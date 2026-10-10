@@ -1,4 +1,4 @@
-# DYD-96 implementation producer brief — ready for root dispatch
+# DYD-96 implementation producer brief - ready for root dispatch
 
 ## Dispatch settings
 

@@ -7,7 +7,7 @@ accepted: 2026-09-04
 participants: [balazs, Claude (Fable)]
 ---
 
-# 046 — Executable Specifications, the Specifier, and Commit-Addressed Hops
+# 046 - Executable Specifications, the Specifier, and Commit-Addressed Hops
 
 Makes the Issue contract runnable and the delivery chain traceable: acceptance criteria become Gherkin
 scenarios where they can, a **specifier** writes the just-in-time spec and route that the Issue Planner
@@ -145,4 +145,4 @@ posted Spec and Plan are retired.
 - [Testing Strategy](../../guides/testing-strategy.md)
 - [Writing Good Briefs](../../guides/writing-good-briefs.md)
 - [Harmonize the skill system](../plans/dydo-3-skill-harmonization.md)
-- [DR 045 — Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](./045-flow-map-hats-review-tiers-and-working-tree-contract.md)
+- [DR 045 - Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](./045-flow-map-hats-review-tiers-and-working-tree-contract.md)

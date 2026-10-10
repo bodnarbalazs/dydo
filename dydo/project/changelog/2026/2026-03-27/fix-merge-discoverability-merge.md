@@ -14,13 +14,13 @@ Merged worktree/fix-merge-discoverability changes into master. Two changes to Gu
 
 ## Files Changed
 
-C:/Users/User/Desktop/Projects/DynaDocs/Commands/smoke-final-a.txt — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\GuardIntegrationTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WorkspaceCleaner.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorkspaceAndCleanTests.cs — Modified
+C:/Users/User/Desktop/Projects/DynaDocs/Commands/smoke-final-a.txt - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\GuardIntegrationTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WorkspaceCleaner.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorkspaceAndCleanTests.cs - Modified
 
 
 ## Review Summary

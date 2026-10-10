@@ -6,7 +6,7 @@ date: 2026-05-06
 
 # Task: implement-pr4-production-drain
 
-Review PR4 of the runtime-regression batch — the final piece. Commit a3654be.
+Review PR4 of the runtime-regression batch - the final piece. Commit a3654be.
 
 WHAT I IMPLEMENTED
 1. Added Services/ProcessUtils.RunProcessCapture(fileName, arguments, workingDir, timeoutMs, environment, redirectStdin) returning (int ExitCode, string Stdout, string Stderr). Drains both pipes concurrently via ReadToEndAsync started before WaitForExit; kills process tree on timeout; returns -1 sentinel on start-failure or timeout. Optional env dictionary merges into psi.Environment (preserves parent env). Optional redirectStdin closes stdin immediately to signal EOF.
@@ -20,9 +20,9 @@ WHAT I IMPLEMENTED
 
 3. OQ3: routed Commands/WorktreeCommand.cs:619-643 RunProcessSilent through the helper. Preserves the load-bearing GIT_TERMINAL_PROMPT=0 env via a static GitNoPromptEnv dict and the stdin-EOF contract via redirectStdin: true. Translates the helper's -1 sentinel back to 1 to preserve the documented contract (FinalizeMerge's best-effort cleanup branches on this).
 
-4. WatchdogService.cs intentionally NOT migrated — fire-and-forget shape, no WaitForExit on the parent side; buffer-pressure pattern does not apply. Documented in commit message.
+4. WatchdogService.cs intentionally NOT migrated - fire-and-forget shape, no WaitForExit on the parent side; buffer-pressure pattern does not apply. Documented in commit message.
 
-5. Test-side fast-follow (Charlie's optional suggestion): DEFERRED. The three test helpers (SnapshotServiceTests.RunGit, InquisitionTests.RunGit, WorktreeMergeSafetyIntegrationTests.Git) already drain concurrently post-PR3. They throw on failure, use different timeouts, and one uses ArgumentList vs Arguments string — routing them through a tuple-returning helper would add throw-wrapper boilerplate at every site rather than reduce code. Plan also explicitly defers TestProcess.cs extraction. Respected that.
+5. Test-side fast-follow (Charlie's optional suggestion): DEFERRED. The three test helpers (SnapshotServiceTests.RunGit, InquisitionTests.RunGit, WorktreeMergeSafetyIntegrationTests.Git) already drain concurrently post-PR3. They throw on failure, use different timeouts, and one uses ArgumentList vs Arguments string - routing them through a tuple-returning helper would add throw-wrapper boilerplate at every site rather than reduce code. Plan also explicitly defers TestProcess.cs extraction. Respected that.
 
 REGRESSION TESTS ADDED (+11)
 - DynaDocs.Tests/Services/ProcessUtilsCaptureTests.cs (7 tests):
@@ -43,21 +43,21 @@ VERIFICATION GATE
 - dotnet build: clean (main + tests).
 - python DynaDocs.Tests/coverage/run_tests.py: 4131 passed, 0 failed (was 4120 baseline + 11 new).
 - python DynaDocs.Tests/coverage/gap_check.py --force-run: 140/140 modules clean, exit 0.
-- Manual probe: dydo inquisition coverage --since 30 — exercises HasChangesSince through the new helper, output is sensible.
+- Manual probe: dydo inquisition coverage --since 30 - exercises HasChangesSince through the new helper, output is sensible.
 - HEAD pinned at 6d00b4c before verification kicked off; gap_check ran on a clean tree.
 
 PLAN DEVIATIONS
 - The plan's surfaced-surprise #5 recommended redirectStdin be default-true (belt-and-braces); I made it opt-in (default false) to keep behaviour strictly preserved for the four simple callers (SnapshotService/AuditService/FileCoverageService/InquisitionCommand). They did not redirect stdin before, and silently changing that adds a behavioural surface for the reviewer to second-guess. Only RunProcessSilent opts in (it requires the contract).
-- The plan's verification step 4 mentions dydo audit replay byte-for-byte — that subcommand is not exposed in the CLI. Substituted dydo inquisition coverage --since 30 as the live-data probe. Reviewer: confirm this substitution is acceptable or point me at a real replay command.
+- The plan's verification step 4 mentions dydo audit replay byte-for-byte - that subcommand is not exposed in the CLI. Substituted dydo inquisition coverage --since 30 as the live-data probe. Reviewer: confirm this substitution is acceptable or point me at a real replay command.
 - The env parameter type is IReadOnlyDictionary<string, string?>?; null value means remove key (safer than empty-string).
 
 KEY DECISIONS
-- -1 sentinel chosen for both start-failure and timeout (single failure code; callers that need a different exit-code contract — only RunProcessSilent today — translate at the call site).
+- -1 sentinel chosen for both start-failure and timeout (single failure code; callers that need a different exit-code contract - only RunProcessSilent today - translate at the call site).
 - environment is merged into psi.Environment (which inherits parent) rather than overwriting; the EnvironmentInjected_PreservesParentEnv test pins this.
 - Process.Kill(entireProcessTree: true) on timeout matches the aeee461 test-helper shape; documented in plan as the safer choice.
 
 FOLLOW-UP CANDIDATES (not filed; surface to user)
-- The dydo audit replay surface gap above — either expose a replay subcommand or document the verification step differently.
+- The dydo audit replay surface gap above - either expose a replay subcommand or document the verification step differently.
 - TestProcess.cs extraction (deferred per plan); revisit if a fourth test-side git helper appears.
 
 REPORT-BACK BATON
@@ -73,7 +73,7 @@ Per workflow, dispatching this reviewer fulfils my reply obligation to Adele on 
 
 ## Review Summary
 
-Review PR4 of the runtime-regression batch — the final piece. Commit a3654be.
+Review PR4 of the runtime-regression batch - the final piece. Commit a3654be.
 
 WHAT I IMPLEMENTED
 1. Added Services/ProcessUtils.RunProcessCapture(fileName, arguments, workingDir, timeoutMs, environment, redirectStdin) returning (int ExitCode, string Stdout, string Stderr). Drains both pipes concurrently via ReadToEndAsync started before WaitForExit; kills process tree on timeout; returns -1 sentinel on start-failure or timeout. Optional env dictionary merges into psi.Environment (preserves parent env). Optional redirectStdin closes stdin immediately to signal EOF.
@@ -87,9 +87,9 @@ WHAT I IMPLEMENTED
 
 3. OQ3: routed Commands/WorktreeCommand.cs:619-643 RunProcessSilent through the helper. Preserves the load-bearing GIT_TERMINAL_PROMPT=0 env via a static GitNoPromptEnv dict and the stdin-EOF contract via redirectStdin: true. Translates the helper's -1 sentinel back to 1 to preserve the documented contract (FinalizeMerge's best-effort cleanup branches on this).
 
-4. WatchdogService.cs intentionally NOT migrated — fire-and-forget shape, no WaitForExit on the parent side; buffer-pressure pattern does not apply. Documented in commit message.
+4. WatchdogService.cs intentionally NOT migrated - fire-and-forget shape, no WaitForExit on the parent side; buffer-pressure pattern does not apply. Documented in commit message.
 
-5. Test-side fast-follow (Charlie's optional suggestion): DEFERRED. The three test helpers (SnapshotServiceTests.RunGit, InquisitionTests.RunGit, WorktreeMergeSafetyIntegrationTests.Git) already drain concurrently post-PR3. They throw on failure, use different timeouts, and one uses ArgumentList vs Arguments string — routing them through a tuple-returning helper would add throw-wrapper boilerplate at every site rather than reduce code. Plan also explicitly defers TestProcess.cs extraction. Respected that.
+5. Test-side fast-follow (Charlie's optional suggestion): DEFERRED. The three test helpers (SnapshotServiceTests.RunGit, InquisitionTests.RunGit, WorktreeMergeSafetyIntegrationTests.Git) already drain concurrently post-PR3. They throw on failure, use different timeouts, and one uses ArgumentList vs Arguments string - routing them through a tuple-returning helper would add throw-wrapper boilerplate at every site rather than reduce code. Plan also explicitly defers TestProcess.cs extraction. Respected that.
 
 REGRESSION TESTS ADDED (+11)
 - DynaDocs.Tests/Services/ProcessUtilsCaptureTests.cs (7 tests):
@@ -110,21 +110,21 @@ VERIFICATION GATE
 - dotnet build: clean (main + tests).
 - python DynaDocs.Tests/coverage/run_tests.py: 4131 passed, 0 failed (was 4120 baseline + 11 new).
 - python DynaDocs.Tests/coverage/gap_check.py --force-run: 140/140 modules clean, exit 0.
-- Manual probe: dydo inquisition coverage --since 30 — exercises HasChangesSince through the new helper, output is sensible.
+- Manual probe: dydo inquisition coverage --since 30 - exercises HasChangesSince through the new helper, output is sensible.
 - HEAD pinned at 6d00b4c before verification kicked off; gap_check ran on a clean tree.
 
 PLAN DEVIATIONS
 - The plan's surfaced-surprise #5 recommended redirectStdin be default-true (belt-and-braces); I made it opt-in (default false) to keep behaviour strictly preserved for the four simple callers (SnapshotService/AuditService/FileCoverageService/InquisitionCommand). They did not redirect stdin before, and silently changing that adds a behavioural surface for the reviewer to second-guess. Only RunProcessSilent opts in (it requires the contract).
-- The plan's verification step 4 mentions dydo audit replay byte-for-byte — that subcommand is not exposed in the CLI. Substituted dydo inquisition coverage --since 30 as the live-data probe. Reviewer: confirm this substitution is acceptable or point me at a real replay command.
+- The plan's verification step 4 mentions dydo audit replay byte-for-byte - that subcommand is not exposed in the CLI. Substituted dydo inquisition coverage --since 30 as the live-data probe. Reviewer: confirm this substitution is acceptable or point me at a real replay command.
 - The env parameter type is IReadOnlyDictionary<string, string?>?; null value means remove key (safer than empty-string).
 
 KEY DECISIONS
-- -1 sentinel chosen for both start-failure and timeout (single failure code; callers that need a different exit-code contract — only RunProcessSilent today — translate at the call site).
+- -1 sentinel chosen for both start-failure and timeout (single failure code; callers that need a different exit-code contract - only RunProcessSilent today - translate at the call site).
 - environment is merged into psi.Environment (which inherits parent) rather than overwriting; the EnvironmentInjected_PreservesParentEnv test pins this.
 - Process.Kill(entireProcessTree: true) on timeout matches the aeee461 test-helper shape; documented in plan as the safer choice.
 
 FOLLOW-UP CANDIDATES (not filed; surface to user)
-- The dydo audit replay surface gap above — either expose a replay subcommand or document the verification step differently.
+- The dydo audit replay surface gap above - either expose a replay subcommand or document the verification step differently.
 - TestProcess.cs extraction (deferred per plan); revisit if a fourth test-side git helper appears.
 
 REPORT-BACK BATON

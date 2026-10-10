@@ -271,7 +271,7 @@ contract change comes back to the admiral as a plan amendment.
   fixture screenshots answer that first; the human's live look settles it. A poor result reopens
   layout tuning as a new Issue, not a redesign.
 
-## Review evidence — 2026-09-25
+## Review evidence - 2026-09-25
 
 Four fresh `reviewer(project-plan)` passes ran, each posted on the Linear Project. FAILs at `e807339`
 (7 findings), `575b4a5` (2) and `d7fa9cb` (2) were corrected. The PASS is at `3e88cc6`. The human delegated

@@ -6,7 +6,7 @@ date: 2026-04-15
 
 # Task: release-test-1
 
-Smoke test of release guard — no code changes to review. Brian was dispatched by Adele purely to probe the 'unprocessed inbox blocks release' guard (confirmed blocking, reported verbatim to Adele). Dispatching you only to satisfy the code-writer→reviewer baton-passing requirement. Close out immediately.
+Smoke test of release guard - no code changes to review. Brian was dispatched by Adele purely to probe the 'unprocessed inbox blocks release' guard (confirmed blocking, reported verbatim to Adele). Dispatching you only to satisfy the code-writer→reviewer baton-passing requirement. Close out immediately.
 
 ## Progress
 
@@ -18,7 +18,7 @@ Smoke test of release guard — no code changes to review. Brian was dispatched 
 
 ## Review Summary
 
-Smoke test of release guard — no code changes to review. Brian was dispatched by Adele purely to probe the 'unprocessed inbox blocks release' guard (confirmed blocking, reported verbatim to Adele). Dispatching you only to satisfy the code-writer→reviewer baton-passing requirement. Close out immediately.
+Smoke test of release guard - no code changes to review. Brian was dispatched by Adele purely to probe the 'unprocessed inbox blocks release' guard (confirmed blocking, reported verbatim to Adele). Dispatching you only to satisfy the code-writer→reviewer baton-passing requirement. Close out immediately.
 
 ## Code Review
 

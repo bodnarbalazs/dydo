@@ -6,7 +6,7 @@ date: 2026-04-02
 
 # Task: docs-v13-readme-sync
 
-Synced Templates/about-dynadocs.template.md with dydo/reference/about-dynadocs.md (exact copy). Added ReadmeClones_ContentInSync test to CommandDocConsistencyTests.cs — verifies README/npm and about-dynadocs/template clones stay in sync, plus section structure alignment. npm/README.md sync blocked by guard (npm/ not in code-writer paths) — reported to orchestrator. All existing tests pass, coverage gate passes.
+Synced Templates/about-dynadocs.template.md with dydo/reference/about-dynadocs.md (exact copy). Added ReadmeClones_ContentInSync test to CommandDocConsistencyTests.cs - verifies README/npm and about-dynadocs/template clones stay in sync, plus section structure alignment. npm/README.md sync blocked by guard (npm/ not in code-writer paths) - reported to orchestrator. All existing tests pass, coverage gate passes.
 
 ## Progress
 
@@ -14,15 +14,15 @@ Synced Templates/about-dynadocs.template.md with dydo/reference/about-dynadocs.m
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleDefinitionService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CommandDocConsistencyTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleDefinitionService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CommandDocConsistencyTests.cs - Modified
 
 
 ## Review Summary
 
-Synced Templates/about-dynadocs.template.md with dydo/reference/about-dynadocs.md (exact copy). Added ReadmeClones_ContentInSync test to CommandDocConsistencyTests.cs — verifies README/npm and about-dynadocs/template clones stay in sync, plus section structure alignment. npm/README.md sync blocked by guard (npm/ not in code-writer paths) — reported to orchestrator. All existing tests pass, coverage gate passes.
+Synced Templates/about-dynadocs.template.md with dydo/reference/about-dynadocs.md (exact copy). Added ReadmeClones_ContentInSync test to CommandDocConsistencyTests.cs - verifies README/npm and about-dynadocs/template clones stay in sync, plus section structure alignment. npm/README.md sync blocked by guard (npm/ not in code-writer paths) - reported to orchestrator. All existing tests pass, coverage gate passes.
 
 ## Code Review (2026-04-01 08:40)
 

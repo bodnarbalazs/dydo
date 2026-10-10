@@ -19,7 +19,7 @@ Pick one, and say which:
 
 ## Edit scope
 
-Edit only the verification skill's own directory (its `SKILL.md`, `resources/features/`) and the control CLI it drives. Product code stays untouched during a run: a behaviour the map describes that the app no longer does is either doc drift (fix the map) or a product regression (report it to the human as a Bug, keep the map describing intended behaviour).
+Edit only the verification skill's own directory (its `SKILL.md`, `resources/features/`) and the control CLI it drives. Product code stays untouched during a run: a behaviour the map describes that the app no longer does is either doc drift (fix the map) or a product regression (report it to the user as a Bug, keep the map describing intended behaviour).
 
 ## Pass
 
@@ -38,7 +38,7 @@ Edit only the verification skill's own directory (its `SKILL.md`, `resources/fea
 
    A doctor failure caused by skill drift is drift: fix it under edit scope and retry once (restart whatever the fix invalidated, nothing more) before calling the pass `blocked`. A feature that can't be reached is `verified-unreachable` only with the concrete prerequisite (auth, entitlement, OS, external state) and the route attempted; if the map omits that prerequisite, that's drift. Any harness fix from triage gets re-driven live before it ships. Final teardown happens after the last drive of the run, including those re-proofs, so nothing outlives the run (evidence stays, per the skill).
 
-5. **Triage.** Wrong or missing user-POV description → doc drift, fix it. Working behaviour the harness can't drive → harness gap, fix it; a harness fix follows the same helpers rule as generation (scripts executable, invocation documented in the skill body). App behaviour that's actually broken → product gap; record it for the human, keep it out of this PR.
+5. **Triage.** Wrong or missing user-POV description → doc drift, fix it. Working behaviour the harness can't drive → harness gap, fix it; a harness fix follows the same helpers rule as generation (scripts executable, invocation documented in the skill body). App behaviour that's actually broken → product gap; record it for the user, keep it out of this PR.
 
 6. **Ship or stop.** For changed: one PR of proven corrections, re-read every changed file first. For clean or blocked: no PR, report the outcome and the coverage honestly.
 

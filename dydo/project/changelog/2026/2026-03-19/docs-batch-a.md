@@ -38,7 +38,7 @@ All content is based on thorough code research across Commands/, Services/, Mode
 - Reviewed by: Emma
 - Date: 2026-03-16 20:34
 - Result: PASSED
-- Notes: All 8 docs verified against source code (25+ claims checked, zero discrepancies). Writing is clean and direct — no slop. Dead links fixed. Task states corrected from inaccurate pre-fill. Tests 2632/2633 pass (1 pre-existing). Coverage 121/121.
+- Notes: All 8 docs verified against source code (25+ claims checked, zero discrepancies). Writing is clean and direct - no slop. Dead links fixed. Task states corrected from inaccurate pre-fill. Tests 2632/2633 pass (1 pre-existing). Coverage 121/121.
 
 Awaiting human approval.
 

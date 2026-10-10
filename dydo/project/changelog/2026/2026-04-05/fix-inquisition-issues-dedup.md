@@ -14,24 +14,24 @@ Extracted 3 shared utilities (FileLock, FileReadRetry, FrontmatterParser) from d
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Utils\FrontmatterParser.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Utils\FrontmatterParserTests.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Utils\FileLock.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Utils\FileLockTests.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Utils\FileReadRetry.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Utils\FileReadRetryTests.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Services\FrontmatterExtractor.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxMetadataReader.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentSessionManager.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxItemParser.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\MessageFinder.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentStateStore.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\DispatchService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\AgentSessionManagerTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\QueueService.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Utils\FrontmatterParser.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Utils\FrontmatterParserTests.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Utils\FileLock.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Utils\FileLockTests.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Utils\FileReadRetry.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Utils\FileReadRetryTests.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Services\FrontmatterExtractor.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxMetadataReader.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentSessionManager.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxItemParser.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\MessageFinder.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentStateStore.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\DispatchService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\AgentSessionManagerTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\QueueService.cs - Modified
 
 
 ## Review Summary
@@ -50,7 +50,7 @@ Requires rework.
 
 - Reviewed by: Charlie
 - Result: FAILED
-- Issues: Code changes are correct — all 3 original issues fixed. BLOCKED by gap_check: (1) tier_registry.json has stale worktree temp paths for FileLock/FileReadRetry/FrontmatterParser. (2) Pre-existing DispatchService CRAP 30.2. (3) Pre-existing ReadmeClones_ContentInSync test failure.
+- Issues: Code changes are correct - all 3 original issues fixed. BLOCKED by gap_check: (1) tier_registry.json has stale worktree temp paths for FileLock/FileReadRetry/FrontmatterParser. (2) Pre-existing DispatchService CRAP 30.2. (3) Pre-existing ReadmeClones_ContentInSync test failure.
 
 Requires rework.
 

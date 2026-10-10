@@ -497,6 +497,6 @@ existing assimilation/read-back evidence. Neither DYD-23 nor DYD-24 may mark DYD
 
 ## Related
 
-- [DR 044 — Linear-Canonical PM and the dydo Knowledge Boundary](../decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md) — Binding ontology and ownership decision.
-- [dydo 3.0 Linear PM Migration](./dydo-3-linear-migration.md) — Portfolio sequence and Project 2 boundary.
-- [dydo 3.0 Notion Runtime Removal and Release](./dydo-3-notion-runtime-removal.md) — Project 5 deletion ownership and serial handoff.
+- [DR 044 - Linear-Canonical PM and the dydo Knowledge Boundary](../decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md) - Binding ontology and ownership decision.
+- [dydo 3.0 Linear PM Migration](./dydo-3-linear-migration.md) - Portfolio sequence and Project 2 boundary.
+- [dydo 3.0 Notion Runtime Removal and Release](./dydo-3-notion-runtime-removal.md) - Project 5 deletion ownership and serial handoff.

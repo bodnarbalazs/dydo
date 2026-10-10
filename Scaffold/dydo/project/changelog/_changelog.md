@@ -29,7 +29,7 @@ changelog/
     └── ...
 ```
 
-> **Note:** This structure is a suggestion. Flat organization or other schemes work fine—dydo doesn't enforce changelog folder structure.
+> **Note:** This structure is a suggestion. Flat organization or other schemes work fine-dydo doesn't enforce changelog folder structure.
 
 ## File Format
 

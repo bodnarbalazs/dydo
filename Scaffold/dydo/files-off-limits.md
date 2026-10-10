@@ -120,12 +120,12 @@ agent may read but none may write or delete. Both bind on every caller, Claude a
 ## Protected Patterns
 
 Paths listed here are **readable by every agent and writable by none**. `Edit`, `Write`,
-`NotebookEdit` and every shell operation that changes them — write, delete, move, copy,
-permission change — is blocked; read them with `Read`, `cat` or `head`. These are dydo's
+`NotebookEdit` and every shell operation that changes them - write, delete, move, copy,
+permission change - is blocked; read them with `Read`, `cat` or `head`. These are dydo's
 own system files: agents read them to orient themselves and never write them directly, and a
-human owns their content. dydo's own commands still rewrite what they manage — `dydo index`
+human owns their content. dydo's own commands still rewrite what they manage - `dydo index`
 regenerates `dydo/index.md`, and `dydo fix` writes
-`dydo.json` — so the tier stops hand edits, not dydo's tooling. Whitelist entries do not apply
+`dydo.json` - so the tier stops hand edits, not dydo's tooling. Whitelist entries do not apply
 to this section.
 
 ```

@@ -49,7 +49,7 @@ public static class ScaffoldTree
     }
 
     /// <summary>
-    /// The runtime entry-point file at the project root — materialized as CLAUDE.md (Claude Code)
+    /// The runtime entry-point file at the project root - materialized as CLAUDE.md (Claude Code)
     /// and AGENTS.md (Codex) from one runtime-neutral source, `Scaffold/entry-point.md`.
     /// </summary>
     public static string EntryPoint(string projectName) =>

@@ -5,7 +5,7 @@ date: 2026-03-18
 area: project
 ---
 
-# 012 — Release Constraints and Role Capabilities
+# 012 - Release Constraints and Role Capabilities
 
 Extend the data-driven role system (decision 008) to cover release-time constraints and role capabilities, replacing hardcoded role-specific checks.
 
@@ -13,8 +13,8 @@ Extend the data-driven role system (decision 008) to cover release-time constrai
 
 Decision 008 moved role-assignment constraints to JSON. But two behavioral rules remain hardcoded in C#:
 
-1. **H25**: Dispatched code-writers must dispatch a reviewer before releasing — an if-statement in `AgentRegistry.ValidateReleasePreconditions()`.
-2. **Dispatch-wait privilege**: Only orchestrator/inquisitor/judge can use `--wait` — a hardcoded string array in `DispatchService`.
+1. **H25**: Dispatched code-writers must dispatch a reviewer before releasing - an if-statement in `AgentRegistry.ValidateReleasePreconditions()`.
+2. **Dispatch-wait privilege**: Only orchestrator/inquisitor/judge can use `--wait` - a hardcoded string array in `DispatchService`.
 
 The inquisitor role now needs the same pattern as H25 (must dispatch a judge before releasing). Adding another hardcoded check would repeat the mistake. Both rules are role capabilities that custom roles should be able to express.
 
@@ -22,7 +22,7 @@ The inquisitor role now needs the same pattern as H25 (must dispatch a judge bef
 
 ### New constraint type: `requires-dispatch`
 
-A new building block for `RoleConstraint` — evaluated at release time, not role-assignment time. Fields:
+A new building block for `RoleConstraint` - evaluated at release time, not role-assignment time. Fields:
 
 - `requiredRoles`: target role(s) that must have been dispatched on the same task
 - `onlyWhenDispatched`: when `true`, constraint only applies to agents dispatched by other agents (not human-initiated). Default `false`.
@@ -40,7 +40,7 @@ A boolean on `RoleDefinition`. When `true`, the role can use `--wait` dispatch (
 
 ### Where we draw the line
 
-Not everything about default roles should be soft-coded. Roles like inquisitor and reviewer are tightly coupled to specific commands and workflows (inquisition commands, task state transitions). Making those data-driven would hit diminishing returns — the complexity of a generic mechanism would exceed the complexity of the hardcoded check. The principle: if a custom role would genuinely need to express the capability, it belongs in role JSON. If it's inherent to a specific role's purpose, it can stay in code.
+Not everything about default roles should be soft-coded. Roles like inquisitor and reviewer are tightly coupled to specific commands and workflows (inquisition commands, task state transitions). Making those data-driven would hit diminishing returns - the complexity of a generic mechanism would exceed the complexity of the hardcoded check. The principle: if a custom role would genuinely need to express the capability, it belongs in role JSON. If it's inherent to a specific role's purpose, it can stay in code.
 
 ## Implications
 

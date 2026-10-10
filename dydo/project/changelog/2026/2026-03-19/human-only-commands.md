@@ -25,7 +25,7 @@ Implemented H28: agents are blocked from running human-only dydo commands (task 
 - Reviewed by: Dexter
 - Date: 2026-03-19 19:23
 - Result: PASSED
-- Notes: LGTM. Clean H28 implementation: source-generated regex, correct placement in HandleDydoBashCommand (after claim, before wait), 14 meaningful tests. gap_check exits non-zero but failures are pre-existing (CheckBashFileOperation 0% cov, RoleDefinitionService, RoleConstraintEvaluator, WatchdogService) — none caused by H28.
+- Notes: LGTM. Clean H28 implementation: source-generated regex, correct placement in HandleDydoBashCommand (after claim, before wait), 14 meaningful tests. gap_check exits non-zero but failures are pre-existing (CheckBashFileOperation 0% cov, RoleDefinitionService, RoleConstraintEvaluator, WatchdogService) - none caused by H28.
 
 Awaiting human approval.
 

@@ -14,12 +14,12 @@ date: 2026-03-19
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\gap_check.py — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\gap_check.py - Modified
 
 
 ## Review Summary
 
-Applied three fixes to exclude generated code from coverage: (1) Added GeneratedCodeAttribute to ExcludeByAttribute in coverage.runsettings — the primary Coverlet-level fix since both RegexGenerator and JsonSourceGenerator use [GeneratedCode]. (2) Added -filefilters to ReportGenerator command in report.py so HTML reports exclude generated files even if Coverlet misses them. (3) Hardened gap_check.py GENERATED_PATTERNS to match both slash directions for obj paths, consistent with report.py. Verified: gap_check --skip-tests shows 147 source modules with zero generated class leakage.
+Applied three fixes to exclude generated code from coverage: (1) Added GeneratedCodeAttribute to ExcludeByAttribute in coverage.runsettings - the primary Coverlet-level fix since both RegexGenerator and JsonSourceGenerator use [GeneratedCode]. (2) Added -filefilters to ReportGenerator command in report.py so HTML reports exclude generated files even if Coverlet misses them. (3) Hardened gap_check.py GENERATED_PATTERNS to match both slash directions for obj paths, consistent with report.py. Verified: gap_check --skip-tests shows 147 source modules with zero generated class leakage.
 
 ## Code Review (2026-03-19 14:45)
 

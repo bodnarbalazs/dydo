@@ -14,12 +14,12 @@ Added RequireAll property to RoleConstraint (default true, preserving ALL semant
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\RoleConstraintEvaluatorTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Models\RoleConstraint.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleConstraintEvaluator.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleDefinitionService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\DispatchWaitIntegrationTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\RoleDefinitionServiceTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\RoleConstraintEvaluatorTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Models\RoleConstraint.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleConstraintEvaluator.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleDefinitionService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\DispatchWaitIntegrationTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\RoleDefinitionServiceTests.cs - Modified
 
 
 ## Review Summary

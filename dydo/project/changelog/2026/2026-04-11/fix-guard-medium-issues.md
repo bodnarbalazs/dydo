@@ -14,10 +14,10 @@ Fixed all 7 guard/security issues (#58, #85, #86, #60, #61, #63, #64). Key chang
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Services\BashCommandAnalyzer.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\OffLimitsService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\GuardSecurityTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\BashCommandAnalyzer.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\OffLimitsService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\GuardSecurityTests.cs - Modified
 
 
 ## Review Summary

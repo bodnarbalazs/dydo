@@ -7,7 +7,7 @@ accepted: 2026-09-24
 participants: [balazs, Claude admiral]
 ---
 
-# 051 — Captains by Default, the Admiral on Invocation
+# 051 - Captains by Default, the Admiral on Invocation
 
 The issue-captain is the default officer, and the admiral exists only when the human invokes it.
 With no admiral, the human holds the Project map in their own session with `wayfinder`, and the map

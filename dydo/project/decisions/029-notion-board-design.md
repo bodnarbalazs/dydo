@@ -6,10 +6,10 @@ date: 2026-07-03
 participants: [balazs, Charlie]
 ---
 
-# 029 — Notion Board Design: Visual Schema, PM Semantics, and Schema-Shape Ownership
+# 029 - Notion Board Design: Visual Schema, PM Semantics, and Schema-Shape Ownership
 
-The Notion PM board gets an intentional visual design — one **color language** across all object types,
-a **word-based priority scheme with operational definitions**, and type-level icons — plus three new
+The Notion PM board gets an intentional visual design - one **color language** across all object types,
+a **word-based priority scheme with operational definitions**, and type-level icons - plus three new
 board capabilities: **progress rollups**, a **blocked-by relation pair**, and **dates powering a
 timeline/Gantt view**. Every property is explicitly tagged **CANONICAL** (stored in frontmatter,
 synced two-way per [Decision 025](./025-notion-sync-architecture.md)) or **VIEW-ONLY** (computed in
@@ -21,8 +21,8 @@ in Notion are **warned about and left alone**, with an explicit `--prune` to yan
 
 With dydo 2.0 the human is PM of agents, and the Notion board is the management surface (DR 025). The
 provisioned defaults were functional but flat: uncolored selects, engineer-only `P0–P3` priorities, no
-progress signal, no dependency modeling, no timeline. Separately, Balazs raised the shape question —
-*"what happens if we edit the shape of data in Notion? It should be owned by the project, right?"* —
+progress signal, no dependency modeling, no timeline. Separately, Balazs raised the shape question -
+*"what happens if we edit the shape of data in Notion? It should be owned by the project, right?"* -
 which DR 025 implies but never states. Constraints verified against the Notion API (`2026-03-11`):
 select option colors come from a fixed palette (no hex); select options carry no icons or descriptions;
 progress bars are number/rollup renderings computed in Notion; Gantt is a timeline view over date
@@ -40,7 +40,7 @@ Colors carry consistent meaning everywhere, so the board reads as a system:
 | purple | queued / ready |
 | blue | in motion |
 | yellow | awaiting review |
-| red | **needs a human** (blocked, escalated) — reserved for attention |
+| red | **needs a human** (blocked, escalated) - reserved for attention |
 | green | done |
 | brown | terminal-negative (abandoned) |
 
@@ -50,7 +50,7 @@ schema, not presentation preference.
 ### 2. Priority: words with operational definitions
 
 `P0–P3` is replaced by a self-explanatory scheme, **reused identically** on every type that has a
-priority (Campaign, SprintTask, and — aligned with the Release/Issue work — Issue). Each level is
+priority (Campaign, SprintTask, and - aligned with the Release/Issue work - Issue). Each level is
 defined by what you do about it, not by an adjective; these definitions are part of the contract
 (documented here and in the sync-model docs; optionally mirrored into the Notion property description,
 since options themselves cannot carry descriptions):
@@ -67,14 +67,14 @@ since options themselves cannot carry descriptions):
 One emoji per object type (database + rows) so a page's *kind* is instantly assessable: Campaign 🚀,
 Sprint 🏃, SprintTask 📋 (recommended for the incoming types: Release 📦, Issue 🐛). **No per-status
 icons**: select options can't carry icons, so per-status icons would mean the sync engine rewriting
-page icons on every status change — complexity for a signal the status badge color already carries.
+page icons on every status change - complexity for a signal the status badge color already carries.
 
 ### 4. Per-object-type schema
 
 Every property tagged **C** (canonical: frontmatter, two-way) or **V** (view-only: computed in
 Notion, never stored).
 
-**Campaign 🚀** — statuses: proposed `gray` → active `blue` → done `green` → abandoned `brown`
+**Campaign 🚀** - statuses: proposed `gray` → active `blue` → done `green` → abandoned `brown`
 
 | Property | Type | Tag |
 |---|---|---|
@@ -85,7 +85,7 @@ Notion, never stored).
 | progress | rollup: % of related Sprints done, progress-bar render | V |
 | dates | rollup: earliest start / latest end across Sprints | V |
 
-**Sprint 🏃** — statuses: planned `gray` → active `blue` → in-review `yellow` → done `green` → escalated `red`
+**Sprint 🏃** - statuses: planned `gray` → active `blue` → in-review `yellow` → done `green` → escalated `red`
 
 | Property | Type | Tag |
 |---|---|---|
@@ -96,7 +96,7 @@ Notion, never stored).
 | start / end | date range | C |
 | progress | rollup: % of related SprintTasks done, progress-bar render | V |
 
-**SprintTask 📋** — statuses: backlog `gray` → ready `purple` → in-progress `blue` → in-review `yellow` → blocked `red` → done `green`
+**SprintTask 📋** - statuses: backlog `gray` → ready `purple` → in-progress `blue` → in-review `yellow` → blocked `red` → done `green`
 
 | Property | Type | Tag |
 |---|---|---|
@@ -109,23 +109,23 @@ Notion, never stored).
 | due | date (optional) | C |
 
 **Release / Issue** (Brian's in-flight types): adopt the same color language and the §2 priority
-scheme; Release gets a **progress rollup (V)** over its children — Balazs flagged release progress as
+scheme; Release gets a **progress rollup (V)** over its children - Balazs flagged release progress as
 possibly the most useful metric on the board. Which relation Release rolls up over depends on Brian's
 model design; aligned via coordination, not decided here.
 
 ### 5. New capabilities settled
 
-- **Progress bars — yes, VIEW-ONLY, provisioner-created.** Rollups on Sprint, Campaign, and Release,
+- **Progress bars - yes, VIEW-ONLY, provisioner-created.** Rollups on Sprint, Campaign, and Release,
   computed in Notion, rendered as bars, nothing stored in the repo (DR 025 §4: rollups compute at the
-  edge). The **provisioner creates them** — Notion is a provisioned projection and the board must
+  edge). The **provisioner creates them** - Notion is a provisioned projection and the board must
   survive re-provisioning from scratch with zero hand configuration.
-- **Blockers — yes, as a relation pair, not an object type.** Canonical `blocked-by: [task-ids]`
+- **Blockers - yes, as a relation pair, not an object type.** Canonical `blocked-by: [task-ids]`
   frontmatter on SprintTask (self-relation, multi-value), synced two-way; Notion's dual-property
   relation derives the reverse "Blocks" column (view-only). DR 025 §7's richer Blocker *entity*
-  (detail/severity/raisedBy, auto-materialized from agent raise-hands) is deferred — revisit when
+  (detail/severity/raisedBy, auto-materialized from agent raise-hands) is deferred - revisit when
   raise-hand integration lands; the two compose.
-- **Dates/Gantt — yes.** Sprint owns canonical `start`/`end`; Campaign dates are a **derived rollup**
-  (view-only — an aggregate doesn't belong in frontmatter); SprintTask gets at most an optional `due`.
+- **Dates/Gantt - yes.** Sprint owns canonical `start`/`end`; Campaign dates are a **derived rollup**
+  (view-only - an aggregate doesn't belong in frontmatter); SprintTask gets at most an optional `due`.
   The timeline view itself is presentation.
 
 ### 6. Schema-shape ownership: values two-way, shape one-way
@@ -136,25 +136,25 @@ model design; aligned via coordination, not decided here.
   is owned by the project's sync-model and flows **one-way, project → Notion, at provision time**.
   Notion never teaches the project new columns; the canonical model wins.
 - **Rogue schema edits in Notion** (a property added or renamed, a select option added):
-  **warn + leave**. The provisioner/sync reports the drift loudly but does not touch it — reverting
+  **warn + leave**. The provisioner/sync reports the drift loudly but does not touch it - reverting
   would silently delete a colleague's column and its data, violating "never a silent clobber"; ignoring
   it would let the board and model diverge invisibly. Rogue properties are already inert to sync (the
   mapper skips unknown names). An explicit **`dydo notion provision --prune`** performs the revert
   deliberately, yanking all rogue additions. A rogue select *option* is the same one level down: its
-  *value* still round-trips as data, but the option is schema — warned, never adopted into the model.
+  *value* still round-trips as data, but the option is schema - warned, never adopted into the model.
 
 ## Consequences & implementation notes
 
 Implementation is **coordinated with Brian's model-layer track** (Release/Issue types, sync-model.json,
-status folder-moves) — folded into his orchestration or sequenced after his slice; not a parallel edit
+status folder-moves) - folded into his orchestration or sequenced after his slice; not a parallel edit
 of the same files. Known gaps the implementation must cover:
 
-- `SyncPropertyDef` options are plain strings — needs a color slot (e.g. `{name, color}` options).
-- `SyncModel.InDependencyOrder()` treats a self-relation as a cycle and throws — `blocked-by`
+- `SyncPropertyDef` options are plain strings - needs a color slot (e.g. `{name, color}` options).
+- `SyncModel.InDependencyOrder()` treats a self-relation as a cycle and throws - `blocked-by`
   (SprintTask → SprintTask) requires fixing this false positive.
-- `NotionPropertyMapper` round-trips only the **first** entry of a relation — multi-value `blocked-by`
+- `NotionPropertyMapper` round-trips only the **first** entry of a relation - multi-value `blocked-by`
   needs full multi-relation support both directions.
-- Date handling maps `start` only — Sprint's date range needs end-date support in mapper + provisioner.
+- Date handling maps `start` only - Sprint's date range needs end-date support in mapper + provisioner.
 - The provisioner gains rollup + dual-property-relation schema creation, and the warn-on-drift check
   (+ `--prune`).
 - The priority rename (`P0–P3` → Urgent/High/Normal/Low) is a data migration for existing frontmatter.
@@ -164,10 +164,10 @@ of the same files. Known gaps the implementation must cover:
 Settled deviations from the design above, recorded as the board landed (the inquisition confirmed each):
 
 - **(a) `--prune` landed on `sync`, not a `provision` subcommand.** §6 spells the deliberate revert
-  as `dydo notion provision --prune`, but there is no `provision` subcommand — provisioning happens
+  as `dydo notion provision --prune`, but there is no `provision` subcommand - provisioning happens
   inside `sync`. The flag landed as **`dydo notion sync --prune`**.
 - **(b) Type icons landed as Release 🏷️ and Issue 🐞**, not the §3 recommendation of 📦 / 🐛. These
-  came in on Brian's Release/Issue slice; kept as landed rather than reworked — a cosmetic choice not
+  came in on Brian's Release/Issue slice; kept as landed rather than reworked - a cosmetic choice not
   worth a follow-up edit.
 - **(c) Sprint dates landed as two independent date properties (`start`, `end`)**, not the §4 "date
   range" single property. Notion timeline views accept two separate date properties, and separate
@@ -176,9 +176,9 @@ Settled deviations from the design above, recorded as the board landed (the inqu
   is "reused identically … on Issue". That clause was superseded by aligning Issue with its landed
   model and the issue-CLI corpus: Issue gets a **`severity`** select (`critical` / `high` / `medium` /
   `low`) and **no `priority` property**. Priority remains on Release, Campaign, and SprintTask.
-- **(e) Issue status set is `triage` / `open` / `resolved`** — there is no `backlog` option on Issue.
+- **(e) Issue status set is `triage` / `open` / `resolved`** - there is no `backlog` option on Issue.
 
 ## Status
 
-Accepted (Balazs green-lit 2026-07-03). Design only — no sync-model/mapper/provisioner edits under
+Accepted (Balazs green-lit 2026-07-03). Design only - no sync-model/mapper/provisioner edits under
 this record; implementation sequencing goes through Brian.

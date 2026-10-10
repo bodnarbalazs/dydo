@@ -29,7 +29,7 @@ This command is _informed_ by the project's domain model and built on a shared d
 so put extra weight on the parts of the codebase that have recently changed. Decide *where* to look
 before you look:
 
-- If the human named a direction (a module, a subsystem, a pain point), take it, and skip the
+- If the user named a direction (a module, a subsystem, a pain point), take it, and skip the
   inference below.
 - Otherwise, walk back a good stretch of the commit history (`git log --oneline`) to find the
   codebase's hot spots, the files and areas that keep coming up, and let those paths pull your
@@ -55,8 +55,8 @@ complexity, or just move it? A "yes, concentrates" is the signal you want.
 Write a self-contained HTML file to the session's scratch directory when the host names one, otherwise
 to the OS temp directory (`$TMPDIR`, falling back to `/tmp`, or `%TEMP%` on Windows), so nothing
 lands in the repo. Write to `<dir>/architecture-review-<timestamp>.html` so each run gets a fresh
-file. Open it for the human (`xdg-open <path>` on Linux, `open <path>` on macOS, `start <path>` on
-Windows) and tell them the absolute path.
+file. Open it for the user (`xdg-open <path>` on Linux, `open <path>` on macOS, `start <path>` on
+Windows) and tell him the absolute path.
 
 The report uses **Tailwind via CDN** for layout and styling, and **Mermaid via CDN** for diagrams where
 a graph/flow/sequence reliably communicates the structure. Mix Mermaid with hand-crafted CSS/SVG
@@ -88,12 +88,12 @@ refactor a Decision Record forbids.
 See [html-report](resources/html-report.md) for the full HTML scaffold, diagram patterns, and styling
 guidance.
 
-Do NOT propose interfaces yet. After the file is written, ask the human: "Which of these would you
+Do NOT propose interfaces yet. After the file is written, ask the user: "Which of these would you
 like to explore?"
 
 ### 3. Grilling loop
 
-Once the human picks a candidate, call the Skill tool with "grilling" to walk the decision tree with
+Once the user picks a candidate, call the Skill tool with "grilling" to walk the decision tree with
 them: constraints, dependencies, the shape of the deepened module, what sits behind the seam, what
 tests survive.
 

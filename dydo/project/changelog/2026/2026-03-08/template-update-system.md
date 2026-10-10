@@ -14,19 +14,19 @@ date: 2026-03-08
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TemplateUpdateTests.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\TemplateCommandTests.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Models\InboxItem.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\DispatchCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\DispatchCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorkflowTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\dydo-commands.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\TemplateCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\IncludeReanchor.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\IncludeReanchorTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\ResolveIncludesTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\EndToEnd\CliEndToEndTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TemplateUpdateTests.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\TemplateCommandTests.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Models\InboxItem.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\DispatchCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\DispatchCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorkflowTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\dydo-commands.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\TemplateCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\IncludeReanchor.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\IncludeReanchorTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\ResolveIncludesTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\EndToEnd\CliEndToEndTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md - Modified
 
 
 ## Review Summary

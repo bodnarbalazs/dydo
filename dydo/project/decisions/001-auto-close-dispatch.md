@@ -5,7 +5,7 @@ date: 2026-03-07
 area: project
 ---
 
-# 001 — Auto-Close for Dispatched Agents
+# 001 - Auto-Close for Dispatched Agents
 
 Two-part mechanism (active kill from release + passive check in launch wrapper) to automatically close terminal tabs after dispatched agents release.
 
@@ -15,9 +15,9 @@ In swarm scenarios, multiple agents are dispatched to tabs/windows. After each a
 
 ## Constraints
 
-1. **Tab closes only after release** — never while the agent is still working
-2. **Agent stays fully interactive** — can ask questions, no behavioral change
-3. **Simple mechanism** — minimal flags, no polling scripts or temp files
+1. **Tab closes only after release** - never while the agent is still working
+2. **Agent stays fully interactive** - can ask questions, no behavioral change
+3. **Simple mechanism** - minimal flags, no polling scripts or temp files
 
 ## Rejected Approaches
 
@@ -71,25 +71,25 @@ Launch wrapper runs post-Claude check:
 
 ### The 3-second delay
 
-`dydo agent release` can't kill Claude immediately — it's called FROM Claude via the Bash tool. If we kill Claude before the tool returns, Claude never renders its final response. The delay gives Claude time to receive the tool output and render its response. After 3 seconds, the kill fires.
+`dydo agent release` can't kill Claude immediately - it's called FROM Claude via the Bash tool. If we kill Claude before the tool returns, Claude never renders its final response. The delay gives Claude time to receive the tool output and render its response. After 3 seconds, the kill fires.
 
 ## Changes Required
 
-### 1. `Commands/DispatchCommand.cs` — `--auto-close` flag
+### 1. `Commands/DispatchCommand.cs` - `--auto-close` flag
 
 - New `--auto-close` boolean option
 - Resolves effective value: CLI flag || config default
 - Creates `.auto-close` marker file in target agent workspace
 - Passes `autoClose: true` to `TerminalLauncher`
 
-### 2. `Models/DispatchConfig.cs` — config default
+### 2. `Models/DispatchConfig.cs` - config default
 
 ```csharp
 [JsonPropertyName("autoClose")]
 public bool AutoClose { get; set; } = false;
 ```
 
-### 3. `Services/TerminalLauncher.cs` — launch without keep-alive
+### 3. `Services/TerminalLauncher.cs` - launch without keep-alive
 
 Add `bool autoClose = false` to `Launch`, `LaunchWindows`, `LaunchMac`, all argument methods.
 
@@ -119,7 +119,7 @@ claude 'Brian --inbox'; if dydo agent status Brian 2>/dev/null | grep -q 'free';
 
 **macOS:** Same pattern as Linux, adapted for AppleScript.
 
-### 4. `Services/ProcessUtils.cs` — ancestor process lookup
+### 4. `Services/ProcessUtils.cs` - ancestor process lookup
 
 Add two methods:
 
@@ -133,7 +133,7 @@ public static int? FindAncestorProcess(string nameContains, int maxDepth = 10)
 // Walk up from current process, return first PID whose name contains the string
 ```
 
-### 5. `Commands/AgentCommand.cs` — auto-close on release
+### 5. `Commands/AgentCommand.cs` - auto-close on release
 
 In `ExecuteRelease()`, after successful release:
 
@@ -148,7 +148,7 @@ if (File.Exists(autoCloseMarker))
 }
 ```
 
-### 6. `Services/TerminalCloser.cs` — new, small service
+### 6. `Services/TerminalCloser.cs` - new, small service
 
 ```csharp
 public static void ScheduleClaudeTermination()
@@ -161,13 +161,13 @@ public static void ScheduleClaudeTermination()
         return;
     }
 
-    // Spawn delayed kill — gives Claude 3s to render final output
+    // Spawn delayed kill - gives Claude 3s to render final output
     if (Windows) → powershell -NoProfile -WindowStyle Hidden "Start-Sleep 3; Stop-Process -Id {pid} -Force"
     else         → bash -c "sleep 3; kill -TERM {pid} 2>/dev/null"
 }
 ```
 
-### 7. Docs — `dydo/reference/dydo-commands.md`
+### 7. Docs - `dydo/reference/dydo-commands.md`
 
 Add `--auto-close` to dispatch options.
 
@@ -181,7 +181,7 @@ Add `--auto-close` to dispatch options.
 | Kill can't find Claude PID | Fallback message printed, tab stays open (no regression) |
 | `--auto-close --no-launch` | Marker created but no terminal launched. Valid: records intent in workspace |
 | `--auto-close` + config default | CLI flag wins, config is the default |
-| Last tab in window closes | Window closes too (expected — empty window is useless) |
+| Last tab in window closes | Window closes too (expected - empty window is useless) |
 | Release with 3s delay kills Claude mid-output | Possible but unlikely. 3s is generous for a release summary. Work is already saved. |
 
 ## Test Plan

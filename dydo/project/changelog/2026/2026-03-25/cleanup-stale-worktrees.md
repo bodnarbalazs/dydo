@@ -14,16 +14,16 @@ date: 2026-03-25
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\ProcessUtilsTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorktreeDispatchTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\FileCoverageService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\WatchdogServiceTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\ProcessUtilsTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorktreeDispatchTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\FileCoverageService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\WatchdogServiceTests.cs - Modified
 
 
 ## Review Summary
 
-No code changes — task was operational cleanup of stale worktrees and an orphan branch. 5/6 worktrees cleaned, 1 skipped (smoke-test-v2, still referenced by 2 agents). Nothing to review.
+No code changes - task was operational cleanup of stale worktrees and an orphan branch. 5/6 worktrees cleaned, 1 skipped (smoke-test-v2, still referenced by 2 agents). Nothing to review.
 
 ## Code Review
 

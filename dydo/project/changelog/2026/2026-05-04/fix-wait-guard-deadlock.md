@@ -6,7 +6,7 @@ date: 2026-05-04
 
 # Task: fix-wait-guard-deadlock
 
-Code-writer task implementing Zelda's plan for [issue #0141](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md): align `WaitCommand.WaitGeneral`'s snapshot with the inbox-dir scanner (so the wait stops auto-exiting on already-known unreads) and fix the multi-writer race on the wait marker. Includes a user-directed override on Step 3 — duplicate registration must fail with a NONZERO exit code instead of returning Success — to break the agent habit of defensively re-registering waits.
+Code-writer task implementing Zelda's plan for [issue #0141](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md): align `WaitCommand.WaitGeneral`'s snapshot with the inbox-dir scanner (so the wait stops auto-exiting on already-known unreads) and fix the multi-writer race on the wait marker. Includes a user-directed override on Step 3 - duplicate registration must fail with a NONZERO exit code instead of returning Success - to break the agent habit of defensively re-registering waits.
 
 # Brief: fix-wait-guard-deadlock ([#0141](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md))
 
@@ -30,7 +30,7 @@ if (existing is { Listening: true, Pid: { } pid }
 {
     Console.Error.WriteLine(
         $"A general wait is already active for {agentName} (PID {pid}). Refusing to register a duplicate.");
-    return ExitCodes.Failure; // or whatever the project's nonzero convention is — check ExitCodes
+    return ExitCodes.Failure; // or whatever the project's nonzero convention is - check ExitCodes
 }
 ```
 
@@ -44,12 +44,12 @@ Update Test C accordingly:
 
 The behavioral training point: agents (including this Brian's session today) get conditioned by the original deadlock to defensively re-register a wait before every tool block. A silent Success-on-duplicate rewards that habit; a nonzero exit + stderr message breaks it. That's the whole reason for the visible failure.
 
-## Step 7 — Issue body fill-in
+## Step 7 - Issue body fill-in
 
-Zelda flagged that the planner role can't write to issue files, so [#0141](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md)'s body is empty. **Code-writer can write to `dydo/project/issues/**` per role permissions** — fill in the issue body as part of this commit. Use the plan's Approach + Reproduction sections as the source. Include:
+Zelda flagged that the planner role can't write to issue files, so [#0141](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md)'s body is empty. **Code-writer can write to `dydo/project/issues/**` per role permissions** - fill in the issue body as part of this commit. Use the plan's Approach + Reproduction sections as the source. Include:
 
 - Description: the divergence between `state.md.UnreadMessages` and inbox-dir scanner; secondary multi-writer race.
-- Reproduction: claim agent, drop `*-msg-*.md` file in inbox, run Read on it to deplete state.md.UnreadMessages, then `dydo wait` — observe exit in <1s instead of blocking.
+- Reproduction: claim agent, drop `*-msg-*.md` file in inbox, run Read on it to deplete state.md.UnreadMessages, then `dydo wait` - observe exit in <1s instead of blocking.
 - Resolution: link the commit hash + summary of the two-part fix.
 
 Include the LC project bug report link (`C:\Users\User\Desktop\LC\dydo\agents\Brian\dydo-bug-report-wait-guard-deadlock.md`) as the original external reporter source.
@@ -76,8 +76,8 @@ Include the LC project bug report link (`C:\Users\User\Desktop\LC\dydo\agents\Br
 ## Hard constraints
 
 - **No worktrees.**
-- **No `git --no-verify`, no `git push`** — Brian/the user owns release.
-- **Don't expand scope.** Zelda's "Out of Scope" list is the correct boundary — stick to it. If you find a third bug, file a separate issue and surface to Brian.
+- **No `git --no-verify`, no `git push`** - Brian/the user owns release.
+- **Don't expand scope.** Zelda's "Out of Scope" list is the correct boundary - stick to it. If you find a third bug, file a separate issue and surface to Brian.
 - **Don't change the cap, the marker on-disk schema, or the `MessageFinder.FindMessage` signature.** Zelda's plan called all three out as out-of-scope.
 - **Match the project's exit-code convention** for the duplicate-registration failure. Look at `Models/ExitCodes.cs` (or equivalent) and pick the right nonzero constant. Don't invent a new one.
 
@@ -98,14 +98,14 @@ Include the LC project bug report link (`C:\Users\User\Desktop\LC\dydo\agents\Br
 
 ## Review Summary
 
-Review commit 65705e0 for fix-wait-guard-deadlock ([#0141](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md)). Plan: dydo/agents/Zelda/plan-fix-wait-guard-deadlock.md. Brief: dydo/agents/Emma/inbox-archive (originally from Brian via inbox 96f6325a). Verify: (1) WaitCommand.WaitGeneral snapshots from inbox dir not state.md (Step 2), (2) idempotency guard refuses duplicate with NONZERO exit + stderr message per user override (Step 3 — ExitCodes.ToolError), (3) all 5 new tests pass + suite is green (3999/3999), (4) gap_check 137/137 modules green, (5) BLOCKER: [issue #0141](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md) body NOT filled — code-writer role lacks dydo/project/issues/** write permission (brief was wrong about this). Approve or reject.
+Review commit 65705e0 for fix-wait-guard-deadlock ([#0141](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md)). Plan: dydo/agents/Zelda/plan-fix-wait-guard-deadlock.md. Brief: dydo/agents/Emma/inbox-archive (originally from Brian via inbox 96f6325a). Verify: (1) WaitCommand.WaitGeneral snapshots from inbox dir not state.md (Step 2), (2) idempotency guard refuses duplicate with NONZERO exit + stderr message per user override (Step 3 - ExitCodes.ToolError), (3) all 5 new tests pass + suite is green (3999/3999), (4) gap_check 137/137 modules green, (5) BLOCKER: [issue #0141](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md) body NOT filled - code-writer role lacks dydo/project/issues/** write permission (brief was wrong about this). Approve or reject.
 
 ## Code Review
 
 - Reviewed by: Adele
 - Date: 2026-04-30 22:40
 - Result: PASSED
-- Notes: PASS. Fix is sound. (1) WaitGeneral now snapshots from MessageFinder.GetInboxMessageIds(inboxPath), aligned with FindMessage's source of truth — divergence-deadlock root cause closed. (2) Idempotency guard refuses duplicate registration with ExitCodes.ToolError + stderr ('A general wait is already active...'), per user override; PID-clobber/zombie leak closed. (3) Tests: 3999/3999 green on rerun (one flaky StaleDispatchDoubleClaimTests.ReserveAgent_StaleAndNoLauncher_Succeeds failed once on first run, passed on rerun — pre-existing flake using static IsLauncherAliveOverride, unrelated to this fix). (4) gap_check 137/137 modules pass. (5) New PollIntervalMs test hook is acceptable — internal static, only used to shorten test poll loops. Three pre-existing tests updated to drop messages mid-flight via IsProcessRunningOverride, matching new post-snapshot-only semantics — mechanically correct. Comments explain WHY ([#0141](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md) reference, divergence rationale). [Issue #0141](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md) body unfilled is genuinely outside code-writer permissions (readOnlyPaths includes dydo/**) — workflow item for orchestrator/human, not a code-quality blocker.
+- Notes: PASS. Fix is sound. (1) WaitGeneral now snapshots from MessageFinder.GetInboxMessageIds(inboxPath), aligned with FindMessage's source of truth - divergence-deadlock root cause closed. (2) Idempotency guard refuses duplicate registration with ExitCodes.ToolError + stderr ('A general wait is already active...'), per user override; PID-clobber/zombie leak closed. (3) Tests: 3999/3999 green on rerun (one flaky StaleDispatchDoubleClaimTests.ReserveAgent_StaleAndNoLauncher_Succeeds failed once on first run, passed on rerun - pre-existing flake using static IsLauncherAliveOverride, unrelated to this fix). (4) gap_check 137/137 modules pass. (5) New PollIntervalMs test hook is acceptable - internal static, only used to shorten test poll loops. Three pre-existing tests updated to drop messages mid-flight via IsProcessRunningOverride, matching new post-snapshot-only semantics - mechanically correct. Comments explain WHY ([#0141](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md) reference, divergence rationale). [Issue #0141](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0141-wait-guard-deadlock-dydo-wait-auto-exits-on-already-unread-inbox-state-guard-the.md) body unfilled is genuinely outside code-writer permissions (readOnlyPaths includes dydo/**) - workflow item for orchestrator/human, not a code-quality blocker.
 
 Awaiting human approval.
 

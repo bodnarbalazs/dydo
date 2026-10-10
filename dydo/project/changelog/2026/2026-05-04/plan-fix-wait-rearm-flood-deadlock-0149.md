@@ -24,7 +24,7 @@ Plan the implementation for fixing [#0149](https://github.com/bodnarbalazs/dydo/
 
 ## Review Summary
 
-(Pending — code-writer slice, then reviewer)
+(Pending - code-writer slice, then reviewer)
 
 ## Approval
 

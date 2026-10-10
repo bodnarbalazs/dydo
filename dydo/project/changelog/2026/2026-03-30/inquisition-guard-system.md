@@ -14,9 +14,9 @@ You are the first inquisitor to run on this project. The inquisition workflow it
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs — Modified
-C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs - Modified
+C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Commands/WorktreeCommandTests.cs - Modified
 
 
 ## Review Summary

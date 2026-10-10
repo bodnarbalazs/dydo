@@ -6,7 +6,7 @@ date: 2026-03-25
 
 # Task: fix-base64-pathutils
 
-Implemented both fixes from the inbox brief. (1) Added Base64DecodePipeExecRegex as a new dangerous pattern in BashCommandAnalyzer.cs that blocks base64 -d/--decode piped to interpreters (python, bash, sh, zsh, perl, ruby, node, pwsh, powershell). Updated existing warning test data to use non-pipe cases (so they still test the bypass warning), and added both positive and negative dangerous pattern tests. (2) Fixed stale XML doc on NormalizeWorktreePath in PathUtils.cs — changed '{mainRoot}/{projectContent}' to a prose description since mainRoot already includes the trailing slash. The 'dead mainRoot variable' from Grace's review is NOT dead in the current code (used at line 112) — appears to have been a false positive or was fixed in a prior commit. All 186 tests pass, coverage gate clean.
+Implemented both fixes from the inbox brief. (1) Added Base64DecodePipeExecRegex as a new dangerous pattern in BashCommandAnalyzer.cs that blocks base64 -d/--decode piped to interpreters (python, bash, sh, zsh, perl, ruby, node, pwsh, powershell). Updated existing warning test data to use non-pipe cases (so they still test the bypass warning), and added both positive and negative dangerous pattern tests. (2) Fixed stale XML doc on NormalizeWorktreePath in PathUtils.cs - changed '{mainRoot}/{projectContent}' to a prose description since mainRoot already includes the trailing slash. The 'dead mainRoot variable' from Grace's review is NOT dead in the current code (used at line 112) - appears to have been a false positive or was fixed in a prior commit. All 186 tests pass, coverage gate clean.
 
 ## Progress
 
@@ -14,14 +14,14 @@ Implemented both fixes from the inbox brief. (1) Added Base64DecodePipeExecRegex
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Services\BashCommandAnalyzer.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Utils\PathUtils.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\BashCommandAnalyzerTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\BashCommandAnalyzer.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Utils\PathUtils.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\BashCommandAnalyzerTests.cs - Modified
 
 
 ## Review Summary
 
-Implemented both fixes from the inbox brief. (1) Added Base64DecodePipeExecRegex as a new dangerous pattern in BashCommandAnalyzer.cs that blocks base64 -d/--decode piped to interpreters (python, bash, sh, zsh, perl, ruby, node, pwsh, powershell). Updated existing warning test data to use non-pipe cases (so they still test the bypass warning), and added both positive and negative dangerous pattern tests. (2) Fixed stale XML doc on NormalizeWorktreePath in PathUtils.cs — changed '{mainRoot}/{projectContent}' to a prose description since mainRoot already includes the trailing slash. The 'dead mainRoot variable' from Grace's review is NOT dead in the current code (used at line 112) — appears to have been a false positive or was fixed in a prior commit. All 186 tests pass, coverage gate clean.
+Implemented both fixes from the inbox brief. (1) Added Base64DecodePipeExecRegex as a new dangerous pattern in BashCommandAnalyzer.cs that blocks base64 -d/--decode piped to interpreters (python, bash, sh, zsh, perl, ruby, node, pwsh, powershell). Updated existing warning test data to use non-pipe cases (so they still test the bypass warning), and added both positive and negative dangerous pattern tests. (2) Fixed stale XML doc on NormalizeWorktreePath in PathUtils.cs - changed '{mainRoot}/{projectContent}' to a prose description since mainRoot already includes the trailing slash. The 'dead mainRoot variable' from Grace's review is NOT dead in the current code (used at line 112) - appears to have been a false positive or was fixed in a prior commit. All 186 tests pass, coverage gate clean.
 
 ## Code Review
 

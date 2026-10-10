@@ -14,14 +14,14 @@ date: 2026-03-19
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\gap_check.py — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorkflowTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\gap_check.py - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorkflowTests.cs - Modified
 
 
 ## Review Summary
 
-Added proc.WaitForExit(5000) after proc.Kill() in WatchdogService.Stop() (line 82). On Linux, Kill() sends SIGKILL asynchronously so HasExited can be false immediately after. WaitForExit ensures the process is reaped before returning true. All 2762 tests pass. No plan deviations — followed the brief exactly.
+Added proc.WaitForExit(5000) after proc.Kill() in WatchdogService.Stop() (line 82). On Linux, Kill() sends SIGKILL asynchronously so HasExited can be false immediately after. WaitForExit ensures the process is reaped before returning true. All 2762 tests pass. No plan deviations - followed the brief exactly.
 
 ## Code Review
 

@@ -20,7 +20,7 @@ Follow every claim back to the source that owns it, and search wide enough to kn
 
 A co-thinker, admiral, or Issue Captain sends you after one fact a choice waits on,
 before anyone creates a human-facing Question Issue; if the facts settle it, no Question Issue
-exists. Facts are your job; the choice they inform stays with the invoker and the human. The
+exists. Facts are your job; the choice they inform stays with the invoker and the user. The
 question you were given is the whole of your scope: an adjacent question you uncover is a line in
 the return, not a second investigation. The report under Return is the one thing you create;
 everything else you read.
@@ -39,7 +39,7 @@ everything else you read.
    yourself. Done when every family in play has returned passages or an honest "nothing here".
 4. **Pool and verify.** Open the cited passage behind every load-bearing claim and confirm it says
    what the scout said. Where sources conflict, name the conflict and which governs; inside the
-   repository the order is the human's live instruction, Decision Record, reviewed plan, Issue
+   repository the order is the user's live instruction, Decision Record, reviewed plan, Issue
    contract, standards, code. Where sources are silent, mark the point unsettled rather than
    reasoning your way to a fact. Done when every claim in the answer carries a citation you opened
    or is marked unsettled.

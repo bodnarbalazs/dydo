@@ -18,7 +18,7 @@ date: 2026-03-13
 
 ## Review Summary
 
-Implemented one-time soft-block nudge in ClaimAuto (AgentRegistry.cs) when dispatched agents with inbox items exist. Added marker cleanup in ClaimAgent and ReleaseAgent. Added 7 unit tests — all pass. No plan deviations. The 2 pre-existing DispatchCommandTests failures are unrelated.
+Implemented one-time soft-block nudge in ClaimAuto (AgentRegistry.cs) when dispatched agents with inbox items exist. Added marker cleanup in ClaimAgent and ReleaseAgent. Added 7 unit tests - all pass. No plan deviations. The 2 pre-existing DispatchCommandTests failures are unrelated.
 
 ## Code Review
 

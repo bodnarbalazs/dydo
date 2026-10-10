@@ -6,13 +6,13 @@ date: 2026-09-12
 participants: [balazs, opencode admiral, Astra]
 ---
 
-# 049 — Skills Are the Source: Retire the Compiler
+# 049 - Skills Are the Source: Retire the Compiler
 
 dydo stops compiling skills and agents from its own templates. **A skill folder is the source of
 truth**, authored directly in the cross-vendor `SKILL.md` format; distribution is the hosts' job.
 The compiler (`dydo sync`), `template update`, the `dydo.json.skills` switchboard, include tags and
 their re-anchoring, framework hashes and managed-output cleanup are retired. Any host-specific agent
-configuration that remains is small, explicit and hand-maintained per host actually used — never
+configuration that remains is small, explicit and hand-maintained per host actually used - never
 generated. The guard and nudges, the documentation structure and `dydo check`, the testing-runner
 proxy, and cheap scaffolding survive. This amends the "compiler is the crown jewel" clause of
 [Decision 041](./041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md).
@@ -28,14 +28,14 @@ defensible product bet. Four things have changed the premise:
 1. **Skills became a shared standard.** Claude Code and Codex both follow the open
    [agentskills.io](https://agentskills.io) standard: a skill is `<name>/SKILL.md` with `name` and
    `description`, plus optional `references/`, `scripts/`, `assets/`. Claude reads `.claude/skills/`,
-   Codex reads `.agents/skills/` (scanning up to the repo root). The *body* — the thing dydo spent
-   its compiler on — is already portable.
+   Codex reads `.agents/skills/` (scanning up to the repo root). The *body* - the thing dydo spent
+   its compiler on - is already portable.
 2. **Both hosts support symlinked skill folders**, and both now ship real distribution
    (Claude plugins/marketplaces; Codex plugins and `$skill-installer`). One canonical folder,
    linked or copied into each host's discovery path, delivers author-once with **zero transform**.
 3. **dydo is a personal workflow others may fork, not a product for others.** The README sketch says
-   so outright ("Don't. Seriously. Build your own system."). The compiler's second machine —
-   includes, re-anchoring, content hashes, the switchboard, managed cleanup — exists to protect
+   so outright ("Don't. Seriously. Build your own system."). The compiler's second machine -
+   includes, re-anchoring, content hashes, the switchboard, managed cleanup - exists to protect
    *downstream consumers* who do not exist. For the author, git is the update mechanism.
 4. **The empirical record.** In the 3.0 delivery, crews ran as plain general agents told to load a
    skill by path. No compiled `.claude/agents/*` type was on the critical path; the prior handoff
@@ -80,7 +80,7 @@ Honours DR 041 as written. One authored role still yields each host's skill *and
    plugins/installers are an available option, never a requirement.
 3. **The compiler is retired.** `dydo sync` as a compiler, `dydo template update`, the
    `dydo.json.skills` switchboard, `{{include:...}}` and re-anchoring, framework content hashes and
-   managed-output cleanup are deleted. Their tests are deleted when their behaviour is retired —
+   managed-output cleanup are deleted. Their tests are deleted when their behaviour is retired -
    not kept dormant.
 4. **Project customization is local editing.** A project edits its copy and references project
    documents. Deliberate divergence from the framework is accepted; there is **no promise of
@@ -94,7 +94,7 @@ Honours DR 041 as written. One authored role still yields each host's skill *and
    every host's configuration model in advance.
 6. **What survives:** the documentation structure and `dydo check`/link checking; the guard and its
    dangerous-pattern detection; the nudge system (regex plus a helpful message); the testing-runner
-   (`gap_check`) proxy; and scaffolding (`dydo init`) while it stays cheap and reliable — a sample
+   (`gap_check`) proxy; and scaffolding (`dydo init`) while it stays cheap and reliable - a sample
    tree plus a copy operation is its sufficient eventual implementation.
 7. **Stopping rule.** Change dydo when a real project exposes recurring friction; require
    demonstrated need before adding another general capability. A test count proves neither value nor
@@ -112,7 +112,7 @@ Honours DR 041 as written. One authored role still yields each host's skill *and
   troubleshooting): the host's skill list shows the role; a spawned agent told only *"load the
   `<role>` skill"* loads the body **and a resource-only detail**; the skill's links resolve from the
   installed location on each host; explicit-only invocation behaves where required.
-- **Observed limit:** [DYD-88 — Codex sub-agent lifecycle observations — 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) requested
+- **Observed limit:** [DYD-88 - Codex sub-agent lifecycle observations - 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) requested
   `sandbox_mode = "read-only"` for a Codex `multi_agent` spawn, yet the spawned role completed a normal
   edit. The field's presence therefore cannot support an enforcement claim. Keep the roles as skills
   and rely on their non-authoring methods, fresh commission, isolated candidates and independent
@@ -137,11 +137,11 @@ category.
 
 ## Affects
 
-- [Decision 041](./041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md) — its compiler clause is amended by this record
+- [Decision 041](./041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md) - its compiler clause is amended by this record
 - [Architecture Overview](../../understand/architecture.md)
 - [Scaffold and Customization](../../understand/scaffold-and-customization.md)
 - [Customizing Roles](../../guides/customizing-roles.md)
-- [Guard System](../../understand/guard-system.md) — retained, unchanged
+- [Guard System](../../understand/guard-system.md) - retained, unchanged
 - [dydo Commands Reference](../../reference/dydo-commands.md)
 - [About This Project](../../understand/about.md)
-- [Decision 024](./024-dydo-2-native-pivot.md) — the pivot this completes
+- [Decision 024](./024-dydo-2-native-pivot.md) - the pivot this completes

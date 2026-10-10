@@ -36,7 +36,7 @@ Verification:
 
 Notable decisions:
 - DispatchWaitMarker coexists with the existing reply-pending mechanism rather than replacing it. Reply-pending is driven by inbox-item.replyRequired; dispatch-wait is the explicit --wait contract with DispatcherRole metadata, stamped on send rather than removed. Both must be satisfied to release. This matches the brief's explicit instruction to add a new model.
-- 'dispatch-waits' added to SystemManagedEntries (alongside .reply-pending) so the marker survives ClaimAgent's archive sweep — without this, a callee that gets re-dispatched after a previous claim would lose its release-block obligation.
+- 'dispatch-waits' added to SystemManagedEntries (alongside .reply-pending) so the marker survives ClaimAgent's archive sweep - without this, a callee that gets re-dispatched after a previous claim would lose its release-block obligation.
 
 ## Progress
 
@@ -78,7 +78,7 @@ Verification:
 
 Notable decisions:
 - DispatchWaitMarker coexists with the existing reply-pending mechanism rather than replacing it. Reply-pending is driven by inbox-item.replyRequired; dispatch-wait is the explicit --wait contract with DispatcherRole metadata, stamped on send rather than removed. Both must be satisfied to release. This matches the brief's explicit instruction to add a new model.
-- 'dispatch-waits' added to SystemManagedEntries (alongside .reply-pending) so the marker survives ClaimAgent's archive sweep — without this, a callee that gets re-dispatched after a previous claim would lose its release-block obligation.
+- 'dispatch-waits' added to SystemManagedEntries (alongside .reply-pending) so the marker survives ClaimAgent's archive sweep - without this, a callee that gets re-dispatched after a previous claim would lose its release-block obligation.
 
 ## Code Review
 

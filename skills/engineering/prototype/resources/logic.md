@@ -27,7 +27,7 @@ If the question is "what should this look like," this is the wrong branch. Use [
 Before writing code, write down what state model and what question you're prototyping. One
 paragraph, at the top of the demo (in a visible intro, not just a comment). A logic prototype that
 answers the wrong question is pure waste, so make the question explicit so it can be checked
-later, whether the human is watching now or returning to it AFK.
+later, whether the user is watching now or returning to it AFK.
 
 ### 2. Isolate the logic in a portable module
 

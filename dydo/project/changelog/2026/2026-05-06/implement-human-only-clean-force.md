@@ -21,9 +21,9 @@ Key behaviors verified by the new test rows AND by 5 manual guard invocations:
 
 Verification gate: dotnet build clean; gap_check.py exit 0 (Failed: 0, Passed: 4086, 139/139 modules pass tier).
 
-DEVIATION FROM PLAN (flagged to Adele in msg): plan included a 2-line doc edit at dydo/reference/dydo-commands.md:182-186, but code-writer role has dydo/** read-only. Doc piece needs a docs-writer dispatch on the same task — separate commit, same branch — Adele was messaged for the call between (A) defer doc to a follow-up commit by docs-writer, (B) Adele dispatches docs-writer to land doc before this PR opens. I went with (A) and committed code+tests now to unblock review.
+DEVIATION FROM PLAN (flagged to Adele in msg): plan included a 2-line doc edit at dydo/reference/dydo-commands.md:182-186, but code-writer role has dydo/** read-only. Doc piece needs a docs-writer dispatch on the same task - separate commit, same branch - Adele was messaged for the call between (A) defer doc to a follow-up commit by docs-writer, (B) Adele dispatches docs-writer to land doc before this PR opens. I went with (A) and committed code+tests now to unblock review.
 
-Single PR. No bundled unrelated changes — only the two files above are staged in 3ad12ba; other 'M' entries in git status are pre-existing in-progress work from a different effort.
+Single PR. No bundled unrelated changes - only the two files above are staged in 3ad12ba; other 'M' entries in git status are pre-existing in-progress work from a different effort.
 
 ## Progress
 
@@ -50,9 +50,9 @@ Key behaviors verified by the new test rows AND by 5 manual guard invocations:
 
 Verification gate: dotnet build clean; gap_check.py exit 0 (Failed: 0, Passed: 4086, 139/139 modules pass tier).
 
-DEVIATION FROM PLAN (flagged to Adele in msg): plan included a 2-line doc edit at dydo/reference/dydo-commands.md:182-186, but code-writer role has dydo/** read-only. Doc piece needs a docs-writer dispatch on the same task — separate commit, same branch — Adele was messaged for the call between (A) defer doc to a follow-up commit by docs-writer, (B) Adele dispatches docs-writer to land doc before this PR opens. I went with (A) and committed code+tests now to unblock review.
+DEVIATION FROM PLAN (flagged to Adele in msg): plan included a 2-line doc edit at dydo/reference/dydo-commands.md:182-186, but code-writer role has dydo/** read-only. Doc piece needs a docs-writer dispatch on the same task - separate commit, same branch - Adele was messaged for the call between (A) defer doc to a follow-up commit by docs-writer, (B) Adele dispatches docs-writer to land doc before this PR opens. I went with (A) and committed code+tests now to unblock review.
 
-Single PR. No bundled unrelated changes — only the two files above are staged in 3ad12ba; other 'M' entries in git status are pre-existing in-progress work from a different effort.
+Single PR. No bundled unrelated changes - only the two files above are staged in 3ad12ba; other 'M' entries in git status are pre-existing in-progress work from a different effort.
 
 ## Approval
 

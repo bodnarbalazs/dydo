@@ -5,7 +5,7 @@ date: 2026-03-11
 area: project
 ---
 
-# 009 — CRAP Uses Per-Method Cyclomatic Complexity
+# 009 - CRAP Uses Per-Method Cyclomatic Complexity
 
 CRAP (Change Risk Anti-Patterns) is a per-method metric. The gap_check Cobertura parser must use the highest per-method CC, not the class-level sum.
 
@@ -47,4 +47,4 @@ GuardCommand CC dropped from 341 (class sum) to 52 (worst method). Many modules 
 
 ## Related
 
-- [Architecture](../../understand/architecture.md) — Project structure
+- [Architecture](../../understand/architecture.md) - Project structure

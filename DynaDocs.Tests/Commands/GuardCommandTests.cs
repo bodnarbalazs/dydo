@@ -522,7 +522,7 @@ public class GuardCommandTests : IDisposable
 
     #endregion
 
-    #region Default Nudges — Indirect Dydo Invocation
+    #region Default Nudges - Indirect Dydo Invocation
 
     [Theory]
     [InlineData("python dydo/scripts/check_coverage.py")]
@@ -649,7 +649,7 @@ public class GuardCommandTests : IDisposable
 
     #endregion
 
-    #region CheckNudges — Warn-then-Allow Marker Flow
+    #region CheckNudges - Warn-then-Allow Marker Flow
 
     [Fact]
     public void CheckNudges_WarnSeverity_BlocksFirstEncounter_CreatesMarker()
@@ -840,7 +840,7 @@ public class GuardCommandTests : IDisposable
         var env = GuardCommand.GuardEnv.Load(_testDir);
 
         var (result, stderr) = RunNudge(
-            "gh pr create --body '## Independent review — rubric: code, verdict: PASS'", env);
+            "gh pr create --body '## Independent review - rubric: code, verdict: PASS'", env);
 
         Assert.Null(result);
         Assert.Empty(stderr);

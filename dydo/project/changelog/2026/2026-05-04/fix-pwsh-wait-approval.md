@@ -13,8 +13,8 @@ Investigation: dydo/agents/Dexter/notes-investigate-pwsh-wait-approval.md.
 Issue: dydo/project/issues/0145-...md.
 
 Verify in the commit:
-1. Commands/InitCommand.cs — DydoAllowEntry scalar replaced with DydoAllowEntries array containing Bash(dydo:*) AND PowerShell(dydo:*); ConfigureAllowList iterates+dedupes.
-2. DynaDocs.Tests/Integration/InitCommandTests.cs — four new tests parallel to lines 272-336 Bash assertions: AddsPowerShellDydoAllowEntry, PowerShellAllowMergesWithExistingEntries, DoesNotDuplicatePowerShellAllowEntry, BothShellEntriesWhenAllowArrayMissing.
+1. Commands/InitCommand.cs - DydoAllowEntry scalar replaced with DydoAllowEntries array containing Bash(dydo:*) AND PowerShell(dydo:*); ConfigureAllowList iterates+dedupes.
+2. DynaDocs.Tests/Integration/InitCommandTests.cs - four new tests parallel to lines 272-336 Bash assertions: AddsPowerShellDydoAllowEntry, PowerShellAllowMergesWithExistingEntries, DoesNotDuplicatePowerShellAllowEntry, BothShellEntriesWhenAllowArrayMissing.
 
 Build: clean (0 warnings, 0 errors). gap_check: 137/137 modules.
 InitCommandTests in isolation: 35/35 pass.
@@ -42,8 +42,8 @@ Investigation: dydo/agents/Dexter/notes-investigate-pwsh-wait-approval.md.
 Issue: dydo/project/issues/0145-...md.
 
 Verify in the commit:
-1. Commands/InitCommand.cs — DydoAllowEntry scalar replaced with DydoAllowEntries array containing Bash(dydo:*) AND PowerShell(dydo:*); ConfigureAllowList iterates+dedupes.
-2. DynaDocs.Tests/Integration/InitCommandTests.cs — four new tests parallel to lines 272-336 Bash assertions: AddsPowerShellDydoAllowEntry, PowerShellAllowMergesWithExistingEntries, DoesNotDuplicatePowerShellAllowEntry, BothShellEntriesWhenAllowArrayMissing.
+1. Commands/InitCommand.cs - DydoAllowEntry scalar replaced with DydoAllowEntries array containing Bash(dydo:*) AND PowerShell(dydo:*); ConfigureAllowList iterates+dedupes.
+2. DynaDocs.Tests/Integration/InitCommandTests.cs - four new tests parallel to lines 272-336 Bash assertions: AddsPowerShellDydoAllowEntry, PowerShellAllowMergesWithExistingEntries, DoesNotDuplicatePowerShellAllowEntry, BothShellEntriesWhenAllowArrayMissing.
 
 Build: clean (0 warnings, 0 errors). gap_check: 137/137 modules.
 InitCommandTests in isolation: 35/35 pass.

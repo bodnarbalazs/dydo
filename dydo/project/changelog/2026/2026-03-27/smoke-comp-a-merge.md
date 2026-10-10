@@ -14,15 +14,15 @@ Merged worktree/smoke-comp-a branch into master via fast-forward. Single new fil
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\InboxServiceTests.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Models\InboxItem.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxItemParser.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\InboxItemParserTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCompatTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\InitCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\InitCommand.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\InboxServiceTests.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Models\InboxItem.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxItemParser.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\InboxItemParserTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCompatTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\InitCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\InitCommand.cs - Modified
 
 
 ## Review Summary

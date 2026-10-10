@@ -5,7 +5,7 @@ date: 2026-03-23
 area: project
 ---
 
-# 013 — Conditional Must-Reads (Hardcoded)
+# 013 - Conditional Must-Reads (Hardcoded)
 
 Hardcode conditional must-read enforcement for merge workflows now; defer soft-coding to role JSON if more cases emerge.
 

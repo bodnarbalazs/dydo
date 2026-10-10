@@ -14,12 +14,12 @@ date: 2026-03-19
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-code-writer.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-reviewer.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-docs-writer.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-planner.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-co-thinker.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\agent-workflow.template.md — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-code-writer.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-reviewer.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-docs-writer.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-planner.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-co-thinker.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\agent-workflow.template.md - Modified
 
 
 ## Review Summary

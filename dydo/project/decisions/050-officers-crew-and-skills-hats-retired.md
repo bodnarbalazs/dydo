@@ -7,7 +7,7 @@ accepted: 2026-09-22
 participants: [balazs, Claude admiral]
 ---
 
-# 050 — Officers, Crew and Skills: Hats Retired
+# 050 - Officers, Crew and Skills: Hats Retired
 
 A **role** is a skill that carries an identity, and there are two kinds of role. **Officers** hold
 something and never switch. **Crew** are spawned for one bounded job, hold nothing, and return their

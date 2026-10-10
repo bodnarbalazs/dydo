@@ -391,10 +391,10 @@ enters `Todo`.
    following inclusion decision/hash in the Linear Issue/session transcript. Every dirty tracked or
    untracked status row is individually exactly one of:
 
-   - **included** — named explicitly, staged into the freeze commit, with its index blob from
+   - **included** - named explicitly, staged into the freeze commit, with its index blob from
      `git rev-parse :<path>` captured before commit and verified equal to
      `git rev-parse <freeze-sha>:<path>` afterward; or
-   - **excluded** — named explicitly with status code, owner/reason, the current working-copy blob from
+   - **excluded** - named explicitly with status code, owner/reason, the current working-copy blob from
      `git hash-object --no-filters -- <path>`, and the current HEAD blob from
      `git rev-parse HEAD:<path>` when tracked. A working-tree deletion records literal `<absent>` plus the
      HEAD blob. No wildcard/group-only exclusion is valid.
@@ -632,8 +632,8 @@ requires a reviewed plan amendment.
 
 #### Exact `v3.0.0` protection and tag gate
 
-Do not begin this gate until all release files—including
-`dydo/project/migrations/3.0-v3-release-ruleset.request.json`—are committed at the recorded final release
+Do not begin this gate until all release files-including
+`dydo/project/migrations/3.0-v3-release-ruleset.request.json`-are committed at the recorded final release
 SHA, the worktree is clean, the integrated audit is PASS, and MCP read-back proves Linear Project 4
 `c8ae27c3-5391-453a-8498-e02c064aa6ae` is Completed with an explicit human-acceptance URL recorded in
 both the release changelog and main-project adoption playbook. The repository currently has no ruleset;
@@ -790,7 +790,7 @@ or add a bypass actor.
 
 ## Plan review
 
-**PASS — 2026-08-27.** An independent reviewer found the plan delivery-ready after the remote read-only
+**PASS - 2026-08-27.** An independent reviewer found the plan delivery-ready after the remote read-only
 freeze boundary, both exact tag-protection protocols, file ownership/serial landing order, dirty-tree
 ledger, Project-2/Project-4 gates, and executable deletion/test/docs/release checks closed all prior
 blocker classes. This verdict activates the plan only; no freeze, implementation, deletion, tag, or

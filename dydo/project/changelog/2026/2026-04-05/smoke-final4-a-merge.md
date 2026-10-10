@@ -6,7 +6,7 @@ date: 2026-04-05
 
 # Task: smoke-final4-a-merge
 
-Merged worktree/smoke-final4-a into master. Clean merge — added Commands/smoke-final4-a.txt. All 3460 tests pass, coverage gap_check passes with 0 failures.
+Merged worktree/smoke-final4-a into master. Clean merge - added Commands/smoke-final4-a.txt. All 3460 tests pass, coverage gap_check passes with 0 failures.
 
 ## Progress
 
@@ -18,7 +18,7 @@ Merged worktree/smoke-final4-a into master. Clean merge — added Commands/smoke
 
 ## Review Summary
 
-Merged worktree/smoke-final4-a into master. Clean merge — added Commands/smoke-final4-a.txt. All 3460 tests pass, coverage gap_check passes with 0 failures.
+Merged worktree/smoke-final4-a into master. Clean merge - added Commands/smoke-final4-a.txt. All 3460 tests pass, coverage gap_check passes with 0 failures.
 
 ## Code Review
 

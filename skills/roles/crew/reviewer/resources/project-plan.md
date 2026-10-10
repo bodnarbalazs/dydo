@@ -17,7 +17,7 @@ a starting route, not a complete one.
    candidate commit. Done when every material claim matches its source or is one finding.
 3. **Test the destination.** Intent, scope, acceptance and governing design agree, and each
    acceptance criterion names the scenario, command, diff or artifact that proves it at the final
-   merge. Done when the human knows what approval fixes.
+   merge. Done when the user knows what approval fixes.
 4. **Inspect the starting route.** Each first Issue is self-contained and vertical, carries outcome,
    owned paths, blockers, gate and base branch, exactly one Type, one Mode and `Todo`; its gate is
    copy-pasteable. Check status and priority against `dydo/reference/linear-workspace-standard.md`,
@@ -32,5 +32,5 @@ a starting route, not a complete one.
 **Wayfinding fog is not a gap.** A sharp blocker left after authoritative homework and needing human
 judgment is a `Question` Issue in `Todo`, created by the map holder, recording its homework and
 blocking every Issue that waits on it, with priority by that standard.
-The map holder owns the review loop and presents approval to the human; the second FAIL is their choice. Dimmer uncertainty stays in `## Not yet specified`. A plan
+The map holder owns the review loop and presents approval to the user; the second FAIL is his choice. Dimmer uncertainty stays in `## Not yet specified`. A plan
 that pretends either is settled FAILs; honest placement passes.

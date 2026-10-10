@@ -53,7 +53,7 @@ AI-generated code tends toward verbosity, over-abstraction, and "just works" sol
 Before implementing:
 
 - State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them — don't pick silently.
+- If multiple interpretations exist, present them - don't pick silently.
 - If a simpler approach exists, say so. Push back when warranted.
 - If something is unclear, stop. Name what's confusing. Ask.
 
@@ -99,7 +99,7 @@ When editing existing code:
 - Don't "improve" adjacent code, comments, or formatting
 - Don't refactor things that aren't broken
 - Match existing style, even if you'd do it differently
-- If you notice unrelated dead code, mention it — don't delete it
+- If you notice unrelated dead code, mention it - don't delete it
 
 When your changes create orphans:
 
@@ -159,11 +159,11 @@ Once data passes a boundary check, don't re-validate in every function.
 
 Be vigilant against:
 
-- **Injection** — SQL, command, template injection
-- **XSS** — Escape output, use framework protections
-- **CSRF** — Use tokens for state-changing operations
-- **Broken auth** — Validate sessions, use secure cookies
-- **Sensitive data exposure** — Encrypt at rest and in transit
+- **Injection** - SQL, command, template injection
+- **XSS** - Escape output, use framework protections
+- **CSRF** - Use tokens for state-changing operations
+- **Broken auth** - Validate sessions, use secure cookies
+- **Sensitive data exposure** - Encrypt at rest and in transit
 
 When uncertain about security implications, stop and research or ask.
 
@@ -209,18 +209,18 @@ The project's testing guide names its facade, acceptance runner, adopted gates, 
 Twelve shapes that make code worse than it needs to be (Fowler, _Refactoring_, ch. 3). Each reads what
 it is → how to fix; the reviewer judges by them, and a fix hop works them.
 
-- **Mysterious Name** — hides what it does or holds. → rename; no honest name means a murky design.
-- **Duplicated Code** — one logic shape in two hunks or files. → extract it, call it from both.
-- **Feature Envy** — a method using another object's data more than its own. → move it there.
-- **Data Clumps** — the same fields always travelling together. → bundle them into one type.
-- **Primitive Obsession** — a primitive standing in for a domain concept. → give it its own type.
-- **Repeated Switches** — the same cascade on one type, twice. → polymorphism or a shared map.
-- **Shotgun Surgery** — one change forcing scattered edits. → gather what changes together.
-- **Divergent Change** — one file edited for unrelated reasons. → split it by reason.
-- **Speculative Generality** — abstraction for needs the contract does not have. → delete it.
-- **Message Chains** — long `a.b().c().d()` walks the caller depends on. → hide the walk.
-- **Middle Man** — a unit that mostly delegates onward. → cut it; call the target direct.
-- **Refused Bequest** — a subclass ignoring most of what it inherits. → compose instead.
+- **Mysterious Name** - hides what it does or holds. → rename; no honest name means a murky design.
+- **Duplicated Code** - one logic shape in two hunks or files. → extract it, call it from both.
+- **Feature Envy** - a method using another object's data more than its own. → move it there.
+- **Data Clumps** - the same fields always travelling together. → bundle them into one type.
+- **Primitive Obsession** - a primitive standing in for a domain concept. → give it its own type.
+- **Repeated Switches** - the same cascade on one type, twice. → polymorphism or a shared map.
+- **Shotgun Surgery** - one change forcing scattered edits. → gather what changes together.
+- **Divergent Change** - one file edited for unrelated reasons. → split it by reason.
+- **Speculative Generality** - abstraction for needs the contract does not have. → delete it.
+- **Message Chains** - long `a.b().c().d()` walks the caller depends on. → hide the walk.
+- **Middle Man** - a unit that mostly delegates onward. → cut it; call the target direct.
+- **Refused Bequest** - a subclass ignoring most of what it inherits. → compose instead.
 
 ---
 
@@ -231,14 +231,14 @@ Software Design_). Depth is the functionality a module provides over the interfa
 learn; a shallow module, whose interface is nearly as large as its body, costs callers more than it
 saves.
 
-- **Information hiding** — each module owns a design decision and keeps it inside, so changing the
+- **Information hiding** - each module owns a design decision and keeps it inside, so changing the
   decision edits one module; a decision leaking through an interface couples every caller to it.
-- **Pull complexity downward** — complexity that must live somewhere lives in the module, not in its
+- **Pull complexity downward** - complexity that must live somewhere lives in the module, not in its
   callers; a parameter the caller cannot choose well is one the module decides.
-- **Define errors out of existence** — shape the interface so the error case cannot arise, such as
+- **Define errors out of existence** - shape the interface so the error case cannot arise, such as
   an idempotent delete or a range clamped to what exists, rather than handing every caller an
   exception.
-- **General-purpose over special-purpose** — an interface slightly more general than its one caller
+- **General-purpose over special-purpose** - an interface slightly more general than its one caller
   needs is often simpler and deeper than a method per special case.
 
 `codebase-design` carries the method: module, interface, seam and depth, and how to find a deepening
@@ -299,18 +299,18 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 
 ```
 ✗ // Loop through users and check if active
-✓ // GDPR compliance — inactive users must not appear in exports
+✓ // GDPR compliance - inactive users must not appear in exports
 ```
 
 ---
 
 ## Related
 
-- [Architecture](../understand/architecture.md) — Project structure
+- [Architecture](../understand/architecture.md) - Project structure
 
 <!--
 Add stack-specific standards as your project grows:
-- guides/backend/_backend.md — Backend patterns
-- guides/frontend/_frontend.md — Frontend patterns
-- guides/testing-strategy.md — testing facade, adopted gates, and mutation command
+- guides/backend/_backend.md - Backend patterns
+- guides/frontend/_frontend.md - Frontend patterns
+- guides/testing-strategy.md - testing facade, adopted gates, and mutation command
 -->

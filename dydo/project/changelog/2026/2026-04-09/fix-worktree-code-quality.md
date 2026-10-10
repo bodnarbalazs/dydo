@@ -6,7 +6,7 @@ date: 2026-04-09
 
 # Task: fix-worktree-code-quality
 
-Refactored three worktree code quality issues from inquisition report. (1) Extracted TeardownWorktree method in WorktreeCommand.cs — shared sequence of PreserveAuditFiles, RemoveJunction (4 junctions now in a single JunctionSubpaths array), RemoveGitWorktree, RemoveZombieDirectory. Branch deletion stays outside since FinalizeMerge uses mergeSource directly. (2) Consolidated Linux/Mac terminal launcher argument duplication — LinuxTerminalLauncher now uses private ApplyOverrides method shared by GetArguments and TryLaunch; MacTerminalLauncher uses private BuildShellComponents shared by GetArguments and Launch. (3) Test coverage blind spot is automatically fixed: tests exercising GetArguments now cover the same code path production uses. Also moved duplicate BashPostClaudeCheck to TerminalLauncher as shared method. All 3477 tests pass, gap_check green.
+Refactored three worktree code quality issues from inquisition report. (1) Extracted TeardownWorktree method in WorktreeCommand.cs - shared sequence of PreserveAuditFiles, RemoveJunction (4 junctions now in a single JunctionSubpaths array), RemoveGitWorktree, RemoveZombieDirectory. Branch deletion stays outside since FinalizeMerge uses mergeSource directly. (2) Consolidated Linux/Mac terminal launcher argument duplication - LinuxTerminalLauncher now uses private ApplyOverrides method shared by GetArguments and TryLaunch; MacTerminalLauncher uses private BuildShellComponents shared by GetArguments and Launch. (3) Test coverage blind spot is automatically fixed: tests exercising GetArguments now cover the same code path production uses. Also moved duplicate BashPostClaudeCheck to TerminalLauncher as shared method. All 3477 tests pass, gap_check green.
 
 ## Progress
 
@@ -14,15 +14,15 @@ Refactored three worktree code quality issues from inquisition report. (1) Extra
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalLauncher.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\LinuxTerminalLauncher.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\MacTerminalLauncher.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalLauncher.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\LinuxTerminalLauncher.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\MacTerminalLauncher.cs - Modified
 
 
 ## Review Summary
 
-Refactored three worktree code quality issues from inquisition report. (1) Extracted TeardownWorktree method in WorktreeCommand.cs — shared sequence of PreserveAuditFiles, RemoveJunction (4 junctions now in a single JunctionSubpaths array), RemoveGitWorktree, RemoveZombieDirectory. Branch deletion stays outside since FinalizeMerge uses mergeSource directly. (2) Consolidated Linux/Mac terminal launcher argument duplication — LinuxTerminalLauncher now uses private ApplyOverrides method shared by GetArguments and TryLaunch; MacTerminalLauncher uses private BuildShellComponents shared by GetArguments and Launch. (3) Test coverage blind spot is automatically fixed: tests exercising GetArguments now cover the same code path production uses. Also moved duplicate BashPostClaudeCheck to TerminalLauncher as shared method. All 3477 tests pass, gap_check green.
+Refactored three worktree code quality issues from inquisition report. (1) Extracted TeardownWorktree method in WorktreeCommand.cs - shared sequence of PreserveAuditFiles, RemoveJunction (4 junctions now in a single JunctionSubpaths array), RemoveGitWorktree, RemoveZombieDirectory. Branch deletion stays outside since FinalizeMerge uses mergeSource directly. (2) Consolidated Linux/Mac terminal launcher argument duplication - LinuxTerminalLauncher now uses private ApplyOverrides method shared by GetArguments and TryLaunch; MacTerminalLauncher uses private BuildShellComponents shared by GetArguments and Launch. (3) Test coverage blind spot is automatically fixed: tests exercising GetArguments now cover the same code path production uses. Also moved duplicate BashPostClaudeCheck to TerminalLauncher as shared method. All 3477 tests pass, gap_check green.
 
 ## Code Review
 

@@ -4913,7 +4913,7 @@
   {
    "id": "088805b3-042b-4e73-bec6-ac3182cc95dd",
    "identifier": "DYD-55",
-   "title": "H-2 — Compiler contract, test de-freezing, retired-output cleanup, merge file rename, working-tree-contract scaffolding",
+   "title": "H-2 - Compiler contract, test de-freezing, retired-output cleanup, merge file rename, working-tree-contract scaffolding",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-55/h-2-compiler-contract-test-de-freezing-retired-output-cleanup-merge",
    "state": {
     "name": "Done",
@@ -4940,7 +4940,7 @@
   {
    "id": "0ff9e768-79c4-49ec-b659-d91200b0fddd",
    "identifier": "DYD-63",
-   "title": "H-10 — Regenerate, reconcile, integrate",
+   "title": "H-10 - Regenerate, reconcile, integrate",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-63/h-10-regenerate-reconcile-integrate",
    "state": {
     "name": "Done",
@@ -5076,7 +5076,7 @@
   {
    "id": "2b99fd9c-d479-4bfe-95dc-ab629887eb0a",
    "identifier": "DYD-47",
-   "title": "P4-4 — Integrate, audit, assimilate, and request human acceptance",
+   "title": "P4-4 - Integrate, audit, assimilate, and request human acceptance",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-47/p4-4-integrate-audit-assimilate-and-request-human-acceptance",
    "state": {
     "name": "Canceled",
@@ -5103,7 +5103,7 @@
   {
    "id": "2ff27c82-3b48-40fc-9f86-ad09698e2712",
    "identifier": "DYD-85",
-   "title": "S-10 — Land the simplification onto DYD-64-human-pass (DR 046 reconciliation)",
+   "title": "S-10 - Land the simplification onto DYD-64-human-pass (DR 046 reconciliation)",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-85/s-10-land-the-simplification-onto-dyd-64-human-pass-dr-046",
    "state": {
     "name": "Done",
@@ -5165,7 +5165,7 @@
   {
    "id": "40c26476-2e19-4c72-901f-37f47a95b657",
    "identifier": "DYD-62",
-   "title": "H-9 — Vocabulary, docs, notices",
+   "title": "H-9 - Vocabulary, docs, notices",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-62/h-9-vocabulary-docs-notices",
    "state": {
     "name": "Done",
@@ -5245,7 +5245,7 @@
   {
    "id": "48ec1e5f-b922-4f79-9150-286c1efd4178",
    "identifier": "DYD-84",
-   "title": "S-9 — Closeout: migration list, audit, assimilation brief",
+   "title": "S-9 - Closeout: migration list, audit, assimilation brief",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-84/s-9-closeout-migration-list-audit-assimilation-brief",
    "state": {
     "name": "Done",
@@ -5276,7 +5276,7 @@
   {
    "id": "4e4b1fcd-9131-4431-8233-68b59a65aff5",
    "identifier": "DYD-28",
-   "title": "P3-1 — Create and read back the seven approved live Issues",
+   "title": "P3-1 - Create and read back the seven approved live Issues",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-28/p3-1-create-and-read-back-the-seven-approved-live-issues",
    "state": {
     "name": "Done",
@@ -5298,7 +5298,7 @@
   {
    "id": "512ce198-9d0d-405f-a0d6-5dec98f0dcac",
    "identifier": "DYD-78",
-   "title": "S-2 — Templates read from the embedded set only; project-local template layer removed",
+   "title": "S-2 - Templates read from the embedded set only; project-local template layer removed",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-78/s-2-templates-read-from-the-embedded-set-only-project-local-template",
    "state": {
     "name": "Done",
@@ -5329,7 +5329,7 @@
   {
    "id": "57f14803-8dd9-4ec2-9d83-fb4771044e6b",
    "identifier": "DYD-53",
-   "title": "P6-6 — Regenerate and audit the restored skill system",
+   "title": "P6-6 - Regenerate and audit the restored skill system",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-53/p6-6-regenerate-and-audit-the-restored-skill-system",
    "state": {
     "name": "Done",
@@ -5378,7 +5378,7 @@
   {
    "id": "87db59c7-db3b-4541-ae6f-24a8aaa1f40f",
    "identifier": "DYD-83",
-   "title": "S-8 — Generator pass: web tools, compiled scout agent, argument-hint pass-through (DYD-75 items 2–4)",
+   "title": "S-8 - Generator pass: web tools, compiled scout agent, argument-hint pass-through (DYD-75 items 2–4)",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-83/s-8-generator-pass-web-tools-compiled-scout-agent-argument-hint-pass",
    "state": {
     "name": "Done",
@@ -5456,7 +5456,7 @@
   {
    "id": "9c47d2a4-c1d3-4b8d-8cdf-cacc8aaf5f04",
    "identifier": "DYD-32",
-   "title": "P3-5 — Rewrite the six Project-5 collision files",
+   "title": "P3-5 - Rewrite the six Project-5 collision files",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-32/p3-5-rewrite-the-six-project-5-collision-files",
    "state": {
     "name": "Done",
@@ -5505,7 +5505,7 @@
   {
    "id": "b34f19a4-092b-42e4-bb28-5719bc489b1f",
    "identifier": "DYD-30",
-   "title": "P3-3 — Rewrite frozen references in retained changelog",
+   "title": "P3-3 - Rewrite frozen references in retained changelog",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-30/p3-3-rewrite-frozen-references-in-retained-changelog",
    "state": {
     "name": "Done",
@@ -5652,7 +5652,7 @@
   {
    "id": "e34132fb-8f51-47f9-a128-e730682b0d43",
    "identifier": "DYD-57",
-   "title": "H-4 — Thinking cluster",
+   "title": "H-4 - Thinking cluster",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-57/h-4-thinking-cluster",
    "state": {
     "name": "Done",
@@ -5707,7 +5707,7 @@
   {
    "id": "f51a2592-f738-45c8-a6cc-6e6b5107c790",
    "identifier": "DYD-64",
-   "title": "H-11 — HITL: the human's file-by-file pass with an agent; edits re-reviewed",
+   "title": "H-11 - HITL: the human's file-by-file pass with an agent; edits re-reviewed",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-64/h-11-hitl-the-humans-file-by-file-pass-with-an-agent-edits-re-reviewed",
    "state": {
     "name": "Done",
@@ -5734,7 +5734,7 @@
   {
    "id": "fbb72089-3985-4944-b76a-3d44fa2078fe",
    "identifier": "DYD-174",
-   "title": "H1 — OpenCode compiler/integration plumbing + skills + agents",
+   "title": "H1 - OpenCode compiler/integration plumbing + skills + agents",
    "url": "https://linear.app/bodnar-balazs/issue/DYD-174/h1-opencode-compilerintegration-plumbing-skills-agents",
    "state": {
     "name": "Done",

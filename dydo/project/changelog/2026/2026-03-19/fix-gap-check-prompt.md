@@ -14,11 +14,11 @@ date: 2026-03-19
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxMetadataReader.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\InboxMetadataReaderTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-code-writer.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-reviewer.template.md — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxMetadataReader.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\InboxMetadataReaderTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-code-writer.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-reviewer.template.md - Modified
 
 
 ## Review Summary
@@ -30,7 +30,7 @@ Rewrote gap_check template-additions to be stronger hard stops. Changes: (1) ext
 - Reviewed by: Henry
 - Date: 2026-03-19 15:21
 - Result: PASSED
-- Notes: LGTM. All 4 template-addition files are concise, unambiguous, and correctly placed. extra-complete-gate is a good addition catching the skip-and-dispatch failure mode. Templates in sync, rendered output verified. gap_check exits non-zero but all 14 failures are pre-existing — no regressions from this task.
+- Notes: LGTM. All 4 template-addition files are concise, unambiguous, and correctly placed. extra-complete-gate is a good addition catching the skip-and-dispatch failure mode. Templates in sync, rendered output verified. gap_check exits non-zero but all 14 failures are pre-existing - no regressions from this task.
 
 Awaiting human approval.
 

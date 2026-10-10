@@ -4,7 +4,7 @@ type: changelog
 date: 2026-08-27
 ---
 
-# dydo 3.0.0 — Linear PM and Notion runtime removal
+# dydo 3.0.0 - Linear PM and Notion runtime removal
 
 dydo 3.0 removes the local Notion runtime and keeps live PM in Linear.
 
@@ -26,4 +26,4 @@ do not ship with the package or `dydo init`.
 
 ## Related
 
-- [Getting Started](../../../../guides/getting-started.md) — Current install and setup steps.
+- [Getting Started](../../../../guides/getting-started.md) - Current install and setup steps.

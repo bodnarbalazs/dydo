@@ -39,7 +39,7 @@ public class CommandSmokeTests
     [Fact]
     public void RootCommand_CanBeBuilt_WithAllSubcommands()
     {
-        // Verify the entire CLI can be constructed — mirrors Program.cs registrations
+        // Verify the entire CLI can be constructed - mirrors Program.cs registrations
         var exception = Record.Exception(() =>
         {
             var rootCommand = new System.CommandLine.RootCommand("Test")

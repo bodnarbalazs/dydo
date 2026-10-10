@@ -142,7 +142,7 @@ The reviewed Git plan is the durable portfolio umbrella. The `Dydo` team and the
 
 | Order | Linear Project | Outcome | Depends on |
 |---|---|---|---|
-| 1 | dydo 3.0 / PM foundation and migration contract | Linear graph, link contract, complete disposition manifest, safe Notion freeze | — |
+| 1 | dydo 3.0 / PM foundation and migration contract | Linear graph, link contract, complete disposition manifest, safe Notion freeze | - |
 | 2 | dydo 3.0 / Adopt Linear-native work model | Glossary, docs, templates, skills, workflows, planner/reviewer/orchestrator contracts use DR 044 | 1 |
 | 3 | dydo 3.0 / Migrate the v2 work corpus | Live work imported by ratified disposition; legacy runtime records removed; retained knowledge and links clean | 1, 2 |
 | 4 | dydo 3.0 / Dogfood and accept Linear PM | Real work completes through the new Linear/repo boundary and the human accepts the operating model | 2, 3 |
@@ -166,7 +166,7 @@ history.
 These contracts are sufficient for shell creation. They are not implementation plans; each Project
 receives a fresh reviewed repo plan and detailed Issues only when it becomes the current frontier.
 
-#### Project 2 — Adopt Linear-native work model
+#### Project 2 - Adopt Linear-native work model
 
 Scope: replace Campaign/Sprint/Slice/Task language and contracts in the glossary, architecture/work-model
 docs, templates, skills, and planner/reviewer/orchestrator workflows; retain FutureFeature; ensure final
@@ -178,7 +178,7 @@ the full documentation/template consistency gates pass.
 
 Dependencies: Project 1. Resources: DR 044, this plan, and the Project 1 disposition manifest.
 
-#### Project 3 — Migrate the v2 work corpus
+#### Project 3 - Migrate the v2 work corpus
 
 Scope: apply the human-ratified manifest; create only approved live Linear work; normalize retained
 FutureFeatures; remove retired PM records from the default branch; rewrite every incoming reference.
@@ -190,7 +190,7 @@ check` and corpus-focused tests pass.
 Dependencies: Projects 1 and 2. Resources: DR 044, this plan, both manifest artifacts, and the
 `pm-v2-final` tag.
 
-#### Project 4 — Dogfood and accept Linear PM
+#### Project 4 - Dogfood and accept Linear PM
 
 Scope: execute at least one representative multi-Issue delivery through Linear using reviewed repo
 context, dependencies, explicit Issue participation, independent Issue reviews, integrated Project audit,
@@ -203,7 +203,7 @@ explicitly accepts or rejects the operating model.
 Dependencies: Projects 2 and 3. Resources: DR 044, the Project 2 work-model plan, the migrated work graph,
 and the pilot Project's reviewed plan.
 
-#### Project 5 — Remove Notion runtime and release dydo 3.0
+#### Project 5 - Remove Notion runtime and release dydo 3.0
 
 Scope: after recorded pilot acceptance, delete the Notion adapter, generic sync code with no remaining
 consumer, watchdog/start paths, token/vault/config/CLI surface, obsolete tests and docs; update packages,
@@ -217,7 +217,7 @@ playbook is complete.
 Dependencies: Projects 1–4, including explicit human acceptance of Project 4. Resources: DR 044, the
 `pm-v2-final` tag, the accepted pilot evidence, and Projects 2–4 plans/audits.
 
-### Project 1 — detailed Issue contracts
+### Project 1 - detailed Issue contracts
 
 #### Bootstrap procedure, evidence, and rollback
 
@@ -238,8 +238,8 @@ PASS, the human first approves publishing the governing artifacts. The operator 
    `dydo/project/migrations/3.0-linear-bootstrap.json` as each call succeeds;
 6. calls `get_project(includeResources: true)` and `get_issue(includeRelations: true)` by returned
    identity; verifies the
-   connector-managed fields at this stage—team, recorded status ID/name, descriptions, Project links,
-   Issue Project membership, and Issue dependencies—and records the partial result;
+   connector-managed fields at this stage-team, recorded status ID/name, descriptions, Project links,
+   Issue Project membership, and Issue dependencies-and records the partial result;
 7. compares the read-back `Depends on` sections to the expected incoming counts `1 + 2 + 2 + 4`, records
    all nine exact name/URL edges in the bootstrap evidence, and fails on a missing or extra edge. The
    current MCP surface cannot write native Project dependencies; native edges may be added manually
@@ -286,7 +286,7 @@ metadata:
 | 5 | Issues 1, 3, and 4 accepted | `dydo/project/migrations/3.0-linear-bootstrap.json`; serial finalization of `dydo/project/migrations/3.0-linear-bootstrap.md` after Issue 1; Project 1 URL frontmatter in `dydo/project/plans/dydo-3-linear-migration.md` | Linear read-back of the bootstrapped Projects, Issues, and links |
 | 6 | Issue 5 accepted | `dydo/project/plans/dydo-3-linear-native-work-model.md` | DR 041, DR 042, ratified manifest, `pm-v2-final` freeze evidence |
 
-#### Issue 1 — Verify Dydo Linear/GitHub PM references
+#### Issue 1 - Verify Dydo Linear/GitHub PM references
 
 Participation: documentation/design. Initial state: `Todo`.
 
@@ -310,7 +310,7 @@ dydo/project/plans/dydo-3-linear-migration.md dydo/project/migrations/3.0-linear
 both exit 0. Obtain a fresh reviewer PASS on these two records and record all observables in the bootstrap
 Markdown evidence.
 
-#### Issue 2 — Inventory legacy PM records and incoming references
+#### Issue 2 - Inventory legacy PM records and incoming references
 
 Participation: agent-executable. Initial state: blocked by Issue 1, then `Todo`.
 
@@ -391,7 +391,7 @@ Gate procedure:
    `-Verify` once more; it must validate the sealed non-null `verify` object and JSON/Markdown parity
    before the Issue 2 gate can pass.
 
-#### Issue 3 — Human-ratify live-work dispositions
+#### Issue 3 - Human-ratify live-work dispositions
 
 Participation: human ratification required. Initial state: blocked by Issue 2.
 
@@ -409,7 +409,7 @@ Gate procedure: run the manifest script with `-Verify -RequireRatified`; require
 signs the bounded groups in `3.0-pm-records.md`; the JSON records that ruling and remains the complete
 proof.
 
-#### Issue 4 — Freeze Notion and seal the v2 PM baseline
+#### Issue 4 - Freeze Notion and seal the v2 PM baseline
 
 Participation: agent-executable with human approval for the live run. Initial state: blocked by Issue 2.
 
@@ -439,12 +439,12 @@ Gate procedure:
    the tag. Require `git rev-parse pm-v2-final^{}` and `git ls-remote origin
    refs/tags/pm-v2-final^{}` to return the same recorded commit SHA.
 5. Configure and record a GitHub tag ruleset/protection targeting `pm-v2-final`, then verify it in the
-   remote UI/API. The exact commit-SHA permalink—not the movable tag-name URL—is authoritative evidence.
+   remote UI/API. The exact commit-SHA permalink-not the movable tag-name URL-is authoritative evidence.
 6. Record command exits, mutation counts, shadow/pending inventory, commit/tag/ruleset URLs, and human
    live-run approval in the freeze artifact. No `notion reset`, `--allow-mass-delete`, or remote archive
    operation is permitted.
 
-#### Issue 5 — Verify and seal the reviewed Linear 3.0 graph
+#### Issue 5 - Verify and seal the reviewed Linear 3.0 graph
 
 Participation: agent-executable. Initial state: blocked by Issues 1, 3, and 4.
 
@@ -469,7 +469,7 @@ safe field mismatch only by recorded ID and read it back again. If correction is
 or fails, record the exact mismatch and stop for a human decision. Because accepted Project 1 work now
 exists, Issue 5 must never invoke whole-graph bootstrap rollback or cancel accepted objects.
 
-#### Issue 6 — Prepare and review the next delivery Project
+#### Issue 6 - Prepare and review the next delivery Project
 
 Participation: human review required. Initial state: blocked by Issue 5.
 
@@ -510,7 +510,7 @@ for repository selection and isolation. Saved views and team-prefix routing are 
 - Project Resources attach branch-following GitHub URLs for current DRs, plans, and
   governing docs.
 - Each Issue description has a `Governing context` section listing only documents that actually govern
-  that contract. Use labels like `DR-044 — Linear-canonical PM boundary`, never naked URLs.
+  that contract. Use labels like `DR-044 - Linear-canonical PM boundary`, never naked URLs.
 - The same URLs are added as Linear link attachments so they remain visible outside the Markdown body.
 - An implementation Issue records the exact governing commit SHA before work begins. The branch-following
   link remains the human navigation link; the commit permalink fixes the contract revision for audit.
@@ -595,7 +595,7 @@ may reset, overwrite, or opportunistically absorb it.
 
 ## Plan review
 
-**PASS — 2026-08-27.** A fresh reviewer found no remaining material correctness, migration-safety,
+**PASS - 2026-08-27.** A fresh reviewer found no remaining material correctness, migration-safety,
 Linear-semantics, reference-durability, boundary, or Project 1 executability blocker after four repair
 rounds. The reviewed plan explicitly closes connector/UI capability boundaries, safe late
 reconciliation, exact dependency/status semantics, a closed disposition schema, commit-SHA historical
@@ -608,7 +608,7 @@ Human ratification, publication of governing commit `868eae47fb39540ce0a9f1e14d6
 and the MCP-only Linear bootstrap are complete. Durable read-back evidence lives in
 `dydo/project/migrations/3.0-linear-bootstrap.{json,md}`.
 
-### Human amendment — 2026-08-27
+### Human amendment - 2026-08-27
 
 Ratified after the PASS review: the DynaDocs dogfood creates no workspace Initiative. The Basic-plan
 workspace is shared with the human's main project, so dydo is confined to five `Dydo`-owned Projects;
@@ -617,14 +617,14 @@ cannot write native Project dependencies, their nine edges are authoritative in 
 in the initial Project-description payloads and read back before PASS; native UI edges are optional
 convenience only. Browser/UI fallback is prohibited during provisioning.
 
-### Contract reconciliation — 2026-08-27
+### Contract reconciliation - 2026-08-27
 
 In-progress DYD-2 review found that the closed top-level manifest schema omitted the evidence object
 already required by its gate. `provenance` now makes the archive source, counts, and actual write,
 verify, and normalized `dydo check` evidence machine-reviewable in both manifest artifacts. This amends
 the contract only; it does not assert that DYD-2 has passed.
 
-### Corrective boundary amendment — 2026-08-28
+### Corrective boundary amendment - 2026-08-28
 
 The **DYD-1 human boundary correction** (Linear comment
 `916b8b30-2ca5-4902-a340-64033228866d`) removes four unsupported requirements from this plan: saved

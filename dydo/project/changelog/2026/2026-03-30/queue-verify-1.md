@@ -6,7 +6,7 @@ date: 2026-03-30
 
 # Task: queue-verify-1
 
-Queue verification task. No code changes — waited 30 seconds, messaged Adele with confirmation. Nothing to review.
+Queue verification task. No code changes - waited 30 seconds, messaged Adele with confirmation. Nothing to review.
 
 ## Progress
 
@@ -14,13 +14,13 @@ Queue verification task. No code changes — waited 30 seconds, messaged Adele w
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\DispatchQueueTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\DispatchQueueTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs - Modified
 
 
 ## Review Summary
 
-Queue verification task. No code changes — waited 30 seconds, messaged Adele with confirmation. Nothing to review.
+Queue verification task. No code changes - waited 30 seconds, messaged Adele with confirmation. Nothing to review.
 
 ## Approval
 

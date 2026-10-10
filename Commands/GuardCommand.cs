@@ -33,7 +33,7 @@ public static partial class GuardCommand
     /// <summary>
     /// Everything the guard needs from the project: the loaded config (nudges)
     /// and the machine-local directory where warn-nudge pass-through markers live
-    /// (dydo/_system/.local/ — gitignored, scan-excluded). Replaces the old AgentRegistry:
+    /// (dydo/_system/.local/ - gitignored, scan-excluded). Replaces the old AgentRegistry:
     /// with the roster/claim machinery gone (DR-041), the guard only ever needed these two.
     /// </summary>
     internal sealed record GuardEnv(DydoConfig? Config, string MarkerDir)
@@ -102,13 +102,13 @@ public static partial class GuardCommand
 
     // Actions that mutate the file they name. The protected tier binds on these only, so an
     // agent can still read its orientation files. The hook maps Edit/Write/NotebookEdit here,
-    // and the CLI lane carries the verb directly (arg mode has no tool name — issue 0302).
+    // and the CLI lane carries the verb directly (arg mode has no tool name - issue 0302).
     private static readonly HashSet<string> MutatingActions =
         new(StringComparer.OrdinalIgnoreCase) { "write", "edit", "delete" };
 
     // Codex delivers file edits as apply_patch, which HookInputExtensions maps to no action at
     // all. It is in the Codex hook matcher precisely as the Codex form of Edit/Write, so it is
-    // named here too — otherwise the protected tier would bind on Claude's lane only.
+    // named here too - otherwise the protected tier would bind on Claude's lane only.
     private static readonly HashSet<string> MutatingTools =
         new(StringComparer.OrdinalIgnoreCase) { "apply_patch" };
 
@@ -159,7 +159,7 @@ public static partial class GuardCommand
         }
 
         // A CLI-provided --command is a shell command by definition, but arg mode has no hook
-        // tool_name — without one, ShouldRouteToShellHandler never fires and the documented
+        // tool_name - without one, ShouldRouteToShellHandler never fires and the documented
         // manual-testing lane silently allows everything (issue 0302). Route it as bash.
         if (toolName == null && cliCommand != null)
             toolName = "bash";
@@ -229,7 +229,7 @@ public static partial class GuardCommand
 
         // ============================================================
         // TIER-2 WORKER LANE (Decision 024): calls carrying agent_id come from
-        // sub-agents / workflow workers. Workers are anonymous — no claim, no role
+        // sub-agents / workflow workers. Workers are anonymous - no claim, no role
         // state, no staged onboarding, no must-reads. Only the universal layers
         // apply: off-limits, dangerous-bash patterns, nudges, and the shared bash
         // safety checks (dydo-command handling).
@@ -252,8 +252,8 @@ public static partial class GuardCommand
 
     /// <summary>
     /// Stop-hook entry point. The agent-identity needs-human machinery this used to drive was
-    /// carved out with the claim ceremony (DR-041) — there is no runtime agent state to reconcile
-    /// now — so the Stop hook is a no-op that always exits 0 (a Stop hook must never block turn end).
+    /// carved out with the claim ceremony (DR-041) - there is no runtime agent state to reconcile
+    /// now - so the Stop hook is a no-op that always exits 0 (a Stop hook must never block turn end).
     /// The option and hook wiring are retained so existing installs' Stop hook keeps resolving.
     /// </summary>
     private static int ExecuteStop() => ExitCodes.Success;
@@ -286,7 +286,7 @@ public static partial class GuardCommand
             return HandleBashCommand(context.BashCommand!, context.SessionId, offLimitsService, bashAnalyzer, env);
         }
 
-        // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool — off-limits applies
+        // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool - off-limits applies
         // to the search root, and the Agent tool gets the Tier-2 worker-lane notice.
         if (context.ToolName != null && SearchTools.Contains(context.ToolName))
         {
@@ -306,7 +306,7 @@ public static partial class GuardCommand
 
     /// <summary>
     /// Native auto-memory paths (~/.claude/projects/&lt;project&gt;/memory/) are outside the
-    /// repo and outside dydo's jurisdiction — always readable and writable. Anchored to
+    /// repo and outside dydo's jurisdiction - always readable and writable. Anchored to
     /// the real user profile and requires 'memory' to be the immediate child of the
     /// project directory, so neither a repo-internal lookalike nor a '..' escape qualifies.
     /// </summary>
@@ -398,7 +398,7 @@ public static partial class GuardCommand
         if (protectedPattern == null)
             return null;
 
-        Console.Error.WriteLine("BLOCKED: Path is protected — every agent may read it, none may write or delete it.");
+        Console.Error.WriteLine("BLOCKED: Path is protected - every agent may read it, none may write or delete it.");
         Console.Error.WriteLine($"  Path: {path}");
         Console.Error.WriteLine($"  Pattern: {protectedPattern}");
         if (detected != null)
@@ -442,15 +442,15 @@ public static partial class GuardCommand
     {
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
 
-        // Tier-2 workers don't run dydo commands — that machinery belongs to the admiral.
+        // Tier-2 workers don't run dydo commands - that machinery belongs to the admiral.
         if (isDydo && isWorker)
         {
-            Console.Error.WriteLine("BLOCKED: Sub-agents don't run dydo commands — that belongs to the");
+            Console.Error.WriteLine("BLOCKED: Sub-agents don't run dydo commands - that belongs to the");
             Console.Error.WriteLine("  admiral who spawned you, not a worker.");
             return ExitCodes.ToolError;
         }
 
-        // Hardcoded dangerous patterns — security checks before configurable nudges
+        // Hardcoded dangerous patterns - security checks before configurable nudges
         var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
         if (isDangerous)
         {
@@ -460,7 +460,7 @@ public static partial class GuardCommand
             return ExitCodes.ToolError;
         }
 
-        // Configurable nudges — after hardcoded security checks, for every command.
+        // Configurable nudges - after hardcoded security checks, for every command.
         var nudged = CheckNudges(command, env);
         if (nudged != null) return nudged.Value;
 
@@ -471,7 +471,7 @@ public static partial class GuardCommand
             var (isCdChain, _, restCmd) = bashAnalyzer.DetectNeedlessCd(command);
             if (isCdChain)
             {
-                Console.Error.WriteLine("BLOCKED: Don't chain cd / Set-Location with other commands — it breaks auto-approval for whitelisted commands.");
+                Console.Error.WriteLine("BLOCKED: Don't chain cd / Set-Location with other commands - it breaks auto-approval for whitelisted commands.");
                 Console.Error.WriteLine($"  If you need to change directory, run it separately first.");
                 Console.Error.WriteLine($"  Otherwise just run: {restCmd}");
                 return ExitCodes.ToolError;
@@ -512,8 +512,8 @@ public static partial class GuardCommand
             if (string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
             {
                 // Warn = "block once, run again to proceed". The pass-through marker lives in
-                // machine-local state (dydo/_system/.local/ — gitignored, scan-excluded), keyed
-                // by pattern hash — global rather than per-agent (DR-041, identity-free model).
+                // machine-local state (dydo/_system/.local/ - gitignored, scan-excluded), keyed
+                // by pattern hash - global rather than per-agent (DR-041, identity-free model).
                 var hash = ComputeNudgeHash(nudge.Pattern);
                 Directory.CreateDirectory(env.MarkerDir);
                 var markerPath = Path.Combine(env.MarkerDir, $".nudge-{hash}");
@@ -548,16 +548,16 @@ public static partial class GuardCommand
     /// Pre-2.1 shipped nudge message texts that must self-heal in existing installs.
     /// EnsureDefaultNudges dedupes by pattern, so a config materialized before 2.1 keeps
     /// these stale messages forever unless we rewrite them here. A message the USER edited
-    /// matches nothing in this set and is left untouched — docs promise message editability.
+    /// matches nothing in this set and is left untouched - docs promise message editability.
     /// </summary>
     private static readonly HashSet<string> StaleNudgeMessages =
     [
         // The three poll-loop warn nudges (until/tail/while) still recommend the deleted `dydo wait`.
         "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`, or `dydo wait` for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
-        // Retired worktree block/warn nudges — no current default, so they are removed outright.
+        // Retired worktree block/warn nudges - no current default, so they are removed outright.
         "Use dydo worktree commands instead of git worktree directly.",
         "Use dydo worktree cleanup instead of deleting worktree directories directly.",
-        "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted files. If the list shown was only generated artifacts (under 'N generated artifacts ignored'), --force is safe. If any source/test/task files were listed as suspicious, commit them first — re-run to proceed anyway.",
+        "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted files. If the list shown was only generated artifacts (under 'N generated artifacts ignored'), --force is safe. If any source/test/task files were listed as suspicious, commit them first - re-run to proceed anyway.",
         // Retired Decision 026 managers-doctrine nudge (DR 045): it points at the run-sprint
         // workflow 3.0 deletes, so an install still carrying it must stop firing it.
         "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.",
@@ -663,7 +663,7 @@ public static partial class GuardCommand
         // Anything that is not a read of op.Path can leave different bytes or different
         // permissions there: writes, deletes, moves, copies, chmod/chown/takeown. Stated as an
         // exclusion so a future op type is guarded by default instead of silently exempt, and
-        // because the analyzer tags a copy's source and destination alike — `cp <protected>
+        // because the analyzer tags a copy's source and destination alike - `cp <protected>
         // elsewhere` is blocked too. Conservative on purpose: no wider than the off-limits
         // block these paths carried before, and the content stays readable through
         // Read, cat and head. Execute names a binary to run, not a file to change.
@@ -676,7 +676,7 @@ public static partial class GuardCommand
     /// <summary>
     /// Collapses '.'/'..' segments lexically so no traversal sequence
     /// ('.../memory/../../secret') can slip past a path-based guard check (off-limits,
-    /// native-memory). Pure normalization — no filesystem or worktree remapping.
+    /// native-memory). Pure normalization - no filesystem or worktree remapping.
     /// </summary>
     internal static string? ResolveTraversal(string? path)
     {
@@ -713,7 +713,7 @@ public static partial class GuardCommand
         }
         catch (InvalidOperationException)
         {
-            // Stdin is redirected — read with a timeout to avoid blocking forever
+            // Stdin is redirected - read with a timeout to avoid blocking forever
             // if the pipe is open but has no data (e.g., chained commands)
             var readTask = Task.Run(() => Console.In.ReadToEnd());
             if (readTask.Wait(TimeSpan.FromMilliseconds(500)))
@@ -721,7 +721,7 @@ public static partial class GuardCommand
                 json = readTask.Result;
                 return !string.IsNullOrWhiteSpace(json);
             }
-            return false; // Timed out — no stdin data available
+            return false; // Timed out - no stdin data available
         }
     }
 

@@ -7,7 +7,7 @@ accepted: 2026-09-25
 participants: [balazs, Claude admiral]
 ---
 
-# 052 — `dydo map`: a Read-Only Linear View
+# 052 - `dydo map`: a Read-Only Linear View
 
 `dydo map` is a read-only, on-demand view of one Linear Project. It reads Linear's GraphQL API with
 the user's `LINEAR_API_KEY` when the page loads. It never writes, polls, subscribes to or mirrors
@@ -81,7 +81,7 @@ Linear's sidebar files it under Related.
 
 ---
 
-## Amendment 2026-10-04 — disposable saved maps
+## Amendment 2026-10-04 - disposable saved maps
 
 The human approved [DYD-314](https://linear.app/bodnar-balazs/issue/DYD-314) and the
 [map change memory Project](https://linear.app/bodnar-balazs/project/dydo-map-change-memory-313-b8ac698c6886):

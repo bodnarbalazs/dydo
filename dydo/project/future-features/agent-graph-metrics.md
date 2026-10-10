@@ -17,21 +17,21 @@ The audit logs, inbox archives, repository task files, and dispatch or messaging
 
 When supported evidence is available, coordination and review relationships could form an implicit graph. A graph built from that evidence could have:
 
-- **Thread nodes** — one per recorded execution thread, with its available timing and role context
-- **Task nodes** — one per task represented by the evidence
-- **Edges** — handoff, collaboration, work, and review relationships when the supported evidence records them
+- **Thread nodes** - one per recorded execution thread, with its available timing and role context
+- **Task nodes** - one per task represented by the evidence
+- **Edges** - handoff, collaboration, work, and review relationships when the supported evidence records them
 
 ## Metrics to Explore
 
 The goal is a small set of numbers that move when you change a prompt, so you can tell if the change helped. Candidates (needs experimentation to find which are actually informative):
 
-- **First-pass approval rate** — % of tasks accepted on first review without further work
-- **Rework rate** — % of tasks returned from review for further work
-- **Chain completion rate** — % of coordination chains that finish without human intervention
-- **Mean chain depth** — average recorded execution steps per task from work start to approval
-- **Execution duration by role** — median wall-clock time, grouped by role
-- **Block rate** — guardrail blocks / total events (high = prompt or onboarding friction)
-- **Orphan rate** — execution threads without a recorded terminal outcome
+- **First-pass approval rate** - % of tasks accepted on first review without further work
+- **Rework rate** - % of tasks returned from review for further work
+- **Chain completion rate** - % of coordination chains that finish without human intervention
+- **Mean chain depth** - average recorded execution steps per task from work start to approval
+- **Execution duration by role** - median wall-clock time, grouped by role
+- **Block rate** - guardrail blocks / total events (high = prompt or onboarding friction)
+- **Orphan rate** - execution threads without a recorded terminal outcome
 
 ## Data Gap
 
@@ -51,4 +51,4 @@ FutureFeature is a repo-native idea record. It remains unpromoted until a separa
 
 ## Related
 
-- [Work Model](../../understand/work-model.md) — Current boundary between durable knowledge and live work
+- [Work Model](../../understand/work-model.md) - Current boundary between durable knowledge and live work

@@ -8,7 +8,7 @@ type: guide
 Failure modes seen when several agents deliver one Project in parallel. They are stated against the
 model that governs delivery here: one captain owns one Issue end to end, an admiral coordinates and
 implements nothing, a fresh reviewer gates every candidate, and Git isolation keeps concurrent work
-apart — one writer per worktree, commits touching owned paths only.
+apart - one writer per worktree, commits touching owned paths only.
 
 ## 1. The coordinator picks up a file
 
@@ -77,7 +77,7 @@ the integrated state, where it costs more to find. Looping instead is the opposi
 candidate keeps failing because something outside it is wrong.
 
 **Rule:** fix and re-review; there is no verdict between PASS and FAIL. The relief valve is the cap, not
-a softer verdict — a fifth consecutive FAIL on one review loop is itself an escalation.
+a softer verdict - a fifth consecutive FAIL on one review loop is itself an escalation.
 
 ## 7. Silent waiting, and its opposite
 
@@ -87,8 +87,8 @@ answers arrives at the human.
 **Mechanism:** an agent that meets fog can neither wait for an answer nor invent one. Both failures come
 from skipping the middle: discovery first, then a question that is on the record.
 
-**Rule:** run bounded discovery — the Decision Records, the plan, the Issue's links, the glossary, the
-code — and only when it comes up empty file a Question Issue listing what you searched, wire it as a
+**Rule:** run bounded discovery - the Decision Records, the plan, the Issue's links, the glossary, the
+code - and only when it comes up empty file a Question Issue listing what you searched, wire it as a
 blocker, then release with branch pushed, resume SHA posted, worktree removed, parent Todo and
 unassigned. The admiral resumes blocker-cleared work on the next captain return or human word. Settle operational conflicts by
 precedence: the human's live instruction, then the Decision Record, the reviewed plan at its governing
@@ -103,8 +103,8 @@ the contract cannot supply.
 **Mechanism:** tests prove the checkout they ran in. They do not prove which commit was judged, which
 worktree supplied it, or whether an edit landed afterwards.
 
-**Rule:** let the review block pin it — candidate and base SHA, and each gate result recorded against
-that candidate with its command, environment, exit and where the output can be seen — posted on the
+**Rule:** let the review block pin it - candidate and base SHA, and each gate result recorded against
+that candidate with its command, environment, exit and where the output can be seen - posted on the
 Issue and in the PR body. Every merge that has a Merge Issue is followed by its own review of the
 integrated state, and the last one proves the plan's acceptance criteria. An atomic Issue's merge
 into main has none; its Issue review PASS, green CI and the human's click stand in its place.
@@ -115,14 +115,14 @@ into main has none; its Issue review PASS, green CI and the human's click stand 
 
 **Mechanism:** host-native spawn routes differ. The role is authored once at `skills/<category>/<name>` and setup
 exposes it through each discovery root; a Claude agent definition may preload that skill, and a Codex
-child is told to load it by name — what else it inherits is not documented. A sandbox setting requests
+child is told to load it by name - what else it inherits is not documented. A sandbox setting requests
 a boundary; its presence does not prove the host enforced it. Hook trust is pinned by hash, so changing
 the hook configuration leaves sessions unguarded until the human re-trusts it.
 
 **Rule:** before relying on a new spawn path, ask the agent to name what it loaded and record the
 answer. Prove any load-bearing restriction with a live host check. A spawn that cannot see its skill
 or enforce the requested boundary is a finding to file and route around, not a reason to stop the
-work — and re-trust the hooks after any change to them.
+work - and re-trust the hooks after any change to them.
 
 ## 10. Live knowledge left in Linear
 
@@ -143,8 +143,8 @@ embedded catalog to go stale.
 
 ## Related
 
-- [Working-Tree Contract](./working-tree-contract.md) — the procedure most of these rules point at
-- [Writing Good Briefs](./writing-good-briefs.md) — the contract an Issue or a crew member starts from
-- [Testing Strategy](./testing-strategy.md) — what the gates are worth
-- [DR 045 — Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md)
-- [DR 044 — Linear-Canonical PM and the dydo Knowledge Boundary](../project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md)
+- [Working-Tree Contract](./working-tree-contract.md) - the procedure most of these rules point at
+- [Writing Good Briefs](./writing-good-briefs.md) - the contract an Issue or a crew member starts from
+- [Testing Strategy](./testing-strategy.md) - what the gates are worth
+- [DR 045 - Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md)
+- [DR 044 - Linear-Canonical PM and the dydo Knowledge Boundary](../project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md)

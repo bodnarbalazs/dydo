@@ -18,7 +18,7 @@ officer never becomes another officer ([Decision 050](../project/decisions/050-o
 
 | Stage | Who | Output | Gate |
 |---|---|---|---|
-| Think | any session, loading co-thinker | ripe intent, and a Decision Record when the choice earns one | — |
+| Think | any session, loading co-thinker | ripe intent, and a Decision Record when the choice earns one | - |
 | Chart and plan a Project | the map holder, the human or an invoked admiral, with wayfinder | the map in the Linear Project, first Issues, Questions; a repository plan only for a cross-cutting architecture contract | project-plan review of that plan, then human approval |
 | Make an Issue exact | issue-captain, through its compact acceptance contract | a just-in-time contract with no hidden implementation decisions; the route stays the writer's | optional spec review |
 | Implement | issue-captain | an Issue branch, a PR into the feature branch, or into main for an atomic Issue, evidence on the Issue | reviewer PASS |
@@ -37,13 +37,13 @@ corrective for agent-speak, at any stage.
   Issue, the chief-of-staff the board. A session or agent has at most one officer role; the human
   holds a row on the map but no role.
 - **Crew** are spawned for one bounded job, hold nothing, and return their result to whoever sent them. Research delegates to non-authoring scouts; other crew do their own bounded work.
-- **Methods** are plain skills — reference and procedure a session applies inside its own thread, never a separate
+- **Methods** are plain skills - reference and procedure a session applies inside its own thread, never a separate
   session.
 - **Human commands** are invoked by the human typing their name, and by nothing else. For the
-  post-landing tour, the map holder — an invoked admiral, or the human itself — opens the Walkthrough
+  post-landing tour, the map holder - an invoked admiral, or the human itself - opens the Walkthrough
   Issue and asks the human to invoke `walkthrough` in that same session before facilitating it.
 
-The [dydo glossary](../reference/dydo-glossary.md) names every member of each category. Every one of them is a native skill folder — see
+The [dydo glossary](../reference/dydo-glossary.md) names every member of each category. Every one of them is a native skill folder - see
 [Scaffold and Customization](./scaffold-and-customization.md).
 
 A captain's Issue is a Project one level down: the same Types, statuses and chain, with a different
@@ -84,15 +84,15 @@ to an Issue. They are not extra levels in the work graph.
 
 ## Review and inquisition
 
-1. **Issue review** — a fresh reviewer with the rubric the candidate targets: code or docs
+1. **Issue review** - a fresh reviewer with the rubric the candidate targets: code or docs
    before merge; `project-plan` before Project approval; `spec` on the contract before any code
    only for one risk the Issue Captain records in the contract.
-2. **Merge review** — a reviewer with the `merge` rubric after every merge that has a Merge Issue
+2. **Merge review** - a reviewer with the `merge` rubric after every merge that has a Merge Issue
    (a lane into its parent, an Issue into the feature, the landing): a mechanical spot check
    scaled to what landed, which at the final feature merge also proves the plan's acceptance criteria.
    An atomic Issue's merge into main has none; its Issue review PASS, green CI and the human's
    click stand in its place.
-3. **Inquisition** — human-confirmed, captain-directed sweeps that file Bugs, each code hypothesis
+3. **Inquisition** - human-confirmed, captain-directed sweeps that file Bugs, each code hypothesis
    proved by a proof-only test and each prose one by its quoted passages, with
    a separate record Feature's docs-writer preserving the evidence through normal delivery. The
    Inquisition releases until that delivery lands, then verifies retention before closing; see the
@@ -129,10 +129,10 @@ promotion paths.
 
 ## Related
 
-- [Control Flow](./control-flow.md) — every handoff drawn: roster, happy path, states, edge contracts, exceptions
-- [Linear Issue Lifecycle](./task-lifecycle.md) — what an Issue carries, and how it is claimed and merged
-- [Working-Tree Contract](../guides/working-tree-contract.md) — branches, worktrees, claims, cleanup
-- [Decision 045 — Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md)
-- [Decision 044 — Linear-Canonical PM and the dydo Knowledge Boundary](../project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md)
-- [dydo Glossary](../reference/dydo-glossary.md) — the locked vocabulary
-- [Writing Good Briefs](../guides/writing-good-briefs.md) — how a brief is written
+- [Control Flow](./control-flow.md) - every handoff drawn: roster, happy path, states, edge contracts, exceptions
+- [Linear Issue Lifecycle](./task-lifecycle.md) - what an Issue carries, and how it is claimed and merged
+- [Working-Tree Contract](../guides/working-tree-contract.md) - branches, worktrees, claims, cleanup
+- [Decision 045 - Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md)
+- [Decision 044 - Linear-Canonical PM and the dydo Knowledge Boundary](../project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md)
+- [dydo Glossary](../reference/dydo-glossary.md) - the locked vocabulary
+- [Writing Good Briefs](../guides/writing-good-briefs.md) - how a brief is written

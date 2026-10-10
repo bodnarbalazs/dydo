@@ -21,7 +21,7 @@ Plan (archived): `dydo/agents/Dexter/archive/20260519-175829/plan-identity-hijac
 - [x] Read F12 surface: `HandleDydoBashCommand` phase-1/phase-2, `AgentSessionManager.GetSessionContext`
 - [x] Read F13 surface: `WatchdogService` end-to-end + launcher `ProcessStartInfo` paths
 - [x] Read F4 encoded-bug tests + existing F1 reproducer (from inquisitor worktree)
-- [x] Verify lower-confidence items (F13 watchdog, R2 wait exit-2) — no scout needed
+- [x] Verify lower-confidence items (F13 watchdog, R2 wait exit-2) - no scout needed
 - [x] Decide F1 fix shape (PID/ancestry verification on env paths, both primitives)
 - [x] Decide slice decomposition (Slice A = identity core + adjacent defenses; Slice B = NOTICE escape + wait observability; [#0190](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0190-resolvesessionfallback-does-not-filter-by-assignedhuman-currenthuman-despite-the.md) deferred)
 - [x] Write `dydo/agents/Dexter/plan-identity-hijack-fix.md`

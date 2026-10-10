@@ -14,11 +14,11 @@ date: 2026-03-07
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Models\DydoConfig.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalLauncher.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TerminalLauncherTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\GuardIntegrationTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Models\DydoConfig.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalLauncher.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TerminalLauncherTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\GuardIntegrationTests.cs - Modified
 
 
 ## Review Summary

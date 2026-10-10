@@ -26,7 +26,7 @@ route are outside this rubric: do not turn them into findings or notes.
    seams, edge and failure handling, migration, compatibility, and proof. **Done:** no material
    choice is silently delegated to production.
 5. **Check the proof.** Acceptance lines, scenarios and gates are exact and sufficient for the Issue
-   outcome. Run those applicable before code; mark implementation gates `not run — pre-code` after
+   outcome. Run those applicable before code; mark implementation gates `not run - pre-code` after
    verifying their commands and pass conditions. **Done:** the eventual result can fail as well as
    pass.
 6. **Check the fog.** A missing answer is either found in the searched ground or returned through the

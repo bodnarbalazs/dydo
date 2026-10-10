@@ -1,6 +1,6 @@
 # DYD-96 AltCover 9.0.102 native probe
 
-**DECIDED — result:** AltCover 9.0.102 passes physical-method identity, zero-hit retention, branch ownership, CC and same-line/ordinal isolation when the instrumented program is the runner's direct target. It **fails the required child-process aggregation case**: the parent run found both parent and child `.acv` spools and both assertions passed, but the child-executed lambda remained wholly unvisited. A direct run of the identical instrumented child records that lambda correctly. This is a material native semantic gap, so AltCover is not yet a credible DYD-96 route and C# remains gap/exit 2 (`G = 2`). Full-suite integration was not attempted.
+**DECIDED - result:** AltCover 9.0.102 passes physical-method identity, zero-hit retention, branch ownership, CC and same-line/ordinal isolation when the instrumented program is the runner's direct target. It **fails the required child-process aggregation case**: the parent run found both parent and child `.acv` spools and both assertions passed, but the child-executed lambda remained wholly unvisited. A direct run of the identical instrumented child records that lambda correctly. This is a material native semantic gap, so AltCover is not yet a credible DYD-96 route and C# remains gap/exit 2 (`G = 2`). Full-suite integration was not attempted.
 
 ## Question and answer condition
 

@@ -14,7 +14,7 @@ v1.3 documentation update complete. Rewrote about-dynadocs.md (human productivit
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\README.md — Created
+C:\Users\User\Desktop\Projects\DynaDocs\README.md - Created
 
 
 ## Review Summary

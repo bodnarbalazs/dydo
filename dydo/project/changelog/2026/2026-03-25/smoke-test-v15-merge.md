@@ -14,9 +14,9 @@ Merged worktree/smoke-test-v15 into master (fast-forward). Single commit adds Co
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Services\ConfigFactory.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\ConfigFactoryTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\TemplateCommand.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\ConfigFactory.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\ConfigFactoryTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\TemplateCommand.cs - Modified
 
 
 ## Review Summary

@@ -5,7 +5,7 @@ date: 2026-04-18
 area: platform
 ---
 
-# 017 — Stale-Free Semantics: Narrow Launcher-Alive Gate to Reservation Only
+# 017 - Stale-Free Semantics: Narrow Launcher-Alive Gate to Reservation Only
 
 The launcher-alive probe added to `IsEffectivelyFree` to fix the stale-dispatch double-claim bug pulled two consumer families in opposite directions: reservation paths want the strict gate, but display and human-selection paths want stale agents to appear claimable. This decision narrows the launcher probe to reservation only and lets `GetFreeAgents`-style queries return permissively, removing both the false-busy noise and the asymmetry.
 
@@ -18,7 +18,7 @@ process still appears in the OS process list.
 
 `IsEffectivelyFree` has two call-site families with different intuitions:
 
-- **Reservation (strict):** `ReserveAgent` (line 131) and — transitively —
+- **Reservation (strict):** `ReserveAgent` (line 131) and - transitively -
   `AgentSelector.TryReserveFromPool`. Any false positive here double-launches a
   terminal and strands the second Claude.
 - **Display / human selection (permissive):** `GetFreeAgents`,
@@ -30,7 +30,7 @@ process still appears in the OS process list.
   appear claimable; `dydo agent list --free` is an informational query.
 
 The two intuitions pull in opposite directions. The launcher probe is also noisy
-in practice — inquisition `stale-dydo-processes.md` F2 confirms that worktree
+in practice - inquisition `stale-dydo-processes.md` F2 confirms that worktree
 teardown routinely leaves stray dydo-related processes alive (watchdogs, orphan
 PowerShell `finally` blocks running `dydo worktree cleanup`), and the
 substring-match probe (`"{agent} --inbox"`) can pick up a departing PowerShell
@@ -51,13 +51,13 @@ Concretely:
 
 - `IsEffectivelyFree(AgentState state)` stays as it was *before* Adele's patch:
   `Free || (stale && (Dispatched || Queued))`. No launcher probe.
-- Add `IsReservable(AgentState state)` — private — that composes
+- Add `IsReservable(AgentState state)` - private - that composes
   `IsEffectivelyFree(state) && !(IsStaleDispatch(state) && IsLauncherAlive(state.Name))`.
 - `ReserveAgent` calls `IsReservable`. Every other call site keeps using
   `IsEffectivelyFree`.
 
-This is option (3) from Brian's brief — "both-permissive + a new explicit
-`ReserveStrict`" — chosen over option (1) "two methods, two behaviors" on
+This is option (3) from Brian's brief - "both-permissive + a new explicit
+`ReserveStrict`" - chosen over option (1) "two methods, two behaviors" on
 naming/clarity grounds (both options behave identically at the call sites; the
 named predicate makes the strict semantic self-documenting) and over option (2)
 "both-strict" because of the display-hiding failure mode described above.
@@ -69,10 +69,10 @@ named predicate makes the strict semantic self-documenting) and over option (2)
    display must not conceal plausible recovery targets. Serving both from
    `IsEffectivelyFree` forces a choice that's wrong for one audience.
 
-2. **The launcher probe has known noise sources.** F2's evidence — 15 stranded
+2. **The launcher probe has known noise sources.** F2's evidence - 15 stranded
    worktree directories on one dev machine, a per-worktree PowerShell `finally`
    block that can take seconds to run `dydo worktree cleanup`, and the substring
-   nature of the match — means false positives are rare but real. False
+   nature of the match - means false positives are rare but real. False
    positives in the display path silently hide reclaim candidates from humans
    (no error, no feedback loop). False positives in the reservation path just
    cause the caller to try another agent or see "no free agents", which is
@@ -84,11 +84,11 @@ named predicate makes the strict semantic self-documenting) and over option (2)
    `ReserveAgent` on each candidate in turn. A permissive selector that surfaces
    a stale+launcher-alive agent is harmless: `ReserveAgent` rejects it and the
    loop moves on. The only visible effect is a possibly-misleading
-   `dydo agent list --free` — which is exactly the informational-noise trade
+   `dydo agent list --free` - which is exactly the informational-noise trade
    point (2) already argues for accepting.
 
 4. **`ClaimAgent` (the manual `dydo agent claim Grace` path) doesn't go through
-   `IsEffectivelyFree` at all** — it goes through `HandleExistingSession`, which
+   `IsEffectivelyFree` at all** - it goes through `HandleExistingSession`, which
    already permits claiming over `Dispatched`/`Queued` freely. So this decision
    has no effect on the human-manual-claim path; it only clarifies which
    automated path gets which gate.
@@ -108,9 +108,9 @@ named predicate makes the strict semantic self-documenting) and over option (2)
 - `AgentSelector.TryReserveFromPool` may iterate through candidates that
   `ReserveAgent` then rejects. This is already the loop's contract
   (`ReserveAgent` can fail for lock-contention reasons too) and costs only the
-  process-list probe per reject — a cold path.
+  process-list probe per reject - a cold path.
 - `ReserveAgent`'s error message, when rejecting a stale+launcher-alive
-  candidate, should surface the reason — otherwise a human debugging a dispatch
+  candidate, should surface the reason - otherwise a human debugging a dispatch
   that "should have worked" sees only "not free (status: dispatched)" and is
   confused by the conflicting signal with `agent list`. This is a small
   implementation follow-up, captured below.
@@ -119,7 +119,7 @@ named predicate makes the strict semantic self-documenting) and over option (2)
 
 - Adele (or whoever lands the stale-dispatch fix) should extend
   `ReserveAgent`'s error text on the stale+launcher-alive branch, e.g.
-  `"Agent 'X' is not free (status: dispatched, launcher still active — try again or claim by name)."`
+  `"Agent 'X' is not free (status: dispatched, launcher still active - try again or claim by name)."`
   This prevents the list/reserve mismatch from becoming a confusing user
   experience.
 - Inquisition `stale-dydo-processes.md` issues #95-#98 (watchdog CWD / per-

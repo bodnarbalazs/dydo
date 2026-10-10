@@ -18,7 +18,7 @@ Implement iTerm2 window ID targeting fix. Read the detailed plan at dydo/agents/
 
 ## Review Summary
 
-Implemented iTerm2 window ID targeting to fix race conditions in back-to-back dispatches. GetITermWindowScript now captures window reference via 'set newWin to (create window with default profile)' and injects DYDO_WINDOW dynamically. GetITermTabScript accepts optional windowId parameter for targeting by ID with try/catch fallback. Launch() rebuilds shell components without windowName for iTerm so AppleScript injects the real ID. Added 9 new tests, updated 2 existing. One plan deviation: Test 3 asserted DoesNotContain('current window') but the on-error fallback legitimately uses it — changed assertion to DoesNotContain('tell current window') to test the primary targeting path while accepting the fallback.
+Implemented iTerm2 window ID targeting to fix race conditions in back-to-back dispatches. GetITermWindowScript now captures window reference via 'set newWin to (create window with default profile)' and injects DYDO_WINDOW dynamically. GetITermTabScript accepts optional windowId parameter for targeting by ID with try/catch fallback. Launch() rebuilds shell components without windowName for iTerm so AppleScript injects the real ID. Added 9 new tests, updated 2 existing. One plan deviation: Test 3 asserted DoesNotContain('current window') but the on-error fallback legitimately uses it - changed assertion to DoesNotContain('tell current window') to test the primary targeting path while accepting the fallback.
 
 ## Code Review
 

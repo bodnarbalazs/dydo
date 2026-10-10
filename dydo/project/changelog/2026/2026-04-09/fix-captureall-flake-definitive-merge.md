@@ -14,9 +14,9 @@ Merge of worktree/inquisition-template-system into master completed. The branch 
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalLauncher.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TerminalLauncherTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalLauncher.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TerminalLauncherTests.cs - Modified
 
 
 ## Review Summary

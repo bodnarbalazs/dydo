@@ -17,7 +17,7 @@ public class FolderScaffolder : IFolderScaffolder
             Directory.CreateDirectory(Path.Combine(basePath, folder));
 
         // The single SHARED scratch folder (gitignored): agents drop temporary work products
-        // here instead of polluting the repo root. No per-agent subfolders (DR-041 — identity
+        // here instead of polluting the repo root. No per-agent subfolders (DR-041 - identity
         // is assigned at spawn, nothing owns a named workspace).
         Directory.CreateDirectory(Path.Combine(basePath, "agents", "workspace"));
 

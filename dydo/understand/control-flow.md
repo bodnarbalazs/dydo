@@ -47,7 +47,7 @@ session or an invoked admiral can direct one per Issue.
 
 | Role | Kind | Runs as | Invoked by | Works in | Does | Returns to |
 |---|---|---|---|---|---|---|
-| human | human | the terminal | — | `main`, where his own commits need no Issue, and any session | thinks, files Projects, holds a Project's map by default and charts it with `wayfinder`, approves plans, answers Questions, confirms inquisitions, clicks the landing one Project at a time and an atomic Issue's reviewed PR, walks through; tells an invoked admiral after each of his board moves, and takes the map back at any time | — |
+| human | human | the terminal | - | `main`, where his own commits need no Issue, and any session | thinks, files Projects, holds a Project's map by default and charts it with `wayfinder`, approves plans, answers Questions, confirms inquisitions, clicks the landing one Project at a time and an atomic Issue's reviewed PR, walks through; tells an invoked admiral after each of his board moves, and takes the map back at any time | - |
 | co-thinker | skill | any session without an officer role | any session with an unripe idea | no branch; DRs and glossary on the current branch | homework, grilling, domain-modeling, recommendation; a DR when the ADR test passes; an atomic Issue with its five fields, Type and Mode | a DR (F), a Project through `to-project` (L), an atomic Issue (L) |
 | admiral | officer, optional | top-level session, explicit-only | the human, only when he wants a right hand for throughput, on a Project at any stage | `feature/<slug>` once the map holder opens one at Open; none before that, or on a Project with no feature branch | holds the map until the human takes it back; wakes on a captain's return or the human's word, reads the Project and acts: charts it with `wayfinder`, writes a plan only for a cross-cutting architecture contract and owns its review, puts approval to the human, commissions the first captain to open the feature, commissions captains, wires the merge order and re-wires it when a later PR is ready first, sets priority on what waits on the human, runs its wayfinding with the human, proposes the inquisition, files the landing and the walkthrough, closes | the human in its own session (C); the board (L) |
 | issue-captain | officer, the default, also agent | top-level for an atomic or HITL Issue; spawned by the human's session or an invoked admiral for an AFK one | the human's session, or an invoked admiral | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, takes an adjacent Issue only on the human's word, sets the status at every chain spawn, directs [code-writer] → [reviewer] on the parent or each lane and adds a spec review only on a risk its contract records, divides when the writer names lanes, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-issues or, on an atomic Issue, waits for the human's click, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
@@ -107,7 +107,7 @@ The model is supersymmetric: a captain's Issue is a Project one level down. The 
 statuses and the same chain hold at both levels; only the map holder changes.
 
 Capability rides with the delegation, not with the role. On every edge below, the delegating role
-picks the model — and the effort where the host exposes one — for the crew member it is about to spawn,
+picks the model - and the effort where the host exposes one - for the crew member it is about to spawn,
 weighing what that one task is worth. Nothing dydo compiles makes the choice for it;
 [Configuration](../reference/configuration.md) carries each host's resolution order and what its
 telemetry can and cannot prove afterwards.
@@ -350,65 +350,65 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 
 | # | Edge | Channel | Sender returns or writes | Receiver reads | Status set |
 |---|---|---|---|---|---|
-| 1 | human → co-thinker | C | the idea | about, architecture, glossary, linear-workspace-standard | — |
-| 2 | co-thinker → repository | F | a Decision Record; a glossary entry | — | — |
-| 3 | human → `to-project` → Linear | C, L | the Project: title, summary, intent, decisions taken, out of scope, links to the DR, glossary entries, source FutureFeature | — | Project `Backlog` |
-| 4 | co-thinker → Linear (atomic Issue) | L | an Issue with one Type, one Mode, outcome, owned paths, blockers, exact gates, base branch | — | `Todo` |
-| 5 | human → admiral | C | the Project, at any stage | the Project, its plan at the governing commit when one exists, every Issue contract, working-tree contract | — |
+| 1 | human → co-thinker | C | the idea | about, architecture, glossary, linear-workspace-standard | - |
+| 2 | co-thinker → repository | F | a Decision Record; a glossary entry | - | - |
+| 3 | human → `to-project` → Linear | C, L | the Project: title, summary, intent, decisions taken, out of scope, links to the DR, glossary entries, source FutureFeature | - | Project `Backlog` |
+| 4 | co-thinker → Linear (atomic Issue) | L | an Issue with one Type, one Mode, outcome, owned paths, blockers, exact gates, base branch | - | `Todo` |
+| 5 | human → admiral | C | the Project, at any stage | the Project, its plan at the governing commit when one exists, every Issue contract, working-tree contract | - |
 | 6 | map holder → Linear (chart) | L | through `wayfinder`: the map in the Project description; first Issues with one Type, a Mode where a captain holds the Type, the five fields or their Type's own template, and native blocking edges; Project-level Questions naming waiters, with priority | the Project, governing DRs, about, architecture, dydo-glossary, linear-workspace-standard | Project `Planning`; first Issues and Questions `Todo` |
-| 7 | map holder → repository, only for a cross-cutting architecture contract | F | the plan commit on `main` | — | — |
-| 8 | map holder → reviewer(project-plan) | R (spawn) | the plan path at its commit | the plan, the project-plan rubric, cited DRs and paths | — |
-| 9 | reviewer(project-plan) → map holder, Linear | R, L | the review block, as a Project update | — | — |
-| 10 | invoked admiral → human | C | the charted route and any passing plan, for approval; after two FAILs, the findings as the choice | — | any plan `reviewed`; Project `Planned` |
-| 11 | admiral → first Issue Captain, Linear | R, L | commission to open `feature/<slug>` from the approved main SHA before claim; the map in the Project description; base branch and blockers on every Issue, priority on every HITL one; the final Merge Sub-issue of every captain-held Issue that merges, created under it and blocked by the previous one in plan order | — | Project `In Progress` |
-| 12 | admiral → issue-captain (AFK) | R (spawn), L | the Issue key; assignment | the Issue's five fields, the plan at its governing commit, working-tree contract | — |
-| 13 | human → issue-captain (HITL, atomic, or any Issue without an invoked admiral) | C, L | the Issue key; assignment | the same | — |
-| 13b | issue-captain (top-level) → human, admiral | C, L | `done <key>` or `released <key>: <reason>` in its own session; the human tells the admiral | the record | — |
-| 14 | issue-captain → Issue | L, G | branch, base SHA, worktree path | — | — |
+| 7 | map holder → repository, only for a cross-cutting architecture contract | F | the plan commit on `main` | - | - |
+| 8 | map holder → reviewer(project-plan) | R (spawn) | the plan path at its commit | the plan, the project-plan rubric, cited DRs and paths | - |
+| 9 | reviewer(project-plan) → map holder, Linear | R, L | the review block, as a Project update | - | - |
+| 10 | invoked admiral → human | C | the charted route and any passing plan, for approval; after two FAILs, the findings as the choice | - | any plan `reviewed`; Project `Planned` |
+| 11 | admiral → first Issue Captain, Linear | R, L | commission to open `feature/<slug>` from the approved main SHA before claim; the map in the Project description; base branch and blockers on every Issue, priority on every HITL one; the final Merge Sub-issue of every captain-held Issue that merges, created under it and blocked by the previous one in plan order | - | Project `In Progress` |
+| 12 | admiral → issue-captain (AFK) | R (spawn), L | the Issue key; assignment | the Issue's five fields, the plan at its governing commit, working-tree contract | - |
+| 13 | human → issue-captain (HITL, atomic, or any Issue without an invoked admiral) | C, L | the Issue key; assignment | the same | - |
+| 13b | issue-captain (top-level) → human, admiral | C, L | `done <key>` or `released <key>: <reason>` in its own session; the human tells the admiral | the record | - |
+| 14 | issue-captain → Issue | L, G | branch, base SHA, worktree path | - | - |
 | 15 | issue-captain → code-writer | R (spawn) | the record to write, its kind | the owning Issue, and on a fix hop the FAIL block that sent it; the governing Project plan at its linked commit and the Decision Records it names; coding-standards | `Implementing` |
-| 16 | code-writer → issue-captain | R, L, G | before code, only when needed: one comment naming the lanes or the inexact contract line; after: the `IMPLEMENTED` line with implement SHA, behaviour, red proof, the suites and static gates run with exits, blocker | — | — |
-| 17 | issue-captain → Sub-issues | L, G | lane Sub-issues with the parent's Type and Mode, disjoint paths and branches, or retained Bug stages with native ordering and serial path transfer; one Merge Sub-issue per actual integration; a Question Sub-issue for local fog | — | lanes `Todo`; parent `In Progress` |
+| 16 | code-writer → issue-captain | R, L, G | before code, only when needed: one comment naming the lanes or the inexact contract line; after: the `IMPLEMENTED` line with implement SHA, behaviour, red proof, the suites and static gates run with exits, blocker | - | - |
+| 17 | issue-captain → Sub-issues | L, G | lane Sub-issues with the parent's Type and Mode, disjoint paths and branches, or retained Bug stages with native ordering and serial path transfer; one Merge Sub-issue per actual integration; a Question Sub-issue for local fog | - | lanes `Todo`; parent `In Progress` |
 | 18 | issue-captain → reviewer(spec), optional, for one risk the contract records, before the code | R (spawn) | the record carrying the captain's contract | that text on the Issue, the five fields, base SHA, branch, worktree, owned paths | `In Review` → `Implementing` |
 | 19 | issue-captain → code-writer, or docs-writer for a documentation change (fix hop) | R (spawn) | the Issue, the candidate, the review block that sent it | the Issue, the block, the plan, standards | `Implementing`, whatever the FAIL found |
-| 20 | code-writer or docs-writer (fix hop) → issue-captain | R, G | Issue key, fix SHA, each finding with what closed it, gates rerun | — | — |
+| 20 | code-writer or docs-writer (fix hop) → issue-captain | R, G | Issue key, fix SHA, each finding with what closed it, gates rerun | - | - |
 | 21 | delivery issue-captain → docs-writer | R (spawn) | the docs Issue and linked plan; for a record Feature, its exact owned record/navigation paths and the Inquisition's pinned packet | the delivery Issue, packet, about, writing-docs and working-tree retention contract | record Feature or other docs Issue `Implementing` |
-| 22 | docs-writer → issue-captain | R | ending commit SHA, files changed, what each says and why, witnesses, `dydo check` and gate results | — | — |
+| 22 | docs-writer → issue-captain | R | ending commit SHA, files changed, what each says and why, witnesses, `dydo check` and gate results | - | - |
 | 23 | issue-captain → reviewer(code \| docs) | R (spawn) | rubric name, `Contract: <KEY> description as of <Linear updatedAt>`, Candidate SHA, Base SHA, the writer's `IMPLEMENTED` line | the contract as of that `updatedAt` with outcome, scenarios, owned paths, gates; the rubric; the hops; the `IMPLEMENTED` line, rerun only on a stated doubt | `In Review` |
-| 24 | reviewer → issue-captain, record, PR | R, L, G | the review block in the standard's one-line `PASS` or `FAIL` form; observations after it | — | `Implementing` on FAIL, whatever it found |
+| 24 | reviewer → issue-captain, record, PR | R, L, G | the review block in the standard's one-line `PASS` or `FAIL` form; observations after it | - | `Implementing` on FAIL, whatever it found |
 | 25 | issue-captain → Merge Sub-issue (one per lane) | L, R (spawn), G | the lane branch at its PASS SHA; a code-writer maps conflicts and gates, merges it into the parent, a resolution that refactored leaving its code no worse than either side, then a fresh `reviewer(merge)` over the parent | the Merge template's fields: source, target, combined gates | lane `Ready to Merge` at its PASS, `Done` when merged; after the last, parent `In Review` for the review of the whole |
 | 26 | issue-captain → admiral | G, L, R | the PR into the feature branch with the block; `done <key>: PR ready` | the record | parent `Ready to Merge` |
-| 27 | admiral → issue-captain | R (message) | `merge`, when the Merge Sub-issue's blocker clears, after re-wiring the order when a later PR was ready first; or a fresh commission from the record | the Merge Sub-issue, the PR, the feature SHA | — |
+| 27 | admiral → issue-captain | R (message) | `merge`, when the Merge Sub-issue's blocker clears, after re-wiring the order when a later PR was ready first; or a fresh commission from the record | the Merge Sub-issue, the PR, the feature SHA | - |
 | 28 | issue-captain → Merge Sub-issue (into the feature) | R (spawn), G | a code-writer maps the conflicts and combined gates, merges `--no-ff` and resolves, a resolution that refactored leaving its code no worse than either side, then a fresh `reviewer(merge)` over the integrated feature | the merge commit, both parents, the landed Issue's gates, the plan at its governing commit | Sub-issue and primary `Done` on PASS |
-| 29 | reviewer(merge) → issue-captain, Merge Sub-issue | R, L | the review block naming the merge commit and the gates rerun | — | — |
-| 30 | issue-captain → admiral | R, L | `done <key>: merged`; worktrees and branches cleaned | — | — |
-| 31 | map holder → Linear, repository | L, F | new, split, dropped or resequenced Issues and Project-level map-holder-held Issues; dated amendments committed to a repository plan, where one exists | a fresh `reviewer(project-plan)` reads an amendment that moves destination, scope, acceptance or architecture | — |
-| 32 | admiral → Linear (inquisition proposal) | L | an Inquisition Issue under the Project: scope, the parts and lenses, the cost, the feature SHA | — | `Backlog` |
-| 33 | human → Linear, admiral (inquisition confirmation) | L, C | the Inquisition Issue moved to `Todo`, or `Canceled` with the reason; the human tells the admiral | — | `Todo` |
-| 34 | admiral → issue-captain (inquisition) | R (spawn), L | the Inquisition Issue key; assignment | the Issue, the plan at its governing commit, the integrated feature SHA, working-tree contract | — |
-| 35 | inquisition captain → Git | G | `inquisition/<slug>` off the feature SHA, never merged; a child branch per proof | — | — |
+| 29 | reviewer(merge) → issue-captain, Merge Sub-issue | R, L | the review block naming the merge commit and the gates rerun | - | - |
+| 30 | issue-captain → admiral | R, L | `done <key>: merged`; worktrees and branches cleaned | - | - |
+| 31 | map holder → Linear, repository | L, F | new, split, dropped or resequenced Issues and Project-level map-holder-held Issues; dated amendments committed to a repository plan, where one exists | a fresh `reviewer(project-plan)` reads an amendment that moves destination, scope, acceptance or architecture | - |
+| 32 | admiral → Linear (inquisition proposal) | L | an Inquisition Issue under the Project: scope, the parts and lenses, the cost, the feature SHA | - | `Backlog` |
+| 33 | human → Linear, admiral (inquisition confirmation) | L, C | the Inquisition Issue moved to `Todo`, or `Canceled` with the reason; the human tells the admiral | - | `Todo` |
+| 34 | admiral → issue-captain (inquisition) | R (spawn), L | the Inquisition Issue key; assignment | the Issue, the plan at its governing commit, the integrated feature SHA, working-tree contract | - |
+| 35 | inquisition captain → Git | G | `inquisition/<slug>` off the feature SHA, never merged; a child branch per proof | - | - |
 | 36 | inquisition captain → inquisitors | R (spawn) | one part or one lens each, the scope, the plan, the Issue review evidence | the assignment with its evidence, about, architecture, coding-standards | `In Progress` |
-| 37 | inquisitor → inquisition captain | R | findings with `file:line`, severity and proof; hypotheses of what could go wrong, each with the test that would decide it, or, in prose, docs or a prompt file, both contradicting passages quoted at `file:line`, which are its reproduction with no test and no proof branch | — | — |
-| 38 | inquisition captain → code-writer (proof-only) | R (spawn) | one code hypothesis, its child branch off the inquisition branch, source read-only | the hypothesis as the Issue, coding-standards | — |
-| 39 | code-writer (proof-only) → inquisition captain | R, G | `confirmed` with the red test at its SHA, `not reproduced`, or `inconclusive`, with the observation that decided it | — | — |
+| 37 | inquisitor → inquisition captain | R | findings with `file:line`, severity and proof; hypotheses of what could go wrong, each with the test that would decide it, or, in prose, docs or a prompt file, both contradicting passages quoted at `file:line`, which are its reproduction with no test and no proof branch | - | - |
+| 38 | inquisition captain → code-writer (proof-only) | R (spawn) | one code hypothesis, its child branch off the inquisition branch, source read-only | the hypothesis as the Issue, coding-standards | - |
+| 39 | code-writer (proof-only) → inquisition captain | R, G | `confirmed` with the red test at its SHA, `not reproduced`, or `inconclusive`, with the observation that decided it | - | - |
 | 40 | inquisition captain → Linear, Git, Bug captain | L, G | one Bug per confirmed problem under the Project, feature base, reproduction SHA and pushed independent named ref (a prose Bug: its quoted passages), Inquisition link; retention ownership transfers only on recorded Bug-captain adoption | Bug captain reads the reproduction as normal-chain input and records cleanup responsibility | Bugs `Todo` |
 | 41 | inquisition captain → admiral, Linear | R, L, G | completed pinned packet: feature SHA, scope, parts/lenses, findings, hypotheses/verdicts and Bugs; pushed/posted resume state; `released <key>: record delivery` before record Feature/blocker exists | this return wakes admiral to read packet and working-tree retention contract | Inquisition released `Todo`, unassigned, worktree removed; no not-yet-created blocker required |
 | 41a | admiral → record Feature captain, Linear | R (spawn), L | on row41 wake, first contract separate primary Feature/AFK on retained feature with exact record and authored navigation paths, packet and gates; wire only Inquisition blocked by Feature before generic pickup, then commission record captain | record captain reads contract/packet and directs docs-writer → docs review → final Merge Sub-issue | record Feature `Todo`, pickable from packet; audit is not recommissioned from temporary Todo gap |
 | 41b | record Feature captain → admiral, Inquisition Issue | R, L, G | `done <key>: merged`; exact record path/blob or digest, delivery merge SHA and retained feature ref, review/gates on delivery records | normal board loop reads delivery `Done` and resumes released Inquisition captain | record Feature `Done`; Inquisition resumes `In Progress` |
 | 42 | inquisition captain → admiral, Linear | R, L | `done <key>` after verifying Bugs, exact record content and delivery merge ancestry/reachability on retained feature; verification on Issue, audit branch deleted, open Bug proof refs retained with named owners | admiral reads durable completion evidence | Inquisition `Done` |
-| 43 | admiral → Linear (landing) | L | the landing Merge Issue: `main` into the feature, gates, merge review with acceptance proof, the PR into `main`, the walkthrough prepared | — | `Todo`, blocked by unresolved prerequisites for this landing: delivery, confirmed Inquisition/record and required fixes; exclude self and later/deferred work |
-| 44 | landing captain → Git, admiral | G, R | the PR into `main` with its PASS block; `done <key>: PR ready` | — | landing `Ready to Merge` |
-| 45 | admiral → human → Git | C, G | the PR to click and the walkthrough that follows; the feature merged into `main` as a merge commit, one Project at a time; the human tells the admiral, which resumes the landing captain to close and clean up the merged feature: `done <key>: merged` | — | landing `Done`, set by its captain |
-| 46 | admiral → Walkthrough Issue, human | L, C | the Issue; request for the human to invoke `walkthrough` in this session, then the four-part tour; commission first fix Captain to re-cut the feature if findings reopen the lap | — | `In Progress` → `Done`; findings as Issues; Project `Completed` when none |
-| 47 | crew → issue-captain (hand-raise) | R | the question, what was searched, why it blocks, facts or options found | — | — |
-| 48 | issue-captain → research | R (spawn) | the question and where the findings land | the question and destination, about, architecture | — |
-| 49 | research → issue-captain | R, L or F | one-line answer, destination, unsettled points; the report as an Issue comment or scratch file | — | Research Issue `Done` by the map holder |
-| 50 | issue-captain → Linear (local fog) | L | a Question Sub-issue under the delivery parent, wired as blocker, with its priority by the standard's guide; the record is the whole report | — | Question `Todo` |
-| 51 | issue-captain → admiral (Project-level fog, or any release) | R, L, G | `released <key>: <reason>`; prepared packet and resume SHA on the record, branch pushed, worktree removed, parent unassigned | — | parent `Todo`, blocker wired |
-| 52 | admiral → Linear, human | L | a Project-level Question Issue with homework, options, recommendation, wired to every waiter, with its priority by the standard's guide | — | `Todo` |
-| 53 | human → Linear, repository, admiral | L, F, C | the answer on the Issue; a DR when it qualifies; the human tells the admiral | — | Question `Done` |
-| 54 | admiral (every wake: a return or the human's word) → Linear | L, R | commissions every pickable Issue, blocker-cleared ones included; re-wires the merge order when a later PR is ready first; resumes every Merge Sub-issue whose turn came; re-sets priority on what waits on the human | the board | — |
-| 55 | human → chief-of-staff | C | a request for triage | the board: open Questions, the gates, Projects in flight; working-tree contract | — |
-| 56 | chief-of-staff → human, Linear | C, L | three lists with recommendations; mechanical fixes; delivery staged on its Project for the admiral | — | — |
+| 43 | admiral → Linear (landing) | L | the landing Merge Issue: `main` into the feature, gates, merge review with acceptance proof, the PR into `main`, the walkthrough prepared | - | `Todo`, blocked by unresolved prerequisites for this landing: delivery, confirmed Inquisition/record and required fixes; exclude self and later/deferred work |
+| 44 | landing captain → Git, admiral | G, R | the PR into `main` with its PASS block; `done <key>: PR ready` | - | landing `Ready to Merge` |
+| 45 | admiral → human → Git | C, G | the PR to click and the walkthrough that follows; the feature merged into `main` as a merge commit, one Project at a time; the human tells the admiral, which resumes the landing captain to close and clean up the merged feature: `done <key>: merged` | - | landing `Done`, set by its captain |
+| 46 | admiral → Walkthrough Issue, human | L, C | the Issue; request for the human to invoke `walkthrough` in this session, then the four-part tour; commission first fix Captain to re-cut the feature if findings reopen the lap | - | `In Progress` → `Done`; findings as Issues; Project `Completed` when none |
+| 47 | crew → issue-captain (hand-raise) | R | the question, what was searched, why it blocks, facts or options found | - | - |
+| 48 | issue-captain → research | R (spawn) | the question and where the findings land | the question and destination, about, architecture | - |
+| 49 | research → issue-captain | R, L or F | one-line answer, destination, unsettled points; the report as an Issue comment or scratch file | - | Research Issue `Done` by the map holder |
+| 50 | issue-captain → Linear (local fog) | L | a Question Sub-issue under the delivery parent, wired as blocker, with its priority by the standard's guide; the record is the whole report | - | Question `Todo` |
+| 51 | issue-captain → admiral (Project-level fog, or any release) | R, L, G | `released <key>: <reason>`; prepared packet and resume SHA on the record, branch pushed, worktree removed, parent unassigned | - | parent `Todo`, blocker wired |
+| 52 | admiral → Linear, human | L | a Project-level Question Issue with homework, options, recommendation, wired to every waiter, with its priority by the standard's guide | - | `Todo` |
+| 53 | human → Linear, repository, admiral | L, F, C | the answer on the Issue; a DR when it qualifies; the human tells the admiral | - | Question `Done` |
+| 54 | admiral (every wake: a return or the human's word) → Linear | L, R | commissions every pickable Issue, blocker-cleared ones included; re-wires the merge order when a later PR is ready first; resumes every Merge Sub-issue whose turn came; re-sets priority on what waits on the human | the board | - |
+| 55 | human → chief-of-staff | C | a request for triage | the board: open Questions, the gates, Projects in flight; working-tree contract | - |
+| 56 | chief-of-staff → human, Linear | C, L | three lists with recommendations; mechanical fixes; delivery staged on its Project for the admiral | - | - |
 | 57 | human → issue-captain (takeover) | C via the admiral, or the sub-agent's transcript | `release`: the captain releases as in row 51; the human opens a top-level captain on the Issue | the record's resume point | parent `Todo` |
 
 ## 6. Exceptions
@@ -504,8 +504,8 @@ climbs the ladder before work resumes.
 
 The approved route fixes the destination, not every turn. The map holder creates, splits, drops and
 resequences Issues and records discoveries; where a repository plan exists, it commits dated
-`## Amendment — <date>` sections to it. With the project-planner gone, the map holder commits a
-repository plan — the initial plan and its amendments alike — on `main` through an atomic docs Issue
+`## Amendment - <date>` sections to it. With the project-planner gone, the map holder commits a
+repository plan - the initial plan and its amendments alike - on `main` through an atomic docs Issue
 when the Project has no feature branch yet, or none exists at all for a standalone cross-cutting
 plan, and on the Project's feature branch once one is open. Route-only amendments need no review. An amendment
 that changes destination, scope, acceptance criteria or governing architecture goes back through
@@ -644,7 +644,7 @@ flowchart LR
 On Claude Code a one-off steer needs no release: the human opens the captain's transcript from the
 subagent panel and sends it a message there. Anything longer is a release and a top-level captain.
 The steer is a Claude Code convenience; the floor on both hosts is the release.
-[DYD-88 — Codex sub-agent lifecycle observations — 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) established returned-sub-agent resume,
+[DYD-88 - Codex sub-agent lifecycle observations - 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) established returned-sub-agent resume,
 while passive wake and human-origin steering remain unestablished on Codex.
 
 ### 6.11 A Bug
@@ -733,7 +733,7 @@ session rather than an answer. Then, in order:
    review, admiral C one. The human takes the next raw idea to a co-thinker, or reads the walkthrough
    of what landed since morning.
 
-## 8. Prompt-file propagation — DYD-90
+## 8. Prompt-file propagation - DYD-90
 
 The authored contacts now carry DR 047. DYD-90's specification pins the file boundary and proof;
 its candidate receives independent docs review and root contact review before integration.
@@ -763,9 +763,9 @@ Completed rows below name the source, not a claim that generated runtime output 
 
 ## Related
 
-- [Work Model](./work-model.md) — the flow map, officers and crew, reviews and inquisition this map expands
-- [Linear Issue Lifecycle](./task-lifecycle.md) — what an Issue carries and how it is claimed and merged
-- [Working-Tree Contract](../guides/working-tree-contract.md) — branches, worktrees, hops, cleanup
-- [Linear Workspace Standard](../reference/linear-workspace-standard.md) — statuses, Types, Mode, templates
-- [dydo Glossary](../reference/dydo-glossary.md) — the locked vocabulary
-- [DR 047](../project/decisions/047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md) — the decisions this map draws
+- [Work Model](./work-model.md) - the flow map, officers and crew, reviews and inquisition this map expands
+- [Linear Issue Lifecycle](./task-lifecycle.md) - what an Issue carries and how it is claimed and merged
+- [Working-Tree Contract](../guides/working-tree-contract.md) - branches, worktrees, hops, cleanup
+- [Linear Workspace Standard](../reference/linear-workspace-standard.md) - statuses, Types, Mode, templates
+- [dydo Glossary](../reference/dydo-glossary.md) - the locked vocabulary
+- [DR 047](../project/decisions/047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md) - the decisions this map draws

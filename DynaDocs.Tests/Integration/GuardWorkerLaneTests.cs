@@ -6,7 +6,7 @@ using DynaDocs.Commands;
 /// Guard pipeline integration tests for the Tier-2 worker lane and the universal
 /// layers that replaced per-role RBAC (Decision 024). Worker calls carry
 /// agent_id/agent_type in the hook payload; only off-limits, dangerous-bash,
-/// and nudges apply to them — no claim, no role, no staged onboarding.
+/// and nudges apply to them - no claim, no role, no staged onboarding.
 /// </summary>
 [Collection("Integration")]
 public class GuardWorkerLaneTests : IntegrationTestBase
@@ -15,7 +15,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         $"{{\"session_id\":\"{TestSessionId}\",\"agent_id\":\"wkr-test-1\",\"agent_type\":\"reviewer\","
         + $"\"tool_name\":\"{toolName}\",\"tool_input\":{inputJson}}}";
 
-    #region Worker Lane — Universal Layers Only
+    #region Worker Lane - Universal Layers Only
 
     [Fact]
     public async Task Worker_NoClaim_CanReadSourceFile()
@@ -135,7 +135,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         await InitProjectAsync();
 
         // dydo/_system/** and dydo.json are agent-untouchable system off-limits.
-        // Use ABSOLUTE paths — that's what Claude Code's hook actually delivers.
+        // Use ABSOLUTE paths - that's what Claude Code's hook actually delivers.
         var systemAbs = Path.Combine(TestDir, "dydo", "_system", "audit", "2026", "x.json").Replace('\\', '/');
         var audit = await GuardWithStdinAsync(WorkerJson("Write", $"{{\"file_path\":\"{systemAbs}\"}}"));
         audit.AssertExitCode(2);
@@ -212,7 +212,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        // Only off-limits and nudges constrain writes now — no RBAC, no identity gate.
+        // Only off-limits and nudges constrain writes now - no RBAC, no identity gate.
         var result = await GuardAsync("edit", "dydo/project/decisions/099-test.md");
 
         result.AssertSuccess();

@@ -62,7 +62,7 @@ public class DocScannerTests : IDisposable
     [Fact]
     public void ScanDirectory_ExcludesAgentsWorkspace()
     {
-        // The shared scratch workspace is not documentation — the scanExclude invariant
+        // The shared scratch workspace is not documentation - the scanExclude invariant
         // is the ONE mechanism that keeps every rule and mirror away from it.
         WriteDoc("understand/about.md");
         WriteDoc("agents/workspace/scratch-notes.md");

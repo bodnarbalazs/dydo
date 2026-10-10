@@ -4,7 +4,7 @@ type: changelog
 date: 2026-09-27
 ---
 
-# dydo 3.1.1 — Map polish
+# dydo 3.1.1 - Map polish
 
 dydo 3.1.1 is a refinement release for the `dydo map` viewer introduced in 3.1.0: a faster way to
 find a Project, a dark theme, and a Refresh that updates the map without losing your place. It also
@@ -59,5 +59,5 @@ use the picker, dark mode or Refresh.
 
 ## Related
 
-- [dydo 3.1.0 — Linear project map](../2026-09-25/dydo-3-1-0-linear-project-map.md) — the release
+- [dydo 3.1.0 - Linear project map](../2026-09-25/dydo-3-1-0-linear-project-map.md) - the release
   this refines.

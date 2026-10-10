@@ -14,9 +14,9 @@ Fixed 2 of 4 gap_check blockers (the other 2 were already resolved). (1) Synced 
 
 ## Files Changed
 
-C:/Users/User/Desktop/Projects/DynaDocs/Commands/smoke-final4-b.txt — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\DispatchService.cs — Modified
+C:/Users/User/Desktop/Projects/DynaDocs/Commands/smoke-final4-b.txt - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\DispatchService.cs - Modified
 
 
 ## Review Summary

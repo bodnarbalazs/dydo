@@ -10,7 +10,7 @@ Follow-up on the `investigate-worktree-race` fix after reviewer Brian FAILED the
 
 # Brief: address reviewer findings on investigate-worktree-race
 
-Reviewer Brian FAILED the first-round review. Full report lives at `dydo/agents/Brian/archive/20260424-163706/review-investigate-worktree-race.md` — read it first, it is concise and correct. Your job is to land the two substantive fixes below. Do not touch anything else.
+Reviewer Brian FAILED the first-round review. Full report lives at `dydo/agents/Brian/archive/20260424-163706/review-investigate-worktree-race.md` - read it first, it is concise and correct. Your job is to land the two substantive fixes below. Do not touch anything else.
 
 ## Context
 
@@ -18,7 +18,7 @@ Primary bug (already fixed on master): `Commands/WorktreeCommand.cs :: FinalizeM
 
 The review did NOT find a logic bug in the fix. It found a weak test and a misleading log line.
 
-## Fix 1 — strengthen the regression test (blocking)
+## Fix 1 - strengthen the regression test (blocking)
 
 `DynaDocs.Tests/Commands/WorktreeCommandTests.cs :: Merge_Finalize_SkipsDirectoryRemoval_WhenOtherAgentReferences` currently passes for the wrong reason: Brian's setup only writes `.worktree`, not `.worktree-path`. After `RemoveAllMarkers` runs for Adele, `ResolveWorktreePath` returns null and the whole refs>0 branch is skipped. In production `Services/DispatchService.cs :: InheritWorktree` (lines ~384-397) copies `.worktree-path`, `.worktree-base`, and `.worktree-root` alongside `.worktree`. Mirror that.
 
@@ -30,9 +30,9 @@ File.WriteAllText(Path.Combine(brianWs, ".worktree-path"), worktreePath);
 
 (`worktreePath` is already in scope.)
 
-Also add a stdout assertion to pin the reference-check branch. Capture stdout from the `ExecuteMerge` call and assert it contains `"still referencing"` — the informational line from `FinalizeMerge:913`, emitted only on the refs>0 branch. Use the `CaptureStdout` / `CaptureAll` helper already used around lines 135-160, 633, 883, 1106, 1626.
+Also add a stdout assertion to pin the reference-check branch. Capture stdout from the `ExecuteMerge` call and assert it contains `"still referencing"` - the informational line from `FinalizeMerge:913`, emitted only on the refs>0 branch. Use the `CaptureStdout` / `CaptureAll` helper already used around lines 135-160, 633, 883, 1106, 1626.
 
-## Fix 2 — reword misleading "cleaned up" line
+## Fix 2 - reword misleading "cleaned up" line
 
 `Commands/WorktreeCommand.cs:924`:
 
@@ -48,17 +48,17 @@ Console.WriteLine($"Merge finalized. Worktree {worktreeId} branch deleted.");
 
 ## Don't touch
 
-- The `FinalizeMerge` reorder itself — correct.
-- The `CountWorktreeReferences` reference-check — correct.
-- `Services/TerminalLauncher.cs` and `TerminalLauncherTests.cs :: Launch_WorkingDirectoryMissing_DoesNotStartProcess` — reviewer approved.
-- `Services/WatchdogService.cs` and its tests — separate `fix-watchdog-anchor-regression` task, already passed review (Dexter LGTM 3781/3781) and awaiting human approval. Don't flag those as your problem.
-- `DynaDocs.csproj` / `npm/package.json` version bumps — unrelated, leave them.
+- The `FinalizeMerge` reorder itself - correct.
+- The `CountWorktreeReferences` reference-check - correct.
+- `Services/TerminalLauncher.cs` and `TerminalLauncherTests.cs :: Launch_WorkingDirectoryMissing_DoesNotStartProcess` - reviewer approved.
+- `Services/WatchdogService.cs` and its tests - separate `fix-watchdog-anchor-regression` task, already passed review (Dexter LGTM 3781/3781) and awaiting human approval. Don't flag those as your problem.
+- `DynaDocs.csproj` / `npm/package.json` version bumps - unrelated, leave them.
 
 ## Verification
 
-1. `python DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~WorktreeCommandTests"` — all green, including strengthened test.
-2. `python DynaDocs.Tests/coverage/run_tests.py` — full suite, expect 3781/3781.
-3. `python DynaDocs.Tests/coverage/gap_check.py` — exit 0.
+1. `python DynaDocs.Tests/coverage/run_tests.py -- --filter "FullyQualifiedName~WorktreeCommandTests"` - all green, including strengthened test.
+2. `python DynaDocs.Tests/coverage/run_tests.py` - full suite, expect 3781/3781.
+3. `python DynaDocs.Tests/coverage/gap_check.py` - exit 0.
 
 ## When done
 
@@ -78,12 +78,12 @@ Second-round review of investigate-worktree-race-review-fixes.
 
 Charlie (code-writer) addressed the two reviewer findings from Brian's first-round FAIL:
 
-Fix 1 — DynaDocs.Tests/Commands/WorktreeCommandTests.cs :: Merge_Finalize_SkipsDirectoryRemoval_WhenOtherAgentReferences
+Fix 1 - DynaDocs.Tests/Commands/WorktreeCommandTests.cs :: Merge_Finalize_SkipsDirectoryRemoval_WhenOtherAgentReferences
 - Added File.WriteAllText(Path.Combine(brianWs, ".worktree-path"), worktreePath) to mirror Services/DispatchService.cs :: InheritWorktree dispatch-time state.
 - Switched ExecuteMerge call to CaptureAll(...) and added Assert.Contains("still referencing", stdout) to pin the CountWorktreeReferences refs>0 branch (FinalizeMerge:913).
 
-Fix 2 — Commands/WorktreeCommand.cs:924
-- Reworded "cleaned up." to "branch deleted." — true in both teardown and skip-teardown paths.
+Fix 2 - Commands/WorktreeCommand.cs:924
+- Reworded "cleaned up." to "branch deleted." - true in both teardown and skip-teardown paths.
 
 Untouched per the brief: FinalizeMerge reorder, CountWorktreeReferences, TerminalLauncher + its test, WatchdogService (separate task), version bumps.
 

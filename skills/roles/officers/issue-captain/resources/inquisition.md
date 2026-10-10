@@ -1,6 +1,6 @@
 # Contract an Inquisition
 
-The human has confirmed its scope and cost. Pin the integrated feature SHA and plan, then make the
+The user has confirmed its scope and cost. Pin the integrated feature SHA and plan, then make the
 sweep and its proofs bounded. It files findings; it has no PASS/FAIL verdict.
 
 1. Name parts and cross-cutting lenses, one bounded brief per read-only inquisitor: one part or

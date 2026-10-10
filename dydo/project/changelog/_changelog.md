@@ -29,7 +29,7 @@ changelog/
     └── ...
 ```
 
-> **Note:** This structure is a suggestion. Flat organization or other schemes work fine—dydo doesn't enforce changelog folder structure.
+> **Note:** This structure is a suggestion. Flat organization or other schemes work fine-dydo doesn't enforce changelog folder structure.
 
 ## File Format
 
@@ -41,12 +41,13 @@ Required sections:
 
 ## Releases
 
-- [dydo 3.1.5 — Skill release preparation](./2026/2026-10-05/dydo-3-1-5-skill-release.md)
-- [dydo 3.1.3 — Map change memory](./2026/2026-10-04/dydo-3-1-3-map-change-memory.md)
-- [dydo 3.1.2 — Map labels](./2026/2026-10-02/dydo-3-1-2-map-labels.md)
-- [dydo 3.1.1 — Map polish](./2026/2026-09-27/dydo-3-1-1-map-polish.md)
-- [dydo 3.1.0 — Linear project map](./2026/2026-09-25/dydo-3-1-0-linear-project-map.md)
-- [dydo 3.0.0 — Linear PM and Notion runtime removal](./2026/2026-08-27/dydo-3-0-0-linear-pm-and-notion-runtime-removal.md)
+- [dydo 3.2.0 - Sitrep and skill voice](./2026/2026-10-10/dydo-3-2-0-sitrep-and-skill-voice.md)
+- [dydo 3.1.5 - Skill release preparation](./2026/2026-10-05/dydo-3-1-5-skill-release.md)
+- [dydo 3.1.3 - Map change memory](./2026/2026-10-04/dydo-3-1-3-map-change-memory.md)
+- [dydo 3.1.2 - Map labels](./2026/2026-10-02/dydo-3-1-2-map-labels.md)
+- [dydo 3.1.1 - Map polish](./2026/2026-09-27/dydo-3-1-1-map-polish.md)
+- [dydo 3.1.0 - Linear project map](./2026/2026-09-25/dydo-3-1-0-linear-project-map.md)
+- [dydo 3.0.0 - Linear PM and Notion runtime removal](./2026/2026-08-27/dydo-3-0-0-linear-pm-and-notion-runtime-removal.md)
 
 ---
 

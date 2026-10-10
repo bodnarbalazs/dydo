@@ -64,12 +64,12 @@ stage() {
 
 # say "..." prints a plain instruction line.
 say()  { printf '  %s\n' "$1"; }
-# step "..." is a numbered-feeling action the human takes in the browser.
+# step "..." is a numbered-feeling action the user takes in the browser.
 step() { printf '  %s•%s %s\n' "$BLUE" "$RESET" "$1"; }
 note() { printf '  %s%s%s\n' "$DIM" "$1" "$RESET"; }
 warn() { printf '  %s⚠ %s%s\n' "$YELLOW" "$1" "$RESET"; }
 
-# open_url URL opens it in the human's browser, cross-platform incl. WSL.
+# open_url URL opens it in the user's browser, cross-platform incl. WSL.
 open_url() {
   local url="$1"
   printf '  %s↗ opening%s %s\n' "$GREEN" "$RESET" "$url"
@@ -81,7 +81,7 @@ open_url() {
   } >/dev/null 2>&1 || warn "couldn't open a browser, so visit it manually: $url"
 }
 
-# pause "msg" waits for the human to confirm they've done the manual part.
+# pause "msg" waits for the user to confirm he's done the manual part.
 pause() {
   printf '  %s%s%s ' "$DIM" "${1:-Press Enter to continue}" "$RESET"
   read -r _ || true
@@ -187,7 +187,7 @@ finish() {
 }
 
 # ──────────────────────────────────────────────────────────────────────────
-# STAGES: author this section. One stage() per step the human takes.
+# STAGES: author this section. One stage() per step the user takes.
 # Replace the example below. Set TOTAL_STAGES to match the stages you write.
 # ──────────────────────────────────────────────────────────────────────────
 

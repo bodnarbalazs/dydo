@@ -21,7 +21,7 @@ Birds-eye co-thinking on the dydo 2.0 vision (as Brian, co-thinker), graduated t
 
 ## Files Changed
 
-Decisions 024/026/028, backlog files, issue corpus sweep, task/log/notes in agents/Brian — implementation commits by Tier-2 workers via run-sprint (see git log ca55fe7..bdfba00).
+Decisions 024/026/028, backlog files, issue corpus sweep, task/log/notes in agents/Brian - implementation commits by Tier-2 workers via run-sprint (see git log ca55fe7..bdfba00).
 
 ## Review Summary
 

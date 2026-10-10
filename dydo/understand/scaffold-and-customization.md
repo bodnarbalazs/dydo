@@ -16,8 +16,8 @@ standard: `name` and `description` in the
 frontmatter, the methodology in the body, and optional `references/`, `scripts/`, `assets/`, or a
 skill's own `resources/` beside it. The canonical tree sorts skills by kind: `<category>` is
 `roles/officers`, `roles/crew`, `engineering` or `productivity`. Claude frontmatter and Codex
-`agents/openai.yaml` stay in that one folder. `node setup-skills.mjs` walks the tree by rule — a
-folder holding `SKILL.md` is a skill, any other folder a category — and projects the whole folder flat (no category level)
+`agents/openai.yaml` stay in that one folder. `node setup-skills.mjs` walks the tree by rule - a
+folder holding `SKILL.md` is a skill, any other folder a category - and projects the whole folder flat (no category level)
 into `.claude/skills/<name>` and
 `.agents/skills/<name>` with a POSIX directory symlink or Windows junction. OpenCode is not a supported
 host: it may read both roots, but that is untested, dydo has no OpenCode init mode, and no
@@ -26,11 +26,11 @@ host: it may read both roots, but that is untested, dydo has no OpenCode init mo
 ## Links
 
 - A project document link names a repository-root literal path in a code span, read from the
-  repository root: "From the repository root, read `dydo/understand/architecture.md`" — never a
+  repository root: "From the repository root, read `dydo/understand/architecture.md`" - never a
   `../` climb, because the identical file is read at two different depths: canonically at
   `skills/<category>/<name>/`, and through the host projection at `.claude/skills/<name>/` or
-  `.agents/skills/<name>/`. The two resolvers disagree — lexical `..` normalization against the
-  projected path versus POSIX `..` applied to the physical parent once the symlink is followed — so
+  `.agents/skills/<name>/`. The two resolvers disagree - lexical `..` normalization against the
+  projected path versus POSIX `..` applied to the physical parent once the symlink is followed - so
   no single relative climb is correct from every install location.
 - A role's own resource is linked `resources/<name>.md`, resolved from the skill folder.
 
@@ -42,7 +42,7 @@ host reads are in [Customizing Roles](../guides/customizing-roles.md).
 
 Setup preflights the whole plan before it writes anything: a missing target is planned for creation,
 an existing projection that already resolves to the canonical folder is accepted, and a link left by
-an older layout of `skills/` — even one now dangling because a skill moved categories — is migrated to
+an older layout of `skills/` - even one now dangling because a skill moved categories - is migrated to
 its current canonical path rather than refused. Any ordinary file, directory, or link to a target
 outside the repository's `skills/` tree still stops the run at the first such collision it finds,
 naming it and leaving it and all host configuration and unrelated skills untouched. Resolve the named
@@ -56,7 +56,7 @@ documents under `dydo/reference/` and `dydo/guides/` are written once; from then
 them in place. `dydo init` tops up `_system/types.json` rather than comparing it.
 
 Their source is the `Scaffold/` directory in the dydo repository, embedded in the binary file by
-file. It mirrors the layout it produces under their final names — `Scaffold/dydo/**` becomes the
+file. It mirrors the layout it produces under their final names - `Scaffold/dydo/**` becomes the
 project's `dydo/` tree, and `Scaffold/entry-point.md` becomes both `CLAUDE.md` and `AGENTS.md` with
 `{{PROJECT_NAME}}` substituted. There is no template language and no placeholder anywhere else:
 each file is copied verbatim, and only a file that does not already exist is written.
@@ -70,7 +70,7 @@ Nothing in `dydo.json` binds a role to a model or an effort; the caller picks ca
 
 ## Related
 
-- [Customizing Roles](../guides/customizing-roles.md) — frontmatter and what each host reads
-- [Architecture Overview](./architecture.md) — where authoring sits in the system
-- [dydo Commands Reference](../reference/dydo-commands.md) — full command documentation
-- [Configuration](../reference/configuration.md) — runtime configuration
+- [Customizing Roles](../guides/customizing-roles.md) - frontmatter and what each host reads
+- [Architecture Overview](./architecture.md) - where authoring sits in the system
+- [dydo Commands Reference](../reference/dydo-commands.md) - full command documentation
+- [Configuration](../reference/configuration.md) - runtime configuration

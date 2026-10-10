@@ -14,11 +14,11 @@ Review documentation fixes across 8 files for three issues: (1) removed false pl
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\README.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\BashCommandAnalyzerTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCompatTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\BashCommandAnalyzer.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\README.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\BashCommandAnalyzerTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCompatTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\BashCommandAnalyzer.cs - Modified
 
 
 ## Review Summary
@@ -29,7 +29,7 @@ Review documentation fixes across 8 files for three issues: (1) removed false pl
 
 - Reviewed by: Grace
 - Result: FAILED
-- Issues: Changes in the 8 files are correct and consistent. FAIL due to incomplete coverage: (1) Templates/about-dynadocs.template.md still has amnesia framing and dydo init none — new projects get stale docs, (2) npm/README.md still has amnesia framing and dydo init none — public package page is inconsistent, (3) Services/RoleDefinitionService.cs:147 hardcoded judge fallback still says 'Arbitrates disputes between agents', (4) DynaDocs.csproj PackageReleaseNotes still says 'platform-agnostic'. Items 1-2 are doc fixes within scope. Items 3-4 are code changes (need code-writer). Also: pre-existing test failure in WatchdogServiceTests.EnsureRunning_LivePid_DoesNotStartProcess (unrelated to this task). gap_check passes.
+- Issues: Changes in the 8 files are correct and consistent. FAIL due to incomplete coverage: (1) Templates/about-dynadocs.template.md still has amnesia framing and dydo init none - new projects get stale docs, (2) npm/README.md still has amnesia framing and dydo init none - public package page is inconsistent, (3) Services/RoleDefinitionService.cs:147 hardcoded judge fallback still says 'Arbitrates disputes between agents', (4) DynaDocs.csproj PackageReleaseNotes still says 'platform-agnostic'. Items 1-2 are doc fixes within scope. Items 3-4 are code changes (need code-writer). Also: pre-existing test failure in WatchdogServiceTests.EnsureRunning_LivePid_DoesNotStartProcess (unrelated to this task). gap_check passes.
 
 Requires rework.
 

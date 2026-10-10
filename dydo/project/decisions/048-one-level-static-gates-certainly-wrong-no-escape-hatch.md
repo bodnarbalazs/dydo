@@ -7,7 +7,7 @@ accepted: 2026-09-05
 participants: [balazs, Claude (Fable)]
 ---
 
-# 048 — One-Level Static Gates: Certainly Wrong, No Escape Hatch
+# 048 - One-Level Static Gates: Certainly Wrong, No Escape Hatch
 
 Replaces the three-tier coverage system (T1/T2/T3 with CRAP thresholds 30/15/5) with one set of
 static gates applied to every module of every stack, admitted by a single rule: a gate exists only
@@ -124,21 +124,21 @@ regression.
 ## Amendment 2026-09-17
 
 Route 1 of a §5 triage, decided with the human: test tooling that drives an external host is treated
-like embedded third-party source and is exempt from the coverage thresholds — line, branch and
-HCRAP — and from nothing else. Two files, named exactly, no wildcard:
+like embedded third-party source and is exempt from the coverage thresholds - line, branch and
+HCRAP - and from nothing else. Two files, named exactly, no wildcard:
 
 - `DynaDocs.Tests/HostCanaries/run-host-canaries.mjs`
 - `DynaDocs.Tests/HostCanaries/openai-sse-provider.mjs`
 
 This widens §1's "code not maintained here" by a fourth category and is the one exception to §2.
 Both files remain full maintained sources: the `node` static row still measures them for ESLint
-diagnostics, cognitive complexity, parameter counts, clone detection and knip accounting — the
+diagnostics, cognitive complexity, parameter counts, clone detection and knip accounting - the
 Issue that recorded this amendment fixed two real `no-nested-ternary` findings in
 `run-host-canaries.mjs` because that row runs.
 
 The exemption is conditional, and both conditions are machine-checked per driver by
 `_coverage_exemption` in `DynaDocs.Tests/coverage/gate_inventory.py`, which sits beside
-`_structural_exclusion` under the same contract — return reproducible exclusion evidence, or a gap
+`_structural_exclusion` under the same contract - return reproducible exclusion evidence, or a gap
 that denies exclusion:
 
 1. the driver's pure logic is extracted into tested modules, required per driver rather than as a
@@ -148,7 +148,7 @@ that denies exclusion:
 2. the driver itself stays associated in `DynaDocs.Tests/coverage/test-associations.json`.
 
 "Tested" is proved by a row in that manifest, which the association gate in turn proves names a
-discovered native test file — not by a coverage number on the extraction. When both conditions hold,
+discovered native test file - not by a coverage number on the extraction. When both conditions hold,
 the inventory `source` row carries `coverageExemption` with the reason
 `external-host-driver-as-embedded-source` and its origin, and `_target_paths` in
 `DynaDocs.Tests/coverage/gate_adapter.py` filters that row out of the coverage targets;

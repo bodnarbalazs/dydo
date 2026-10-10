@@ -5,9 +5,9 @@ date: 2026-04-20
 area: platform
 ---
 
-# 019 — Reviewer Verdict Routing and Subject-Aware Send Diagnostics
+# 019 - Reviewer Verdict Routing and Subject-Aware Send Diagnostics
 
-Reviewer verdicts (`dydo review complete --status pass`) used to die in the reviewer's terminal — no inter-agent message, no automatic notification to the dispatcher's chain. Code-writers were supposed to forward manually and routinely skipped it, leaving orchestrators with a fired wait but an empty inbox. This decision auto-routes the verdict back through the dispatch chain and adds subject-aware diagnostics to `dydo msg` so failed sends to released agents tell the sender what they should have done instead.
+Reviewer verdicts (`dydo review complete --status pass`) used to die in the reviewer's terminal - no inter-agent message, no automatic notification to the dispatcher's chain. Code-writers were supposed to forward manually and routinely skipped it, leaving orchestrators with a fired wait but an empty inbox. This decision auto-routes the verdict back through the dispatch chain and adds subject-aware diagnostics to `dydo msg` so failed sends to released agents tell the sender what they should have done instead.
 
 ## Context
 
@@ -15,7 +15,7 @@ Previously, `dydo review complete --status pass` produced no inter-agent
 message: the verdict was only reflected in task state and in the reviewer's
 terminal output. The code-writer who dispatched the reviewer was expected to
 manually forward the verdict to whichever orchestrator spawned them. In
-practice that step was frequently skipped — the code-writer would release,
+practice that step was frequently skipped - the code-writer would release,
 their `.session` would disappear, and the orchestrator's
 `dydo wait --task <name>` would fire on subject match but with no inbox
 message addressed to them. The orchestrator then had to manually reconstruct
@@ -31,9 +31,9 @@ A related pair of `dydo msg` pain points surfaced at the same time:
    any of them (`--subject fooo`), delivery succeeds silently but the
    target's wait never fires. Typos become invisible timeouts.
 
-Frank co-thought five options (A–E) with the user. Option A — auto-CC the
+Frank co-thought five options (A–E) with the user. Option A - auto-CC the
 nearest `canOrchestrate` ancestor on PASS, at the `review complete` call
-site — was chosen. See the summary under *Rationale* for why the alternatives
+site - was chosen. See the summary under *Rationale* for why the alternatives
 were rejected.
 
 ## Decision
@@ -50,7 +50,7 @@ Three behavioral changes, implemented in `Commands/ReviewCommand.cs` and
    `canOrchestrate: true`. If such an ancestor exists and is not the
    dispatcher itself or the reviewer, a `[CC]` message is sent to them on
    the same subject. FAIL verdicts intentionally do NOT auto-CC (per
-   Frank's co-thinking notes — fail CCs were considered and ruled out
+   Frank's co-thinking notes - fail CCs were considered and ruled out
    because a failing review usually needs a redo from the code-writer, not
    intervention from the orchestrator).
 
@@ -80,7 +80,7 @@ verdict crystallises. Later hook points considered:
   between `review complete` and `agent release`; auto-CCing on release
   would either duplicate the verdict or require state to remember "I
   already CC'd." Both are worse than doing it once, at the verdict.
-- On code-writer inbox-clear of the verdict: semantically wrong — the
+- On code-writer inbox-clear of the verdict: semantically wrong - the
   CC is a notification to the orchestrator about the review, not about
   the code-writer's reading habits.
 - On orchestrator's `dydo wait` fire: out of scope. `wait` is a passive
@@ -90,7 +90,7 @@ verdict crystallises. Later hook points considered:
 
 `WaitMarker.Since` filtering was one of Frank's ruled-out alternatives.
 The problem: a marker's `Since` timestamp doesn't tell you *which*
-agent's release should satisfy it — only when the wait began. An
+agent's release should satisfy it - only when the wait began. An
 orchestrator who waits on `task X` might be waiting for a code-writer,
 a reviewer, or an inquisitor to finish. The dispatch chain is the
 correct structural answer to "who should I report to?", and we already
@@ -125,7 +125,7 @@ specific to the send-diagnostics path in `MessageService`; it does not
 belong in the registry's API surface. It is implemented as a
 `private static` helper in `MessageService` that composes the existing
 registry methods. `Services/AgentRegistry.cs` was not modified by this
-lane — Brian's dispatch brief explicitly scoped it out to avoid
+lane - Brian's dispatch brief explicitly scoped it out to avoid
 conflicts with a parallel lane touching that file.
 
 ## Consequences
@@ -149,11 +149,11 @@ conflicts with a parallel lane touching that file.
 
 ## Related
 
-- [003 — Agent Messaging](./003-agent-messaging.md) — the inbox/wait
+- [003 - Agent Messaging](./003-agent-messaging.md) - the inbox/wait
   primitives this decision builds on.
-- [005 — Fresh Agent Over Wait-for-Feedback](./005-fresh-agent-over-wait-for-feedback.md)
-  — the reviewer-in-fresh-session model that makes manual verdict
+- [005 - Fresh Agent Over Wait-for-Feedback](./005-fresh-agent-over-wait-for-feedback.md)
+  - the reviewer-in-fresh-session model that makes manual verdict
   forwarding awkward in the first place.
-- [010 — Baton-Passing and Review Enforcement](./010-baton-passing-and-review-enforcement.md)
-  — the reply-obligation mechanics that the PASS auto-send clears on
+- [010 - Baton-Passing and Review Enforcement](./010-baton-passing-and-review-enforcement.md)
+  - the reply-obligation mechanics that the PASS auto-send clears on
   the reviewer's behalf.

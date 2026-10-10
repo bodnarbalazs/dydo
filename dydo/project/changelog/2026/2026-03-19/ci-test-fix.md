@@ -14,11 +14,11 @@ date: 2026-03-19
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxMetadataReader.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\BashCommandAnalyzer.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CommandDocConsistencyTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TemplateGeneratorTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\ConfigurablePathsTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxMetadataReader.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\BashCommandAnalyzer.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CommandDocConsistencyTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TemplateGeneratorTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\ConfigurablePathsTests.cs - Modified
 
 
 ## Review Summary

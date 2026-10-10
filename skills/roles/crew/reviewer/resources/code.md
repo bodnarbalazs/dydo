@@ -60,7 +60,7 @@ its reviewed Project plan, on four axes judged alone, so a clean axis never mask
   a finding
 - The project's changed-code mutation gate, in its `--since <base>` form, run by you when the
   project has one; a surviving or uncovered mutant is a finding
-- At a gate — the Issue's final gates, a merge, the landing — the whole set below on that exact
+- At a gate - the Issue's final gates, a merge, the landing - the whole set below on that exact
   candidate, read from its gate record or run by you:
   - The Issue's gate-scale commands and the full suites, all green
   - Coverage, HCRAP and the one-level static policy in the project's testing guide

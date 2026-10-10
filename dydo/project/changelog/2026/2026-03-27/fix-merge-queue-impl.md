@@ -14,8 +14,8 @@ Fixed merge queue isolation: added NormalizeWorktreePath() call in QueueService 
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\QueueServiceTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\QueueService.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\QueueServiceTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\QueueService.cs - Modified
 
 
 ## Review Summary

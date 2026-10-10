@@ -5,7 +5,7 @@ using DynaDocs.Services;
 
 /// <summary>
 /// Validates dydo.json invariants for CheckCommand. Today's only invariant
-/// is the scan-exclude list — every entry in
+/// is the scan-exclude list - every entry in
 /// <see cref="ConfigFactory.DydoInternalScanExclude"/> must be present in
 /// <c>config.ScanExclude</c>. <c>dydo fix</c> restores missing entries.
 /// </summary>

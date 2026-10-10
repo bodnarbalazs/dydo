@@ -9,8 +9,8 @@ A role is a skill that carries an identity, an officer or crew; every other skil
 Both are skill folders, authored under `skills/<category>/<name>/`, where `<category>` is
 `roles/officers`, `roles/crew`, `engineering` or `productivity`. Author the body directly in the
 cross-vendor `SKILL.md` format; there is no template and no compile step. `node setup-skills.mjs`
-walks the tree by rule, not by depth — a folder holding `SKILL.md` is a skill, any other folder a
-category — and still exposes every skill flat (no category level) to each host. The [scaffold page](../understand/scaffold-and-customization.md)
+walks the tree by rule, not by depth - a folder holding `SKILL.md` is a skill, any other folder a
+category - and still exposes every skill flat (no category level) to each host. The [scaffold page](../understand/scaffold-and-customization.md)
 covers the artifact shapes and the link rules; this page covers the frontmatter and what each host
 reads.
 
@@ -25,8 +25,8 @@ reads.
 | `disable-model-invocation` | `true` | Claude-only: the skill is out of every model's reach; only the human, by name. |
 | `argument-hint` | one quoted line | Claude-only: the prompt the host shows after the name. Codex carries the same hint in the skill's `agents/openai.yaml`. |
 
-`automatic` discovery buys reach — the model can fire on the description, and other skills can reach
-the role — and costs a description that stays loaded every turn, so write it trigger-first. An
+`automatic` discovery buys reach - the model can fire on the description, and other skills can reach
+the role - and costs a description that stays loaded every turn, so write it trigger-first. An
 explicit role costs no context and has to be remembered instead, which is why the
 [dydo Glossary](../reference/dydo-glossary.md) carries the taxonomy.
 
@@ -44,22 +44,22 @@ edit `skills/<category>/<name>/` once.
 
 ## The context a role carries
 
-**`## Must-Reads`** — project documents named under that heading. Write each target as a
-repository-root literal path in a code span, read from the repository root — "From the repository
-root, read `dydo/understand/architecture.md`" — the way every shipped role names its own (see
+**`## Must-Reads`** - project documents named under that heading. Write each target as a
+repository-root literal path in a code span, read from the repository root - "From the repository
+root, read `dydo/understand/architecture.md`" - the way every shipped role names its own (see
 `skills/roles/crew/reviewer/SKILL.md`); `DynaDocs.Tests/Steps/CanonicalSkillSteps.cs`
 (`EveryLinkResolves`, its `AssertInside` call) enforces that no Must-Read is written as a markdown link. A `../` climb does not work here because the identical file
 is read at two different depths: canonically at `skills/<category>/<name>/`, and through the host projection at
-`.claude/skills/<name>/` or `.agents/skills/<name>/`. The two resolvers disagree — lexical `..`
+`.claude/skills/<name>/` or `.agents/skills/<name>/`. The two resolvers disagree - lexical `..`
 normalization against the projected path versus POSIX `..` applied to the physical parent once the
-symlink is followed — so no single relative climb is correct from every install location. A project
+symlink is followed - so no single relative climb is correct from every install location. A project
 adds its own context by editing the skill body directly.
 
-**Resources** — a role's own reference behind a file boundary, read only by the branches that need
+**Resources** - a role's own reference behind a file boundary, read only by the branches that need
 it. Link it as `resources/<name>.md`, relative to the skill folder. Reference several skills share
 lives instead in a model-invoked method skill or in a `dydo/` document listed under Must-Reads.
 
-**Includes** — retired with the compiler ([Decision 049](../project/decisions/049-skills-are-the-source-retire-the-compiler.md)).
+**Includes** - retired with the compiler ([Decision 049](../project/decisions/049-skills-are-the-source-retire-the-compiler.md)).
 Project-specific guidance lives in the skill body, or in a project document linked under Must-Reads.
 
 ## Choosing a model for a task
@@ -70,9 +70,9 @@ the shipped `admiral` and `issue-captain` methods carry that judgment.
 
 Select at the call, not in a file:
 
-- **Claude Code** — pass `model` on the Agent call that spawns the role. Effort belongs to the
+- **Claude Code** - pass `model` on the Agent call that spawns the role. Effort belongs to the
   session, so open the session at the effort the work needs.
-- **Codex** — pass the model and a reasoning effort that model supports, together, on the spawn.
+- **Codex** - pass the model and a reasoning effort that model supports, together, on the spawn.
 
 The [configuration reference](../reference/configuration.md) carries each host's full resolution
 order and the limits worth knowing before a claim rests on one.
@@ -91,8 +91,8 @@ current audit procedure.
 
 ## Related
 
-- [Scaffold and Customization](../understand/scaffold-and-customization.md) — the artifact shapes end to end
-- [Configuration Reference](../reference/configuration.md) — dispatch-time model and effort, nudges
-- [dydo Commands Reference](../reference/dydo-commands.md) — the CLI
-- [dydo Glossary](../reference/dydo-glossary.md) — officer, crew, method, and the retired terms
-- [Orientation](../index.md) — the shipped taxonomy and what each role is reached for
+- [Scaffold and Customization](../understand/scaffold-and-customization.md) - the artifact shapes end to end
+- [Configuration Reference](../reference/configuration.md) - dispatch-time model and effort, nudges
+- [dydo Commands Reference](../reference/dydo-commands.md) - the CLI
+- [dydo Glossary](../reference/dydo-glossary.md) - officer, crew, method, and the retired terms
+- [Orientation](../index.md) - the shipped taxonomy and what each role is reached for

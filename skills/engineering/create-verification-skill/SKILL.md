@@ -10,16 +10,16 @@ disable-model-invocation: true
 
 Every serious project needs a scripted way to drive the real app and prove behaviour: launch it, exercise a feature the way a user would, and capture evidence. This skill generates that as a project-local skill, `skills/engineering/verify-<app>/`, tailored to the repository. You write the generator's output for the next agent, not for a human: it will be read cold, mid-task, by an agent that has never seen the app.
 
-## 1. Interview the repo, not the human
+## 1. Interview the repo, not the user
 
-Answer these from the codebase and ask the human only what you cannot observe:
+Answer these from the codebase and ask the user only what you cannot observe:
 
 - **Surface:** what does a user actually touch? A web UI, a CLI/TUI, a desktop app, an API, a mobile app, a library? A repo can have several; pick the primary one and note the rest.
 - **Run:** how does the app start locally? Prefer the repo's own documented dev command (package scripts, Makefile, README quickstart, an orchestrator such as Aspire or Compose). Note ports, env vars and seed data.
 - **Sign in:** how does an agent get past the auth gate? Prefer a development-only quick login or a pre-signed-in disposable profile over typed credentials. Where a flow needs credentials, they belong to a disposable test account, come from the environment, and stay out of every artifact. Name how an expired session shows itself and how the driver recovers.
 - **Drive:** how can an agent interact with it programmatically? Existing harnesses first: Playwright/Cypress specs, expect scripts, PTY helpers, curl-able endpoints, a debug port. Only then pick a generic recipe: browser/CDP for web and Electron, a tmux/PTY harness for CLI/TUI, plain HTTP for services.
 - **Observe:** what evidence can be captured? Screenshots, accessibility snapshots, terminal transcripts, response bodies, logs, exit codes, DB state.
-- **Isolate:** can two instances run side by side (ports, data dirs, profiles)? If not, say so in the generated skill: refusing to double-drive a shared instance beats corrupting the human's session.
+- **Isolate:** can two instances run side by side (ports, data dirs, profiles)? If not, say so in the generated skill: refusing to double-drive a shared instance beats corrupting the user's session.
 
 If the checkout doesn't build or start as-is, fix that first (or report it precisely) before generating; a skill written against a broken base teaches wrong steps. When an irrelevant missing asset blocks startup (a static dir the API never serves, a sample config), the generated skill may create it, clearly marked as verification scaffolding, and remove it in cleanup.
 
@@ -59,4 +59,4 @@ Run its own instructions end to end once: launch, doctor, drive ONE mapped featu
 
 ## 6. Hand over the maintenance loop
 
-Name `maintain-verification-skill` in the generated skill's Evidence section as the upkeep loop an agent runs when a drive contradicts the map. Suggest a cadence only if the human asks.
+Name `maintain-verification-skill` in the generated skill's Evidence section as the upkeep loop an agent runs when a drive contradicts the map. Suggest a cadence only if the user asks.

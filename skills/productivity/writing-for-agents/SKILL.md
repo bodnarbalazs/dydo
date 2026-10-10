@@ -9,7 +9,7 @@ description: Writing documents for agents. Use when creating or editing skills, 
 
 Reference for writing any document an agent consumes: a skill, an `AGENTS.md` / `CLAUDE.md`, a doc reached by a pointer. The packaging differs; the writing does not: the same levers make each one predictable, since the agent takes the same _process_ every run rather than producing the same output.
 
-When the document is a dydo skill, read [`skill-mechanics`](resources/skill-mechanics.md) first: frontmatter keys, the invocation choice, Must-Reads, resources, and how the native folders are distributed. When the text is the reply only the human will read, `writing-for-humans` is this skill's pair.
+When the document is a dydo skill, read [`skill-mechanics`](resources/skill-mechanics.md) first: frontmatter keys, the invocation choice, Must-Reads, resources, and how the native folders are distributed. When the text is the reply only the user will read, `writing-for-humans` is this skill's pair.
 
 ## Context pointers
 
@@ -23,16 +23,16 @@ A pointer does two jobs: state what the material is, and list the **branches** t
 
 ## The funnel
 
-Every line serves the reader who is actually there: name the reader before the line goes in, and move a fact whose reader is elsewhere into that reader's document — "edit the source, not the build product" lives with the skills that edit skills, not in an entry point every session loads.
+Every line serves the reader who is actually there: name the reader before the line goes in, and move a fact whose reader is elsewhere into that reader's document - "edit the source, not the build product" lives with the skills that edit skills, not in an entry point every session loads.
 
-An orientation file is a funnel, not a summary. It sorts its reader toward one next document and stops: sort by the reader's situation (started by the human, working an Issue, spawned with a skill), never by a role catalog, which lands incomplete or inconsistent and drags every reader through every other reader's material. A hole in the sort is a defect in the hub — fix it rather than adding an "if nothing fits" escape line. What a hub names, it does not describe: each entry's own description is its routing.
+An orientation file is a funnel, not a summary. It sorts its reader toward one next document and stops: sort by the reader's situation (started by the user, working an Issue, spawned with a skill), never by a role catalog, which lands incomplete or inconsistent and drags every reader through every other reader's material. A hole in the sort is a defect in the hub - fix it rather than adding an "if nothing fits" escape line. What a hub names, it does not describe: each entry's own description is its routing.
 
 ## The two loads
 
 Every document and pointer you add spends one of two budgets:
 
 - **Context load** is the cost of always-loaded material on the agent's window: an `AGENTS.md` line, a skill description, anything sitting in context every turn, spending tokens and attention whether or not it fires.
-- **Cognitive load** is the cost on the human: which documents exist and when to reach for each. The human is the index. Not a cost to minimise: it is the price of human agency; spend it where human judgement matters, remove it where it does not.
+- **Cognitive load** is the cost on the user: which documents exist and when to reach for each. The user is the index. Not a cost to minimise: it is the price of human agency; spend it where human judgement matters, remove it where it does not.
 
 Material reached only through a pointer escapes context load at the price of the pointer's own line; material with no pointer at all rides entirely on cognitive load.
 

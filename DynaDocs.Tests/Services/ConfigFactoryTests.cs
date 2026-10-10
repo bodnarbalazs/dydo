@@ -43,7 +43,7 @@ public class ConfigFactoryTests
         Assert.DoesNotContain("model", nudge.Pattern);
         Assert.DoesNotContain("inquisition", nudge.Pattern);
 
-        // The alternation lists exactly the commands Program.cs registers — nothing retired.
+        // The alternation lists exactly the commands Program.cs registers - nothing retired.
         Assert.Equal(
             ["check", "fix", "index", "init", "graph", "guard",
                 "completions", "complete", "validate", "map", "version", "help"],

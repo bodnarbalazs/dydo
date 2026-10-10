@@ -3,7 +3,7 @@ area: project
 type: reference
 ---
 
-# DYD-314 — Map memory implementation evidence
+# DYD-314 - Map memory implementation evidence
 
 [DYD-314](https://linear.app/bodnar-balazs/issue/DYD-314) implements the
 [DR 052 amendment](../decisions/052-dydo-map-read-only-linear-view.md) on base

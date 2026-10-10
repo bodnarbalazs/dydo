@@ -175,7 +175,7 @@ Before the first agent session:
    `.agents/skills/`.
 
 The script always creates both folders, and `dydo init` and every `dydo init <integration> --join`
-add both to `.gitignore` in every mode — `/.claude/skills/` for Claude Code and `/.agents/skills/`
+add both to `.gitignore` in every mode - `/.claude/skills/` for Claude Code and `/.agents/skills/`
 for Codex. Each clone runs `node setup-skills.mjs` once. The script is safe to rerun. It checks its whole plan
 before creating anything, stops at the first collision it names, and never replaces host
 configuration or unrelated skills. OpenCode may read the same two folders; that is untested, and
@@ -205,4 +205,4 @@ Options, examples and exit codes are in the
 
 ## License
 
-MIT — see LICENSE.
+MIT - see LICENSE.

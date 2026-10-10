@@ -11,8 +11,8 @@ The destination is known, but the route is wrapped in **fog**. Wayfinding finds 
 not charge at the destination. The map holds the low-resolution view, and its **Wayfinding Issues**
 clear one part of the route at a time.
 
-The **map holder** charts and grills. A Project's map holder is the human, driving the map in their
-own session, or an admiral the human invoked, until the human takes the map back; the Project
+The **map holder** charts and grills. A Project's map holder is the user, driving the map in his
+own session, or an admiral the user invoked, until the user takes the map back; the Project
 description names the current holder. An Issue Captain may chart local fog inside one approved
 delivery outcome.
 
@@ -27,7 +27,7 @@ The map is complete at the destination, with no open Tasks or unresolved fog.
 
 ## Refer by name
 
-In everything the human reads, name every Project and Issue by its title, with its Linear key and URL
+In everything the user reads, name every Project and Issue by its title, with its Linear key and URL
 inside that name. Titles scan; walls of bare keys do not.
 
 ## The map
@@ -37,7 +37,7 @@ Wayfinding Issue stores its own context and resolution. Open Issues stay out of 
 are found through Linear queries.
 
 ```markdown
-**Map holder:** <the human, or the admiral the human invoked; rewritten when the map changes hands>
+**Map holder:** <the user, or the admiral the user invoked; rewritten when the map changes hands>
 
 ## Destination
 
@@ -74,7 +74,7 @@ Each Issue has a name, Linear key, and URL. Its body carries one outcome sized t
 Assignment is the claim: assign it first, before any work, so concurrent sessions skip it.
 
 Blocking uses Linear's native dependency relationship: essential because it renders the frontier
-visually in Linear, so the human sees what is takeable without opening the map. An Issue is
+visually in Linear, so the user sees what is takeable without opening the map. An Issue is
 **unblocked** when every Issue blocking it is closed; the **frontier** is the open, unblocked,
 unassigned Issues at the edge of the known.
 
@@ -91,12 +91,12 @@ The standard owns the full Type set and status/priority rules: from the reposito
 
 Every captain-held Issue carries Mode **HITL** (human in the loop, worked _with_ a human who speaks for themselves)
 or **AFK**, driven by the agent alone. A HITL Issue only resolves through that live exchange; the
-agent never stands in for the human's side of it (a grilling agent that answers its own questions has
+agent never stands in for the user's side of it (a grilling agent that answers its own questions has
 broken this).
 
 - **Task** (HITL or AFK): the role a captain-held Issue plays on the map, as the standard defines
-  it. Its Issue Captain and crew — one author, then one fresh reviewer, more only at the captain's
-  discretion — carry it through its contract, production, review, and its Merge Sub-issue.
+  it. Its Issue Captain and crew - one author, then one fresh reviewer, more only at the captain's
+  discretion - carry it through its contract, production, review, and its Merge Sub-issue.
 - **Research**: Reading documentation, third-party APIs, or local resources like knowledge
   bases to surface a fact a decision waits on. Resolved by a subagent that calls the Skill tool with
   "research". Use when authoritative evidence, inside or outside the repository, can settle the fact.
@@ -178,7 +178,7 @@ walked; a scope boundary isn't a step on it.
 
 ## Invocation
 
-Two modes. Either way, a session the human drives never resolves more than one Wayfinding Issue,
+Two modes. Either way, a session the user drives never resolves more than one Wayfinding Issue,
 with the exception of Research Issues: one Issue is sized to one session. An invoked admiral is
 exempt. Tasks may run concurrently under separate Issue Captains.
 
@@ -205,12 +205,12 @@ Charting starts from a Linear Project and a loose destination.
 ### Work through the map
 
 Working starts from a Project or parent delivery Issue. Naming a frontier Issue is optional: without
-one, take the next Issue rather than asking the human to choose.
+one, take the next Issue rather than asking the user to choose.
 
 1. Load the **map**: the low-resolution view, not every Issue body.
 2. Choose the Issue. If one was named, use it. Otherwise take the first frontier Issue in order.
    A captain-held Type goes to its Issue Captain, which claims it. For a map-holder-held Type,
-   claim it before work; a Question still waits for the human's answer.
+   claim it before work; a Question still waits for the user's answer.
 3. Resolve a Wayfinding Issue. **Zoom as needed**: fetch the full body of any related or closed Issue
    on demand; use whichever methods the `## Notes` block names. Follow the Issue Type above.
 4. Record the resolution when the Type's outcome is reached: post the answer as a **resolution

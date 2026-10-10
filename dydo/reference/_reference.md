@@ -9,7 +9,7 @@ Technical specifications and lookup documentation.
 
 ## Purpose
 
-This folder answers "What are the exact specs?" — detailed reference material for when you need precise information. Look things up here, don't read cover-to-cover.
+This folder answers "What are the exact specs?" - detailed reference material for when you need precise information. Look things up here, don't read cover-to-cover.
 
 ## Contents
 

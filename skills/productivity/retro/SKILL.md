@@ -8,13 +8,13 @@ description: Kaizen for the harness. Use when the same friction, correction, or 
 # Retro
 
 **Kaizen**: turn friction that keeps returning into one small, incremental, testable improvement to
-the harness — prompts, skills, guides, nudges, hooks, checks, and the code behind them — and suggest
+the harness - prompts, skills, guides, nudges, hooks, checks, and the code behind them - and suggest
 it rather than ship it. Product behaviour changes through its own Issue.
 
 ## Boundary
 
 The chief-of-staff reaches for this when the board shows the same friction across sessions; any session
-may reach for it mid-run, then return to its work. The output is a suggestion. The human decides: an
+may reach for it mid-run, then return to its work. The output is a suggestion. The user decides: an
 accepted change becomes an Issue, or lands directly only when it is tiny and inside the scope the
 current Issue already grants.
 
@@ -26,8 +26,8 @@ story; the second occurrence is the pattern that earns a change.
 
 ## Method
 
-1. **Establish the recurrence.** Read the primary sources — session logs, Issue comments, review
-   blocks, the diff — and name the repeated symptom, its occurrences, the work it costs, and the
+1. **Establish the recurrence.** Read the primary sources - session logs, Issue comments, review
+   blocks, the diff - and name the repeated symptom, its occurrences, the work it costs, and the
    likely cause. Done when two occurrences are cited by location.
 2. **Deduplicate.** Search the Issues, Decision Records, guides, pitfalls, prompts, skills, nudges and
    hooks that already speak to this cause. The existing canonical surface wins; a second one splits it.
@@ -51,7 +51,7 @@ Where the lever usually sits:
 - **Coding standards**: should the **reviewer agent** be given a new rule to enforce? Should an existing rule be removed or clarified? Classify the violation first: a **mechanical** one (a fixed syntactic pattern, a banned API, an import shape, a file-location rule) gets a deterministic check, full stop: a custom rule in the repo's own linter, a new pre-commit hook, or a new CI job, whichever the repo's language and existing guardrail make cheapest. Default to suggesting the check over writing the rule. Reserve `dydo/guides/coding-standards.md` for genuine **judgement calls** (cross-file consistency, "matches the surrounding style," anything no guardrail could ever substitute for). _Use when_ the reviewer agent failed to catch a mistake.
 - **Entry point size**: are there steering instructions that should move to a guide or an automated
   check instead? _Use when_ the always-loaded entry point is particularly large, in the repo or in the
-  human's global scope.
+  user's global scope.
 - **Tool economy**: did the agent make expensive tool calls that could be streamlined? Is there any
   custom tooling (CLIs, MCPs) that is particularly token-inefficient? _Use when_ the agent made an
   expensive tool call.

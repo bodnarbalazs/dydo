@@ -1,8 +1,8 @@
 namespace DynaDocs.Tests;
 
 /// <summary>Makes <see cref="File.Delete(string)"/> fail for the given file for this object's lifetime, on any
-/// OS. On Windows an exclusive share-lock blocks deletion; on Unix — where an open handle does NOT block unlink
-/// (POSIX allows deleting an open file) — the parent directory is made non-writable instead, since unlink
+/// OS. On Windows an exclusive share-lock blocks deletion; on Unix - where an open handle does NOT block unlink
+/// (POSIX allows deleting an open file) - the parent directory is made non-writable instead, since unlink
 /// permission is governed by the directory, not the file. Restores the original mode on <see cref="Dispose"/>.
 /// Lets a delete-failure test exercise the same abort path on both the dev (Windows) and CI (Linux) OSes.</summary>
 public sealed class UndeletableFile : IDisposable

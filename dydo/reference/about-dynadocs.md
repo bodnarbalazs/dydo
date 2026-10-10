@@ -90,14 +90,14 @@ management, including FutureFeatures.
 
 ## How Work Runs
 
-1. **Shape intent** — record durable decisions and create the appropriately sized Linear Issue or Project.
-2. **Review the contract** — an atomic Issue may be its own contract; coordinated or architecture-sensitive
+1. **Shape intent** - record durable decisions and create the appropriately sized Linear Issue or Project.
+2. **Review the contract** - an atomic Issue may be its own contract; coordinated or architecture-sensitive
    work links to one reviewed repository Project plan.
-3. **Execute Issues** — native agents work in isolated branches/worktrees and attach governing commits,
+3. **Execute Issues** - native agents work in isolated branches/worktrees and attach governing commits,
    tests, reviews, and delivery evidence to the Issue.
-4. **Inquisition, when confirmed** — this optional, human-confirmed audit files Bugs and delivers its
+4. **Inquisition, when confirmed** - this optional, human-confirmed audit files Bugs and delivers its
    record to the feature before landing, following the Working-Tree Contract above.
-5. **Land and inspect** — the landing Merge obtains acceptance review, the human lands the feature,
+5. **Land and inspect** - the landing Merge obtains acceptance review, the human lands the feature,
    then a Walkthrough inspects it. An empty Walkthrough closes the Project; findings reopen the lap
    in the same Project.
 
@@ -131,8 +131,8 @@ agent session: the `CLAUDE.md` and `AGENTS.md` entry points send a thinking sess
 
 ## Customize
 
-- **Nudges** — project regex rules and messages in `dydo.json`
-- **Skills** — plain `skills/<category>/<name>/` folders, edited directly and exposed flat by `setup-skills.mjs`
+- **Nudges** - project regex rules and messages in `dydo.json`
+- **Skills** - plain `skills/<category>/<name>/` folders, edited directly and exposed flat by `setup-skills.mjs`
 
 Edit the skill folder in place. A project's copy is its own; there is no automatic reconciliation.
 
@@ -165,9 +165,9 @@ validation, testing, and utility commands.
 
 ## License
 
-MIT — see LICENSE.
+MIT - see LICENSE.
 
 ## Related
 
-- [dydo Glossary](./dydo-glossary.md) — Locked work and knowledge vocabulary
-- [dydo Commands Reference](./dydo-commands.md) — Local CLI surface
+- [dydo Glossary](./dydo-glossary.md) - Locked work and knowledge vocabulary
+- [dydo Commands Reference](./dydo-commands.md) - Local CLI surface

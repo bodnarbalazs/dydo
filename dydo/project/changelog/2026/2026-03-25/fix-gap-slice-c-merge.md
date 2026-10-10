@@ -25,7 +25,7 @@ Merged worktree/fix-gap-slice-c into master (fast-forward). Single commit 018e87
 - Reviewed by: Dexter
 - Date: 2026-03-23 17:45
 - Result: PASSED
-- Notes: LGTM. All 3 dead-code removals verified safe (upstream guards made them unreachable). Tests are meaningful edge-case coverage targeting real analyzer behaviors. gap_check 128/129 — sole failure (WorktreeCommand.cs CRAP 32.9) is pre-existing and untouched.
+- Notes: LGTM. All 3 dead-code removals verified safe (upstream guards made them unreachable). Tests are meaningful edge-case coverage targeting real analyzer behaviors. gap_check 128/129 - sole failure (WorktreeCommand.cs CRAP 32.9) is pre-existing and untouched.
 
 Awaiting human approval.
 

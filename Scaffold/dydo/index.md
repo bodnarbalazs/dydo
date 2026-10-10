@@ -3,10 +3,10 @@ area: general
 type: hub
 ---
 
-# DynaDocs — Documentation Root
+# DynaDocs - Documentation Root
 
 Documentation is agents' long-term memory: a source of truth that outlives every session, and a
-guiding light through the fog of implementation. Keep it true — a stale doc misleads everyone who
+guiding light through the fog of implementation. Keep it true - a stale doc misleads everyone who
 comes after you.
 
 - [understand/](understand/_understand.md) - what this project is and how it is built: start at

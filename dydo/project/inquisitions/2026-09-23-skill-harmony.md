@@ -6,7 +6,7 @@ type: inquisition
 # Inquisition: harmony of the 3.0 skill tree
 
 [DYD-235](https://linear.app/bodnar-balazs/issue/DYD-235/inquisition-harmony-of-the-30-skill-tree-no-two-skills-claim-different)
-— completed audit: no two skills in the 3.0 tree may claim different things about the same fact.
+- completed audit: no two skills in the 3.0 tree may claim different things about the same fact.
 
 - **Audited SHA:** master `313088e2`
 - **Audit branch:** `inquisition/skill-harmony` (pushed, never merged)
@@ -19,14 +19,14 @@ type: inquisition
 
 **Parts:**
 
-1. Officers to crew — admiral, chief-of-staff, issue-captain against every crew skill.
-2. Crew to crew — code-writer/reviewer, docs-writer/reviewer, inquisitor/issue-captain,
+1. Officers to crew - admiral, chief-of-staff, issue-captain against every crew skill.
+2. Crew to crew - code-writer/reviewer, docs-writer/reviewer, inquisitor/issue-captain,
    research/scout, project-planner/admiral+reviewer.
-3. Non-role skills against the roles — `engineering/` and `productivity/` skills (wayfinder,
+3. Non-role skills against the roles - `engineering/` and `productivity/` skills (wayfinder,
    grilling/grill-me, co-thinker, handoff, walkthrough, to-project, prototype, wizard,
    self-improvement, writing skills, codebase-design, domain-modeling, diagnosing-bugs,
    improve-codebase-architecture, teach, bro, show-me).
-4. Skills against the authority docs — status/label/Type/Mode/path/template/return-line/gate claims
+4. Skills against the authority docs - status/label/Type/Mode/path/template/return-line/gate claims
    checked against the standard, working-tree contract, control-flow, glossary and DRs.
 
 **Lenses** (applied in every Part): (a) direct contradiction, (b) producer/consumer mismatch,
@@ -65,7 +65,7 @@ blocker of [DYD-11](https://linear.app/bodnar-balazs/issue/DYD-11) and lives in
 
 Shared-path overlaps: `linear-workspace-standard.md` is touched by DYD-236 (lines 79-81, 183-185),
 DYD-238 (line 41), DYD-246 (line 39); `issue-captain/SKILL.md` is touched by DYD-238 (step 5),
-DYD-239 (steps 6-7), DYD-246 (step 2) — sequence or take together.
+DYD-239 (steps 6-7), DYD-246 (step 2) - sequence or take together.
 
 ## Refuted hypotheses
 
@@ -85,7 +85,7 @@ DYD-239 (steps 6-7), DYD-246 (step 2) — sequence or take together.
 - **P3-13:** wizard's script is ephemeral by default, committed only on the human's word;
   control-flow:76 assigns wizard to the Enablement captain.
 - **P4-09 (partly refuted):** the standard gives Prototype/Enablement "Level: any", so a captain MAY
-  open those Sub-issues — refuting that part; the Enablement-scope part is confirmed and folded into
+  open those Sub-issues - refuting that part; the Enablement-scope part is confirmed and folded into
   DYD-243.
 
 ## Bugs and Questions filed
@@ -124,9 +124,9 @@ merge reachability) before DYD-235 closes Done.
 
 ## Related
 
-- [Working-Tree Contract](../../guides/working-tree-contract.md) — record-delivery route this file
+- [Working-Tree Contract](../../guides/working-tree-contract.md) - record-delivery route this file
   follows.
-- [DR 047 — Supersymmetry, Hop Statuses, Merge Issues, and the Release Protocol](../decisions/047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md)
-- [DR 049 — Skills Are the Source: Retire the Compiler](../decisions/049-skills-are-the-source-retire-the-compiler.md)
-- [DR 050 — Officers, Crew and Skills: Hats Retired](../decisions/050-officers-crew-and-skills-hats-retired.md)
+- [DR 047 - Supersymmetry, Hop Statuses, Merge Issues, and the Release Protocol](../decisions/047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md)
+- [DR 049 - Skills Are the Source: Retire the Compiler](../decisions/049-skills-are-the-source-retire-the-compiler.md)
+- [DR 050 - Officers, Crew and Skills: Hats Retired](../decisions/050-officers-crew-and-skills-hats-retired.md)
 - [Inquisitions](./_inquisitions.md)

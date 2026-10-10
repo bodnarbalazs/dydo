@@ -1,7 +1,7 @@
 namespace DynaDocs.Utils;
 
 /// <summary>
-/// Shared YAML frontmatter extraction — the single parsing path for the surviving frontmatter
+/// Shared YAML frontmatter extraction - the single parsing path for the surviving frontmatter
 /// readers (task/issue/doc records and the sync spine). The agent-state / inbox / dispatch
 /// readers that also used it were removed in the 2.1.0 simplification campaign (DR-041).
 /// </summary>
@@ -10,7 +10,7 @@ public static class FrontmatterParser
     /// <summary>
     /// Extracts YAML frontmatter key-value pairs from Markdown content.
     /// Returns null if the content has no valid frontmatter block.
-    /// Keys are returned as-is (not lowercased) — callers handle casing.
+    /// Keys are returned as-is (not lowercased) - callers handle casing.
     /// </summary>
     public static Dictionary<string, string>? ParseFields(string content)
     {
@@ -29,7 +29,7 @@ public static class FrontmatterParser
 
             var value = line[(colonIndex + 1)..].Trim();
             // First-wins on a duplicate key (finding 7): UpsertField rewrites the FIRST duplicate line, so the
-            // reader must resolve the first occurrence too — else an upserted value reads back invisible on a
+            // reader must resolve the first occurrence too - else an upserted value reads back invisible on a
             // duplicate-key file. The first declaration stays canonical.
             fields.TryAdd(key, value);
         }
@@ -61,7 +61,7 @@ public static class FrontmatterParser
     /// Sets a single top-level frontmatter key to <paramref name="value"/>, preserving every other
     /// line, the body, and delimiters. Rewrites the line in place when the key exists; otherwise
     /// appends it as the last frontmatter line. Content with no frontmatter block is returned
-    /// unchanged — the caller decides whether an un-fronted file is an error worth surfacing.
+    /// unchanged - the caller decides whether an un-fronted file is an error worth surfacing.
     /// </summary>
     public static string UpsertField(string content, string key, string value)
     {
@@ -92,7 +92,7 @@ public static class FrontmatterParser
         }
 
         // lines[0] is the remainder of the OPENING delimiter line (empty for a normal "---\n" open), never a
-        // key line, so the back-scan must stop at index 1 — inserting before it would glue the new key onto
+        // key line, so the back-scan must stop at index 1 - inserting before it would glue the new key onto
         // the opening "---" and corrupt a file whose frontmatter block is empty.
         var insertAt = lines.Count;
         while (insertAt > 1 && lines[insertAt - 1].Trim().Length == 0)
@@ -101,7 +101,7 @@ public static class FrontmatterParser
     }
 
     /// <summary>The single shared boundary of a leading frontmatter block, resolved identically for every
-    /// frontmatter reader — this parser and the skill-folder readers — so their opener,
+    /// frontmatter reader - this parser and the skill-folder readers - so their opener,
     /// empty-block, and closer semantics can never diverge (finding 8). The opener is <c>---</c> on the first
     /// line (trailing whitespace tolerated); the closer is the first LATER line that is <c>---</c> with only
     /// trailing whitespace, so a <c>---</c> inside a value is never the terminator and an EMPTY block
@@ -116,7 +116,7 @@ public static class FrontmatterParser
         // Validate the OPENER with the same strictness as the closer, matching the XML contract above (review
         // R2-3): exactly `---` on the first line, trailing whitespace tolerated. A bare StartsWith("---") also
         // opened on `----` (a 4-dash horizontal rule) or `--- title`, so a body that happens to begin with such a
-        // line — plus any later `---` — was mis-parsed as bogus frontmatter, mangling body content into fields on
+        // line - plus any later `---` - was mis-parsed as bogus frontmatter, mangling body content into fields on
         // the sync path. IsDelimiterLine keeps the trailing-whitespace tolerance the doc promises.
         if (!IsDelimiterLine(content, 0, openerNewline)) return null;
 

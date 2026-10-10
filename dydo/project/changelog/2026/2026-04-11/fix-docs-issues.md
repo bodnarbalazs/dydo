@@ -24,7 +24,7 @@ Documentation fixes ready for review. Fixed 7 issues: #28 worktree docs updated 
 
 - Reviewed by: Frank
 - Result: FAILED
-- Issues: Documentation quality is PASS — all 7 issues accurately documented and verified against implementation. However, gap_check exits non-zero: 4 test failures (AuditEdgeCaseTests x2, TaskTests, AgentLifecycleTests) and 3 coverage gaps (GuardCommand CRAP 30.2, BashCommandAnalyzer CRAP 38.0, TaskApproveHandler line/branch coverage). All failures are pre-existing and unrelated to documentation changes. Awaiting guidance from user.
+- Issues: Documentation quality is PASS - all 7 issues accurately documented and verified against implementation. However, gap_check exits non-zero: 4 test failures (AuditEdgeCaseTests x2, TaskTests, AgentLifecycleTests) and 3 coverage gaps (GuardCommand CRAP 30.2, BashCommandAnalyzer CRAP 38.0, TaskApproveHandler line/branch coverage). All failures are pre-existing and unrelated to documentation changes. Awaiting guidance from user.
 
 Requires rework.
 

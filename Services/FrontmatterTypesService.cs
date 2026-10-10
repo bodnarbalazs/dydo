@@ -7,7 +7,7 @@ using DynaDocs.Serialization;
 /// <summary>
 /// Loads <c>dydo/_system/types.json</c> and merges it with the built-in
 /// <see cref="Frontmatter.ValidTypes"/> baseline. The file is read once on
-/// first access and cached for the instance's lifetime — callers construct
+/// first access and cached for the instance's lifetime - callers construct
 /// one instance per check pass.
 /// </summary>
 public class FrontmatterTypesService : IFrontmatterTypesService

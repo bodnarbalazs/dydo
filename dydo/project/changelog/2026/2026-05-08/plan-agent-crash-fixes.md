@@ -14,11 +14,11 @@ Plan implementation of clear-cut fixes from `dydo/project/inquisitions/agent-cra
 
 ## Files Changed
 
-- `dydo/agents/Brian/plan-agent-crash-fixes.md` — implementation plan.
+- `dydo/agents/Brian/plan-agent-crash-fixes.md` - implementation plan.
 
 ## Review Summary
 
-(Pending — awaiting Adele review of the plan; counter-recommendation on PR1 boundary is the load-bearing decision.)
+(Pending - awaiting Adele review of the plan; counter-recommendation on PR1 boundary is the load-bearing decision.)
 
 ## Approval
 

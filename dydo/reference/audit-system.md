@@ -5,7 +5,7 @@ type: reference
 
 # Audit System (removed in 2.0)
 
-dydo's own audit trail — per-session JSON logs, baseline+delta compaction, and the HTML replay visualization — was **removed in 2.0** ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)). Claude Code's native session transcripts are the record now, so dydo no longer maintains a parallel one.
+dydo's own audit trail - per-session JSON logs, baseline+delta compaction, and the HTML replay visualization - was **removed in 2.0** ([Decision 024](../project/decisions/024-dydo-2-native-pivot.md)). Claude Code's native session transcripts are the record now, so dydo no longer maintains a parallel one.
 
 ---
 
@@ -13,7 +13,7 @@ dydo's own audit trail — per-session JSON logs, baseline+delta compaction, and
 
 | Was (pre-2.0) | Now (2.0) |
 |---|---|
-| `dydo audit` command (list, session view, HTML replay) | Removed — read Claude Code's transcripts |
+| `dydo audit` command (list, session view, HTML replay) | Removed - read Claude Code's transcripts |
 | Per-session JSON in `dydo/_system/audit/YYYY/` + `.events` | Legacy; not written by the 2.0 guard |
 | `dydo audit compact` (baseline+delta compression) | Removed |
 | Audit-derived "inquisition coverage" | Replaced by the artifact-derived attention ledger ([Decision 032](../project/decisions/032-attention-ledger-and-housekeeping-nudge.md)) |
@@ -29,6 +29,6 @@ Native subagents and the historical workflow harness share the parent session's 
 
 ## Related
 
-- [Architecture Overview](../understand/architecture.md) — where audit fit in the system
-- [Decision 024](../project/decisions/024-dydo-2-native-pivot.md) — the native pivot that removed the audit trail
-- [CLI Commands Reference](./dydo-commands.md) — the current command surface
+- [Architecture Overview](../understand/architecture.md) - where audit fit in the system
+- [Decision 024](../project/decisions/024-dydo-2-native-pivot.md) - the native pivot that removed the audit trail
+- [CLI Commands Reference](./dydo-commands.md) - the current command surface

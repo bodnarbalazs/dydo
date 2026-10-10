@@ -2,7 +2,7 @@ namespace DynaDocs.Tests;
 
 /// <summary>
 /// Thread-safe console capture for parallel xUnit test execution.
-/// Console.Out/Error are process-global — a static semaphore serializes all
+/// Console.Out/Error are process-global - a static semaphore serializes all
 /// redirect-execute-restore sequences so ToString() never races with writes.
 /// </summary>
 public static class ConsoleCapture

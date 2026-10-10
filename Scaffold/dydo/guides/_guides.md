@@ -9,7 +9,7 @@ Task-oriented documentation: how to accomplish specific things in this project.
 
 ## Purpose
 
-This folder answers "How do I DO this?" — step-by-step instructions for common tasks. Read these docs when you need to implement something specific.
+This folder answers "How do I DO this?" - step-by-step instructions for common tasks. Read these docs when you need to implement something specific.
 
 ## Contents
 

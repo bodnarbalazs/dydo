@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: An Issue's code or docs, a spec, a Project plan, or a merged tree — one candidate, one named rubric, one binding verdict.
+description: An Issue's code or docs, a spec, a Project plan, or a merged tree - one candidate, one named rubric, one binding verdict.
 ---
 
 # Reviewer
@@ -36,7 +36,7 @@ Judge one candidate; corrections and status are the invoker's. Your independence
 4. **Take the gates at this stage's scale.** Judging a `code-writer` hop, weigh the run it
    reported: the full suite and static gate of each changed stack, once each. Judging another crew
    hop, weigh the focused run it committed: a test relevant to the change and left out of it is a
-   finding, and the full suites stay with the gate. At a gate review — the Issue's final gates, a merge, the landing — the full-suite evidence
+   finding, and the full suites stay with the gate. At a gate review - the Issue's final gates, a merge, the landing - the full-suite evidence
    is that exact candidate's own gate record: candidate, command, environment or session, exit and
    result location. Check that record; a rerun needs a concrete doubt you state. Real output is
    evidence; a gate that cannot run yet is named with why.
@@ -64,5 +64,5 @@ the PR body carries it under `## Independent review` when a PR exists. Return it
 even when a read-only host prevents posting.
 
 PASS means no findings, and binds this candidate under this contract. There is no PASS with notes: a
-note is a finding, and a finding is a FAIL — YOU SHALL NOT PASS. A defect the candidate neither
+note is a finding, and a finding is a FAIL - YOU SHALL NOT PASS. A defect the candidate neither
 created nor exposed is one line after the block, `Observation (out of scope, non-binding):`.

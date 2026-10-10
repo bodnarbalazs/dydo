@@ -75,7 +75,7 @@ reviews live work; Git/dydo remains the durable knowledge boundary.
 
 ### Questions and answers
 
-- **What is the restoration baseline?** `0f06c947` for the mature dydo roles, selectively—not a blind
+- **What is the restoration baseline?** `0f06c947` for the mature dydo roles, selectively-not a blind
   revert. Obsolete runtime mechanics stay deleted.
 - **How much Linear coupling is correct?** Native Linear objects and relationships in Wayfinder,
   Planner, Orchestrator, Chief of Staff, and worker/reviewer handoffs; nowhere else without a concrete
@@ -157,7 +157,7 @@ beside the README, and `npm/package.json` includes the npm notice. Packaging tes
 
 | Issue | Outcome | Exclusive surface | Blockers | Gate |
 |---|---|---|---|---|
-| P6-1 | Rename sources with the four-case legacy migration above | `Commands/HelpCommand.cs`, `Commands/SyncCommand.cs`, `Commands/TemplateCommand.cs`, `Models/RoleDefinition.cs`, `Services/RoleDefinitionService.cs`, `Services/TemplateGenerator.cs`, existing filename-contract tests/docs, all 26 source/install filename moves, `dydo.json` hash keys | — | Gate A |
+| P6-1 | Rename sources with the four-case legacy migration above | `Commands/HelpCommand.cs`, `Commands/SyncCommand.cs`, `Commands/TemplateCommand.cs`, `Models/RoleDefinition.cs`, `Services/RoleDefinitionService.cs`, `Services/TemplateGenerator.cs`, existing filename-contract tests/docs, all 26 source/install filename moves, `dydo.json` hash keys | - | Gate A |
 | P6-2 | Restore the minimal entry prompt and current root parity | `Templates/entry-point.template.md`, root `AGENTS.md`, root `CLAUDE.md`, new `DynaDocs.Tests/Integration/EntryPointParityTests.cs` | P6-1 | Gate B |
 | P6-3 | Apply the role-by-role table to mature dydo roles | the ten named non-Matt `Templates/skill-*.template.md` files, their ten `_system` copies, `dydo/_system/template-additions/**`, the four existing semantic contract tests named below, and this plan for the chronological correction | P6-1 | Gate C |
 | P6-4 | Restore Matt-derived fidelity and add `writing-for-agents` | five named shipped templates and five `_system` copies; root/npm notices; `DynaDocs.csproj`; `npm/package.json`; new `DynaDocs.Tests/Integration/UpstreamSkillSourceTests.cs` | P6-1 | Gate D |
@@ -192,7 +192,7 @@ test paths are exactly `ChiefOfStaffSyncTests.cs`, `SyncCommandTests.cs`, `CliEn
 
 Run all commands from the repository root in the Issue worktree.
 
-**Gate A — filename migration**
+**Gate A - filename migration**
 
 ```powershell
 dotnet build DynaDocs.sln -c Release --no-restore
@@ -205,7 +205,7 @@ The independent review also runs the four migration fixtures verbatim and compar
 hashes for every old/new source pair. Active code/docs/tests may contain `mode-*` only in those four
 legacy fixtures and the migration warning.
 
-**Gate B — entry prompt**
+**Gate B - entry prompt**
 
 ```powershell
 dotnet build DynaDocs.sln -c Release --no-restore
@@ -214,7 +214,7 @@ dotnet bin/Release/net10.0/dydo.dll check
 git diff --check -- Templates/entry-point.template.md AGENTS.md CLAUDE.md DynaDocs.Tests/Integration/EntryPointParityTests.cs
 ```
 
-**Gate C — mature role sources**
+**Gate C - mature role sources**
 
 ```powershell
 dotnet build DynaDocs.sln -c Release --no-restore
@@ -227,7 +227,7 @@ git diff --check -- Templates dydo/_system/templates dydo/_system/template-addit
 The `rg` command must return no hits. A fresh skill-quality review checks each row of the restoration
 table against `0f06c947` and the current boundary; it is the semantic gate and must PASS before commit.
 
-**Gate D — upstream fidelity**
+**Gate D - upstream fidelity**
 
 ```powershell
 dotnet build DynaDocs.sln -c Release --no-restore
@@ -245,11 +245,11 @@ git diff --check -- Templates dydo/_system/templates THIRD-PARTY-NOTICES.md npm/
 ```
 
 The source test checks template existence, neutral invocation metadata, the `grill-me` pointer target,
-source comments, notice identity, and package inclusion—not prose equality. A fresh reviewer compares
+source comments, notice identity, and package inclusion-not prose equality. A fresh reviewer compares
 Wayfinder, Grilling, Grill Me, Bro, and Writing for Agents against pinned upstream `6654f6b6`, accounting
 only for the adaptations authorized here.
 
-**Gate E — compiler and invocation metadata**
+**Gate E - compiler and invocation metadata**
 
 ```powershell
 dotnet build DynaDocs.sln -c Release --no-restore
@@ -261,7 +261,7 @@ git diff --check -- Models/RoleDefinition.cs Services/RoleDefinitionService.cs C
 Fixtures cover `explicit` and `automatic`, invalid values, exact description passthrough, Claude
 frontmatter, Codex `agents/openai.yaml`, absent restrictions for automatic skills, and repeat emission.
 
-**Gate F — integrated delivery**
+**Gate F - integrated delivery**
 
 ```powershell
 dotnet build DynaDocs.sln -c Release --no-restore
@@ -339,7 +339,7 @@ git diff --check -- Templates/entry-point.template.md AGENTS.md CLAUDE.md DynaDo
 A fresh review covers all seven paths. The two pre-existing test files may change only to replace the
 stale memory and kaizen assertions with minimal-entry and parity behavior.
 
-## 8. Chronological correction — P6-3 harmony contract (2026-08-30)
+## 8. Chronological correction - P6-3 harmony contract (2026-08-30)
 
 The first P6-3 implementation run exposed one more content-sensitive test outside its original three-test
 surface: `DynaDocs.Tests/Commands/WayfinderHarmonyTests.cs` asserted the invented Waypoint and top-level
@@ -353,7 +353,7 @@ Waypoint/session choreography. Gate C now includes the harmony test, forced cove
 diff-check over the amended closed surface. This correction changes no Matt-derived skill, generated
 runtime artifact, PM ontology, or P6-4/P6-5 ownership.
 
-## 9. Chronological correction — P6-4 source expansion (2026-08-30)
+## 9. Chronological correction - P6-4 source expansion (2026-08-30)
 
 P6-4 adds two skill sources, so three pre-existing discovery/scaffold tests must move from the old
 13-skill inventory to the reviewed 15-skill inventory. It also replaces one frozen Grilling-description

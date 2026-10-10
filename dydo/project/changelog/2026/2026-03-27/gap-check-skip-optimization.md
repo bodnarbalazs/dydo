@@ -6,7 +6,7 @@ date: 2026-03-27
 
 # Task: gap-check-skip-optimization
 
-Update 4 doc files to reflect gap_check.py flag changes: --skip-tests and --force-stale removed, --force-run added, auto-skip is now default behavior. Files: (1) dydo/_system/template-additions/extra-verify.md line 7 — remove --skip-tests guidance, note auto-skip. (2) dydo/_system/template-additions/extra-review-steps.md line 7 — same. (3) dydo/guides/testing-strategy.md line 106 — replace --skip-tests example with --force-run. (4) dydo/reference/coverage-tools.md lines 18-24 — rewrite flags section: remove --skip-tests/--force-stale, add --force-run, document auto-skip. See plan at agents/Emma/plan-gap-check-skip-optimization.md.
+Update 4 doc files to reflect gap_check.py flag changes: --skip-tests and --force-stale removed, --force-run added, auto-skip is now default behavior. Files: (1) dydo/_system/template-additions/extra-verify.md line 7 - remove --skip-tests guidance, note auto-skip. (2) dydo/_system/template-additions/extra-review-steps.md line 7 - same. (3) dydo/guides/testing-strategy.md line 106 - replace --skip-tests example with --force-run. (4) dydo/reference/coverage-tools.md lines 18-24 - rewrite flags section: remove --skip-tests/--force-stale, add --force-run, document auto-skip. See plan at agents/Emma/plan-gap-check-skip-optimization.md.
 
 ## Progress
 
@@ -14,7 +14,7 @@ Update 4 doc files to reflect gap_check.py flag changes: --skip-tests and --forc
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\gap_check.py — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\gap_check.py - Modified
 
 
 ## Review Summary

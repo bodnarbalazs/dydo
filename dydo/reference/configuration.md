@@ -78,13 +78,13 @@ orchestration to the host runtime.
 ## Model and effort at dispatch
 
 `dydo.json` carries no model and no effort, and a skill binds neither. The delegating admiral or
-Issue Captain chooses the model — and the effort where the host exposes one — for each task it hands
+Issue Captain chooses the model - and the effort where the host exposes one - for each task it hands
 out. There is no generated agent file carrying a default.
 
 | Host | What the caller sets | Left to the session |
 |---|---|---|
 | Claude Code | the model on each Agent call | effort from the session |
-| Codex | model and supported reasoning effort on each spawn | — |
+| Codex | model and supported reasoning effort on each spawn | - |
 
 A role reached as a skill inherits the session's model and effort. An explicit spawn value is the
 last word over the host's agents defaults.
@@ -139,10 +139,10 @@ and blocks reject the action. Nudges enforce project process; they do not create
 
 ## Customization points
 
-- `skills/<category>/<name>/` — the only editable skill folders. Run `node setup-skills.mjs` to create the
+- `skills/<category>/<name>/` - the only editable skill folders. Run `node setup-skills.mjs` to create the
   Claude and Codex discovery projections; init gitignores both roots, in every mode. OpenCode is not a supported host: it may read both roots,
   but that is untested and there is no OpenCode init mode.
-- `dydo/files-off-limits.md` — the two universal path tiers: **off-limits** patterns, which no tool may
+- `dydo/files-off-limits.md` - the two universal path tiers: **off-limits** patterns, which no tool may
   read or write, and `## Protected Patterns`, which every tool may read and none may write or delete.
   Whitelist entries lift off-limits patterns only; [Guard System](../understand/guard-system.md) owns
   how each tier binds.

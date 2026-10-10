@@ -110,7 +110,7 @@ Global JSON/schema/request errors start nothing. Row-local defects skip only tha
 run before aggregate failure is reported. Configured rows require command and artifacts and forbid a
 reason. Unavailable rows require a reason, forbid executable commands/artifacts, and may carry
 non-executable `exampleArgv` for adoption. A configured coverage row may additionally declare
-`suiteVerdict` — an `exit` path and a `failure` match into its required report — so that under
+`suiteVerdict` - an `exit` path and a `failure` match into its required report - so that under
 `--force-run` its test row derives the verdict from that one instrumented execution rather than
 running the suite again. Do not relabel an unwired available mechanism as a pass.
 The example's own static and coverage rows stay unavailable until DYD-91's adoption pass gives each
@@ -158,7 +158,7 @@ the `testSetup.ts` vitest loads before every file, can only run under the runner
 harness: role `test` with `nativeTest: false`, which no association can name as another module's
 test file. Test bodies, fixtures and assertion helpers supply the evidence; they are
 not coverage targets and are never required to cover themselves. A maintained gate producer or
-runner is a target even under a test directory — `GateMetrics` and the `DynaDocs.Tests/coverage`
+runner is a target even under a test directory - `GateMetrics` and the `DynaDocs.Tests/coverage`
 runners are measured, while the `DynaDocs.Tests` assembly is instrumented for identity only.
 `DynaDocs.Tests/coverage/test-associations.json` carries the file-level intent DR 048's test rule
 needs: every executable target module must name at least one associated test file, and one that
@@ -196,8 +196,8 @@ DR 048 admits a gate only where a violation is certainly wrong at a threshold wh
 would be accepted, with no per-file suppression, and it makes the transition the validation: when
 the gates first run on existing code, a failure over code that is right as it stands means the gate
 is wrong and is corrected, and the triage is recorded. Dead code is such a gate, run for Python as
-`ruff check --isolated --select F` plus Vulture. Vulture is a heuristic — it reports a name with no
-static reader — and three of its reports here name symbols that a real caller reads at run time
+`ruff check --isolated --select F` plus Vulture. Vulture is a heuristic - it reports a name with no
+static reader - and three of its reports here name symbols that a real caller reads at run time
 through a mechanism no static analysis can see.
 
 `DynaDocs.Tests/coverage/gate_collect.py` holds those three as exact `(path, message)` pairs in
@@ -222,8 +222,8 @@ This is a correction, not a waiver:
 - The pairs are exact, so drift re-raises the finding. Rename the function, rename an attribute, or
   let a Vulture upgrade reword its message, and the row no longer matches and becomes an ordinary
   dead-code finding again. Because Vulture's message does not name the owning structure, the
-  `flags` pair covers every `unused attribute 'flags'` row in `windows_job.py` — the
-  `STARTUPINFOEX` one and the two job-limit ones — and would cover a new one added to that file;
+  `flags` pair covers every `unused attribute 'flags'` row in `windows_job.py` - the
+  `STARTUPINFOEX` one and the two job-limit ones - and would cover a new one added to that file;
   any other name or file is outside it.
 - The measurement keeps emitting the evidence beside the record. Every reclassified row is
   published in the `python-dead-code` collector's `facts.semantic_uses` in
@@ -233,6 +233,6 @@ This is a correction, not a waiver:
 
 ## Related
 
-- [Coverage Tools](../reference/coverage-tools.md) — adapter commands, schemas and provenance
-- [DR 048](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md) —
+- [Coverage Tools](../reference/coverage-tools.md) - adapter commands, schemas and provenance
+- [DR 048](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md) -
   one-level static gates, no escape hatch

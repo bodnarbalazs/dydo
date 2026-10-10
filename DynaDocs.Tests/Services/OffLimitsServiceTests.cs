@@ -57,7 +57,7 @@ public class OffLimitsServiceTests : IDisposable
         Assert.NotNull(service.IsPathOffLimits(relative));
         Assert.NotNull(service.IsPathOffLimits(absolute));
 
-        // The hardcoded system patterns must also match absolute paths — dydo/_system/** is
+        // The hardcoded system patterns must also match absolute paths - dydo/_system/** is
         // off-limits, dydo.json is protected (readable, never writable).
         Assert.NotNull(service.IsPathOffLimits(Path.Combine(_testDir, "dydo", "_system", "audit", "x.json")));
         Assert.NotNull(service.IsPathProtected(Path.Combine(_testDir, "dydo.json")));
@@ -828,7 +828,7 @@ public class OffLimitsServiceTests : IDisposable
         // Whitelist allows matching paths
         Assert.Null(service.IsPathOffLimits("logs/app/debug.log"));
 
-        // dydo/_system/** must STILL be off-limits and dydo.json still unwritable — a
+        // dydo/_system/** must STILL be off-limits and dydo.json still unwritable - a
         // whitelist entry can defeat neither hardcoded system list.
         Assert.NotNull(service.IsPathOffLimits("dydo/_system/roles/code-writer.role.json"));
         Assert.Null(service.IsPathOffLimits("dydo.json"));
@@ -917,7 +917,7 @@ public class OffLimitsServiceTests : IDisposable
     [Fact]
     public void ValidateLiteralPaths_ChecksProtectedPathsToo()
     {
-        // A protected pattern that names nothing protects nothing — the same check
+        // A protected pattern that names nothing protects nothing - the same check
         // dydo/index.md kept while it was still an off-limits entry.
         File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), TieredOffLimits);
 

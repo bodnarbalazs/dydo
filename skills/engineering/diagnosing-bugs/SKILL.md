@@ -1,6 +1,6 @@
 ---
 name: diagnosing-bugs
-description: Diagnosis loop for hard bugs and performance regressions. Use when the human says "diagnose"/"debug this", or an Issue reports something broken/throwing/failing/slow.
+description: Diagnosis loop for hard bugs and performance regressions. Use when the user says "diagnose"/"debug this", or an Issue reports something broken/throwing/failing/slow.
 ---
 
 <!-- Adapted from mattpocock/skills diagnosing-bugs at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
@@ -13,9 +13,9 @@ When exploring the codebase, from the repository root read `dydo/glossary.md` an
 `dydo/understand/architecture.md` to get a clear mental model of the relevant
 modules, and check the Decision Records in the area you're touching.
 
-**Run as crew**, you ask and post only through your Issue Captain: each "ask the human" and each post
+**Run as crew**, you ask and post only through your Issue Captain: each "ask the user" and each post
 "on the Issue" below becomes a hand-raise to the captain carrying what you tried, never a post of your
-own. A Bug fix needs its red reproduction, so a missing correct seam also returns to the captain instead of excusing the regression test. Run directly by the human, the steps stand
+own. A Bug fix needs its red reproduction, so a missing correct seam also returns to the captain instead of excusing the regression test. Run directly by the user, the steps stand
 as written.
 
 ## Redact
@@ -25,7 +25,7 @@ This skill has you show commands, outputs and captured artifacts. **Redact every
 rather than in what you show. Captured artifacts carry auth headers: quote only the lines that carry
 the signal.
 
-If the redacted output is not enough to diagnose the bug, say so on the Issue and ask the human.
+If the redacted output is not enough to diagnose the bug, say so on the Issue and ask the user.
 
 ## Phase 1: Build a feedback loop
 
@@ -76,7 +76,7 @@ raising the rate until it's debuggable.
 
 ### When you genuinely cannot build a loop
 
-Stop and say so on the Issue. List what you tried. Ask the human for: (a) access to whatever
+Stop and say so on the Issue. List what you tried. Ask the user for: (a) access to whatever
 environment reproduces it, (b) a redacted captured artifact (HAR file, log dump, core dump, screen
 recording with timestamps), or (c) permission to add temporary production instrumentation. Do **not**
 proceed to hypothesise without a loop.
@@ -138,9 +138,9 @@ Each hypothesis must be **falsifiable**: state the prediction it makes.
 
 If you cannot state the prediction, the hypothesis is a vibe: discard or sharpen it.
 
-**Post the ranked list on the Issue before testing.** The human often has domain knowledge that
-re-ranks instantly ("we just deployed a change to #3"), or knows hypotheses they've already ruled out.
-Cheap checkpoint, big time saver. Don't block on it; proceed with your ranking if the human is AFK.
+**Post the ranked list on the Issue before testing.** The user often has domain knowledge that
+re-ranks instantly ("we just deployed a change to #3"), or knows hypotheses he's already ruled out.
+Cheap checkpoint, big time saver. Don't block on it; proceed with your ranking if the user is AFK.
 
 ## Phase 4: Instrument
 
@@ -185,7 +185,7 @@ If a correct seam exists:
 Required before declaring done:
 
 - [ ] Original repro no longer reproduces (re-run the Phase 1 loop)
-- [ ] Regression test passes (or, run directly by the human, absence of seam is documented)
+- [ ] Regression test passes (or, run directly by the user, absence of seam is documented)
 - [ ] All `[DEBUG-...]` instrumentation removed (`grep` the prefix)
 - [ ] Throwaway prototypes deleted (or moved to a clearly-marked debug location)
 - [ ] The hypothesis that turned out correct is stated in the commit / PR message and on the Issue, so

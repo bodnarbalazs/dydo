@@ -14,8 +14,8 @@ Merged worktree/fix-gap-slice-b into master. Added 4 new test files (813 lines):
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs - Modified
 
 
 ## Review Summary
@@ -27,7 +27,7 @@ Merged worktree/fix-gap-slice-b into master. Added 4 new test files (813 lines):
 - Reviewed by: Dexter
 - Date: 2026-03-23 18:59
 - Result: PASSED
-- Notes: LGTM. 4 new test files (~1400 lines) are clean, thorough, and meaningful. Coverage gate failures (Program.cs, FrontmatterRule.cs, OffLimitsRule.cs) are pre-existing — no regressions. Template and guide changes are reasonable improvements.
+- Notes: LGTM. 4 new test files (~1400 lines) are clean, thorough, and meaningful. Coverage gate failures (Program.cs, FrontmatterRule.cs, OffLimitsRule.cs) are pre-existing - no regressions. Template and guide changes are reasonable improvements.
 
 Awaiting human approval.
 

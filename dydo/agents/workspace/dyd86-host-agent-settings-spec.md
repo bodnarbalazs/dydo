@@ -63,7 +63,7 @@ project document rather than generated role TOML.
 
 **Files.**
 
-1. `Commands/InitCommand.cs` — preflight every selected host-settings document before existing init
+1. `Commands/InitCommand.cs` - preflight every selected host-settings document before existing init
    or join mutations. For Codex TOML, parse the original UTF-8 bytes with CsToml into a `TomlDocument`
    and catch `CsToml.Error.CsTomlSerializeException`, read its `ParseExceptions` collection for line
    and inner-error details, and produce the existing actionable malformed diagnostic; no separate
@@ -72,19 +72,19 @@ project document rather than generated role TOML.
    parse success, merge only verified managed JSON/TOML settings and fail on any ambiguous inline,
    dotted, or quoted `[agents]` form rather than selecting one. Write prepared outputs only after all
    validation succeeds.
-2. `DynaDocs.Tests/Integration/InitCommandTests.cs` — prove fresh/init/join/repeat cases, unrelated
+2. `DynaDocs.Tests/Integration/InitCommandTests.cs` - prove fresh/init/join/repeat cases, unrelated
    JSON and TOML preservation, Claude's canonical-string acceptance and rejection cases,
    satisfying-value retention, each conflict/type/malformed diagnostic, and that every host
    preflight failure leaves all pre-existing init/join side-effect paths unchanged or absent:
    `dydo.json`, hooks, entry points, ignore-file, and both host-settings files. Cover `init all`
    when either its Claude or Codex target is invalid. Add a focused duplicate-unrelated-root-key
    regression that proves all selected settings and every init/join side effect remain unchanged.
-3. `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs` — run the built CLI with `init all` and read both
+3. `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs` - run the built CLI with `init all` and read both
    project settings back; retain one actual join/repeat invocation to prove the shipped command path.
-4. `dydo/guides/getting-started.md` — replace the DYD-86 future-tense note with the delivered
+4. `dydo/guides/getting-started.md` - replace the DYD-86 future-tense note with the delivered
    configuration contract, concurrency-intent qualification, and Codex V2 limitation. This is a
    guide-only coordination boundary with DYD-91: do not register, template, or scaffold it here.
-5. `DynaDocs.csproj` — add exactly `<PackageReference Include="CsToml" Version="1.8.4" />`; its
+5. `DynaDocs.csproj` - add exactly `<PackageReference Include="CsToml" Version="1.8.4" />`; its
    net10 asset and `System.IO.Hashing` 10.0.9 dependency are part of the Native AOT proof.
 
 **Mutation order.** Determine selected integrations; read and parse every target; validate root and

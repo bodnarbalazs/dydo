@@ -18,7 +18,7 @@ date: 2026-03-13
 
 ## Review Summary
 
-Fixed DynaDocs gap_check.py CRAP metric to use per-method max CC instead of class-level sum. Single change in parse_cobertura_xml() at line ~249: now reads methods elements for per-method complexity and takes the max, falling back to class-level attribute only if no methods element exists. Verified via --skip-tests run — GuardCommand CC dropped from 341 to 52. LC fix and decision doc could not be completed due to guard permissions — Brian has been notified.
+Fixed DynaDocs gap_check.py CRAP metric to use per-method max CC instead of class-level sum. Single change in parse_cobertura_xml() at line ~249: now reads methods elements for per-method complexity and takes the max, falling back to class-level attribute only if no methods element exists. Verified via --skip-tests run - GuardCommand CC dropped from 341 to 52. LC fix and decision doc could not be completed due to guard permissions - Brian has been notified.
 
 ## Code Review
 

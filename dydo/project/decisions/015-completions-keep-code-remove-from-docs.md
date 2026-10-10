@@ -5,7 +5,7 @@ date: 2026-03-30
 area: project
 ---
 
-# 015 — Shell Completions: Keep Code, Remove from Docs
+# 015 - Shell Completions: Keep Code, Remove from Docs
 
 The shell-completion infrastructure works for the static command tree but doesn't deliver dynamic completions, the part users actually want. Rather than ripping it out or shipping a half-feature, this decision keeps the code in place and removes the user-facing documentation pointers, leaving the plumbing for whoever picks up dynamic completions later.
 
@@ -17,7 +17,7 @@ However, dynamic completions (e.g., tab-completing task names like `dydo task ap
 
 ## Decision
 
-Keep all completion code in place. Remove references from user-facing documentation (command reference, README, about-dynadocs). Mark as a future feature — the plumbing is there for when someone makes dynamic completions work end-to-end.
+Keep all completion code in place. Remove references from user-facing documentation (command reference, README, about-dynadocs). Mark as a future feature - the plumbing is there for when someone makes dynamic completions work end-to-end.
 
 ## Rationale
 

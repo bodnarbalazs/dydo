@@ -7,7 +7,7 @@ accepted: 2026-08-30
 participants: [balazs, Claude (Fable)]
 ---
 
-# 045 — Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract
+# 045 - Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract
 
 Fixes the operating model the harmonized dydo 3 skill system compiles to: one flow map every agent can
 place itself on, a taxonomy of hats, workers, methods and commands, three review tiers with a
@@ -23,7 +23,7 @@ restoration (Project "Restore skill craftsmanship") and found it clean but unhar
 - The restoration removed sediment and gave every role one shape, but the result does not route:
   descriptions state identity rather than triggers, no skill names the flow it belongs to, leading
   words that anchored behaviour ("YOU SHALL NOT PASS") were sanded into taglines, skills describe prose
-  returns while workflows enforce JSON schemas, and four mechanical defects shipped — `dydo/index.md`
+  returns while workflows enforce JSON schemas, and four mechanical defects shipped - `dydo/index.md`
   is off-limits to reads although every entry prompt orders agents to read it; `Commands/SyncCommand.cs`
   drops `## Must-Reads` from skill-only roles so admiral skills compile without their context pointers;
   `workflow-run-sprint.js` cites `references/merge-sprint.md` where the compiler emits
@@ -46,7 +46,7 @@ types.
 
 | Stage | Hat | Uses | Output | Gate |
 |---|---|---|---|---|
-| Think | co-thinker | grilling, domain-modeling, research | ripe intent; a DR when the ADR test passes | — |
+| Think | co-thinker | grilling, domain-modeling, research | ripe intent; a DR when the ADR test passes | - |
 | Chart and plan a Project | project-planner, using wayfinder | grilling, research, prototype | first Project map; blocking question Issues | reviewer (project-plan) → human approval |
 | Plan an Issue | issue-captain, using issue-planner | codebase-design, writing-good-briefs | just-in-time Issue route | optional reviewer (issue-plan) |
 | Implement | issue-captain | code/test/docs-writer as optional workers, tdd, diagnosing-bugs | Issue branch, PR into the feature branch, evidence on the Issue | reviewer PASS (review block) |
@@ -93,14 +93,14 @@ resource. New and dydo-native: Issue Captain, walkthrough, the working-tree cont
 
 ### 3. Three review tiers and the review block
 
-1. **Issue review** — reviewer with the target rubric: code, tests, or docs before a production merge;
+1. **Issue review** - reviewer with the target rubric: code, tests, or docs before a production merge;
    project-plan before Project approval; issue-plan before production only when the Issue Captain
    requires it.
-2. **Merge review** — reviewer with the `merge` rubric after *every* merge: a mechanical spot check
+2. **Merge review** - reviewer with the `merge` rubric after *every* merge: a mechanical spot check
    that scales with what landed; at the final feature merge it also proves the plan's acceptance
    criteria. The former `merge-sprint.md` is this rubric, renamed and narrowed; lens-hunting moves to
    the inquisitor.
-3. **Inquisition** — rare, fan-out across lenses, adversarial verification, reviewer as judge using
+3. **Inquisition** - rare, fan-out across lenses, adversarial verification, reviewer as judge using
    the `merge` rubric at full scale, docs-writer assimilation. Proposed by the admiral with scope and
    cost; runs only after the human confirms, enforced by a `confirmed` argument the workflow refuses
    to run without. Its purpose is to catch what got through, not to prove zero defects.
@@ -144,16 +144,16 @@ choices are the human's. Native blocking does the pickup.
 
 ### 5. Planning at two resolutions
 
-- **Project planning** — low resolution: destination, scope, acceptance, architecture-level design, the first
+- **Project planning** - low resolution: destination, scope, acceptance, architecture-level design, the first
   few pickable tracer-bullet Issues with full contracts (expand–contract for wide refactors), rough
-  later bearings, ordering and isolation, watch-outs, and — when foggy — `## Not yet specified` plus
+  later bearings, ordering and isolation, watch-outs, and - when foggy - `## Not yet specified` plus
   blocking question Issues instead of a pretended-complete route. Perfect plans are fiction: the
   approved plan fixes the destination, not every turn. The admiral uses wayfinder as fog clears to
   create, split, drop, or resequence Issues and records dated amendments. Normal map refinement inside
   the approved destination needs no new review; changes to destination, scope, acceptance criteria,
   or governing architecture do.
-- **Issue planning** — high resolution, just in time: files to touch, the pattern to copy with its path,
-  steps, edge cases, exact gates — until implementation contains no hidden decisions. Authored in the
+- **Issue planning** - high resolution, just in time: files to touch, the pattern to copy with its path,
+  steps, edge cases, exact gates - until implementation contains no hidden decisions. Authored in the
   parent Issue or direct lane Sub-issue by a spawned `issue-planner` at the Issue Captain's direction,
   then implemented by delegated writers and reviewed with their code. The Issue Planner recommends whether
   route risk warrants a separate `issue-plan` review; the Issue Captain decides and uses it sparingly
@@ -169,10 +169,10 @@ precedence: the human's live instruction > DR > reviewed Project plan at its gov
 contract > coding standards > existing code. The human is reached only for a conflict with a DR (which
 is truth, or is the DR obsolete?), live external state agents cannot coordinate, or authority the
 contract cannot supply. Raising a hand means a comment on the Issue and, when blocked, a question
-Issue wired as blocker with the Issue moved to Blocked — never silent waiting. A fifth consecutive
+Issue wired as blocker with the Issue moved to Blocked - never silent waiting. A fifth consecutive
 review FAIL on the same candidate is itself an escalation: stop looping and raise. The retired
 `run-issues` workflow enforced this cap in code; the Issue Captain and admiral carry it as prose.
-There is no "PASS with notes" — a note is a finding, and a finding is a FAIL; the cap, not a
+There is no "PASS with notes" - a note is a finding, and a finding is a FAIL; the cap, not a
 softened verdict, is the relief valve.
 
 ### 7. The human's gates
@@ -206,9 +206,9 @@ is; explicit-only descriptions are a punchy human-facing line.
 
 ### 10. Guard and compiler
 
-- A **protected tier** joins off-limits: any tool may read, no tool — Bash included — may write or
+- A **protected tier** joins off-limits: any tool may read, no tool - Bash included - may write or
   delete. Members are dydo's own system files only: `dydo/index.md`, `dydo/files-off-limits.md`,
-  `dydo.json`. `CLAUDE.md`, `AGENTS.md` and harness config files stay outside the guard — the
+  `dydo.json`. `CLAUDE.md`, `AGENTS.md` and harness config files stay outside the guard - the
   harness owns its own defensive measures, and off-limits keeps its original meaning of files agents
   must not even read (secrets). `dydo/_system/**` stays fully off-limits. This unblinds agents to
   their orientation without stretching the guard beyond dydo's own surface; who may *edit* the entry
@@ -277,4 +277,4 @@ Amended by [DR 051](./051-captains-by-default-admiral-on-invocation.md) (2026-09
 - [Customizing Roles](../../guides/customizing-roles.md)
 - [dydo Glossary](../../reference/dydo-glossary.md)
 - [Restore skill craftsmanship](../plans/dydo-3-skill-craftsmanship-restoration.md)
-- [DR 044 — Linear-Canonical PM and the dydo Knowledge Boundary](./044-linear-canonical-pm-and-dydo-knowledge-boundary.md)
+- [DR 044 - Linear-Canonical PM and the dydo Knowledge Boundary](./044-linear-canonical-pm-and-dydo-knowledge-boundary.md)

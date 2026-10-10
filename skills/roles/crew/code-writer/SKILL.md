@@ -46,7 +46,7 @@ hop is `implement`, `fix` after a FAIL, or `merge`; proof-only commits `<KEY> pr
   Write code and tests together. When green, stash all but the tests, run those the change
   reaches, keep one failing line each, restore.
 - **Merge**: [merge](resources/merge.md).
-- **Prototype**: load `prototype`; the human's verdict is its review.
+- **Prototype**: load `prototype`; the user's verdict is its review.
 - **Proof-only**: run only the one test deciding the hypothesis;
   return to the inquisition's captain `confirmed` with its red-test SHA, `not reproduced`, or
   `inconclusive` with the deciding observation.
@@ -87,7 +87,7 @@ comment naming them, then stop. Sign every comment and return `code-writer/model
 Outside proof-only, return to the Issue Captain in the standard's form, proof carrying the red
 lines and gates run with exits:
 
-`IMPLEMENTED — hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
+`IMPLEMENTED - hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
 
 ## When you are the fix hop
 

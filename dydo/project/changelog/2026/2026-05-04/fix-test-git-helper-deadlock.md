@@ -6,7 +6,7 @@ date: 2026-05-04
 
 # Task: fix-test-git-helper-deadlock
 
-Fix the 30s WaitForExit cliff in WorktreeMergeSafetyIntegrationTests.Git() — pump stdout/stderr concurrently to avoid pipe-buffer deadlock. Diagnosed in [#0148](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0148-test-suite-runtime-ballooned-from-3min-to-10min-investigate-parallelism-other-sp.md).
+Fix the 30s WaitForExit cliff in WorktreeMergeSafetyIntegrationTests.Git() - pump stdout/stderr concurrently to avoid pipe-buffer deadlock. Diagnosed in [#0148](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0148-test-suite-runtime-ballooned-from-3min-to-10min-investigate-parallelism-other-sp.md).
 
 ## Progress
 
@@ -42,7 +42,7 @@ Approve or reject.
 - Reviewed by: Adele
 - Date: 2026-05-01 18:20
 - Result: PASSED
-- Notes: PASS. Commit aeee461 implements Tara's plan exactly. Git() helper now drains stdout/stderr concurrently via ReadToEndAsync before WaitForExit, kills the process tree on timeout with a clear 'timed out after 30s' message, and surfaces (exit N) + captured stderr on non-zero exit. New regression test WorktreeMergeSafetyGitHelperTests.Git_NoisyOutput_DoesNotDeadlock invokes the private helper via reflection (with TargetInvocationException unwrap), commits a 256 KB file, runs git log -p, and asserts <10s wall — would have hung 30s on the unfixed helper. Test-file scope only — no production code changed. Verified: filtered run (FullyQualifiedName~WorktreeMergeSafety) 27/27 pass; gap_check 137/137 pass. Grepped the test tree — no caller asserts on the exact failure-message text, so the new (exit N) substring is safe. dydo check shows 19 errors / 7 warnings, all pre-existing working-tree state from other in-flight tasks (template-additions missing titles, inquisitions invalid type 'inquisition', issues/_index.md broken links to issues moved to resolved/, fix-test-git-helper-deadlock.md task-file orphan). None are introduced by aeee461. LGTM — approve.
+- Notes: PASS. Commit aeee461 implements Tara's plan exactly. Git() helper now drains stdout/stderr concurrently via ReadToEndAsync before WaitForExit, kills the process tree on timeout with a clear 'timed out after 30s' message, and surfaces (exit N) + captured stderr on non-zero exit. New regression test WorktreeMergeSafetyGitHelperTests.Git_NoisyOutput_DoesNotDeadlock invokes the private helper via reflection (with TargetInvocationException unwrap), commits a 256 KB file, runs git log -p, and asserts <10s wall - would have hung 30s on the unfixed helper. Test-file scope only - no production code changed. Verified: filtered run (FullyQualifiedName~WorktreeMergeSafety) 27/27 pass; gap_check 137/137 pass. Grepped the test tree - no caller asserts on the exact failure-message text, so the new (exit N) substring is safe. dydo check shows 19 errors / 7 warnings, all pre-existing working-tree state from other in-flight tasks (template-additions missing titles, inquisitions invalid type 'inquisition', issues/_index.md broken links to issues moved to resolved/, fix-test-git-helper-deadlock.md task-file orphan). None are introduced by aeee461. LGTM - approve.
 
 Awaiting human approval.
 

@@ -14,9 +14,9 @@ Added default nudges to ConfigFactory (coverage tool warn nudge). CreateDefault 
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Services\ConfigFactory.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\ConfigFactoryTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\TemplateCommand.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\ConfigFactory.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\ConfigFactoryTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\TemplateCommand.cs - Modified
 
 
 ## Review Summary

@@ -14,17 +14,17 @@ Implemented decision 014: renamed dydo clean to dydo agent clean. Moved command 
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleDefinitionService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CommandDocConsistencyTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Program.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\AgentCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\CompletionProvider.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\dydo-commands.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CompleteCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\HelpCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\EndToEnd\CliEndToEndTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleDefinitionService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CommandDocConsistencyTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Program.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\AgentCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\CompletionProvider.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\dydo-commands.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CompleteCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\HelpCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\EndToEnd\CliEndToEndTests.cs - Modified
 
 
 ## Review Summary
@@ -36,7 +36,7 @@ Implemented decision 014: renamed dydo clean to dydo agent clean. Moved command 
 - Reviewed by: Grace
 - Date: 2026-03-31 14:31
 - Result: PASSED
-- Notes: LGTM. Command correctly moved from root to agent subcommand group. CompletionProvider refactor to data-driven tables is clean and reduces CC from ~38 to ~19. Tests comprehensive — 8+ new edge-case tests added. No dead code, no backwards-compat hacks, exactly per decision 014. All 3364 tests pass, coverage gate 132/132.
+- Notes: LGTM. Command correctly moved from root to agent subcommand group. CompletionProvider refactor to data-driven tables is clean and reduces CC from ~38 to ~19. Tests comprehensive - 8+ new edge-case tests added. No dead code, no backwards-compat hacks, exactly per decision 014. All 3364 tests pass, coverage gate 132/132.
 
 Awaiting human approval.
 

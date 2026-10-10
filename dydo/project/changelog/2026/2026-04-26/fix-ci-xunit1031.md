@@ -6,7 +6,7 @@ date: 2026-04-26
 
 # Task: fix-ci-xunit1031
 
-Review fix-ci-xunit1031. Part 1: Converted three WatchdogServiceTests to async Task (Run_ExitsWhenAnchorProcessDies, Run_ExitsWhenCancellationRequested, Run_DeletesPidFileOnExit) — replaced blocking runTask.Wait(ts) with await Task.WhenAny(runTask, Task.Delay(ts)) + Assert.Same + await runTask (per brief pattern); Thread.Sleep(250) → await Task.Delay(250). Part 2: Added repo-root Directory.Build.props with <TreatWarningsAsErrors>true</TreatWarningsAsErrors> (recommended option from brief). Note: code-writer lacks repo-root write perms, human granted a temporary guard lift (dydo guard lift) to create the file. Verification: dotnet build DynaDocs.sln --warnaserror → 0 warnings, 0 errors; run_tests.py → 3776/3776 passed; gap_check.py --force-run → 136/136 modules passing.
+Review fix-ci-xunit1031. Part 1: Converted three WatchdogServiceTests to async Task (Run_ExitsWhenAnchorProcessDies, Run_ExitsWhenCancellationRequested, Run_DeletesPidFileOnExit) - replaced blocking runTask.Wait(ts) with await Task.WhenAny(runTask, Task.Delay(ts)) + Assert.Same + await runTask (per brief pattern); Thread.Sleep(250) → await Task.Delay(250). Part 2: Added repo-root Directory.Build.props with <TreatWarningsAsErrors>true</TreatWarningsAsErrors> (recommended option from brief). Note: code-writer lacks repo-root write perms, human granted a temporary guard lift (dydo guard lift) to create the file. Verification: dotnet build DynaDocs.sln --warnaserror → 0 warnings, 0 errors; run_tests.py → 3776/3776 passed; gap_check.py --force-run → 136/136 modules passing.
 
 ## Progress
 
@@ -18,7 +18,7 @@ Review fix-ci-xunit1031. Part 1: Converted three WatchdogServiceTests to async T
 
 ## Review Summary
 
-Review fix-ci-xunit1031. Part 1: Converted three WatchdogServiceTests to async Task (Run_ExitsWhenAnchorProcessDies, Run_ExitsWhenCancellationRequested, Run_DeletesPidFileOnExit) — replaced blocking runTask.Wait(ts) with await Task.WhenAny(runTask, Task.Delay(ts)) + Assert.Same + await runTask (per brief pattern); Thread.Sleep(250) → await Task.Delay(250). Part 2: Added repo-root Directory.Build.props with <TreatWarningsAsErrors>true</TreatWarningsAsErrors> (recommended option from brief). Note: code-writer lacks repo-root write perms, human granted a temporary guard lift (dydo guard lift) to create the file. Verification: dotnet build DynaDocs.sln --warnaserror → 0 warnings, 0 errors; run_tests.py → 3776/3776 passed; gap_check.py --force-run → 136/136 modules passing.
+Review fix-ci-xunit1031. Part 1: Converted three WatchdogServiceTests to async Task (Run_ExitsWhenAnchorProcessDies, Run_ExitsWhenCancellationRequested, Run_DeletesPidFileOnExit) - replaced blocking runTask.Wait(ts) with await Task.WhenAny(runTask, Task.Delay(ts)) + Assert.Same + await runTask (per brief pattern); Thread.Sleep(250) → await Task.Delay(250). Part 2: Added repo-root Directory.Build.props with <TreatWarningsAsErrors>true</TreatWarningsAsErrors> (recommended option from brief). Note: code-writer lacks repo-root write perms, human granted a temporary guard lift (dydo guard lift) to create the file. Verification: dotnet build DynaDocs.sln --warnaserror → 0 warnings, 0 errors; run_tests.py → 3776/3776 passed; gap_check.py --force-run → 136/136 modules passing.
 
 ## Code Review
 

@@ -25,7 +25,7 @@ Merged worktree branch worktree/fix-gap-slice-d into master. Branch was already 
 - Reviewed by: Dexter
 - Date: 2026-03-23 17:25
 - Result: PASSED
-- Notes: LGTM. Merge was a clean no-op — worktree branch HEAD (89ebdcb) already matched master. Branch deleted, 484 audit files preserved. 13 gap_check failures are pre-existing on master, zero regressions from this merge.
+- Notes: LGTM. Merge was a clean no-op - worktree branch HEAD (89ebdcb) already matched master. Branch deleted, 484 audit files preserved. 13 gap_check failures are pre-existing on master, zero regressions from this merge.
 
 Awaiting human approval.
 

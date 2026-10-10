@@ -6,20 +6,20 @@ date: 2026-05-08
 
 # Task: fix-ci-failures
 
-Review commit 834b00f on master — two test-only fixes that turned Linux CI from red to green (run 25459952823, build+test 1m44s).
+Review commit 834b00f on master - two test-only fixes that turned Linux CI from red to green (run 25459952823, build+test 1m44s).
 
 CHANGES (DynaDocs.Tests/ only, zero production code touched):
 
 1. DynaDocs.Tests/Integration/InquisitionTests.cs (InitGitRepo helper)
    - Was: RunGit("init") then RunGit("commit --allow-empty -m \"init\"").
    - Now: second call passes -c user.email=test@example.com -c user.name=Test inline so the commit succeeds on CI runners with no global git config.
-   - Picked option 2 from Adele's brief (single git invocation, no global state mutation, no helper signature change). WorktreeMergeSafetyIntegrationTests uses option 1 ("git config user.email" calls) — kept divergence intentional because option 2 is meaningfully cleaner here (no extra RunGit calls).
+   - Picked option 2 from Adele's brief (single git invocation, no global state mutation, no helper signature change). WorktreeMergeSafetyIntegrationTests uses option 1 ("git config user.email" calls) - kept divergence intentional because option 2 is meaningfully cleaner here (no extra RunGit calls).
    - Fixes 5 failures: InitGitRepo_CompletesAndProducesValidRepository + Coverage_ReportWithDate_ShowsDateAndStatus + Coverage_WithReports_ShowsTableHeader + Coverage_MixedReports_ShowsCorrectStatuses + Coverage_ReportWithMultipleDates_ShowsLatest.
 
 2. DynaDocs.Tests/Services/ProcessUtilsCaptureTests.cs (RunProcessCapture_EnvironmentInjected_PreservesParentEnv, line 81-83)
    - Was: sh -c "echo $DYDO_TEST_VAR-${PATH:0:1}".
    - Now: sh -c "echo $DYDO_TEST_VAR-${PATH%%:*}".
-   - Root cause: ${PATH:0:1} is a bashism. /bin/sh on Debian/Ubuntu is dash, which rejects it as "Bad substitution" (exit 2 — exactly what CI saw). ${PATH%%:*} is POSIX (strips the first colon-separated component), preserves semantic intent (proves parent PATH is inherited via a non-empty prefix). Inline comment updated to match.
+   - Root cause: ${PATH:0:1} is a bashism. /bin/sh on Debian/Ubuntu is dash, which rejects it as "Bad substitution" (exit 2 - exactly what CI saw). ${PATH%%:*} is POSIX (strips the first colon-separated component), preserves semantic intent (proves parent PATH is inherited via a non-empty prefix). Inline comment updated to match.
    - Fixes 1 failure: RunProcessCapture_EnvironmentInjected_PreservesParentEnv.
 
 VERIFICATION:
@@ -29,7 +29,7 @@ VERIFICATION:
 
 KEY DECISIONS:
 - Used -c <key>=<value> form rather than `git config` to keep test isolation tight and avoid mutating any state outside the single commit invocation.
-- Did not add a regression guard in CI that strips global git config — out of scope; the inline -c form is self-contained.
+- Did not add a regression guard in CI that strips global git config - out of scope; the inline -c form is self-contained.
 - The test suite worked locally before the fix (Windows dev box has global git config + cmd path uses %PATH:~0,1%); only Linux CI was red. Fix is verified by the green CI run, not by local repro.
 
 NO PRODUCTION CHANGES. NO UNRELATED CHANGES. NO OUT-OF-SCOPE WORK.
@@ -44,20 +44,20 @@ NO PRODUCTION CHANGES. NO UNRELATED CHANGES. NO OUT-OF-SCOPE WORK.
 
 ## Review Summary
 
-Review commit 834b00f on master — two test-only fixes that turned Linux CI from red to green (run 25459952823, build+test 1m44s).
+Review commit 834b00f on master - two test-only fixes that turned Linux CI from red to green (run 25459952823, build+test 1m44s).
 
 CHANGES (DynaDocs.Tests/ only, zero production code touched):
 
 1. DynaDocs.Tests/Integration/InquisitionTests.cs (InitGitRepo helper)
    - Was: RunGit("init") then RunGit("commit --allow-empty -m \"init\"").
    - Now: second call passes -c user.email=test@example.com -c user.name=Test inline so the commit succeeds on CI runners with no global git config.
-   - Picked option 2 from Adele's brief (single git invocation, no global state mutation, no helper signature change). WorktreeMergeSafetyIntegrationTests uses option 1 ("git config user.email" calls) — kept divergence intentional because option 2 is meaningfully cleaner here (no extra RunGit calls).
+   - Picked option 2 from Adele's brief (single git invocation, no global state mutation, no helper signature change). WorktreeMergeSafetyIntegrationTests uses option 1 ("git config user.email" calls) - kept divergence intentional because option 2 is meaningfully cleaner here (no extra RunGit calls).
    - Fixes 5 failures: InitGitRepo_CompletesAndProducesValidRepository + Coverage_ReportWithDate_ShowsDateAndStatus + Coverage_WithReports_ShowsTableHeader + Coverage_MixedReports_ShowsCorrectStatuses + Coverage_ReportWithMultipleDates_ShowsLatest.
 
 2. DynaDocs.Tests/Services/ProcessUtilsCaptureTests.cs (RunProcessCapture_EnvironmentInjected_PreservesParentEnv, line 81-83)
    - Was: sh -c "echo $DYDO_TEST_VAR-${PATH:0:1}".
    - Now: sh -c "echo $DYDO_TEST_VAR-${PATH%%:*}".
-   - Root cause: ${PATH:0:1} is a bashism. /bin/sh on Debian/Ubuntu is dash, which rejects it as "Bad substitution" (exit 2 — exactly what CI saw). ${PATH%%:*} is POSIX (strips the first colon-separated component), preserves semantic intent (proves parent PATH is inherited via a non-empty prefix). Inline comment updated to match.
+   - Root cause: ${PATH:0:1} is a bashism. /bin/sh on Debian/Ubuntu is dash, which rejects it as "Bad substitution" (exit 2 - exactly what CI saw). ${PATH%%:*} is POSIX (strips the first colon-separated component), preserves semantic intent (proves parent PATH is inherited via a non-empty prefix). Inline comment updated to match.
    - Fixes 1 failure: RunProcessCapture_EnvironmentInjected_PreservesParentEnv.
 
 VERIFICATION:
@@ -67,7 +67,7 @@ VERIFICATION:
 
 KEY DECISIONS:
 - Used -c <key>=<value> form rather than `git config` to keep test isolation tight and avoid mutating any state outside the single commit invocation.
-- Did not add a regression guard in CI that strips global git config — out of scope; the inline -c form is self-contained.
+- Did not add a regression guard in CI that strips global git config - out of scope; the inline -c form is self-contained.
 - The test suite worked locally before the fix (Windows dev box has global git config + cmd path uses %PATH:~0,1%); only Linux CI was red. Fix is verified by the green CI run, not by local repro.
 
 NO PRODUCTION CHANGES. NO UNRELATED CHANGES. NO OUT-OF-SCOPE WORK.

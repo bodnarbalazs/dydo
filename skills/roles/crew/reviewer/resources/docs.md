@@ -38,7 +38,7 @@ Every item below is a FAIL when it holds.
 - **Anchor missing or doubled, or a tagline that changes nothing.** The no-op test grades against
   the model's default, and a failing line is deleted rather than softened.
 - **Shape broken.** Officers and crew: H1 → one-line job → Must-Reads → Boundary → Method with a
-  completion criterion on every step → Return or Handoff. A section order the human set for a role
+  completion criterion on every step → Return or Handoff. A section order the user set for a role
   stands in place of Method; Must-Reads, Boundary, Return, and a completion criterion wherever steps
   exist still bind. Methods keep their upstream shape.
 - **Off the map.** Must-Reads that do not name what the sender hands over, a Return that does not

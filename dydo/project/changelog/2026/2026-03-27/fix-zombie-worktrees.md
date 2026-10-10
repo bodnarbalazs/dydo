@@ -14,11 +14,11 @@ Implemented dydo worktree prune command and enhanced dydo clean --all. Changes: 
 
 ## Files Changed
 
-C:/Users/User/Desktop/Projects/DynaDocs/Commands/smoke-final-a.txt — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WorkspaceCleaner.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorkspaceAndCleanTests.cs — Modified
+C:/Users/User/Desktop/Projects/DynaDocs/Commands/smoke-final-a.txt - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WorkspaceCleaner.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorkspaceAndCleanTests.cs - Modified
 
 
 ## Review Summary

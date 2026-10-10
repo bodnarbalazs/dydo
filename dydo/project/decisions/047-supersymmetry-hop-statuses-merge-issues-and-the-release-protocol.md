@@ -7,7 +7,7 @@ accepted: 2026-09-05
 participants: [balazs, Claude (Fable)]
 ---
 
-# 047 — Supersymmetry, Hop Statuses, Merge Issues, and the Release Protocol
+# 047 - Supersymmetry, Hop Statuses, Merge Issues, and the Release Protocol
 
 Reshapes the dydo 3 operating model where the control-flow map found its contracts disagreeing: a
 captain's Issue is a Project one level down and the same Types, statuses and chain hold at both
@@ -31,7 +31,7 @@ model tiers in use, and the setup guide.
 - Facts established on both hosts: a sub-agent can spawn sub-agents, to a default depth of three on
   Claude Code and to `agents.max_depth`, default one, on Codex (DYD-86 sets both); no sub-agent on
   either host can talk to the human; AGENTS.md reaches a Codex sub-agent (the human's run,
-  2026-09-04). [DYD-88 — Codex sub-agent lifecycle observations — 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) established that a
+  2026-09-04). [DYD-88 - Codex sub-agent lifecycle observations - 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) established that a
   returned Codex `multi_agent` sub-agent resumes with its context when messaged. A finished Codex
   sub-agent passively waking an idle parent and human-origin steering of a running Codex sub-agent
   remain unestablished. A Codex spawn requested with `sandbox_mode = "read-only"` completed a normal
@@ -321,12 +321,12 @@ publication acceptance.
   `types.json` follows the Type set. The prompt-file pass is DYD-90, its worklist the map's §8; the
   Workflow retirement is DYD-92.
 - DR 046 is accepted as written and amended here, not folded in.
-- [DYD-86 — dydo init sets the sub-agent nesting depth on both hosts](https://linear.app/bodnar-balazs/issue/DYD-86/dydo-init-sets-the-sub-agent-nesting-depth-on-both-hosts)
-  sets the nesting depth on both hosts before 3.0 is done. [DYD-88 — Codex sub-agent lifecycle
-  observations — 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) established returned-sub-agent resume, left passive wake and
+- [DYD-86 - dydo init sets the sub-agent nesting depth on both hosts](https://linear.app/bodnar-balazs/issue/DYD-86/dydo-init-sets-the-sub-agent-nesting-depth-on-both-hosts)
+  sets the nesting depth on both hosts before 3.0 is done. [DYD-88 - Codex sub-agent lifecycle
+  observations - 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) established returned-sub-agent resume, left passive wake and
   human-origin steering unestablished, and showed that a requested read-only sandbox did not prevent
   a normal edit. Until passive wake is established, the Codex admiral waits inside its turn for its
-  captains. [DYD-89 — CodeRabbit on top-level Issue merges and the landing](https://linear.app/bodnar-balazs/issue/DYD-89/coderabbit-on-top-level-issue-merges-and-the-landing)
+  captains. [DYD-89 - CodeRabbit on top-level Issue merges and the landing](https://linear.app/bodnar-balazs/issue/DYD-89/coderabbit-on-top-level-issue-merges-and-the-landing)
   holds CodeRabbit on top-level and landing merges for 3.1.
 
 ## Supersedes and amends
@@ -402,5 +402,5 @@ Amended by [DR 051](./051-captains-by-default-admiral-on-invocation.md) (2026-09
 - [dydo Glossary](../../reference/dydo-glossary.md)
 - [Working-Tree Contract](../../guides/working-tree-contract.md)
 - [Harmonize the skill system](../plans/dydo-3-skill-harmonization.md)
-- [DR 045 — Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](./045-flow-map-hats-review-tiers-and-working-tree-contract.md)
-- [DR 046 — Executable Specifications, the Specifier, and Commit-Addressed Hops](./046-executable-specifications-specifier-and-commit-addressed-hops.md)
+- [DR 045 - Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](./045-flow-map-hats-review-tiers-and-working-tree-contract.md)
+- [DR 046 - Executable Specifications, the Specifier, and Commit-Addressed Hops](./046-executable-specifications-specifier-and-commit-addressed-hops.md)

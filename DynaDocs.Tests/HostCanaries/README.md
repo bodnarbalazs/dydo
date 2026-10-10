@@ -19,7 +19,7 @@ not copy authentication or inherit API-key variables. Plugin startup is disabled
 fully matched read-only command approval is accepted for the derived resource read. The isolated-HOME
 Claude leg is retired (DYD-200): Claude Code discovery is proven by direct observation instead,
 recorded on the Issue (Linear comment "Claude Code host discovery", 2026-09-16, DYD-200 Canceled).
-This recorder no longer runs that Claude leg on purpose — but a bare invocation of the command below
+This recorder no longer runs that Claude leg on purpose - but a bare invocation of the command below
 with no `--only` flag still executes it, and that leg calls the configured live model provider. That
 is why the gate is documented and run as the two narrowed invocations below, each with an explicit
 `--only`, and never as the bare command.

@@ -10,11 +10,11 @@ linear-project: https://linear.app/bodnar-balazs/project/dydo-30-harmonize-the-s
 
 Build the skill system [DR 045](../decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md)
 describes: one flow map every agent can place itself on, twenty-six skills that trigger correctly and
-cross-reference only their genuine neighbours — each reference bound by the §7 table and living in
-exactly one place, never a web of everything naming everything — six rubrics, two planning roles, a working-tree contract, a guard
+cross-reference only their genuine neighbours - each reference bound by the §7 table and living in
+exactly one place, never a web of everything naming everything - six rubrics, two planning roles, a working-tree contract, a guard
 that protects orientation files without hiding them, and a compiler whose agents actually reach their
-skill. This plan runs **under today's tooling** — the current orchestrator-era skills, hands-on
-sub-agent dispatch, and a disabled guard — because the system it builds does not exist yet.
+skill. This plan runs **under today's tooling** - the current orchestrator-era skills, hands-on
+sub-agent dispatch, and a disabled guard - because the system it builds does not exist yet.
 
 ## 1. Specification
 
@@ -100,7 +100,7 @@ defects. Import the Matt Pocock skills DR 045 names, adapted. Leave the reposito
 - **How does the review discipline hold before the Issue Captain skill exists?** The admiral session
   spawns a fresh `reviewer` sub-agent per Issue and per file and refuses to merge without its review
   block; H-10 re-reviews the integrated result.
-- **Who writes `CLAUDE.md`/`AGENTS.md`?** They are not guard-protected — the harness defends its own
+- **Who writes `CLAUDE.md`/`AGENTS.md`?** They are not guard-protected - the harness defends its own
   orientation and config files, and off-limits keeps its original meaning of files agents must not
   even read. Only §8's ownership rule governs them: H-3 (they mirror its template; parity is its
   contract) and H-10 (final regeneration); afterwards the human. The entry-point parity test
@@ -133,35 +133,35 @@ defects. Import the Matt Pocock skills DR 045 names, adapted. Leave the reposito
   Fowler smell baseline the code rubric absorbs.
 - Claude Code docs (`code.claude.com/docs/en/sub-agents.md`, `skills.md`) and Codex docs
   (`learn.chatgpt.com/docs/agent-configuration/subagents`, `build-skills`, `hooks`) as verified on
-  2026-08-30 — the compiler lane's contract.
+  2026-08-30 - the compiler lane's contract.
 
 ## 3. Design
 
 - **Guard.** `dydo/files-off-limits.md` gains a `## Protected Patterns` block; `OffLimitsService`
-  loads both lists; `GuardCommand` checks protected patterns only on write/delete paths — direct
-  tools and the Bash analyzer's detected writes — with a message that says the file is readable and
+  loads both lists; `GuardCommand` checks protected patterns only on write/delete paths - direct
+  tools and the Bash analyzer's detected writes - with a message that says the file is readable and
   human-owned. Protected members are dydo's own system files only: `dydo/index.md`,
   `dydo/files-off-limits.md`, `dydo.json` (the hardcoded system pattern moves it from off-limits to
-  protected). `CLAUDE.md`, `AGENTS.md` and harness config files stay outside the guard — the
-  harness owns its own defensive measures — and off-limits keeps its original meaning: files agents
+  protected). `CLAUDE.md`, `AGENTS.md` and harness config files stay outside the guard - the
+  harness owns its own defensive measures - and off-limits keeps its original meaning: files agents
   must not even read. Shipped
   defaults live in `Services/ConfigFactory.cs`: `DefaultNudges` reaches `dydo.json` through
-  `EnsureDefaultNudges` — the review-block nudge is added there at warn severity (matching
+  `EnsureDefaultNudges` - the review-block nudge is added there at warn severity (matching
   `gh pr create` whose command lacks `Independent review`), the DR 026 "Tier-1 agents are managers …
   run-sprint workflow" nudge is retired from the factory, every remaining `run-sprint` mention in
   that file (including comments) goes with it, and this repo's `dydo.json` mirrors both changes;
   `CreateDefaultModels` binds both planning roles and `issue-captain` to strong, and `research` to standard,
   so a fresh `dydo init` ships the DR 045 bindings, and this repo's `dydo.json` is updated to match.
   The Codex hook matcher (`InitCommand.CodexGuardMatcher`) becomes exactly
-  `Bash|apply_patch|Edit|Write|Agent|shell_command|exec|local_shell|unified_exec` — the documented
+  `Bash|apply_patch|Edit|Write|Agent|shell_command|exec|local_shell|unified_exec` - the documented
   Codex matcher names first (shell and unified exec match as `Bash`; `apply_patch` also as
   `Edit`/`Write`; `spawn_agent` as `Agent`), with the legacy shell names **retained** because they
   were added empirically (issue 0295: the hook fired but never matched Codex's shell lane) and the
   documentation reading is unproven against the installed Codex; the Claude-only UI names are
   dropped. H-2's recorded Codex spawn therefore includes one shell probe that must come back
   `BLOCKED` through the hook; that evidence goes to the assimilation brief, and trimming the legacy
-  names is a follow-up Issue, not this Project. Every `orchestrator` mention in `GuardCommand.cs` — the stderr
-  message and the comment above it — is reworded against the admiral role.
+  names is a follow-up Issue, not this Project. Every `orchestrator` mention in `GuardCommand.cs` - the stderr
+  message and the comment above it - is reworded against the admiral role.
 - **Compiler.** Delete `DropOrchestrationSections`; rewrite `../../../<x>` and `dydo/<x>` links in
   the compiled body to `../../../dydo/<x>` (valid from both `.claude/skills/<n>/` and
   `.agents/skills/<n>/`) and `resources/<n>.md` links to the host's emitted path;
@@ -184,22 +184,22 @@ defects. Import the Matt Pocock skills DR 045 names, adapted. Leave the reposito
 - **Hazards.** Renaming `merge-sprint`: H-2 performs the pure file rename (`git mv`, content
   untouched) and updates code and test references; H-7 writes the content and updates the reviewer
   template's link line and the inquisition citation. Between the two merges the feature branch
-  carries one dangling link — tolerated, and Gate E proves it closed. Exact-wording tests
+  carries one dangling link - tolerated, and Gate E proves it closed. Exact-wording tests
   (`ChiefOfStaffSyncTests`, `WayfinderHarmonyTests`, `SyncCommandTests.MattDerivedSkills…`,
   `UpstreamSkillSourceTests`'s wayfinder-explicit and grill-me-phrase assertions,
   `EntryPointParityTests.SharedTemplate_ContainsOnlyTheMinimalEntryContract`'s required/forbidden
   word lists, and `SyncCommandTests`' planning-role model `InlineData`) will fail on the new prose and
   config; H-2 replaces them with structural assertions (the entry point: ≤ 25 non-blank lines, a
-  link to `dydo/index.md`, CLAUDE.md/AGENTS.md parity kept — the working-tree link is H-3's and is
+  link to `dydo/index.md`, CLAUDE.md/AGENTS.md parity kept - the working-tree link is H-3's and is
   proved by its per-file review and Gate E, never asserted before H-3 merges). The
   shipped-equals-installed parity assertion in `UpstreamSkillSourceTests` is guaranteed to fail on any
   branch where a source changed but H-10 has not mirrored it; H-2 moves it into its own class,
   `InstalledTemplateParityTests`, whose comparison set is **exactly the five Matt-derived skills it
-  compares today** (wayfinder, grilling, grill-me, bro, writing-for-agents) — general parity is
+  compares today** (wayfinder, grilling, grill-me, bro, writing-for-agents) - general parity is
   proved by Gate E's `template update --diff` reporting zero pending, not by this test. It passes at
   Gates A and B because neither H-1 nor H-2 edits a compared skill, is not run at Gates C/D, and is
   expected **red on the feature branch from H-3's merge** (H-3 rewrites writing-for-agents) **until
-  H-10 mirrors** — the second named tolerated window beside the `merge-sprint` dangling link. "Merges
+  H-10 mirrors** - the second named tolerated window beside the `merge-sprint` dangling link. "Merges
   with the suite green" therefore means green at the Issue's own gate; the full suite is demanded
   only at Gates A, B and E. **No Gate C Issue merges before
   H-2 has merged** (they may be worked in parallel).
@@ -207,14 +207,14 @@ defects. Import the Matt Pocock skills DR 045 names, adapted. Leave the reposito
   executes the full test suite with no filter and exits non-zero on any failure; a gate's `--filter`
   line is only the fast first pass. Gates C and D run no or a narrow xunit set by design, and their
   Issues merge with the suite green only because every test their sources trip is either de-frozen by
-  H-2 (merged first) or kept green by the Issue itself — H-3 keeps `CLAUDE.md`/`AGENTS.md` in parity
+  H-2 (merged first) or kept green by the Issue itself - H-3 keeps `CLAUDE.md`/`AGENTS.md` in parity
   with its rewritten template for exactly that reason. Test ownership in §4 is spot-exact: H-1's config, matcher and nudge changes break
   `SyncCommandTests`' Codex-matcher assertions and planning-role model `InlineData`, and
-  `ConfigFactoryTests`' managers-doctrine nudge tests — those spots are H-1's, and `ConfigFactory.
+  `ConfigFactoryTests`' managers-doctrine nudge tests - those spots are H-1's, and `ConfigFactory.
   IsLegacyDefaultNudge` becomes dead code H-1 removes. `GuardIntegrationTests` asserts that an edit of
   `dydo/index.md` exits 2 with `BLOCKED` on stderr; the protected tier keeps that contract for writes
   and H-1 adds the read-allowed case beside it. `InitCommandTests.cs` is edited by both H-1 (Codex
-  matcher assertions) and H-2 (inventory count) — H-2 is blocked by H-1. Rewriting
+  matcher assertions) and H-2 (inventory count) - H-2 is blocked by H-1. Rewriting
   `.codex/hooks.json` (H-1) invalidates the SHA-pinned hook trust in `~/.codex/config.toml`, so the
   human's Codex sessions run unguarded until re-trusted: H-1's return says so explicitly. Rollback
   is `git revert` of the feature merge; no data or config migration.
@@ -223,9 +223,9 @@ defects. Import the Matt Pocock skills DR 045 names, adapted. Leave the reposito
 
 | Issue | Outcome | Exclusive surface | Blockers | Gate |
 |---|---|---|---|---|
-| H-1 | Guard protected tier, review-block default nudge, DR 026 nudge retired, Codex hook matcher cleanup | `Services/OffLimitsService.cs`, `Commands/GuardCommand.cs`, `Commands/InitCommand.cs` (hooks), `Services/ConfigFactory.cs` (retire the DR 026 nudge and every `run-sprint` mention, add the review-block default, fix `CreateDefaultModels`), `Templates/files-off-limits.template.md`, `dydo/files-off-limits.md`, `dydo.json` (nudges; `models.roles`: bind both planning roles and `issue-captain` to strong, `research` to standard), `.codex/hooks.json`, `dydo/understand/guard-system.md`, tests `OffLimitsServiceTests`, `GuardCommandTests`, `GuardIntegrationTests`, `ConfigFactoryTests`, `InitCommandTests` (Codex matcher assertions only), `SyncCommandTests` (only the Codex-matcher assertions and planning-role model `InlineData`) | — | A |
-| H-2 | Compiler contract, test de-freezing, retired-output cleanup, `merge` file rename, working-tree-contract scaffolding | `Commands/SyncCommand.cs`, `Models/RoleDefinition.cs`, `Services/RoleDefinitionService.cs`, `Services/TemplateGenerator.cs` (incl. its fallback role table, which still lists `orchestrator`), `Services/FolderScaffolder.cs`, `Commands/TemplateCommand.cs`, new stub `Templates/working-tree-contract.template.md` **and its installed twin** `dydo/guides/working-tree-contract.md` (each frontmatter, H1 and a one-sentence summary — so no later worktree materializes an orphan and `dydo check` stays warning-free; H-2 regenerates `dydo/guides/_index.md` so the hub line exists; H-6 writes the real content of both), `git mv Templates/reviewer-resource-merge-sprint.template.md Templates/reviewer-resource-merge.template.md` (content untouched), delete `Templates/workflow-run-sprint.js`, tests `SyncCommandTests` (everything except H-1's two spots), `RoleDefinitionServiceTests`, `TemplateGeneratorTests`, `CodexSyncArtifactsE2ETests`, `ChiefOfStaffSyncTests`, `WayfinderHarmonyTests`, `TemplateOverrideTests`, `InitCommandTests` (inventory count only), `UpstreamSkillSourceTests`, `EntryPointParityTests`, new `InstalledTemplateParityTests` | H-1 | B |
-| H-3 | The standard-setters: writing-for-agents + `SKILL-MECHANICS` resource, entry point, `dydo/index.md` taxonomy | `Templates/skill-writing-for-agents.template.md`, new `Templates/writing-for-agents-resource-skill-mechanics.template.md`, `Templates/entry-point.template.md` with its mirrors `CLAUDE.md` and `AGENTS.md` (parity is this Issue's contract), `Templates/index.template.md`, `dydo/index.md` | — | C |
+| H-1 | Guard protected tier, review-block default nudge, DR 026 nudge retired, Codex hook matcher cleanup | `Services/OffLimitsService.cs`, `Commands/GuardCommand.cs`, `Commands/InitCommand.cs` (hooks), `Services/ConfigFactory.cs` (retire the DR 026 nudge and every `run-sprint` mention, add the review-block default, fix `CreateDefaultModels`), `Templates/files-off-limits.template.md`, `dydo/files-off-limits.md`, `dydo.json` (nudges; `models.roles`: bind both planning roles and `issue-captain` to strong, `research` to standard), `.codex/hooks.json`, `dydo/understand/guard-system.md`, tests `OffLimitsServiceTests`, `GuardCommandTests`, `GuardIntegrationTests`, `ConfigFactoryTests`, `InitCommandTests` (Codex matcher assertions only), `SyncCommandTests` (only the Codex-matcher assertions and planning-role model `InlineData`) | - | A |
+| H-2 | Compiler contract, test de-freezing, retired-output cleanup, `merge` file rename, working-tree-contract scaffolding | `Commands/SyncCommand.cs`, `Models/RoleDefinition.cs`, `Services/RoleDefinitionService.cs`, `Services/TemplateGenerator.cs` (incl. its fallback role table, which still lists `orchestrator`), `Services/FolderScaffolder.cs`, `Commands/TemplateCommand.cs`, new stub `Templates/working-tree-contract.template.md` **and its installed twin** `dydo/guides/working-tree-contract.md` (each frontmatter, H1 and a one-sentence summary - so no later worktree materializes an orphan and `dydo check` stays warning-free; H-2 regenerates `dydo/guides/_index.md` so the hub line exists; H-6 writes the real content of both), `git mv Templates/reviewer-resource-merge-sprint.template.md Templates/reviewer-resource-merge.template.md` (content untouched), delete `Templates/workflow-run-sprint.js`, tests `SyncCommandTests` (everything except H-1's two spots), `RoleDefinitionServiceTests`, `TemplateGeneratorTests`, `CodexSyncArtifactsE2ETests`, `ChiefOfStaffSyncTests`, `WayfinderHarmonyTests`, `TemplateOverrideTests`, `InitCommandTests` (inventory count only), `UpstreamSkillSourceTests`, `EntryPointParityTests`, new `InstalledTemplateParityTests` | H-1 | B |
+| H-3 | The standard-setters: writing-for-agents + `SKILL-MECHANICS` resource, entry point, `dydo/index.md` taxonomy | `Templates/skill-writing-for-agents.template.md`, new `Templates/writing-for-agents-resource-skill-mechanics.template.md`, `Templates/entry-point.template.md` with its mirrors `CLAUDE.md` and `AGENTS.md` (parity is this Issue's contract), `Templates/index.template.md`, `dydo/index.md` | - | C |
 | H-4 | Thinking cluster | `skill-co-thinker`, `skill-grilling`, `skill-grill-me`, `skill-bro`, new `skill-domain-modeling`, `skill-research`, `skill-prototype` | H-3 | C |
 | H-5 | Planning cluster | new `skill-project-planner`, `skill-issue-planner`, `skill-wayfinder` (method), new `skill-codebase-design` | H-3 | C |
 | H-6 | Delivery cluster + working-tree contract | new `skill-issue-captain`, `skill-admiral` (from orchestrator, which is deleted), `skill-code-writer`, `skill-test-writer`, `skill-docs-writer`, new `skill-diagnosing-bugs`, `skill-handoff`, the content of `Templates/working-tree-contract.template.md` (H-2 ships the stub and the scaffolding) + its installed copy `dydo/guides/working-tree-contract.md` (written by hand here; H-10 reconciles the hash) | H-3 | C |
@@ -244,7 +244,7 @@ mirrored into `dydo/_system/templates/` by H-10, never by the source Issue.
 Run from the repository root in the Issue worktree. `dydo` below means `dotnet bin/Release/net10.0/dydo.dll`
 until the 3.0.0 CLI is reinstalled.
 
-**Gate A — guard**
+**Gate A - guard**
 
 ```powershell
 dotnet build DynaDocs.sln -c Release
@@ -262,7 +262,7 @@ equals the §3 literal (Claude-only UI names dropped, legacy shell names retaine
 `issue-captain: strong`, and `research: standard`.
 `gap_check.py` runs the whole suite: H-1's named test spots keep it green.
 
-**Gate B — compiler**
+**Gate B - compiler**
 
 ```powershell
 dotnet build DynaDocs.sln -c Release
@@ -289,7 +289,7 @@ the stub `working-tree-contract.template.md` scaffolded by `dydo init` and track
 `template update`; the emitted Codex matcher equals the §3 literal. One recorded Codex spawn (`codex exec` of a compiled agent asking it to name its `AGENTS.md` first line and
 its loaded skill) is attached to the Issue as evidence.
 
-**Gate C — a source cluster**
+**Gate C - a source cluster**
 
 ```powershell
 dotnet build DynaDocs.sln -c Release
@@ -312,7 +312,7 @@ source (`TemplateGenerator.ReadTemplate`), so without the `template update` step
 stale copy of every pre-existing role and only brand-new roles would show the rewrite. The
 `template update` refreshes the hash-clean local copies from the rebuilt source **inside the Issue
 worktree only**; the final `git checkout` discards those refreshed copies, the hash changes and the
-generated output before the Issue returns — H-10 alone commits them. The `rg` is scoped to the Issue's
+generated output before the Issue returns - H-10 alone commits them. The `rg` is scoped to the Issue's
 own files and returns no hits; the full-set `rg` is acceptance
 criterion 5, proved at Gate E. `dydo check` exits 0 with zero errors; an orphan-hub warning for a file
 this Issue creates is tolerated until H-10 regenerates the hubs, any other warning is a finding. No
@@ -321,7 +321,7 @@ the `docs` rubric **and** §6 (the writing checklist) as its brief, reading the 
 compiled output second (source-compiled, thanks to the step above); its review block is attached to
 the Issue. Source Issues never commit generated output, local template copies or hash changes.
 
-**Gate D — docs and vocabulary**
+**Gate D - docs and vocabulary**
 
 ```powershell
 dydo check dydo
@@ -335,7 +335,7 @@ exits 0 with zero errors; orphan-hub warnings for the two new FutureFeatures are
 regenerates the hubs. The notices are verified by H-10's Gate E run of `InstalledTemplateParityTests`
 and `UpstreamSkillSourceTests`, not here.
 
-**Gate E — integration**
+**Gate E - integration**
 
 ```powershell
 dotnet build DynaDocs.sln -c Release
@@ -362,7 +362,7 @@ change only `frameworkHashes` keys in `dydo.json` and the mirrored `dydo/_system
 `merge` rubric reviews the integrated feature branch; the human's pass (H-11) starts only after its
 PASS. After H-11, Gate E runs again and every edited file gets a fresh `docs`-rubric review.
 
-**Gate F — inquisition**
+**Gate F - inquisition**
 
 Run `.claude/workflows/inquisition.js` with `confirmed: true` only after the human says go, over the
 full feature diff against this plan. PASS with an assimilation brief closes the Project.
@@ -372,8 +372,8 @@ full feature diff against this plan. PASS with an assimilation brief closes the 
 Kickoff, one act by the admiral before any Issue is pickable: confirm the Dydo team labels
 `question`, `HITL`, `AFK` and `Needs human` exist (they do as of 2026-08-30; `Needs human` is the
 raise-hand label the escalation ladder uses); create the twelve Issues from §4 if they do not exist
-yet — title `H-n — <outcome>`, description from the §4 row plus its gate letter and base branch,
-label `AFK` (H-11 gets `HITL`), native blocking per the Blockers column — and confirm each carries
+yet - title `H-n - <outcome>`, description from the §4 row plus its gate letter and base branch,
+label `AFK` (H-11 gets `HITL`), native blocking per the Blockers column - and confirm each carries
 base branch, blockers and gate letter; create the feature branch; post the governing commit on the
 Project; block DYD-11 (the 3.0.0 release) and DYD-47 (Linear-PM acceptance) on H-12.
 
@@ -382,8 +382,8 @@ Feature branch `feature/skill-harmonization` from `master` at the governing comm
 branch in this order:
 
 1. **H-1** first, then **H-2** (blocked by H-1: shared `InitCommandTests.cs`, and Gate B's `rg`
-   needs H-1's `ConfigFactory.cs` cleanup). **H-3** is worked in parallel with both — it sets the
-   standard every other prose Issue is reviewed against — but **merges only after H-2**, like every
+   needs H-1's `ConfigFactory.cs` cleanup). **H-3** is worked in parallel with both - it sets the
+   standard every other prose Issue is reviewed against - but **merges only after H-2**, like every
    Gate C Issue.
 2. **H-4, H-5, H-6, H-8** in parallel after H-3 lands. Each is executed by the admiral session
    fanning out **one writer sub-agent per file** with §6 + that file's §7 row as the brief, then one
@@ -395,7 +395,7 @@ branch in this order:
 
 Merge order into the feature branch: H-1, H-2, H-3, then the clusters as they pass, H-7 and H-9 after
 their blockers, H-10 last before the human's pass. Hot files: `dydo.json` (H-1 nudges and model
-bindings; H-10 hashes — never both in flight); `DynaDocs.Tests/Integration/InitCommandTests.cs` and
+bindings; H-10 hashes - never both in flight); `DynaDocs.Tests/Integration/InitCommandTests.cs` and
 `DynaDocs.Tests/Commands/SyncCommandTests.cs` (H-1 its named spots, then H-2 the rest);
 `dydo/_system/templates/**` (H-10 only). Under
 today's tooling the admiral session is a human-started Claude or Codex session wearing the current
@@ -432,9 +432,9 @@ never edits sources itself and never merges without a review block.
 | writing-for-agents | fix | keep upstream body; replace the compiler sentence with a pointer to the `skill-mechanics` resource | skill-mechanics, self-improvement |
 | skill-mechanics (resource) | new | Matt's `SKILL-MECHANICS` adapted to dydo: `mode`, `description`, `emit`, `read-only`, `delegates`, `invocation`, Must-Reads, includes, resources, `dydo sync`, protected files | customizing-roles |
 | co-thinker | fix | restore curiosity and "do your homework"; step for grilling and domain-modeling; research for facts; hand-off table (DR / FutureFeature / project-planner / issue-captain) | grilling, domain-modeling, research, project-planner, issue-captain |
-| grilling | keep | faithful upstream; description already a trigger | — |
+| grilling | keep | faithful upstream; description already a trigger | - |
 | grill-me | fix | "Call the Skill tool with `grilling`." one line; human-facing description | grilling |
-| bro | fix | description: *Stop. That did not land — re-pitch it.*; body keeps STE + both glossaries; note it is the corrective for agent-speak anywhere | glossary, dydo-glossary |
+| bro | fix | description: *Stop. That did not land - re-pitch it.*; body keeps STE + both glossaries; note it is the corrective for agent-speak anywhere | glossary, dydo-glossary |
 | domain-modeling | import | glossary discipline for `dydo/glossary.md` and DRs (ADR test = hard to reverse + surprising + real trade-off); no CONTEXT.md | glossary, decisions, co-thinker |
 | research | import | `emit: agent`, `read-only: true`; primary sources; cited Markdown at a named location or as an Issue comment; invoked by co-thinker, wayfinder, admiral | co-thinker, wayfinder |
 | prototype | import | throwaway artifact to raise fidelity; `prototype/<name>` branch; linked from the question Issue | wayfinder, co-thinker |
@@ -442,34 +442,34 @@ never edits sources itself and never merges without a review block.
 | issue-planner | split | `emit: agent`, `strong`, and crew; plans one parent Issue or direct lane Sub-issue until implementation has no hidden decisions, then returns blockers and an optional review recommendation to the Issue Captain | issue-captain, working-tree-contract, codebase-design |
 | wayfinder | reshape | method, `invocation: automatic`; map body, fog/frontier, **question Issues** (label `question`, `## Question`), types research/prototype/grilling/task; consumed by project-planner (chart) and admiral (work the map); no identity, no "modes" | grilling, research, prototype, project-planner, admiral |
 | codebase-design | import | glossary of module/interface/depth/seam/adapter/leverage/locality + principles; used by both planners, reviewer, test-writer | project-planner, issue-planner, reviewer, test-writer |
-| issue-captain | new | `emit: agent`, `delegates: true`; anchor: *One Issue. One accountable captain.*; the Issue contract is the destination, its Issue-resolution plan the route, and spawned planners, writers, and independent reviewers the crew; method: claim → environment check (right base, isolated worktree, base SHA posted, clean tree, owned paths) → parent record or one level of disjoint lane Sub-issues → spawn `issue-planner` just in time until implementation has no hidden decisions → require optional `issue-plan` review only when route risk warrants it → direct all code, test and docs production through the crew, using `diagnosing-bugs` where needed → fresh binding reviewer loop (a fifth consecutive FAIL on one candidate escalates — the retired workflow's cap, now prose) → integrate passed lanes serially → combined gates and final parent review → review block on Issue + PR → return the pushed PR to admiral, or merge an atomic Issue → cleanup every captain-owned artifact; accountable for every delegated change; never authors production or self-reviews; fog → discovery → question Issue; escalation ladder and precedence order (DR 045 §6) inline | working-tree-contract, issue-planner, code-writer, test-writer, docs-writer, reviewer, diagnosing-bugs, admiral |
+| issue-captain | new | `emit: agent`, `delegates: true`; anchor: *One Issue. One accountable captain.*; the Issue contract is the destination, its Issue-resolution plan the route, and spawned planners, writers, and independent reviewers the crew; method: claim → environment check (right base, isolated worktree, base SHA posted, clean tree, owned paths) → parent record or one level of disjoint lane Sub-issues → spawn `issue-planner` just in time until implementation has no hidden decisions → require optional `issue-plan` review only when route risk warrants it → direct all code, test and docs production through the crew, using `diagnosing-bugs` where needed → fresh binding reviewer loop (a fifth consecutive FAIL on one candidate escalates - the retired workflow's cap, now prose) → integrate passed lanes serially → combined gates and final parent review → review block on Issue + PR → return the pushed PR to admiral, or merge an atomic Issue → cleanup every captain-owned artifact; accountable for every delegated change; never authors production or self-reviews; fog → discovery → question Issue; escalation ladder and precedence order (DR 045 §6) inline | working-tree-contract, issue-planner, code-writer, test-writer, docs-writer, reviewer, diagnosing-bugs, admiral |
 | admiral | rewrite from orchestrator | `invocation: explicit`; anchor: *One Project. Many captains. One accountable admiral.*; carry an approved Project from plan approval to a human-landable feature branch; one `issue-captain` owns each Issue and its crew while the admiral coordinates the captains; perfect plans are fiction, so the plan fixes the destination while the admiral uses `wayfinder` to create, split, drop or resequence Issues and raise newly visible blocking questions as fog clears; open the feature; commission pickable Issues; integrate serially; merge review after every merge; record dated amendments; propose inquisition; escalation ladder and precedence order (DR 045 §6) inline; never implements or self-reviews | working-tree-contract, issue-captain, reviewer(merge), wayfinder, project-planner, inquisition, chief-of-staff |
 | code-writer | polish | keep; red-before-green inline; return shape with the Issue Captain as consumer | issue-captain, coding-standards |
 | test-writer | polish | keep; seams + anti-patterns (tautological, horizontal slicing) from `tdd`; anchor: *a good test is a contract* | issue-captain, codebase-design |
 | docs-writer | polish | keep; assimilation-brief headings; writing-docs pointer | issue-captain, writing-docs |
 | diagnosing-bugs | import | keep upstream phases; drop CONTEXT.md/ADR lines; `scripts/hitl-loop` reference removed or replaced; anchor: *tight loop that goes red* | issue-captain, test-writer |
-| handoff | import | scratch-dir output; suggested skills section; redaction | — |
+| handoff | import | scratch-dir output; suggested skills section; redaction | - |
 | working-tree-contract (guide) | new | DR 045 §8 as procedure: branch names, host vs fallback worktrees (`../<repo>.worktrees/`), Issue fields, environment check, cleanup, orphan sweep, atomic-Issue path | issue-captain, admiral, chief-of-staff, issue-planner |
-| reviewer | fix | anchor: *Gandalf — YOU SHALL NOT PASS*; six rubrics named as the invoker names them; review block as the only return | code, tests, docs, project-plan, issue-plan, merge, inquisitor |
+| reviewer | fix | anchor: *Gandalf - YOU SHALL NOT PASS*; six rubrics named as the invoker names them; review block as the only return | code, tests, docs, project-plan, issue-plan, merge, inquisitor |
 | reviewer-resource-code | fix | add the Fowler smell baseline as judgement calls; review block | review block |
-| reviewer-resource-tests | fix | align with test-writer's anti-patterns | — |
+| reviewer-resource-tests | fix | align with test-writer's anti-patterns | - |
 | reviewer-resource-docs | fix | add the §6 writing checklist as the rubric for agent-facing documents | writing-for-agents |
 | reviewer-resource-project-plan | split | mandatory Project-plan gate: verify the destination, first pickable Issues, rough later bearings, and blocking questions; "Wayfinding Fog is not a gap" stays | project-planner |
 | reviewer-resource-issue-plan | split | optional Captain-invoked pre-code gate for material route defects and hidden decisions; prose preferences and equally valid routes are outside the rubric | issue-planner |
-| reviewer-resource-merge | rewrite from merge-sprint | merge review: mechanical spot check scaling with size — merge artifacts, seams, gates rerun on the integrated state; plan acceptance at the final merge; no lens-hunting; no "two characters" | inquisition |
+| reviewer-resource-merge | rewrite from merge-sprint | merge review: mechanical spot check scaling with size - merge artifacts, seams, gates rerun on the integrated state; plan acceptance at the final merge; no lens-hunting; no "two characters" | inquisition |
 | inquisitor | polish | restore the calibration section and severity scale; name the inquisition as its only invoker | inquisition, reviewer |
 | workflow-inquisition.js | fix | `confirmed: true` arg gate; prompts cite `.claude/skills/reviewer/resources/merge.md`; inquisitor prompts carry the lens name | inquisitor, reviewer(merge), docs-writer |
 | chief-of-staff | fix | `invocation: explicit`; anchor: *the human's attention is the scarcest resource*; the three lists; HITL question surfacing + grilling; board hygiene incl. orphan sweep; routes to admiral | grilling, admiral, self-improvement, working-tree-contract |
 | self-improvement | fix | keep threshold/lever/authority/rollback; add `retro`'s lens list (navigation, automated checks, coding standards, entry point size, tool economy, no-ops, information access) | writing-for-agents |
-| walkthrough | new | `invocation: explicit`; argument = what to walk through; output = brief for the human: what changed and why (Issues/DRs), where to look, how to try it, what reviewers flagged or deferred; ephemeral | — |
-| teach | import | as upstream; workspace = current directory | — |
+| walkthrough | new | `invocation: explicit`; argument = what to walk through; output = brief for the human: what changed and why (Issues/DRs), where to look, how to try it, what reviewers flagged or deferred; ephemeral | - |
+| teach | import | as upstream; workspace = current directory | - |
 | improve-codebase-architecture | import | as upstream minus CONTEXT.md; HTML report to scratch; grills the chosen candidate | codebase-design, grilling, co-thinker |
-| orchestrator, run-sprint workflow, merge-sprint resource | delete | — | — |
+| orchestrator, run-sprint workflow, merge-sprint resource | delete | - | - |
 
 ## 8. Watch-outs
 
 - Do not let synchronized generated output stand in for source review: every Gate C review reads
-  the **template**, then confirms the compiled skill matches — and the compiled skill is only
+  the **template**, then confirms the compiled skill matches - and the compiled skill is only
   source-derived after `dydo template update` has refreshed the local copy in that worktree; a
   `dydo sync` without it compiles the stale `dydo/_system/templates/` copy.
 - Do not paste `596e3839` back; take its anchors, not its runtime ceremony.
@@ -490,7 +490,7 @@ Paste this into a fresh Claude Code or Codex session started in the repository:
 
 > You are the **admiral** for the Linear Project *dydo 3.0 / Harmonize the skill system*. Read, in
 > this order: `dydo/project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md`,
-> then `dydo/project/plans/dydo-3-skill-harmonization.md` — the plan is your contract: §4 is the Issue
+> then `dydo/project/plans/dydo-3-skill-harmonization.md` - the plan is your contract: §4 is the Issue
 > map, §5 your sequence, §6 and §7 the briefs you hand out, §9 the prompts you use. First run
 > `dotnet build DynaDocs.sln -c Release` so `bin/Release/net10.0/dydo.dll` matches HEAD; use that
 > dll for every `dydo` command (the installed CLI is older). Confirm you can reach Linear
@@ -525,24 +525,24 @@ Paste this into a fresh Claude Code or Codex session started in the repository:
 
 ### Code Issue prompt (H-1, H-2)
 
-> Implement Linear Issue `<key>` — `<title>`. Contract: plan §4 row `<H-n>`, §3 design, Gate `<A|B>`.
+> Implement Linear Issue `<key>` - `<title>`. Contract: plan §4 row `<H-n>`, §3 design, Gate `<A|B>`.
 > Owned paths are exactly the row's surface. Prove defects with a failing test first; replace any
 > prose-freezing assertion you meet with a structural one. Run the full Gate and paste its output.
 > Return: changed files, behaviour delivered, gate results, any contract deviation.
 
-## Amendment — 2026-08-31
+## Amendment - 2026-08-31
 
 - H-9 owned paths gain `dydo/reference/configuration.md` (files-off-limits section only), carried from
   DYD-54's review: the section described one tier where H-1 shipped two. Admiral ruling on DYD-62.
-- §7 reviewer row — "review block as the only return" is narrowed by admiral ruling (DYD-60): a
+- §7 reviewer row - "review block as the only return" is narrowed by admiral ruling (DYD-60): a
   defect the candidate neither created nor exposed is reported as one line after the block, prefixed
   `Observation (out of scope, non-binding):`, never as a finding; the `merge` rubric and the
   reviewer skill state it. Flagged for the human's H-11 pass as a possible DR 045 §6 clarification.
-- §7 co-thinker row — "wayfinder-via-admiral" is reconciled with DR 045 §1 and §4 by admiral ruling
+- §7 co-thinker row - "wayfinder-via-admiral" is reconciled with DR 045 §1 and §4 by admiral ruling
   (DYD-57's merge review): a foggy Project not yet charted goes to the `project-planner`, who charts it with
   `wayfinder` (§1's Chart row); the `admiral` receives question Issues only for a Project already in
   delivery (§4's routing). The co-thinker's Handoff row and the prototype's placement sentence
   follow the Project Planner route.
-- **H-10 surface** — `.gitattributes` gains `Templates/*.js text eol=lf` so workflow templates
+- **H-10 surface** - `.gitattributes` gains `Templates/*.js text eol=lf` so workflow templates
   stay LF at source like their compiled `.claude/workflows/*.js`; a one-line surface addition
   outside H-10's owned paths, ruled by the admiral on DYD-63 (2026-08-31).

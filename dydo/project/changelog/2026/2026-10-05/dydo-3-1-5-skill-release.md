@@ -4,7 +4,7 @@ type: changelog
 date: 2026-10-05
 ---
 
-# dydo 3.1.5 — Skill release preparation
+# dydo 3.1.5 - Skill release preparation
 
 ## Summary
 
@@ -38,4 +38,4 @@ upgrade skill files already installed in downstream projects.
 
 ## Related
 
-- [dydo 3.1.3 — Map change memory](../2026-10-04/dydo-3-1-3-map-change-memory.md)
+- [dydo 3.1.3 - Map change memory](../2026-10-04/dydo-3-1-3-map-change-memory.md)

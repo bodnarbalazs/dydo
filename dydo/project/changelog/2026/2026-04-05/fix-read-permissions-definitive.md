@@ -14,18 +14,18 @@ Worktree Read allow decision implemented. When the guard approves a Read in a wo
 
 ## Files Changed
 
-C:/Users/User/Desktop/Projects/DynaDocs/Commands/smoke-final4-b.txt — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\GuardWorktreeAllowTests.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\tier_registry.json — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\DispatchService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\MessageFinder.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\QueueService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Utils\FileLockTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Utils\FileReadRetryTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Utils\FrontmatterParserTests.cs — Modified
+C:/Users/User/Desktop/Projects/DynaDocs/Commands/smoke-final4-b.txt - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\GuardWorktreeAllowTests.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\tier_registry.json - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\DispatchService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\MessageFinder.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\QueueService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Utils\FileLockTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Utils\FileReadRetryTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Utils\FrontmatterParserTests.cs - Modified
 
 
 ## Review Summary
@@ -37,7 +37,7 @@ Worktree Read allow decision implemented. When the guard approves a Read in a wo
 - Reviewed by: Jack
 - Date: 2026-04-03 15:28
 - Result: PASSED
-- Notes: LGTM. Code is clean, tests pass. All 14 new tests pass. Security verified: allow JSON only on approved read success path. gap_check: 134/135 pass — the 1 failure (DispatchService CRAP 30.2) is pre-existing from ca09bfd, not a regression.
+- Notes: LGTM. Code is clean, tests pass. All 14 new tests pass. Security verified: allow JSON only on approved read success path. gap_check: 134/135 pass - the 1 failure (DispatchService CRAP 30.2) is pre-existing from ca09bfd, not a regression.
 
 Awaiting human approval.
 

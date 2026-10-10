@@ -334,7 +334,7 @@ Exact remediation Issues depend on DYD-96's measured inventory, and exact audit 
 DYD-65's proofs. The admiral creates those only from evidence and wires them before their waiters;
 their absence from this map is not permission to waive a finding.
 
-## Review evidence — 2026-09-05
+## Review evidence - 2026-09-05
 
 Independent Project-plan review returned **PASS** for candidate
 `12112f507b4d1726310b96150f385a52bd1986f9`. Reviewer: `completion-route-rereview` (gpt-5).
@@ -343,7 +343,7 @@ The retained evidence is
 `61A20F71D15488C02B12B0BB0758684F023D18E17FFB7F03693099A6DEA8C314`; the corresponding Linear
 Project review comment is `e4407b08-6299-458c-ab45-6d959f9c0b0f`.
 
-## DYD-118 amendment — 2026-09-09
+## DYD-118 amendment - 2026-09-09
 
 DYD-118 operates from `fddaec54ad73fde6cf7d2fcc58ffd72951be21ab`. Its owned refresh is limited to
 `DynaDocs.csproj`, `npm/package.json`, the focused CLI version expectation, the reusable local-only

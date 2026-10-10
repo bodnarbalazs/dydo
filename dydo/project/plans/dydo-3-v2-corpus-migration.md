@@ -29,8 +29,8 @@ is absent from `master` but recoverable at
 
 | Authority | Fixed identity and role |
 |---|---|
-| Linear Project 3 | `1d7837c0-ba28-4852-ad0e-5f068bd778bf` — [dydo 3.0 / Migrate the v2 work corpus](https://linear.app/bodnar-balazs/project/dydo-30-migrate-the-v2-work-corpus-51b02b121391) |
-| Linear team | `caa6ccbf-4f9b-477e-826c-a51ed43b0687` — `Dydo` (`DYD`) |
+| Linear Project 3 | `1d7837c0-ba28-4852-ad0e-5f068bd778bf` - [dydo 3.0 / Migrate the v2 work corpus](https://linear.app/bodnar-balazs/project/dydo-30-migrate-the-v2-work-corpus-51b02b121391) |
+| Linear team | `caa6ccbf-4f9b-477e-826c-a51ed43b0687` - `Dydo` (`DYD`) |
 | Boundary decision | [DR 044](../decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md) |
 | Portfolio migration contract | [dydo 3.0 Linear PM Migration](./dydo-3-linear-migration.md), governing bootstrap commit `868eae47fb39540ce0a9f1e14d6ae694a08e94a9` |
 | Completed work-model contract | [dydo 3.0 Linear-Native Work Model](./dydo-3-linear-native-work-model.md), reviewed commit `1cf75a219e4a7a30397174e0ab79f4aff1326547` |
@@ -282,7 +282,7 @@ P3-6 owns `dydo/project/_index.md` (three frozen root-record permalinks) while d
 navigation. `dydo/project/future-features/_index.md` is a verified no-edit path with three unchanged links.
 Together the ownership totals are 58 + 36 + 6 + 1 + 1 = 102 retained sources and
 540 + 790 + 22 + 3 + 3 = 1,358 ledger occurrences. Two identical `#0263` occurrences share one frozen
-source line, so occurrence count—not four-tuple set cardinality—is the authority. The closed executable
+source line, so occurrence count-not four-tuple set cardinality-is the authority. The closed executable
 partition in §6 rejects source-set overlap. P3-4's derived set expressly excludes all
 P3-5/P3-6/no-edit paths.
 
@@ -356,14 +356,14 @@ relations are exactly the §4 `Blockers` column; do not encode dependencies only
 
 | Plan ID and Issue title | Outcome | Exclusive repository/Linear ownership | Blockers | Gate |
 |---|---|---|---|---|
-| P3-1 — Create and read back the seven approved live Issues | Seven exact unprojected Dydo `Todo` Issues and a returned-ID map; no product implementation | Linear: exactly the seven new Issue objects in §3; repository: none | reviewed plan merged | exact creation/read-back predicate; zero extra objects |
-| P3-2 — Normalize the three retained FutureFeatures | Three unpromoted idea records meet the final content contract | the three exact FutureFeature files in §3 | reviewed plan merged | focused `FutureFeatureRule` fixture precheck after P3-7 integration; links resolve |
-| P3-3 — Rewrite frozen references in retained changelog | All 540 manifest tuples in the exact 58 retained changelog sources have their prescribed targets | exact manifest-derived retained `sourcePath` set matching `dydo/project/changelog/**` | P3-1 | source/target occurrence validator for this partition; `git diff --check` on its set |
-| P3-4 — Rewrite frozen references in retained knowledge and fixtures | The 36-file non-changelog, non-hot, non-index partition has 789 prescribed-target rewrites plus the one exact already-absent DYD-43 adjudication, totaling its immutable 790 tuples without a `project/issues` consumer | exact derived set in §3, including Decisions, inquisitions, active plan/context, and `DynaDocs.Tests/TestData/link-validator/index.md`; excludes every P3-3/P3-5/P3-6/P3-2 path | P3-1; DYD-43 merged | disjoint-set assertion; 789 rewritten + 1 exact already-absent = 790 adjudicated; source/target occurrence validator; focused link-validator E2E and active-doc no-`project/issues` tests |
-| P3-5 — Rewrite the six Project-5 collision files | All 22 frozen tuples in the six exact hot files use durable targets without performing Project-5 removal | the six exact paths in §3, reference edits only | P3-1; Project-5 docs/config lane held | exact hot-file diff allowlist; occurrence validator; Project-5 owner acknowledges rebase point |
-| P3-6 — Delete the ratified corpus and retire its navigation | Exact 471 manifest source deletions, twelve hub/meta deletions, and a durable root recovery section | `records[finalDisposition != 'retain-normalize'].path`; twelve exact compatibility paths; `dydo/project/_index.md` | P3-1 read-back; P3-2 ready; P3-3–P3-5 review PASS | exact deletion-set equality; 3 retained rows present; six roots contain no tracked file |
-| P3-7 — Close the legacy validators and enforce FutureFeatures | Permanent tombstone and strict FutureFeature/frontmatter contract | `Services/LegacyPmManifestService.cs`; `Rules/LegacyPmRecordRule.cs`; `Rules/FrontmatterRule.cs`; `Rules/HubFilesRule.cs`; `Rules/OrphanDocsRule.cs`; new `Rules/FutureFeatureRule.cs`; `Commands/CheckDocValidator.cs`; `Models/Frontmatter.cs`; `Templates/types.json.template`; `dydo/_system/types.json`; `DynaDocs.Tests/Services/LegacyPmManifestServiceTests.cs`; `DynaDocs.Tests/Rules/LegacyPmRecordRuleTests.cs`; `DynaDocs.Tests/Rules/FrontmatterRuleTests.cs`; `DynaDocs.Tests/Rules/HubFilesRuleTests.cs`; `DynaDocs.Tests/Rules/OrphanDocsRuleTests.cs`; new `DynaDocs.Tests/Rules/FutureFeatureRuleTests.cs`; `DynaDocs.Tests/Services/FrontmatterTypesServiceTests.cs` | P3-2 and P3-6 integrated | build plus exact focused filter; no legacy exception symbols; strict fixtures pass |
-| P3-8 — Apply the manifest and run the integrated corpus audit | All rows applied, final deterministic evidence sealed, builder deleted, assimilation recorded, both authored records reachable, integrated PASS | `dydo/project/migrations/3.0-pm-records.json`; `dydo/project/migrations/3.0-pm-records.md`; deletion of `dydo/project/migrations/build-3.0-pm-manifest.ps1`; new `dydo/project/migrations/3.0-v2-corpus-migration-assimilation.md`; generated `dydo/project/migrations/_index.md`; generated `dydo/project/plans/_index.md`; conflict resolution only in prior Issue-owned paths | P3-1–P3-7 reviewed and integrated | all §6 gates, fresh integrated audit PASS |
+| P3-1 - Create and read back the seven approved live Issues | Seven exact unprojected Dydo `Todo` Issues and a returned-ID map; no product implementation | Linear: exactly the seven new Issue objects in §3; repository: none | reviewed plan merged | exact creation/read-back predicate; zero extra objects |
+| P3-2 - Normalize the three retained FutureFeatures | Three unpromoted idea records meet the final content contract | the three exact FutureFeature files in §3 | reviewed plan merged | focused `FutureFeatureRule` fixture precheck after P3-7 integration; links resolve |
+| P3-3 - Rewrite frozen references in retained changelog | All 540 manifest tuples in the exact 58 retained changelog sources have their prescribed targets | exact manifest-derived retained `sourcePath` set matching `dydo/project/changelog/**` | P3-1 | source/target occurrence validator for this partition; `git diff --check` on its set |
+| P3-4 - Rewrite frozen references in retained knowledge and fixtures | The 36-file non-changelog, non-hot, non-index partition has 789 prescribed-target rewrites plus the one exact already-absent DYD-43 adjudication, totaling its immutable 790 tuples without a `project/issues` consumer | exact derived set in §3, including Decisions, inquisitions, active plan/context, and `DynaDocs.Tests/TestData/link-validator/index.md`; excludes every P3-3/P3-5/P3-6/P3-2 path | P3-1; DYD-43 merged | disjoint-set assertion; 789 rewritten + 1 exact already-absent = 790 adjudicated; source/target occurrence validator; focused link-validator E2E and active-doc no-`project/issues` tests |
+| P3-5 - Rewrite the six Project-5 collision files | All 22 frozen tuples in the six exact hot files use durable targets without performing Project-5 removal | the six exact paths in §3, reference edits only | P3-1; Project-5 docs/config lane held | exact hot-file diff allowlist; occurrence validator; Project-5 owner acknowledges rebase point |
+| P3-6 - Delete the ratified corpus and retire its navigation | Exact 471 manifest source deletions, twelve hub/meta deletions, and a durable root recovery section | `records[finalDisposition != 'retain-normalize'].path`; twelve exact compatibility paths; `dydo/project/_index.md` | P3-1 read-back; P3-2 ready; P3-3–P3-5 review PASS | exact deletion-set equality; 3 retained rows present; six roots contain no tracked file |
+| P3-7 - Close the legacy validators and enforce FutureFeatures | Permanent tombstone and strict FutureFeature/frontmatter contract | `Services/LegacyPmManifestService.cs`; `Rules/LegacyPmRecordRule.cs`; `Rules/FrontmatterRule.cs`; `Rules/HubFilesRule.cs`; `Rules/OrphanDocsRule.cs`; new `Rules/FutureFeatureRule.cs`; `Commands/CheckDocValidator.cs`; `Models/Frontmatter.cs`; `Templates/types.json.template`; `dydo/_system/types.json`; `DynaDocs.Tests/Services/LegacyPmManifestServiceTests.cs`; `DynaDocs.Tests/Rules/LegacyPmRecordRuleTests.cs`; `DynaDocs.Tests/Rules/FrontmatterRuleTests.cs`; `DynaDocs.Tests/Rules/HubFilesRuleTests.cs`; `DynaDocs.Tests/Rules/OrphanDocsRuleTests.cs`; new `DynaDocs.Tests/Rules/FutureFeatureRuleTests.cs`; `DynaDocs.Tests/Services/FrontmatterTypesServiceTests.cs` | P3-2 and P3-6 integrated | build plus exact focused filter; no legacy exception symbols; strict fixtures pass |
+| P3-8 - Apply the manifest and run the integrated corpus audit | All rows applied, final deterministic evidence sealed, builder deleted, assimilation recorded, both authored records reachable, integrated PASS | `dydo/project/migrations/3.0-pm-records.json`; `dydo/project/migrations/3.0-pm-records.md`; deletion of `dydo/project/migrations/build-3.0-pm-manifest.ps1`; new `dydo/project/migrations/3.0-v2-corpus-migration-assimilation.md`; generated `dydo/project/migrations/_index.md`; generated `dydo/project/plans/_index.md`; conflict resolution only in prior Issue-owned paths | P3-1–P3-7 reviewed and integrated | all §6 gates, fresh integrated audit PASS |
 
 No implementation Issue may add a path to its ownership set by convenience. A newly discovered source
 tuple or collision stops integration and requires a reviewed plan amendment; it is not absorbed by P3-8.
@@ -790,7 +790,7 @@ not add a permanent source file or CLI command.
 - Do not mark Project 3 complete merely because its PR merges. Linear completion follows final read-back,
   integrated audit PASS, and the human/coordinator's acceptance workflow.
 
-## 8. Chronological amendment — DYD-43 / P3-4A
+## 8. Chronological amendment - DYD-43 / P3-4A
 
 This non-retroactive amendment records one execution fact discovered after the original plan was reviewed.
 It does not alter the ratified manifest, its immutable 790-tuple P3-4 evidence partition, or any frozen
@@ -818,28 +818,28 @@ DYD-43 must merge before DYD-31 resumes. DYD-31 then removes any artificially in
 permalink from its preserved worktree and reruns every amended gate. DYD-43 does not authorize resuming
 DYD-31, changing the manifest, weakening a test, or editing any source other than this plan.
 
-## 9. Chronological amendment — DYD-44 / P3-8A
+## 9. Chronological amendment - DYD-44 / P3-8A
 
 This non-retroactive amendment records one stale retained-link fact discovered by DYD-35. It authorizes
 one URL-only textual repair after this amendment is reviewed; it does not change the manifest or expand
 any Project-3 path authority.
 
 - stale source and text: `dydo/project/decisions/023-backlog-doc-category.md` contains
-  `[Issues](../issues/_index.md) — broken things; the "is this a bug?" boundary.`
+  `[Issues](../issues/_index.md) - broken things; the "is this a bug?" boundary.`
 - cause: `../issues/_index.md` was an underscore compatibility hub deleted by P3-6, not a target row in
   the closed 474-record manifest or any of its 2,845 incoming-reference tuples.
 - ownership evidence: DR-023 was not in DYD-31/P3-4's exact 36-source/790-tuple set and was unchanged
   by reviewed head `a633cf61e4b8307c0eab58fcb675cedc01d0e9b8` from governing plan commit
   `6ec7aa9ca4971451e5a883d738365477fa41d215`.
 - authorized DYD-35 repair: replace only the stale URL with
-  `[Issues](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/_index.md) — broken things; the "is this a bug?" boundary.`
+  `[Issues](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/_index.md) - broken things; the "is this a bug?" boundary.`
 
 The repair preserves all 474 rows, all 2,845 tuples, immutable-row SHA-256
 `30421da6b5c3621a563938ba16a51b35a7f352c630d5ad1986d392e6a05bfb81`, deletion arithmetic, the
 Project-5 boundary, and every other path authority. It authorizes no repository-to-Linear synchronization,
 Linear-managed-agent machinery, Project-5 Notion runtime removal, hub rewrite, or unrelated cleanup.
 
-## 10. Chronological amendment — DYD-45 / P3-8B
+## 10. Chronological amendment - DYD-45 / P3-8B
 
 This non-retroactive amendment records one retired-root sentinel discovered by the fresh DYD-35 integrated
 audit at reviewed head `a29d1d32fc83b7aef302c3c1b07cbcc9680f928b`. The Markdown-only retired-root
@@ -855,7 +855,7 @@ other authority. DYD-35 reruns only the integrated evidence invalidated by this 
 integrated head; it does not authorize repository↔Linear synchronization, Linear-managed-agent machinery,
 Project-5 Notion runtime removal, or unrelated cleanup.
 
-## 11. Chronological amendment — DYD-46 / P3-8C
+## 11. Chronological amendment - DYD-46 / P3-8C
 
 This non-retroactive amendment records one forced-coverage failure from the DYD-35 integrated audit at
 head `a29d1d32fc83b7aef302c3c1b07cbcc9680f928b`. The forced coverage gate passed 133/134 modules but

@@ -14,12 +14,12 @@ Merged worktree/inquisition-audit-system into master (fast-forward). Added Audit
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\CompactionAtomicWriteTests.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\AuditXssTests.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Services\SnapshotCompactionService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\AuditCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\OffLimitsServiceTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\OffLimitsService.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\CompactionAtomicWriteTests.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\AuditXssTests.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Services\SnapshotCompactionService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\AuditCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\OffLimitsServiceTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\OffLimitsService.cs - Modified
 
 
 ## Review Summary
@@ -31,7 +31,7 @@ Merged worktree/inquisition-audit-system into master (fast-forward). Added Audit
 - Reviewed by: Frank
 - Date: 2026-04-09 13:54
 - Result: PASSED
-- Notes: LGTM. 8 edge case tests verified against source — each targets a real confirmed bug. Code clean, follows standards, gap_check 136/136 green.
+- Notes: LGTM. 8 edge case tests verified against source - each targets a real confirmed bug. Code clean, follows standards, gap_check 136/136 green.
 
 Awaiting human approval.
 

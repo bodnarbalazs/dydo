@@ -10,8 +10,8 @@ linear-project: https://linear.app/bodnar-balazs/project/dydo-30-simplify-the-sk
 
 Cut the compiler's leftover "role" model and every customisation path the human has abandoned, so
 that a skill template is one shipped `skill-<name>.template.md` whose frontmatter is the whole
-metadata and whose compiled output derives from the embedded set alone. Runs under today's tooling —
-the `master`-era compiled skills and hands-on sub-agent dispatch by the planning session — in
+metadata and whose compiled output derives from the embedded set alone. Runs under today's tooling -
+the `master`-era compiled skills and hands-on sub-agent dispatch by the planning session - in
 parallel with the human's file-by-file template pass (DYD-64) on `DYD-64-human-pass`, from whose tip
 `9875c9a6` this Project branches.
 
@@ -23,7 +23,7 @@ dydo 3.0 is a breaking boundary and the product serves one human. The compiler s
 skill template a "role", binds model tiers under `models.roles`, keeps C# fallback copies of documents
 it always ships as templates, and carries a template-override, template-update, model-cap, path-set
 and legacy-migration apparatus that nobody uses. After this Project the code names what the
-[glossary](../../reference/dydo-glossary.md) names — a skill template that may also emit an agent —
+[glossary](../../reference/dydo-glossary.md) names - a skill template that may also emit an agent -
 reads one metadata key set from one place, fails loudly instead of falling back, and carries the
 generator changes DYD-75 asked for.
 
@@ -82,7 +82,7 @@ means `Commands Services Models Utils Rules Serialization Program.cs DynaDocs.Te
 9. `dotnet test DynaDocs.Tests --nologo -v q` reports only the §4 stage baseline red; every test an Issue adds is green.
 10. `dotnet bin/Release/net10.0/dydo.dll check dydo` reports no finding that `9875c9a6` did not.
 11. `dydo/guides/migrating-dydo-2x-to-3x.md` names every removed `dydo.json` key, the `dydo/_system/templates/` deletion and the model-cap marker directory as the human's migration for a 2.x or early-3.0 project.
-12. `dydo/project/migrations/3.0-skill-model-simplification-assimilation.md` exists with what changed, what was learned, and what remains — including every template prose line the human's pass must revisit.
+12. `dydo/project/migrations/3.0-skill-model-simplification-assimilation.md` exists with what changed, what was learned, and what remains - including every template prose line the human's pass must revisit.
 
 ### Questions and answers
 
@@ -95,21 +95,21 @@ means `Commands Services Models Utils Rules Serialization Program.cs DynaDocs.Te
   a spawnable agent; `name:` is identity only. S-7 does not write that sentence into the docs (the
   human's no-rewrite rule); it lists the gap for the human's pass. (Human's question, 2026-09-02;
   answered from the compiler.)
-- **Which customisation paths go?** All four offered — project-local templates, model caps, `paths`
-  with file-scoped nudges, `efforts` and `name` — plus every legacy migration, per the 3.0 stance.
+- **Which customisation paths go?** All four offered - project-local templates, model caps, `paths`
+  with file-scoped nudges, `efforts` and `name` - plus every legacy migration, per the 3.0 stance.
   (Human, 2026-09-02.)
 - **Where is a new skill authored after S-2?** In dydo's own `Templates/`, like every shipped skill:
   the product is the human's, and a skill only one project needs is still a shipped skill.
-- **Does `--force` survive on `dydo template update`?** No. Its documented purpose — writing past an
-  include tag the update could not re-anchor — leaves with re-anchoring; `--diff` stays.
+- **Does `--force` survive on `dydo template update`?** No. Its documented purpose - writing past an
+  include tag the update could not re-anchor - leaves with re-anchoring; `--diff` stays.
 - **Which tier does `scout` bind to?** `standard`, like `research`, in `models.agents`; the human may
   retune it. (Planning session's call, flagged on S-8.)
 - **What of DYD-75?** Items 2–4 and its two small items become S-8 here; item 1 (reflection) stays on
   DYD-75, blocked by S-8 and DYD-64. (Human, 2026-09-02.)
 - **Argument hints for skills upstream leaves without one?** Upstream at `6654f6b6` carries
   `argument-hint` only on `handoff` and `teach`. S-8 adds those two with the upstream texts; `grill-me`,
-  `bro`, `walkthrough` and `improve-codebase-architecture` get none from this Project — their wording
-  is the human's — and are listed for the pass.
+  `bro`, `walkthrough` and `improve-codebase-architecture` get none from this Project - their wording
+  is the human's - and are listed for the pass.
 
 ## 2. Prior art
 
@@ -138,7 +138,7 @@ means `Commands Services Models Utils Rules Serialization Program.cs DynaDocs.Te
   `mode-*` mirror copies and five reviewer resource copies (two under retired names, three stale mirrors
   of current names), no custom skill; `dydo/_system/template-additions/` holds six additions in use.
   Hence overrides go, includes stay, and LC's migration is one directory delete.
-- `dydo/reference/dydo-glossary.md` — Role, Hat, Worker, Method, Human command: the taxonomy the code
+- `dydo/reference/dydo-glossary.md` - Role, Hat, Worker, Method, Human command: the taxonomy the code
   should name; "role" remains a glossary word for an authored skill source, so prose may keep it while
   code identifiers say skill template and agent.
 
@@ -152,7 +152,7 @@ means `Commands Services Models Utils Rules Serialization Program.cs DynaDocs.Te
   `argument-hint`. Unknown keys are ignored so the human's upstream-shaped frontmatter never breaks a sync.
 - `Services/SkillTemplateService.cs`: `DiscoverSkills()` enumerates the embedded `skill-*.template.md`
   set (source `Templates/` in dev-mode; retired names excluded) and `Parse(templateFile, content)` turns
-  one template into a `SkillTemplate` — a pure function the tests exercise directly now that
+  one template into a `SkillTemplate` - a pure function the tests exercise directly now that
   project-local fixtures are gone. An invalid `invocation`, a missing `name`, or a `name` that differs
   from the filename slug throws `InvalidDataException` naming the file.
 - `Commands/SyncCommand.cs`: `ResolveModel(models, agentName)` returns the vendor model or null. Claude
@@ -204,7 +204,7 @@ means `Commands Services Models Utils Rules Serialization Program.cs DynaDocs.Te
   `sed -i 's/^mode: /name: /; s/^skill: /name: /' Templates/skill-*.template.md` followed by `unix2dos` on those files,
   recorded on the Issue, so a merge conflict on any template is resolved by taking the human's file
   and re-running the line. The compiler check then fails loudly on any template still carrying
-  `mode:` — which is the point.
+  `mode:` - which is the point.
 - **Hot files.** `SyncCommand.cs`, `TemplateGenerator.cs`, `ConfigFactory.cs`, `ModelsConfig.cs`,
   `GuardCommand.cs`, `dydo.json`, `SyncCommandTests.cs`, `RoleDefinitionServiceTests.cs` and
   `customizing-roles.md` are touched by several Issues; §5 serialises them. Only S-1 and S-3 run in
@@ -222,12 +222,12 @@ means `Commands Services Models Utils Rules Serialization Program.cs DynaDocs.Te
   must stay identical (`CommandDocConsistencyTests`). From S-2 on, an Issue that edits the template
   runs `dotnet bin/Release/net10.0/dydo.dll template update` so the installed copy and its hash follow;
   that run also rewrites `guides/working-tree-contract.md` and reports `reference/dydo-glossary.md` as
-  user-edited — both pre-existing on the branch and owned by DYD-64 / DYD-75 — so the Issue stages
+  user-edited - both pre-existing on the branch and owned by DYD-64 / DYD-75 - so the Issue stages
   only the two doc twins it owns and reverts the rest (`git checkout -- dydo/guides/working-tree-contract.md`).
   `files-off-limits.md` is project-owned: the template and the installed copy are edited identically by hand.
 - **Docs that describe cut features.** `README.md`, `npm/README.md`, `dydo/understand/*.md`,
   `dydo/guides/*.md` and `dydo/reference/*.md` get straight reference deletions only: the sentence,
-  row, bullet or section that describes the cut feature goes, and nothing is written in its place —
+  row, bullet or section that describes the cut feature goes, and nothing is written in its place -
   a section that becomes false as a whole (the Add and Override sections of `customizing-roles.md`)
   goes as a whole. `Templates/about-dynadocs.template.md` gets only the deletion of its two false
   lines (the `_system/templates/` bullet and tree row at base); its installed copy follows through
@@ -235,7 +235,7 @@ means `Commands Services Models Utils Rules Serialization Program.cs DynaDocs.Te
 - **Custom-skill tests.** Every test that today writes a `dydo/_system/templates/skill-*.template.md`
   fixture (four `skill-*` and one `mode-*` in `SyncCommandTests`, eight in `RoleDefinitionServiceTests`,
   three `skill-*` and four `mode-*` in `TemplateCommandTests`) is rewritten in S-2 against `Parse(templateFile, content)` or a constructed
-  `RoleDefinition` compiled through the existing `SyncRole`/`SyncCodexRole` seams — the behaviour
+  `RoleDefinition` compiled through the existing `SyncRole`/`SyncCodexRole` seams - the behaviour
   (delegates → `Agent`, read-only → tool profile, explicit invocation, invalid invocation) keeps its proof.
 
 ### Migration (the human's projects)
@@ -261,16 +261,16 @@ Base branch for every Issue: `feature/simplify-skill-model` (from `DYD-64-human-
 Issue edits nothing else in it.
 
 Owned paths are exclusive where Issues run in parallel (S-1 with S-3). Along the serial chain an
-Issue's surface is what its row names plus every file its cut demonstrably breaks — a compile error, a
-test green at the Issue's base that the cut turns red, or a hit from its own Gate R — each listed on
+Issue's surface is what its row names plus every file its cut demonstrably breaks - a compile error, a
+test green at the Issue's base that the cut turns red, or a hit from its own Gate R - each listed on
 the Issue with a one-line reason; the reviewer confirms each such extra change is a straight
 consequence of the cut and nothing more. A region another Issue names stays off-limits beyond that
 consequence.
 
 | Issue | Outcome | Owned paths | Blockers | Gate | Base branch |
 |---|---|---|---|---|---|
-| S-1 | `models.roles` is `models.agents` in code, config and docs; `ResolveModel(models, agentName)`; `UpgradeLegacyPlannerRole`, `UpgradeLegacyOpenAiTierDefaults` and `MigrateHashFormat` are gone with their tests; the migration guide names the key rename | `Models/ModelsConfig.cs`; `Services/ConfigFactory.cs`; `Commands/TemplateCommand.cs` (`ApplyConfigDefaults`, `MigrateHashFormat` and its call only); `Commands/SyncCommand.cs` (`ResolveModel` and its two call sites only); `dydo.json` (`models.roles` key only); `dydo/reference/configuration.md` (the `models` rows, the schema block's `"roles"` key line and the Model tiers paragraph only); `dydo/guides/customizing-roles.md` (Model tier section and its Related line only); `dydo/guides/migrating-dydo-2x-to-3x.md`; tests `ConfigFactoryTests.cs`, `SyncCommandTests.cs` (`Roles`/`ResolveModel` spots only), `TemplateCommandTests.cs` (`TemplateUpdate_MigratesLegacyOpenAiModelDefaults` only), `TemplateUpdateTests.cs` (`MigrateHashFormat_*` only) | — | S, R1, D | `feature/simplify-skill-model` |
-| S-3 | Every `Generate*Md` in `TemplateGenerator` reads its embedded template or throws; the ten `GenerateFallback*Md` bodies and their nine tests are gone (`GenerateFallbackDydoGlossaryMd` has none) | `Services/TemplateGenerator.cs` (the `Generate*Md` / `GenerateFallback*Md` region only); `DynaDocs.Tests/Services/TemplateGeneratorTests.cs` (the fallback tests only) | — | S, R2 | `feature/simplify-skill-model` |
+| S-1 | `models.roles` is `models.agents` in code, config and docs; `ResolveModel(models, agentName)`; `UpgradeLegacyPlannerRole`, `UpgradeLegacyOpenAiTierDefaults` and `MigrateHashFormat` are gone with their tests; the migration guide names the key rename | `Models/ModelsConfig.cs`; `Services/ConfigFactory.cs`; `Commands/TemplateCommand.cs` (`ApplyConfigDefaults`, `MigrateHashFormat` and its call only); `Commands/SyncCommand.cs` (`ResolveModel` and its two call sites only); `dydo.json` (`models.roles` key only); `dydo/reference/configuration.md` (the `models` rows, the schema block's `"roles"` key line and the Model tiers paragraph only); `dydo/guides/customizing-roles.md` (Model tier section and its Related line only); `dydo/guides/migrating-dydo-2x-to-3x.md`; tests `ConfigFactoryTests.cs`, `SyncCommandTests.cs` (`Roles`/`ResolveModel` spots only), `TemplateCommandTests.cs` (`TemplateUpdate_MigratesLegacyOpenAiModelDefaults` only), `TemplateUpdateTests.cs` (`MigrateHashFormat_*` only) | - | S, R1, D | `feature/simplify-skill-model` |
+| S-3 | Every `Generate*Md` in `TemplateGenerator` reads its embedded template or throws; the ten `GenerateFallback*Md` bodies and their nine tests are gone (`GenerateFallbackDydoGlossaryMd` has none) | `Services/TemplateGenerator.cs` (the `Generate*Md` / `GenerateFallback*Md` region only); `DynaDocs.Tests/Services/TemplateGeneratorTests.cs` (the fallback tests only) | - | S, R2 | `feature/simplify-skill-model` |
 | S-2 | Templates are read from the embedded set only: no `dydo/_system/templates/` scaffold, mirror, override, custom skill, include re-anchoring, template hash, `mode-*` handling, or `--force`; `DiscoverRoles()` takes no project root; `Parse(templateFile, content)` is the testable seam; the 35-file mirror is deleted from this repository and its hashes pruned; the docs and README lose every line that described it | `Services/TemplateGenerator.cs` (outside S-3's region); `Services/RoleDefinitionService.cs`; `Services/FolderScaffolder.cs`; `Services/IFolderScaffolder.cs`; `Services/IncludeReanchor.cs` (delete); `Commands/TemplateCommand.cs` (outside S-1's spots); `Commands/SyncCommand.cs` (`Execute`, `WarnAboutLegacyModeTemplates`, `CleanRetiredArtifacts`, `ExtractMethodology`, `ExtractMustReads` and the class-summary sentence that names `dydo/_system/templates/` only); `Commands/InitCommand.cs` (hash call only); `Commands/FixFileHandler.cs`; `Utils/RuleSkipPaths.cs`; `dydo/_system/templates/**` (delete); `dydo.json` (`frameworkHashes`: the template entries and the `reference/about-dynadocs.md` and `reference/dydo-commands.md` hash values only); `README.md` (template lines); `Templates/about-dynadocs.template.md` (two line deletions); `Templates/dydo-commands.template.md` + `dydo/reference/dydo-commands.md` (`dydo template update` section); `dydo/reference/about-dynadocs.md` (via `template update` only); `THIRD-PARTY-NOTICES.md`, `npm/THIRD-PARTY-NOTICES.md` (the one `_system/templates/` clause each); `Templates/template-additions-readme.md` (the re-anchoring sentence only; the installed `_README.md` never carried it); `dydo/understand/templates-and-customization.md`; `dydo/understand/architecture.md` (template lines); `dydo/guides/customizing-roles.md` (outside S-1's section); `dydo/reference/configuration.md` (Customization points and `frameworkHashes` row only); `dydo/guides/troubleshooting.md`, `dydo/guides/adding-a-command.md` (mentions only); tests `TemplateOverrideTests.cs` (rename to `TemplateScaffoldingTests.cs`; keep the template-additions, framework-doc hash and `ReadBuiltInTemplate_*` tests, delete the rest), `InstalledTemplateParityTests.cs` (delete), `IncludeReanchorTests.cs` (delete), `TemplateUpdateTests.cs`, `TemplateCommandTests.cs`, `RoleDefinitionServiceTests.cs`, `SyncCommandTests.cs` (project-local fixtures only), `FolderScaffolderTests.cs`, `InitCommandTests.cs`, `InitCheckIntegrationTests.cs` (`FreshInit_TemplatesAreExcludedFromCheck` delete only), `DocumentationTests.cs` (`Fix_DoesNotRenameTemplateFiles`, `Fix_DoesNotCreateHubFilesInSystemFolders` and `Fix_DoesNotReportManualFixesForTemplates` only), `ChiefOfStaffSyncTests.cs` (the project-local copy fixture and its `DiscoverRoles` call only), `WayfinderHarmonyTests.cs` (`DiscoverRoles` call sites only), `FixFileHandlerTests.cs` (the `_system/templates` exclusion test only), `RuleSkipPathsTests.cs`, `DocScannerTests.cs`, `Rules/{BrokenLinks,Frontmatter,FolderMetaFiles,Naming,HubFiles,OrphanDocs,Summary}RuleTests.cs`, `CommandDocConsistencyTests.cs`, `TemplateGeneratorTests.cs` and `CodexSyncArtifactsE2ETests.cs` (their `_system/templates` spots only), `EndToEnd/CliEndToEndTests.cs` (`TemplateUpdate_EndToEnd_UserAddedInclude` and `TemplateUpdate_EndToEnd_RepeatedUserEdits` only) | S-1, S-3 | S, R5, D | `feature/simplify-skill-model` |
 | S-4 | `dydo model` and every model-cap seam are gone: command, service, models, `models.fallback`, guard restore, completions, help, JSON context, nudge word list, docs and READMEs | `Commands/ModelCommand.cs`, `Services/ModelCapService.cs`, `Models/ModelCap.cs`, `Models/ModelCapBinding.cs` (delete); `Models/ModelsConfig.cs` (`Fallback` only); `Services/ConfigFactory.cs` (`Fallback` and the `dotnet run` nudge word list only); `Commands/GuardCommand.cs` (`RestoreExpiredModelCapsIfDue` and its call only); `Commands/HelpCommand.cs`; `Services/CompletionProvider.cs`; `Program.cs`; `Serialization/DydoJsonContext.cs` (cap types only); `dydo.json` (`models.fallback`, the two `dotnet run` nudge patterns and the `reference/dydo-commands.md` hash value only); `Templates/dydo-commands.template.md` + `dydo/reference/dydo-commands.md` (Model Commands section); `Templates/files-off-limits.template.md` + `dydo/files-off-limits.md` (the `dydo model cap` mention); `dydo/reference/configuration.md` (`fallback` row and the model-cap sentence only); `dydo/understand/guard-system.md` (model-cap text only); `README.md`, `npm/README.md` (model rows); tests `ModelCommandTests.cs`, `ModelCapServiceTests.cs` (delete), `CommandSmokeTests.cs`, `GuardIntegrationTests.cs`, `CompletionProviderTests.cs`, `CompletionsCommandTests.cs`, `HelpCommandTests.cs`, `CommandDocConsistencyTests.cs`, `ConfigFactoryTests.cs` (`Fallback` spots and `DefaultNudges_DotnetRunPatternExcludesRetiredWorkCommands` only) | S-2 | S, R6, D | `feature/simplify-skill-model` |
 | S-5 | `paths`, `pathSets`, tool-scoped file nudges, `models.efforts` and `name` are gone; `ResolveModel` returns the model only; `IRoleDefinitionService` and `ResolvePathSets` are gone; config docs match | `Models/PathsConfig.cs` (delete); `Models/DydoConfig.cs`; `Models/ModelsConfig.cs` (`Efforts` only); `Models/NudgeConfig.cs`; `Services/ConfigFactory.cs` (the two `Tools` copy lines only); `Services/ValidationService.cs` (the `tools`/`audience` validation branch only); `Commands/GuardCommand.cs` (`CheckFileNudges`, `ApplyFileNudge`, `MatchesFileNudgePattern`, `NudgeAppliesToAudience` if orphaned, their call sites, the `Tools` skip in `CheckNudges` and the `Tools` copy in the block-nudge merge only); `Services/IRoleDefinitionService.cs` (delete); `Services/RoleDefinitionService.cs` (`ResolvePathSets` only; class becomes static); `Commands/SyncCommand.cs` (`ResolveModel` and the `effort` line only); `Serialization/DydoJsonContext.cs` (`PathsConfig` only); `dydo.json` (`paths`, `name`, `models.efforts` only); `dydo/reference/configuration.md` (the `paths`, `name`, `efforts` rows, the schema block minus its `models` key line, the `paths.pathSets` bullet and the Nudges paragraph's `tools` phrase only); `dydo/understand/guard-system.md` (tool-scoped nudge text only); tests `GuardCommandTests.cs` (file-nudge tests only), `RoleDefinitionServiceTests.cs` (`ResolvePathSets` region only), `ConfigurablePathsTests.cs` (delete), `ConfigServiceTests.cs`, `ConfigFactoryTests.cs` (`Efforts`/`Name` spots only), `SyncCommandTests.cs` (`effort` spots only), `ValidateCommandTests.cs` (config-literal lines only), `ValidationServiceTests.cs` (config literals and the tool-scoped-nudge tests only), `GuardWorkerLaneTests.cs` (the four file-nudge theories only) | S-4 | S, R7, D | `feature/simplify-skill-model` |
@@ -294,7 +294,7 @@ consequence.
 
 Run from the Issue worktree root. Build first so `dotnet bin/Release/net10.0/dydo.dll` is current.
 
-**Gate S — the suite (every Issue)**
+**Gate S - the suite (every Issue)**
 
 ```powershell
 dotnet build DynaDocs.sln -c Release
@@ -305,7 +305,7 @@ git status --porcelain -- .claude .codex .agents
 
 The build succeeds. The failed set equals the stage baseline: for S-1 and S-3 the fourteen below;
 from S-2 on, the twelve that remain once `FreshInit_TemplatesAreExcludedFromCheck` and
-`MattDerivedTemplates_ShippedSourceEqualsInstalledCopy` are deleted — or fewer, with the Issue recording
+`MattDerivedTemplates_ShippedSourceEqualsInstalledCopy` are deleted - or fewer, with the Issue recording
 which baseline test went green and why. `git diff --check` and the status line print nothing.
 
 Baseline at `9875c9a6` (14 red, all pre-existing, none owned here): `InitCheckIntegrationTests`
@@ -317,15 +317,15 @@ Baseline at `9875c9a6` (14 red, all pre-existing, none owned here): `InitCheckIn
 `ChangelogStructureTests` {`Check_AcceptsAlternativeChangelogStructure`, `Check_AcceptsFlatChangelogStructure`,
 `Check_AcceptsMixedChangelogStructure`}; `InstalledTemplateParityTests.MattDerivedTemplates_ShippedSourceEqualsInstalledCopy`.
 
-**Gate R — residue (R*n* is acceptance criterion *n*'s `rg` line)**
+**Gate R - residue (R*n* is acceptance criterion *n*'s `rg` line)**
 
-The Issue's `rg` line from §1 prints nothing — with one recorded exception: R1 at S-1's gate may show
+The Issue's `rg` line from §1 prints nothing - with one recorded exception: R1 at S-1's gate may show
 exactly one hit, the `roles` assertion in `ConfigFactoryTests.DefaultNudges_DotnetRunPatternExcludesRetiredWorkCommands`,
 which S-4 retires together with the `dotnet run` word list; at the final merge R1 prints nothing.
 `CODE` expands to
 `Commands Services Models Utils Rules Serialization Program.cs DynaDocs.Tests -g '!DynaDocs.Tests/Fixtures/**'`.
 
-**Gate D — docs (S-1, S-2, S-4, S-5, S-9)**
+**Gate D - docs (S-1, S-2, S-4, S-5, S-9)**
 
 ```powershell
 dotnet bin/Release/net10.0/dydo.dll check dydo
@@ -338,7 +338,7 @@ line reports the mirror as pending (32 entries), a pending `guides/working-tree-
 user-edited `reference/dydo-glossary.md`: the mirror leaves with S-2; the two framework docs belong
 to the human's DYD-64 pass and DYD-75's reflection, not to this Project.)
 
-**Gate C — compile proof (S-8)**
+**Gate C - compile proof (S-8)**
 
 ```powershell
 $scratch = Join-Path $env:TEMP ("dydo-s8-" + [guid]::NewGuid().ToString("N").Substring(0,8))
@@ -356,7 +356,7 @@ Pop-Location
 
 The output shows acceptance criterion 8 verbatim; paste it on the Issue.
 
-**Gate A — audit (S-9)**
+**Gate A - audit (S-9)**
 
 Inquisitor sub-agents over the integrated feature branch, one lens each: dead references to cut
 features (code, config, docs, READMEs); truth of every doc touched; the new seams' test coverage
@@ -367,7 +367,7 @@ the brief records the rest.
 ## 5. Ordering and isolation
 
 Kickoff, by the planning session before any Issue is pickable: create S-1 … S-9 in the Linear Project
-from the §4 rows (title `S-n — <outcome>`, body = the row plus its gates and base branch, labels
+from the §4 rows (title `S-n - <outcome>`, body = the row plus its gates and base branch, labels
 `Improvement` + `AFK`, native blockers per the Blockers column); confirm `feature/simplify-skill-model`
 exists at `9875c9a6`; post the governing commit on the Project; set DYD-75 blocked by S-8 and comment
 its narrowed scope.
@@ -380,14 +380,14 @@ worker starts from the reduced surface.
 Per Issue: one `code-writer` sub-agent in the Issue worktree with the contract; where the Issue owns
 `dydo/` documents, a `docs-writer` sub-agent follows in the same worktree with the doc list; one fresh
 `reviewer` (`code` rubric) on the branch; findings loop to the writer; on PASS the planning session
-merges and reviews the merge. The planning session — this human-started session, wearing the current
-`orchestrator`-era skills — never edits sources itself beyond this plan and Linear, dispatches
+merges and reviews the merge. The planning session - this human-started session, wearing the current
+`orchestrator`-era skills - never edits sources itself beyond this plan and Linear, dispatches
 sub-agents directly because current workers cannot delegate, and stages by explicit path.
 
 Hot files and their order: `Services/ConfigFactory.cs` (S-1, S-4, S-5, S-8), `Models/ModelsConfig.cs`
 (S-1, S-4, S-5), `Commands/SyncCommand.cs` (S-1, S-2, S-5, S-6, S-8), `Services/TemplateGenerator.cs`
 (S-3 its region, S-2 the rest, S-6 names), `Commands/TemplateCommand.cs` (S-1 its spots, S-2 the
-rest), `Commands/GuardCommand.cs` (S-4, S-5, S-6), `dydo.json` (S-1, S-2, S-4, S-5, S-8 — one key
+rest), `Commands/GuardCommand.cs` (S-4, S-5, S-6), `dydo.json` (S-1, S-2, S-4, S-5, S-8 - one key
 group each), `SyncCommandTests.cs` (S-1, S-2, S-5, S-6, S-7, S-8), `RoleDefinitionServiceTests.cs`
 (S-2, S-5, S-6 rename, S-7, S-8), `dydo/guides/customizing-roles.md` (S-1, S-2, S-7),
 `dydo/reference/configuration.md` (S-1, S-2, S-4, S-5). Never two of these in flight at once.
@@ -418,14 +418,14 @@ group each), `SyncCommandTests.cs` (S-1, S-2, S-5, S-6, S-7, S-8), `RoleDefiniti
 - Whether the `research` body still wants a scout brief once `scout` is an agent that preloads its own
   skill: S-8 replaces the link with the agent's name and the human's pass decides the sentence.
 
-## Amendment — 2026-09-02
+## Amendment - 2026-09-02
 
 - Plan review PASS on the sixth fresh round (candidate `47c10d92`); the three non-binding observations
   are folded in here (S-5 added to the `ConfigFactory.cs` hot-file entry; S-6's no-op
   `architecture.md` entry dropped; S-2's `_README.md` twin noted as never carrying the sentence). The
   human opened delivery on 2026-09-02 before this round returned; S-1 and S-3 branched from `47c10d92`.
 
-## Amendment — 2026-09-02, closeout
+## Amendment - 2026-09-02, closeout
 
 - Closeout lane. Gate A returned findings that are straight deletions or Gate R blind spots, not
   prose, so S-9 grew one code-writer lane (`966525ac`) instead of a new Issue: `InitCommand` still printed
@@ -446,14 +446,14 @@ group each), `SyncCommandTests.cs` (S-1, S-2, S-5, S-6, S-7, S-8), `RoleDefiniti
   `frameworkHashes` is pruned by `template update`, never by hand; the `_system/templates/` delete
   comes before `dydo check`, which now flags every file in it. §3 stands as the set of removed keys.
 
-## Amendment — 2026-09-03, landing
+## Amendment - 2026-09-03, landing
 
 - S-10 landed the branch: `8c93c610` merges `653960ef` into `DYD-64-human-pass` at `4fa34c01`, on
   `landing/s10-simplify-into-dyd-64`, resolved as the simplification's structure carrying DR 046's
-  agent set — `implementer`, `hardener` and `specifier` replace `code-writer` and `issue-planner` in
+  agent set - `implementer`, `hardener` and `specifier` replace `code-writer` and `issue-planner` in
   `ConfigFactory`, `dydo.json`'s `models.agents` and every renamed test.
 - `code-writer` and `issue-planner` joined `RetiredSkills` and `implementer` left it (DR 046 ships it
   again, and a shipped name in that list makes every sync sweep its own output);
   `reviewer/resources/issue-plan.md` joined `RetiredSkillResources`.
-- The planner shim DR 046 re-added was dropped with both of its tests — §6's no-shim rule holds, and
+- The planner shim DR 046 re-added was dropped with both of its tests - §6's no-shim rule holds, and
   the migration guide carries the `code-writer` and `issue-planner` renames instead.

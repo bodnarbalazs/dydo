@@ -72,4 +72,4 @@ See the full [command reference](https://github.com/bodnarbalazs/dydo/blob/maste
 
 ## License
 
-MIT — see LICENSE.
+MIT - see LICENSE.

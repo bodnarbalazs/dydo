@@ -15,10 +15,10 @@ This is the human entry point to the project documentation.
 
 If you're new here:
 
-1. **[About](./understand/about.md)** — What this project is
-2. **[Architecture](./understand/architecture.md)** — How the system is structured
-3. **[Coding Standards](./guides/coding-standards.md)** — Read before writing code
-4. **[Glossary](./glossary.md)** — Project-specific terms
+1. **[About](./understand/about.md)** - What this project is
+2. **[Architecture](./understand/architecture.md)** - How the system is structured
+3. **[Coding Standards](./guides/coding-standards.md)** - Read before writing code
+4. **[Glossary](./glossary.md)** - Project-specific terms
 
 ---
 

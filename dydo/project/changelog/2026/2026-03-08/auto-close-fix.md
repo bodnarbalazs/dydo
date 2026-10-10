@@ -18,7 +18,7 @@ Fix auto-close: remove -NoExit for auto-close shells, kill by PID ancestry not n
 
 ## Review Summary
 
-Implemented auto-close-fix per plan. (1) GetWindowsArguments now omits -NoExit when autoClose is true so PowerShell exits naturally. (2) TerminalCloser.ScheduleClaudeTermination refactored to kill grandparent PID instead of searching by process name. (3) Linux and macOS paths verified — already correct. (4) Updated existing tests: renamed/inverted NoExit assertion, updated ScheduleClaudeTermination test to verify grandparent PID. Added new NoAutoClose test. All 1593 tests pass. No deviations from plan.
+Implemented auto-close-fix per plan. (1) GetWindowsArguments now omits -NoExit when autoClose is true so PowerShell exits naturally. (2) TerminalCloser.ScheduleClaudeTermination refactored to kill grandparent PID instead of searching by process name. (3) Linux and macOS paths verified - already correct. (4) Updated existing tests: renamed/inverted NoExit assertion, updated ScheduleClaudeTermination test to verify grandparent PID. Added new NoAutoClose test. All 1593 tests pass. No deviations from plan.
 
 ## Code Review
 

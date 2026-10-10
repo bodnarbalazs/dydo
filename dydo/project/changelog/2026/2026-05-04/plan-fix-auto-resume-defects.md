@@ -16,7 +16,7 @@ Plan the fix for the auto-resume defect bundle ([#0150](https://github.com/bodna
 
 ## Files Changed
 
-(None — planner output only)
+(None - planner output only)
 
 ## Review Summary
 

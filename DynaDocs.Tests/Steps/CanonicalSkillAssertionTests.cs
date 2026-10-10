@@ -66,9 +66,9 @@ public sealed class CanonicalSkillAssertionTests
             ["bro"] = "productivity", ["handoff"] = "productivity", ["teach"] = "productivity",
             ["show-me"] = "productivity", ["walkthrough"] = "productivity", ["writing-for-agents"] = "productivity",
             ["writing-for-humans"] = "productivity", ["retro"] = "productivity", ["wayfinder"] = "productivity",
-            ["to-project"] = "productivity", ["to-issue"] = "productivity"
+            ["to-project"] = "productivity", ["to-issue"] = "productivity", ["sitrep"] = "productivity"
         };
-        Assert.Equal(32, expected.Count);
+        Assert.Equal(33, expected.Count);
         var root = Path.Combine(RepositoryRoot(), "skills");
         Assert.Equal(["engineering", "productivity", "roles"], ChildDirectoryNames(root));
         Assert.Equal(["crew", "officers"], ChildDirectoryNames(Path.Combine(root, "roles")));
@@ -240,8 +240,8 @@ public sealed class CanonicalSkillAssertionTests
 
     private static string ImplementedForm(string body)
     {
-        var form = Regex.Match(body, "`(IMPLEMENTED — [^`]+)`");
-        Assert.True(form.Success, "no `IMPLEMENTED — ...` form line");
+        var form = Regex.Match(body, "`(IMPLEMENTED - [^`]+)`");
+        Assert.True(form.Success, "no `IMPLEMENTED - ...` form line");
         return form.Groups[1].Value;
     }
 
@@ -381,7 +381,7 @@ public sealed class CanonicalSkillAssertionTests
     }
 
     [Fact]
-    public void SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo32()
+    public void SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo33()
     {
         var root = RepositoryRoot();
         var skillsRoot = Path.Combine(root, "skills");
@@ -390,18 +390,18 @@ public sealed class CanonicalSkillAssertionTests
             .GroupBy(skill => skill.Category.Split('/')[0])
             .ToDictionary(group => group.Key, group => group.Count());
         Assert.Equal(categories.Order(StringComparer.Ordinal), actualCounts.Keys.Order(StringComparer.Ordinal));
-        Assert.Equal(32, actualCounts.Values.Sum());
+        Assert.Equal(33, actualCounts.Values.Sum());
 
         var readme = File.ReadAllText(Path.Combine(skillsRoot, "README.md"));
         foreach (var category in categories)
         {
-            var match = Regex.Match(readme, $@"`{category}/`\]\({category}/README\.md\) — (\d+) skills\.");
+            var match = Regex.Match(readme, $@"`{category}/`\]\({category}/README\.md\) - (\d+) skills\.");
             Assert.True(match.Success, $"skills/README.md does not cite a skill count for {category}/");
             Assert.Equal(actualCounts[category], int.Parse(match.Groups[1].Value));
         }
 
         Assert.Contains(
-            $"{actualCounts["roles"]} + {actualCounts["engineering"]} + {actualCounts["productivity"]} = 32",
+            $"{actualCounts["roles"]} + {actualCounts["engineering"]} + {actualCounts["productivity"]} = 33",
             readme);
     }
 

@@ -14,9 +14,9 @@ date: 2026-03-19
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxMetadataReader.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\InboxMetadataReaderTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxMetadataReader.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\InboxMetadataReaderTests.cs - Modified
 
 
 ## Review Summary
@@ -28,7 +28,7 @@ Fixed non-deterministic inbox file selection in GetDispatchedFrom, GetDispatched
 - Reviewed by: Emma
 - Date: 2026-03-19 18:23
 - Result: PASSED
-- Notes: LGTM. Core fix is clean — iterates all matching inbox files and picks newest by received timestamp. GetDispatchedFromRole added. AgentRegistry properly delegates to InboxMetadataReader, eliminating ~100 lines of duplicated code. 4 new tests cover multi-file scenarios for all three methods. All 11 tests pass. No regressions.
+- Notes: LGTM. Core fix is clean - iterates all matching inbox files and picks newest by received timestamp. GetDispatchedFromRole added. AgentRegistry properly delegates to InboxMetadataReader, eliminating ~100 lines of duplicated code. 4 new tests cover multi-file scenarios for all three methods. All 11 tests pass. No regressions.
 
 Awaiting human approval.
 

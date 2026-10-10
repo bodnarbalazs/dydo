@@ -18,7 +18,7 @@ date: 2026-03-07
 
 ## Review Summary
 
-Added --all / -a flag to dydo task approve as cross-platform alternative to wildcard *. Made name argument optional when --all is set, kept * for backward compat. Updated docs (templates + reference). 4 new tests, all 1282 tests pass. Skipped shell-expansion hint (plan item 2) — deemed unnecessary since --all is now the primary documented approach.
+Added --all / -a flag to dydo task approve as cross-platform alternative to wildcard *. Made name argument optional when --all is set, kept * for backward compat. Updated docs (templates + reference). 4 new tests, all 1282 tests pass. Skipped shell-expansion hint (plan item 2) - deemed unnecessary since --all is now the primary documented approach.
 
 ## Code Review
 

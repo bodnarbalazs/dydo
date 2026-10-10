@@ -18,7 +18,7 @@ Investigate why InboxServiceTests.PrintInboxItem_TaskItem_IncludesFilePath fails
 
 ## Review Summary
 
-No-op review: investigation concluded no regression exists. All 3 InboxServiceTests pass on HEAD 580515e; gap_check 136/136 clean. Services/InboxService.cs:192-197 correctly emits the 'File:' line; DynaDocs.Tests/Services/InboxServiceTests.cs:9-24 asserts correctly. The 2026-04-02 failure reported in brief was a console-capture race fixed later by 41b3503 and 0a6e930. No code changes made. Please verify by running: python DynaDocs.Tests/coverage/run_tests.py -- --filter FullyQualifiedName~InboxServiceTests — then close out.
+No-op review: investigation concluded no regression exists. All 3 InboxServiceTests pass on HEAD 580515e; gap_check 136/136 clean. Services/InboxService.cs:192-197 correctly emits the 'File:' line; DynaDocs.Tests/Services/InboxServiceTests.cs:9-24 asserts correctly. The 2026-04-02 failure reported in brief was a console-capture race fixed later by 41b3503 and 0a6e930. No code changes made. Please verify by running: python DynaDocs.Tests/coverage/run_tests.py -- --filter FullyQualifiedName~InboxServiceTests - then close out.
 
 ## Code Review
 

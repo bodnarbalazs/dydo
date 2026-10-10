@@ -12,7 +12,7 @@ Scope: Services/HubGenerator.cs + DynaDocs.Tests/Services/HubGeneratorTests.cs o
 
 What changed: HubGenerator.GenerateDocumentLinks now branches on whether relativeFolderPath is under project/changelog/. For changelog folders it renders bare links via KebabToTitleCase(filename) and omits the summary trail. For everything else it keeps the existing doc.Title (with KebabToTitleCase fallback) + first-sentence summary behavior. New IsChangelogFolder helper sits next to the other path helpers in the same file.
 
-Why: HubGenerator was using doc.Title for every entry. Changelog template H1s are `# Task: <kebab-name>`, so doc.Title produced verbose `Task: foo-bar-baz` labels with redundant brief summaries — drifted from the committed shape on ~18 changelog _index.md files; `dydo fix` regenerated all of them on every run. Hybrid rule scoped narrowly to project/changelog/. Content/concept hubs (guides, understand, reference, decisions, issues) are unchanged because they already match doc.Title shape and benefit from curated H1s.
+Why: HubGenerator was using doc.Title for every entry. Changelog template H1s are `# Task: <kebab-name>`, so doc.Title produced verbose `Task: foo-bar-baz` labels with redundant brief summaries - drifted from the committed shape on ~18 changelog _index.md files; `dydo fix` regenerated all of them on every run. Hybrid rule scoped narrowly to project/changelog/. Content/concept hubs (guides, understand, reference, decisions, issues) are unchanged because they already match doc.Title shape and benefit from curated H1s.
 
 Tests: 6 unit tests cover both branches with concrete fixtures (changelog with doc.Title set + summary present → bare KebabToTitleCase link, no summary; non-changelog with doc.Title null → KebabToTitleCase fallback; non-changelog with summary → first-sentence trail; backslash path normalization on the changelog branch). Full suite 4080/4080 green; gap_check.py 139/139 pass.
 
@@ -40,7 +40,7 @@ Scope: Services/HubGenerator.cs + DynaDocs.Tests/Services/HubGeneratorTests.cs o
 
 What changed: HubGenerator.GenerateDocumentLinks now branches on whether relativeFolderPath is under project/changelog/. For changelog folders it renders bare links via KebabToTitleCase(filename) and omits the summary trail. For everything else it keeps the existing doc.Title (with KebabToTitleCase fallback) + first-sentence summary behavior. New IsChangelogFolder helper sits next to the other path helpers in the same file.
 
-Why: HubGenerator was using doc.Title for every entry. Changelog template H1s are `# Task: <kebab-name>`, so doc.Title produced verbose `Task: foo-bar-baz` labels with redundant brief summaries — drifted from the committed shape on ~18 changelog _index.md files; `dydo fix` regenerated all of them on every run. Hybrid rule scoped narrowly to project/changelog/. Content/concept hubs (guides, understand, reference, decisions, issues) are unchanged because they already match doc.Title shape and benefit from curated H1s.
+Why: HubGenerator was using doc.Title for every entry. Changelog template H1s are `# Task: <kebab-name>`, so doc.Title produced verbose `Task: foo-bar-baz` labels with redundant brief summaries - drifted from the committed shape on ~18 changelog _index.md files; `dydo fix` regenerated all of them on every run. Hybrid rule scoped narrowly to project/changelog/. Content/concept hubs (guides, understand, reference, decisions, issues) are unchanged because they already match doc.Title shape and benefit from curated H1s.
 
 Tests: 6 unit tests cover both branches with concrete fixtures (changelog with doc.Title set + summary present → bare KebabToTitleCase link, no summary; non-changelog with doc.Title null → KebabToTitleCase fallback; non-changelog with summary → first-sentence trail; backslash path normalization on the changelog branch). Full suite 4080/4080 green; gap_check.py 139/139 pass.
 
@@ -57,7 +57,7 @@ Approve or reject.
 - Reviewed by: Frank
 - Date: 2026-05-05 19:10
 - Result: PASSED
-- Notes: Hub fix code, tests, and visual readback all clean. Full-suite gate failures are [issue #0167](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0167-test-parallelism-breaks-process-global-static-isolation-collection-definitions-m.md) parallelism flakes (different test each run, both static-state races) — confirmed unrelated by balazs. Mergeable.
+- Notes: Hub fix code, tests, and visual readback all clean. Full-suite gate failures are [issue #0167](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0167-test-parallelism-breaks-process-global-static-isolation-collection-definitions-m.md) parallelism flakes (different test each run, both static-state races) - confirmed unrelated by balazs. Mergeable.
 
 Awaiting human approval.
 

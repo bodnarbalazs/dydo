@@ -10,7 +10,7 @@ PowerShell fails with `ERROR_DIRECTORY (0x8007010b)` / "Could not access startin
 
 ## Root cause
 
-`Commands/WorktreeCommand.cs:899-901` — `FinalizeMerge` calls `TeardownWorktree` unconditionally. Unlike `ExecuteCleanup` (`:316-321`), it does not consult `CountWorktreeReferences`. When a merger finalizes while another agent (or a queued dispatch carrying `WorkingDirOverride` = worktree path via `Services/QueueService.cs:143-148`) still references the worktree, the directory is deleted out from under them. At dequeue (`Commands/AgentLifecycleHandlers.cs:99-101`, `Services/WatchdogService.cs:316-318`), `TerminalLauncher.LaunchNewTerminal` → `WindowsTerminalLauncher.Launch` sets `psi.WorkingDirectory` to the now-gone path and Process.Start fails with 0x8007010b.
+`Commands/WorktreeCommand.cs:899-901` - `FinalizeMerge` calls `TeardownWorktree` unconditionally. Unlike `ExecuteCleanup` (`:316-321`), it does not consult `CountWorktreeReferences`. When a merger finalizes while another agent (or a queued dispatch carrying `WorkingDirOverride` = worktree path via `Services/QueueService.cs:143-148`) still references the worktree, the directory is deleted out from under them. At dequeue (`Commands/AgentLifecycleHandlers.cs:99-101`, `Services/WatchdogService.cs:316-318`), `TerminalLauncher.LaunchNewTerminal` → `WindowsTerminalLauncher.Launch` sets `psi.WorkingDirectory` to the now-gone path and Process.Start fails with 0x8007010b.
 
 ## Plan
 
@@ -34,7 +34,7 @@ See `dydo/agents/Adele/plan-investigate-worktree-race.md` for implementation ste
 
 ## What happened (user-reported)
 
-User saw PowerShell windows fail to launch with `error 2147942667 (0x8007010b)` / `Could not access starting directory "…\dydo\_system\.local\worktrees\tier-registry-warnings-fix"` while running a worktree-forest merge queue in their LC project. Surfaced after commit `07d4208` ("test writer merge bug fix" — widened reviewer → code-writer dispatch allowlist to include test-writer-originated chains).
+User saw PowerShell windows fail to launch with `error 2147942667 (0x8007010b)` / `Could not access starting directory "…\dydo\_system\.local\worktrees\tier-registry-warnings-fix"` while running a worktree-forest merge queue in their LC project. Surfaced after commit `07d4208` ("test writer merge bug fix" - widened reviewer → code-writer dispatch allowlist to include test-writer-originated chains).
 
 ## Root cause (see `dydo/agents/Adele/plan-investigate-worktree-race.md` for the long form)
 
@@ -44,24 +44,24 @@ User saw PowerShell windows fail to launch with `error 2147942667 (0x8007010b)` 
 
 1. **`Commands/WorktreeCommand.cs` → `FinalizeMerge`**
    - Moved `RemoveAllMarkers(workspace)` to the top so the merger's own `.worktree-hold` is not counted as a reference.
-   - Before `TeardownWorktree`, now calls `CountWorktreeReferences(registry, worktreeId)`. When `> 0`, the directory is kept with an informational line ("… agent(s) still referencing — directory kept; the last cleanup will remove it.") and the last referrer's `dydo worktree cleanup` (already in the PS `finally` block) tears it down when refs hit zero.
-   - `git worktree prune` and `git branch -D -- {mergeSource}` still run — the merged branch is always deleted, only the physical directory teardown is gated.
+   - Before `TeardownWorktree`, now calls `CountWorktreeReferences(registry, worktreeId)`. When `> 0`, the directory is kept with an informational line ("… agent(s) still referencing - directory kept; the last cleanup will remove it.") and the last referrer's `dydo worktree cleanup` (already in the PS `finally` block) tears it down when refs hit zero.
+   - `git worktree prune` and `git branch -D -- {mergeSource}` still run - the merged branch is always deleted, only the physical directory teardown is gated.
 
 2. **`Services/TerminalLauncher.cs` → `Launch`**
    - If `workingDirectory != null && !Directory.Exists(workingDirectory)`, throw `DirectoryNotFoundException` immediately. The existing catch block then prints the usual "WARN: Could not launch terminal … Please manually open a new terminal and run: claude '…'" and returns 0. Keeps the target terminal from ever crashing with the cryptic `0x8007010b`.
 
 ## New regression tests (both red on master, green after fix)
 
-- `DynaDocs.Tests/Commands/WorktreeCommandTests.cs :: Merge_Finalize_SkipsDirectoryRemoval_WhenOtherAgentReferences` — Adele is the merger with `.merge-source`/`.worktree-hold`, Brian holds `.worktree = wtId`, worktree dir exists on disk. After `ExecuteMerge(finalize: true)`: directory preserved, Brian's `.worktree` untouched, Adele's merger markers cleared, `git branch -D -- worktree/<id>` attempted, `git worktree remove` NOT attempted.
-- `DynaDocs.Tests/Services/TerminalLauncherTests.cs :: Launch_WorkingDirectoryMissing_DoesNotStartProcess` — passes a missing directory as `workingDirectory`; asserts `pid == 0` and `recorder.Started` is empty.
+- `DynaDocs.Tests/Commands/WorktreeCommandTests.cs :: Merge_Finalize_SkipsDirectoryRemoval_WhenOtherAgentReferences` - Adele is the merger with `.merge-source`/`.worktree-hold`, Brian holds `.worktree = wtId`, worktree dir exists on disk. After `ExecuteMerge(finalize: true)`: directory preserved, Brian's `.worktree` untouched, Adele's merger markers cleared, `git branch -D -- worktree/<id>` attempted, `git worktree remove` NOT attempted.
+- `DynaDocs.Tests/Services/TerminalLauncherTests.cs :: Launch_WorkingDirectoryMissing_DoesNotStartProcess` - passes a missing directory as `workingDirectory`; asserts `pid == 0` and `recorder.Started` is empty.
 
 ## What to verify
 
-- Re-read `plan-investigate-worktree-race.md` against the diff — did I miss any call site that could still tear down with refs present? (Checked `ExecutePrune` already consults `CountWorktreeReferences`; `ExecuteCleanup` already correct; `FinalizeMerge` was the only gap.)
-- Full test suite: `python DynaDocs.Tests/coverage/run_tests.py` — expect 3779/3779 pass. I confirmed this.
-- Coverage gate: `python DynaDocs.Tests/coverage/gap_check.py` — expect 136/136 modules at tier. I confirmed this.
-- Does the existing `Merge_Finalize_RemovesZombieWorktreeDirectory` still pass? It uses only `.worktree-path` on Brian (not `.worktree`), so refs stay at 0 and teardown proceeds — yes, still passes.
-- Sanity: branch deletion after finalize is safe even when the directory is still populated (other agents won't be on a deleted branch in practice — the merger path only fires after a review pass in that worktree).
+- Re-read `plan-investigate-worktree-race.md` against the diff - did I miss any call site that could still tear down with refs present? (Checked `ExecutePrune` already consults `CountWorktreeReferences`; `ExecuteCleanup` already correct; `FinalizeMerge` was the only gap.)
+- Full test suite: `python DynaDocs.Tests/coverage/run_tests.py` - expect 3779/3779 pass. I confirmed this.
+- Coverage gate: `python DynaDocs.Tests/coverage/gap_check.py` - expect 136/136 modules at tier. I confirmed this.
+- Does the existing `Merge_Finalize_RemovesZombieWorktreeDirectory` still pass? It uses only `.worktree-path` on Brian (not `.worktree`), so refs stay at 0 and teardown proceeds - yes, still passes.
+- Sanity: branch deletion after finalize is safe even when the directory is still populated (other agents won't be on a deleted branch in practice - the merger path only fires after a review pass in that worktree).
 
 ## Files changed
 
@@ -73,7 +73,7 @@ User saw PowerShell windows fail to launch with `error 2147942667 (0x8007010b)` 
 
 ## Out of scope (acknowledged, not fixed here)
 
-- Separate auto-close regression from commit `def1fa4` — being handled on its own task (`fix-watchdog-anchor-regression`). Do NOT try to fix it as part of this review.
+- Separate auto-close regression from commit `def1fa4` - being handled on its own task (`fix-watchdog-anchor-regression`). Do NOT try to fix it as part of this review.
 - Broader refactor of worktree lifecycle reference tracking.
 
 

@@ -4,7 +4,7 @@ type: changelog
 date: 2026-09-09
 ---
 
-# DYD-118 beta.2 dogfood refresh — 2026-09-09
+# DYD-118 beta.2 dogfood refresh - 2026-09-09
 
 Corrected source commit `6e6521b431bb6a7e50280e330b12c1e3ccb88fed` packaged locally as
 `dydo.3.0.0-beta.2.nupkg`, SHA-256

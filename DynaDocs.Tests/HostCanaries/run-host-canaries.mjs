@@ -28,7 +28,7 @@ let candidatePrepared = false;
 let expectedSkills = [];
 let candidateFingerprintBefore;
 let rejectedAncestorPaths = [];
-const manifest = { issue: "DYD-91 — Make one canonical skill tree easy to install for Claude, Codex, and OpenCode", startedAt: new Date().toISOString(), commands: [], assertions: [], environment: {}, artifacts: {} };
+const manifest = { issue: "DYD-91 - Make one canonical skill tree easy to install for Claude, Codex, and OpenCode", startedAt: new Date().toISOString(), commands: [], assertions: [], environment: {}, artifacts: {} };
 manifest.environment.networkEvidenceBoundary = "The deny proxies prove zero proxy-observed external attempts and exact loopback traffic. They do not provide OS-level process-network confinement or prove that a child incapable of honoring proxy variables made no direct connection.";
 
 let failure;

@@ -5,17 +5,17 @@ date: 2026-04-18
 area: platform
 ---
 
-# 018 — Zombie Working State: Mechanism, Fixes, and Doc Surface
+# 018 - Zombie Working State: Mechanism, Fixes, and Doc Surface
 
-`status: working` can persist after a tab closes when an agent's claude exits without going through `dydo agent release` — typically a crash, a window close, or an in-flight task that ended unexpectedly. This decision captures why the state lingers, what's being fixed mechanically (cleanup, recovery), what's being documented (so the pattern stops being re-discovered from first principles), and how it relates to the adjacent stale-dispatch work in decision 017.
+`status: working` can persist after a tab closes when an agent's claude exits without going through `dydo agent release` - typically a crash, a window close, or an in-flight task that ended unexpectedly. This decision captures why the state lingers, what's being fixed mechanically (cleanup, recovery), what's being documented (so the pattern stops being re-discovered from first principles), and how it relates to the adjacent stale-dispatch work in decision 017.
 
 ## Context
 
 Four agents (Adele, Charlie, Dexter, Emma) were observed on 2026-04-18 with
 `status: working` in their `state.md` after their tabs had closed. One of
 them (Emma) had been seen by the user completing a successful release in
-her terminal output. The symptom is visually alarming — the system looks
-like it "forgot" to update state.md after a release — but the mechanism is
+her terminal output. The symptom is visually alarming - the system looks
+like it "forgot" to update state.md after a release - but the mechanism is
 a workflow gap, not a state-write bug.
 
 This decision captures:
@@ -23,14 +23,14 @@ This decision captures:
   re-discovering this from first principles each time).
 - What we're fixing now.
 - What we're documenting so the next investigator has footing.
-- How this relates to [017 — Stale-Free Semantics](./017-stale-free-semantics.md),
+- How this relates to [017 - Stale-Free Semantics](./017-stale-free-semantics.md),
   which is the adjacent stale-dispatch story.
 
 ## Decision
 
 **`ReleaseAgent` is the only code path that transitions `Working → Free`.
 If a session ends before `dydo agent release` runs to completion, state.md
-legitimately retains `working` — that's not a bug, it's missing state.
+legitimately retains `working` - that's not a bug, it's missing state.
 We address this on two fronts:**
 
 1. **Close the watchdog-revival gap on release.** Extend
@@ -44,7 +44,7 @@ We address this on two fronts:**
    reclaim a stale `Dispatched`/`Queued` agent. Extend this to `Working` by
    reading the launcher/Claude PID from `.session` and checking liveness.
    A `Status==Working` agent with a dead `.session` PID, past a
-   `StaleWorkingMinutes` threshold, should be treated as reservable —
+   `StaleWorkingMinutes` threshold, should be treated as reservable -
    making `dydo agent claim <name>` and (critically) `claude --resume`
    just work, without the destructive `agent clean --force` path.
    Tracked as issue #103.
@@ -63,7 +63,7 @@ free"` banner only prints on `ReleaseAgent` return value true, which requires
 the full chain:
 preconditions pass → `.session` deleted →
 `LogLifecycleEvent(Release)` (synchronous `File.AppendAllText` in
-`AuditService.cs:187` — not buffered, no async flush) →
+`AuditService.cs:187` - not buffered, no async flush) →
 `UpdateAgentState` to Free → `CleanupAfterRelease`.
 
 So if you see "Status: free" in a terminal, release DID complete; the
@@ -73,7 +73,7 @@ it's on disk, because the write is synchronous.
 For the four observed zombies:
 - No Release audit event exists for any of their current sessions (checked
   both main-repo `dydo/_system/audit/2026/` AND Emma's worktree's own audit
-  dir, which is NOT junctioned — see issue #96 for the related watchdog
+  dir, which is NOT junctioned - see issue #96 for the related watchdog
   footgun this creates).
 - `.session` files still present (release deletes them at
   `AgentRegistry.cs:423-425`).
@@ -89,7 +89,7 @@ resolving the blocker." It is NOT the fingerprint of a code bug in
 
 ### Why the user's observation is consistent, not contradictory
 
-In Emma's specific case, the user saw a real release complete — on session
+In Emma's specific case, the user saw a real release complete - on session
 `a3f5693b` at 19:28:30 UTC, which was task
 `investigate-printinboxitem-test-regression`. Frank then re-dispatched Emma
 into a worktree at 19:30:22 UTC for
@@ -103,7 +103,7 @@ Emma tabs. No mystery, just a timing/re-dispatch gotcha worth naming.
 The four agents had four different dead-end patterns, useful because they
 cover most of the failure space:
 
-- **Adele and Charlie** — code-writer + dispatched. The `requires-dispatch`
+- **Adele and Charlie** - code-writer + dispatched. The `requires-dispatch`
   constraint (`_system/roles/code-writer.role.json`, evaluated at
   `AgentRegistry.cs:491-503`) requires a reviewer dispatch before release.
   Hitting this at end-of-work is easy: `dydo inbox clear --all && dydo
@@ -112,10 +112,10 @@ cover most of the failure space:
   releasing."`. A Claude running low on context may not recover from this
   cleanly. This is the single most likely trigger for zombie-working
   scenarios, and is directly addressed in the troubleshooting doc.
-- **Dexter** — co-thinker + dispatched. No `requires-dispatch` constraint.
+- **Dexter** - co-thinker + dispatched. No `requires-dispatch` constraint.
   But co-thinker mode file explicitly says "don't release until the user
-  says so." He drafted a message and went quiet — tab died waiting.
-- **Emma (current)** — judge in a worktree. No constraint blocker. Tab
+  says so." He drafted a message and went quiet - tab died waiting.
+- **Emma (current)** - judge in a worktree. No constraint blocker. Tab
   simply died (last audit event was a trivial `cat .worktree`). Worktrees
   complicate recovery because `agent clean --force` doesn't tear down the
   git worktree or branch.
@@ -125,7 +125,7 @@ cover most of the failure space:
 Tempting but wrong. The watchdog runs in a separate process and cannot
 safely reconstruct the precondition checks that `ReleaseAgent` runs
 (reply-pending, wait markers, role constraints, worktree state). A watchdog
-that force-transitions a Working agent skips all of those — a Claude that
+that force-transitions a Working agent skips all of those - a Claude that
 was about to send a reply, or a code-writer that hadn't dispatched a
 reviewer, would be silently freed and their baton-passed task forgotten.
 The reclaim-on-claim path (issue #103) instead puts the decision in the
@@ -146,7 +146,7 @@ cross-link.
 
 ## Consequences
 
-- Issues #102 and #103 are now in the backlog. Both are medium severity —
+- Issues #102 and #103 are now in the backlog. Both are medium severity -
   neither is a data-loss bug. #102 is a one-line fix; #103 is a modest
   refactor that should cite and extend decision 017's `IsReservable`.
 - The troubleshooting doc grows by two sections (draft in
@@ -163,10 +163,10 @@ cross-link.
 
 ## Related
 
-- [017 — Stale-Free Semantics](./017-stale-free-semantics.md) — reservation
+- [017 - Stale-Free Semantics](./017-stale-free-semantics.md) - reservation
   vs. display split that #103 extends.
-- [001 — Auto-Close for Dispatched Agents](./001-auto-close-dispatch.md) —
+- [001 - Auto-Close for Dispatched Agents](./001-auto-close-dispatch.md) -
   the watchdog's main job; #102 closes a hole in its lifecycle.
-- Issues #95–98 — watchdog CWD/orphan PID bugs. Separate from this
+- Issues #95–98 - watchdog CWD/orphan PID bugs. Separate from this
   decision but adjacent; do not conflate.
-- Inquisition `stale-dydo-processes.md` — background for watchdog noise.
+- Inquisition `stale-dydo-processes.md` - background for watchdog noise.

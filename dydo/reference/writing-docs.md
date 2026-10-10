@@ -97,7 +97,7 @@ End every doc with a Related section:
 ```markdown
 ## Related
 
-- [Related Doc](./path/to/doc.md) — Brief description
+- [Related Doc](./path/to/doc.md) - Brief description
 ```
 
 This enables navigation through the documentation.
@@ -148,4 +148,4 @@ This shows incoming and outgoing links - useful when updating docs to ensure you
 
 ## Related
 
-- [dydo Commands Reference](./dydo-commands.md) — Full command documentation
+- [dydo Commands Reference](./dydo-commands.md) - Full command documentation

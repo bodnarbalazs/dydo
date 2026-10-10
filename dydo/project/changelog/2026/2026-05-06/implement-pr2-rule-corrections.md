@@ -8,15 +8,15 @@ date: 2026-05-06
 
 Review PR2 of the dydo-check-drift batch (4 commits on master, 0 in PR-isolation).
 
-COMMITS (oldest first; PR1 is included as commit 1 because it had been sitting uncommitted in the working tree all session — see Adele/Charlie correspondence):
+COMMITS (oldest first; PR1 is included as commit 1 because it had been sitting uncommitted in the working tree all session - see Adele/Charlie correspondence):
 - fc83e31 feat(check): scan boundary + RuleBase ShouldSkip + RuleSkipPaths helper ([#0163](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0163-docscanner-recurses-into-system-local-worktrees-dydo-check-reports-tens-of-spuri.md))  [PR1, authored by Brian, review-passed by Charlie before this branch]
 - 3213931 feat(check): types.json vocabulary + inquisition type ([#0159](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0159-frontmatter-validtypes-allowed-types-list-missing-inquisition-every-inquisition.md), D1)
-- 8b71cd4 feat(check): rule skip moves — template-additions, project/tasks ([#0160](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0160-summaryrule-lacks-the-system-template-additions-skip-block-its-three-sibling-rul.md), [#0162](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0162-orphandocsrule-flags-transient-task-files-until-dydo-fix-runs-adds-noise-on-ever.md))
+- 8b71cd4 feat(check): rule skip moves - template-additions, project/tasks ([#0160](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0160-summaryrule-lacks-the-system-template-additions-skip-block-its-three-sibling-rul.md), [#0162](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0162-orphandocsrule-flags-transient-task-files-until-dydo-fix-runs-adds-noise-on-ever.md))
 - d05f696 feat(hubs): drop tasks/_index auto-gen + project hub Tasks prose (D4)
 
 PLAN: dydo/agents/Brian/archive/20260504-215742/plan-dydo-check-drift.md ('PR2' section). Locked decisions D1–D5 are in the 'Resolved decisions' index at top.
 
-PR1 NOTE: I (Charlie) was the original reviewer for PR1 in a prior session and passed it (see dydo/project/tasks/pr1-scan-boundary.md). Adele's brief said it was 'on master' but it actually sat uncommitted in the working tree. I lifted it into git as commit 1 of this branch with the original author/reviewer attribution in the commit body. If you re-review PR1 substantively, that's fine — but it's not strictly the new work in this batch.
+PR1 NOTE: I (Charlie) was the original reviewer for PR1 in a prior session and passed it (see dydo/project/tasks/pr1-scan-boundary.md). Adele's brief said it was 'on master' but it actually sat uncommitted in the working tree. I lifted it into git as commit 1 of this branch with the original author/reviewer attribution in the commit body. If you re-review PR1 substantively, that's fine - but it's not strictly the new work in this batch.
 
 PR2 SUBSTANCE:
 - D1: types.json embedded baseline + IFrontmatterTypesService merging baseline ∪ user-added entries (case-sensitive, AOT-clean via TypesJsonContext source-gen). EnsureTypesJson in TemplateCommand.ExecuteUpdate. FolderScaffolder writes types.json on init. Inquisition added to baseline ValidTypes.
@@ -28,7 +28,7 @@ VERIFICATION GATE:
 - dotnet build: clean (0 warnings, 0 errors).
 - python DynaDocs.Tests/coverage/run_tests.py: 4111/4111 pass (was ~4076 before; +35 net new tests across PR1+PR2).
 - python DynaDocs.Tests/coverage/gap_check.py: 140/140 modules pass tier requirements (T1).
-- dydo check on the dydo project itself: NOT performed; per Adele's reply, this is a soft-pass for this wave because the dev binary is not on PATH (the residual broken links in dydo/project/_index.md, _issues.md, _changelog.md will be repaired by the next dydo template update + dydo fix once the new binary ships — same convention as [#0166](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0166-hub-format-drift-hubgenerator-uses-doc-title-but-committed-index-md-files-use-ke.md)). The Verification gate item 1 from Brian's plan ('0/0 on dydo project') is therefore deferred to release-time verification.
+- dydo check on the dydo project itself: NOT performed; per Adele's reply, this is a soft-pass for this wave because the dev binary is not on PATH (the residual broken links in dydo/project/_index.md, _issues.md, _changelog.md will be repaired by the next dydo template update + dydo fix once the new binary ships - same convention as [#0166](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0166-hub-format-drift-hubgenerator-uses-doc-title-but-committed-index-md-files-use-ke.md)). The Verification gate item 1 from Brian's plan ('0/0 on dydo project') is therefore deferred to release-time verification.
 
 KEY DECISIONS WORTH SCRUTINY:
 - IFrontmatterTypesService is constructed once per check pass in CheckDocValidator (single-load semantics; the cache is per-instance, not static, so concurrent check runs each get fresh state).
@@ -56,15 +56,15 @@ REPORT BACK to Adele on task implement-pr2-rule-corrections (per the dispatch fl
 
 Review PR2 of the dydo-check-drift batch (4 commits on master, 0 in PR-isolation).
 
-COMMITS (oldest first; PR1 is included as commit 1 because it had been sitting uncommitted in the working tree all session — see Adele/Charlie correspondence):
+COMMITS (oldest first; PR1 is included as commit 1 because it had been sitting uncommitted in the working tree all session - see Adele/Charlie correspondence):
 - fc83e31 feat(check): scan boundary + RuleBase ShouldSkip + RuleSkipPaths helper ([#0163](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0163-docscanner-recurses-into-system-local-worktrees-dydo-check-reports-tens-of-spuri.md))  [PR1, authored by Brian, review-passed by Charlie before this branch]
 - 3213931 feat(check): types.json vocabulary + inquisition type ([#0159](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0159-frontmatter-validtypes-allowed-types-list-missing-inquisition-every-inquisition.md), D1)
-- 8b71cd4 feat(check): rule skip moves — template-additions, project/tasks ([#0160](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0160-summaryrule-lacks-the-system-template-additions-skip-block-its-three-sibling-rul.md), [#0162](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0162-orphandocsrule-flags-transient-task-files-until-dydo-fix-runs-adds-noise-on-ever.md))
+- 8b71cd4 feat(check): rule skip moves - template-additions, project/tasks ([#0160](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0160-summaryrule-lacks-the-system-template-additions-skip-block-its-three-sibling-rul.md), [#0162](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0162-orphandocsrule-flags-transient-task-files-until-dydo-fix-runs-adds-noise-on-ever.md))
 - d05f696 feat(hubs): drop tasks/_index auto-gen + project hub Tasks prose (D4)
 
 PLAN: dydo/agents/Brian/archive/20260504-215742/plan-dydo-check-drift.md ('PR2' section). Locked decisions D1–D5 are in the 'Resolved decisions' index at top.
 
-PR1 NOTE: I (Charlie) was the original reviewer for PR1 in a prior session and passed it (see dydo/project/tasks/pr1-scan-boundary.md). Adele's brief said it was 'on master' but it actually sat uncommitted in the working tree. I lifted it into git as commit 1 of this branch with the original author/reviewer attribution in the commit body. If you re-review PR1 substantively, that's fine — but it's not strictly the new work in this batch.
+PR1 NOTE: I (Charlie) was the original reviewer for PR1 in a prior session and passed it (see dydo/project/tasks/pr1-scan-boundary.md). Adele's brief said it was 'on master' but it actually sat uncommitted in the working tree. I lifted it into git as commit 1 of this branch with the original author/reviewer attribution in the commit body. If you re-review PR1 substantively, that's fine - but it's not strictly the new work in this batch.
 
 PR2 SUBSTANCE:
 - D1: types.json embedded baseline + IFrontmatterTypesService merging baseline ∪ user-added entries (case-sensitive, AOT-clean via TypesJsonContext source-gen). EnsureTypesJson in TemplateCommand.ExecuteUpdate. FolderScaffolder writes types.json on init. Inquisition added to baseline ValidTypes.
@@ -76,7 +76,7 @@ VERIFICATION GATE:
 - dotnet build: clean (0 warnings, 0 errors).
 - python DynaDocs.Tests/coverage/run_tests.py: 4111/4111 pass (was ~4076 before; +35 net new tests across PR1+PR2).
 - python DynaDocs.Tests/coverage/gap_check.py: 140/140 modules pass tier requirements (T1).
-- dydo check on the dydo project itself: NOT performed; per Adele's reply, this is a soft-pass for this wave because the dev binary is not on PATH (the residual broken links in dydo/project/_index.md, _issues.md, _changelog.md will be repaired by the next dydo template update + dydo fix once the new binary ships — same convention as [#0166](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0166-hub-format-drift-hubgenerator-uses-doc-title-but-committed-index-md-files-use-ke.md)). The Verification gate item 1 from Brian's plan ('0/0 on dydo project') is therefore deferred to release-time verification.
+- dydo check on the dydo project itself: NOT performed; per Adele's reply, this is a soft-pass for this wave because the dev binary is not on PATH (the residual broken links in dydo/project/_index.md, _issues.md, _changelog.md will be repaired by the next dydo template update + dydo fix once the new binary ships - same convention as [#0166](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0166-hub-format-drift-hubgenerator-uses-doc-title-but-committed-index-md-files-use-ke.md)). The Verification gate item 1 from Brian's plan ('0/0 on dydo project') is therefore deferred to release-time verification.
 
 KEY DECISIONS WORTH SCRUTINY:
 - IFrontmatterTypesService is constructed once per check pass in CheckDocValidator (single-load semantics; the cache is per-instance, not static, so concurrent check runs each get fresh state).

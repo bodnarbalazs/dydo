@@ -8,9 +8,9 @@ date: 2026-05-06
 
 REVIEW PR3 of the dydo-check-drift batch ([#0161](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0161-dydo-issue-create-output-cannot-satisfy-summaryrule-every-issue-stub-triggers-a.md)). Three commits on master:
 
-- c85947a feat(issues): add --summary flag + placeholder detection — code-writer (Dexter)
-- 5c77bbb docs(pr3): reference-doc sync + exclusion-model nudges — docs-writer (Frank)
-- cbd063f docs(issues): backfill summaries on [#0151](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0151-watchdog-never-registers-anchors-on-windows-orphan-cap-is-the-only-thing-keeping.md)-[#0158](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0158-createlisteningwaitmarker-preserve-since-branch-is-dead-for-general-waits-undocu.md) — docs-writer (Frank)
+- c85947a feat(issues): add --summary flag + placeholder detection - code-writer (Dexter)
+- 5c77bbb docs(pr3): reference-doc sync + exclusion-model nudges - docs-writer (Frank)
+- cbd063f docs(issues): backfill summaries on [#0151](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0151-watchdog-never-registers-anchors-on-windows-orphan-cap-is-the-only-thing-keeping.md)-[#0158](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0158-createlisteningwaitmarker-preserve-since-branch-is-dead-for-general-waits-undocu.md) - docs-writer (Frank)
 
 PR1 + PR2 are already on master (commits fc83e31, 3213931, 8b71cd4, d05f696). The plan lives at dydo/agents/Brian/archive/20260504-215742/plan-dydo-check-drift.md (read the "PR3" section for file:line guidance, BC migration table, rollout risks).
 
@@ -19,7 +19,7 @@ PR1 + PR2 are already on master (commits fc83e31, 3213931, 8b71cd4, d05f696). Th
 Code (c85947a, code-writer):
 - Commands/IssueCommand.cs: --summary option wired through CreateCreateCommand alongside --body, --body-file.
 - Commands/IssueCreateHandler.cs: refactored Execute into TryValidateMetadata / TryResolveBody / NormalizeSummary / AcquireIssueLock / RenderIssueContent helpers. Refactor was driven by Adele's note that the prior single-method version pushed CRAP > T1=30 after the --summary addition. Verify CRAP is now under threshold and the helpers' decomposition reads cleanly.
-- Rules/SummaryRule.cs: new branch warns when SummaryParagraph trims to exactly the IssueCreateHandler.SummaryPlaceholder constant. Note the cross-namespace reference (Rules → Commands) — this is intentional so the placeholder string has one source of truth in the Command that emits it. If you disagree with the direction of the dependency, propose where else it should live.
+- Rules/SummaryRule.cs: new branch warns when SummaryParagraph trims to exactly the IssueCreateHandler.SummaryPlaceholder constant. Note the cross-namespace reference (Rules → Commands) - this is intentional so the placeholder string has one source of truth in the Command that emits it. If you disagree with the direction of the dependency, propose where else it should live.
 - Templates/* (8 files): coordinated --summary teaching sweep. Verify all 8 mention --summary with consistent phrasing. The list: mode-code-writer, mode-reviewer, mode-orchestrator, mode-judge, mode-inquisitor, dydo-commands, about-dynadocs, _issues.
 
 Tests (c85947a, code-writer):
@@ -30,7 +30,7 @@ Docs (5c77bbb, docs-writer):
 - dydo/reference/dydo-commands.md: --summary added to the issue-create section, mirroring the template.
 - dydo/reference/about-dynadocs.md: Issues table line mirrors the template.
 - dydo/reference/configuration.md: paragraphs on the three-layer exclusion model + the ## Tasks prose convention; AutoGenComment public note.
-- dydo/project/changelog/2026/2026-05-04/cleanup-docs-check-backlog.md: appended Resolution paragraph tying PR1/PR2/PR3 hashes back. (Adele's original brief asked for a supersede on the dydo/project/tasks/ file but it was already migrated to the changelog at 9d2474e before her brief was written; Frank chose option (b) — annotate the changelog rather than skip — to preserve the audit trail.)
+- dydo/project/changelog/2026/2026-05-04/cleanup-docs-check-backlog.md: appended Resolution paragraph tying PR1/PR2/PR3 hashes back. (Adele's original brief asked for a supersede on the dydo/project/tasks/ file but it was already migrated to the changelog at 9d2474e before her brief was written; Frank chose option (b) - annotate the changelog rather than skip - to preserve the audit trail.)
 
 Backfill (cbd063f, docs-writer):
 - dydo/project/issues/0151-*.md … 0158-*.md: each got a one-sentence summary inserted between the H1 and the first ## section, derived from the first sentence of ## Description. Frank flagged that [#0155](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0155-rbac-off-limits-and-dangerous-pattern-checks-bypassed-for-any-bash-chain-contain.md)-[#0158](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0158-createlisteningwaitmarker-preserve-since-branch-is-dead-for-general-waits-undocu.md) each had a duplicate empty ## Description heading immediately preceding the real one; his single edit collapsed those pairs to one heading. Spot-check 2-3 backfill files to confirm summaries are faithful (not invented).
@@ -38,7 +38,7 @@ Backfill (cbd063f, docs-writer):
 == VERIFICATION GATE OUTPUT ==
 
 Ran on cbd063f via worktree-isolated runner:
-- Tests: 4118/4118 passed (4 s + setup; baseline 4115/4115 + my 6 new + Frank's 0 = 4121 expected — the 4118 is correct because some tests are parameterized; verify by running yourself).
+- Tests: 4118/4118 passed (4 s + setup; baseline 4115/4115 + my 6 new + Frank's 0 = 4121 expected - the 4118 is correct because some tests are parameterized; verify by running yourself).
 - Coverage gap_check: 140/140 modules at tier (100.0%).
 - CommandDocConsistencyTests: 10/10 green (Frank verified at 5c77bbb and again at cbd063f).
 
@@ -48,7 +48,7 @@ Ran on cbd063f via worktree-isolated runner:
 
 == REVIEW SCOPE NOTES ==
 
-- Reviewer cannot be Dexter (code-writer) or Frank (docs-writer) on this task — that constraint is automatic, just calling it out.
+- Reviewer cannot be Dexter (code-writer) or Frank (docs-writer) on this task - that constraint is automatic, just calling it out.
 - All three commits are part of one logical PR per Adele's plan ("Single PR can carry multiple commits across roles"). Review them as one unit.
 - Soft-pass convention applies if any gap_check failure is race-based and unrelated; current run is clean so it should not come up.
 
@@ -68,9 +68,9 @@ Per the brief, by accepting this review you take over Dexter's reply obligation 
 
 REVIEW PR3 of the dydo-check-drift batch ([#0161](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0161-dydo-issue-create-output-cannot-satisfy-summaryrule-every-issue-stub-triggers-a.md)). Three commits on master:
 
-- c85947a feat(issues): add --summary flag + placeholder detection — code-writer (Dexter)
-- 5c77bbb docs(pr3): reference-doc sync + exclusion-model nudges — docs-writer (Frank)
-- cbd063f docs(issues): backfill summaries on [#0151](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0151-watchdog-never-registers-anchors-on-windows-orphan-cap-is-the-only-thing-keeping.md)-[#0158](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0158-createlisteningwaitmarker-preserve-since-branch-is-dead-for-general-waits-undocu.md) — docs-writer (Frank)
+- c85947a feat(issues): add --summary flag + placeholder detection - code-writer (Dexter)
+- 5c77bbb docs(pr3): reference-doc sync + exclusion-model nudges - docs-writer (Frank)
+- cbd063f docs(issues): backfill summaries on [#0151](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0151-watchdog-never-registers-anchors-on-windows-orphan-cap-is-the-only-thing-keeping.md)-[#0158](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0158-createlisteningwaitmarker-preserve-since-branch-is-dead-for-general-waits-undocu.md) - docs-writer (Frank)
 
 PR1 + PR2 are already on master (commits fc83e31, 3213931, 8b71cd4, d05f696). The plan lives at dydo/agents/Brian/archive/20260504-215742/plan-dydo-check-drift.md (read the "PR3" section for file:line guidance, BC migration table, rollout risks).
 
@@ -79,7 +79,7 @@ PR1 + PR2 are already on master (commits fc83e31, 3213931, 8b71cd4, d05f696). Th
 Code (c85947a, code-writer):
 - Commands/IssueCommand.cs: --summary option wired through CreateCreateCommand alongside --body, --body-file.
 - Commands/IssueCreateHandler.cs: refactored Execute into TryValidateMetadata / TryResolveBody / NormalizeSummary / AcquireIssueLock / RenderIssueContent helpers. Refactor was driven by Adele's note that the prior single-method version pushed CRAP > T1=30 after the --summary addition. Verify CRAP is now under threshold and the helpers' decomposition reads cleanly.
-- Rules/SummaryRule.cs: new branch warns when SummaryParagraph trims to exactly the IssueCreateHandler.SummaryPlaceholder constant. Note the cross-namespace reference (Rules → Commands) — this is intentional so the placeholder string has one source of truth in the Command that emits it. If you disagree with the direction of the dependency, propose where else it should live.
+- Rules/SummaryRule.cs: new branch warns when SummaryParagraph trims to exactly the IssueCreateHandler.SummaryPlaceholder constant. Note the cross-namespace reference (Rules → Commands) - this is intentional so the placeholder string has one source of truth in the Command that emits it. If you disagree with the direction of the dependency, propose where else it should live.
 - Templates/* (8 files): coordinated --summary teaching sweep. Verify all 8 mention --summary with consistent phrasing. The list: mode-code-writer, mode-reviewer, mode-orchestrator, mode-judge, mode-inquisitor, dydo-commands, about-dynadocs, _issues.
 
 Tests (c85947a, code-writer):
@@ -90,7 +90,7 @@ Docs (5c77bbb, docs-writer):
 - dydo/reference/dydo-commands.md: --summary added to the issue-create section, mirroring the template.
 - dydo/reference/about-dynadocs.md: Issues table line mirrors the template.
 - dydo/reference/configuration.md: paragraphs on the three-layer exclusion model + the ## Tasks prose convention; AutoGenComment public note.
-- dydo/project/changelog/2026/2026-05-04/cleanup-docs-check-backlog.md: appended Resolution paragraph tying PR1/PR2/PR3 hashes back. (Adele's original brief asked for a supersede on the dydo/project/tasks/ file but it was already migrated to the changelog at 9d2474e before her brief was written; Frank chose option (b) — annotate the changelog rather than skip — to preserve the audit trail.)
+- dydo/project/changelog/2026/2026-05-04/cleanup-docs-check-backlog.md: appended Resolution paragraph tying PR1/PR2/PR3 hashes back. (Adele's original brief asked for a supersede on the dydo/project/tasks/ file but it was already migrated to the changelog at 9d2474e before her brief was written; Frank chose option (b) - annotate the changelog rather than skip - to preserve the audit trail.)
 
 Backfill (cbd063f, docs-writer):
 - dydo/project/issues/0151-*.md … 0158-*.md: each got a one-sentence summary inserted between the H1 and the first ## section, derived from the first sentence of ## Description. Frank flagged that [#0155](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0155-rbac-off-limits-and-dangerous-pattern-checks-bypassed-for-any-bash-chain-contain.md)-[#0158](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0158-createlisteningwaitmarker-preserve-since-branch-is-dead-for-general-waits-undocu.md) each had a duplicate empty ## Description heading immediately preceding the real one; his single edit collapsed those pairs to one heading. Spot-check 2-3 backfill files to confirm summaries are faithful (not invented).
@@ -98,7 +98,7 @@ Backfill (cbd063f, docs-writer):
 == VERIFICATION GATE OUTPUT ==
 
 Ran on cbd063f via worktree-isolated runner:
-- Tests: 4118/4118 passed (4 s + setup; baseline 4115/4115 + my 6 new + Frank's 0 = 4121 expected — the 4118 is correct because some tests are parameterized; verify by running yourself).
+- Tests: 4118/4118 passed (4 s + setup; baseline 4115/4115 + my 6 new + Frank's 0 = 4121 expected - the 4118 is correct because some tests are parameterized; verify by running yourself).
 - Coverage gap_check: 140/140 modules at tier (100.0%).
 - CommandDocConsistencyTests: 10/10 green (Frank verified at 5c77bbb and again at cbd063f).
 
@@ -108,7 +108,7 @@ Ran on cbd063f via worktree-isolated runner:
 
 == REVIEW SCOPE NOTES ==
 
-- Reviewer cannot be Dexter (code-writer) or Frank (docs-writer) on this task — that constraint is automatic, just calling it out.
+- Reviewer cannot be Dexter (code-writer) or Frank (docs-writer) on this task - that constraint is automatic, just calling it out.
 - All three commits are part of one logical PR per Adele's plan ("Single PR can carry multiple commits across roles"). Review them as one unit.
 - Soft-pass convention applies if any gap_check failure is race-based and unrelated; current run is clean so it should not come up.
 

@@ -185,11 +185,11 @@ Bug Sub-issues would transfer the same prompt paths twice and add no independent
 
 Authored production sources:
 
-- `Templates/skill-admiral.template.md` — add Admiral capacity budgeting, saved-brief boundary and
+- `Templates/skill-admiral.template.md` - add Admiral capacity budgeting, saved-brief boundary and
   refusal/escalation instructions.
-- `Templates/skill-issue-captain.template.md` — add captain-only crew authority, serial chain budget,
+- `Templates/skill-issue-captain.template.md` - add captain-only crew authority, serial chain budget,
   freshness preservation and refusal return/release instructions.
-- `Templates/working-tree-contract.template.md` — add the narrow shared capacity and portable-brief
+- `Templates/working-tree-contract.template.md` - add the narrow shared capacity and portable-brief
   contract.
 
 Managed/generated outputs, changed only by source-built template update/sync:
@@ -201,16 +201,16 @@ Managed/generated outputs, changed only by source-built template update/sync:
 - `.claude/skills/issue-captain/SKILL.md`
 - `.agents/skills/admiral/SKILL.md`
 - `.agents/skills/issue-captain/SKILL.md`
-- `dydo.json` — only its `frameworkHashes` entries for `guides/working-tree-contract.md`,
+- `dydo.json` - only its `frameworkHashes` entries for `guides/working-tree-contract.md`,
   `_system/templates/skill-issue-captain.template.md` and
   `_system/templates/skill-admiral.template.md`, which `template update` rewrites to the hashes of the
   three managed copies above. Every other line of `dydo.json` is unowned and stays byte-identical.
 
 Proof:
 
-- `DynaDocs.Tests/Features/captain-capacity.feature` — the four boundary scenarios above.
-- `DynaDocs.Tests/Steps/CaptainCapacitySteps.cs` — focused source/output and obligation assertions.
-- `dydo/agents/workspace/dyd141-capacity-evidence.md` — configuration provenance, bounded desktop
+- `DynaDocs.Tests/Features/captain-capacity.feature` - the four boundary scenarios above.
+- `DynaDocs.Tests/Steps/CaptainCapacitySteps.cs` - focused source/output and obligation assertions.
+- `dydo/agents/workspace/dyd141-capacity-evidence.md` - configuration provenance, bounded desktop
   observations, native inventory/results and exact candidate identity.
 
 No other generated file or `dydo.json` line is owned. In particular `.claude/agents/issue-captain.md`,
@@ -219,15 +219,15 @@ and existing evidence are read-only and must remain byte-identical.
 
 ### Steps and hops
 
-1. **Specify — nonempty.** Commit this file, obtain fresh SPEC review, and close the unused Bug
+1. **Specify - nonempty.** Commit this file, obtain fresh SPEC review, and close the unused Bug
    reproduce/fix placeholders `Canceled` with the recorded collapse reason.
-2. **Implement — nonempty.** First add the four failing focused scenarios. Then edit only the three
+2. **Implement - nonempty.** First add the four failing focused scenarios. Then edit only the three
    authored templates, run the source-built template update and sync, inspect the named outputs, and
    make the focused/full/build/docs/generation gates pass. Commit the exact owned paths.
-3. **Harden — nonempty.** Run the bounded native proof, record compact evidence and hashes, challenge
+3. **Harden - nonempty.** Run the bounded native proof, record compact evidence and hashes, challenge
    every universal host claim, rerun all gates, and commit the evidence or any necessary correction
    inside the owned paths. Do not edit user config or broaden DYD-86/88.
-4. **Issue review — required and fresh.** Judge the complete candidate against this spec and the CODE
+4. **Issue review - required and fresh.** Judge the complete candidate against this spec and the CODE
    rubric, including generated parity, unchanged wrapper bytes, native evidence qualification and
    captain-only dispatch. Correct any FAIL through the owner named by the captain, then review afresh.
    CODE review 1 of `059c575f` returned FAIL (artifact on the Issue). Its corrections run on the Issue
@@ -235,9 +235,9 @@ and existing evidence are read-only and must remain byte-identical.
    hashes`); a fresh hardener's `DYD-141 fix:` commit of the regenerated `dydo.json` hash lines under
    the generation gate; the same hardener's second `DYD-141 fix:` commit resolving finding 2 in
    `dydo/agents/workspace/dyd141-capacity-evidence.md`; then a fresh CODE review of the result.
-5. **Offer — nonempty captain operation.** Push the unsquashed Issue branch, open the PR with the PASS
+5. **Offer - nonempty captain operation.** Push the unsquashed Issue branch, open the PR with the PASS
    block, and keep DYD-141 `Ready to Merge`.
-6. **Merge — later Sub-issue required.** Create/specify a Merge/AFK Sub-issue when the candidate and
+6. **Merge - later Sub-issue required.** Create/specify a Merge/AFK Sub-issue when the candidate and
    target SHAs are known; its captain-owned implementer merges into `feature/dydo-3-consolidation`,
    runs combined gates, and a fresh merge reviewer judges the integrated result. No merge lane is
    created by this specifier.

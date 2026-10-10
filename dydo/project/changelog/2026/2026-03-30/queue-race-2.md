@@ -6,7 +6,7 @@ date: 2026-03-30
 
 # Task: queue-race-2
 
-Queue race test — no code changes made. This was a wait-and-release test dispatch.
+Queue race test - no code changes made. This was a wait-and-release test dispatch.
 
 ## Progress
 
@@ -14,12 +14,12 @@ Queue race test — no code changes made. This was a wait-and-release test dispa
 
 ## Files Changed
 
-C:/Users/User/Desktop/Projects/DynaDocs/Commands/smoke-final3-b.txt — Created
+C:/Users/User/Desktop/Projects/DynaDocs/Commands/smoke-final3-b.txt - Created
 
 
 ## Review Summary
 
-Queue race test — no code changes made. This was a wait-and-release test dispatch.
+Queue race test - no code changes made. This was a wait-and-release test dispatch.
 
 ## Code Review
 

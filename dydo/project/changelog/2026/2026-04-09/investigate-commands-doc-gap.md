@@ -14,11 +14,11 @@ date: 2026-04-09
 
 ## Files Changed
 
-C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Services/AuditEdgeCaseTests.cs — Created
-C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Integration/TemplateCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CommandDocConsistencyTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\dydo-commands.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md — Modified
+C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Services/AuditEdgeCaseTests.cs - Created
+C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Integration/TemplateCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CommandDocConsistencyTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\dydo-commands.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md - Modified
 
 
 ## Review Summary

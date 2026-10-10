@@ -14,11 +14,11 @@ date: 2026-03-13
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\AgentListHandler.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\AgentTreeHandler.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\AgentRegistryTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorktreeDispatchTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\AgentListHandler.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\AgentTreeHandler.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\AgentRegistryTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorktreeDispatchTests.cs - Modified
 
 
 ## Review Summary
@@ -29,7 +29,7 @@ Implementation complete. Added GetWorktreeId/IsWorktreeStale/TruncateWorktreeId 
 
 - Reviewed by: Charlie
 - Result: FAILED
-- Issues: ResolveWorktreePath in WorktreeCommand.cs:102 uses path.Contains(worktreeId) — imprecise matching. Dispatched code-writer to fix.
+- Issues: ResolveWorktreePath in WorktreeCommand.cs:102 uses path.Contains(worktreeId) - imprecise matching. Dispatched code-writer to fix.
 
 Requires rework.
 
@@ -38,7 +38,7 @@ Requires rework.
 - Reviewed by: Charlie
 - Date: 2026-03-13 17:30
 - Result: PASSED
-- Notes: LGTM. ResolveWorktreePath fix is correct — Path.GetFileName(path) == worktreeId ensures exact directory name matching. Test Cleanup_DoesNotMatchPartialWorktreeId properly exercises the fix. All 376 related tests pass.
+- Notes: LGTM. ResolveWorktreePath fix is correct - Path.GetFileName(path) == worktreeId ensures exact directory name matching. Test Cleanup_DoesNotMatchPartialWorktreeId properly exercises the fix. All 376 related tests pass.
 
 Awaiting human approval.
 

@@ -130,7 +130,7 @@ public class GuardSecurityTests : IntegrationTestBase
     }
 
     // ================================================================
-    // Finding 3: Command substitution — tainted writes blocked
+    // Finding 3: Command substitution - tainted writes blocked
     // ================================================================
 
     [Fact]
@@ -187,7 +187,7 @@ public class GuardSecurityTests : IntegrationTestBase
     public void Finding5_WriteInsideCommandSubstitution_DetectedAsWriteOp()
     {
         var analyzer = new BashCommandAnalyzer();
-        // cp is entirely inside $() — analyzer must still detect the write
+        // cp is entirely inside $() - analyzer must still detect the write
         var result = analyzer.Analyze("echo $(cp secret.txt /tmp/output.txt)");
         Assert.True(result.HasBypassAttempt);
         Assert.Contains(result.Operations, op =>
@@ -209,7 +209,7 @@ public class GuardSecurityTests : IntegrationTestBase
     public void Finding5_ReadInsideCommandSubstitution_NoWriteOp()
     {
         var analyzer = new BashCommandAnalyzer();
-        // cat inside $() is a read, not a write — should not produce write ops
+        // cat inside $() is a read, not a write - should not produce write ops
         var result = analyzer.Analyze("echo $(cat readme.txt)");
         Assert.True(result.HasBypassAttempt);
         Assert.DoesNotContain(result.Operations, op =>
@@ -346,7 +346,7 @@ public class GuardSecurityTests : IntegrationTestBase
     public async Task BugB_PowerShell_DangerousPattern_IsBlocked()
     {
         // Bug B: before the fix, PowerShell tool calls fell through to HandleWriteOperation
-        // with filePath==null and returned Success — full guard bypass. This test proves
+        // with filePath==null and returned Success - full guard bypass. This test proves
         // PowerShell now routes through HandleBashCommand and trips CheckDangerousPatterns
         // identically to Bash.
         await SetupClaimedAgent();
@@ -362,7 +362,7 @@ public class GuardSecurityTests : IntegrationTestBase
     //
     // Codex names its shell tool shell_command (also exec/local_shell/unified_exec by mode),
     // not Bash/PowerShell. Before the fix these fell through to HandleWriteOperation with a
-    // null filePath and returned Success — every codex shell command ran UNGUARDED (an off-limits
+    // null filePath and returned Success - every codex shell command ran UNGUARDED (an off-limits
     // read returned the file contents, git stash/destructive git went through). These tests pin
     // that each codex shell tool name now routes through HandleBashCommand identically to Bash.
 
@@ -391,7 +391,7 @@ public class GuardSecurityTests : IntegrationTestBase
     public async Task Issue295_CodexShellTool_OffLimitsWrite_IsBlocked()
     {
         // git stash/merge fences were removed with worktree management (DR-041 Part B), but
-        // the codex shell lane must still bind off-limits — a write to a system path is blocked.
+        // the codex shell lane must still bind off-limits - a write to a system path is blocked.
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(CodexShellJson("shell_command", "tee config/secrets.json"));
@@ -520,7 +520,7 @@ public class GuardSecurityTests : IntegrationTestBase
     {
         await SetupClaimedAgent();
 
-        // Real quotes around -c argument — BashJson handles JSON escaping
+        // Real quotes around -c argument - BashJson handles JSON escaping
         var result = await GuardWithStdinAsync(
             BashJson("bash -c \"tee config/secrets.json\""));
         result.AssertExitCode(2);
@@ -545,7 +545,7 @@ public class GuardSecurityTests : IntegrationTestBase
     public void Issue86_SubstitutionAsCommand_PathArgsFlagged()
     {
         var analyzer = new BashCommandAnalyzer();
-        // $(echo tee) tokenizes to ["$(echo", "tee)", "file.cs"] — cmdName starts with $
+        // $(echo tee) tokenizes to ["$(echo", "tee)", "file.cs"] - cmdName starts with $
         var result = analyzer.Analyze("$(echo tee) file.cs");
         Assert.True(result.HasBypassAttempt);
         Assert.Contains(result.Operations, op => op.IsUncertain && op.Path == "file.cs");
@@ -568,7 +568,7 @@ public class GuardSecurityTests : IntegrationTestBase
     [Fact]
     public void Issue64_MergeSystemNudges_AddsBlockDefaults()
     {
-        // Empty config — should merge in all block-severity defaults
+        // Empty config - should merge in all block-severity defaults
         var nudges = GuardCommand.MergeSystemNudges([]);
         Assert.True(nudges.Count > 0);
         Assert.All(nudges, n => Assert.Equal("block", n.Severity, ignoreCase: true));
@@ -577,7 +577,7 @@ public class GuardSecurityTests : IntegrationTestBase
     [Fact]
     public void Issue64_MergeSystemNudges_NoDoubles()
     {
-        // Full config — no duplicates added
+        // Full config - no duplicates added
         var nudges = GuardCommand.MergeSystemNudges(ConfigFactory.DefaultNudges.ToList());
         var patterns = nudges.Select(n => n.Pattern).ToList();
         Assert.Equal(patterns.Count, patterns.Distinct().Count());
@@ -724,7 +724,7 @@ public class GuardSecurityTests : IntegrationTestBase
         var analyzer = new BashCommandAnalyzer();
         // bash with -e flag (exit on error) should not trigger inner analysis
         var result = analyzer.Analyze("bash -e script.sh");
-        // No file operations expected — bash is not in command dictionaries
+        // No file operations expected - bash is not in command dictionaries
         Assert.DoesNotContain(result.Operations, op => op.Type == FileOperationType.Read);
     }
 
@@ -732,7 +732,7 @@ public class GuardSecurityTests : IntegrationTestBase
     public void Issue85_ShellCWithNoArgument_NoInnerAnalysis()
     {
         var analyzer = new BashCommandAnalyzer();
-        // bash -c with no following argument — edge case
+        // bash -c with no following argument - edge case
         var result = analyzer.Analyze("bash -c");
         Assert.Empty(result.Operations);
     }
@@ -751,7 +751,7 @@ public class GuardSecurityTests : IntegrationTestBase
     public void Issue86_VariableWithNoPathArgs_NoUncertainOps()
     {
         var analyzer = new BashCommandAnalyzer();
-        // $CMD with no arguments — no uncertain operations
+        // $CMD with no arguments - no uncertain operations
         var result = analyzer.Analyze("$CMD");
         Assert.True(result.HasBypassAttempt);
         Assert.Empty(result.Operations);
@@ -787,7 +787,7 @@ public class GuardSecurityTests : IntegrationTestBase
     }
 
     // ================================================================
-    // CheckBashFileOperation coverage — bash file operations
+    // CheckBashFileOperation coverage - bash file operations
     // ================================================================
 
     [Fact]

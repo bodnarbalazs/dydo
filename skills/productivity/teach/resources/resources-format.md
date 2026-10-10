@@ -37,5 +37,5 @@ be drawn from here, not from parametric guesses. Wisdom comes from the communiti
   `## Gaps` section listing what is missing. This drives future search.
 - **Prune ruthlessly.** A resource that turned out to be wrong, shallow, or off-mission should be
   removed, not buried. Better five sharp sources than thirty mediocre ones.
-- **Record community preferences.** If the human has opted out of joining communities, note it here
+- **Record community preferences.** If the user has opted out of joining communities, note it here
   so future sessions don't keep proposing them.

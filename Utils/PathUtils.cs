@@ -89,7 +89,7 @@ public static partial class PathUtils
                     stack.RemoveAt(stack.Count - 1);
                 else if (!rooted)
                     stack.Add("..");
-                // rooted '..' at the top is dropped — can't escape the root
+                // rooted '..' at the top is dropped - can't escape the root
             }
             else
             {

@@ -4,7 +4,7 @@ type: changelog
 date: 2026-10-04
 ---
 
-# dydo 3.1.3 — Map change memory
+# dydo 3.1.3 - Map change memory
 
 ## Summary
 
@@ -43,4 +43,4 @@ available after the first successful map fetch for that project.
 
 ## Related
 
-- [dydo 3.1.2 — Map labels](../2026-10-02/dydo-3-1-2-map-labels.md)
+- [dydo 3.1.2 - Map labels](../2026-10-02/dydo-3-1-2-map-labels.md)

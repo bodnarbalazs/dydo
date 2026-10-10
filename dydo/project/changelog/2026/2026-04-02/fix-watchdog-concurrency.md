@@ -14,8 +14,8 @@ Fixed TOCTOU race in WatchdogService.EnsureRunning. On Linux, unlink() succeeds 
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleDefinitionService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleDefinitionService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs - Modified
 
 
 ## Review Summary

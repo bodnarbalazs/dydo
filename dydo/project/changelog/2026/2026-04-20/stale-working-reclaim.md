@@ -55,9 +55,9 @@ Requires rework.
 - Result: PASSED
 - Notes: LGTM. Both of Henry's blockers resolved via Option B (decision-017-aligned).
 
-Blocker 1 (dead code in IsReservable) — FIXED. IsEffectivelyFree's stale-working clause is now permissive (just IsStaleWorking(state), no PID gate), so the IsReservable guard '!(IsStaleWorking(state) && IsSessionPidAlive(state.Name))' now actually fires when the PID is alive. The two predicates have meaningfully different behavior.
+Blocker 1 (dead code in IsReservable) - FIXED. IsEffectivelyFree's stale-working clause is now permissive (just IsStaleWorking(state), no PID gate), so the IsReservable guard '!(IsStaleWorking(state) && IsSessionPidAlive(state.Name))' now actually fires when the PID is alive. The two predicates have meaningfully different behavior.
 
-Blocker 2 (decision 017 alignment) — FIXED for stale-working. IsEffectivelyFree keeps the new stale-working clause permissive (display surfaces reclaim candidates regardless of PID liveness), matching decision 017 rationale #2. Adele's uncommitted stale-dispatch clause retaining !IsLauncherAlive is correctly flagged as out-of-scope and does not worsen the divergence.
+Blocker 2 (decision 017 alignment) - FIXED for stale-working. IsEffectivelyFree keeps the new stale-working clause permissive (display surfaces reclaim candidates regardless of PID liveness), matching decision 017 rationale #2. Adele's uncommitted stale-dispatch clause retaining !IsLauncherAlive is correctly flagged as out-of-scope and does not worsen the divergence.
 
 Comment on IsReservable rewritten to describe real behavior instead of the prior redundancy-as-self-documentation.
 

@@ -4,7 +4,7 @@ type: changelog
 date: 2026-09-25
 ---
 
-# dydo 3.1.0 — Linear project map
+# dydo 3.1.0 - Linear project map
 
 dydo 3.1 adds `dydo map`, a read-only browser map of one Linear Project. The viewer is new in this
 release; refinements follow in 3.1.x.
@@ -45,5 +45,5 @@ and run `dydo map`. No project files change.
 
 ## Related
 
-- [dydo Commands](../../../../reference/dydo-commands.md) — `dydo map` reference.
-- [Visual Linear project map](../../../plans/visual-linear-project-map.md) — The reviewed plan.
+- [dydo Commands](../../../../reference/dydo-commands.md) - `dydo map` reference.
+- [Visual Linear project map](../../../plans/visual-linear-project-map.md) - The reviewed plan.

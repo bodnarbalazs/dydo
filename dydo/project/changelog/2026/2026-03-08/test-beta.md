@@ -14,10 +14,10 @@ date: 2026-03-08
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalLauncher.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalCloser.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TerminalLauncherTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TerminalCloserTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalLauncher.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalCloser.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TerminalLauncherTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TerminalCloserTests.cs - Modified
 
 
 ## Review Summary

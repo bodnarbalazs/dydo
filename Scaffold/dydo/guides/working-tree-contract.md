@@ -31,9 +31,9 @@ crew; Issue Captains use it to know what they own and what they hand back. The `
 | Project Issue | its feature branch | `DYD-123-<slug>` | its feature branch | its captain-directed Merge Sub-issue |
 | Atomic Issue | `main` | `DYD-123-<slug>` | `main` | human, clicking its PR once it carries a reviewer PASS and CI is green; no Merge Sub-issue |
 | Lane Sub-issue | its parent Issue branch | `DYD-124-<slug>` | its parent Issue branch | its captain-directed Merge Sub-issue |
-| Inquisition Issue | integrated feature SHA | `inquisition/<slug>` | none; never merges | — |
-| Proof branch | the Inquisition's audit SHA | a child branch named in the proof-only brief | none; never merges | — |
-| Prototype Issue | its feature branch, else `main` | `prototype/<name>` | none; never merges | — |
+| Inquisition Issue | integrated feature SHA | `inquisition/<slug>` | none; never merges | - |
+| Proof branch | the Inquisition's audit SHA | a child branch named in the proof-only brief | none; never merges | - |
+| Prototype Issue | its feature branch, else `main` | `prototype/<name>` | none; never merges | - |
 
 `DYD-123` is an example: use the Issue's key so Linear attaches the branch and PR. The host may
 provide the Issue worktree; otherwise place it beside the repository at
@@ -49,7 +49,7 @@ provide the Issue worktree; otherwise place it beside the repository at
 | Open a parallel lane | `issue-captain` | The Sub-issue carries the parent's Type and Mode, its own chain, status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
 | Build and prove | crew | Changes stay inside owned paths; exact gates pass; each hop ends on a commit `<KEY> <hop>: <what>`, the hop being `implement`, `fix` after a FAIL, `merge`, or `proof`, which commits as `<KEY> proof: <hypothesis>`; review evidence stays on the work item reviewed; every return comes back to the Issue Captain. |
 | Review and offer | `issue-captain` | Passed lane branches are integrated into the parent Issue branch; combined gates pass; a fresh parent Issue-review PASS block is on the Issue and in the PR; the branch is pushed and the PR targets the branch in the table above. |
-| Integrate a Project Issue | `issue-captain` | Its final Merge Sub-issue runs a code-writer — conflicts and combined gates mapped, the merge performed, a resolution that refactored leaving its code no worse than either side — then a fresh merge reviewer, preserving the merge commit and hop SHAs; the map holder wires the order and may advance an independent ready PR. Parent stays `Ready to Merge` until merge PASS, then both close `Done`. |
+| Integrate a Project Issue | `issue-captain` | Its final Merge Sub-issue runs a code-writer - conflicts and combined gates mapped, the merge performed, a resolution that refactored leaving its code no worse than either side - then a fresh merge reviewer, preserving the merge commit and hop SHAs; the map holder wires the order and may advance an independent ready PR. Parent stays `Ready to Merge` until merge PASS, then both close `Done`. |
 | Integrate an Atomic Issue | `issue-captain` | No Merge Sub-issue: the PR into main carries its reviewer PASS, the captain confirms CI green and sets `Ready to Merge`, and the human clicks the merge. The captain then closes the Issue `Done` and cleans up. |
 | Land the Project | human | The landing Merge Issue prepares main into feature and obtains acceptance PASS; the human clicks feature into main as a merge commit, never squash. |
 
@@ -71,7 +71,7 @@ clean, and only the test path is touched.
 
 ## Delivery scale and evidence
 
-The default crew is one author — `code-writer`, or `docs-writer` for a documentation change — and
+The default crew is one author - `code-writer`, or `docs-writer` for a documentation change - and
 one fresh independent whole-change reviewer. Add a spec review of the contract before any code only
 when one short, concrete risk reason, recorded in the contract, calls for it; persistence, migrations,
 permissions and uncertain native interfaces are examples of such a risk. Keep one compact acceptance contract and point to evidence rather than copying
@@ -185,4 +185,4 @@ delegated to staff.
 
 ## Related
 
-- [dydo Glossary](../reference/dydo-glossary.md) — locked delivery vocabulary
+- [dydo Glossary](../reference/dydo-glossary.md) - locked delivery vocabulary

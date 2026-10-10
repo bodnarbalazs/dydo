@@ -14,29 +14,29 @@ Implemented fix for inquisition state isolation. Changes: (1) TerminalLauncher.c
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleDefinitionService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CommandDocConsistencyTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\README.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\npm\README.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Utils\GlobMatcher.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\OffLimitsService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Program.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\AgentCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\CompletionProvider.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\dydo-commands.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CompleteCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\HelpCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\EndToEnd\CliEndToEndTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalLauncher.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WindowsTerminalLauncher.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\IssueCreateHandler.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-judge.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-inquisitor.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TerminalLauncherTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\IssueTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\about-dynadocs.template.md - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleDefinitionService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CommandDocConsistencyTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\README.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\npm\README.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Utils\GlobMatcher.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\OffLimitsService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Program.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\AgentCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\CompletionProvider.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\dydo-commands.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CompleteCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\HelpCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\EndToEnd\CliEndToEndTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalLauncher.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WindowsTerminalLauncher.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\IssueCreateHandler.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-judge.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-inquisitor.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TerminalLauncherTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\IssueTests.cs - Modified
 
 
 ## Review Summary

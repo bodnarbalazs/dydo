@@ -23,16 +23,16 @@ accurate board, with remaining work distinguished from claims of completion.
 
 ### In scope
 
-- **P — Protocol:** accept DR 047; propagate its contracts through authored prompts and current
+- **P - Protocol:** accept DR 047; propagate its contracts through authored prompts and current
   guides, supply missing methods/resources, preserve provenance and craftsmanship.
-- **S — Simpler checking:** remove mandatory summary-line validation; preserve broken-link checks,
+- **S - Simpler checking:** remove mandatory summary-line validation; preserve broken-link checks,
   guard behavior and nudges. Summaries may still serve navigation without being a requirement.
-- **G — Static gates:** fully adopt DR 048 locally, including producers, policy, failure triage and
+- **G - Static gates:** fully adopt DR 048 locally, including producers, policy, failure triage and
   fixes. The shipped product carries the policy; this repository owns its runners.
-- **C — Compiler and onboarding:** retire workflow emission, repair fresh installations, ship the
+- **C - Compiler and onboarding:** retire workflow emission, repair fresh installations, ship the
   setup guide, configure nesting, and establish actual host behavior.
-- **B — Board:** reconcile existing Issues and Projects with the accepted model and evidence.
-- **I — Integration:** regenerate both hosts, prove parity and cross-contract behavior, prepare
+- **B - Board:** reconcile existing Issues and Projects with the accepted model and evidence.
+- **I - Integration:** regenerate both hosts, prove parity and cross-contract behavior, prepare
   test-gated packages and release evidence, install the candidate locally.
 
 ### Out of scope
@@ -340,7 +340,7 @@ owning Issue or a new bounded fix contract; do not hide it in regeneration or re
 - Work is ready for the human when its integrated evidence is ready. A locally installed 3.0.0
   binary alone does not mean release acceptance, and no open human gate becomes `Done` overnight.
 
-## Amendment — 2026-09-05: experimental beta dogfood before complete G/M adoption
+## Amendment - 2026-09-05: experimental beta dogfood before complete G/M adoption
 
 The human authorized a clearly prerelease local build before the repository completes G-final and
 mutation assurance. This amendment creates a narrow dogfood milestone at `3.0.0-beta.1`; it does not
@@ -404,13 +404,13 @@ The observable scenarios are in `DynaDocs.Tests/Features/experimental-beta.featu
 
 ### DYD-110 plan
 
-**Approach** — retain the compiler, make embedded resources the executable's sole implicit template
+**Approach** - retain the compiler, make embedded resources the executable's sole implicit template
 source, correct the two bounded Codex TOML projections and their canonical explanation, stage one
 prerelease version, regenerate the candidate's compiler-owned native artifacts, and install only
 after independent review. Do not add a project-TOML merger, switchboard, hub removal, testing facade,
 release workflow, or publication path to this Feature.
 
-**Patterns to copy** — `Services/TemplateGenerator.cs` already owns embedded resource lookup and
+**Patterns to copy** - `Services/TemplateGenerator.cs` already owns embedded resource lookup and
 inventory; remove its current-working-directory branch rather than introducing another source
 resolver. `Commands/SyncCommand.cs` already derives Claude's `Agent` tool from `delegates` and Codex
 web configuration from `web`; compile the same metadata into current Codex top-level/table keys.
@@ -423,7 +423,7 @@ the isolated process, byte snapshot, idempotence, and cleanup pattern. Section 4
 the package/scratch/install pattern; this amendment narrows its release claims and adds a real
 rollback round trip.
 
-**Files** — the production hop owns only:
+**Files** - the production hop owns only:
 
 - `Services/TemplateGenerator.cs`: remove implicit source-tree discovery and reads.
 - `Commands/SyncCommand.cs`: emit top-level Codex web configuration and the delegating-role agents
@@ -493,14 +493,14 @@ evidence that the whole project is aligned.
    beta/rollback/beta sequence. Retain the package SHA, command output, source-template manifest,
    emitted-artifact manifest, installed executable path/version, rollback result, scratch result,
    and explicit G/M limitation report.
-8. Record the captain-to-research-to-scout nonce procedure and `PENDING — fresh task/session
+8. Record the captain-to-research-to-scout nonce procedure and `PENDING - fresh task/session
    required` in the beta limitation report. Do not create a new app task in this Issue and do not
    claim that this task's already loaded roles were refreshed. The first later task opened on a
    reviewed synced workspace runs the canary before claiming generated-role runtime acceptance. The
    captain offers the DYD-110 PR to `feature/dydo-3-consolidation`; its later Merge Issue supplies
    integration review.
 
-**Edge cases** — an installed beta invoked from a source-looking directory still uses embedded
+**Edge cases** - an installed beta invoked from a source-looking directory still uses embedded
 resources; absent or unrecognized custom native files survive; only allowlisted retired outputs are
 removed; non-delegating agents receive explicit V1 `enabled = false` without `max_depth`; omitted
 `web_search` inherits host policy and is not reported as denial; V2 precedence over `enabled` and its
@@ -512,7 +512,7 @@ and preserves diagnostic evidence; npm postinstall is not run because no public 
 exists; malformed managed hook recovery and general project TOML merging remain DYD-86 work and are
 not represented as beta preservation proof.
 
-**Gates** — use the bundled Python and never invoke `dotnet test` directly:
+**Gates** - use the bundled Python and never invoke `dotnet test` directly:
 
 ```powershell
 $BetaPython = 'C:/Users/User/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe'
@@ -533,13 +533,13 @@ the main checkout's pre-existing Obsidian edit, which is outside this worktree. 
 recorded `UNAVAILABLE`, not executed as beta PASS gates. The generated-role runtime canary is
 recorded pending until a later fresh task/session on a reviewed synced workspace runs it.
 
-**Lanes and hops** — no parallel lanes: template ownership, Codex projection, regeneration, version,
+**Lanes and hops** - no parallel lanes: template ownership, Codex projection, regeneration, version,
 and one package hash join on the parent. Specify, implement, and harden are nonempty. Fresh code
 review is mandatory. The later Merge Sub-issue into `feature/dydo-3-consolidation` has a gates-only
 specify hop, an actual merge implementation hop, an empty hardening hop unless conflict resolution
 changes behavior, and fresh merge review.
 
-**Plan review** — recommended: this amendment changes the accepted Project ordering, temporarily
+**Plan review** - recommended: this amendment changes the accepted Project ordering, temporarily
 removes G/M from a local-install prerequisite, changes package identity and template source
 ownership, emits host configuration, updates global user tooling, and relies on a runtime canary
 whose hot-reload behavior is unknown.

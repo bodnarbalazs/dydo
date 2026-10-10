@@ -5,12 +5,12 @@
 ## Officers
 
 Officers hold something and never switch: the issue-captain, the default officer, holds an Issue;
-an admiral, only when the human invokes one, holds a Project; the chief-of-staff holds the board. A
+an admiral, only when the user invokes one, holds a Project; the chief-of-staff holds the board. A
 session or agent has at most one officer role; a captain never becomes an admiral, or the reverse.
 
-- **admiral** (user-invoked): Your right hand on one Project: chart it, then run it through captains, reviewed merges and your gates.
-- **chief-of-staff** (user-invoked): Your attention, triaged — the Questions waiting on your answer, the gates waiting on your approval or your click, and what on the board has gone stale.
-- **issue-captain** (model-invoked): One contracted Issue needs a captain: specify, direct the crew, review, merge and release from its recorded state.
+- **admiral** (user-invoked): Your right hand on one Project - chart it, then run it through captains, reviewed merges and your gates.
+- **chief-of-staff** (user-invoked): Your attention, triaged - the Questions waiting on your answer, the gates waiting on your approval or your click, and what on the board has gone stale.
+- **issue-captain** (model-invoked): One contracted Issue needs a captain - specify, direct the crew, review, merge and release from its recorded state.
 
 ## Crew
 
@@ -20,5 +20,5 @@ Crew are spawned for one bounded job, hold nothing, and return their result to w
 - **docs-writer** (model-invoked): Documentation the repository can witness. Write or correct one reviewed change, including an inquisition's record through its delivery Feature, for its Issue Captain.
 - **inquisitor** (model-invoked): Refute-first sweep of landed work. Use when the inquisition's Captain assigns one part of the named scope, or one lens across it.
 - **research** (model-invoked): Primary sources, cited. Use when a fact a choice waits on could hide in Decision Records, plans, code, history, or outside sources, or when docs, specs, or API behaviour must be established before work depends on them.
-- **reviewer** (model-invoked): An Issue's code or docs, a spec, a Project plan, or a merged tree — one candidate, one named rubric, one binding verdict.
+- **reviewer** (model-invoked): An Issue's code or docs, a spec, a Project plan, or a merged tree - one candidate, one named rubric, one binding verdict.
 - **scout** (model-invoked): One question, one source family, passages back, for a researcher who verifies and pools them.

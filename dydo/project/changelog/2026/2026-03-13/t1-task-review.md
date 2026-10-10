@@ -14,17 +14,17 @@ date: 2026-03-13
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\InquisitionTests.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\IssueCreateHandler.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\IssueListHandler.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\IssueResolveHandler.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\IssueCommand.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\TaskCreateHandler.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\TaskReviewHandler.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\TaskApproveHandler.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\TaskListHandler.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\InquisitionCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\TaskCommand.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\InquisitionTests.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\IssueCreateHandler.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\IssueListHandler.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\IssueResolveHandler.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\IssueCommand.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\TaskCreateHandler.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\TaskReviewHandler.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\TaskApproveHandler.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\TaskListHandler.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\InquisitionCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\TaskCommand.cs - Modified
 
 
 ## Review Summary

@@ -5,7 +5,7 @@ status: accepted
 date: 2026-03-16
 ---
 
-# 010 — Baton-Passing and Review Enforcement
+# 010 - Baton-Passing and Review Enforcement
 
 When an agent dispatches on the same task, its reply obligation passes to the dispatched agent. Dispatched code-writers cannot release without dispatching a reviewer.
 
@@ -24,7 +24,7 @@ The core question: in a chain like orchestrator → code-writer → reviewer, wh
 Implementation:
 - When an agent dispatches on the same task it was dispatched for, its reply-pending marker is cleared
 - The new agent's inbox item carries `reply_required: true` (inherited from the chain, not from `--wait`)
-- The last agent in the chain — the one who doesn't dispatch anyone else — sends the message back
+- The last agent in the chain - the one who doesn't dispatch anyone else - sends the message back
 
 Typical chain:
 ```
@@ -46,17 +46,17 @@ Detection: if the agent's inbox item had an `origin` field (indicating it's part
 
 ### 3. `--auto-close` in template examples
 
-Template dispatch examples should include `--auto-close` since the primary audience for these templates is dispatched agents (who are always in their own terminal). When agents dispatch further down the chain, `--auto-close` keeps terminal clutter down. Humans who dispatch directly choose whether to include it — templates don't need to account for that case.
+Template dispatch examples should include `--auto-close` since the primary audience for these templates is dispatched agents (who are always in their own terminal). When agents dispatch further down the chain, `--auto-close` keeps terminal clutter down. Humans who dispatch directly choose whether to include it - templates don't need to account for that case.
 
 ## Consequences
 
 - **Code change**: Reply-pending marker cleared on same-task dispatch. `reply_required` inherited through chain independent of `--wait`.
-- **Code change**: New hard rule — dispatched code-writers blocked from releasing without dispatching reviewer.
+- **Code change**: New hard rule - dispatched code-writers blocked from releasing without dispatching reviewer.
 - **Template fixes**: All non-oversight role templates use `--no-wait`. Examples show `--auto-close` only in orchestrated patterns.
 - **Guardrails doc**: New entries for the baton-passing clearance and review enforcement rule.
 
 ## Related
 
-- [Decision 003 — Agent Messaging](./003-agent-messaging.md)
-- [Decision 005 — Fresh Agent Over Wait-for-Feedback](./005-fresh-agent-over-wait-for-feedback.md)
-- Guardrails Reference — historical; the tier catalog it pointed to was folded into [Guard System](../../understand/guard-system.md) when the claim-era guardrails were removed
+- [Decision 003 - Agent Messaging](./003-agent-messaging.md)
+- [Decision 005 - Fresh Agent Over Wait-for-Feedback](./005-fresh-agent-over-wait-for-feedback.md)
+- Guardrails Reference - historical; the tier catalog it pointed to was folded into [Guard System](../../understand/guard-system.md) when the claim-era guardrails were removed

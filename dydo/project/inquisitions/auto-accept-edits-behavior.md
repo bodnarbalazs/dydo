@@ -5,36 +5,36 @@ type: inquisition
 
 # Auto-accept-edits behavior inquiry
 
-Mechanism inquiry into why Edit/Write tool calls auto-approve in some Claude Code projects (e.g., LC) but prompt in others (e.g., DynaDocs) on the same machine. The user wanted the underlying mechanism — settings-file precedence, allowed-tools resolution, mode/role interaction — not a fix.
+Mechanism inquiry into why Edit/Write tool calls auto-approve in some Claude Code projects (e.g., LC) but prompt in others (e.g., DynaDocs) on the same machine. The user wanted the underlying mechanism - settings-file precedence, allowed-tools resolution, mode/role interaction - not a fix.
 
-## 2026-04-18 — Frank
+## 2026-04-18 - Frank
 
 ### Claim under investigation
 
 "Edit/Write tool calls auto-approve (skip the permission prompt) inconsistently
-between projects on the same machine — LC bypasses the prompt; DynaDocs does
+between projects on the same machine - LC bypasses the prompt; DynaDocs does
 not." The user wants the *mechanism*, not a fix.
 
 ### Scope
 
 - **Entry point:** Feature investigation (cross-project behavior).
 - **Files investigated:**
-  - `Commands/GuardCommand.cs` — guard output contract, worktree detection,
+  - `Commands/GuardCommand.cs` - guard output contract, worktree detection,
     all emit sites.
-  - `DynaDocs.Tests/Integration/GuardWorktreeAllowTests.cs` — canonical tests
+  - `DynaDocs.Tests/Integration/GuardWorktreeAllowTests.cs` - canonical tests
     for the allow-JSON behavior.
-  - `dydo/project/changelog/2026/2026-04-09/fix-guard-worktree-allow.md` —
+  - `dydo/project/changelog/2026/2026-04-09/fix-guard-worktree-allow.md` -
     change that introduced the worktree-conditional allow.
 - **Configs inspected (redacted):**
   - `C:\Users\User\Desktop\LC\.claude\settings.local.json`
   - `C:\Users\User\Desktop\Projects\DynaDocs\.claude\settings.local.json`
   - `C:\Users\User\Desktop\Projects\DynaDocs\dydo\_system\.local\worktrees\auto-accept-edits-inquiry\.claude\settings.local.json`
-    (identical to main — worktree inherits on creation)
+    (identical to main - worktree inherits on creation)
   - `C:\Users\User\.claude\settings.json` (user scope)
   - `C:\Users\User\.claude.json` (user-scope Claude Code state, per-project entries)
 - **Live probe:** ran `dydo guard` under two CWDs (worktree vs project root)
   with identical stdin.
-- **Scouts dispatched:** 0 — reconnaissance only; the mechanism is small and
+- **Scouts dispatched:** 0 - reconnaissance only; the mechanism is small and
   concentrated in one file.
 - **External reference:** Claude Code hooks docs
   (`code.claude.com/docs/en/hooks`) for the `permissionDecision` contract.
@@ -52,11 +52,11 @@ emitting a specific JSON to stdout with exit code 0.
 ```
 
 `permissionDecision: "allow"` skips the prompt; `"ask"` / `"deny"` / `"defer"`
-are the other legal values. Exit 0 with empty stdout does NOT auto-approve —
+are the other legal values. Exit 0 with empty stdout does NOT auto-approve -
 Claude Code falls back to its normal permission flow (settings.local.json
 allow list, then prompt).
 
-**The emit gate** — `Commands/GuardCommand.cs:73-92`:
+**The emit gate** - `Commands/GuardCommand.cs:73-92`:
 
 ```csharp
 private const string WorktreeAllowJson =
@@ -86,11 +86,11 @@ The gate is **purely a CWD substring check**. If CWD contains
 | `HandleDydoBashCommand` | 639 | Bash (dydo subcommands) |
 | `AnalyzeAndCheckBashOperations` | 795 | Bash (non-dydo, after file-op analysis) |
 
-**Handlers that never emit allow** (gap — even inside a worktree):
+**Handlers that never emit allow** (gap - even inside a worktree):
 
-- `HandleSearchTool` (Glob / Grep / Agent) — passes silently on success.
-- All failure/BLOCKED paths — correctly never emit allow.
-- CLI-mode invocation (no stdin JSON) — same success/failure pattern.
+- `HandleSearchTool` (Glob / Grep / Agent) - passes silently on success.
+- All failure/BLOCKED paths - correctly never emit allow.
+- CLI-mode invocation (no stdin JSON) - same success/failure pattern.
 
 **What governs the prompt when allow is NOT emitted** (i.e., outside
 worktrees or for search tools):
@@ -99,7 +99,7 @@ worktrees or for search tools):
 2. If no match → Claude Code prompts the user.
 
 So outside a worktree, the user experience is driven entirely by
-settings.local.json — the guard contributes only a block/no-block decision,
+settings.local.json - the guard contributes only a block/no-block decision,
 not an auto-approve signal.
 
 ### Observed differences (LC vs DynaDocs, redacted)
@@ -119,13 +119,13 @@ Both files have the same structural shape: `permissions.allow[]` + a single
 Both projects' `~/.claude.json` entries show `hasTrustDialogAccepted: true`,
 `allowedTools: []`, no per-project permission overrides. User-scope
 `~/.claude/settings.json` contains only `enabledPlugins`, `autoUpdatesChannel`,
-`effortLevel` — no permission config.
+`effortLevel` - no permission config.
 
 **Worktree state at time of inquiry:**
 
 - LC: `dydo/_system/.local/worktrees/` directory exists but is **empty** (no
   active worktrees on disk). `~/.claude.json`'s `githubRepoPaths` records
-  11 LC worktree paths that Claude Code has opened historically — all
+  11 LC worktree paths that Claude Code has opened historically - all
   currently cleaned up.
 - DynaDocs: 10+ active worktrees on disk (coverage/inquisition/fix-*).
   `githubRepoPaths` records 60+ DynaDocs worktree paths (historical).
@@ -145,21 +145,21 @@ signal.
 **1. Where Claude Code was started, not which project it is.** (high
 confidence)
 
-The code mechanism is project-agnostic — same binary, same gate, same JSON.
+The code mechanism is project-agnostic - same binary, same gate, same JSON.
 It treats "inside a worktree" differently, period. The observed
 LC-vs-DynaDocs difference is almost certainly a byproduct of **CWD at
 Claude Code startup**:
 
 - Dispatched agents in both projects run inside a worktree (dispatch creates
-  the worktree and launches a new terminal there) — the guard emits allow,
+  the worktree and launches a new terminal there) - the guard emits allow,
   no prompt.
 - The *main / human-driven* session typically starts at the project root.
   At LC's project root, `dydo/_system/.local/worktrees/` is empty today,
-  so the user would *also* see prompts there — but LC has been in
+  so the user would *also* see prompts there - but LC has been in
   maintenance for a while; the user's recent session that felt "pleasant"
   was likely a dispatched agent terminal or a session started inside a
   coverage-slice worktree back when those existed.
-- DynaDocs is in active development — the user frequently drives a session
+- DynaDocs is in active development - the user frequently drives a session
   from the project root, which hits the no-emit branch and prompts.
 
 The "same agents, same kinds of edits" observation is consistent with this:
@@ -178,7 +178,7 @@ user expects on Windows paths, (b) the Edit tool doesn't match a `Write(...)`
 rule (distinct tool namespace), or (c) the guard's `dydo guard` hook runs
 first and, on not emitting allow, Claude Code *still* falls to its own
 prompt rather than the settings allow list. I couldn't cleanly test this
-without driving Claude Code UI. But this is secondary — the mechanism in
+without driving Claude Code UI. But this is secondary - the mechanism in
 *our* code is #1.
 
 **3. Settings drift of MCP / hook matcher.** (low confidence, probably
@@ -186,7 +186,7 @@ unrelated to the prompt question)
 
 LC's `enableAllProjectMcpServers: true` plus the `aspire-dashboard` MCP
 server entry affect MCP tool loading. DynaDocs hooks `Agent|EnterPlanMode|
-ExitPlanMode` where LC does not — meaning the Agent sub-agent tool passes
+ExitPlanMode` where LC does not - meaning the Agent sub-agent tool passes
 through `dydo guard` in DynaDocs and gets treated as a search tool
 (`HandleSearchTool`), which never emits allow. So DynaDocs main sessions
 that use `Agent` (sub-agent dispatch) would prompt; LC main sessions would
@@ -196,7 +196,7 @@ because the user's observation is about Edit/Write, not Agent.
 
 ### Is it intentional?
 
-**Partially — and surfacing a gap.**
+**Partially - and surfacing a gap.**
 
 - The worktree-conditional allow was intentional (see
   `dydo/project/changelog/2026/2026-04-09/fix-guard-worktree-allow.md`).
@@ -206,8 +206,8 @@ because the user's observation is about Edit/Write, not Agent.
   match `Write(/c/Users/User/Desktop/Projects/DynaDocs/**)`), so without
   the guard's explicit allow, agents would hit prompts. Worktree allow
   closed that gap.
-- The side-effect — "only agents in worktrees get auto-approved; main
-  sessions at project root still prompt" — appears to be a side-effect
+- The side-effect - "only agents in worktrees get auto-approved; main
+  sessions at project root still prompt" - appears to be a side-effect
   rather than a designed UX choice. The changelog doesn't mention the
   non-worktree path.
 - `HandleSearchTool` missing the emit is an acknowledged pre-existing gap
@@ -217,7 +217,7 @@ because the user's observation is about Edit/Write, not Agent.
 
 Presenting tradeoffs only; no implementation.
 
-**Option A — accept as-is, document it.**
+**Option A - accept as-is, document it.**
 
 Add a short note to `dydo/understand/guard-system.md` explaining: "The guard
 auto-approves tool calls (skips Claude Code's prompt) only inside a dispatch
@@ -225,27 +225,27 @@ worktree; at the project root you will still see prompts unless
 `settings.local.json` whitelists the pattern." Cheapest; preserves current
 security surface.
 
-**Option B — emit allow unconditionally on guard success.**
+**Option B - emit allow unconditionally on guard success.**
 
 Drop `IsWorktreeContext()` gating; emit the allow JSON from every success
 branch (Read, Write, Bash, plus the currently-missing Search). This makes
 behavior consistent between project root and worktrees.
 
 - Security tradeoff: the guard is already the authoritative RBAC/off-limits
-  check — its decision supersedes Claude Code's prompt. Making it always
+  check - its decision supersedes Claude Code's prompt. Making it always
   emit allow when it already says "exit 0" removes a *second* prompt that
   wasn't adding security (only adding friction). It does remove a human
   "are you sure" step on destructive writes at project root, which some
   users rely on as a psychological checkpoint.
 - This is the smallest, most consistent change if the goal is uniform UX.
 
-**Option C — close the Search-tool gap but keep worktree-only gating.**
+**Option C - close the Search-tool gap but keep worktree-only gating.**
 
 Add `EmitWorktreeAllowIfNeeded()` to `HandleSearchTool` (after the off-limits
 and identity/role checks). Minimal change; fixes a tiny within-worktree
 inconsistency without altering the main-session behavior.
 
-**Option D — make the gate opt-in via dydo.json.**
+**Option D - make the gate opt-in via dydo.json.**
 
 Add a `guard.auto_approve_on_success: true|false` (or similar) setting to
 `dydo.json`. Project chooses. Most flexible, most config surface; heaviest
@@ -257,7 +257,7 @@ truth"). Both cheap.
 
 ### Findings
 
-Recorded as obvious findings only — no hypotheses needed testing.
+Recorded as obvious findings only - no hypotheses needed testing.
 
 #### 1. `HandleSearchTool` never emits allow JSON, even inside a worktree
 
@@ -278,7 +278,7 @@ Recorded as obvious findings only — no hypotheses needed testing.
   2026-04-09/fix-guard-worktree-allow.md` (full review block).
 - **Independent verification:** Re-read every emit site cited.
   `EmitWorktreeAllowIfNeeded()` calls present at lines 279, 304, 373, 639,
-  795 — exactly the four handlers Frank named, and absent from
+  795 - exactly the four handlers Frank named, and absent from
   `HandleSearchTool` (line 436 returns `ExitCodes.Success` with nothing
   written to stdout). Cross-referenced the 2026-04-09 review note: Dexter
   flagged both `HandleSearchTool` and `AnalyzeAndCheckBashOperations` as
@@ -286,7 +286,7 @@ Recorded as obvious findings only — no hypotheses needed testing.
   `HandleSearchTool` remains uncovered. Confirmed via
   `GuardWorktreeAllowTests.cs` that no existing test asserts allow
   emission for Glob/Grep/Agent.
-- **Alternative explanations considered:** Could be intentional —
+- **Alternative explanations considered:** Could be intentional -
   Search tools never write, so a missing auto-approve doesn't risk
   bypassing safety. But the docs offer no rationale, the four sister
   handlers (including the read-only `HandleReadOperation`) all emit, and
@@ -298,10 +298,10 @@ Recorded as obvious findings only — no hypotheses needed testing.
 - **Category:** bug (theoretical; low impact)
 - **Severity:** low
 - **Type:** obvious
-- **Evidence:** `Commands/GuardCommand.cs:80-86` —
+- **Evidence:** `Commands/GuardCommand.cs:80-86` -
   `cwd.Contains("dydo/_system/.local/worktrees/")`. Any directory that
-  happens to include that substring anywhere — e.g. a user project named
-  `my-dydo/_system/.local/worktrees-notes/` or a backup directory — would
+  happens to include that substring anywhere - e.g. a user project named
+  `my-dydo/_system/.local/worktrees-notes/` or a backup directory - would
   be treated as a worktree and get auto-approve. Probability in practice:
   near zero, but the check does not anchor to the project root or verify
   the worktree marker files (`.worktree`, `.worktree-path`). Fix would be
@@ -323,7 +323,7 @@ Recorded as obvious findings only — no hypotheses needed testing.
 - **Alternative explanations considered:** A stricter check would cost
   filesystem I/O on every guard invocation (the guard runs on every tool
   call). That's a real tradeoff and could justify the current approach
-  in principle — but no comment or doc records the decision, so it reads
+  in principle - but no comment or doc records the decision, so it reads
   as oversight rather than deliberate. The bug is theoretical at low
   severity, matching Frank's framing.
 - **Issue:** [#0100](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0100-isworktreecontext-uses-unanchored-substring-match-on-cwd.md)
@@ -349,7 +349,7 @@ Recorded as obvious findings only — no hypotheses needed testing.
   but does not change the substantive claim).
 - **Independent verification:** `Grep` over `dydo/` for
   `permissionDecision|hookSpecificOutput|EmitWorktreeAllow|WorktreeAllowJson`
-  returns three changelog files only — no user-facing doc. Re-read
+  returns three changelog files only - no user-facing doc. Re-read
   `guard-system.md` end-to-end: it covers blocking guardrails, staged
   access, off-limits, and audit, but never references the allow
   envelope nor explains why prompts disappear inside worktrees.
@@ -359,7 +359,7 @@ Recorded as obvious findings only — no hypotheses needed testing.
   undocumented because the auto-approve is meant to be invisible
   plumbing rather than a feature. But the user-visible side-effect
   (prompts at root, silence in worktree) is a feature/UX concern, and
-  is exactly what triggered this inquisition — so the silence is doing
+  is exactly what triggered this inquisition - so the silence is doing
   harm, not avoiding it.
 - **Issue:** [#0101](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0101-worktree-only-auto-approve-gating-is-undocumented-in-guard-system-md.md)
 
@@ -367,7 +367,7 @@ Recorded as obvious findings only — no hypotheses needed testing.
 
 - *Settings.local.json `Write(**)` actually auto-approves DynaDocs edits on
   its own.* Could not drive Claude Code UI to verify. If true, the user's
-  observation would not exist — so this is implicitly disproven by the
+  observation would not exist - so this is implicitly disproven by the
   observation itself. Leaving as inconclusive rather than confirmed.
 
 ### Confidence: medium
@@ -375,23 +375,23 @@ Recorded as obvious findings only — no hypotheses needed testing.
 - **Covered thoroughly:** the guard's output contract, every emit site,
   the CWD gate, configuration diff between the two projects (redacted).
 - **Covered shallowly:** Claude Code's own permission-matching behavior for
-  `Write(**)` / `Edit(...)` patterns — docs were not explicit; couldn't
+  `Write(**)` / `Edit(...)` patterns - docs were not explicit; couldn't
   observe the Claude Code UI prompting dynamics directly. This is the main
   uncertainty. If `Write(**)` actually did auto-approve everywhere, the
-  observation wouldn't arise — so either it doesn't, or there's a subtle
+  observation wouldn't arise - so either it doesn't, or there's a subtle
   matcher quirk (path normalization, tool-namespace, etc.) that matters.
 - **Not examined:** any differences in Claude Code *version* between LC and
   DynaDocs terminals (user said same, trusting that). `%LOCALAPPDATA%\claude\`
-  on Windows — checked via `$LOCALAPPDATA` expansion, returned empty;
+  on Windows - checked via `$LOCALAPPDATA` expansion, returned empty;
   assumed not present or not relevant.
 
-### Judge verdict (2026-04-18 — Emma)
+### Judge verdict (2026-04-18 - Emma)
 
 All three findings CONFIRMED. Issues [#0099](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0099-handlesearchtool-never-emits-worktree-allow-json-prompting-users-for-glob-grep-a.md) (HandleSearchTool gap),
 [#0100](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0100-isworktreecontext-uses-unanchored-substring-match-on-cwd.md) (unanchored substring), [#0101](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0101-worktree-only-auto-approve-gating-is-undocumented-in-guard-system-md.md) (undocumented gating) filed.
 
-On the headline question — *does the LC-vs-DynaDocs prompt
-inconsistency the user observed warrant a fix task?* — my reading is
+On the headline question - *does the LC-vs-DynaDocs prompt
+inconsistency the user observed warrant a fix task?* - my reading is
 **not as a behaviour bug, but as a documentation-and-coverage gap**:
 
 - The mechanism map confirms the difference is purely a function of
@@ -399,15 +399,15 @@ inconsistency the user observed warrant a fix task?* — my reading is
   per-project configuration drift. Same binary, same gate, same JSON.
   There is nothing wrong with the code emitting allow inside worktrees;
   that's the deliberate fix from 2026-04-09.
-- What's missing is (a) the user's mental model — addressed by issue
-  [#0101](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0101-worktree-only-auto-approve-gating-is-undocumented-in-guard-system-md.md) (document the gating) — and (b) the Search-tool gap that makes
-  even the worktree behaviour inconsistent across handlers — addressed
+- What's missing is (a) the user's mental model - addressed by issue
+  [#0101](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0101-worktree-only-auto-approve-gating-is-undocumented-in-guard-system-md.md) (document the gating) - and (b) the Search-tool gap that makes
+  even the worktree behaviour inconsistent across handlers - addressed
   by [#0099](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0099-handlesearchtool-never-emits-worktree-allow-json-prompting-users-for-glob-grep-a.md).
 - Frank's Option A (document) and Option C (close the search-tool gap
   without changing main-session behaviour) together cover the
   headline observation cheaply and conservatively. Option B
   (unconditional emit) is a real-but-larger UX call that I would not
-  recommend folding into this inquisition's follow-up — it changes the
+  recommend folding into this inquisition's follow-up - it changes the
   security posture for project-root sessions, and that decision
   deserves its own discussion.
 

@@ -18,7 +18,7 @@ Fix #99 (HandleSearchTool worktree-allow), #100 (unanchored substring match), #1
 
 ## Review Summary
 
-Review lane `guard-worktree-and-phantom-inbox` — four-part bundle on master (no worktree). Brian's full brief at `dydo/agents/Brian/brief-guard-worktree-and-phantom-inbox.md`.
+Review lane `guard-worktree-and-phantom-inbox` - four-part bundle on master (no worktree). Brian's full brief at `dydo/agents/Brian/brief-guard-worktree-and-phantom-inbox.md`.
 
 ## What shipped
 
@@ -45,12 +45,12 @@ Review lane `guard-worktree-and-phantom-inbox` — four-part bundle on master (n
 ## Plan deviations
 
 - Brian's brief listed `DynaDocs.Tests/Commands/GuardCommandTests.cs (extend)` for new tests, but the canonical allow-JSON test collection lives in `DynaDocs.Tests/Integration/GuardWorktreeAllowTests.cs` alongside the sister `WorktreeRead/Write/Bash_Approved_OutputsAllowJson` tests. I added the new tests there for consistency. Not on Brian's DO-NOT-touch list.
-- One coordination hop: hit a pre-existing build break in `DynaDocs.Tests/Integration/ReviewerVerdictRoutingTests.cs:219` (CS9006 — untracked file from the reviewer-verdict-routing lane, also hit by Adele). Brian authorized the shared one-char unblock; Adele landed it and I rebased onto her version, no conflict.
+- One coordination hop: hit a pre-existing build break in `DynaDocs.Tests/Integration/ReviewerVerdictRoutingTests.cs:219` (CS9006 - untracked file from the reviewer-verdict-routing lane, also hit by Adele). Brian authorized the shared one-char unblock; Adele landed it and I rebased onto her version, no conflict.
 - The doc half (#101) went through Grace (docs-writer) because code-writer role can't edit `dydo/understand/**`. Grace handled the doc section, the issue resolve, and messaged me "done" so I could dispatch this reviewer on the combined lane.
 
 ## Key notes for future agents
 
-- **Auto-approve JSON shape** (the thing #99 is about): `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}`. `allow` skips Claude Code's prompt; `ask`/`deny`/`defer` are the other legal values. Exit 0 with empty stdout does NOT auto-approve — Claude Code falls back to its settings.local.json allow-list, then prompt. Gate is `IsWorktreeContext()` — CWD must be inside `dydo/_system/.local/worktrees/{id}/…` (now anchored to exact path segments).
+- **Auto-approve JSON shape** (the thing #99 is about): `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}`. `allow` skips Claude Code's prompt; `ask`/`deny`/`defer` are the other legal values. Exit 0 with empty stdout does NOT auto-approve - Claude Code falls back to its settings.local.json allow-list, then prompt. Gate is `IsWorktreeContext()` - CWD must be inside `dydo/_system/.local/worktrees/{id}/…` (now anchored to exact path segments).
 - Five handlers emit on success: `HandleReadOperation`, `HandleWriteOperation` (both lifted + RBAC-pass branches), `HandleSearchTool` (new), `HandleDydoBashCommand`, `AnalyzeAndCheckBashOperations`. Blocked paths never emit.
 
 ## Issues
@@ -59,7 +59,7 @@ Review lane `guard-worktree-and-phantom-inbox` — four-part bundle on master (n
 
 ## Baton
 
-Per mode instructions, this reviewer dispatch fulfills my reply obligation to Brian for the `guard-worktree-and-phantom-inbox` lane — please relay the review outcome to Brian on my behalf.
+Per mode instructions, this reviewer dispatch fulfills my reply obligation to Brian for the `guard-worktree-and-phantom-inbox` lane - please relay the review outcome to Brian on my behalf.
 
 ## Code Review
 

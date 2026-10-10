@@ -1152,7 +1152,7 @@ public class BashCommandAnalyzerTests
     [Fact]
     public void Analyze_EmptyQuotedString_DoesNotThrow()
     {
-        // TokenizeCommand("\"\"") returns empty list — guard prevents IndexOutOfRangeException
+        // TokenizeCommand("\"\"") returns empty list - guard prevents IndexOutOfRangeException
         var result = _analyzer.Analyze("\"\"");
 
         Assert.False(result.HasDangerousPattern);
@@ -1228,7 +1228,7 @@ public class BashCommandAnalyzerTests
     {
         var result = _analyzer.Analyze("echo 'hello | world' > output.txt");
 
-        // The pipe is inside quotes — should not split
+        // The pipe is inside quotes - should not split
         Assert.Contains(result.Operations, op =>
             op.Type == FileOperationType.Write && op.Path == "output.txt");
     }

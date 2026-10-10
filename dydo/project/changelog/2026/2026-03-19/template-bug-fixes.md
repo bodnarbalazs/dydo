@@ -14,26 +14,26 @@ date: 2026-03-19
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-inquisitor.template.md — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-judge.template.md — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-test-writer.template.md — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-orchestrator.template.md — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-reviewer.template.md — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-planner.template.md — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Models\ReviewDispatchedMarker.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-code-writer.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-docs-writer.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-co-thinker.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Serialization\DydoJsonContext.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\DispatchService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\MarkerStore.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WorkspaceCleaner.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\MarkerStoreTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\DispatchWaitIntegrationTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\TaskApproveHandler.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-inquisitor.template.md - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-judge.template.md - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-test-writer.template.md - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-orchestrator.template.md - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-reviewer.template.md - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-planner.template.md - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Models\ReviewDispatchedMarker.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-code-writer.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-docs-writer.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\mode-co-thinker.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Serialization\DydoJsonContext.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\DispatchService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\MarkerStore.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WorkspaceCleaner.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\MarkerStoreTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\DispatchWaitIntegrationTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\InboxService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\TaskApproveHandler.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs - Modified
 
 
 ## Review Summary

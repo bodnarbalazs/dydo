@@ -10,16 +10,16 @@ an Issue carries, how it is planned, claimed, reviewed and merged, and the human
 
 ## Two kinds of Issue
 
-An **implementation Issue** carries five required fields — outcome, owned paths, blockers, exact
-gates, base branch — plus the relevant context, and it links the governing Decision and the exact plan
+An **implementation Issue** carries five required fields - outcome, owned paths, blockers, exact
+gates, base branch - plus the relevant context, and it links the governing Decision and the exact plan
 commit when a Project plan applies. Use a Sub-issue only when the child needs its own status, owner,
 dependency, or review evidence; a checklist is enough for mechanical steps that cannot progress
 independently.
 
 A **Question Issue** (Linear Type `Question`, body under `## Question`) is an open question that
 blocks planning or implementation and is too big or too uncertain to settle inline. The rule is *fog →
-discovery → Question Issue*: an agent in fog first runs a bounded discovery — the Decision index, the
-Project plan, the Issue's own links, the glossary, the code — and only when that comes up empty does
+discovery → Question Issue*: an agent in fog first runs a bounded discovery - the Decision index, the
+Project plan, the Issue's own links, the glossary, the code - and only when that comes up empty does
 the question become an Issue that records what was searched and blocks every named plan or
 implementation Issue awaiting its answer. A crew member raises a hand to its captain. Captains file
 local Question Sub-issues; the Project's map holder, the human or an invoked admiral, alone files
@@ -32,14 +32,14 @@ Decision Records carry decisions, and the two are linked rather than copied.
 
 ## Planned at two resolutions
 
-- **Project** — low resolution: the Linear Project and its Issues are the plan, charted by the map
+- **Project** - low resolution: the Linear Project and its Issues are the plan, charted by the map
   holder with `wayfinder`: destination, the first pickable tracer-bullet Issues, and fog written
   down in `## Not yet specified`, with blocking Question Issues instead of a pretended complete
   route. Only a cross-cutting architecture contract earns a repository plan file, written by the
   map holder; a fresh reviewer passes it against `project-plan` before human approval, and dated
   amendments return only changes to destination, scope, acceptance criteria, or governing
   architecture for fresh review and human approval.
-- **Issue** — high resolution, just in time: the Issue Captain's compact acceptance contract on the
+- **Issue** - high resolution, just in time: the Issue Captain's compact acceptance contract on the
   parent Issue or a direct lane Sub-issue, with its scenarios where the Issue carries Gherkin, owned
   paths and gates, exact enough to build. The spawned `code-writer` builds from it. The contract is
   reviewed with the code; the Captain may buy a `spec` review of it before any code for one risk it
@@ -49,7 +49,7 @@ Decision Records carry decisions, and the two are linked rather than copied.
 
 Assignment is the claim: nothing else marks an Issue as taken. From there the Issue has one branch and
 one worktree, one writer inside it, and commits that touch only the paths the Issue owns. The
-[Working-Tree Contract](../guides/working-tree-contract.md) is that procedure end to end — how the
+[Working-Tree Contract](../guides/working-tree-contract.md) is that procedure end to end - how the
 branch is named, what goes on the Issue before the first edit, and what is cleaned up after the
 merge.
 
@@ -70,7 +70,7 @@ A fresh reviewer judges the candidate against the rubric it targets before any m
 merge has a Merge Issue a second reviewer applies the `merge` rubric after the merge lands. An
 atomic Issue's merge into main has none; its Issue review PASS, green CI and the human's click stand
 in its place. Each reviewer returns the review block, which is posted on the work judged: its Issue or Merge Issue, and in the PR body when present. A fifth consecutive FAIL on the same review loop is
-itself an escalation — stop looping and raise a hand. Review, inquisition and the verdict's rule are in
+itself an escalation - stop looping and raise a hand. Review, inquisition and the verdict's rule are in
 the [Work Model](./work-model.md); the review block's one-line form is locked in the
 [Linear Workspace Standard](../reference/linear-workspace-standard.md#communication-and-evidence).
 
@@ -80,8 +80,8 @@ The captain directs the merge by one code-writer and a fresh merge review, then 
 Done and returns `done <key>: merged`. A Merge Sub-issue never waits in Ready to Merge. The landing
 Merge does: the human clicks its reviewed PR as a merge commit.
 
-Every FAIL returns to Implementing, whatever it found: a fresh author of the change's kind —
-`code-writer`, or `docs-writer` for a documentation change — takes the next fix hop
+Every FAIL returns to Implementing, whatever it found: a fresh author of the change's kind -
+`code-writer`, or `docs-writer` for a documentation change - takes the next fix hop
 with the FAIL block as its contract, amending a scenario only where the block names it. Corrections carry new
 commits and fresh reviews. Merge FAIL
 fixes integration defects inside Merge. A source defect is reverted there, Merge closes Canceled
@@ -95,7 +95,7 @@ invoked admiral, the Issue Captain escalates straight to the human, already the 
 settle operational conflicts themselves by precedence, highest first: the human's live instruction, a
 Decision Record, the reviewed Project plan at its governing commit, the Issue contract, coding
 standards, existing code. The human
-is reached only for a conflict with a Decision Record — is it truth, or is it obsolete? — for live
+is reached only for a conflict with a Decision Record - is it truth, or is it obsolete? - for live
 external state agents cannot coordinate, or for authority the contract cannot supply.
 
 A crew member raises its hand by returning to its Issue Captain; a comment on the Issue and, when
@@ -103,8 +103,8 @@ the work is blocked, a Question Issue wired as a blocker are the captain's rungs
 one pre-code comment naming lanes or an inexact contract is its scoped exception, not a hand-raise.
 A blocked captain releases: post the resume SHA, push the branch, remove the worktree,
 return the parent to Todo and unassign. A human takeover does the same; a dead session leaves its
-last recorded hop without a final push. The map holder's next wake — an invoked admiral's, or the
-human's own return to the board when none is invoked — picks up blocker-cleared work.
+last recorded hop without a final push. The map holder's next wake - an invoked admiral's, or the
+human's own return to the board when none is invoked - picks up blocker-cleared work.
 
 ## Where the human is asked
 
@@ -119,7 +119,7 @@ or poll Linear.
 
 ## Related
 
-- [Work Model](./work-model.md) — the flow map, ownership, review and inquisition
-- [Working-Tree Contract](../guides/working-tree-contract.md) — branches, worktrees, claims, cleanup
-- [Writing Good Briefs](../guides/writing-good-briefs.md) — how an Issue's contract is written
-- [dydo Glossary](../reference/dydo-glossary.md) — the locked vocabulary
+- [Work Model](./work-model.md) - the flow map, ownership, review and inquisition
+- [Working-Tree Contract](../guides/working-tree-contract.md) - branches, worktrees, claims, cleanup
+- [Writing Good Briefs](../guides/writing-good-briefs.md) - how an Issue's contract is written
+- [dydo Glossary](../reference/dydo-glossary.md) - the locked vocabulary

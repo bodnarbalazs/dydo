@@ -14,16 +14,16 @@ Fixed all 8 issues. #70: baseline filter in ListSessionFiles. #71: sidecar appen
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\AuditEdgeCaseTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\AuditService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\AuditCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\AuditCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\SnapshotCompactionService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCompatTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalLauncher.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WindowsTerminalLauncher.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Serialization\DydoJsonContext.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\AuditEdgeCaseTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\AuditService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\AuditCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\AuditCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\SnapshotCompactionService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCompatTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\TerminalLauncher.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WindowsTerminalLauncher.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Serialization\DydoJsonContext.cs - Modified
 
 
 ## Review Summary

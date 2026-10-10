@@ -14,11 +14,11 @@ date: 2026-03-13
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Services\DispatchService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\ReviewCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorktreeDispatchTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\DispatchService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\ReviewCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorktreeDispatchTests.cs - Modified
 
 
 ## Review Summary

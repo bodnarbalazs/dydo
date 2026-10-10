@@ -14,21 +14,21 @@ date: 2026-03-25
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\ProcessUtilsTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorktreeDispatchTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\FileCoverageService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\WatchdogServiceTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Utils\PathUtils.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\InitCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\TemplateCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorkspaceCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\PathUtilsTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\AgentRegistryTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCompatTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\ProcessUtilsTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\WorktreeDispatchTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\FileCoverageService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\WatchdogServiceTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Utils\PathUtils.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\InitCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\TemplateCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorkspaceCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\PathUtilsTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\AgentRegistryTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCompatTests.cs - Modified
 
 
 ## Review Summary
@@ -39,7 +39,7 @@ Implemented three worktree compatibility fixes: (1) Added PathUtils.EnsureLocalD
 
 - Reviewed by: Grace
 - Result: FAILED
-- Issues: FAIL — gap_check exits non-zero. GuardCommand CRAP 30.8>30, WatchdogService line 75.9%<80% + CRAP 32.1>30. Also: EnsureLocalDirExists inside IsWorktreeStale is a side-effect on a query method — remove it, Directory.Exists works fine without the parent existing.
+- Issues: FAIL - gap_check exits non-zero. GuardCommand CRAP 30.8>30, WatchdogService line 75.9%<80% + CRAP 32.1>30. Also: EnsureLocalDirExists inside IsWorktreeStale is a side-effect on a query method - remove it, Directory.Exists works fine without the parent existing.
 
 Requires rework.
 
@@ -48,7 +48,7 @@ Requires rework.
 - Reviewed by: Brian
 - Date: 2026-03-20 19:07
 - Result: PASSED
-- Notes: LGTM. All 3 Grace review issues fixed correctly: GuardCommand CRAP resolved (internal helpers + tests), WatchdogService coverage met (StartProcessOverride/FindProcessesOverride hooks + 7 PollAndCleanup tests), EnsureLocalDirExists removed from IsWorktreeStale (uses GetDydoRoot). Additional scope (roles junction, Read(**) wildcard, worktree-refuse guards, merge docs) is clean and well-tested. 126/129 gap_check — 3 pre-existing failures untouched by this task. 2993/2995 tests pass — 2 pre-existing CommandDocConsistency failures.
+- Notes: LGTM. All 3 Grace review issues fixed correctly: GuardCommand CRAP resolved (internal helpers + tests), WatchdogService coverage met (StartProcessOverride/FindProcessesOverride hooks + 7 PollAndCleanup tests), EnsureLocalDirExists removed from IsWorktreeStale (uses GetDydoRoot). Additional scope (roles junction, Read(**) wildcard, worktree-refuse guards, merge docs) is clean and well-tested. 126/129 gap_check - 3 pre-existing failures untouched by this task. 2993/2995 tests pass - 2 pre-existing CommandDocConsistency failures.
 
 Awaiting human approval.
 

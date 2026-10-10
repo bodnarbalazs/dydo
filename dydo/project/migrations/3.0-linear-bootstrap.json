@@ -166,7 +166,7 @@
         "resources": [
           {
             "id": "a006d010-303a-4f06-ac25-88c674828bf4",
-            "label": "DR-044 — Linear-canonical PM boundary",
+            "label": "DR-044 - Linear-canonical PM boundary",
             "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md"
           },
           {
@@ -196,7 +196,7 @@
           },
           {
             "id": "7854389e-8c03-4c05-b599-f1519a577764",
-            "label": "DR-044 — Linear-canonical PM boundary",
+            "label": "DR-044 - Linear-canonical PM boundary",
             "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md"
           },
           {
@@ -231,7 +231,7 @@
           },
           {
             "id": "9e745ba7-8c53-4a87-8ea7-6c6ed872ee3b",
-            "label": "DR-044 — Linear-canonical PM boundary",
+            "label": "DR-044 - Linear-canonical PM boundary",
             "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md"
           }
         ]
@@ -256,7 +256,7 @@
           },
           {
             "id": "6560fe3f-1bd0-46c6-912e-dde1c8e0abbe",
-            "label": "DR-044 — Linear-canonical PM boundary",
+            "label": "DR-044 - Linear-canonical PM boundary",
             "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md"
           }
         ]
@@ -286,7 +286,7 @@
           },
           {
             "id": "e65a7255-f0d7-4a28-9e41-62a30cf5e2a5",
-            "label": "DR-044 — Linear-canonical PM boundary",
+            "label": "DR-044 - Linear-canonical PM boundary",
             "url": "https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md"
           }
         ]

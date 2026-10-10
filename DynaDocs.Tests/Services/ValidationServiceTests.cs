@@ -30,7 +30,7 @@ public class ValidationServiceTests : IDisposable
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), json);
     }
 
-    #region ValidateSystem — dydo.json
+    #region ValidateSystem - dydo.json
 
     [Fact]
     public void ValidateSystem_MissingDydoJson_ReportsError()
@@ -62,7 +62,7 @@ public class ValidationServiceTests : IDisposable
 
     #endregion
 
-    #region ValidateSystem — Exit code semantics
+    #region ValidateSystem - Exit code semantics
 
     [Fact]
     public void ValidateSystem_CleanProject_ReturnsNoErrors()
@@ -77,7 +77,7 @@ public class ValidationServiceTests : IDisposable
 
     #endregion
 
-    #region ValidateSystem — Null deserialization
+    #region ValidateSystem - Null deserialization
 
     [Fact]
     public void ValidateSystem_DydoJsonScalar_ReportsRootShapeError()

@@ -14,8 +14,8 @@ Fixed 2 source code locations: (1) Updated judge role description in RoleDefinit
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleDefinitionService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.csproj — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\RoleDefinitionService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.csproj - Modified
 
 
 ## Review Summary

@@ -31,7 +31,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // dydo/index.md is a system file — protected, so the edit is blocked
+        // dydo/index.md is a system file - protected, so the edit is blocked
         var result = await GuardAsync("edit", "dydo/index.md");
 
         result.AssertExitCode(2);
@@ -54,7 +54,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // A Read tool-call against an off-limits secret (**/secrets.json) must be blocked —
+        // A Read tool-call against an off-limits secret (**/secrets.json) must be blocked -
         // off-limits binds on every direct file op, reads included, not just writes.
         var json = "{\"session_id\":\"" + TestSessionId
             + "\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"config/secrets.json\"}}";
@@ -70,7 +70,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // src/file.cs is not off-limits — allowed
+        // src/file.cs is not off-limits - allowed
         var result = await GuardAsync("edit", "src/file.cs");
 
         result.AssertSuccess();
@@ -78,7 +78,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
-    #region Protected Tier — readable by every tool, writable by none (DR 045 §10)
+    #region Protected Tier - readable by every tool, writable by none (DR 045 §10)
 
     [Theory]
     [InlineData("dydo/index.md")]
@@ -101,7 +101,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("Write", "dydo/files-off-limits.md")]
     [InlineData("NotebookEdit", "dydo.json")]
     // Codex's apply_patch maps to no action, so the tier must recognize it by tool name or it
-    // would bind on Claude's lane only — and these files were writable on the Codex lane.
+    // would bind on Claude's lane only - and these files were writable on the Codex lane.
     [InlineData("apply_patch", "dydo/index.md")]
     public async Task Guard_ProtectedPath_DirectWriteToolBlocked(string toolName, string path)
     {
@@ -124,7 +124,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("mv dydo/index.md gone.md")]
     [InlineData("mv other.md dydo/index.md")]
     // A copy can overwrite a protected file. The analyzer cannot tell a copy's source from
-    // its destination, so copying *out of* a protected path is blocked too, by design —
+    // its destination, so copying *out of* a protected path is blocked too, by design -
     // the content stays readable through Read, cat and head.
     [InlineData("cp evil.json dydo.json")]
     [InlineData("cp permissive.md dydo/files-off-limits.md")]
@@ -254,7 +254,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_CommandOption_AppliesShellAnalysis()
     {
-        // Issue 0302: the documented manual-testing lane used to exit 0 for EVERYTHING —
+        // Issue 0302: the documented manual-testing lane used to exit 0 for EVERYTHING -
         // arg mode carried no tool name, so ShouldRouteToShellHandler never routed the
         // command to the shell analyzer. A CLI --command is a shell command by definition.
         await InitProjectAsync("none");
@@ -444,7 +444,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // .env is off-limits by default — searching with it as the path should block
+        // .env is off-limits by default - searching with it as the path should block
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\".env\",\"pattern\":\"*\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
@@ -476,7 +476,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
-    #region Git commands (git stash / merge are ordinary now — DR-041 Part B)
+    #region Git commands (git stash / merge are ordinary now - DR-041 Part B)
 
     [Theory]
     [InlineData("git stash")]
@@ -590,7 +590,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
-    #region Agent Tool — Nudge
+    #region Agent Tool - Nudge
 
     [Fact]
     public async Task Guard_AgentTool_EmitsNudgeAndPasses()

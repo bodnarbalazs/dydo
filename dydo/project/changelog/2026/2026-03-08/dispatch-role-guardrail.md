@@ -14,25 +14,25 @@ date: 2026-03-08
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Models\ReplyPendingMarker.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\Serialization\DydoJsonContext.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Models\InboxItem.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\DispatchCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\InboxCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\MessageCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\DispatchWaitIntegrationTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Models\ReplyPendingMarker.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\Serialization\DydoJsonContext.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Models\InboxItem.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\DispatchCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\InboxCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\MessageCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\DispatchWaitIntegrationTests.cs - Modified
 
 
 ## Review Summary
 
-Implemented dispatch role guardrail. SetRole now checks the agent's inbox for a role field and fails on first attempt if the requested role differs from the dispatched role. Succeeds on retry (nudge marker file). Deviated from plan: kept IAgentRegistry.SetRole signature unchanged — the nudge is a hard fail, not a success-with-warning. Added GetDispatchedRole private helper in AgentRegistry. 11 new tests covering mismatch fail, retry success, matching role, no inbox, null task, case-insensitive match, different task, malformed inbox, missing role field, anti-pattern guard, and nudge-then-match-role. All 1586 tests green.
+Implemented dispatch role guardrail. SetRole now checks the agent's inbox for a role field and fails on first attempt if the requested role differs from the dispatched role. Succeeds on retry (nudge marker file). Deviated from plan: kept IAgentRegistry.SetRole signature unchanged - the nudge is a hard fail, not a success-with-warning. Added GetDispatchedRole private helper in AgentRegistry. 11 new tests covering mismatch fail, retry success, matching role, no inbox, null task, case-insensitive match, different task, malformed inbox, missing role field, anti-pattern guard, and nudge-then-match-role. All 1586 tests green.
 
 ## Code Review (2026-03-08 19:15)
 
 - Reviewed by: Emma
 - Result: FAILED
-- Issues: BUG: .role-nudge marker files never cleaned up — stale markers bypass guardrail on re-use. GetDispatchedRole in wrong region. AgentCommand.cs changes are out of scope.
+- Issues: BUG: .role-nudge marker files never cleaned up - stale markers bypass guardrail on re-use. GetDispatchedRole in wrong region. AgentCommand.cs changes are out of scope.
 
 Requires rework.
 
@@ -41,7 +41,7 @@ Requires rework.
 - Reviewed by: Frank
 - Date: 2026-03-08 19:29
 - Result: PASSED
-- Notes: All 3 Emma issues resolved correctly. (1) ReleaseAgent cleans up .role-nudge-* markers; SetRole deletes stale markers on matching role. (2) GetDispatchedRole correctly placed right before SetRole. (3) AgentCommand.cs untouched. Tests comprehensive — 13 tests cover core flows and edge cases. All 1592 tests green. Code is clean, no unnecessary abstractions.
+- Notes: All 3 Emma issues resolved correctly. (1) ReleaseAgent cleans up .role-nudge-* markers; SetRole deletes stale markers on matching role. (2) GetDispatchedRole correctly placed right before SetRole. (3) AgentCommand.cs untouched. Tests comprehensive - 13 tests cover core flows and edge cases. All 1592 tests green. Code is clean, no unnecessary abstractions.
 
 Awaiting human approval.
 

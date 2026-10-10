@@ -38,14 +38,14 @@ container. JSON serialization is source-generated for Native AOT compatibility.
 ## Native skills
 
 A skill is a plain `SKILL.md` folder authored directly in the cross-vendor
-[agentskills.io](https://agentskills.io) format — there is no compile step
+[agentskills.io](https://agentskills.io) format - there is no compile step
 ([Decision 049](../project/decisions/049-skills-are-the-source-retire-the-compiler.md)). The
 canonical folder is `skills/<category>/<name>/`, sorted by kind
 ([Decision 050](../project/decisions/050-officers-crew-and-skills-hats-retired.md)): the roles under
 `roles/officers/` and `roles/crew/`, every other skill under `engineering/` or `productivity/`. It
 keeps Claude's frontmatter, resources, and Codex's `agents/openai.yaml` together. The
-dependency-free `setup-skills.mjs` walks the tree by rule — a folder holding `SKILL.md` is a skill,
-any other folder a category — and creates one directory symlink or Windows junction per skill in
+dependency-free `setup-skills.mjs` walks the tree by rule - a folder holding `SKILL.md` is a skill,
+any other folder a category - and creates one directory symlink or Windows junction per skill in
 `.claude/skills/` and `.agents/skills/`, flat with no category level. OpenCode is not a supported host: it may read those two roots, but
 that is untested, dydo has no OpenCode init mode, and setup creates no third projection. DR 047 retires
 Workflow as an operating-model concept; no workflow scripts exist. What each metadata key means is in
@@ -86,17 +86,17 @@ rules check titles, links, filenames, and project-specific invariants.
 
 ## Key design choices
 
-- **Dedicated live-work owner** — Linear manages volatile project state; dydo does not duplicate it.
-- **Git-native durable knowledge** — decisions and proof stay reviewable at exact commits.
-- **Host-native execution** — Claude Code and Codex own delegation, isolation, and lifecycle.
-- **One canonical native skill tree** — host discovery paths point at the same authored role folders.
-- **Universal guard rules** — enforcement is independent of any dydo-managed identity.
-- **No DI framework** — direct construction keeps the Native AOT CLI small.
+- **Dedicated live-work owner** - Linear manages volatile project state; dydo does not duplicate it.
+- **Git-native durable knowledge** - decisions and proof stay reviewable at exact commits.
+- **Host-native execution** - Claude Code and Codex own delegation, isolation, and lifecycle.
+- **One canonical native skill tree** - host discovery paths point at the same authored role folders.
+- **Universal guard rules** - enforcement is independent of any dydo-managed identity.
+- **No DI framework** - direct construction keeps the Native AOT CLI small.
 
 ## Related
 
-- [Work Model](./work-model.md) — Linear/Git operating contract
-- [Scaffold and Customization](./scaffold-and-customization.md) — Authoring and customization
-- [Guard System](./guard-system.md) — Enforcement layers and the hook contract
-- [Configuration](../reference/configuration.md) — Runtime configuration
-- [Coding Standards](../guides/coding-standards.md) — Repository conventions
+- [Work Model](./work-model.md) - Linear/Git operating contract
+- [Scaffold and Customization](./scaffold-and-customization.md) - Authoring and customization
+- [Guard System](./guard-system.md) - Enforcement layers and the hook contract
+- [Configuration](../reference/configuration.md) - Runtime configuration
+- [Coding Standards](../guides/coding-standards.md) - Repository conventions

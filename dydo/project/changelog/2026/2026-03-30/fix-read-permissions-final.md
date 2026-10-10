@@ -14,7 +14,7 @@ Plan ready. See agents/Frank/plan-fix-read-permissions-final.md. Defensive multi
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\README.md — Created
+C:\Users\User\Desktop\Projects\DynaDocs\README.md - Created
 
 
 ## Review Summary

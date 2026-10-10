@@ -10,22 +10,22 @@ Review extension of cd-chain coaching guard to PowerShell forms (from Adele's br
 
 ## Changes
 
-1. **Services/BashCommandAnalyzer.cs:292** — extended `CdThenCommandRegex` leading-verb alternation from just `cd` to `(?:cd|Set-Location|sl|chdir|Push-Location|pushd)`. Existing capture-group numbering preserved (1=double-quoted, 2=single-quoted, 3=unquoted, 4=rest cmd) so `DetectNeedlessCd` body is unchanged.
+1. **Services/BashCommandAnalyzer.cs:292** - extended `CdThenCommandRegex` leading-verb alternation from just `cd` to `(?:cd|Set-Location|sl|chdir|Push-Location|pushd)`. Existing capture-group numbering preserved (1=double-quoted, 2=single-quoted, 3=unquoted, 4=rest cmd) so `DetectNeedlessCd` body is unchanged.
 
-2. **Commands/GuardCommand.cs:520-522** — block message reworded to `Don't chain cd / Set-Location with other commands` and `run it separately first` (was `run cd separately first`).
+2. **Commands/GuardCommand.cs:520-522** - block message reworded to `Don't chain cd / Set-Location with other commands` and `run it separately first` (was `run cd separately first`).
 
-3. **DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs** — added 3 new theories in the `DetectNeedlessCd` region:
+3. **DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs** - added 3 new theories in the `DetectNeedlessCd` region:
    - `PowerShellForms_ReturnsMatch` (7 cases): Set-Location / set-location / sl / chdir / Push-Location / pushd, mix of `&&` and `;`, case-insensitive form.
    - `PowerShellQuotedPath_ReturnsMatch` (3 cases): single-quoted, double-quoted, lowercase variant.
    - `PowerShellNonLeadingOrAlone_NoMatch` (4 cases): `Set-LocationWeirdSuffix` boundary, `slbang` boundary, right-side chain (`git status; Set-Location /tmp`), single command without chain.
 
-4. **DynaDocs.Tests/Integration/GuardIntegrationTests.cs:693** — updated `AssertStderrContains` to match the new message text.
+4. **DynaDocs.Tests/Integration/GuardIntegrationTests.cs:693** - updated `AssertStderrContains` to match the new message text.
 
 ## Key decisions
 
 - **Push-Location / pushd included** (per Adele's recommendation): if an agent wants save/restore semantics, they should run two separate calls. Same auto-approve breakage applies to Push-Location chains as to Set-Location.
 - **Boundary safety**: the existing `\s+` after the verb prevents `Set-LocationWeirdSuffix` / `slbang` false matches without needing explicit `\b`. Verified by the negative theory.
-- **Out of scope but worth flagging**: regex still doesn't handle named-parameter forms like `Set-Location -Path C:\foo; cmd` or `cd /d C:\foo; cmd` — the same gap already existed for `cd`. Not addressed; Adele asked for the smallest change.
+- **Out of scope but worth flagging**: regex still doesn't handle named-parameter forms like `Set-Location -Path C:\foo; cmd` or `cd /d C:\foo; cmd` - the same gap already existed for `cd`. Not addressed; Adele asked for the smallest change.
 
 ## Nudge investigation finding (brief item 4)
 
@@ -58,22 +58,22 @@ Review extension of cd-chain coaching guard to PowerShell forms (from Adele's br
 
 ## Changes
 
-1. **Services/BashCommandAnalyzer.cs:292** — extended `CdThenCommandRegex` leading-verb alternation from just `cd` to `(?:cd|Set-Location|sl|chdir|Push-Location|pushd)`. Existing capture-group numbering preserved (1=double-quoted, 2=single-quoted, 3=unquoted, 4=rest cmd) so `DetectNeedlessCd` body is unchanged.
+1. **Services/BashCommandAnalyzer.cs:292** - extended `CdThenCommandRegex` leading-verb alternation from just `cd` to `(?:cd|Set-Location|sl|chdir|Push-Location|pushd)`. Existing capture-group numbering preserved (1=double-quoted, 2=single-quoted, 3=unquoted, 4=rest cmd) so `DetectNeedlessCd` body is unchanged.
 
-2. **Commands/GuardCommand.cs:520-522** — block message reworded to `Don't chain cd / Set-Location with other commands` and `run it separately first` (was `run cd separately first`).
+2. **Commands/GuardCommand.cs:520-522** - block message reworded to `Don't chain cd / Set-Location with other commands` and `run it separately first` (was `run cd separately first`).
 
-3. **DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs** — added 3 new theories in the `DetectNeedlessCd` region:
+3. **DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs** - added 3 new theories in the `DetectNeedlessCd` region:
    - `PowerShellForms_ReturnsMatch` (7 cases): Set-Location / set-location / sl / chdir / Push-Location / pushd, mix of `&&` and `;`, case-insensitive form.
    - `PowerShellQuotedPath_ReturnsMatch` (3 cases): single-quoted, double-quoted, lowercase variant.
    - `PowerShellNonLeadingOrAlone_NoMatch` (4 cases): `Set-LocationWeirdSuffix` boundary, `slbang` boundary, right-side chain (`git status; Set-Location /tmp`), single command without chain.
 
-4. **DynaDocs.Tests/Integration/GuardIntegrationTests.cs:693** — updated `AssertStderrContains` to match the new message text.
+4. **DynaDocs.Tests/Integration/GuardIntegrationTests.cs:693** - updated `AssertStderrContains` to match the new message text.
 
 ## Key decisions
 
 - **Push-Location / pushd included** (per Adele's recommendation): if an agent wants save/restore semantics, they should run two separate calls. Same auto-approve breakage applies to Push-Location chains as to Set-Location.
 - **Boundary safety**: the existing `\s+` after the verb prevents `Set-LocationWeirdSuffix` / `slbang` false matches without needing explicit `\b`. Verified by the negative theory.
-- **Out of scope but worth flagging**: regex still doesn't handle named-parameter forms like `Set-Location -Path C:\foo; cmd` or `cd /d C:\foo; cmd` — the same gap already existed for `cd`. Not addressed; Adele asked for the smallest change.
+- **Out of scope but worth flagging**: regex still doesn't handle named-parameter forms like `Set-Location -Path C:\foo; cmd` or `cd /d C:\foo; cmd` - the same gap already existed for `cd`. Not addressed; Adele asked for the smallest change.
 
 ## Nudge investigation finding (brief item 4)
 

@@ -9,7 +9,7 @@ Core knowledge about the project: what it is, how it's built, and key domain con
 
 ## Purpose
 
-This folder answers "What IS this?" — the foundational context that agents need before they can work effectively. Read these docs when starting a new task or joining the project.
+This folder answers "What IS this?" - the foundational context that agents need before they can work effectively. Read these docs when starting a new task or joining the project.
 
 ## Contents
 

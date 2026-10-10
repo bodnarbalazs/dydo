@@ -6,7 +6,7 @@ date: 2026-03-27
 
 # Task: fix-default-nudges
 
-Moved 5 indirect dydo invocation nudges (npx, dotnet, dotnet run, shell, python) from hard-coded BuiltInNudges in GuardCommand.cs to soft-coded DefaultNudges in ConfigFactory.cs. Removed the project-specific coverage tool nudge from defaults. Simplified CheckNudges to only use config nudges (no more BuiltInNudges list). Updated all tests to reference ConfigFactory.DefaultNudges. No plan deviations — clean removal of BuiltInNudges with no double-firing concern since they now flow through dydo.json.
+Moved 5 indirect dydo invocation nudges (npx, dotnet, dotnet run, shell, python) from hard-coded BuiltInNudges in GuardCommand.cs to soft-coded DefaultNudges in ConfigFactory.cs. Removed the project-specific coverage tool nudge from defaults. Simplified CheckNudges to only use config nudges (no more BuiltInNudges list). Updated all tests to reference ConfigFactory.DefaultNudges. No plan deviations - clean removal of BuiltInNudges with no double-firing concern since they now flow through dydo.json.
 
 ## Progress
 
@@ -14,21 +14,21 @@ Moved 5 indirect dydo invocation nudges (npx, dotnet, dotnet run, shell, python)
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\gap_check.py — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WorkspaceArchiver.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\DispatchWaitIntegrationTests.cs — Modified
-C:/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs — Modified
-C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Integration/GuardIntegrationTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\ConfigFactory.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\GuardCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCompatTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\gap_check.py - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WorkspaceArchiver.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\DispatchWaitIntegrationTests.cs - Modified
+C:/Users/User/Desktop/Projects/DynaDocs/Commands/GuardCommand.cs - Modified
+C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Integration/GuardIntegrationTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\ConfigFactory.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\GuardCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCompatTests.cs - Modified
 
 
 ## Review Summary
 
-Moved 5 indirect dydo invocation nudges (npx, dotnet, dotnet run, shell, python) from hard-coded BuiltInNudges in GuardCommand.cs to soft-coded DefaultNudges in ConfigFactory.cs. Removed the project-specific coverage tool nudge from defaults. Simplified CheckNudges to only use config nudges (no more BuiltInNudges list). Updated all tests to reference ConfigFactory.DefaultNudges. No plan deviations — clean removal of BuiltInNudges with no double-firing concern since they now flow through dydo.json.
+Moved 5 indirect dydo invocation nudges (npx, dotnet, dotnet run, shell, python) from hard-coded BuiltInNudges in GuardCommand.cs to soft-coded DefaultNudges in ConfigFactory.cs. Removed the project-specific coverage tool nudge from defaults. Simplified CheckNudges to only use config nudges (no more BuiltInNudges list). Updated all tests to reference ConfigFactory.DefaultNudges. No plan deviations - clean removal of BuiltInNudges with no double-firing concern since they now flow through dydo.json.
 
 ## Code Review
 

@@ -2,7 +2,7 @@
 
 # Skill mechanics
 
-The skill-specific branch of writing-for-agents: what changes when the document is a dydo skill —
+The skill-specific branch of writing-for-agents: what changes when the document is a dydo skill -
 frontmatter, invocation, and where its reference lives. Everything else about writing it is the
 universal reference in this skill's body.
 
@@ -18,15 +18,15 @@ format; there is no template and no compile step. The canonical artifact is
 |---|---|---|
 | `name` | the folder slug | Identity on both hosts; keep it equal to the folder name. |
 | `description` | one line | The only text a model weighs before reaching for the skill. |
-| `disable-model-invocation` | `true` | Claude-only: the skill is out of every model's reach; only the human, by name. Codex's twin is `allow_implicit_invocation: false` under the skill's `agents/openai.yaml`. |
+| `disable-model-invocation` | `true` | Claude-only: the skill is out of every model's reach; only the user, by name. Codex's twin is `allow_implicit_invocation: false` under the skill's `agents/openai.yaml`. |
 | `argument-hint` | `"<what to type>"` | Claude-only: the prompt the host shows after the name. Codex's twin is `interface.default_prompt` under the skill's `agents/openai.yaml`. |
 
-The historical template keys — `emit`, `read-only`, `delegates`, `invocation`, `web` — described a
+The historical template keys - `emit`, `read-only`, `delegates`, `invocation`, `web` - described a
 compiled agent and are retired with the compiler. A role is now a skill; keeping a read-only reviewer
 from writing is a request made through host sandbox and permission settings, not a generated agent
-file, and the request's presence does not prove it was enforced — that takes a native check on the
+file, and the request's presence does not prove it was enforced - that takes a native check on the
 host. Codex's `multi_agent` permitted an ordinary edit under `sandbox_mode = "read-only"`; see "DYD-88
-— Codex sub-agent lifecycle observations — 2026-09-14".
+- Codex sub-agent lifecycle observations - 2026-09-14".
 
 ## Invocation
 
@@ -34,10 +34,10 @@ Two choices, trading the two loads:
 
 - **automatic** (the default) keeps a description the agent can fire on, and other skills can reach
   it. You can still type its name: model-invocation always _includes_ human reach. That description
-  is a context pointer forced to stay loaded every turn — write it trigger-first, one trigger per
+  is a context pointer forced to stay loaded every turn - write it trigger-first, one trigger per
   branch, with this skill's pointer rules applied in full.
-- **explicit** keeps the skill out of every model's reach: only the human typing its name invokes
-  it, and no other skill can. Zero context load, but it spends cognitive load — a human has to know
+- **explicit** keeps the skill out of every model's reach: only the user typing its name invokes
+  it, and no other skill can. Zero context load, but it spends cognitive load - a human has to know
   it exists, which is why the locked dydo glossary carries the taxonomy. Its description turns
   human-facing: one punchy line, trigger lists stripped. On Claude this is
   `disable-model-invocation: true` in `SKILL.md`; on Codex it is `allow_implicit_invocation: false`
@@ -45,21 +45,21 @@ Two choices, trading the two loads:
 
 ## Where reference lives
 
-- **`## Must-Reads`** — project documents named under that heading. Author each target as a
-  repository-root literal path in a code span, read from the repository root — "From the repository
+- **`## Must-Reads`** - project documents named under that heading. Author each target as a
+  repository-root literal path in a code span, read from the repository root - "From the repository
   root, read `dydo/understand/architecture.md`" (see `skills/roles/crew/reviewer/SKILL.md`);
   `DynaDocs.Tests/Steps/CanonicalSkillSteps.cs` (`EveryLinkResolves`, its `AssertInside` call)
   enforces that no Must-Read is written as a markdown link. A `../` climb does not work here because the identical file is read at two
   different depths: canonically at `skills/<category>/<name>/`, and through the host projection at
-  `.claude/skills/<name>/` or `.agents/skills/<name>/`. The two resolvers disagree — lexical `..`
+  `.claude/skills/<name>/` or `.agents/skills/<name>/`. The two resolvers disagree - lexical `..`
   normalization against the projected path versus POSIX `..` applied to the physical parent once the
-  symlink is followed — so no single relative climb is correct from every install location. Project
+  symlink is followed - so no single relative climb is correct from every install location. Project
   additions are edits to the skill body itself; include tags are retired.
-- **Resources** — `resources/<name>.md` beside the skill, reached by that same folder-relative path.
+- **Resources** - `resources/<name>.md` beside the skill, reached by that same folder-relative path.
   This is disclosure with a file boundary: one skill's own reference, reached only by the branches
   that need it. Reference several skills share lives instead in a model-invoked method skill, or in
   a `dydo/` document each of them lists under Must-Reads.
-- **Citing a project-owned doc** — cite a file or a heading that `Scaffold/dydo/` carries. A
+- **Citing a project-owned doc** - cite a file or a heading that `Scaffold/dydo/` carries. A
   project's copy freezes at its first `dydo init` and an adopter reconciles it by hand, so a file or
   heading found only in the dydo repository's own `dydo/` resolves nowhere else. Content the skill
   cannot work without lives in the skill. A new citation, by file or by heading, lands in

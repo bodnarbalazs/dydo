@@ -5,7 +5,7 @@ using DynaDocs.Models;
 public static class ConfigFactory
 {
     /// <summary>
-    /// Dydo-internal scan-exclude entries — invariant. The check/fix loop
+    /// Dydo-internal scan-exclude entries - invariant. The check/fix loop
     /// guarantees these are present in every project's dydo.json (preserving
     /// any user-added entries alongside).
     /// </summary>
@@ -14,7 +14,7 @@ public static class ConfigFactory
         "_system/.local/",
         "_system/audit/",
         // The shared scratch workspace (dydo/agents/workspace/): agent work products,
-        // not documentation — never scanned, never validated, never mirrored.
+        // not documentation - never scanned, never validated, never mirrored.
         "agents/"
     ];
 
@@ -23,31 +23,31 @@ public static class ConfigFactory
         new()
         {
             Pattern = @"(?:^|[;&|]\s*)npx\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*dydo\b(.*)",
-            Message = "Don't use npx to run dydo — it's already on your PATH. Just use: dydo $1",
+            Message = "Don't use npx to run dydo - it's already on your PATH. Just use: dydo $1",
             Severity = "block"
         },
         new()
         {
             Pattern = @"(?:^|[;&|]\s*)dotnet\s+(?:tool\s+run\s+)?dydo\b(.*)",
-            Message = "Don't use dotnet to run dydo — it's already on your PATH. Just use: dydo $1",
+            Message = "Don't use dotnet to run dydo - it's already on your PATH. Just use: dydo $1",
             Severity = "block"
         },
         new()
         {
             Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:check|fix|index|init|graph|guard|completions|complete|validate|map|version|help)\b.*)",
-            Message = "Don't use dotnet run to invoke dydo — it's already on your PATH. Just use: dydo $1",
+            Message = "Don't use dotnet run to invoke dydo - it's already on your PATH. Just use: dydo $1",
             Severity = "block"
         },
         new()
         {
             Pattern = @"(?:^|[;&|]\s*)(bash|sh|zsh|cmd|powershell|pwsh)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo(?=[\s""']|$)(.*?)(?:[""'])?$",
-            Message = "Don't use '$1' to run dydo — it's already on your PATH. Just use: dydo $2",
+            Message = "Don't use '$1' to run dydo - it's already on your PATH. Just use: dydo $2",
             Severity = "block"
         },
         new()
         {
             Pattern = @"(?:^|[;&|]\s*)(python3?|py)\s+(?:(?:-\w+|--[\w-]+(?:\s+\S+)?)\s+)*(?:[""'])?dydo(?=[\s""']|$)(.*?)(?:[""'])?$",
-            Message = "Don't use '$1' to run dydo — it's already on your PATH. Just use: dydo $2",
+            Message = "Don't use '$1' to run dydo - it's already on your PATH. Just use: dydo $2",
             Severity = "block"
         },
         new()

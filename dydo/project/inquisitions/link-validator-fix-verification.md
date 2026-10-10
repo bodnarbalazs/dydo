@@ -3,7 +3,7 @@ area: project
 type: inquisition
 ---
 
-# Inquisition: link-validator fix slice — post-implementation verification
+# Inquisition: link-validator fix slice - post-implementation verification
 
 Verification inquisition for the link-validator fix slice (commit `5783867`, closing issues
 [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md)–[#0188](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md)). The slice changed `dydo check` to scan from the docs root and thread the
@@ -12,7 +12,7 @@ links through the link resolver instead of the broken non-markdown branch ([#018
 `DocLinkResolver` and routed `DocGraph` through `ILinkResolver.ResolveToRelativeKey` ([#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md -->),
 and added regression tests plus a `TestData/link-validator/` fixture ([#0188](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md)).
 
-**Headline:** the slice is **substantially correct** — every one of [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md), [#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md), [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) is
+**Headline:** the slice is **substantially correct** - every one of [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md), [#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md), [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) is
 fixed and verified by live reproduction, and the validator was *not* made permissive
 (genuinely broken links are still caught). Three findings remain: a **medium** one where the
 already-filed follow-up [#0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md)<!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md --><!-- manifest duplicate: https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md --> records an unworkable resolution, and two **low** ones (a thin
@@ -21,23 +21,23 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
 
 ---
 
-## 2026-05-21 — Brian
+## 2026-05-21 - Brian
 
 ### Scope
 
-- **Entry point:** Feature verification — the link-validator fix slice (commit `5783867`).
+- **Entry point:** Feature verification - the link-validator fix slice (commit `5783867`).
 - **Files investigated (code):**
-  - `Commands/CheckCommand.cs` (full — new `ValidateDocs` / `ResolveReportScope`)
-  - `Commands/CheckDocValidator.cs` (full — new `Validate(basePath, reportScope)` + `IsUnderScope`)
+  - `Commands/CheckCommand.cs` (full - new `ValidateDocs` / `ResolveReportScope`)
+  - `Commands/CheckDocValidator.cs` (full - new `Validate(basePath, reportScope)` + `IsUnderScope`)
   - `Commands/GraphCommand.cs` (`DocGraph` construction)
-  - `Rules/BrokenLinksRule.cs` (full — empty-target routing change)
-  - `Services/LinkResolver.cs` (full — empty-target branch + `ResolveToRelativeKey`)
-  - `Services/ILinkResolver.cs`, `Services/DocGraph.cs` (full — resolver-injection)
-  - `Services/DocLinkResolver.cs` (deleted — verified no dangling references)
-  - `Services/SnapshotService.cs` (lines 95–205 — the surviving private `ResolveLink`)
-  - `Services/LinkExtractor.cs` (full — to bound the empty-target / anchor-only input space)
-  - `Commands/FixFileHandler.cs` (link-resolver usage — to confirm `dydo fix` is unaffected)
-- **Tests audited:** the full slice test diff — `DynaDocs.Tests/Commands/CheckDocValidatorTests.cs`,
+  - `Rules/BrokenLinksRule.cs` (full - empty-target routing change)
+  - `Services/LinkResolver.cs` (full - empty-target branch + `ResolveToRelativeKey`)
+  - `Services/ILinkResolver.cs`, `Services/DocGraph.cs` (full - resolver-injection)
+  - `Services/DocLinkResolver.cs` (deleted - verified no dangling references)
+  - `Services/SnapshotService.cs` (lines 95–205 - the surviving private `ResolveLink`)
+  - `Services/LinkExtractor.cs` (full - to bound the empty-target / anchor-only input space)
+  - `Commands/FixFileHandler.cs` (link-resolver usage - to confirm `dydo fix` is unaffected)
+- **Tests audited:** the full slice test diff - `DynaDocs.Tests/Commands/CheckDocValidatorTests.cs`,
   `DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs` (new region), `DynaDocs.Tests/Services/LinkResolverTests.cs`
   (new region), `DynaDocs.Tests/Services/PathUtilsDiscoveryTests.cs` (new tests),
   `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs` (3 new tests), `DynaDocs.Tests/TestData/link-validator/**`.
@@ -61,28 +61,28 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
 
 ### Findings
 
-#### 1. Follow-up [#0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md) records an unworkable resolution — the `#section` noise self-perpetuates through `dydo fix`
+#### 1. Follow-up [#0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md) records an unworkable resolution - the `#section` noise self-perpetuates through `dydo fix`
 
 - **Category:** bug / incomplete-fix.
 - **Severity:** medium.
 - **Type:** tested (live reproduction).
 - **Evidence:**
   - The [#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md) fix makes anchor-only `[label](#section)` links *live-validated* against the
-    source doc's anchors. Correct behaviour — but it also means any doc that contains the
+    source doc's anchors. Correct behaviour - but it also means any doc that contains the
     literal text `[label](#section)` (with no matching `## Section` heading) now reports a
     broken link. Issue [#0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md) was filed for this and is recorded at **severity low** with the
     resolution: *"backtick-escape the literal patterns (`[label](#section)` as code)."*
   - That resolution is **unworkable for `dydo/project/issues/_index.md`**. That file carries
     the header `<!-- Auto-generated by 'dydo fix'. Do not edit - changes will be overwritten. -->`
     It is regenerated by `dydo fix` from issue titles. Issue **[#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md)'s own title** is
-    `Anchor-only links [label](#section) produce empty-target Broken link error` — the title
+    `Anchor-only links [label](#section) produce empty-target Broken link error` - the title
     contains raw markdown-link syntax, so `_index.md:80` (the generated list entry for [#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md))
     contains `[label](#section)` and is flagged broken. You cannot backtick-escape a generated
     file; the next `dydo fix` run overwrites the escape. [#0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md)'s fix is futile for this file.
   - It is also awkward for the issue files themselves: historical issue [`0186`](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md) at line 11 is the `# heading`,
     which *is* the issue title (`# Anchor-only links [label](#section) produce ...`).
     Backtick-escaping the heading changes the rendered title.
-  - Live `dydo check` (whole tree, this branch) — 7 `#section` broken-link errors:
+  - Live `dydo check` (whole tree, this branch) - 7 `#section` broken-link errors:
     ```
     project/issues/_index.md            - Line 80: Broken link: #section   (GENERATED file)
     project/issues/0186-...md           - Line 11, 17: Broken link: #section
@@ -90,18 +90,18 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
     project/issues/0205-...md           - Line 11, 13, 17: Broken link: #section
     ```
   - The affected historical issue records are [0188](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md) and [0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md).
-  - Net effect: `dydo check` whole-tree signal is degraded by self-documenting bug text — the
+  - Net effect: `dydo check` whole-tree signal is degraded by self-documenting bug text - the
     same *class* of harm (noise drowning real errors) that the original [#0184](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0184-dydo-check-link-validator-flags-valid-relative-cross-folder-markdown-links-as-br.md)/[#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) bug caused.
     And [#0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md)'s recorded resolution gives a false sense that a one-pass backtick edit will
     clear it; it will not, because `dydo fix` re-emits `_index.md`.
 - **Reproduction:** build this branch, `dydo check` from the worktree root; observe the 7
   `#section` errors above. Backtick-escape `_index.md:80`, run `dydo fix`, re-run `dydo check`
-  — the error returns.
-- **Is this a false positive?** No — `[label](#section)` *is* a dead link in rendered
+  - the error returns.
+- **Is this a false positive?** No - `[label](#section)` *is* a dead link in rendered
   markdown. The validator is behaving correctly. The defect is upstream: issue titles are
   allowed to contain raw markdown-link syntax, `dydo fix` propagates them verbatim into a
   generated index, and `BrokenLinksRule` validates that generated index. The inquisitor
-  workflow itself assumes `dydo issue create ... --summary` lands "check-clean" — an issue
+  workflow itself assumes `dydo issue create ... --summary` lands "check-clean" - an issue
   whose *title* breaks `dydo check` violates that assumption.
 - **Recommended direction (for the judge / planner):** [#0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md)'s resolution should be rewritten.
   Viable options: (a) `RuleSkipPaths` / `BrokenLinksRule` skips auto-generated hub/index files
@@ -110,10 +110,10 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
   `# heading`; (c) reject/sanitise raw `[..](..)` syntax in `dydo issue create --title`.
   Option (a) is the smallest and most consistent with the existing template-skip precedent.
 - **Judge ruling:** CONFIRMED
-- **Files examined:** `dydo/project/issues/_index.md` (line 6 auto-gen marker, line 80), `dydo/project/issues/0186-*.md` (title + lines 11, 17), the [`0188`](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md)/[`0205`](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md) issue files, `Services/HubGenerator.cs` (`GenerateDocumentLinks` lines 192–223, `AutoGenComment` line 13), `Rules/BrokenLinksRule.cs` (lines 19–23 — only `RuleSkipPaths.IsTemplateOrAddition` is skipped; generated hubs are not), issue [#0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md).
-- **Independent verification:** Ran `dydo check dydo/project/issues` with this branch's binary — reproduced exactly 7 `#section` broken-link errors at the cited locations (`_index.md:80`; `0186:11,17`; `0188:19`; `0205:11,13,17`). Confirmed `_index.md` is auto-generated (line 6 marker) and that `HubGenerator.GenerateDocumentLinks` emits `[{doc.Title}](./{file})` verbatim — so [#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md)'s title, which literally contains `[label](#section)`, is re-emitted into `_index.md:80` on every `dydo fix`, so a backtick-escape there cannot survive. Confirmed `BrokenLinksRule` skips only templates/additions, not auto-generated hubs.
-- **Alternative explanations considered:** Not a false positive — `[label](#section)` is a genuinely dead link in rendered markdown and the validator behaves correctly. The defect is that [#0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md)'s recorded resolution (backtick-escape) is futile for the generated `_index.md`, which `dydo fix` overwrites from issue titles.
-- **Issue:** #0205 (updated — severity low→medium, recorded resolution rewritten).
+- **Files examined:** `dydo/project/issues/_index.md` (line 6 auto-gen marker, line 80), `dydo/project/issues/0186-*.md` (title + lines 11, 17), the [`0188`](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md)/[`0205`](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md) issue files, `Services/HubGenerator.cs` (`GenerateDocumentLinks` lines 192–223, `AutoGenComment` line 13), `Rules/BrokenLinksRule.cs` (lines 19–23 - only `RuleSkipPaths.IsTemplateOrAddition` is skipped; generated hubs are not), issue [#0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md).
+- **Independent verification:** Ran `dydo check dydo/project/issues` with this branch's binary - reproduced exactly 7 `#section` broken-link errors at the cited locations (`_index.md:80`; `0186:11,17`; `0188:19`; `0205:11,13,17`). Confirmed `_index.md` is auto-generated (line 6 marker) and that `HubGenerator.GenerateDocumentLinks` emits `[{doc.Title}](./{file})` verbatim - so [#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md)'s title, which literally contains `[label](#section)`, is re-emitted into `_index.md:80` on every `dydo fix`, so a backtick-escape there cannot survive. Confirmed `BrokenLinksRule` skips only templates/additions, not auto-generated hubs.
+- **Alternative explanations considered:** Not a false positive - `[label](#section)` is a genuinely dead link in rendered markdown and the validator behaves correctly. The defect is that [#0205](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0205-anchor-only-label-section-literals-in-issue-task-body-text-trip-post-fix-link-va.md)'s recorded resolution (backtick-escape) is futile for the generated `_index.md`, which `dydo fix` overwrites from issue titles.
+- **Issue:** #0205 (updated - severity low→medium, recorded resolution rewritten).
 
 #### 2. The actual [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) bug locus has thin regression coverage
 
@@ -121,7 +121,7 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
 - **Severity:** low.
 - **Type:** obvious.
 - **Evidence:**
-  - The [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) bug was never in `LinkResolver` / `BrokenLinksRule` — the original inquisition
+  - The [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) bug was never in `LinkResolver` / `BrokenLinksRule` - the original inquisition
     proved the resolver is correct. The bug lived in **scope**: `CheckCommand`/`CheckDocValidator`
     narrowed `allDocs` to the subfolder. The fix lives in `CheckDocValidator.Validate(basePath,
     reportScope)`: it scans `allDocs` from the docs root, derives `docsToValidate` by filtering
@@ -129,7 +129,7 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
     argument to every `rule.Validate(doc, allDocs, basePath)` call (`CheckDocValidator.cs:46,54`).
   - The slice's new unit tests `BrokenLinksRuleTests.Validate_AcceptsCrossFolderLink_WhenAllDocsContainsTarget`
     and `Validate_AcceptsTwoLevelParentLink_AcrossFolders` exercise the *resolver* with the
-    target already in `allDocs` — i.e. they test code that was never broken. They do not
+    target already in `allDocs` - i.e. they test code that was never broken. They do not
     reproduce the [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) failure mode.
   - The *only* regression guard for the actual scope fix is the single E2E test
     `CliEndToEndTests.Check_Subfolder_AcceptsLinksToTargetsOutsideSubfolder`, and its assertion
@@ -139,7 +139,7 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
     `rule.Validate(doc, docsToValidate, …)` would silently reintroduce [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) and only the one
     coarse E2E test would catch it.
   - `CheckDocValidatorTests.cs` covers `IsUnderScope` well (7 tests, including the
-    `/x` vs `/xy` partial-prefix case) — but `IsUnderScope` is the easy half. The
+    `/x` vs `/xy` partial-prefix case) - but `IsUnderScope` is the easy half. The
     `allDocs`-vs-`docsToValidate` split is the half that actually encodes the [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) fix and it
     is unit-untested.
 - **Recommended test:** a `CheckDocValidator` test that builds a multi-folder doc set, calls
@@ -147,9 +147,9 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
   that a cross-folder link from an in-scope doc to an out-of-scope target is **not** flagged
   broken, and that an in-scope doc with a genuinely missing target **is** flagged.
 - **Judge ruling:** CONFIRMED
-- **Files examined:** `Commands/CheckDocValidator.cs` (lines 13–59 — full `Validate`; rules receive `allDocs` at lines 46, 54 while `docsToValidate` is the iteration set), `DynaDocs.Tests/Commands/CheckDocValidatorTests.cs` (all 7 tests), `DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs` (lines 145–169 — the two cross-folder tests), `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs` (lines 149–170), `DynaDocs.Tests/TestData/link-validator/**`.
-- **Independent verification:** Read `CheckDocValidatorTests.cs` in full — confirmed zero tests on `Validate` itself; all 7 cover `IsUnderScope`. Confirmed the two new `BrokenLinksRule` tests pass an `allDocs` that already contains the target, exercising resolution that [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) never broke. Traced the E2E fixture: `_index.md` links `../../../understand/architecture.md`, which is outside the `dydo/x/y/z` scope, so the E2E does genuinely exercise the scope fix — but its sole assertion is the coarse `DoesNotContain("Broken link:")`, and it is the only guard.
-- **Alternative explanations considered:** Is the E2E sufficient on its own? It catches the specific regression but is slow (full `init` + process spawn) and coarse; [#0188](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md)'s mandate was to close the coverage gap for the shapes that triggered the bug, and the actual [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) locus — the `allDocs`-vs-`docsToValidate` split — remains unit-untested. A genuine gap, not an acceptable tradeoff.
+- **Files examined:** `Commands/CheckDocValidator.cs` (lines 13–59 - full `Validate`; rules receive `allDocs` at lines 46, 54 while `docsToValidate` is the iteration set), `DynaDocs.Tests/Commands/CheckDocValidatorTests.cs` (all 7 tests), `DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs` (lines 145–169 - the two cross-folder tests), `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs` (lines 149–170), `DynaDocs.Tests/TestData/link-validator/**`.
+- **Independent verification:** Read `CheckDocValidatorTests.cs` in full - confirmed zero tests on `Validate` itself; all 7 cover `IsUnderScope`. Confirmed the two new `BrokenLinksRule` tests pass an `allDocs` that already contains the target, exercising resolution that [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) never broke. Traced the E2E fixture: `_index.md` links `../../../understand/architecture.md`, which is outside the `dydo/x/y/z` scope, so the E2E does genuinely exercise the scope fix - but its sole assertion is the coarse `DoesNotContain("Broken link:")`, and it is the only guard.
+- **Alternative explanations considered:** Is the E2E sufficient on its own? It catches the specific regression but is slow (full `init` + process spawn) and coarse; [#0188](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md)'s mandate was to close the coverage gap for the shapes that triggered the bug, and the actual [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) locus - the `allDocs`-vs-`docsToValidate` split - remains unit-untested. A genuine gap, not an acceptable tradeoff.
 - **Issue:** [#0206](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/0206-checkdocvalidator-validate-scope-fix-0185-has-no-unit-regression-test-only-a-coa.md) (filed).
 
 #### 3. [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) is marked closed, but a third parallel resolver survives in `SnapshotService`
@@ -159,18 +159,18 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
 - **Type:** obvious.
 - **Evidence:**
   - [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)'s mandate (and the slice commit message) is "collapse the parallel resolvers."
-    `Services/DocLinkResolver.cs` was deleted cleanly — `grep DocLinkResolver` across
+    `Services/DocLinkResolver.cs` was deleted cleanly - `grep DocLinkResolver` across
     `Commands/ Services/ Models/ Rules/ Utils/ Program.cs DynaDocs.Tests/` returns **no
     matches**, and `DocGraph` is correctly routed through `ILinkResolver.ResolveToRelativeKey`.
   - However `Services/SnapshotService.cs:173` still carries a `private static string?
-    ResolveLink(DocFile, LinkInfo)` — a near-verbatim copy of the deleted `DocLinkResolver`
+    ResolveLink(DocFile, LinkInfo)` - a near-verbatim copy of the deleted `DocLinkResolver`
     (anchor-strip + manual `..` segment-walk), used by `ExtractDocLinks` (`SnapshotService.cs:124`).
-    So the codebase still has **two** resolver implementations, not one — [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)'s spirit is
+    So the codebase still has **two** resolver implementations, not one - [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)'s spirit is
     not fully met.
   - This is **already ticketed** as **[#0204](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0204-snapshotservice-cs-has-private-resolvelink-that-duplicates-linkresolver-route-th.md)** (severity low, found by Dexter's review,
     acknowledged in the slice author's deviation notes). [#0204](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0204-snapshotservice-cs-has-private-resolvelink-that-duplicates-linkresolver-route-th.md) accurately describes the
     leftover and proposes the correct fix (route through `ILinkResolver.ResolveToRelativeKey`).
-  - **Confirming the brief's question — is `SnapshotService` the *only* remaining duplicate?**
+  - **Confirming the brief's question - is `SnapshotService` the *only* remaining duplicate?**
     Yes. A sweep of every `Resolve*`/private link-resolving method across `Commands/`,
     `Services/`, `Rules/` found only `SnapshotService.ResolveLink`. `GraphCommand`,
     `FixFileHandler`, and `CheckDocValidator` all construct and use the shared `LinkResolver`.
@@ -180,17 +180,17 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
     list (membership-gated by `graph.HasDoc`). The finding is the maintenance liability and
     the gap between "[#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) closed" and "[#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)'s spirit achieved."
 - **Note for the judge:** [#0204](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0204-snapshotservice-cs-has-private-resolvelink-that-duplicates-linkresolver-route-th.md) already exists and is adequate. The only judgement call is
-  whether [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) should have been marked *closed* while [#0204](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0204-snapshotservice-cs-has-private-resolvelink-that-duplicates-linkresolver-route-th.md) remains *open* — a process point,
+  whether [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) should have been marked *closed* while [#0204](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0204-snapshotservice-cs-has-private-resolvelink-that-duplicates-linkresolver-route-th.md) remains *open* - a process point,
   not a code defect.
 - **Judge ruling:** CONFIRMED
 - **Files examined:** `Services/SnapshotService.cs` (lines 101–152 `ExtractDocLinks`, lines 170–217 the private `ResolveLink`), `Services/LinkResolver.cs` (`ResolveToRelativeKey` lines 33–44), `Services/DocGraph.cs`, issue [#0204](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0204-snapshotservice-cs-has-private-resolvelink-that-duplicates-linkresolver-route-th.md), issue [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md).
-- **Independent verification:** Read `SnapshotService.ResolveLink` — confirmed it is a near-verbatim anchor-strip + manual `..` segment-walk, independent of `ILinkResolver`, called only by `ExtractDocLinks`. Confirmed [#0204](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0204-snapshotservice-cs-has-private-resolvelink-that-duplicates-linkresolver-route-th.md) already exists and accurately describes the leftover and the correct fix. Re-read [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)'s own description: its mandate was specifically "delete `DocLinkResolver` and have `DocGraph` call `ILinkResolver`" — fully met (`DocLinkResolver.cs` deleted, `DocGraph` routes through `ResolveToRelativeKey`). [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) never named `SnapshotService`; that resolver was found separately by Dexter's review.
-- **Alternative explanations considered:** Is [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) wrongly closed? No — [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)'s literal scope was met, and `SnapshotService.ResolveLink` is correctly tracked as a distinct issue ([#0204](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0204-snapshotservice-cs-has-private-resolvelink-that-duplicates-linkresolver-route-th.md)), not a [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) regression. One genuine tracker-hygiene gap surfaced beyond the finding: the slice commit message says "closes [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) [#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md) [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) [#0188](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md)" but all four issue files still carry `status: open` and none were moved to `issues/resolved/` — broader than this finding, not a code defect. `SnapshotService.ResolveLink` produces equivalent in-tree keys today (membership-gated by `graph.HasDoc`), so the finding is a maintenance liability only.
-- **Issue:** #0204 (pre-existing — covers this; no new issue).
+- **Independent verification:** Read `SnapshotService.ResolveLink` - confirmed it is a near-verbatim anchor-strip + manual `..` segment-walk, independent of `ILinkResolver`, called only by `ExtractDocLinks`. Confirmed [#0204](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0204-snapshotservice-cs-has-private-resolvelink-that-duplicates-linkresolver-route-th.md) already exists and accurately describes the leftover and the correct fix. Re-read [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)'s own description: its mandate was specifically "delete `DocLinkResolver` and have `DocGraph` call `ILinkResolver`" - fully met (`DocLinkResolver.cs` deleted, `DocGraph` routes through `ResolveToRelativeKey`). [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) never named `SnapshotService`; that resolver was found separately by Dexter's review.
+- **Alternative explanations considered:** Is [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) wrongly closed? No - [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)'s literal scope was met, and `SnapshotService.ResolveLink` is correctly tracked as a distinct issue ([#0204](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0204-snapshotservice-cs-has-private-resolvelink-that-duplicates-linkresolver-route-th.md)), not a [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) regression. One genuine tracker-hygiene gap surfaced beyond the finding: the slice commit message says "closes [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md) [#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md) [#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md) [#0188](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0188-test-coverage-gap-for-link-validation-shapes-that-triggered-0184.md)" but all four issue files still carry `status: open` and none were moved to `issues/resolved/` - broader than this finding, not a code defect. `SnapshotService.ResolveLink` produces equivalent in-tree keys today (membership-gated by `graph.HasDoc`), so the finding is a maintenance liability only.
+- **Issue:** #0204 (pre-existing - covers this; no new issue).
 
 ### Hypotheses Not Reproduced
 
-- **`dydo graph` output changed by the resolver collapse ([#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)).** Not reproduced — output
+- **`dydo graph` output changed by the resolver collapse ([#0187](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0187-two-parallel-link-resolver-implementations-linkresolver-vs-doclinkresolver.md)).** Not reproduced - output
   is equivalent. `DocGraph` now resolves via `LinkResolver.ResolveToRelativeKey`, which does
   `Path.GetFullPath` (collapsing `..`) then `Path.GetRelativePath(basePath, …)` then
   `NormalizeForKey`. The deleted `DocLinkResolver` did a manual string-segment `..` walk then
@@ -203,19 +203,19 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
   excess `..` (could fabricate an edge), the new path produces a `../…` key that fails the
   `_allDocs` membership test (no edge). The original inquisition already established no
   in-tree production doc walks above the root, so `dydo graph` is byte-identical on the real
-  tree — and where they differ, the new behaviour is the *more* correct one.
+  tree - and where they differ, the new behaviour is the *more* correct one.
   *Caveat (confidence: medium on this point):* this was verified by code analysis + the test
   suite + a live `dydo graph` run, not by a literal diff against a rebuilt pre-fix binary
   (the guard blocks ad-hoc `git worktree add`).
 - **The [#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md) fix made the validator permissive.** Not reproduced. `LinkResolver.ResolveLink`
-  still membership-tests `.md` targets against `allDocs` with no `File.Exists` fallback — a
+  still membership-tests `.md` targets against `allDocs` with no `File.Exists` fallback - a
   genuinely missing target is still reported broken. Live proof: the whole-tree `dydo check`
   correctly flags 8 genuinely-missing `.md` targets in `project/changelog/2026/2026-05-21/_index.md`.
   The empty-target short-circuit only routes anchor-only links to `ValidateAnchor`, which
   *rejects* unknown anchors (`Validate_ReportsAnchorOnlyLink_WhenAnchorDoesNotExist` passes).
 - **`[label]()` (empty target, no anchor) silently accepted.** Not reproduced as a reachable
   defect. `LinkResolver.ResolveLink`'s empty-target branch calls `ValidateAnchor(link.Anchor,
-  …)` which returns `true` for a `null` anchor — but `LinkExtractor.MarkdownLinkRegex`
+  …)` which returns `true` for a `null` anchor - but `LinkExtractor.MarkdownLinkRegex`
   (`\[…\]\(([^)]+)\)`) requires ≥1 character inside the parens, and the only way to get
   `Target == ""` is a `#` at index 0, which always yields a non-null `Anchor`. So the
   `null`-anchor path is unreachable from extraction; `[label]()` is never extracted as a link
@@ -225,12 +225,12 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
   them to *every* rule in `CreateRules` (Naming, RelativeLinks, Frontmatter, Summary,
   BrokenLinks, HubFiles, FolderMetaFiles, OrphanDocs, OffLimits, UncustomizedDocs). Confirmed
   live: subfolder checks that previously emitted `OrphanDocsRule` false-positive warnings
-  (because inbound links were out of the old narrow scope) are now clean — `OrphanDocsRule`
+  (because inbound links were out of the old narrow scope) are now clean - `OrphanDocsRule`
   correctly sees the full `allDocs`.
 - **`dydo fix` regressed by the `LinkResolver` change.** Not reproduced. `FixFileHandler`
   uses only `LinkResolver.FindFileByName` (for wikilink conversion); `FindFileByName` was not
   touched by the slice. `dydo fix` does not call `ResolveLink`.
-- **A caller of the deleted `DocLinkResolver` was left dangling.** Not reproduced — zero
+- **A caller of the deleted `DocLinkResolver` was left dangling.** Not reproduced - zero
   references remain (verified by grep across the whole source tree).
 
 ### Observations outside slice scope (not findings)
@@ -238,10 +238,10 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
 - **`dydo check` whole-tree is currently red (17 errors, exit 1)**, broken down as: 2
   pre-existing wikilink-syntax errors in inquisition files (unrelated), 7 `#section` errors
   (Finding 1 / #0205), and **8 genuine broken `.md` links in
-  `project/changelog/2026/2026-05-21/_index.md`** — that changelog index lists 9 entries but
+  `project/changelog/2026/2026-05-21/_index.md`** - that changelog index lists 9 entries but
   only `backlog-folder-introduction-impl.md` exists on disk. This is a stale changelog index
   (a doc bug in a file created 2026-05-21, after the fix), **not** a link-validator-slice
-  defect — the validator is correctly catching real missing files. Flagging it for Adele
+  defect - the validator is correctly catching real missing files. Flagging it for Adele
   because it leaves `dydo check` red on the branch, but it needs its own doc-cleanup ticket.
 - **Performance:** `dydo check <subfolder>` now always scans the full docs tree (~984 files)
   then filters, where it previously scanned only the subfolder. This is inherent to fix
@@ -249,10 +249,10 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
   scan completes in ~1–2 s; the trade-off is acceptable and was pre-approved. Not a defect.
 - **Behaviour change:** when no docs folder is found but the user passes a valid path,
   `dydo check` now prints "No docs folder found." and ignores the path (it used to treat the
-  path as an ad-hoc docs root). More correct — `check` needs a real docs root — and `dydo
+  path as an ad-hoc docs root). More correct - `check` needs a real docs root - and `dydo
   check` is always run inside a project. Noted for completeness only.
 
-### Test evidence — preserved in this report (worktree is temporary)
+### Test evidence - preserved in this report (worktree is temporary)
 
 - Build: `dotnet build -c Release` → 0 warnings, 0 errors.
 - Slice unit tests (`run_tests.py -c Release --filter "FullyQualifiedName~BrokenLinksRule|
@@ -272,7 +272,7 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
   | `dydo check` (whole tree) | 17 errors, exit 1 | see observation above |
 
 - Suggested test for Finding 2 (so the next code-writer need not reconstruct it):
-  `CheckDocValidatorTests.Validate_Scoped_AcceptsCrossScopeLink_ButCatchesMissingTarget` —
+  `CheckDocValidatorTests.Validate_Scoped_AcceptsCrossScopeLink_ButCatchesMissingTarget` -
   build docs in `a/` and `b/`, put a `b/x.md` link from `a/src.md`, call
   `CheckDocValidator.Validate(basePath, reportScope=<a>)`, assert the `a/src.md → b/x.md`
   link is not flagged AND a separate `a/src.md → a/missing.md` link IS flagged.
@@ -282,7 +282,7 @@ resolver in `SnapshotService`). No new critical or high-severity defect was foun
 - **Hard-evidenced (high):** all three findings; [#0185](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0185-dydo-check-subfolder-shrinks-alldocs-to-subfolder-every-cross-folder-link-report.md)/[#0186](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0186-anchor-only-links-label-section-produce-empty-target-broken-link-error.md)/#0187 fixes verified by live
   reproduction; the not-permissive proof; the `reportScope`-scopes-all-rules proof; the
   clean `DocLinkResolver` deletion; the `dydo fix` non-impact.
-- **Hard-evidenced but bounded (medium):** the `dydo graph` byte-identity claim — proven by
+- **Hard-evidenced but bounded (medium):** the `dydo graph` byte-identity claim - proven by
   code analysis + the test suite + a live run, but not by a literal binary diff against a
   rebuilt pre-fix binary (guard blocks ad-hoc worktrees). The conclusion is firm; the method
   was indirect.

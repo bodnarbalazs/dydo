@@ -61,8 +61,8 @@ evidence is needed; do not recreate repository work records to address a current
 ## Skill setup collision
 
 A skill is authored once under `skills/<category>/<name>/`; never maintain a host copy. Run
-`node setup-skills.mjs` after checkout. A link setup created earlier — even one now dangling because
-a skill's category changed — is migrated to the current canonical path automatically. If it names a
+`node setup-skills.mjs` after checkout. A link setup created earlier - even one now dangling because
+a skill's category changed - is migrated to the current canonical path automatically. If it names a
 collision, the existing file, directory, or link to a target outside the repository's `skills/` tree
 is human-owned and remains untouched. Decide whether to keep or relocate it, then rerun setup.
 Existing correct links are accepted. There is no compile step, copy reconciliation, or generated

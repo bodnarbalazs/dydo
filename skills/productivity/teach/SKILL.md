@@ -1,6 +1,6 @@
 ---
 name: teach
-description: Teach the human a new skill or concept, within this workspace.
+description: Teach the user a new skill or concept, within this workspace.
 argument-hint: "What would you like to learn about?"
 disable-model-invocation: true
 ---
@@ -9,15 +9,15 @@ disable-model-invocation: true
 
 # Teach
 
-The human has asked you to teach them something. This is a stateful request - they intend to learn
+The user has asked you to teach him something. This is a stateful request - he intends to learn
 the topic over multiple sessions.
 
 ## Teaching Workspace
 
-Treat the current directory as a teaching workspace. The state of their learning is captured in this
+Treat the current directory as a teaching workspace. The state of his learning is captured in this
 directory in several files:
 
-- `MISSION.md`: A document capturing the _reason_ the human is interested in the topic. This should
+- `MISSION.md`: A document capturing the _reason_ the user is interested in the topic. This should
   be used to ground all teaching. Use the format in [mission-format](resources/mission-format.md).
 - `./reference/*.html`: A directory of reference materials. These are the compressed learnings from
   the lessons - cheat sheets, reference algorithms, syntax, yoga poses, glossaries. They are the raw
@@ -26,7 +26,7 @@ directory in several files:
 - `RESOURCES.md`: A list of resources which can be explored to ground your teaching in contextual
   knowledge, or to acquire knowledge and wisdom. Use the format in
   [resources-format](resources/resources-format.md).
-- `./learning-records/*.md`: A directory of learning records, which capture what the human has
+- `./learning-records/*.md`: A directory of learning records, which capture what the user has
   learned. These are loosely equivalent to architectural decision records in software development -
   they capture non-obvious lessons and key insights that may need to be revised later, or drive
   future sessions. These should be used to calculate the zone of proximal development. They are
@@ -36,11 +36,11 @@ directory in several files:
   that teaches one tightly-scoped thing tied to the mission. This is the primary unit of teaching in
   this workspace.
 - `./assets/*`: Reusable **components** shared across lessons. See [Assets](#assets).
-- `NOTES.md`: A scratchpad for you to jot down the human's preferences, or working notes.
+- `NOTES.md`: A scratchpad for you to jot down the user's preferences, or working notes.
 
 ## Philosophy
 
-To learn at a deep level, the human needs three things:
+To learn at a deep level, the user needs three things:
 
 - **Knowledge**, captured from high-quality, high-trust resources
 - **Skills**, acquired through highly-relevant interactive lessons devised by you, based on the
@@ -48,7 +48,7 @@ To learn at a deep level, the human needs three things:
 - **Wisdom**, which comes from interacting with other learners and practitioners
 
 Before the `RESOURCES.md` is well-populated, your focus should be to find high-quality resources which
-will help the human acquire knowledge. Never trust your parametric knowledge.
+will help the user acquire knowledge. Never trust your parametric knowledge.
 
 Some topics may require more skills than knowledge. Learning more about theoretical physics might be
 more knowledge-based. For yoga, more skills-based.
@@ -60,7 +60,7 @@ You should be careful to split between two types of learning:
 - **Fluency strength**: in-the-moment retrieval of knowledge
 - **Storage strength**: long-term retention of knowledge
 
-Fluency can give the human an illusory sense of mastery, but storage strength is the real goal. Try to
+Fluency can give the user an illusory sense of mastery, but storage strength is the real goal. Try to
 design lessons which build long-term retention by desirable difficulty:
 
 - Using retrieval practice (recall from memory)
@@ -69,27 +69,27 @@ design lessons which build long-term retention by desirable difficulty:
 
 ## Lessons
 
-A lesson is the main thing you produce: the unit in which knowledge and skills reach the human. Each
+A lesson is the main thing you produce: the unit in which knowledge and skills reach the user. Each
 lesson is one self-contained HTML file, saved to `./lessons/` and titled `0001-<dash-case-name>.html`
 where the number increments each time.
 
-A lesson should be **beautiful**, with clean, readable typography and layout, since the human will
+A lesson should be **beautiful**, with clean, readable typography and layout, since the user will
 return to these later to review. Think Tufte. Pick each visual by `show-me`: the smallest view that
 makes the point clear.
 
 The lesson should be short, and completable very quickly. Learners' working memory is very small, and
-we need to stay within it. But each lesson should give the human a single tangible win that they can
-build on. It should be directly tied to the mission, and should be in the human's zone of proximal
+we need to stay within it. But each lesson should give the user a single tangible win that he can
+build on. It should be directly tied to the mission, and should be in the user's zone of proximal
 development.
 
-If possible, open the lesson file for the human by running a CLI command.
+If possible, open the lesson file for the user by running a CLI command.
 
 Each lesson should link via HTML anchors to other lessons and reference documents.
 
-Each lesson should recommend a primary source for the human to read or watch. This should be the most
+Each lesson should recommend a primary source for the user to read or watch. This should be the most
 high-quality, high-trust resource you found on the topic.
 
-Each lesson should contain a reminder to ask followup questions to the agent. The agent is their
+Each lesson should contain a reminder to ask followup questions to the agent. The agent is his
 teacher, and can assist with anything that's unclear.
 
 ## Assets
@@ -107,35 +107,35 @@ should the component library.
 
 ## The Mission
 
-Every lesson should be tied into the mission - the reason that the human is interested in learning
+Every lesson should be tied into the mission - the reason that the user is interested in learning
 about the topic.
 
-If the human is unclear about the mission, or the `MISSION.md` is not populated, your first job
-should be to question the human on why they want to learn this.
+If the user is unclear about the mission, or the `MISSION.md` is not populated, your first job
+should be to question the user on why he wants to learn this.
 
 Failing to understand the mission will mean knowledge acquisition is not grounded in real-world
-goals. Lessons will feel too abstract. You will have no way of judging what the human should do next.
+goals. Lessons will feel too abstract. You will have no way of judging what the user should do next.
 
-Missions may change as the human develops more skills and knowledge. This is normal - make sure to
-update the `MISSION.md` and add a learning record to capture the change. Confirm with the human
+Missions may change as the user develops more skills and knowledge. This is normal - make sure to
+update the `MISSION.md` and add a learning record to capture the change. Confirm with the user
 before changing the mission.
 
 ## Zone Of Proximal Development
 
-Each lesson, the human should always feel as if they are being challenged 'just enough'.
+Each lesson, the user should always feel as if he is being challenged 'just enough'.
 
-The human may specify an exact thing they want to learn. If they don't, figure out their zone of
+The user may specify an exact thing he wants to learn. If he doesn't, figure out his zone of
 proximal development by:
 
-- Reading their `learning-records`
-- Figuring out the right thing to teach them based on their mission
-- Teach the most relevant thing that fits in their zone of proximal development
+- Reading his `learning-records`
+- Figuring out the right thing to teach him based on his mission
+- Teach the most relevant thing that fits in his zone of proximal development
 
 ## Knowledge
 
-Lessons should be designed around a skill the human is going to learn. The knowledge in the lesson
+Lessons should be designed around a skill the user is going to learn. The knowledge in the lesson
 should be only what's required to acquire that skill. You teach the knowledge first, then get the
-human to practice the skills via an interactive feedback loop.
+user to practice the skills via an interactive feedback loop.
 
 Knowledge should first be gathered from trusted resources. Use `RESOURCES.md` to keep track of them.
 Lessons should be littered with citations - links to external resources to back up any claim made.
@@ -152,27 +152,27 @@ For skill acquisition, difficulty is the tool. Effortful retrieval is what build
 Skills should be taught through interactive lessons. There are several tools at your disposal:
 
 - Interactive lessons, using quizzes and light in-browser tasks
-- Lessons which guide the human through a list of real-world steps to take (for instance, yoga poses)
+- Lessons which guide the user through a list of real-world steps to take (for instance, yoga poses)
 
-Each of these should be based on a **feedback loop**, where the human receives feedback on their
+Each of these should be based on a **feedback loop**, where the user receives feedback on his
 performance. This feedback loop should be as tight as possible, giving feedback immediately - and
 ideally automatically.
 
 For quizzes, each answer should be exactly the same number of words (and characters, if possible).
-Don't give the human any clues about the answer through formatting.
+Don't give the user any clues about the answer through formatting.
 
 ## Acquiring Wisdom
 
 Wisdom comes from true real-world interaction - testing your skills outside the learning environment.
 
-When the human asks a question that appears to require wisdom, your default posture should be to
+When the user asks a question that appears to require wisdom, your default posture should be to
 attempt to answer - but to ultimately delegate to a **community**.
 
-A community is a place (online or offline) where the human can test their skills in the real world.
+A community is a place (online or offline) where the user can test his skills in the real world.
 This might be a forum, a subreddit, a real-world class (budget permitting) or a local interest group.
 
-You should attempt to find high-reputation communities the human can join. If the human expresses a
-preference that they don't want to join a community, respect it.
+You should attempt to find high-reputation communities the user can join. If the user expresses a
+preference that he doesn't want to join a community, respect it.
 
 ## Reference Documents
 
@@ -195,6 +195,6 @@ every lesson. Use the format in [glossary-format](resources/glossary-format.md).
 
 ## `NOTES.md`
 
-The human will sometimes express preferences of how they want to be taught, or things you should keep
+The user will sometimes express preferences of how he wants to be taught, or things you should keep
 in mind. This is the place to record those preferences, so you can refer back to them when designing
-lessons or working with the human.
+lessons or working with the user.

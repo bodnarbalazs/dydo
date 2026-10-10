@@ -5,7 +5,7 @@ date: 2026-03-30
 area: project
 ---
 
-# 016 — Keep `workspace init` and `workspace check`
+# 016 - Keep `workspace init` and `workspace check`
 
 `dydo workspace init` and `dydo workspace check` have effectively zero usage in the audit history because their behavior is folded into the agent claim and release flows. This decision retains both commands as low-risk redundancy rather than removing them, since they cost nothing to keep and would be tedious to reintroduce later.
 
@@ -19,6 +19,6 @@ Keep both commands. No changes.
 
 ## Rationale
 
-- They're low-risk — no maintenance burden, no confusion in help output
+- They're low-risk - no maintenance burden, no confusion in help output
 - Possible edge use-cases for manual workspace setup or validation outside the normal agent flow
 - Removing working, tested code risks breaking something for no meaningful gain

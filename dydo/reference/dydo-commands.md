@@ -140,7 +140,7 @@ Exit `0` allows the action; exit `2` blocks it with `BLOCKED:` on stderr. **Off-
 every operation, reads included. **Protected** paths are readable by any tool and writable by none,
 Bash included. Both tiers bind on every caller; [Files Off-Limits](../files-off-limits.md) declares
 them, their glob syntax, and the whitelist that lifts off-limits patterns. Nudges are configured in
-`dydo.json` — see [DynaDocs](./about-dynadocs.md). `--stop` is a retained no-op so existing Stop-hook
+`dydo.json` - see [DynaDocs](./about-dynadocs.md). `--stop` is a retained no-op so existing Stop-hook
 wiring keeps resolving.
 
 ---
@@ -279,6 +279,6 @@ dydo help
 
 ## Related
 
-- [DynaDocs](./about-dynadocs.md) — Product boundary and operating model
-- [Files Off-Limits](../files-off-limits.md) — The two path tiers `dydo guard` enforces
-- [Writing Documentation](./writing-docs.md) — Documentation conventions validated by dydo
+- [DynaDocs](./about-dynadocs.md) - Product boundary and operating model
+- [Files Off-Limits](../files-off-limits.md) - The two path tiers `dydo guard` enforces
+- [Writing Documentation](./writing-docs.md) - Documentation conventions validated by dydo

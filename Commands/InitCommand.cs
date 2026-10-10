@@ -174,7 +174,7 @@ public static class InitCommand
     }
 
     // With the 26-agent roster gone (DR-041), "join" no longer assigns a pool of agents to a new
-    // human — there is no roster to draw from. It reduces to "wire up this machine's local
+    // human - there is no roster to draw from. It reduces to "wire up this machine's local
     // integration for an already-initialized project" (a fresh clone, or adding a second
     // integration): configure hooks without re-scaffolding or overwriting the tree.
     internal static int ExecuteJoin(string integration, Action? beforeConfigCommit = null)
@@ -530,7 +530,7 @@ public static class InitCommand
     // Codex exposes file edits as apply_patch and shell execution under several tool names
     // depending on mode (shell_command interactive/exec, plus the code-mode aliases exec,
     // local_shell, unified_exec). All must be in the matcher or the guard never sees codex
-    // shell commands — the PreToolUse hook fires but the tool name doesn't match, so no
+    // shell commands - the PreToolUse hook fires but the tool name doesn't match, so no
     // off-limits / dangerous-bash / nudge layer binds on the shell lane (issue 0295).
     // These names must stay in lockstep with GuardCommand.ShellTools, which routes them to
     // the shell analyzer once they reach the guard.
@@ -538,7 +538,7 @@ public static class InitCommand
 
     // Codex's own matcher, not Claude's: the documented Codex names come first (shell and
     // unified exec arrive as Bash, apply_patch also as Edit/Write, spawn_agent as Agent), and
-    // the legacy shell names above are retained on purpose — they were added empirically
+    // the legacy shell names above are retained on purpose - they were added empirically
     // (issue 0295) and the documentation reading is unproven against the installed Codex.
     // Claude-only UI names (Read, Glob, Grep, PowerShell, plan mode, AskUserQuestion) are
     // dropped: Codex never emits them, so they could only ever be dead configuration.
@@ -626,7 +626,7 @@ public static class InitCommand
             }
             catch
             {
-                // Invalid JSON — start fresh
+                // Invalid JSON - start fresh
             }
         }
         return new JsonObject();
@@ -677,7 +677,7 @@ public static class InitCommand
         }
     }
 
-    // The Claude guard wiring lives in .claude/settings.local.json — personal-scope by Claude
+    // The Claude guard wiring lives in .claude/settings.local.json - personal-scope by Claude
     // Code convention, so each machine runs `dydo init claude --join` and the file never gets
     // committed. Codex has no local-settings tier: its wiring (.codex/hooks.json) is committed
     // and works from a fresh clone (issue 0303 records this deliberate asymmetry).

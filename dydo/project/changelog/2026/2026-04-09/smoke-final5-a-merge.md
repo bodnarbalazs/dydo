@@ -14,15 +14,15 @@ Merged worktree/smoke-final5-a into master via fast-forward. Single commit addin
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\GuardLiftServiceTests.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\CompletionProviderTests.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\WorktreeCreationLockTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\PathUtilsTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\DispatchService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Utils\PathUtils.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\GuardLiftService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\CompletionProvider.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\GuardLiftServiceTests.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\CompletionProviderTests.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\WorktreeCreationLockTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\PathUtilsTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\WorktreeCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\DispatchService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Utils\PathUtils.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\GuardLiftService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\CompletionProvider.cs - Modified
 
 
 ## Review Summary

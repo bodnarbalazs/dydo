@@ -6,13 +6,13 @@ date: 2026-05-06
 
 # Task: implement-pr3-git-helper-drain
 
-Review PR3 of the runtime-regression batch — commit 6d00b4c on master. Test-file scope only, no production code changed.
+Review PR3 of the runtime-regression batch - commit 6d00b4c on master. Test-file scope only, no production code changed.
 
 CHANGES
-- DynaDocs.Tests/Services/SnapshotServiceTests.cs:52-87 — drain pattern applied to RunGit (5s timeout, throw-on-timeout/throw-on-nonzero-exit, surface captured stderr).
-- DynaDocs.Tests/Services/SnapshotServiceTests.cs (new test, end of file) — RunGit_NoisyOutput_DoesNotDeadlock. Mirrors WorktreeMergeSafetyGitHelperTests.Git_NoisyOutput_DoesNotDeadlock: 256 KB content + git log -p, assert under 10 s.
-- DynaDocs.Tests/Integration/InquisitionTests.cs:14-55 — InitGitRepo refactored to call a new private RunGit(string args) helper using the drain pattern with the same 5 s timeout and throw semantics.
-- DynaDocs.Tests/Integration/InquisitionTests.cs (new test, RunGit Helper Tests region) — InitGitRepo_CompletesAndProducesValidRepository, the lighter contract pin per plan recommendation.
+- DynaDocs.Tests/Services/SnapshotServiceTests.cs:52-87 - drain pattern applied to RunGit (5s timeout, throw-on-timeout/throw-on-nonzero-exit, surface captured stderr).
+- DynaDocs.Tests/Services/SnapshotServiceTests.cs (new test, end of file) - RunGit_NoisyOutput_DoesNotDeadlock. Mirrors WorktreeMergeSafetyGitHelperTests.Git_NoisyOutput_DoesNotDeadlock: 256 KB content + git log -p, assert under 10 s.
+- DynaDocs.Tests/Integration/InquisitionTests.cs:14-55 - InitGitRepo refactored to call a new private RunGit(string args) helper using the drain pattern with the same 5 s timeout and throw semantics.
+- DynaDocs.Tests/Integration/InquisitionTests.cs (new test, RunGit Helper Tests region) - InitGitRepo_CompletesAndProducesValidRepository, the lighter contract pin per plan recommendation.
 
 CANONICAL SHAPE
 Mirrors aeee461 ([#0148](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0148-test-suite-runtime-ballooned-from-3min-to-10min-investigate-parallelism-other-sp.md)) exactly: using var process = Process.Start(psi) plus the null-throw, concurrent ReadToEndAsync on both pipes before WaitForExit, on timeout Kill(entireProcessTree:true) and throw the timeout message, on non-zero exit surface stderrTask.GetAwaiter().GetResult() in the throw. The 5 s timeout matches the existing per-helper contract (vs aeee461's 30 s).
@@ -21,7 +21,7 @@ PLAN DEVIATIONS
 None. Followed dydo/agents/Dexter/archive/20260505-173954/plan-runtime-regression-batch.md PR3 section verbatim. Did NOT take the optional TestProcess.cs extraction (plan recommendation: defer).
 
 KEY DECISIONS
-- The new regression test in SnapshotServiceTests reuses the existing private RunGit. If the helper ever deadlocks again, the 5 s timeout fires and RunGit throws — and the assertion Stopwatch under 10 s still catches the regression cleanly because the throw happens within the test's measured window.
+- The new regression test in SnapshotServiceTests reuses the existing private RunGit. If the helper ever deadlocks again, the 5 s timeout fires and RunGit throws - and the assertion Stopwatch under 10 s still catches the regression cleanly because the throw happens within the test's measured window.
 - The InquisitionTests regression test is intentionally lighter (just confirms .git and HEAD exist after InitGitRepo). The plan flagged the noisy-output test there as not deterministically reproducible at the 5 s timeout for init and commit --allow-empty.
 
 VERIFICATION GATE
@@ -42,13 +42,13 @@ None. PR3 is mechanically self-contained; PR4 (production helper unification) do
 
 ## Review Summary
 
-Review PR3 of the runtime-regression batch — commit 6d00b4c on master. Test-file scope only, no production code changed.
+Review PR3 of the runtime-regression batch - commit 6d00b4c on master. Test-file scope only, no production code changed.
 
 CHANGES
-- DynaDocs.Tests/Services/SnapshotServiceTests.cs:52-87 — drain pattern applied to RunGit (5s timeout, throw-on-timeout/throw-on-nonzero-exit, surface captured stderr).
-- DynaDocs.Tests/Services/SnapshotServiceTests.cs (new test, end of file) — RunGit_NoisyOutput_DoesNotDeadlock. Mirrors WorktreeMergeSafetyGitHelperTests.Git_NoisyOutput_DoesNotDeadlock: 256 KB content + git log -p, assert under 10 s.
-- DynaDocs.Tests/Integration/InquisitionTests.cs:14-55 — InitGitRepo refactored to call a new private RunGit(string args) helper using the drain pattern with the same 5 s timeout and throw semantics.
-- DynaDocs.Tests/Integration/InquisitionTests.cs (new test, RunGit Helper Tests region) — InitGitRepo_CompletesAndProducesValidRepository, the lighter contract pin per plan recommendation.
+- DynaDocs.Tests/Services/SnapshotServiceTests.cs:52-87 - drain pattern applied to RunGit (5s timeout, throw-on-timeout/throw-on-nonzero-exit, surface captured stderr).
+- DynaDocs.Tests/Services/SnapshotServiceTests.cs (new test, end of file) - RunGit_NoisyOutput_DoesNotDeadlock. Mirrors WorktreeMergeSafetyGitHelperTests.Git_NoisyOutput_DoesNotDeadlock: 256 KB content + git log -p, assert under 10 s.
+- DynaDocs.Tests/Integration/InquisitionTests.cs:14-55 - InitGitRepo refactored to call a new private RunGit(string args) helper using the drain pattern with the same 5 s timeout and throw semantics.
+- DynaDocs.Tests/Integration/InquisitionTests.cs (new test, RunGit Helper Tests region) - InitGitRepo_CompletesAndProducesValidRepository, the lighter contract pin per plan recommendation.
 
 CANONICAL SHAPE
 Mirrors aeee461 ([#0148](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0148-test-suite-runtime-ballooned-from-3min-to-10min-investigate-parallelism-other-sp.md)) exactly: using var process = Process.Start(psi) plus the null-throw, concurrent ReadToEndAsync on both pipes before WaitForExit, on timeout Kill(entireProcessTree:true) and throw the timeout message, on non-zero exit surface stderrTask.GetAwaiter().GetResult() in the throw. The 5 s timeout matches the existing per-helper contract (vs aeee461's 30 s).
@@ -57,7 +57,7 @@ PLAN DEVIATIONS
 None. Followed dydo/agents/Dexter/archive/20260505-173954/plan-runtime-regression-batch.md PR3 section verbatim. Did NOT take the optional TestProcess.cs extraction (plan recommendation: defer).
 
 KEY DECISIONS
-- The new regression test in SnapshotServiceTests reuses the existing private RunGit. If the helper ever deadlocks again, the 5 s timeout fires and RunGit throws — and the assertion Stopwatch under 10 s still catches the regression cleanly because the throw happens within the test's measured window.
+- The new regression test in SnapshotServiceTests reuses the existing private RunGit. If the helper ever deadlocks again, the 5 s timeout fires and RunGit throws - and the assertion Stopwatch under 10 s still catches the regression cleanly because the throw happens within the test's measured window.
 - The InquisitionTests regression test is intentionally lighter (just confirms .git and HEAD exist after InitGitRepo). The plan flagged the noisy-output test there as not deterministically reproducible at the 5 s timeout for init and commit --allow-empty.
 
 VERIFICATION GATE

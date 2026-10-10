@@ -27,23 +27,23 @@ Both homes are scaffolded in every project, so nothing is created lazily:
 
 ### Challenge against the glossary
 
-When the human uses a term that conflicts with the existing language in the glossary, call it out
+When the user uses a term that conflicts with the existing language in the glossary, call it out
 immediately. "Your glossary defines 'cancellation' as X, but you seem to mean Y. Which is it?"
 
 ### Sharpen fuzzy language
 
-When the human uses vague or overloaded terms, propose a precise canonical term. "You're saying
+When the user uses vague or overloaded terms, propose a precise canonical term. "You're saying
 'account': do you mean the Customer or the User? Those are different things."
 
 ### Discuss concrete scenarios
 
 When domain relationships are being discussed, stress-test them with specific scenarios. Invent
-scenarios that probe edge cases and force the human to be precise about the boundaries between
+scenarios that probe edge cases and force the user to be precise about the boundaries between
 concepts.
 
 ### Cross-reference with code
 
-When the human states how something works, check whether the code agrees. If you find a
+When the user states how something works, check whether the code agrees. If you find a
 contradiction, surface it: "Your code cancels entire Orders, but you just said partial cancellation
 is possible. Which is right?"
 

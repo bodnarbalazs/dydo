@@ -5,24 +5,24 @@ date: 2026-03-07
 area: project
 ---
 
-# 002 — Template Update System
+# 002 - Template Update System
 
 Include tags for project additions plus hash tracking for safe framework template overwrites during updates.
 
 ## Problem
 
-When dydo is updated, framework files (templates, reference docs) may contain new features, flags, or workflow changes. Projects that use dydo have stale copies of these files. Currently there's no way to update them without manually diffing and merging — which is exactly what we had to do for the LC project.
+When dydo is updated, framework files (templates, reference docs) may contain new features, flags, or workflow changes. Projects that use dydo have stale copies of these files. Currently there's no way to update them without manually diffing and merging - which is exactly what we had to do for the LC project.
 
-Users also customize templates (e.g., adding project-specific verification steps). These customizations must survive framework updates. And they must live **in the template itself** — agents follow the steps they see in their mode file. Instructions buried only in coding-standards get ignored.
+Users also customize templates (e.g., adding project-specific verification steps). These customizations must survive framework updates. And they must live **in the template itself** - agents follow the steps they see in their mode file. Instructions buried only in coding-standards get ignored.
 
 ## Constraints
 
-1. **Project customizations must survive updates** — gap_check.py in code-writer must not vanish
-2. **Agents must see customizations inline** — they follow the steps in their mode file
-3. **Same addition reusable across templates** — no file duplication if code-writer and reviewer need the same content
-4. **Fully extensible** — any `{{include:whatever}}` works, not just predefined hooks
-5. **Both lazy and proper paths must work** — users can edit templates directly OR use the additions system
-6. **Simple** — no three-way merge, no section markers
+1. **Project customizations must survive updates** - gap_check.py in code-writer must not vanish
+2. **Agents must see customizations inline** - they follow the steps in their mode file
+3. **Same addition reusable across templates** - no file duplication if code-writer and reviewer need the same content
+4. **Fully extensible** - any `{{include:whatever}}` works, not just predefined hooks
+5. **Both lazy and proper paths must work** - users can edit templates directly OR use the additions system
+6. **Simple** - no three-way merge, no section markers
 
 ## Decision
 
@@ -40,7 +40,7 @@ Template (framework-owned)              Additions (project-owned)
 │ 1. Understand               │        │   _README.md                │
 │ 2. Implement                │        └─────────────────────────────┘
 │ 3. Test                     │
-│ 4. Verify — Run tests       │
+│ 4. Verify - Run tests       │
 │ {{include:extra-verify}}    │───> resolves to extra-verify.md content
 │                             │     (empty string if file missing)
 │ **If guard blocks you:**    │
@@ -52,7 +52,7 @@ Template (framework-owned)              Additions (project-owned)
 
 **Proper path (recommended):** Create files in `template-additions/`. Templates stay stock. `dydo template update` works seamlessly.
 
-**Dirty path (quick edits):** Edit the template directly — including adding `{{include:...}}` tags anywhere you want. Works immediately. On `dydo template update`, user-added include tags are detected, anchored by surrounding content, and re-inserted into the new template automatically.
+**Dirty path (quick edits):** Edit the template directly - including adding `{{include:...}}` tags anywhere you want. Works immediately. On `dydo template update`, user-added include tags are detected, anchored by surrounding content, and re-inserted into the new template automatically.
 
 ### User-added include re-anchoring
 
@@ -60,7 +60,7 @@ Users can add `{{include:whatever}}` anywhere in a template. Include tags are al
 
 On `dydo template update`:
 1. Compare the stored stock template (from hash/embedded) against the user's on-disk version
-2. Find any `{{include:...}}` tags present on-disk but absent in stock — these are user-added
+2. Find any `{{include:...}}` tags present on-disk but absent in stock - these are user-added
 3. For each user-added tag, record the **line above** (upper anchor) and **line below** (lower anchor)
 4. Write the new stock template
 5. For each user-added tag, find its anchors in the new template and re-insert
@@ -69,9 +69,9 @@ Resolution rules:
 - **Both anchors found** → insert between them
 - **Only upper anchor found** → insert after it
 - **Only lower anchor found** → insert before it
-- **Neither anchor found** → cannot place — report to user, tag saved in `.unplaced` file
+- **Neither anchor found** → cannot place - report to user, tag saved in `.unplaced` file
 
-Anchors are matched by trimmed content (whitespace-insensitive). Empty/blank lines are skipped when finding anchors — the first non-blank line above and below is used.
+Anchors are matched by trimmed content (whitespace-insensitive). Empty/blank lines are skipped when finding anchors - the first non-blank line above and below is used.
 
 This means both paths work with `dydo template update`:
 - Shipped hooks in `template-additions/` → survive because templates are overwritten with new stock (which has the hooks)
@@ -84,39 +84,39 @@ This means both paths work with `dydo template update`:
 - Tag name = filename (minus `.md`)
 - Missing file = tag resolves to empty string (no trace in output)
 - Same tag in multiple templates = same file = shared content, zero duplication
-- **Any `{{include:whatever}}` works** — not limited to shipped hooks
+- **Any `{{include:whatever}}` works** - not limited to shipped hooks
 - Resolution happens alongside existing `{{AGENT_NAME}}`, `{{SOURCE_PATHS}}` etc.
 
 ### Shipped hook points
 
-Templates ship with these tags at natural extension points. These are starting points — users can add more via the dirty path.
+Templates ship with these tags at natural extension points. These are starting points - users can add more via the dirty path.
 
-**All mode templates** — after must-reads list:
+**All mode templates** - after must-reads list:
 ```markdown
 {{include:extra-must-reads}}
 ```
 
-**code-writer** — after verify step 4:
+**code-writer** - after verify step 4:
 ```markdown
 {{include:extra-verify}}
 ```
 
-**reviewer** — after work step 3 (run tests):
+**reviewer** - after work step 3 (run tests):
 ```markdown
 {{include:extra-review-steps}}
 ```
 
-**reviewer** — end of checklist:
+**reviewer** - end of checklist:
 ```markdown
 {{include:extra-review-checklist}}
 ```
 
-**code-writer, reviewer** — end of complete section:
+**code-writer, reviewer** - end of complete section:
 ```markdown
 {{include:extra-complete-gate}}
 ```
 
-**test-writer** — after test guidance section:
+**test-writer** - after test guidance section:
 ```markdown
 {{include:extra-test-guidance}}
 ```
@@ -124,14 +124,14 @@ Templates ship with these tags at natural extension points. These are starting p
 ### Default example
 
 `dydo init` creates `_system/template-additions/` with:
-- `_README.md` — explains the system, lists shipped hooks
-- `extra-verify.md.example` — inactive example (rename to `.md` to activate)
+- `_README.md` - explains the system, lists shipped hooks
+- `extra-verify.md.example` - inactive example (rename to `.md` to activate)
 
 The `.example` extension means it won't be picked up. This makes the system discoverable without being intrusive.
 
 ## Changes Required
 
-### 1. `Services/TemplateGenerator.cs` — include resolution
+### 1. `Services/TemplateGenerator.cs` - include resolution
 
 Add a `ResolveIncludes` method. Call it after `ReplacePlaceholders` in `GenerateModeFile` and `GenerateWorkflowFile`.
 
@@ -173,27 +173,27 @@ result = Regex.Replace(result, @"\n{3,}", "\n\n"); // collapse excess blank line
 return result;
 ```
 
-### 2. `Templates/*.template.md` — add include tags
+### 2. `Templates/*.template.md` - add include tags
 
 Insert tags in the embedded resource templates:
 
-**All mode templates** — after must-reads numbered list:
+**All mode templates** - after must-reads numbered list:
 ```markdown
-3. [coding-standards.md](...) — Code conventions
+3. [coding-standards.md](...) - Code conventions
 {{include:extra-must-reads}}
 ```
 
-**mode-code-writer.template.md** — after verify step:
+**mode-code-writer.template.md** - after verify step:
 ```markdown
-4. **Verify** — Run tests, ensure they pass
+4. **Verify** - Run tests, ensure they pass
 {{include:extra-verify}}
 ```
 
-**mode-reviewer.template.md** — after step 3 and end of checklist:
+**mode-reviewer.template.md** - after step 3 and end of checklist:
 ```markdown
-3. **Run tests** — Verify they pass
+3. **Run tests** - Verify they pass
 {{include:extra-review-steps}}
-4. **Document findings** — Note issues clearly
+4. **Document findings** - Note issues clearly
 ```
 
 ```markdown
@@ -201,12 +201,12 @@ Insert tags in the embedded resource templates:
 {{include:extra-review-checklist}}
 ```
 
-**mode-code-writer.template.md, mode-reviewer.template.md** — end of complete section:
+**mode-code-writer.template.md, mode-reviewer.template.md** - end of complete section:
 ```markdown
 {{include:extra-complete-gate}}
 ```
 
-**mode-test-writer.template.md** — after verify step and after test guidance:
+**mode-test-writer.template.md** - after verify step and after test guidance:
 ```markdown
 {{include:extra-verify}}
 ```
@@ -214,14 +214,14 @@ Insert tags in the embedded resource templates:
 {{include:extra-test-guidance}}
 ```
 
-### 3. `Models/DydoConfig.cs` — hash tracking
+### 3. `Models/DydoConfig.cs` - hash tracking
 
 ```csharp
 [JsonPropertyName("frameworkHashes")]
 public Dictionary<string, string> FrameworkHashes { get; set; } = new();
 ```
 
-### 4. `Commands/TemplateCommand.cs` — new command
+### 4. `Commands/TemplateCommand.cs` - new command
 
 ```bash
 dydo template update           # apply updates, re-anchor user includes
@@ -245,9 +245,9 @@ Logic for each framework-owned template file:
 7. `--force`: on unplaceable tags, write the template anyway (backup first), save unplaced tags to `.unplaced`
 8. First run (no stored hash): compare on-disk to embedded. Identical → store hash. Different → treat as user-edited, follow step 5.
 
-For non-template framework files (about-dynadocs.md, etc.): simpler flow — hash match → overwrite. Hash mismatch → skip with warning unless `--force` (these don't have include tags).
+For non-template framework files (about-dynadocs.md, etc.): simpler flow - hash match → overwrite. Hash mismatch → skip with warning unless `--force` (these don't have include tags).
 
-**Note on old stock retrieval:** The old stock is the embedded template from the *currently installed* dydo version before the update. Since `dydo template update` runs *after* installing the new dydo, we need the old stock. Two options: (a) store the full stock content alongside the hash, or (b) store only the hash — if hash matches on-disk, on-disk IS the old stock; if not, the diff between old embedded and on-disk reveals user additions. Option (b) is simpler: the stored hash tells us whether the file was edited. If edited, we can diff the *previous* embedded (which we ship as a resource keyed by version, or simply accept that the hash alone suffices — the user's file IS the reference, and we extract include tags from it directly against the new template).
+**Note on old stock retrieval:** The old stock is the embedded template from the *currently installed* dydo version before the update. Since `dydo template update` runs *after* installing the new dydo, we need the old stock. Two options: (a) store the full stock content alongside the hash, or (b) store only the hash - if hash matches on-disk, on-disk IS the old stock; if not, the diff between old embedded and on-disk reveals user additions. Option (b) is simpler: the stored hash tells us whether the file was edited. If edited, we can diff the *previous* embedded (which we ship as a resource keyed by version, or simply accept that the hash alone suffices - the user's file IS the reference, and we extract include tags from it directly against the new template).
 
 Framework-owned file list (hardcoded):
 
@@ -272,7 +272,7 @@ public static readonly string[] FrameworkOwnedFiles =
 ];
 ```
 
-### 5. `Services/FolderScaffolder.cs` — scaffold additions folder + store hashes
+### 5. `Services/FolderScaffolder.cs` - scaffold additions folder + store hashes
 
 In `Scaffold()`, after `CopyBuiltInTemplates(basePath)`:
 
@@ -287,7 +287,7 @@ StoreInitialFrameworkHashes(basePath, config);
 
 `StoreInitialFrameworkHashes` computes SHA256 of each framework-owned file just written and stores in dydo.json.
 
-### 6. `Services/IncludeReanchor.cs` — new service for re-anchoring logic
+### 6. `Services/IncludeReanchor.cs` - new service for re-anchoring logic
 
 Extracts user-added include tags from the on-disk template (by comparing against stock) and re-inserts them into the new template.
 
@@ -313,16 +313,16 @@ public static class IncludeReanchor
 
 Anchor matching is trimmed and whitespace-insensitive. Empty lines are skipped when finding anchors.
 
-### 7. Embedded resources — new files
+### 7. Embedded resources - new files
 
-- `Templates/template-additions-readme.md` — content for `_README.md`
-- `Templates/extra-verify.example.md` — content for the example file
+- `Templates/template-additions-readme.md` - content for `_README.md`
+- `Templates/extra-verify.example.md` - content for the example file
 
 ### 7. Documentation updates
 
-**`reference/dydo-commands.md`** — add `dydo template update` command section with options.
+**`reference/dydo-commands.md`** - add `dydo template update` command section with options.
 
-**`reference/about-dynadocs.md`** — add a "Template Additions" subsection under "Customize the templates" explaining the include system and both paths.
+**`reference/about-dynadocs.md`** - add a "Template Additions" subsection under "Customize the templates" explaining the include system and both paths.
 
 ## Edge Cases
 
@@ -335,7 +335,7 @@ Anchor matching is trimmed and whitespace-insensitive. Empty lines are skipped w
 | Missing file | Tag resolves to empty string (no trace in output) |
 | Trailing newlines in addition file | `TrimEnd()` before injection |
 | Multiple `{{include:same}}` in one file | All resolve to same content |
-| `{{include:no spaces!}}` (invalid chars) | Regex rejects — tag left as-is (visible signal) |
+| `{{include:no spaces!}}` (invalid chars) | Regex rejects - tag left as-is (visible signal) |
 
 ### Template update (dydo template update)
 
@@ -343,10 +343,10 @@ Anchor matching is trimmed and whitespace-insensitive. Empty lines are skipped w
 |----------|----------|
 | Clean project (no user edits) | All framework files overwritten, hashes updated |
 | User added `{{include:custom}}` to template | Tag extracted, re-anchored into new template |
-| User added include — both anchors found in new template | Tag inserted between anchors |
-| User added include — only upper anchor found | Tag inserted after upper anchor |
-| User added include — only lower anchor found | Tag inserted before lower anchor |
-| User added include — neither anchor found | Tag reported as unplaced, saved to `.unplaced` file |
+| User added include - both anchors found in new template | Tag inserted between anchors |
+| User added include - only upper anchor found | Tag inserted after upper anchor |
+| User added include - only lower anchor found | Tag inserted before lower anchor |
+| User added include - neither anchor found | Tag reported as unplaced, saved to `.unplaced` file |
 | User added multiple includes to same template | Each re-anchored independently |
 | User added same include tag to multiple templates | Re-anchored in each template independently |
 | User made non-include edits (rewrote text) | Those edits are lost on update (only include tags are preserved) |
@@ -355,133 +355,133 @@ Anchor matching is trimmed and whitespace-insensitive. Empty lines are skipped w
 | `--diff` flag | Shows preview of all changes including re-anchor placements, no writes |
 | `dydo init --join` | Doesn't overwrite existing `template-additions/` |
 | Binary framework file (svg) | Hash comparison only, no include logic |
-| Anchor line appears multiple times in new template | Use first occurrence (anchors are contextual — typically unique) |
+| Anchor line appears multiple times in new template | Use first occurrence (anchors are contextual - typically unique) |
 | User added include between two blank lines | Skip blanks, use nearest non-blank lines as anchors |
 
 ## Test Plan
 
-### Unit: `TemplateGeneratorTests.cs` — include resolution
+### Unit: `TemplateGeneratorTests.cs` - include resolution
 
 **Core resolution:**
-- `ResolveIncludes_ResolvesExistingFile` — tag replaced with file content
-- `ResolveIncludes_MissingFile_ResolvesToEmpty` — tag disappears cleanly
-- `ResolveIncludes_NoAdditionsFolder_ResolvesToEmpty` — graceful when folder doesn't exist
-- `ResolveIncludes_MultipleTagsSameFile_AllResolved` — same tag twice in one template
-- `ResolveIncludes_MultipleDifferentTags_EachResolved` — different tags, different files
-- `ResolveIncludes_EmptyFile_ResolvesToEmpty` — addition file exists but is empty
-- `ResolveIncludes_InvalidTagChars_LeftAsIs` — `{{include:no spaces!}}` not matched
-- `ResolveIncludes_TrimsTrailingNewlines` — no excess whitespace from file content
-- `ResolveIncludes_ExcessiveBlankLinesCollapsed` — 3+ newlines → 2
+- `ResolveIncludes_ResolvesExistingFile` - tag replaced with file content
+- `ResolveIncludes_MissingFile_ResolvesToEmpty` - tag disappears cleanly
+- `ResolveIncludes_NoAdditionsFolder_ResolvesToEmpty` - graceful when folder doesn't exist
+- `ResolveIncludes_MultipleTagsSameFile_AllResolved` - same tag twice in one template
+- `ResolveIncludes_MultipleDifferentTags_EachResolved` - different tags, different files
+- `ResolveIncludes_EmptyFile_ResolvesToEmpty` - addition file exists but is empty
+- `ResolveIncludes_InvalidTagChars_LeftAsIs` - `{{include:no spaces!}}` not matched
+- `ResolveIncludes_TrimsTrailingNewlines` - no excess whitespace from file content
+- `ResolveIncludes_ExcessiveBlankLinesCollapsed` - 3+ newlines → 2
 
 **Integration with generation:**
-- `GenerateModeFile_WithAddition_IncludesContent` — addition file content appears in generated mode file
-- `GenerateModeFile_WithoutAddition_NoLeftoverTags` — no `{{include:...}}` in output
-- `GenerateModeFile_AdditionAndPlaceholders_BothResolved` — `{{AGENT_NAME}}` and `{{include:...}}` both work
-- `GenerateWorkflowFile_WithAddition_IncludesContent` — same for workflow files
+- `GenerateModeFile_WithAddition_IncludesContent` - addition file content appears in generated mode file
+- `GenerateModeFile_WithoutAddition_NoLeftoverTags` - no `{{include:...}}` in output
+- `GenerateModeFile_AdditionAndPlaceholders_BothResolved` - `{{AGENT_NAME}}` and `{{include:...}}` both work
+- `GenerateWorkflowFile_WithAddition_IncludesContent` - same for workflow files
 
 **Tag name formats:**
-- `ResolveIncludes_SupportsHyphens` — `{{include:my-custom-step}}`
-- `ResolveIncludes_SupportsUnderscores` — `{{include:my_custom_step}}`
-- `ResolveIncludes_SupportsNumbers` — `{{include:step2-verify}}`
-- `ResolveIncludes_CaseSensitive` — `{{include:Extra-Verify}}` → `Extra-Verify.md`
+- `ResolveIncludes_SupportsHyphens` - `{{include:my-custom-step}}`
+- `ResolveIncludes_SupportsUnderscores` - `{{include:my_custom_step}}`
+- `ResolveIncludes_SupportsNumbers` - `{{include:step2-verify}}`
+- `ResolveIncludes_CaseSensitive` - `{{include:Extra-Verify}}` → `Extra-Verify.md`
 
-### Unit: `IncludeReanchorTests.cs` — the re-anchoring engine
+### Unit: `IncludeReanchorTests.cs` - the re-anchoring engine
 
 **Extraction:**
-- `ExtractUserIncludes_NoUserTags_ReturnsEmpty` — stock and user identical
-- `ExtractUserIncludes_OneUserTag_ExtractsWithAnchors` — user added one include, both anchors captured
-- `ExtractUserIncludes_MultipleUserTags_ExtractsAll` — user added several includes at different spots
-- `ExtractUserIncludes_ShippedTagsIgnored` — tags present in stock are not extracted (they're framework hooks)
-- `ExtractUserIncludes_TagBetweenBlankLines_SkipsBlanksForAnchors` — anchors are nearest non-blank lines
-- `ExtractUserIncludes_TagAtTopOfFile_UpperAnchorNull` — no content above → null upper anchor
-- `ExtractUserIncludes_TagAtBottomOfFile_LowerAnchorNull` — no content below → null lower anchor
+- `ExtractUserIncludes_NoUserTags_ReturnsEmpty` - stock and user identical
+- `ExtractUserIncludes_OneUserTag_ExtractsWithAnchors` - user added one include, both anchors captured
+- `ExtractUserIncludes_MultipleUserTags_ExtractsAll` - user added several includes at different spots
+- `ExtractUserIncludes_ShippedTagsIgnored` - tags present in stock are not extracted (they're framework hooks)
+- `ExtractUserIncludes_TagBetweenBlankLines_SkipsBlanksForAnchors` - anchors are nearest non-blank lines
+- `ExtractUserIncludes_TagAtTopOfFile_UpperAnchorNull` - no content above → null upper anchor
+- `ExtractUserIncludes_TagAtBottomOfFile_LowerAnchorNull` - no content below → null lower anchor
 
-**Re-anchoring — both anchors found:**
-- `Reanchor_BothAnchorsFound_InsertsCorrectly` — tag placed between matching lines
-- `Reanchor_BothAnchorsFound_PreservesBlankLineSeparation` — clean formatting around inserted tag
-- `Reanchor_MultipleUserTags_AllPlaced` — several tags, all anchored correctly
-- `Reanchor_AnchorMatchIsTrimmed` — leading/trailing whitespace differences don't break matching
+**Re-anchoring - both anchors found:**
+- `Reanchor_BothAnchorsFound_InsertsCorrectly` - tag placed between matching lines
+- `Reanchor_BothAnchorsFound_PreservesBlankLineSeparation` - clean formatting around inserted tag
+- `Reanchor_MultipleUserTags_AllPlaced` - several tags, all anchored correctly
+- `Reanchor_AnchorMatchIsTrimmed` - leading/trailing whitespace differences don't break matching
 
-**Re-anchoring — partial anchors:**
-- `Reanchor_OnlyUpperAnchor_InsertsAfterIt` — lower anchor missing in new template
-- `Reanchor_OnlyLowerAnchor_InsertsBeforeIt` — upper anchor missing in new template
+**Re-anchoring - partial anchors:**
+- `Reanchor_OnlyUpperAnchor_InsertsAfterIt` - lower anchor missing in new template
+- `Reanchor_OnlyLowerAnchor_InsertsBeforeIt` - upper anchor missing in new template
 
-**Re-anchoring — no anchors:**
-- `Reanchor_NeitherAnchorFound_ReportsUnplaced` — tag in unplaced list, not in output
-- `Reanchor_MixOfPlacedAndUnplaced_CorrectLists` — some tags anchor, some don't
+**Re-anchoring - no anchors:**
+- `Reanchor_NeitherAnchorFound_ReportsUnplaced` - tag in unplaced list, not in output
+- `Reanchor_MixOfPlacedAndUnplaced_CorrectLists` - some tags anchor, some don't
 
-**Re-anchoring — tricky cases:**
-- `Reanchor_AnchorAppearsMultipleTimes_UsesFirstOccurrence` — deterministic placement
-- `Reanchor_UserTagAdjacentToShippedTag_BothSurvive` — user tag next to framework tag, both in output
-- `Reanchor_NewTemplateHasNewSections_AnchorsStillMatch` — framework added content elsewhere, existing anchors still found
-- `Reanchor_AnchorContentReworded_AnchorNotFound` — framework changed the anchor line → tag unplaced (correct)
-- `Reanchor_MultipleTagsBetweenSameAnchors_AllInserted` — two tags sharing anchor lines
-- `Reanchor_EmptyNewTemplate_AllUnplaced` — degenerate case
+**Re-anchoring - tricky cases:**
+- `Reanchor_AnchorAppearsMultipleTimes_UsesFirstOccurrence` - deterministic placement
+- `Reanchor_UserTagAdjacentToShippedTag_BothSurvive` - user tag next to framework tag, both in output
+- `Reanchor_NewTemplateHasNewSections_AnchorsStillMatch` - framework added content elsewhere, existing anchors still found
+- `Reanchor_AnchorContentReworded_AnchorNotFound` - framework changed the anchor line → tag unplaced (correct)
+- `Reanchor_MultipleTagsBetweenSameAnchors_AllInserted` - two tags sharing anchor lines
+- `Reanchor_EmptyNewTemplate_AllUnplaced` - degenerate case
 
-### Unit: `TemplateUpdateTests.cs` — hash and update logic
+### Unit: `TemplateUpdateTests.cs` - hash and update logic
 
 **Hash computation:**
-- `ComputeHash_ConsistentForSameContent` — deterministic
+- `ComputeHash_ConsistentForSameContent` - deterministic
 - `ComputeHash_DifferentContent_DifferentHash`
 
 **Direct edit detection:**
-- `IsDirectlyEdited_HashMatches_ReturnsFalse` — file unchanged
-- `IsDirectlyEdited_HashMismatch_ReturnsTrue` — user edited it
-- `IsDirectlyEdited_NoStoredHash_ContentMatchesEmbedded_ReturnsFalse` — first-run clean
-- `IsDirectlyEdited_NoStoredHash_ContentDiffers_ReturnsTrue` — first-run customized
+- `IsDirectlyEdited_HashMatches_ReturnsFalse` - file unchanged
+- `IsDirectlyEdited_HashMismatch_ReturnsTrue` - user edited it
+- `IsDirectlyEdited_NoStoredHash_ContentMatchesEmbedded_ReturnsFalse` - first-run clean
+- `IsDirectlyEdited_NoStoredHash_ContentDiffers_ReturnsTrue` - first-run customized
 
 **Update with re-anchoring:**
-- `UpdateFile_CleanFile_Overwrites` — hash matches, file overwritten
-- `UpdateFile_UserAddedIncludes_ReanchorsIntoNew` — includes extracted and placed in new template
-- `UpdateFile_UserAddedIncludes_AllPlaced_Success` — all tags anchored, hash updated
-- `UpdateFile_UserAddedIncludes_SomeUnplaced_WarnsAndWritesUnplacedFile` — partial success
-- `UpdateFile_UserMadeNonIncludeEdits_OnlyIncludesPreserved` — text edits lost, includes kept
-- `UpdateFile_AlreadyUpToDate_NoOp` — on-disk matches embedded
-- `UpdateFile_StoresUpdatedHash` — hash updated after successful write
-- `UpdateFile_Force_WithUnplaced_WritesAnywayWithBackup` — backup created, unplaced saved
-- `UpdateFile_BinaryFile_ComparesBytes` — SVG: hash only, no include logic
+- `UpdateFile_CleanFile_Overwrites` - hash matches, file overwritten
+- `UpdateFile_UserAddedIncludes_ReanchorsIntoNew` - includes extracted and placed in new template
+- `UpdateFile_UserAddedIncludes_AllPlaced_Success` - all tags anchored, hash updated
+- `UpdateFile_UserAddedIncludes_SomeUnplaced_WarnsAndWritesUnplacedFile` - partial success
+- `UpdateFile_UserMadeNonIncludeEdits_OnlyIncludesPreserved` - text edits lost, includes kept
+- `UpdateFile_AlreadyUpToDate_NoOp` - on-disk matches embedded
+- `UpdateFile_StoresUpdatedHash` - hash updated after successful write
+- `UpdateFile_Force_WithUnplaced_WritesAnywayWithBackup` - backup created, unplaced saved
+- `UpdateFile_BinaryFile_ComparesBytes` - SVG: hash only, no include logic
 
-### Integration: `TemplateOverrideTests.cs` — additions in scaffolding
+### Integration: `TemplateOverrideTests.cs` - additions in scaffolding
 
-- `Init_CreatesTemplateAdditionsFolder` — folder exists after init
-- `Init_CreatesReadmeInAdditions` — `_README.md` present
-- `Init_CreatesExampleFile` — `extra-verify.md.example` present
-- `Init_StoresFrameworkHashes` — dydo.json has hashes for all framework files
-- `AgentClaim_WithAdditionFile_IncludesInModeFile` — create `extra-verify.md`, claim agent, mode file contains it
-- `AgentClaim_WithoutAdditionFile_CleanOutput` — no addition files, no leftover tags
-- `AgentClaim_SharedAddition_AppearsInMultipleModes` — same tag in code-writer and reviewer templates, one file, both generated modes have the content
-- `Join_DoesNotOverwriteExistingAdditions` — additions folder preserved on join
+- `Init_CreatesTemplateAdditionsFolder` - folder exists after init
+- `Init_CreatesReadmeInAdditions` - `_README.md` present
+- `Init_CreatesExampleFile` - `extra-verify.md.example` present
+- `Init_StoresFrameworkHashes` - dydo.json has hashes for all framework files
+- `AgentClaim_WithAdditionFile_IncludesInModeFile` - create `extra-verify.md`, claim agent, mode file contains it
+- `AgentClaim_WithoutAdditionFile_CleanOutput` - no addition files, no leftover tags
+- `AgentClaim_SharedAddition_AppearsInMultipleModes` - same tag in code-writer and reviewer templates, one file, both generated modes have the content
+- `Join_DoesNotOverwriteExistingAdditions` - additions folder preserved on join
 
-### Integration: `TemplateCommandTests.cs` — the command itself
+### Integration: `TemplateCommandTests.cs` - the command itself
 
-- `TemplateUpdate_CleanProject_UpdatesAllFiles` — all framework files overwritten
-- `TemplateUpdate_UserAddedInclude_Reanchored` — user added `{{include:custom}}`, it appears in updated template
-- `TemplateUpdate_UserAddedInclude_AnchorMoved_StillPlaced` — framework reorganized but anchor lines unchanged
-- `TemplateUpdate_UserAddedInclude_AnchorRemoved_ReportedUnplaced` — anchor gone, user warned
-- `TemplateUpdate_Force_BackupCreated` — `.backup/` contains old version
-- `TemplateUpdate_Diff_ShowsReanchorPlacements` — `--diff` shows where tags will land
-- `TemplateUpdate_AlreadyCurrent_ReportsNoChanges` — everything up to date
-- `TemplateUpdate_PreAdditionsProject_ExtractsAndReanchors` — no hashes, user includes still found and placed
-- `TemplateUpdate_PreservesTemplateAdditions` — additions folder untouched
-- `TemplateUpdate_UpdatesConfigHashes` — dydo.json updated after success
-- `TemplateUpdate_NonTemplateFrameworkFiles_AlsoUpdated` — about-dynadocs.md etc. updated
-- `TemplateUpdate_PartialUpdate_MixedResults` — some files clean, some with includes, some unplaceable
+- `TemplateUpdate_CleanProject_UpdatesAllFiles` - all framework files overwritten
+- `TemplateUpdate_UserAddedInclude_Reanchored` - user added `{{include:custom}}`, it appears in updated template
+- `TemplateUpdate_UserAddedInclude_AnchorMoved_StillPlaced` - framework reorganized but anchor lines unchanged
+- `TemplateUpdate_UserAddedInclude_AnchorRemoved_ReportedUnplaced` - anchor gone, user warned
+- `TemplateUpdate_Force_BackupCreated` - `.backup/` contains old version
+- `TemplateUpdate_Diff_ShowsReanchorPlacements` - `--diff` shows where tags will land
+- `TemplateUpdate_AlreadyCurrent_ReportsNoChanges` - everything up to date
+- `TemplateUpdate_PreAdditionsProject_ExtractsAndReanchors` - no hashes, user includes still found and placed
+- `TemplateUpdate_PreservesTemplateAdditions` - additions folder untouched
+- `TemplateUpdate_UpdatesConfigHashes` - dydo.json updated after success
+- `TemplateUpdate_NonTemplateFrameworkFiles_AlsoUpdated` - about-dynadocs.md etc. updated
+- `TemplateUpdate_PartialUpdate_MixedResults` - some files clean, some with includes, some unplaceable
 
 ### E2E: `CliEndToEndTests.cs`
 
-- `TemplateUpdate_EndToEnd_ShippedHooks` — init, create addition file, update, verify addition content in regenerated mode files
-- `TemplateUpdate_EndToEnd_UserAddedInclude` — init, add custom `{{include:my-step}}` to template between known lines, update, verify tag survives in updated template
-- `TemplateUpdate_EndToEnd_MultiVersion` — init at v1, add custom include, update to v2 (new framework content), verify include re-anchored, update to v3 (more changes), verify include still re-anchored
+- `TemplateUpdate_EndToEnd_ShippedHooks` - init, create addition file, update, verify addition content in regenerated mode files
+- `TemplateUpdate_EndToEnd_UserAddedInclude` - init, add custom `{{include:my-step}}` to template between known lines, update, verify tag survives in updated template
+- `TemplateUpdate_EndToEnd_MultiVersion` - init at v1, add custom include, update to v2 (new framework content), verify include re-anchored, update to v3 (more changes), verify include still re-anchored
 
 ## Scope
 
-- `Services/TemplateGenerator.cs` — ~30 lines (include resolution + helper)
-- `Services/IncludeReanchor.cs` — ~120 lines (extraction + re-anchoring logic)
-- `Commands/TemplateCommand.cs` — ~180 lines (command + update orchestration)
-- `Models/DydoConfig.cs` — ~3 lines (hash dictionary)
-- `Services/FolderScaffolder.cs` — ~30 lines (scaffold additions, store initial hashes)
-- `Templates/*.template.md` — 4 tag insertions across templates
-- `Templates/` — 2 new embedded resources (README + example)
-- Docs updates — dydo-commands.md, about-dynadocs.md
+- `Services/TemplateGenerator.cs` - ~30 lines (include resolution + helper)
+- `Services/IncludeReanchor.cs` - ~120 lines (extraction + re-anchoring logic)
+- `Commands/TemplateCommand.cs` - ~180 lines (command + update orchestration)
+- `Models/DydoConfig.cs` - ~3 lines (hash dictionary)
+- `Services/FolderScaffolder.cs` - ~30 lines (scaffold additions, store initial hashes)
+- `Templates/*.template.md` - 4 tag insertions across templates
+- `Templates/` - 2 new embedded resources (README + example)
+- Docs updates - dydo-commands.md, about-dynadocs.md
 
 ~360 lines of production code across 6 files. ~750 lines of tests.

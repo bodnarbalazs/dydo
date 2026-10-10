@@ -37,5 +37,5 @@ reconciliation). An adopting project does three things by hand:
 
 ## Related
 
-- [Skills Are the Source: Retire the Compiler](../decisions/049-skills-are-the-source-retire-the-compiler.md) — why nothing reconciles skills or documents
-- [Scaffold and Customization](../../understand/scaffold-and-customization.md) — how `dydo init` scaffolds and what a project edits
+- [Skills Are the Source: Retire the Compiler](../decisions/049-skills-are-the-source-retire-the-compiler.md) - why nothing reconciles skills or documents
+- [Scaffold and Customization](../../understand/scaffold-and-customization.md) - how `dydo init` scaffolds and what a project edits

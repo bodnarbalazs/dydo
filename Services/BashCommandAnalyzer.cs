@@ -221,11 +221,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (OndrejPasswordStorePathRegex(), "Password store path access"),
         (OndrejPasswordAppRegex(), "Password manager application access"),
 
-        // Inline interpreter execution — bypasses all file operation analysis
+        // Inline interpreter execution - bypasses all file operation analysis
         (InlineInterpreterRegex(), "Inline interpreter execution bypasses file operation analysis. Write a script file instead."),
     ];
 
-    // Heredoc detection — strip $(cat <<'WORD'...WORD) to prevent false positives
+    // Heredoc detection - strip $(cat <<'WORD'...WORD) to prevent false positives
     [GeneratedRegex(@"\$\(cat\s+<<-?'?""?(\w+)""?'?\s*\n[\s\S]*?\n\1\s*\)")]
     private static partial Regex CatHeredocRegex();
 
@@ -390,7 +390,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex OndrejPasswordAppRegex();
 
     // Matches inline interpreter execution: python -c, node -e, ruby -e, perl -e/-E, php -r.
-    // Does NOT include bash/sh/zsh -c — those are handled by shell -c subcommand extraction
+    // Does NOT include bash/sh/zsh -c - those are handled by shell -c subcommand extraction
     // in AnalyzeSubCommand, which analyzes the inner command's file operations instead of
     // blocking outright (blocking all bash -c would cause massive false positives).
     // Does NOT match script file execution (python script.py) or version flags (python --version).
@@ -398,7 +398,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex InlineInterpreterRegex();
 
     // Coaching: detect needless change-directory + command compounds.
-    // Covers Bash `cd` and PowerShell forms (Set-Location, sl, chdir, Push-Location, pushd) —
+    // Covers Bash `cd` and PowerShell forms (Set-Location, sl, chdir, Push-Location, pushd) -
     // all break Claude Code auto-approve when chained (`cd dir && cmd`, `Set-Location dir; cmd`).
     [GeneratedRegex(@"^\s*(?:cd|Set-Location|sl|chdir|Push-Location|pushd)\s+(?:""([^""]+)""|'([^']+)'|(\S+))\s*(?:&&|;)\s*(.*)", RegexOptions.IgnoreCase)]
     private static partial Regex CdThenCommandRegex();
@@ -442,7 +442,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             return result;
         }
 
-        // Strip cat heredoc blocks — literal text, not shell code
+        // Strip cat heredoc blocks - literal text, not shell code
         var strippedCommand = CatHeredocRegex().Replace(command, "HEREDOC_STRIPPED");
 
         // Check for bypass attempts
@@ -703,7 +703,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     /// <summary>
     /// When the command name is a variable ($CMD) or substitution (`cmd`), the actual
-    /// command is unknown — flag path-like arguments as uncertain writes.
+    /// command is unknown - flag path-like arguments as uncertain writes.
     /// </summary>
     private static void AnalyzeUncertainCommand(string cmdName, List<string> tokens, BashAnalysisResult result)
     {
@@ -733,7 +733,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             var token = tokens[i];
             if (token == "-c")
                 return i;
-            // Combined flags: -xc, -exc, etc. — if starts with - (not --) and contains 'c'
+            // Combined flags: -xc, -exc, etc. - if starts with - (not --) and contains 'c'
             if (token.Length > 1 && token[0] == '-' && token[1] != '-' && token.Contains('c'))
                 return i;
         }

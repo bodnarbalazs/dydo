@@ -14,15 +14,15 @@ Fix guard-system.md line 84: it claims bash operations are checked just like dir
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\BashCommandAnalyzerTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCompatTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\BashCommandAnalyzer.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\BashCommandAnalyzerTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCompatTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\GuardCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\BashCommandAnalyzer.cs - Modified
 
 
 ## Review Summary
 
-Review 3 guard enforcement fixes. [#0003](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md): CheckBashFileOperation now calls IsReadAllowed for Read ops — bash read commands enforce the same staged access as direct Read tool calls. [#0005](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0005-dead-code-queueservice-tryenqueue-superseded-by-tryacquireorenqueue.md): CheckCommandSeparator now splits on single pipe — piped commands analyzed independently, eliminating false Read ops from downstream segments. [#0009](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0009-messagefinder-orders-by-file-creation-time-instead-of-received-timestamp.md): Removed sc alias from WriteCommands (conflicts with Windows sc.exe). 9 new tests (3 in WorktreeCompatTests for staged access, 6 in BashCommandAnalyzerTests for pipes and sc). All 3328 tests pass, coverage gate green.
+Review 3 guard enforcement fixes. [#0003](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0003-reviewer-role-lacks-docs-review-guidance-prompt-engineering-debt.md): CheckBashFileOperation now calls IsReadAllowed for Read ops - bash read commands enforce the same staged access as direct Read tool calls. [#0005](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0005-dead-code-queueservice-tryenqueue-superseded-by-tryacquireorenqueue.md): CheckCommandSeparator now splits on single pipe - piped commands analyzed independently, eliminating false Read ops from downstream segments. [#0009](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0009-messagefinder-orders-by-file-creation-time-instead-of-received-timestamp.md): Removed sc alias from WriteCommands (conflicts with Windows sc.exe). 9 new tests (3 in WorktreeCompatTests for staged access, 6 in BashCommandAnalyzerTests for pipes and sc). All 3328 tests pass, coverage gate green.
 
 ## Code Review
 

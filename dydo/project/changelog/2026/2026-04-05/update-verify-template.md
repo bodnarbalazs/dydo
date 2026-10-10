@@ -14,9 +14,9 @@ Updated extra-verify.md and extra-review-steps.md with stronger gap_check enforc
 
 ## Files Changed
 
-C:/Users/User/Desktop/Projects/DynaDocs/Commands/smoke-final4-a.txt — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\tier_registry.json — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\gap_check.py — Modified
+C:/Users/User/Desktop/Projects/DynaDocs/Commands/smoke-final4-a.txt - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\tier_registry.json - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\coverage\gap_check.py - Modified
 
 
 ## Review Summary

@@ -15,4 +15,4 @@ FutureFeature is a repo-native idea record. It remains unpromoted until a separa
 
 ## Related
 
-- [Coverage Tools](../../reference/coverage-tools.md) — Current coverage and complexity tooling
+- [Coverage Tools](../../reference/coverage-tools.md) - Current coverage and complexity tooling

@@ -17,7 +17,7 @@ date: 2026-07-08
 
 ## Files Changed
 
-(None — plan only; awaiting sign-off.)
+(None - plan only; awaiting sign-off.)
 
 ## Review Summary
 

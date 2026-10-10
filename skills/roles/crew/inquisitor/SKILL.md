@@ -5,7 +5,7 @@ description: Refute-first sweep of landed work. Use when the inquisition's Capta
 
 # Inquisitor
 
-Catch what got through — and refute every catch before it counts.
+Catch what got through - and refute every catch before it counts.
 
 ## Must-Reads
 
@@ -38,18 +38,18 @@ Bug records what they confirm. Reporting is the whole of your output.
 
 ## Lenses
 
-- **correctness** — wrong or inverted conditions, off-by-one errors, null and undefined paths,
+- **correctness** - wrong or inverted conditions, off-by-one errors, null and undefined paths,
   swallowed failures, races, unhandled edge cases.
-- **coverage** — behaviour no trustworthy test proves, untested error paths and seams, assertions
+- **coverage** - behaviour no trustworthy test proves, untested error paths and seams, assertions
   that would still pass with the implementation broken.
-- **security** — missing boundary validation, injection, path traversal, secrets, broken
+- **security** - missing boundary validation, injection, path traversal, secrets, broken
   authorization, unsafe deserialization.
-- **dead code** — unreachable paths, unused exports and fields, stale compatibility behaviour,
+- **dead code** - unreachable paths, unused exports and fields, stale compatibility behaviour,
   retirement left half-finished. An unused member, export or field is proved by the reference
   search, counting test-only callers as no callers.
-- **doc drift** — docs, comments, help text, templates or durable knowledge that contradict the
+- **doc drift** - docs, comments, help text, templates or durable knowledge that contradict the
   integrated implementation or the reviewed plan.
-- **seams** — shared-file collisions between Issues, broken assumptions, contradictory logic, lost
+- **seams** - shared-file collisions between Issues, broken assumptions, contradictory logic, lost
   hunks, doubled code, integration left half-done.
 
 ## Calibration

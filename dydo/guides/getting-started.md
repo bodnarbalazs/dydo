@@ -37,7 +37,7 @@ dydo init codex       # or: dydo init claude / dydo init all / dydo init none
 ```
 
 Every mode creates the documentation tree and `CLAUDE.md`, and adds both skill projection folders
-to `.gitignore` — `/.claude/skills/` for Claude Code and `/.agents/skills/` for Codex. The `claude`,
+to `.gitignore` - `/.claude/skills/` for Claude Code and `/.agents/skills/` for Codex. The `claude`,
 `codex` and `all` modes also wire the guard hooks for the chosen runtimes; Codex selections add
 `AGENTS.md`. The [command reference](../reference/dydo-commands.md#dydo-init) lists every file init
 writes. Initialization creates durable Decisions, changelog, pitfalls and FutureFeature
@@ -123,7 +123,7 @@ Done when `dydo check` no longer warns about uncustomized foundation documents.
 
 ## 7. Host configuration
 
-The spawn tree needs three layers below the top-level session — the human's own, or an invoked
+The spawn tree needs three layers below the top-level session - the human's own, or an invoked
 admiral's: issue-captain, crew, scout.
 
 - Claude Code: `.claude/settings.json` contains `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"`.
@@ -149,8 +149,8 @@ touching a status, which only a captain sets.
 ## Run work through Linear
 
 The operating model is in [Control Flow](../understand/control-flow.md): an idea goes to a
-co-thinker, a ripe one becomes a Project through `to-project`, the map holder — the human by default,
-or an invoked admiral — reads the Project and acts, captains own Issues, every merge inside a
+co-thinker, a ripe one becomes a Project through `to-project`, the map holder - the human by default,
+or an invoked admiral - reads the Project and acts, captains own Issues, every merge inside a
 Project is a Merge Issue, and the human acts at the gates,
 clicking an atomic Issue's reviewed PR into main. The
 [Working-Tree Contract](./working-tree-contract.md) says which branch and worktree each of them works

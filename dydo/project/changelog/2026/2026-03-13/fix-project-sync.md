@@ -14,18 +14,18 @@ date: 2026-03-13
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\RolesCreateCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CheckAgentValidatorTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Templates\dydo-commands.template.md — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\TemplateCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\InquisitionCommand.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\ShellCompletionInstaller.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WorkspaceCleaner.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\ProcessUtils.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\TemplateGenerator.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\TemplateOverrideTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TemplateGeneratorTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\RolesCreateCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\CheckAgentValidatorTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Templates\dydo-commands.template.md - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\TemplateCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\AgentRegistry.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\InquisitionCommand.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\ShellCompletionInstaller.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WorkspaceCleaner.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\ProcessUtils.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\TemplateGenerator.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\TemplateOverrideTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TemplateGeneratorTests.cs - Modified
 
 
 ## Review Summary
@@ -45,7 +45,7 @@ Requires rework.
 - Reviewed by: Jack
 - Date: 2026-03-11 19:52
 - Result: PASSED
-- Notes: LGTM. Both regressions fixed: (1) CleanAll properly enumerates working agents with name/status/task, (2) wait marker audit restored in CleanAgent and CleanAll with all three helpers. Extraction from CleanCommand to WorkspaceCleaner is faithful — all behavior preserved. 7/7 tests pass, 2 pre-existing FixCommand failures unrelated.
+- Notes: LGTM. Both regressions fixed: (1) CleanAll properly enumerates working agents with name/status/task, (2) wait marker audit restored in CleanAgent and CleanAll with all three helpers. Extraction from CleanCommand to WorkspaceCleaner is faithful - all behavior preserved. 7/7 tests pass, 2 pre-existing FixCommand failures unrelated.
 
 Awaiting human approval.
 

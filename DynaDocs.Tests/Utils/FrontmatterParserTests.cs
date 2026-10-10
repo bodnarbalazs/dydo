@@ -63,7 +63,7 @@ public class FrontmatterParserTests
     {
         // "------" is a single line: its closing "---" is not line-anchored (it sits on the opening line),
         // so line-anchored reads correctly reject it rather than parsing a phantom empty block from the
-        // "---" SUBSTRING — the exact truncation the read-side anchoring fixes (finding 4).
+        // "---" SUBSTRING - the exact truncation the read-side anchoring fixes (finding 4).
         const string content = "------\n\n# Body";
 
         Assert.Null(FrontmatterParser.ParseFields(content));
@@ -118,7 +118,7 @@ public class FrontmatterParserTests
     [Fact]
     public void ParseFields_DuplicateKeys_FirstWins()
     {
-        // Finding 7: duplicate-key handling is FIRST-wins across the whole stack — UpsertField rewrites the first
+        // Finding 7: duplicate-key handling is FIRST-wins across the whole stack - UpsertField rewrites the first
         // duplicate line, so the reader must resolve the first occurrence too, or an upserted value reads back
         // invisible. The first declaration stays canonical.
         const string content = "---\nkey: first\nkey: second\n---\n";
@@ -290,7 +290,7 @@ public class FrontmatterParserTests
     public void UpsertField_NoLineAnchoredClose_ReturnsContentUnchanged()
     {
         // An opening delimiter whose only "---" lives inside a value (no closing line) cannot be safely
-        // upserted — return the content unchanged rather than corrupt it.
+        // upserted - return the content unchanged rather than corrupt it.
         const string content = "---\nkey: a---b";
         Assert.Equal(content, FrontmatterParser.UpsertField(content, "status", "closed"));
     }
@@ -299,7 +299,7 @@ public class FrontmatterParserTests
     public void ParseFields_ValueContainingTripleDash_ReadBackFully_NotTruncated()
     {
         // Finding 4 (read side): a value containing a "---" substring must be read in full, and later keys
-        // must not be lost — the un-anchored read truncated the block at the first "---" inside the value.
+        // must not be lost - the un-anchored read truncated the block at the first "---" inside the value.
         const string content = "---\ntitle: a --- b\nstatus: open\n---\n\n# Body";
 
         var fields = FrontmatterParser.ParseFields(content);
@@ -336,7 +336,7 @@ public class FrontmatterParserTests
     public void UpsertField_EmptyFrontmatterBlock_DoesNotGlueKeyOntoOpeningDelimiter()
     {
         // Finding 4 (UpsertField): a file whose frontmatter block is EMPTY ("---\n---\n"). The insert must land
-        // on its own line — the old back-scan reached index 0 and glued the key onto the opening delimiter
+        // on its own line - the old back-scan reached index 0 and glued the key onto the opening delimiter
         // ("---needs-human: true"), corrupting the file.
         const string content = "---\n---\n\n# Body\n";
 
@@ -370,7 +370,7 @@ public class FrontmatterParserTests
     [InlineData("---\narea: backend\n---   ")]             // trailing spaces at end-of-content
     public void ParseFields_ClosingDelimiterWithTrailingWhitespace_StillParsed(string content)
     {
-        // Finding 7: a closing "---" line carrying trailing whitespace ("---  \n") must still close the block —
+        // Finding 7: a closing "---" line carrying trailing whitespace ("---  \n") must still close the block -
         // several pre-anchoring readers accepted it, so the anchored close must too, or a previously-parseable
         // file silently degrades to frontmatter-less.
         var fields = FrontmatterParser.ParseFields(content);
@@ -406,7 +406,7 @@ public class FrontmatterParserTests
     [Fact]
     public void UpsertThenParse_DuplicateKeyFile_ReadsBackUpsertedValue()
     {
-        // Finding 7 — the invariant that MUST hold: UpsertField(k, v) rewrites the FIRST duplicate line, and
+        // Finding 7 - the invariant that MUST hold: UpsertField(k, v) rewrites the FIRST duplicate line, and
         // ParseFields resolves the FIRST occurrence, so the upserted value reads back. With the old last-wins
         // ParseFields the second stale line shadowed the write and the value was invisible.
         const string content = "---\nstatus: open\nstatus: open\n---\n\nbody";
@@ -420,7 +420,7 @@ public class FrontmatterParserTests
     [Fact]
     public void ParseFields_OpenerWithNoNewline_ReturnsNull()
     {
-        // Finding 8: a bare "---" with no newline is not a frontmatter block — there is no opener line to close.
+        // Finding 8: a bare "---" with no newline is not a frontmatter block - there is no opener line to close.
         Assert.Null(FrontmatterParser.ParseFields("---"));
     }
 
@@ -429,7 +429,7 @@ public class FrontmatterParserTests
     [InlineData("---\t\nstatus: open\n---\n\nbody")] // trailing tab on the opener line
     public void ParseFields_OpeningDelimiterWithTrailingWhitespace_StillParsed(string content)
     {
-        // Finding 8: opener tolerance is harmonized across all readers — a "---" opener carrying trailing
+        // Finding 8: opener tolerance is harmonized across all readers - a "---" opener carrying trailing
         // whitespace still opens the block.
         var fields = FrontmatterParser.ParseFields(content);
 
@@ -443,9 +443,9 @@ public class FrontmatterParserTests
     [InlineData("--- title\nkey: v\n---\nbody")] // "---" followed by heading text
     public void ParseFields_OpenerNotExactlyTripleDash_NotParsedAsFrontmatter(string content)
     {
-        // Review R2-3: the OPENER is validated with the same strictness as the closer — exactly "---" (trailing
+        // Review R2-3: the OPENER is validated with the same strictness as the closer - exactly "---" (trailing
         // whitespace tolerated). A bare StartsWith("---") also opened on a 4+-dash horizontal rule or "--- title",
-        // so a body that happens to begin with such a line — plus any later "---" — was mis-parsed as bogus
+        // so a body that happens to begin with such a line - plus any later "---" - was mis-parsed as bogus
         // frontmatter, mangling body content into fields on the sync path. Such content must NOT parse as
         // frontmatter; every dydo-generated file uses a strict "---\n" opener, so this loses nothing legitimate.
         Assert.Null(FrontmatterParser.ParseFields(content));

@@ -37,7 +37,7 @@ every chain spawn, and nothing else flips it.
 | `Backlog` | backlog | Retained with a Type, unscheduled, waiting to become a Todo: no contract yet, or one awaiting the human's go, as an Inquisition's. |
 | `Todo` | unstarted | The incoming list: contracted and to be started soon. An open native blocker still prevents pickup. A `Question` in `Todo` is the human's turn. |
 | `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding Issue, an Inquisition's sweep, proofs and final retention verification. |
-| `Implementing` | started | The author of the change's kind is spawned for one hop — a `code-writer`, or a `docs-writer` for a documentation change — a fix hop after a FAIL included. |
+| `Implementing` | started | The author of the change's kind is spawned for one hop - a `code-writer`, or a `docs-writer` for a documentation change - a fix hop after a FAIL included. |
 | `In Review` | started | Any reviewer is spawned, the optional spec review of the contract before any code included. A FAIL returns the record to `Implementing`, whatever it found; a spec review returns it there on either verdict. |
 | `Ready to Merge` | started | The PR carries its PASS block and waits for its merge turn. The record stays here while its own Merge Sub-issue runs; the landing, one Project at a time, and an atomic Issue wait here for the human's click. A merge review FAIL that reverts sends it back to `Implementing`. |
 | `Done` | completed | Merged, or the outcome the Type names reached, with its evidence. |
@@ -74,8 +74,8 @@ Issue carries exactly one Type. Mode sits on every Type a captain holds.
 | `Grilling` | map holder | any | A tree of intent or specification choices resolved with the human. | shared understanding recorded, with its Decision Records linked | `#D4A017` |
 | `Walkthrough` | map holder | primary only | The human inspects what landed: what changed, where to look, how to try it, what reviewers flagged. | the human has walked it; findings filed as Issues | `#C69C6D` |
 
-A captain-held Issue normally uses one author — `code-writer`, or `docs-writer` for a documentation
-change — and one fresh independent whole-change reviewer. A spec review of the contract before any
+A captain-held Issue normally uses one author - `code-writer`, or `docs-writer` for a documentation
+change - and one fresh independent whole-change reviewer. A spec review of the contract before any
 code needs one short concrete risk reason, recorded in the contract; persistence, migrations, permissions and uncertain native
 interfaces are examples of such a risk. Required G/M, integration and release gates remain. The captain records one compact
 acceptance contract and points to its evidence. A map-holder-held Issue is run
@@ -204,11 +204,11 @@ updates, or token, cost, or latency claims. Review gates stay where their workfl
 
 Start each post with the applicable form:
 
-- `PASS — rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>.`
-- `FAIL — rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; gates <N/N>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
-- `IMPLEMENTED — hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
-- `DECIDED — result: <result>; immutable contract: <contract>; next: <action>.`
-- `STATE — <status>; owner: <role>; candidate or PR: <reference>; next or blocker: <fact>; evidence: <link>.`
+- `PASS - rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>.`
+- `FAIL - rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; gates <N/N>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
+- `IMPLEMENTED - hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
+- `DECIDED - result: <result>; immutable contract: <contract>; next: <action>.`
+- `STATE - <status>; owner: <role>; candidate or PR: <reference>; next or blocker: <fact>; evidence: <link>.`
 
 A review block's `contract <ref>` is the contract its brief pinned, for an Issue
 `<KEY> description as of <Linear updatedAt>`; `base <SHA>` is the brief's base.
@@ -229,10 +229,10 @@ signature, so do not add a second or conflicting one. Historical comments stay u
 
 Examples:
 
-- `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-terra; proof: <evidence>; blocker: none.`
-- `PASS — rubric/type: docs; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: gpt-5.6-sol; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>. posted by issue-captain/model: gpt-5.6-terra.`
-- `IMPLEMENTED — hop/candidate <SHA>; docs-writer/model: gpt-5.6-luna (later task); proof: <evidence>; blocker: none.`
-- `STATE — Implementing; owner: code-writer; requested model: gpt-5.6-terra (effective identity unavailable); next: <fact>; evidence: <link>.`
+- `IMPLEMENTED - hop/candidate <SHA>; docs-writer/model: gpt-5.6-terra; proof: <evidence>; blocker: none.`
+- `PASS - rubric/type: docs; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: gpt-5.6-sol; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>. posted by issue-captain/model: gpt-5.6-terra.`
+- `IMPLEMENTED - hop/candidate <SHA>; docs-writer/model: gpt-5.6-luna (later task); proof: <evidence>; blocker: none.`
+- `STATE - Implementing; owner: code-writer; requested model: gpt-5.6-terra (effective identity unavailable); next: <fact>; evidence: <link>.`
 
 ## Decision Records
 
@@ -243,5 +243,5 @@ Linear.
 
 ## Related
 
-- [Working-Tree Contract](../guides/working-tree-contract.md) — Branches, hops, review and merge ownership.
-- [dydo Glossary](./dydo-glossary.md) — Locked definitions for the Linear-native work model.
+- [Working-Tree Contract](../guides/working-tree-contract.md) - Branches, hops, review and merge ownership.
+- [dydo Glossary](./dydo-glossary.md) - Locked definitions for the Linear-native work model.

@@ -22,9 +22,9 @@ Demonstrate that representative multi-Issue delivery can move from reviewed inte
 isolated implementation, independent Issue reviews, GitHub pull requests carrying explicit Issue keys,
 an integrated audit, durable assimilation, and an explicit human accept/reject decision without a
 repository/Linear mirror or watchdog. The smallest meaningful pilot uses existing unprojected work:
-[DYD-42 — enforce read-only capability for Codex worker roles](https://linear.app/bodnar-balazs/issue/DYD-42/enforce-read-only-capability-for-codex-worker-roles),
-[DYD-36 — implement the settled agent auto-memory routing policy](https://linear.app/bodnar-balazs/issue/DYD-36/implement-the-settled-agent-auto-memory-routing-policy),
-and [DYD-38 — make file nudges apply to workers by audience](https://linear.app/bodnar-balazs/issue/DYD-38/make-file-nudges-apply-to-workers-by-audience).
+[DYD-42 - enforce read-only capability for Codex worker roles](https://linear.app/bodnar-balazs/issue/DYD-42/enforce-read-only-capability-for-codex-worker-roles),
+[DYD-36 - implement the settled agent auto-memory routing policy](https://linear.app/bodnar-balazs/issue/DYD-36/implement-the-settled-agent-auto-memory-routing-policy),
+and [DYD-38 - make file nudges apply to workers by audience](https://linear.app/bodnar-balazs/issue/DYD-38/make-file-nudges-apply-to-workers-by-audience).
 
 DYD-42 runs first so the later independent Codex reviews exercise an actually read-only reviewer. DYD-36
 and DYD-38 then run in parallel on disjoint files. A new integration Issue runs only after all three
@@ -34,12 +34,12 @@ product Issues are reviewed, merged, and read back from Linear.
 
 | Authority | Exact identity |
 |---|---|
-| Project 4 | `c8ae27c3-5391-453a-8498-e02c064aa6ae` — [dydo 3.0 / Dogfood and accept Linear PM](https://linear.app/bodnar-balazs/project/dydo-30-dogfood-and-accept-linear-pm-0a31eceeb1c2) |
+| Project 4 | `c8ae27c3-5391-453a-8498-e02c064aa6ae` - [dydo 3.0 / Dogfood and accept Linear PM](https://linear.app/bodnar-balazs/project/dydo-30-dogfood-and-accept-linear-pm-0a31eceeb1c2) |
 | Dydo team | `caa6ccbf-4f9b-477e-826c-a51ed43b0687` |
-| Project-3 completion base | `89d38089fdfd1404e1cdd5127dcf10d3718d7287` — merge of PR 23, with Project-3 Issue review PASS, integrated audit PASS, CI PASS, 474/474 manifest rows applied, and 134/134 modules covered |
-| Project 5 | `2ecbc168-2a42-482d-9b1b-a29537985ca5` — [dydo 3.0 / Remove Notion runtime and release](https://linear.app/bodnar-balazs/project/dydo-30-remove-notion-runtime-and-release-54b8939d748e) |
+| Project-3 completion base | `89d38089fdfd1404e1cdd5127dcf10d3718d7287` - merge of PR 23, with Project-3 Issue review PASS, integrated audit PASS, CI PASS, 474/474 manifest rows applied, and 134/134 modules covered |
+| Project 5 | `2ecbc168-2a42-482d-9b1b-a29537985ca5` - [dydo 3.0 / Remove Notion runtime and release](https://linear.app/bodnar-balazs/project/dydo-30-remove-notion-runtime-and-release-54b8939d748e) |
 | Product Issues | `DYD-42`, `DYD-36`, and `DYD-38`, all currently unprojected Dydo `Todo` Issues |
-| Needs-human label | `a1604e47-3e58-4aee-81c4-ef0e51c63638` — temporary attention marker, not a work type or acceptance state |
+| Needs-human label | `a1604e47-3e58-4aee-81c4-ef0e51c63638` - temporary attention marker, not a work type or acceptance state |
 
 Every implementation branch starts from an exact merged predecessor, never from a movable local branch.
 The planning baseline and first governing implementation base are the Project-3 merge above.
@@ -51,7 +51,7 @@ The planning baseline and first governing implementation base are the Project-3 
 - Sharpen and move the three existing migrated Issues into Project 4; create exactly one new integration,
   audit, and assimilation Issue after an exact-name/Project read-back proves it does not already exist.
 - Make Codex read-only worker roles emit the supported native read-only sandbox setting and prove the
-  generated configuration deterministically. After DYD-47 — P4-4 — Integrate, audit, assimilate, and
+  generated configuration deterministically. After DYD-47 - P4-4 - Integrate, audit, assimilate, and
   request human acceptance (P4-4 below) installs the generated reviewer/inquisitor artifacts, attempt
   the live spawned-reviewer canary once in that native execution context.
 - Complete DR-038's repository policy: scaffold the memory-routing paragraph and compile the
@@ -180,7 +180,7 @@ The planning baseline and first governing implementation base are the Project-3 
   are the seven exact human-ratified live migrations. Project 3 deliberately created them unprojected
   and did not implement them. Project-3 merge `89d38089fdfd1404e1cdd5127dcf10d3718d7287`
   is therefore the exact pilot base.
-- [Corrected DYD-1 — verify Dydo Linear/GitHub PM references](https://linear.app/bodnar-balazs/issue/DYD-1/verify-dydo-lineargithub-pm-references)
+- [Corrected DYD-1 - verify Dydo Linear/GitHub PM references](https://linear.app/bodnar-balazs/issue/DYD-1/verify-dydo-lineargithub-pm-references)
   is adopted: explicit Issue keys attach PRs; labels are nonbinding workspace conveniences; saved views,
   team-prefix repository routing, Linear Agent guidance, and managed coding environments are unrelated.
 - [DR-038](../decisions/038-auto-memory-policy.md) is adopted exactly. The repository already contains
@@ -200,7 +200,7 @@ The planning baseline and first governing implementation base are the Project-3 
 
 ## 3. Design
 
-### DYD-42 — native read-only Codex roles
+### DYD-42 - native read-only Codex roles
 
 `Commands/SyncCommand.cs` already derives Claude tools and both runtime stance text from
 `RoleDefinition.ReadOnly`. Extend `BuildCodexAgent` at that same decision point: emit one TOML line
@@ -212,7 +212,7 @@ Focused tests in `DynaDocs.Tests/Commands/SyncCommandTests.cs` must cover a read
 code writer, project-override role discovery, exact TOML field order/quoting/newline shape, and repeat
 byte-idempotent compilation. The live canary follows section 8.
 
-### DYD-36 — memory routing and the genuine human route
+### DYD-36 - memory routing and the genuine human route
 
 Add DR-038's existing paragraph verbatim to `Templates/entry-point.template.md`; do not rewrite the
 already-correct root `CLAUDE.md`. Add one concise `Memory sweep` subsection to both authored
@@ -236,7 +236,7 @@ current proposal or target can be established without reading out-of-scope perso
 `defer`; do not ask for broad access. Apply `Needs human` only while awaiting the response. Record the
 human's exact `accept`, `defer`, or `reject` response and remove the label before closeout.
 
-### DYD-38 — audience-aware file nudges
+### DYD-38 - audience-aware file nudges
 
 Add optional JSON property `audience` to `Models/NudgeConfig.cs`. Omission deserializes to `all` and
 serialization omits the field only when its effective value is `all`; accepted case-insensitive input
@@ -307,10 +307,10 @@ removed. No agent interprets silence, a merge, CI, or audit PASS as acceptance.
 
 | Issue | Outcome | Files touched (disjoint) | Blockers | Gate |
 |---|---|---|---|---|
-| DYD-42 — enforce read-only capability for Codex worker roles | Supported native read-only Codex role TOML with deterministic config proof | `Commands/SyncCommand.cs`; `DynaDocs.Tests/Commands/SyncCommandTests.cs` | reviewed plan merged | Release build; focused `SyncCommandTests`; strict isolated config and repeat byte-idempotence; coverage; diff check; independent code review |
-| DYD-36 — implement the settled agent auto-memory routing policy | Generic routing paragraph, compiled sweep duty, and one explicit first-sweep human disposition | `Templates/entry-point.template.md`; `Templates/mode-chief-of-staff.template.md`; `dydo/_system/templates/mode-chief-of-staff.template.md`; `DynaDocs.Tests/Services/TemplateGeneratorTests.cs`; new `DynaDocs.Tests/Commands/ChiefOfStaffSyncTests.cs` | DYD-42 merged and read back | focused template/sync tests; source/output occurrence predicates; Needs-human decision evidence; independent code/docs review |
-| DYD-38 — make file nudges apply to workers by audience | Backward-compatible audience semantics across direct manager/worker calls | `Models/NudgeConfig.cs`; `Commands/GuardCommand.cs`; `Services/ConfigFactory.cs`; `Services/ValidationService.cs`; `DynaDocs.Tests/Integration/GuardWorkerLaneTests.cs`; `DynaDocs.Tests/Commands/GuardCommandTests.cs`; `DynaDocs.Tests/Services/ConfigFactoryTests.cs`; `DynaDocs.Tests/Services/ValidationServiceTests.cs` | DYD-42 merged and read back | focused guard/config/validation tests; `dydo validate` fixture; independent code/tests review |
-| P4-4 — integrate, audit, assimilate, and request human acceptance (new after plan merge) | Exact generated surfaces, combined gates, section-8 canary outcome, friction dispositions, assimilation, integrated audit, explicit accept/reject | `.agents/skills/chief-of-staff/SKILL.md`; `.claude/skills/chief-of-staff/SKILL.md`; `.codex/agents/reviewer.toml`; `.codex/agents/inquisitor.toml`; `dydo.json`; new `dydo/project/migrations/3.0-linear-pm-dogfood-assimilation.md`; `dydo/project/migrations/_index.md` | DYD-42, DYD-36, DYD-38 merged, CI green, reviewed, and read back | all section-6 gates; section-8 canary proof or limitation; fresh integrated audit; explicit human decision; narrow acceptance-seal review |
+| DYD-42 - enforce read-only capability for Codex worker roles | Supported native read-only Codex role TOML with deterministic config proof | `Commands/SyncCommand.cs`; `DynaDocs.Tests/Commands/SyncCommandTests.cs` | reviewed plan merged | Release build; focused `SyncCommandTests`; strict isolated config and repeat byte-idempotence; coverage; diff check; independent code review |
+| DYD-36 - implement the settled agent auto-memory routing policy | Generic routing paragraph, compiled sweep duty, and one explicit first-sweep human disposition | `Templates/entry-point.template.md`; `Templates/mode-chief-of-staff.template.md`; `dydo/_system/templates/mode-chief-of-staff.template.md`; `DynaDocs.Tests/Services/TemplateGeneratorTests.cs`; new `DynaDocs.Tests/Commands/ChiefOfStaffSyncTests.cs` | DYD-42 merged and read back | focused template/sync tests; source/output occurrence predicates; Needs-human decision evidence; independent code/docs review |
+| DYD-38 - make file nudges apply to workers by audience | Backward-compatible audience semantics across direct manager/worker calls | `Models/NudgeConfig.cs`; `Commands/GuardCommand.cs`; `Services/ConfigFactory.cs`; `Services/ValidationService.cs`; `DynaDocs.Tests/Integration/GuardWorkerLaneTests.cs`; `DynaDocs.Tests/Commands/GuardCommandTests.cs`; `DynaDocs.Tests/Services/ConfigFactoryTests.cs`; `DynaDocs.Tests/Services/ValidationServiceTests.cs` | DYD-42 merged and read back | focused guard/config/validation tests; `dydo validate` fixture; independent code/tests review |
+| P4-4 - integrate, audit, assimilate, and request human acceptance (new after plan merge) | Exact generated surfaces, combined gates, section-8 canary outcome, friction dispositions, assimilation, integrated audit, explicit accept/reject | `.agents/skills/chief-of-staff/SKILL.md`; `.claude/skills/chief-of-staff/SKILL.md`; `.codex/agents/reviewer.toml`; `.codex/agents/inquisitor.toml`; `dydo.json`; new `dydo/project/migrations/3.0-linear-pm-dogfood-assimilation.md`; `dydo/project/migrations/_index.md` | DYD-42, DYD-36, DYD-38 merged, CI green, reviewed, and read back | all section-6 gates; section-8 canary proof or limitation; fresh integrated audit; explicit human decision; narrow acceptance-seal review |
 
 The integration Issue may resolve textual conflicts only inside its seven owned paths. A generated delta
 outside the four listed compiled artifacts or a required edit outside the table is a plan finding, not
@@ -333,7 +333,7 @@ integration discretion.
    replace their sparse meaning with the exact outcome, owned paths, acceptance criteria, gates, branch/
    PR key rule, evidence requirements, and governing plan permalink from this contract. Assign each to
    Project 4 and the fixed Dydo team. Set DYD-36 and DYD-38 `blockedBy: DYD-42`.
-5. Search exact title `P4-4 — Integrate, audit, assimilate, and request human acceptance` in Project 4.
+5. Search exact title `P4-4 - Integrate, audit, assimilate, and request human acceptance` in Project 4.
    If absent, create exactly one Issue with the table's contract, set it blocked by all three product
    Issues, and record the returned ID/URL immediately. If any unrecorded match exists, stop; title match
    alone is not adoption authority.

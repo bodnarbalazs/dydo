@@ -6,7 +6,7 @@ date: 2026-03-27
 
 # Task: fix-plan-mode-matcher
 
-Fixed: Added EnterPlanMode|ExitPlanMode to the PreToolUse hook matcher regex in InitCommand.cs (line 340). The guard's plan-mode block (layer 2.6) was already implemented but never triggered because these tools weren't in the matcher. Added test Init_Claude_MatcherIncludesPlanModeTools. Note: .claude/settings.local.json could not be updated directly (outside code-writer permissions) — re-running dydo init claude --join will regenerate it with the fix. No plan deviations.
+Fixed: Added EnterPlanMode|ExitPlanMode to the PreToolUse hook matcher regex in InitCommand.cs (line 340). The guard's plan-mode block (layer 2.6) was already implemented but never triggered because these tools weren't in the matcher. Added test Init_Claude_MatcherIncludesPlanModeTools. Note: .claude/settings.local.json could not be updated directly (outside code-writer permissions) - re-running dydo init claude --join will regenerate it with the fix. No plan deviations.
 
 ## Progress
 
@@ -14,13 +14,13 @@ Fixed: Added EnterPlanMode|ExitPlanMode to the PreToolUse hook matcher regex in 
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\InitCommandTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Commands\InitCommand.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\InitCommandTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Commands\InitCommand.cs - Modified
 
 
 ## Review Summary
 
-Fixed: Added EnterPlanMode|ExitPlanMode to the PreToolUse hook matcher regex in InitCommand.cs (line 340). The guard's plan-mode block (layer 2.6) was already implemented but never triggered because these tools weren't in the matcher. Added test Init_Claude_MatcherIncludesPlanModeTools. Note: .claude/settings.local.json could not be updated directly (outside code-writer permissions) — re-running dydo init claude --join will regenerate it with the fix. No plan deviations.
+Fixed: Added EnterPlanMode|ExitPlanMode to the PreToolUse hook matcher regex in InitCommand.cs (line 340). The guard's plan-mode block (layer 2.6) was already implemented but never triggered because these tools weren't in the matcher. Added test Init_Claude_MatcherIncludesPlanModeTools. Note: .claude/settings.local.json could not be updated directly (outside code-writer permissions) - re-running dydo init claude --join will regenerate it with the fix. No plan deviations.
 
 ## Code Review
 

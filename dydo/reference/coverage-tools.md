@@ -39,8 +39,8 @@ The interpreter that creates the virtual environment must be 3.12.10 itself, not
 `python_runtime._key` joins a code object to its parsed body on
 `(co_qualname, co_firstlineno, co_positions())`, and a different compiler emits different positions:
 on CPython 3.12.3 the isolated suite produces six errors in
-`DynaDocs.Tests/coverage/tests/test_python_runtime.py` — `Missing or ambiguous callable
-body/code-object join` and `Unexpected callable body line` — that a 3.12.10 environment does not
+`DynaDocs.Tests/coverage/tests/test_python_runtime.py` - `Missing or ambiguous callable
+body/code-object join` and `Unexpected callable body line` - that a 3.12.10 environment does not
 produce, and rebuilding the environment on 3.12.10 clears all six. The `versions` collector does not
 catch this: `gate_versions.python_versions` requires the declaration to read exactly 3.12.10 and the
 running implementation to be CPython 3.12, and never compares the running patch to the declaration.
@@ -76,7 +76,7 @@ $py = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
 
 `all` runs test rows only. Each `gate` operation runs exactly the named capability, defaulting to
 every declared stack in manifest order. `--force-run` is the compatibility full-G operation: it
-selects test, static and coverage for every stack — twelve rows here — and never selects mutation.
+selects test, static and coverage for every stack - twelve rows here - and never selects mutation.
 Where a stack's coverage row declares `suiteVerdict`, `--force-run` derives that stack's test row
 from the coverage row's single instrumented run instead of launching the suite a second time.
 
@@ -109,20 +109,20 @@ caller's identity propagates into every adapter.
 
 | Stack | Capability | Command | Required artifact | Suite verdict |
 |---|---|---|---|---|
-| `dotnet` | test | `<python> -u DynaDocs.Tests/coverage/run_tests.py --` | none | — |
-| `dotnet` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack dotnet --gate static` | `results/adapters/dotnet-static.json` | — |
+| `dotnet` | test | `<python> -u DynaDocs.Tests/coverage/run_tests.py --` | none | - |
+| `dotnet` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack dotnet --gate static` | `results/adapters/dotnet-static.json` | - |
 | `dotnet` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack dotnet --gate coverage` | `results/adapters/dotnet-coverage.json` | `collectors.csharp-coverage.facts.child_exit`; `collectors.csharp-coverage.findings[gate=functional]` |
-| `python` | test | `<python> -m unittest discover -s DynaDocs.Tests/coverage/tests -p test_*.py` | none | — |
-| `python` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack python --gate static` | `results/adapters/python-static.json` | — |
+| `python` | test | `<python> -m unittest discover -s DynaDocs.Tests/coverage/tests -p test_*.py` | none | - |
+| `python` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack python --gate static` | `results/adapters/python-static.json` | - |
 | `python` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack python --gate coverage` | `results/adapters/python-coverage.json` | `collectors.python-coverage.facts.child_exit`; `collectors.python-coverage.findings[gate=functional]` |
-| `node` | test | `node DynaDocs.Tests/coverage/node_tests.cjs` | none | — |
-| `node` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack node --gate static` | `results/adapters/node-static.json` | — |
+| `node` | test | `node DynaDocs.Tests/coverage/node_tests.cjs` | none | - |
+| `node` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack node --gate static` | `results/adapters/node-static.json` | - |
 | `node` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack node --gate coverage` | `results/adapters/node-coverage.json` | `collectors.javascript-coverage.facts.child_exit`; `collectors.javascript-coverage.findings[gate=functional]` |
-| `viewer` | test | `pnpm -C viewer run test` | none | — |
-| `viewer` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack viewer --gate static` | `results/adapters/viewer-static.json` | — |
+| `viewer` | test | `pnpm -C viewer run test` | none | - |
+| `viewer` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack viewer --gate static` | `results/adapters/viewer-static.json` | - |
 | `viewer` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack viewer --gate coverage` | `results/adapters/viewer-coverage.json` | `collectors.typescript-coverage.facts.suite_exit`; `collectors.typescript-coverage.findings[gate=functional]` |
-| `dotnet`, `python`, `node` | mutation | unavailable, reason `Pending DYD-103` | none | — |
-| `viewer` | mutation | unavailable: no TypeScript mutation mechanism is adopted | none | — |
+| `dotnet`, `python`, `node` | mutation | unavailable, reason `Pending DYD-103` | none | - |
+| `viewer` | mutation | unavailable: no TypeScript mutation mechanism is adopted | none | - |
 
 Artifact paths are shown relative to `DynaDocs.Tests/coverage/`; the manifest declares them
 repository-relative, and the artifact root is `DynaDocs.Tests/coverage/results`. The `dotnet` stack declares isolation
@@ -140,7 +140,7 @@ Every G row therefore has a real mechanism: four test adapters, four static adap
 coverage adapters. Mutation is the only unavailable capability. On `dotnet`, `python` and `node` it
 belongs to DYD-103, whose policy is already settled and does not wait on the adapter: DynaDocs
 requires no surviving or uncovered changed-code mutants, as the [Testing
-Strategy](../guides/testing-strategy.md) states it. Nothing here measures that today — those three
+Strategy](../guides/testing-strategy.md) states it. Nothing here measures that today - those three
 stacks' mutation rows are `unavailable` with the reason `Pending DYD-103`, so the gate cannot run,
 and cannot pass, until that Issue lands a reviewed mechanism. `viewer`'s mutation row is
 `unavailable` for a different reason: no TypeScript mutation mechanism is adopted, and no Issue
@@ -231,9 +231,9 @@ The `resolved` maps above are abbreviated; the artifact carries every entry of e
 Ordered rows of
 `{name, argv, cwd, environment, exit, elapsedSeconds, stdout, stdoutSha256, stderr, stderrSha256}`.
 Stream paths are relative to the run directory. `environment` is only what this gate supplied to
-that command — `APPDATA`, `NUGET_PACKAGES` and `DYDO_ROW_DEADLINE` for the adapter's own children,
+that command - `APPDATA`, `NUGET_PACKAGES` and `DYDO_ROW_DEADLINE` for the adapter's own children,
 and `DOTNET_CLI_USE_MSBUILD_SERVER`, `MSBUILDDISABLENODEREUSE` and
-`DYNADOCS_GATE_METRICS_PREBUILT_DLL` inside the C# campaign — never the inherited process
+`DYNADOCS_GATE_METRICS_PREBUILT_DLL` inside the C# campaign - never the inherited process
 environment, so ambient secrets stay out of the artifact.
 
 The four coverage wrapper rows `python-coverage`, `javascript-coverage`, `typescript-coverage` and
@@ -287,8 +287,8 @@ containing namespace and keeping only edges whose two namespaces both declare a 
 project's maintained trees; `python-dependencies` derives module edges from the AST import graph;
 and `javascript-dependencies` keeps dependency-cruiser's resolved edges between two maintained
 files. Each stack hands its edges to the same `gate_inventory.dependency_cycles`, which returns the
-strongly connected components of that graph — every component of more than one member, plus any
-self-edge — rather than a bounded search, so no traversal depth can omit a cycle. The `dotnet`
+strongly connected components of that graph - every component of more than one member, plus any
+self-edge - rather than a bounded search, so no traversal depth can omit a cycle. The `dotnet`
 edges are pooled across every project before the components are computed, so dependency cycles that
 close through a second project are still found. Each one is a single finding carrying its whole
 component as sorted `members`, named `namespace-cycle` on `dotnet` and `module-cycle` on `python`,
@@ -324,7 +324,7 @@ The Python, JavaScript and TypeScript rows take their targets from the source in
 external-host drivers of DR 048's Amendment 2026-09-17,
 `DynaDocs.Tests/HostCanaries/run-host-canaries.mjs` and `openai-sse-provider.mjs`. The exemption is
 coverage-scoped: both files are still measured by every static collector above. It also fails
-closed — an unextracted or unassociated driver produces the gap `host-driver-logic-untested` or
+closed - an unextracted or unassociated driver produces the gap `host-driver-logic-untested` or
 `host-driver-unassociated` instead of the exemption, and the file returns to the coverage targets.
 
 The TypeScript join reads Istanbul LCOV per module: `DA` lines for the line floor, `BRDA` branches
@@ -433,7 +433,7 @@ error rather than a coverage number:
 
 Every eligible original token must appear in the report; a missing one fails with
 `Missing physical token coverage`. Eligible means the method has at least one `maintained` point and
-is not a `SourceBehavior` structural member — a semantic synthesized member with no authored
+is not a `SourceBehavior` structural member - a semantic synthesized member with no authored
 executable behaviour, which is accounted with its evidence instead of being counted.
 
 ---
@@ -508,7 +508,7 @@ digests. Node v22.13.0 and .NET SDK 10.0.300 remain exact runtime requirements.
 
 ## Related
 
-- [Testing Strategy](../guides/testing-strategy.md) — the adopted policy, the gate route and the
+- [Testing Strategy](../guides/testing-strategy.md) - the adopted policy, the gate route and the
   recorded triage
-- [DR 048](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md) —
+- [DR 048](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md) -
   one-level static gates, no escape hatch

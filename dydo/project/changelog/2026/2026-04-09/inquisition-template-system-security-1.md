@@ -14,11 +14,11 @@ date: 2026-04-09
 
 ## Files Changed
 
-C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Services/CompletionProviderTests.cs — Created
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TerminalLauncherTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WindowsTerminalLauncher.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TemplateGeneratorTests.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\TemplateOverrideTests.cs — Modified
+C:/Users/User/Desktop/Projects/DynaDocs/DynaDocs.Tests/Services/CompletionProviderTests.cs - Created
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TerminalLauncherTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WindowsTerminalLauncher.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\TemplateGeneratorTests.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Integration\TemplateOverrideTests.cs - Modified
 
 
 ## Review Summary

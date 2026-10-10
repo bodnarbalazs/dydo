@@ -83,14 +83,14 @@ public class OffLimitsService : IOffLimitsService
         // (dydo/_system/**, dydo/index.md, …) would ever match in production.
         var normalizedPath = PathUtils.NormalizeForPattern(RelativizeToProjectRoot(path));
 
-        // Hardcoded system patterns — always enforced, not whitelistable
+        // Hardcoded system patterns - always enforced, not whitelistable
         foreach (var (pattern, compiled) in SystemOffLimits)
         {
             if (compiled.IsMatch(normalizedPath))
                 return pattern;
         }
 
-        // Whitelist — if matched, allow past user-defined off-limits patterns
+        // Whitelist - if matched, allow past user-defined off-limits patterns
         if (FindMatchingPattern(normalizedPath, _whitelistPatterns, _whitelistCompiled) != null)
             return null;
 
@@ -100,7 +100,7 @@ public class OffLimitsService : IOffLimitsService
     /// <summary>
     /// Check if a path is protected: readable by every tool, writable by none (DR 045 §10).
     /// Returns the matched pattern if protected, null otherwise. Callers apply it on
-    /// write/delete paths only — reading an orientation file is the point of the tier.
+    /// write/delete paths only - reading an orientation file is the point of the tier.
     /// The whitelist does not apply: protected members are dydo's own system files.
     /// </summary>
     public string? IsPathProtected(string path)
@@ -134,7 +134,7 @@ public class OffLimitsService : IOffLimitsService
         var relative = Path.GetRelativePath(root, path);
         // Outside the project root (GetRelativePath yields a rooted path or a leading '..'
         // segment): leave it absolute so it simply won't match any repo-relative pattern.
-        // Match '..' as a whole segment only — a dir literally named '..foo' is inside the root.
+        // Match '..' as a whole segment only - a dir literally named '..foo' is inside the root.
         var firstSegment = relative.Replace('\\', '/').Split('/', 2)[0];
         if (Path.IsPathRooted(relative) || firstSegment == "..")
             return path;

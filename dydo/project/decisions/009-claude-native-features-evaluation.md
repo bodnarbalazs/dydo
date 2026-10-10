@@ -6,9 +6,9 @@ date: 2026-03-25
 participants: [balazs, Emma]
 ---
 
-# 009 — Claude Code Native `.claude/` Features Evaluation
+# 009 - Claude Code Native `.claude/` Features Evaluation
 
-Evaluation of whether dydo should adopt any of Claude Code's expanded native `.claude/` features (rules, skills, native subagents, auto-memory, additional hook events, MCP servers, native worktree isolation, dynamic permission rewriting). The decision is to skip all of them — dydo's current integration surface (PreToolUse hook, CLAUDE.md pointer, terminal spawn) is sufficient, and the native features either conflict with staged enforcement or solve weaker versions of problems dydo already handles.
+Evaluation of whether dydo should adopt any of Claude Code's expanded native `.claude/` features (rules, skills, native subagents, auto-memory, additional hook events, MCP servers, native worktree isolation, dynamic permission rewriting). The decision is to skip all of them - dydo's current integration surface (PreToolUse hook, CLAUDE.md pointer, terminal spawn) is sufficient, and the native features either conflict with staged enforcement or solve weaker versions of problems dydo already handles.
 
 ## Context
 
@@ -38,7 +38,7 @@ dydo's value is in the features Claude Code *doesn't* provide: agent identity an
 ## Risks Noted
 
 - **Auto-memory** could silently inject stale info that contradicts dydo docs. Not blocking, but worth awareness.
-- **Future Claude Code changes** to the hook system could affect the guard. Low risk — the PreToolUse contract is stable.
+- **Future Claude Code changes** to the hook system could affect the guard. Low risk - the PreToolUse contract is stable.
 
 ## Revisit When
 

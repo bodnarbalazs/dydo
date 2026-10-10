@@ -14,8 +14,8 @@ date: 2026-03-25
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs — Modified
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\WatchdogServiceTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\Services\WatchdogService.cs - Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Services\WatchdogServiceTests.cs - Modified
 
 
 ## Review Summary
@@ -27,7 +27,7 @@ Added StartProcessOverride (Func<ProcessStartInfo, Process?>) to WatchdogService
 - Reviewed by: Brian
 - Date: 2026-03-20 16:53
 - Result: PASSED
-- Notes: LGTM. StartProcessOverride follows established pattern. PollAndCleanup logic fix is correct — fixes missing ClearAutoClose in fallback kill path. Tests pass (33/33). gap_check failures are pre-existing (stale coverage data, locked by Dexter), no regressions.
+- Notes: LGTM. StartProcessOverride follows established pattern. PollAndCleanup logic fix is correct - fixes missing ClearAutoClose in fallback kill path. Tests pass (33/33). gap_check failures are pre-existing (stale coverage data, locked by Dexter), no regressions.
 
 Awaiting human approval.
 

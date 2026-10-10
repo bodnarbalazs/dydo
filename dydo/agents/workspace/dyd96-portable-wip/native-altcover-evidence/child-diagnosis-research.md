@@ -1,6 +1,6 @@
 # DYD-96 AltCover child aggregation diagnosis
 
-**DECIDED — answer:** the missing child hits are an AltCover 9.0.102 aggregation defect, not a fixture or report-path error. The default recorder writes one buffered `Table` per process. The shipped runner's compiled C# `AddTable` only copies a module while that module key is absent, so the first spool wins and every later spool for the same instrumented module is discarded. The documented `--eager` prepare option is a supported fix for this fixture: it writes visits immediately rather than as end-of-process tables, and the same parent → child run then collects all 24 visits and the exact child-only lambda/branch. Keep `G = 2` until that invocation is separately specified/reviewed and the retained integration/full-suite proof passes.
+**DECIDED - answer:** the missing child hits are an AltCover 9.0.102 aggregation defect, not a fixture or report-path error. The default recorder writes one buffered `Table` per process. The shipped runner's compiled C# `AddTable` only copies a module while that module key is absent, so the first spool wins and every later spool for the same instrumented module is discarded. The documented `--eager` prepare option is a supported fix for this fixture: it writes visits immediately rather than as end-of-process tables, and the same parent → child run then collects all 24 visits and the exact child-only lambda/branch. Keep `G = 2` until that invocation is separately specified/reviewed and the retained integration/full-suite proof passes.
 
 ## Question and answer condition
 

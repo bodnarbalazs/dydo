@@ -11,13 +11,13 @@ repository records.
 
 ## Contents
 
-- **decisions/** — accepted technical and product choices
-- **plans/** — reviewed contracts for coordinated, cross-cutting, or architecture-sensitive Linear Projects
-- **future-features/** — unscheduled repo-native ideas; only a human may promote one to Linear
-- **migrations/** — durable migration evidence and assimilation briefs
-- **inquisitions/** — multi-lens QA reports at meaningful product milestones
-- **changelog/** — completed change and release history
-- **pitfalls/** — recurring knowledge and known gotchas
+- **decisions/** - accepted technical and product choices
+- **plans/** - reviewed contracts for coordinated, cross-cutting, or architecture-sensitive Linear Projects
+- **future-features/** - unscheduled repo-native ideas; only a human may promote one to Linear
+- **migrations/** - durable migration evidence and assimilation briefs
+- **inquisitions/** - multi-lens QA reports at meaningful product milestones
+- **changelog/** - completed change and release history
+- **pitfalls/** - recurring knowledge and known gotchas
 
 Historical work records may remain during a migration, but they are not a live work queue and must not
 grow. Use Linear Initiatives, Projects, Issues, optional Milestones, and Cycles for work in flight.

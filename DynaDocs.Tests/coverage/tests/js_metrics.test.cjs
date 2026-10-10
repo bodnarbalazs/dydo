@@ -67,8 +67,8 @@ test('a function used as a computed key is refused, never silently mis-joined', 
 });
 
 test('a class field holding a function is refused for an unjoinable location, not a duplicate', () => {
-  // ESLint scores a field initializer twice — once at the field head, once as 'Class field
-  // initializer' — against our single function row, so neither message can be attributed.
+  // ESLint scores a field initializer twice - once at the field head, once as 'Class field
+  // initializer' - against our single function row, so neither message can be attributed.
   for (const source of ['class A { f = (x) => (x ? 1 : 2); }', 'class A { g = function gg(x) { return x ? 1 : 2; }; }']) {
     assert.throws(() => analyze(source), /^Error: Missing or ambiguous JavaScript metric location 1:11$/);
   }

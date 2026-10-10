@@ -6,7 +6,7 @@ date: 2026-08-17
 participants: [balazs, Codex]
 ---
 
-# 043 — Dual-Projection, Format-Preserving Notion Body Sync
+# 043 - Dual-Projection, Format-Preserving Notion Body Sync
 
 Authored repo Markdown and Notion's Markdown echo are two representations of one document, not two
 strings that can safely share one merge base. Body sync therefore stores one base per representation,
@@ -29,8 +29,8 @@ formatting, merged duplicated regions, and serialized board-shaped collateral in
 
 Moving the spine to Notion's native Markdown API removes the in-house block converter but does not make
 the channel lossless. DR 035's live evidence records leading-H1 removal, escape insertion, blank-line
-collapse, and indentation changes. Comparing local bytes to that dialect—even after increasingly broad
-normalization—cannot distinguish channel drift from authorship and will eventually repeat the failure.
+collapse, and indentation changes. Comparing local bytes to that dialect-even after increasingly broad
+normalization-cannot distinguish channel drift from authorship and will eventually repeat the failure.
 
 ## Decision
 
@@ -63,7 +63,7 @@ and `FromBlocks(ToBlocks(body))` are retired as spine body transport and compari
 After every successful body write, the adapter immediately reads the page Markdown and returns that
 observed projection as the write receipt. The neutral read contract distinguishes `Complete` from
 `Truncated`; a truncated export is unavailable evidence, never a shortened body. The runner advances
-`localBody` to the exact body it wrote and `externalBody` to a complete receipt—not to a predicted
+`localBody` to the exact body it wrote and `externalBody` to a complete receipt-not to a predicted
 normalization.
 
 Property-only upserts explicitly carry no body-write operation. For a page with child pages, a native
@@ -76,8 +76,8 @@ When Notion genuinely changed, parse `localBody`, `externalBody`, the current re
 Notion body into source-spanned Markdown syntax trees. Align the two base trees by semantic node identity
 and order, then express local and external changes as operations on that shared alignment.
 
-- Unchanged local source spans—including blank lines, heading spelling, list markers, escapes, inline
-  markup, and surrounding frontmatter—are copied byte-for-byte from the current repo file.
+- Unchanged local source spans-including blank lines, heading spelling, list markers, escapes, inline
+  markup, and surrounding frontmatter-are copied byte-for-byte from the current repo file.
 - A uniquely mapped external insertion, deletion, or modification is grafted at the smallest unambiguous
   node/span. New syntax with no local spelling is rendered deterministically as repo Markdown.
 - Disjoint local and external operations compose automatically.
@@ -143,7 +143,7 @@ This is permanent correctness behavior for unknowable pre-upgrade state, not a t
 ### 7. Keep conflict safety permanent
 
 Shadowing is reserved for genuine overlap, ambiguous projection, truncated export, or unprovable legacy
-migration—not for all external edits. No result containing conflict markers or an uncertain body mapping
+migration-not for all external edits. No result containing conflict markers or an uncertain body mapping
 may be written to a canonical file or pushed to Notion. Resolved-shadow promotion creates a new dual base
 from the promoted local bytes and a confirmed external write receipt. Promotion first persists a durable
 resolution intent against the current external projection; it never pre-advances the base. The shadow is

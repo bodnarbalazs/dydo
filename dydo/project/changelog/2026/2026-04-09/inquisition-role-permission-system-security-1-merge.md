@@ -25,7 +25,7 @@ Merged worktree branch worktree/inquisition-role-permission-system into master. 
 - Reviewed by: Emma
 - Date: 2026-04-08 18:50
 - Result: PASSED
-- Notes: LGTM. Worktree merge was clean — both branches at same commit (2a94936). Worktree branch cleaned up correctly. All 3538 tests pass, 135/135 modules pass coverage tier requirements.
+- Notes: LGTM. Worktree merge was clean - both branches at same commit (2a94936). Worktree branch cleaned up correctly. All 3538 tests pass, 135/135 modules pass coverage tier requirements.
 
 Awaiting human approval.
 

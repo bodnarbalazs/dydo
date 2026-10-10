@@ -19,13 +19,13 @@ Every Issue carries exactly one Type:
 - `Merge`: one merge operation.
 - `Enablement`: access, environment, credentials or material other work needs.
 - `Inquisition`: many read-only eyes on the integrated feature; Bugs filed.
-- `Prototype`: a design question raised to fidelity the human can react to.
+- `Prototype`: a design question raised to fidelity the user can react to.
 - `Question`: one prepared, discrete question whose answer blocks named work.
 - `Research`: a factual answer whose investigation needs its own owner, status or evidence.
-- `Grilling`: a tree of intent or specification choices resolved with the human.
-- `Walkthrough`: the human inspects what landed.
+- `Grilling`: a tree of intent or specification choices resolved with the user.
+- `Walkthrough`: the user inspects what landed.
 
-Every Type a captain holds also carries one Mode: `AFK`, the captain reaches reviewed completion without a live conversation; `HITL`, the human and the captain work the Issue together in a session the human opened.
+Every Type a captain holds also carries one Mode: `AFK`, the captain reaches reviewed completion without a live conversation; `HITL`, the user and the captain work the Issue together in a session the user opened.
 
 ## Process
 

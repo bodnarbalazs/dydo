@@ -15,13 +15,13 @@ agent coordination.
 
 ## What dydo does
 
-- **Documentation as memory** — agents onboard from structured, reviewable project knowledge.
-- **Native skill authoring** — skills are plain `skills/<category>/<name>/` folders, edited
+- **Documentation as memory** - agents onboard from structured, reviewable project knowledge.
+- **Native skill authoring** - skills are plain `skills/<category>/<name>/` folders, edited
   directly and exposed flat through each host's discovery roots by `setup-skills.mjs`; there is no
   compile step.
-- **Guard enforcement** — `dydo guard` applies universal off-limits rules and project nudges.
-- **Documentation tooling** — `dydo check`, `dydo fix`, indexes, and graph commands keep knowledge usable.
-- **Reviewed delivery knowledge** — Decisions, Project plans, audits, and assimilation evidence remain in Git.
+- **Guard enforcement** - `dydo guard` applies universal off-limits rules and project nudges.
+- **Documentation tooling** - `dydo check`, `dydo fix`, indexes, and graph commands keep knowledge usable.
+- **Reviewed delivery knowledge** - Decisions, Project plans, audits, and assimilation evidence remain in Git.
 
 dydo does not manage Linear objects or mirror their state. A fresh project scaffolds durable knowledge,
 not a repository-backed work hierarchy; FutureFeatures live in Linear with the rest of the work graph.
@@ -33,6 +33,6 @@ Markdown and JSON are durable local state; Linear remains the external system of
 
 ## Related
 
-- [Architecture](./architecture.md) — Component and boundary overview
-- [DynaDocs](../reference/about-dynadocs.md) — Product overview and setup
-- [Work Model](./work-model.md) — Linear/Git operating contract
+- [Architecture](./architecture.md) - Component and boundary overview
+- [DynaDocs](../reference/about-dynadocs.md) - Product overview and setup
+- [Work Model](./work-model.md) - Linear/Git operating contract

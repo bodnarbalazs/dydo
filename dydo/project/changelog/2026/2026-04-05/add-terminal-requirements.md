@@ -14,7 +14,7 @@ Terminal compatibility section added to README.md, about-dynadocs.md, and dispat
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\README.md — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\README.md - Modified
 
 
 ## Review Summary

@@ -7,7 +7,7 @@ accepted: 2026-08-27
 participants: [balazs, Codex]
 ---
 
-# 044 — Linear-Canonical PM and the dydo Knowledge Boundary
+# 044 - Linear-Canonical PM and the dydo Knowledge Boundary
 
 Defines the canonical boundary between Linear's live work graph and dydo's durable repository knowledge,
 including FutureFeature intake and the dydo 3.0 migration posture.
@@ -32,12 +32,12 @@ to an Issue, never another PM object.
 
 The live work hierarchy uses Linear's native nouns:
 
-- **Initiative** — a broad goal spanning independently meaningful Projects.
-- **Project** — one bounded product or technical outcome.
-- **Issue** — the only actionable tracked work item. Type is expressed by template/label, not a separate
+- **Initiative** - a broad goal spanning independently meaningful Projects.
+- **Project** - one bounded product or technical outcome.
+- **Issue** - the only actionable tracked work item. Type is expressed by template/label, not a separate
   record class.
-- **Milestone** — an optional meaningful checkpoint inside a Project.
-- **Cycle** — an optional repeating capacity timebox, orthogonal to Projects.
+- **Milestone** - an optional meaningful checkpoint inside a Project.
+- **Cycle** - an optional repeating capacity timebox, orthogonal to Projects.
 
 Campaign, Sprint, Slice, Task, and the separate observed-problem Issue type retire as canonical PM
 records. Slice may remain a planning verb or implementation technique. Waypoint remains an optional
@@ -120,7 +120,7 @@ as the reviewed-intent rule above. Its 2026-09-01 amendment moves FutureFeatures
 superseding the repository-home rulings in DR 023, 034, and 040 while retaining the distinct
 FutureFeature type and human-only promotion rule. Wayfinding's Fog/frontier distinction remains.
 
-## Amendment — 2026-09-25
+## Amendment - 2026-09-25
 
 [DR 052](./052-dydo-map-read-only-linear-view.md) adds `dydo map`, a read-only, on-demand view of
 one Linear Project. It reads Linear's API with the user's `LINEAR_API_KEY` and never writes, caches,

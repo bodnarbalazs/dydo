@@ -14,7 +14,7 @@ Fixed flaky test: Merge_Finalize_DecodesWorktreeIdFromBranchSuffix was failing d
 
 ## Files Changed
 
-C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs — Modified
+C:\Users\User\Desktop\Projects\DynaDocs\DynaDocs.Tests\Commands\WorktreeCommandTests.cs - Modified
 
 
 ## Review Summary

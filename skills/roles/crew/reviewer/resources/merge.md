@@ -24,8 +24,8 @@ No review at another level substitutes for this one; final landing also proves P
    and why this pass exists. Done when every shared file, symbol and behaviour is checked.
 4. **Put the gates on the integrated state.** Each landed Issue's exact gate commands have run once
    on this exact merge commit: where a gate record names that commit you verify it, and where none
-   does you run them yourself in the merged tree. A green from any other tree — an isolated
-   worktree, either parent — proves nothing here. Done when every gate has its command and result
+   does you run them yourself in the merged tree. A green from any other tree - an isolated
+   worktree, either parent - proves nothing here. Done when every gate has its command and result
    recorded.
 5. **Prove acceptance** (final merge). Run every feature file the landed Issues wrote, then read the
    reviewed plan at its governing commit and prove each acceptance criterion against the merged

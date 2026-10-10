@@ -17,11 +17,11 @@ date: 2026-05-21
 
 ## Plan
 
-See `dydo/agents/Brian/plan-f13-windows.md` — amends §F13/[#0197](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0197-watchdog-and-terminal-launchers-do-not-scrub-or-pin-dydo-agent-on-child-processs.md) (Windows portion) of Dexter's plan.
+See `dydo/agents/Brian/plan-f13-windows.md` - amends §F13/[#0197](https://github.com/bodnarbalazs/dydo/blob/ffffc02dcdf92b9677d0eb4f522d1af57a869990/dydo/project/issues/resolved/0197-watchdog-and-terminal-launchers-do-not-scrub-or-pin-dydo-agent-on-child-processs.md) (Windows portion) of Dexter's plan.
 
 **Chosen mechanism:** `-NoProfile` + in-`-Command` controlled profile re-source. The
 `DYDO_AGENT` pin is the first `-Command` statement; profiles are then re-sourced so they
-observe the correct value. Fix is entirely in the command string — no `ProcessStartInfo`
+observe the correct value. Fix is entirely in the command string - no `ProcessStartInfo`
 change, `UseShellExecute=true` kept, `psi.Environment` never touched on Windows.
 
 **Why not the candidates:** `psi.Environment`/parent-env pins don't reach a tab opened in
@@ -31,12 +31,12 @@ customisations. No `wt`-native `--env` exists.
 
 ## Files Changed
 
-(None — planning only. Implementation: `Services/WindowsTerminalLauncher.cs` +
+(None - planning only. Implementation: `Services/WindowsTerminalLauncher.cs` +
 `DynaDocs.Tests/Services/TerminalLauncherTests.cs`, per the plan.)
 
 ## Review Summary
 
-(Pending — awaiting user sign-off, then Frank implements.)
+(Pending - awaiting user sign-off, then Frank implements.)
 
 ## Approval
 

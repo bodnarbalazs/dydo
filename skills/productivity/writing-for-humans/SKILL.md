@@ -1,13 +1,13 @@
 ---
 name: writing-for-humans
-description: The reply only the human reads. Cut AI tells and add voice in the conversation; a document, record or comment another agent will read is writing-for-agents's.
+description: The reply only the user reads. Cut AI tells and add voice in the conversation; a document, record or comment another agent will read is writing-for-agents's.
 ---
 
 <!-- Adapted from cursor/plugins pstack/unslop at 7314f723a487ec406b6369fe5865ba034cfed166 (MIT). -->
 
 # Writing for Humans
 
-Edit text to remove AI patterns and add human voice. One use: what only the human reads, the reply
+Edit text to remove AI patterns and add human voice. One use: what only the user reads, the reply
 in this conversation, ephemeral and read by nobody else. Anything another agent will read, a
 document, a Decision Record, a plan, a Linear comment, a commit message, is written for that agent
 first, by `writing-for-agents`.

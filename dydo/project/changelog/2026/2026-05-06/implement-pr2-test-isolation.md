@@ -19,9 +19,9 @@ CHANGES (DynaDocs.Tests/** only):
 
 VERIFICATION:
 - run_tests.py: Passed:4087, Failed:0, Duration 4m 3s (vs 3:13 baseline → +50s, within plan +60-120s prediction)
-- gap_check.py --force-run: 12 integration failures + 1 tier failure (Commands/TemplateCommand.cs T1). ALL residuals are in code paths owned by in-flight dydo-check-drift PR2 work (Rules/, CheckCommand, FixCommand, TemplateCommand) — untouched by my commit. Filtered re-run on ChangelogStructureTests + Fix_GeneratedHubsPassFrontmatterCheck reproduces 4/5 fail with identical error signatures, confirming pre-existing under in-flight working tree. Soft-pass per Adele's brief.
+- gap_check.py --force-run: 12 integration failures + 1 tier failure (Commands/TemplateCommand.cs T1). ALL residuals are in code paths owned by in-flight dydo-check-drift PR2 work (Rules/, CheckCommand, FixCommand, TemplateCommand) - untouched by my commit. Filtered re-run on ChangelogStructureTests + Fix_GeneratedHubsPassFrontmatterCheck reproduces 4/5 fail with identical error signatures, confirming pre-existing under in-flight working tree. Soft-pass per Adele's brief.
 
-OUT OF SCOPE (per plan): OQ4 docs touch on dydo/project/issues/0148-… + dydo/guides/coding-standards.md test-parallelism subsection — docs-writer territory; coordination with Adele pending.
+OUT OF SCOPE (per plan): OQ4 docs touch on dydo/project/issues/0148-… + dydo/guides/coding-standards.md test-parallelism subsection - docs-writer territory; coordination with Adele pending.
 
 ## Progress
 
@@ -46,9 +46,9 @@ CHANGES (DynaDocs.Tests/** only):
 
 VERIFICATION:
 - run_tests.py: Passed:4087, Failed:0, Duration 4m 3s (vs 3:13 baseline → +50s, within plan +60-120s prediction)
-- gap_check.py --force-run: 12 integration failures + 1 tier failure (Commands/TemplateCommand.cs T1). ALL residuals are in code paths owned by in-flight dydo-check-drift PR2 work (Rules/, CheckCommand, FixCommand, TemplateCommand) — untouched by my commit. Filtered re-run on ChangelogStructureTests + Fix_GeneratedHubsPassFrontmatterCheck reproduces 4/5 fail with identical error signatures, confirming pre-existing under in-flight working tree. Soft-pass per Adele's brief.
+- gap_check.py --force-run: 12 integration failures + 1 tier failure (Commands/TemplateCommand.cs T1). ALL residuals are in code paths owned by in-flight dydo-check-drift PR2 work (Rules/, CheckCommand, FixCommand, TemplateCommand) - untouched by my commit. Filtered re-run on ChangelogStructureTests + Fix_GeneratedHubsPassFrontmatterCheck reproduces 4/5 fail with identical error signatures, confirming pre-existing under in-flight working tree. Soft-pass per Adele's brief.
 
-OUT OF SCOPE (per plan): OQ4 docs touch on dydo/project/issues/0148-… + dydo/guides/coding-standards.md test-parallelism subsection — docs-writer territory; coordination with Adele pending.
+OUT OF SCOPE (per plan): OQ4 docs touch on dydo/project/issues/0148-… + dydo/guides/coding-standards.md test-parallelism subsection - docs-writer territory; coordination with Adele pending.
 
 ## Code Review (2026-05-05 20:24)
 

@@ -18,7 +18,7 @@ internal static class CheckDocValidator
         var typesService = new FrontmatterTypesService(basePath);
 
         // agents/ (and the other machine-local dirs) are excluded by the scanner's
-        // scanExclude invariants — files and folders share that one mechanism.
+        // scanExclude invariants - files and folders share that one mechanism.
         var allDocs = scanner.ScanDirectory(basePath);
         var allFolders = scanner.GetAllFolders(basePath);
 

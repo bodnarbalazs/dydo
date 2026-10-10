@@ -29,7 +29,7 @@ public static class ShellCompletionInstaller
 
     /// <summary>
     /// Writes completion block to the given profile path if not already present.
-    /// Extracted for testability — Install() calls this after detecting the shell.
+    /// Extracted for testability - Install() calls this after detecting the shell.
     /// </summary>
     public static string? InstallToProfile(string shell, string profilePath)
     {

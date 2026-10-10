@@ -745,7 +745,7 @@ public class InitCommandTests : IntegrationTestBase
     public async Task Init_Claude_MatcherIncludesPowerShell()
     {
         // Bug B: PowerShell was missing from the matcher, so Claude Code did not pipe
-        // PowerShell tool calls through `dydo guard` — total bypass of every guard layer.
+        // PowerShell tool calls through `dydo guard` - total bypass of every guard layer.
         var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
@@ -797,7 +797,7 @@ public class InitCommandTests : IntegrationTestBase
 
         // The PreToolUse guard command is exactly `"dydo guard"` (trailing quote), distinct from the
         // Stop hook's `"dydo guard --stop"`. Counting the quoted form isolates the PreToolUse hook so a
-        // re-run must leave exactly one of it — the Stop hook does not inflate the count.
+        // re-run must leave exactly one of it - the Stop hook does not inflate the count.
         var guardCount = content.Split("\"dydo guard\"").Length - 1;
         Assert.Equal(1, guardCount);
 
@@ -1032,7 +1032,7 @@ public class InitCommandTests : IntegrationTestBase
     {
         // setup-skills.mjs always creates BOTH .claude/skills/ and .agents/skills/ regardless of
         // which host is wired; that's host-local discovery state, not source, and must never ride
-        // a commit — for either host.
+        // a commit - for either host.
         var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
@@ -1066,7 +1066,7 @@ public class InitCommandTests : IntegrationTestBase
     public async Task Init_None_GitignoresBothSkillProjections()
     {
         // setup-skills.mjs always creates both projection folders even when no host is wired, so
-        // 'none' mode must still gitignore both — otherwise whichever host a developer later uses
+        // 'none' mode must still gitignore both - otherwise whichever host a developer later uses
         // locally leaves an untracked folder easy to commit by accident.
         var result = await InitProjectAsync("none");
 
@@ -1095,7 +1095,7 @@ public class InitCommandTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // With the roster gone (DR-041), join no longer assigns agents — it just re-wires the
+        // With the roster gone (DR-041), join no longer assigns agents - it just re-wires the
         // local integration for an already-initialized project, and succeeds.
         var result = await JoinProjectAsync("none");
 
@@ -1105,7 +1105,7 @@ public class InitCommandTests : IntegrationTestBase
     [Fact]
     public async Task Init_Join_Codex_RecordsIntegrationInConfig()
     {
-        // Issue 0300: a claude-inited project joined with codex must end up recording BOTH —
+        // Issue 0300: a claude-inited project joined with codex must end up recording BOTH -
         // join used to wire hooks without ever touching dydo.json.
         await InitProjectAsync("claude");
 

@@ -116,7 +116,7 @@ the default officer: an Issue gets a captain whether or not the user has invoked
    than either side. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-Issue
    PASS once all lanes are in. The full suites and the Issue's whole gate set
    run here, again at each Merge Sub-issue's combined gates and at the landing; within one such run
-   each suite executes once. **Done:** push the branch, open the PR with its PASS block on the
+   each suite executes once. **Done:** push the branch, write the PR body with `pr`, open the PR with its PASS block on the
    record and in the body; on an atomic Issue, also read CI green with `gh pr checks`; set
    `Ready to Merge`, and return `done <key>: PR ready`.
 7. **Merge.** When the final Merge Sub-issue's blocker clears, resume from the record and direct

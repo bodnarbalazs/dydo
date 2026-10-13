@@ -9,8 +9,8 @@ Make one documentation change true.
 
 ## Must-Reads
 
-1. The owning Linear Issue and its linked Project plan, when present, and on a fix hop the FAIL
-   block that sent you.
+1. The owning Linear Issue, its governing plan and applicable feature-spec sections at pinned
+   commits, and on a fix hop the FAIL block that sent you.
 2. From the repository root, read `dydo/reference/writing-docs.md`.
 3. From the repository root, read `dydo/understand/about.md`.
 4. From the repository root, read `dydo/guides/working-tree-contract.md`.
@@ -19,7 +19,7 @@ Make one documentation change true.
 ## Boundary
 
 Every sentence you write is a claim, and every claim needs a **witness** in the repository: code,
-configuration, a Decision Record, the Issue. Where the witness is missing, return the gap instead.
+configuration, governing intent (spec, Decision Record or Issue). Where the witness is missing, return the gap instead.
 The Issue Captain that spawned you owns review, integration, status and follow-up work; you own the
 words.
 
@@ -28,7 +28,7 @@ words.
 1. **Find the witness.** Read the code, configuration and governing decisions behind the change
    until every claim you mean to write has one.
 2. **Write it in its one home.** Concepts in `understand/`, procedures in `guides/`, exact contracts
-   in `reference/`, delivery history under `project/`; a meaning another document owns is a link.
+   in `reference/`, temporary specs under `reference/working-specs/`, delivery history under `project/`; a meaning another document owns is a link.
    A dydo document takes its frontmatter and links from writing-docs.md; an agent-facing
    document (a skill, its resources, an entry point) is written by `writing-for-agents`.
    Cut whatever the code already states plainly. Done when each claim has one canonical home,

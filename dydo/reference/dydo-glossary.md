@@ -35,11 +35,13 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Frontier** - the open, unblocked, unassigned map Issues: the edge of what a Project knows.
   Linear's own blocking relations and assignment render it; there is no separate navigation object.
 
-## Durable knowledge
+## Knowledge and contracts
 
 - **Decision** - a choice recorded in a Decision Record because it is hard to reverse, surprising
   later, and the result of a real trade-off. Issues carry questions, Decision Records carry
   decisions, and the two are linked rather than copied.
+- **Feature spec** - a temporary current anchor for shared multi-Issue behavior under
+  `dydo/reference/working-specs/<project-slug>/`; the [spec convention](./feature-spec-convention.md) owns its lifecycle.
 - **Project plan** - a reviewed repository contract the map holder writes only for cross-cutting
   architecture work, at low resolution: destination, acceptance, architecture, and an Issue
   map. Its `linear-project` URL is provenance, not synchronization.

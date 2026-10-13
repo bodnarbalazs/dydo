@@ -69,5 +69,7 @@ Two choices, trading the two loads:
 
 One `skills/<category>/<name>/` folder is committed and hand-maintained. `node setup-skills.mjs` creates
 per-skill POSIX symlinks or Windows junctions in the Claude and Codex discovery roots; OpenCode may read
-both roots too, but that is untested. A skill change edits the canonical folder once. Setup never copies or reconciles prose.
+both roots too, but that is untested. After a skill sync, run `node setup-skills.mjs` from the repository
+root. Verify each canonical skill resolves through both discovery roots and links to deleted skills
+are gone. Setup never copies or reconciles prose.
 What no tool may rewrite is listed in `dydo/files-off-limits.md`, read from the repository root.

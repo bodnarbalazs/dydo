@@ -13,6 +13,9 @@ This folder answers "What are the exact specs?" - detailed reference material fo
 
 ## Contents
 
+- [Feature Spec Convention](./feature-spec-convention.md) - rules for temporary shared intent
+- [Working Specs](./working-specs/_working-specs.md) - working specs grouped by Linear Project
+
 - **writing-docs.md** - Documentation conventions and validation rules
 - **dydo-commands.md** - CLI command reference
 - **linear-workspace-standard.md** - Canonical Linear workspace setup (reserved for its HITL pass)

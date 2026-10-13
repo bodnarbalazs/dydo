@@ -2,7 +2,7 @@
 
 Target: the contract text on the Issue as it stands before any code, invoked when the Issue Captain
 has bought a spec review. Judge it against the parent's criteria, the settled working tree, the
-governing Decisions and Project-plan section, and the `code-writer` skill.
+governing Decisions, pinned architecture-plan and feature-spec sections, and the `code-writer` skill.
 
 ## Boundary
 

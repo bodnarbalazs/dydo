@@ -24,7 +24,7 @@ type: guide
 
 | Field | Values | Description |
 |-------|--------|-------------|
-| `area` | `understand`, `guides`, `reference`, `general`, `frontend`, `backend`, `microservices`, `platform` | Which section this doc belongs to |
+| `area` | `understand`, `guides`, `reference`, `general`, `frontend`, `backend`, `microservices`, `platform`, `project` | Which section this doc belongs to |
 | `type` | `context`, `concept`, `guide`, `reference`, `hub`, `decision`, `pitfall`, `changelog` | What kind of document this is |
 
 ### Additional Fields
@@ -36,9 +36,8 @@ type: guide
 
 ### Role Context Reads
 
-Role skills can include a `## Must-Reads` section whose markdown links resolve from the skill
-folder, carrying its context. This selects role context; documentation frontmatter itself does not
-enforce reads.
+Role skills name repository-root paths in code spans under `## Must-Reads`; skill resources use
+folder-relative links. Frontmatter does not enforce reads.
 
 ---
 
@@ -71,6 +70,8 @@ Examples:
 - `apiAuthentication.md` (incorrect)
 
 ---
+
+Temporary feature specs use [Feature Spec Convention](./feature-spec-convention.md) for placement and lifecycle.
 
 ## Structure
 

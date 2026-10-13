@@ -45,9 +45,9 @@ map and how the Issues move, integrate, and finish together.
 - **Board discipline:** own Project and map-holder-held Issue statuses; delivery captains own theirs.
   Keep blockers, answers and evidence true to the work.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Neither role authors
-  production changes or reviews its own candidate. You do no Git beyond your plan's commits:
-  commission every other operation.
-- **Precedence:** user's live instruction → DR → reviewed plan at its governing commit → Issue
+  production changes or reviews its own candidate. Your Git authorship covers plans and feature specs;
+  commission other operations.
+- **Precedence:** user's live instruction → DR → reviewed architecture plan → feature spec (both pinned) → Issue
   contract → coding standards → existing code.
 - **Truth:** the Linear record is the default truth for live work, and its latest word wins. Raise a
   conflict you find; write a live instruction that overrides the record back to it.
@@ -92,7 +92,9 @@ map and how the Issues move, integrate, and finish together.
    of an earlier unready one. **Done:** every merge has its own captain-directed chain and fresh
    merge review; the record shows the order that ran and `done <key>: merged` wakes the next work.
 5. **Wayfind.** Rechart as discovery clears fog: create, split, drop, or resequence Issues and record
-   the discoveries on the Project. Where a repository plan exists, commit dated
+   the discoveries on the Project. Maintain shared feature intent following `dydo/reference/feature-spec-convention.md`,
+   read from the repository root; reconcile affected contracts. Where a repository plan exists,
+   commit dated
    `## Amendment - <YYYY-MM-DD>` sections to it; give every new implementation Issue one Type,
    one Mode, and `Todo`; re-review
    changes to destination, scope, acceptance criteria, or governing architecture and obtain human
@@ -124,7 +126,8 @@ map and how the Issues move, integrate, and finish together.
    Issue and ask the user to invoke `walkthrough` in this session, then facilitate it here.
    Findings reopen the lap: commission the first fix Captain to re-cut the feature from main under
    the same name; another inquisition needs confirmation. **Done:** an empty walkthrough closes
-   the Project `Completed`, and the landing Captain has confirmed artifact cleanup.
+   the Project `Completed`; commission spec retirement under `dydo/reference/feature-spec-convention.md`, and
+   confirm landing artifact cleanup.
 
 A `released <key>: <reason>` points to the record's resume SHA, blocker and prepared packet.
 Treat a dead captain as a release without a final push; preserve the last recorded hop. A human

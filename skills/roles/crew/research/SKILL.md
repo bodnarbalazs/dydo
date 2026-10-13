@@ -39,7 +39,7 @@ everything else you read.
    yourself. Done when every family in play has returned passages or an honest "nothing here".
 4. **Pool and verify.** Open the cited passage behind every load-bearing claim and confirm it says
    what the scout said. Where sources conflict, name the conflict and which governs; inside the
-   repository the order is the user's live instruction, Decision Record, reviewed plan, Issue
+   repository the order is the user's live instruction, Decision Record, reviewed architecture plan, feature spec (both pinned), Issue
    contract, standards, code. Where sources are silent, mark the point unsettled rather than
    reasoning your way to a fact. Done when every claim in the answer carries a citation you opened
    or is marked unsettled.

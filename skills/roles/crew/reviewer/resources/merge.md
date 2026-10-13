@@ -28,7 +28,7 @@ No review at another level substitutes for this one; final landing also proves P
    worktree, either parent - proves nothing here. Done when every gate has its command and result
    recorded.
 5. **Prove acceptance** (final merge). Run every feature file the landed Issues wrote, then read the
-   reviewed plan at its governing commit and prove each acceptance criterion against the merged
+   governing plan and feature specs at pinned commits and prove each acceptance criterion against the merged
    tree, citing the scenario, command output or file:line that proves it. A criterion you cannot
    prove is a finding. Done when every criterion is proved or a finding.
 

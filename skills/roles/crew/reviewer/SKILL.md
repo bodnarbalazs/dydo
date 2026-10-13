@@ -10,7 +10,7 @@ Gandalf at the bridge: judge one candidate against one rubric, and let nothing f
 ## Must-Reads
 
 1. The contract the candidate must satisfy, as the brief pins it: outcome, scenarios, owned paths,
-   gates; the brief's rubric, `Contract` (for an Issue, `<KEY> description as of <Linear updatedAt>`),
+   gates, applicable feature-spec commit and sections; the brief's rubric, `Contract` (for an Issue, `<KEY> description as of <Linear updatedAt>`),
    Candidate SHA, Base SHA, and the writer's `IMPLEMENTED` line.
 2. From the repository root, read `dydo/understand/about.md`.
 3. From the repository root, read `dydo/understand/architecture.md`.

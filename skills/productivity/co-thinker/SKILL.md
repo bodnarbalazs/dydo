@@ -48,6 +48,7 @@ what he alone has the authority to settle.
 |---|---|
 | Hard to reverse, surprising later, a real trade-off | a Decision Record in `dydo/project/decisions/` |
 | An unscheduled strategic possibility worth preserving | a Linear Issue in `FutureFeature` |
+| Shared feature intent within a Project | the map holder maintains its anchor following `dydo/reference/feature-spec-convention.md`, read from the repository root |
 | Project intent after the homework | the user invokes `to-project`, creating a Project in `Backlog` |
 | Ripe atomic Issue intent | file the Issue in `Todo` with one Type, one Mode, outcome, owned paths, blockers, exact gates and base branch; the admiral commissions its captain, or the user opens a captain session; this session does not become the captain |
 

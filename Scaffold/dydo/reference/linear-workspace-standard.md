@@ -20,8 +20,8 @@ status circle from its position in its category.
 | `Planning` | The map holder is charting the first low-resolution map with `wayfinder`; a repository plan, when one is written, runs its review loop. |
 | `Planned` | The human approved the charted route, and any repository plan passed independent review; the map holder commissions the first Issue Captain to open the feature. |
 | `In Progress` | The map holder is working the map through Issue Captains toward the destination. |
-| `Completed` | The destination landed and a walkthrough found nothing more. |
-| `Canceled` | The destination was consciously abandoned; the Project records why. |
+| `Completed` | The destination landed and a walkthrough found nothing more; commission [spec retirement](./feature-spec-convention.md#retirement). |
+| `Canceled` | The destination was consciously abandoned; record why and commission [spec retirement](./feature-spec-convention.md#retirement). |
 
 There are no canonical Project labels: a Project's status and Issue graph carry the information.
 
@@ -169,7 +169,7 @@ required connector capability.
 
 | Template | Body |
 |---|---|
-| `Feature` | `## Outcome` · `## Owned paths` · `## Blockers` · `## Exact gates` · `## Base branch`: the captain's compact acceptance contract, which is the spec the code-writer builds from; `## Exact gates` names the command for each test, suite and static gate. |
+| `Feature` | `## Outcome` · `## Owned paths` · `## Blockers` · `## Exact gates` · `## Base branch`, plus optional `## Spec` linking relevant feature-spec sections: the captain's bounded acceptance contract; `## Exact gates` names the command for each test, suite and static gate. |
 | `Bug` | the five fields, then `## Observed`, `## Expected`, `## Reproduction` (a scenario at the boundary, else the red test; a prose Bug quotes both contradicting passages at `file:line`); default Sub-issues: *reproduce or identify*, *fix*. |
 | `Merge` | `## Source` and `## Target` at their SHAs, `## Plan order` (the Merge Sub-issue this one is blocked by), `## Combined gates`, `## Conflicts expected`. |
 | `Enablement` | `## Condition` that must become true, `## Steps only the human can do`, `## Evidence` when done. |

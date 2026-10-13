@@ -608,8 +608,8 @@ flowchart LR
 ```
 
 Agents settle operational conflicts themselves, highest first: the human's live instruction, a
-Decision Record, the reviewed plan at its governing commit, the Issue contract, coding standards,
-existing code. Beside that ladder stands the truth rule for live work: the Linear record is the
+Decision Record, the reviewed architecture plan, the feature spec (both pinned), the Issue contract,
+coding standards, existing code. Beside that ladder stands the truth rule for live work: the Linear record is the
 default truth and its latest word wins; an agent that finds a conflict raises it, and a live
 instruction that overrides the record is written back to it. A crew member raises its hand by returning to its Issue Captain (row 47); the
 captain's rungs are a comment on the Issue and, when blocked, a wired Question Issue in `Todo`;

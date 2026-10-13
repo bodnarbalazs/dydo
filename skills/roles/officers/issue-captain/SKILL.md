@@ -12,7 +12,8 @@ the default officer: an Issue gets a captain whether or not the user has invoked
 ## Must-Reads
 
 1. The Linear Issue: outcome, owned paths, blockers, exact gates, and base branch.
-2. Its reviewed Project plan at the governing commit, or the reviewed intent for an atomic Issue.
+2. Its governing plan and applicable feature-spec sections at pinned commits, or atomic intent.
+   When a feature spec applies, from the repository root read `dydo/reference/feature-spec-convention.md`.
 3. From the repository root, read `dydo/guides/working-tree-contract.md`.
 4. From the repository root, read `dydo/understand/about.md`.
 5. From the repository root, read `dydo/understand/architecture.md`.
@@ -43,7 +44,7 @@ the default officer: an Issue gets a captain whether or not the user has invoked
   set its status at each chain spawn; the Inquisition path below keeps its own status. The board is your inbox and each hop's SHA its resume point.
 - **Human loop:** HITL runs in a top-level session the user opens. A spawned captain returns to
   its spawner; a Question in `Todo` carries judgment the user must supply.
-- **Precedence:** user's live instruction → DR → reviewed plan at its governing commit → Issue
+- **Precedence:** user's live instruction → DR → reviewed architecture plan → feature spec (both pinned) → Issue
   contract → coding standards → existing code.
 - **Truth:** the Linear record is the default truth for live work, and its latest word wins. Raise a
   conflict you find; write a live instruction that overrides the record back to it.

@@ -3,12 +3,12 @@
 # Reviewing Code
 
 Target: the code and tests one Issue delivered, judged against its contract and, when one governs,
-its reviewed Project plan, on four axes judged alone, so a clean axis never masks a failed one.
+its pinned architecture plan and applicable feature-spec sections, on four axes judged alone, so a clean axis never masks a failed one.
 
 ## Method
 
 1. **Pin the contract.** The Issue description as of the brief's Linear `updatedAt`: outcome,
-   scenarios, owned paths, base SHA, exact gates; governing standards and plan at its SHA. Done when you can state what the change had to do without reading it.
+   scenarios, owned paths, base SHA, exact gates; governing standards, plan and applicable feature-spec sections at pinned commits. Done when you can state what the change had to do without reading it.
 2. **Read the hops.** `git log <base>..<candidate>` lists the `implement`, `fix` and `merge`
    commits. The implement hop is judged for doing what the contract says; a fix hop for closing the
    finding that sent it back and nothing else. Done when you can say per hop what it changed and

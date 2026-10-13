@@ -1,7 +1,7 @@
 # Reviewing Documentation
 
 Target: one documentation change delivered by a Linear Issue. Two kinds arrive here: human-facing
-dydo documents under `dydo/`, judged against the code they describe, and agent-facing documents
+dydo documents under `dydo/`, judged against code for delivered behavior or governing intent for specs, and agent-facing documents
 (skills, their resources, entry points), judged as prompt files that must fire and route.
 **Drift** is the failure both kinds share: a claim the tree no longer supports, or an environment
 restated in prose (directory layout, `--help`, config) where a pointer would not have gone stale.
@@ -10,7 +10,7 @@ Every item below is a FAIL when it holds.
 ## Method
 
 1. **Resolve the contract.** The Issue description as of the brief's Linear `updatedAt`, and the
-   Project plan at its governing commit when one governs. Done when audience, owned paths,
+   governing plan and applicable feature-spec sections at pinned commits. Done when audience, owned paths,
    acceptance criteria and gates are named; an unmet criterion or an edit outside the owned paths
    is a finding.
 2. **Sort every changed file** into one of the two lists below, then work that list entire.

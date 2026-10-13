@@ -92,7 +92,7 @@ code - and only when it comes up empty file a Question Issue listing what you se
 blocker, then release with branch pushed, resume SHA posted, worktree removed, parent Todo and
 unassigned. The admiral resumes blocker-cleared work on the next captain return or human word. Settle operational conflicts by
 precedence: the human's live instruction, then the Decision Record, the reviewed plan at its governing
-commit, the Issue contract, coding standards, existing code. The ladder is crew → Issue Captain → admiral → human, and the human is
+commit, the pinned feature spec, the Issue contract, coding standards, existing code. The ladder is crew → Issue Captain → admiral → human, and the human is
 reached for a conflict with a Decision Record, live external state no agent can coordinate, or authority
 the contract cannot supply.
 

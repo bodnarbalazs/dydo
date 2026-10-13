@@ -70,7 +70,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype, show-me,
   writing-for-agents, writing-for-humans, retro, wizard, maintain-verification-skill.
 - **Human command** - a skill only the human invokes by name, never reached for by a model:
-  to-project, to-issue, grill-me, bro, handoff, sitrep, walkthrough, teach, improve-codebase-architecture,
+  to-project, to-issue, grill-me, bro, in-your-own-words, handoff, ketchup, walkthrough, teach, improve-codebase-architecture,
   create-verification-skill.
 - **Rubric** - the one named standard a reviewer judges a candidate against: code, docs,
   project-plan, spec, or merge.

@@ -66,9 +66,9 @@ public sealed class CanonicalSkillAssertionTests
             ["bro"] = "productivity", ["handoff"] = "productivity", ["teach"] = "productivity",
             ["show-me"] = "productivity", ["walkthrough"] = "productivity", ["writing-for-agents"] = "productivity",
             ["writing-for-humans"] = "productivity", ["retro"] = "productivity", ["wayfinder"] = "productivity",
-            ["to-project"] = "productivity", ["to-issue"] = "productivity", ["sitrep"] = "productivity"
+            ["to-project"] = "productivity", ["to-issue"] = "productivity", ["ketchup"] = "productivity", ["in-your-own-words"] = "productivity"
         };
-        Assert.Equal(33, expected.Count);
+        Assert.Equal(34, expected.Count);
         var root = Path.Combine(RepositoryRoot(), "skills");
         Assert.Equal(["engineering", "productivity", "roles"], ChildDirectoryNames(root));
         Assert.Equal(["crew", "officers"], ChildDirectoryNames(Path.Combine(root, "roles")));
@@ -381,7 +381,7 @@ public sealed class CanonicalSkillAssertionTests
     }
 
     [Fact]
-    public void SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo33()
+    public void SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo34()
     {
         var root = RepositoryRoot();
         var skillsRoot = Path.Combine(root, "skills");
@@ -390,7 +390,7 @@ public sealed class CanonicalSkillAssertionTests
             .GroupBy(skill => skill.Category.Split('/')[0])
             .ToDictionary(group => group.Key, group => group.Count());
         Assert.Equal(categories.Order(StringComparer.Ordinal), actualCounts.Keys.Order(StringComparer.Ordinal));
-        Assert.Equal(33, actualCounts.Values.Sum());
+        Assert.Equal(34, actualCounts.Values.Sum());
 
         var readme = File.ReadAllText(Path.Combine(skillsRoot, "README.md"));
         foreach (var category in categories)
@@ -401,7 +401,7 @@ public sealed class CanonicalSkillAssertionTests
         }
 
         Assert.Contains(
-            $"{actualCounts["roles"]} + {actualCounts["engineering"]} + {actualCounts["productivity"]} = 33",
+            $"{actualCounts["roles"]} + {actualCounts["engineering"]} + {actualCounts["productivity"]} = 34",
             readme);
     }
 

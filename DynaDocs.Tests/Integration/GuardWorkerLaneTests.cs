@@ -173,11 +173,92 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     [InlineData("Bash", "dydo check `dydo init`", "init")]
     [InlineData("Bash", "dydo check <(dydo init)", "init")]
     [InlineData("Bash", "dydo \\\ninit claude", "init")]
+    [InlineData("Bash", "dydo check \\\ndydo init", "init")]
     [InlineData("PowerShell", "dydo check (dydo init claude)", "init")]
     [InlineData("PowerShell", "dydo check $(dydo init claude)", "init")]
     [InlineData("PowerShell", "dydo `\ninit claude", "init")]
     [InlineData("PowerShell", "dydo `\r\ninit claude", "init")]
     public async Task Worker_NestedOrContinuedDydoCommand_Blocked(string tool, string command, string subcommand)
+    {
+        await InitProjectAsync();
+
+        var input = $"{{\"command\":{System.Text.Json.JsonSerializer.Serialize(command)}}}";
+        var result = await GuardWithStdinAsync(WorkerJson(tool, input));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Sub-agents may run only these dydo commands");
+        result.AssertStderrContains($"Not allowed here: dydo {subcommand}");
+    }
+
+    // dydo is only an invocation in command position; as a directory or argument of another
+    // command it is a path, and the worker may search, list and copy it.
+    [Theory]
+    [InlineData("Bash", "find dydo -name '*.md'")]
+    [InlineData("Bash", "find ./dydo -name '*.md'")]
+    [InlineData("Bash", "find dydo -type f")]
+    [InlineData("Bash", "grep -rn foo dydo src")]
+    [InlineData("Bash", "rg foo dydo --type md")]
+    [InlineData("Bash", "tree dydo -L 2")]
+    [InlineData("Bash", "ls dydo -la")]
+    [InlineData("Bash", "cp -r dydo backup")]
+    [InlineData("Bash", "git diff -- dydo src")]
+    [InlineData("PowerShell", "Get-ChildItem dydo -Recurse")]
+    [InlineData("PowerShell", "Get-ChildItem -Path dydo -Recurse -Filter *.md")]
+    public async Task Worker_DydoAsPathArgument_Allowed(string tool, string command)
+    {
+        await InitProjectAsync();
+
+        var input = $"{{\"command\":{System.Text.Json.JsonSerializer.Serialize(command)}}}";
+        var result = await GuardWithStdinAsync(WorkerJson(tool, input));
+
+        result.AssertSuccess();
+    }
+
+    // A wrapper that runs its arguments as a command puts dydo back in command position.
+    [Theory]
+    [InlineData("Bash", "env dydo init", "init")]
+    [InlineData("Bash", "env FOO=1 -u BAR dydo init", "init")]
+    [InlineData("Bash", "command dydo init", "init")]
+    [InlineData("Bash", "exec dydo init", "init")]
+    [InlineData("Bash", "nohup dydo init", "init")]
+    [InlineData("Bash", "time dydo init", "init")]
+    [InlineData("Bash", "timeout 5 dydo init", "init")]
+    [InlineData("Bash", "nice -n 5 dydo init", "init")]
+    [InlineData("Bash", "sudo -u root dydo init", "init")]
+    [InlineData("Bash", "echo x | xargs -n 1 dydo index", "index")]
+    [InlineData("Bash", "find . -exec dydo init \\;", "init")]
+    [InlineData("Bash", "find dydo -execdir dydo index {} +", "index")]
+    [InlineData("Bash", "cmd /c dydo init", "init")]
+    [InlineData("Bash", "cmd.exe /C dydo init", "init")]
+    [InlineData("Bash", "cmd /c \"dydo init\"", "init")]
+    [InlineData("Bash", "bash -c \"dydo sync\"", "sync")]
+    [InlineData("Bash", "bash -lc 'dydo check && dydo init'", "init")]
+    [InlineData("Bash", "sh -c 'dydo init'", "init")]
+    [InlineData("Bash", "pwsh -c \"dydo init\"", "init")]
+    [InlineData("Bash", "powershell -NoProfile -Command dydo init claude", "init")]
+    [InlineData("Bash", "python -c \"import os; os.system('dydo init')\"", "init")]
+    [InlineData("Bash", "node -e \"require('child_process').execSync('dydo init')\"", "init")]
+    [InlineData("Bash", "if true; then dydo init; fi", "init")]
+    [InlineData("Bash", "if false; then :; else dydo index; fi", "index")]
+    [InlineData("Bash", "for x in 1; do dydo init; done", "init")]
+    [InlineData("Bash", "true && { dydo init; }", "init")]
+    [InlineData("Bash", "echo `dydo init`", "init")]
+    [InlineData("Bash", "x=$(dydo init)", "init")]
+    [InlineData("Bash", "FOO=1 BAR=2 dydo map", "map")]
+    [InlineData("Bash", "\"dydo\" init claude", "init")]
+    [InlineData("Bash", "d\"\"ydo init", "init")]
+    [InlineData("Bash", "C:/Program\\ Files/dydo/dydo.exe init", "init")]
+    [InlineData("Bash", "./dydo.cmd init", "init")]
+    [InlineData("Bash", "dydo.bat init", "init")]
+    [InlineData("PowerShell", "& dydo init claude", "init")]
+    [InlineData("PowerShell", "& 'C:/tools/dydo.ps1' init", "init")]
+    [InlineData("PowerShell", "iex 'dydo init'", "init")]
+    [InlineData("PowerShell", "Invoke-Expression \"dydo index\"", "index")]
+    [InlineData("PowerShell", "Start-Process dydo -ArgumentList init", "init")]
+    [InlineData("PowerShell", "Start-Process -FilePath dydo.exe -ArgumentList init", "init")]
+    [InlineData("PowerShell", "$out = dydo init", "init")]
+    [InlineData("PowerShell", "1 | ForEach-Object { dydo init }", "init")]
+    public async Task Worker_WrappedDydoCommand_Blocked(string tool, string command, string subcommand)
     {
         await InitProjectAsync();
 
@@ -210,7 +291,11 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     [InlineData("cat dydo/index.md", null)]
     [InlineData("dydo check > dydo/out.md", null)]
     [InlineData("dydo check $(dydo fix)", null)]
-    [InlineData("echo dydo sync", "sync")]
+    [InlineData("echo dydo sync", null)]
+    [InlineData("find dydo -name x", null)]
+    [InlineData("dydo \\\ncheck dydo/guides", null)]
+    [InlineData("git commit -m \"dydo check passes\"", null)]
+    [InlineData("grep -rn \"dydo init\" docs", "init")]
     [InlineData("dydo check $(dydo init)", "init")]
     [InlineData("dydo check \"$(dydo index)\"", "index")]
     [InlineData("dydo check `dydo init`", "init")]

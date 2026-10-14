@@ -742,26 +742,139 @@ public static partial class GuardCommand
     private static readonly HashSet<string> WorkerAllowedRootFlags =
         new(["-h", "--help", "-?", "/?", "/h", "--version"], StringComparer.Ordinal);
 
+    // Words after which the next word is still in command position.
+    private static readonly HashSet<string> CommandPrefixWords =
+        new(["if", "then", "else", "elif", "do", "while", "until", "!", "{", "(", ".", "="], StringComparer.Ordinal);
+
+    // Commands that run the command following their flags, with the flags that take a value.
+    private static readonly Dictionary<string, HashSet<string>> WrapperValueFlags = BuildWrapperValueFlags();
+
+    // Commands that run the command following a marker word: find -exec, cmd /c, bash -c, pwsh -Command.
+    private static readonly Dictionary<string, Regex> WrapperMarkers = BuildWrapperMarkers();
+
+    private static Dictionary<string, HashSet<string>> BuildWrapperValueFlags()
+    {
+        HashSet<string> none = [];
+        var startProcess = new HashSet<string>(
+            ["-ArgumentList", "-WorkingDirectory", "-WindowStyle", "-Verb", "-Credential",
+             "-RedirectStandardInput", "-RedirectStandardOutput", "-RedirectStandardError"],
+            StringComparer.OrdinalIgnoreCase);
+        return new()
+        {
+            ["env"] = ["-u", "--unset", "-C", "--chdir"],
+            ["command"] = none,
+            ["exec"] = ["-a"],
+            ["nohup"] = none,
+            ["time"] = ["-f", "-o"],
+            ["nice"] = ["-n"],
+            ["timeout"] = ["-s", "-k"],
+            ["sudo"] = ["-u", "-g", "-h", "-p", "-C", "-D", "-r", "-t", "-T", "-U"],
+            ["xargs"] = ["-a", "-d", "-E", "-I", "-L", "-n", "-P", "-s"],
+            ["iex"] = none,
+            ["invoke-expression"] = none,
+            ["start-process"] = startProcess,
+            ["saps"] = startProcess,
+            ["start"] = startProcess,
+        };
+    }
+
+    private static Dictionary<string, Regex> BuildWrapperMarkers()
+    {
+        var shell = ShellCommandFlagRegex();
+        return new()
+        {
+            ["find"] = FindExecRegex(),
+            ["cmd"] = CmdRunRegex(),
+            ["cmd.exe"] = CmdRunRegex(),
+            ["bash"] = shell, ["sh"] = shell, ["zsh"] = shell, ["dash"] = shell,
+            ["pwsh"] = shell, ["pwsh.exe"] = shell, ["powershell"] = shell, ["powershell.exe"] = shell,
+        };
+    }
+
     /// <summary>
     /// Returns the first dydo subcommand in <paramref name="command"/> that a sub-agent may not
-    /// run, or null when every dydo invocation is allowed. Backslash and PowerShell-backtick
-    /// line continuations are joined, then every dydo occurrence in every shell segment faces
-    /// the allowlist, including one nested in another command's arguments ($( ), backticks,
-    /// &lt;( ), PowerShell ( )). Leading flags are skipped; a flag-only invocation is allowed
-    /// only for help/version.
+    /// run, or null when every dydo invocation is allowed. dydo is an invocation only in command
+    /// position: at the start of a shell segment (after VAR=value assignments and the keywords
+    /// if/then/else/do/{), right after $( ( &lt;( { or a backtick, or as the command a wrapper runs
+    /// (env, command, exec, nohup, time, nice, timeout, sudo, xargs, find -exec, cmd /c,
+    /// bash/sh/pwsh/powershell -c, iex, Start-Process). Every quoted string is re-read as a command
+    /// line of its own, since bash -c, iex, python -c and node -e run one. Elsewhere dydo is a path
+    /// or a word (find dydo -name x, echo dydo sync) and is allowed. A line ended by a backslash or
+    /// PowerShell-backtick continuation is read both joined and split. Leading flags of an invocation are
+    /// skipped; a flag-only invocation is allowed only for help/version.
     /// </summary>
     internal static string? FindWorkerBlockedDydoCommand(string command)
     {
-        var joined = LineContinuationRegex().Replace(command, " ");
-        return ShellSegmentRegex().Split(joined)
-            .SelectMany(segment => DydoOccurrenceRegex().Matches(segment))
-            .Select(match => WorkerBlockedToken(match.Groups["args"].Value))
+        // A continued line is read both joined and split, so a dydo call that starts the next
+        // line counts as one even though the shell would make it an argument.
+        string[] readings = [LineContinuationRegex().Replace(command, " "), LineContinuationRegex().Replace(command, "\n")];
+        return readings.SelectMany(CommandLines)
+            .SelectMany(line => ShellSegmentRegex().Split(line))
+            .SelectMany(CommandStarts)
+            .Select(BlockedDydoInvocation)
             .FirstOrDefault(blocked => blocked != null);
     }
 
-    private static string? WorkerBlockedToken(string args)
+    private static IEnumerable<string> CommandLines(string text) =>
+        QuotedStringRegex().Matches(text)
+            .SelectMany(quoted => CommandLines(quoted.Groups["double"].Success
+                ? quoted.Groups["double"].Value.Replace("\\\"", "\"")
+                : quoted.Groups["single"].Value))
+            .Prepend(text);
+
+    private static IEnumerable<string> CommandStarts(string segment) =>
+        segment.Select((c, i) => (c, i))
+            .Where(opener => opener.c is '(' or '{' or '`')
+            .Select(opener => segment[(opener.i + 1)..])
+            .Prepend(segment);
+
+    private static string? BlockedDydoInvocation(string commandStart)
     {
-        var tokens = args.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+        var words = ShellWordRegex().Matches(commandStart).Select(m => m.Value).ToList();
+        for (var i = SkipToCommand(words, 0); i < words.Count; i = SkipToCommand(words, WrappedCommandIndex(words, i)))
+        {
+            if (DydoExecutableRegex().IsMatch(CommandName(words[i])))
+                return WorkerBlockedToken(words.Skip(i + 1));
+        }
+        return null;
+    }
+
+    private static int SkipToCommand(List<string> words, int i)
+    {
+        while (i < words.Count && (CommandPrefixWords.Contains(words[i]) || AssignmentRegex().IsMatch(words[i])))
+            i++;
+        return i;
+    }
+
+    // Index of the command that words[at] runs, or words.Count when it runs none.
+    private static int WrappedCommandIndex(List<string> words, int at)
+    {
+        var name = CommandName(words[at]).ToLowerInvariant();
+        if (WrapperMarkers.TryGetValue(name, out var marker))
+        {
+            var found = words.FindIndex(at + 1, marker.IsMatch);
+            return found < 0 ? words.Count : found + 1;
+        }
+        if (!WrapperValueFlags.TryGetValue(name, out var valueFlags))
+            return words.Count;
+
+        var next = at + 1;
+        while (next < words.Count && (words[next].StartsWith('-') || AssignmentRegex().IsMatch(words[next])))
+            next += valueFlags.Contains(words[next]) ? 2 : 1;
+        return name == "timeout" ? next + 1 : next;
+    }
+
+    // A word as the shell would name the program: quotes, PowerShell backticks and cmd carets
+    // removed, directory dropped ("C:/Program Files/dydo/dydo.exe" -> dydo.exe).
+    private static string CommandName(string word)
+    {
+        var unquoted = word.Replace("\"", "").Replace("'", "").Replace("`", "").Replace("^", "");
+        return unquoted[(unquoted.LastIndexOfAny(['/', '\\']) + 1)..];
+    }
+
+    private static string? WorkerBlockedToken(IEnumerable<string> args)
+    {
+        var tokens = args
             .Select(t => t.Trim('"', '\'', ')', '}', '`'))
             .Where(t => t.Length > 0)
             .ToArray();
@@ -778,11 +891,29 @@ public static partial class GuardCommand
     [GeneratedRegex(@"&&|\|\||[;&|\n\r]")]
     private static partial Regex ShellSegmentRegex();
 
-    // Any dydo word followed by arguments, wherever it stands: bare, quoted or path-qualified
-    // (./dydo, "C:/tools/dydo.exe"), and inside $( ), backticks, <( ) or ( ). The lookahead
-    // captures the rest of the segment without consuming it, so a nested dydo matches too.
-    [GeneratedRegex(@"(?<![\w.-])dydo(?:\.(?:exe|cmd|ps1|bat))?[""']?(?=[ \t]+(?<args>.*))", RegexOptions.IgnoreCase)]
-    private static partial Regex DydoOccurrenceRegex();
+    [GeneratedRegex(@"""(?<double>(?:\\.|[^""\\])*)""|'(?<single>[^']*)'")]
+    private static partial Regex QuotedStringRegex();
+
+    // One shell word: quoted runs, backslash escapes and plain characters up to whitespace.
+    [GeneratedRegex(@"(?:""(?:\\.|[^""\\])*""?|'[^']*'?|\\.|[^\s""'\\])+")]
+    private static partial Regex ShellWordRegex();
+
+    [GeneratedRegex(@"^dydo(?:\.(?:exe|cmd|ps1|bat))?$", RegexOptions.IgnoreCase)]
+    private static partial Regex DydoExecutableRegex();
+
+    // VAR=value (bash) or a $variable before PowerShell's =.
+    [GeneratedRegex(@"^(?:[A-Za-z_]\w*=|\$[\w:]+$)")]
+    private static partial Regex AssignmentRegex();
+
+    [GeneratedRegex(@"^-(?:exec|execdir|ok|okdir)$")]
+    private static partial Regex FindExecRegex();
+
+    [GeneratedRegex(@"^/[ck]$", RegexOptions.IgnoreCase)]
+    private static partial Regex CmdRunRegex();
+
+    // bash -c, -lc, -xc; PowerShell -c, -Command and its abbreviations.
+    [GeneratedRegex(@"^-(?:[a-z]*c|com[a-z]*)$", RegexOptions.IgnoreCase)]
+    private static partial Regex ShellCommandFlagRegex();
 
     /// <summary>
     /// Check if a command is a dydo command.

@@ -115,7 +115,84 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(WorkerJson("Bash", "{\"command\":\"dydo agent claim auto\"}"));
 
         result.AssertExitCode(2);
-        result.AssertStderrContains("Sub-agents don't run dydo commands");
+        result.AssertStderrContains("Sub-agents may run only these dydo commands");
+        result.AssertStderrContains("dydo agent");
+    }
+
+    // Issue Captains and their crew are native sub-agents in dydo 3; the documentation and
+    // coverage gates are theirs to run, so the worker lane admits read-only and gate commands.
+    [Theory]
+    [InlineData("dydo check")]
+    [InlineData("dydo check dydo/guides")]
+    [InlineData("dydo fix dydo/guides/coding-standards.md")]
+    [InlineData("./dydo check")]
+    [InlineData("dydo gap-check")]
+    [InlineData("dydo graph stats")]
+    [InlineData("dydo validate")]
+    [InlineData("dydo help")]
+    [InlineData("dydo version")]
+    [InlineData("dydo --version")]
+    [InlineData("dydo --help")]
+    [InlineData("dydo check && dydo fix")]
+    [InlineData("git status && dydo check")]
+    public async Task Worker_GateDydoCommand_Allowed(string command)
+    {
+        await InitProjectAsync();
+
+        var result = await GuardWithStdinAsync(WorkerJson("Bash", $"{{\"command\":\"{command}\"}}"));
+
+        result.AssertSuccess();
+    }
+
+    [Theory]
+    [InlineData("dydo sync", "sync")]
+    [InlineData("dydo init claude", "init")]
+    [InlineData("dydo index", "index")]
+    [InlineData("dydo guard", "guard")]
+    [InlineData("dydo check && dydo sync", "sync")]
+    [InlineData("dydo check; ./dydo init claude", "init")]
+    [InlineData("dydo check || dydo index", "index")]
+    [InlineData("dydo check | dydo sync", "sync")]
+    [InlineData("dydo --help sync", "sync")]
+    public async Task Worker_OrchestrationDydoCommand_Blocked(string command, string subcommand)
+    {
+        await InitProjectAsync();
+
+        var result = await GuardWithStdinAsync(WorkerJson("Bash", $"{{\"command\":\"{command}\"}}"));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Sub-agents may run only these dydo commands");
+        result.AssertStderrContains($"dydo {subcommand}");
+    }
+
+    [Fact]
+    public async Task TopLevelSession_DydoSync_NotBlockedByWorkerRule()
+    {
+        await InitProjectAsync();
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\","
+            + "\"tool_input\":{\"command\":\"dydo check && dydo sync\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    [Theory]
+    [InlineData("dydo check", null)]
+    [InlineData("./dydo fix docs", null)]
+    [InlineData("C:/tools/dydo.exe check", null)]
+    [InlineData("dydo", null)]
+    [InlineData("dydo -h", null)]
+    [InlineData("echo dydo sync", null)]
+    [InlineData("cat dydo/index.md", null)]
+    [InlineData("dydo sync", "sync")]
+    [InlineData("dydo check\ndydo init", "init")]
+    [InlineData("dydo check && (dydo sync)", "sync")]
+    [InlineData("DYDO_X=1 dydo map", "map")]
+    [InlineData("dydo --verbose", "--verbose")]
+    public void FindWorkerBlockedDydoCommand_ParsesEverySegment(string command, string? expected)
+    {
+        Assert.Equal(expected, GuardCommand.FindWorkerBlockedDydoCommand(command));
     }
 
     [Fact]

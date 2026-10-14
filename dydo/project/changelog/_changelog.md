@@ -41,6 +41,7 @@ Required sections:
 
 ## Releases
 
+- [dydo 3.3.1 - Sub-agents run the dydo gates](./2026/2026-10-14/dydo-3-3-1-worker-gate-commands.md)
 - [dydo 3.3.0 - Working specs and communication](./2026/2026-10-14/dydo-3-3-0-working-specs-and-communication-skills.md)
 - [dydo 3.2.0 - Sitrep and skill voice](./2026/2026-10-10/dydo-3-2-0-sitrep-and-skill-voice.md)
 - [dydo 3.1.5 - Skill release preparation](./2026/2026-10-05/dydo-3-1-5-skill-release.md)

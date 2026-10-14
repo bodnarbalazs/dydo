@@ -37,12 +37,14 @@ the original baseline; correcting the local glossary path in `design-it-twice.md
 
 | Upstream portion | Adapted in |
 |---|---|
-| `pr` (verbatim, including credits and metadata) | `skills/engineering/pr/SKILL.md`, `skills/engineering/pr/agents/openai.yaml`, `skills/engineering/pr/CREDITS.md` |
+| `pr` | `skills/engineering/pr/SKILL.md`, `skills/engineering/pr/agents/openai.yaml`, `skills/engineering/pr/CREDITS.md` |
 | `retro` Automated checks and Coding standards lenses | `skills/productivity/retro/SKILL.md` |
 | `tdd` glossary read | `skills/roles/crew/code-writer/SKILL.md` |
 
-The `pr` files above are imported verbatim; their attribution is recorded here rather than inserted
-into the skill. Upstream `CREDITS.md` preserves the attribution to Dex Horthy’s `show-me` material.
+The `pr` files above retain the pinned upstream baseline, credits and metadata, with local
+independent-review and glossary-path adaptations in `SKILL.md`; their attribution is recorded here
+rather than inserted into the skill. Upstream `CREDITS.md` preserves the attribution to Dex Horthy’s
+`show-me` material.
 
 MIT License
 

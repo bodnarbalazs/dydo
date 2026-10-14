@@ -111,7 +111,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        // A worker's dydo command would otherwise mutate the parent's session state
+        // An unknown or retired subcommand (here the 2.0-era agent claim) is outside the allowlist
         var result = await GuardWithStdinAsync(WorkerJson("Bash", "{\"command\":\"dydo agent claim auto\"}"));
 
         result.AssertExitCode(2);
@@ -165,6 +165,30 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         result.AssertStderrContains($"dydo {subcommand}");
     }
 
+    // A blocked dydo call nested in an allowed one's arguments, or split by a line
+    // continuation, is still a dydo call: every occurrence faces the allowlist.
+    [Theory]
+    [InlineData("Bash", "dydo check $(dydo init)", "init")]
+    [InlineData("Bash", "dydo check \"$(dydo index)\"", "index")]
+    [InlineData("Bash", "dydo check `dydo init`", "init")]
+    [InlineData("Bash", "dydo check <(dydo init)", "init")]
+    [InlineData("Bash", "dydo \\\ninit claude", "init")]
+    [InlineData("PowerShell", "dydo check (dydo init claude)", "init")]
+    [InlineData("PowerShell", "dydo check $(dydo init claude)", "init")]
+    [InlineData("PowerShell", "dydo `\ninit claude", "init")]
+    [InlineData("PowerShell", "dydo `\r\ninit claude", "init")]
+    public async Task Worker_NestedOrContinuedDydoCommand_Blocked(string tool, string command, string subcommand)
+    {
+        await InitProjectAsync();
+
+        var input = $"{{\"command\":{System.Text.Json.JsonSerializer.Serialize(command)}}}";
+        var result = await GuardWithStdinAsync(WorkerJson(tool, input));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Sub-agents may run only these dydo commands");
+        result.AssertStderrContains($"Not allowed here: dydo {subcommand}");
+    }
+
     [Fact]
     public async Task TopLevelSession_DydoSync_NotBlockedByWorkerRule()
     {
@@ -183,8 +207,21 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     [InlineData("C:/tools/dydo.exe check", null)]
     [InlineData("dydo", null)]
     [InlineData("dydo -h", null)]
-    [InlineData("echo dydo sync", null)]
     [InlineData("cat dydo/index.md", null)]
+    [InlineData("dydo check > dydo/out.md", null)]
+    [InlineData("dydo check $(dydo fix)", null)]
+    [InlineData("echo dydo sync", "sync")]
+    [InlineData("dydo check $(dydo init)", "init")]
+    [InlineData("dydo check \"$(dydo index)\"", "index")]
+    [InlineData("dydo check `dydo init`", "init")]
+    [InlineData("dydo check <(dydo init)", "init")]
+    [InlineData("git status $(dydo init)", "init")]
+    [InlineData("x=$(dydo init)", "init")]
+    [InlineData("dydo check (dydo init claude)", "init")]
+    [InlineData("dydo \\\ninit claude", "init")]
+    [InlineData("dydo `\ninit claude", "init")]
+    [InlineData("\"C:/Program Files/dydo/dydo.exe\" init", "init")]
+    [InlineData("for x in 1; do dydo init; done", "init")]
     [InlineData("dydo sync", "sync")]
     [InlineData("dydo check\ndydo init", "init")]
     [InlineData("dydo check && (dydo sync)", "sync")]

@@ -17,11 +17,14 @@ dydo 2.0 worker model. In dydo 3, Issue Captains and their crew are native sub-a
 
 - The guard's worker lane allows `dydo check`, `fix`, `gap-check`, `graph`, `validate`, `help`,
   `version` and the root `--help`/`--version` flags from sub-agents.
-- `init`, `index`, `guard`, `map`, `completions`, and any unknown or retired subcommand stay blocked
+- `init`, `index`, `guard`, `map`, `completions`, `_complete`, and any unknown or retired subcommand stay blocked
   for sub-agents. The top-level session is unaffected.
-- The guard checks every `dydo` invocation in a compound command, split on `;`, `&`, `|` and
-  newlines. It accepts `./dydo`, a path-qualified `dydo`, `VAR=value` prefixes, subshell openers
-  and flags before the subcommand. `dydo check && dydo init` is blocked.
+- The guard checks every `dydo` invocation in a compound command. It joins backslash and
+  PowerShell-backtick line continuations, splits on `;`, `&`, `|` and newlines, and checks every
+  `dydo` word followed by arguments wherever it stands: bare, quoted or path-qualified, behind a
+  wrapper such as `env` or `cmd /c`, and nested in `$( )`, backticks, `<( )` or PowerShell `( )`.
+  Flags before the subcommand are skipped. `dydo check && dydo init` and `dydo check $(dydo init)`
+  are blocked, and so is plain text such as `echo dydo sync`.
 - The block message names the allowed commands and the one it refused.
 - Align the runtime and npm package versions to 3.3.1, point NuGet release notes to this entry
   and permit publication only on the exact v3.3.1 tag.

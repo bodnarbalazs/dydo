@@ -450,7 +450,7 @@ public static partial class GuardCommand
             Console.Error.WriteLine("BLOCKED: Sub-agents may run only these dydo commands: "
                 + string.Join(", ", WorkerAllowedDydoSubcommands) + " (plus --help/--version).");
             Console.Error.WriteLine($"  Not allowed here: dydo {workerBlocked}");
-            Console.Error.WriteLine("  Setup, generation and hook commands (init, index, guard, map, completions)");
+            Console.Error.WriteLine("  Setup, generation and hook commands (init, index, guard, map, completions, _complete)");
             Console.Error.WriteLine("  belong to the top-level session that spawned you.");
             return ExitCodes.ToolError;
         }
@@ -731,9 +731,6 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Check if a command is a dydo command.
-    /// </summary>
-    /// <summary>
     /// dydo subcommands a sub-agent may run: the documentation and coverage gates
     /// (check, fix, gap-check), read-only inspection (graph, validate) and help/version.
     /// Setup, generation and hook commands (init, index, guard, map, completions, ...)
@@ -747,25 +744,19 @@ public static partial class GuardCommand
 
     /// <summary>
     /// Returns the first dydo subcommand in <paramref name="command"/> that a sub-agent may not
-    /// run, or null when every dydo invocation is allowed. Every shell segment (split on
-    /// ; &amp; | and newlines) is checked, so a blocked command chained after an allowed one
-    /// is still found. Leading flags are skipped; a flag-only invocation is allowed only
-    /// for help/version.
+    /// run, or null when every dydo invocation is allowed. Backslash and PowerShell-backtick
+    /// line continuations are joined, then every dydo occurrence in every shell segment faces
+    /// the allowlist, including one nested in another command's arguments ($( ), backticks,
+    /// &lt;( ), PowerShell ( )). Leading flags are skipped; a flag-only invocation is allowed
+    /// only for help/version.
     /// </summary>
     internal static string? FindWorkerBlockedDydoCommand(string command)
     {
-        foreach (var segment in ShellSegmentRegex().Split(command))
-        {
-            var match = DydoInvocationRegex().Match(segment);
-            if (!match.Success)
-                continue;
-
-            var blocked = WorkerBlockedToken(match.Groups["args"].Value);
-            if (blocked != null)
-                return blocked;
-        }
-
-        return null;
+        var joined = LineContinuationRegex().Replace(command, " ");
+        return ShellSegmentRegex().Split(joined)
+            .SelectMany(segment => DydoOccurrenceRegex().Matches(segment))
+            .Select(match => WorkerBlockedToken(match.Groups["args"].Value))
+            .FirstOrDefault(blocked => blocked != null);
     }
 
     private static string? WorkerBlockedToken(string args)
@@ -781,14 +772,21 @@ public static partial class GuardCommand
         return tokens.FirstOrDefault(t => !WorkerAllowedRootFlags.Contains(t));
     }
 
+    [GeneratedRegex(@"[\\`]\r?\n")]
+    private static partial Regex LineContinuationRegex();
+
     [GeneratedRegex(@"&&|\|\||[;&|\n\r]")]
     private static partial Regex ShellSegmentRegex();
 
-    // A segment that invokes dydo: optional subshell/brace openers and VAR=value prefixes,
-    // then dydo by bare name or any path (./dydo, C:/tools/dydo.exe).
-    [GeneratedRegex(@"^[\s({`]*(?:\$\()?\s*(?:\w+=\S*\s+)*(?:\S*[/\\])?dydo(?:\.exe)?(?<args>(?:\s.*)?)$", RegexOptions.IgnoreCase)]
-    private static partial Regex DydoInvocationRegex();
+    // Any dydo word followed by arguments, wherever it stands: bare, quoted or path-qualified
+    // (./dydo, "C:/tools/dydo.exe"), and inside $( ), backticks, <( ) or ( ). The lookahead
+    // captures the rest of the segment without consuming it, so a nested dydo matches too.
+    [GeneratedRegex(@"(?<![\w.-])dydo(?:\.(?:exe|cmd|ps1|bat))?[""']?(?=[ \t]+(?<args>.*))", RegexOptions.IgnoreCase)]
+    private static partial Regex DydoOccurrenceRegex();
 
+    /// <summary>
+    /// Check if a command is a dydo command.
+    /// </summary>
     internal static bool IsDydoCommand(string command)
     {
         return DydoCommandRegex().IsMatch(command);

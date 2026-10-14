@@ -7,7 +7,7 @@ type: context
 
 DynaDocs (dydo) is a documentation, skill-authoring, and guardrail framework for AI coding assistants.
 It makes durable project context explicit and versioned, then authors shared methods as native skills
-for coding agent runtimes. Linear owns live project management; dydo/Git owns knowledge and reviewed proof.
+for coding agent runtimes. Linear owns live project management; dydo/Git owns knowledge, temporary feature specs and reviewed proof.
 
 This repository is both the dydo implementation and a living example of its documentation model. Claude
 Code and Codex own runtime identity, permissions, process lifecycle, worktree isolation, and native
@@ -24,7 +24,7 @@ agent coordination.
 - **Reviewed delivery knowledge** - Decisions, Project plans, audits, and assimilation evidence remain in Git.
 
 dydo does not manage Linear objects or mirror their state. A fresh project scaffolds durable knowledge,
-not a repository-backed work hierarchy; FutureFeatures live in Linear with the rest of the work graph.
+with optional [working specs](../reference/working-specs/_working-specs.md); FutureFeatures live in Linear.
 
 ## Technology
 

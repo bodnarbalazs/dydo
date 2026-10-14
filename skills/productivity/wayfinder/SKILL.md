@@ -33,8 +33,9 @@ inside that name. Titles scan; walls of bare keys do not.
 ## The map
 
 At Project scale, the Linear Project description is the whole map at low resolution. It indexes; each
-Wayfinding Issue stores its own context and resolution. Open Issues stay out of the description and
-are found through Linear queries.
+Wayfinding Issue stores its own context and resolution. Link shared feature anchors following
+`dydo/reference/feature-spec-convention.md`, read from the repository root when creating or changing one.
+Open Issues are found through Linear queries.
 
 ```markdown
 **Map holder:** <the user, or the admiral the user invoked; rewritten when the map changes hands>

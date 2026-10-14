@@ -5,7 +5,7 @@ type: concept
 
 # Work Model
 
-How work moves here: Linear owns the live work graph, Git and dydo own durable knowledge and proof,
+How work moves here: Linear owns the live work graph, Git and dydo own knowledge, feature specs and proof,
 and every session places itself on one flow map before it acts. The stages, the roles that hold them,
 and the reviews that prove them follow
 [Decision 047](../project/decisions/047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md),
@@ -57,7 +57,7 @@ the inbox; an admiral wakes on a captain's return or the human's word.
 |---|---|
 | Initiatives, Projects, Issues, optional Milestones and Cycles | Linear |
 | Status, priority, assignee, dependencies, updates, review state | Linear |
-| Decisions, reviewed Project plans, guides | dydo/Git |
+| Decisions, reviewed architecture plans, guides, temporary feature specs | dydo/Git |
 | Audit, inquisition, migration, and assimilation evidence | dydo/Git |
 | Release tags and changelog | Git |
 | FutureFeatures and their promotion state | Linear |
@@ -71,11 +71,12 @@ its official MCP, UI, API, and integrations.
 
 No implementation begins without a contract another agent can review independently.
 
-- One atomic Issue can be its own reviewed contract. Coordinated, cross-cutting, or
-  architecture-sensitive work gets one reviewed Project plan in the repository.
+- One atomic Issue can be its own reviewed contract. Cross-cutting architecture gets a reviewed
+  repository plan; shared multi-Issue behavior may use a [feature spec](../reference/feature-spec-convention.md).
 - The plan carries one `linear-project` URL, and its Linear Project links back to the published plan.
 - An implementation Issue under a Project plan records the plan's exact governing commit before
-  execution; a review pins the Issue's own contract as its description as of a Linear `updatedAt`.
+  execution, including applicable feature-spec commit and sections; a review pins the Issue's
+  contract as its description as of a Linear `updatedAt`.
 - The two planning resolutions, the fields an Issue must carry, and the Question Issue that clears
   fog are in the [Linear Issue Lifecycle](./task-lifecycle.md).
 
@@ -89,7 +90,7 @@ to an Issue. They are not extra levels in the work graph.
    only for one risk the Issue Captain records in the contract.
 2. **Merge review** - a reviewer with the `merge` rubric after every merge that has a Merge Issue
    (a lane into its parent, an Issue into the feature, the landing): a mechanical spot check
-   scaled to what landed, which at the final feature merge also proves the plan's acceptance criteria.
+   scaled to what landed, which at the final feature merge also proves governing plan and feature-spec acceptance criteria.
    An atomic Issue's merge into main has none; its Issue review PASS, green CI and the human's
    click stand in its place.
 3. **Inquisition** - human-confirmed, captain-directed sweeps that file Bugs, each code hypothesis

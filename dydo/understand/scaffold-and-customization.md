@@ -21,7 +21,9 @@ folder holding `SKILL.md` is a skill, any other folder a category - and projects
 into `.claude/skills/<name>` and
 `.agents/skills/<name>` with a POSIX directory symlink or Windows junction. OpenCode is not a supported
 host: it may read both roots, but that is untested, dydo has no OpenCode init mode, and no
-`.opencode/skills` copy is created. No host transforms the body.
+`.opencode/skills` copy is created. No host transforms the body. After a skill sync, follow Distribution in
+`skills/productivity/writing-for-agents/resources/skill-mechanics.md`, read from the repository root,
+to refresh and verify discovery.
 
 ## Links
 

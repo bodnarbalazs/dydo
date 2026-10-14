@@ -12,7 +12,7 @@ Red you can check, green only from code.
 ## Must-Reads
 
 1. The owning Issue, and on a fix hop the FAIL block that sent you.
-2. The governing Project plan at its linked commit and the Decision Records it names.
+2. The governing plan and applicable feature-spec sections at the brief's commits, and their Decisions.
 3. From the repository root, read `dydo/guides/coding-standards.md`.
 4. From the repository root, read `dydo/glossary.md`.
 

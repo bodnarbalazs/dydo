@@ -35,9 +35,9 @@ Call `dydo` directly from `PATH`; do not wrap it in `npx`, `dotnet run`, Python,
 
 ## Reviewed-intent failures
 
-Implementation needs an atomic, autonomous-ready Linear Issue or a Linear Issue linked to the reviewed
-Project plan governing coordinated work. If the contract is missing, ambiguous, or contradicts the
-repository, stop and ask the coordinator or human instead of inventing local work records.
+Implementation needs a bounded Linear Issue contract and pinned governing plan/spec sections when
+applicable. Hold missing, ambiguous or conflicting intent and return it to the Captain or map holder
+for reconciliation.
 
 ## Validation failures
 
@@ -73,8 +73,8 @@ agent definition. Run `dydo check` to validate the documentation tree.
 dydo has no Linear poller or mirror; its only Linear client is the read-only `dydo map`, whose
 disposable saved maps can be deleted from the OS user's local application data `dydo/map` folder
 ([DR 052](../project/decisions/052-dydo-map-read-only-linear-view.md)). Use the official Linear MCP,
-UI, API, or integrations for live work. Put only durable Decisions, plans, guides, audits, assimilation briefs,
-changelog, pitfalls, and FutureFeature ideas in Git.
+UI, API, or integrations for live work, including FutureFeatures. Git holds knowledge, proof and
+[temporary feature specs](../reference/feature-spec-convention.md).
 
 ## Related
 

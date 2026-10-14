@@ -31,7 +31,9 @@ Every Type a captain holds also carries one Mode: `AFK`, the captain reaches rev
 
 ### 1. Gather context
 
-Work from whatever is already in the conversation context. If the user passes a reference (a spec path, an Issue key or URL) as an argument, fetch it and read its full body and comments.
+Read the supplied intent and relevant references; fetch comments only for a named missing fact.
+For shared multi-Issue behavior, read `dydo/reference/feature-spec-convention.md` from the repository root
+and link the applicable spec sections.
 
 ### 2. Explore the codebase (optional)
 
@@ -97,6 +99,10 @@ The end-to-end behaviour this Issue makes work, from the user's perspective, not
 
 - [ ] Acceptance criterion 1
 - [ ] Acceptance criterion 2
+
+## Spec
+
+Current feature spec and relevant sections, when applicable; otherwise omit.
 
 ## Owned paths
 

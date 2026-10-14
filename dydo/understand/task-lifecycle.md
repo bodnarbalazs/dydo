@@ -12,7 +12,8 @@ an Issue carries, how it is planned, claimed, reviewed and merged, and the human
 
 An **implementation Issue** carries five required fields - outcome, owned paths, blockers, exact
 gates, base branch - plus the relevant context, and it links the governing Decision and the exact plan
-commit when a Project plan applies. Use a Sub-issue only when the child needs its own status, owner,
+commit when a Project plan applies, plus applicable feature-spec commit and sections. Use a
+Sub-issue only when the child needs its own status, owner,
 dependency, or review evidence; a checklist is enough for mechanical steps that cannot progress
 independently.
 
@@ -38,7 +39,8 @@ Decision Records carry decisions, and the two are linked rather than copied.
   route. Only a cross-cutting architecture contract earns a repository plan file, written by the
   map holder; a fresh reviewer passes it against `project-plan` before human approval, and dated
   amendments return only changes to destination, scope, acceptance criteria, or governing
-  architecture for fresh review and human approval.
+  architecture for fresh review and human approval. Shared multi-Issue behavior may use a
+  [feature spec](../reference/feature-spec-convention.md); reconcile affected contracts when intent shifts.
 - **Issue** - high resolution, just in time: the Issue Captain's compact acceptance contract on the
   parent Issue or a direct lane Sub-issue, with its scenarios where the Issue carries Gherkin, owned
   paths and gates, exact enough to build. The spawned `code-writer` builds from it. The contract is
@@ -93,8 +95,8 @@ the revert. Plan review has its own two-round cap before the human chooses.
 The ladder runs crew → Issue Captain → an invoked admiral → human when one holds the map; without an
 invoked admiral, the Issue Captain escalates straight to the human, already the map holder. Agents
 settle operational conflicts themselves by precedence, highest first: the human's live instruction, a
-Decision Record, the reviewed Project plan at its governing commit, the Issue contract, coding
-standards, existing code. The human
+Decision Record, the reviewed architecture plan, the feature spec (both pinned), the Issue contract,
+coding standards, existing code. The human
 is reached only for a conflict with a Decision Record - is it truth, or is it obsolete? - for live
 external state agents cannot coordinate, or for authority the contract cannot supply.
 

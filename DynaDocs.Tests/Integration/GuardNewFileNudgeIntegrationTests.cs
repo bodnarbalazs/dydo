@@ -130,6 +130,47 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
         result.AssertExitCode(2);
     }
 
+    private const string AnyPathMessage = "Nudge fired for any new file.";
+
+    private static NudgeConfig AnyNewFileBlock() =>
+        new() { Pattern = ".", Message = AnyPathMessage, Severity = "block", Match = "new-file" };
+
+    [Theory]
+    [InlineData(null, ".env", "off-limits")]
+    [InlineData("wkr-1", ".env", "off-limits")]
+    [InlineData(null, "dydo/index.md", "protected")]
+    [InlineData("wkr-1", "dydo/index.md", "protected")]
+    public async Task NewFileNudge_RunsAfterOffLimitsAndProtected_BlockTextWins(string? agentId, string path, string tier)
+    {
+        await InitWithNudges(AnyNewFileBlock());
+        var existing = Path.Combine(TestDir, path);
+        if (File.Exists(existing)) File.Delete(existing);
+
+        var result = await GuardWithStdinAsync(Payload("Write", new { file_path = path, content = "x" }, agentId));
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("BLOCKED:");
+        result.AssertStderrContains(tier);
+        Assert.DoesNotContain(AnyPathMessage, result.Stderr);
+    }
+
+    [Fact]
+    public async Task NewFileNudge_WithoutPayloadCwd_FallsBackToProcessDirectory()
+    {
+        await InitWithNudges(ToolsNudge("block"));
+        var payload = JsonSerializer.Serialize(new Dictionary<string, object?>
+        {
+            ["session_id"] = TestSessionId,
+            ["tool_name"] = "Write",
+            ["tool_input"] = new { file_path = "tools/new.py", content = "x" },
+        });
+
+        var result = await GuardWithStdinAsync(payload);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains(ToolsMessage);
+    }
+
     [Fact]
     public async Task ShellCreatedFile_IsCommandLaneOnly()
     {

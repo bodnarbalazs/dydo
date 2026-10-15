@@ -187,6 +187,12 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     [InlineData("Bash", "dydo check; DYDO SYNC", "SYNC")]
     [InlineData("Bash", "dydo check; ./dydo.exe init", "init")]
     [InlineData("Bash", "dydo check dydo src", "src")]
+    [InlineData("PowerShell", "dydo\finit", "init")]
+    [InlineData("PowerShell", "dydo\vinit", "init")]
+    [InlineData("PowerShell", "dydo\u00A0init", "init")]
+    [InlineData("PowerShell", "dydo\u2003init", "init")]
+    [InlineData("PowerShell", "dydo\u0085init", "init")]
+    [InlineData("PowerShell", "dydo check; dydo init", "init")]
     public async Task Worker_NonGateDydoCommand_Blocked(string tool, string command, string word)
     {
         var result = await WorkerShellAsync(tool, command);
@@ -281,6 +287,12 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     [InlineData("dydo check; dydo \"init\"", "init")]
     [InlineData("dydo check; dydo >/dev/null init", ">/dev/null")]
     [InlineData("dydo --verbose", "--verbose")]
+    [InlineData("dydo\finit", "init")]
+    [InlineData("dydo\vinit", "init")]
+    [InlineData("dydo\u00A0init", "init")]
+    [InlineData("dydo\u2003init", "init")]
+    [InlineData("dydo\u0085init", "init")]
+    [InlineData("dydo check; dydo init", "init")]
     public void FindWorkerBlockedDydoCommand_ChecksEveryTokenOfAMatchedLine(string command, string? expected)
     {
         Assert.Equal(expected, GuardCommand.FindWorkerBlockedDydoCommand(command));

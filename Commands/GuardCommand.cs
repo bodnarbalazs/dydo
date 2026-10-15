@@ -771,8 +771,10 @@ public static partial class GuardCommand
     [GeneratedRegex(@"[""'\\`^]")]
     private static partial Regex WorkerScanStripRegex();
 
-    // dydo, then the word after spaces, tabs or brace-expansion commas, up to whitespace or a terminator.
-    [GeneratedRegex(@"dydo(?:\.(?:exe|cmd|ps1|bat))?(?![\w.\-/])[ \t,]*(?<word>[^\s;&|)}]*)", RegexOptions.IgnoreCase)]
+    // dydo, then the word after any whitespace but a line break, or brace-expansion commas, up to
+    // whitespace or a terminator. \s is Unicode-aware on both sides, so form feed, vertical tab, NBSP,
+    // U+2003 and NEL separate dydo from its word exactly as PowerShell and 3.3.0's dydo\s treat them.
+    [GeneratedRegex(@"dydo(?:\.(?:exe|cmd|ps1|bat))?(?![\w.\-/])(?:[^\S\r\n]|,)*(?<word>[^\s;&|)}]*)", RegexOptions.IgnoreCase)]
     private static partial Regex DydoTokenRegex();
 
     /// <summary>

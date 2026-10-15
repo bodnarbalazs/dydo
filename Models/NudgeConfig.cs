@@ -15,6 +15,21 @@ public class NudgeConfig
     [JsonPropertyName("severity")]
     public string Severity { get; set; } = "block";
 
+    /// <summary>
+    /// What the pattern is matched against: absent or "command" = the shell command line,
+    /// "new-file" = the project-relative path of a file a write tool is about to create.
+    /// Any other value matches nothing; <c>dydo validate</c> reports it.
+    /// </summary>
+    [JsonPropertyName("match")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Match { get; set; }
+
+    [JsonIgnore]
+    public bool IsCommandMatch => Match == null || string.Equals(Match, "command", StringComparison.OrdinalIgnoreCase);
+
+    [JsonIgnore]
+    public bool IsNewFileMatch => string.Equals(Match, "new-file", StringComparison.OrdinalIgnoreCase);
+
     [JsonIgnore]
     public string Audience
     {

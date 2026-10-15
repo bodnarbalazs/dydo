@@ -140,7 +140,10 @@ Exit `0` allows the action; exit `2` blocks it with `BLOCKED:` on stderr. **Off-
 every operation, reads included. **Protected** paths are readable by any tool and writable by none,
 Bash included. Both tiers bind on every caller; [Files Off-Limits](../files-off-limits.md) declares
 them, their glob syntax, and the whitelist that lifts off-limits patterns. Nudges are configured in
-`dydo.json` - see [DynaDocs](./about-dynadocs.md). `--stop` is a retained no-op so existing Stop-hook
+`dydo.json` - see [DynaDocs](./about-dynadocs.md). A nudge matches shell command lines by default; one
+with `"match": "new-file"` matches the project-relative path of a file that Write, Edit, NotebookEdit
+or a Codex `apply_patch` is about to create, and never fires for a file that already exists or for a
+file a shell command creates. `--stop` is a retained no-op so existing Stop-hook
 wiring keeps resolving.
 
 ---
@@ -215,7 +218,8 @@ fake Linear, not a user setting.
 
 ### dydo validate
 
-Validate `dydo.json` deserialization and nudge definitions.
+Validate `dydo.json` deserialization and nudge definitions: each nudge's pattern, message,
+severity, audience, and `match` (absent, `command`, or `new-file`).
 
 ```bash
 dydo validate

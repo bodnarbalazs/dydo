@@ -136,6 +136,41 @@ evidence observed.
 Each nudge has a regular-expression `pattern`, a `message`, a `severity` (`notice`, `warn`, or
 `block`). Notices inform, warnings require a deliberate retry,
 and blocks reject the action. Nudges enforce project process; they do not create or update work records.
+The pattern is matched case-insensitively, and `$1`, `$2` and so on in the message take the
+matching capture groups.
+
+An optional `match` picks what the pattern is matched against:
+
+| `match` | Pattern is matched against |
+|---|---|
+| absent or `"command"` | The shell command line of a shell tool call (Bash, PowerShell, Codex's shell tools). |
+| `"new-file"` | The path of each file a write tool is about to create. |
+
+A `new-file` nudge reads the target of Claude's Write, Edit, MultiEdit and NotebookEdit
+(`file_path` or `notebook_path`) and every `*** Add File:` and `*** Move to:` path in a Codex
+`apply_patch`. Each target is resolved against the hook's `cwd` and matched as a path relative to the
+project root (the directory holding `dydo.json`), with forward slashes, such as `tools/x.py`. A target
+outside the project root never matches. It fires only when the target exists neither as a file nor as
+a directory, so edits to existing files pass. When several targets match, the first in call order
+fires and fills the message's capture groups. Severities behave as for command nudges; a `warn`
+blocks the first write and lets the retried write through, with a pass-through marker separate from
+any command nudge of the same pattern. It applies to main sessions and subagents alike, after the
+off-limits and protected checks.
+
+```json
+{
+  "pattern": "^tools/(?!one-off/)",
+  "message": "New tools go under tools/one-off/ unless the human asked for a permanent one.",
+  "severity": "warn",
+  "match": "new-file"
+}
+```
+
+A file created through a shell command, including an `apply_patch` run inside a shell, is invisible
+to `new-file` nudges; only command nudges see that call. The shipped default nudges are all command
+nudges and stay in force whatever new-file nudges a project adds. A dydo release older than this
+field ignores `match` and would treat the entry as a command nudge, so adopt the release before
+adding one. `dydo validate` reports any other `match` value.
 
 ## Customization points
 

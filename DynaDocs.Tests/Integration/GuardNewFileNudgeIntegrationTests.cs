@@ -154,21 +154,42 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
         Assert.DoesNotContain(AnyPathMessage, result.Stderr);
     }
 
-    [Fact]
-    public async Task NewFileNudge_WithoutPayloadCwd_FallsBackToProcessDirectory()
+    [Theory]
+    [InlineData("../tools/new.py", true)]
+    [InlineData("tools/new.py", false)]
+    public async Task NewFileNudge_WithoutPayloadCwd_ResolvesAgainstProcessDirectory(string target, bool nudged)
     {
         await InitWithNudges(ToolsNudge("block"));
+        var processDir = Path.Combine(TestDir, "src");
+        Directory.CreateDirectory(processDir);
         var payload = JsonSerializer.Serialize(new Dictionary<string, object?>
         {
             ["session_id"] = TestSessionId,
             ["tool_name"] = "Write",
-            ["tool_input"] = new { file_path = "tools/new.py", content = "x" },
+            ["tool_input"] = new { file_path = target, content = "x" },
         });
 
-        var result = await GuardWithStdinAsync(payload);
+        var original = Environment.CurrentDirectory;
+        Environment.CurrentDirectory = processDir;
+        try
+        {
+            var result = await GuardWithStdinAsync(payload);
 
-        result.AssertExitCode(2);
-        result.AssertStderrContains(ToolsMessage);
+            if (nudged)
+            {
+                result.AssertExitCode(2);
+                result.AssertStderrContains(ToolsMessage);
+            }
+            else
+            {
+                result.AssertSuccess();
+                Assert.DoesNotContain(ToolsMessage, result.Stderr);
+            }
+        }
+        finally
+        {
+            Environment.CurrentDirectory = original;
+        }
     }
 
     [Fact]

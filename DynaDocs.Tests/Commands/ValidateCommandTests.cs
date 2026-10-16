@@ -105,6 +105,36 @@ public class ValidateCommandTests : IDisposable
         Assert.Equal(1, exitCode);
     }
 
+    [Fact]
+    public void Validate_AcceptsNewFileNudge()
+    {
+        SetupValidProjectNoWarnings();
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
+            {"version":1,"structure":{"root":"dydo"},"nudges":[
+              {"pattern":"^tools/(?!one-off/)","message":"New tools go under tools/one-off/.","severity":"warn","match":"new-file"}]}
+            """);
+
+        var (stdout, _) = CaptureOutput(() => DynaDocs.Commands.ValidateCommand.Create().Parse("").Invoke());
+
+        Assert.Contains("Validation passed", stdout);
+    }
+
+    [Fact]
+    public void Validate_RejectsUnknownNudgeMatch()
+    {
+        SetupValidProjectNoWarnings();
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
+            {"version":1,"structure":{"root":"dydo"},"nudges":[
+              {"pattern":"^tools/","message":"m","severity":"warn","match":"path"}]}
+            """);
+
+        var exitCode = 0;
+        var (_, stderr) = CaptureOutput(() => exitCode = DynaDocs.Commands.ValidateCommand.Create().Parse("").Invoke());
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Nudge [0] has invalid match 'path'. Must be 'command' or 'new-file'.", stderr);
+    }
+
     private static (string stdout, string stderr) CaptureOutput(Func<int> action)
     {
         var (_, stdout, stderr) = ConsoleCapture.All(action);

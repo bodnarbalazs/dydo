@@ -208,5 +208,52 @@ public class ValidationServiceTests : IDisposable
         Assert.Contains(issues, i => i.Message.Contains("invalid audience"));
     }
 
+    [Theory]
+    [InlineData("new-file")]
+    [InlineData("command")]
+    [InlineData("NEW-FILE")]
+    public void ValidateSystem_NudgeWithKnownMatch_NoNudgeErrors(string match)
+    {
+        CreateDydoJson(new
+        {
+            version = 1, structure = new { root = "dydo" },
+            nudges = new[] { new { pattern = "^tools/(?!one-off/)", message = "Use tools/one-off/.", severity = "warn", match } }
+        });
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.DoesNotContain(issues, i => i.Message.Contains("Nudge"));
+    }
+
+    [Theory]
+    [InlineData("path")]
+    [InlineData("")]
+    public void ValidateSystem_NudgeWithUnknownMatch_ReportsError(string match)
+    {
+        CreateDydoJson(new
+        {
+            version = 1, structure = new { root = "dydo" },
+            nudges = new[] { new { pattern = "^tools/", message = "test", severity = "warn", match } }
+        });
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains($"Nudge [0] has invalid match '{match}'"));
+    }
+
+    [Fact]
+    public void ValidateSystem_NewFileNudgeWithInvalidRegex_ReportsError()
+    {
+        CreateDydoJson(new
+        {
+            version = 1, structure = new { root = "dydo" },
+            nudges = new[] { new { pattern = "^tools/(", message = "test", severity = "block", match = "new-file" } }
+        });
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.Contains(issues, i => i.Severity == "error" && i.Message.Contains("invalid regex"));
+    }
+
     #endregion
 }

@@ -131,7 +131,8 @@ agent session: the `CLAUDE.md` and `AGENTS.md` entry points send a thinking sess
 
 ## Customize
 
-- **Nudges** - project regex rules and messages in `dydo.json`
+- **Nudges** - project regex rules and messages in `dydo.json`, matched against shell command
+  lines or, with `"match": "new-file"`, against the paths of files a write tool is about to create
 - **Skills** - plain `skills/<category>/<name>/` folders, edited directly and exposed flat by `setup-skills.mjs`
 
 Edit the skill folder in place. A project's copy is its own; there is no automatic reconciliation.

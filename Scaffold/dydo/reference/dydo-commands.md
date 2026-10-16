@@ -12,7 +12,10 @@ polls, or mirrors a Linear object; `dydo map` reads Linear on demand and keeps d
 durable evidence rather than a second work board.
 
 Commands find the project by walking up to the nearest `dydo.json`; `dydo validate` is the exception
-and reads it from the current directory. `dydo help` prints the one-screen summary;
+and reads it from the current directory. `dydo check`, `dydo graph` and `dydo validate` take
+`--root <dir>` to work on another project: they walk up from `<dir>` to its nearest `dydo.json`, read
+config and docs from there, print `Root: <project root>`, and exit `2` when `<dir>` is in no dydo
+project. `dydo help` prints the one-screen summary;
 `dydo <command> --help` is the authoritative option list.
 
 ---
@@ -73,9 +76,12 @@ uncustomized foundation docs (warning), and `dydo.json` itself; config errors co
 ```bash
 dydo check
 dydo check <path>
+dydo check --root <dir>          # check the project containing <dir>, not the current one
+dydo check --root <dir> <path>   # <path> must lie inside that project's docs tree
 ```
 
-Exit `0` means no errors. Exit `1` means validation errors were found.
+Exit `0` means no errors. Exit `1` means validation errors were found. Exit `2` means a tool error,
+such as a `<path>` outside the docs tree or a `--root` in no dydo project.
 
 ### dydo fix
 
@@ -106,6 +112,7 @@ Show incoming and outgoing documentation links for one file.
 dydo graph <file>
 dydo graph <file> --incoming
 dydo graph <file> --degree 2
+dydo graph <file> --root <dir>
 ```
 
 ### dydo graph stats
@@ -115,6 +122,7 @@ Show repository-wide documentation graph statistics.
 ```bash
 dydo graph stats
 dydo graph stats --top 20
+dydo graph stats --root <dir>
 ```
 
 ---
@@ -219,6 +227,7 @@ Validate `dydo.json` deserialization and nudge definitions.
 
 ```bash
 dydo validate
+dydo validate --root <dir>
 ```
 
 This validates dydo's local configuration. It does not validate or provision Linear.

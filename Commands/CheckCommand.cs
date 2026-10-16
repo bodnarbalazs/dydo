@@ -14,27 +14,38 @@ public static class CheckCommand
             Description = "Path to docs folder or file to check"
         };
 
+        var rootOption = new Option<string?>("--root")
+        {
+            Description = "Check the dydo project containing this directory instead of the current one"
+        };
+
         var command = new Command("check", "Validate documentation and report violations");
         command.Arguments.Add(pathArgument);
+        command.Options.Add(rootOption);
 
         command.SetAction(parseResult =>
         {
             var path = parseResult.GetValue(pathArgument);
-            return Execute(path);
+            var root = parseResult.GetValue(rootOption);
+            return Execute(path, root);
         });
 
         return command;
     }
 
-    private static int Execute(string? path)
+    private static int Execute(string? path, string? root)
     {
         try
         {
+            var projectRoot = PathUtils.ResolveCommandRoot(root);
+            if (projectRoot == null)
+                return ExitCodes.ToolError;
+
             var configService = new ConfigService();
-            var config = configService.LoadConfigStrict();
+            var config = configService.LoadConfigStrict(projectRoot);
             var configHasErrors = ValidateConfig(config);
 
-            var docsOutcome = ValidateDocs(path);
+            var docsOutcome = ValidateDocs(path, projectRoot);
             if (docsOutcome.IsToolError)
                 return ExitCodes.ToolError;
 
@@ -63,9 +74,9 @@ public static class CheckCommand
 
     private record DocsOutcome(bool IsToolError, bool HasErrors, bool HasWarnings);
 
-    private static DocsOutcome ValidateDocs(string? path)
+    private static DocsOutcome ValidateDocs(string? path, string projectRoot)
     {
-        var basePath = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
+        var basePath = PathUtils.FindDocsFolder(projectRoot);
         var reportScope = ResolveReportScope(path);
 
         if (!string.IsNullOrEmpty(path) && reportScope == null)

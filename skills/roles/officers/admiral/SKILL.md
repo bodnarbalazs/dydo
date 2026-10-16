@@ -84,7 +84,8 @@ map and how the Issues move, integrate, and finish together.
    and effort together where the host takes both; where it takes only a model, leave effort
    host-owned and record that limit. State the requested value in your signature and claim an
    effective identity only where telemetry shows it. dydo compiles no model, no effort and no
-   standing capability table.
+   standing capability table. Candidates include other vendors' models wherever the host can
+   dispatch them; brief captains to seat cross-vendor reviewers when available.
    **Done:** each pickable Issue has a captain or a stated reason.
 4. **Order merges.** A captain's `done <key>: PR ready` leaves its Issue `Ready to Merge` with a
    reviewed PR. When its Merge Sub-issue's blocker clears, resume that captain with `merge`, or

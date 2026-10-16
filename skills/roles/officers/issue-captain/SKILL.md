@@ -89,7 +89,8 @@ the default officer: an Issue gets a captain whether or not the user has invoked
    the host takes both; where it takes only a model, leave effort host-owned and record that limit.
    Brief the requested value so the crew member's signature is truthful, and claim an effective identity
    only where telemetry shows it. dydo compiles no model, no effort and no standing capability
-   table. Validate uncertain native interface shapes early. Brief other crew's proof focused - the
+   table. Candidates include other vendors' models wherever the host can dispatch them; weigh
+   them on the same terms as your own. Validate uncertain native interface shapes early. Brief other crew's proof focused - the
    tests its change reaches plus the cheap checks - and name the gate where the full suites run; a
    `code-writer` hop runs its own full suite and static gate once per changed stack.
    Before expensive tests, prove the repository or snapshot, intended selection and nonzero
@@ -103,7 +104,8 @@ the default officer: an Issue gets a captain whether or not the user has invoked
    `Implementing`, whatever it is, and a wrong scenario is amended by that fix hop when the FAIL
    block names it.
    Give each fresh reviewer the capability the consequence of error deserves; reviews and gates keep
-   full strength whatever the work below them cost.
+   full strength whatever the work below them cost. Prefer a reviewer from a different vendor than
+   the author when the host offers one: a second lineage catches what the first shares.
    Send the FAIL block with the brief and set `Implementing`. A change to acceptance,
    scope, destination or architecture goes to the Project's map holder for a map or plan amendment. **Done:** each fix
    has its own commit and fresh review; the fifth consecutive FAIL stops the loop, records the

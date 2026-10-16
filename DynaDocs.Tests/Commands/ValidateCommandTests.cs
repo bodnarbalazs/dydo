@@ -105,6 +105,20 @@ public class ValidateCommandTests : IDisposable
         Assert.Equal(1, exitCode);
     }
 
+    private static (string stdout, string stderr) CaptureOutput(Func<int> action)
+    {
+        var (_, stdout, stderr) = ConsoleCapture.All(action);
+        return (stdout, stderr);
+    }
+
+    private void SetupValidProjectNoWarnings()
+    {
+        // Minimal valid dydo.json with no roles → no warnings
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
+            """{"version":1,"structure":{"root":"dydo"},"integrations":{"claude":false,"codex":false},"scanExclude":["_system/.local/","_system/audit/","agents/"],"nudges":[],"frameworkHashes":{}}""");
+        Directory.CreateDirectory(Path.Combine(_testDir, "dydo", "_system"));
+    }
+
     [Fact]
     public void Validate_Root_ReadsDydoJsonFromThatProjectNotCwd()
     {
@@ -148,19 +162,5 @@ public class ValidateCommandTests : IDisposable
         var (stdout, _) = CaptureOutput(() => DynaDocs.Commands.ValidateCommand.Create().Parse("").Invoke());
 
         Assert.DoesNotContain("Root:", stdout);
-    }
-
-    private static (string stdout, string stderr) CaptureOutput(Func<int> action)
-    {
-        var (_, stdout, stderr) = ConsoleCapture.All(action);
-        return (stdout, stderr);
-    }
-
-    private void SetupValidProjectNoWarnings()
-    {
-        // Minimal valid dydo.json with no roles → no warnings
-        File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
-            """{"version":1,"structure":{"root":"dydo"},"integrations":{"claude":false,"codex":false},"scanExclude":["_system/.local/","_system/audit/","agents/"],"nudges":[],"frameworkHashes":{}}""");
-        Directory.CreateDirectory(Path.Combine(_testDir, "dydo", "_system"));
     }
 }

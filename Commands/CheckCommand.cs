@@ -16,7 +16,7 @@ public static class CheckCommand
 
         var rootOption = new Option<string?>("--root")
         {
-            Description = "Check the dydo project containing this directory instead of the current one"
+            Description = "Check the dydo project containing this directory or file instead of the current one"
         };
 
         var command = new Command("check", "Validate documentation and report violations");

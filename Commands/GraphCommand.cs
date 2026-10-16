@@ -48,7 +48,7 @@ public static class GraphCommand
 
     private static Option<string?> CreateRootOption() => new("--root")
     {
-        Description = "Use the dydo project containing this directory instead of the current one"
+        Description = "Use the dydo project containing this directory or file instead of the current one"
     };
 
     private static int Execute(string file, bool incoming, int degree, string? root)

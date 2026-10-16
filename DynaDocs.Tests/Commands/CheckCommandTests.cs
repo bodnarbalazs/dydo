@@ -77,6 +77,19 @@ public class CheckCommandTests : IDisposable
     }
 
     [Fact]
+    public void Check_RootGivenAFileInsideAnotherProject_ResolvesToThatProjectsRoot()
+    {
+        Environment.CurrentDirectory = CreateProject("here", ValidConfig);
+        var other = CreateProject("other", MissingExclusionConfig);
+
+        var (code, stdout, stderr) = Check("--root", Path.Combine(other, "dydo", "index.md"));
+
+        Assert.Equal(1, code);
+        Assert.Contains($"Root: {other}", stdout);
+        Assert.Contains(MissingExclusionError, stderr);
+    }
+
+    [Fact]
     public void Check_RootInNoDydoProject_IsToolError()
     {
         var nowhere = Path.Combine(_root, "nowhere");

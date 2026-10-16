@@ -10,7 +10,7 @@ public static class ValidateCommand
     {
         var rootOption = new Option<string?>("--root")
         {
-            Description = "Validate the dydo project containing this directory instead of the current one"
+            Description = "Validate the dydo project containing this directory or file instead of the current one"
         };
 
         var command = new Command("validate", "Validate dydo configuration and nudges");

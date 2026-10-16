@@ -124,7 +124,13 @@ public static partial class PathUtils
         if (root == null)
             return Environment.CurrentDirectory;
 
-        var projectRoot = Directory.Exists(root) ? FindProjectRoot(Path.GetFullPath(root)) : null;
+        string? start = null;
+        if (File.Exists(root))
+            start = Path.GetDirectoryName(Path.GetFullPath(root));
+        else if (Directory.Exists(root))
+            start = Path.GetFullPath(root);
+
+        var projectRoot = start == null ? null : FindProjectRoot(start);
         if (projectRoot == null)
         {
             ConsoleOutput.WriteError($"No dydo project found at {root}");

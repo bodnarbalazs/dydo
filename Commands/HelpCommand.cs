@@ -25,6 +25,7 @@ public static class HelpCommand
         Console.WriteLine();
         Console.WriteLine("Documentation Commands:");
         Console.WriteLine("  check [path]           Validate docs, report violations");
+        Console.WriteLine("  check --root <dir>     Check another project (graph, validate also take --root)");
         Console.WriteLine("  fix [path]             Auto-fix issues where possible");
         Console.WriteLine("  index [path]           Regenerate index.md from structure");
         Console.WriteLine("  graph <file>           Show graph connections for a file");

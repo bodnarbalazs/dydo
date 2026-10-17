@@ -24,17 +24,21 @@ public static class GraphCommand
             Description = "Show docs within n link-hops (default: 1)"
         };
 
+        var rootOption = CreateRootOption();
+
         var command = new Command("graph", "Show graph connections for a documentation file");
         command.Arguments.Add(fileArgument);
         command.Options.Add(incomingOption);
         command.Options.Add(degreeOption);
+        command.Options.Add(rootOption);
 
         command.SetAction(parseResult =>
         {
             var file = parseResult.GetValue(fileArgument)!;
             var incoming = parseResult.GetValue(incomingOption);
             var degree = parseResult.GetValue(degreeOption);
-            return Execute(file, incoming, degree);
+            var root = parseResult.GetValue(rootOption);
+            return Execute(file, incoming, degree, root);
         });
 
         command.Subcommands.Add(CreateStatsCommand());
@@ -42,11 +46,16 @@ public static class GraphCommand
         return command;
     }
 
-    private static int Execute(string file, bool incoming, int degree)
+    private static Option<string?> CreateRootOption() => new("--root")
+    {
+        Description = "Use the dydo project containing this directory or file instead of the current one"
+    };
+
+    private static int Execute(string file, bool incoming, int degree, string? root)
     {
         try
         {
-            var context = CreateGraph();
+            var context = CreateGraph(root);
             if (context == null)
                 return ExitCodes.ToolError;
 
@@ -128,23 +137,27 @@ public static class GraphCommand
             Description = "Number of documents to show (default: 100)"
         };
 
+        var rootOption = CreateRootOption();
+
         var statsCommand = new Command("stats", "Show document link statistics ranked by incoming links");
         statsCommand.Options.Add(topOption);
+        statsCommand.Options.Add(rootOption);
 
         statsCommand.SetAction(parseResult =>
         {
             var top = parseResult.GetValue(topOption);
-            return ExecuteStats(top);
+            var root = parseResult.GetValue(rootOption);
+            return ExecuteStats(top, root);
         });
 
         return statsCommand;
     }
 
-    private static int ExecuteStats(int top)
+    private static int ExecuteStats(int top, string? root)
     {
         try
         {
-            var context = CreateGraph();
+            var context = CreateGraph(root);
             if (context == null)
                 return ExitCodes.ToolError;
 
@@ -159,9 +172,13 @@ public static class GraphCommand
         }
     }
 
-    private static (DocGraph Graph, List<Models.DocFile> Docs)? CreateGraph()
+    private static (DocGraph Graph, List<Models.DocFile> Docs)? CreateGraph(string? root)
     {
-        var basePath = PathUtils.FindDocsFolder(Environment.CurrentDirectory);
+        var projectRoot = PathUtils.ResolveCommandRoot(root);
+        if (projectRoot == null)
+            return null;
+
+        var basePath = PathUtils.FindDocsFolder(projectRoot);
         if (basePath == null)
         {
             ConsoleOutput.WriteError("Could not find docs folder. Ensure a 'docs' folder with index.md exists.");

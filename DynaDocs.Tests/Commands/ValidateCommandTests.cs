@@ -148,4 +148,49 @@ public class ValidateCommandTests : IDisposable
             """{"version":1,"structure":{"root":"dydo"},"integrations":{"claude":false,"codex":false},"scanExclude":["_system/.local/","_system/audit/","agents/"],"nudges":[],"frameworkHashes":{}}""");
         Directory.CreateDirectory(Path.Combine(_testDir, "dydo", "_system"));
     }
+
+    [Fact]
+    public void Validate_Root_ReadsDydoJsonFromThatProjectNotCwd()
+    {
+        SetupValidProjectNoWarnings();
+        var other = Path.Combine(_testDir, "other");
+        Directory.CreateDirectory(Path.Combine(other, "dydo", "guides"));
+        File.WriteAllText(Path.Combine(other, "dydo.json"), "{\"testing\":{\"runner\":[]}}");
+
+        var (code, stdout, _) = ConsoleCapture.All(() =>
+            DynaDocs.Commands.ValidateCommand.Create().Parse(["--root", Path.Combine(other, "dydo", "guides")]).Invoke());
+
+        Assert.Equal(1, code);
+        Assert.Contains($"Root: {other}", stdout);
+    }
+
+    [Fact]
+    public void Validate_RootInNoDydoProject_IsToolError()
+    {
+        SetupValidProjectNoWarnings();
+        var nowhere = Path.Combine(Path.GetTempPath(), "dydo-validate-nowhere-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(nowhere);
+        try
+        {
+            var (code, _, stderr) = ConsoleCapture.All(() =>
+                DynaDocs.Commands.ValidateCommand.Create().Parse(["--root", nowhere]).Invoke());
+
+            Assert.Equal(2, code);
+            Assert.Contains($"No dydo project found at {nowhere}", stderr);
+        }
+        finally
+        {
+            Directory.Delete(nowhere, true);
+        }
+    }
+
+    [Fact]
+    public void Validate_WithoutRoot_PrintsNoRootLine()
+    {
+        SetupValidProjectNoWarnings();
+
+        var (stdout, _) = CaptureOutput(() => DynaDocs.Commands.ValidateCommand.Create().Parse("").Invoke());
+
+        Assert.DoesNotContain("Root:", stdout);
+    }
 }

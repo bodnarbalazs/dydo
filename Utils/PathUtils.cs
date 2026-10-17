@@ -115,6 +115,33 @@ public static partial class PathUtils
     }
 
     /// <summary>
+    /// Resolves a read-only command's <c>--root</c> option. Without it, the current directory
+    /// (the default lookup, unchanged). With it, the nearest <c>dydo.json</c> at or above that
+    /// directory, announced as <c>Root:</c>; null, after reporting the error, when there is none.
+    /// </summary>
+    public static string? ResolveCommandRoot(string? root)
+    {
+        if (root == null)
+            return Environment.CurrentDirectory;
+
+        string? start = null;
+        if (File.Exists(root))
+            start = Path.GetDirectoryName(Path.GetFullPath(root));
+        else if (Directory.Exists(root))
+            start = Path.GetFullPath(root);
+
+        var projectRoot = start == null ? null : FindProjectRoot(start);
+        if (projectRoot == null)
+        {
+            ConsoleOutput.WriteError($"No dydo project found at {root}");
+            return null;
+        }
+
+        Console.WriteLine($"Root: {projectRoot}");
+        return projectRoot;
+    }
+
+    /// <summary>
     /// Normalizes a path for pattern matching/comparison.
     /// Converts backslashes, removes leading './' and '/', but preserves case.
     /// Use for glob pattern matching, regex comparison with IgnoreCase.

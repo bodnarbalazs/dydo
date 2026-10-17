@@ -111,11 +111,191 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        // A worker's dydo command would otherwise mutate the parent's session state
+        // An unknown or retired subcommand (here the 2.0-era agent claim) is outside the allowlist
         var result = await GuardWithStdinAsync(WorkerJson("Bash", "{\"command\":\"dydo agent claim auto\"}"));
 
         result.AssertExitCode(2);
-        result.AssertStderrContains("Sub-agents don't run dydo commands");
+        result.AssertStderrContains("Sub-agents may run only these dydo commands");
+        result.AssertStderrContains("dydo agent");
+    }
+
+    private async Task<CommandResult> WorkerShellAsync(string tool, string command)
+    {
+        await InitProjectAsync();
+        var input = $"{{\"command\":{System.Text.Json.JsonSerializer.Serialize(command)}}}";
+        return await GuardWithStdinAsync(WorkerJson(tool, input));
+    }
+
+    // Rule 1: a command the 3.3.0 dydo regex does not match is not a dydo call for the worker
+    // lane, so directory arguments, continued lines and prose stay allowed exactly as before.
+    [Theory]
+    [InlineData("Bash", "find dydo -name '*.md'")]
+    [InlineData("Bash", "grep -rn foo dydo src")]
+    [InlineData("Bash", "git diff -- dydo src")]
+    [InlineData("Bash", "find \\\n  dydo -name '*.md'")]
+    [InlineData("Bash", "git diff --stat \\\n  dydo src")]
+    [InlineData("Bash", "rg -n \"pattern\" \\\n  dydo src tests")]
+    [InlineData("PowerShell", "Get-ChildItem dydo -Recurse")]
+    [InlineData("PowerShell", "Get-ChildItem `\n  dydo -Recurse")]
+    [InlineData("Bash", "echo dydo sync")]
+    [InlineData("Bash", "git commit -m \"fix (dydo init blocked)\"")]
+    [InlineData("Bash", "rg -n \"dydo init\" Commands")]
+    public async Task Worker_NotBaseDydoCommand_Allowed(string tool, string command)
+    {
+        var result = await WorkerShellAsync(tool, command);
+
+        result.AssertSuccess();
+    }
+
+    // Rule 2 and 3: a matched command is allowed when every dydo token followed by a word
+    // names a gate; a bare dydo prints help.
+    [Theory]
+    [InlineData("dydo check")]
+    [InlineData("dydo check && dydo fix dydo/guides")]
+    [InlineData("dydo check dydo/guides")]
+    [InlineData("dydo --help")]
+    [InlineData("dydo")]
+    [InlineData("./dydo fix dydo/guides/coding-standards.md")]
+    [InlineData("dydo gap-check")]
+    [InlineData("dydo graph stats")]
+    [InlineData("dydo validate")]
+    [InlineData("dydo version")]
+    [InlineData("dydo -h")]
+    [InlineData("dydo --version")]
+    [InlineData("dydo check \\\n  dydo/understand")]
+    public async Task Worker_GateDydoCommand_Allowed(string command)
+    {
+        var result = await WorkerShellAsync("Bash", command);
+
+        result.AssertSuccess();
+    }
+
+    [Theory]
+    [InlineData("Bash", "dydo agent claim auto", "agent")]
+    [InlineData("Bash", "dydo sync", "sync")]
+    [InlineData("Bash", "dydo init claude", "init")]
+    [InlineData("Bash", "dydo check && dydo sync", "sync")]
+    [InlineData("Bash", "dydo check $(dydo init)", "init")]
+    [InlineData("Bash", "dydo check \"$(dydo index)\"", "index")]
+    [InlineData("Bash", "dydo check `dydo init`", "init")]
+    [InlineData("Bash", "dydo check <(dydo init)", "init")]
+    [InlineData("PowerShell", "dydo check (dydo init claude)", "init")]
+    [InlineData("Bash", "dydo check && dy\\\ndo init", "init")]
+    [InlineData("Bash", "dydo \\\ninit", "init")]
+    [InlineData("PowerShell", "dydo `\ninit claude", "init")]
+    [InlineData("PowerShell", "dydo `\r\ninit claude", "init")]
+    [InlineData("Bash", "dydo check; DYDO SYNC", "SYNC")]
+    [InlineData("Bash", "dydo check; ./dydo.exe init", "init")]
+    [InlineData("Bash", "dydo check dydo src", "src")]
+    [InlineData("PowerShell", "dydo\finit", "init")]
+    [InlineData("PowerShell", "dydo\vinit", "init")]
+    [InlineData("PowerShell", "dydo\u00A0init", "init")]
+    [InlineData("PowerShell", "dydo\u2003init", "init")]
+    [InlineData("PowerShell", "dydo\u0085init", "init")]
+    [InlineData("PowerShell", "dydo check; dydo init", "init")]
+    public async Task Worker_NonGateDydoCommand_Blocked(string tool, string command, string word)
+    {
+        var result = await WorkerShellAsync(tool, command);
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains("Sub-agents may run only these dydo commands");
+        result.AssertStderrContains($"Not allowed here: dydo {word}");
+    }
+
+    // Parity: outside the rule-2 relaxation the worker lane answers exactly as 3.3.0 (c31f66c7)
+    // did. Expected values were recorded by running the 3.3.0 guard on a fresh `init none` project.
+    [Theory]
+    [InlineData("Bash", "find dydo -name '*.md'", true)]
+    [InlineData("Bash", "find dydo -name '*.md' -exec grep -l foo {} \\;", true)]
+    [InlineData("Bash", "find dydo -type f | xargs grep -l foo", true)]
+    [InlineData("Bash", "grep -rn foo dydo src", true)]
+    [InlineData("Bash", "rg -n \"foo\" dydo/ --glob '*.md'", true)]
+    [InlineData("Bash", "ls dydo -la", true)]
+    [InlineData("Bash", "tree dydo", true)]
+    [InlineData("Bash", "cp -r dydo backup", true)]
+    [InlineData("Bash", "git diff -- dydo src", true)]
+    [InlineData("Bash", "git add dydo/ && git commit -m \"docs: update dydo index\"", true)]
+    [InlineData("Bash", "git ls-files dydo | xargs wc -l", true)]
+    [InlineData("Bash", "for f in dydo/*.md; do wc -l \"$f\"; done", true)]
+    [InlineData("Bash", "(cd dydo && ls)", true)]
+    [InlineData("Bash", "test -d dydo && echo yes", true)]
+    [InlineData("Bash", "echo dydo sync", true)]
+    [InlineData("Bash", "echo \"dydo sync is retired\"", true)]
+    [InlineData("Bash", "git commit -m \"fix (dydo init blocked for workers)\"", true)]
+    [InlineData("Bash", "rg -n \"dydo init\" Commands", true)]
+    [InlineData("Bash", "grep -rn \"dydo check\" docs", true)]
+    [InlineData("Bash", "npx prettier --check dydo", true)]
+    [InlineData("Bash", "dotnet test --filter dydo", true)]
+    [InlineData("Bash", "rg -n \"pattern\" \\\n  dydo src tests", true)]
+    [InlineData("Bash", "git diff --stat \\\n  dydo src", true)]
+    [InlineData("Bash", "find \\\n  dydo -name '*.md'", true)]
+    [InlineData("Bash", "grep -rn foo \\\n  dydo", true)]
+    [InlineData("Bash", "watch dydo init", true)]
+    [InlineData("Bash", "echo init | xargs dydo", true)]
+    [InlineData("Bash", "x=1 dydo init", true)]
+    [InlineData("Bash", "npx dydo agent claim auto", false)]
+    [InlineData("Bash", "dydo sync", false)]
+    [InlineData("Bash", "dydo init claude", false)]
+    [InlineData("Bash", "dydo check && dydo init", false)]
+    [InlineData("Bash", "dydo check $(dydo init)", false)]
+    [InlineData("Bash", "dydo check && dy\\\ndo init", false)]
+    [InlineData("Bash", "dydo check; echo dydo sync", false)]
+    [InlineData("Bash", "dydo check; DYDO SYNC", false)]
+    [InlineData("PowerShell", "Get-ChildItem dydo -Recurse", true)]
+    [InlineData("PowerShell", "Get-ChildItem `\n  dydo -Recurse", true)]
+    [InlineData("PowerShell", "Get-ChildItem -Path dydo, src -Recurse", true)]
+    [InlineData("PowerShell", "Select-String -Path dydo/*.md -Pattern foo", true)]
+    [InlineData("PowerShell", "dydo check (dydo init)", false)]
+    [InlineData("PowerShell", "$out = dydo init", false)]
+    [InlineData("PowerShell", "@{ dydo = 1 }", true)]
+    public async Task Worker_NonGateCommand_MatchesBase330(string tool, string command, bool baseAllowed)
+    {
+        var result = await WorkerShellAsync(tool, command);
+
+        Assert.Equal(baseAllowed, result.ExitCode == 0);
+    }
+
+    [Fact]
+    public async Task TopLevelSession_DydoSync_NotBlockedByWorkerRule()
+    {
+        await InitProjectAsync();
+
+        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\","
+            + "\"tool_input\":{\"command\":\"dydo check && dydo sync\"}}";
+        var result = await GuardWithStdinAsync(json);
+
+        result.AssertSuccess();
+    }
+
+    [Theory]
+    [InlineData("find dydo -name x", null)]
+    [InlineData("echo dydo sync", null)]
+    [InlineData("watch dydo init", null)]
+    [InlineData("dydo", null)]
+    [InlineData("dydo check; dydo", null)]
+    [InlineData("dydo check $(dydo fix)", null)]
+    [InlineData("dydo check > dydo/out.md", null)]
+    [InlineData("C:/tools/dydo.exe check", null)]
+    [InlineData("dydo check dydo.json", null)]
+    [InlineData("dydo check dydo-notes", null)]
+    [InlineData("dydo sync", "sync")]
+    [InlineData("dydo check dydo src", "src")]
+    [InlineData("dydo check; d\"\"ydo init", "init")]
+    [InlineData("dydo check; d\\ydo init", "init")]
+    [InlineData("dydo check && {dydo,init}", "init")]
+    [InlineData("dydo check; C:\\tools\\dydo.cmd init", "init")]
+    [InlineData("dydo check; dydo \"init\"", "init")]
+    [InlineData("dydo check; dydo >/dev/null init", ">/dev/null")]
+    [InlineData("dydo --verbose", "--verbose")]
+    [InlineData("dydo\finit", "init")]
+    [InlineData("dydo\vinit", "init")]
+    [InlineData("dydo\u00A0init", "init")]
+    [InlineData("dydo\u2003init", "init")]
+    [InlineData("dydo\u0085init", "init")]
+    [InlineData("dydo check; dydo init", "init")]
+    public void FindWorkerBlockedDydoCommand_ChecksEveryTokenOfAMatchedLine(string command, string? expected)
+    {
+        Assert.Equal(expected, GuardCommand.FindWorkerBlockedDydoCommand(command));
     }
 
     [Fact]

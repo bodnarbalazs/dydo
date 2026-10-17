@@ -452,11 +452,16 @@ public static partial class GuardCommand
     {
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
 
-        // Tier-2 workers don't run dydo commands - that machinery belongs to the admiral.
-        if (isDydo && isWorker)
+        // Sub-agents (Issue Captains, crew) run the gates their work needs; setup, generation
+        // and hook commands stay with the top-level session.
+        var workerBlocked = isDydo && isWorker ? FindWorkerBlockedDydoCommand(command) : null;
+        if (workerBlocked != null)
         {
-            Console.Error.WriteLine("BLOCKED: Sub-agents don't run dydo commands - that belongs to the");
-            Console.Error.WriteLine("  admiral who spawned you, not a worker.");
+            Console.Error.WriteLine("BLOCKED: Sub-agents may run only these dydo commands: "
+                + string.Join(", ", WorkerAllowedDydoSubcommands) + " (plus -h/--help/--version).");
+            Console.Error.WriteLine($"  Not allowed here: dydo {workerBlocked}");
+            Console.Error.WriteLine("  Setup, generation and hook commands (init, index, guard, map, completions, _complete)");
+            Console.Error.WriteLine("  belong to the top-level session that spawned you.");
             return ExitCodes.ToolError;
         }
 
@@ -748,6 +753,53 @@ public static partial class GuardCommand
             return false; // Timed out - no stdin data available
         }
     }
+
+    /// <summary>
+    /// dydo subcommands a sub-agent may run: the documentation and coverage gates
+    /// (check, fix, gap-check), read-only inspection (graph, validate) and help/version.
+    /// Setup, generation and hook commands (init, index, guard, map, completions, ...)
+    /// stay with the top-level session.
+    /// </summary>
+    internal static readonly string[] WorkerAllowedDydoSubcommands =
+        ["check", "fix", "gap-check", "graph", "validate", "help", "version"];
+
+    private static readonly HashSet<string> WorkerAllowedDydoWords =
+        new([.. WorkerAllowedDydoSubcommands, "-h", "--help", "--version"], StringComparer.Ordinal);
+
+    /// <summary>
+    /// Returns the first word a sub-agent may not pass to dydo, or null when the command is allowed.
+    /// A command <see cref="IsDydoCommand"/> does not match is allowed, exactly as in 3.3.0. A matched
+    /// command is allowed only when every dydo token in it that is followed by a word is followed by
+    /// an allowed word; a bare dydo prints help. Before the scan, backslash-newline and
+    /// backtick-newline continuations are deleted, then quotes, backslashes, backticks and carets,
+    /// so d"y"do, d\ydo and `dydo init` read as dydo calls. The token matches anywhere,
+    /// case-insensitively, with an optional .exe/.cmd/.ps1/.bat suffix; dydo followed by a letter,
+    /// digit, '.', '-' or '/' is part of a longer word or a path (dydo/guides, dydo.json) and is
+    /// skipped. A matched line therefore blocks a dydo directory given as its own word, such as
+    /// dydo check dydo src.
+    /// </summary>
+    internal static string? FindWorkerBlockedDydoCommand(string command)
+    {
+        if (!IsDydoCommand(command))
+            return null;
+
+        var scanned = WorkerScanStripRegex().Replace(LineContinuationRegex().Replace(command, ""), "");
+        return DydoTokenRegex().Matches(scanned)
+            .Select(token => token.Groups["word"].Value)
+            .FirstOrDefault(word => word.Length > 0 && !WorkerAllowedDydoWords.Contains(word));
+    }
+
+    [GeneratedRegex(@"[\\`]\r?\n")]
+    private static partial Regex LineContinuationRegex();
+
+    [GeneratedRegex(@"[""'\\`^]")]
+    private static partial Regex WorkerScanStripRegex();
+
+    // dydo, then the word after any whitespace but a line break, or brace-expansion commas, up to
+    // whitespace or a terminator. \s is Unicode-aware on both sides, so form feed, vertical tab, NBSP,
+    // U+2003 and NEL separate dydo from its word exactly as PowerShell and 3.3.0's dydo\s treat them.
+    [GeneratedRegex(@"dydo(?:\.(?:exe|cmd|ps1|bat))?(?![\w.\-/])(?:[^\S\r\n]|,)*(?<word>[^\s;&|)}]*)", RegexOptions.IgnoreCase)]
+    private static partial Regex DydoTokenRegex();
 
     /// <summary>
     /// Check if a command is a dydo command.

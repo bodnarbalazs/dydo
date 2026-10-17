@@ -69,6 +69,15 @@ public class ValidationService : IValidationService
                 });
             }
 
+            if (!nudge.IsCommandMatch && !nudge.IsNewFileMatch)
+            {
+                issues.Add(new ValidationIssue
+                {
+                    Severity = "error", File = "dydo.json",
+                    Message = $"Nudge [{i}] has invalid match '{nudge.Match}'. Must be 'command' or 'new-file'."
+                });
+            }
+
             try { _ = new Regex(nudge.Pattern); }
             catch (ArgumentException ex)
             {

@@ -35,15 +35,17 @@ public static partial class GuardCommand
     /// and the machine-local directory where warn-nudge pass-through markers live
     /// (dydo/_system/.local/ - gitignored, scan-excluded). Replaces the old AgentRegistry:
     /// with the roster/claim machinery gone (DR-041), the guard only ever needed these two.
+    /// ProjectRoot (the directory of the nearest dydo.json) anchors new-file nudge paths.
     /// </summary>
-    internal sealed record GuardEnv(DydoConfig? Config, string MarkerDir)
+    internal sealed record GuardEnv(DydoConfig? Config, string MarkerDir, string? ProjectRoot = null)
     {
         public static GuardEnv Load(string? basePath = null)
         {
             var configService = new ConfigService();
             return new GuardEnv(
                 configService.LoadConfig(basePath),
-                Path.Combine(configService.GetDydoRoot(basePath), "_system", ".local"));
+                Path.Combine(configService.GetDydoRoot(basePath), "_system", ".local"),
+                configService.GetProjectRoot(basePath));
         }
     }
 
@@ -126,14 +128,16 @@ public static partial class GuardCommand
     private record struct GuardContext(
         string? FilePath, string? Action, string? BashCommand,
         string? ToolName, string? SessionId, string? SearchPath,
-        bool HasCliArgs, string? AgentId, string? AgentType);
+        bool HasCliArgs, string? AgentId, string? AgentType,
+        IReadOnlyList<string> WriteTargets, string? Cwd);
 
     private static GuardContext ParseInput(string? cliAction, string? cliPath, string? cliCommand)
     {
         var hasCliArgs = cliAction != null || cliPath != null || cliCommand != null;
         string? filePath = null, action = null, bashCommand = null;
         string? toolName = null, sessionId = null, searchPath = null;
-        string? agentId = null, agentType = null;
+        string? agentId = null, agentType = null, cwd = null;
+        IReadOnlyList<string> writeTargets = [];
 
         if (!hasCliArgs && TryReadStdinJson(out var json) && json != null)
         {
@@ -150,6 +154,8 @@ public static partial class GuardCommand
                     toolName = hookInput.ToolName?.ToLowerInvariant();
                     bashCommand = hookInput.GetCommand();
                     searchPath = hookInput.GetSearchPath();
+                    writeTargets = hookInput.GetWriteTargets();
+                    cwd = hookInput.Cwd;
                 }
             }
             catch (Exception ex)
@@ -169,7 +175,7 @@ public static partial class GuardCommand
             action ?? cliAction ?? "edit",
             bashCommand ?? cliCommand,
             toolName, sessionId, searchPath, hasCliArgs,
-            agentId, agentType);
+            agentId, agentType, writeTargets, cwd);
     }
 
     private static int Execute(string? cliAction, string? cliPath, string? cliCommand)
@@ -280,6 +286,10 @@ public static partial class GuardCommand
             }
         }
 
+        // LAYER 1c: new-file nudges, after off-limits / protected so a nudge never masks a block.
+        var newFileNudge = CheckNewFileNudges(context.WriteTargets, context.Cwd, env);
+        if (newFileNudge != null) return newFileNudge.Value;
+
         // SECURITY LAYER 2: Bash tool
         if (ShouldRouteToShellHandler(context.ToolName, context.BashCommand))
         {
@@ -364,7 +374,7 @@ public static partial class GuardCommand
             }
         }
 
-        return ExitCodes.Success;
+        return CheckNewFileNudges(ctx.WriteTargets, ctx.Cwd, env) ?? ExitCodes.Success;
     }
 
     /// <summary>
@@ -485,57 +495,68 @@ public static partial class GuardCommand
     {
         // Always include block-severity default nudges (H19 indirect dydo invocation) even if
         // removed from config. These are security-critical and must not be removable via dydo.json.
-        var nudges = MergeSystemNudges(env.Config?.Nudges);
-        if (nudges.Count == 0)
-            return null;
-
-        foreach (var nudge in nudges)
+        foreach (var nudge in MergeSystemNudges(env.Config?.Nudges))
         {
-            Regex regex;
-            try { regex = new Regex(nudge.Pattern, RegexOptions.IgnoreCase); }
-            catch { continue; }
+            if (!nudge.IsCommandMatch) continue;
 
-            var match = regex.Match(command);
-            if (!match.Success) continue;
+            var match = CompileNudgePattern(nudge.Pattern)?.Match(command);
+            if (match is not { Success: true }) continue;
 
-            var message = nudge.Message;
-            for (int i = 1; i < match.Groups.Count; i++)
-                message = message.Replace($"${i}", match.Groups[i].Value.Trim());
-
-            if (string.Equals(nudge.Severity, "notice", StringComparison.OrdinalIgnoreCase))
-            {
-                // Soft nudge: warn on stderr, never block (exit 0).
-                Console.Error.WriteLine($"NOTICE: {message}");
-                continue;
-            }
-
-            if (string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
-            {
-                // Warn = "block once, run again to proceed". The pass-through marker lives in
-                // machine-local state (dydo/_system/.local/ - gitignored, scan-excluded), keyed
-                // by pattern hash - global rather than per-agent (DR-041, identity-free model).
-                var hash = ComputeNudgeHash(nudge.Pattern);
-                Directory.CreateDirectory(env.MarkerDir);
-                var markerPath = Path.Combine(env.MarkerDir, $".nudge-{hash}");
-
-                if (!File.Exists(markerPath))
-                {
-                    File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
-                    Console.Error.WriteLine($"BLOCKED: {message}");
-                    Console.Error.WriteLine("  (Run the same command again to proceed anyway.)");
-                    return ExitCodes.ToolError;
-                }
-
-                File.Delete(markerPath);
-                continue;
-            }
-
-            // Block severity: always block
-            Console.Error.WriteLine($"BLOCKED: {message}");
-            return ExitCodes.ToolError;
+            var verdict = EnforceNudge(nudge, match, $".nudge-{ComputeNudgeHash(nudge.Pattern)}",
+                "Run the same command again to proceed anyway.", env);
+            if (verdict != null) return verdict;
         }
 
         return null;
+    }
+
+    private static Regex? CompileNudgePattern(string pattern)
+    {
+        try { return new Regex(pattern, RegexOptions.IgnoreCase); }
+        catch (ArgumentException) { return null; }
+    }
+
+    /// <summary>
+    /// Applies a matched nudge's severity. Returns an exit code when the call is blocked, null
+    /// to continue with the next nudge. <paramref name="markerName"/> names the warn pass-through
+    /// marker, so each nudge lane keys its own.
+    /// </summary>
+    private static int? EnforceNudge(NudgeConfig nudge, Match match, string markerName, string retryHint, GuardEnv env)
+    {
+        var message = nudge.Message;
+        for (int i = 1; i < match.Groups.Count; i++)
+            message = message.Replace($"${i}", match.Groups[i].Value.Trim());
+
+        if (string.Equals(nudge.Severity, "notice", StringComparison.OrdinalIgnoreCase))
+        {
+            // Soft nudge: warn on stderr, never block (exit 0).
+            Console.Error.WriteLine($"NOTICE: {message}");
+            return null;
+        }
+
+        if (string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
+        {
+            // Warn = "block once, run again to proceed". The pass-through marker lives in
+            // machine-local state (dydo/_system/.local/ - gitignored, scan-excluded), keyed
+            // by pattern hash - global rather than per-agent (DR-041, identity-free model).
+            Directory.CreateDirectory(env.MarkerDir);
+            var markerPath = Path.Combine(env.MarkerDir, markerName);
+
+            if (!File.Exists(markerPath))
+            {
+                File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
+                Console.Error.WriteLine($"BLOCKED: {message}");
+                Console.Error.WriteLine($"  ({retryHint})");
+                return ExitCodes.ToolError;
+            }
+
+            File.Delete(markerPath);
+            return null;
+        }
+
+        // Block severity: always block
+        Console.Error.WriteLine($"BLOCKED: {message}");
+        return ExitCodes.ToolError;
     }
 
     internal static string ComputeNudgeHash(string pattern)
@@ -564,7 +585,9 @@ public static partial class GuardCommand
     ];
 
     /// <summary>
-    /// Reconcile config nudges with the shipped defaults. Two independent passes:
+    /// Reconcile config nudges with the shipped defaults. A nudge's identity is its match form
+    /// and pattern: the shipped defaults are all command nudges, so a new-file entry never
+    /// satisfies, replaces, or is rebuilt by one, whatever its pattern. Two independent passes:
     ///   1. Self-heal known-stale shipped messages (ANY severity): a nudge still carrying a
     ///      pre-2.1 default text is refreshed to the current default (matched by pattern) or
     ///      dropped entirely when that default was retired. User-edited messages are untouched.
@@ -578,7 +601,7 @@ public static partial class GuardCommand
 
         for (int i = nudges.Count - 1; i >= 0; i--)
         {
-            if (!StaleNudgeMessages.Contains(nudges[i].Message))
+            if (!nudges[i].IsCommandMatch || !StaleNudgeMessages.Contains(nudges[i].Message))
                 continue;
 
             var current = ConfigFactory.DefaultNudges.FirstOrDefault(d => d.Pattern == nudges[i].Pattern);
@@ -593,7 +616,7 @@ public static partial class GuardCommand
             if (!string.Equals(defaultNudge.Severity, "block", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            var existingIndex = nudges.FindIndex(n => n.Pattern == defaultNudge.Pattern);
+            var existingIndex = nudges.FindIndex(n => n.IsCommandMatch && n.Pattern == defaultNudge.Pattern);
             if (existingIndex < 0)
             {
                 nudges.Add(defaultNudge);
@@ -606,7 +629,8 @@ public static partial class GuardCommand
                     Pattern = existing.Pattern,
                     Message = existing.Message,
                     Severity = "block",
-                    Audience = existing.Audience
+                    Audience = existing.Audience,
+                    Match = existing.Match
                 };
             }
         }

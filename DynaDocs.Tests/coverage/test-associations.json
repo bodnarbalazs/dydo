@@ -104,6 +104,12 @@
       ]
     },
     {
+      "module": "Commands/GuardCommand.NewFileNudges.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/GuardNewFileNudgeTests.cs"
+      ]
+    },
+    {
       "module": "Commands/HelpCommand.cs",
       "tests": [
         "DynaDocs.Tests/Commands/HelpCommandTests.cs"

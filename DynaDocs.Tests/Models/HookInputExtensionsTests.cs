@@ -152,6 +152,71 @@ public class HookInputExtensionsTests
         Assert.Null(input.GetCommand());
     }
 
+    // ─── GetWriteTargets ───
+
+    [Theory]
+    [InlineData("Write")]
+    [InlineData("Edit")]
+    [InlineData("MultiEdit")]
+    public void GetWriteTargets_ClaudeWriteTool_ReturnsFilePath(string toolName)
+    {
+        Assert.Equal(["tools/x.py"], MakeInput(toolName, filePath: "tools/x.py").GetWriteTargets());
+    }
+
+    [Fact]
+    public void GetWriteTargets_NotebookEdit_ReturnsNotebookPath()
+    {
+        var input = new HookInput { ToolName = "NotebookEdit", ToolInput = new ToolInputData { NotebookPath = "tools/n.ipynb" } };
+
+        Assert.Equal(["tools/n.ipynb"], input.GetWriteTargets());
+    }
+
+    [Theory]
+    [InlineData("Read")]
+    [InlineData("Bash")]
+    [InlineData(null)]
+    public void GetWriteTargets_NonWriteTool_ReturnsNothing(string? toolName)
+    {
+        Assert.Empty(MakeInput(toolName, filePath: "tools/x.py", command: "touch tools/x.py").GetWriteTargets());
+    }
+
+    [Fact]
+    public void GetWriteTargets_WriteToolWithoutPath_ReturnsNothing()
+    {
+        Assert.Empty(MakeInput("Write").GetWriteTargets());
+    }
+
+    [Fact]
+    public void GetWriteTargets_ApplyPatch_ReturnsAddedAndMovedToPathsInOrder()
+    {
+        var patch = string.Join("\r\n",
+            "*** Begin Patch",
+            "*** Environment ID: env-1",
+            "*** Update File: src/a.cs",
+            "*** Move to: tools/moved.py",
+            "@@",
+            "-old",
+            "+new",
+            "*** Add File: tools/x.py",
+            "+*** Add File: tools/not-a-header.py",
+            "  *** Add File: tools/indented.py  ",
+            "*** Delete File: tools/gone.py",
+            "*** End Patch");
+
+        var targets = MakeInput("apply_patch", command: patch).GetWriteTargets();
+
+        Assert.Equal(["tools/moved.py", "tools/x.py", "tools/indented.py"], targets);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("not a patch")]
+    [InlineData("*** Add File:")]
+    public void GetWriteTargets_UnparseablePatch_ReturnsNothing(string? patch)
+    {
+        Assert.Empty(MakeInput("apply_patch", filePath: "tools/x.py", command: patch).GetWriteTargets());
+    }
+
     // ─── IsFileOperation ───
 
     [Theory]

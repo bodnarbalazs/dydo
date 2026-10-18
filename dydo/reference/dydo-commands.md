@@ -145,14 +145,18 @@ dydo guard --command "git status"
 dydo guard --stop
 ```
 
-Exit `0` allows the action; exit `2` blocks it with `BLOCKED:` on stderr. **Off-limits** paths block
+In hook mode (a PreToolUse payload on stdin, no arguments) exit `0` with empty stdout allows the
+action, and exit `0` with one `permissionDecision: "deny"` object on stdout blocks it; the reason
+carries the `BLOCKED:` text, which still goes to stderr too. See [Guard System](../understand/guard-system.md)
+for why a block is not exit `2`. In diagnostic mode (the CLI-argument examples above) exit `0`
+allows and exit `2` blocks with `BLOCKED:` on stderr. **Off-limits** paths block
 every operation, reads included. **Protected** paths are readable by any tool and writable by none,
 Bash included. Both tiers bind on every caller; [Files Off-Limits](../files-off-limits.md) declares
 them, their glob syntax, and the whitelist that lifts off-limits patterns. Nudges are configured in
 `dydo.json` - see [DynaDocs](./about-dynadocs.md). A nudge matches shell command lines by default; one
 with `"match": "new-file"` matches the project-relative path of a file that Write, Edit, NotebookEdit
 or a Codex `apply_patch` is about to create, and never fires for a file that already exists or for a
-file a shell command creates. `--stop` is a retained no-op so existing Stop-hook
+file a shell command creates. `--stop` is a retained no-op (exit `0`, empty stdout) so existing Stop-hook
 wiring keeps resolving.
 
 ---

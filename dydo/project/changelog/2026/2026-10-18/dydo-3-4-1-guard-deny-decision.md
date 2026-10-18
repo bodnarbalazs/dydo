@@ -31,7 +31,7 @@ Patch release closing a fail-open: on Windows, Codex let every tool call the gua
 ## Files Changed
 
 `Commands/GuardCommand.cs`, `Commands/GuardCommand.Refusal.cs`, `dydo/understand/guard-system.md`,
-`dydo/reference/configuration.md`, `DynaDocs.csproj`, `npm/package.json`,
+`dydo/reference/configuration.md`, `dydo/reference/dydo-commands.md`, `DynaDocs.csproj`, `npm/package.json`,
 `.github/workflows/release.yml`, `DynaDocs.Tests/Integration/`,
 `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`, `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs`,
 `npm/test/install.test.cjs`, this entry and its changelog hub.

@@ -102,7 +102,7 @@ Tested empirically with a logging `PreToolUse` hook (`dydo/agents/Adele/spike/`)
 | Hooks live-reload mid-session? | **Yes** - editing `settings.local.json` takes effect immediately, no restart. |
 | PreToolUse fires for Agent-tool subagent calls? | **Yes.** |
 | PreToolUse fires for Workflow-spawned agent calls? | **Yes.** |
-| Hook can hard-block (exit 2) inside both? | **Yes** - a marked Bash command was blocked in a subagent *and* in a workflow agent. Auto-approve (`acceptEdits`) mode does **not** bypass the hook; exit-2 is upstream of permission mode. |
+| Hook can hard-block (exit 2) inside both? | **Yes** - a marked Bash command was blocked in a subagent *and* in a workflow agent. Auto-approve (`acceptEdits`) mode does **not** bypass the hook; exit-2 is upstream of permission mode. (Probe record; since dydo 3.4.1, LC-1021, `dydo guard` blocks through a `deny` object at exit 0 - see [Guard System](../../understand/guard-system.md).) |
 | Payload identifies the actor? | **Yes** - `agent_id` (unique per instance; equals the agentId the Agent tool returns) + `agent_type`. `session_id` and `transcript_path` are **shared with the parent**. |
 | `agent_type` carries the role? | **Yes, when a type is specified.** Agent-tool path surfaces the requested `subagent_type` (observed `general-purpose`); workflow path surfaces an explicit `agentType` (observed `Explore`). A bare `agent()` with no type defaults to the generic `agent_type: "workflow-subagent"`. |
 

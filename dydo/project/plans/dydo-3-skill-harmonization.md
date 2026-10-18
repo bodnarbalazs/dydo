@@ -213,6 +213,9 @@ defects. Import the Matt Pocock skills DR 045 names, adapted. Leave the reposito
   `ConfigFactoryTests`' managers-doctrine nudge tests - those spots are H-1's, and `ConfigFactory.
   IsLegacyDefaultNudge` becomes dead code H-1 removes. `GuardIntegrationTests` asserts that an edit of
   `dydo/index.md` exits 2 with `BLOCKED` on stderr; the protected tier keeps that contract for writes
+  (**superseded by LC-1021, dydo 3.4.1:** hook-mode refusals now exit 0 with a `deny` object on
+  stdout and `BLOCKED:` still on stderr; only diagnostic CLI-argument mode keeps exit 2 - see
+  [Guard System](../../understand/guard-system.md); the exit-2 wording here is the 3.0 record)
   and H-1 adds the read-allowed case beside it. `InitCommandTests.cs` is edited by both H-1 (Codex
   matcher assertions) and H-2 (inventory count) - H-2 is blocked by H-1. Rewriting
   `.codex/hooks.json` (H-1) invalidates the SHA-pinned hook trust in `~/.codex/config.toml`, so the
@@ -255,7 +258,9 @@ git diff --check
 ```
 
 Fixtures prove: protected file readable via `Read` and `cat`; blocked via `Edit`, `Write`, `sed -i`,
-`echo >`, `rm` (exit 2, `BLOCKED:` on stderr); off-limits still blocks reads; the review-block nudge
+`echo >`, `rm` (exit 2, `BLOCKED:` on stderr; **superseded by LC-1021, dydo 3.4.1:** in hook mode
+these now exit 0 with a `deny` object on stdout, `BLOCKED:` still on stderr, and diagnostic CLI mode
+keeps exit 2 - see [Guard System](../../understand/guard-system.md)); off-limits still blocks reads; the review-block nudge
 fires on `gh pr create` without the block and stays silent with it; the emitted Codex matcher
 equals the §3 literal (Claude-only UI names dropped, legacy shell names retained); a fresh
 `CreateDefaultModels` binds `project-planner: strong`, `issue-planner: strong`,

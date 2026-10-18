@@ -110,6 +110,12 @@
       ]
     },
     {
+      "module": "Commands/GuardCommand.Refusal.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/GuardRefusalContractTests.cs"
+      ]
+    },
+    {
       "module": "Commands/HelpCommand.cs",
       "tests": [
         "DynaDocs.Tests/Commands/HelpCommandTests.cs"

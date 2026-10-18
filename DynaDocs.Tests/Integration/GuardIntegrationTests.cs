@@ -60,7 +60,7 @@ public class GuardIntegrationTests : IntegrationTestBase
             + "\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"config/secrets.json\"}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("off-limits");
     }
 
@@ -93,7 +93,7 @@ public class GuardIntegrationTests : IntegrationTestBase
             $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Read\",\"tool_input\":{{\"file_path\":\"{path}\"}}}}");
 
         argMode.AssertSuccess();
-        hookMode.AssertSuccess();
+        hookMode.AssertPreToolUseAllowed();
     }
 
     [Theory]
@@ -110,7 +110,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(
             $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"file_path\":\"{path}\"}}}}");
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED:");
         result.AssertStderrContains("protected");
         result.AssertStderrContains(path);
@@ -140,7 +140,7 @@ public class GuardIntegrationTests : IntegrationTestBase
             $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}");
 
         // "protected", not "off-limits": the tier, not the old block list, is what stops this.
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED:");
         result.AssertStderrContains("protected");
     }
@@ -155,7 +155,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(
             $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}");
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -169,8 +169,8 @@ public class GuardIntegrationTests : IntegrationTestBase
         var patch = await GuardWithStdinAsync(
             $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"apply_patch\",\"tool_input\":{{\"file_path\":\"src/Foo.cs\"}}}}");
 
-        edit.AssertSuccess();
-        patch.AssertSuccess();
+        edit.AssertPreToolUseAllowed();
+        patch.AssertPreToolUseAllowed();
     }
 
     #endregion
@@ -222,7 +222,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"CLAUDE.md\"}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -233,7 +233,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"src/test.cs\"}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     #endregion
@@ -304,7 +304,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED");
     }
 
@@ -326,7 +326,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains(expectedInvoker);
     }
 
@@ -350,7 +350,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + command + "\"}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -361,7 +361,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dydo agent claim auto\"}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -372,7 +372,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cd /tmp && npx dydo agent claim auto\"}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED");
     }
 
@@ -388,7 +388,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cd /c/Users/User/Desktop/Projects && git diff --name-only\"}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED");
         result.AssertStderrContains("Don't chain cd / Set-Location with other commands");
         result.AssertStderrContains("just run: git diff --name-only");
@@ -402,7 +402,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"cd /tmp && ls\"}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED");
         result.AssertStderrContains("Don't chain cd / Set-Location with other commands");
     }
@@ -421,7 +421,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\"src\",\"pattern\":\"*.cs\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Theory]
@@ -434,7 +434,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"pattern\":\"*.cs\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Theory]
@@ -448,7 +448,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\".env\",\"pattern\":\"*\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED");
         result.AssertStderrContains("off-limits");
     }
@@ -469,8 +469,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var direct = await Run("dydo/_system/types.json");
         var traversal = await Run("safe/../dydo/_system/types.json");
 
-        direct.AssertExitCode(2);
-        traversal.AssertExitCode(2);
+        Assert.Equal(direct.AssertPreToolUseDenied(), traversal.AssertPreToolUseDenied());
         Assert.Equal(direct.Stderr, traversal.Stderr);
     }
 
@@ -491,7 +490,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Theory]
@@ -506,7 +505,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     #endregion
@@ -521,7 +520,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"EnterPlanMode\",\"tool_input\":{}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED");
         result.AssertStderrContains("plan mode");
     }
@@ -534,7 +533,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"ExitPlanMode\",\"tool_input\":{}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED");
         result.AssertStderrContains("plan mode");
     }
@@ -551,7 +550,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"EnterPlanMode\",\"tool_input\":{}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         var routed = SkillsNamedIn(result.Stderr);
         Assert.NotEmpty(routed);
         foreach (var skill in routed)
@@ -600,7 +599,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Agent\",\"tool_input\":{{\"prompt\":\"do something\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
         result.AssertStderrContains("NOTICE");
         result.AssertStderrContains("Tier-2 worker lane");
     }
@@ -613,7 +612,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Glob\",\"tool_input\":{{\"pattern\":\"**/*.cs\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
         Assert.DoesNotContain("NOTICE", result.Stderr);
     }
 

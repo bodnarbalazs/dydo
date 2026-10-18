@@ -70,8 +70,9 @@ briefs, changelog, and FutureFeature ideas.
 `dydo init claude` and `dydo init codex` wire the selected runtime's guard hooks automatically.
 Claude Code uses `.claude/settings.local.json`; Codex uses `.codex/hooks.json`.
 
-The `PreToolUse` hook sends matched tool calls to `dydo guard`. Exit `0` allows the action and exit
-`2` blocks it. Codex includes `apply_patch` in its matcher because file edits use that tool. The
+The `PreToolUse` hook sends matched tool calls to `dydo guard`. Exit `0` with empty stdout allows
+the action; exit `0` with one `permissionDecision: "deny"` object on stdout blocks it, a contract
+that survives Codex running hooks through PowerShell (see [Guard System](../understand/guard-system.md)). Codex includes `apply_patch` in its matcher because file edits use that tool. The
 retained `Stop` hook calls `dydo guard --stop`, a compatibility no-op after dydo ceded lifecycle
 orchestration to the host runtime.
 

@@ -25,8 +25,10 @@ using DynaDocs.Utils;
 /// 2. CLI arguments (manual testing) - --action and --path flags
 ///
 /// Output:
-/// - Exit code 0 = action allowed (silent stdout)
-/// - Exit code 2 = action blocked (error message to stderr)
+/// - Exit code 0, empty stdout = action allowed
+/// - Hook-mode refusal: exit code 0 with one PreToolUse deny-decision object on stdout
+///   (GuardCommand.Refusal.cs); the same text also goes to stderr
+/// - CLI-mode or non-PreToolUse-event refusal: exit code 2, message on stderr
 /// </summary>
 public static partial class GuardCommand
 {
@@ -129,14 +131,14 @@ public static partial class GuardCommand
         string? FilePath, string? Action, string? BashCommand,
         string? ToolName, string? SessionId, string? SearchPath,
         bool HasCliArgs, string? AgentId, string? AgentType,
-        IReadOnlyList<string> WriteTargets, string? Cwd);
+        IReadOnlyList<string> WriteTargets, string? Cwd, string? HookEventName);
 
     private static GuardContext ParseInput(string? cliAction, string? cliPath, string? cliCommand)
     {
         var hasCliArgs = cliAction != null || cliPath != null || cliCommand != null;
         string? filePath = null, action = null, bashCommand = null;
         string? toolName = null, sessionId = null, searchPath = null;
-        string? agentId = null, agentType = null, cwd = null;
+        string? agentId = null, agentType = null, cwd = null, hookEventName = null;
         IReadOnlyList<string> writeTargets = [];
 
         if (!hasCliArgs && TryReadStdinJson(out var json) && json != null)
@@ -156,6 +158,7 @@ public static partial class GuardCommand
                     searchPath = hookInput.GetSearchPath();
                     writeTargets = hookInput.GetWriteTargets();
                     cwd = hookInput.Cwd;
+                    hookEventName = hookInput.HookEventName;
                 }
             }
             catch (Exception ex)
@@ -175,13 +178,34 @@ public static partial class GuardCommand
             action ?? cliAction ?? "edit",
             bashCommand ?? cliCommand,
             toolName, sessionId, searchPath, hasCliArgs,
-            agentId, agentType, writeTargets, cwd);
+            agentId, agentType, writeTargets, cwd, hookEventName);
     }
 
     private static int Execute(string? cliAction, string? cliPath, string? cliCommand)
     {
-        var ctx = ParseInput(cliAction, cliPath, cliCommand);
+        // Everything the call writes to stderr is held, so a PreToolUse refusal can carry the
+        // whole text as its deny reason, then replayed to stderr unchanged.
+        var stderr = Console.Error;
+        var transcript = new StringWriter();
+        Console.SetError(transcript);
+        GuardContext ctx;
+        int exitCode;
+        try
+        {
+            ctx = ParseInput(cliAction, cliPath, cliCommand);
+            exitCode = Evaluate(ctx);
+        }
+        finally
+        {
+            Console.SetError(stderr);
+            stderr.Write(transcript.ToString());
+        }
 
+        return IsPreToolUseRefusal(ctx, exitCode) ? DenyPreToolUse(transcript.ToString()) : exitCode;
+    }
+
+    private static int Evaluate(GuardContext ctx)
+    {
         if (!ctx.HasCliArgs && string.IsNullOrEmpty(ctx.SessionId))
         {
             Console.Error.WriteLine("BLOCKED: No session_id in hook input.");

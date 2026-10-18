@@ -210,6 +210,38 @@ public record CommandResult(int ExitCode, string Stdout, string Stderr)
         Assert.Equal(expected, ExitCode);
     }
 
+    /// <summary>
+    /// Asserts the guard allowed a hook-mode call: exit 0 and no decision on stdout. Exit 0 alone
+    /// no longer proves an allow, because a PreToolUse refusal also exits 0 (LC-1021).
+    /// </summary>
+    public bool IsPreToolUseAllowed => ExitCode == 0 && Stdout.Length == 0;
+
+    public void AssertPreToolUseAllowed()
+    {
+        Assert.True(IsPreToolUseAllowed, $"Expected an allowed call but got exit {ExitCode}.\nStderr: {Stderr}\nStdout: {Stdout}");
+    }
+
+    /// <summary>
+    /// Asserts the guard refused a PreToolUse call the way Codex and Claude Code both honour:
+    /// exit 0 and stdout holding exactly one deny-decision object (LC-1021). Returns the reason.
+    /// </summary>
+    public string AssertPreToolUseDenied()
+    {
+        Assert.True(ExitCode == 0, $"Expected exit 0 with a deny decision but got {ExitCode}.\nStderr: {Stderr}\nStdout: {Stdout}");
+        using var json = System.Text.Json.JsonDocument.Parse(Stdout.Trim());
+        var root = json.RootElement;
+        Assert.Equal(System.Text.Json.JsonValueKind.Object, root.ValueKind);
+        Assert.Equal(["hookSpecificOutput"], root.EnumerateObject().Select(p => p.Name));
+        var output = root.GetProperty("hookSpecificOutput");
+        Assert.Equal(["hookEventName", "permissionDecision", "permissionDecisionReason"],
+            output.EnumerateObject().Select(p => p.Name));
+        Assert.Equal("PreToolUse", output.GetProperty("hookEventName").GetString());
+        Assert.Equal("deny", output.GetProperty("permissionDecision").GetString());
+        var reason = output.GetProperty("permissionDecisionReason").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(reason));
+        return reason!;
+    }
+
     public void AssertStdoutContains(string text)
     {
         Assert.Contains(text, Stdout);

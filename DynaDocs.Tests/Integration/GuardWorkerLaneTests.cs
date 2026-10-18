@@ -25,7 +25,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         // Tier-1 stage-0 would block this read; the worker lane has no staged onboarding
         var result = await GuardWithStdinAsync(WorkerJson("Read", "{\"file_path\":\"src/Foo.cs\"}"));
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         // Tier-1 would block this without identity + role + must-reads
         var result = await GuardWithStdinAsync(WorkerJson("Write", "{\"file_path\":\"src/Foo.cs\"}"));
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(WorkerJson("Bash", "{\"command\":\"cat src/Foo.cs\"}"));
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(WorkerJson("Write", "{\"file_path\":\".env\"}"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("off-limits");
     }
 
@@ -67,7 +67,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(WorkerJson("Bash", "{\"command\":\"cat .env\"}"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("off-limits");
     }
 
@@ -78,7 +78,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(WorkerJson("Bash", "{\"command\":\"rm -rf /\"}"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("Dangerous");
     }
 
@@ -90,7 +90,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         // H19: indirect dydo invocation is a block-severity default nudge
         var result = await GuardWithStdinAsync(WorkerJson("Bash", "{\"command\":\"npx dydo agent claim auto\"}"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED");
     }
 
@@ -102,7 +102,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         // Command substitution + write op: analysis is unreliable, so writes are blocked
         var result = await GuardWithStdinAsync(WorkerJson("Bash", "{\"command\":\"echo $(whoami) > out.txt\"}"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("bypass patterns");
     }
 
@@ -114,7 +114,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         // An unknown or retired subcommand (here the 2.0-era agent claim) is outside the allowlist
         var result = await GuardWithStdinAsync(WorkerJson("Bash", "{\"command\":\"dydo agent claim auto\"}"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("Sub-agents may run only these dydo commands");
         result.AssertStderrContains("dydo agent");
     }
@@ -144,7 +144,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     {
         var result = await WorkerShellAsync(tool, command);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     // Rule 2 and 3: a matched command is allowed when every dydo token followed by a word
@@ -167,7 +167,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     {
         var result = await WorkerShellAsync("Bash", command);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Theory]
@@ -197,7 +197,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     {
         var result = await WorkerShellAsync(tool, command);
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("Sub-agents may run only these dydo commands");
         result.AssertStderrContains($"Not allowed here: dydo {word}");
     }
@@ -252,7 +252,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     {
         var result = await WorkerShellAsync(tool, command);
 
-        Assert.Equal(baseAllowed, result.ExitCode == 0);
+        Assert.Equal(baseAllowed, result.IsPreToolUseAllowed);
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
             + "\"tool_input\":{\"command\":\"dydo check && dydo sync\"}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Theory]
@@ -305,7 +305,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync("{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"src/Foo.cs\"}}");
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("No session_id");
     }
 
@@ -318,11 +318,11 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         // Use ABSOLUTE paths - that's what Claude Code's hook actually delivers.
         var systemAbs = Path.Combine(TestDir, "dydo", "_system", "audit", "2026", "x.json").Replace('\\', '/');
         var audit = await GuardWithStdinAsync(WorkerJson("Write", $"{{\"file_path\":\"{systemAbs}\"}}"));
-        audit.AssertExitCode(2);
+        audit.AssertPreToolUseDenied();
 
         var configAbs = Path.Combine(TestDir, "dydo.json").Replace('\\', '/');
         var config = await GuardWithStdinAsync(WorkerJson("Write", $"{{\"file_path\":\"{configAbs}\"}}"));
-        config.AssertExitCode(2);
+        config.AssertPreToolUseDenied();
     }
 
     #endregion
@@ -344,7 +344,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
             + $"\"tool_input\":{{\"file_path\":\"{MemoryPath("debugging.md")}\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -356,7 +356,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
             + $"\"tool_input\":{{\"file_path\":\"{MemoryPath("MEMORY.md")}\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]

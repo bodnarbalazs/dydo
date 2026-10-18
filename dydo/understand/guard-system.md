@@ -27,8 +27,18 @@ The guard integrates with the platform through the **PreToolUse** hook event. Be
 
 The guard evaluates the request and returns:
 
-- **Exit 0** - action allowed (a `NOTICE:` or `WARNING:` on stderr may ride along)
-- **Exit 2** - action blocked (`BLOCKED: <reason>` on stderr, tool fails)
+- **Exit 0, empty stdout** - action allowed (a `NOTICE:` or `WARNING:` on stderr may ride along)
+- **Exit 0, one deny decision on stdout** - action blocked. Stdout holds exactly one object,
+  `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"<text>"}}`,
+  where the reason is everything the call wrote to stderr: the `BLOCKED: <reason>` line, its
+  follow-up lines and any `WARNING:` lines. The same text still goes to stderr. Non-ASCII is
+  escaped, so a shell that re-encodes stdout cannot break the object.
+
+A block decides through stdout rather than exit 2 because Codex runs a hook through its session
+shell, `powershell -NoProfile -Command "dydo guard"` on Windows, and Windows PowerShell and pwsh
+both turn a native exit 2 into exit 1 there; Codex treats exit 1 as a failed hook and runs the
+tool. Codex and Claude Code both honour the deny decision at exit 0 (LC-1021). A payload naming
+another `hook_event_name` keeps the old exit 2 with stderr only, and so does the CLI-argument mode.
 
 `dydo init` installs the matcher that decides which calls arrive: on Claude `Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion`, on Codex `Bash|apply_patch|Edit|Write|Agent|shell_command|exec|local_shell|unified_exec`. A tool outside its host's matcher never reaches the guard.
 
@@ -75,7 +85,7 @@ Bash commands get deeper treatment than direct tool calls:
 1. **Dangerous pattern detection** (immediate block): recursive root/home deletes, fork bombs, direct disk writes (`dd`), download-and-execute (`curl | sh`), base64 decoded into an interpreter, eval of variable content, history clearing, security disables (SELinux, firewall), shadow/passwd access, and inline interpreter execution (`python -c`), which would hide file operations from the analysis below. The built-in list also blocks destructive Git pushes and recovery removal, destructive GitHub CLI commands, disk formatting, privileged deletes, system-wide permission changes, and access to password managers or secret-key exports. These rules cannot be configured away.
 2. **Nudges**: Layer 3 is evaluated here, on the raw command text, before any path is extracted.
 3. **Chained `cd` block**: `cd /path && command` breaks path analysis - run `cd` separately or use absolute paths. Skipped for dydo's own commands.
-4. **Bypass detection**: command substitution (`$(...)`), base64/hex decode, variable expansion, embedded newlines - flagged because they can obscure the paths actually being touched. On their own each is a `WARNING:` on stderr and the command proceeds; combined with any extracted write, delete, move, copy or permission change the command is **blocked outright**, because the path it would touch cannot be verified. So `cat $FILE` warns and runs, while `echo x > $OUT` exits 2.
+4. **Bypass detection**: command substitution (`$(...)`), base64/hex decode, variable expansion, embedded newlines - flagged because they can obscure the paths actually being touched. On their own each is a `WARNING:` on stderr and the command proceeds; combined with any extracted write, delete, move, copy or permission change the command is **blocked outright**, because the path it would touch cannot be verified. So `cat $FILE` warns and runs, while `echo x > $OUT` is denied.
 5. **File operation extraction**: the command is tokenized into reads (`cat`, `grep`), writes (`tee`, `>`, `>>`, `sed -i`), deletes (`rm`), copies/moves (`cp`, `mv`), and permission changes (`chmod`) - and each extracted path is checked against off-limits - and, for anything that is not a read of it, the protected tier - individually. A chain can't smuggle a guarded path past the guard.
 
 The guard fires on `dydo` commands themselves too - dangerous patterns, nudges and the path checks apply to dydo's own CLI like anything else; only the `cd` coaching is skipped for them.
@@ -131,10 +141,10 @@ Because the guard runs on every matched tool call, it carries throttled maintena
 
 ## Integration for Other AI Tools
 
-Any coding tool can integrate through two input modes with the same contract (exit 0 allows, exit 2 blocks with stderr message):
+Any coding tool can integrate through two input modes:
 
-- **Stdin JSON** (preferred for hooks) - the payload shown above; `file_path` for file tools, `command` for bash, `path` for search tools.
-- **CLI arguments** (for testing) - `--action {edit|write|delete|read}`, `--path <path>`, `--command <command>`.
+- **Stdin JSON** (preferred for hooks) - the payload shown above; `file_path` for file tools, `command` for bash, `path` for search tools. Exit 0 with empty stdout allows; exit 0 with the deny decision on stdout blocks.
+- **CLI arguments** (for testing) - `--action {edit|write|delete|read}`, `--path <path>`, `--command <command>`. Exit 0 allows; exit 2 blocks with the message on stderr.
 
 ---
 

@@ -47,7 +47,7 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(ApplyPatch("*** Add File: tools/x.py", "+print(1)"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains(ToolsMessage);
     }
 
@@ -58,7 +58,7 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(ApplyPatch("*** Add File: tools/one-off/x.py", "+print(1)"));
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(ApplyPatch("*** Update File: tools/existing.py", "@@", "-print(0)", "+print(1)"));
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(ApplyPatch("*** Update File: scripts/a.py", "*** Move to: tools/a.py"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
     }
 
     [Fact]
@@ -92,9 +92,9 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
         var first = await GuardWithStdinAsync(payload);
         var retry = await GuardWithStdinAsync(payload);
 
-        first.AssertExitCode(2);
+        first.AssertPreToolUseDenied();
         first.AssertStderrContains(ToolsMessage);
-        retry.AssertSuccess();
+        retry.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(Payload("Edit", new { file_path = "tools/existing.py", old_string = "0", new_string = "1" }));
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(Payload("Write", new { file_path = "tools/new.py", content = "x" }, agentId: "wkr-1"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains(ToolsMessage);
     }
 
@@ -127,7 +127,7 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
         var payload = Payload("apply_patch", new { command = "*** Begin Patch\n*** Add File: tools/x.py\n+x\n*** End Patch" }, agentId: "wkr-1");
         var result = await GuardWithStdinAsync(payload);
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
     }
 
     private const string AnyPathMessage = "Nudge fired for any new file.";
@@ -148,7 +148,7 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(Payload("Write", new { file_path = path, content = "x" }, agentId));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED:");
         result.AssertStderrContains(tier);
         Assert.DoesNotContain(AnyPathMessage, result.Stderr);
@@ -177,12 +177,12 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
 
             if (nudged)
             {
-                result.AssertExitCode(2);
+                result.AssertPreToolUseDenied();
                 result.AssertStderrContains(ToolsMessage);
             }
             else
             {
-                result.AssertSuccess();
+                result.AssertPreToolUseAllowed();
                 Assert.DoesNotContain(ToolsMessage, result.Stderr);
             }
         }
@@ -199,7 +199,7 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(Payload("Bash", new { command = "touch tools/x.py" }));
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -214,7 +214,7 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(Payload("Bash", new { command = "npx dydo agent claim auto" }));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED");
         Assert.DoesNotContain("file lane", result.Stderr);
         Assert.Contains("\"match\": \"new-file\"", File.ReadAllText(configService.FindConfigFile(TestDir)!));

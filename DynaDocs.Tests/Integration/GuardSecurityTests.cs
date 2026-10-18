@@ -46,7 +46,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(BashJson(command));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("Dangerous");
     }
 
@@ -70,7 +70,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(BashJson(command));
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     private async Task SetupClaimedAgent()
@@ -165,7 +165,7 @@ public class GuardSecurityTests : IntegrationTestBase
         // Variable expansion + write redirection = tainted write, should be blocked
         var result = await GuardWithStdinAsync(
             BashJson("echo $PAYLOAD > src/output.txt"));
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("bypass");
     }
 
@@ -176,7 +176,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         // Variable expansion + read only = allowed (with warning)
         var result = await GuardWithStdinAsync(BashJson("cat $FILENAME"));
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     // ================================================================
@@ -224,7 +224,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(
             BashJson("echo $(cp secret.txt /tmp/leak.txt)"));
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("bypass");
     }
 
@@ -235,7 +235,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(
             BashJson("echo $(cat readme.txt)"));
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     // ================================================================
@@ -253,7 +253,7 @@ public class GuardSecurityTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(
             BashJson("dydo task list && tail -f build.log"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("poll-loop");
     }
 
@@ -263,7 +263,7 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(BashJson("rm -rf /"));
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("Dangerous");
     }
 
@@ -279,7 +279,7 @@ public class GuardSecurityTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(
             BashJson("dydo whoami && cat config/secrets.json"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("off-limits");
     }
 
@@ -291,7 +291,7 @@ public class GuardSecurityTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(
             BashJson("dydo whoami && tee config/secrets.json"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("off-limits");
     }
 
@@ -302,7 +302,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(BashJson("dydo whoami && rm -rf /"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("Dangerous");
     }
 
@@ -313,7 +313,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(BashJson("rm -rf / && dydo whoami"));
 
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("Dangerous");
     }
 
@@ -325,7 +325,7 @@ public class GuardSecurityTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(
             BashJson("dydo wait --cancel && tee scratch/notes.md"));
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -335,7 +335,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(BashJson("dydo whoami"));
 
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     private string PowerShellJson(string command) =>
@@ -352,7 +352,7 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(PowerShellJson("rm -rf /"));
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("Dangerous");
     }
 
@@ -383,7 +383,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(
             CodexShellJson(toolName, "cat config/secrets.json"));
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("off-limits");
     }
 
@@ -395,7 +395,7 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(CodexShellJson("shell_command", "tee config/secrets.json"));
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("off-limits");
     }
 
@@ -405,7 +405,7 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(CodexShellJson("shell_command", "rm -rf /"));
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("Dangerous");
     }
 
@@ -416,7 +416,7 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(CodexShellJson("shell_command", "git status --short"));
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     // ================================================================
@@ -523,7 +523,7 @@ public class GuardSecurityTests : IntegrationTestBase
         // Real quotes around -c argument - BashJson handles JSON escaping
         var result = await GuardWithStdinAsync(
             BashJson("bash -c \"tee config/secrets.json\""));
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("off-limits");
     }
 
@@ -557,7 +557,7 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(BashJson("$CMD dydo/files-off-limits.md"));
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("bypass");
     }
 
@@ -599,7 +599,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(
             BashJson("npx dydo agent claim auto"));
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED");
     }
 
@@ -796,7 +796,7 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(BashJson("cat README.md"));
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -807,7 +807,7 @@ public class GuardSecurityTests : IntegrationTestBase
         // A write to a path that isn't off-limits is allowed
         var result = await GuardWithStdinAsync(
             BashJson("tee scratch/notes.md"));
-        result.AssertSuccess();
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
@@ -817,7 +817,7 @@ public class GuardSecurityTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(
             BashJson("rm config/secrets.json"));
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("off-limits");
     }
 
@@ -829,7 +829,7 @@ public class GuardSecurityTests : IntegrationTestBase
         // Off-limits file that's NOT a mode or bootstrap file should still be blocked
         var result = await GuardWithStdinAsync(
             BashJson("cat config/secrets.json"));
-        result.AssertExitCode(2);
+        result.AssertPreToolUseDenied();
         result.AssertStderrContains("off-limits");
     }
 

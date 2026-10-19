@@ -423,16 +423,6 @@ public class ConfigServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetAuditPath_ReturnsSystemAuditSubfolder()
-    {
-        var service = new ConfigService();
-        var result = service.GetAuditPath(_testDir);
-
-        Assert.Contains("_system", result);
-        Assert.Contains("audit", result);
-    }
-
-    [Fact]
     public void LoadConfig_LegacyWorkPaths_AreIgnored()
     {
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """

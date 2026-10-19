@@ -48,15 +48,15 @@ public class DocScannerTests : IDisposable
     }
 
     [Fact]
-    public void ScanDirectory_ExcludesAuditPaths()
+    public void ScanDirectory_ExcludesNestedDydoInternalPaths()
     {
         WriteDoc("understand/about.md");
-        WriteDoc("_system/audit/2026/anything.md");
+        WriteDoc("_system/.local/2026/anything.md");
 
         var docs = NewScanner().ScanDirectory(_tempDir);
 
         Assert.Contains(docs, d => d.RelativePath.EndsWith("about.md"));
-        Assert.DoesNotContain(docs, d => PathUtils.NormalizePath(d.RelativePath).Contains("_system/audit/"));
+        Assert.DoesNotContain(docs, d => PathUtils.NormalizePath(d.RelativePath).Contains("_system/.local/"));
     }
 
     [Fact]
@@ -131,7 +131,6 @@ public class DocScannerTests : IDisposable
         public string? GetProjectRoot(string? startPath = null) => null;
         public string GetDydoRoot(string? startPath = null) => "";
         public string GetDocsPath(string? startPath = null) => "";
-        public string GetAuditPath(string? startPath = null) => "";
         public string GetChangelogPath(string? startPath = null) => "";
         public (bool CanClaim, string? Error) ValidateAgentClaim(string agentName, string? humanName, DydoConfig? config)
         {

@@ -171,14 +171,6 @@ public class ConfigService : IConfigService
     }
 
     /// <summary>
-    /// Get the audit folder path (dydo/_system/audit/)
-    /// </summary>
-    public string GetAuditPath(string? startPath = null)
-    {
-        return Path.Combine(GetDydoRoot(startPath), "_system", "audit");
-    }
-
-    /// <summary>
     /// Get the changelog folder path (dydo/project/changelog/)
     /// </summary>
     public string GetChangelogPath(string? startPath = null)

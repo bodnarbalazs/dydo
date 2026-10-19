@@ -10,6 +10,5 @@ public interface IConfigService
     string? GetProjectRoot(string? startPath = null);
     string GetDydoRoot(string? startPath = null);
     string GetDocsPath(string? startPath = null);
-    string GetAuditPath(string? startPath = null);
     string GetChangelogPath(string? startPath = null);
 }

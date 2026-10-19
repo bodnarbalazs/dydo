@@ -27,7 +27,6 @@ through Linear's official surfaces.
   },
   "scanExclude": [
     "_system/.local/",
-    "_system/audit/",
     "agents/"
   ],
   "nudges": [],

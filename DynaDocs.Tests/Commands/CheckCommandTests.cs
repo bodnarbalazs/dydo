@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Commands;
 
 using DynaDocs.Commands;
+using DynaDocs.Utils;
 
 [Collection("Integration")]
 public class CheckCommandTests : IDisposable
@@ -31,6 +32,8 @@ public class CheckCommandTests : IDisposable
     }
 
     private const string ValidConfig =
+        """{"version":1,"structure":{"root":"dydo"},"scanExclude":["_system/.local/","agents/"]}""";
+    private const string StaleAuditEntryConfig =
         """{"version":1,"structure":{"root":"dydo"},"scanExclude":["_system/.local/","_system/audit/","agents/"]}""";
     private const string MissingExclusionConfig =
         """{"version":1,"structure":{"root":"dydo"},"scanExclude":["agents/"]}""";
@@ -140,6 +143,20 @@ public class CheckCommandTests : IDisposable
         Assert.Equal(2, code);
         Assert.Contains($"Path is outside the docs tree: {otherDocs}", stderr);
         Assert.DoesNotContain("Root:", stdout);
+    }
+
+    [Fact]
+    public void Check_ConfigStillCarryingStaleAuditEntry_PassesTheScanExcludeInvariant()
+    {
+        var project = CreateProject("stale", StaleAuditEntryConfig);
+        File.WriteAllText(Path.Combine(project, "dydo", "index.md"),
+            "---\narea: general\ntype: hub\n---\n\n# Index\n\nA valid hub.\n");
+        Environment.CurrentDirectory = project;
+
+        var (code, _, stderr) = Check();
+
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.DoesNotContain("scanExclude", stderr);
     }
 
     public void Dispose()

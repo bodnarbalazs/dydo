@@ -14,7 +14,7 @@ public class OptionalSummarySteps(CliScenario scenario)
     public void ValidTree()
     {
         File.WriteAllText(Path.Combine(scenario.DirectoryPath, "dydo.json"),
-            """{"version":1,"structure":{"root":"dydo"},"scanExclude":["_system/.local/","_system/audit/","agents/"]}""");
+            """{"version":1,"structure":{"root":"dydo"},"scanExclude":["_system/.local/","agents/"]}""");
         Directory.CreateDirectory(Path.GetDirectoryName(DocumentPath)!);
         File.WriteAllText(Path.Combine(scenario.DirectoryPath, "dydo", "index.md"),
             "---\narea: general\ntype: hub\n---\n\n# Index\n\n[Document](./document.md)\n[Off-limits](./files-off-limits.md)\n");

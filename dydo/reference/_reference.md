@@ -21,7 +21,6 @@ This folder answers "What are the exact specs?" - detailed reference material fo
 - **dydo-glossary.md** - The dydo system's locked terms
 - **about-dynadocs.md** - About the DynaDocs system
 - **configuration.md** - dydo.json schema and all config options
-- **audit-system.md** - Audit trail (removed in 2.0) and what replaced it
 
 ## When to Add Docs Here
 

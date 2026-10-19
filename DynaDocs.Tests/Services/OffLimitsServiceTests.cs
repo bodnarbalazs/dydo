@@ -59,7 +59,7 @@ public class OffLimitsServiceTests : IDisposable
 
         // The hardcoded system patterns must also match absolute paths - dydo/_system/** is
         // off-limits, dydo.json is protected (readable, never writable).
-        Assert.NotNull(service.IsPathOffLimits(Path.Combine(_testDir, "dydo", "_system", "audit", "x.json")));
+        Assert.NotNull(service.IsPathOffLimits(Path.Combine(_testDir, "dydo", "_system", "roles", "x.json")));
         Assert.NotNull(service.IsPathProtected(Path.Combine(_testDir, "dydo.json")));
 
         // A path outside the project root is not off-limits.

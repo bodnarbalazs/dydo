@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Commands;
 
 using DynaDocs.Commands;
+using DynaDocs.Utils;
 
 [Collection("Integration")]
 public class CheckCommandTests : IDisposable
@@ -147,10 +148,14 @@ public class CheckCommandTests : IDisposable
     [Fact]
     public void Check_ConfigStillCarryingStaleAuditEntry_PassesTheScanExcludeInvariant()
     {
-        Environment.CurrentDirectory = CreateProject("stale", StaleAuditEntryConfig);
+        var project = CreateProject("stale", StaleAuditEntryConfig);
+        File.WriteAllText(Path.Combine(project, "dydo", "index.md"),
+            "---\narea: general\ntype: hub\n---\n\n# Index\n\nA valid hub.\n");
+        Environment.CurrentDirectory = project;
 
-        var (_, _, stderr) = Check();
+        var (code, _, stderr) = Check();
 
+        Assert.Equal(ExitCodes.Success, code);
         Assert.DoesNotContain("scanExclude", stderr);
     }
 

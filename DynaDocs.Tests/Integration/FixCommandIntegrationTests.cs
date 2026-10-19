@@ -66,6 +66,40 @@ public class FixCommandIntegrationTests : IntegrationTestBase
         Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
     }
 
+    [Fact]
+    public async Task Fix_StaleAuditScanExcludeEntry_IsKeptAlongsideRestoredInvariants()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        var config = new ConfigService().LoadConfigStrict(TestDir)!;
+        config.ScanExclude.Remove("_system/.local/");
+        config.ScanExclude.Add("_system/audit/");
+        new ConfigService().SaveConfig(config, configPath);
+
+        var (exitCode, stdout, _) = ConsoleCapture.All(() => FixCommand.Execute(DydoDir));
+
+        Assert.Equal(ExitCodes.Success, exitCode);
+        Assert.Contains("Restored 1 scanExclude invariant(s)", stdout);
+        var fixedEntries = new ConfigService().LoadConfigStrict(TestDir)!.ScanExclude;
+        Assert.Contains("_system/audit/", fixedEntries);
+        Assert.Contains("_system/.local/", fixedEntries);
+    }
+
+    [Fact]
+    public async Task Fix_ConfigWithoutAuditScanExcludeEntry_DoesNotAddOne()
+    {
+        (await InitProjectAsync()).AssertSuccess();
+        var configPath = Path.Combine(TestDir, "dydo.json");
+        RemoveScanExcludeInvariant(configPath);
+
+        var (exitCode, _, _) = ConsoleCapture.All(() => FixCommand.Execute(DydoDir));
+
+        Assert.Equal(ExitCodes.Success, exitCode);
+        var fixedEntries = new ConfigService().LoadConfigStrict(TestDir)!.ScanExclude;
+        Assert.Contains("_system/.local/", fixedEntries);
+        Assert.DoesNotContain("_system/audit/", fixedEntries);
+    }
+
     private void RemoveScanExcludeInvariant(string configPath)
     {
         var config = new ConfigService().LoadConfigStrict(TestDir)!;

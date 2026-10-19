@@ -316,9 +316,9 @@ public class GuardWorkerLaneTests : IntegrationTestBase
 
         // dydo/_system/** and dydo.json are agent-untouchable system off-limits.
         // Use ABSOLUTE paths - that's what Claude Code's hook actually delivers.
-        var systemAbs = Path.Combine(TestDir, "dydo", "_system", "audit", "2026", "x.json").Replace('\\', '/');
-        var audit = await GuardWithStdinAsync(WorkerJson("Write", $"{{\"file_path\":\"{systemAbs}\"}}"));
-        audit.AssertPreToolUseDenied();
+        var systemAbs = Path.Combine(TestDir, "dydo", "_system", "roles", "x.json").Replace('\\', '/');
+        var systemWrite = await GuardWithStdinAsync(WorkerJson("Write", $"{{\"file_path\":\"{systemAbs}\"}}"));
+        systemWrite.AssertPreToolUseDenied();
 
         var configAbs = Path.Combine(TestDir, "dydo.json").Replace('\\', '/');
         var config = await GuardWithStdinAsync(WorkerJson("Write", $"{{\"file_path\":\"{configAbs}\"}}"));

@@ -31,6 +31,8 @@ public class CheckCommandTests : IDisposable
     }
 
     private const string ValidConfig =
+        """{"version":1,"structure":{"root":"dydo"},"scanExclude":["_system/.local/","agents/"]}""";
+    private const string StaleAuditEntryConfig =
         """{"version":1,"structure":{"root":"dydo"},"scanExclude":["_system/.local/","_system/audit/","agents/"]}""";
     private const string MissingExclusionConfig =
         """{"version":1,"structure":{"root":"dydo"},"scanExclude":["agents/"]}""";
@@ -140,6 +142,16 @@ public class CheckCommandTests : IDisposable
         Assert.Equal(2, code);
         Assert.Contains($"Path is outside the docs tree: {otherDocs}", stderr);
         Assert.DoesNotContain("Root:", stdout);
+    }
+
+    [Fact]
+    public void Check_ConfigStillCarryingStaleAuditEntry_PassesTheScanExcludeInvariant()
+    {
+        Environment.CurrentDirectory = CreateProject("stale", StaleAuditEntryConfig);
+
+        var (_, _, stderr) = Check();
+
+        Assert.DoesNotContain("scanExclude", stderr);
     }
 
     public void Dispose()

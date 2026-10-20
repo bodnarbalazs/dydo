@@ -91,6 +91,9 @@ to 08:00 Budapest time. The arrangement:
 11. **Staff, not line.** The chief of staff never merged, implemented or decided anything for a
     Project. It routed, nudged, mediated collisions and fixed Linear bookkeeping (state, labels).
     That boundary held and should stay.
+12. **Questions to the human must carry their context.** Each Question says what it blocks, the
+    facts, and the options with a recommendation. Ask it in the conversation, not as a bare terminal
+    prompt.
 
 ## What the mode would look like
 

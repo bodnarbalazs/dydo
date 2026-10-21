@@ -83,6 +83,7 @@ Agent-invoked methods:
 | writing-for-agents | anyone editing a skill or a document an agent reaches by pointer; reviewer(docs) | a prompt file is created, edited, or fires wrong | the edited file |
 | retro | any session; chief-of-staff routes recurring friction to it | the same friction or workaround returns a second time | one small, authorized, testable harness change |
 | maintain-verification-skill | any agent driving the app through a project's verification skill; the map holder before a landing | a drive contradicts the feature map, a touched area has no map file, or the whole map needs an audit | `clean`, `changed` with one PR of proven map or harness corrections, or `blocked`; product regressions reported as Bugs |
+| maintain-formal-verification-skill | any agent or the map holder after merges, refactors or edits touched verified code without rechecking the verification | verified code changed since the verification's sync commit, or a verify skill's check passes on code that has since moved | each check `in sync`, `updated`, `bug` or `blocked`, with drift and code bugs told apart and verification updates kept in a change of their own |
 
 Human commands:
 
@@ -97,6 +98,7 @@ Human commands:
 | teach | the human wants to learn a topic in the workspace | a mission and its learning records |
 | improve-codebase-architecture | the codebase's architecture should be examined | a grilled candidate with its report |
 | create-verification-skill | the project has no scripted way to drive the app as a user | a proven `verify-<app>` skill, its control CLI and a seeded feature map |
+| create-formal-verification-skill | code where a bug costs the most and tests reach the least needs more than tests: concurrency, retries, state machines, parsers, unsafe code | a project-local skill that checks a change against one verified property, proven to catch a scratch break |
 
 The explicit-only officers admiral and chief-of-staff are also typed by the human; they are actors and
 stand in the roster.

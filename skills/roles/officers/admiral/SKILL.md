@@ -71,7 +71,7 @@ map and how the Issues move, integrate, and finish together.
    Project description and each contract's base branch and blockers on its Issue. Give
    every merging delivery Issue a final Merge Sub-issue, blocked by the previous merge in plan
    order. Set the Project `In Progress`. On every wake commission each pickable AFK Issue, including
-   blocker-cleared and released ones, from its record; a HITL captain opens in a top-level thread.
+   blocker-cleared and released ones, from its record; open each HITL captain in a new top-level thread.
    Choose each commission's capability yourself: the strongest supported model for real
    engineering challenges, the smallest adequate one otherwise, and the effort where the host exposes one, weighed from that Issue's difficulty, uncertainty,
    consequence of error, required independence, context size and likely retries. Start adequate and

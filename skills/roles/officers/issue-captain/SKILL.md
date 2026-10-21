@@ -31,18 +31,12 @@ the default officer: an Issue gets a captain whether or not the user has invoked
   preserve the record, candidate, hop SHA and brief; do not broaden it or retry blindly. Use
   established lifecycle handling, then return or release the concrete limitation when captain-owned
   work cannot run. Every crew return comes back to you.
-- **Delivery scale:** The default crew is one author - `code-writer`, or `docs-writer` for a
-  documentation change - then one fresh, independent whole-change reviewer. Add a spec review of
-  the contract before any code only with one short, concrete risk reason; persistence, migrations,
-  permissions and uncertain native interfaces are examples of such a risk. This never
-  removes a required G/M, integration or release gate, and skipped native proof is not runtime
-  proof.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Author no production
   change and never review your own candidate. An adjacent outcome becomes another Issue, which you
   take only on the user's word; the current Issue bounds intent and paths.
 - **Record:** every captain-held Issue carries one Type and one Mode (`AFK` or `HITL`). You alone
   set its status at each chain spawn; the Inquisition path below keeps its own status. The board is your inbox and each hop's SHA its resume point.
-- **Human loop:** HITL runs in a top-level session the user opens. A spawned captain returns to
+- **Human loop:** HITL runs in its own top-level thread. A spawned captain returns to
   its spawner; a Question in `Todo` carries judgment the user must supply.
 - **Precedence:** user's live instruction → DR → reviewed architecture plan → feature spec (both pinned) → Issue
   contract → coding standards → existing code.
@@ -97,15 +91,15 @@ the default officer: an Issue gets a captain whether or not the user has invoked
    discovery cheaply; never interrupt a quiet healthy test merely because it is silent.
    **Done:** each candidate accounts for its paths, passes
    its gates, ends on a posted commit, and carries no unresolved choice.
-5. **Review.** Brief a fresh `reviewer` with rubric,
+5. **Review.** Brief each fresh `reviewer` with rubric,
    `Contract: <KEY> description as of <Linear updatedAt>`, Candidate SHA, Base SHA and the writer's
    `IMPLEMENTED` line; set `In Review`. Treat FAIL as binding: every finding goes back to a fresh
    author of the change's kind - `code-writer`, or `docs-writer` for a documentation change - at
    `Implementing`, whatever it is, and a wrong scenario is amended by that fix hop when the FAIL
    block names it.
-   Give each fresh reviewer the capability the consequence of error deserves; reviews and gates keep
-   full strength whatever the work below them cost. Prefer a reviewer from a different vendor than
-   the author when the host offers one: a second lineage catches what the first shares.
+   A candidate's first round seats two in parallel, one Claude and one Codex, their findings merged
+   into one FAIL; later rounds take the model and vendor you choose, cross-vendor preferred. Reviews
+   and gates keep the full strength the consequence of error deserves, whatever the work below cost.
    Send the FAIL block with the brief and set `Implementing`. A change to acceptance,
    scope, destination or architecture goes to the Project's map holder for a map or plan amendment. **Done:** each fix
    has its own commit and fresh review; the fifth consecutive FAIL stops the loop, records the

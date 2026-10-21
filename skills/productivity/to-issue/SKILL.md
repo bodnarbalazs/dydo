@@ -25,7 +25,7 @@ Every Issue carries exactly one Type:
 - `Grilling`: a tree of intent or specification choices resolved with the user.
 - `Walkthrough`: the user inspects what landed.
 
-Every Type a captain holds also carries one Mode: `AFK`, the captain reaches reviewed completion without a live conversation; `HITL`, the user and the captain work the Issue together in a session the user opened.
+Every Type a captain holds also carries one Mode: `AFK`, the captain reaches reviewed completion without a live conversation; `HITL`, the user and the captain work the Issue together in its own top-level thread.
 
 ## Process
 

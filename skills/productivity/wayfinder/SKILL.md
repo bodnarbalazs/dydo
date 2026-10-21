@@ -96,8 +96,8 @@ agent never stands in for the user's side of it (a grilling agent that answers i
 broken this).
 
 - **Task** (HITL or AFK): the role a captain-held Issue plays on the map, as the standard defines
-  it. Its Issue Captain and crew - one author, then one fresh reviewer, more only at the captain's
-  discretion - carry it through its contract, production, review, and its Merge Sub-issue.
+  it. Its Issue Captain and crew carry it through its contract, production, review, and its Merge
+  Sub-issue.
 - **Research**: Reading documentation, third-party APIs, or local resources like knowledge
   bases to surface a fact a decision waits on. Resolved by a subagent that calls the Skill tool with
   "research". Use when authoritative evidence, inside or outside the repository, can settle the fact.

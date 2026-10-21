@@ -72,7 +72,8 @@ clean, and only the test path is touched.
 ## Delivery scale and evidence
 
 The default crew is one author - `code-writer`, or `docs-writer` for a documentation change - and
-one fresh independent whole-change reviewer. Add a spec review of the contract before any code only
+fresh independent whole-change review, whose first round on a candidate seats two reviewers in
+parallel, one Claude and one Codex. Add a spec review of the contract before any code only
 when one short, concrete risk reason, recorded in the contract, calls for it; persistence, migrations,
 permissions and uncertain native interfaces are examples of such a risk. Keep one compact acceptance contract and point to evidence rather than copying
 it. This scale rule does not weaken required G/M, integration or release gates, and skipped native
@@ -95,6 +96,11 @@ interface shapes early.
 - The Admiral budgets open native capacity before commissioning or resuming a captain. The captain alone
   commissions exact-scope crew, budgets that capacity and preserves the fresh reviewer
   obligation. A saved brief is not Admiral-to-crew authority.
+- AFK work, captain or crew, runs as a child task of its dispatcher; HITL work, which the user joins,
+  runs as a new top-level thread, never a child. Within one vendor, use the host's native subagents
+  and messaging where they carry the work and its return. When any agent in the exchange is another
+  vendor's, always use T3's `delegate_task` for a child and T3 messaging for a peer; without T3, use
+  what the host supplies, or none. A return comes back once, on the channel it was dispatched on.
 - On a bounded refusal, preserve the record, candidate, hop SHA and exact brief; do not broaden it or
   retry blindly. Use established lifecycle handling, then return or release the concrete limitation
   when captain-owned work cannot run. Record only observed native evidence.

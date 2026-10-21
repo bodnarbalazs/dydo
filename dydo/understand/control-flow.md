@@ -146,8 +146,8 @@ flowchart TD
 ### 3b. One Issue
 
 The captain is the connector: every crew member is briefed by it and returns to it, and it flips the
-Issue's status at each chain spawn. The default crew is two: one `code-writer`, then one fresh
-reviewer. The dashed edge is the captain's discretion, bought with one short concrete risk reason.
+Issue's status at each chain spawn. The default crew is a `code-writer`, then the fresh
+reviewers of [Delivery scale](../guides/working-tree-contract.md#delivery-scale-and-evidence). The dashed edge is the captain's discretion, bought with one short concrete risk reason.
 
 ```mermaid
 flowchart TD
@@ -250,8 +250,8 @@ Step by step, with the Linear status each step leaves behind:
    approved `main` SHA before claiming its Issue. The map holder keeps the map in the Project description, gives every Issue its base branch and every Issue that merges its final Merge Sub-issue, wired in plan order, and sets the
    Project `In Progress`. Issues in
    `Todo` with no open blocker are pickable.
-6. **Claim.** The map holder commissions a captain per pickable AFK Issue; a HITL Issue waits for
-   the human to open its captain session. Assignment is the claim; branch, base SHA and worktree path go
+6. **Claim.** The map holder commissions a captain per pickable AFK Issue, and opens a HITL Issue's
+   captain in a new top-level thread the human works in. Assignment is the claim; branch, base SHA and worktree path go
    on the Issue before the first edit.
 7. **Write.** The captain spawns one `code-writer` and sets `Implementing`. The captain's contract
    says whether the Issue carries Gherkin. The writer posts nothing before code unless the work

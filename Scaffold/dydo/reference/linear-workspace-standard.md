@@ -75,7 +75,7 @@ Issue carries exactly one Type. Mode sits on every Type a captain holds.
 | `Walkthrough` | map holder | primary only | The human inspects what landed: what changed, where to look, how to try it, what reviewers flagged. | the human has walked it; findings filed as Issues | `#C69C6D` |
 
 A captain-held Issue normally uses one author - `code-writer`, or `docs-writer` for a documentation
-change - and one fresh independent whole-change reviewer. A spec review of the contract before any
+change - and review at the working-tree contract's [Delivery scale](../guides/working-tree-contract.md#delivery-scale-and-evidence). A spec review of the contract before any
 code needs one short concrete risk reason, recorded in the contract; persistence, migrations, permissions and uncertain native
 interfaces are examples of such a risk. Required G/M, integration and release gates remain. The captain records one compact
 acceptance contract and points to its evidence. A map-holder-held Issue is run

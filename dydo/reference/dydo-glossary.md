@@ -68,10 +68,11 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   the human's session or an invoked admiral keeps in flight.
 - **Method** - a plain skill used inside other work, carrying no identity of its own: co-thinker,
   grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype, show-me,
-  writing-for-agents, writing-for-humans, retro, wizard, maintain-verification-skill.
+  writing-for-agents, writing-for-humans, retro, wizard, maintain-verification-skill,
+  maintain-formal-verification-skill.
 - **Human command** - a skill only the human invokes by name, never reached for by a model:
   to-project, to-issue, grill-me, bro, in-your-own-words, handoff, ketchup, walkthrough, teach, improve-codebase-architecture,
-  create-verification-skill.
+  create-verification-skill, create-formal-verification-skill.
 - **Rubric** - the one named standard a reviewer judges a candidate against: code, docs,
   project-plan, spec, or merge.
 

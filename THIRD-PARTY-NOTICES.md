@@ -115,6 +115,8 @@ names. Each adapted file repeats the attribution in its own header.
 | `create-verification-skill` and its `references/feature-map-example` | `ecc249f1e306fc64ddf83c7bed16cacf7c2239db` | `skills/engineering/create-verification-skill/SKILL.md`, `skills/engineering/create-verification-skill/resources/feature-map-example/README.md`, `skills/engineering/create-verification-skill/resources/feature-map-example/create-note.md`, `skills/engineering/create-verification-skill/resources/feature-map-example/search.md` |
 | `create-verification-skill`: Launch readiness, missing journey prerequisites and stand-in proof | `1e5c90a4b6f249917bd21fe361b3a2a7deb741b8` | `skills/engineering/create-verification-skill/SKILL.md` |
 | `maintain-verification-skill` | `ecc249f1e306fc64ddf83c7bed16cacf7c2239db` | `skills/engineering/maintain-verification-skill/SKILL.md` |
+| `create-formal-verification-skill` | `5dba0b8d0bb778182411b2544f7a801d1529aef1` | `skills/engineering/create-formal-verification-skill/SKILL.md` |
+| `maintain-formal-verification-skill` | `5dba0b8d0bb778182411b2544f7a801d1529aef1` | `skills/engineering/maintain-formal-verification-skill/SKILL.md` |
 
 MIT License
 

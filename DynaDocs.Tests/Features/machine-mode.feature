@@ -26,6 +26,21 @@ Feature: Machine mode
       | daylight  | on    | daylight |
       | overnight | maybe | maybe    |
 
+  Scenario Outline: Any agent may show the mode
+    Given <caller> on "Claude Code" in "default" permission mode
+    When the agent runs "dydo mode show"
+    Then the guard allows it
+
+    Examples:
+      | caller      |
+      | an agent    |
+      | a sub-agent |
+
+  Scenario: A sub-agent's mode set meets the same reminder and ask
+    Given a sub-agent on "Claude Code" in "default" permission mode
+    When the agent runs "dydo mode set overnight on" twice
+    Then the guard asks the user about "dydo mode set overnight on"
+
   Scenario: An agent's first mode set is blocked with a reminder
     Given an agent on "Claude Code" in "default" permission mode
     When the agent runs "dydo mode set overnight on"

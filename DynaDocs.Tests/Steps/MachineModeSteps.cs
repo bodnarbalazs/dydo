@@ -12,6 +12,7 @@ public sealed class MachineModeSteps : IntegrationTestBase
     private readonly string? _originalClaudeCode = Environment.GetEnvironmentVariable("CLAUDECODE");
     private string _toolName = "Bash";
     private string _permissionMode = "default";
+    private string? _agentId;
     private CommandResult _result = new(-1, "", "");
 
     private ModeState State => new(Path.Combine(TestDir, "machine"));
@@ -65,6 +66,13 @@ public sealed class MachineModeSteps : IntegrationTestBase
         (await InitProjectAsync("none")).AssertSuccess();
     }
 
+    [Given("a sub-agent on {string} in {string} permission mode")]
+    public async Task SubAgent(string host, string permissionMode)
+    {
+        await Agent(host, permissionMode);
+        _agentId = "sub-agent-1";
+    }
+
     [When("the agent runs {string}")]
     public async Task AgentRuns(string command) => _result = await GuardWithStdinAsync(Hook(command));
 
@@ -83,6 +91,9 @@ public sealed class MachineModeSteps : IntegrationTestBase
         Assert.StartsWith("BLOCKED: dydo mode set changes the mode of every agent on this machine.", reason);
         Assert.Contains("Chief of staff: run the same command again", reason);
     }
+
+    [Then("the guard allows it")]
+    public void Allows() => _result.AssertPreToolUseAllowed();
 
     [Then("the guard asks the user about {string}")]
     public void Asks(string command)
@@ -103,12 +114,18 @@ public sealed class MachineModeSteps : IntegrationTestBase
         Assert.EndsWith($"Ask the user to run it in their own terminal: {command}", reason);
     }
 
-    private string Hook(string command) => JsonSerializer.Serialize(new Dictionary<string, object>
+    private string Hook(string command)
     {
-        ["session_id"] = TestSessionId,
-        ["hook_event_name"] = "PreToolUse",
-        ["permission_mode"] = _permissionMode,
-        ["tool_name"] = _toolName,
-        ["tool_input"] = new Dictionary<string, string> { ["command"] = command }
-    });
+        var hook = new Dictionary<string, object>
+        {
+            ["session_id"] = TestSessionId,
+            ["hook_event_name"] = "PreToolUse",
+            ["permission_mode"] = _permissionMode,
+            ["tool_name"] = _toolName,
+            ["tool_input"] = new Dictionary<string, string> { ["command"] = command }
+        };
+        if (_agentId != null)
+            hook["agent_id"] = _agentId;
+        return JsonSerializer.Serialize(hook);
+    }
 }

@@ -130,6 +130,18 @@
       ]
     },
     {
+      "module": "Services/DydoInvocationScanner.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/DydoInvocationScannerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ShellReader.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/DydoInvocationScannerTests.cs"
+      ]
+    },
+    {
       "module": "Services/ModeState.cs",
       "tests": [
         "DynaDocs.Tests/Services/ModeStateTests.cs"

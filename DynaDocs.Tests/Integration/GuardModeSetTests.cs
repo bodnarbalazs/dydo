@@ -152,6 +152,51 @@ public sealed class GuardModeSetTests : IntegrationTestBase
         (await GuardWithStdinAsync(Hook(command), ClaudeHook)).AssertPreToolUseAllowed();
     }
 
+    [Theory]
+    [InlineData("git commit -m \"fix guard\n\nTests pass; dydo mode set now asks\nand | dydo mode set overnight on\"")]
+    [InlineData("@'\nfix guard; dydo mode set must ask\n'@ | git commit -F -")]
+    [InlineData("@\"\nfix \"guard\"; dydo mode set must ask\n\"@ | git commit -F -")]
+    [InlineData("git commit -m \"$(cat <<'EOF'\nfix guard\n\ndydo mode set overnight on now asks, it doesn't deny\nEOF\n)\"")]
+    [InlineData("grep -rn 'dydo mode set' Commands | head")]
+    [InlineData("echo 'a;b' && git log --grep=\"dydo mode set\"")]
+    public async Task QuotedSeparators_DoNotMakeACommand(string command)
+    {
+        await InitProjectAsync("none");
+
+        (await GuardWithStdinAsync(Hook(command), ClaudeHook)).AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("cmd.exe /C dydo mode set overnight on")]
+    [InlineData("powershell -c \"& { dydo mode set overnight on }\"")]
+    [InlineData("sh -lc \"cd /tmp; dydo mode set overnight on\"")]
+    [InlineData("sudo -u me nohup dydo mode set overnight on")]
+    [InlineData("echo on | xargs -n 1 dydo mode set overnight")]
+    [InlineData("saps -FilePath C:/tools/dydo.exe -ArgumentList 'mode set overnight on' -Wait")]
+    [InlineData("Start-Process cmd -ArgumentList '/c dydo mode set overnight on'")]
+    [InlineData("git commit -m \"x $(dydo mode set overnight on)\"")]
+    [InlineData("dotnet exec C:/src/bin/dydo.dll mode set overnight on")]
+    [InlineData("dydo mode set \"overnight on")]
+    public async Task WrappedModeSet_MeetsTheReminder(string command)
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardWithStdinAsync(Hook(command), ClaudeHook);
+
+        Assert.Contains("BLOCKED: dydo mode set changes the mode", result.AssertPreToolUseDenied());
+    }
+
+    [Fact]
+    public async Task StartProcessRerun_NamesTheCanonicalCommand()
+    {
+        await InitProjectAsync("none");
+
+        var result = await Twice(Hook("Start-Process dydo -ArgumentList \"mode\", \"set\", \"overnight\", \"off\"",
+            permissionMode: "dontAsk"));
+
+        Assert.EndsWith("their own terminal: dydo mode set overnight off", result.AssertPreToolUseDenied());
+    }
+
     private Task<CommandResult> GuardCommandAsync(string command) =>
         RunAsync(DynaDocs.Commands.GuardCommand.Create(), "--command", command);
 }

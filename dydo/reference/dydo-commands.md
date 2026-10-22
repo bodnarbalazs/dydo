@@ -248,17 +248,26 @@ reads the same values. One flag ships: `overnight`, `on` or `off`, default `off`
 unknown flag or value with exit `2` and changes nothing; on success it prints every flag as `show` does.
 
 `dydo mode set` from an agent meets a built-in warn nudge that `dydo.json` cannot remove or weaken. The
-first try is blocked with a reminder that only the chief of staff sets the mode. The nudge matches a
-dydo call at command position after quotes, backslashes, backticks, carets and line continuations are
-removed, so `"dydo" mode 'set'`, a path such as `C:/tools/dydo.exe`, `dotnet ...dydo.dll` and
-`dotnet run --` all meet it, and a command that only mentions the words, such as a commit message,
-does not. On the rerun the guard answers `permissionDecision: "ask"` only when the hook command carries
+first try is blocked with a reminder that only the chief of staff sets the mode. The guard reads the
+command as bash and as PowerShell or cmd would, quotes, escapes, here-strings, heredocs and line
+continuations included, and splits it only on separators outside quotes. A dydo call at command
+position meets the nudge: past environment assignments and wrappers such as `env -i`, `sudo`, `nohup`,
+`xargs` and the `&` call operator, as `dydo` under any path or case (`"C:/Program Files/dydo.exe"`,
+`DYDO.EXE`), `dotnet ...dydo.dll` or `dotnet run --`. The command string of `cmd /c`,
+`pwsh -Command`, `bash -c`, `eval` or `Invoke-Expression` and every `$(...)` or backtick substitution
+is read the same way, and `Start-Process dydo -ArgumentList "mode", "set", ...` counts too. Arguments
+of any other program are text, so a commit message, a PR body or a here-string that mentions
+`dydo mode set`, even after a `;` inside the quotes, does not meet it. A command the guard cannot read,
+such as one with an unbalanced quote or one piping text into a shell, meets it whenever it contains
+dydo, mode and set in that order. On the rerun the guard answers `permissionDecision: "ask"` only when the hook command carries
 the `--host claude` marker `dydo init` writes into the Claude Code hook and the permission mode is
 `default`, `acceptEdits`, `plan` or `auto`, so the user approves or rejects it. The environment is not
 the signal: `CLAUDECODE=1` is inherited by a Codex session started from a Claude Code shell. Everywhere
 else, Codex, `bypassPermissions`, `dontAsk`, an unknown host or a Claude Code hook written before the
 marker existed, it denies, and the user runs the command in their own terminal, where no guard runs.
 To get the prompt on an older install, run `dydo init claude --join` to rewrite the Claude Code hook.
+The guard stops a stray agent setting the mode by accident, not a deliberate bypass such as an agent
+forging the hook marker or writing the mode file directly.
 
 ---
 

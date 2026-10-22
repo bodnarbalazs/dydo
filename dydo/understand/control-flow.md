@@ -463,9 +463,9 @@ asks it to, it is never sent anything.
 
 A call above the officer's say goes through `what-would-balazs-do`
 ([DR 054](../project/decisions/054-what-would-balazs-do-tribunal.md)) when it is DR-grade or
-irreversible, or when the human is away. The skill decides it, unratified, and leaves the Question
-unwired for him to ratify or overturn; when the tribunal cannot decide or the call is irreversible,
-it leaves a prepared Question wired to its waiters.
+irreversible, or when the human is away. Only a call the tribunal decides while he is away stays
+unwired, for him to ratify or overturn; every other call, present, irreversible or undecided, gets a
+prepared Question wired to its waiters.
 
 ### 6.2 Review FAIL
 

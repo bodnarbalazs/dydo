@@ -1,6 +1,6 @@
 # Productivity
 
-16 skills for thinking, writing, and moving work along with the user.
+17 skills for thinking, writing, and moving work along with the user.
 
 - **bro** (user-invoked): Stop. That last message did not land: re-pitch it.
 - **co-thinker** (model-invoked): An idea not ripe yet. Use when a thought, a doubt or a preference is still open, when a question surfaces that is not yet an Issue, or when a trade-off needs testing before intent hardens into a plan or a Decision Record.
@@ -8,6 +8,7 @@
 - **grilling** (model-invoked): Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test his thinking, or uses any 'grill' trigger phrases.
 - **handoff** (user-invoked): Compact the current conversation into a handoff document for another agent to pick up.
 - **in-your-own-words** (user-invoked): Restate in your own words what you think the user's goals are and what problem they're trying to solve. Use for /in-your-own-words.
+- **overnight-mode** (model-invoked): Overnight mode, the user away while admirals run on standing and night orders. Load only on the chief of staff's muster or morning-brief announcement, or when the user calls overnight mode.
 - **retro** (model-invoked): Kaizen for the harness. Use when the same friction, correction, or workaround returns a second time; when a mistake could have been caught by a check that does not exist; when a run burns its budget finding what it should have been handed.
 - **show-me** (model-invoked): Help the user understand the current topic visually with concise diagrams, code-shape sketches, and focused HTML artifacts.
 - **ketchup** (user-invoked): Catch the user up on what changed in this chat since their last message, in a short reply built on real visuals. Give each action item just enough context to make the call. Use for /ketchup.

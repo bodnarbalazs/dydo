@@ -26,6 +26,8 @@ Required frontmatter:
 - `status: proposed | accepted | deprecated | superseded`
 - `date: YYYY-MM-DD`
 - `area: <category>` (optional, for filtering)
+- `ratification: pending` (only on a `proposed` record a tribunal decided while the human was away;
+  removed when he ratifies or overturns it)
 
 ## Status Values
 

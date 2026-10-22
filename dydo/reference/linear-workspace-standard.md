@@ -160,6 +160,9 @@ that waits. Its body carries:
 
 If the answer determines which implementation Issue should exist, resolve the Question first.
 
+A Question a `what-would-balazs-do` tribunal decided while the human was away stays in `Todo`
+unwired, and work proceeds; he answers it with `RATIFIED` or `OVERTURNED`.
+
 ## Issue templates
 
 One Linear Issue template per Type, named after it, is a workspace-UI convenience. Create it from
@@ -208,6 +211,9 @@ Start each post with the applicable form:
 - `FAIL - rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; gates <N/N>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
 - `IMPLEMENTED - hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
 - `DECIDED - result: <result>; immutable contract: <contract>; next: <action>.`
+- `DECIDED - by: what-would-balazs-do tribunal, unratified; result: <action>; vote: <for-against>; log: <link>; undo: <steps>; next: <action>.`
+- `RATIFIED - by: <the human> <date>: "<his words, verbatim>"; record: <DECIDED or DR link>; next: <action>.`
+- `OVERTURNED - by: <the human> <date>: "<his words, verbatim>"; record: <link>; reopened: <Issues>; next: <action>.`
 - `STATE - <status>; owner: <role>; candidate or PR: <reference>; next or blocker: <fact>; evidence: <link>.`
 
 A review block's `contract <ref>` is the contract its brief pinned, for an Issue

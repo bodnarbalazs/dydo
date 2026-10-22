@@ -1,6 +1,6 @@
 # Productivity
 
-16 skills for thinking, writing, and moving work along with the user.
+17 skills for thinking, writing, and moving work along with the user.
 
 - **bro** (user-invoked): Stop. That last message did not land: re-pitch it.
 - **co-thinker** (model-invoked): An idea not ripe yet. Use when a thought, a doubt or a preference is still open, when a question surfaces that is not yet an Issue, or when a trade-off needs testing before intent hardens into a plan or a Decision Record.
@@ -16,5 +16,6 @@
 - **to-project** (user-invoked): Turn this co-think into a Linear Project, with its settled intent and links.
 - **walkthrough** (user-invoked): Show me what landed, where to look first, and how to try it.
 - **wayfinder** (model-invoked): Fog in a Project map or inside one Issue. Chart the visible route as Wayfinding Issues and resolve them one at a time until the destination is reached.
+- **what-would-balazs-do** (model-invoked): A call Balazs would otherwise be asked. Use when an officer must decide one while he is away, prepare a DR-grade or irreversible one for him, or when he asks for it on any call.
 - **writing-for-agents** (model-invoked): Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.
 - **writing-for-humans** (model-invoked): The reply only the user reads. Cut AI tells and add voice in the conversation; a document, record or comment another agent will read is writing-for-agents's.

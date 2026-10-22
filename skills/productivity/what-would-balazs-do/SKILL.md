@@ -66,7 +66,7 @@ Every call is a `Question` Issue in `Todo`, his turn, with the tribunal log atta
 Document.
 
 - **Decided:** post
-  `DECIDED - by: what-would-balazs-do tribunal, unratified; result: <action>; vote: <for-against>; log: <link>; undo: <steps>; next: <action>.`
+  `DECIDED - by: what-would-balazs-do tribunal, unratified; result: <action>; vote: <n of 3, or split; most reversible>; log: <link>; undo: <steps>; next: <action>.`
   Leave the Question unwired; work proceeds. A DR-grade decision also writes the repo DR
   `status: proposed`, `ratification: pending`, linking the log.
 - **Prepared or not decided:** no `DECIDED` post. The Question's body carries the prediction, any

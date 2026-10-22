@@ -5,7 +5,7 @@ using System.Text;
 /// <summary>
 /// One reading of a shell command line into commands and their words. <c>posix</c> reads it as bash
 /// does (backslash escapes, backtick substitution); otherwise as PowerShell or cmd do (backtick and
-/// caret escapes, doubled quotes inside quotes, backslashes literal). Commands split only on unquoted separators: ; &amp; | ( ) { }
+/// caret escapes, doubled quotes inside quotes, backslashes literal, <c>&lt;# ... #&gt;</c> block comments). Commands split only on unquoted separators: ; &amp; | ( ) { }
 /// and line breaks. Quotes, PowerShell here-strings and heredoc bodies are word text; a heredoc or
 /// <c>&lt;&lt;&lt;</c> word is the command's stdin, and a redirection target is dropped. The text of
 /// a <c>$(...)</c> inside double quotes or a here-string is read as commands, and a backtick
@@ -85,6 +85,7 @@ internal sealed class ShellReader
             case '@' when !_posix && Peek(1) == '(': GroupWord(_i + 2); return;
             case '(' when !_posix && (_word != null || _command.Words.Count > 0): GroupWord(_i + 1); return;
             case '#' when _word == null: SkipComment(); return;
+            case '<' when !_posix && Peek(1) == '#': SkipBlockComment(); return;
             case '$' when Peek(1) == '{': VariableInBraces(); return;
             case '<' or '>':
             case '&' when Peek(1) == '>': Redirect(); return;
@@ -273,6 +274,20 @@ internal sealed class ShellReader
     {
         var end = _text.IndexOf('\n', _i);
         _i = end < 0 ? _text.Length : end;
+    }
+
+    // A PowerShell <# ... #> comment, which can span lines; unterminated, the reading fails.
+    private void SkipBlockComment()
+    {
+        EndWord();
+        var end = _text.IndexOf("#>", _i + 2, StringComparison.Ordinal);
+        if (end < 0)
+        {
+            _failed = true;
+            return;
+        }
+
+        _i = end + 2;
     }
 
     private void VariableInBraces()

@@ -162,7 +162,7 @@ internal sealed partial class DydoInvocationScanner
         if (rest.Count > 0 && rest[0] == "run")
         {
             var separator = rest.IndexOf("--");
-            if (separator >= 0)
+            if (separator >= 0 && RunsDydo(rest.Take(separator).ToList()))
                 _invocations.Add(rest.Skip(separator + 1).ToList());
             return;
         }
@@ -172,6 +172,28 @@ internal sealed partial class DydoInvocationScanner
             at += 2;
         if (at < rest.Count && ProgramName(rest[at]) == "dydo.dll")
             _invocations.Add(rest.Skip(at + 1).ToList());
+    }
+
+    // dotnet run targets dydo when --project or -p names dydo or DynaDocs, as a .csproj or a
+    // directory. With no project it runs the current directory's, which may be dydo: counted, fail-closed.
+    private static bool RunsDydo(List<string> options)
+    {
+        string? project = null;
+        for (var at = 0; at < options.Count; at++)
+        {
+            var match = ProjectOptionRegex().Match(options[at]);
+            if (!match.Success)
+                continue;
+            project = match.Groups[1].Success ? match.Groups[1].Value : options.ElementAtOrDefault(++at) ?? "";
+        }
+
+        if (project == null)
+            return true;
+        var path = project.TrimEnd('/', '\\');
+        var name = path[(path.LastIndexOfAny(['/', '\\']) + 1)..];
+        if (name.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
+            name = name[..^".csproj".Length];
+        return name.Equals("dydo", StringComparison.OrdinalIgnoreCase) || name.Equals("DynaDocs", StringComparison.OrdinalIgnoreCase);
     }
 
     // A shell given no command string reads its commands from stdin: a here-string or heredoc is
@@ -329,4 +351,7 @@ internal sealed partial class DydoInvocationScanner
 
     [GeneratedRegex(@"\.(?:exe|cmd|bat|com|ps1)$")]
     private static partial Regex ExecutableSuffixRegex();
+
+    [GeneratedRegex(@"^(?:--project|-p)(?:[=:](.*))?$")]
+    private static partial Regex ProjectOptionRegex();
 }

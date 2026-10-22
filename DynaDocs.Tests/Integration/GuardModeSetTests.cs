@@ -182,6 +182,9 @@ public sealed class GuardModeSetTests : IntegrationTestBase
     [InlineData("Start-Process cmd -ArgumentList '/c dydo mode set overnight on'")]
     [InlineData("git commit -m \"x $(dydo mode set overnight on)\"")]
     [InlineData("dotnet exec C:/src/bin/dydo.dll mode set overnight on")]
+    [InlineData("dotnet run --project DynaDocs.csproj -- mode set overnight on")]
+    [InlineData("dotnet run -p ../src/DynaDocs/ -- mode set overnight on")]
+    [InlineData("dotnet run --project=tools/dydo -- mode set overnight on")]
     [InlineData("dydo mode set \"overnight on")]
     public async Task WrappedModeSet_MeetsTheReminder(string command)
     {
@@ -242,6 +245,38 @@ public sealed class GuardModeSetTests : IntegrationTestBase
         await InitProjectAsync("none");
 
         (await GuardWithStdinAsync(Hook(command, tool: "PowerShell"), ClaudeHook)).AssertPreToolUseAllowed();
+    }
+
+    // A PowerShell block comment, which can span lines, is never run.
+    [Theory]
+    [InlineData("<#\ndydo mode set overnight on\n#>\ngit status")]
+    [InlineData("git status <# dydo mode set overnight on #>; git log")]
+    public async Task PowerShellBlockComment_UnderThePowerShellTool_PassesUntouched(string command)
+    {
+        await InitProjectAsync("none");
+
+        (await GuardWithStdinAsync(Hook(command, tool: "PowerShell"), ClaudeHook)).AssertPreToolUseAllowed();
+    }
+
+    [Fact]
+    public async Task UnterminatedPowerShellBlockComment_MeetsTheReminder()
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardWithStdinAsync(Hook("<# note\ndydo mode set overnight on", tool: "PowerShell"), ClaudeHook);
+
+        Assert.Contains("BLOCKED: dydo mode set changes the mode", result.AssertPreToolUseDenied());
+    }
+
+    // dotnet run is dydo only when its project is dydo; another project's arguments are its own.
+    [Theory]
+    [InlineData("dotnet run --project examples/OtherCli -- mode set dark on")]
+    [InlineData("dotnet run -p OtherCli.csproj -- mode set dark on")]
+    public async Task DotnetRunOfAnotherProject_PassesUntouched(string command)
+    {
+        await InitProjectAsync("none");
+
+        (await GuardWithStdinAsync(Hook(command), ClaudeHook)).AssertPreToolUseAllowed();
     }
 
     // Bash escapes a quote or a backslash with a backslash; a PowerShell reading of the same text

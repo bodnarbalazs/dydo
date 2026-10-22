@@ -256,10 +256,10 @@ Windows and the user's shell elsewhere. A call whose shell is unknown, such as `
 hook on Windows, and any `cmd /c` string are read both as bash and as PowerShell or cmd would. A dydo call at command
 position meets the nudge: past environment assignments and wrappers such as `env -i`, `sudo`, `nohup`,
 `xargs` and the `&` call operator, as `dydo` under any path or case (`"C:/Program Files/dydo.exe"`,
-`DYDO.EXE`), `dotnet ...dydo.dll` or `dotnet run --`. The command string of `cmd /c`,
+`DYDO.EXE`), `dotnet ...dydo.dll` or `dotnet run --` with no `--project` or one naming dydo or DynaDocs. The command string of `cmd /c`,
 `pwsh -Command`, `bash -c`, `eval` or `Invoke-Expression` and every `$(...)` or backtick substitution
 is read with that shell's rules, and `Start-Process dydo -ArgumentList "mode", "set", ...` counts too,
-as does an `@(...)` array or `(...)` group as the argument list. Arguments
+as does an `@(...)` array or `(...)` group as the argument list. A PowerShell `<# ... #>` block comment is skipped. Arguments
 of any other program are text, so a commit message, a PR body or a here-string that mentions
 `dydo mode set`, even after a `;` inside the quotes, does not meet it. A command the guard cannot read,
 such as one with an unbalanced quote or one piping text into a shell, meets it whenever it contains

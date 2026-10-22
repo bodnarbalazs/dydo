@@ -165,8 +165,9 @@ it, file a following fix Issue instead of reverting. Every operation preserves t
 
 ## Release
 
-Discovery comes before a Question; a DR-grade call, or any call while the user is away, goes through
-`what-would-balazs-do` first. File a local Question Sub-issue in `Todo`, wired to its waiters;
+Discovery comes before a Question. A call above your say goes through `what-would-balazs-do` when it
+is DR-grade or irreversible, or when the user is away; it sets the Question's wiring. File any other
+local Question Sub-issue in `Todo`, wired to its waiters;
 send a prepared packet to the Project's map holder when its answer reaches other Issues or the
 Project's destination. Put the packet and all evidence on the record. Set priority by the standard: the
 user's next pick is the answer that frees the most AFK work.

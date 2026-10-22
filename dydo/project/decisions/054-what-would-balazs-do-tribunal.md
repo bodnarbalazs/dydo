@@ -16,7 +16,7 @@ letting agents make or prepare those calls the way he would.
 ## Decision
 
 A model-invoked skill, `what-would-balazs-do`, personal by design; an adopter renames it. An officer
-runs it inside its own say. After research, the call's class decides the route: easily reversible,
+runs it inside its own remit. After research, the call's class decides the route: easily reversible,
 the officer decides; above its say but below DR-grade, a plain Question when he is present and a
 tribunal decision when he is away; DR-grade, a tribunal prepares the Question when he is present and
 decides it when he is away; irreversible, he alone decides and the tribunal only prepares.

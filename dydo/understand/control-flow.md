@@ -461,10 +461,11 @@ versus Project-level packet; the Project's map holder alone creates Project-leve
 the Issue, never in a chat that evaporates; the chief-of-staff surfaces open Questions when the human
 asks it to, it is never sent anything.
 
-A DR-grade call, or a call above the officer's say while the human is away, first goes through
-`what-would-balazs-do` ([DR 054](../project/decisions/054-what-would-balazs-do-tribunal.md)): a
-tribunal of the officer and two fresh judges prepares the Question with its predicted answer or,
-while he is away, decides a call short of irreversible, unratified, and leaves the Question unwired for him to ratify or overturn.
+A call above the officer's say goes through `what-would-balazs-do`
+([DR 054](../project/decisions/054-what-would-balazs-do-tribunal.md)) when it is DR-grade or
+irreversible, or when the human is away. The skill decides it, unratified, and leaves the Question
+unwired for him to ratify or overturn; when the tribunal cannot decide or the call is irreversible,
+it leaves a prepared Question wired to its waiters.
 
 ### 6.2 Review FAIL
 

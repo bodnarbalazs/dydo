@@ -99,8 +99,9 @@ map and how the Issues move, integrate, and finish together.
 6. **Clear fog.** Do small discovery inline; create a Wayfinding Issue when the investigation needs
    its own status, owner, blocker, or evidence. Dispatch Research agents, use Prototype in its captain's session
    or Grilling in this session, present one prepared Question only when
-   judgment remains, through `what-would-balazs-do` when the call is DR-grade or the user is away,
-   and commission Enablement. Wire every blocker and settle what is visible before commissioning the
+   judgment remains, and commission Enablement. A call above your say goes through
+   `what-would-balazs-do` when it is DR-grade or irreversible, or when the user is away; it sets the
+   Question's wiring. Wire every blocker and settle what is visible before commissioning the
    affected delivery Issue. Accept a Captain's local course correction when later facts expose it;
    move cross-Issue and Project-wide discoveries back onto your map. **Done:** every visible unknown
    is resolved or has the right owner, record, and blocker. Set and revisit priority on every human

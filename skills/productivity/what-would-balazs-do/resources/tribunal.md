@@ -6,7 +6,7 @@ verbatim, tracks turns and claims, and tallies ballots; its view enters only thr
 
 ## Phases
 
-Set a deadline for every phase at dispatch. Append each finished phase to the log before the next.
+Set every phase's deadline when you open the case file. Append each finished phase to the log before the next.
 
 1. **Case file.** Research the case law, sending `research` or `scout` sparingly where a source is
    out of reach. Write the case file below. Done when it holds every option, unranked.
@@ -16,16 +16,16 @@ Set a deadline for every phase at dispatch. Append each finished phase to the lo
    file. Done when both return sealed positions and their results show the model and effort asked
    for.
 4. **Rounds.** Send every member the same bundle: the sealed positions and the last round's turns,
-   always queued, never steered. Write your own turn before reading theirs. Each turn answers the
-   strongest outstanding challenge to the member's own position, or says "unchanged; no outstanding
-   material challenge". A concession quotes the evidence or restates the argument it yields to.
+   always queued, never steered. Write your own turn before reading theirs. Each turn raises the
+   strongest material objection to another member's position, or says why none exists, and answers
+   the strongest outstanding challenge to its own. A concession quotes the evidence or restates the argument it yields to.
 5. **Claims.** A factual claim names its check; the other two members run it independently and
    report confirmed, refuted or inconclusive. A reframe states exactly what it changes, and the
    judges may object. No class is lowered over an unresolved objection: the strictest class stands.
 6. **Close.** Stop when a round changes nothing and no claim is pending, and after 4 rounds at most,
    evidence rounds and reframes included.
-7. **Ballot.** Write the one exact action under vote; each member votes for or against it in one
-   line. Tally by the verdict table in the skill.
+7. **Ballot.** List every option still standing, each as one exact action quoted from the final
+   positions. Each member names one of them, verbatim. Tally by the verdict table in the skill.
 
 A missing or stalled member gets one retry. After that the tribunal is incomplete and ends without a
 decision; never swap a vendor silently. An experiment goes to a proof-only `code-writer` in an
@@ -55,17 +55,22 @@ Judges get this and nothing else from your session:
 > You are a judge on a `what-would-balazs-do` tribunal. Load that skill and follow its
 > `resources/tribunal.md`. Answer as Balazs would, from his own words only, quoting each source. You
 > may send `research` or `scout` subagents after evidence. Return your sealed position in the
-> skill's form by <deadline>. Later rounds arrive as queued messages; answer each with one turn.
+> skill's form by <deadline>. Later rounds arrive as queued messages; answer each with one turn. As
+> a judge, use the Sealed position form and phases 4-7 as a member; phases 1-3, the clerk duties and
+> writing the ballot list are the clerk's. Never dispatch judges.
 >
 > Case file: <case file>
 
 ## Log
 
-A Linear Document `Tribunal log - <KEY>`, attached to the Question. A fresh clerk resumes from the
-last complete section.
+A Linear Document `Tribunal log - <KEY>`, attached to the Question. Checkpoint `Dispatch` on every
+dispatch and retry, and append each round once complete, so a fresh clerk resumes without
+dispatching a judge twice or resetting a retry.
 
 ```markdown
 ## Case file
+## Dispatch
+<member>: task <id>; deadline <time>; retries <n>; pending: <turn or none>
 ## Sealed positions
 <member> - <role/model and effort, as the result shows them>: <position>
 ## Round <n>
@@ -73,8 +78,8 @@ last complete section.
 ## Claims
 <claim> | <check> | <member>: confirmed, refuted or inconclusive
 ## Ballot
-<action, exact text>
-<member>: for or against
+<option, exact text>
+<member>: <option, exact text>
 ## Verdict
 result: <decision, prepared Question, or no decision>; stop: converged, cap or incomplete; undo: <steps>
 ```

@@ -16,21 +16,23 @@ tests it against his own words.
 
 ## Authority
 
-Officers only, each inside its own say: a captain on calls inside its Issue contract, the map holder
-on scope, destination, architecture and cross-Issue calls. Crew returns its call to its captain; the
-chief of staff never runs it. A vote never widens an officer's say.
+A judge goes straight to the Tribunal section.
+
+Officers only, each inside its own remit: a captain on calls inside its Issue contract, the map
+holder on scope, destination, architecture and cross-Issue calls. Crew returns its call to its
+captain; the chief of staff never runs it. A vote never widens an officer's remit.
 
 ## When
 
 Research first: a call the facts settle is no Question. DR-grade is the Decision Record test: hard
-to reverse, surprising without context, a real trade-off. He is away only while the session records
-him away; otherwise he is present.
+to reverse, surprising without context, a real trade-off. Away means the away switch is on; with no
+switch, he is present.
 
 | The call | He is present | He is away |
 |---|---|---|
 | Easily reversible | you decide; no skill | you decide; no skill |
 | Above your say, below DR-grade | a plain Question; no skill | the tribunal decides; on thin case law, the most reversible option, flagged |
-| DR-grade | the tribunal prepares the Question | the tribunal decides and writes the DR |
+| DR-grade | the tribunal prepares the Question | the tribunal decides if unanimous, and writes the DR |
 | Irreversible | his alone; the tribunal prepares the Question | the same |
 
 He may invoke this skill on any call.
@@ -44,20 +46,19 @@ Search the current project unless he points it at another project's records.
 
 ## Tribunal
 
-You and two fresh judges, one Claude and one Codex. You seal your position before they start. Run
-it by [tribunal](resources/tribunal.md); judges load this skill and follow the same file.
+Run it by [tribunal](resources/tribunal.md); judges load this skill and follow the same file.
 
 ## Verdict
 
-The final ballot is on one exact, written action.
+Each member's ballot names one exact, written action.
 
-| Mode | Call | Decided by | Otherwise |
-|---|---|---|---|
-| Away | DR-grade | a unanimous ballot | no decision: a prepared Question |
-| Away | below DR-grade | a majority | a three-way split: the most reversible option, flagged |
-| Present | any | never | a prepared Question with the predicted answer and any dissent |
+| Away, the call is | Decided by | Otherwise |
+|---|---|---|
+| DR-grade | all three naming the same text | no decision: a prepared Question |
+| below DR-grade | two naming the same text | three different actions: the most reversible option, flagged |
 
-An incomplete tribunal decides nothing; the call becomes a prepared Question.
+While he is present, the result is always a prepared Question carrying the predicted answer and any
+dissent. An incomplete tribunal decides nothing; the call becomes a prepared Question.
 
 ## Record
 
@@ -68,7 +69,9 @@ Document.
   `DECIDED - by: what-would-balazs-do tribunal, unratified; result: <action>; vote: <for-against>; log: <link>; undo: <steps>; next: <action>.`
   Leave the Question unwired; work proceeds. A DR-grade decision also writes the repo DR
   `status: proposed`, `ratification: pending`, linking the log.
-- **Prepared or not decided:** wire the Question as a blocker of every waiter.
+- **Prepared or not decided:** no `DECIDED` post. The Question's body carries the prediction, any
+  dissent, the stop reason and the log link; wire it as a blocker of every waiter.
 - **His answer:** post `RATIFIED` or `OVERTURNED` in the standard's form, quoting him, and move the
-  Question to `Done`. An overturn reopens the affected work. That prediction-and-answer pair is how
-  the skill learns.
+  Question to `Done`. Ratified, the DR becomes `accepted`. Overturned, the DR becomes `deprecated`,
+  or `superseded` by the record his answer calls for, quotes his answer, and the affected work
+  reopens. Either way, drop `ratification`.

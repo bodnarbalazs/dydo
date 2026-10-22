@@ -34,7 +34,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   creates Project-level Questions.
 - **Tribunal** - three members testing one call against the human's own words through
   `what-would-balazs-do`: the officer that raised it and two fresh judges, one per vendor. Its output
-  is **unratified** and never precedent until the human answers it `RATIFIED` or `OVERTURNED`.
+  is **unratified** and becomes precedent only when the human answers it `RATIFIED`.
 - **Frontier** - the open, unblocked, unassigned map Issues: the edge of what a Project knows.
   Linear's own blocking relations and assignment render it; there is no separate navigation object.
 

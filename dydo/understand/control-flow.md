@@ -461,6 +461,12 @@ versus Project-level packet; the Project's map holder alone creates Project-leve
 the Issue, never in a chat that evaporates; the chief-of-staff surfaces open Questions when the human
 asks it to, it is never sent anything.
 
+A call above the officer's say goes through `what-would-balazs-do`
+([DR 054](../project/decisions/054-what-would-balazs-do-tribunal.md)) when it is DR-grade or
+irreversible, or when the human is away. Only a call the tribunal decides while he is away stays
+unwired, for him to ratify or overturn; every other call, present, irreversible or undecided, gets a
+prepared Question wired to its waiters.
+
 ### 6.2 Review FAIL
 
 ```mermaid

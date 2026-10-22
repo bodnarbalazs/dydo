@@ -23,6 +23,7 @@ public sealed class CanonicalSkillAssertionTests
         "skills/roles/crew/scout/SKILL.md",
         "skills/productivity/wayfinder/SKILL.md",
         "skills/productivity/to-issue/SKILL.md",
+        "skills/productivity/what-would-balazs-do/SKILL.md",
         "skills/roles/crew/reviewer/resources/code.md",
         "skills/roles/crew/reviewer/resources/docs.md",
         "skills/roles/crew/reviewer/resources/project-plan.md",
@@ -67,9 +68,10 @@ public sealed class CanonicalSkillAssertionTests
             ["bro"] = "productivity", ["handoff"] = "productivity", ["teach"] = "productivity",
             ["show-me"] = "productivity", ["walkthrough"] = "productivity", ["writing-for-agents"] = "productivity",
             ["writing-for-humans"] = "productivity", ["retro"] = "productivity", ["wayfinder"] = "productivity",
-            ["to-project"] = "productivity", ["to-issue"] = "productivity", ["ketchup"] = "productivity", ["in-your-own-words"] = "productivity"
+            ["to-project"] = "productivity", ["to-issue"] = "productivity", ["ketchup"] = "productivity", ["in-your-own-words"] = "productivity",
+            ["what-would-balazs-do"] = "productivity"
         };
-        Assert.Equal(36, expected.Count);
+        Assert.Equal(37, expected.Count);
         var root = Path.Combine(RepositoryRoot(), "skills");
         Assert.Equal(["engineering", "productivity", "roles"], ChildDirectoryNames(root));
         Assert.Equal(["crew", "officers"], ChildDirectoryNames(Path.Combine(root, "roles")));
@@ -196,7 +198,7 @@ public sealed class CanonicalSkillAssertionTests
     public void ProjectKnowledgePaths_AreRepositoryRootLiteralsNotSkillRelativeLinks()
     {
         var root = RepositoryRoot();
-        Assert.Equal(20, ProjectPathGuidance.Length);
+        Assert.Equal(21, ProjectPathGuidance.Length);
         foreach (var relative in ProjectPathGuidance)
         {
             var body = File.ReadAllText(Path.Combine(root, relative));
@@ -382,7 +384,7 @@ public sealed class CanonicalSkillAssertionTests
     }
 
     [Fact]
-    public void SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo36()
+    public void SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo37()
     {
         var root = RepositoryRoot();
         var skillsRoot = Path.Combine(root, "skills");
@@ -391,7 +393,7 @@ public sealed class CanonicalSkillAssertionTests
             .GroupBy(skill => skill.Category.Split('/')[0])
             .ToDictionary(group => group.Key, group => group.Count());
         Assert.Equal(categories.Order(StringComparer.Ordinal), actualCounts.Keys.Order(StringComparer.Ordinal));
-        Assert.Equal(36, actualCounts.Values.Sum());
+        Assert.Equal(37, actualCounts.Values.Sum());
 
         var readme = File.ReadAllText(Path.Combine(skillsRoot, "README.md"));
         foreach (var category in categories)
@@ -402,7 +404,7 @@ public sealed class CanonicalSkillAssertionTests
         }
 
         Assert.Contains(
-            $"{actualCounts["roles"]} + {actualCounts["engineering"]} + {actualCounts["productivity"]} = 36",
+            $"{actualCounts["roles"]} + {actualCounts["engineering"]} + {actualCounts["productivity"]} = 37",
             readme);
     }
 

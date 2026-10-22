@@ -32,6 +32,9 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   after discovery. It records the homework, options, recommendation and named waiters, and resolves
   into an **answer** on the Issue. The captain creates local Sub-issues; the Project's map holder
   creates Project-level Questions.
+- **Tribunal** - three members testing one call against the human's own words through
+  `what-would-balazs-do`: the officer that raised it and two fresh judges, one per vendor. Its output
+  is **unratified** and becomes precedent only when the human answers it `RATIFIED`.
 - **Frontier** - the open, unblocked, unassigned map Issues: the edge of what a Project knows.
   Linear's own blocking relations and assignment render it; there is no separate navigation object.
 
@@ -68,7 +71,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   the human's session or an invoked admiral keeps in flight.
 - **Method** - a plain skill used inside other work, carrying no identity of its own: co-thinker,
   grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype, show-me,
-  writing-for-agents, writing-for-humans, retro, wizard, overnight-mode, maintain-verification-skill,
+  writing-for-agents, writing-for-humans, retro, wizard, overnight-mode, what-would-balazs-do, maintain-verification-skill,
   maintain-formal-verification-skill.
 - **Human command** - a skill only the human invokes by name, never reached for by a model:
   to-project, to-issue, grill-me, bro, in-your-own-words, handoff, ketchup, walkthrough, teach, improve-codebase-architecture,

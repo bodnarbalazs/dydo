@@ -15,6 +15,9 @@ public static partial class GuardCommand
     // An internal verdict only: Execute turns it into an ask decision or a block, never an exit code.
     private const int AskUser = -1;
 
+    /// <summary>The <c>--host</c> value in the Claude Code hook command dydo init writes.</summary>
+    internal const string ClaudeHost = "claude";
+
     // Claude Code prompts on a PreToolUse ask in these modes, auto included. bypassPermissions and
     // dontAsk never prompt, and Codex parses ask but runs the tool, so those are denied.
     private static readonly HashSet<string> AskingPermissionModes =
@@ -29,18 +32,20 @@ public static partial class GuardCommand
     };
 
     /// <summary>
-    /// Positive identification only: Claude Code injects CLAUDECODE=1 into every command hook it
-    /// spawns, and an unrecognised host is treated as one that cannot ask.
+    /// Positive identification only: the Claude Code hook dydo init writes runs
+    /// <c>dydo guard --host claude</c>, and no other hook carries the marker. The environment proves
+    /// nothing, since CLAUDECODE=1 is inherited by a Codex session started from a Claude Code shell.
+    /// An unmarked hook is treated as a host that cannot ask.
     /// </summary>
     private static bool CanAskUser(GuardContext ctx) =>
         !ctx.HasCliArgs
-        && Environment.GetEnvironmentVariable("CLAUDECODE") == "1"
+        && ctx.Host == ClaudeHost
         && ctx.PermissionMode != null
         && AskingPermissionModes.Contains(ctx.PermissionMode);
 
     private static int CheckModeSet(string command, GuardEnv env, bool canAsk)
     {
-        var match = ModeSetRegex().Match(command);
+        var match = ModeSetRegex().Match(NormaliseForDydoScan(command));
         if (!match.Success)
             return ExitCodes.Success;
 
@@ -49,7 +54,7 @@ public static partial class GuardCommand
         if (firstTry != null)
             return firstTry.Value;
 
-        var modeSet = match.Value.Trim();
+        var modeSet = "dydo mode set" + match.Groups["args"].Value.TrimEnd();
         if (canAsk)
         {
             Console.Error.WriteLine($"ASK: An agent wants to run `{modeSet}`, which changes the mode of every agent "
@@ -58,11 +63,18 @@ public static partial class GuardCommand
         }
 
         Console.Error.WriteLine("BLOCKED: This host cannot ask the user to approve dydo mode set "
-            + "(only Claude Code in default, acceptEdits, plan or auto mode can).");
+            + "(only Claude Code through the hook dydo init writes, in default, acceptEdits, plan or auto mode, can).");
         Console.Error.WriteLine($"  Ask the user to run it in their own terminal: {modeSet}");
         return ExitCodes.ToolError;
     }
 
-    [GeneratedRegex(@"dydo(?:\.(?:exe|cmd|ps1|bat))?\s+mode\s+set\b[^;&|\r\n]*", RegexOptions.IgnoreCase)]
+    // A dydo invocation at command position, matched on the normalised command: after a line start,
+    // a separator or a subshell opener, past env assignments and plain wrappers, as dydo under any
+    // path (C:/tools/dydo.exe, ./dydo), dotnet ...dydo.dll, or dotnet run -- in the dydo repo. A
+    // command that only mentions the words, as a commit message or an echo argument, is not one.
+    [GeneratedRegex(@"(?:^|[;&|(){}])\s*(?:(?:env|command|exec|nohup|time|sudo)\s+|\w+=\S*\s+)*"
+        + @"(?:dotnet\s+(?:run\b[^;&|\r\n]*?\s--|(?:exec\s+)?\S*dydo\.dll)|\S*dydo(?:\.(?:exe|cmd|ps1|bat))?)"
+        + @"[^\S\r\n]+mode[^\S\r\n]+set\b(?<args>[^;&|)}\r\n]*)",
+        RegexOptions.IgnoreCase | RegexOptions.Multiline)]
     private static partial Regex ModeSetRegex();
 }

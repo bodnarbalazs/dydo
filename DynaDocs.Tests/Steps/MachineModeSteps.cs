@@ -11,6 +11,7 @@ public sealed class MachineModeSteps : IntegrationTestBase
 {
     private readonly string? _originalClaudeCode = Environment.GetEnvironmentVariable("CLAUDECODE");
     private string _toolName = "Bash";
+    private string[] _hookArgs = [];
     private string _permissionMode = "default";
     private string? _agentId;
     private CommandResult _result = new(-1, "", "");
@@ -52,16 +53,24 @@ public sealed class MachineModeSteps : IntegrationTestBase
         Assert.Contains($"{flag}: {value}", shown.Stdout.Split(Environment.NewLine));
     }
 
+    /// <summary>
+    /// The host decides two things: the hook command (only <c>dydo init</c>'s Claude Code hook carries
+    /// the <c>--host claude</c> marker) and the inherited environment. CLAUDECODE=1 is set wherever a
+    /// Claude Code shell is in the ancestry, so it proves nothing about the host running the hook.
+    /// </summary>
     [Given("an agent on {string} in {string} permission mode")]
     public async Task Agent(string host, string permissionMode)
     {
-        Environment.SetEnvironmentVariable("CLAUDECODE", host switch
+        (var claudeCodeShell, _toolName, _hookArgs) = host switch
         {
-            "Claude Code" => "1",
-            "Codex" or "unknown" => null,
+            "Claude Code" => (true, "Bash", new[] { "--host", "claude" }),
+            "Claude Code without the init marker" => (true, "Bash", Array.Empty<string>()),
+            "Codex" => (false, "shell_command", Array.Empty<string>()),
+            "Codex launched from a Claude Code shell" => (true, "Bash", Array.Empty<string>()),
+            "unknown" => (false, "Bash", Array.Empty<string>()),
             _ => throw new ArgumentException($"Unknown host in scenario: {host}")
-        });
-        _toolName = host == "Codex" ? "shell_command" : "Bash";
+        };
+        Environment.SetEnvironmentVariable("CLAUDECODE", claudeCodeShell ? "1" : null);
         _permissionMode = permissionMode;
         (await InitProjectAsync("none")).AssertSuccess();
     }
@@ -74,7 +83,10 @@ public sealed class MachineModeSteps : IntegrationTestBase
     }
 
     [When("the agent runs {string}")]
-    public async Task AgentRuns(string command) => _result = await GuardWithStdinAsync(Hook(command));
+    public async Task AgentRuns(string command) => _result = await GuardWithStdinAsync(Hook(command), _hookArgs);
+
+    [When(@"^the agent runs the command: (.+)$")]
+    public Task AgentRunsCommand(string command) => AgentRuns(command);
 
     [When("the agent runs {string} twice")]
     public async Task AgentRunsTwice(string command)

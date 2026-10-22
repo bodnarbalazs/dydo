@@ -69,6 +69,11 @@ public static partial class GuardCommand
             Description = "Bash command to analyze"
         };
 
+        var hostOption = new Option<string?>("--host")
+        {
+            Description = "The host whose hook runs the guard; dydo init writes 'claude' into the Claude Code hook"
+        };
+
         var stopOption = new Option<bool>("--stop")
         {
             Description = "Stop-hook mode: no-op retained so existing Stop-hook wiring keeps resolving"
@@ -78,6 +83,7 @@ public static partial class GuardCommand
         command.Options.Add(actionOption);
         command.Options.Add(pathOption);
         command.Options.Add(commandOption);
+        command.Options.Add(hostOption);
         command.Options.Add(stopOption);
 
         command.SetAction(parseResult =>
@@ -88,7 +94,7 @@ public static partial class GuardCommand
             var cliAction = parseResult.GetValue(actionOption);
             var cliPath = parseResult.GetValue(pathOption);
             var cliCommand = parseResult.GetValue(commandOption);
-            return Execute(cliAction, cliPath, cliCommand);
+            return Execute(cliAction, cliPath, cliCommand, parseResult.GetValue(hostOption));
         });
 
         return command;
@@ -133,9 +139,11 @@ public static partial class GuardCommand
         string? ToolName, string? SessionId, string? SearchPath,
         bool HasCliArgs, string? AgentId, string? AgentType,
         IReadOnlyList<string> WriteTargets, string? Cwd, string? HookEventName,
-        string? PermissionMode);
+        string? PermissionMode, string? Host);
 
-    private static GuardContext ParseInput(string? cliAction, string? cliPath, string? cliCommand)
+    // --host is the hook's own marker, not a diagnostic argument: a call carrying only it still
+    // reads its payload from stdin and answers as a hook.
+    private static GuardContext ParseInput(string? cliAction, string? cliPath, string? cliCommand, string? host)
     {
         var hasCliArgs = cliAction != null || cliPath != null || cliCommand != null;
         string? filePath = null, action = null, bashCommand = null;
@@ -181,10 +189,10 @@ public static partial class GuardCommand
             action ?? cliAction ?? "edit",
             bashCommand ?? cliCommand,
             toolName, sessionId, searchPath, hasCliArgs,
-            agentId, agentType, writeTargets, cwd, hookEventName, permissionMode);
+            agentId, agentType, writeTargets, cwd, hookEventName, permissionMode, host);
     }
 
-    private static int Execute(string? cliAction, string? cliPath, string? cliCommand)
+    private static int Execute(string? cliAction, string? cliPath, string? cliCommand, string? host)
     {
         // Everything the call writes to stderr is held, so a PreToolUse refusal can carry the
         // whole text as its deny reason, then replayed to stderr unchanged.
@@ -195,7 +203,7 @@ public static partial class GuardCommand
         int exitCode;
         try
         {
-            ctx = ParseInput(cliAction, cliPath, cliCommand);
+            ctx = ParseInput(cliAction, cliPath, cliCommand, host);
             exitCode = Evaluate(ctx);
         }
         finally
@@ -814,11 +822,18 @@ public static partial class GuardCommand
         if (!IsDydoCommand(command))
             return null;
 
-        var scanned = WorkerScanStripRegex().Replace(LineContinuationRegex().Replace(command, ""), "");
-        return DydoTokenRegex().Matches(scanned)
+        return DydoTokenRegex().Matches(NormaliseForDydoScan(command))
             .Select(token => token.Groups["word"].Value)
             .FirstOrDefault(word => word.Length > 0 && !WorkerAllowedDydoWords.Contains(word));
     }
+
+    /// <summary>
+    /// The command as the shell reads its words: backslash-newline and backtick-newline
+    /// continuations deleted, then quotes, backslashes, backticks and carets, so d"y"do, d\ydo and
+    /// `dydo init` read as dydo. Shared by the worker lane and the mode-set nudge.
+    /// </summary>
+    private static string NormaliseForDydoScan(string command) =>
+        WorkerScanStripRegex().Replace(LineContinuationRegex().Replace(command, ""), "");
 
     [GeneratedRegex(@"[\\`]\r?\n")]
     private static partial Regex LineContinuationRegex();

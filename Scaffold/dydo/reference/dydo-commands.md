@@ -40,7 +40,7 @@ runtime integration. The runtime modes add, per selected host:
 
 | Host | Files | What they carry |
 |---|---|---|
-| `claude` | `.claude/settings.local.json` | a `PreToolUse` hook running `dydo guard` on the matched tools, a `Stop` hook running `dydo guard --stop`, and the allow entries `Bash(dydo:*)` and `PowerShell(dydo:*)` |
+| `claude` | `.claude/settings.local.json` | a `PreToolUse` hook running `dydo guard --host claude` on the matched tools, a `Stop` hook running `dydo guard --stop`, and the allow entries `Bash(dydo:*)` and `PowerShell(dydo:*)` |
 | `claude` | `.claude/settings.json` | `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"` |
 | `claude` | `.gitignore` | `.claude/settings.local.json`, `/.claude/skills/` and `/.agents/skills/` |
 | `codex` | `AGENTS.md` | the same entry point as `CLAUDE.md` |
@@ -145,6 +145,9 @@ dydo guard --command "git status"
 dydo guard --stop
 ```
 
+`--host claude` marks the Claude Code hook `dydo init` writes; it is not a diagnostic argument, so
+the call still reads its payload from stdin. The Codex hook carries no marker.
+
 In hook mode (a PreToolUse payload on stdin, no arguments) exit `0` with empty stdout allows the
 action, and exit `0` with one `permissionDecision: "deny"` object on stdout blocks it (the one
 `"ask"` is the [mode-set](#dydo-mode) rerun); the reason
@@ -246,11 +249,17 @@ reads the same values. One flag ships: `overnight`, `on` or `off`, default `off`
 unknown flag or value with exit `2` and changes nothing; on success it prints every flag as `show` does.
 
 `dydo mode set` from an agent meets a built-in warn nudge that `dydo.json` cannot remove or weaken. The
-first try is blocked with a reminder that only the chief of staff sets the mode. On the rerun the
-guard answers `permissionDecision: "ask"` only on Claude Code (identified by `CLAUDECODE=1` in the hook
-environment) in the `default`, `acceptEdits`, `plan` or `auto` permission mode, so the user approves or
-rejects it. Everywhere else, Codex, `bypassPermissions`, `dontAsk` or an unknown host, it denies, and
-the user runs the command in their own terminal, where no guard runs.
+first try is blocked with a reminder that only the chief of staff sets the mode. The nudge matches a
+dydo call at command position after quotes, backslashes, backticks, carets and line continuations are
+removed, so `"dydo" mode 'set'`, a path such as `C:/tools/dydo.exe`, `dotnet ...dydo.dll` and
+`dotnet run --` all meet it, and a command that only mentions the words, such as a commit message,
+does not. On the rerun the guard answers `permissionDecision: "ask"` only when the hook command carries
+the `--host claude` marker `dydo init` writes into the Claude Code hook and the permission mode is
+`default`, `acceptEdits`, `plan` or `auto`, so the user approves or rejects it. The environment is not
+the signal: `CLAUDECODE=1` is inherited by a Codex session started from a Claude Code shell. Everywhere
+else, Codex, `bypassPermissions`, `dontAsk`, an unknown host or a Claude Code hook written before the
+marker existed, it denies, and the user runs the command in their own terminal, where no guard runs.
+To get the prompt on an older install, run `dydo init claude --join` to rewrite the Claude Code hook.
 
 ---
 

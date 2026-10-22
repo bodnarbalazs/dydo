@@ -795,10 +795,10 @@ public class InitCommandTests : IntegrationTestBase
         result.AssertSuccess();
         var content = ReadFile(".claude/settings.local.json");
 
-        // The PreToolUse guard command is exactly `"dydo guard"` (trailing quote), distinct from the
+        // The PreToolUse guard command is exactly `"dydo guard --host claude"`, distinct from the
         // Stop hook's `"dydo guard --stop"`. Counting the quoted form isolates the PreToolUse hook so a
         // re-run must leave exactly one of it - the Stop hook does not inflate the count.
-        var guardCount = content.Split("\"dydo guard\"").Length - 1;
+        var guardCount = content.Split("\"dydo guard --host claude\"").Length - 1;
         Assert.Equal(1, guardCount);
 
         // The Stop hook is likewise de-duplicated across the re-run.
@@ -814,6 +814,51 @@ public class InitCommandTests : IntegrationTestBase
 
         result.AssertSuccess();
         Assert.Contains("AskUserQuestion", ReadFile(".claude/settings.local.json"));
+    }
+
+    [Fact]
+    public async Task Init_Claude_GuardHookCarriesTheHostMarker()
+    {
+        var result = await InitProjectAsync("claude");
+
+        result.AssertSuccess();
+        var settings = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.local.json")));
+        var preToolUse = Assert.IsType<JsonArray>(settings["hooks"]?["PreToolUse"]);
+        Assert.Equal(1, HookTestAssertions.Count(preToolUse, "dydo guard --host claude"));
+        Assert.Equal(0, HookTestAssertions.Count(preToolUse, "dydo guard"));
+    }
+
+    [Fact]
+    public async Task Init_Claude_ReplacesAnUnmarkedGuardHook()
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        WriteFile(".claude/settings.local.json", """
+            {
+              "hooks": {
+                "PreToolUse": [
+                  { "matcher": "Edit", "hooks": [ { "type": "command", "command": "dydo guard" } ] }
+                ]
+              }
+            }
+            """);
+
+        var result = await InitProjectAsync("claude");
+
+        result.AssertSuccess();
+        var settings = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.local.json")));
+        var preToolUse = Assert.IsType<JsonArray>(settings["hooks"]?["PreToolUse"]);
+        Assert.Equal(0, HookTestAssertions.Count(preToolUse, "dydo guard"));
+        Assert.Equal(1, HookTestAssertions.Count(preToolUse, "dydo guard --host claude"));
+    }
+
+    [Fact]
+    public async Task Init_All_OnlyTheClaudeHookCarriesTheHostMarker()
+    {
+        var result = await InitProjectAsync("all");
+
+        result.AssertSuccess();
+        Assert.Contains("\"dydo guard --host claude\"", ReadFile(".claude/settings.local.json"));
+        Assert.DoesNotContain("--host", ReadFile(".codex/hooks.json"));
     }
 
     [Fact]

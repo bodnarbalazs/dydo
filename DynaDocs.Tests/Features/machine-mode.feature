@@ -64,8 +64,39 @@ Feature: Machine mode
     Then the guard denies it and asks the user to run "dydo mode set overnight on" in their own terminal
 
     Examples:
-      | host        | permission mode   |
-      | Codex       | default           |
-      | Claude Code | bypassPermissions |
-      | Claude Code | dontAsk           |
-      | unknown     | default           |
+      | host                                    | permission mode   |
+      | Codex                                   | default           |
+      | Codex launched from a Claude Code shell | default           |
+      | Claude Code without the init marker     | default           |
+      | Claude Code                             | bypassPermissions |
+      | Claude Code                             | dontAsk           |
+      | unknown                                 | default           |
+
+  Scenario Outline: A quoted, pathed or indirect mode set meets the same reminder
+    Given an agent on "Claude Code" in "default" permission mode
+    When the agent runs the command: <command>
+    Then the guard blocks it and tells the chief of staff to run it again
+
+    Examples:
+      | command                                                    |
+      | dydo mode "set" overnight on                               |
+      | dydo 'mode' set overnight on                               |
+      | "dydo" mode set overnight on                               |
+      | d"y"do mode set overnight on                               |
+      | "C:/tools/dydo.exe" mode set overnight on                  |
+      | & "dydo" mode set overnight on                             |
+      | dotnet bin/Release/net10.0/dydo.dll mode set overnight on  |
+      | dotnet run -- mode set overnight on                        |
+      | git status && dydo mode set overnight on                   |
+      | git status; "dydo" mode set overnight on                   |
+
+  Scenario Outline: A command that only mentions mode set passes
+    Given an agent on "Claude Code" in "default" permission mode
+    When the agent runs the command: <command>
+    Then the guard allows it
+
+    Examples:
+      | command                                                              |
+      | git commit -m "docs: explain dydo mode set overnight on"             |
+      | gh issue comment 12 --body "run dydo mode set overnight off"         |
+      | echo dydo mode set overnight on                                      |

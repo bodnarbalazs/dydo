@@ -250,13 +250,17 @@ unknown flag or value with exit `2` and changes nothing; on success it prints ev
 
 `dydo mode set` from an agent meets a built-in warn nudge that `dydo.json` cannot remove or weaken. The
 first try is blocked with a reminder that only the chief of staff sets the mode. The guard reads the
-command as bash and as PowerShell or cmd would, quotes, escapes, here-strings, heredocs and line
-continuations included, and splits it only on separators outside quotes. A dydo call at command
+command as the shell that runs it would, quotes, escapes, here-strings, heredocs and line
+continuations included, and splits it only on separators outside quotes. Claude Code's `Bash` tool runs
+bash and its `PowerShell` tool PowerShell; Codex, whose payload carries a `turn_id`, runs PowerShell on
+Windows and the user's shell elsewhere. A call whose shell is unknown, such as `Bash` from an unmarked
+hook on Windows, and any `cmd /c` string are read both as bash and as PowerShell or cmd would. A dydo call at command
 position meets the nudge: past environment assignments and wrappers such as `env -i`, `sudo`, `nohup`,
 `xargs` and the `&` call operator, as `dydo` under any path or case (`"C:/Program Files/dydo.exe"`,
 `DYDO.EXE`), `dotnet ...dydo.dll` or `dotnet run --`. The command string of `cmd /c`,
 `pwsh -Command`, `bash -c`, `eval` or `Invoke-Expression` and every `$(...)` or backtick substitution
-is read the same way, and `Start-Process dydo -ArgumentList "mode", "set", ...` counts too. Arguments
+is read with that shell's rules, and `Start-Process dydo -ArgumentList "mode", "set", ...` counts too,
+as does an `@(...)` array or `(...)` group as the argument list. Arguments
 of any other program are text, so a commit message, a PR body or a here-string that mentions
 `dydo mode set`, even after a `;` inside the quotes, does not meet it. A command the guard cannot read,
 such as one with an unbalanced quote or one piping text into a shell, meets it whenever it contains

@@ -9,7 +9,9 @@ using System.Text;
 /// and line breaks. Quotes, PowerShell here-strings and heredoc bodies are word text; a heredoc or
 /// <c>&lt;&lt;&lt;</c> word is the command's stdin, and a redirection target is dropped. The text of
 /// a <c>$(...)</c> inside double quotes or a here-string is read as commands, and a backtick
-/// substitution is returned for a fresh scan.
+/// substitution is returned for a fresh scan. In PowerShell an array <c>@(...)</c>, or a
+/// <c>(...)</c> group in argument position, is read as commands and is also one word: the words of
+/// those commands joined by spaces, so <c>-ArgumentList @('mode', 'set')</c> keeps its value.
 /// </summary>
 internal sealed class ShellReader
 {
@@ -80,6 +82,8 @@ internal sealed class ShellReader
             case '"': DoubleQuoted(); return;
             case '`': _i = BacktickSubstitution(_i); StartWord(); return;
             case '@' when _word == null && HereStringBodyStart() > 0: HereString(); return;
+            case '@' when !_posix && Peek(1) == '(': GroupWord(_i + 2); return;
+            case '(' when !_posix && (_word != null || _command.Words.Count > 0): GroupWord(_i + 1); return;
             case '#' when _word == null: SkipComment(); return;
             case '$' when Peek(1) == '{': VariableInBraces(); return;
             case '<' or '>':
@@ -173,6 +177,15 @@ internal sealed class ShellReader
         inner.Run();
         _failed |= inner._failed;
         return inner._i + 1;
+    }
+
+    // A PowerShell @( ... ) or argument ( ... ) from start: its commands are read, and their words
+    // become one word of the enclosing command.
+    private void GroupWord(int start)
+    {
+        var first = _commands.Count;
+        _i = Substitution(start);
+        StartWord().AppendJoin(' ', _commands.Skip(first).SelectMany(command => command.Words));
     }
 
     private int BacktickSubstitution(int open)

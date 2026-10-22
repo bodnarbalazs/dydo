@@ -139,7 +139,7 @@ public static partial class GuardCommand
         string? ToolName, string? SessionId, string? SearchPath,
         bool HasCliArgs, string? AgentId, string? AgentType,
         IReadOnlyList<string> WriteTargets, string? Cwd, string? HookEventName,
-        string? PermissionMode, string? Host);
+        string? PermissionMode, string? Host, bool FromCodex);
 
     // --host is the hook's own marker, not a diagnostic argument: a call carrying only it still
     // reads its payload from stdin and answers as a hook.
@@ -149,6 +149,7 @@ public static partial class GuardCommand
         string? filePath = null, action = null, bashCommand = null;
         string? toolName = null, sessionId = null, searchPath = null;
         string? agentId = null, agentType = null, cwd = null, hookEventName = null, permissionMode = null;
+        var fromCodex = false;
         IReadOnlyList<string> writeTargets = [];
 
         if (!hasCliArgs && TryReadStdinJson(out var json) && json != null)
@@ -170,6 +171,7 @@ public static partial class GuardCommand
                     cwd = hookInput.Cwd;
                     hookEventName = hookInput.HookEventName;
                     permissionMode = hookInput.PermissionMode;
+                    fromCodex = hookInput.TurnId != null;
                 }
             }
             catch (Exception ex)
@@ -189,7 +191,7 @@ public static partial class GuardCommand
             action ?? cliAction ?? "edit",
             bashCommand ?? cliCommand,
             toolName, sessionId, searchPath, hasCliArgs,
-            agentId, agentType, writeTargets, cwd, hookEventName, permissionMode, host);
+            agentId, agentType, writeTargets, cwd, hookEventName, permissionMode, host, fromCodex);
     }
 
     private static int Execute(string? cliAction, string? cliPath, string? cliCommand, string? host)
@@ -329,7 +331,7 @@ public static partial class GuardCommand
         if (ShouldRouteToShellHandler(context.ToolName, context.BashCommand))
         {
             return HandleBashCommand(context.BashCommand!, context.SessionId, offLimitsService, bashAnalyzer, env,
-                CanAskUser(context));
+                ModeSetCallerOf(context));
         }
 
         // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool - off-limits applies
@@ -392,7 +394,7 @@ public static partial class GuardCommand
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
             return HandleBashCommand(
                 ctx.BashCommand!, ctx.SessionId,
-                offLimitsService, bashAnalyzer, env, CanAskUser(ctx), isWorker: true);
+                offLimitsService, bashAnalyzer, env, ModeSetCallerOf(ctx), isWorker: true);
 
         var checkPath = filePath ?? searchPath;
         if (!string.IsNullOrEmpty(checkPath) && !IsNativeMemoryPath(checkPath))
@@ -484,7 +486,7 @@ public static partial class GuardCommand
         OffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer,
         GuardEnv env,
-        bool canAsk,
+        ModeSetCaller caller,
         bool isWorker = false)
     {
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
@@ -531,7 +533,7 @@ public static partial class GuardCommand
         }
 
         var verdict = AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer);
-        return verdict == ExitCodes.Success ? CheckModeSet(command, env, canAsk) : verdict;
+        return verdict == ExitCodes.Success ? CheckModeSet(command, env, caller) : verdict;
     }
 
     internal static int? CheckNudges(string command, GuardEnv env)

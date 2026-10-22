@@ -45,4 +45,11 @@ public class HookInput
 
     [JsonPropertyName("tool_use_id")]
     public string? ToolUseId { get; set; }
+
+    /// <summary>
+    /// The Codex turn id, a Codex-only extension of the hook payload: present only when Codex
+    /// sent the call.
+    /// </summary>
+    [JsonPropertyName("turn_id")]
+    public string? TurnId { get; set; }
 }

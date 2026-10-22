@@ -12,17 +12,21 @@ public sealed class GuardModeSetTests : IntegrationTestBase
     // The hook command dydo init writes for Claude Code.
     private static readonly string[] ClaudeHook = ["--host", "claude"];
 
-    private static string Hook(string command, string? permissionMode = "default", string eventName = "PreToolUse")
+    private static string Hook(string command, string? permissionMode = "default", string eventName = "PreToolUse",
+        string tool = "Bash", bool codex = false)
     {
         var hook = new JsonObject
         {
             ["session_id"] = TestSessionId,
             ["hook_event_name"] = eventName,
-            ["tool_name"] = "Bash",
+            ["tool_name"] = tool,
             ["tool_input"] = new JsonObject { ["command"] = command }
         };
         if (permissionMode != null)
             hook["permission_mode"] = permissionMode;
+        // turn_id is a Codex-only extension of the hook payload.
+        if (codex)
+            hook["turn_id"] = "turn-1";
         return hook.ToJsonString();
     }
 
@@ -114,19 +118,21 @@ public sealed class GuardModeSetTests : IntegrationTestBase
         Assert.EndsWith("their own terminal: dydo mode set overnight off", result.AssertPreToolUseDenied());
     }
 
+    // A backslash path is a path only where backslashes are literal: bash reads C:\tools\dydo.exe
+    // as C:toolsdydo.exe, so that row runs under the PowerShell tool.
     [Theory]
-    [InlineData("dydo mode \\\nset overnight on")]
-    [InlineData("dydo mode `\r\nset overnight on")]
-    [InlineData(@"C:\tools\dydo.exe mode set overnight on")]
-    [InlineData(@"d\ydo mode set overnight on")]
-    [InlineData("echo start\ndydo mode set overnight on")]
-    [InlineData("echo $(dydo mode set overnight on)")]
-    [InlineData("git status || DYDO_X=1 dydo mode set overnight on")]
-    public async Task ObfuscatedModeSet_MeetsTheReminder(string command)
+    [InlineData("dydo mode \\\nset overnight on", "Bash")]
+    [InlineData("dydo mode `\r\nset overnight on", "Bash")]
+    [InlineData(@"C:\tools\dydo.exe mode set overnight on", "PowerShell")]
+    [InlineData(@"d\ydo mode set overnight on", "Bash")]
+    [InlineData("echo start\ndydo mode set overnight on", "Bash")]
+    [InlineData("echo $(dydo mode set overnight on)", "Bash")]
+    [InlineData("git status || DYDO_X=1 dydo mode set overnight on", "Bash")]
+    public async Task ObfuscatedModeSet_MeetsTheReminder(string command, string tool)
     {
         await InitProjectAsync("none");
 
-        var result = await GuardWithStdinAsync(Hook(command), ClaudeHook);
+        var result = await GuardWithStdinAsync(Hook(command, tool: tool), ClaudeHook);
 
         Assert.Contains("BLOCKED: dydo mode set changes the mode", result.AssertPreToolUseDenied());
     }
@@ -195,6 +201,90 @@ public sealed class GuardModeSetTests : IntegrationTestBase
             permissionMode: "dontAsk"));
 
         Assert.EndsWith("their own terminal: dydo mode set overnight off", result.AssertPreToolUseDenied());
+    }
+
+    [Theory]
+    [InlineData("Start-Process dydo -ArgumentList @('mode', 'set', 'overnight', 'on') -Wait")]
+    [InlineData("Start-Process dydo -ArgumentList ('mode', 'set', 'overnight', 'on')")]
+    [InlineData("Start-Process -FilePath dydo -ArgumentList @(\"mode\", \"set\") -NoNewWindow")]
+    [InlineData("Write-Output (dydo mode set overnight on)")]
+    public async Task PowerShellArrayOrGroup_MeetsTheReminder(string command)
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardWithStdinAsync(Hook(command, tool: "PowerShell"), ClaudeHook);
+
+        Assert.Contains("BLOCKED: dydo mode set changes the mode", result.AssertPreToolUseDenied());
+    }
+
+    [Fact]
+    public async Task PowerShellArrayRerun_NamesTheCanonicalCommand()
+    {
+        await InitProjectAsync("none");
+
+        var result = await Twice(Hook("Start-Process dydo -ArgumentList @('mode', 'set', 'overnight', 'off') -Wait",
+            permissionMode: "dontAsk", tool: "PowerShell"));
+
+        Assert.EndsWith("their own terminal: dydo mode set overnight off", result.AssertPreToolUseDenied());
+    }
+
+    // PowerShell escapes a quote inside double quotes with a backtick; bash would read the backtick
+    // as a substitution and the ; as a separator, which is why the executing shell decides.
+    [Theory]
+    [InlineData("git commit -m \"fix `\"mode`\"; dydo mode set now asks\"")]
+    [InlineData("gh pr comment 12 --body \"fix `\"mode`\"; dydo mode set now asks\"")]
+    public async Task PowerShellEscapedQuotes_UnderThePowerShellTool_PassUntouched(string command)
+    {
+        await InitProjectAsync("none");
+
+        (await GuardWithStdinAsync(Hook(command, tool: "PowerShell"), ClaudeHook)).AssertPreToolUseAllowed();
+    }
+
+    // Bash escapes a quote or a backslash with a backslash; a PowerShell reading of the same text
+    // ends the first string early and finds a dydo command after the ;.
+    [Theory]
+    [InlineData("git commit -m \"fix \\\"mode\\\"; dydo mode set now asks\"")]
+    [InlineData("git commit -m \"dir C:\\\\\" -m \"then; dydo mode set now asks\"")]
+    public async Task BashEscapedQuotes_UnderTheBashTool_PassUntouched(string command)
+    {
+        await InitProjectAsync("none");
+
+        (await GuardWithStdinAsync(Hook(command), ClaudeHook)).AssertPreToolUseAllowed();
+    }
+
+    // Codex sends its shell calls as Bash with no host marker, and runs them in PowerShell on
+    // Windows and in the user's POSIX shell elsewhere.
+    [Fact]
+    public async Task CodexShellCall_IsReadWithTheShellCodexRuns()
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardWithStdinAsync(
+            Hook("git commit -m \"fix `\"mode`\"; dydo mode set now asks\"", codex: true));
+
+        if (OperatingSystem.IsWindows())
+            result.AssertPreToolUseAllowed();
+        else
+            Assert.Contains("BLOCKED: dydo mode set changes the mode", result.AssertPreToolUseDenied());
+    }
+
+    [Theory]
+    [InlineData("PowerShell", "claude", false, true, null, "PowerShell")]
+    [InlineData("powershell", null, false, false, null, "PowerShell")]
+    [InlineData("Bash", "claude", false, true, null, "Posix")]
+    [InlineData("Bash", null, false, false, null, "Posix")]
+    [InlineData("Bash", null, false, true, null, "Unknown")]
+    [InlineData("Bash", null, true, true, null, "PowerShell")]
+    [InlineData("Bash", null, true, false, "/bin/zsh", "Posix")]
+    [InlineData("Bash", null, true, false, "/usr/bin/pwsh", "PowerShell")]
+    [InlineData("shell_command", null, false, true, null, "PowerShell")]
+    [InlineData("unified_exec", null, false, false, "/bin/bash", "Posix")]
+    [InlineData("Read", "claude", false, true, null, "Unknown")]
+    [InlineData(null, null, false, true, null, "Unknown")]
+    public void ExecutingShell_FollowsTheHostAndTool(string? tool, string? host, bool fromCodex, bool windows,
+        string? userShell, string expected)
+    {
+        Assert.Equal(expected, DynaDocs.Commands.GuardCommand.ExecutingShell(tool, host, fromCodex, windows, userShell).ToString());
     }
 
     private Task<CommandResult> GuardCommandAsync(string command) =>

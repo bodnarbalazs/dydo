@@ -60,6 +60,27 @@ public class DydoInvocationScannerTests
             Assert.Contains(expected, All(command));
     }
 
+    [Theory]
+    [InlineData("PowerShell", "Start-Process dydo -ArgumentList @('check', '--strict') -Wait", "check --strict")]
+    [InlineData("PowerShell", "Start-Process dydo -ArgumentList ('check') -NoNewWindow", "check")]
+    [InlineData("PowerShell", "if ($x) { dydo check }", "check")]
+    [InlineData("PowerShell", "$n = @(dydo check)", "check")]
+    [InlineData("PowerShell", "echo \"a `\"b`\"; dydo check\"", null)]
+    [InlineData("PowerShell", "bash -c 'echo \"a\\\\\"; dydo check'", "check")]
+    [InlineData("Posix", "echo \"a\\\\\" \"; dydo check\"", null)]
+    [InlineData("Posix", "echo \"a `echo b`\"; dydo check", "check")]
+    [InlineData("Posix", "pwsh -c 'echo \"a `\"; dydo check\"'", null)]
+    public void ReadsWithTheGivenShell(string shell, string command, string? expected)
+    {
+        var found = DydoInvocationScanner.Find(command, Enum.Parse<ShellDialect>(shell)).Invocations
+            .Select(words => string.Join(' ', words)).ToList();
+
+        if (expected == null)
+            Assert.Empty(found);
+        else
+            Assert.Contains(expected, found);
+    }
+
     [Fact]
     public void EncodedPowerShellCommand_IsDecoded()
     {

@@ -24,6 +24,13 @@ public static partial class GuardCommand
     private static readonly HashSet<string> AskingPermissionModes =
         new(StringComparer.Ordinal) { "default", "acceptEdits", "plan", "auto" };
 
+    // Codex's shell tools. Codex now names its shell calls Bash, told apart by its turn_id.
+    private static readonly HashSet<string> CodexShellToolNames =
+        new(StringComparer.OrdinalIgnoreCase) { "shell_command", "exec", "local_shell", "unified_exec" };
+
+    /// <summary>Whether the caller's host can ask the user, and the shell that runs its command.</summary>
+    private readonly record struct ModeSetCaller(bool CanAsk, ShellDialect Shell);
+
     private static readonly NudgeConfig ModeSetNudge = new()
     {
         Pattern = LooseModeSetRegex().ToString(),
@@ -44,9 +51,34 @@ public static partial class GuardCommand
         && ctx.PermissionMode != null
         && AskingPermissionModes.Contains(ctx.PermissionMode);
 
-    private static int CheckModeSet(string command, GuardEnv env, bool canAsk)
+    private static ModeSetCaller ModeSetCallerOf(GuardContext ctx) => new(CanAskUser(ctx),
+        ctx.HasCliArgs
+            ? ShellDialect.Unknown
+            : ExecutingShell(ctx.ToolName, ctx.Host, ctx.FromCodex, OperatingSystem.IsWindows(),
+                Environment.GetEnvironmentVariable("SHELL")));
+
+    /// <summary>
+    /// The shell a hook's tool call runs in. Claude Code's PowerShell tool runs PowerShell and its
+    /// Bash tool runs bash, Git Bash on Windows. Codex (a turn_id in the payload, or one of its legacy
+    /// shell tool names) runs PowerShell on Windows and the user's shell elsewhere. An unmarked Bash
+    /// call on Windows may be either host, so it and any other call are Unknown, read both ways.
+    /// </summary>
+    internal static ShellDialect ExecutingShell(string? toolName, string? host, bool fromCodex, bool windows, string? userShell)
     {
-        var args = FindModeSetArgs(command);
+        if (string.Equals(toolName, "powershell", StringComparison.OrdinalIgnoreCase))
+            return ShellDialect.PowerShell;
+        var bash = string.Equals(toolName, "bash", StringComparison.OrdinalIgnoreCase);
+        if ((fromCodex && bash) || (toolName != null && CodexShellToolNames.Contains(toolName)))
+            return windows || IsPowerShell(userShell) ? ShellDialect.PowerShell : ShellDialect.Posix;
+        return bash && (host == ClaudeHost || !windows) ? ShellDialect.Posix : ShellDialect.Unknown;
+    }
+
+    private static bool IsPowerShell(string? shellPath) =>
+        Path.GetFileNameWithoutExtension(shellPath ?? "").ToLowerInvariant() is "pwsh" or "powershell";
+
+    private static int CheckModeSet(string command, GuardEnv env, ModeSetCaller caller)
+    {
+        var args = FindModeSetArgs(command, caller.Shell);
         if (args == null)
             return ExitCodes.Success;
 
@@ -56,7 +88,7 @@ public static partial class GuardCommand
             return firstTry.Value;
 
         var modeSet = string.Join(' ', args.Prepend("dydo mode set"));
-        if (canAsk)
+        if (caller.CanAsk)
         {
             Console.Error.WriteLine($"ASK: An agent wants to run `{modeSet}`, which changes the mode of every agent "
                 + "on this machine. Approve only if you started or are ending overnight mode.");
@@ -70,13 +102,13 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// The words after <c>dydo mode set</c> when the command runs it, or null. The shell-aware
-    /// <see cref="DydoInvocationScanner"/> decides; where it cannot be sure (an unbalanced quote, a
+    /// The words after <c>dydo mode set</c> when the command runs it, or null. The
+    /// <see cref="DydoInvocationScanner"/> decides, reading the command as its shell does; where it cannot be sure (an unbalanced quote, a
     /// shell reading a pipe), any dydo ... mode ... set in the command's words counts, failing closed.
     /// </summary>
-    private static IReadOnlyList<string>? FindModeSetArgs(string command)
+    private static IReadOnlyList<string>? FindModeSetArgs(string command, ShellDialect shell)
     {
-        var scan = DydoInvocationScanner.Find(command);
+        var scan = DydoInvocationScanner.Find(command, shell);
         var invocation = scan.Invocations.FirstOrDefault(words => words.Count >= 2
             && string.Equals(words[0], "mode", StringComparison.OrdinalIgnoreCase)
             && string.Equals(words[1], "set", StringComparison.OrdinalIgnoreCase));

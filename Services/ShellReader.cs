@@ -5,7 +5,7 @@ using System.Text;
 /// <summary>
 /// One reading of a shell command line into commands and their words. <c>posix</c> reads it as bash
 /// does (backslash escapes, backtick substitution); otherwise as PowerShell or cmd do (backtick and
-/// caret escapes, backslashes literal). Commands split only on unquoted separators: ; &amp; | ( ) { }
+/// caret escapes, doubled quotes inside quotes, backslashes literal). Commands split only on unquoted separators: ; &amp; | ( ) { }
 /// and line breaks. Quotes, PowerShell here-strings and heredoc bodies are word text; a heredoc or
 /// <c>&lt;&lt;&lt;</c> word is the command's stdin, and a redirection target is dropped. The text of
 /// a <c>$(...)</c> inside double quotes or a here-string is read as commands, and a backtick
@@ -130,6 +130,10 @@ internal sealed class ShellReader
 
         StartWord().Append(_text, _i + 1, end - _i - 1);
         _i = end + 1;
+        if (_posix || Peek(0) != '\'')
+            return;
+        _word!.Append('\'');
+        SingleQuoted();
     }
 
     private void DoubleQuoted()
@@ -140,7 +144,7 @@ internal sealed class ShellReader
         {
             var c = _text[at];
             var next = at + 1 < _text.Length ? _text[at + 1] : '\0';
-            if (c == '"')
+            if (c == '"' && !IsQuotedEscape(c, next))
             {
                 _i = at + 1;
                 return;
@@ -166,9 +170,10 @@ internal sealed class ShellReader
         _failed = true;
     }
 
+    // PowerShell keeps a backslash literal: only a backtick or a doubled quote escapes inside "...".
     private bool IsQuotedEscape(char c, char next) => _posix
         ? c == '\\' && next is '$' or '`' or '"' or '\\' or '\n'
-        : (c == '`' && next != '\0') || (c == '\\' && next == '"');
+        : (c == '`' && next != '\0') || (c == '"' && next == '"');
 
     // Reads $( ... ) from start as commands of its own; returns the index after the closing parenthesis.
     private int Substitution(int start)

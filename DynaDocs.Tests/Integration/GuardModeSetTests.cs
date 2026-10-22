@@ -228,11 +228,15 @@ public sealed class GuardModeSetTests : IntegrationTestBase
         Assert.EndsWith("their own terminal: dydo mode set overnight off", result.AssertPreToolUseDenied());
     }
 
-    // PowerShell escapes a quote inside double quotes with a backtick; bash would read the backtick
-    // as a substitution and the ; as a separator, which is why the executing shell decides.
+    // PowerShell escapes a quote inside double quotes with a backtick or a doubled quote, and keeps a
+    // backslash literal; bash would read the backtick as a substitution and the ; as a separator,
+    // which is why the executing shell decides.
     [Theory]
     [InlineData("git commit -m \"fix `\"mode`\"; dydo mode set now asks\"")]
     [InlineData("gh pr comment 12 --body \"fix `\"mode`\"; dydo mode set now asks\"")]
+    [InlineData(@"git commit -m ""path C:\"" -m ""note; dydo mode set now asks""")]
+    [InlineData(@"git commit -m ""fix """"mode""""; dydo mode set now asks""")]
+    [InlineData(@"git commit -m 'it''s; dydo mode set now asks'")]
     public async Task PowerShellEscapedQuotes_UnderThePowerShellTool_PassUntouched(string command)
     {
         await InitProjectAsync("none");

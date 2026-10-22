@@ -146,7 +146,8 @@ dydo guard --stop
 ```
 
 In hook mode (a PreToolUse payload on stdin, no arguments) exit `0` with empty stdout allows the
-action, and exit `0` with one `permissionDecision: "deny"` object on stdout blocks it; the reason
+action, and exit `0` with one `permissionDecision: "deny"` object on stdout blocks it (the one
+`"ask"` is the [mode-set](#dydo-mode) rerun); the reason
 carries the `BLOCKED:` text, which still goes to stderr too. A block is not exit `2` because Codex on
 Windows runs hooks through PowerShell, which turns exit `2` into exit `1`, and Codex then lets the tool
 run. In diagnostic mode (the CLI-argument examples above) exit `0`
@@ -225,6 +226,31 @@ without it serves a page at `/` saying the viewer was not built, and `dydo map -
 
 `DYDO_LINEAR_ENDPOINT` replaces the Linear GraphQL URL. It is a test seam for pointing dydo map at a
 fake Linear, not a user setting.
+
+---
+
+## Mode Command
+
+### dydo mode
+
+Show or set this machine's mode flags.
+
+```bash
+dydo mode show                 # list every flag with its value
+dydo mode set overnight on     # set one flag
+```
+
+The flags live in one file per user and machine, `dydo/mode.json` under the user's local application
+data (`%LOCALAPPDATA%` on Windows, `~/.local/share` on Linux), so every project and agent on the machine
+reads the same values. One flag ships: `overnight`, `on` or `off`, default `off`. `set` refuses an
+unknown flag or value with exit `2` and changes nothing; on success it prints every flag as `show` does.
+
+`dydo mode set` from an agent meets a built-in warn nudge that `dydo.json` cannot remove or weaken. The
+first try is blocked with a reminder that only the chief of staff sets the mode. On the rerun the
+guard answers `permissionDecision: "ask"` only on Claude Code (identified by `CLAUDECODE=1` in the hook
+environment) in the `default`, `acceptEdits`, `plan` or `auto` permission mode, so the user approves or
+rejects it. Everywhere else, Codex, `bypassPermissions`, `dontAsk` or an unknown host, it denies, and
+the user runs the command in their own terminal, where no guard runs.
 
 ---
 

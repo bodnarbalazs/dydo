@@ -28,6 +28,7 @@ using DynaDocs.Utils;
 /// - Exit code 0, empty stdout = action allowed
 /// - Hook-mode refusal: exit code 0 with one PreToolUse deny-decision object on stdout
 ///   (GuardCommand.Refusal.cs); the same text also goes to stderr
+/// - Hook-mode ask (the mode-set rerun on Claude Code only): exit 0 with one ask-decision object
 /// - CLI-mode or non-PreToolUse-event refusal: exit code 2, message on stderr
 /// </summary>
 public static partial class GuardCommand
@@ -131,14 +132,15 @@ public static partial class GuardCommand
         string? FilePath, string? Action, string? BashCommand,
         string? ToolName, string? SessionId, string? SearchPath,
         bool HasCliArgs, string? AgentId, string? AgentType,
-        IReadOnlyList<string> WriteTargets, string? Cwd, string? HookEventName);
+        IReadOnlyList<string> WriteTargets, string? Cwd, string? HookEventName,
+        string? PermissionMode);
 
     private static GuardContext ParseInput(string? cliAction, string? cliPath, string? cliCommand)
     {
         var hasCliArgs = cliAction != null || cliPath != null || cliCommand != null;
         string? filePath = null, action = null, bashCommand = null;
         string? toolName = null, sessionId = null, searchPath = null;
-        string? agentId = null, agentType = null, cwd = null, hookEventName = null;
+        string? agentId = null, agentType = null, cwd = null, hookEventName = null, permissionMode = null;
         IReadOnlyList<string> writeTargets = [];
 
         if (!hasCliArgs && TryReadStdinJson(out var json) && json != null)
@@ -159,6 +161,7 @@ public static partial class GuardCommand
                     writeTargets = hookInput.GetWriteTargets();
                     cwd = hookInput.Cwd;
                     hookEventName = hookInput.HookEventName;
+                    permissionMode = hookInput.PermissionMode;
                 }
             }
             catch (Exception ex)
@@ -178,7 +181,7 @@ public static partial class GuardCommand
             action ?? cliAction ?? "edit",
             bashCommand ?? cliCommand,
             toolName, sessionId, searchPath, hasCliArgs,
-            agentId, agentType, writeTargets, cwd, hookEventName);
+            agentId, agentType, writeTargets, cwd, hookEventName, permissionMode);
     }
 
     private static int Execute(string? cliAction, string? cliPath, string? cliCommand)
@@ -201,7 +204,7 @@ public static partial class GuardCommand
             stderr.Write(transcript.ToString());
         }
 
-        return IsPreToolUseRefusal(ctx, exitCode) ? DenyPreToolUse(transcript.ToString()) : exitCode;
+        return Conclude(ctx, exitCode, transcript.ToString());
     }
 
     private static int Evaluate(GuardContext ctx)
@@ -317,7 +320,8 @@ public static partial class GuardCommand
         // SECURITY LAYER 2: Bash tool
         if (ShouldRouteToShellHandler(context.ToolName, context.BashCommand))
         {
-            return HandleBashCommand(context.BashCommand!, context.SessionId, offLimitsService, bashAnalyzer, env);
+            return HandleBashCommand(context.BashCommand!, context.SessionId, offLimitsService, bashAnalyzer, env,
+                CanAskUser(context));
         }
 
         // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool - off-limits applies
@@ -380,7 +384,7 @@ public static partial class GuardCommand
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
             return HandleBashCommand(
                 ctx.BashCommand!, ctx.SessionId,
-                offLimitsService, bashAnalyzer, env, isWorker: true);
+                offLimitsService, bashAnalyzer, env, CanAskUser(ctx), isWorker: true);
 
         var checkPath = filePath ?? searchPath;
         if (!string.IsNullOrEmpty(checkPath) && !IsNativeMemoryPath(checkPath))
@@ -472,6 +476,7 @@ public static partial class GuardCommand
         OffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer,
         GuardEnv env,
+        bool canAsk,
         bool isWorker = false)
     {
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
@@ -517,7 +522,8 @@ public static partial class GuardCommand
             }
         }
 
-        return AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer);
+        var verdict = AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer);
+        return verdict == ExitCodes.Success ? CheckModeSet(command, env, canAsk) : verdict;
     }
 
     internal static int? CheckNudges(string command, GuardEnv env)

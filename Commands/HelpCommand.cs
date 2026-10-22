@@ -36,6 +36,8 @@ public static class HelpCommand
         Console.WriteLine();
         Console.WriteLine("Workspace Commands:");
         Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
+        Console.WriteLine("  mode show              List this machine's mode flags (overnight)");
+        Console.WriteLine("  mode set <flag> <val>  Set a mode flag, e.g. mode set overnight on");
         Console.WriteLine();
         Console.WriteLine("Validation Commands:");
         Console.WriteLine("  validate               Validate local configuration and nudges");

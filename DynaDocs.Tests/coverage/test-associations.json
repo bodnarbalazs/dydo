@@ -116,6 +116,26 @@
       ]
     },
     {
+      "module": "Commands/GuardCommand.ModeSet.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/GuardModeSetTests.cs",
+        "DynaDocs.Tests/Steps/MachineModeSteps.cs"
+      ]
+    },
+    {
+      "module": "Commands/ModeCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/ModeCommandTests.cs",
+        "DynaDocs.Tests/Steps/MachineModeSteps.cs"
+      ]
+    },
+    {
+      "module": "Services/ModeState.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/ModeStateTests.cs"
+      ]
+    },
+    {
       "module": "Commands/HelpCommand.cs",
       "tests": [
         "DynaDocs.Tests/Commands/HelpCommandTests.cs"

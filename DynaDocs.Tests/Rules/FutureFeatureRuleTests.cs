@@ -25,8 +25,8 @@ public sealed class FutureFeatureRuleTests : IDisposable
     public static TheoryData<string> DeliveryFields => new()
     {
         "assigned", "assignee", "priority", "blocked-by", "blocks", "dependency", "dependencies",
-        "project", "initiative", "cycle", "milestone", "sprint", "campaign", "slice", "task", "issue",
-        "workflow", "state", "due-date", "estimate", "labels", "parent", "sub-issue", "team"
+        "project", "initiative", "cycle", "milestone", "sprint", "campaign", "slice", "task", "issue", "ticket",
+        "workflow", "state", "due-date", "estimate", "labels", "parent", "sub-issue", "sub-ticket", "team"
     };
 
     public void Dispose()

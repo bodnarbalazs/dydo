@@ -96,13 +96,13 @@ describe('map nodes', () => {
     expect(document.querySelector('.plate')?.className).toBe('plate closed');
     fireEvent.click(screen.getByRole('button', { name: 'Collapse T-a' }));
     expect(toggle).toHaveBeenCalledWith('a');
-    expect(screen.getByText(/1 sub-issue$/)).toBeTruthy();
+    expect(screen.getByText(/1 sub-ticket$/)).toBeTruthy();
   });
 
   it('marks a collapsed plate and counts its hidden sub-issues', () => {
     draw({ ...base, kind: 'plate', collapsed: true, descendants: 4 }, true);
     expect(document.querySelector('.plate')?.className).toBe('plate collapsed selected');
-    expect(screen.getByRole('button', { name: 'Expand T-a' }).textContent).toBe('▸ 4 sub-issues');
+    expect(screen.getByRole('button', { name: 'Expand T-a' }).textContent).toBe('▸ 4 sub-tickets');
   });
 
   it('washes an expanded plate in its status colour and leaves a collapsed one plain', () => {

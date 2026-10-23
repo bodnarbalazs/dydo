@@ -24,7 +24,7 @@ describe('Legend', () => {
   it('explains the three edge styles', () => {
     render(<Legend />);
     expect(samples()).toEqual([
-      { label: 'blocks (arrow points at the blocked issue)', stroke: EDGE_COLORS.blocks, end: '26', dash: null, arrow: EDGE_COLORS.blocks },
+      { label: 'blocks (arrow points at the blocked ticket)', stroke: EDGE_COLORS.blocks, end: '26', dash: null, arrow: EDGE_COLORS.blocks },
       { label: 'resolved blocker', stroke: EDGE_COLORS.muted, end: '26', dash: null, arrow: EDGE_COLORS.muted },
       { label: 'related', stroke: EDGE_COLORS.related, end: '33', dash: '5 3', arrow: null },
     ]);

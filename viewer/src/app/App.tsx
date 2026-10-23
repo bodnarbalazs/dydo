@@ -224,7 +224,7 @@ export function App({ elk }: { elk: ELK }) {
 }
 
 function summarize(graph: Graph, plates: number): string {
-  return `${graph.project.name}: ${graph.issues.length} issues, ${plates} plates`;
+  return `${graph.project.name}: ${graph.issues.length} tickets, ${plates} plates`;
 }
 
 function Placeholder({ url, loading }: { url: UrlState; loading: boolean }) {

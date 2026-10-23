@@ -60,7 +60,7 @@ describe('RefreshLayers', () => {
     draw(node('plate'), { kind: 'changed', delay: 0, previous: previous('plate') });
     const old = ghost()?.querySelector('.plate');
     expect(old?.querySelector('.plate-header .title')?.textContent).toBe('Old title');
-    expect(old?.querySelector('.plate-toggle')?.textContent).toBe('▾ 2 sub-issues');
+    expect(old?.querySelector('.plate-toggle')?.textContent).toBe('▾ 2 sub-tickets');
     expect(old?.querySelector('button')).toBeNull();
     expect(ring()?.className).toBe('refresh-ring refresh-header');
   });

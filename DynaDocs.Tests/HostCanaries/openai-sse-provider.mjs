@@ -4,10 +4,11 @@ import path from "node:path";
 import { parseArgs } from "./openai-sse-provider-args.mjs";
 
 const args = parseArgs(process.argv.slice(2));
-const expectedFact = "# Mission: {Topic}";
-const teachDescription = "Teach the human a new skill or concept, within this workspace.";
-const implicitPrompt = "If the project skill teach appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_TEACH_HIDDEN. Do not use slash-command syntax.";
-const codexPrompt = "Load the teach skill. Follow its mission-format link from the installed skill base reported or exposed by the host. Reply exactly with the Markdown H1 template from that resource and no other text.";
+const expectedFact = "# HTML Report Format";
+const canarySkill = "improve-codebase-architecture";
+const canaryDescription = "Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick.";
+const implicitPrompt = "If the project skill improve-codebase-architecture appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_SKILL_HIDDEN. Do not use slash-command syntax.";
+const codexPrompt = "Load the improve-codebase-architecture skill. Follow its html-report link from the installed skill base reported or exposed by the host. Reply exactly with the Markdown H1 heading from that resource and no other text.";
 let state = 0;
 let derivedResourcePath;
 let eventSequence = 0;
@@ -41,16 +42,16 @@ const server = http.createServer(async (request, response) => {
 
     if (state === 0) {
       assert(serialized.includes('"skill"'), "first request did not expose the native skill tool");
-      assert(serialized.includes("teach"), "first request did not expose teach in the native inventory");
+      assert(serialized.includes(canarySkill), "first request did not expose the canary skill in the native inventory");
       state = 1;
-      return providerTool(request.url, response, "dyd91-skill", "skill", { name: "teach" });
+      return providerTool(request.url, response, "dyd91-skill", "skill", { name: canarySkill });
     }
 
     if (state === 1) {
       const skillResult = findToolOutput(payload, "dyd91-skill");
-      assert(skillResult?.includes("mission-format.md"), "native skill result omitted the mission-format link");
+      assert(skillResult?.includes("html-report.md"), "native skill result omitted the html-report link");
       const base = extractSkillBase(skillResult);
-      derivedResourcePath = path.resolve(base, "resources", "mission-format.md");
+      derivedResourcePath = path.resolve(base, "resources", "html-report.md");
       const fact = await readFile(derivedResourcePath, "utf8");
       assert(fact.includes(expectedFact), "derived resource did not contain the expected fact");
       state = 2;
@@ -114,30 +115,30 @@ function providerText(url, response, content) {
   return chatText(response, content);
 }
 
-function teachSkillDirectory() {
-  assert(args.candidate, "--candidate is required to resolve the canonical teach skill directory");
-  return path.join(args.candidate, "skills", "productivity", "teach");
+function canarySkillDirectory() {
+  assert(args.candidate, "--candidate is required to resolve the canonical canary skill directory");
+  return path.join(args.candidate, "skills", "engineering", canarySkill);
 }
 
 async function handleCodex(request, response, payload) {
   if (!request.url?.endsWith("/responses")) return deny(response, `unexpected Codex provider endpoint ${request.url}`);
   const strings = collectStrings(payload);
   if (state === 0) {
-    const body = await readFile(path.join(teachSkillDirectory(), "SKILL.md"), "utf8");
-    const marker = `teach: ${teachDescription}`;
+    const body = await readFile(path.join(canarySkillDirectory(), "SKILL.md"), "utf8");
+    const marker = `${canarySkill}: ${canaryDescription}`;
     const serialized = JSON.stringify(payload);
     assert(countAcross(strings, implicitPrompt) === 1, "Codex implicit request did not contain the exact control prompt once");
-    assert(countAcross(strings, marker) === 0, "Codex implicit request exposed teach's name-plus-description marker");
-    assert(countAcross(strings, body) === 0, "Codex implicit request injected the canonical teach body");
+    assert(countAcross(strings, marker) === 0, "Codex implicit request exposed the canary skill's name-plus-description marker");
+    assert(countAcross(strings, body) === 0, "Codex implicit request injected the canonical canary skill body");
     assert(!serialized.includes('"type":"skill"'), "Codex implicit request exposed structured skill input");
     assert(countAcross(strings, expectedFact) === 0, "Codex implicit request pre-inlined the resource-only fact");
-    await record({ state, method: "POST", url: request.url, payload, response: { text: "DYDO_TEACH_HIDDEN" } });
+    await record({ state, method: "POST", url: request.url, payload, response: { text: "DYDO_SKILL_HIDDEN" } });
     state = 1;
-    return responsesText(response, "DYDO_TEACH_HIDDEN");
+    return responsesText(response, "DYDO_SKILL_HIDDEN");
   }
   if (state === 1) {
-    const body = await readFile(path.join(teachSkillDirectory(), "SKILL.md"), "utf8");
-    assert(countAcross(strings, body) === 1, "Codex explicit request did not contain the exact canonical teach body once");
+    const body = await readFile(path.join(canarySkillDirectory(), "SKILL.md"), "utf8");
+    assert(countAcross(strings, body) === 1, "Codex explicit request did not contain the exact canonical canary skill body once");
     assert(countAcross(strings, codexPrompt) === 1, "Codex explicit request did not contain the exact prompt once");
     assert(countAcross(strings, expectedFact) === 0, "Codex explicit request pre-inlined the resource-only fact");
     const execTool = Array.isArray(payload.tools) ? payload.tools.find(tool => tool.name === "exec_command") : undefined;
@@ -145,13 +146,13 @@ async function handleCodex(request, response, payload) {
     assert(!(payload.tools ?? []).some(tool => tool.name === "shell_command"), "Codex explicit request unexpectedly offered retired shell_command");
     assertExecCommandSchema(execTool.parameters);
     const selectedSkill = extractInstalledSkillPath(strings);
-    const link = body.match(/\[mission-format\]\(([^)]+)\)/)?.[1];
-    assert(link, "canonical teach body did not expose mission-format link");
+    const link = body.match(/\[html-report\]\(([^)]+)\)/)?.[1];
+    assert(link, "canonical canary skill body did not expose html-report link");
     derivedResourcePath = path.resolve(path.dirname(selectedSkill), link);
     const realResource = await realpath(derivedResourcePath);
     const realSkill = await realpath(path.dirname(selectedSkill));
     assert(isInside(realSkill, realResource), "derived Codex resource escaped the selected skill");
-    assert(samePath(realResource, path.join(teachSkillDirectory(), "resources", "mission-format.md")), "derived Codex resource did not resolve to canonical mission-format.md");
+    assert(samePath(realResource, path.join(canarySkillDirectory(), "resources", "html-report.md")), "derived Codex resource did not resolve to canonical html-report.md");
     const command = `Get-Content -Raw -LiteralPath '${derivedResourcePath}'`;
     const argumentsJson = { cmd: command, workdir: args.candidate, yield_time_ms: 10000, max_output_tokens: 2000, shell: "powershell", login: false };
     await record({ state, method: "POST", url: request.url, payload, offeredSchema: execTool, derivedResourcePath, response: { tool: "exec_command", arguments: argumentsJson } });
@@ -293,15 +294,15 @@ function record(value) {
 function extractSkillBase(serialized) {
   const normalized = serialized.replaceAll("\\\\", "\\");
   const candidates = [
-    /base directory for this skill:\s*([^\n\r"`]+?teach)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i,
-    /base directory(?: is|:)[ \t]*([^\n\r"`]+?teach)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i,
-    /((?:[A-Za-z]:)?[^\n\r"`]*[\\/]skills[\\/]productivity[\\/]teach)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i
+    /base directory for this skill:\s*([^\n\r"`]+?improve-codebase-architecture)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i,
+    /base directory(?: is|:)[ \t]*([^\n\r"`]+?improve-codebase-architecture)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i,
+    /((?:[A-Za-z]:)?[^\n\r"`]*[\\/]skills[\\/]engineering[\\/]improve-codebase-architecture)(?:[\\/]SKILL\.md)?(?=[\n\r"`])/i
   ];
   for (const candidate of candidates) {
     const match = normalized.match(candidate);
     if (match) return match[1].trim().replace(/^<|>$/g, "");
   }
-  throw new Error("could not derive teach's installed base from the native skill result");
+  throw new Error("could not derive the canary skill's installed base from the native skill result");
 }
 
 function findToolOutput(value, callId) {
@@ -332,7 +333,7 @@ function countAcross(strings, needle) {
 
 function extractInstalledSkillPath(strings) {
   for (const value of strings) {
-    const match = value.match(/([A-Za-z]:[\\/][^\n\r"`<>]*[\\/]skills[\\/]productivity[\\/]teach[\\/]SKILL\.md)/i);
+    const match = value.match(/([A-Za-z]:[\\/][^\n\r"`<>]*[\\/]skills[\\/]engineering[\\/]improve-codebase-architecture[\\/]SKILL\.md)/i);
     if (match) return match[1];
   }
   throw new Error("Codex first request did not expose the selected installed skill path");

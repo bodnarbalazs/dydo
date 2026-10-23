@@ -8,9 +8,10 @@ import { spawn } from "node:child_process";
 import { isInside, samePath } from "./path-containment.mjs";
 import { parseArgs } from "./run-host-canaries-args.mjs";
 
-const EXPECTED_FACT = "# Mission: {Topic}";
-const CODEX_IMPLICIT_PROMPT = "If the project skill teach appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_TEACH_HIDDEN. Do not use slash-command syntax.";
-const PROMPT = "Load the teach skill. Follow its mission-format link from the installed skill base reported or exposed by the host. Reply exactly with the Markdown H1 template from that resource and no other text.";
+const CANARY_SKILL = "improve-codebase-architecture";
+const EXPECTED_FACT = "# HTML Report Format";
+const CODEX_IMPLICIT_PROMPT = "If the project skill improve-codebase-architecture appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_SKILL_HIDDEN. Do not use slash-command syntax.";
+const PROMPT = "Load the improve-codebase-architecture skill. Follow its html-report link from the installed skill base reported or exposed by the host. Reply exactly with the Markdown H1 heading from that resource and no other text.";
 const OPENCODE_ARCHIVE_SHA256 = "c8c0e0d05ac3dac544a0edfad8de9eb244bf46c6c7a131c38619d40fcf31bd1f";
 const OPENCODE_EXE_SHA256 = "c1bdbb18767048e1853af4238311b3f7e16ff2f91b68fb4c7ced3c5175347eea";
 const RIPGREP_SHA256 = "14231169855ec5205cf5a1b6f1db358ff4aed4247c86b69ce8aae647c77f6680";
@@ -335,12 +336,12 @@ async function runClaudeCanary() {
   manifest.environment.claude = { version, configDir: claudeConfig, settingSources: ["project"], strictMcpConfig: true, chrome: false, instructions: { path: claudeInstructionsPath, sha256: await sha256(claudeInstructionsPath), bytes: (await stat(claudeInstructionsPath)).size } };
   const common = ["--output-format", "stream-json", "--verbose", "--no-session-persistence", "--setting-sources", "project", "--strict-mcp-config", "--no-chrome", "--permission-mode", "dontAsk", "--allowedTools", "Skill,Read"];
   await writeArtifact("claude-session-settings.json", JSON.stringify({ executable: "claude", cwd: checkout, promptPlacement: "immediately after --print", commonArgv: common }, null, 2));
-  const implicitPrompt = "If the project skill teach appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_TEACH_HIDDEN. Do not use slash-command syntax.";
+  const implicitPrompt = "If the project skill improve-codebase-architecture appears in the model-visible skill inventory, invoke it. Otherwise reply exactly DYDO_SKILL_HIDDEN. Do not use slash-command syntax.";
   const implicit = await capture("claude", ["--print", implicitPrompt, ...common], { cwd: checkout, env });
   await writeArtifact("claude-implicit.ndjson", implicit.stdout);
   await writeArtifact("claude-implicit.stderr.txt", implicit.stderr);
   assert(implicit.exitCode === 0, `Claude implicit canary exited ${implicit.exitCode}: ${redact(implicit.stderr || implicit.stdout)}`);
-  const explicit = await capture("claude", ["--print", `/teach ${PROMPT}`, ...common], { cwd: checkout, env });
+  const explicit = await capture("claude", ["--print", `/${CANARY_SKILL} ${PROMPT}`, ...common], { cwd: checkout, env });
   await writeArtifact("claude-explicit.ndjson", explicit.stdout);
   await writeArtifact("claude-explicit.stderr.txt", explicit.stderr);
   assert(explicit.exitCode === 0, `Claude explicit canary exited ${explicit.exitCode}: ${redact(explicit.stderr || explicit.stdout)}`);
@@ -353,12 +354,12 @@ async function runClaudeCanary() {
   assertNoOuterState(explicitEvents, "Claude explicit native stream");
   const implicitText = JSON.stringify(implicitEvents);
   const explicitText = JSON.stringify(explicitEvents);
-  assert(implicitText.includes("DYDO_TEACH_HIDDEN"), "Claude implicit canary did not return the hidden marker");
-  assert(!implicitText.includes("mission-format.md") && !implicitText.includes(EXPECTED_FACT), "Claude implicitly exposed teach");
-  assert(explicitText.includes("teach") && explicitText.includes("mission-format.md"), "Claude explicit canary did not load teach");
+  assert(implicitText.includes("DYDO_SKILL_HIDDEN"), "Claude implicit canary did not return the hidden marker");
+  assert(!implicitText.includes("html-report.md") && !implicitText.includes(EXPECTED_FACT), "Claude implicitly exposed the canary skill");
+  assert(explicitText.includes(CANARY_SKILL) && explicitText.includes("html-report.md"), "Claude explicit canary did not load the canary skill");
   assert(explicitText.includes(EXPECTED_FACT), "Claude explicit canary did not read the resource fact");
   assert(finalText(explicitEvents) === EXPECTED_FACT, "Claude explicit final response was not exact");
-  pass("Claude keeps teach explicit-only and resolves its linked resource through the installed base");
+  pass("Claude keeps the canary skill explicit-only and resolves its linked resource through the installed base");
 }
 
 async function assertClaudeInit(events, label) {
@@ -384,8 +385,8 @@ async function runCodexCanary() {
   const resolvedCodex = await resolveCodexExecutable();
   const version = (await run(resolvedCodex, ["--version"])).stdout.trim();
   manifest.environment.codex = version;
-  const yaml = await readFile(join(dirname(skillPath("teach")), "agents", "openai.yaml"), "utf8");
-  assert(yaml.includes("allow_implicit_invocation: false"), "canonical teach lost its Codex explicit-only control");
+  const yaml = await readFile(join(dirname(skillPath(CANARY_SKILL)), "agents", "openai.yaml"), "utf8");
+  assert(yaml.includes("allow_implicit_invocation: false"), "canonical canary skill lost its Codex explicit-only control");
   await recordCodexProjection();
 
   const isolation = join(hostsRoot, "codex-isolation");
@@ -420,12 +421,12 @@ async function runCodexCanary() {
     const allowedSystemNames = ["imagegen", "openai-docs", "plugin-creator", "review-agent", "skill-creator", "skill-installer"].sort(ordinal);
     assert(JSON.stringify(systemRecords.map(record => record.name).sort(ordinal)) === JSON.stringify(allowedSystemNames), "Codex system inventory differed from the six allowed isolated built-ins");
     for (const record of systemRecords) assert(isInside(await realpath(join(home, "skills", ".system")), await realpath(record.path)), `Codex system skill escaped isolated CODEX_HOME: ${record.name}`);
-    const records = repoRecords.filter(record => record.name === "teach");
-    assert(records.length === 1, `Codex inventory returned ${records.length} enabled repository teach skills`);
+    const records = repoRecords.filter(record => record.name === CANARY_SKILL);
+    assert(records.length === 1, `Codex inventory returned ${records.length} enabled repository canary skills`);
     const record = records[0];
     const selectedPath = record.path;
     await writeArtifact("codex-explicit.json", JSON.stringify({ selectedSkill: record }, null, 2));
-    assert(typeof selectedPath === "string" && samePath(await realpath(selectedPath), await realpath(skillPath("teach"))), `Codex inventory did not supply teach's canonical SKILL.md path: ${selectedPath}`);
+    assert(typeof selectedPath === "string" && samePath(await realpath(selectedPath), await realpath(skillPath(CANARY_SKILL))), `Codex inventory did not supply the canary skill's canonical SKILL.md path: ${selectedPath}`);
 
     const implicitThread = await rpc.request({ method: "thread/start", id: 3, params: { cwd: checkout, model: "skill-canary", modelProvider: "dyd91_loopback", approvalPolicy: "on-request", sandbox: "read-only", ephemeral: true } });
     const implicitThreadId = implicitThread.result?.thread?.id;
@@ -437,7 +438,7 @@ async function runCodexCanary() {
     const implicitIncoming = rpc.incomingSince(implicitStart);
     assert(!implicitIncoming.some(isCodexToolItem), "Codex implicit control emitted a tool item");
     assert(implicitIncoming.filter(isServerRequest).length === 0, "Codex implicit control requested approval or another server-side action");
-    assert(exactCodexFinal(implicitIncoming) === "DYDO_TEACH_HIDDEN", "Codex implicit control final was not exactly DYDO_TEACH_HIDDEN");
+    assert(exactCodexFinal(implicitIncoming) === "DYDO_SKILL_HIDDEN", "Codex implicit control final was not exactly DYDO_SKILL_HIDDEN");
     await writeArtifact("codex-implicit.ndjson", implicitIncoming.map(message => JSON.stringify(message)).join("\n") + "\n");
     const implicitProviderEntries = parseNdjson(await readFile(requestsPath, "utf8"), "Codex provider requests after implicit turn");
     const implicitPost = implicitProviderEntries.find(entry => entry.method === "POST");
@@ -449,17 +450,17 @@ async function runCodexCanary() {
     const explicitThread = await rpc.request({ method: "thread/start", id: 5, params: { cwd: checkout, model: "skill-canary", modelProvider: "dyd91_loopback", approvalPolicy: "on-request", sandbox: "read-only", ephemeral: true } });
     const explicitThreadId = explicitThread.result?.thread?.id;
     assert(typeof explicitThreadId === "string", "Codex explicit thread/start did not return result.thread.id");
-    const teachBody = await readFile(selectedPath, "utf8");
-    const resourceLink = teachBody.match(/\[mission-format\]\(([^)]+)\)/)?.[1];
-    assert(resourceLink, "selected teach body did not expose the mission-format link");
+    const skillBody = await readFile(selectedPath, "utf8");
+    const resourceLink = skillBody.match(/\[html-report\]\(([^)]+)\)/)?.[1];
+    assert(resourceLink, "selected canary skill body did not expose the html-report link");
     const derivedResourcePath = resolve(dirname(selectedPath), resourceLink);
-    assert(samePath(await realpath(derivedResourcePath), await realpath(join(dirname(skillPath("teach")), "resources", "mission-format.md"))), "Codex approval resource did not derive from the selected canonical skill");
+    assert(samePath(await realpath(derivedResourcePath), await realpath(join(dirname(skillPath(CANARY_SKILL)), "resources", "html-report.md"))), "Codex approval resource did not derive from the selected canonical skill");
     const readArgv = ["Get-Content", "-Raw", "-LiteralPath", derivedResourcePath];
     const readCommand = `Get-Content -Raw -LiteralPath '${derivedResourcePath}'`;
     const powershell = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
     const renderedCommand = `"${powershell.replaceAll("\\", "\\\\")}" -NoProfile -Command "${readCommand.replaceAll("\\", "\\\\")}"`;
     const explicitStart = rpc.mark();
-    rpc.send({ method: "turn/start", id: 6, params: { threadId: explicitThreadId, cwd: checkout, sandboxPolicy: { type: "readOnly", networkAccess: false }, input: [{ type: "skill", name: "teach", path: selectedPath }, { type: "text", text: PROMPT }] } });
+    rpc.send({ method: "turn/start", id: 6, params: { threadId: explicitThreadId, cwd: checkout, sandboxPolicy: { type: "readOnly", networkAccess: false }, input: [{ type: "skill", name: CANARY_SKILL, path: selectedPath }, { type: "text", text: PROMPT }] } });
     const explicitTurnResponse = await rpc.wait(message => message.id === 6, explicitStart);
     assert(!explicitTurnResponse.error, `Codex explicit turn/start failed: ${JSON.stringify(explicitTurnResponse.error)}`);
     const explicitTurnId = explicitTurnResponse.result?.turn?.id;
@@ -484,7 +485,7 @@ async function runCodexCanary() {
     const serverRequests = incoming.filter(isServerRequest);
     assert(serverRequests.length === 1 && serverRequests[0] === approval, `Codex emitted ${serverRequests.length} server requests instead of the one approved read`);
     const started = incoming.findIndex(message => message.method === "turn/started");
-    const command = incoming.findIndex(message => message.method === "item/completed" && JSON.stringify(message).includes("Get-Content -Raw -LiteralPath") && JSON.stringify(message).includes("mission-format.md") && JSON.stringify(message).includes('"exitCode":0'));
+    const command = incoming.findIndex(message => message.method === "item/completed" && JSON.stringify(message).includes("Get-Content -Raw -LiteralPath") && JSON.stringify(message).includes("html-report.md") && JSON.stringify(message).includes('"exitCode":0'));
     const message = incoming.findIndex(item => item.method === "item/completed" && findString(item, value => value === EXPECTED_FACT));
     const completed = incoming.findIndex(item => item.method === "turn/completed" && !JSON.stringify(item).includes('"status":"failed"'));
     assert(started >= 0 && command > started && message > command && completed > message, "Codex transcript lacked the ordered successful turn/read/agent-message/completion sequence");
@@ -519,14 +520,14 @@ async function runCodexCanary() {
 }
 
 async function recordCodexProjection() {
-  const projectedDirectory = join(checkout, ".agents", "skills", "teach");
+  const projectedDirectory = join(checkout, ".agents", "skills", CANARY_SKILL);
   const projectedBody = join(projectedDirectory, "SKILL.md");
-  const projectedResource = join(projectedDirectory, "resources", "mission-format.md");
-  const canonicalBody = skillPath("teach");
-  const canonicalResource = join(dirname(skillPath("teach")), "resources", "mission-format.md");
+  const projectedResource = join(projectedDirectory, "resources", "html-report.md");
+  const canonicalBody = skillPath(CANARY_SKILL);
+  const canonicalResource = join(dirname(skillPath(CANARY_SKILL)), "resources", "html-report.md");
   const entry = await lstat(projectedDirectory);
-  assert(entry.isSymbolicLink(), "Codex teach projection was not a directory link/junction");
-  assert((await stat(projectedDirectory)).isDirectory(), "Codex teach projection did not target a directory");
+  assert(entry.isSymbolicLink(), "Codex canary skill projection was not a directory link/junction");
+  assert((await stat(projectedDirectory)).isDirectory(), "Codex canary skill projection did not target a directory");
   const storedTarget = await readlink(projectedDirectory);
   const projectedBodyReal = await realpath(projectedBody);
   const projectedResourceReal = await realpath(projectedResource);
@@ -626,13 +627,13 @@ async function runOpenCodeCanary() {
     const live = await run(exe, ["--pure", "run", "--dir", ".", "--title", "DYD-91-skill-canary", "--model", "openai/skill-canary", "--format", "json", PROMPT], { cwd: checkout, env });
     await writeArtifact("opencode-live.ndjson", live.stdout);
     const events = parseNdjson(live.stdout, "OpenCode live output");
-    const skillIndex = events.findIndex(event => event.type === "tool_use" && event.part?.tool === "skill" && event.part?.state?.status === "completed" && event.part?.state?.input?.name === "teach");
-    const readIndex = events.findIndex(event => event.type === "tool_use" && event.part?.tool === "read" && event.part?.state?.status === "completed" && event.part?.state?.input?.filePath?.endsWith("mission-format.md"));
+    const skillIndex = events.findIndex(event => event.type === "tool_use" && event.part?.tool === "skill" && event.part?.state?.status === "completed" && event.part?.state?.input?.name === CANARY_SKILL);
+    const readIndex = events.findIndex(event => event.type === "tool_use" && event.part?.tool === "read" && event.part?.state?.status === "completed" && event.part?.state?.input?.filePath?.endsWith("html-report.md"));
     const textIndex = events.findIndex(event => event.type === "text" && event.part?.text === EXPECTED_FACT);
     assert(skillIndex >= 0 && readIndex > skillIndex && textIndex > readIndex, "OpenCode live events did not record the ordered completed skill/read/final sequence");
-    assert(events[skillIndex].part.state.output.includes("[mission-format](resources/mission-format.md)"), "OpenCode's native skill result lost the resource link");
+    assert(events[skillIndex].part.state.output.includes("[html-report](resources/html-report.md)"), "OpenCode's native skill result lost the resource link");
     const readPath = await realpath(events[readIndex].part.state.input.filePath);
-    assert(samePath(readPath, await realpath(join(dirname(skillPath("teach")), "resources", "mission-format.md"))), "OpenCode read did not resolve to the canonical resource");
+    assert(samePath(readPath, await realpath(join(dirname(skillPath(CANARY_SKILL)), "resources", "html-report.md"))), "OpenCode read did not resolve to the canonical resource");
     assert(events[readIndex].part.state.output.includes(EXPECTED_FACT), "OpenCode native read result omitted the resource fact");
     assert(events.filter(event => event.type === "text").map(event => event.part?.text).join("") === EXPECTED_FACT, "OpenCode live final response was not exact");
     const requests = parseNdjson(await readFile(requestsPath, "utf8"), "OpenCode provider requests");
@@ -1018,7 +1019,7 @@ function finalText(events) { const strings = []; walk(events, value => { if (typ
 function exactCodexFinal(messages) {
   const strings = [];
   for (const message of messages.filter(value => value.method === "item/completed")) walk(message, value => { if (typeof value === "string") strings.push(value); });
-  return strings.filter(value => value === "DYDO_TEACH_HIDDEN").at(-1);
+  return strings.filter(value => value === "DYDO_SKILL_HIDDEN").at(-1);
 }
 function isCodexToolItem(message) {
   if (message.method !== "item/started" && message.method !== "item/completed") return false;

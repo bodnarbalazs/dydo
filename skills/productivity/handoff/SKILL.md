@@ -1,8 +1,7 @@
 ---
 name: handoff
-description: Compact the current conversation into a handoff document for another agent to pick up.
+description: Compact the current conversation into a handoff document for another agent to pick up. Load only when the user asks, or when an officer briefs an agent it dispatches.
 argument-hint: "What will the next session be used for?"
-disable-model-invocation: true
 ---
 
 <!-- Adapted from mattpocock/skills handoff at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->

@@ -2,7 +2,8 @@
 title: Overnight Chief of Staff
 area: project
 type: concept
-status: idea
+status: promoted
+linear-reference: https://linear.app/bodnar-balazs/issue/DYD-351
 ---
 
 # Overnight Chief of Staff

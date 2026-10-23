@@ -83,6 +83,7 @@ Agent-invoked methods:
 | writing-for-agents | anyone editing a skill or a document an agent reaches by pointer; reviewer(docs) | a prompt file is created, edited, or fires wrong | the edited file |
 | retro | any session; chief-of-staff routes recurring friction to it | the same friction or workaround returns a second time | one small, authorized, testable harness change |
 | maintain-verification-skill | any agent driving the app through a project's verification skill; the map holder before a landing | a drive contradicts the feature map, a touched area has no map file, or the whole map needs an audit | `clean`, `changed` with one PR of proven map or harness corrections, or `blocked`; product regressions reported as Bugs |
+| maintain-formal-verification-skill | any agent or the map holder after merges, refactors or edits touched verified code without rechecking the verification | verified code changed since the verification's sync commit, or a verify skill's check passes on code that has since moved | each check `in sync`, `updated`, `bug` or `blocked`, with drift and code bugs told apart and verification updates kept in a change of their own |
 
 Human commands:
 
@@ -97,6 +98,7 @@ Human commands:
 | teach | the human wants to learn a topic in the workspace | a mission and its learning records |
 | improve-codebase-architecture | the codebase's architecture should be examined | a grilled candidate with its report |
 | create-verification-skill | the project has no scripted way to drive the app as a user | a proven `verify-<app>` skill, its control CLI and a seeded feature map |
+| create-formal-verification-skill | code where a bug costs the most and tests reach the least needs more than tests: concurrency, retries, state machines, parsers, unsafe code | a project-local skill that checks a change against one verified property, proven to catch a scratch break |
 
 The explicit-only officers admiral and chief-of-staff are also typed by the human; they are actors and
 stand in the roster.
@@ -144,8 +146,8 @@ flowchart TD
 ### 3b. One Issue
 
 The captain is the connector: every crew member is briefed by it and returns to it, and it flips the
-Issue's status at each chain spawn. The default crew is two: one `code-writer`, then one fresh
-reviewer. The dashed edge is the captain's discretion, bought with one short concrete risk reason.
+Issue's status at each chain spawn. The default crew is a `code-writer`, then the fresh
+reviewers of [Delivery scale](../guides/working-tree-contract.md#delivery-scale-and-evidence). The dashed edge is the captain's discretion, bought with one short concrete risk reason.
 
 ```mermaid
 flowchart TD
@@ -248,8 +250,8 @@ Step by step, with the Linear status each step leaves behind:
    approved `main` SHA before claiming its Issue. The map holder keeps the map in the Project description, gives every Issue its base branch and every Issue that merges its final Merge Sub-issue, wired in plan order, and sets the
    Project `In Progress`. Issues in
    `Todo` with no open blocker are pickable.
-6. **Claim.** The map holder commissions a captain per pickable AFK Issue; a HITL Issue waits for
-   the human to open its captain session. Assignment is the claim; branch, base SHA and worktree path go
+6. **Claim.** The map holder commissions a captain per pickable AFK Issue, and opens a HITL Issue's
+   captain in a new top-level thread the human works in. Assignment is the claim; branch, base SHA and worktree path go
    on the Issue before the first edit.
 7. **Write.** The captain spawns one `code-writer` and sets `Implementing`. The captain's contract
    says whether the Issue carries Gherkin. The writer posts nothing before code unless the work
@@ -458,6 +460,12 @@ owns discovery and the local map; the scope rule in the workspace standard decid
 versus Project-level packet; the Project's map holder alone creates Project-level Questions; the human answers on
 the Issue, never in a chat that evaporates; the chief-of-staff surfaces open Questions when the human
 asks it to, it is never sent anything.
+
+A call above the officer's say goes through `what-would-balazs-do`
+([DR 054](../project/decisions/054-what-would-balazs-do-tribunal.md)) when it is DR-grade or
+irreversible, or when the human is away. Only a call the tribunal decides while he is away stays
+unwired, for him to ratify or overturn; every other call, present, irreversible or undecided, gets a
+prepared Question wired to its waiters.
 
 ### 6.2 Review FAIL
 

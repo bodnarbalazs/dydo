@@ -75,7 +75,7 @@ Issue carries exactly one Type. Mode sits on every Type a captain holds.
 | `Walkthrough` | map holder | primary only | The human inspects what landed: what changed, where to look, how to try it, what reviewers flagged. | the human has walked it; findings filed as Issues | `#C69C6D` |
 
 A captain-held Issue normally uses one author - `code-writer`, or `docs-writer` for a documentation
-change - and one fresh independent whole-change reviewer. A spec review of the contract before any
+change - and review at the working-tree contract's [Delivery scale](../guides/working-tree-contract.md#delivery-scale-and-evidence). A spec review of the contract before any
 code needs one short concrete risk reason, recorded in the contract; persistence, migrations, permissions and uncertain native
 interfaces are examples of such a risk. Required G/M, integration and release gates remain. The captain records one compact
 acceptance contract and points to its evidence. A map-holder-held Issue is run
@@ -160,6 +160,9 @@ that waits. Its body carries:
 
 If the answer determines which implementation Issue should exist, resolve the Question first.
 
+A Question a `what-would-balazs-do` tribunal decided while the human was away stays in `Todo`
+unwired, and work proceeds; he answers it with `RATIFIED` or `OVERTURNED`.
+
 ## Issue templates
 
 One Linear Issue template per Type, named after it, is a workspace-UI convenience. Create it from
@@ -208,6 +211,9 @@ Start each post with the applicable form:
 - `FAIL - rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; gates <N/N>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
 - `IMPLEMENTED - hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
 - `DECIDED - result: <result>; immutable contract: <contract>; next: <action>.`
+- `DECIDED - by: what-would-balazs-do tribunal, unratified; result: <action>; vote: <n of 3, or split; most reversible>; log: <link>; undo: <steps>; next: <action>.`
+- `RATIFIED - by: <the human> <date>: "<his words, verbatim>"; record: <DECIDED or DR link>; next: <action>.`
+- `OVERTURNED - by: <the human> <date>: "<his words, verbatim>"; record: <link>; reopened: <Issues>; next: <action>.`
 - `STATE - <status>; owner: <role>; candidate or PR: <reference>; next or blocker: <fact>; evidence: <link>.`
 
 A review block's `contract <ref>` is the contract its brief pinned, for an Issue

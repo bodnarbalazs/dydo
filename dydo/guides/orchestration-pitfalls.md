@@ -63,10 +63,9 @@ issued the first.
 **Mechanism:** independence is independence of *context*. A reviewer holding the writer's context
 inherits its blind spot, and one revisiting its own verdict is defending it.
 
-**Rule:** one fresh reviewer per candidate, given the rubric the change targets, reading the candidate
-rather than the story told about it, taking the gates at this stage's scale rather than a claimed
-green. Same-vendor review is acceptable; the review block names the model, so who judged what stays
-observable later.
+**Rule:** every verdict comes from a fresh reviewer, given the rubric the change targets, reading the
+candidate rather than the story told about it, taking the gates at this stage's scale rather than a
+claimed green. The review block names the model, so who judged what stays observable later.
 
 ## 6. "PASS with notes"
 

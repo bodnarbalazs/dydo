@@ -513,7 +513,7 @@ public static class InitCommand
         var settingsPath = Path.Combine(claudeDir, "settings.local.json");
         var settings = LoadJsonSettings(settingsPath);
 
-        ConfigureGuardHook(settings, GuardMatcher);
+        ConfigureGuardHook(settings, GuardMatcher, ClaudeGuardHookCommand);
         ConfigureStopHook(settings);
         ConfigureAllowList(settings);
 
@@ -544,7 +544,12 @@ public static class InitCommand
     // dropped: Codex never emits them, so they could only ever be dead configuration.
     private const string CodexGuardMatcher = "Bash|apply_patch|Edit|Write|Agent|" + CodexShellTools;
 
-    private static void ConfigureGuardHook(JsonNode settings, string matcher)
+    // The Claude Code hook alone carries the host marker: it is the guard's only proof that the
+    // host can answer an ask (the mode-set rerun). The Codex hook stays unmarked, so it is denied.
+    private const string GuardHookCommand = "dydo guard";
+    private const string ClaudeGuardHookCommand = GuardHookCommand + " --host " + GuardCommand.ClaudeHost;
+
+    private static void ConfigureGuardHook(JsonNode settings, string matcher, string guardCommand = GuardHookCommand)
     {
         var hooks = settings["hooks"]?.AsObject() ?? new JsonObject();
         settings["hooks"] = hooks;
@@ -552,12 +557,13 @@ public static class InitCommand
         var preToolUse = hooks["PreToolUse"]?.AsArray() ?? new JsonArray();
         hooks["PreToolUse"] = preToolUse;
 
-        RemoveDydoGuardEntries(preToolUse, "dydo guard");
+        RemoveDydoGuardEntries(preToolUse, GuardHookCommand);
+        RemoveDydoGuardEntries(preToolUse, ClaudeGuardHookCommand);
 
         var hookCommand = new JsonObject
         {
             ["type"] = "command",
-            ["command"] = "dydo guard"
+            ["command"] = guardCommand
         };
         var hooksArray = new JsonArray();
         hooksArray.Add((JsonNode)hookCommand);

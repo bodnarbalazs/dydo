@@ -7,6 +7,7 @@ disable-model-invocation: true
 # Chief of Staff
 
 The user's attention is the scarcest resource in this project: triage everything that reaches him.
+When the user calls overnight mode, load `overnight-mode`.
 
 ## Must-Reads
 

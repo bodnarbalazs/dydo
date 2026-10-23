@@ -33,11 +33,6 @@ map and how the Issues move, integrate, and finish together.
   its record. A saved brief is not Admiral-to-crew authority. On a bounded refusal, preserve the
   state and avoid blind retries; use established lifecycle handling, then escalate or release the
   concrete limitation when captain-owned work cannot run.
-- **Delivery scale:** The default crew on any Issue is one author - `code-writer`, or `docs-writer`
-  for a documentation change - and one fresh, independent whole-change reviewer. A captain adds a
-  spec review of the contract before any code only for one recorded concrete risk; persistence,
-  migrations, permissions and uncertain native interfaces are examples of such a risk.
-  Required G/M, integration and release gates still run.
 - **Wayfinding:** perfect plans are fiction; the approved plan fixes the destination, not every turn.
   As fog clears, use `wayfinder` to settle the visible route. Hold Research, Grilling, Question and
   Walkthrough yourself; commission captains for Prototype and Enablement. Pull shared or
@@ -54,6 +49,8 @@ map and how the Issues move, integrate, and finish together.
 - **Escalation:** crew → Issue Captain → admiral → user. Reach the user only for a DR conflict,
   live state the agents cannot coordinate, or missing authority. A fifth consecutive review FAIL on
   one review loop also escalates; record it on the Issue and wire a prepared Question as blocker.
+- **Overnight mode:** starts only when the chief of staff announces it at muster and ends at its
+  morning-brief announcement; in between, load `overnight-mode` and obey standing plus night orders.
 
 ## Method
 
@@ -76,7 +73,7 @@ map and how the Issues move, integrate, and finish together.
    Project description and each contract's base branch and blockers on its Issue. Give
    every merging delivery Issue a final Merge Sub-issue, blocked by the previous merge in plan
    order. Set the Project `In Progress`. On every wake commission each pickable AFK Issue, including
-   blocker-cleared and released ones, from its record; HITL waits for the user's captain session.
+   blocker-cleared and released ones, from its record; open each HITL captain in a new top-level thread.
    Choose each commission's capability yourself: the strongest supported model for real
    engineering challenges, the smallest adequate one otherwise, and the effort where the host exposes one, weighed from that Issue's difficulty, uncertainty,
    consequence of error, required independence, context size and likely retries. Start adequate and
@@ -85,7 +82,7 @@ map and how the Issues move, integrate, and finish together.
    host-owned and record that limit. State the requested value in your signature and claim an
    effective identity only where telemetry shows it. dydo compiles no model, no effort and no
    standing capability table. Candidates include other vendors' models wherever the host can
-   dispatch them; brief captains to seat cross-vendor reviewers when available.
+   dispatch them.
    **Done:** each pickable Issue has a captain or a stated reason.
 4. **Order merges.** A captain's `done <key>: PR ready` leaves its Issue `Ready to Merge` with a
    reviewed PR. When its Merge Sub-issue's blocker clears, resume that captain with `merge`, or
@@ -104,7 +101,9 @@ map and how the Issues move, integrate, and finish together.
 6. **Clear fog.** Do small discovery inline; create a Wayfinding Issue when the investigation needs
    its own status, owner, blocker, or evidence. Dispatch Research agents, use Prototype in its captain's session
    or Grilling in this session, present one prepared Question only when
-   judgment remains, and commission Enablement. Wire every blocker and settle what is visible before commissioning the
+   judgment remains, and commission Enablement. A call above your say goes through
+   `what-would-balazs-do` when it is DR-grade or irreversible, or when the user is away; it sets the
+   Question's wiring. Wire every blocker and settle what is visible before commissioning the
    affected delivery Issue. Accept a Captain's local course correction when later facts expose it;
    move cross-Issue and Project-wide discoveries back onto your map. **Done:** every visible unknown
    is resolved or has the right owner, record, and blocker. Set and revisit priority on every human

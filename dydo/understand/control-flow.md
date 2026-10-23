@@ -66,8 +66,8 @@ floor.
 
 ## 2. Skills that are not actors
 
-Methods run inside the caller's thread and leave nothing of their own; human commands run only when
-the human types them.
+Methods run inside the caller's thread and leave nothing of their own; some load only when the
+human asks, and human commands run only when the human types them.
 
 Agent-invoked methods:
 
@@ -85,17 +85,22 @@ Agent-invoked methods:
 | maintain-verification-skill | any agent driving the app through a project's verification skill; the map holder before a landing | a drive contradicts the feature map, a touched area has no map file, or the whole map needs an audit | `clean`, `changed` with one PR of proven map or harness corrections, or `blocked`; product regressions reported as Bugs |
 | maintain-formal-verification-skill | any agent or the map holder after merges, refactors or edits touched verified code without rechecking the verification | verified code changed since the verification's sync commit, or a verify skill's check passes on code that has since moved | each check `in sync`, `updated`, `bug` or `blocked`, with drift and code bugs told apart and verification updates kept in a change of their own |
 
+Methods loaded only when the human asks:
+
+| Method | The human asks when | Produces |
+|---|---|---|
+| to-project | a co-think is ripe and belongs in Linear | a Project in `Backlog`: title, summary, the intent as description, links to the DR, the glossary entries and the source FutureFeature when one exists; no Issues |
+| to-issue | a plan, spec or conversation is ready to become Issues | pickable tracer-bullet Issues in `Todo`, each with one Type, a Mode where a captain holds the Type, and the five fields or its Type's own template, wired with native blocking relations |
+| handoff | the session is ending and another agent continues; also loaded by an officer briefing an agent it dispatches | a handoff document in the scratch directory |
+| walkthrough | a Walkthrough Issue is open; also loaded by an admiral at its landing step | the four-part tour: what changed, where to look, how to try it, what reviewers flagged |
+| teach | the human wants to learn a topic in the workspace | a mission and its learning records |
+
 Human commands:
 
 | Command | The human types it when | Produces |
 |---|---|---|
-| to-project | a co-think is ripe and belongs in Linear | a Project in `Backlog`: title, summary, the intent as description, links to the DR, the glossary entries and the source FutureFeature when one exists; no Issues |
-| to-issue | a plan, spec or conversation is ready to become Issues | pickable tracer-bullet Issues in `Todo`, each with one Type, a Mode where a captain holds the Type, and the five fields or its Type's own template, wired with native blocking relations |
 | grill-me | a plan or idea of theirs should be pressed | answers and reasoning, recorded by the session in play |
 | bro | an agent's pitch did not land | the same thing said plainly, with the two glossaries in hand |
-| handoff | the session is ending and another agent continues | a handoff document in the scratch directory |
-| walkthrough | a Walkthrough Issue is open | the four-part tour: what changed, where to look, how to try it, what reviewers flagged |
-| teach | the human wants to learn a topic in the workspace | a mission and its learning records |
 | improve-codebase-architecture | the codebase's architecture should be examined | a grilled candidate with its report |
 | create-verification-skill | the project has no scripted way to drive the app as a user | a proven `verify-<app>` skill, its control CLI and a seeded feature map |
 | create-formal-verification-skill | code where a bug costs the most and tests reach the least needs more than tests: concurrency, retries, state machines, parsers, unsafe code | a project-local skill that checks a change against one verified property, proven to catch a scratch break |

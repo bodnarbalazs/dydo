@@ -318,7 +318,7 @@ public class CommandDocConsistencyTests
         foreach (var file in filesToCheck)
         {
             var content = File.ReadAllText(FindRepoFile(file));
-            Assert.Contains("Linear owns the live Initiative/Project/Issue graph", content);
+            Assert.Contains("Linear owns the live Initiative/Project/ticket graph", content);
             Assert.Contains("## Command Reference", content);
             Assert.Contains("[dydo Commands Reference](./dydo-commands.md)", content);
             Assert.DoesNotContain("dydo task", content, StringComparison.OrdinalIgnoreCase);

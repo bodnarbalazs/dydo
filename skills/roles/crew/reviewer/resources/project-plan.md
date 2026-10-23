@@ -9,8 +9,8 @@ a starting route, not a complete one.
 
 1. **Check the shape.** Frontmatter carries `title`, `status`, `area`, `type` and `linear-project`;
    six numbered sections stand in order: 1 Specification (intent, in scope, out of scope,
-   acceptance criteria, questions and answers), 2 Prior art, 3 Design, 4 Implementation Issue map
-   (First pickable Issues, Later bearings, Exact gates), 5 Ordering and isolation, 6 Watch-outs;
+   acceptance criteria, questions and answers), 2 Prior art, 3 Design, 4 Implementation ticket map
+   (First pickable tickets, Later bearings, Exact gates), 5 Ordering and isolation, 6 Watch-outs;
    any Not yet specified fog closes it; `dydo check` passes. Done when every required element exists
    or is one finding.
 2. **Verify the ground.** Read every cited Decision, path, pattern and specification at the

@@ -46,13 +46,13 @@ Then in 2.0 I learned the lesson that I shouldn't build stuff which OpenAI and A
 ## Overview
 So how does dydo work in practice?
 
-I break the work with a software product into many Linear projects. Each project is a map, where the issues are the nodes, they are marked with statuses and labels. By default I hold the map myself and chart it with wayfinder in my own session; when I want throughput (AFK work overnight) I invoke an Admiral to hold it for me. Whoever holds the map charts it, manages the PM surface and coordinates the Issue Captains who oversee the completion of the Issues with their crew of (code-writers, docs-writers, reviewers, inquisitors, researchers and scouts).
+I break the work with a software product into many Linear projects. Each project is a map, where the tickets are the nodes, they are marked with statuses and labels. By default I hold the map myself and chart it with wayfinder in my own session; when I want throughput (AFK work overnight) I invoke an Admiral to hold it for me. Whoever holds the map charts it, manages the PM surface and coordinates the ticket Captains who oversee the completion of the tickets with their crew of (code-writers, docs-writers, reviewers, inquisitors, researchers and scouts).
 
-Each issue is either AFK or HITL
+Each ticket is either AFK or HITL
 - AFK is completed without me if everything goes according to plan
 - HITL happens with my direct involvement and guidance
 
-These are the types of issues:
+These are the types of tickets:
 - Feature
 	- Some new feature is being built or improved upon
 - Bug
@@ -62,9 +62,9 @@ These are the types of issues:
 - Inquisition
 	- An audit where sub agents not only look at the code like reviewers, but also try to come up with ways which it could break and they test these hypotheses out to verify them
 - Grilling
-	- An agent asks me questions about my intent and vision, I understand and weigh the choices and out of these sessions come Decision Records, plans and further issues which can be navigated
+	- An agent asks me questions about my intent and vision, I understand and weigh the choices and out of these sessions come Decision Records, plans and further tickets which can be navigated
 - Merge
-	- Each project is a feature branch, each issue where code gets written is a sub branch and each lane or sub issue within that issue also gets its child branch so agents never collide. When these are merged back to their parent, it's a merge issue.
+	- Each project is a feature branch, each ticket where code gets written is a sub branch and each lane or sub ticket within that ticket also gets its child branch so agents never collide. When these are merged back to their parent, it's a merge ticket.
 - Prototype
 	- An interactive session where throwaway code gets created mostly for UI decisions, the winner code may become preserved as a starting guide for the actual implementation
 - Question
@@ -89,23 +89,23 @@ flowchart TD
   H0([human: an idea]):::human --> CT[co-thinker]:::session
   CT -->|ripe| TP([human: to-project, Project in Backlog]):::human
   TP --> AD[map holder: me, or an admiral I invoke, reads the Project and acts]:::officer
-  AD -->|Project Planning| PP[map holder charts with wayfinder: the map, first Issues]:::session
+  AD -->|Project Planning| PP[map holder charts with wayfinder: the map, first tickets]:::session
   PP -->|plan commit, only for a cross-cutting architecture contract| RP{{reviewer: project-plan, two rounds at most}}:::reviewer
   PP -->|no plan file| H1
   RP -->|PASS| H1([human approves, in the admiral's session when one holds the map, Project Planned]):::human
   H1 --> OP[map holder commissions first captain to open feature; wires merge order]:::officer
-  OP <-->|"one captain per pickable AFK Issue: commission · done &lt;key&gt;: PR ready · merge, when its turn comes · done &lt;key&gt;: merged"| IC[issue-captain]:::officer
-  OP -->|all landed: Inquisition Issue in Backlog, scope and cost| H2([human moves it to Todo and tells the map holder, or cancels]):::human
-  H2 -->|the map holder commissions| IQ[issue-captain of the inquisition: Bugs filed]:::officer
+  OP <-->|"one captain per pickable AFK ticket: commission · done &lt;key&gt;: PR ready · merge, when its turn comes · done &lt;key&gt;: merged"| IC[ticket-captain]:::officer
+  OP -->|all landed: Inquisition Ticket in Backlog, scope and cost| H2([human moves it to Todo and tells the map holder, or cancels]):::human
+  H2 -->|the map holder commissions| IQ[ticket-captain of the inquisition: Bugs filed]:::officer
   IQ --> OP
-  OP -->|landing Merge Issue: main into the feature, gates, merge review| LM[issue-captain of the landing]:::officer
+  OP -->|landing Merge Ticket: main into the feature, gates, merge review| LM[ticket-captain of the landing]:::officer
   LM -->|PR into main with its PASS, Ready to Merge| H3([human clicks the merge, one Project at a time, and tells the map holder]):::human
-  H3 -->|map holder commissions landing captain cleanup; the human invokes walkthrough| WT[Walkthrough Issue: the human, with the admiral when one holds the map]:::officer
-  WT -->|findings: Issues, a second lap on the re-cut feature| OP
+  H3 -->|map holder commissions landing captain cleanup; the human invokes walkthrough| WT[Walkthrough Ticket: the human, with the admiral when one holds the map]:::officer
+  WT -->|findings: Tickets, a second lap on the re-cut feature| OP
   WT -->|nothing: Project Completed| END([done]):::human
 ```
 
-One Issue, inside its captain's loop:
+One ticket, inside its captain's loop:
 
 ```mermaid
 flowchart TD
@@ -113,16 +113,16 @@ flowchart TD
   classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
 
-  AD[map holder]:::officer <-->|"commission, then done &lt;key&gt;: PR ready, then merge, then done &lt;key&gt;: merged"| IC[issue-captain: claims, sets the status at every chain spawn, posts every SHA]:::officer
+  AD[map holder]:::officer <-->|"commission, then done &lt;key&gt;: PR ready, then merge, then done &lt;key&gt;: merged"| IC[ticket-captain: claims, sets the status at every chain spawn, posts every SHA]:::officer
   IC <-->|"1 write · Implementing"| CW
   IC <-.->|"1b contract review before any code, at the captain's discretion · In Review, then Implementing"| RS
   IC <-->|"2 review · In Review"| RC
-  IC <-->|"3 merge · source parent stays Ready to Merge; Sub-issue runs its chain"| MG
+  IC <-->|"3 merge · source parent stays Ready to Merge; Sub-ticket runs its chain"| MG
   subgraph CREW [the crew]
     CW[1 code-writer<br>builds and proves the contract<br>returns implement SHA, red proof, gates]:::crew
-    RS{{1b reviewer: spec<br>reads the contract text on the Issue<br>returns review block}}:::reviewer
+    RS{{1b reviewer: spec<br>reads the contract text on the ticket<br>returns review block}}:::reviewer
     RC{{2 reviewer: code or docs<br>returns review block}}:::reviewer
-    MG[3 Merge Sub-issue<br>a code-writer maps conflicts and gates and merges, reviewer: merge judges]:::crew
+    MG[3 Merge Sub-ticket<br>a code-writer maps conflicts and gates and merges, reviewer: merge judges]:::crew
   end
 ```
 

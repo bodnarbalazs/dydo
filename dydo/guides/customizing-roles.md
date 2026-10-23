@@ -66,7 +66,7 @@ Project-specific guidance lives in the skill body, or in a project document link
 
 Nothing in a skill or in `dydo.json` binds a role to a model or an effort. Every role is left
 unbound on purpose, so whoever delegates picks the capability the task in front of them deserves;
-the shipped `admiral` and `issue-captain` methods carry that judgment.
+the shipped `admiral` and `ticket-captain` methods carry that judgment.
 
 Select at the call, not in a file:
 
@@ -86,7 +86,7 @@ order and the limits worth knowing before a claim rests on one.
   configuration may request a restrictive sandbox, but its presence is not proof that the host
   enforces the restriction.
 
-Workflow as a delivery concept is retired by DR 047. The Inquisition Issue protocol supplies the
+Workflow as a delivery concept is retired by DR 047. The Inquisition Ticket protocol supplies the
 current audit procedure.
 
 ## Related

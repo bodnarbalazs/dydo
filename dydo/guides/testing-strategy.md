@@ -169,7 +169,7 @@ every static gate and in the association manifest, and their inventory row carri
 `coverageExemption` only while their extracted modules and the drivers themselves stay associated.
 
 Two gaps are recorded rather than dropped or weakened. The first is mutation: on `dotnet`, `python`
-and `node` it is DYD-103; on `viewer` no TypeScript mutation mechanism is adopted, and no Issue
+and `node` it is DYD-103; on `viewer` no TypeScript mutation mechanism is adopted, and no ticket
 currently tracks that gap. The
 JavaScript coverage row carries a second fail-closed rule that currently reports nothing: a
 maintained JavaScript file with no filename extension would be reported as a gap naming DYD-105

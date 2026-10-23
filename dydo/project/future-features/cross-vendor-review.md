@@ -28,7 +28,7 @@ Two things would have to exist. First, per-host model bindings in `dydo.json`: t
 read through whichever vendor table the host compiles against, so there is no way to say "the
 reviewer is openai wherever it runs". Second, a way for a session on one host to spawn an agent on
 the other - dydo owns none, and each host spawns its own vendor's models. Evidence needs nothing
-new: the review block already carries `Reviewer: <label> (<model>)` on every Issue and PR.
+new: the review block already carries `Reviewer: <label> (<model>)` on every ticket and PR.
 
 ## The evidence that would justify it
 
@@ -45,7 +45,7 @@ enough review blocks exist to compare verdicts by model.
 ## Rationale
 
 FutureFeature is a repo-native idea record. It remains unpromoted until the human promotes it to
-exactly one Linear Initiative, Project, or Issue.
+exactly one Linear Initiative, Project, or ticket.
 
 ## Related
 

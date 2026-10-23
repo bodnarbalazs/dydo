@@ -6,7 +6,7 @@ type: guide
 # Orchestration Pitfalls
 
 Failure modes seen when several agents deliver one Project in parallel. They are stated against the
-model that governs delivery here: one captain owns one Issue end to end, an admiral coordinates and
+model that governs delivery here: one captain owns one ticket end to end, an admiral coordinates and
 implements nothing, a fresh reviewer gates every candidate, and Git isolation keeps concurrent work
 apart - one writer per worktree, commits touching owned paths only.
 
@@ -18,7 +18,7 @@ contains a change nobody reviewed independently.
 **Mechanism:** coordination and authorship collapse into the same context. If the coordinating session also judges what it writes, independence is lost, and its checkout becomes a
 second writer in a tree someone else owns.
 
-**Rule:** an admiral sequences captains and wires their Merge Issues. Every edit inside an Issue's
+**Rule:** an admiral sequences captains and wires their Merge Tickets. Every edit inside a ticket's
 owned paths belongs to its crew; its captain directs, and a fresh reviewer judges. The map holder
 updates Linear and writes the dated amendments of a repository plan, where one exists.
 
@@ -31,8 +31,8 @@ asked for.
 branch cut from a stale base, or from the wrong branch entirely, cannot see a prerequisite that has not
 merged.
 
-**Rule:** cut from the Issue's base branch and post branch, base SHA and worktree path on the Issue
-before the first edit. Keep the Issue blocked in Linear until its blockers land, and integrate the later prerequisite through a Merge Issue, preserving existing hop SHAs.
+**Rule:** cut from the ticket's base branch and post branch, base SHA and worktree path on the ticket
+before the first edit. Keep the ticket blocked in Linear until its blockers land, and integrate the later prerequisite through a Merge Ticket, preserving existing hop SHAs.
 
 ## 3. A whole-tree `git add`
 
@@ -46,10 +46,10 @@ are left where they are and reported.
 
 ## 4. Disjoint paths, shared gates
 
-**Symptom:** an Issue's build or documentation gate fails on a sibling's incomplete change.
+**Symptom:** a ticket's build or documentation gate fails on a sibling's incomplete change.
 
 **Mechanism:** builds, documentation validation, generated output and coverage are whole-tree gates. Two
-Issues can own strictly different files and still meet inside one compiled artifact, one hub, or one
+Tickets can own strictly different files and still meet inside one compiled artifact, one hub, or one
 test file.
 
 **Rule:** name the shared surface in the plan, express it as a blocking relation, and sequence the
@@ -80,18 +80,18 @@ a softer verdict - a fifth consecutive FAIL on one review loop is itself an esca
 
 ## 7. Silent waiting, and its opposite
 
-**Symptom:** an Issue sits in progress with no comment for hours, or a question that the plan already
+**Symptom:** a ticket sits in progress with no comment for hours, or a question that the plan already
 answers arrives at the human.
 
 **Mechanism:** an agent that meets fog can neither wait for an answer nor invent one. Both failures come
 from skipping the middle: discovery first, then a question that is on the record.
 
-**Rule:** run bounded discovery - the Decision Records, the plan, the Issue's links, the glossary, the
-code - and only when it comes up empty file a Question Issue listing what you searched, wire it as a
+**Rule:** run bounded discovery - the Decision Records, the plan, the ticket's links, the glossary, the
+code - and only when it comes up empty file a Question Ticket listing what you searched, wire it as a
 blocker, then release with branch pushed, resume SHA posted, worktree removed, parent Todo and
 unassigned. The admiral resumes blocker-cleared work on the next captain return or human word. Settle operational conflicts by
 precedence: the human's live instruction, then the Decision Record, the reviewed plan at its governing
-commit, the pinned feature spec, the Issue contract, coding standards, existing code. The ladder is crew → Issue Captain → admiral → human, and the human is
+commit, the pinned feature spec, the ticket contract, coding standards, existing code. The ladder is crew → Ticket Captain → admiral → human, and the human is
 reached for a conflict with a Decision Record, live external state no agent can coordinate, or authority
 the contract cannot supply.
 
@@ -104,9 +104,9 @@ worktree supplied it, or whether an edit landed afterwards.
 
 **Rule:** let the review block pin it - candidate and base SHA, and each gate result recorded against
 that candidate with its command, environment, exit and where the output can be seen - posted on the
-Issue and in the PR body. Every merge that has a Merge Issue is followed by its own review of the
-integrated state, and the last one proves the plan's acceptance criteria. An atomic Issue's merge
-into main has none; its Issue review PASS, green CI and the human's click stand in its place.
+ticket and in the PR body. Every merge that has a Merge Ticket is followed by its own review of the
+integrated state, and the last one proves the plan's acceptance criteria. An atomic ticket's merge
+into main has none; its ticket review PASS, green CI and the human's click stand in its place.
 
 ## 9. A spawned agent without its methodology
 
@@ -125,13 +125,13 @@ work - and re-trust the hooks after any change to them.
 
 ## 10. Live knowledge left in Linear
 
-**Symptom:** later work re-derives a design that was settled in an Issue comment.
+**Symptom:** later work re-derives a design that was settled in a ticket comment.
 
 **Mechanism:** Linear is excellent for volatile coordination and is not the repository's durable memory.
 
-**Rule:** Issues carry questions and work; Decision Records carry decisions; guides, plans, audits and
-assimilation briefs carry the rest. Extract the invariant, link the artifact from the Issue, and never
-mirror an Issue body into the repository.
+**Rule:** tickets carry questions and work; Decision Records carry decisions; guides, plans, audits and
+assimilation briefs carry the rest. Extract the invariant, link the artifact from the ticket, and never
+mirror a ticket body into the repository.
 
 ## 11. A template edit the binary never saw (retired)
 
@@ -143,7 +143,7 @@ embedded catalog to go stale.
 ## Related
 
 - [Working-Tree Contract](./working-tree-contract.md) - the procedure most of these rules point at
-- [Writing Good Briefs](./writing-good-briefs.md) - the contract an Issue or a crew member starts from
+- [Writing Good Briefs](./writing-good-briefs.md) - the contract a ticket or a crew member starts from
 - [Testing Strategy](./testing-strategy.md) - what the gates are worth
 - [DR 045 - Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md)
 - [DR 044 - Linear-Canonical PM and the dydo Knowledge Boundary](../project/decisions/044-linear-canonical-pm-and-dydo-knowledge-boundary.md)

@@ -18,7 +18,7 @@ On the night of 2026-10-18 the human went to sleep and left the chief of staff i
 active Projects (Test optimisation, Tools folder cleanup, Automation, TeasePlayer) from about 21:00
 to 08:00 Budapest time. The arrangement:
 
-- The chief of staff messages the admirals; admirals run issue-captains; captains run crew.
+- The chief of staff messages the admirals; admirals run ticket-captains; captains run crew.
 - Smaller decisions are made by the responsible agent: read the spec, the intent and the Decision
   Records, ask "what would the human choose?", record it as `DECIDED`, and go.
 - Atomic PRs self-merge when they have a fresh independent PASS, green gates and a clean merge.
@@ -47,7 +47,7 @@ to 08:00 Budapest time. The arrangement:
   measuring the host, which idles at about 0.46. No timing trial could start all night. Every
   check-in saw the admiral "active", and none noticed that nothing was progressing.
 - **One collision prevented.** Two Projects were about to edit the same hook file. The chief of
-  staff held one Issue until the other stack finished, then lifted the hold.
+  staff held one ticket until the other stack finished, then lifted the hold.
 - **The morning still needed a lot of the human.** Nineteen merges in stack order, a release tag, a
   tool install, hook re-trust in two Codex homes, four live probes and six Questions. The fix was a
   single wizard script, written after the fact, that did all of it with pinned SHAs and one

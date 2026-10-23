@@ -6,22 +6,22 @@ type: concept
 # Documentation Model
 
 dydo uses JITI (Just-In-Time Information) so agents load only the durable knowledge relevant to the
-current Linear Issue or conversation. Documentation is curated memory, not a mirror of live workflow
+current Linear ticket or conversation. Documentation is curated memory, not a mirror of live workflow
 state.
 
 ## The documentation funnel
 
 ```text
-entry file → dydo/index.md → authored navigation → issue-relevant durable docs
+entry file → dydo/index.md → authored navigation → ticket-relevant durable docs
 ```
 
 1. The host loads `CLAUDE.md` or `AGENTS.md`.
 2. `dydo/index.md` establishes the knowledge and work boundary.
-3. Optional authored navigation pages or direct durable docs narrow the path to the material relevant to the Issue.
+3. Optional authored navigation pages or direct durable docs narrow the path to the material relevant to the ticket.
 4. The agent reads only the Decisions, plan, architecture, guide, or reference material needed now.
 5. An invoked skill adds the methodology for the current kind of work.
 
-Linear supplies current Issue/Project state. Repository documents supply durable context and reviewed
+Linear supplies current ticket/Project state. Repository documents supply durable context and reviewed
 contracts. Copying volatile Linear state into Markdown creates drift and is not part of this model.
 
 ## Folder purposes
@@ -40,7 +40,7 @@ accepted Decisions, reviewed coordinated-work plans, audits, assimilation briefs
 release history, pitfalls, and FutureFeatures.
 
 A FutureFeature is an unscheduled idea, not actionable work. Only the human may promote it to exactly
-one Linear Initiative, Project, or Issue. Its terminal promotion reference is provenance; delivery
+one Linear Initiative, Project, or ticket. Its terminal promotion reference is provenance; delivery
 status remains in Linear.
 
 ## File conventions

@@ -120,13 +120,13 @@ public abstract class IntegrationTestBase : IDisposable
     /// <summary>
     /// Run guard command with JSON piped to stdin (simulates Claude Code hook).
     /// </summary>
-    protected async Task<CommandResult> GuardWithStdinAsync(string json)
+    protected async Task<CommandResult> GuardWithStdinAsync(string json, params string[] args)
     {
         var command = GuardCommand.Create();
         var stdinReader = new StringReader(json);
 
         var (exitCode, stdout, stderr) = await ConsoleCapture.AllAsyncWithStdin(
-            stdinReader, async () => await command.Parse(Array.Empty<string>()).InvokeAsync());
+            stdinReader, async () => await command.Parse(args).InvokeAsync());
         return new CommandResult(exitCode, stdout, stderr);
     }
 

@@ -28,6 +28,7 @@ using DynaDocs.Utils;
 /// - Exit code 0, empty stdout = action allowed
 /// - Hook-mode refusal: exit code 0 with one PreToolUse deny-decision object on stdout
 ///   (GuardCommand.Refusal.cs); the same text also goes to stderr
+/// - Hook-mode ask (the mode-set rerun on Claude Code only): exit 0 with one ask-decision object
 /// - CLI-mode or non-PreToolUse-event refusal: exit code 2, message on stderr
 /// </summary>
 public static partial class GuardCommand
@@ -68,6 +69,11 @@ public static partial class GuardCommand
             Description = "Bash command to analyze"
         };
 
+        var hostOption = new Option<string?>("--host")
+        {
+            Description = "The host whose hook runs the guard; dydo init writes 'claude' into the Claude Code hook"
+        };
+
         var stopOption = new Option<bool>("--stop")
         {
             Description = "Stop-hook mode: no-op retained so existing Stop-hook wiring keeps resolving"
@@ -77,6 +83,7 @@ public static partial class GuardCommand
         command.Options.Add(actionOption);
         command.Options.Add(pathOption);
         command.Options.Add(commandOption);
+        command.Options.Add(hostOption);
         command.Options.Add(stopOption);
 
         command.SetAction(parseResult =>
@@ -87,7 +94,7 @@ public static partial class GuardCommand
             var cliAction = parseResult.GetValue(actionOption);
             var cliPath = parseResult.GetValue(pathOption);
             var cliCommand = parseResult.GetValue(commandOption);
-            return Execute(cliAction, cliPath, cliCommand);
+            return Execute(cliAction, cliPath, cliCommand, parseResult.GetValue(hostOption));
         });
 
         return command;
@@ -131,14 +138,18 @@ public static partial class GuardCommand
         string? FilePath, string? Action, string? BashCommand,
         string? ToolName, string? SessionId, string? SearchPath,
         bool HasCliArgs, string? AgentId, string? AgentType,
-        IReadOnlyList<string> WriteTargets, string? Cwd, string? HookEventName);
+        IReadOnlyList<string> WriteTargets, string? Cwd, string? HookEventName,
+        string? PermissionMode, string? Host, bool FromCodex);
 
-    private static GuardContext ParseInput(string? cliAction, string? cliPath, string? cliCommand)
+    // --host is the hook's own marker, not a diagnostic argument: a call carrying only it still
+    // reads its payload from stdin and answers as a hook.
+    private static GuardContext ParseInput(string? cliAction, string? cliPath, string? cliCommand, string? host)
     {
         var hasCliArgs = cliAction != null || cliPath != null || cliCommand != null;
         string? filePath = null, action = null, bashCommand = null;
         string? toolName = null, sessionId = null, searchPath = null;
-        string? agentId = null, agentType = null, cwd = null, hookEventName = null;
+        string? agentId = null, agentType = null, cwd = null, hookEventName = null, permissionMode = null;
+        var fromCodex = false;
         IReadOnlyList<string> writeTargets = [];
 
         if (!hasCliArgs && TryReadStdinJson(out var json) && json != null)
@@ -159,6 +170,8 @@ public static partial class GuardCommand
                     writeTargets = hookInput.GetWriteTargets();
                     cwd = hookInput.Cwd;
                     hookEventName = hookInput.HookEventName;
+                    permissionMode = hookInput.PermissionMode;
+                    fromCodex = hookInput.TurnId != null;
                 }
             }
             catch (Exception ex)
@@ -178,10 +191,10 @@ public static partial class GuardCommand
             action ?? cliAction ?? "edit",
             bashCommand ?? cliCommand,
             toolName, sessionId, searchPath, hasCliArgs,
-            agentId, agentType, writeTargets, cwd, hookEventName);
+            agentId, agentType, writeTargets, cwd, hookEventName, permissionMode, host, fromCodex);
     }
 
-    private static int Execute(string? cliAction, string? cliPath, string? cliCommand)
+    private static int Execute(string? cliAction, string? cliPath, string? cliCommand, string? host)
     {
         // Everything the call writes to stderr is held, so a PreToolUse refusal can carry the
         // whole text as its deny reason, then replayed to stderr unchanged.
@@ -192,7 +205,7 @@ public static partial class GuardCommand
         int exitCode;
         try
         {
-            ctx = ParseInput(cliAction, cliPath, cliCommand);
+            ctx = ParseInput(cliAction, cliPath, cliCommand, host);
             exitCode = Evaluate(ctx);
         }
         finally
@@ -201,7 +214,7 @@ public static partial class GuardCommand
             stderr.Write(transcript.ToString());
         }
 
-        return IsPreToolUseRefusal(ctx, exitCode) ? DenyPreToolUse(transcript.ToString()) : exitCode;
+        return Conclude(ctx, exitCode, transcript.ToString());
     }
 
     private static int Evaluate(GuardContext ctx)
@@ -317,7 +330,8 @@ public static partial class GuardCommand
         // SECURITY LAYER 2: Bash tool
         if (ShouldRouteToShellHandler(context.ToolName, context.BashCommand))
         {
-            return HandleBashCommand(context.BashCommand!, context.SessionId, offLimitsService, bashAnalyzer, env);
+            return HandleBashCommand(context.BashCommand!, context.SessionId, offLimitsService, bashAnalyzer, env,
+                ModeSetCallerOf(context));
         }
 
         // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool - off-limits applies
@@ -380,7 +394,7 @@ public static partial class GuardCommand
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
             return HandleBashCommand(
                 ctx.BashCommand!, ctx.SessionId,
-                offLimitsService, bashAnalyzer, env, isWorker: true);
+                offLimitsService, bashAnalyzer, env, ModeSetCallerOf(ctx), isWorker: true);
 
         var checkPath = filePath ?? searchPath;
         if (!string.IsNullOrEmpty(checkPath) && !IsNativeMemoryPath(checkPath))
@@ -472,6 +486,7 @@ public static partial class GuardCommand
         OffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer,
         GuardEnv env,
+        ModeSetCaller caller,
         bool isWorker = false)
     {
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
@@ -517,7 +532,8 @@ public static partial class GuardCommand
             }
         }
 
-        return AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer);
+        var verdict = AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer);
+        return verdict == ExitCodes.Success ? CheckModeSet(command, env, caller) : verdict;
     }
 
     internal static int? CheckNudges(string command, GuardEnv env)
@@ -780,12 +796,13 @@ public static partial class GuardCommand
 
     /// <summary>
     /// dydo subcommands a sub-agent may run: the documentation and coverage gates
-    /// (check, fix, gap-check), read-only inspection (graph, validate) and help/version.
+    /// (check, fix, gap-check), read-only inspection (graph, validate), the machine mode every
+    /// agent reads (mode; mode set still meets its nudge) and help/version.
     /// Setup, generation and hook commands (init, index, guard, map, completions, ...)
     /// stay with the top-level session.
     /// </summary>
     internal static readonly string[] WorkerAllowedDydoSubcommands =
-        ["check", "fix", "gap-check", "graph", "validate", "help", "version"];
+        ["check", "fix", "gap-check", "graph", "validate", "mode", "help", "version"];
 
     private static readonly HashSet<string> WorkerAllowedDydoWords =
         new([.. WorkerAllowedDydoSubcommands, "-h", "--help", "--version"], StringComparer.Ordinal);
@@ -807,11 +824,18 @@ public static partial class GuardCommand
         if (!IsDydoCommand(command))
             return null;
 
-        var scanned = WorkerScanStripRegex().Replace(LineContinuationRegex().Replace(command, ""), "");
-        return DydoTokenRegex().Matches(scanned)
+        return DydoTokenRegex().Matches(NormaliseForDydoScan(command))
             .Select(token => token.Groups["word"].Value)
             .FirstOrDefault(word => word.Length > 0 && !WorkerAllowedDydoWords.Contains(word));
     }
+
+    /// <summary>
+    /// The command as the shell reads its words: backslash-newline and backtick-newline
+    /// continuations deleted, then quotes, backslashes, backticks and carets, so d"y"do, d\ydo and
+    /// `dydo init` read as dydo. Shared by the worker lane and the mode-set nudge.
+    /// </summary>
+    private static string NormaliseForDydoScan(string command) =>
+        WorkerScanStripRegex().Replace(LineContinuationRegex().Replace(command, ""), "");
 
     [GeneratedRegex(@"[\\`]\r?\n")]
     private static partial Regex LineContinuationRegex();

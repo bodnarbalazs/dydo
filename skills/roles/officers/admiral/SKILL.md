@@ -49,6 +49,8 @@ map and how the Issues move, integrate, and finish together.
 - **Escalation:** crew → Issue Captain → admiral → user. Reach the user only for a DR conflict,
   live state the agents cannot coordinate, or missing authority. A fifth consecutive review FAIL on
   one review loop also escalates; record it on the Issue and wire a prepared Question as blocker.
+- **Overnight mode:** starts only when the chief of staff announces it at muster and ends at its
+  morning-brief announcement; in between, load `overnight-mode` and obey standing plus night orders.
 
 ## Method
 

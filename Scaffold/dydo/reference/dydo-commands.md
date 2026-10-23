@@ -40,7 +40,7 @@ runtime integration. The runtime modes add, per selected host:
 
 | Host | Files | What they carry |
 |---|---|---|
-| `claude` | `.claude/settings.local.json` | a `PreToolUse` hook running `dydo guard` on the matched tools, a `Stop` hook running `dydo guard --stop`, and the allow entries `Bash(dydo:*)` and `PowerShell(dydo:*)` |
+| `claude` | `.claude/settings.local.json` | a `PreToolUse` hook running `dydo guard --host claude` on the matched tools, a `Stop` hook running `dydo guard --stop`, and the allow entries `Bash(dydo:*)` and `PowerShell(dydo:*)` |
 | `claude` | `.claude/settings.json` | `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"` |
 | `claude` | `.gitignore` | `.claude/settings.local.json`, `/.claude/skills/` and `/.agents/skills/` |
 | `codex` | `AGENTS.md` | the same entry point as `CLAUDE.md` |
@@ -145,8 +145,12 @@ dydo guard --command "git status"
 dydo guard --stop
 ```
 
+`--host claude` marks the Claude Code hook `dydo init` writes; it is not a diagnostic argument, so
+the call still reads its payload from stdin. The Codex hook carries no marker.
+
 In hook mode (a PreToolUse payload on stdin, no arguments) exit `0` with empty stdout allows the
-action, and exit `0` with one `permissionDecision: "deny"` object on stdout blocks it; the reason
+action, and exit `0` with one `permissionDecision: "deny"` object on stdout blocks it (the one
+`"ask"` is the [mode-set](#dydo-mode) rerun); the reason
 carries the `BLOCKED:` text, which still goes to stderr too. A block is not exit `2` because Codex on
 Windows runs hooks through PowerShell, which turns exit `2` into exit `1`, and Codex then lets the tool
 run. In diagnostic mode (the CLI-argument examples above) exit `0`
@@ -225,6 +229,50 @@ without it serves a page at `/` saying the viewer was not built, and `dydo map -
 
 `DYDO_LINEAR_ENDPOINT` replaces the Linear GraphQL URL. It is a test seam for pointing dydo map at a
 fake Linear, not a user setting.
+
+---
+
+## Mode Command
+
+### dydo mode
+
+Show or set this machine's mode flags.
+
+```bash
+dydo mode show                 # list every flag with its value
+dydo mode set overnight on     # set one flag
+```
+
+The flags live in one file per user and machine, `dydo/mode.json` under the user's local application
+data (`%LOCALAPPDATA%` on Windows, `~/.local/share` on Linux), so every project and agent on the machine
+reads the same values. One flag ships: `overnight`, `on` or `off`, default `off`. `set` refuses an
+unknown flag or value with exit `2` and changes nothing; on success it prints every flag as `show` does.
+
+`dydo mode set` from an agent meets a built-in warn nudge that `dydo.json` cannot remove or weaken. The
+first try is blocked with a reminder that only the chief of staff sets the mode. The guard reads the
+command as the shell that runs it would, quotes, escapes, here-strings, heredocs and line
+continuations included, and splits it only on separators outside quotes. Claude Code's `Bash` tool runs
+bash and its `PowerShell` tool PowerShell; Codex, whose payload carries a `turn_id`, runs PowerShell on
+Windows and the user's shell elsewhere. A call whose shell is unknown, such as `Bash` from an unmarked
+hook on Windows, and any `cmd /c` string are read both as bash and as PowerShell or cmd would. A dydo call at command
+position meets the nudge: past environment assignments and wrappers such as `env -i`, `sudo`, `nohup`,
+`xargs` and the `&` call operator, as `dydo` under any path or case (`"C:/Program Files/dydo.exe"`,
+`DYDO.EXE`), `dotnet ...dydo.dll` or `dotnet run --` with no `--project` or one naming dydo or DynaDocs. The command string of `cmd /c`,
+`pwsh -Command`, `bash -c`, `eval` or `Invoke-Expression` and every `$(...)` or backtick substitution
+is read with that shell's rules, and `Start-Process dydo -ArgumentList "mode", "set", ...` counts too,
+as does an `@(...)` array or `(...)` group as the argument list. A PowerShell `<# ... #>` block comment is skipped. Arguments
+of any other program are text, so a commit message, a PR body or a here-string that mentions
+`dydo mode set`, even after a `;` inside the quotes, does not meet it. A command the guard cannot read,
+such as one with an unbalanced quote or one piping text into a shell, meets it whenever it contains
+dydo, mode and set in that order. On the rerun the guard answers `permissionDecision: "ask"` only when the hook command carries
+the `--host claude` marker `dydo init` writes into the Claude Code hook and the permission mode is
+`default`, `acceptEdits`, `plan` or `auto`, so the user approves or rejects it. The environment is not
+the signal: `CLAUDECODE=1` is inherited by a Codex session started from a Claude Code shell. Everywhere
+else, Codex, `bypassPermissions`, `dontAsk`, an unknown host or a Claude Code hook written before the
+marker existed, it denies, and the user runs the command in their own terminal, where no guard runs.
+To get the prompt on an older install, run `dydo init claude --join` to rewrite the Claude Code hook.
+The guard stops a stray agent setting the mode by accident, not a deliberate bypass such as an agent
+forging the hook marker or writing the mode file directly.
 
 ---
 

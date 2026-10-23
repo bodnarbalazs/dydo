@@ -25,8 +25,8 @@ captain; the chief of staff never runs it. A vote never widens an officer's remi
 ## When
 
 Research first: a call the facts settle is no Question. DR-grade is the Decision Record test: hard
-to reverse, surprising without context, a real trade-off. Away means the away switch is on; with no
-switch, he is present.
+to reverse, surprising without context, a real trade-off. Away means
+`dydo mode show` reports `overnight` `on`; off or unreadable, he is present.
 
 | The call | He is present | He is away |
 |---|---|---|

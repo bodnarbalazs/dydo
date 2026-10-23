@@ -35,7 +35,8 @@ Only his own words are precedent. Every tribunal output is unratified until he a
 Work continues while he is away, at the cost of decisions he may overturn; an overturn reopens the
 affected work. Each call is a `Question` Issue with a Linear Document log, so the prediction and his
 answer form the self-improvement record and no separate ledger exists. A decided Question stays in
-`Todo` unwired. Whether he is away is a separate switch, not set here.
+`Todo` unwired. Whether he is away is a separate switch, not set here;
+DYD-351 made it the `overnight` mode flag.
 
 ## Related
 

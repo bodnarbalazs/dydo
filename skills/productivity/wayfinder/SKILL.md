@@ -68,7 +68,7 @@ contract, or the Project map is escalated to the Project's map holder instead.
 
 ## Tickets
 
-The map contains both Tasks and Wayfinding Tickets. Tasks are the route someone builds; a ticket
+The map contains both Tasks and Wayfinding Tickets. Tasks are the route someone builds; a Ticket
 Captain owns each one end to end. Wayfinding Tickets clear the fog around that route.
 
 Each ticket has a name, Linear key, and URL. Its body carries one outcome sized to one agent session.

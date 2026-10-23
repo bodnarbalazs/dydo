@@ -44,7 +44,7 @@ the default officer: a ticket gets a captain whether or not the user has invoked
   conflict you find; write a live instruction that overrides the record back to it.
 - **Wayfinding:** the Project's map holder, the user or an invoked admiral, should have cleared most
   Project fog and captured relevant answers in the ticket contract. If delivery exposes new fog, load `wayfinder` and use its Wayfinding
-  tickets to course-correct. Prefer `Research` when facts can settle it; use human-facing tickets only
+  Tickets to course-correct. Prefer `Research` when facts can settle it; use human-facing tickets only
   when necessary.
 - **Escalation:** crew → Ticket Captain → `admiral`, when one is invoked → user. Reach the user only for a DR conflict,
   live state the agents cannot coordinate, or missing authority.

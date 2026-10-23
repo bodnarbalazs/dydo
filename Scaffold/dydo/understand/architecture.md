@@ -47,7 +47,7 @@ Input → Processing → Durable output
 
 ## Knowledge and Work Boundary
 
-- **Linear** owns Initiatives, Projects, Issues, optional Milestones and Cycles, plus live status,
+- **Linear** owns Initiatives, Projects, tickets, optional Milestones and Cycles, plus live status,
   priority, assignment, dependencies, updates, and review state.
 - **Git/dydo** owns architecture, Decisions, reviewed Project plans, guides, audits, assimilation
   evidence, changelog, and temporary [feature specs](../reference/feature-spec-convention.md). Linear owns FutureFeatures.

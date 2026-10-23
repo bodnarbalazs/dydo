@@ -12,7 +12,7 @@ Each FutureFeature has `area: project`, `type: concept`, and either `status: ide
 `status: promoted`. Its body contains a non-empty `## Rationale` section and a `## Related` section
 with at least one resolving link to durable repository knowledge.
 
-Human promotion creates exactly one appropriately shaped Linear Initiative, Project, or Issue, records
+Human promotion creates exactly one appropriately shaped Linear Initiative, Project, or ticket, records
 its stable URL in `linear-reference`, and changes the status to `promoted`. Delivery state then lives
 only in Linear; the FutureFeature remains provenance and is never synchronized with that work item.
 

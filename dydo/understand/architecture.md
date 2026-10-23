@@ -56,16 +56,16 @@ The folders under `skills/` are the only editable skill source. Host projections
 
 ## Knowledge and work boundary
 
-Linear owns Initiatives, Projects, Issues, optional Milestones and Cycles, and every live field:
+Linear owns Initiatives, Projects, tickets, optional Milestones and Cycles, and every live field:
 status, priority, assignment, dependencies, updates, review state.
 
 Git and dydo own architecture, Decisions, reviewed Project plans, temporary
 [feature specs](../reference/feature-spec-convention.md), guides, audits, inquisitions,
 assimilation briefs, changelog, release tags, and pitfalls. Linear owns FutureFeatures with the rest
 of the work graph. Branches, worktrees, sessions, native sub-agents, commits, pull requests, and
-review passes are execution evidence linked to a Linear Issue, not work-record types. The
-[Work Model](./work-model.md) states the contract; the [Linear Issue Lifecycle](./task-lifecycle.md)
-states how one Issue moves through it.
+review passes are execution evidence linked to a Linear ticket, not work-record types. The
+[Work Model](./work-model.md) states the contract; the [Linear Ticket Lifecycle](./task-lifecycle.md)
+states how one ticket moves through it.
 
 ## Guard system
 

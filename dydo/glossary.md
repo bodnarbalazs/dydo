@@ -28,7 +28,7 @@ the documentation model requires one.
 
 ## JITI
 
-Just-In-Time Information: agents navigate to the context needed for the current Issue instead of reading
+Just-In-Time Information: agents navigate to the context needed for the current ticket instead of reading
 the entire repository upfront.
 
 ## Off-Limits

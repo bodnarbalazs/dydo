@@ -181,7 +181,7 @@ public class InitCommandTests : IntegrationTestBase
         AssertFileContains("dydo/project/future-features/_future-features.md",
             "repo-native ideas, not scheduled work");
         AssertFileContains("dydo/project/future-features/_future-features.md",
-            "Human promotion creates exactly one appropriately shaped Linear Initiative, Project, or Issue");
+            "Human promotion creates exactly one appropriately shaped Linear Initiative, Project, or ticket");
         AssertFileContains("dydo/project/future-features/_future-features.md",
             "only in Linear; the FutureFeature remains provenance");
 

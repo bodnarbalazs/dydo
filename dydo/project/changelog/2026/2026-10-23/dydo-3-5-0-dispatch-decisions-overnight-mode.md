@@ -32,10 +32,14 @@ audit trail.
   commit message that only mentions `dydo mode set` is not. `dydo init claude --join` rewrites an
   older Claude Code hook to carry the marker. The nudge stops accidents, not a deliberate bypass.
 - The `what-would-balazs-do` decision skill and its tribunal (DYD-350, DR 054): a trigger map
-  decides a weighty call or prepares it as a Question, with a ballot and a judge brief.
+  decides a weighty call or prepares it as a Question, with a ballot and a judge brief. Control-flow
+  section 6.1 sends a call above the officer's say through it when the call is DR-grade or
+  irreversible, or when the human is away. Only a call the tribunal decides while he is away stays
+  unwired, for him to ratify or overturn; every other call gets a prepared Question wired to its
+  waiters.
 - The `create-formal-verification-skill` and `maintain-formal-verification-skill` skills
   (DYD-344), adapted from the cursor/plugins pstack at 5dba0b8d (MIT), registered in the skill
-  READMEs, the glossary and the third-party notices.
+  READMEs, the control-flow table, the glossary and the third-party notices.
 - A proposal for an overnight chief of staff, recorded as a FutureFeature idea (PR #153). It stays
   an idea; the shipped overnight mode above grew from it.
 
@@ -46,7 +50,6 @@ audit trail.
   captured values (a secret, an identifier, a path).
 - A dispatch channel rule and a two-vendor first review round, with the reviewer counts and
   human-in-the-loop threads aligned to the working-tree contract (DYD-346).
-- The control-flow table keeps present calls as prepared Questions (DYD-350).
 - `dydo guard` accepts `--host claude`, which `dydo init` writes into the Claude Code hook. It is
   a marker, not a diagnostic argument: the call still reads its payload from stdin.
 - Align runtime and npm versions to 3.5.0 and permit publication only on the exact v3.5.0 tag.
@@ -67,7 +70,7 @@ audit trail.
 `dydo/project/decisions/054-what-would-balazs-do-tribunal.md`,
 `dydo/project/future-features/overnight-chief-of-staff.md`, `dydo/_system/audit/` (removed),
 `dydo.json`, `skills/` (overnight-mode, what-would-balazs-do, the two formal verification skills,
-wizard, admiral, issue-captain, chief-of-staff, READMEs), `THIRD-PARTY-NOTICES.md`,
+wizard, to-issue, wayfinder, admiral, issue-captain, chief-of-staff, READMEs), `THIRD-PARTY-NOTICES.md`,
 `npm/THIRD-PARTY-NOTICES.md`, `DynaDocs.csproj`, `npm/package.json`,
 `.github/workflows/release.yml`, `DynaDocs.Tests/` (guard mode-set, shell reader, mode state, init,
 fix, fixtures), `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`,

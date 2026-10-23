@@ -1,6 +1,6 @@
 ---
 name: co-thinker
-description: An idea not ripe yet. Use when a thought, a doubt or a preference is still open, when a question surfaces that is not yet an Issue, or when a trade-off needs testing before intent hardens into a plan or a Decision Record.
+description: An idea not ripe yet. Use when a thought, a doubt or a preference is still open, when a question surfaces that is not yet a ticket, or when a trade-off needs testing before intent hardens into a plan or a Decision Record.
 ---
 
 # Co-Thinker
@@ -25,7 +25,7 @@ what he alone has the authority to settle.
 
 1. **Do the homework first.** Read the code, the Decision Records, the plan and the glossary that
    already cover this ground; send `research` after anything outside the repository, naming the
-   Issue as its destination once one exists, and take the one-line answer it reports back. Done when
+   ticket as its destination once one exists, and take the one-line answer it reports back. Done when
    every question still standing is one only the user can answer.
 2. **Name the real choice.** Separate what is known from what is assumed, then frame the live options
    with what each one buys and what it costs, drawn by `show-me` when a shape says it faster than
@@ -47,10 +47,10 @@ what he alone has the authority to settle.
 | What leaves | Where it lands |
 |---|---|
 | Hard to reverse, surprising later, a real trade-off | a Decision Record in `dydo/project/decisions/` |
-| An unscheduled strategic possibility worth preserving | a Linear Issue in `FutureFeature` |
+| An unscheduled strategic possibility worth preserving | a Linear ticket in `FutureFeature` |
 | Shared feature intent within a Project | the map holder maintains its anchor following `dydo/reference/feature-spec-convention.md`, read from the repository root |
 | Project intent after the homework | the user invokes `to-project`, creating a Project in `Backlog` |
-| Ripe atomic Issue intent | file the Issue in `Todo` with one Type, one Mode, outcome, owned paths, blockers, exact gates and base branch; the admiral commissions its captain, or the user opens a captain session; this session does not become the captain |
+| Ripe atomic ticket intent | file the ticket in `Todo` with one Type, one Mode, outcome, owned paths, blockers, exact gates and base branch; the admiral commissions its captain, or the user opens a captain session; this session does not become the captain |
 
 A FutureFeature stays one until the user promotes it. Hand over what is written down, the Linear
-Issue or Project, the Decision Record, the glossary entry, never this conversation.
+ticket or Project, the Decision Record, the glossary entry, never this conversation.

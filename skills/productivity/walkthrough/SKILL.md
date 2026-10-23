@@ -7,17 +7,17 @@ description: Show me what landed, where to look first, and how to try it. Load o
 
 Give the user the tour of what landed.
 
-The map holder runs the Walkthrough Issue with the user after landing. Its findings decide whether
+The map holder runs the Walkthrough Ticket with the user after landing. Its findings decide whether
 the Project needs another lap.
 
-The argument names what to walk - a feature branch, a Project, an Issue, a diff range. Ask which one
+The argument names what to walk - a feature branch, a Project, a ticket, a diff range. Ask which one
 when it is missing.
 
-Walk it yourself first: the diff and its hops, the Issues it closed with their review blocks, the
-DRs and applicable spec sections those Issues cite, the returns their crew posted. Then brief the
+Walk it yourself first: the diff and its hops, the tickets it closed with their review blocks, the
+DRs and applicable spec sections those tickets cite, the returns their crew posted. Then brief the
 user in four parts.
 
-- **What changed and why** - the outcome in one paragraph, each part traced to the Issue that carried
+- **What changed and why** - the outcome in one paragraph, each part traced to the ticket that carried
   it and the DR that decided it, with the shape drawn by `show-me` where a tree or a diff says it
   faster than prose.
 - **Where to look first** - a route for his own file-by-file pass: the files that drew findings,
@@ -28,11 +28,11 @@ user in four parts.
   deferred one now lives, reported as they stand.
 
 The tour ends when the user has inspected the files and tried the behavior. Record findings as
-Issues in the same Project; the map holder commissions the first fix Captain to re-cut its feature
+tickets in the same Project; the map holder commissions the first fix Captain to re-cut its feature
 branch from main for fixes and another landing/walkthrough. An empty walkthrough lets the Project close;
 the map holder commissions spec retirement following `dydo/reference/feature-spec-convention.md`, read from
 the repository root.
 
 Keep the brief in the terminal, or in a scratch file when the user wants to read it beside the diff.
-The durable record stays where it already is: the Issues, the review blocks and the DRs the tour
+The durable record stays where it already is: the tickets, the review blocks and the DRs the tour
 points at.

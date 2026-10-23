@@ -40,8 +40,8 @@ audit trail.
 - The `create-formal-verification-skill` and `maintain-formal-verification-skill` skills
   (DYD-344), adapted from the cursor/plugins pstack at 5dba0b8d (MIT), registered in the skill
   READMEs, the control-flow table, the glossary and the third-party notices.
-- A proposal for an overnight chief of staff, recorded as a FutureFeature idea (PR #153). It stays
-  an idea; the shipped overnight mode above grew from it.
+- A proposal for an overnight chief of staff, recorded in PR #153 and now marked `promoted` into
+  the shipped overnight mode above (DYD-351).
 
 ## Changed
 
@@ -52,6 +52,9 @@ audit trail.
   human-in-the-loop threads aligned to the working-tree contract (DYD-346).
 - `dydo guard` accepts `--host claude`, which `dydo init` writes into the Claude Code hook. It is
   a marker, not a diagnostic argument: the call still reads its payload from stdin.
+- The decision-record hub states when to write a record (all three of hard to reverse, surprising
+  without context, a real trade-off) and documents the `ratification: pending` frontmatter for a
+  `proposed` record a tribunal decided while the human was away (DYD-350).
 - Align runtime and npm versions to 3.5.0 and permit publication only on the exact v3.5.0 tag.
 
 ## Removed
@@ -65,15 +68,19 @@ audit trail.
 
 `Commands/` (`ModeCommand.cs`, `GuardCommand.ModeSet.cs`, `GuardCommand.cs`,
 `GuardCommand.Refusal.cs`, `InitCommand.cs`, `HelpCommand.cs`), `Models/HookInput.cs`, `Program.cs`,
-`Services/` (`ModeState.cs`, `ShellReader.cs`, `DydoInvocationScanner.cs`, config service),
-`Scaffold/dydo/`, `dydo/guides/`, `dydo/reference/`, `dydo/understand/control-flow.md`,
+`Services/` (`ModeState.cs`, `ShellReader.cs`, `DydoInvocationScanner.cs`, `ConfigFactory.cs`,
+`ConfigService.cs`, `IConfigService.cs`), `Scaffold/dydo/` (guides, reference, decisions hub),
+`dydo/guides/`, `dydo/reference/`, `dydo/understand/control-flow.md`,
 `dydo/project/decisions/054-what-would-balazs-do-tribunal.md`,
+`dydo/project/decisions/_decisions.md`,
 `dydo/project/future-features/overnight-chief-of-staff.md`, `dydo/_system/audit/` (removed),
 `dydo.json`, `skills/` (overnight-mode, what-would-balazs-do, the two formal verification skills,
 wizard, to-issue, wayfinder, admiral, issue-captain, chief-of-staff, READMEs), `THIRD-PARTY-NOTICES.md`,
 `npm/THIRD-PARTY-NOTICES.md`, `DynaDocs.csproj`, `npm/package.json`,
-`.github/workflows/release.yml`, `DynaDocs.Tests/` (guard mode-set, shell reader, mode state, init,
-fix, fixtures), `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`,
+`.github/workflows/release.yml`, `DynaDocs.Tests/` (mode command, mode state, invocation scanner
+in `Services/DydoInvocationScannerTests.cs`, guard mode-set and worker lane, init, fix, check,
+validate, config, doc scanner, off-limits, command smoke, the `machine-mode.feature` scenarios and
+steps, canonical skill assertions, coverage associations, the removed audit-large fixtures), `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`,
 `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs`, `npm/test/install.test.cjs`, this entry and its
 changelog hub.
 

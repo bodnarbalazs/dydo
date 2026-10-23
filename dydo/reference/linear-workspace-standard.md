@@ -243,7 +243,7 @@ Examples:
 ## Decision Records
 
 Linear records the decision-making work; dydo records a qualifying decision. Link the Question or
-Grilling ticket to its repository Decision Record and link the record back when it has a Linear
+Grilling Ticket to its repository Decision Record and link the record back when it has a Linear
 origin. The Decision Record is canonical: keep its rationale in dydo rather than copying it into
 Linear.
 

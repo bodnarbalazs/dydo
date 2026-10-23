@@ -36,8 +36,8 @@ sight, and hand back every judgement call with a recommendation.
    passing commit, waiting on the user's word in the map holder's session - the user's own when no
    admiral is invoked, an invoked admiral's otherwise - and an Inquisition filed in
    `Backlog`, waiting on the move to `Todo`. *Landing*: the landing Merge Ticket and each atomic
-   ticket in `Ready to Merge`, waiting on the user's click, and the Walkthrough ticket after a
-   landing. The user's queue is these and never the assignee filter. Lead with meaning: keep an
+   ticket in `Ready to Merge`, waiting on the user's click, and the Walkthrough Ticket after a
+   landing. The user's queue is these and never the assignee filter. Lead with meaning: keep a
    ticket key, SHA or filename for traceability, paired at first use with its title in plain language, and recommend an outcome for
    every item. Done when each list is empty or one line the user can act on.
 3. **Grill the user through the open questions.** On request, take the *Answer needed* list one

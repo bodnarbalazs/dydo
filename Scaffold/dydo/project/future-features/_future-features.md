@@ -23,5 +23,5 @@ An `idea` needs no `linear-reference`; a `promoted` idea requires exactly one UR
 
 Both states prohibit delivery fields: `assigned`, `assignee`, `priority`, `blocked-by`, `blocks`,
 `dependency`, `dependencies`, `project`, `initiative`, `cycle`, `milestone`, `sprint`, `campaign`,
-`slice`, `task`, `issue`, `workflow`, `state`, `due-date`, `estimate`, `labels`, `parent`, `sub-issue`,
+`slice`, `task`, `issue`, `ticket`, `workflow`, `state`, `due-date`, `estimate`, `labels`, `parent`, `sub-issue`, `sub-ticket`,
 and `team`. Strict content validation begins only after Project 3 normalizes the retained ideas.

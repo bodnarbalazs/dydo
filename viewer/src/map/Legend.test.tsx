@@ -36,7 +36,7 @@ describe('Legend', () => {
     const swatches = [...document.querySelectorAll('.legend-swatch')].map((swatch) => [swatch.className, swatch.parentElement?.textContent?.trim()]);
     expect(swatches).toEqual([
       ['legend-swatch pickable-swatch', 'pickable'],
-      ['legend-swatch external-swatch', 'issue outside this Project'],
+      ['legend-swatch external-swatch', 'ticket outside this Project'],
     ]);
   });
 });

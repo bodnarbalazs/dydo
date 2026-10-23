@@ -31,9 +31,9 @@ crew; Ticket Captains use it to know what they own and what they hand back. The 
 | Project ticket | its feature branch | `DYD-123-<slug>` | its feature branch | its captain-directed Merge Sub-ticket |
 | Atomic ticket | `main` | `DYD-123-<slug>` | `main` | human, clicking its PR once it carries a reviewer PASS and CI is green; no Merge Sub-ticket |
 | Lane Sub-ticket | its parent ticket branch | `DYD-124-<slug>` | its parent ticket branch | its captain-directed Merge Sub-ticket |
-| Inquisition ticket | integrated feature SHA | `inquisition/<slug>` | none; never merges | - |
+| Inquisition Ticket | integrated feature SHA | `inquisition/<slug>` | none; never merges | - |
 | Proof branch | the Inquisition's audit SHA | a child branch named in the proof-only brief | none; never merges | - |
-| Prototype ticket | its feature branch, else `main` | `prototype/<name>` | none; never merges | - |
+| Prototype Ticket | its feature branch, else `main` | `prototype/<name>` | none; never merges | - |
 
 `DYD-123` is an example: use the ticket's key so Linear attaches the branch and PR. The host may
 provide the ticket worktree; otherwise place it beside the repository at

@@ -10,7 +10,7 @@ export function Legend() {
         <span className="legend-swatch pickable-swatch" /> pickable
       </div>
       <div className="legend-row">
-        <span className="legend-swatch external-swatch" /> issue outside this Project
+        <span className="legend-swatch external-swatch" /> ticket outside this Project
       </div>
     </div>
   );

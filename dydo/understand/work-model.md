@@ -33,7 +33,7 @@ corrective for agent-speak, at any stage.
 
 ## Officers, crew, and skills
 
-- **Officers** hold something and never switch: the admiral holds a Project, the ticket-captain an
+- **Officers** hold something and never switch: the admiral holds a Project, the ticket-captain a
   ticket, the chief-of-staff the board. A session or agent has at most one officer role; the human
   holds a row on the map but no role.
 - **Crew** are spawned for one bounded job, hold nothing, and return their result to whoever sent them. Research delegates to non-authoring scouts; other crew do their own bounded work.

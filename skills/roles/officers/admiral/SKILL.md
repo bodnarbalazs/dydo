@@ -98,7 +98,7 @@ map and how the tickets move, integrate, and finish together.
    changes to destination, scope, acceptance criteria, or governing architecture and obtain human
    approval before affected work resumes. **Done:** the
    Project map matches the work in flight.
-6. **Clear fog.** Do small discovery inline; create a Wayfinding ticket when the investigation needs
+6. **Clear fog.** Do small discovery inline; create a Wayfinding Ticket when the investigation needs
    its own status, owner, blocker, or evidence. Dispatch Research agents, use Prototype in its captain's session
    or Grilling in this session, present one prepared Question only when
    judgment remains, and commission Enablement. A call above your say goes through

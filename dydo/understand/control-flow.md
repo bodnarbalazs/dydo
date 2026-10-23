@@ -78,8 +78,8 @@ Agent-invoked methods:
 | domain-modeling | co-thinker, wayfinder | a term keeps sliding, or a choice looks durable enough for a DR | `dydo/glossary.md` entries; a Decision Record |
 | codebase-design | code-writer, reviewer | shaping a module or interface, choosing a seam, judging depth | vocabulary applied, nothing written |
 | diagnosing-bugs | the code-writer reproducing a Bug, on the parent or its retained reproduce-or-identify Sub-ticket | a defect without a red reproduction | a tight loop that goes red; the regression test; the cause on the ticket |
-| prototype | the code-writer on a Prototype ticket | how it should look or behave is the open question | `prototype/<name>`, never merged; kept and linked from the ticket until the delivery ticket is `Done`, read by the delivery ticket's code-writer as the template for a fresh rewrite, never a base or a copy (DR 047 §5) |
-| wizard | the captain on an Enablement ticket | steps only the human can perform: credentials, dashboards, cutovers | a bash wizard that walks him through them |
+| prototype | the code-writer on a Prototype Ticket | how it should look or behave is the open question | `prototype/<name>`, never merged; kept and linked from the ticket until the delivery ticket is `Done`, read by the delivery ticket's code-writer as the template for a fresh rewrite, never a base or a copy (DR 047 §5) |
+| wizard | the captain on an Enablement Ticket | steps only the human can perform: credentials, dashboards, cutovers | a bash wizard that walks him through them |
 | writing-for-agents | anyone editing a skill or a document an agent reaches by pointer; reviewer(docs) | a prompt file is created, edited, or fires wrong | the edited file |
 | retro | any session; chief-of-staff routes recurring friction to it | the same friction or workaround returns a second time | one small, authorized, testable harness change |
 | maintain-verification-skill | any agent driving the app through a project's verification skill; the map holder before a landing | a drive contradicts the feature map, a touched area has no map file, or the whole map needs an audit | `clean`, `changed` with one PR of proven map or harness corrections, or `blocked`; product regressions reported as Bugs |
@@ -138,7 +138,7 @@ flowchart TD
   RP -->|PASS| H1
   H1 --> OP[map holder commissions first captain to open feature; wires merge order]:::officer
   OP <-->|"one captain per pickable AFK ticket, the loop in 3b: commission · done &lt;key&gt;: PR ready · merge, when its turn comes · done &lt;key&gt;: merged"| IC[ticket-captain]:::officer
-  OP -->|all landed: Inquisition ticket in Backlog, scope and cost| H2([human moves it to Todo and tells an invoked admiral, or cancels]):::human
+  OP -->|all landed: Inquisition Ticket in Backlog, scope and cost| H2([human moves it to Todo and tells an invoked admiral, or cancels]):::human
   H2 -->|the map holder commissions| IQ[ticket-captain of the inquisition, 6.6: Bugs filed]:::officer
   IQ --> OP
   OP -->|landing Merge Ticket: main into the feature, gates, merge review| LM[ticket-captain of the landing]:::officer
@@ -279,7 +279,7 @@ Step by step, with the Linear status each step leaves behind:
     does not depend on it, the map holder re-wires the order first. Its code-writer merges with `--no-ff`, a
     resolution that refactored leaving its code no worse than either side, before a fresh `reviewer(merge)` judges the integrated feature; PASS sets the Sub-ticket and the primary `Done`.
     The captain cleans up and returns `done <key>: merged`. PR by PR, in plan order, never batched.
-13. **Inquisition (rare).** The map holder files an Inquisition ticket with scope and cost in `Backlog`;
+13. **Inquisition (rare).** The map holder files an Inquisition Ticket with scope and cost in `Backlog`;
     the human moves it to `Todo` and tells an invoked admiral, or cancels; the map holder commissions
     a captain who runs it and files Bugs, which land through the normal loop before the landing. Section 6.6.
 14. **Land.** The map holder files the landing Merge Ticket; its captain directs a code-writer to merge `main` into
@@ -389,9 +389,9 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 29 | reviewer(merge) → ticket-captain, Merge Sub-ticket | R, L | the review block naming the merge commit and the gates rerun | - | - |
 | 30 | ticket-captain → admiral | R, L | `done <key>: merged`; worktrees and branches cleaned | - | - |
 | 31 | map holder → Linear, repository | L, F | new, split, dropped or resequenced tickets and Project-level map-holder-held tickets; dated amendments committed to a repository plan, where one exists | a fresh `reviewer(project-plan)` reads an amendment that moves destination, scope, acceptance or architecture | - |
-| 32 | admiral → Linear (inquisition proposal) | L | an Inquisition ticket under the Project: scope, the parts and lenses, the cost, the feature SHA | - | `Backlog` |
-| 33 | human → Linear, admiral (inquisition confirmation) | L, C | the Inquisition ticket moved to `Todo`, or `Canceled` with the reason; the human tells the admiral | - | `Todo` |
-| 34 | admiral → ticket-captain (inquisition) | R (spawn), L | the Inquisition ticket key; assignment | the ticket, the plan at its governing commit, the integrated feature SHA, working-tree contract | - |
+| 32 | admiral → Linear (inquisition proposal) | L | an Inquisition Ticket under the Project: scope, the parts and lenses, the cost, the feature SHA | - | `Backlog` |
+| 33 | human → Linear, admiral (inquisition confirmation) | L, C | the Inquisition Ticket moved to `Todo`, or `Canceled` with the reason; the human tells the admiral | - | `Todo` |
+| 34 | admiral → ticket-captain (inquisition) | R (spawn), L | the Inquisition Ticket key; assignment | the ticket, the plan at its governing commit, the integrated feature SHA, working-tree contract | - |
 | 35 | inquisition captain → Git | G | `inquisition/<slug>` off the feature SHA, never merged; a child branch per proof | - | - |
 | 36 | inquisition captain → inquisitors | R (spawn) | one part or one lens each, the scope, the plan, the ticket review evidence | the assignment with its evidence, about, architecture, coding-standards | `In Progress` |
 | 37 | inquisitor → inquisition captain | R | findings with `file:line`, severity and proof; hypotheses of what could go wrong, each with the test that would decide it, or, in prose, docs or a prompt file, both contradicting passages quoted at `file:line`, which are its reproduction with no test and no proof branch | - | - |
@@ -400,7 +400,7 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 40 | inquisition captain → Linear, Git, Bug captain | L, G | one Bug per confirmed problem under the Project, feature base, reproduction SHA and pushed independent named ref (a prose Bug: its quoted passages), Inquisition link; retention ownership transfers only on recorded Bug-captain adoption | Bug captain reads the reproduction as normal-chain input and records cleanup responsibility | Bugs `Todo` |
 | 41 | inquisition captain → admiral, Linear | R, L, G | completed pinned packet: feature SHA, scope, parts/lenses, findings, hypotheses/verdicts and Bugs; pushed/posted resume state; `released <key>: record delivery` before record Feature/blocker exists | this return wakes admiral to read packet and working-tree retention contract | Inquisition released `Todo`, unassigned, worktree removed; no not-yet-created blocker required |
 | 41a | admiral → record Feature captain, Linear | R (spawn), L | on row41 wake, first contract separate primary Feature/AFK on retained feature with exact record and authored navigation paths, packet and gates; wire only Inquisition blocked by Feature before generic pickup, then commission record captain | record captain reads contract/packet and directs docs-writer → docs review → final Merge Sub-ticket | record Feature `Todo`, pickable from packet; audit is not recommissioned from temporary Todo gap |
-| 41b | record Feature captain → admiral, Inquisition ticket | R, L, G | `done <key>: merged`; exact record path/blob or digest, delivery merge SHA and retained feature ref, review/gates on delivery records | normal board loop reads delivery `Done` and resumes released Inquisition captain | record Feature `Done`; Inquisition resumes `In Progress` |
+| 41b | record Feature captain → admiral, Inquisition Ticket | R, L, G | `done <key>: merged`; exact record path/blob or digest, delivery merge SHA and retained feature ref, review/gates on delivery records | normal board loop reads delivery `Done` and resumes released Inquisition captain | record Feature `Done`; Inquisition resumes `In Progress` |
 | 42 | inquisition captain → admiral, Linear | R, L | `done <key>` after verifying Bugs, exact record content and delivery merge ancestry/reachability on retained feature; verification on ticket, audit branch deleted, open Bug proof refs retained with named owners | admiral reads durable completion evidence | Inquisition `Done` |
 | 43 | admiral → Linear (landing) | L | the landing Merge Ticket: `main` into the feature, gates, merge review with acceptance proof, the PR into `main`, the walkthrough prepared | - | `Todo`, blocked by unresolved prerequisites for this landing: delivery, confirmed Inquisition/record and required fixes; exclude self and later/deferred work |
 | 44 | landing captain → Git, admiral | G, R | the PR into `main` with its PASS block; `done <key>: PR ready` | - | landing `Ready to Merge` |
@@ -558,10 +558,10 @@ flowchart TD
   classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
   classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
 
-  AD[map holder: the human, or an admiral the human invoked; the feature is integrated]:::officer -->|Inquisition ticket in Backlog: scope, parts, lenses, cost| H([human]):::human
+  AD[map holder: the human, or an admiral the human invoked; the feature is integrated]:::officer -->|Inquisition Ticket in Backlog: scope, parts, lenses, cost| H([human]):::human
   H -->|moves it to Todo and tells an invoked admiral, or cancels; the map holder commissions| IC[ticket-captain of the inquisition]:::officer
   IC -->|inquisition branch off the feature SHA, never merged| BR[(inquisition/slug)]
-  IC -->|contracts it: the parts, the lenses, the shape of a hypothesis| SP[(the Inquisition ticket)]
+  IC -->|contracts it: the parts, the lenses, the shape of a hypothesis| SP[(the Inquisition Ticket)]
   IC --> P1[inquisitor: module A]:::crew
   IC --> P2[inquisitor: module B]:::crew
   IC --> P3[inquisitor: the whole, at the seams]:::crew
@@ -569,7 +569,7 @@ flowchart TD
   P1 & P2 & P3 & P4 -->|findings with proof, and hypotheses of what could go wrong| IC
   IC -->|one code hypothesis each, proof-only, on a child branch| IM[code-writers: write the test that would catch it]:::crew
   IM -->|confirmed with a red test, not reproduced, or inconclusive| IC
-  IC -->|dedupe, reproduction SHA on pushed independent ref with retention owner, or quoted passages| BUG[(Bug tickets in Todo, under the Project)]
+  IC -->|dedupe, reproduction SHA on pushed independent ref with retention owner, or quoted passages| BUG[(Bug Tickets in Todo, under the Project)]
   IC -->|completed pinned packet and pushed/posted resume state| REL[Inquisition captain: release Todo, unassign, remove worktree; Feature and blocker do not exist yet]:::officer
   REL -->|released &lt;key&gt;: record delivery wakes the map holder| AD2[map holder]:::officer
   AD2 -->|before generic pickup: contract Feature, wire only audit blocked by it, then commission| RC[record Feature captain: normal delivery chain, exact record and navigation paths]:::officer
@@ -581,7 +581,7 @@ flowchart TD
   BUG -->|the normal loop, a captain each, before the landing| FIX[fixes through PR, review, Merge Sub-ticket]
 ```
 
-The contract: the map holder proposes by filing the Inquisition ticket in `Backlog` with the parts and
+The contract: the map holder proposes by filing the Inquisition Ticket in `Backlog` with the parts and
 lenses it wants swept and the cost; the human confirms by moving it to `Todo`, which is the gate DR
 045 reserves; the captain claims it like any ticket and works on `inquisition/<slug>`, cut from the
 integrated feature SHA and deleted when the ticket is `Done`, so nothing on it can leak into the
@@ -631,7 +631,7 @@ its scoped exception, not a hand-raise.
 
 ### 6.9 A prototype
 
-A Prototype ticket is held by a captain and run for the human: fast sketches that settle a visual or
+A Prototype Ticket is held by a captain and run for the human: fast sketches that settle a visual or
 behavioural choice, co-thinking in code. Its contract names the question and the variants; its
 code-writer builds them on `prototype/<name>` in its own worktree; the human is the review, in the
 session. The verdict goes on the ticket with the winning commit. The

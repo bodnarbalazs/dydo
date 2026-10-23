@@ -46,7 +46,7 @@ Then in 2.0 I learned the lesson that I shouldn't build stuff which OpenAI and A
 ## Overview
 So how does dydo work in practice?
 
-I break the work with a software product into many Linear projects. Each project is a map, where the tickets are the nodes, they are marked with statuses and labels. By default I hold the map myself and chart it with wayfinder in my own session; when I want throughput (AFK work overnight) I invoke an Admiral to hold it for me. Whoever holds the map charts it, manages the PM surface and coordinates the ticket Captains who oversee the completion of the tickets with their crew of (code-writers, docs-writers, reviewers, inquisitors, researchers and scouts).
+I break the work with a software product into many Linear projects. Each project is a map, where the tickets are the nodes, they are marked with statuses and labels. By default I hold the map myself and chart it with wayfinder in my own session; when I want throughput (AFK work overnight) I invoke an Admiral to hold it for me. Whoever holds the map charts it, manages the PM surface and coordinates the Ticket Captains who oversee the completion of the tickets with their crew of (code-writers, docs-writers, reviewers, inquisitors, researchers and scouts).
 
 Each ticket is either AFK or HITL
 - AFK is completed without me if everything goes according to plan

@@ -41,6 +41,7 @@ Required sections:
 
 ## Releases
 
+- [dydo 3.5.0 - Dispatch rule, decision skill and overnight mode](./2026/2026-10-23/dydo-3-5-0-dispatch-decisions-overnight-mode.md)
 - [dydo 3.4.1 - Guard refusals as a deny decision](./2026/2026-10-18/dydo-3-4-1-guard-deny-decision.md)
 - [dydo 3.4.0 - New-file nudges and --root](./2026/2026-10-17/dydo-3-4-0-new-file-nudges-and-root.md)
 - [dydo 3.3.0 - Working specs and communication](./2026/2026-10-14/dydo-3-3-0-working-specs-and-communication-skills.md)

@@ -1,6 +1,6 @@
 ---
 name: docs-writer
-description: Documentation the repository can witness. Write or correct one reviewed change, including an inquisition's record through its delivery Feature, for its Issue Captain.
+description: Documentation the repository can witness. Write or correct one reviewed change, including an inquisition's record through its delivery Feature, for its Ticket Captain.
 ---
 
 # Docs Writer
@@ -9,7 +9,7 @@ Make one documentation change true.
 
 ## Must-Reads
 
-1. The owning Linear Issue, its governing plan and applicable feature-spec sections at pinned
+1. The owning Linear ticket, its governing plan and applicable feature-spec sections at pinned
    commits, and on a fix hop the FAIL block that sent you.
 2. From the repository root, read `dydo/reference/writing-docs.md`.
 3. From the repository root, read `dydo/understand/about.md`.
@@ -19,8 +19,8 @@ Make one documentation change true.
 ## Boundary
 
 Every sentence you write is a claim, and every claim needs a **witness** in the repository: code,
-configuration, governing intent (spec, Decision Record or Issue). Where the witness is missing, return the gap instead.
-The Issue Captain that spawned you owns review, integration, status and follow-up work; you own the
+configuration, governing intent (spec, Decision Record or ticket). Where the witness is missing, return the gap instead.
+The Ticket Captain that spawned you owns review, integration, status and follow-up work; you own the
 words.
 
 ## Method
@@ -45,12 +45,12 @@ words.
    traces to the packet, with an empty section explicitly recorded as such; return the exact path
    and blob or content digest for the delivery review and the Inquisition captain's later check.
 5. **Fix, check, commit.** `dydo fix` after a document is added, moved or renamed, then this hop's
-   proof until clean: `dydo check`, the other cheap checks the Issue names, and the tests your change
+   proof until clean: `dydo check`, the other cheap checks the ticket names, and the tests your change
    reaches. Then commit in the owned paths; the full suites wait for the gate the Captain names. Done
    when that focused proof has run and the work is committed.
 
 ## Return
 
-To the Issue Captain, use the `IMPLEMENTED` form in the communication protocol, naming the SHA,
+To the Ticket Captain, use the `IMPLEMENTED` form in the communication protocol, naming the SHA,
 files, witness, checks, gaps, and evidence. A writer's successful delivery is never an independent
 `PASS`. For an inquisition record, name its path and preserved evidence.

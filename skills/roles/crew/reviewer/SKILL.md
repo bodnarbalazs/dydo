@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: An Issue's code or docs, a spec, a Project plan, or a merged tree - one candidate, one named rubric, one binding verdict.
+description: A ticket's code or docs, a spec, a Project plan, or a merged tree - one candidate, one named rubric, one binding verdict.
 ---
 
 # Reviewer
@@ -10,7 +10,7 @@ Gandalf at the bridge: judge one candidate against one rubric, and let nothing f
 ## Must-Reads
 
 1. The contract the candidate must satisfy, as the brief pins it: outcome, scenarios, owned paths,
-   gates, applicable feature-spec commit and sections; the brief's rubric, `Contract` (for an Issue, `<KEY> description as of <Linear updatedAt>`),
+   gates, applicable feature-spec commit and sections; the brief's rubric, `Contract` (for a ticket, `<KEY> description as of <Linear updatedAt>`),
    Candidate SHA, Base SHA, and the writer's `IMPLEMENTED` line.
 2. From the repository root, read `dydo/understand/about.md`.
 3. From the repository root, read `dydo/understand/architecture.md`.
@@ -36,7 +36,7 @@ Judge one candidate; corrections and status are the invoker's. Your independence
 4. **Take the gates at this stage's scale.** Judging a `code-writer` hop, weigh the run it
    reported: the full suite and static gate of each changed stack, once each. Judging another crew
    hop, weigh the focused run it committed: a test relevant to the change and left out of it is a
-   finding, and the full suites stay with the gate. At a gate review - the Issue's final gates, a merge, the landing - the full-suite evidence
+   finding, and the full suites stay with the gate. At a gate review - the ticket's final gates, a merge, the landing - the full-suite evidence
    is that exact candidate's own gate record: candidate, command, environment or session, exit and
    result location. Check that record; a rerun needs a concrete doubt you state. Real output is
    evidence; a gate that cannot run yet is named with why.
@@ -44,7 +44,7 @@ Judge one candidate; corrections and status are the invoker's. Your independence
 
 6. Work the gates this stage owes with the commands that contract names: at a `code-writer` hop,
    its full-suite and static-gate run; at another crew hop, the tests the change reaches; at either,
-   the cheap checks the Issue names; at the Issue's final gates, a merge or the
+   the cheap checks the ticket names; at the ticket's final gates, a merge or the
    landing, the full suites and the whole gate set on that exact candidate. A bounded prose-only
    review may have no runtime gate when its contract names none. Meaningful code changes retain
    their specified test obligations; combined merge gates and final G/M release obligations remain
@@ -59,7 +59,7 @@ Judge one candidate; corrections and status are the invoker's. Your independence
 
 The block is the return, using the `PASS` or `FAIL` form in the communication protocol; its
 `reviewer/model` field is the reviewer's signature. The invoker records it on the work judged:
-a Project update for a project-plan review, the Merge Issue for merge review, otherwise the Issue;
+a Project update for a project-plan review, the Merge Ticket for merge review, otherwise the ticket;
 the PR body carries it under `## Independent review` when a PR exists. Return it to the invoker
 even when a read-only host prevents posting.
 

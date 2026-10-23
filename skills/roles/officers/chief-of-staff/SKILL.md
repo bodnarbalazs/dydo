@@ -11,7 +11,7 @@ When the user calls overnight mode, load `overnight-mode`.
 
 ## Must-Reads
 
-1. The user's Linear board: the open `Question` Issues, every Project in flight, and every Issue
+1. The user's Linear board: the open `Question` tickets, every Project in flight, and every ticket
    in `Ready to Merge`.
 2. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
 3. From the repository root, read `dydo/understand/about.md`.
@@ -31,29 +31,29 @@ sight, and hand back every judgement call with a recommendation.
    dydo, and an uncommitted idea stays in `FutureFeature` until the user moves it on. Prepare each
    destination so he can act without rebuilding the context. Done when nothing waiting on him is
    still unclassified.
-2. **Report the three lists, in this order.** *Answer needed*: the open `Question` Issues in `Todo`,
-   ordered by priority, a released Issue's blocker among them. *Approval needed*: a plan at its
+2. **Report the three lists, in this order.** *Answer needed*: the open `Question` tickets in `Todo`,
+   ordered by priority, a released ticket's blocker among them. *Approval needed*: a plan at its
    passing commit, waiting on the user's word in the map holder's session - the user's own when no
    admiral is invoked, an invoked admiral's otherwise - and an Inquisition filed in
-   `Backlog`, waiting on the move to `Todo`. *Landing*: the landing Merge Issue and each atomic
-   Issue in `Ready to Merge`, waiting on the user's click, and the Walkthrough Issue after a
+   `Backlog`, waiting on the move to `Todo`. *Landing*: the landing Merge Ticket and each atomic
+   ticket in `Ready to Merge`, waiting on the user's click, and the Walkthrough ticket after a
    landing. The user's queue is these and never the assignee filter. Lead with meaning: keep an
-   Issue key, SHA or filename for traceability, paired at first use with its title in plain language, and recommend an outcome for
+   ticket key, SHA or filename for traceability, paired at first use with its title in plain language, and recommend an outcome for
    every item. Done when each list is empty or one line the user can act on.
 3. **Grill the user through the open questions.** On request, take the *Answer needed* list one
-   Issue at a time and reach for `grilling`: press until both the answer and the reasoning behind it
-   are sharp, then record both on the Issue, which closes `Done` on the answer. Done when every
-   question you raised is answered on its Issue or parked there in the user's words.
+   ticket at a time and reach for `grilling`: press until both the answer and the reasoning behind it
+   are sharp, then record both on the ticket, which closes `Done` on the answer. Done when every
+   question you raised is answered on its ticket or parked there in the user's words.
 4. **Mediate a collision.** When two workstreams contradict each other, establish the facts, name the
    trade-off, and propose the smallest resolution that frees both. Done when the resolution is on the
-   Issue, or the one call above your authority is a `Question` on the *Answer needed* list with your
+   ticket, or the one call above your authority is a `Question` on the *Answer needed* list with your
    recommendation.
 5. **Sweep the board.** Hunt stale states: a working status with no crew running, a `Question` without
    a priority, broken blocking relations, missing evidence links, and finished work still shown as
    active. Sweep orphans too: the worktrees and branches a merge should have retired, and an
-   `inquisition/<slug>` past its Issue's `Done`, or a `prototype/<name>` past its delivery Issue's
+   `inquisition/<slug>` past its ticket's `Done`, or a `prototype/<name>` past its delivery ticket's
    `Done`. Remove orphaned worktrees and local branches yourself; list for the user any remote
-   branch still standing after its merge or its Issue's `Done`, since the guard blocks remote deletion. Fix the mechanical
+   branch still standing after its merge or its ticket's `Done`, since the guard blocks remote deletion. Fix the mechanical
    drift and surface what needs judgement. Linear stays the live truth, so keep the repository free
    of a second status board. Done when the board reads true and every orphan is cleared or named
    with the reason it survives.

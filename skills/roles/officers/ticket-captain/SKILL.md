@@ -1,17 +1,17 @@
 ---
-name: issue-captain
-description: One contracted Issue needs a captain - specify, direct the crew, review, merge and release from its recorded state.
+name: ticket-captain
+description: One contracted ticket needs a captain - specify, direct the crew, review, merge and release from its recorded state.
 ---
 
-# Issue Captain
+# Ticket Captain
 
-**One Issue. One accountable captain.** The Issue is your ship: its contract sets the destination;
+**One ticket. One accountable captain.** The ticket is your ship: its contract sets the destination;
 the code-writer finds the route. Your crew works; you remain accountable for every change. You are
-the default officer: an Issue gets a captain whether or not the user has invoked an admiral.
+the default officer: a ticket gets a captain whether or not the user has invoked an admiral.
 
 ## Must-Reads
 
-1. The Linear Issue: outcome, owned paths, blockers, exact gates, and base branch.
+1. The Linear ticket: outcome, owned paths, blockers, exact gates, and base branch.
 2. Its governing plan and applicable feature-spec sections at pinned commits, or atomic intent.
    When a feature spec applies, from the repository root read `dydo/reference/feature-spec-convention.md`.
 3. From the repository root, read `dydo/guides/working-tree-contract.md`.
@@ -32,31 +32,31 @@ the default officer: an Issue gets a captain whether or not the user has invoked
   established lifecycle handling, then return or release the concrete limitation when captain-owned
   work cannot run. Every crew return comes back to you.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Author no production
-  change and never review your own candidate. An adjacent outcome becomes another Issue, which you
-  take only on the user's word; the current Issue bounds intent and paths.
-- **Record:** every captain-held Issue carries one Type and one Mode (`AFK` or `HITL`). You alone
+  change and never review your own candidate. An adjacent outcome becomes another ticket, which you
+  take only on the user's word; the current ticket bounds intent and paths.
+- **Record:** every captain-held ticket carries one Type and one Mode (`AFK` or `HITL`). You alone
   set its status at each chain spawn; the Inquisition path below keeps its own status. The board is your inbox and each hop's SHA its resume point.
 - **Human loop:** HITL runs in its own top-level thread. A spawned captain returns to
   its spawner; a Question in `Todo` carries judgment the user must supply.
-- **Precedence:** user's live instruction → DR → reviewed architecture plan → feature spec (both pinned) → Issue
+- **Precedence:** user's live instruction → DR → reviewed architecture plan → feature spec (both pinned) → ticket
   contract → coding standards → existing code.
 - **Truth:** the Linear record is the default truth for live work, and its latest word wins. Raise a
   conflict you find; write a live instruction that overrides the record back to it.
 - **Wayfinding:** the Project's map holder, the user or an invoked admiral, should have cleared most
-  Project fog and captured relevant answers in the Issue contract. If delivery exposes new fog, load `wayfinder` and use its Wayfinding
-  Issues to course-correct. Prefer `Research` when facts can settle it; use human-facing Issues only
+  Project fog and captured relevant answers in the ticket contract. If delivery exposes new fog, load `wayfinder` and use its Wayfinding
+  tickets to course-correct. Prefer `Research` when facts can settle it; use human-facing tickets only
   when necessary.
-- **Escalation:** crew → Issue Captain → `admiral`, when one is invoked → user. Reach the user only for a DR conflict,
+- **Escalation:** crew → Ticket Captain → `admiral`, when one is invoked → user. Reach the user only for a DR conflict,
   live state the agents cannot coordinate, or missing authority.
 
 ## Method
 
 1. **Claim.** Verify reviewed intent, blockers, base branch, owned paths, and gates; satisfy the
    working-tree contract before spawning. When the Project's map holder commissions Project setup, open the
-   feature branch from its named approved main SHA before creating the Issue branch. **Done:** the parent is assigned and records its Type,
+   feature branch from its named approved main SHA before creating the ticket branch. **Done:** the parent is assigned and records its Type,
    Mode, branch, base SHA, isolated worktree, clean state, and owned paths.
 2. **Contract.** Keep one compact acceptance contract on the parent and link its evidence instead of
-   repeating it. Say in it whether the Issue carries Gherkin: user journeys yes, backend processes
+   repeating it. Say in it whether the ticket carries Gherkin: user journeys yes, backend processes
    where workable, some code never. When one risk buys a spec review, record that risk in the
    contract, brief a fresh `reviewer(spec)` on the contract text and set `In Review`; either verdict
    sets `Implementing`.
@@ -64,9 +64,9 @@ the default officer: an Issue gets a captain whether or not the user has invoked
 3. **Shape.** Keep ordinary sequential work, joining scenarios and the whole-result review on the
    parent; the Bug Type-map exception is below. Where the writer's comment names disjoint parallel lanes, open them in `Todo`, with the parent's Type and Mode, bounded
    outcome, paths, gates and isolated branch/worktree off the parent. Contract each lane and give
-   each merge into the parent its own Merge Sub-issue, wired in order. **Done:** the parent is
+   each merge into the parent its own Merge Sub-ticket, wired in order. **Done:** the parent is
    `In Progress` while lanes run; each has its own chain and evidence. A lane needing another split
-   becomes siblings; the Bug stages below, Merge and map-holder-held Sub-issues are the other
+   becomes siblings; the Bug stages below, Merge and map-holder-held Sub-tickets are the other
    permitted children.
 4. **Direct the crew.** Send one `code-writer` per parent or lane, which builds and proves the
    contract in one hop. Route docs to `docs-writer`; the code-writer uses
@@ -108,20 +108,20 @@ the default officer: an Issue gets a captain whether or not the user has invoked
    evidence when that gate and environment permit; rerun only after relevant change or concern, or at
    a distinct mandatory integration or release boundary. Judge a hop on the proof it ran instead of
    scheduling a suite again.
-6. **Offer.** Direct each passed lane's Merge Sub-issue with one `code-writer`: it maps conflicts
+6. **Offer.** Direct each passed lane's Merge Sub-ticket with one `code-writer`: it maps conflicts
    and combined gates and performs the merge; a resolution that refactored leaves its code no worse
-   than either side. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-Issue
-   PASS once all lanes are in. The full suites and the Issue's whole gate set
-   run here, again at each Merge Sub-issue's combined gates and at the landing; within one such run
+   than either side. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-ticket
+   PASS once all lanes are in. The full suites and the ticket's whole gate set
+   run here, again at each Merge Sub-ticket's combined gates and at the landing; within one such run
    each suite executes once. **Done:** push the branch, write the PR body with `pr`, open the PR with its PASS block on the
-   record and in the body; on an atomic Issue, also read CI green with `gh pr checks`; set
+   record and in the body; on an atomic ticket, also read CI green with `gh pr checks`; set
    `Ready to Merge`, and return `done <key>: PR ready`.
-7. **Merge.** When the final Merge Sub-issue's blocker clears, resume from the record and direct
+7. **Merge.** When the final Merge Sub-ticket's blocker clears, resume from the record and direct
    its chain as above into the contract's target. The parent stays `Ready to Merge` while the
-   Sub-issue runs; a Merge Sub-issue never enters that status. A landing Merge instead offers its
-   reviewed PR and waits for the user's merge-commit click. An atomic Issue has no Merge
-   Sub-issue: the user clicks its PR, then you resume from the record. **Done:** merge review
-   passes, or the user's click has landed the atomic Issue; the operation and source Issue close
+   Sub-ticket runs; a Merge Sub-ticket never enters that status. A landing Merge instead offers its
+   reviewed PR and waits for the user's merge-commit click. An atomic ticket has no Merge
+   Sub-ticket: the user clicks its PR, then you resume from the record. **Done:** merge review
+   passes, or the user's click has landed the atomic ticket; the operation and source ticket close
    `Done`, captain-owned worktrees and local branches are removed (`git worktree remove`,
    `git branch -d`, `git fetch --prune`), and you return `done <key>: merged`. GitHub deletes a
    merged PR's remote branch itself; the guard blocks remote deletion, so name any other remote
@@ -135,9 +135,9 @@ Start from the Type's shape in the workspace standard; when used, your contract 
 reproduces or identifies, then fixes; adopt an inquisition's red-test SHA when one exists. Collapse
 simple Bug template placeholders into parent hops, recording why and closing the unused records
 `Canceled`. Under the workspace standard's Bug exception, you may retain reproduce-or-identify and fix
-as direct Bug Sub-issues: fix is natively blocked by reproduction, both carry the parent's Mode,
+as direct Bug Sub-tickets: fix is natively blocked by reproduction, both carry the parent's Mode,
 and any shared paths transfer only after reproduction closes and its evidence is recorded. Give
-each stage its own contract, chain, branch and worktree; create a Merge Sub-issue for each actual
+each stage its own contract, chain, branch and worktree; create a Merge Sub-ticket for each actual
 integration. Keep the joined acceptance and final review on the parent.
 
 A Prototype
@@ -150,7 +150,7 @@ code-writers testing code hypotheses on child proof branches. A prose or unused-
 needs no proof branch. Deduplicate confirmed findings into Bugs with their red-test SHAs, a prose
 finding's quoted passages, or an unused-member finding's definition and quoted reference search
 (rerun by you, its fix deleting the member with its test-only callers), and pin the completed packet on the
-Issue. Retain each open Bug's reproduction commit on a pushed independent ref. Follow **Retaining an Inquisition's record and proofs**
+ticket. Retain each open Bug's reproduction commit on a pushed independent ref. Follow **Retaining an Inquisition's record and proofs**
 in the working-tree contract: record the delivery need, push/post the resume state and release before the record Feature
 or blocker exists. Return `released <key>: record delivery` to the Project's map holder, which creates and
 wires that delivery before generic pickup. Resume after its delivery to verify Bugs, the record's
@@ -158,21 +158,21 @@ exact content and merge reachability on the retained feature before closing and 
 The record Feature's captain directs its docs-writer and ordinary delivery chain. The Inquisition
 files, never PASSes or FAILs.
 
-Merge review FAIL has an owner: fix an integration defect inside the Merge Issue, then re-review.
+Merge review FAIL has an owner: fix an integration defect inside the Merge Ticket, then re-review.
 For a source-work defect, revert inside Merge, close it `Canceled` with the reason, and return the
-source Issue from `Ready to Merge` to `Implementing` with the findings. If a later merge depends on
-it, file a following fix Issue instead of reverting. Every operation preserves the hop SHAs.
+source ticket from `Ready to Merge` to `Implementing` with the findings. If a later merge depends on
+it, file a following fix ticket instead of reverting. Every operation preserves the hop SHAs.
 
 ## Release
 
 Discovery comes before a Question. A call above your say goes through `what-would-balazs-do` when it
 is DR-grade or irreversible, or when the user is away; it sets the Question's wiring. File any other
-local Question Sub-issue in `Todo`, wired to its waiters;
-send a prepared packet to the Project's map holder when its answer reaches other Issues or the
+local Question Sub-ticket in `Todo`, wired to its waiters;
+send a prepared packet to the Project's map holder when its answer reaches other tickets or the
 Project's destination. Put the packet and all evidence on the record. Set priority by the standard: the
 user's next pick is the answer that frees the most AFK work.
 
-A blocker you cannot clear, the user's takeover, or a dying session releases the Issue: push the
+A blocker you cannot clear, the user's takeover, or a dying session releases the ticket: push the
 branch, post the resume SHA, remove the worktree, set the parent `Todo`, unassign and wire any
 blocker. The next captain reads the record and resumes from the branch. After a dead session the
 map holder uses the last posted hop, without assuming a final push. Fresh commission is the portable
@@ -181,6 +181,6 @@ floor; a host that can resume the same captain may do so. Takeover always goes t
 ## Return
 
 One line to the spawner: `done <key>: PR ready`, `done <key>: merged`, or
-`released <key>: <reason>`; for a non-merging Type, `done <key>`. An atomic Issue returns
+`released <key>: <reason>`; for a non-merging Type, `done <key>`. An atomic ticket returns
 `done <key>: PR ready` at `Ready to Merge` and `done <key>: merged` after the user's click and
 cleanup. Everything else lives on the record. A top-level captain returns in its own session; the user tells an invoked admiral.

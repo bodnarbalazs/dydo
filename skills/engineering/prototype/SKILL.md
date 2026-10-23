@@ -11,7 +11,7 @@ A prototype is **throwaway code that answers a question**. The question decides 
 
 ## Pick a branch
 
-Identify which question is being answered, using the Prototype Issue, the prompt and surrounding
+Identify which question is being answered, using the Prototype ticket, the prompt and surrounding
 code. A crew member returns a missing choice to the Captain, whose HITL session reaches the user:
 
 - **"Does this logic / state model feel right?"** → [logic](resources/logic.md). Build a single
@@ -43,7 +43,7 @@ their HITL session resolves it with the user before the prototype proceeds.
 5. **Surface the state.** After every action (logic) or on every variant switch (UI), print or
    render the full relevant state so the user can see what changed.
 6. **Capture it when done.** Record the user's verdict and the winning commit on the Prototype
-   Issue. The `prototype/<name>` branch is a **primary source**, linked and never submitted or
-   merged. A delivery Issue's `code-writer` reads it as the template for a fresh rewrite, never as a
-   base or a copy; retain it until that delivery Issue is `Done`, or until feature cleanup. Only the
+   ticket. The `prototype/<name>` branch is a **primary source**, linked and never submitted or
+   merged. A delivery ticket's `code-writer` reads it as the template for a fresh rewrite, never as a
+   base or a copy; retain it until that delivery ticket is `Done`, or until feature cleanup. Only the
    idea survives: the delivery crew implements the decision.

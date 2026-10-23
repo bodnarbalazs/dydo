@@ -49,7 +49,7 @@ Bug records what they confirm. Reporting is the whole of your output.
   search, counting test-only callers as no callers.
 - **doc drift** - docs, comments, help text, templates or durable knowledge that contradict the
   integrated implementation or the reviewed plan.
-- **seams** - shared-file collisions between Issues, broken assumptions, contradictory logic, lost
+- **seams** - shared-file collisions between tickets, broken assumptions, contradictory logic, lost
   hunks, doubled code, integration left half-done.
 
 ## Calibration

@@ -18,8 +18,8 @@ Follow every claim back to the source that owns it, and search wide enough to kn
 
 ## Boundary
 
-A co-thinker, admiral, or Issue Captain sends you after one fact a choice waits on,
-before anyone creates a human-facing Question Issue; if the facts settle it, no Question Issue
+A co-thinker, admiral, or Ticket Captain sends you after one fact a choice waits on,
+before anyone creates a human-facing Question Ticket; if the facts settle it, no Question Ticket
 exists. Facts are your job; the choice they inform stays with the invoker and the user. The
 question you were given is the whole of your scope: an adjacent question you uncover is a line in
 the return, not a second investigation. The report under Return is the one thing you create;
@@ -39,7 +39,7 @@ everything else you read.
    yourself. Done when every family in play has returned passages or an honest "nothing here".
 4. **Pool and verify.** Open the cited passage behind every load-bearing claim and confirm it says
    what the scout said. Where sources conflict, name the conflict and which governs; inside the
-   repository the order is the user's live instruction, Decision Record, reviewed architecture plan, feature spec (both pinned), Issue
+   repository the order is the user's live instruction, Decision Record, reviewed architecture plan, feature spec (both pinned), ticket
    contract, standards, code. Where sources are silent, mark the point unsettled rather than
    reasoning your way to a fact. Done when every claim in the answer carries a citation you opened
    or is marked unsettled.
@@ -51,7 +51,7 @@ everything else you read.
 
 ## Return
 
-Given a Wayfinding Issue, post the report as a named evidence comment using the `DECIDED` form in the
-communication protocol; the map holder closes the Issue and updates the map. Otherwise write it as
+Given a Wayfinding ticket, post the report as a named evidence comment using the `DECIDED` form in the
+communication protocol; the map holder closes the ticket and updates the map. Otherwise write it as
 `dydo/agents/workspace/research-<slug>.md`, the shared scratch folder git ignores. Either way,
 report the answer, destination, and what stayed unsettled.

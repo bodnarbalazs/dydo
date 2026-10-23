@@ -1,6 +1,6 @@
 # Reviewing Documentation
 
-Target: one documentation change delivered by a Linear Issue. Two kinds arrive here: human-facing
+Target: one documentation change delivered by a Linear ticket. Two kinds arrive here: human-facing
 dydo documents under `dydo/`, judged against code for delivered behavior or governing intent for specs, and agent-facing documents
 (skills, their resources, entry points), judged as prompt files that must fire and route.
 **Drift** is the failure both kinds share: a claim the tree no longer supports, or an environment
@@ -9,12 +9,12 @@ Every item below is a FAIL when it holds.
 
 ## Method
 
-1. **Resolve the contract.** The Issue description as of the brief's Linear `updatedAt`, and the
+1. **Resolve the contract.** The ticket description as of the brief's Linear `updatedAt`, and the
    governing plan and applicable feature-spec sections at pinned commits. Done when audience, owned paths,
    acceptance criteria and gates are named; an unmet criterion or an edit outside the owned paths
    is a finding.
 2. **Sort every changed file** into one of the two lists below, then work that list entire.
-3. **Verify from source.** Open the paths, run the commands, read the code; rerun the Issue's gates
+3. **Verify from source.** Open the paths, run the commands, read the code; rerun the ticket's gates
    yourself, `dydo check` among them. Drift lives in the sentence nobody rechecked. Done when every
    claim the change makes has met its source.
 
@@ -24,7 +24,7 @@ Every item below is a FAIL when it holds.
   `dydo/reference/writing-docs.md`, read from the repository root.
 - Written for a reader its folder does not name (`understand/` vs `guides/` vs `reference/`).
 - A meaning another document already owns, written a second time here.
-- `dydo check` or an Issue gate left failing on the touched tree.
+- `dydo check` or a ticket gate left failing on the touched tree.
 - A reusable decision, invariant, pitfall or explanation left only in execution evidence instead of
   assimilated into dydo.
 
@@ -55,4 +55,4 @@ Every item below is a FAIL when it holds.
   Captain.
 - **Drift from the canonical source.** `skills/` is the single canonical tree, authored directly with
   no compile step; every host reads it through its own projection, never a generated copy. Judge
-  drift against that rule and the Issue's own contract.
+  drift against that rule and the ticket's own contract.

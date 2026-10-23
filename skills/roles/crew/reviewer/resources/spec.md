@@ -1,6 +1,6 @@
 # Reviewing a Spec
 
-Target: the contract text on the Issue as it stands before any code, invoked when the Issue Captain
+Target: the contract text on the ticket as it stands before any code, invoked when the Ticket Captain
 has bought a spec review. Judge it against the parent's criteria, the settled working tree, the
 governing Decisions, pinned architecture-plan and feature-spec sections, and the `code-writer` skill.
 
@@ -13,19 +13,19 @@ route are outside this rubric: do not turn them into findings or notes.
 
 ## Method
 
-1. **Pin the ground.** Match the contract to the target Issue or direct lane Sub-issue, its five
+1. **Pin the ground.** Match the contract to the target ticket or direct lane Sub-ticket, its five
    contract fields, base SHA, branch, worktree, clean state and owned paths. **Done:** it binds the
    exact tree and nothing outside its authority.
 2. **Judge the scenarios.** Where the contract calls for Gherkin, each scenario stands at the
    product's boundary, in glossary words, deterministic, refining one criterion its parent carries;
-   every example column changes an outcome. **Done:** the scenarios say what the Issue proves and
+   every example column changes an outcome. **Done:** the scenarios say what the ticket proves and
    nothing the parent did not ask for.
 3. **Verify the ground it cites.** Read every cited Decision, specification, pattern, seam, file, and
    test at the base SHA. **Done:** each citation holds, or its departure is justified.
 4. **Hunt hidden decisions.** Walk the contract as the delegated writer through behavior, files,
    seams, edge and failure handling, migration, compatibility, and proof. **Done:** no material
    choice is silently delegated to production.
-5. **Check the proof.** Acceptance lines, scenarios and gates are exact and sufficient for the Issue
+5. **Check the proof.** Acceptance lines, scenarios and gates are exact and sufficient for the ticket
    outcome. Run those applicable before code; mark implementation gates `not run - pre-code` after
    verifying their commands and pass conditions. **Done:** the eventual result can fail as well as
    pass.

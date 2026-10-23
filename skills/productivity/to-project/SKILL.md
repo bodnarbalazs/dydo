@@ -1,7 +1,6 @@
 ---
 name: to-project
-description: Turn this co-think into a Linear Project, with its settled intent and links.
-disable-model-invocation: true
+description: Turn this co-think into a Linear Project, with its settled intent and links. Load only when the user asks.
 ---
 
 <!-- Adapted from mattpocock/skills to-spec at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->

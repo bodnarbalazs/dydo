@@ -1,7 +1,6 @@
 ---
 name: to-issue
-description: Break a plan, spec, or this conversation into pickable Linear Issues, tracer-bullet slices wired with native blocking relations.
-disable-model-invocation: true
+description: Break a plan, spec, or this conversation into pickable Linear Issues, tracer-bullet slices wired with native blocking relations. Load only when the user asks.
 ---
 
 <!-- Adapted from mattpocock/skills to-tickets at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->

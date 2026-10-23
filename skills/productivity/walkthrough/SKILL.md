@@ -1,7 +1,6 @@
 ---
 name: walkthrough
-description: Show me what landed, where to look first, and how to try it.
-disable-model-invocation: true
+description: Show me what landed, where to look first, and how to try it. Load only when the user asks, or at the admiral's landing step.
 ---
 
 # Walkthrough

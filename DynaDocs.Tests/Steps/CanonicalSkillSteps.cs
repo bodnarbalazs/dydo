@@ -114,21 +114,24 @@ public sealed class CanonicalSkillSteps(CliScenario scenario)
         Directory.Delete(Local(".git"), recursive: true);
     }
 
-    [Then("the canonical {string} skill keeps its Claude invocation frontmatter")]
-    public void ClaudeMetadata(string name)
+    [Then("the canonical {string} skill keeps its explicit-only lock on both hosts")]
+    public void ExplicitOnlyLock(string name)
     {
         var body = File.ReadAllText(Local("skills", CanonicalCategory(name), name, "SKILL.md"));
         Assert.StartsWith("---\n", body.ReplaceLineEndings("\n"));
-        Assert.Contains("argument-hint: \"What would you like to learn about?\"", body);
         Assert.Contains("disable-model-invocation: true", body);
-    }
-
-    [Then("the canonical {string} skill keeps its Codex invocation metadata")]
-    public void CodexMetadata(string name)
-    {
         var metadata = File.ReadAllText(Local("skills", CanonicalCategory(name), name, "agents", "openai.yaml"));
         Assert.Contains("allow_implicit_invocation: false", metadata);
-        Assert.Contains("default_prompt: \"What would you like to learn about?\"", metadata);
+    }
+
+    [Then("the canonical {string} skill keeps the argument hint {string} on both hosts")]
+    public void ArgumentHint(string name, string hint)
+    {
+        var body = File.ReadAllText(Local("skills", CanonicalCategory(name), name, "SKILL.md"));
+        Assert.StartsWith("---\n", body.ReplaceLineEndings("\n"));
+        Assert.Contains($"argument-hint: \"{hint}\"", body);
+        var metadata = File.ReadAllText(Local("skills", CanonicalCategory(name), name, "agents", "openai.yaml"));
+        Assert.Contains($"default_prompt: \"{hint}\"", metadata);
     }
 
     [Then("every resource linked by the canonical {string} body resolves inside its skill directory")]

@@ -72,10 +72,12 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Method** - a plain skill used inside other work, carrying no identity of its own: co-thinker,
   grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype, show-me,
   writing-for-agents, writing-for-humans, retro, wizard, overnight-mode, what-would-balazs-do, maintain-verification-skill,
-  maintain-formal-verification-skill.
+  maintain-formal-verification-skill. These load only when the user asks: to-project, to-issue,
+  in-your-own-words, ketchup, teach, walkthrough (also at an admiral's landing) and handoff (also
+  when an officer briefs an agent it dispatches).
 - **Human command** - a skill only the human invokes by name, never reached for by a model:
-  to-project, to-issue, grill-me, bro, in-your-own-words, handoff, ketchup, walkthrough, teach, improve-codebase-architecture,
-  create-verification-skill, create-formal-verification-skill.
+  grill-me, bro, improve-codebase-architecture, create-verification-skill,
+  create-formal-verification-skill.
 - **Rubric** - the one named standard a reviewer judges a candidate against: code, docs,
   project-plan, spec, or merge.
 

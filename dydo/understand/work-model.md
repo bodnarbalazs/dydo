@@ -39,9 +39,11 @@ corrective for agent-speak, at any stage.
 - **Crew** are spawned for one bounded job, hold nothing, and return their result to whoever sent them. Research delegates to non-authoring scouts; other crew do their own bounded work.
 - **Methods** are plain skills - reference and procedure a session applies inside its own thread, never a separate
   session.
-- **Human commands** are invoked by the human typing their name, and by nothing else. For the
-  post-landing tour, the map holder - an invoked admiral, or the human itself - opens the Walkthrough
-  Issue and asks the human to invoke `walkthrough` in that same session before facilitating it.
+- Some methods load only when the human asks for them; `handoff` also when an officer briefs an
+  agent it dispatches. For the post-landing tour, the map holder - an invoked admiral, or the human
+  itself - opens the Walkthrough Issue and asks the human to invoke `walkthrough` in that same session
+  before facilitating it; an admiral may also load it at its landing step.
+- **Human commands** are invoked by the human typing their name, and by nothing else.
 
 The [dydo glossary](../reference/dydo-glossary.md) names every member of each category. Every one of them is a native skill folder - see
 [Scaffold and Customization](./scaffold-and-customization.md).

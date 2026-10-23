@@ -27,8 +27,9 @@ Feature: One canonical skill tree reaches every supported host
     And the Claude and Codex "reviewer" entries resolve to the canonical skill directory
 
   Scenario: Keep both hosts' metadata and resources beside one body
-    Then the canonical "teach" skill keeps its Claude invocation frontmatter
-    And the canonical "teach" skill keeps its Codex invocation metadata
+    Given the canonical "improve-codebase-architecture" skill is also in the project
+    Then the canonical "improve-codebase-architecture" skill keeps its explicit-only lock on both hosts
+    And the canonical "teach" skill keeps the argument hint "What would you like to learn about?" on both hosts
     And every resource linked by the canonical "teach" body resolves inside its skill directory
 
   Scenario: Resolve skill links from canonical and projected locations

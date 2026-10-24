@@ -123,29 +123,29 @@ telemetry can and cannot prove afterwards.
 
 ```mermaid
 flowchart TD
-  classDef user fill:#f6d365,stroke:#8a6d00,color:#000
+  classDef human fill:#f6d365,stroke:#8a6d00,color:#000
   classDef session fill:#e9ecef,stroke:#6c757d,color:#000
   classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
   classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
 
-  H0([user: an idea]):::user --> CT[co-thinker]:::session
-  CT -->|ripe| TP([user: to-project, Project in Backlog]):::user
+  H0([user: an idea]):::human --> CT[co-thinker]:::session
+  CT -->|ripe| TP([user: to-project, Project in Backlog]):::human
   TP --> AD[map holder: the user, or an admiral the user invoked; reads the Project]:::officer
   AD -->|Project Planning, wayfinder| MAP[the map in the Project description, first tickets, Questions]:::officer
   MAP -.->|only a cross-cutting architecture contract: plan commit| RP{{reviewer: project-plan, two rounds at most}}:::reviewer
-  MAP -->|route charted| H1([user approves, Project Planned]):::user
+  MAP -->|route charted| H1([user approves, Project Planned]):::human
   RP -->|PASS| H1
   H1 --> OP[map holder commissions first captain to open feature; wires merge order]:::officer
   OP <-->|"one captain per pickable AFK ticket, the loop in 3b: commission · done &lt;key&gt;: PR ready · merge, when its turn comes · done &lt;key&gt;: merged"| IC[ticket-captain]:::officer
-  OP -->|all landed: Inquisition Ticket in Backlog, scope and cost| H2([user moves it to Todo and tells an invoked admiral, or cancels]):::user
+  OP -->|all landed: Inquisition Ticket in Backlog, scope and cost| H2([user moves it to Todo and tells an invoked admiral, or cancels]):::human
   H2 -->|the map holder commissions| IQ[ticket-captain of the inquisition, 6.6: Bugs filed]:::officer
   IQ --> OP
   OP -->|landing Merge Ticket: main into the feature, gates, merge review| LM[ticket-captain of the landing]:::officer
-  LM -->|PR into main with its PASS, Ready to Merge| H3([user clicks the merge, one Project at a time, and tells an invoked admiral]):::user
+  LM -->|PR into main with its PASS, Ready to Merge| H3([user clicks the merge, one Project at a time, and tells an invoked admiral]):::human
   H3 -->|map holder commissions landing captain cleanup; the map holder loads walkthrough| WT[Walkthrough Ticket: the map holder with the user]:::officer
   WT -->|findings: tickets, a second lap on the re-cut feature| OP
-  WT -->|nothing: Project Completed| END([done]):::user
+  WT -->|nothing: Project Completed| END([done]):::human
 ```
 
 ### 3b. One ticket
@@ -554,11 +554,11 @@ gate; it files.
 
 ```mermaid
 flowchart TD
-  classDef user fill:#f6d365,stroke:#8a6d00,color:#000
+  classDef human fill:#f6d365,stroke:#8a6d00,color:#000
   classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
   classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
 
-  AD[map holder: the user, or an admiral the user invoked; the feature is integrated]:::officer -->|Inquisition Ticket in Backlog: scope, parts, lenses, cost| H([user]):::user
+  AD[map holder: the user, or an admiral the user invoked; the feature is integrated]:::officer -->|Inquisition Ticket in Backlog: scope, parts, lenses, cost| H([user]):::human
   H -->|moves it to Todo and tells an invoked admiral, or cancels; the map holder commissions| IC[ticket-captain of the inquisition]:::officer
   IC -->|inquisition branch off the feature SHA, never merged| BR[(inquisition/slug)]
   IC -->|contracts it: the parts, the lenses, the shape of a hypothesis| SP[(the Inquisition Ticket)]
@@ -645,13 +645,13 @@ One mechanism serves three cases.
 ```mermaid
 flowchart LR
   classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
-  classDef user fill:#f6d365,stroke:#8a6d00,color:#000
+  classDef human fill:#f6d365,stroke:#8a6d00,color:#000
   B[a blocker the captain cannot clear] --> REL
-  T([the user wants to drive it]):::user -->|release, through the map holder| REL
+  T([the user wants to drive it]):::human -->|release, through the map holder| REL
   D[the session dies, no return] -.->|the map holder treats it as a release without the push| REL
   REL[the captain releases: branch pushed, worktree removed, parent to Todo, unassigned, blocker wired]:::officer --> REC[(the record: every hop's SHA, the last one is the resume point)]
   REC -->|blocker cleared, next wake| RC[a fresh captain resumes from the branch]:::officer
-  REC -->|a top-level captain session| H2([the user drives it]):::user
+  REC -->|a top-level captain session| H2([the user drives it]):::human
 ```
 
 On Claude Code a one-off steer needs no release: the user opens the captain's transcript from the
@@ -705,7 +705,7 @@ A snapshot at 10:40:
 
 ```mermaid
 flowchart LR
-  classDef user fill:#f6d365,stroke:#8a6d00,color:#000
+  classDef human fill:#f6d365,stroke:#8a6d00,color:#000
   subgraph A [Project A, admiral A]
     A1[DYD-90 Implementing]
     A2[DYD-91 Todo, blocked by DYD-90]
@@ -719,7 +719,7 @@ flowchart LR
     C1[DYD-99 Question, Todo]
     C2[plan draft, blocked by DYD-99]
   end
-  H([user]):::user -->|1: answer, five minutes| C1
+  H([user]):::human -->|1: answer, five minutes| C1
   H -->|2: prototype session, half an hour| B3
   H -.->|3: nothing yet| A1
 ```

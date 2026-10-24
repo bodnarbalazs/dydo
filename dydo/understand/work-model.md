@@ -19,30 +19,30 @@ officer never becomes another officer ([Decision 050](../project/decisions/050-o
 | Stage | Who | Output | Gate |
 |---|---|---|---|
 | Think | any session, loading co-thinker | ripe intent, and a Decision Record when the choice earns one | - |
-| Chart and plan a Project | the map holder, the human or an invoked admiral, with wayfinder | the map in the Linear Project, first tickets, Questions; a repository plan only for a cross-cutting architecture contract | project-plan review of that plan, then human approval |
+| Chart and plan a Project | the map holder, the user or an invoked admiral, with wayfinder | the map in the Linear Project, first tickets, Questions; a repository plan only for a cross-cutting architecture contract | project-plan review of that plan, then user approval |
 | Make a ticket exact | ticket-captain, through its compact acceptance contract | a just-in-time contract with no hidden implementation decisions; the route stays the writer's | optional spec review |
 | Implement | ticket-captain | a ticket branch, a PR into the feature branch, or into main for an atomic ticket, evidence on the ticket | reviewer PASS |
-| Coordinate | the map holder, the human or an invoked admiral | captains in flight, wired Merge Sub-tickets, plan amendments | each captain directs its own merge review |
-| Inquisition | ticket-captain | read-only sweeps, proof tests for code hypotheses and quoted passages for prose ones, Bugs and an inquisition record | human confirms Backlog → Todo; it files rather than gates |
-| Land | the human | the feature branch merged into main | the human's own hands |
-| Walkthrough | an invoked admiral with the human, or the human alone | inspected landing, findings as tickets in the same Project | an empty walkthrough closes the Project |
+| Coordinate | the map holder, the user or an invoked admiral | captains in flight, wired Merge Sub-tickets, plan amendments | each captain directs its own merge review |
+| Inquisition | ticket-captain | read-only sweeps, proof tests for code hypotheses and quoted passages for prose ones, Bugs and an inquisition record | the user confirms Backlog → Todo; it files rather than gates |
+| Land | the user | the feature branch merged into main | the user's own hands |
+| Walkthrough | an invoked admiral with the user, or the user alone | inspected landing, findings as tickets in the same Project | an empty walkthrough closes the Project |
 
-Some work has no stage of its own: chief-of-staff triages the human's attention and never delivers,
-and any session may reach for retro, writing-for-agents and diagnosing-bugs; bro is the human's
+Some work has no stage of its own: chief-of-staff triages the user's attention and never delivers,
+and any session may reach for retro, writing-for-agents and diagnosing-bugs; bro is the user's
 corrective for agent-speak, at any stage.
 
 ## Officers, crew, and skills
 
 - **Officers** hold something and never switch: the admiral holds a Project, the ticket-captain a
-  ticket, the chief-of-staff the board. A session or agent has at most one officer role; the human
+  ticket, the chief-of-staff the board. A session or agent has at most one officer role; the user
   holds a row on the map but no role.
 - **Crew** are spawned for one bounded job, hold nothing, and return their result to whoever sent them. Research delegates to non-authoring scouts; other crew do their own bounded work.
 - **Methods** are plain skills - reference and procedure a session applies inside its own thread, never a separate
   session.
-- Some methods load only when the human asks for them; `handoff` also when an officer briefs an
-  agent it dispatches. For the post-landing tour, the map holder - an invoked admiral, or the human
+- Some methods load only when the user asks for them; `handoff` also when an officer briefs an
+  agent it dispatches. For the post-landing tour, the map holder - an invoked admiral, or the user
   itself - opens the Walkthrough Ticket and loads `walkthrough` itself before facilitating it.
-- **Human commands** are invoked by the human typing their name, and by nothing else.
+- **User commands** are invoked by the user typing their name, and by nothing else.
 
 The [dydo glossary](../reference/dydo-glossary.md) names every member of each category. Every one of them is a native skill folder - see
 [Scaffold and Customization](./scaffold-and-customization.md).
@@ -50,7 +50,7 @@ The [dydo glossary](../reference/dydo-glossary.md) names every member of each ca
 A captain's ticket is a Project one level down: the same Types, statuses and chain, with a different
 map holder. The [control-flow map](./control-flow.md) carries every contact, including captain
 two-step returns, release/takeover, review FAIL, merge FAIL and blocker-cleared resume. The board is
-the inbox; an admiral wakes on a captain's return or the human's word.
+the inbox; an admiral wakes on a captain's return or the user's word.
 
 ## Canonical ownership
 
@@ -92,9 +92,9 @@ to a ticket. They are not extra levels in the work graph.
 2. **Merge review** - a reviewer with the `merge` rubric after every merge that has a Merge Ticket
    (a lane into its parent, a ticket into the feature, the landing): a mechanical spot check
    scaled to what landed, which at the final feature merge also proves governing plan and feature-spec acceptance criteria.
-   An atomic ticket's merge into main has none; its ticket review PASS, green CI and the human's
+   An atomic ticket's merge into main has none; its ticket review PASS, green CI and the user's
    click stand in its place.
-3. **Inquisition** - human-confirmed, captain-directed sweeps that file Bugs, each code hypothesis
+3. **Inquisition** - user-confirmed, captain-directed sweeps that file Bugs, each code hypothesis
    proved by a proof-only test and each prose one by its quoted passages, with
    a separate record Feature's docs-writer preserving the evidence through normal delivery. The
    Inquisition releases until that delivery lands, then verifies retention before closing; see the
@@ -125,7 +125,7 @@ rather than left in a comment thread or a session transcript.
 ## FutureFeatures
 
 A FutureFeature is an unscheduled strategic possibility recorded as a Linear ticket, not a generic
-idea or delivery contract. It stays in `FutureFeature` until the human promotes or cancels it. The
+idea or delivery contract. It stays in `FutureFeature` until the user promotes or cancels it. The
 [Linear Workspace Standard](../reference/linear-workspace-standard.md) defines its status and
 promotion paths.
 

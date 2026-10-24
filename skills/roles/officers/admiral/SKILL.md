@@ -35,8 +35,8 @@ map and how the tickets move, integrate, and finish together.
   concrete limitation when captain-owned work cannot run.
 - **Dispatch:** same vendor → native subagent (Claude's Agent tool, Codex's own spawn); other vendor
   → T3 `delegate_task` from your own turn, a child of you. Never `t3_thread_launch` or
-  `create_threads` for captains or crew: those are the user's top-level threads. When a captain
-  reports `parent_not_active`, dispatch its crew for it. Full rule: working-tree contract.
+  `create_threads` for AFK captains or crew: those are the user's top-level threads. When a
+  captain reports `parent_not_active`, dispatch its crew for it. Full rule: working-tree contract.
 - **Wayfinding:** perfect plans are fiction; the approved plan fixes the destination, not every turn.
   As fog clears, use `wayfinder` to settle the visible route. Hold Research, Grilling, Question and
   Walkthrough yourself; commission captains for Prototype and Enablement. Pull shared or

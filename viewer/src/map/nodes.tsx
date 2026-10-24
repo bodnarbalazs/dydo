@@ -88,7 +88,7 @@ function Plate({ node, selected, children }: { node: MapNode; selected: boolean;
 }
 
 function pill({ collapsed, descendants }: MapNode): string {
-  return `${collapsed ? '▸' : '▾'} ${String(descendants)} sub-issue${descendants === 1 ? '' : 's'}`;
+  return `${collapsed ? '▸' : '▾'} ${String(descendants)} sub-ticket${descendants === 1 ? '' : 's'}`;
 }
 
 function PlateNode({ id, data, selected }: NodeProps<MapFlowNode>) {

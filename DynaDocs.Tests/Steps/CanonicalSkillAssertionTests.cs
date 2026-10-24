@@ -17,12 +17,12 @@ public sealed class CanonicalSkillAssertionTests
         "skills/engineering/domain-modeling/SKILL.md",
         "skills/engineering/improve-codebase-architecture/SKILL.md",
         "skills/roles/crew/inquisitor/SKILL.md",
-        "skills/roles/officers/issue-captain/SKILL.md",
+        "skills/roles/officers/ticket-captain/SKILL.md",
         "skills/roles/crew/research/SKILL.md",
         "skills/roles/crew/reviewer/SKILL.md",
         "skills/roles/crew/scout/SKILL.md",
         "skills/productivity/wayfinder/SKILL.md",
-        "skills/productivity/to-issue/SKILL.md",
+        "skills/productivity/to-ticket/SKILL.md",
         "skills/productivity/what-would-balazs-do/SKILL.md",
         "skills/roles/crew/reviewer/resources/code.md",
         "skills/roles/crew/reviewer/resources/docs.md",
@@ -57,7 +57,7 @@ public sealed class CanonicalSkillAssertionTests
     {
         var expected = new Dictionary<string, string>
         {
-            ["admiral"] = "roles/officers", ["issue-captain"] = "roles/officers", ["chief-of-staff"] = "roles/officers",
+            ["admiral"] = "roles/officers", ["ticket-captain"] = "roles/officers", ["chief-of-staff"] = "roles/officers",
             ["code-writer"] = "roles/crew", ["docs-writer"] = "roles/crew",
             ["reviewer"] = "roles/crew", ["inquisitor"] = "roles/crew", ["research"] = "roles/crew", ["scout"] = "roles/crew",
             ["codebase-design"] = "engineering", ["domain-modeling"] = "engineering", ["diagnosing-bugs"] = "engineering",
@@ -68,7 +68,7 @@ public sealed class CanonicalSkillAssertionTests
             ["bro"] = "productivity", ["handoff"] = "productivity", ["teach"] = "productivity",
             ["show-me"] = "productivity", ["walkthrough"] = "productivity", ["writing-for-agents"] = "productivity",
             ["writing-for-humans"] = "productivity", ["retro"] = "productivity", ["wayfinder"] = "productivity",
-            ["to-project"] = "productivity", ["to-issue"] = "productivity", ["ketchup"] = "productivity", ["in-your-own-words"] = "productivity",
+            ["to-project"] = "productivity", ["to-ticket"] = "productivity", ["ketchup"] = "productivity", ["in-your-own-words"] = "productivity",
             ["overnight-mode"] = "productivity",
             ["what-would-balazs-do"] = "productivity"
         };

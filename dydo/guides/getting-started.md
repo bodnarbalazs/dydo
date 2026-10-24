@@ -6,7 +6,7 @@ type: guide
 # Getting Started
 
 The framework setup checklist: how an agent, or a human, builds dydo into a project from install to
-the first claimable Issue, Linear workspace and host configuration included. Follow it top to
+the first claimable ticket, Linear workspace and host configuration included. Follow it top to
 bottom. Every step says how to tell it is already done, so it also serves a project that has dydo
 half set up.
 
@@ -74,7 +74,7 @@ OpenCode may read those roots as well; that is untested, and dydo has no OpenCod
 ## 4. Connect Linear
 
 Agents reach Linear through its official MCP server, which writes as the human who authorized it.
-Check first: list the team's Issues over the MCP. If that answers, go to step 5.
+Check first: list the team's tickets over the MCP. If that answers, go to step 5.
 
 Claude Code:
 
@@ -100,12 +100,12 @@ the team against it over the MCP and fix the differences. The MCP creates labels
 statuses and templates are the human's clicks, so list exactly what is missing, with the standard's
 names and order for statuses and names and colours for labels, and walk the human through it.
 
-1. **Issue statuses.** The ten, in the standard's categories and order. Linear draws the order as
+1. **Ticket statuses.** The ten, in the standard's categories and order. Linear draws the order as
    progress, so `Ready to Merge` is the last of the started ones.
 2. **Project statuses.** `Backlog`, `Planning`, `Planned`, `In Progress`, `Completed`, `Canceled`.
 3. **Labels.** The `Type` group with its ten labels and the `Mode` group with `AFK` and `HITL`,
    colours as listed. Retire what the standard does not name.
-4. **Issue templates.** One per Type, its body from the standard.
+4. **Ticket templates.** One per Type, its body from the standard.
 5. **Priority.** Nothing to create; the standard's guide says how the map holder uses it.
 
 Done when the MCP read-back of statuses, labels and templates matches the standard's tables, and
@@ -124,7 +124,7 @@ Done when `dydo check` no longer warns about uncustomized foundation documents.
 ## 7. Host configuration
 
 The spawn tree needs three layers below the top-level session - the human's own, or an invoked
-admiral's: issue-captain, crew, scout.
+admiral's: ticket-captain, crew, scout.
 
 - Claude Code: `.claude/settings.json` contains `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"`.
 - Codex: the project's `.codex/config.toml` contains `[agents]` with `max_depth = 3` and
@@ -142,7 +142,7 @@ dydo check
 dydo fix
 ```
 
-Both clean. Then one live check: assign an existing Issue to yourself over the MCP and unassign it,
+Both clean. Then one live check: assign an existing ticket to yourself over the MCP and unassign it,
 and read the team's statuses back. That proves the claim, the write path and the status set without
 touching a status, which only a captain sets.
 
@@ -150,9 +150,9 @@ touching a status, which only a captain sets.
 
 The operating model is in [Control Flow](../understand/control-flow.md): an idea goes to a
 co-thinker, a ripe one becomes a Project through `to-project`, the map holder - the human by default,
-or an invoked admiral - reads the Project and acts, captains own Issues, every merge inside a
-Project is a Merge Issue, and the human acts at the gates,
-clicking an atomic Issue's reviewed PR into main. The
+or an invoked admiral - reads the Project and acts, captains own tickets, every merge inside a
+Project is a Merge Ticket, and the human acts at the gates,
+clicking an atomic ticket's reviewed PR into main. The
 [Working-Tree Contract](./working-tree-contract.md) says which branch and worktree each of them works
 in.
 

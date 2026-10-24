@@ -179,7 +179,7 @@ Never run an open-ended poll in an agent shell call, such as `tail -f` or a `whi
 proves after green that they fail without it. Three claims prove a change, and each has one owner:
 
 - A **scenario** claims behaviour at the product's boundary, in glossary words, with example tables
-  where values vary. It is contract where the Issue calls for Gherkin: the captain decides the set,
+  where values vary. It is contract where the ticket calls for Gherkin: the captain decides the set,
   the code-writer writes and wires it without weakening it, and the acceptance runner runs it.
 - A **test** claims one seam inside, in the code's words. It comes and goes
   with refactors. Every non-trivial module has a test file; generated code and logic-free data types

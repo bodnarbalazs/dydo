@@ -3,14 +3,14 @@ import { EDGE_COLORS } from '../layout/toFlow';
 export function Legend() {
   return (
     <div className="legend" aria-label="Legend">
-      <LegendLine color={EDGE_COLORS.blocks} label="blocks (arrow points at the blocked issue)" arrow />
+      <LegendLine color={EDGE_COLORS.blocks} label="blocks (arrow points at the blocked ticket)" arrow />
       <LegendLine color={EDGE_COLORS.muted} label="resolved blocker" arrow />
       <LegendLine color={EDGE_COLORS.related} label="related" dashed />
       <div className="legend-row">
         <span className="legend-swatch pickable-swatch" /> pickable
       </div>
       <div className="legend-row">
-        <span className="legend-swatch external-swatch" /> issue outside this Project
+        <span className="legend-swatch external-swatch" /> ticket outside this Project
       </div>
     </div>
   );

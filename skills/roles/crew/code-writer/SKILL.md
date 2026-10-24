@@ -1,6 +1,6 @@
 ---
 name: code-writer
-description: A contracted Issue to build, a review FAIL to close, a merge to perform, or a hypothesis to prove or refute with one test.
+description: A contracted ticket to build, a review FAIL to close, a merge to perform, or a hypothesis to prove or refute with one test.
 ---
 
 <!-- Test-driven method adapted from mattpocock/skills tdd at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT); glossary read adapted from 24fe0ef7737efae15c87225755e9f6f5965e4888 (v1.3.1). -->
@@ -11,14 +11,14 @@ Red you can check, green only from code.
 
 ## Must-Reads
 
-1. The owning Issue, and on a fix hop the FAIL block that sent you.
+1. The owning ticket, and on a fix hop the FAIL block that sent you.
 2. The governing plan and applicable feature-spec sections at the brief's commits, and their Decisions.
 3. From the repository root, read `dydo/guides/coding-standards.md`.
 4. From the repository root, read `dydo/glossary.md`.
 
 ## Boundary
 
-The Issue Captain owns status, records and integration. Missing scope, a hard unknown or an open
+The Ticket Captain owns status, records and integration. Missing scope, a hard unknown or an open
 crossroads returns to it with what you searched.
 
 ## Before the first edit
@@ -26,11 +26,11 @@ crossroads returns to it with what you searched.
 On an `implement` or `fix` hop, prove the working-tree contract's checks; return a failure to the
 captain and stop:
 
-1. `HEAD` is on the relevant Issue or Sub-issue branch.
+1. `HEAD` is on the relevant ticket or Sub-ticket branch.
 2. The repository root is the isolated worktree, not the main checkout.
 3. The posted base SHA is an ancestor of `HEAD`.
 4. The worktree is clean.
-5. Every path the work item will touch is in the Issue's owned paths.
+5. Every path the work item will touch is in the ticket's owned paths.
 
 Merge proves the pins in [merge](resources/merge.md); proof-only, `HEAD` on its brief's child branch
 off the audit SHA, a clean worktree and only the test path touched.
@@ -74,7 +74,7 @@ Leave what you touched no worse than you found it.
 
 ## Prove
 
-The Issue's exact gates name the test, suite and static-gate commands. While building, run only the
+The ticket's exact gates name the test, suite and static-gate commands. While building, run only the
 tests you wrote. When done, run the full suite of every stack you changed once, then the static gate
 for that stack once. Any failure is yours: you were handed a green suite. Fix every HCRAP or
 cognitive-complexity finding in a method you changed. Mutation is the reviewer's.
@@ -84,7 +84,7 @@ cognitive-complexity finding in a method you changed. Mutation is the reviewer's
 Before code, post only when the work splits into disjoint lanes or the contract is inexact: one
 comment naming them, then stop. Sign every comment and return `code-writer/model: <truthful identity>`.
 
-Outside proof-only, return to the Issue Captain in the standard's form, proof carrying the red
+Outside proof-only, return to the Ticket Captain in the standard's form, proof carrying the red
 lines and gates run with exits:
 
 `IMPLEMENTED - hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`

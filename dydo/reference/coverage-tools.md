@@ -142,8 +142,8 @@ belongs to DYD-103, whose policy is already settled and does not wait on the ada
 requires no surviving or uncovered changed-code mutants, as the [Testing
 Strategy](../guides/testing-strategy.md) states it. Nothing here measures that today - those three
 stacks' mutation rows are `unavailable` with the reason `Pending DYD-103`, so the gate cannot run,
-and cannot pass, until that Issue lands a reviewed mechanism. `viewer`'s mutation row is
-`unavailable` for a different reason: no TypeScript mutation mechanism is adopted, and no Issue
+and cannot pass, until that ticket lands a reviewed mechanism. `viewer`'s mutation row is
+`unavailable` for a different reason: no TypeScript mutation mechanism is adopted, and no ticket
 currently tracks that gap. Whether a given candidate passes is what its result artifact says; no
 document stands in for a run.
 

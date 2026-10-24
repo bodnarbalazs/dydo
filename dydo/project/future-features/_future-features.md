@@ -12,7 +12,7 @@ Each FutureFeature has `area: project`, `type: concept`, and either `status: ide
 `status: promoted`. Its body contains a non-empty `## Rationale` section and a `## Related` section
 with at least one resolving link to durable repository knowledge.
 
-Human promotion creates exactly one appropriately shaped Linear Initiative, Project, or Issue, records
+Human promotion creates exactly one appropriately shaped Linear Initiative, Project, or ticket, records
 its stable URL in `linear-reference`, and changes the status to `promoted`. Delivery state then lives
 only in Linear; the FutureFeature remains provenance and is never synchronized with that work item.
 
@@ -23,5 +23,5 @@ An `idea` needs no `linear-reference`; a `promoted` idea requires exactly one UR
 
 Both states prohibit delivery fields: `assigned`, `assignee`, `priority`, `blocked-by`, `blocks`,
 `dependency`, `dependencies`, `project`, `initiative`, `cycle`, `milestone`, `sprint`, `campaign`,
-`slice`, `task`, `issue`, `workflow`, `state`, `due-date`, `estimate`, `labels`, `parent`, `sub-issue`,
+`slice`, `task`, `issue`, `ticket`, `workflow`, `state`, `due-date`, `estimate`, `labels`, `parent`, `sub-issue`, `sub-ticket`,
 and `team`. Strict content validation begins only after Project 3 normalizes the retained ideas.

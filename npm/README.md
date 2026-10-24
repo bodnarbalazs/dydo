@@ -5,7 +5,7 @@ skills for Claude Code and Codex.
 
 dydo is a documentation, skill-authoring, and guardrail framework for AI coding assistants. It keeps
 reviewed project knowledge in Git, authors each role as a native skill folder, and applies
-project rules through hooks. Linear owns live Projects and Issues; Claude Code and Codex own agent
+project rules through hooks. Linear owns live Projects and tickets; Claude Code and Codex own agent
 identity, delegation, scheduling, and worktree isolation.
 
 ## What it provides

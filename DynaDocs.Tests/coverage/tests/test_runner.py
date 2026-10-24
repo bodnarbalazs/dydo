@@ -195,7 +195,7 @@ class SkillLinkMaterializationTests(unittest.TestCase):
             root.mkdir()
             worktree = Path(folder) / "worktree"
             layout = {
-                "roles/officers": ["admiral", "issue-captain"],
+                "roles/officers": ["admiral", "ticket-captain"],
                 "roles/crew": ["code-writer", "reviewer"],
                 "engineering": ["prototype"],
                 "productivity": ["co-thinker"],

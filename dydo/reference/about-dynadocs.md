@@ -10,7 +10,7 @@ Own your project's knowledge, use Linear for live work, and let native coding ag
 DynaDocs is a documentation, skill-authoring, and guardrail framework for AI coding systems. It keeps
 durable project knowledge explicit and versioned, authors shared methods as native skills for
 Claude Code and Codex, and enforces project rules through hooks.
-Linear owns the live Initiative/Project/Issue graph; the coding platform owns sessions, worktrees,
+Linear owns the live Initiative/Project/ticket graph; the coding platform owns sessions, worktrees,
 delegation, and scheduling.
 
 This project is an opinionated personal harness, not a compatibility-first product. It evolves with the
@@ -23,7 +23,7 @@ Decisions, architecture, guides, reviewed Project plans, audits, assimilation br
 as Markdown in Git. They are human-readable, reviewable, linkable at an exact commit, and written for AI
 consumption as much as for people.
 
-Linear holds volatile work state: Initiatives, Projects, Issues, optional Milestones and Cycles, status,
+Linear holds volatile work state: Initiatives, Projects, tickets, optional Milestones and Cycles, status,
 priority, assignee, dependencies, current updates, and review state. dydo does not copy that graph into
 Markdown. Linear links to durable repository artifacts; knowledge discovered during execution flows
 back into the appropriate Decision, guide, plan, audit, or assimilation brief.
@@ -37,7 +37,7 @@ until the human promotes or cancels them; durable knowledge they uncover flows i
 Humans should spend their attention on intent and value choices. Agents implement, test, document,
 review, coordinate, and audit from independently reviewable contracts.
 
-- Officers hold one thing and never switch: the issue-captain, the default officer, holds an Issue,
+- Officers hold one thing and never switch: the ticket-captain, the default officer, holds a ticket,
   and the chief-of-staff the board; an admiral holds a Project only when the human invokes one. They
   keep Linear current.
 - A Project's map holder, the human or an admiral the human invoked, charts it with `wayfinder`.
@@ -45,12 +45,12 @@ review, coordinate, and audit from independently reviewable contracts.
   docs-writer, reviewer, inquisitor, research, scout.
 - Every other skill, `co-thinker` among them, is a plain skill any session loads when the work needs
   it.
-- A fresh agent independently reviews each implementation Issue before human harmonization.
+- A fresh agent independently reviews each implementation ticket before human harmonization.
 - The [Working-Tree Contract](../guides/working-tree-contract.md) governs Project integration,
   optional Inquisition record delivery, and landing.
 
 Branches, worktrees, sessions, subagents, commits, PRs, and reviewer attempts are execution evidence
-linked to an Issue. They are not additional work types.
+linked to a ticket. They are not additional work types.
 
 ## What dydo Provides
 
@@ -90,11 +90,11 @@ management, including FutureFeatures.
 
 ## How Work Runs
 
-1. **Shape intent** - record durable decisions and create the appropriately sized Linear Issue or Project.
-2. **Review the contract** - an atomic Issue may be its own contract; coordinated or architecture-sensitive
+1. **Shape intent** - record durable decisions and create the appropriately sized Linear ticket or Project.
+2. **Review the contract** - an atomic ticket may be its own contract; coordinated or architecture-sensitive
    work links to one reviewed repository Project plan.
-3. **Execute Issues** - native agents work in isolated branches/worktrees and attach governing commits,
-   tests, reviews, and delivery evidence to the Issue.
+3. **Execute tickets** - native agents work in isolated branches/worktrees and attach governing commits,
+   tests, reviews, and delivery evidence to the ticket.
 4. **Inquisition, when confirmed** - this optional, human-confirmed audit files Bugs and delivers its
    record to the feature before landing, following the Working-Tree Contract above.
 5. **Land and inspect** - the landing Merge obtains acceptance review, the human lands the feature,

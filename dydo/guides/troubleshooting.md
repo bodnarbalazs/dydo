@@ -35,7 +35,7 @@ Call `dydo` directly from `PATH`; do not wrap it in `npx`, `dotnet run`, Python,
 
 ## Reviewed-intent failures
 
-Implementation needs a bounded Linear Issue contract and pinned governing plan/spec sections when
+Implementation needs a bounded Linear ticket contract and pinned governing plan/spec sections when
 applicable. Hold missing, ambiguous or conflicting intent and return it to the Captain or map holder
 for reconciliation.
 

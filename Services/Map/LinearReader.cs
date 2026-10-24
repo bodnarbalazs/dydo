@@ -159,7 +159,7 @@ internal sealed class LinearReader(LinearGraphQL linear)
             var issue = Found(
                 await linear.QueryAsync(IssueRelationsPageQuery,
                     new() { ["id"] = issueId, ["after"] = outCursor, ["invAfter"] = inCursor }, ct),
-                "issue", $"Linear has no issue {issueId}.");
+                "issue", $"Linear has no ticket {issueId}.");
 
             // A finished connection keeps its last cursor, so it answers an empty page; skip it.
             if (moreOut)

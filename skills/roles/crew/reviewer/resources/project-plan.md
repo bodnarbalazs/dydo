@@ -9,8 +9,8 @@ a starting route, not a complete one.
 
 1. **Check the shape.** Frontmatter carries `title`, `status`, `area`, `type` and `linear-project`;
    six numbered sections stand in order: 1 Specification (intent, in scope, out of scope,
-   acceptance criteria, questions and answers), 2 Prior art, 3 Design, 4 Implementation Issue map
-   (First pickable Issues, Later bearings, Exact gates), 5 Ordering and isolation, 6 Watch-outs;
+   acceptance criteria, questions and answers), 2 Prior art, 3 Design, 4 Implementation ticket map
+   (First pickable tickets, Later bearings, Exact gates), 5 Ordering and isolation, 6 Watch-outs;
    any Not yet specified fog closes it; `dydo check` passes. Done when every required element exists
    or is one finding.
 2. **Verify the ground.** Read every cited Decision, path, pattern and specification at the
@@ -18,19 +18,19 @@ a starting route, not a complete one.
 3. **Test the destination.** Intent, scope, acceptance and governing design agree, and each
    acceptance criterion names the scenario, command, diff or artifact that proves it at the final
    merge. Done when the user knows what approval fixes.
-4. **Inspect the starting route.** Each first Issue is self-contained and vertical, carries outcome,
+4. **Inspect the starting route.** Each first ticket is self-contained and vertical, carries outcome,
    owned paths, blockers, gate and base branch, exactly one Type, one Mode and `Todo`; its gate is
    copy-pasteable. Check status and priority against `dydo/reference/linear-workspace-standard.md`,
    read from the repository root. Owned paths isolate
    parallel work, hot paths are serial, and the first merge order is credible. Done when every
-   listed Issue is safe for an Issue Captain to claim.
+   listed ticket is safe for a Ticket Captain to claim.
 5. **Respect the horizon.** Later bearings orient without speculative precision, and every in-scope
    outcome, the durable knowledge and the integration the destination needs among them, is a first
-   Issue, a later bearing, honest fog or a blocking Question Issue. Done when the map starts the
+   ticket, a later bearing, honest fog or a blocking Question Ticket. Done when the map starts the
    journey without hiding or inventing what comes later.
 
 **Wayfinding fog is not a gap.** A sharp blocker left after authoritative homework and needing human
-judgment is a `Question` Issue in `Todo`, created by the map holder, recording its homework and
-blocking every Issue that waits on it, with priority by that standard.
+judgment is a `Question` ticket in `Todo`, created by the map holder, recording its homework and
+blocking every ticket that waits on it, with priority by that standard.
 The map holder owns the review loop and presents approval to the user; the second FAIL is his choice. Dimmer uncertainty stays in `## Not yet specified`. A plan
 that pretends either is settled FAILs; honest placement passes.

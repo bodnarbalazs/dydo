@@ -15,7 +15,7 @@ directory of the user's OS - not the current workspace - and report its absolute
 Include a "suggested skills" section in the document, naming which skills the next agent should call
 the Skill tool for.
 
-Do not duplicate content already captured in other artifacts (Linear Issues and Projects, plans,
+Do not duplicate content already captured in other artifacts (Linear tickets and Projects, plans,
 Decision Records, commits, diffs). Reference them by key, path or URL instead.
 
 Redact any sensitive information, such as API keys, passwords, or personally identifiable information.

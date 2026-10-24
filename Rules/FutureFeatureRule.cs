@@ -11,8 +11,8 @@ public sealed class FutureFeatureRule : RuleBase
 {
     private static readonly HashSet<string> DeliveryFields = new(
         ["assigned", "assignee", "priority", "blocked-by", "blocks", "dependency", "dependencies",
-         "project", "initiative", "cycle", "milestone", "sprint", "campaign", "slice", "task", "issue",
-         "workflow", "state", "due-date", "estimate", "labels", "parent", "sub-issue", "team"],
+         "project", "initiative", "cycle", "milestone", "sprint", "campaign", "slice", "task", "issue", "ticket",
+         "workflow", "state", "due-date", "estimate", "labels", "parent", "sub-issue", "sub-ticket", "team"],
         StringComparer.OrdinalIgnoreCase);
 
     private static readonly Regex LinearReference = new(

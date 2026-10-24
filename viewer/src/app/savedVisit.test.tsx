@@ -112,7 +112,7 @@ it('Refresh stays disabled until the first fresh layout has landed', async () =>
   const elk = { layout: (graph: import('elkjs/lib/elk-api').ElkNode) => { requested.resolve(graph); return laid.promise; } } as unknown as import('elkjs/lib/elk-api').ELK;
   window.history.replaceState(null, '', '/?team=t&project=project-1');
   render(<App elk={elk} />);
-  await screen.findByText('Project One: 1 issues, 0 plates');
+  await screen.findByText('Project One: 1 tickets, 0 plates');
   const input = await requested.promise;
   expect(screen.getByRole('button', { name: 'Refresh' }).hasAttribute('disabled')).toBe(true);
   await act(async () => { laid.resolve(input); await laid.promise; });

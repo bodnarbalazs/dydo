@@ -6,7 +6,7 @@ type: folder-meta
 # Project Knowledge
 
 This folder contains durable project knowledge and delivery proof. Live project management belongs in
-Linear; dydo does not mirror Linear status, assignment, priority, dependencies, or Issue bodies into
+Linear; dydo does not mirror Linear status, assignment, priority, dependencies, or ticket bodies into
 repository records.
 
 ## Contents
@@ -20,13 +20,13 @@ repository records.
 - **pitfalls/** - recurring knowledge and known gotchas
 
 Historical work records may remain during a migration, but they are not a live work queue and must not
-grow. Use Linear Initiatives, Projects, Issues, optional Milestones, and Cycles for work in flight.
+grow. Use Linear Initiatives, Projects, tickets, optional Milestones, and Cycles for work in flight.
 
 ## When to Add Docs Here
 
 Add a repository document when the information must remain reviewable and useful after current Linear
 state changes: a Decision, reviewed Project plan, audit, assimilation brief, migration receipt,
-FutureFeature, changelog entry, or durable pitfall. Link the Linear Project or Issue to that artifact and
+FutureFeature, changelog entry, or durable pitfall. Link the Linear Project or ticket to that artifact and
 use an exact commit permalink when the content is historical evidence.
 
 For technical specifications, use `reference/`. For how-to guides, use `guides/`.

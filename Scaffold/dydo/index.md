@@ -18,7 +18,7 @@ comes after you.
 - [project/](project/_project.md) - what was decided and what happened: Decision Records, plans, evidence,
   release history, pitfalls, and FutureFeatures.
 - [dydo glossary](reference/dydo-glossary.md) - locked definitions of how work is named: the Linear
-  work graph, fog and question Issues, roles and skills, evidence - and the retired PM terms to avoid.
+  work graph, fog and question tickets, roles and skills, evidence - and the retired PM terms to avoid.
 - [glossary.md](glossary.md) - this project's own domain vocabulary.
 
 About to write or edit any doc? [Writing docs](reference/writing-docs.md) is the contract it is

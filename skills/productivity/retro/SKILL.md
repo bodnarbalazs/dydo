@@ -9,14 +9,14 @@ description: Kaizen for the harness. Use when the same friction, correction, or 
 
 **Kaizen**: turn friction that keeps returning into one small, incremental, testable improvement to
 the harness - prompts, skills, guides, nudges, hooks, checks, and the code behind them - and suggest
-it rather than ship it. Product behaviour changes through its own Issue.
+it rather than ship it. Product behaviour changes through its own ticket.
 
 ## Boundary
 
 The chief-of-staff reaches for this when the board shows the same friction across sessions; any session
 may reach for it mid-run, then return to its work. The output is a suggestion. The user decides: an
-accepted change becomes an Issue, or lands directly only when it is tiny and inside the scope the
-current Issue already grants.
+accepted change becomes a ticket, or lands directly only when it is tiny and inside the scope the
+current ticket already grants.
 
 ## Threshold
 
@@ -26,10 +26,10 @@ story; the second occurrence is the pattern that earns a change.
 
 ## Method
 
-1. **Establish the recurrence.** Read the primary sources - session logs, Issue comments, review
+1. **Establish the recurrence.** Read the primary sources - session logs, ticket comments, review
    blocks, the diff - and name the repeated symptom, its occurrences, the work it costs, and the
    likely cause. Done when two occurrences are cited by location.
-2. **Deduplicate.** Search the Issues, Decision Records, guides, pitfalls, prompts, skills, nudges and
+2. **Deduplicate.** Search the tickets, Decision Records, guides, pitfalls, prompts, skills, nudges and
    hooks that already speak to this cause. The existing canonical surface wins; a second one splits it.
 3. **Choose one lever.** Scan the lenses for the surface that reaches the cause, then take the smallest
    durable change on it: a deterministic check for a mechanical violation; otherwise wording first,

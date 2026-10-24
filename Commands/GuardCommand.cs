@@ -491,7 +491,7 @@ public static partial class GuardCommand
     {
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
 
-        // Sub-agents (Issue Captains, crew) run the gates their work needs; setup, generation
+        // Sub-agents (Ticket Captains, crew) run the gates their work needs; setup, generation
         // and hook commands stay with the top-level session.
         var workerBlocked = isDydo && isWorker ? FindWorkerBlockedDydoCommand(command) : null;
         if (workerBlocked != null)

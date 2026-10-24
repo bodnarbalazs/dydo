@@ -104,7 +104,7 @@ DYD-188 compared [the upstream denylist](https://github.com/davidondrej/skills/b
 | System permissions | Added `chmod 777 /` and `chown -R ... /` | changes to a named file or directory allowed |
 | GitHub CLI mutation and tokens | Added repository/release/secret/key delete, API DELETE, public visibility and `gh auth token` | repo view, API GET/POST, auth status allowed |
 | Credential stores | Added named password CLIs, sensitive `op` subcommands, macOS keychain password verbs, GPG/GPG2 secret export, `.password-store` paths and named password `.app` bundles at any path, plus app launch/removal | `op --version`, certificate lookup, public GPG export, unrelated apps and `brew`/`open` allowed |
-| Generic `git reset` and `git clean` | Excluded: absent from upstream and local, recoverable operations outside this Issue's contract | Existing path guard still evaluates extracted operations |
+| Generic `git reset` and `git clean` | Excluded: absent from upstream and local, recoverable operations outside this ticket's contract | Existing path guard still evaluates extracted operations |
 
 The upstream POSIX expressions are translated to .NET regexes rather than copied verbatim. The hook evaluates these before nudges or path analysis, so a matching command blocks for every caller even when it names no local file.
 

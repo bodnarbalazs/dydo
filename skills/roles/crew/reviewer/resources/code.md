@@ -2,12 +2,12 @@
 
 # Reviewing Code
 
-Target: the code and tests one Issue delivered, judged against its contract and, when one governs,
+Target: the code and tests one ticket delivered, judged against its contract and, when one governs,
 its pinned architecture plan and applicable feature-spec sections, on four axes judged alone, so a clean axis never masks a failed one.
 
 ## Method
 
-1. **Pin the contract.** The Issue description as of the brief's Linear `updatedAt`: outcome,
+1. **Pin the contract.** The ticket description as of the brief's Linear `updatedAt`: outcome,
    scenarios, owned paths, base SHA, exact gates; governing standards, plan and applicable feature-spec sections at pinned commits. Done when you can state what the change had to do without reading it.
 2. **Read the hops.** `git log <base>..<candidate>` lists the `implement`, `fix` and `merge`
    commits. The implement hop is judged for doing what the contract says; a fix hop for closing the
@@ -55,14 +55,14 @@ its pinned architecture plan and applicable feature-spec sections, on four axes 
 ## Gates
 
 - At a hop, the writer's run: the full suite and the static gate of every stack the change touched,
-  once each, green beside the cheap checks the Issue names
+  once each, green beside the cheap checks the ticket names
 - The HCRAP row of that static gate, read for every method the change touched; one over the bar is
   a finding
 - The project's changed-code mutation gate, in its `--since <base>` form, run by you when the
   project has one; a surviving or uncovered mutant is a finding
-- At a gate - the Issue's final gates, a merge, the landing - the whole set below on that exact
+- At a gate - the ticket's final gates, a merge, the landing - the whole set below on that exact
   candidate, read from its gate record or run by you:
-  - The Issue's gate-scale commands and the full suites, all green
+  - The ticket's gate-scale commands and the full suites, all green
   - Coverage, HCRAP and the one-level static policy in the project's testing guide
   - Mutation on the changed files, no survivor; one example value changed per scenario, none left green
   - `dydo check` when the change touches documentation or validation surfaces

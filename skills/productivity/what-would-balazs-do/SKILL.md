@@ -10,7 +10,7 @@ tests it against his own words.
 
 ## Must-Reads
 
-1. From the repository root, read the Question Issues and Communication and evidence sections of
+1. From the repository root, read the Question Tickets and Communication and evidence sections of
    `dydo/reference/linear-workspace-standard.md`.
 2. From the repository root, read `dydo/project/decisions/_decisions.md`.
 
@@ -18,8 +18,8 @@ tests it against his own words.
 
 A judge goes straight to the Tribunal section.
 
-Officers only, each inside its own remit: a captain on calls inside its Issue contract, the map
-holder on scope, destination, architecture and cross-Issue calls. Crew returns its call to its
+Officers only, each inside its own remit: a captain on calls inside its ticket contract, the map
+holder on scope, destination, architecture and cross-ticket calls. Crew returns its call to its
 captain; the chief of staff never runs it. A vote never widens an officer's remit.
 
 ## When
@@ -62,7 +62,7 @@ dissent. An incomplete tribunal decides nothing; the call becomes a prepared Que
 
 ## Record
 
-Every call is a `Question` Issue in `Todo`, his turn, with the tribunal log attached as a Linear
+Every call is a `Question` ticket in `Todo`, his turn, with the tribunal log attached as a Linear
 Document.
 
 - **Decided:** post

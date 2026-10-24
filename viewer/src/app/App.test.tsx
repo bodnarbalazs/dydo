@@ -91,7 +91,7 @@ describe('App selectors and URL state', () => {
     chooseProject('Project One');
     expect(window.location.search).toBe('?team=team-1&project=project-1');
     await mapShown();
-    expect(screen.getByText('Project One: 4 issues, 1 plates')).toBeTruthy();
+    expect(screen.getByText('Project One: 4 tickets, 1 plates')).toBeTruthy();
   });
 
   it('prompts for a Project once a team is chosen', async () => {
@@ -152,7 +152,7 @@ describe('App map', () => {
     await mapShown();
     fireEvent.click(card('T-E')!);
     expect(window.location.search).toBe('?team=team-2&project=project-2&focus=E');
-    await waitFor(() => expect(screen.getByText('Project Two: 1 issues, 0 plates')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Project Two: 1 tickets, 0 plates')).toBeTruthy());
   });
 
   it('only focuses an external issue without a Project', async () => {
@@ -501,7 +501,7 @@ describe('App ignores answers for a view it has left', () => {
     await new Promise((settle) => setTimeout(settle, 50));
     expect(card('T-E')).not.toBeNull();
     expect(card('T-X')).toBeNull();
-    expect(screen.getByText('Project Two: 1 issues, 0 plates')).toBeTruthy();
+    expect(screen.getByText('Project Two: 1 tickets, 0 plates')).toBeTruthy();
   });
 
   it('drops a graph failure that arrives after the Project changed', async () => {
@@ -718,7 +718,7 @@ describe('App refresh in place', () => {
     expect(transform()).toBe(viewport);
     expect(window.location.search).toBe(search);
     expect(refreshButton().disabled).toBe(false);
-    expect(screen.getByText('Project One: 5 issues, 1 plates')).toBeTruthy();
+    expect(screen.getByText('Project One: 5 tickets, 1 plates')).toBeTruthy();
   });
 
   it('fades a removed issue out on the old map before the new one replaces it', async () => {
@@ -849,7 +849,7 @@ describe('App refresh in place', () => {
       answer.resolve(json(withoutX));
       await new Promise((settle) => setTimeout(settle, 20));
     });
-    expect(screen.getByText('Project Two: 1 issues, 0 plates')).toBeTruthy();
+    expect(screen.getByText('Project Two: 1 tickets, 0 plates')).toBeTruthy();
     expect(screen.queryByRole('status')).toBeNull();
   });
 

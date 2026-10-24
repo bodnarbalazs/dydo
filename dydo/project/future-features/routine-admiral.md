@@ -14,24 +14,24 @@ only for as long as a human keeps a session open.
 
 `admiral` is an officer role authored with the other skills at `skills/<category>/<name>` - specifically `skills/roles/officers/admiral` -
 and exposed to each host by setup. A human invokes it, and it carries one approved Project plan to a
-feature branch he can land. Inside that one session it opens the feature branch, keeps N Issues in
-flight by spawning an `issue-captain` per pickable Issue, merges serially, runs a merge review after
+feature branch he can land. Inside that one session it opens the feature branch, keeps N tickets in
+flight by spawning a `ticket-captain` per pickable ticket, merges serially, runs a merge review after
 every merge, amends the plan as fog clears, routes what the plan cannot answer, and offers the
 inquisition. When the session ends, the Project stops advancing.
 
 ## What the feature adds
 
 One trigger: a cadence. The same method, started without a human present - read the Project's live
-state from Linear, top the in-flight Issues back up to N, merge what passed, and stop. Progress
+state from Linear, top the in-flight tickets back up to N, merge what passed, and stop. Progress
 between the human's gates stops depending on his attention being on a session.
 
 ## What it must not change
 
-- **The human's gates.** Plan approval, HITL question Issues, escalations that survive the ladder,
+- **The human's gates.** Plan approval, HITL question tickets, escalations that survive the ladder,
   inquisition confirmation, and the feature → main merge stay his. A routine admiral runs *between*
   gates and never passes one; unattended is not unreviewed.
-- **The review block.** Issue review before every merge and merge review after it, each from a fresh
-  reviewer, each posted on the Issue and the PR. A cadence is not a reason to merge on a claim.
+- **The review block.** Ticket review before every merge and merge review after it, each from a fresh
+  reviewer, each posted on the ticket and the PR. A cadence is not a reason to merge on a claim.
 - **One writer per worktree.** Assignment is the claim, and the working-tree contract governs
   branches, base SHAs and cleanup exactly as it does now.
 - **The conductor plays no instrument.** A routine admiral coordinates; it still never implements.
@@ -45,7 +45,7 @@ both are true, a cadence only makes unreviewed work arrive faster.
 ## Rationale
 
 FutureFeature is a repo-native idea record. It remains unpromoted until the human promotes it to
-exactly one Linear Initiative, Project, or Issue.
+exactly one Linear Initiative, Project, or ticket.
 
 ## Related
 

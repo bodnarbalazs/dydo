@@ -60,7 +60,7 @@ and inherits the terminal streams.
 ## Work-management boundary
 
 There is no Linear token, object schema, cache path, poll interval, webhook, or synchronization field in
-the active configuration. Linear owns Initiatives, Projects, Issues, optional Milestones and Cycles,
+the active configuration. Linear owns Initiatives, Projects, tickets, optional Milestones and Cycles,
 along with live workflow state. Git owns Decisions, reviewed Project plans, guides, audits, assimilation
 briefs, changelog, and FutureFeature ideas.
 
@@ -78,7 +78,7 @@ orchestration to the host runtime.
 ## Model and effort at dispatch
 
 `dydo.json` carries no model and no effort, and a skill binds neither. The delegating admiral or
-Issue Captain chooses the model - and the effort where the host exposes one - for each task it hands
+Ticket Captain chooses the model - and the effort where the host exposes one - for each task it hands
 out. There is no generated agent file carrying a default.
 
 | Host | What the caller sets | Left to the session |

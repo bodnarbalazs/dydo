@@ -3,7 +3,7 @@
 The 38 canonical dydo skills, sorted by kind:
 
 - [`roles/`](roles/README.md) - 9 skills. The skills that carry an identity: `roles/officers/`
-  hold something and never switch (admiral, issue-captain, chief-of-staff); `roles/crew/` are
+  hold something and never switch (admiral, ticket-captain, chief-of-staff); `roles/crew/` are
   spawned for one bounded job and return their result to whoever sent them.
 - [`engineering/`](engineering/README.md) - 11 skills. The craft: diagnosing, shaping and designing
   code.

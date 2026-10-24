@@ -10,10 +10,17 @@ using System.Diagnostics;
 internal static class GitRunner
 {
     public static GitResult Run(string workingDirectory, params string[] arguments) =>
-        Run(workingDirectory, new Dictionary<string, string>(), arguments);
+        Start(workingDirectory, new Dictionary<string, string>(), inheritGitVariables: true, arguments);
 
-    /// <summary>Runs git with <paramref name="environment"/> added to its environment.</summary>
-    public static GitResult Run(string workingDirectory, IReadOnlyDictionary<string, string> environment, params string[] arguments)
+    /// <summary>
+    /// Runs git with every inherited <c>GIT_*</c> variable removed (config such as <c>GIT_CONFIG_COUNT</c> or
+    /// <c>GIT_CONFIG_PARAMETERS</c>, repository paths, object directories) and <paramref name="environment"/> added.
+    /// </summary>
+    public static GitResult RunIsolated(string workingDirectory, IReadOnlyDictionary<string, string> environment, params string[] arguments) =>
+        Start(workingDirectory, environment, inheritGitVariables: false, arguments);
+
+    private static GitResult Start(string workingDirectory, IReadOnlyDictionary<string, string> environment,
+        bool inheritGitVariables, string[] arguments)
     {
         var start = new ProcessStartInfo("git")
         {
@@ -24,6 +31,8 @@ internal static class GitRunner
             RedirectStandardInput = true,
             CreateNoWindow = true
         };
+        if (!inheritGitVariables)
+            RemoveGitVariables(start.Environment);
         start.Environment["GIT_TERMINAL_PROMPT"] = "0";
         start.Environment["GIT_OPTIONAL_LOCKS"] = "0";
         foreach (var (name, value) in environment)
@@ -45,5 +54,12 @@ internal static class GitRunner
         {
             return new GitResult(-1, [], $"git could not start: {ex.Message}");
         }
+    }
+
+    // A prefix, not a list, so variables a later git adds are covered too; case-insensitive, as Windows names are.
+    private static void RemoveGitVariables(IDictionary<string, string?> environment)
+    {
+        foreach (var name in environment.Keys.Where(name => name.StartsWith("GIT_", StringComparison.OrdinalIgnoreCase)).ToList())
+            environment.Remove(name);
     }
 }

@@ -277,6 +277,44 @@ public sealed class CleanCommandTests : IDisposable
         Assert.True(HasBranch("feature"));
     }
 
+    // Config dydo's own environment carries (GIT_CONFIG_COUNT or GIT_CONFIG_PARAMETERS) must not reach the squash check.
+    [Theory]
+    [InlineData("count", true)]
+    [InlineData("count", false)]
+    [InlineData("parameters", true)]
+    [InlineData("parameters", false)]
+    public async Task KeepMineMergeDriverFromTheEnvironment_DoesNotHideAnUnmergedChange(string source, bool dryRun)
+    {
+        Write(_main, "F", "1\n2\n3\n4\n5\n6\n7\n8\n");
+        Commit(_main, "eight lines");
+        Git(_main, "push", "origin", "master");
+        var tree = AddWorktree("feature");
+        Write(tree, "F", "one\n2\n3\n4\n5\n6\n7\n8\n");
+        Commit(tree, "line one");
+        Write(_main, "F", "1\n2\n3\n4\n5\n6\n7\neight\n");
+        Commit(_main, "line eight");
+        Git(_main, "push", "origin", "master");
+        var keepMine = source == "count"
+            ? new Dictionary<string, string?>
+            {
+                ["GIT_CONFIG_COUNT"] = "2",
+                ["GIT_CONFIG_KEY_0"] = "merge.default",
+                ["GIT_CONFIG_VALUE_0"] = "keep",
+                ["GIT_CONFIG_KEY_1"] = "merge.keep.driver",
+                ["GIT_CONFIG_VALUE_1"] = "true"
+            }
+            : new Dictionary<string, string?>
+            {
+                ["GIT_CONFIG_PARAMETERS"] = "'merge.default'='keep' 'merge.keep.driver'='true'"
+            };
+
+        var (exit, stdout, _) = await WithEnvironment(keepMine, () => dryRun ? Clean("feature", "--dry-run") : Clean("feature"));
+
+        Assert.Equal(0, exit);
+        Assert.Contains(dryRun ? "branch feature would be kept (not merged" : "branch feature kept (not merged", stdout);
+        Assert.True(HasBranch("feature"));
+    }
+
     // A driver a committed .gitattributes names but nothing defines falls back to git's own merge.
     [Fact]
     public async Task UndefinedMergeDriverInCommittedAttributes_StillJudgesBySquash()
@@ -977,7 +1015,24 @@ public sealed class CleanCommandTests : IDisposable
     private async Task<(int Exit, string Stdout, string Stderr)> Clean(params string[] args) =>
         await ConsoleCapture.AllAsync(() => CleanCommand.Create(_t3Root).Parse(args).InvokeAsync());
 
-    private async Task<string> ListOutput() => (await Clean("--archive")).Stdout;
+    // Runs action with variables set in this process, restoring them after; test parallelization is off assembly-wide.
+    private static async Task<T> WithEnvironment<T>(IReadOnlyDictionary<string, string?> variables, Func<Task<T>> action)
+    {
+        var saved = variables.Keys.ToDictionary(name => name, Environment.GetEnvironmentVariable);
+        try
+        {
+            foreach (var (name, value) in variables)
+                Environment.SetEnvironmentVariable(name, value);
+            return await action();
+        }
+        finally
+        {
+            foreach (var (name, value) in saved)
+                Environment.SetEnvironmentVariable(name, value);
+        }
+    }
+
+    private async Task<string> ListOutput()=> (await Clean("--archive")).Stdout;
 
     private string AddWorktree(string branch)
     {

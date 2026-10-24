@@ -4,8 +4,8 @@ namespace DynaDocs.Services;
 /// Decides whether a removed worktree's local branch may go: when its tip is reachable from
 /// <c>origin/&lt;default&gt;</c>, or when merging the tip into it changes nothing, as after a squash or rebase
 /// merge (<c>git merge-tree --write-tree</c> prints exactly origin's tree). That merge runs in a scratch bare
-/// repository that borrows the real object store, without the repository's config or attributes, so no merge
-/// driver decides and no verdict writes an object into the repository; a git without
+/// repository that borrows the real object store, without the repository's config or attributes or any inherited
+/// <c>GIT_*</c> variable, so no merge driver decides and no verdict writes an object into the repository; a git without
 /// <c>merge-tree --write-tree</c>, or one that fails, keeps the branch. A real run fetches with <c>--prune</c> once, before the first verdict, and
 /// keeps every branch when the fetch fails; a dry run fetches nothing and judges the last fetch. The
 /// default branch is the one origin advertises now (<c>git ls-remote --symref origin HEAD</c>), so a
@@ -68,9 +68,11 @@ internal sealed class MergedBranchJudge(string repository, bool dryRun)
     }
 
     // git merge-tree in a scratch bare repository that borrows the real object store as an alternate, so
-    // the objects it writes go with the scratch directory, and no repository, global or system config and
-    // no attributes file reach it: a configured merge driver cannot resolve the tip's changes away. Its
-    // HEAD is unborn, so it reads no attributes from a tree either.
+    // the objects it writes go with the scratch directory, and no repository, global, system or environment
+    // config and no attributes file reach it: a configured merge driver cannot resolve the tip's changes away.
+    // Every inherited GIT_* variable is dropped; the empty global config and XDG_CONFIG_HOME in scratch also
+    // shut out the HOME and XDG config and attributes files. Its HEAD is unborn, so it reads no attributes
+    // from a tree either.
     private static GitResult IsolatedMergeTree(string scratch, string store, string target, string tip)
     {
         var bare = Path.Combine(scratch, "repo.git");
@@ -83,13 +85,13 @@ internal sealed class MergedBranchJudge(string repository, bool dryRun)
             ["GIT_CONFIG_GLOBAL"] = emptyConfig,
             ["XDG_CONFIG_HOME"] = scratch
         };
-        var init = GitRunner.Run(scratch, isolated, "init", "--bare", "--quiet", "--template=", bare);
+        var init = GitRunner.RunIsolated(scratch, isolated, "init", "--bare", "--quiet", "--template=", bare);
         if (!init.Ok)
             return init;
         // One path per line; quoted, a path holding a quote, a backslash or a newline survives intact.
         File.WriteAllText(Path.Combine(bare, "objects", "info", "alternates"), CQuoted(store) + "\n");
         isolated["GIT_DIR"] = bare;
-        return GitRunner.Run(bare, isolated, "merge-tree", "--write-tree", "--no-messages", target, tip);
+        return GitRunner.RunIsolated(bare, isolated, "merge-tree", "--write-tree", "--no-messages", target, tip);
     }
 
     private static string CQuoted(string path) =>

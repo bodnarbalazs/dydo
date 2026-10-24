@@ -3,7 +3,10 @@ namespace DynaDocs.Services;
 using System.ComponentModel;
 using System.Diagnostics;
 
-/// <summary>Runs git directly, without a shell, and never waits on a prompt.</summary>
+/// <summary>
+/// Runs git directly, without a shell, and never waits on a prompt. Optional locks are off, so a read
+/// such as <c>git status</c> never rewrites an index to refresh its stat cache (a dry run changes nothing).
+/// </summary>
 internal static class GitRunner
 {
     public static GitResult Run(string workingDirectory, params string[] arguments)
@@ -18,6 +21,7 @@ internal static class GitRunner
             CreateNoWindow = true
         };
         start.Environment["GIT_TERMINAL_PROMPT"] = "0";
+        start.Environment["GIT_OPTIONAL_LOCKS"] = "0";
         foreach (var argument in arguments)
             start.ArgumentList.Add(argument);
 

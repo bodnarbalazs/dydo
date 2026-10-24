@@ -554,6 +554,95 @@ public sealed class CleanCommandTests : IDisposable
         Assert.False(Directory.Exists(tree));
     }
 
+    // HEAD is clean and pushed; the unpushed commit sits on a ref HEAD does not reach.
+    [Theory]
+    [InlineData("branch")]
+    [InlineData("tag")]
+    [InlineData("stash")]
+    public async Task SubmoduleWithUnpushedWorkOffHead_KeepsTheTree(string where)
+    {
+        var tree = AddWorktree("feature");
+        var submodule = AddSubmodule(tree);
+        File.WriteAllText(Path.Combine(submodule, "lib.txt"), "side work\n");
+        if (where == "stash")
+            Git(submodule, "-c", "user.name=Test", "-c", "user.email=test@example.com", "stash");
+        else
+        {
+            Git(submodule, "checkout", "-b", "side");
+            CommitAs(submodule, "side work");
+            if (where == "tag")
+            {
+                Git(submodule, "tag", "side-tag");
+                Git(submodule, "checkout", "master");
+                Git(submodule, "branch", "-D", "side");
+            }
+            else
+                Git(submodule, "checkout", "master");
+        }
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(2, exit);
+        Assert.Contains($"skipped {tree}: submodule lib has commits on no remote ref", stdout);
+        Assert.True(Directory.Exists(submodule));
+    }
+
+    // The stat cache is stale (a tracked file touched, content unchanged) in the tree and its submodule,
+    // so a git call that refreshes the index would rewrite it.
+    [Fact]
+    public async Task DryRun_LeavesTheIndexOfTheTreeAndItsSubmoduleUnchanged()
+    {
+        var tree = AddWorktree("feature");
+        var submodule = AddSubmodule(tree);
+        var indexes = new[] { tree, submodule }
+            .Select(repository => Git(repository, "rev-parse", "--path-format=absolute", "--git-path", "index").Text.Trim())
+            .ToList();
+        var stale = DateTime.UtcNow.AddHours(-1);
+        foreach (var index in indexes)
+            File.SetLastWriteTimeUtc(index, stale.AddMinutes(-10));
+        File.SetLastWriteTimeUtc(Path.Combine(tree, "readme.md"), stale);
+        File.SetLastWriteTimeUtc(Path.Combine(submodule, "lib.txt"), stale);
+        var before = indexes.Select(index => (File.ReadAllBytes(index), File.GetLastWriteTimeUtc(index))).ToList();
+
+        var (exit, stdout, stderr) = await Clean("feature", "--dry-run");
+
+        Assert.True(exit == 0, stdout + stderr);
+        Assert.Contains($"would remove {tree}", stdout);
+        Assert.DoesNotContain("WARNING", stderr);
+        for (var i = 0; i < indexes.Count; i++)
+        {
+            Assert.Equal(before[i].Item1, File.ReadAllBytes(indexes[i]));
+            Assert.Equal(before[i].Item2, File.GetLastWriteTimeUtc(indexes[i]));
+        }
+    }
+
+    // The archive root, or the folder above it inside the git directory, links outside: nothing behind
+    // the link is pruned, and no work is archived there.
+    [Theory]
+    [InlineData("clean-archive")]
+    [InlineData("dydo")]
+    public async Task ArchiveRootBehindALink_IsNeitherPrunedNorWritten(string linked)
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, "notes.txt", "draft\n");
+        var outside = Path.Combine(_root, "outside");
+        var outsideArchive = linked == "dydo" ? Path.Combine(outside, "clean-archive") : outside;
+        var oldEntry = Path.Combine(outsideArchive, "20200101T000000Z-old");
+        Write(oldEntry, "tracked.patch", "keep me\n");
+        var gitDydo = Path.Combine(_main, ".git", "dydo");
+        DirectoryLinks.Create(linked == "dydo" ? gitDydo : Path.Combine(gitDydo, "clean-archive"), outside);
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(2, exit);
+        Assert.Contains($"failed {tree}: archiving its work failed, so nothing was removed: ", stdout);
+        Assert.Contains("is a link", stdout);
+        Assert.Contains("archive not pruned: ", stdout);
+        Assert.Equal("keep me\n", File.ReadAllText(Path.Combine(oldEntry, "tracked.patch")));
+        Assert.Equal([oldEntry], Directory.GetDirectories(outsideArchive));
+        Assert.Equal("draft\n", File.ReadAllText(Path.Combine(tree, "notes.txt")));
+    }
+
     [Fact]
     public async Task SkippedTrees_SayTheirBranchIsKept()
     {

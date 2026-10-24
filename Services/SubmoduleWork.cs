@@ -4,8 +4,8 @@ namespace DynaDocs.Services;
 /// Work inside a worktree's initialized submodules that removing the tree would lose. The archive reads
 /// only the superproject, and a linked worktree keeps its submodules' git directories inside its own
 /// admin folder, so <c>dydo clean</c> keeps any tree with a submodule that has staged, unstaged or
-/// untracked changes, or commits on none of that submodule's remote refs. Clean, pushed submodules go
-/// with the tree.
+/// untracked changes, or a commit on any local ref (HEAD, a branch, a tag, the stash) that none of that
+/// submodule's remote refs reach. Clean, pushed submodules go with the tree.
 /// </summary>
 internal static class SubmoduleWork
 {
@@ -32,7 +32,7 @@ internal static class SubmoduleWork
             return $"could not be checked ({changes.Error})";
         if (changes.Text.Length > 0)
             return "has uncommitted or untracked changes";
-        var unpushed = GitRunner.Run(submodule, "rev-list", "-n", "1", "HEAD", "--not", "--remotes");
+        var unpushed = GitRunner.Run(submodule, "rev-list", "-n", "1", "HEAD", "--all", "--not", "--remotes");
         if (!unpushed.Ok)
             return $"could not be checked ({unpushed.Error})";
         return unpushed.Text.Trim().Length > 0 ? "has commits on no remote ref" : null;

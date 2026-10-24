@@ -31,7 +31,7 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
         if (!TryOpen(out var repository, out var error) || !TryLoadCap(out var capBytes, out error))
             return Error(error!);
 
-        var run = new Run(repository!, new CleanArchive(ArchiveRoot(repository!), capBytes),
+        var run = new Run(repository!, new CleanArchive(repository!.CommonDirectory, capBytes),
             new MergedBranchJudge(currentDirectory, dryRun), dryRun, DateTime.UtcNow);
         var problem = false;
         foreach (var (target, tree) in Select(repository!.Worktrees, targets, all))
@@ -44,8 +44,7 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
             problem |= outcome.Failed || (!all && !outcome.Removed);
         }
 
-        foreach (var pruned in run.Archive.Prune(run.Now, run.Written, dryRun))
-            Console.WriteLine($"{(dryRun ? "would prune" : "pruned")} archive entry {pruned}");
+        problem |= !Prune(run);
         return problem ? ExitCodes.ToolError : ExitCodes.Success;
     }
 
@@ -53,8 +52,31 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
     {
         if (!TryOpen(out var repository, out var error))
             return Error(error!);
-        new CleanArchive(ArchiveRoot(repository!), 0).List(Console.Out);
+        try
+        {
+            new CleanArchive(repository!.CommonDirectory, 0).List(Console.Out);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return Error($"archive not listed: {ex.Message}");
+        }
+
         return ExitCodes.Success;
+    }
+
+    private static bool Prune(Run run)
+    {
+        try
+        {
+            foreach (var pruned in run.Archive.Prune(run.Now, run.Written, run.DryRun))
+                Console.WriteLine($"{(run.DryRun ? "would prune" : "pruned")} archive entry {pruned}");
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Console.WriteLine($"archive not pruned: {ex.Message}");
+            return false;
+        }
     }
 
     private Outcome CleanOne(WorktreeEntry tree, Run run)
@@ -123,7 +145,7 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
         {
             try
             {
-                CleanArchive.Write(entry, plan, tree, run.Now);
+                run.Archive.Write(entry, plan, tree, run.Now);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -233,9 +255,6 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
         capBytes = megabytes * 1024L * 1024L;
         return error == null;
     }
-
-    private static string ArchiveRoot(Repository repository) =>
-        Path.Combine(repository.CommonDirectory, "dydo", "clean-archive");
 
     private static string DydoRoot(string worktree) =>
         new ConfigService().LoadConfig(worktree)?.Structure.Root ?? ConfigService.DefaultRoot;

@@ -301,8 +301,9 @@ failed worktree always keeps its branch, and its line says so.
   one a running process is using, and one under T3's worktree root `~/.t3/worktrees` (archive the T3
   thread instead). Each is skipped with its reason.
 - **Submodules:** the archive reads only the worktree itself, so a worktree with an initialized
-  submodule that has staged, unstaged or untracked changes, or commits on none of its remote refs, is
-  skipped with a reason naming the submodule: commit and push it, or clean it, first. A worktree whose
+  submodule that has staged, unstaged or untracked changes, or a commit on any local ref (HEAD, a
+  branch, a tag, the stash) that none of its remote refs reach, is skipped with a reason naming the
+  submodule: commit and push it, or clean it, first. A worktree whose
   submodules are clean and pushed is removed as usual.
 - **Uncommitted work is archived, then removed.** Staged, unstaged and untracked files git does not
   ignore, plus dydo's ignored evidence under `dydo/agents/`, are copied to
@@ -313,7 +314,9 @@ failed worktree always keeps its branch, and its line says so.
   files (`bin`, `obj`, `node_modules`, skill links) are regenerable and dropped. A `WARNING:` on stderr lists every
   archived file and the archive path; there is no confirmation step. If the archive cannot be
   written, that worktree's line is `failed` and nothing is removed: no unlinking, no removal, no
-  prune, and the branch is kept.
+  prune, and the branch is kept. When `<git common dir>/dydo` or `clean-archive` is a link, dydo does
+  not follow it: no work is archived (so those worktrees fail), nothing is pruned or listed, the run
+  prints `archive not pruned` with the reason and exits `2`.
 - **Restore:** in a checkout of the entry's HEAD, `git apply <entry>/tracked.patch`, copy
   `untracked/` and `evidence/` back, and recreate each link in `manifest.json`'s `links` at its path,
   pointing to its target.
@@ -341,6 +344,7 @@ failed worktree always keeps its branch, and its line says so.
   keeps it meanwhile (unlock it after the move), and the run goes on.
 - **`--dry-run`** prints the same lines and the same archive warning with `would`, and changes
   nothing: no fetch (branches are judged against the last fetch), no archive, no removal, no prune,
+  no index rewrite (dydo runs git with optional locks off, so reads do not refresh a stat cache),
   and no busy check, since the Windows check renames the folder; each line says the busy check was not
   run.
 

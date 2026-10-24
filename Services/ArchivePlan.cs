@@ -19,7 +19,8 @@ internal sealed record ArchivePlan(
     /// <summary>Reads the plan from git; null with <paramref name="error"/> set when git cannot answer.</summary>
     public static ArchivePlan? Collect(string worktree, string dydoRoot, out string? error)
     {
-        var tracked = GitRunner.Run(worktree, "diff", "HEAD", "--name-only", "-z");
+        // git diff HEAD would rewrite the index even with optional locks off; status refreshes in memory only.
+        var tracked = GitRunner.Run(worktree, "status", "--porcelain=v1", "-z", "--no-renames", "--untracked-files=no");
         var untracked = GitRunner.Run(worktree, "ls-files", "--others", "--exclude-standard", "-z");
         var evidence = GitRunner.Run(worktree, "ls-files", "--others", "--ignored", "--exclude-standard", "-z",
             "--", $"{dydoRoot}/agents/");
@@ -33,7 +34,7 @@ internal sealed record ArchivePlan(
         error = null;
         var links = new List<ArchiveLink>();
         return new ArchivePlan(
-            tracked.Entries,
+            [.. tracked.Entries.Select(entry => entry[3..])],
             WithoutLinks(worktree, untracked.Entries, links),
             WithoutLinks(worktree, evidence.Entries, links),
             links);

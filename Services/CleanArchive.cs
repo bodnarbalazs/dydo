@@ -9,9 +9,13 @@ using System.Text.RegularExpressions;
 /// <c>&lt;git common dir&gt;/dydo/clean-archive/</c>, one <c>&lt;UTC timestamp&gt;-&lt;branch&gt;</c> folder per
 /// archived worktree holding <c>tracked.patch</c>, <c>untracked/</c>, <c>evidence/</c> and
 /// <c>manifest.json</c>. Inside the git directory it outlives the worktree and is never committed.
+/// When <c>dydo/</c> or <c>clean-archive/</c> there is a link, the archive is not used at all: no entry is
+/// written, listed or pruned behind it, so retention never reaches outside the git directory.
 /// </summary>
-internal sealed partial class CleanArchive(string root, long capBytes)
+internal sealed partial class CleanArchive(string gitCommonDirectory, long capBytes)
 {
+    private readonly string root = Path.Combine(gitCommonDirectory, "dydo", "clean-archive");
+
     public static readonly TimeSpan Retention = TimeSpan.FromDays(90);
 
     private const string StampFormat = "yyyyMMdd'T'HHmmss'Z'";
@@ -29,8 +33,9 @@ internal sealed partial class CleanArchive(string root, long capBytes)
     }
 
     /// <summary>Copies everything <paramref name="plan"/> names out of the worktree into <paramref name="entry"/>.</summary>
-    public static void Write(string entry, ArchivePlan plan, WorktreeEntry tree, DateTime utcNow)
+    public void Write(string entry, ArchivePlan plan, WorktreeEntry tree, DateTime utcNow)
     {
+        ThrowIfLinked();
         Directory.CreateDirectory(entry);
         if (plan.Tracked.Count > 0)
         {
@@ -52,7 +57,8 @@ internal sealed partial class CleanArchive(string root, long capBytes)
 
     /// <summary>
     /// Entries older than <see cref="Retention"/> go, then the oldest until the archive fits the cap.
-    /// <paramref name="keep"/> (this run's entries) is never pruned. Returns each pruned entry with why.
+    /// <paramref name="keep"/> (this run's entries) is never pruned. Returns each pruned entry with why;
+    /// throws <see cref="IOException"/>, pruning nothing, when the archive sits behind a link.
     /// </summary>
     public List<string> Prune(DateTime utcNow, IReadOnlySet<string> keep, bool dryRun)
     {
@@ -95,8 +101,22 @@ internal sealed partial class CleanArchive(string root, long capBytes)
             + "and recreate each link manifest.json lists under links at its path, pointing to its target.");
     }
 
+    // Every folder from the git directory down to the root is real, so what is enumerated is inside it.
+    private void ThrowIfLinked()
+    {
+        foreach (var folder in new[] { Path.GetDirectoryName(root)!, root })
+        {
+            var info = new FileInfo(LinkSafeDelete.Extended(folder));
+            // A missing path reports every attribute bit (-1), so existence is checked first.
+            if ((int)info.Attributes != -1 && LinkSafeDelete.IsLink(info))
+                throw new IOException($"{folder} is a link, and dydo clean does not follow it out of the git directory; "
+                    + "replace it with a real folder");
+        }
+    }
+
     private IEnumerable<(string Path, DateTime Stamp)> Entries()
     {
+        ThrowIfLinked();
         if (!Directory.Exists(root))
             return [];
         return Directory.EnumerateDirectories(root)

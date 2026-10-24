@@ -11,12 +11,8 @@ public class ConfigService : IConfigService
     public const string ConfigFileName = ConfigFileLocator.FileName;
     public const string DefaultRoot = ConfigFileLocator.DefaultRoot;
 
-    // Cache keyed by startPath to avoid repeated directory walks within the same instance
     private readonly Dictionary<string, string?> _configFileCache = new();
 
-    /// <summary>
-    /// Find dydo.json by walking up the directory tree
-    /// </summary>
     public string? FindConfigFile(string? startPath = null)
     {
         var cacheKey = startPath ?? Environment.CurrentDirectory;
@@ -28,9 +24,6 @@ public class ConfigService : IConfigService
         return result;
     }
 
-    /// <summary>
-    /// Load configuration from dydo.json
-    /// </summary>
     public DydoConfig? LoadConfig(string? startPath = null)
     {
         var configPath = FindConfigFile(startPath);
@@ -140,9 +133,6 @@ public class ConfigService : IConfigService
             throw new InvalidDataException("dydo.json testing.runner executable must not be blank.");
     }
 
-    /// <summary>
-    /// Get the project root directory (where dydo.json lives)
-    /// </summary>
     public string? GetProjectRoot(string? startPath = null)
     {
         var configPath = FindConfigFile(startPath);
@@ -152,9 +142,6 @@ public class ConfigService : IConfigService
         return Path.GetDirectoryName(configPath);
     }
 
-    /// <summary>
-    /// Get the dydo root folder path (e.g., /project/dydo/)
-    /// </summary>
     public string GetDydoRoot(string? startPath = null)
     {
         var baseDir = GetProjectRoot(startPath) ?? startPath ?? Environment.CurrentDirectory;
@@ -170,9 +157,6 @@ public class ConfigService : IConfigService
         return GetDydoRoot(startPath);
     }
 
-    /// <summary>
-    /// Get the changelog folder path (dydo/project/changelog/)
-    /// </summary>
     public string GetChangelogPath(string? startPath = null)
     {
         return Path.Combine(GetDydoRoot(startPath), "project", "changelog");

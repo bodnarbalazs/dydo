@@ -4,8 +4,7 @@ using System.Text.RegularExpressions;
 using DynaDocs.Utils;
 
 /// <summary>
-/// Service for managing globally off-limits file patterns.
-/// Loads patterns from dydo/files-off-limits.md and provides path matching.
+/// Loads the globally off-limits patterns from dydo/files-off-limits.md and matches paths against them.
 /// </summary>
 public class OffLimitsService : IOffLimitsService
 {
@@ -29,9 +28,8 @@ public class OffLimitsService : IOffLimitsService
         _configService = configService ?? new ConfigService();
     }
 
-    // Hardcoded off-limits pattern for machine-managed state (audit, local markers, role
-    // definitions) that no agent may even read, regardless of what's in files-off-limits.md.
-    // Prevents self-escalation attacks; agent-untouchable since per-role RBAC went (Decision 024).
+    // Machine-managed state no agent may even read, whatever files-off-limits.md says:
+    // prevents self-escalation (Decision 024).
     private static readonly (string Pattern, Regex Compiled)[] SystemOffLimits =
     [
         ("dydo/_system/**", CompileGlobToRegex("dydo/_system/**")),
@@ -169,11 +167,9 @@ public class OffLimitsService : IOffLimitsService
     public IEnumerable<string> ValidateLiteralPaths(string basePath)
     {
         var missing = new List<string>();
-        // Protected patterns are checked alongside off-limits ones: a typo there silently
-        // protects nothing, and dydo/index.md kept this check when it was still off-limits.
+        // Protected patterns are checked too: a typo there silently protects nothing.
         foreach (var pattern in _patterns.Concat(_protectedPatterns))
         {
-            // Only check patterns that are literal paths (no wildcards)
             if (!ContainsWildcard(pattern))
             {
                 var fullPath = Path.Combine(basePath, pattern);
@@ -284,10 +280,6 @@ public class OffLimitsService : IOffLimitsService
         return pattern.Contains('*') || pattern.Contains('?');
     }
 
-    /// <summary>
-    /// Check if text looks like a file pattern rather than descriptive text.
-    /// Patterns typically contain: path separators, wildcards, dots (extensions), or start with special chars.
-    /// </summary>
     private static bool LooksLikePattern(string text)
     {
         // If text contains multiple spaces, it's likely a descriptive sentence, not a pattern
@@ -296,7 +288,6 @@ public class OffLimitsService : IOffLimitsService
         if (spaceCount >= 2)
             return false;
 
-        // Patterns contain: path separators, wildcards, or look like filenames
         return text.Contains('/') ||
                text.Contains('\\') ||
                text.Contains('*') ||
@@ -305,10 +296,6 @@ public class OffLimitsService : IOffLimitsService
                (text.Contains('.') && !text.Contains(' '));  // file.ext but not "a sentence."
     }
 
-    /// <summary>
-    /// Validate the format of the off-limits file.
-    /// Returns a list of validation issues found.
-    /// </summary>
     public IEnumerable<FormatValidationIssue> ValidateFormat(string? basePath = null)
     {
         var path = GetOffLimitsPath(basePath ?? _basePath ?? Environment.CurrentDirectory);
@@ -361,11 +348,6 @@ public class OffLimitsService : IOffLimitsService
         }
     }
 
-    /// <summary>
-    /// Check if a whitelist pattern is too broad.
-    /// Patterns like "**/secrets*" or "**/*.json" are too broad for whitelist.
-    /// Note: **/.*  is specifically allowed as it matches dotfiles (reasonably scoped).
-    /// </summary>
     private static bool IsBroadWhitelistPattern(string pattern)
     {
         if (!pattern.StartsWith("**/"))

@@ -3,8 +3,7 @@ namespace DynaDocs.Models;
 using System.Text.Json.Serialization;
 
 /// <summary>
-/// Input received from Claude Code hooks via stdin.
-/// This represents the JSON structure sent by PreToolUse hooks.
+/// The JSON a PreToolUse hook sends on stdin, from Claude Code or Codex.
 /// </summary>
 public class HookInput
 {
@@ -13,14 +12,14 @@ public class HookInput
 
     /// <summary>
     /// Unique id of the sub-agent making this call. Present only when the hook fires
-    /// inside a sub-agent (Agent tool or workflow-spawned). Absence = Tier-1 main thread.
+    /// inside a sub-agent (Agent tool or workflow-spawned); absent on the main thread.
     /// </summary>
     [JsonPropertyName("agent_id")]
     public string? AgentId { get; set; }
 
     /// <summary>
     /// Agent type name of the sub-agent (e.g. "reviewer", "Explore", "workflow-subagent").
-    /// Carries the role for Tier-2 workers. Present only alongside agent_id.
+    /// Carries the crew member's role. Present only alongside agent_id.
     /// </summary>
     [JsonPropertyName("agent_type")]
     public string? AgentType { get; set; }

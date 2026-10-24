@@ -7,7 +7,6 @@ public static class ShellCompletionInstaller
     private const string Marker = "# dydo shell completions";
 
     /// <summary>
-    /// Detect shell, append completion sourcing line to profile.
     /// Returns a status message on success, or null if skipped/failed.
     /// </summary>
     public static string? Install()
@@ -29,7 +28,6 @@ public static class ShellCompletionInstaller
 
     /// <summary>
     /// Writes completion block to the given profile path if not already present.
-    /// Extracted for testability - Install() calls this after detecting the shell.
     /// </summary>
     public static string? InstallToProfile(string shell, string profilePath)
     {
@@ -150,13 +148,11 @@ public static class ShellCompletionInstaller
                 var bashrc = Path.Combine(home, ".bashrc");
                 var bashProfile = Path.Combine(home, ".bash_profile");
 
-                // Prefer .bashrc if it exists, otherwise .bash_profile
                 var profile = File.Exists(bashrc) ? bashrc : bashProfile;
                 return ("bash", profile);
             }
         }
 
-        // If $SHELL is unset and we're on Windows → PowerShell
         if (string.IsNullOrEmpty(shellEnv) && OperatingSystem.IsWindows())
         {
             var docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);

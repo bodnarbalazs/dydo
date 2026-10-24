@@ -1,8 +1,5 @@
 namespace DynaDocs.Models;
 
-/// <summary>
-/// Helper methods for working with hook input
-/// </summary>
 public static class HookInputExtensions
 {
     private static readonly Dictionary<string, string> ActionMap = new(StringComparer.OrdinalIgnoreCase)

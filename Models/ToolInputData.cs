@@ -2,10 +2,6 @@ namespace DynaDocs.Models;
 
 using System.Text.Json.Serialization;
 
-/// <summary>
-/// Tool input data from the hook.
-/// Contains the file path and other tool-specific data.
-/// </summary>
 public class ToolInputData
 {
     [JsonPropertyName("file_path")]

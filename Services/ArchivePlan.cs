@@ -51,7 +51,6 @@ internal sealed record ArchivePlan(
             evidence.Entries.Length - kept.Length);
     }
 
-    // A path below <root>/agents/ with a build folder among its folders.
     private static bool IsBuildOutput(string path, IReadOnlyList<string> dydoRoots) =>
         dydoRoots.Select(AgentsFolder)
             .Where(agents => path.StartsWith(agents, StringComparison.OrdinalIgnoreCase))
@@ -102,7 +101,6 @@ internal sealed record ArchivePlan(
         return outside ? null : relative;
     }
 
-    // The pathspec and listing prefix of a root's agents folder.
     private static string AgentsFolder(string root) => root.Length == 0 ? "agents/" : $"{root}/agents/";
 
     // HEAD's dydo.json and the working tree's, each where it exists; reason is set when one exists but

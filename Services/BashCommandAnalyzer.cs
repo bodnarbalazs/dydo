@@ -4,12 +4,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 /// <summary>
-/// Analyzes shell commands to detect file operations.
-/// Supports bash, zsh, PowerShell, and Windows cmd.
+/// Detects file operations in bash, zsh, PowerShell and cmd commands.
 /// </summary>
 public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 {
-    // Read commands by shell type
     private static readonly Dictionary<string, FileOperationType> ReadCommands = new(StringComparer.OrdinalIgnoreCase)
     {
         // Unix/Linux/macOS
@@ -153,51 +151,39 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private const string CommandEndContext = @"\s|$|['""`);&|]";
     private const string CommandEnd = "(?=" + CommandEndContext + ")";
 
-    // Dangerous patterns that should always be blocked
     private static readonly (Regex Pattern, string Reason)[] DangerousPatterns =
     [
-        // Recursive delete of root or home
         (RecursiveDeleteRootRegex(), "Recursive delete of root or home directory"),
         (RecursiveDeleteGlobRegex(), "Recursive delete with dangerous glob pattern"),
 
-        // PowerShell recursive delete of root
         (PowerShellRecursiveDeleteRegex(), "PowerShell recursive delete of root directory"),
 
-        // Fork bomb patterns
         (ForkBombClassicRegex(), "Fork bomb detected"),
         (ForkBombAltRegex(), "Fork bomb variant detected"),
 
-        // Direct disk writes
         (DirectDiskWriteRegex(), "Direct disk write attempt"),
         (DdDiskWriteRegex(), "Direct disk write via dd"),
         (DdKnownDiskWriteRegex(), "Direct disk write via dd"),
 
-        // Base64 decode piped to interpreter
         (Base64DecodePipeExecRegex(), "Base64 decode piped to interpreter"),
 
-        // Download and execute - Unix
         (CurlPipeShRegex(), "Download and execute pattern (curl | sh)"),
         (WgetPipeShRegex(), "Download and execute pattern (wget | sh)"),
         (WgetOutputPipeShRegex(), "Download and execute pattern (wget -O | sh)"),
 
-        // Download and execute - PowerShell
         (PowerShellIwrIexRegex(), "Download and execute pattern (PowerShell IWR | IEX)"),
         (PowerShellIwrIexShortRegex(), "Download and execute pattern (PowerShell iwr | iex)"),
         (PowerShellDownloadStringRegex(), "Download and execute pattern (DownloadString | IEX)"),
 
-        // Eval of untrusted input
         (EvalVariableRegex(), "Eval of variable content"),
 
-        // History clearing (potential cover-up)
         (HistoryClearRegex(), "History clearing detected"),
         (HistoryFileTruncateRegex(), "History file truncation"),
         (PowerShellHistoryDeleteRegex(), "PowerShell history deletion"),
 
-        // Disable security features
         (SelinuxDisableRegex(), "SELinux disable attempt"),
         (FirewallFlushRegex(), "Firewall flush attempt"),
 
-        // Credential theft indicators
         (ShadowFileAccessRegex(), "Shadow file access attempt"),
         (PasswdModifyRegex(), "Password file modification attempt"),
 
@@ -225,7 +211,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (ForcedWorktreeRemoveRegex(), WorktreeRemovalReason),
         (RecursiveWorktreeDeleteRegex(), WorktreeRemovalReason),
 
-        // Inline interpreter execution - bypasses all file operation analysis
         (InlineInterpreterRegex(), "Inline interpreter execution bypasses file operation analysis. Write a script file instead."),
     ];
 
@@ -246,7 +231,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"\$[A-Za-z_][A-Za-z0-9_]*|\$\{[^}]+\}")]
     private static partial Regex VariableExpansionRegex();
 
-    // Dangerous pattern regexes (generated for performance)
     [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(\./|/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex RecursiveDeleteRootRegex();
 
@@ -268,7 +252,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(CommandStart + @"dd\s+[^;&|\r\n]*\bof\s*=\s*['""]?/dev/(?!null(?:\s|$|['"";&|)`]))[^\s'"";&|]+", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex DdDiskWriteRegex();
 
-    // Master's floor, kept unanchored: known disk targets block anywhere in the command text.
+    // Kept unanchored on purpose: known disk targets block anywhere in the command text.
     [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?:sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex DdKnownDiskWriteRegex();
 
@@ -440,7 +424,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"^\s*(?:cd|Set-Location|sl|chdir|Push-Location|pushd)\s+(?:""([^""]+)""|'([^']+)'|(\S+))\s*(?:&&|;)\s*(.*)", RegexOptions.IgnoreCase)]
     private static partial Regex CdThenCommandRegex();
 
-    // Redirection patterns
     [GeneratedRegex(@"(?<!\d)(>{1,2})\s*([^\s|;&><]+)")]
     private static partial Regex OutputRedirectRegex();
 
@@ -470,7 +453,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         if (string.IsNullOrWhiteSpace(command))
             return result;
 
-        // First check for dangerous patterns
         var (isDangerous, reason) = CheckDangerousPatterns(command);
         if (isDangerous)
         {
@@ -482,10 +464,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         // Strip cat heredoc blocks - literal text, not shell code
         var strippedCommand = CatHeredocRegex().Replace(command, "HEREDOC_STRIPPED");
 
-        // Check for bypass attempts
         CheckBypassAttempts(strippedCommand, result);
 
-        // Split command by separators (;, &&, ||, newlines)
         var subCommands = SplitCommand(strippedCommand);
 
         foreach (var subCmd in subCommands)
@@ -505,7 +485,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         foreach (Match match in CommandSubstitutionRegex().Matches(command))
         {
             var raw = match.Value;
-            // Extract inner content: $(inner) or `inner`
             string inner;
             if (raw.StartsWith("$(") && raw.EndsWith(")"))
                 inner = raw[2..^1];
@@ -652,7 +631,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
         var cmdName = tokens[0];
 
-        // Shell -c: extract and analyze the inner command string
         if (TryAnalyzeShellC(tokens, result))
             return;
 
@@ -668,10 +646,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             AnalyzeUncertainCommand(cmdName, tokens, result);
     }
 
-    /// <summary>
-    /// Detect bash/sh/zsh -c and recursively analyze the inner command.
-    /// Returns true if the command was a shell -c invocation (caller should return).
-    /// </summary>
     private bool TryAnalyzeShellC(List<string> tokens, BashAnalysisResult result)
     {
         if (!ShellInterpreters.Contains(tokens[0]))
@@ -759,10 +733,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         }
     }
 
-    /// <summary>
-    /// Find the -c flag in shell interpreter tokens (handles both -c and combined flags like -xc).
-    /// Returns the index of the token containing -c, or -1 if not found.
-    /// </summary>
     private static int FindShellCArgument(List<string> tokens)
     {
         for (int i = 1; i < tokens.Count; i++)
@@ -805,7 +775,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private static void AnalyzeRedirection(string command, BashAnalysisResult result)
     {
-        // Output redirection: > or >>
         var outputRedirects = OutputRedirectRegex().Matches(command);
         foreach (Match match in outputRedirects)
         {
@@ -822,7 +791,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             }
         }
 
-        // Input redirection: <
         var inputRedirects = InputRedirectRegex().Matches(command);
         foreach (Match match in inputRedirects)
         {

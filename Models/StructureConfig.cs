@@ -2,9 +2,6 @@ namespace DynaDocs.Models;
 
 using System.Text.Json.Serialization;
 
-/// <summary>
-/// Configuration for folder structure
-/// </summary>
 public class StructureConfig
 {
     [JsonPropertyName("root")]

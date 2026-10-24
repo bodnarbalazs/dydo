@@ -1,14 +1,11 @@
 namespace DynaDocs.Utils;
 
 /// <summary>
-/// Shared YAML frontmatter extraction - the single parsing path for the surviving frontmatter
-/// readers (task/issue/doc records and the sync spine). The agent-state / inbox / dispatch
-/// readers that also used it were removed in the 2.1.0 simplification campaign (DR-041).
+/// Shared YAML frontmatter extraction: the single parsing path for every frontmatter reader.
 /// </summary>
 public static class FrontmatterParser
 {
     /// <summary>
-    /// Extracts YAML frontmatter key-value pairs from Markdown content.
     /// Returns null if the content has no valid frontmatter block.
     /// Keys are returned as-is (not lowercased) - callers handle casing.
     /// </summary>
@@ -38,7 +35,6 @@ public static class FrontmatterParser
     }
 
     /// <summary>
-    /// Removes the frontmatter block (including delimiters) and returns the body.
     /// Returns the original content unchanged if no frontmatter is present.
     /// </summary>
     public static string StripFrontmatter(string content)
@@ -47,10 +43,6 @@ public static class FrontmatterParser
         return bounds == null ? content : content[bounds.Value.BodyStart..].TrimStart();
     }
 
-    /// <summary>
-    /// Extracts the raw YAML string between the --- delimiters.
-    /// Returns null if no valid frontmatter block exists.
-    /// </summary>
     internal static string? ExtractYamlBlock(string content)
     {
         var bounds = Bounds(content);
@@ -68,9 +60,7 @@ public static class FrontmatterParser
         var bounds = Bounds(content);
         if (bounds == null) return content;
 
-        // The opener line (content[..openerLen]) and the closing delimiter both come from the shared Bounds
-        // helper, so opener tolerance and the empty-block case never diverge from the other frontmatter readers
-        // (finding 8). The yaml region begins at the opener's newline, so lines[0] is that line's remainder.
+        // The yaml region begins at the opener's newline, so lines[0] is that line's remainder.
         var openerLen = bounds.Value.YamlStart - 1;
         var closerStart = bounds.Value.CloserStart;
         var lines = content[openerLen..closerStart].Split('\n').ToList();
@@ -113,11 +103,8 @@ public static class FrontmatterParser
     {
         var openerNewline = content.IndexOf('\n');
         if (openerNewline < 0) return null;
-        // Validate the OPENER with the same strictness as the closer, matching the XML contract above (review
-        // R2-3): exactly `---` on the first line, trailing whitespace tolerated. A bare StartsWith("---") also
-        // opened on `----` (a 4-dash horizontal rule) or `--- title`, so a body that happens to begin with such a
-        // line - plus any later `---` - was mis-parsed as bogus frontmatter, mangling body content into fields on
-        // the sync path. IsDelimiterLine keeps the trailing-whitespace tolerance the doc promises.
+        // As strict as the closer: a body opening with `----` (a horizontal rule) or `--- title`
+        // must not parse as frontmatter.
         if (!IsDelimiterLine(content, 0, openerNewline)) return null;
 
         var lineStart = openerNewline + 1;

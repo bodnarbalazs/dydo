@@ -3,10 +3,6 @@ namespace DynaDocs.Rules;
 using DynaDocs.Models;
 using DynaDocs.Services;
 
-/// <summary>
-/// Rule for validating the files-off-limits.md configuration.
-/// Checks that literal paths (without wildcards) in the off-limits file actually exist.
-/// </summary>
 public class OffLimitsRule : RuleBase
 {
     public override string Name => "OffLimitsValidation";
@@ -25,14 +21,12 @@ public class OffLimitsRule : RuleBase
         var configService = new ConfigService();
         var dydoRoot = configService.GetDydoRoot(basePath);
 
-        // Normalize paths for comparison
         var normalizedFolderPath = Path.GetFullPath(folderPath).TrimEnd(Path.DirectorySeparatorChar);
         var normalizedDydoRoot = Path.GetFullPath(dydoRoot).TrimEnd(Path.DirectorySeparatorChar);
 
         if (!normalizedFolderPath.Equals(normalizedDydoRoot, StringComparison.OrdinalIgnoreCase))
             yield break;
 
-        // Check if off-limits file exists
         if (!_offLimitsService.OffLimitsFileExists(basePath))
         {
             yield return new Violation(
@@ -44,10 +38,8 @@ public class OffLimitsRule : RuleBase
             yield break;
         }
 
-        // Load patterns and validate literal paths
         _offLimitsService.LoadPatterns(basePath);
 
-        // Validate format
         var formatIssues = _offLimitsService.ValidateFormat(basePath);
         foreach (var issue in formatIssues)
         {

@@ -21,6 +21,7 @@ public class GuardWorktreeRemovalTests : IntegrationTestBase
     [InlineData("Bash", "dydo clean --all", true)]
     [InlineData("PowerShell", "dydo clean .claude/worktrees/dyd-1", true)]
     [InlineData("Bash", "rm -rf .claude/worktrees/dyd-1/bin", true)]
+    [InlineData("Bash", "rm -rf \"C:/repo/.claude/worktrees/my tree/bin\"", true)]
     public async Task DydoCleanAndDeletesInsideATree_AreAllowed(string tool, string command, bool subAgent)
     {
         var result = await ShellAsync(tool, command, subAgent);
@@ -33,6 +34,9 @@ public class GuardWorktreeRemovalTests : IntegrationTestBase
     [InlineData("Bash", "rm -rf .claude/worktrees/dyd-1")]
     [InlineData("Bash", "git worktree remove -ff .claude/worktrees/dyd-1")]
     [InlineData("PowerShell", "Remove-Item -Recurse -Force .claude\\worktrees\\dyd-1")]
+    [InlineData("PowerShell", "git -C \"C:\\My Repo\" worktree remove --force \"C:\\My Repo\\.claude\\worktrees\\x\"")]
+    [InlineData("Bash", "rm -rf \"C:/repo/.claude/worktrees/my tree\"")]
+    [InlineData("PowerShell", "Remove-Item -Recurse \"C:\\repo\\.claude\\worktrees\\my tree\"")]
     public async Task RawWorktreeRemoval_IsDeniedWithTheDydoCleanHint(string tool, string command)
     {
         var result = await ShellAsync(tool, command, subAgent: false);

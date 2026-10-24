@@ -8,8 +8,9 @@ using DynaDocs.Utils;
 /// without losing work. Uncommitted work is archived first (<see cref="CleanArchive"/>), links inside a
 /// tree are unlinked before anything recursive runs (<see cref="LinkSafeDelete"/>), and a local branch
 /// is deleted only when <see cref="MergedBranchJudge"/> finds its tip on origin's default branch. The main
-/// checkout, the tree holding the current directory, locked trees, trees in use and trees under T3's root
-/// are skipped with the reason. Prints one line per worktree. A dry run changes nothing, so it runs no
+/// checkout, the tree holding the current directory, locked trees, trees whose submodules hold work
+/// (<see cref="SubmoduleWork"/>), trees in use and trees under T3's root are skipped with the reason.
+/// Prints one line per worktree, ending with what happened to its branch. A dry run changes nothing, so it runs no
 /// busy check (the Windows probe moves the folder) and says so.
 /// </summary>
 internal sealed class WorktreeCleaner(string currentDirectory, string t3WorktreeRoot, Func<string, string?>? findUse = null)
@@ -61,7 +62,7 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
         try
         {
             var skip = SkipReason(tree, run);
-            return skip == null ? Remove(tree, run) : new Outcome($"skipped {tree.Path}: {skip}", Removed: false, Failed: false);
+            return skip == null ? Remove(tree, run) : new Outcome($"skipped {tree.Path}: {skip}{Kept(tree)}", Removed: false, Failed: false);
         }
         catch (ProbeStrandedException ex)
         {
@@ -96,7 +97,9 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
             return $"T3 owns worktrees under {t3WorktreeRoot}; archive the thread instead";
         if (tree.Locked)
             return "it is locked";
-        return !run.DryRun && Directory.Exists(tree.Path) ? _findUse(tree.Path) : null;
+        if (!Directory.Exists(tree.Path))
+            return null;
+        return SubmoduleWork.Find(tree.Path) ?? (run.DryRun ? null : _findUse(tree.Path));
     }
 
     private Outcome Remove(WorktreeEntry tree, Run run)
@@ -118,7 +121,15 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
 
         if (entry != null)
         {
-            CleanArchive.Write(entry, plan, tree, run.Now);
+            try
+            {
+                CleanArchive.Write(entry, plan, tree, run.Now);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return Failure(tree, $"archiving its work failed, so nothing was removed: {ex.Message}");
+            }
+
             run.Written.Add(entry);
         }
 
@@ -130,7 +141,10 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
     }
 
     private static Outcome Failure(WorktreeEntry tree, string reason) =>
-        new($"failed {tree.Path}: {reason}", Removed: false, Failed: true);
+        new($"failed {tree.Path}: {reason}{Kept(tree)}", Removed: false, Failed: true);
+
+    // A tree that stays keeps its branch too.
+    private static string Kept(WorktreeEntry tree) => BranchNote(tree, (false, "worktree not removed"), "kept");
 
     private bool DeleteWorktree(string path)
     {

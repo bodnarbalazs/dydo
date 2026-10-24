@@ -295,11 +295,16 @@ Name the worktrees, by path or branch, and run from outside them; naming none, o
 be archived, and commit anything worth keeping, then `dydo clean <worktree>`. `--all` also reaches other
 sessions' worktrees, so confirm no session is live before using it. Each worktree
 gets one line: removed, archived and removed (with the archive entry), skipped (with the reason) or
-failed (with the reason), followed by whether its local branch was deleted or kept.
+failed (with the reason), followed by whether its local branch was deleted or kept; a skipped or
+failed worktree always keeps its branch, and its line says so.
 
 - **Never touched:** the main checkout, the worktree holding the current directory, a locked worktree,
   one a running process is using, and one under T3's worktree root `~/.t3/worktrees` (archive the T3
   thread instead). Each is skipped with its reason.
+- **Submodules:** the archive reads only the worktree itself, so a worktree with an initialized
+  submodule that has staged, unstaged or untracked changes, or commits on none of its remote refs, is
+  skipped with a reason naming the submodule: commit and push it, or clean it, first. A worktree whose
+  submodules are clean and pushed is removed as usual.
 - **Uncommitted work is archived, then removed.** Staged, unstaged and untracked files git does not
   ignore, plus dydo's ignored evidence under `dydo/agents/`, are copied to
   `<git common dir>/dydo/clean-archive/<UTC timestamp>-<branch>/`: `tracked.patch` (`git diff HEAD
@@ -307,7 +312,9 @@ failed (with the reason), followed by whether its local branch was deleted or ke
   HEAD, files, sizes, time, links). A link among those paths is never followed or copied: its
   `links` record keeps its path, whether it links a directory or a file, and its target. Other ignored
   files (`bin`, `obj`, `node_modules`, skill links) are regenerable and dropped. A `WARNING:` on stderr lists every
-  archived file and the archive path; there is no confirmation step.
+  archived file and the archive path; there is no confirmation step. If the archive cannot be
+  written, that worktree's line is `failed` and nothing is removed: no unlinking, no removal, no
+  prune, and the branch is kept.
 - **Restore:** in a checkout of the entry's HEAD, `git apply <entry>/tracked.patch`, copy
   `untracked/` and `evidence/` back, and recreate each link in `manifest.json`'s `links` at its path,
   pointing to its target.
@@ -339,7 +346,7 @@ failed (with the reason), followed by whether its local branch was deleted or ke
   run.
 
 Exit `0` when nothing failed; exit `2` when a removal failed, or when a named worktree was not
-removed (unknown, main checkout, current directory, locked, busy or under T3). With `--all`, skips
+removed (unknown, main checkout, current directory, locked, submodule work, busy or under T3). With `--all`, skips
 exit `0`.
 
 ---

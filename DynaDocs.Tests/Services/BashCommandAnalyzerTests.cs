@@ -270,6 +270,14 @@ public class BashCommandAnalyzerTests
     [InlineData("rm -rf .claude/worktrees")]
     [InlineData("rm -rf C:/Users/me/repo/.claude/worktrees/dyd-1/")]
     [InlineData("rm -rf /home/me/.t3/worktrees/DynaDocs")]
+    [InlineData("git -C \"C:\\My Repo\" worktree remove --force \"C:\\My Repo\\.claude\\worktrees\\x\"")]
+    [InlineData("git -C 'C:/My Repo' worktree remove -f x")]
+    [InlineData("git -c core.longpaths=true -C \"C:\\My Repo\" worktree remove x --force")]
+    [InlineData("rm -rf \"C:/repo/.claude/worktrees/my tree\"")]
+    [InlineData("rm -rf 'C:/repo/.claude/worktrees/my tree/'")]
+    [InlineData("Remove-Item -Recurse \"C:\\repo\\.claude\\worktrees\\my tree\"")]
+    [InlineData("Remove-Item -Recurse -Force 'C:\\Users\\me\\.t3\\worktrees\\Dyna Docs\\my thread'")]
+    [InlineData("bash -c \"rm -rf '/home/me/repo/.claude/worktrees/my tree'\"")]
     public void WorktreeRemoval_RawForms_AreBlockedWithTheDydoCleanHint(string command)
     {
         var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
@@ -292,6 +300,10 @@ public class BashCommandAnalyzerTests
     [InlineData("rm -rf C:/Users/me/repo/.claude/worktrees/dyd-1/bin")]
     [InlineData("Remove-Item -Recurse C:\\repo\\.claude\\worktrees\\dyd-1\\DynaDocs.Tests\\obj")]
     [InlineData("rm -rf /home/me/.t3/worktrees/DynaDocs/t3-1/node_modules")]
+    [InlineData("rm -rf \"C:/repo/.claude/worktrees/my tree/bin\"")]
+    [InlineData("Remove-Item -Recurse \"C:\\repo\\.claude\\worktrees\\my tree\\DynaDocs.Tests\\obj\"")]
+    [InlineData("Remove-Item -Recurse 'C:\\Users\\me\\.t3\\worktrees\\Dyna Docs\\my thread\\bin'")]
+    [InlineData("git -C \"C:\\My Repo\" worktree remove \"C:\\My Repo\\.claude\\worktrees\\x\"")]
     public void WorktreeRemoval_SafeForms_AreAllowed(string command)
     {
         var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);

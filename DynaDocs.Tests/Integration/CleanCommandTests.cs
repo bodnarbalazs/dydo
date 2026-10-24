@@ -506,12 +506,97 @@ public sealed class CleanCommandTests : IDisposable
         Assert.Equal(2, exit);
         var probe = Directory.GetDirectories(Path.GetDirectoryName(stranded)!, "stranded.dydo-clean-probe-*").Single();
         Assert.Contains($"failed {stranded}: the busy check renamed it to {probe} and could not move it back (the folder is held)", stdout);
-        Assert.Contains($"Move-Item -LiteralPath '{probe}' -Destination '{stranded}', then git worktree unlock '{stranded}'", stdout);
+        Assert.Contains($"Move-Item -LiteralPath '{probe}' -Destination '{stranded}', then git worktree unlock '{stranded}'; "
+            + "branch stranded kept (worktree not removed)", stdout);
         Assert.Contains($"removed {other}", stdout);
         Assert.False(Directory.Exists(other));
         var list = Git(_main, "worktree", "list", "--porcelain").Text;
         Assert.Contains("branch refs/heads/stranded\nlocked", list.ReplaceLineEndings("\n"));
         Assert.True(File.Exists(Path.Combine(probe, "readme.md")));
+    }
+
+    [Theory]
+    [InlineData("untracked")]
+    [InlineData("modified")]
+    [InlineData("unpushed")]
+    public async Task SubmoduleHoldingWork_KeepsTheTree_AndNamesTheSubmodule(string work)
+    {
+        var tree = AddWorktree("feature");
+        var submodule = AddSubmodule(tree);
+        if (work == "untracked")
+            Write(submodule, "draft.txt", "only here\n");
+        else
+            File.WriteAllText(Path.Combine(submodule, "lib.txt"), "changed\n");
+        if (work == "unpushed")
+            CommitAs(submodule, "local only");
+        var problem = work == "unpushed" ? "has commits on no remote ref" : "has uncommitted or untracked changes";
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(2, exit);
+        Assert.Contains($"skipped {tree}: submodule lib {problem}; commit and push it, or clean it, first; "
+            + "branch feature kept (worktree not removed)", stdout);
+        Assert.True(Directory.Exists(submodule));
+        Assert.True(HasBranch("feature"));
+        Assert.Empty(ArchiveEntries());
+    }
+
+    [Fact]
+    public async Task CleanPushedSubmodule_GoesWithTheTree()
+    {
+        var tree = AddWorktree("feature");
+        AddSubmodule(tree);
+
+        var (exit, stdout, stderr) = await Clean("feature");
+
+        Assert.True(exit == 0, stdout + stderr);
+        Assert.Contains($"removed {tree}", stdout);
+        Assert.False(Directory.Exists(tree));
+    }
+
+    [Fact]
+    public async Task SkippedTrees_SayTheirBranchIsKept()
+    {
+        var locked = AddWorktree("locked");
+        Git(_main, "worktree", "lock", locked);
+        var detached = Path.Combine(_main, ".claude", "worktrees", "detached");
+        Git(_main, "worktree", "add", "--detach", detached);
+        Git(_main, "worktree", "lock", detached);
+
+        var (exit, stdout, _) = await Clean(locked, detached);
+
+        Assert.Equal(2, exit);
+        Assert.Contains($"skipped {locked}: it is locked; branch locked kept (worktree not removed)", stdout);
+        Assert.Contains($"skipped {detached}: it is locked; no branch (detached HEAD)", stdout);
+    }
+
+    [Fact]
+    public async Task ArchiveThatCannotBeWritten_FailsClosed_AndRemovesNothing()
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, "notes.txt", "draft\n");
+        var outside = Path.Combine(_root, "outside");
+        Write(outside, "keep.txt", "keep me\n");
+        var link = Path.Combine(tree, ".claude", "skills");
+        DirectoryLinks.Create(link, outside);
+        var gone = AddWorktree("gone");
+        LinkSafeDelete.DeleteTree(gone); // a prunable admin entry: still listed only if nothing ran git worktree prune
+        // A file where the archive folder belongs: creating the entry fails.
+        Directory.CreateDirectory(Path.GetDirectoryName(ArchiveRoot)!);
+        File.WriteAllText(ArchiveRoot, "not a folder");
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(2, exit);
+        Assert.Contains($"failed {tree}: archiving its work failed, so nothing was removed: ", stdout);
+        Assert.Contains("; branch feature kept (worktree not removed)", stdout);
+        Assert.Equal("draft\n", File.ReadAllText(Path.Combine(tree, "notes.txt")));
+        Assert.NotNull(new DirectoryInfo(link).LinkTarget);
+        Assert.Equal("keep me\n", File.ReadAllText(Path.Combine(outside, "keep.txt")));
+        Assert.True(HasBranch("feature"));
+        var list = Git(_main, "worktree", "list", "--porcelain").Text;
+        Assert.Contains("branch refs/heads/feature", list);
+        Assert.Contains("branch refs/heads/gone", list);
     }
 
     [Theory]
@@ -566,6 +651,31 @@ public sealed class CleanCommandTests : IDisposable
         var path = Path.Combine(root, relativePath);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, content);
+    }
+
+    // A submodule at tree/lib, cloned from a repository under the temp root and committed in the tree.
+    private string AddSubmodule(string tree)
+    {
+        var library = Path.Combine(_root, "lib-origin");
+        if (!Directory.Exists(library))
+        {
+            Directory.CreateDirectory(library);
+            Git(library, "init", "-b", "master");
+            File.WriteAllText(Path.Combine(library, "lib.txt"), "library\n");
+            CommitAs(library, "library");
+        }
+
+        Git(tree, "-c", "protocol.file.allow=always", "submodule", "add", library, "lib");
+        Commit(tree, "add the library");
+        return Path.Combine(tree, "lib");
+    }
+
+    // A commit in a repository that has no identity of its own configured.
+    private static void CommitAs(string directory, string message)
+    {
+        Git(directory, "add", "-A");
+        Git(directory, "-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false",
+            "commit", "-m", message);
     }
 
     private static void Commit(string directory, string message)

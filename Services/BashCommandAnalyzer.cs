@@ -397,18 +397,33 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         "Raw worktree removal can lose uncommitted work or follow a link out of the tree. "
         + "From outside the tree run dydo clean --dry-run <worktree>, then dydo clean <worktree>";
 
+    // One git -C/-c value: double- or single-quoted (spaces allowed), or a bare word.
+    private const string GitOptionValue = @"(?:""[^""\r\n]*""|'[^'\r\n]*'|[^\s;&|'""]+)";
+
     // git worktree remove with a force flag (-f, git's repeated -ff, --force), after any git -C/-c
-    // options. Plain remove refuses a dirty tree, so it stays allowed.
-    [GeneratedRegex(CommandStart + @"git(?:\s+-[cC]\s+\S+)*\s+worktree\s+remove\b[^;&|\r\n]*\s(?:-f+|--force)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    // options, quoted or not. Plain remove refuses a dirty tree, so it stays allowed.
+    [GeneratedRegex(CommandStart + @"git(?:\s+-[cC]\s+" + GitOptionValue + @")*\s+worktree\s+remove\b[^;&|\r\n]*\s(?:-f+|--force)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex ForcedWorktreeRemoveRegex();
+
+    // A worktree path argument: an optional prefix ending in a separator, then a worktrees folder, one
+    // entry in it, or T3's .t3/worktrees/<project>/<thread>, then optional trailing separators.
+    private const string BareWorktreeArgument =
+        @"\s(?:[^\s'""`;&|]*[/\\])?(?:worktrees(?:[/\\]+[^\s/\\'""`;&|]+)?|\.t3[/\\]+worktrees(?:[/\\]+[^\s/\\'""`;&|]+){2})[/\\]*(?=[\s'""`);&|]|$)";
+
+    private const string DoubleQuotedWorktreeArgument =
+        @"""(?:[^""\r\n]*[/\\])?(?:worktrees(?:[/\\]+[^/\\""\r\n]+)?|\.t3[/\\]+worktrees(?:[/\\]+[^/\\""\r\n]+){2})[/\\]*""";
+
+    private const string SingleQuotedWorktreeArgument =
+        @"'(?:[^'\r\n]*[/\\])?(?:worktrees(?:[/\\]+[^/\\'\r\n]+)?|\.t3[/\\]+worktrees(?:[/\\]+[^/\\'\r\n]+){2})[/\\]*'";
 
     // A recursive delete of a worktree itself: the argument is a worktrees folder or one entry in it
     // (T3's .t3/worktrees/<project>/<thread> counts two deep), so a delete inside a tree, such as its
     // bin or obj, stays allowed. Recursive means rm -r/-R/--recursive (flag clusters of rm's own
     // letters, so -f alone and PowerShell's -Force do not count), PowerShell -Recurse and its prefixes,
-    // and cmd's rd /s. An accident guard, not a shell parser: a worktree outside a worktrees folder
-    // is not recognised.
-    [GeneratedRegex(CommandStart + @"(?:rm|rmdir|rd|del|erase|ri|Remove-Item)(?=\s)(?=[^;&|\r\n]*\s(?:-[dfiIvrR]*[rR][dfiIvrR]*|--recursive|-rec(?:u(?:r(?:s(?:e)?)?)?)?|/s)(?=[\s:]|$))(?=[^;&|\r\n]*(?:[\s/\\'""]worktrees(?:[/\\]+[^\s/\\'"";&|]+)?|[\s/\\'""]\.t3[/\\]+worktrees(?:[/\\]+[^\s/\\'"";&|]+){2})[/\\]*(?=[\s'"";&|]|$))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    // and cmd's rd /s. The argument is bare (a name ends at whitespace) or quoted (a name may hold
+    // spaces and ends at the closing quote). An accident guard, not a shell parser: a worktree outside
+    // a worktrees folder is not recognised.
+    [GeneratedRegex(CommandStart + @"(?:rm|rmdir|rd|del|erase|ri|Remove-Item)(?=\s)(?=[^;&|\r\n]*\s(?:-[dfiIvrR]*[rR][dfiIvrR]*|--recursive|-rec(?:u(?:r(?:s(?:e)?)?)?)?|/s)(?=[\s:]|$))(?=[^;&|\r\n]*(?:" + BareWorktreeArgument + "|" + DoubleQuotedWorktreeArgument + "|" + SingleQuotedWorktreeArgument + "))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex RecursiveWorktreeDeleteRegex();
 
     // Matches inline interpreter execution: python -c, node -e, ruby -e, perl -e/-E, php -r.

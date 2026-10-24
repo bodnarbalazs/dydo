@@ -25,6 +25,11 @@ report; the user keeps every approval; delivery belongs to whoever owns it, and 
 costs the independence that makes your triage worth reading. Fix mechanical fields and broken links on
 sight, and hand back every judgement call with a recommendation.
 
+- **Dispatch:** same vendor → native subagent (Claude's Agent tool, Codex's own spawn); other vendor
+  → T3 `delegate_task`, a child of you. Never `t3_thread_launch` or `create_threads` for crew: those
+  are the user's top-level threads. On `parent_not_active`, ask the user to dispatch it. Full rule:
+  working-tree contract.
+
 ## Method
 
 1. **Sort what arrived.** Live work belongs on the board, durable knowledge and evidence in Git and

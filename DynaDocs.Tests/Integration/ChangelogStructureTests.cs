@@ -12,11 +12,9 @@ public class ChangelogStructureTests : IntegrationTestBase
     [Fact]
     public async Task Check_AcceptsFlatChangelogStructure()
     {
-        // Arrange - Initialize and create changelog files directly in changelog folder (no subfolders)
         var initResult = await InitProjectAsync("none");
         initResult.AssertSuccess();
 
-        // Create a flat changelog entry (no year/date subfolders)
         WriteFile("dydo/project/changelog/auth-feature.md", """
             ---
             area: project
@@ -38,23 +36,18 @@ public class ChangelogStructureTests : IntegrationTestBase
             - src/auth/token.cs
             """);
 
-        // Act - Run check
         var checkResult = await CheckAsync();
 
-        // Assert - Should pass without errors about changelog structure
         Assert.DoesNotContain("Found errors", checkResult.Stdout);
-        // The flat changelog file should be accepted
         Assert.DoesNotContain("changelog", checkResult.Stderr.ToLower());
     }
 
     [Fact]
     public async Task Check_AcceptsAlternativeChangelogStructure()
     {
-        // Arrange - Initialize and create changelog with feature-based organization
         var initResult = await InitProjectAsync("none");
         initResult.AssertSuccess();
 
-        // Create a feature-based subfolder structure (not year/date)
         Directory.CreateDirectory(Path.Combine(TestDir, "dydo/project/changelog/feature-auth"));
 
         // Hub file is required for all folders with content
@@ -104,21 +97,17 @@ public class ChangelogStructureTests : IntegrationTestBase
             - src/auth/login.cs
             """);
 
-        // Act - Run check
         var checkResult = await CheckAsync();
 
-        // Assert - Should pass (alternative structure is allowed)
         Assert.DoesNotContain("Found errors", checkResult.Stdout);
     }
 
     [Fact]
     public async Task Fix_DoesNotEnforceChangelogFolderStructure()
     {
-        // Arrange - Initialize and create flat changelog structure
         var initResult = await InitProjectAsync("none");
         initResult.AssertSuccess();
 
-        // Create flat changelog file
         var changelogContent = """
             ---
             area: project
@@ -140,14 +129,11 @@ public class ChangelogStructureTests : IntegrationTestBase
             """;
         WriteFile("dydo/project/changelog/some-feature.md", changelogContent);
 
-        // Act - Run fix
         var fixResult = await FixAsync();
         fixResult.AssertSuccess();
 
-        // Assert - File should still be in flat location (not moved to year/date folders)
         AssertFileExists("dydo/project/changelog/some-feature.md");
 
-        // Should not have created year folders
         Assert.False(Directory.Exists(Path.Combine(TestDir, "dydo/project/changelog/2025")),
             "dydo fix should not create year folders - structure is a soft rule");
     }
@@ -155,11 +141,9 @@ public class ChangelogStructureTests : IntegrationTestBase
     [Fact]
     public async Task Check_AcceptsMixedChangelogStructure()
     {
-        // Arrange - Initialize with both flat files and nested folders
         var initResult = await InitProjectAsync("none");
         initResult.AssertSuccess();
 
-        // Flat file - link it from the changelog hub
         WriteFile("dydo/project/changelog/quick-fix.md", """
             ---
             area: project
@@ -180,7 +164,6 @@ public class ChangelogStructureTests : IntegrationTestBase
             - src/utils.cs
             """);
 
-        // Nested in year/date (following the suggested structure)
         Directory.CreateDirectory(Path.Combine(TestDir, "dydo/project/changelog/2025/2025-01-15"));
 
         // Year folder needs hub
@@ -257,10 +240,8 @@ public class ChangelogStructureTests : IntegrationTestBase
             - package.json
             """);
 
-        // Act - Run check
         var checkResult = await CheckAsync();
 
-        // Assert - Mixed structure should be accepted
         Assert.DoesNotContain("Found errors", checkResult.Stdout);
     }
 

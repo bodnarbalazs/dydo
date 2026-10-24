@@ -458,9 +458,8 @@ public class ConfigServiceTests : IDisposable
     [Fact]
     public void LoadConfig_LegacyAgentsSection_IsIgnored()
     {
-        // The 26-agent roster runtime was removed (DR-041); DydoConfig no longer models an
-        // `agents` section. A pre-DR-041 dydo.json still carrying one must load cleanly, with
-        // the dead section silently dropped rather than failing deserialization.
+        // A dydo.json still carrying the `agents` section DR-041 removed must load cleanly, the dead
+        // section dropped rather than failing deserialization.
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
             {
                 "version": 1,

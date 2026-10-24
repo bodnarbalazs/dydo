@@ -313,8 +313,8 @@ public class MarkdownParserTests
     [Fact]
     public void ExtractFrontmatter_IgnoresUnknownKeys()
     {
-        // Retired keys (e.g. the old must-read flag) and arbitrary user keys parse
-        // cleanly without affecting the known fields.
+        // Retired keys (e.g. must-read) and arbitrary user keys parse cleanly without affecting
+        // the known fields.
         var content = """
             ---
             area: understand

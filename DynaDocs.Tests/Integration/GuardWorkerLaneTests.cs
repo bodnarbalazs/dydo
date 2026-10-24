@@ -3,10 +3,9 @@ namespace DynaDocs.Tests.Integration;
 using DynaDocs.Commands;
 
 /// <summary>
-/// Guard pipeline integration tests for the Tier-2 worker lane and the universal
-/// layers that replaced per-role RBAC (Decision 024). Worker calls carry
-/// agent_id/agent_type in the hook payload; only off-limits, dangerous-bash,
-/// and nudges apply to them - no claim, no role, no staged onboarding.
+/// Guard pipeline integration tests for the worker lane (Decision 024). Worker calls carry
+/// agent_id/agent_type in the hook payload; only off-limits, dangerous-bash, and nudges apply
+/// to them.
 /// </summary>
 [Collection("Integration")]
 public class GuardWorkerLaneTests : IntegrationTestBase
@@ -22,7 +21,6 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        // Tier-1 stage-0 would block this read; the worker lane has no staged onboarding
         var result = await GuardWithStdinAsync(WorkerJson("Read", "{\"file_path\":\"src/Foo.cs\"}"));
 
         result.AssertPreToolUseAllowed();
@@ -33,7 +31,6 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        // Tier-1 would block this without identity + role + must-reads
         var result = await GuardWithStdinAsync(WorkerJson("Write", "{\"file_path\":\"src/Foo.cs\"}"));
 
         result.AssertPreToolUseAllowed();
@@ -111,7 +108,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        // An unknown or retired subcommand (here the 2.0-era agent claim) is outside the allowlist
+        // An unknown or retired subcommand (here agent claim) is outside the allowlist
         var result = await GuardWithStdinAsync(WorkerJson("Bash", "{\"command\":\"dydo agent claim auto\"}"));
 
         result.AssertPreToolUseDenied();
@@ -126,8 +123,8 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         return await GuardWithStdinAsync(WorkerJson(tool, input));
     }
 
-    // Rule 1: a command the 3.3.0 dydo regex does not match is not a dydo call for the worker
-    // lane, so directory arguments, continued lines and prose stay allowed exactly as before.
+    // Rule 1: a command the dydo regex does not match is not a dydo call for the worker lane,
+    // so directory arguments, continued lines and prose stay allowed.
     [Theory]
     [InlineData("Bash", "find dydo -name '*.md'")]
     [InlineData("Bash", "grep -rn foo dydo src")]
@@ -369,7 +366,6 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     [Fact]
     public void IsNativeMemoryPath_Traversal_DoesNotMatch()
     {
-        // '../' escape out of the memory dir must not be treated as native memory
         Assert.False(GuardCommand.IsNativeMemoryPath(MemoryPath("..", "..", "..", "secret.md")));
     }
 
@@ -392,7 +388,6 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        // Only off-limits and nudges constrain writes now - no RBAC, no identity gate.
         var result = await GuardAsync("edit", "dydo/project/decisions/099-test.md");
 
         result.AssertSuccess();

@@ -162,7 +162,6 @@ public class GuardSecurityTests : IntegrationTestBase
     {
         await SetupClaimedAgent();
 
-        // Variable expansion + write redirection = tainted write, should be blocked
         var result = await GuardWithStdinAsync(
             BashJson("echo $PAYLOAD > src/output.txt"));
         result.AssertPreToolUseDenied();
@@ -174,7 +173,6 @@ public class GuardSecurityTests : IntegrationTestBase
     {
         await SetupClaimedAgent();
 
-        // Variable expansion + read only = allowed (with warning)
         var result = await GuardWithStdinAsync(BashJson("cat $FILENAME"));
         result.AssertPreToolUseAllowed();
     }
@@ -187,7 +185,6 @@ public class GuardSecurityTests : IntegrationTestBase
     public void Finding5_WriteInsideCommandSubstitution_DetectedAsWriteOp()
     {
         var analyzer = new BashCommandAnalyzer();
-        // cp is entirely inside $() - analyzer must still detect the write
         var result = analyzer.Analyze("echo $(cp secret.txt /tmp/output.txt)");
         Assert.True(result.HasBypassAttempt);
         Assert.Contains(result.Operations, op =>
@@ -209,7 +206,6 @@ public class GuardSecurityTests : IntegrationTestBase
     public void Finding5_ReadInsideCommandSubstitution_NoWriteOp()
     {
         var analyzer = new BashCommandAnalyzer();
-        // cat inside $() is a read, not a write - should not produce write ops
         var result = analyzer.Analyze("echo $(cat readme.txt)");
         Assert.True(result.HasBypassAttempt);
         Assert.DoesNotContain(result.Operations, op =>
@@ -239,8 +235,8 @@ public class GuardSecurityTests : IntegrationTestBase
     }
 
     // ================================================================
-    // Finding 4: Nudges now fire for EVERY shell command, dydo included (DR-041 Part C).
-    // A security-critical nudge can no longer be bypassed by prefixing a dydo call.
+    // Finding 4: nudges fire for every shell command, dydo included (DR-041 Part C),
+    // so prefixing a dydo call cannot bypass a block nudge.
     // ================================================================
 
     [Fact]
@@ -248,8 +244,6 @@ public class GuardSecurityTests : IntegrationTestBase
     {
         await SetupClaimedAgent();
 
-        // A dydo invocation chained with an open-ended poll-loop (tail -f): nudges are now
-        // evaluated for dydo commands, so the poll-loop warn fires instead of being skipped.
         var result = await GuardWithStdinAsync(
             BashJson("dydo task list && tail -f build.log"));
 
@@ -345,10 +339,8 @@ public class GuardSecurityTests : IntegrationTestBase
     [Fact]
     public async Task BugB_PowerShell_DangerousPattern_IsBlocked()
     {
-        // Bug B: before the fix, PowerShell tool calls fell through to HandleWriteOperation
-        // with filePath==null and returned Success - full guard bypass. This test proves
-        // PowerShell now routes through HandleBashCommand and trips CheckDangerousPatterns
-        // identically to Bash.
+        // PowerShell must route through HandleBashCommand like Bash; unrouted, it reached
+        // HandleWriteOperation with a null filePath and passed - a full guard bypass.
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(PowerShellJson("rm -rf /"));
@@ -361,10 +353,8 @@ public class GuardSecurityTests : IntegrationTestBase
     // ================================================================
     //
     // Codex names its shell tool shell_command (also exec/local_shell/unified_exec by mode),
-    // not Bash/PowerShell. Before the fix these fell through to HandleWriteOperation with a
-    // null filePath and returned Success - every codex shell command ran UNGUARDED (an off-limits
-    // read returned the file contents, git stash/destructive git went through). These tests pin
-    // that each codex shell tool name now routes through HandleBashCommand identically to Bash.
+    // not Bash/PowerShell. Unrouted, these reach HandleWriteOperation with a null filePath and
+    // pass, so every codex shell command runs unguarded.
 
     private string CodexShellJson(string toolName, string command) =>
         "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"" + toolName + "\",\"tool_input\":{\"command\":\"" +
@@ -377,8 +367,8 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("unified_exec")]
     public async Task Issue295_CodexShellTool_OffLimitsRead_IsBlocked(string toolName)
     {
-        // The exact reported repro: a codex worker read an off-limits agent state file and got
-        // the contents back, exit 0, no block. Every codex shell tool name must block it now.
+        // The reported repro: a codex worker read an off-limits agent state file and got the
+        // contents back, exit 0, no block.
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(
@@ -390,8 +380,6 @@ public class GuardSecurityTests : IntegrationTestBase
     [Fact]
     public async Task Issue295_CodexShellTool_OffLimitsWrite_IsBlocked()
     {
-        // git stash/merge fences were removed with worktree management (DR-041 Part B), but
-        // the codex shell lane must still bind off-limits - a write to a system path is blocked.
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(CodexShellJson("shell_command", "tee config/secrets.json"));
@@ -412,7 +400,6 @@ public class GuardSecurityTests : IntegrationTestBase
     [Fact]
     public async Task Issue295_CodexShellTool_BenignCommand_IsAllowed()
     {
-        // The swarm-safety guarantee: an ordinary codex command must NOT be false-blocked.
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(CodexShellJson("shell_command", "git status --short"));
@@ -568,7 +555,6 @@ public class GuardSecurityTests : IntegrationTestBase
     [Fact]
     public void Issue64_MergeSystemNudges_AddsBlockDefaults()
     {
-        // Empty config - should merge in all block-severity defaults
         var nudges = GuardCommand.MergeSystemNudges([]);
         Assert.True(nudges.Count > 0);
         Assert.All(nudges, n => Assert.Equal("block", n.Severity, ignoreCase: true));
@@ -577,7 +563,6 @@ public class GuardSecurityTests : IntegrationTestBase
     [Fact]
     public void Issue64_MergeSystemNudges_NoDoubles()
     {
-        // Full config - no duplicates added
         var nudges = GuardCommand.MergeSystemNudges(ConfigFactory.DefaultNudges.ToList());
         var patterns = nudges.Select(n => n.Pattern).ToList();
         Assert.Equal(patterns.Count, patterns.Distinct().Count());
@@ -588,7 +573,6 @@ public class GuardSecurityTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // Clear all nudges from config
         var configPath = Path.Combine(TestDir, "dydo", "dydo.json");
         if (File.Exists(configPath))
         {
@@ -613,7 +597,6 @@ public class GuardSecurityTests : IntegrationTestBase
     [Fact]
     public void Issue64_MergeSystemNudges_DoesNotAddWarnNudges()
     {
-        // Only block-severity defaults should be merged
         var nudges = GuardCommand.MergeSystemNudges([]);
         Assert.All(nudges, n => Assert.Equal("block", n.Severity, ignoreCase: true));
     }
@@ -621,7 +604,6 @@ public class GuardSecurityTests : IntegrationTestBase
     [Fact]
     public void Issue64_MergeSystemNudges_DowngradedSeverity_ForcedBackToBlock()
     {
-        // Take a block-severity default and downgrade it to "warn" in config
         var blockDefault = ConfigFactory.DefaultNudges.First(
             n => string.Equals(n.Severity, "block", StringComparison.OrdinalIgnoreCase));
 
@@ -632,7 +614,6 @@ public class GuardSecurityTests : IntegrationTestBase
 
         var result = GuardCommand.MergeSystemNudges(configNudges);
 
-        // The downgraded nudge must be replaced with block severity
         var matching = result.Where(n => n.Pattern == blockDefault.Pattern).ToList();
         Assert.Single(matching);
         Assert.Equal("block", matching[0].Severity, ignoreCase: true);
@@ -641,7 +622,7 @@ public class GuardSecurityTests : IntegrationTestBase
     [Fact]
     public void MergeSystemNudges_HealsStaleWarnMessage()
     {
-        // The pre-2.1 poll-loop warn text still recommends the deleted `dydo wait`.
+        // A known-stale poll-loop warn text that still recommends the deleted `dydo wait`.
         var stale = new NudgeConfig
         {
             Pattern = @"\buntil\s+\[",
@@ -678,7 +659,6 @@ public class GuardSecurityTests : IntegrationTestBase
     [Fact]
     public void MergeSystemNudges_LeavesUserCustomizedMessageAlone()
     {
-        // A user-edited block-nudge message (not a known-stale text) must survive verbatim.
         var blockDefault = ConfigFactory.DefaultNudges.First(
             n => string.Equals(n.Severity, "block", StringComparison.OrdinalIgnoreCase));
         var custom = new NudgeConfig
@@ -697,7 +677,6 @@ public class GuardSecurityTests : IntegrationTestBase
     [Fact]
     public void MergeSystemNudges_ForceRestoresSeverityWithoutClobberingCustomMessage()
     {
-        // Severity force-restore must not overwrite a user-customized message.
         var blockDefault = ConfigFactory.DefaultNudges.First(
             n => string.Equals(n.Severity, "block", StringComparison.OrdinalIgnoreCase));
         var custom = new NudgeConfig
@@ -714,15 +693,10 @@ public class GuardSecurityTests : IntegrationTestBase
         Assert.Equal("My team's own wording for this rule.", matching.Message);
     }
 
-    // ================================================================
-    // Additional edge-case tests for BashCommandAnalyzer
-    // ================================================================
-
     [Fact]
     public void Issue85_ShellWithoutCFlag_NoInnerAnalysis()
     {
         var analyzer = new BashCommandAnalyzer();
-        // bash with -e flag (exit on error) should not trigger inner analysis
         var result = analyzer.Analyze("bash -e script.sh");
         // No file operations expected - bash is not in command dictionaries
         Assert.DoesNotContain(result.Operations, op => op.Type == FileOperationType.Read);
@@ -732,7 +706,6 @@ public class GuardSecurityTests : IntegrationTestBase
     public void Issue85_ShellCWithNoArgument_NoInnerAnalysis()
     {
         var analyzer = new BashCommandAnalyzer();
-        // bash -c with no following argument - edge case
         var result = analyzer.Analyze("bash -c");
         Assert.Empty(result.Operations);
     }
@@ -741,7 +714,6 @@ public class GuardSecurityTests : IntegrationTestBase
     public void Issue85_ShellCWithMultipleSubcommands()
     {
         var analyzer = new BashCommandAnalyzer();
-        // Inner command has multiple subcommands separated by ;
         var result = analyzer.Analyze("bash -c \"cat file.txt; rm temp.txt\"");
         Assert.Contains(result.Operations, op => op.Type == FileOperationType.Read);
         Assert.Contains(result.Operations, op => op.Type == FileOperationType.Delete);
@@ -751,7 +723,6 @@ public class GuardSecurityTests : IntegrationTestBase
     public void Issue86_VariableWithNoPathArgs_NoUncertainOps()
     {
         var analyzer = new BashCommandAnalyzer();
-        // $CMD with no arguments - no uncertain operations
         var result = analyzer.Analyze("$CMD");
         Assert.True(result.HasBypassAttempt);
         Assert.Empty(result.Operations);
@@ -786,10 +757,6 @@ public class GuardSecurityTests : IntegrationTestBase
         Assert.True(isDangerous, $"Expected dangerous: {command}");
     }
 
-    // ================================================================
-    // CheckBashFileOperation coverage - bash file operations
-    // ================================================================
-
     [Fact]
     public async Task BashReadOperation_AllowedForClaimedAgent()
     {
@@ -804,7 +771,6 @@ public class GuardSecurityTests : IntegrationTestBase
     {
         await SetupClaimedAgent();
 
-        // A write to a path that isn't off-limits is allowed
         var result = await GuardWithStdinAsync(
             BashJson("tee scratch/notes.md"));
         result.AssertPreToolUseAllowed();
@@ -826,7 +792,6 @@ public class GuardSecurityTests : IntegrationTestBase
     {
         await SetupClaimedAgent();
 
-        // Off-limits file that's NOT a mode or bootstrap file should still be blocked
         var result = await GuardWithStdinAsync(
             BashJson("cat config/secrets.json"));
         result.AssertPreToolUseDenied();

@@ -83,8 +83,8 @@ public class ConfigFactoryTests
     [Fact]
     public void CreateDefault_SerializesNoAudienceScopedOrRetiredNudge()
     {
-        // The Decision 026 managers-doctrine nudge was the only audience-scoped shipped nudge
-        // and the last mention of the retired workflow; both leave with it (DR 045).
+        // DR 045 retired the managers workflow (run-sprint) and, with it, the only audience-scoped
+        // shipped nudge.
         var json = JsonSerializer.Serialize(ConfigFactory.CreateDefault(), DydoConfigJsonContext.Default.DydoConfig);
 
         Assert.DoesNotContain("\"audience\"", json);

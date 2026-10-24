@@ -13,7 +13,6 @@ public class OffLimitsServiceTests : IDisposable
         _dydoDir = Path.Combine(_testDir, "dydo");
         Directory.CreateDirectory(_dydoDir);
 
-        // Create minimal dydo.json
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
             {
                 "version": 1,
@@ -62,7 +61,6 @@ public class OffLimitsServiceTests : IDisposable
         Assert.NotNull(service.IsPathOffLimits(Path.Combine(_testDir, "dydo", "_system", "roles", "x.json")));
         Assert.NotNull(service.IsPathProtected(Path.Combine(_testDir, "dydo.json")));
 
-        // A path outside the project root is not off-limits.
         Assert.Null(service.IsPathOffLimits("C:/elsewhere/dydo/_system/x.json"));
     }
 
@@ -364,7 +362,6 @@ public class OffLimitsServiceTests : IDisposable
     [Fact]
     public void IsPathOffLimits_MatchesSimplePatternAgainstFilename()
     {
-        // Pattern without path separators should match against filename too
         File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
             ```
             .env
@@ -374,7 +371,6 @@ public class OffLimitsServiceTests : IDisposable
         var service = new OffLimitsService();
         service.LoadPatterns(_testDir);
 
-        // Should match .env even in subdirectories
         Assert.NotNull(service.IsPathOffLimits(".env"));
         Assert.NotNull(service.IsPathOffLimits("config/.env"));
         Assert.NotNull(service.IsPathOffLimits("src/config/.env"));
@@ -395,7 +391,6 @@ public class OffLimitsServiceTests : IDisposable
             ```
             """);
 
-        // Create only existing.txt
         File.WriteAllText(Path.Combine(_testDir, "existing.txt"), "");
 
         var service = new OffLimitsService();
@@ -423,7 +418,6 @@ public class OffLimitsServiceTests : IDisposable
 
         var missing = service.ValidateLiteralPaths(_testDir).ToList();
 
-        // Wildcard patterns should not be validated as literal paths
         Assert.Empty(missing);
     }
 
@@ -509,10 +503,8 @@ public class OffLimitsServiceTests : IDisposable
             ```
             """);
 
-        // .env.local should be blocked (matches .env.*)
         Assert.NotNull(service.IsPathOffLimits(".env.local"));
 
-        // .env.example should be allowed (whitelisted)
         Assert.Null(service.IsPathOffLimits(".env.example"));
     }
 
@@ -534,10 +526,8 @@ public class OffLimitsServiceTests : IDisposable
         var service = new OffLimitsService();
         service.LoadPatterns(_testDir);
 
-        // Regular secrets.json blocked
         Assert.NotNull(service.IsPathOffLimits("config/secrets.json"));
 
-        // Test fixture allowed
         Assert.Null(service.IsPathOffLimits("tests/fixtures/secrets.json"));
     }
 
@@ -545,7 +535,6 @@ public class OffLimitsServiceTests : IDisposable
     [Fact]
     public void LoadPatterns_HandlesFileWithoutWhitelistSection()
     {
-        // Existing files without whitelist should still work
         File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
             ```
             .env
@@ -578,11 +567,9 @@ public class OffLimitsServiceTests : IDisposable
         var service = new OffLimitsService();
         service.LoadPatterns(_testDir);
 
-        // .env should be blocked
         Assert.NotNull(service.IsPathOffLimits(".env"));
         Assert.NotNull(service.IsPathOffLimits("config/.env"));
 
-        // .env.example should be allowed even in subdirectories
         Assert.Null(service.IsPathOffLimits(".env.example"));
         Assert.Null(service.IsPathOffLimits("config/.env.example"));
     }
@@ -825,7 +812,6 @@ public class OffLimitsServiceTests : IDisposable
         var service = new OffLimitsService();
         service.LoadPatterns(_testDir);
 
-        // Whitelist allows matching paths
         Assert.Null(service.IsPathOffLimits("logs/app/debug.log"));
 
         // dydo/_system/** must STILL be off-limits and dydo.json still unwritable - a
@@ -917,8 +903,7 @@ public class OffLimitsServiceTests : IDisposable
     [Fact]
     public void ValidateLiteralPaths_ChecksProtectedPathsToo()
     {
-        // A protected pattern that names nothing protects nothing - the same check
-        // dydo/index.md kept while it was still an off-limits entry.
+        // A protected pattern that names nothing protects nothing.
         File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), TieredOffLimits);
 
         var service = new OffLimitsService();

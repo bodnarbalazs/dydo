@@ -863,7 +863,6 @@ public class BashCommandAnalyzerTests
         var result = _analyzer.Analyze(command);
 
         Assert.False(result.HasDangerousPattern);
-        // May have operations but not dangerous ones
     }
 
     [Theory]
@@ -875,7 +874,7 @@ public class BashCommandAnalyzerTests
         var result = _analyzer.Analyze(command);
 
         Assert.False(result.HasDangerousPattern);
-        Assert.True(result.Operations.Count > 0); // Has operations
+        Assert.True(result.Operations.Count > 0);
     }
 
     #endregion
@@ -1138,7 +1137,6 @@ public class BashCommandAnalyzerTests
     {
         var result = _analyzer.Analyze(command);
 
-        // Should not extract array slicing or code expressions as file paths
         Assert.DoesNotContain(result.Operations, op =>
             op.Path.Contains('[') || op.Path.Contains(']') ||
             op.Path.Contains('{') || op.Path.Contains('}'));
@@ -1164,8 +1162,8 @@ public class BashCommandAnalyzerTests
     {
         var result = _analyzer.Analyze(command);
 
-        // Paths with dots/extensions should still be detected even if they contain brackets,
-        // because the dot check (line 679) fires before the bracket exclusion filter.
+        // Paths with dots/extensions are detected even with brackets, because the dot check
+        // fires before the bracket exclusion filter.
         Assert.Contains(result.Operations, op =>
             op.Type == FileOperationType.Read && op.Path == expectedPath);
     }
@@ -1175,7 +1173,6 @@ public class BashCommandAnalyzerTests
     {
         var result = _analyzer.Analyze("echo test > output[1].log");
 
-        // Redirection targets with dots should still be detected despite brackets
         Assert.Contains(result.Operations, op =>
             op.Type == FileOperationType.Write && op.Path == "output[1].log");
     }
@@ -1185,7 +1182,6 @@ public class BashCommandAnalyzerTests
     {
         var result = _analyzer.Analyze("python3 -c 'x=1' > data[0]");
 
-        // Redirection target without extension but with brackets should NOT be a path
         Assert.DoesNotContain(result.Operations, op =>
             op.Path == "data[0]");
     }
@@ -1245,7 +1241,6 @@ public class BashCommandAnalyzerTests
     {
         var result = _analyzer.Analyze(command);
 
-        // Flag-like tokens with colons should not be extracted as paths
         Assert.DoesNotContain(result.Operations, op =>
             op.Path.StartsWith("-") || op.Path.StartsWith("%"));
     }
@@ -1259,11 +1254,9 @@ public class BashCommandAnalyzerTests
     {
         var result = _analyzer.Analyze("cat file.txt | grep pattern");
 
-        // cat should produce a Read for file.txt
         Assert.Contains(result.Operations, op =>
             op.Type == FileOperationType.Read && op.Path == "file.txt");
 
-        // 'grep' and 'pattern' should NOT appear as Read paths attributed to cat
         Assert.DoesNotContain(result.Operations, op =>
             op.Type == FileOperationType.Read && op.Path == "grep" && op.Command == "cat");
         Assert.DoesNotContain(result.Operations, op =>
@@ -1297,7 +1290,6 @@ public class BashCommandAnalyzerTests
     {
         var result = _analyzer.Analyze("echo 'hello | world' > output.txt");
 
-        // The pipe is inside quotes - should not split
         Assert.Contains(result.Operations, op =>
             op.Type == FileOperationType.Write && op.Path == "output.txt");
     }
@@ -1319,7 +1311,6 @@ public class BashCommandAnalyzerTests
     [Fact]
     public void Analyze_SetContent_StillMappedToWrite()
     {
-        // Full PowerShell name set-content should still work
         var result = _analyzer.Analyze("set-content -Path output.txt -Value hello");
 
         Assert.Contains(result.Operations, op =>

@@ -106,7 +106,6 @@ public class PathUtilsDiscoveryTests : IDisposable
     [Fact]
     public void FindDocsFolder_ReturnsDydoRoot_WhenConfigExists()
     {
-        // Set up a minimal dydo project
         var dydoJson = Path.Combine(_testDir, "dydo.json");
         File.WriteAllText(dydoJson, """{"name": "test", "dydoDir": "dydo"}""");
 

@@ -49,9 +49,6 @@ public class CliEndToEndTests : IDisposable
 
     #region Startup / Help Tests
 
-    /// <summary>
-    /// The most basic test: does the CLI start without crashing?
-    /// </summary>
     [Fact]
     public async Task Help_DoesNotCrash()
     {
@@ -74,10 +71,6 @@ public class CliEndToEndTests : IDisposable
         Assert.Equal("dydo version 3.5.0", command.Stdout.Trim());
     }
 
-    /// <summary>
-    /// Verify all subcommands can show help without crashing.
-    /// This catches command construction errors like the AuditCommand whitespace alias bug.
-    /// </summary>
     [Theory]
     [InlineData("init")]
     [InlineData("check")]
@@ -99,9 +92,6 @@ public class CliEndToEndTests : IDisposable
 
     #region Init Tests
 
-    /// <summary>
-    /// The first thing every user does: initialize a project.
-    /// </summary>
     [Theory]
     [InlineData("claude")]
     [InlineData("none")]
@@ -120,7 +110,6 @@ public class CliEndToEndTests : IDisposable
     [Fact]
     public async Task Init_ThenCheck_RunsWithoutCrash()
     {
-        // Initialize
         var initResult = await RunDydoAsync("init none");
         Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
 
@@ -133,7 +122,7 @@ public class CliEndToEndTests : IDisposable
         // The important thing is it doesn't crash with an unhandled exception
         Assert.True(checkResult.ExitCode <= 1,
             $"check crashed:\nStderr: {checkResult.Stderr}\nStdout: {checkResult.Stdout}");
-        Assert.Contains("Checking", checkResult.Stdout); // Verify it actually ran
+        Assert.Contains("Checking", checkResult.Stdout);
     }
 
     [Fact]
@@ -151,10 +140,6 @@ public class CliEndToEndTests : IDisposable
         Assert.Equal(before, File.ReadAllBytes(codexPath));
     }
 
-    /// <summary>
-    /// The agent-free CLI exposes documentation commands after initialization without restoring
-    /// the retired repository work commands.
-    /// </summary>
     [Fact]
     public async Task Init_ThenHelp_OmitsRetiredWorkCommands()
     {
@@ -265,9 +250,6 @@ public class CliEndToEndTests : IDisposable
     private record CliResult(int ExitCode, string Stdout, string Stderr);
 }
 
-/// <summary>
-/// Fixture that ensures the project is built before E2E tests run.
-/// </summary>
 public class EndToEndFixture : IDisposable
 {
     public string DllPath { get; }
@@ -277,7 +259,6 @@ public class EndToEndFixture : IDisposable
         var projectDir = FindProjectDirectory();
         DllPath = Path.Combine(projectDir, "bin", "Debug", "net10.0", "dydo.dll");
 
-        // Build the project if needed
         if (!File.Exists(DllPath))
         {
             var psi = new ProcessStartInfo
@@ -291,7 +272,7 @@ public class EndToEndFixture : IDisposable
             };
 
             using var process = Process.Start(psi)!;
-            process.WaitForExit(120000); // 2 minute timeout
+            process.WaitForExit(120000);
 
             if (process.ExitCode != 0 || !File.Exists(DllPath))
             {
@@ -305,11 +286,9 @@ public class EndToEndFixture : IDisposable
 
     private static string FindProjectDirectory()
     {
-        // Walk up from test assembly location to find DynaDocs.csproj
         var dir = AppContext.BaseDirectory;
         while (dir != null)
         {
-            // Check current directory
             if (File.Exists(Path.Combine(dir, "DynaDocs.csproj")))
                 return dir;
 
@@ -321,7 +300,6 @@ public class EndToEndFixture : IDisposable
                 if (File.Exists(siblingPath))
                     return Path.Combine(parent, "DynaDocs");
 
-                // Try going up more levels
                 var grandparent = Path.GetDirectoryName(parent);
                 if (grandparent != null)
                 {
@@ -346,10 +324,8 @@ public class EndToEndFixture : IDisposable
 }
 
 /// <summary>
-/// Collection definition for E2E tests.
-/// Uses a shared fixture to avoid rebuilding for each test class.
-/// Parallelism is controlled assembly-wide via AssemblyInfo.cs
-/// (DisableTestParallelization); the fixture wiring here is independent.
+/// Shares one fixture so the CLI builds once for all E2E classes. Parallelism is controlled
+/// assembly-wide via AssemblyInfo.cs (DisableTestParallelization).
 /// </summary>
 [CollectionDefinition("EndToEnd")]
 public class EndToEndCollection : ICollectionFixture<EndToEndFixture> { }

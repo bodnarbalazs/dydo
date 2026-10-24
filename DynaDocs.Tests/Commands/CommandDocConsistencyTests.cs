@@ -126,10 +126,6 @@ public class CommandDocConsistencyTests
         return pattern.Matches(text).Select(m => m.Groups[1].Value).ToHashSet();
     }
 
-    // ──────────────────────────────────────────────
-    // Test 1: Every registered command appears in help text
-    // ──────────────────────────────────────────────
-
     [Fact]
     public void AllCommands_AppearInHelpText()
     {
@@ -145,10 +141,6 @@ public class CommandDocConsistencyTests
         Assert.True(missing.Count == 0,
             $"Commands missing from help text in HelpCommand.cs:\n  {string.Join("\n  ", missing)}");
     }
-
-    // ──────────────────────────────────────────────
-    // Test 2: Every command option appears in the reference doc
-    // ──────────────────────────────────────────────
 
     [Fact]
     public void AllOptions_AppearInReferenceDoc()
@@ -180,10 +172,6 @@ public class CommandDocConsistencyTests
         Assert.True(missing.Count == 0,
             $"Options missing from dydo-commands.md:\n  {string.Join("\n  ", missing)}");
     }
-
-    // ──────────────────────────────────────────────
-    // Test 3: Reference doc and scaffold source have same options per command
-    // ──────────────────────────────────────────────
 
     [Fact]
     public void ReferenceDocAndTemplate_HaveSameOptions()
@@ -229,10 +217,6 @@ public class CommandDocConsistencyTests
             $"Mismatches between dydo-commands.md and template:\n  {string.Join("\n  ", mismatches)}");
     }
 
-    // ──────────────────────────────────────────────
-    // Test 4: Examples include all required flags
-    // ──────────────────────────────────────────────
-
     [Fact]
     public void Examples_IncludeAllRequiredFlags()
     {
@@ -276,10 +260,6 @@ public class CommandDocConsistencyTests
             $"Required flags missing from examples in dydo-commands.md:\n  {string.Join("\n  ", missing)}");
     }
 
-    // ──────────────────────────────────────────────
-    // Test 5: All command factories appear in smoke tests
-    // ──────────────────────────────────────────────
-
     [Fact]
     public void AllCommandFactories_InSmokeTests()
     {
@@ -301,10 +281,6 @@ public class CommandDocConsistencyTests
         Assert.True(missing.Count == 0,
             $"Command factories missing from CommandSmokeTests.cs:\n  {string.Join("\n  ", missing)}");
     }
-
-    // ──────────────────────────────────────────────
-    // Test 6: About-dynadocs states the product boundary and links the full command reference
-    // ──────────────────────────────────────────────
 
     [Fact]
     public void AboutReference_DefinesLinearBoundaryAndLinksCommandReference()
@@ -390,10 +366,6 @@ public class CommandDocConsistencyTests
         }
     }
 
-    // ──────────────────────────────────────────────
-    // Test 7: Scaffold examples use required flags
-    // ──────────────────────────────────────────────
-
     [Fact]
     public void ScaffoldExamples_UseRequiredFlags()
     {
@@ -435,10 +407,6 @@ public class CommandDocConsistencyTests
     private static bool ExampleSupplies(string example, Option option) =>
         GetAllNames(option).Any(example.Contains)
         || example.Contains($"<{option.Name.TrimStart('-')}>");
-
-    // ──────────────────────────────────────────────
-    // Test 8: License section is consistent across all README-like files
-    // ──────────────────────────────────────────────
 
     [Fact]
     public void LicenseSection_ConsistentAcrossAllReadmes()
@@ -488,10 +456,6 @@ public class CommandDocConsistencyTests
             "CLA.md must remain absent after retiring the AGPL/commercial dual-license model");
     }
 
-    // ──────────────────────────────────────────────
-    // Test 9: ExtractFlags handles --flag <value> patterns
-    // ──────────────────────────────────────────────
-
     [Fact]
     public void ExtractFlags_HandlesFlagValuePatterns()
     {
@@ -504,10 +468,6 @@ public class CommandDocConsistencyTests
         Assert.Contains("--since", flags);
         Assert.Equal(4, flags.Count);
     }
-
-    // ──────────────────────────────────────────────
-    // Test 10: The installed framework doc stays aligned with its scaffold source
-    // ──────────────────────────────────────────────
 
     [Fact]
     public void InstalledAboutDoc_MatchesTemplate()
@@ -545,7 +505,6 @@ public class CommandDocConsistencyTests
     /// </summary>
     private static string? IdentifyCommand(string line, List<string> commandPaths)
     {
-        // Remove "dydo " prefix
         var rest = line["dydo ".Length..];
 
         foreach (var path in commandPaths) // already sorted longest-first
@@ -554,7 +513,6 @@ public class CommandDocConsistencyTests
                 return path;
         }
 
-        // Try single-word match
         var firstWord = rest.Split(' ')[0];
         return commandPaths.Contains(firstWord) ? firstWord : null;
     }

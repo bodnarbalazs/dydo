@@ -467,7 +467,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
-    #region Git commands (git stash / merge are ordinary now - DR-041 Part B)
+    #region Git commands
 
     [Theory]
     [InlineData("git stash")]

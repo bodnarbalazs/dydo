@@ -4,6 +4,9 @@ using System.Text.Json;
 using DynaDocs.Models;
 using DynaDocs.Serialization;
 
+/// <summary>
+/// Caches types.json for the instance's lifetime; construct one per check pass.
+/// </summary>
 public class FrontmatterTypesService : IFrontmatterTypesService
 {
     public const string TypesJsonRelativePath = "_system/types.json";

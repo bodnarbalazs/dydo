@@ -259,7 +259,6 @@ public static partial class GuardCommand
             return HandleWorkerCall(normalized, filePath, searchPath, offLimitsService, bashAnalyzer, env);
         }
 
-        // Native auto-memory (~/.claude/projects/*/memory/) is exempt from off-limits enforcement.
         if (!string.IsNullOrEmpty(filePath) && IsNativeMemoryPath(filePath))
             return ExitCodes.Success;
 
@@ -445,8 +444,6 @@ public static partial class GuardCommand
     {
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
 
-        // Sub-agents (Ticket Captains, crew) run the gates their work needs; setup, generation
-        // and hook commands stay with the top-level session.
         var workerBlocked = isDydo && isWorker ? FindWorkerBlockedDydoCommand(command) : null;
         if (workerBlocked != null)
         {
@@ -490,8 +487,6 @@ public static partial class GuardCommand
 
     internal static int? CheckNudges(string command, GuardEnv env)
     {
-        // Always include block-severity default nudges (H19 indirect dydo invocation) even if
-        // removed from config. These are security-critical and must not be removable via dydo.json.
         foreach (var nudge in MergeSystemNudges(env.Config?.Nudges))
         {
             if (!nudge.IsCommandMatch) continue;
@@ -653,8 +648,6 @@ public static partial class GuardCommand
 
     internal static int? CheckBashFileOperation(FileOperation op, OffLimitsService offLimitsService)
     {
-        // Native memory is exempt for any op type (out of dydo's jurisdiction).
-        // Everything else is subject to the universal off-limits check.
         if (IsNativeMemoryPath(op.Path))
             return null;
 
@@ -672,8 +665,7 @@ public static partial class GuardCommand
         // permissions there: writes, deletes, moves, copies, chmod/chown/takeown. Stated as an
         // exclusion so a future op type is guarded by default instead of silently exempt, and
         // because the analyzer tags a copy's source and destination alike - `cp <protected>
-        // elsewhere` is blocked too. Conservative on purpose: no wider than the off-limits
-        // block these paths carried before, and the content stays readable through
+        // elsewhere` is blocked too. Conservative on purpose: the content stays readable through
         // Read, cat and head. Execute names a binary to run, not a file to change.
         if (op.Type is not (FileOperationType.Read or FileOperationType.Execute))
             return BlockIfPathProtected(op.Path, offLimitsService, $"{op.Type} via {op.Command}");

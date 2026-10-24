@@ -26,9 +26,6 @@ public static class ShellCompletionInstaller
         }
     }
 
-    /// <summary>
-    /// Writes completion block to the given profile path if not already present.
-    /// </summary>
     public static string? InstallToProfile(string shell, string profilePath)
     {
         var sourcingLine = shell switch

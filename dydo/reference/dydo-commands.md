@@ -316,7 +316,7 @@ failed worktree always keeps its branch, and its line says so.
   files (`bin`, `obj`, `node_modules`, skill links) are regenerable and dropped, and so is build output
   under `<root>/agents/`: a file below a `bin`, `obj`, `node_modules` or `.vs` folder there, in any case,
   is not evidence, and the worktree's line counts the files skipped. A `WARNING:` on stderr lists every
-  archived file and the archive path; there is no confirmation step. If the archive cannot be
+  archived file, the count of build output skipped, and the archive path; there is no confirmation step. If the archive cannot be
   written, that worktree's line is `failed` and nothing is removed: no unlinking, no removal, no
   prune, and the branch is kept. When `<git common dir>/dydo` or `clean-archive` is a link, dydo does
   not follow it: no work is archived (so those worktrees fail), nothing is pruned or listed, the run
@@ -328,10 +328,12 @@ failed worktree always keeps its branch, and its line says so.
   the oldest entries until the archive fits `clean.archiveSizeCapMb` in `dydo.json` (default 1024).
   Entries written by the same run are never pruned.
 - **Branches:** after `git fetch --prune origin`, the local branch is deleted when its tip is
-  reachable from `origin/<default>`, or when it was squash- or rebase-merged: `git merge-tree
-  --write-tree origin/<default> <tip>` merges cleanly to exactly `origin/<default>`'s tree, so the
-  branch holds nothing origin lacks. That merge writes into a temporary object directory, so even a dry
-  run adds nothing to the repository. Otherwise the branch is kept and the line says why (not merged,
+  reachable from `origin/<default>`, or when no changes are left to merge into it, as after a squash or
+  rebase merge: `git merge-tree --write-tree origin/<default> <tip>` merges cleanly to exactly
+  `origin/<default>`'s tree, so the branch holds nothing origin lacks. That merge runs in a scratch bare
+  repository that borrows the real object store and reads no repository, global or system config and no
+  attributes, so a configured merge driver cannot resolve a change away, and even a dry run adds nothing
+  to the repository. Otherwise the branch is kept and the line says why (not merged,
   no origin, fetch failed, or the squash check failed, as with a git older than 2.38). The default is the branch origin advertises now (`git ls-remote --symref origin HEAD`),
   so a stale local `origin/HEAD` never decides; only when origin cannot answer do the local
   `origin/HEAD`, then `origin/main` or `origin/master`, stand in. `git branch -d` runs first; it also

@@ -196,9 +196,10 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
         entry == null ? $"{plain} {tree.Path}" : $"{archived} {tree.Path} -> {entry}";
 
     private static string BuildOutputNote(ArchivePlan plan) =>
-        plan.SkippedBuildOutput == 0
-            ? ""
-            : $"; {plan.SkippedBuildOutput} build-output file(s) under agents/ not archived (bin, obj, node_modules, .vs)";
+        plan.SkippedBuildOutput == 0 ? "" : $"; {BuildOutputSkipped(plan)}";
+
+    private static string BuildOutputSkipped(ArchivePlan plan) =>
+        $"{plan.SkippedBuildOutput} build-output file(s) under agents/ not archived (bin, obj, node_modules, .vs)";
 
     private static string BranchNote(WorktreeEntry tree, (bool Delete, string Reason) verdict, string outcome) =>
         tree.Branch == null ? "; no branch (detached HEAD)" : $"; branch {tree.Branch} {outcome} ({verdict.Reason})";
@@ -217,6 +218,8 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
             error.WriteLine($"  evidence   {path}");
         foreach (var link in plan.Links)
             error.WriteLine($"  link       {link.Path} -> {link.Target} (recorded, not followed)");
+        if (plan.SkippedBuildOutput > 0)
+            error.WriteLine($"  {BuildOutputSkipped(plan)}");
         error.WriteLine($"  Archive: {entry}");
     }
 

@@ -206,7 +206,7 @@ public sealed class CleanCommandTests : IDisposable
         var (exit, stdout, _) = await Clean("feature");
 
         Assert.Equal(0, exit);
-        Assert.Contains($"removed {tree}; branch feature deleted (squash- or rebase-merged into origin/master)", stdout);
+        Assert.Contains($"removed {tree}; branch feature deleted (no changes left to merge into origin/master)", stdout);
         Assert.False(HasBranch("feature"));
     }
 
@@ -245,8 +245,98 @@ public sealed class CleanCommandTests : IDisposable
         var (exit, stdout, _) = await Clean("feature");
 
         Assert.Equal(0, exit);
-        Assert.Contains("branch feature deleted (squash- or rebase-merged into origin/master)", stdout);
+        Assert.Contains("branch feature deleted (no changes left to merge into origin/master)", stdout);
         Assert.False(HasBranch("feature"));
+    }
+
+    // A "keep mine" merge driver would resolve the branch's edit away and make the merge look empty.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ConfiguredKeepMineMergeDriver_DoesNotHideAnUnmergedChange(bool committedAttributes)
+    {
+        Write(_main, "F", "1\n2\n3\n4\n5\n6\n7\n8\n");
+        if (committedAttributes)
+            Write(_main, ".gitattributes", "F merge=keep\n");
+        else
+            Write(_main, Path.Combine(".git", "info", "attributes"), "F merge=keep\n");
+        Commit(_main, "eight lines");
+        Git(_main, "push", "origin", "master");
+        Git(_main, "config", "merge.keep.driver", "true");
+        var tree = AddWorktree("feature");
+        Write(tree, "F", "one\n2\n3\n4\n5\n6\n7\n8\n");
+        Commit(tree, "line one");
+        Write(_main, "F", "1\n2\n3\n4\n5\n6\n7\neight\n");
+        Commit(_main, "line eight");
+        Git(_main, "push", "origin", "master");
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("branch feature kept (not merged into origin/master)", stdout);
+        Assert.True(HasBranch("feature"));
+    }
+
+    // A driver a committed .gitattributes names but nothing defines falls back to git's own merge.
+    [Fact]
+    public async Task UndefinedMergeDriverInCommittedAttributes_StillJudgesBySquash()
+    {
+        Write(_main, ".gitattributes", "F merge=nowhere\n");
+        Write(_main, "F", "1\n2\n");
+        Commit(_main, "attributes");
+        Git(_main, "push", "origin", "master");
+        var tree = AddWorktree("feature");
+        Write(tree, "F", "one\n2\n");
+        Commit(tree, "line one");
+        SquashIntoOriginMaster("feature");
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("branch feature deleted (no changes left to merge into origin/master)", stdout);
+    }
+
+    [Fact]
+    public async Task SquashedThenRevertedOnOrigin_KeepsTheBranch()
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, "one.txt", "first\n");
+        Commit(tree, "one");
+        SquashIntoOriginMaster("feature");
+        Git(_main, "revert", "--no-edit", "HEAD");
+        Git(_main, "push", "origin", "master");
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("branch feature kept (not merged into origin/master)", stdout);
+        Assert.True(HasBranch("feature"));
+    }
+
+    // Git splits GIT_ALTERNATE_OBJECT_DIRECTORIES on ';' on Windows, so the object store must not travel in it.
+    [Fact]
+    public async Task SquashMerged_InARepositoryWhosePathHoldsASemicolonAndASpace_IsDeleted()
+    {
+        var main = Path.Combine(_root, "odd; path", "main");
+        Directory.CreateDirectory(Path.GetDirectoryName(main)!);
+        Git(_root, "clone", Path.Combine(_root, "origin.git"), main);
+        Git(main, "config", "user.name", "Test");
+        Git(main, "config", "user.email", "test@example.com");
+        Git(main, "config", "commit.gpgsign", "false");
+        var tree = Path.Combine(main, ".claude", "worktrees", "feature");
+        Git(main, "worktree", "add", "-b", "feature", tree);
+        Write(tree, "one.txt", "first\n");
+        Commit(tree, "one");
+        Git(main, "merge", "--squash", "feature");
+        Git(main, "commit", "-m", "squash feature");
+        Git(main, "push", "origin", "master");
+        Environment.CurrentDirectory = main;
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains($"removed {tree}; branch feature deleted (no changes left to merge into origin/master)", stdout);
+        Assert.False(GitRunner.Run(main, "rev-parse", "--verify", "--quiet", "refs/heads/feature").Ok);
     }
 
     // One branch merges to origin's tree, the other to a new tree: neither verdict may write an object.
@@ -272,7 +362,7 @@ public sealed class CleanCommandTests : IDisposable
         var (exit, stdout, _) = await Clean("squashed", "extended", "--dry-run");
 
         Assert.Equal(0, exit);
-        Assert.Contains("branch squashed would be deleted (squash- or rebase-merged into origin/master as of the last fetch)", stdout);
+        Assert.Contains("branch squashed would be deleted (no changes left to merge into origin/master as of the last fetch)", stdout);
         Assert.Contains("branch extended would be kept (not merged into origin/master as of the last fetch)", stdout);
         Assert.Equal(filesBefore, Directory.GetFiles(objects, "*", SearchOption.AllDirectories).Length);
         Assert.Equal(refsBefore, Git(_main, "for-each-ref").Text);
@@ -349,6 +439,7 @@ public sealed class CleanCommandTests : IDisposable
 
         Assert.Equal(0, exit);
         Assert.Contains("4 build-output file(s) under agents/ not archived (bin, obj, node_modules, .vs)", stdout);
+        Assert.Contains("  4 build-output file(s) under agents/ not archived (bin, obj, node_modules, .vs)", stderr);
         foreach (var dropped in new[] { "app.dll", "project.assets.json", "index.js", "state.bin" })
             Assert.DoesNotContain(dropped, stderr);
         var entry = ArchiveEntries().Single();

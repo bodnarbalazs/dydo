@@ -3,9 +3,10 @@ namespace DynaDocs.Services;
 /// <summary>
 /// Decides whether a removed worktree's local branch may go: when its tip is reachable from
 /// <c>origin/&lt;default&gt;</c>, or when merging the tip into it changes nothing, as after a squash or rebase
-/// merge (<c>git merge-tree --write-tree</c> prints exactly origin's tree). That merge writes its objects into
-/// a temporary object directory that borrows the real store as an alternate, so no verdict writes an object
-/// into the repository; a git without <c>merge-tree --write-tree</c>, or one that fails, keeps the branch. A real run fetches with <c>--prune</c> once, before the first verdict, and
+/// merge (<c>git merge-tree --write-tree</c> prints exactly origin's tree). That merge runs in a scratch bare
+/// repository that borrows the real object store, without the repository's config or attributes, so no merge
+/// driver decides and no verdict writes an object into the repository; a git without
+/// <c>merge-tree --write-tree</c>, or one that fails, keeps the branch. A real run fetches with <c>--prune</c> once, before the first verdict, and
 /// keeps every branch when the fetch fails; a dry run fetches nothing and judges the last fetch. The
 /// default branch is the one origin advertises now (<c>git ls-remote --symref origin HEAD</c>), so a
 /// stale local <c>origin/HEAD</c> never decides; only when origin cannot answer does the local
@@ -30,38 +31,79 @@ internal sealed class MergedBranchJudge(string repository, bool dryRun)
         if (unavailable != null)
             return (false, $"not merged into {_target}{Staleness}; the squash check failed: {unavailable}");
         return contentMerged
-            ? (true, $"squash- or rebase-merged into {_target}{Staleness}")
+            ? (true, $"no changes left to merge into {_target}{Staleness}")
             : (false, $"not merged into {_target}{Staleness}");
     }
 
-    // Whether merging tip into the target yields the target's own tree; the reason when git cannot tell.
+    // Whether merging tip (a full hash) into the target yields the target's own tree; the reason when git cannot tell.
     private string? MergeChangesNothing(string tip, out bool unchanged)
     {
         unchanged = false;
+        var target = GitRunner.Run(repository, "rev-parse", "--verify", "--quiet", $"{_target}^{{commit}}");
         var targetTree = GitRunner.Run(repository, "rev-parse", "--verify", "--quiet", $"{_target}^{{tree}}");
         var store = GitRunner.Run(repository, "rev-parse", "--path-format=absolute", "--git-path", "objects");
-        if (!targetTree.Ok || !store.Ok)
-            return (targetTree.Ok ? store : targetTree).Error;
+        var failed = new[] { target, targetTree, store }.FirstOrDefault(result => !result.Ok);
+        if (failed != null)
+            return failed.Error;
 
         var scratch = Path.Combine(Path.GetTempPath(), "dydo-merge-tree-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(scratch);
         try
         {
-            var merge = GitRunner.Run(repository, new Dictionary<string, string>
-            {
-                ["GIT_OBJECT_DIRECTORY"] = scratch,
-                ["GIT_ALTERNATE_OBJECT_DIRECTORIES"] = store.Text.Trim()
-            }, "merge-tree", "--write-tree", "--no-messages", _target!, tip);
+            var merge = IsolatedMergeTree(scratch, store.Text.Trim(), target.Text.Trim(), tip);
             // Exit 1 is a conflicted merge: the tip holds changes origin does not.
             if (merge.ExitCode is not (0 or 1))
-                return string.IsNullOrEmpty(merge.Error) ? $"git merge-tree exited {merge.ExitCode}" : merge.Error;
+                return string.IsNullOrEmpty(merge.Error) ? $"git exited {merge.ExitCode}" : merge.Error;
             // A clean merge with --no-messages prints only the merged tree.
             unchanged = merge.ExitCode == 0 && merge.Text.Trim() == targetTree.Text.Trim();
             return null;
         }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return $"its scratch repository {scratch} failed: {ex.Message}";
+        }
         finally
         {
+            DeleteScratch(scratch);
+        }
+    }
+
+    // git merge-tree in a scratch bare repository that borrows the real object store as an alternate, so
+    // the objects it writes go with the scratch directory, and no repository, global or system config and
+    // no attributes file reach it: a configured merge driver cannot resolve the tip's changes away. Its
+    // HEAD is unborn, so it reads no attributes from a tree either.
+    private static GitResult IsolatedMergeTree(string scratch, string store, string target, string tip)
+    {
+        var bare = Path.Combine(scratch, "repo.git");
+        var emptyConfig = Path.Combine(scratch, "config");
+        Directory.CreateDirectory(scratch);
+        File.WriteAllText(emptyConfig, "");
+        var isolated = new Dictionary<string, string>
+        {
+            ["GIT_CONFIG_NOSYSTEM"] = "1",
+            ["GIT_CONFIG_GLOBAL"] = emptyConfig,
+            ["XDG_CONFIG_HOME"] = scratch
+        };
+        var init = GitRunner.Run(scratch, isolated, "init", "--bare", "--quiet", "--template=", bare);
+        if (!init.Ok)
+            return init;
+        // One path per line; quoted, a path holding a quote, a backslash or a newline survives intact.
+        File.WriteAllText(Path.Combine(bare, "objects", "info", "alternates"), CQuoted(store) + "\n");
+        isolated["GIT_DIR"] = bare;
+        return GitRunner.Run(bare, isolated, "merge-tree", "--write-tree", "--no-messages", target, tip);
+    }
+
+    private static string CQuoted(string path) =>
+        "\"" + path.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n") + "\"";
+
+    // A scratch directory left behind holds only objects already judged; it never changes the verdict.
+    private static void DeleteScratch(string scratch)
+    {
+        try
+        {
             LinkSafeDelete.DeleteTree(scratch);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
         }
     }
 

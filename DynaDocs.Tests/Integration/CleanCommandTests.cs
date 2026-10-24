@@ -315,6 +315,38 @@ public sealed class CleanCommandTests : IDisposable
         Assert.True(HasBranch("feature"));
     }
 
+    // A builtin driver needs no config, so system gitattributes ($(prefix)/etc/gitattributes) must be shut out too:
+    // the scratch git carries exactly these GIT_* variables, whatever dydo inherits.
+    [Fact]
+    public async Task ScratchGitEnvironment_ShutsOutSystemAttributesAndConfig_WhateverIsInherited()
+    {
+        var scratch = Path.Combine(_root, "scratch");
+        var inherited = new Dictionary<string, string?>
+        {
+            ["GIT_ATTR_NOSYSTEM"] = "0",
+            ["GIT_ATTR_SOURCE"] = "HEAD",
+            ["GIT_CONFIG_NOSYSTEM"] = "0",
+            ["GIT_CONFIG_SYSTEM"] = Path.Combine(_root, "system-config"),
+            ["GIT_CONFIG_GLOBAL"] = Path.Combine(_root, "global-config"),
+            ["GIT_TEMPLATE_DIR"] = _root
+        };
+
+        var environment = await WithEnvironment(inherited, () => Task.FromResult(
+            GitRunner.IsolatedStartInfo(scratch, MergedBranchJudge.ScratchEnvironment(scratch)).Environment));
+
+        var git = environment.Where(entry => entry.Key.StartsWith("GIT_", StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(entry => entry.Key.ToUpperInvariant(), entry => entry.Value);
+        Assert.Equal(new Dictionary<string, string?>
+        {
+            ["GIT_ATTR_NOSYSTEM"] = "1",
+            ["GIT_CONFIG_NOSYSTEM"] = "1",
+            ["GIT_CONFIG_GLOBAL"] = Path.Combine(scratch, "config"),
+            ["GIT_TERMINAL_PROMPT"] = "0",
+            ["GIT_OPTIONAL_LOCKS"] = "0"
+        }.OrderBy(entry => entry.Key), git.OrderBy(entry => entry.Key));
+        Assert.Equal(scratch, environment["XDG_CONFIG_HOME"]);
+    }
+
     // A driver a committed .gitattributes names but nothing defines falls back to git's own merge.
     [Fact]
     public async Task UndefinedMergeDriverInCommittedAttributes_StillJudgesBySquash()

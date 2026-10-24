@@ -19,7 +19,32 @@ internal static class GitRunner
     public static GitResult RunIsolated(string workingDirectory, IReadOnlyDictionary<string, string> environment, params string[] arguments) =>
         Start(workingDirectory, environment, inheritGitVariables: false, arguments);
 
+    /// <summary>The process <see cref="RunIsolated"/> starts, its environment final.</summary>
+    internal static ProcessStartInfo IsolatedStartInfo(string workingDirectory, IReadOnlyDictionary<string, string> environment,
+        params string[] arguments) =>
+        StartInfo(workingDirectory, environment, inheritGitVariables: false, arguments);
+
     private static GitResult Start(string workingDirectory, IReadOnlyDictionary<string, string> environment,
+        bool inheritGitVariables, string[] arguments)
+    {
+        var start = StartInfo(workingDirectory, environment, inheritGitVariables, arguments);
+        try
+        {
+            using var process = Process.Start(start)!;
+            process.StandardInput.Close();
+            var error = process.StandardError.ReadToEndAsync();
+            using var output = new MemoryStream();
+            process.StandardOutput.BaseStream.CopyTo(output);
+            process.WaitForExit();
+            return new GitResult(process.ExitCode, output.ToArray(), error.Result.Trim());
+        }
+        catch (Win32Exception ex)
+        {
+            return new GitResult(-1, [], $"git could not start: {ex.Message}");
+        }
+    }
+
+    private static ProcessStartInfo StartInfo(string workingDirectory, IReadOnlyDictionary<string, string> environment,
         bool inheritGitVariables, string[] arguments)
     {
         var start = new ProcessStartInfo("git")
@@ -39,21 +64,7 @@ internal static class GitRunner
             start.Environment[name] = value;
         foreach (var argument in arguments)
             start.ArgumentList.Add(argument);
-
-        try
-        {
-            using var process = Process.Start(start)!;
-            process.StandardInput.Close();
-            var error = process.StandardError.ReadToEndAsync();
-            using var output = new MemoryStream();
-            process.StandardOutput.BaseStream.CopyTo(output);
-            process.WaitForExit();
-            return new GitResult(process.ExitCode, output.ToArray(), error.Result.Trim());
-        }
-        catch (Win32Exception ex)
-        {
-            return new GitResult(-1, [], $"git could not start: {ex.Message}");
-        }
+        return start;
     }
 
     // A prefix, not a list, so variables a later git adds are covered too; case-insensitive, as Windows names are.

@@ -333,7 +333,7 @@ failed worktree always keeps its branch, and its line says so.
   rebase merge: `git merge-tree --write-tree origin/<default> <tip>` merges cleanly to exactly
   `origin/<default>`'s tree, so the branch holds nothing origin lacks. That merge runs in a scratch bare
   repository that borrows the real object store and reads no repository, global or system config, no
-  inherited `GIT_*` variable and no attributes, so a configured merge driver cannot resolve a change away, and even a dry run adds nothing
+  inherited `GIT_*` variable and no attributes, so no merge driver, builtin or configured, can resolve a change away, and even a dry run adds nothing
   to the repository. Otherwise the branch is kept and the line says why (not merged,
   no origin, fetch failed, or the squash check failed, as with a git older than 2.38). The default is the branch origin advertises now (`git ls-remote --symref origin HEAD`),
   so a stale local `origin/HEAD` never decides; only when origin cannot answer do the local

@@ -42,14 +42,16 @@ internal sealed class MergedBranchJudge(string repository, bool dryRun)
         var target = GitRunner.Run(repository, "rev-parse", "--verify", "--quiet", $"{_target}^{{commit}}");
         var targetTree = GitRunner.Run(repository, "rev-parse", "--verify", "--quiet", $"{_target}^{{tree}}");
         var store = GitRunner.Run(repository, "rev-parse", "--path-format=absolute", "--git-path", "objects");
-        var failed = new[] { target, targetTree, store }.FirstOrDefault(result => !result.Ok);
+        // The scratch repository can read the borrowed objects only in their own format, SHA-1 or SHA-256.
+        var format = GitRunner.Run(repository, "rev-parse", "--show-object-format");
+        var failed = new[] { target, targetTree, store, format }.FirstOrDefault(result => !result.Ok);
         if (failed != null)
             return failed.Error;
 
         var scratch = Path.Combine(Path.GetTempPath(), "dydo-merge-tree-" + Guid.NewGuid().ToString("N"));
         try
         {
-            var merge = IsolatedMergeTree(scratch, store.Text.Trim(), target.Text.Trim(), tip);
+            var merge = IsolatedMergeTree(scratch, store.Text.Trim(), format.Text.Trim(), target.Text.Trim(), tip);
             // Exit 1 is a conflicted merge: the tip holds changes origin does not.
             if (merge.ExitCode is not (0 or 1))
                 return string.IsNullOrEmpty(merge.Error) ? $"git exited {merge.ExitCode}" : merge.Error;
@@ -70,6 +72,7 @@ internal sealed class MergedBranchJudge(string repository, bool dryRun)
     // git merge-tree in a scratch bare repository that borrows the real object store as an alternate, so
     // the objects it writes go with the scratch directory, and no config or attributes but its own reach it:
     // a merge driver, even a builtin one such as union that needs no config, cannot resolve the tip's changes away.
+    // The scratch repository takes the real one's object format, or a SHA-1 scratch could not read SHA-256 objects.
     // Every source git consults, and how it is shut:
     // - environment: every inherited GIT_* is dropped (GIT_CONFIG_PARAMETERS and GIT_CONFIG_COUNT command-line
     //   config, GIT_CONFIG, GIT_CONFIG_SYSTEM, GIT_ATTR_SOURCE, GIT_TEMPLATE_DIR, GIT_DIR and the like); no -c is passed.
@@ -83,13 +86,14 @@ internal sealed class MergedBranchJudge(string repository, bool dryRun)
     // - templates: --template= copies none, so no hooks, info/exclude or info/attributes land in $GIT_DIR/info.
     // - in-tree .gitattributes: the repository is bare with an unborn HEAD and no index, and attr.tree is unset,
     //   so no tree, index or worktree supplies attributes.
-    private static GitResult IsolatedMergeTree(string scratch, string store, string target, string tip)
+    private static GitResult IsolatedMergeTree(string scratch, string store, string objectFormat, string target, string tip)
     {
         var bare = Path.Combine(scratch, "repo.git");
         Directory.CreateDirectory(scratch);
         var isolated = ScratchEnvironment(scratch);
         File.WriteAllText(isolated["GIT_CONFIG_GLOBAL"], "");
-        var init = GitRunner.RunIsolated(scratch, isolated, "init", "--bare", "--quiet", "--template=", bare);
+        var init = GitRunner.RunIsolated(scratch, isolated, "init", "--bare", "--quiet", "--template=",
+            $"--object-format={objectFormat}", bare);
         if (!init.Ok)
             return init;
         // One path per line; quoted, a path holding a quote, a backslash or a newline survives intact.

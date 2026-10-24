@@ -32,7 +32,7 @@ internal sealed record ArchivePlan(
         var tracked = GitRunner.Run(worktree, "status", "--porcelain=v1", "-z", "--no-renames", "--untracked-files=no");
         var untracked = GitRunner.Run(worktree, "ls-files", "--others", "--exclude-standard", "-z");
         var evidence = GitRunner.Run(worktree, ["ls-files", "--others", "--ignored", "--exclude-standard", "-z",
-            "--", .. dydoRoots.Select(root => $"{root}/agents/")]);
+            "--", .. dydoRoots.Select(AgentsFolder)]);
         var failed = new[] { tracked, untracked, evidence }.FirstOrDefault(result => !result.Ok);
         if (failed != null)
         {
@@ -53,7 +53,7 @@ internal sealed record ArchivePlan(
 
     // A path below <root>/agents/ with a build folder among its folders.
     private static bool IsBuildOutput(string path, IReadOnlyList<string> dydoRoots) =>
-        dydoRoots.Select(root => $"{root}/agents/")
+        dydoRoots.Select(AgentsFolder)
             .Where(agents => path.StartsWith(agents, StringComparison.OrdinalIgnoreCase))
             .Any(agents => path[agents.Length..].Split('/').SkipLast(1)
                 .Any(folder => BuildFolders.Contains(folder, StringComparer.OrdinalIgnoreCase)));
@@ -61,7 +61,7 @@ internal sealed record ArchivePlan(
     /// <summary>
     /// The dydo roots whose <c>agents/</c> may hold evidence: the one <c>dydo.json</c> names at
     /// <paramref name="head"/>, the one the working tree's <c>dydo.json</c> names, and the default,
-    /// de-duplicated. A root changed in the tree leaves the old one's ignored files behind, so every root
+    /// each spelled as git lists paths (see <see cref="GitSpelling"/>) and de-duplicated. A root changed in the tree leaves the old one's ignored files behind, so every root
     /// is searched. Null with <paramref name="reason"/> set when a <c>dydo.json</c> exists but cannot be
     /// read or parsed: which evidence the tree holds is then unknown. Reads only; HEAD's copy comes from
     /// <c>git show</c>, which leaves the index alone.
@@ -71,18 +71,39 @@ internal sealed record ArchivePlan(
         var texts = ConfigTexts(worktree, head, out reason);
         if (reason != null)
             return null;
-        var roots = new List<string> { ConfigService.DefaultRoot };
+        var roots = new List<string?> { GitSpelling(worktree, ConfigService.DefaultRoot) };
         foreach (var (source, json) in texts)
         {
             var root = RootIn(json, source, out reason);
             if (reason != null)
                 return null;
-            if (root != null && !roots.Contains(root))
-                roots.Add(root);
+            if (root != null)
+                roots.Add(GitSpelling(worktree, root));
         }
 
-        return roots;
+        return [.. roots.OfType<string>().Distinct(StringComparer.Ordinal)];
     }
+
+    /// <summary>
+    /// A configured root as git spells the folder in its listings: worktree-relative, forward slashes, no
+    /// <c>.</c> or <c>..</c> segment, repeated slash or edge slash, and empty for the worktree itself. dydo
+    /// resolves the root with <see cref="Path.Combine(string, string)"/> against the folder holding
+    /// <c>dydo.json</c>, so <c>./docs</c>, <c>docs/</c> and <c>.\docs</c> all name <c>docs</c>. Null when the root
+    /// resolves outside the worktree: removing the tree loses nothing there.
+    /// </summary>
+    internal static string? GitSpelling(string worktree, string root)
+    {
+        var top = Path.GetFullPath(worktree);
+        var full = Path.GetFullPath(Path.Combine(top, root.Replace('\\', '/')));
+        var relative = Path.GetRelativePath(top, full).Replace('\\', '/').Trim('/');
+        if (relative == ".")
+            return "";
+        var outside = relative == ".." || relative.StartsWith("../", StringComparison.Ordinal) || Path.IsPathRooted(relative);
+        return outside ? null : relative;
+    }
+
+    // The pathspec and listing prefix of a root's agents folder.
+    private static string AgentsFolder(string root) => root.Length == 0 ? "agents/" : $"{root}/agents/";
 
     // HEAD's dydo.json and the working tree's, each where it exists; reason is set when one exists but
     // cannot be read.
@@ -123,7 +144,7 @@ internal sealed record ArchivePlan(
         return listed.Output.Length == 0 ? null : GitRunner.Run(worktree, "show", $"{commit}:{name}");
     }
 
-    // The structure root a dydo.json names, with forward slashes and no edge slashes; null when it names none.
+    // The structure root a dydo.json names, as written; null when it names none.
     private static string? RootIn(string json, string source, out string? reason)
     {
         reason = null;
@@ -131,7 +152,7 @@ internal sealed record ArchivePlan(
         {
             var config = JsonSerializer.Deserialize(json.TrimStart('\uFEFF'), DydoConfigJsonContext.Default.DydoConfig)
                 ?? throw new JsonException("it holds no object");
-            var root = config.Structure?.Root?.Replace('\\', '/').Trim('/');
+            var root = config.Structure?.Root;
             return string.IsNullOrEmpty(root) ? null : root;
         }
         catch (JsonException ex)

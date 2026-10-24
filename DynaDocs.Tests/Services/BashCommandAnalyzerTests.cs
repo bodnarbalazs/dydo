@@ -251,6 +251,75 @@ public class BashCommandAnalyzerTests
         Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
     }
 
+    [Theory]
+    [InlineData("git worktree remove --force .claude/worktrees/dyd-1")]
+    [InlineData("git worktree remove -f ../wt")]
+    [InlineData("git -C C:/repo worktree remove C:/repo/.claude/worktrees/x --force")]
+    [InlineData("git status && git worktree remove -f x")]
+    [InlineData("git worktree remove -ff .claude/worktrees/dyd-1")]
+    [InlineData("git worktree remove -f -f .claude/worktrees/dyd-1")]
+    [InlineData("rm -rf .claude/worktrees/dyd-1")]
+    [InlineData("rm -fr /home/me/.t3/worktrees/DynaDocs/t3-1")]
+    [InlineData("rm -r -f \"C:/Users/me/repo/.claude/worktrees/x\"")]
+    [InlineData("rm --recursive worktrees/x")]
+    [InlineData("rm .claude/worktrees/x -rf")]
+    [InlineData("Remove-Item -Recurse -Force C:\\repo\\.claude\\worktrees\\x")]
+    [InlineData("Remove-Item 'C:\\repo\\.claude\\worktrees\\x' -Recurse")]
+    [InlineData("ri -r .claude\\worktrees\\x")]
+    [InlineData("rd /s /q C:\\repo\\.claude\\worktrees\\x")]
+    [InlineData("rm -rf .claude/worktrees")]
+    [InlineData("rm -rf C:/Users/me/repo/.claude/worktrees/dyd-1/")]
+    [InlineData("rm -rf /home/me/.t3/worktrees/DynaDocs")]
+    [InlineData("git -C \"C:\\My Repo\" worktree remove --force \"C:\\My Repo\\.claude\\worktrees\\x\"")]
+    [InlineData("git -C 'C:/My Repo' worktree remove -f x")]
+    [InlineData("git -c core.longpaths=true -C \"C:\\My Repo\" worktree remove x --force")]
+    [InlineData("rm -rf \"C:/repo/.claude/worktrees/my tree\"")]
+    [InlineData("rm -rf 'C:/repo/.claude/worktrees/my tree/'")]
+    [InlineData("Remove-Item -Recurse \"C:\\repo\\.claude\\worktrees\\my tree\"")]
+    [InlineData("Remove-Item -Recurse -Force 'C:\\Users\\me\\.t3\\worktrees\\Dyna Docs\\my thread'")]
+    [InlineData("bash -c \"rm -rf '/home/me/repo/.claude/worktrees/my tree'\"")]
+    public void WorktreeRemoval_RawForms_AreBlockedWithTheDydoCleanHint(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, $"Expected dangerous: {command}");
+        Assert.Contains("dydo clean --dry-run <worktree>, then dydo clean <worktree>", reason);
+    }
+
+    [Theory]
+    [InlineData("dydo clean --dry-run")]
+    [InlineData("dydo clean --all")]
+    [InlineData("dydo clean .claude/worktrees/dyd-1")]
+    [InlineData("git worktree remove .claude/worktrees/dyd-1")]
+    [InlineData("git worktree prune")]
+    [InlineData("git worktree list --porcelain")]
+    [InlineData("rm -f .claude/worktrees/x/notes.txt")]
+    [InlineData("Remove-Item -Force .claude\\worktrees\\x\\notes.txt")]
+    [InlineData("rm -rf bin/obj")]
+    [InlineData("rm -rf /tmp/my-worktrees-backup")]
+    [InlineData("rm -rf C:/Users/me/repo/.claude/worktrees/dyd-1/bin")]
+    [InlineData("Remove-Item -Recurse C:\\repo\\.claude\\worktrees\\dyd-1\\DynaDocs.Tests\\obj")]
+    [InlineData("rm -rf /home/me/.t3/worktrees/DynaDocs/t3-1/node_modules")]
+    [InlineData("rm -rf \"C:/repo/.claude/worktrees/my tree/bin\"")]
+    [InlineData("Remove-Item -Recurse \"C:\\repo\\.claude\\worktrees\\my tree\\DynaDocs.Tests\\obj\"")]
+    [InlineData("Remove-Item -Recurse 'C:\\Users\\me\\.t3\\worktrees\\Dyna Docs\\my thread\\bin'")]
+    [InlineData("git -C \"C:\\My Repo\" worktree remove \"C:\\My Repo\\.claude\\worktrees\\x\"")]
+    public void WorktreeRemoval_SafeForms_AreAllowed(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    [Fact]
+    public void ForcePushRefusal_NamesDydoCleanForLocalCleanup()
+    {
+        var (_, reason) = _analyzer.CheckDangerousPatterns("git push origin --delete feature");
+
+        Assert.Contains("dydo clean --dry-run <worktree>, then dydo clean <worktree>", reason);
+        Assert.DoesNotContain("git worktree remove", reason);
+    }
+
     #region Read Operations - Unix
 
     [Theory]

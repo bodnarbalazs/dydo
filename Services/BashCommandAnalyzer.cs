@@ -206,7 +206,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (OndrejDiskRegex(), "Disk format or erase attempt"),
         (OndrejSudoRmRegex(), "Privileged delete attempt"),
         (OndrejCurlPipeRegex(), "Download and execute as shell"),
-        (OndrejGitPushRegex(), "Force push or remote branch deletion. GitHub deletes a merged PR's branch itself; clean up locally with git worktree remove, git branch -d and git fetch --prune, and name any other remote branch for the human"),
+        (OndrejGitPushRegex(), "Force push or remote branch deletion. GitHub deletes a merged PR's branch itself; clean up locally from outside the tree with dydo clean --dry-run <worktree>, then dydo clean <worktree>, which removes the worktree, keeps unmerged branches and runs git fetch --prune; name any other remote branch for the human"),
         (OndrejGitRecoveryRegex(), "Git recovery history destruction"),
         (OndrejSystemPermissionsRegex(), "System permission or ownership change"),
         (OndrejGhDeleteRegex(), "Destructive GitHub operation"),
@@ -220,6 +220,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (OndrejGpgSecretRegex(), "GPG secret key export"),
         (OndrejPasswordStorePathRegex(), "Password store path access"),
         (OndrejPasswordAppRegex(), "Password manager application access"),
+
+        // Raw worktree removal - dydo clean archives uncommitted work and never follows a link.
+        (ForcedWorktreeRemoveRegex(), WorktreeRemovalReason),
+        (RecursiveWorktreeDeleteRegex(), WorktreeRemovalReason),
 
         // Inline interpreter execution - bypasses all file operation analysis
         (InlineInterpreterRegex(), "Inline interpreter execution bypasses file operation analysis. Write a script file instead."),
@@ -388,6 +392,39 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     [GeneratedRegex(CommandStart + @"(?:open\s+-a\s+['""]?(?:1Password|Bitwarden|NordPass|KeePass)|brew\s+(?:uninstall|remove|rm)\b[^;&|\r\n]*\s['""]?(?:1password|bitwarden(?:-cli)?|nordpass|keepassxc|lastpass))(?=\s|$|['""/;&|])|(?<=^|[/\s'""])(?:1Password|Bitwarden|NordPass|KeePassXC)\.app(?=\s|$|['""/;&|])", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejPasswordAppRegex();
+
+    private const string WorktreeRemovalReason =
+        "Raw worktree removal can lose uncommitted work or follow a link out of the tree. "
+        + "From outside the tree run dydo clean --dry-run <worktree>, then dydo clean <worktree>";
+
+    // One git -C/-c value: double- or single-quoted (spaces allowed), or a bare word.
+    private const string GitOptionValue = @"(?:""[^""\r\n]*""|'[^'\r\n]*'|[^\s;&|'""]+)";
+
+    // git worktree remove with a force flag (-f, git's repeated -ff, --force), after any git -C/-c
+    // options, quoted or not. Plain remove refuses a dirty tree, so it stays allowed.
+    [GeneratedRegex(CommandStart + @"git(?:\s+-[cC]\s+" + GitOptionValue + @")*\s+worktree\s+remove\b[^;&|\r\n]*\s(?:-f+|--force)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex ForcedWorktreeRemoveRegex();
+
+    // A worktree path argument: an optional prefix ending in a separator, then a worktrees folder, one
+    // entry in it, or T3's .t3/worktrees/<project>/<thread>, then optional trailing separators.
+    private const string BareWorktreeArgument =
+        @"\s(?:[^\s'""`;&|]*[/\\])?(?:worktrees(?:[/\\]+[^\s/\\'""`;&|]+)?|\.t3[/\\]+worktrees(?:[/\\]+[^\s/\\'""`;&|]+){2})[/\\]*(?=[\s'""`);&|]|$)";
+
+    private const string DoubleQuotedWorktreeArgument =
+        @"""(?:[^""\r\n]*[/\\])?(?:worktrees(?:[/\\]+[^/\\""\r\n]+)?|\.t3[/\\]+worktrees(?:[/\\]+[^/\\""\r\n]+){2})[/\\]*""";
+
+    private const string SingleQuotedWorktreeArgument =
+        @"'(?:[^'\r\n]*[/\\])?(?:worktrees(?:[/\\]+[^/\\'\r\n]+)?|\.t3[/\\]+worktrees(?:[/\\]+[^/\\'\r\n]+){2})[/\\]*'";
+
+    // A recursive delete of a worktree itself: the argument is a worktrees folder or one entry in it
+    // (T3's .t3/worktrees/<project>/<thread> counts two deep), so a delete inside a tree, such as its
+    // bin or obj, stays allowed. Recursive means rm -r/-R/--recursive (flag clusters of rm's own
+    // letters, so -f alone and PowerShell's -Force do not count), PowerShell -Recurse and its prefixes,
+    // and cmd's rd /s. The argument is bare (a name ends at whitespace) or quoted (a name may hold
+    // spaces and ends at the closing quote). An accident guard, not a shell parser: a worktree outside
+    // a worktrees folder is not recognised.
+    [GeneratedRegex(CommandStart + @"(?:rm|rmdir|rd|del|erase|ri|Remove-Item)(?=\s)(?=[^;&|\r\n]*\s(?:-[dfiIvrR]*[rR][dfiIvrR]*|--recursive|-rec(?:u(?:r(?:s(?:e)?)?)?)?|/s)(?=[\s:]|$))(?=[^;&|\r\n]*(?:" + BareWorktreeArgument + "|" + DoubleQuotedWorktreeArgument + "|" + SingleQuotedWorktreeArgument + "))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    private static partial Regex RecursiveWorktreeDeleteRegex();
 
     // Matches inline interpreter execution: python -c, node -e, ruby -e, perl -e/-E, php -r.
     // Does NOT include bash/sh/zsh -c - those are handled by shell -c subcommand extraction

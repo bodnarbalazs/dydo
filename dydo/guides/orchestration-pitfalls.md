@@ -88,7 +88,7 @@ from skipping the middle: discovery first, then a question that is on the record
 
 **Rule:** run bounded discovery - the Decision Records, the plan, the ticket's links, the glossary, the
 code - and only when it comes up empty file a Question Ticket listing what you searched, wire it as a
-blocker, then release with branch pushed, resume SHA posted, worktree removed, parent Todo and
+blocker, then release with branch pushed, resume SHA posted, worktree cleaned (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree), parent Todo and
 unassigned. The admiral resumes blocker-cleared work on the next captain return or human word. Settle operational conflicts by
 precedence: the human's live instruction, then the Decision Record, the reviewed plan at its governing
 commit, the pinned feature spec, the ticket contract, coding standards, existing code. The ladder is crew → Ticket Captain → admiral → human, and the human is

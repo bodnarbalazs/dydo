@@ -44,7 +44,6 @@ async function extractArchive(archivePath, destDir, platformInfo) {
   fs.mkdirSync(destDir, { recursive: true });
 
   if (platformInfo.archiveExt === '.zip') {
-    // Windows: use PowerShell to extract
     if (process.platform === 'win32') {
       execFileSync('powershell', [
         '-Command',
@@ -54,7 +53,6 @@ async function extractArchive(archivePath, destDir, platformInfo) {
       execFileSync('unzip', ['-o', archivePath, '-d', destDir], { stdio: 'pipe' });
     }
   } else {
-    // tar.gz: use tar command
     execFileSync('tar', ['-xzf', archivePath, '-C', destDir], { stdio: 'pipe' });
   }
 }
@@ -74,10 +72,8 @@ async function downloadBinary(version, platformInfo, installDir) {
 
   await extractArchive(archivePath, installDir, platformInfo);
 
-  // Clean up archive
   fs.unlinkSync(archivePath);
 
-  // Set executable permission on Unix systems
   if (process.platform !== 'win32') {
     const binaryPath = path.join(installDir, platformInfo.binaryName);
     fs.chmodSync(binaryPath, 0o755);

@@ -41,8 +41,7 @@ async function rawLinkTarget(linkPath) {
 }
 
 // A link is "ours" when its raw target falls under this repository's canonical skills/ tree,
-// whether or not that target still exists. That is exactly what a link from an earlier layout
-// (flat, or an old category) looks like once its skill moved: dangling, but still ours to fix.
+// whether or not that target still exists: a link left by a moved skill dangles but is still ours.
 function underCanonicalRoot(candidate) {
   const relative = path.relative(canonicalRoot, candidate);
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));

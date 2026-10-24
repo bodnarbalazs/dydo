@@ -1,9 +1,7 @@
 import { isAbsolute } from "node:path";
 
-// Extracted from run-host-canaries.mjs (DYD-91): the runner executes its CLI at module
-// top level, so importing it to reach parseArgs would run the whole host-canary suite.
-// This module holds only the pure argument shaping, kept behaviour-identical, so it can
-// be imported and tested without spawning a host.
+// Split out of run-host-canaries.mjs, which runs its CLI at module top level: importing it for
+// parseArgs would run the whole host-canary suite.
 export function parseArgs(argv) {
   const result = {};
   for (let index = 0; index < argv.length; index += 2) {

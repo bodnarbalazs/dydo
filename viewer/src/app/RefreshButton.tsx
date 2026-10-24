@@ -12,7 +12,6 @@ function isShortcut(event: KeyboardEvent): boolean {
   return !(event.target instanceof HTMLElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName));
 }
 
-/** Re-fetches the Project in place, from the toolbar or with the R key. */
 export function RefreshButton({ disabled, busy, onRefresh }: RefreshButtonProps) {
   const ready = !disabled && !busy;
 

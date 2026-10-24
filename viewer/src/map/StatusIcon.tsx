@@ -5,7 +5,6 @@ interface StatusIconProps {
   color: string;
 }
 
-/** One glyph per workflow state type, drawn in the status colour. */
 export function StatusIcon({ type, color }: StatusIconProps) {
   return (
     <svg className="status-icon" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" data-state-type={type}>

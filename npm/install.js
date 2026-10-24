@@ -6,7 +6,6 @@ const { getBinaryDir, isBinaryInstalled, getInstalledVersion, setInstalledVersio
 const pkg = require('./package.json');
 
 async function install() {
-  // Check platform support
   const platformInfo = getPlatformInfo();
 
   if (!platformInfo.supported) {
@@ -16,7 +15,6 @@ async function install() {
     process.exit(0); // Don't fail npm install, just warn
   }
 
-  // Check if already installed with correct version
   const installedVersion = getInstalledVersion();
   if (installedVersion === pkg.version && isBinaryInstalled(platformInfo)) {
     console.log(`[dydo] Binary already installed (v${pkg.version})`);

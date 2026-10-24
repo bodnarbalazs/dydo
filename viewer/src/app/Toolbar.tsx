@@ -14,7 +14,6 @@ interface ToolbarProps {
   summary: string | null;
   canRefresh: boolean;
   refreshing: boolean;
-  /** What the latest refresh changed, shown for a moment beside the summary. */
   notice: string | null;
   theme: ThemePreference;
   onTeam: (id: string) => void;

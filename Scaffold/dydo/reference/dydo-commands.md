@@ -300,14 +300,16 @@ failed worktree always keeps its branch, and its line says so.
 
 - **Never touched:** the main checkout, the worktree holding the current directory, a locked worktree,
   one a running process is using, and one under T3's worktree root `~/.t3/worktrees` (archive the T3
-  thread instead). Each is skipped with its reason.
+  thread instead). Each is skipped with its reason. So is a worktree whose `dydo.json`, at HEAD or
+  in the tree, cannot be parsed, dry run included: which evidence it holds is unknown.
 - **Submodules:** the archive reads only the worktree itself, so a worktree with an initialized
   submodule that has staged, unstaged or untracked changes, or a commit on any local ref (HEAD, a
   branch, a tag, the stash) that none of its remote refs reach, is skipped with a reason naming the
   submodule: commit and push it, or clean it, first. A worktree whose
   submodules are clean and pushed is removed as usual.
 - **Uncommitted work is archived, then removed.** Staged, unstaged and untracked files git does not
-  ignore, plus dydo's ignored evidence under `dydo/agents/`, are copied to
+  ignore, plus dydo's ignored evidence under `<root>/agents/` for every dydo root (the one
+  `dydo.json` names at HEAD, the one the worktree's `dydo.json` names, and `dydo`), are copied to
   `<git common dir>/dydo/clean-archive/<UTC timestamp>-<branch>/`: `tracked.patch` (`git diff HEAD
   --binary`), `untracked/` and `evidence/` with their paths, and `manifest.json` (worktree, branch,
   HEAD, files, sizes, time, links). A link among those paths is never followed or copied: its

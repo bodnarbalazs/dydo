@@ -20,8 +20,6 @@ internal sealed partial class CleanArchive(string gitCommonDirectory, long capBy
 
     private const string StampFormat = "yyyyMMdd'T'HHmmss'Z'";
 
-    public string Root => root;
-
     /// <summary>A fresh entry path for <paramref name="label"/>; nothing is created.</summary>
     public string NewEntryPath(string label, DateTime utcNow)
     {

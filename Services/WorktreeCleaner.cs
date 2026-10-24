@@ -9,7 +9,7 @@ using DynaDocs.Utils;
 /// tree are unlinked before anything recursive runs (<see cref="LinkSafeDelete"/>), and a local branch
 /// is deleted only when <see cref="MergedBranchJudge"/> finds its tip on origin's default branch. The main
 /// checkout, the tree holding the current directory, locked trees, trees whose submodules hold work
-/// (<see cref="SubmoduleWork"/>), trees in use and trees under T3's root are skipped with the reason.
+/// (<see cref="SubmoduleWork"/>), trees whose dydo.json cannot be parsed, trees in use and trees under T3's root are skipped with the reason.
 /// Prints one line per worktree, ending with what happened to its branch. A dry run changes nothing, so it runs no
 /// busy check (the Windows probe moves the folder) and says so.
 /// </summary>
@@ -83,8 +83,8 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
     {
         try
         {
-            var skip = SkipReason(tree, run);
-            return skip == null ? Remove(tree, run) : new Outcome($"skipped {tree.Path}: {skip}{Kept(tree)}", Removed: false, Failed: false);
+            var skip = SkipReason(tree, run, out var evidenceRoots);
+            return skip == null ? Remove(tree, run, evidenceRoots) : new Outcome($"skipped {tree.Path}: {skip}{Kept(tree)}", Removed: false, Failed: false);
         }
         catch (ProbeStrandedException ex)
         {
@@ -108,8 +108,10 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
             : $"{ex.Message}; run no git worktree prune until it is back. Move it back with {moveBack}");
     }
 
-    private string? SkipReason(WorktreeEntry tree, Run run)
+    // A dydo.json that cannot be parsed leaves the evidence folders unknown, so the tree stays.
+    private string? SkipReason(WorktreeEntry tree, Run run, out IReadOnlyList<string> evidenceRoots)
     {
+        evidenceRoots = [];
         var repository = run.Repository;
         if (tree.IsMain)
             return "the main checkout is never removed";
@@ -121,15 +123,19 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
             return "it is locked";
         if (!Directory.Exists(tree.Path))
             return null;
+        var roots = ArchivePlan.EvidenceRoots(tree.Path, tree.Head, out var unknown);
+        if (roots == null)
+            return unknown;
+        evidenceRoots = roots;
         return SubmoduleWork.Find(tree.Path) ?? (run.DryRun ? null : _findUse(tree.Path));
     }
 
-    private Outcome Remove(WorktreeEntry tree, Run run)
+    private Outcome Remove(WorktreeEntry tree, Run run, IReadOnlyList<string> evidenceRoots)
     {
         var verdict = tree.Branch == null ? (Delete: false, Reason: "detached HEAD") : run.Judge.Judge(tree.Head!);
         string? error = null;
         var plan = Directory.Exists(tree.Path)
-            ? ArchivePlan.Collect(tree.Path, DydoRoot(tree.Path), out error)
+            ? ArchivePlan.Collect(tree.Path, evidenceRoots, out error)
             : new ArchivePlan([], [], [], []);
         if (plan == null)
             return Failure(tree, error!);
@@ -255,9 +261,6 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
         capBytes = megabytes * 1024L * 1024L;
         return error == null;
     }
-
-    private static string DydoRoot(string worktree) =>
-        new ConfigService().LoadConfig(worktree)?.Structure.Root ?? ConfigService.DefaultRoot;
 
     private static bool SamePath(string a, string? b) =>
         b != null && string.Equals(Trim(a), Trim(b), PathComparison);

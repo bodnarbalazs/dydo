@@ -243,6 +243,60 @@ public sealed class CleanCommandTests : IDisposable
         Assert.Contains("2 file(s)", await ListOutput());
     }
 
+    // dydo.json at HEAD names one root, the tree's edited copy another, and the default holds evidence
+    // too: every root's ignored agents files are archived.
+    [Fact]
+    public async Task ChangedDydoRoot_ArchivesTheEvidenceOfTheOldRoot_TheNewAndTheDefault()
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, ".gitignore", ".claude/\nold/agents/\nnew/agents/\ndydo/agents/\n");
+        Write(tree, "dydo.json", """{ "structure": { "root": "old" } }""");
+        Commit(tree, "root old");
+        Write(tree, "dydo.json", """{ "structure": { "root": "new/" } }""");
+        Write(tree, "old/agents/captain/before.md", "old\n");
+        Write(tree, "new/agents/captain/after.md", "new\n");
+        Write(tree, "dydo/agents/captain/default.md", "default\n");
+
+        var (exit, stdout, stderr) = await Clean("feature");
+
+        Assert.True(exit == 0, stdout + stderr);
+        var evidence = Path.Combine(ArchiveEntries().Single(), "evidence");
+        Assert.Equal("old\n", File.ReadAllText(Path.Combine(evidence, "old", "agents", "captain", "before.md")));
+        Assert.Equal("new\n", File.ReadAllText(Path.Combine(evidence, "new", "agents", "captain", "after.md")));
+        Assert.Equal("default\n", File.ReadAllText(Path.Combine(evidence, "dydo", "agents", "captain", "default.md")));
+        Assert.Contains("evidence   old/agents/captain/before.md", stderr);
+        Assert.False(Directory.Exists(tree));
+    }
+
+    // A dydo.json that cannot be parsed, at HEAD or in the tree, leaves the evidence folders unknown:
+    // the tree is skipped, dry run included, and nothing is archived.
+    [Theory]
+    [InlineData("HEAD", false)]
+    [InlineData("HEAD", true)]
+    [InlineData("the working tree's", false)]
+    [InlineData("the working tree's", true)]
+    public async Task MalformedDydoJson_KeepsTheTree(string where, bool dryRun)
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, "dydo.json", "{ \"structure\": ");
+        if (where == "HEAD")
+        {
+            Commit(tree, "broken config");
+            Write(tree, "dydo.json", "{}");
+        }
+
+        Write(tree, "dydo/agents/captain/evidence.md", "proof\n");
+        var source = where == "HEAD" ? "dydo.json at HEAD" : "the working tree's dydo.json";
+
+        var (exit, stdout, _) = await Clean(dryRun ? ["feature", "--dry-run"] : ["feature"]);
+
+        Assert.Equal(2, exit);
+        Assert.Contains($"skipped {tree}: {source} cannot be parsed (", stdout);
+        Assert.Contains("so the evidence folders to archive are unknown; branch feature kept (worktree not removed)", stdout);
+        Assert.Equal("proof\n", File.ReadAllText(Path.Combine(tree, "dydo", "agents", "captain", "evidence.md")));
+        Assert.Empty(ArchiveEntries());
+    }
+
     [Fact]
     public async Task Archive_ListsEntriesNewestFirst()
     {

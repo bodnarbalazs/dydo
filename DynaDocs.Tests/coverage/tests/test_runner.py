@@ -258,7 +258,7 @@ class SkillLinkMaterializationTests(unittest.TestCase):
             root = Path(folder) / "source"
             root.mkdir()
             worktree = Path(folder) / "worktree"
-            (worktree / "skills").mkdir(parents=True)  # skills/ exists but has no canonical skills
+            (worktree / "skills").mkdir(parents=True)
 
             with patch.object(run_tests, "ROOT", root):
                 with self.assertRaisesRegex(ValueError, "materialize skill discovery directory"):
@@ -316,7 +316,7 @@ class SkillLinkMaterializationTests(unittest.TestCase):
             root = Path(folder) / "source"
             root.mkdir()
             worktree = Path(folder) / "worktree"
-            worktree.mkdir()  # no skills/ tree at all
+            worktree.mkdir()
 
             with patch.object(run_tests, "ROOT", root):
                 run_tests.materialize_skill_links(worktree)
@@ -711,8 +711,7 @@ class StaleWorktreePruningTests(unittest.TestCase):
 
     def test_prune_parses_real_porcelain_shape_and_needs_resolve_for_an_aliased_path(self):
         """`git worktree list --porcelain` emits forward slashes plus HEAD/branch (or `detached`)
-        lines and blank-line separators -- verified directly against this repository's own
-        `git worktree list --porcelain` output, not guessed. Registers the stale worktree through a
+        lines and blank-line separators. Registers the stale worktree through a
         directory junction so its raw porcelain path lexically escapes temp_root; only `.resolve()`
         walks the junction back onto the real, canonical path, so deleting `.resolve()` from
         `_registered_worktree_paths` makes this test fail (`is_relative_to` is False without it)."""
@@ -757,8 +756,8 @@ class StaleWorktreePruningTests(unittest.TestCase):
             self.assertFalse(stale.exists())
 
     def test_prune_leaves_an_unregistered_stale_marked_leftover_directory_alone(self):
-        """Narrowed contract: pruning enumerates only git's own registered worktrees, so a stale
-        marked directory git no longer tracks is left in place rather than swept by a TEMP scan."""
+        """Pruning enumerates only git's own registered worktrees, so a stale marked directory git
+        no longer tracks is left in place rather than swept by a TEMP scan."""
         with tempfile.TemporaryDirectory() as temp_root_str:
             temp_root = Path(temp_root_str)
             leftover = temp_root / "dydo-test-leftover01"
@@ -779,7 +778,7 @@ class StaleWorktreePruningTests(unittest.TestCase):
             self.assertTrue(leftover.exists())
 
     def test_prune_never_enumerates_the_temp_root_even_with_thousands_of_entries(self):
-        """The production scan of tempfile.gettempdir() is gone: prove it with a poisoned
+        """Pruning never scans tempfile.gettempdir(): prove it with a poisoned
         os.scandir/os.listdir on the temp root itself. The 10,000 real unrelated entries on disk
         give that poison a realistic TEMP to fire against -- they carry no `dydo-test-` prefix, so
         they are not themselves a second, independent proof of anything: the poison is the whole
@@ -827,8 +826,8 @@ class StaleWorktreePruningTests(unittest.TestCase):
     def test_is_stale_test_worktree_boundary_conditions(self):
         """`now` is derived from the marker's own read-back value rather than a wall-clock read
         taken before `_mark` writes it, so the boundary is exact and not a race against mkdir/write
-        latency: a wall-clock `now` combined with `_mark`'s whole-second truncation made the
-        "exactly at threshold" case land up to ~1s off, flaking under replay."""
+        latency: with `_mark`'s whole-second truncation, a wall-clock `now` lands the "exactly at
+        threshold" case up to ~1s off."""
         with tempfile.TemporaryDirectory() as temp_root_str, \
              tempfile.TemporaryDirectory() as outside_root_str:
             temp_root = Path(temp_root_str).resolve()

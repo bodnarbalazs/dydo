@@ -6,12 +6,9 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-// Regression for DYD-219: the OpenCode leg of run-host-canaries.mjs starts this provider
-// without --candidate (openai-sse-provider-args.mjs makes --candidate optional outside Codex
-// mode). A prior fix hop hoisted the teach-directory resolution to module top level, which
-// dereferenced the absent args.candidate and crashed the process before it could print its
-// port line. This test spawns the real provider script the same way the runner does for the
-// OpenCode leg and asserts it starts and reports a port, instead of exiting non-zero.
+// DYD-219: the OpenCode leg of run-host-canaries.mjs starts this provider without --candidate
+// (openai-sse-provider-args.mjs makes it optional outside Codex mode), so nothing at module top
+// level may dereference args.candidate before the port line prints.
 
 const scriptPath = fileURLToPath(new URL("../../HostCanaries/openai-sse-provider.mjs", import.meta.url));
 

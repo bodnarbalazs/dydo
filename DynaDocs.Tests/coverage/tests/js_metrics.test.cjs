@@ -75,9 +75,8 @@ test('a class field holding a function is refused for an unjoinable location, no
 });
 
 test('member rows carry the diagnostic head and the runtime literal as separate anchors', () => {
-  // V8 measures the function literal, ESLint reports at the member head, and the two only coincide
-  // for a concise method that is not static; javascript_coverage.cjs joins on start/end. The last
-  // member pins that V8 skips one leading `static` token even when `static` is the method's name.
+  // javascript_coverage.cjs joins on start/end. The last member pins that V8 skips one leading
+  // `static` token even when `static` is the method's name.
   const source = 'const o = { mark: () => 1, shorthand() { return 2; }, get size() { return 3; } };\n'
     + 'class K { static level() { return 4; } read() { return 5; } static() { return 6; } }';
   const rows = analyze(source).methods;

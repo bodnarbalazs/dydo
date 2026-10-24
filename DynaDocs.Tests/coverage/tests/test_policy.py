@@ -1,4 +1,4 @@
-"""Universal thresholds are independent of language and old tier annotations."""
+"""Universal thresholds are independent of language."""
 import sys
 import unittest
 from pathlib import Path

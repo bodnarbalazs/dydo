@@ -52,7 +52,7 @@ sight, and hand back every judgement call with a recommendation.
    a priority, broken blocking relations, missing evidence links, and finished work still shown as
    active. Sweep orphans too: the worktrees and branches a merge should have retired, and an
    `inquisition/<slug>` past its ticket's `Done`, or a `prototype/<name>` past its delivery ticket's
-   `Done`. Clear orphaned worktrees and merged local branches yourself with `dydo clean --dry-run`, then `dydo clean`; list for the user any remote
+   `Done`. Clear orphaned worktrees yourself with `dydo clean --dry-run --all`, then `dydo clean --all`, run from outside every tree and only after confirming no session is live in them (it deletes each worktree's own branch once merged); clear merged local branches with no worktree by `git branch -d`; list for the user any remote
    branch still standing after its merge or its ticket's `Done`, since the guard blocks remote deletion. Fix the mechanical
    drift and surface what needs judgement. Linear stays the live truth, so keep the repository free
    of a second status board. Done when the board reads true and every orphan is cleared or named

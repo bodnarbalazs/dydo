@@ -30,7 +30,7 @@ Every implementation ticket carries five fields. They are the contract; the rest
 What the ticket deliberately does **not** carry is the route. Pre-writing it ages badly and buys
 nothing: the implementing agent reads the code you were guessing about. The Ticket Captain writes the
 compact acceptance contract just in time, and the route stays the writer's - the two planning
-resolutions are in the [Linear ticket Lifecycle](../understand/task-lifecycle.md). The Captain buys a
+resolutions are in the [Linear Ticket Lifecycle](../understand/task-lifecycle.md). The Captain buys a
 `spec` review of the contract before any code only for one risk it records in the contract.
 
 Owned paths do double duty. They are the brief's scope and the isolation that lets tickets run in
@@ -71,7 +71,7 @@ boundary to be judged against.
 
 A brief does not have to answer every question - it has to leave the open ones askable. What an agent
 does with a question the brief did not settle is the *fog → discovery → Question Ticket* rule in the
-[Linear ticket Lifecycle](../understand/task-lifecycle.md); what it ends up as is a **Question Ticket**,
+[Linear Ticket Lifecycle](../understand/task-lifecycle.md); what it ends up as is a **Question Ticket**,
 Linear Type `Question` in `Todo`, the question itself under a `## Question` heading.
 
 Your part is upstream of that. Name the questions you already know are open, link the Question Tickets
@@ -97,7 +97,7 @@ reviewer decide PASS or FAIL from the same text? If either answer is no, the bri
 
 - [Working-Tree Contract](./working-tree-contract.md) - base branch, owned paths, and the claim
 - [Orchestration Pitfalls](./orchestration-pitfalls.md) - how briefs fail once several are in flight
-- [Linear ticket Lifecycle](../understand/task-lifecycle.md) - where a ticket's state lives
+- [Linear Ticket Lifecycle](../understand/task-lifecycle.md) - where a ticket's state lives
 - [Work Model](../understand/work-model.md) - what Linear owns and what Git owns
 - [dydo Glossary](../reference/dydo-glossary.md) - Question Ticket, review block, gate
 - [DR 045 - Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract](../project/decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md)

@@ -206,7 +206,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (OndrejDiskRegex(), "Disk format or erase attempt"),
         (OndrejSudoRmRegex(), "Privileged delete attempt"),
         (OndrejCurlPipeRegex(), "Download and execute as shell"),
-        (OndrejGitPushRegex(), "Force push or remote branch deletion. GitHub deletes a merged PR's branch itself; clean up locally with dydo clean --dry-run, then dydo clean, which removes the worktree, keeps unmerged branches and runs git fetch --prune; name any other remote branch for the human"),
+        (OndrejGitPushRegex(), "Force push or remote branch deletion. GitHub deletes a merged PR's branch itself; clean up locally from outside the tree with dydo clean --dry-run <worktree>, then dydo clean <worktree>, which removes the worktree, keeps unmerged branches and runs git fetch --prune; name any other remote branch for the human"),
         (OndrejGitRecoveryRegex(), "Git recovery history destruction"),
         (OndrejSystemPermissionsRegex(), "System permission or ownership change"),
         (OndrejGhDeleteRegex(), "Destructive GitHub operation"),
@@ -394,17 +394,21 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex OndrejPasswordAppRegex();
 
     private const string WorktreeRemovalReason =
-        "Raw worktree removal can lose uncommitted work or follow a link out of the tree. Run dydo clean --dry-run, then dydo clean";
+        "Raw worktree removal can lose uncommitted work or follow a link out of the tree. "
+        + "From outside the tree run dydo clean --dry-run <worktree>, then dydo clean <worktree>";
 
-    // git worktree remove with -f/--force, after any git -C/-c options. Plain remove refuses a dirty tree, so it stays allowed.
-    [GeneratedRegex(CommandStart + @"git(?:\s+-[cC]\s+\S+)*\s+worktree\s+remove\b[^;&|\r\n]*\s(?:-f|--force)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    // git worktree remove with a force flag (-f, git's repeated -ff, --force), after any git -C/-c
+    // options. Plain remove refuses a dirty tree, so it stays allowed.
+    [GeneratedRegex(CommandStart + @"git(?:\s+-[cC]\s+\S+)*\s+worktree\s+remove\b[^;&|\r\n]*\s(?:-f+|--force)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex ForcedWorktreeRemoveRegex();
 
-    // A recursive delete naming a path with a worktrees segment, where agents' and T3's worktrees
-    // live: rm -r/-R/--recursive (flag clusters of rm's own letters, so -f alone and PowerShell's
-    // -Force do not count), PowerShell -Recurse and its prefixes, and cmd's rd /s. An accident
-    // guard, not a shell parser: a worktree outside a worktrees folder is not recognised.
-    [GeneratedRegex(CommandStart + @"(?:rm|rmdir|rd|del|erase|ri|Remove-Item)(?=\s)(?=[^;&|\r\n]*\s(?:-[dfiIvrR]*[rR][dfiIvrR]*|--recursive|-rec(?:u(?:r(?:s(?:e)?)?)?)?|/s)(?=[\s:]|$))(?=[^;&|\r\n]*[\s/\\'""]worktrees(?:[/\\\s'""]|$))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    // A recursive delete of a worktree itself: the argument is a worktrees folder or one entry in it
+    // (T3's .t3/worktrees/<project>/<thread> counts two deep), so a delete inside a tree, such as its
+    // bin or obj, stays allowed. Recursive means rm -r/-R/--recursive (flag clusters of rm's own
+    // letters, so -f alone and PowerShell's -Force do not count), PowerShell -Recurse and its prefixes,
+    // and cmd's rd /s. An accident guard, not a shell parser: a worktree outside a worktrees folder
+    // is not recognised.
+    [GeneratedRegex(CommandStart + @"(?:rm|rmdir|rd|del|erase|ri|Remove-Item)(?=\s)(?=[^;&|\r\n]*\s(?:-[dfiIvrR]*[rR][dfiIvrR]*|--recursive|-rec(?:u(?:r(?:s(?:e)?)?)?)?|/s)(?=[\s:]|$))(?=[^;&|\r\n]*(?:[\s/\\'""]worktrees(?:[/\\]+[^\s/\\'"";&|]+)?|[\s/\\'""]\.t3[/\\]+worktrees(?:[/\\]+[^\s/\\'"";&|]+){2})[/\\]*(?=[\s'"";&|]|$))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex RecursiveWorktreeDeleteRegex();
 
     // Matches inline interpreter execution: python -c, node -e, ruby -e, perl -e/-E, php -r.

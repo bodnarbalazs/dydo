@@ -47,10 +47,7 @@ internal sealed partial class CleanArchive(string root, long capBytes)
             files.Add((path, "untracked", Copy(tree.Path, path, Path.Combine(entry, "untracked"))));
         foreach (var path in plan.Evidence)
             files.Add((path, "evidence", Copy(tree.Path, path, Path.Combine(entry, "evidence"))));
-        foreach (var path in plan.Links)
-            files.Add((path, "link-not-copied", 0));
-
-        WriteManifest(Path.Combine(entry, "manifest.json"), tree, utcNow, files);
+        WriteManifest(Path.Combine(entry, "manifest.json"), tree, utcNow, files, plan.Links);
     }
 
     /// <summary>
@@ -94,7 +91,8 @@ internal sealed partial class CleanArchive(string root, long capBytes)
         output.WriteLine($"Archive: {root}");
         foreach (var (path, _) in entries)
             output.WriteLine($"  {Path.GetFileName(path)}  {Megabytes(SizeOf(path))}  {Describe(path)}");
-        output.WriteLine("Restore: in a checkout of the entry's HEAD run git apply <entry>/tracked.patch, then copy untracked/ and evidence/ back.");
+        output.WriteLine("Restore: in a checkout of the entry's HEAD run git apply <entry>/tracked.patch, then copy untracked/ and evidence/ back, "
+            + "and recreate each link manifest.json lists under links at its path, pointing to its target.");
     }
 
     private IEnumerable<(string Path, DateTime Stamp)> Entries()
@@ -131,7 +129,8 @@ internal sealed partial class CleanArchive(string root, long capBytes)
         {
             using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(entry, "manifest.json")));
             var rootElement = manifest.RootElement;
-            return $"{rootElement.GetProperty("files").GetArrayLength()} file(s) from {rootElement.GetProperty("worktree").GetString()} at {rootElement.GetProperty("head").GetString()}";
+            var links = rootElement.TryGetProperty("links", out var linkArray) ? $", {linkArray.GetArrayLength()} link(s)" : "";
+            return $"{rootElement.GetProperty("files").GetArrayLength()} file(s){links} from {rootElement.GetProperty("worktree").GetString()} at {rootElement.GetProperty("head").GetString()}";
         }
         catch (Exception ex) when (ex is IOException or JsonException or KeyNotFoundException or InvalidOperationException)
         {
@@ -149,7 +148,7 @@ internal sealed partial class CleanArchive(string root, long capBytes)
     }
 
     private static void WriteManifest(string path, WorktreeEntry tree, DateTime utcNow,
-        List<(string Path, string Kind, long Bytes)> files)
+        List<(string Path, string Kind, long Bytes)> files, IReadOnlyList<ArchiveLink> links)
     {
         using var stream = File.Create(path);
         using var json = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
@@ -165,6 +164,17 @@ internal sealed partial class CleanArchive(string root, long capBytes)
             json.WriteString("path", filePath);
             json.WriteString("kind", kind);
             json.WriteNumber("bytes", bytes);
+            json.WriteEndObject();
+        }
+
+        json.WriteEndArray();
+        json.WriteStartArray("links");
+        foreach (var link in links)
+        {
+            json.WriteStartObject();
+            json.WriteString("path", link.Path);
+            json.WriteString("linksTo", link.LinksTo);
+            json.WriteString("target", link.Target);
             json.WriteEndObject();
         }
 

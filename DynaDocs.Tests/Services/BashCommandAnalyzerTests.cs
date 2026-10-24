@@ -256,6 +256,8 @@ public class BashCommandAnalyzerTests
     [InlineData("git worktree remove -f ../wt")]
     [InlineData("git -C C:/repo worktree remove C:/repo/.claude/worktrees/x --force")]
     [InlineData("git status && git worktree remove -f x")]
+    [InlineData("git worktree remove -ff .claude/worktrees/dyd-1")]
+    [InlineData("git worktree remove -f -f .claude/worktrees/dyd-1")]
     [InlineData("rm -rf .claude/worktrees/dyd-1")]
     [InlineData("rm -fr /home/me/.t3/worktrees/DynaDocs/t3-1")]
     [InlineData("rm -r -f \"C:/Users/me/repo/.claude/worktrees/x\"")]
@@ -266,12 +268,14 @@ public class BashCommandAnalyzerTests
     [InlineData("ri -r .claude\\worktrees\\x")]
     [InlineData("rd /s /q C:\\repo\\.claude\\worktrees\\x")]
     [InlineData("rm -rf .claude/worktrees")]
+    [InlineData("rm -rf C:/Users/me/repo/.claude/worktrees/dyd-1/")]
+    [InlineData("rm -rf /home/me/.t3/worktrees/DynaDocs")]
     public void WorktreeRemoval_RawForms_AreBlockedWithTheDydoCleanHint(string command)
     {
         var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
 
         Assert.True(dangerous, $"Expected dangerous: {command}");
-        Assert.Contains("dydo clean --dry-run, then dydo clean", reason);
+        Assert.Contains("dydo clean --dry-run <worktree>, then dydo clean <worktree>", reason);
     }
 
     [Theory]
@@ -285,6 +289,9 @@ public class BashCommandAnalyzerTests
     [InlineData("Remove-Item -Force .claude\\worktrees\\x\\notes.txt")]
     [InlineData("rm -rf bin/obj")]
     [InlineData("rm -rf /tmp/my-worktrees-backup")]
+    [InlineData("rm -rf C:/Users/me/repo/.claude/worktrees/dyd-1/bin")]
+    [InlineData("Remove-Item -Recurse C:\\repo\\.claude\\worktrees\\dyd-1\\DynaDocs.Tests\\obj")]
+    [InlineData("rm -rf /home/me/.t3/worktrees/DynaDocs/t3-1/node_modules")]
     public void WorktreeRemoval_SafeForms_AreAllowed(string command)
     {
         var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
@@ -297,7 +304,7 @@ public class BashCommandAnalyzerTests
     {
         var (_, reason) = _analyzer.CheckDangerousPatterns("git push origin --delete feature");
 
-        Assert.Contains("dydo clean --dry-run, then dydo clean", reason);
+        Assert.Contains("dydo clean --dry-run <worktree>, then dydo clean <worktree>", reason);
         Assert.DoesNotContain("git worktree remove", reason);
     }
 

@@ -126,7 +126,8 @@ public sealed class CleanCommandTests : IDisposable
         Git(_main, "config", "remote.origin.followRemoteHEAD", "never"); // git 2.48+ would restore origin/HEAD on fetch
         Git(_main, "branch", "-m", "master", "trunk");
         Git(_main, "push", "origin", "trunk");
-        Git(Path.Combine(_root, "origin.git"), "symbolic-ref", "HEAD", "refs/heads/trunk");
+        // origin's HEAD names a branch that does not exist, so origin advertises no default.
+        Git(Path.Combine(_root, "origin.git"), "symbolic-ref", "HEAD", "refs/heads/nothing");
         Git(_main, "push", "origin", "--delete", "master");
         AddWorktree("feature");
 
@@ -134,6 +135,44 @@ public sealed class CleanCommandTests : IDisposable
 
         Assert.Equal(0, exit);
         Assert.Contains("branch feature kept (origin has no default branch", stdout);
+    }
+
+    [Fact]
+    public async Task DefaultBranchChangedOnOrigin_IsJudgedAgainstTheNewDefault_NotAStaleOriginHead()
+    {
+        Git(_main, "config", "remote.origin.followRemoteHEAD", "never"); // keep the local origin/HEAD stale
+        var tree = AddWorktree("feature");
+        File.WriteAllText(Path.Combine(tree, "feature.txt"), "done\n");
+        Commit(tree, "feature");
+        Git(tree, "push", "origin", "feature:master");
+        Git(_main, "push", "origin", "HEAD:refs/heads/main"); // main lacks the feature commit
+        Git(Path.Combine(_root, "origin.git"), "symbolic-ref", "HEAD", "refs/heads/main");
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("branch feature kept (not merged into origin/main)", stdout);
+        Assert.True(HasBranch("feature"));
+        Assert.Equal("origin/master", Git(_main, "symbolic-ref", "--short", "refs/remotes/origin/HEAD").Text.Trim());
+    }
+
+    [Fact]
+    public void BranchFallback_DeletesOnlyTheVerifiedTip_AMovedRefIsKept()
+    {
+        var tree = AddWorktree("feature");
+        File.WriteAllText(Path.Combine(tree, "feature.txt"), "done\n");
+        Commit(tree, "feature");
+        var verified = Git(tree, "rev-parse", "HEAD").Text.Trim();
+        Git(tree, "push", "origin", "feature:master"); // merged on origin; the main checkout's master is stale
+        File.WriteAllText(Path.Combine(tree, "late.txt"), "after the verdict\n");
+        Commit(tree, "late");
+        var moved = Git(tree, "rev-parse", "HEAD").Text.Trim();
+        Git(_main, "worktree", "remove", tree);
+
+        var deleted = WorktreeCleaner.DeleteMergedBranch(_main, "feature", verified);
+
+        Assert.False(deleted);
+        Assert.Equal(moved, Git(_main, "rev-parse", "refs/heads/feature").Text.Trim());
     }
 
     [Fact]
@@ -295,6 +334,29 @@ public sealed class CleanCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task UntrackedLink_IsRecordedWithItsTarget_SoItCanBeRecreated()
+    {
+        var tree = AddWorktree("feature");
+        var outside = Path.Combine(_root, "outside");
+        Write(outside, "secret.txt", "outside the tree");
+        DirectoryLinks.Create(Path.Combine(tree, "linked"), outside);
+
+        var (exit, _, stderr) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        var entry = ArchiveEntries().Single();
+        Assert.Contains($"link       linked -> {outside}", stderr);
+        using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(entry, "manifest.json")));
+        var link = manifest.RootElement.GetProperty("links").EnumerateArray().Single();
+        Assert.Equal("linked", link.GetProperty("path").GetString());
+        Assert.Equal("directory", link.GetProperty("linksTo").GetString());
+        Assert.Equal(Path.TrimEndingDirectorySeparator(outside), Path.TrimEndingDirectorySeparator(link.GetProperty("target").GetString()!));
+        var list = await ListOutput();
+        Assert.Contains("1 link(s)", list);
+        Assert.Contains("recreate each link", list);
+    }
+
+    [Fact]
     public async Task PathLongerThan260Characters_IsRemoved()
     {
         var tree = AddWorktree("feature");
@@ -408,6 +470,50 @@ public sealed class CleanCommandTests : IDisposable
         Assert.Equal([old], ArchiveEntries());
     }
 
+    [Fact]
+    public async Task DryRun_RunsNoBusyCheck_AndSaysSo()
+    {
+        var tree = AddWorktree("feature");
+        var probed = new List<string>();
+        var cleaner = new WorktreeCleaner(_main, _t3Root, path => { probed.Add(path); return null; });
+
+        var (exit, stdout, _) = await ConsoleCapture.AllAsync(() => Task.FromResult(cleaner.Clean(["feature"], all: false, dryRun: true)));
+
+        Assert.Equal(0, exit);
+        Assert.Empty(probed);
+        Assert.Contains($"would remove {tree}", stdout);
+        Assert.Contains("busy check not run in a dry run", stdout);
+        Assert.True(Directory.Exists(tree));
+    }
+
+    [Fact]
+    public async Task BusyProbeThatCannotMoveTheTreeBack_FailsThatTree_LocksIt_AndTheRunGoesOn()
+    {
+        var stranded = AddWorktree("stranded");
+        var other = AddWorktree("other");
+        void MoveBackFails(string from, string to)
+        {
+            if (to == stranded)
+                throw new IOException("the folder is held");
+            Directory.Move(from, to);
+        }
+
+        var cleaner = new WorktreeCleaner(_main, _t3Root,
+            path => path == stranded ? WorktreeProcessProbe.RenameProbe(path, MoveBackFails, TimeSpan.Zero) : null);
+
+        var (exit, stdout, _) = await ConsoleCapture.AllAsync(() => Task.FromResult(cleaner.Clean(["stranded", "other"], all: false, dryRun: false)));
+
+        Assert.Equal(2, exit);
+        var probe = Directory.GetDirectories(Path.GetDirectoryName(stranded)!, "stranded.dydo-clean-probe-*").Single();
+        Assert.Contains($"failed {stranded}: the busy check renamed it to {probe} and could not move it back (the folder is held)", stdout);
+        Assert.Contains($"Move-Item -LiteralPath '{probe}' -Destination '{stranded}', then git worktree unlock '{stranded}'", stdout);
+        Assert.Contains($"removed {other}", stdout);
+        Assert.False(Directory.Exists(other));
+        var list = Git(_main, "worktree", "list", "--porcelain").Text;
+        Assert.Contains("branch refs/heads/stranded\nlocked", list.ReplaceLineEndings("\n"));
+        Assert.True(File.Exists(Path.Combine(probe, "readme.md")));
+    }
+
     [Theory]
     [InlineData]
     [InlineData("--all", "feature")]
@@ -416,7 +522,9 @@ public sealed class CleanCommandTests : IDisposable
         var (exit, _, stderr) = await Clean(args);
 
         Assert.Equal(2, exit);
-        Assert.Contains("name the worktrees to clean", stderr);
+        Assert.Contains("name the worktree to clean", stderr);
+        Assert.Contains("dydo clean --dry-run <worktree>, then dydo clean <worktree>", stderr);
+        Assert.DoesNotContain("or pass --all", stderr);
     }
 
     [Fact]

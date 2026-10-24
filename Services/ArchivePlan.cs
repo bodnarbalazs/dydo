@@ -3,14 +3,16 @@ namespace DynaDocs.Services;
 /// <summary>
 /// What a worktree holds that removal would lose: tracked changes against HEAD (staged or not),
 /// untracked files git does not ignore, and dydo's ignored evidence under <c>&lt;dydo root&gt;/agents/</c>.
-/// Paths are worktree-relative with forward slashes. A path that is a link, or sits under one, is listed in
-/// <see cref="Links"/> and never copied, so archiving never reads through a link out of the tree.
+/// Paths are worktree-relative with forward slashes. A link among those paths, or one a path sits under,
+/// is never read through: it goes to <see cref="Links"/> once, with its target, so the archive records it
+/// without copying anything out of the tree. Ignored links outside the evidence paths, such as skill
+/// links, are regenerable and never listed.
 /// </summary>
 internal sealed record ArchivePlan(
     IReadOnlyList<string> Tracked,
     IReadOnlyList<string> Untracked,
     IReadOnlyList<string> Evidence,
-    IReadOnlyList<string> Links)
+    IReadOnlyList<ArchiveLink> Links)
 {
     public bool IsEmpty => Tracked.Count + Untracked.Count + Evidence.Count + Links.Count == 0;
 
@@ -29,7 +31,7 @@ internal sealed record ArchivePlan(
         }
 
         error = null;
-        var links = new List<string>();
+        var links = new List<ArchiveLink>();
         return new ArchivePlan(
             tracked.Entries,
             WithoutLinks(worktree, untracked.Entries, links),
@@ -37,32 +39,41 @@ internal sealed record ArchivePlan(
             links);
     }
 
-    private static List<string> WithoutLinks(string worktree, string[] paths, List<string> links)
+    private static List<string> WithoutLinks(string worktree, string[] paths, List<ArchiveLink> links)
     {
         var kept = new List<string>();
         foreach (var path in paths)
         {
-            if (CrossesLink(worktree, path))
-                links.Add(path);
-            else
+            var link = LinkOnPath(worktree, path);
+            if (link == null)
                 kept.Add(path);
+            else if (links.All(known => known.Path != link.Path))
+                links.Add(link);
         }
 
         return kept;
     }
 
-    private static bool CrossesLink(string worktree, string relativePath)
+    // The first link along relativePath, read without following it.
+    private static ArchiveLink? LinkOnPath(string worktree, string relativePath)
     {
         var current = worktree;
-        foreach (var segment in relativePath.Split('/'))
+        var walked = new List<string>();
+        foreach (var segment in relativePath.TrimEnd('/').Split('/'))
         {
             current = Path.Combine(current, segment);
+            walked.Add(segment);
             // A missing path reports every attribute bit (-1), so existence is checked first.
             var info = new FileInfo(LinkSafeDelete.Extended(current));
             if ((int)info.Attributes != -1 && LinkSafeDelete.IsLink(info))
-                return true;
+                return new ArchiveLink(string.Join('/', walked),
+                    info.Attributes.HasFlag(FileAttributes.Directory) ? "directory" : "file",
+                    info.LinkTarget ?? "(unreadable)");
         }
 
-        return false;
+        return null;
     }
 }
+
+/// <summary>A link inside a worktree: its worktree-relative path, whether it links a directory or a file, and its target as stored.</summary>
+internal sealed record ArchiveLink(string Path, string LinksTo, string Target);

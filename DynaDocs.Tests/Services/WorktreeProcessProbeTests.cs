@@ -28,6 +28,41 @@ public sealed class WorktreeProcessProbeTests : IDisposable
     }
 
     [Fact]
+    public void RenameProbe_RetriesAMoveBackThatFailsOnce()
+    {
+        var tree = Directory.CreateDirectory(Path.Combine(_root, "tree")).FullName;
+        var failures = 1;
+        void Move(string from, string to)
+        {
+            if (to == tree && failures-- > 0)
+                throw new IOException("held for a moment");
+            Directory.Move(from, to);
+        }
+
+        Assert.Null(WorktreeProcessProbe.RenameProbe(tree, Move, TimeSpan.Zero));
+        Assert.Equal([tree], Directory.GetDirectories(_root));
+    }
+
+    [Fact]
+    public void RenameProbe_MoveBackThatKeepsFailing_NamesWhereTheFolderIs()
+    {
+        var tree = Directory.CreateDirectory(Path.Combine(_root, "tree")).FullName;
+        void Move(string from, string to)
+        {
+            if (to == tree)
+                throw new IOException("held");
+            Directory.Move(from, to);
+        }
+
+        var stranded = Assert.Throws<ProbeStrandedException>(() => WorktreeProcessProbe.RenameProbe(tree, Move, TimeSpan.Zero));
+
+        Assert.True(Directory.Exists(stranded.Probe));
+        Assert.StartsWith(tree + ".dydo-clean-probe-", stranded.Probe);
+        Assert.Contains(stranded.Probe, stranded.Message);
+        Assert.Contains("held", stranded.Message);
+    }
+
+    [Fact]
     public void ProcScan_FindsAProcessWhoseWorkingDirectoryIsInside()
     {
         var tree = Directory.CreateDirectory(Path.Combine(_root, "tree")).FullName;

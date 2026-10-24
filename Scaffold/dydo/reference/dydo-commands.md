@@ -284,14 +284,16 @@ forging the hook marker or writing the mode file directly.
 Remove this repository's linked worktrees without losing work.
 
 ```bash
-dydo clean --all --dry-run           # what would happen to every linked worktree; changes nothing
+dydo clean --dry-run <worktree>...   # what would happen to the named worktrees; changes nothing
 dydo clean <worktree>...             # remove the named worktrees, by path or branch name
 dydo clean --all                     # remove every linked worktree it may remove
 dydo clean --archive                 # list the archive of uncommitted work
 ```
 
-Name the worktrees or pass `--all`; neither or both is a usage error with exit `2`. Run
-`--dry-run` first, look at what would be archived, and commit anything worth keeping. Each worktree
+Name the worktrees, by path or branch, and run from outside them; naming none, or naming some with
+`--all`, is a usage error with exit `2`. Run `dydo clean --dry-run <worktree>` first, look at what would
+be archived, and commit anything worth keeping, then `dydo clean <worktree>`. `--all` also reaches other
+sessions' worktrees, so confirm no session is live before using it. Each worktree
 gets one line: removed, archived and removed (with the archive entry), skipped (with the reason) or
 failed (with the reason), followed by whether its local branch was deleted or kept.
 
@@ -302,18 +304,24 @@ failed (with the reason), followed by whether its local branch was deleted or ke
   ignore, plus dydo's ignored evidence under `dydo/agents/`, are copied to
   `<git common dir>/dydo/clean-archive/<UTC timestamp>-<branch>/`: `tracked.patch` (`git diff HEAD
   --binary`), `untracked/` and `evidence/` with their paths, and `manifest.json` (worktree, branch,
-  HEAD, files, sizes, time). A link inside the tree is listed, never followed or copied. Other ignored
-  files (`bin`, `obj`, `node_modules`, skill links) are dropped. A `WARNING:` on stderr lists every
+  HEAD, files, sizes, time, links). A link among those paths is never followed or copied: its
+  `links` record keeps its path, whether it links a directory or a file, and its target. Other ignored
+  files (`bin`, `obj`, `node_modules`, skill links) are regenerable and dropped. A `WARNING:` on stderr lists every
   archived file and the archive path; there is no confirmation step.
-- **Restore:** in a checkout of the entry's HEAD, `git apply <entry>/tracked.patch`, then copy
-  `untracked/` and `evidence/` back.
+- **Restore:** in a checkout of the entry's HEAD, `git apply <entry>/tracked.patch`, copy
+  `untracked/` and `evidence/` back, and recreate each link in `manifest.json`'s `links` at its path,
+  pointing to its target.
 - **Retention:** every run except `--dry-run` and `--archive` prunes entries older than 90 days, then
   the oldest entries until the archive fits `clean.archiveSizeCapMb` in `dydo.json` (default 1024).
   Entries written by the same run are never pruned.
 - **Branches:** the local branch is deleted only when its tip is reachable from `origin/<default>`
   after `git fetch --prune origin`; otherwise it is kept and the line says why (not merged, no origin,
-  fetch failed). `git branch -d` runs first; it also wants the branch merged into the current checkout's
-  HEAD, so when it refuses, `git branch -D` follows, the tip having already been found on origin. Remote branches are never
+  fetch failed). The default is the branch origin advertises now (`git ls-remote --symref origin HEAD`),
+  so a stale local `origin/HEAD` never decides; only when origin cannot answer do the local
+  `origin/HEAD`, then `origin/main` or `origin/master`, stand in. `git branch -d` runs first; it also
+  wants the branch merged into the current checkout's HEAD, so when it refuses,
+  `git update-ref -d refs/heads/<branch> <verified tip>` follows, which deletes the branch only while it
+  still points at the tip found on origin: a branch that moved since is kept. Remote branches are never
   touched.
 - **Removal:** every junction and symlink inside the tree is unlinked first, so nothing recursive can
   follow one out of the tree. Then `git worktree remove --force` (the archive already holds the dirty
@@ -321,10 +329,14 @@ failed (with the reason), followed by whether its local branch was deleted or ke
   itself through the extended-length path and runs `git worktree prune`.
 - **Busy worktrees:** on Windows a worktree counts as in use when its folder cannot be renamed (a
   process has its working directory or an open file inside); on Linux when a process's working
-  directory is inside it. macOS has no detection, so stop processes there first.
+  directory is inside it. macOS has no detection, so stop processes there first. If the Windows
+  rename cannot be moved back, even after retries, that worktree's line is `failed`, naming where the
+  folder is and the `Move-Item` that puts it back; dydo locks the worktree so `git worktree prune`
+  keeps it meanwhile (unlock it after the move), and the run goes on.
 - **`--dry-run`** prints the same lines and the same archive warning with `would`, and changes
-  nothing: no fetch (branches are judged against the last fetch), no archive, no removal, no prune.
-  On Windows the busy check still renames the folder and straight back.
+  nothing: no fetch (branches are judged against the last fetch), no archive, no removal, no prune,
+  and no busy check, since the Windows check renames the folder; each line says the busy check was not
+  run.
 
 Exit `0` when nothing failed; exit `2` when a removal failed, or when a named worktree was not
 removed (unknown, main checkout, current directory, locked, busy or under T3). With `--all`, skips

@@ -1008,6 +1008,19 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     [Fact]
+    public void ThisRepository_CommitsTheCodexRuleInitWrites()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir != null && !File.Exists(Path.Combine(dir, ".codex", "hooks.json")))
+            dir = Path.GetDirectoryName(dir);
+        Assert.NotNull(dir);
+
+        var committed = File.ReadAllText(Path.Combine(dir, ".codex", "rules", "dydo.rules"));
+
+        Assert.Equal(InitCommand.CodexRules, committed.ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
     public async Task Init_Claude_WritesNoCodexRule()
     {
         (await InitProjectAsync("claude")).AssertSuccess();

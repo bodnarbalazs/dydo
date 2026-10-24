@@ -3,7 +3,10 @@ namespace DynaDocs.Services;
 /// <summary>
 /// Decides whether a removed worktree's local branch may go: only when its tip is reachable from
 /// <c>origin/&lt;default&gt;</c>. A real run fetches with <c>--prune</c> once, before the first verdict, and
-/// keeps every branch when the fetch fails; a dry run fetches nothing and judges the last fetch.
+/// keeps every branch when the fetch fails; a dry run fetches nothing and judges the last fetch. The
+/// default branch is the one origin advertises now (<c>git ls-remote --symref origin HEAD</c>), so a
+/// stale local <c>origin/HEAD</c> never decides; only when origin cannot answer does the local
+/// <c>origin/HEAD</c>, then <c>origin/main</c> or <c>origin/master</c>, stand in.
 /// </summary>
 internal sealed class MergedBranchJudge(string repository, bool dryRun)
 {
@@ -55,10 +58,29 @@ internal sealed class MergedBranchJudge(string repository, bool dryRun)
 
     private string? DefaultBranch()
     {
+        var advertised = GitRunner.Run(repository, "ls-remote", "--symref", "origin", "HEAD");
+        if (advertised.Ok)
+            return AdvertisedHead(advertised.Text);
         var head = GitRunner.Run(repository, "symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD");
         if (head.Ok)
             return head.Text.Trim();
         return new[] { "origin/main", "origin/master" }
-            .FirstOrDefault(candidate => GitRunner.Run(repository, "rev-parse", "--verify", "--quiet", candidate).Ok);
+            .FirstOrDefault(Exists);
     }
+
+    // "ref: refs/heads/main<TAB>HEAD" names the default; origin answering without it has none.
+    private string? AdvertisedHead(string listing)
+    {
+        const string prefix = "ref: refs/heads/";
+        const string suffix = "\tHEAD";
+        var line = listing.ReplaceLineEndings("\n").Split('\n')
+            .FirstOrDefault(entry => entry.StartsWith(prefix, StringComparison.Ordinal) && entry.EndsWith(suffix, StringComparison.Ordinal));
+        if (line == null)
+            return null;
+        var branch = "origin/" + line[prefix.Length..^suffix.Length];
+        return Exists(branch) ? branch : null;
+    }
+
+    private bool Exists(string reference) =>
+        GitRunner.Run(repository, "rev-parse", "--verify", "--quiet", reference).Ok;
 }

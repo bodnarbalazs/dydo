@@ -9,10 +9,13 @@ using DynaDocs.Utils;
 /// tree are unlinked before anything recursive runs (<see cref="LinkSafeDelete"/>), and a local branch
 /// is deleted only when <see cref="MergedBranchJudge"/> finds its tip on origin's default branch. The main
 /// checkout, the tree holding the current directory, locked trees, trees in use and trees under T3's root
-/// are skipped with the reason. Prints one line per worktree.
+/// are skipped with the reason. Prints one line per worktree. A dry run changes nothing, so it runs no
+/// busy check (the Windows probe moves the folder) and says so.
 /// </summary>
-internal sealed class WorktreeCleaner(string currentDirectory, string t3WorktreeRoot)
+internal sealed class WorktreeCleaner(string currentDirectory, string t3WorktreeRoot, Func<string, string?>? findUse = null)
 {
+    private readonly Func<string, string?> _findUse = findUse ?? WorktreeProcessProbe.FindUse;
+
     private static readonly StringComparison PathComparison =
         OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
@@ -22,7 +25,8 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
     public int Clean(IReadOnlyList<string> targets, bool all, bool dryRun)
     {
         if (all == targets.Count > 0)
-            return Error("name the worktrees to clean (path or branch), or pass --all; not both and not neither.");
+            return Error("name the worktree to clean, by path or branch, and run from outside it: "
+                + "dydo clean --dry-run <worktree>, then dydo clean <worktree>. A named worktree and --all do not combine.");
         if (!TryOpen(out var repository, out var error) || !TryLoadCap(out var capBytes, out error))
             return Error(error!);
 
@@ -54,13 +58,14 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
 
     private Outcome CleanOne(WorktreeEntry tree, Run run)
     {
-        var skip = SkipReason(tree, run.Repository);
-        if (skip != null)
-            return new Outcome($"skipped {tree.Path}: {skip}", Removed: false, Failed: false);
-
         try
         {
-            return Remove(tree, run);
+            var skip = SkipReason(tree, run);
+            return skip == null ? Remove(tree, run) : new Outcome($"skipped {tree.Path}: {skip}", Removed: false, Failed: false);
+        }
+        catch (ProbeStrandedException ex)
+        {
+            return Stranded(tree, ex);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -68,8 +73,21 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
         }
     }
 
-    private string? SkipReason(WorktreeEntry tree, Repository repository)
+    // The lock keeps git worktree prune, later in this run or after it, from dropping the tree's
+    // admin entry while its folder sits at the probe path.
+    private Outcome Stranded(WorktreeEntry tree, ProbeStrandedException ex)
     {
+        var locked = GitRunner.Run(currentDirectory, "worktree", "lock", "--reason",
+            $"dydo clean's busy check left it at {ex.Probe}", tree.Path).Ok;
+        var moveBack = $"Move-Item -LiteralPath '{ex.Probe}' -Destination '{tree.Path}'";
+        return Failure(tree, locked
+            ? $"{ex.Message}; it is locked so git worktree prune keeps it. Move it back with {moveBack}, then git worktree unlock '{tree.Path}'"
+            : $"{ex.Message}; run no git worktree prune until it is back. Move it back with {moveBack}");
+    }
+
+    private string? SkipReason(WorktreeEntry tree, Run run)
+    {
+        var repository = run.Repository;
         if (tree.IsMain)
             return "the main checkout is never removed";
         if (SamePath(tree.Path, repository.CurrentTop) || IsWithin(currentDirectory, tree.Path))
@@ -78,7 +96,7 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
             return $"T3 owns worktrees under {t3WorktreeRoot}; archive the thread instead";
         if (tree.Locked)
             return "it is locked";
-        return Directory.Exists(tree.Path) ? WorktreeProcessProbe.FindUse(tree.Path) : null;
+        return !run.DryRun && Directory.Exists(tree.Path) ? _findUse(tree.Path) : null;
     }
 
     private Outcome Remove(WorktreeEntry tree, Run run)
@@ -95,7 +113,8 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
 
         if (run.DryRun)
             return new Outcome(Describe(tree, entry, "would remove", "would archive and remove")
-                + BranchNote(tree, verdict, verdict.Delete ? "would be deleted" : "would be kept"), Removed: true, Failed: false);
+                + BranchNote(tree, verdict, verdict.Delete ? "would be deleted" : "would be kept") + "; busy check not run in a dry run",
+                Removed: true, Failed: false);
 
         if (entry != null)
         {
@@ -105,7 +124,7 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
 
         if (!DeleteWorktree(tree.Path))
             return Failure(tree, "the folder could not be deleted" + (entry == null ? "" : $"; its work is archived in {entry}"));
-        var deleted = verdict.Delete && DeleteBranch(tree);
+        var deleted = verdict.Delete && DeleteMergedBranch(currentDirectory, tree.Branch!, tree.Head!);
         return new Outcome(Describe(tree, entry, "removed", "archived and removed")
             + BranchNote(tree, verdict, deleted ? "deleted" : "kept"), Removed: true, Failed: false);
     }
@@ -125,11 +144,11 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
     }
 
     // git branch -d also demands the branch be merged into HEAD (or its upstream), which a stale
-    // main checkout fails; the judge already proved the tip is on origin's default branch, so -D
-    // is as safe here.
-    private bool DeleteBranch(WorktreeEntry tree) =>
-        GitRunner.Run(currentDirectory, "branch", "-d", tree.Branch!).Ok
-        || GitRunner.Run(currentDirectory, "branch", "-D", tree.Branch!).Ok;
+    // main checkout fails. The judge proved verifiedTip is on origin's default branch, so the fallback
+    // deletes the ref only while it still points there: a ref that moved since the verdict is kept.
+    internal static bool DeleteMergedBranch(string repository, string branch, string verifiedTip) =>
+        GitRunner.Run(repository, "branch", "-d", branch).Ok
+        || GitRunner.Run(repository, "update-ref", "-d", $"refs/heads/{branch}", verifiedTip).Ok;
 
     private static string Describe(WorktreeEntry tree, string? entry, string plain, string archived) =>
         entry == null ? $"{plain} {tree.Path}" : $"{archived} {tree.Path} -> {entry}";
@@ -149,8 +168,8 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
             error.WriteLine($"  untracked  {path}");
         foreach (var path in plan.Evidence)
             error.WriteLine($"  evidence   {path}");
-        foreach (var path in plan.Links)
-            error.WriteLine($"  link       {path} (not copied)");
+        foreach (var link in plan.Links)
+            error.WriteLine($"  link       {link.Path} -> {link.Target} (recorded, not followed)");
         error.WriteLine($"  Archive: {entry}");
     }
 

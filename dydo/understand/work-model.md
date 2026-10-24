@@ -41,8 +41,7 @@ corrective for agent-speak, at any stage.
   session.
 - Some methods load only when the human asks for them; `handoff` also when an officer briefs an
   agent it dispatches. For the post-landing tour, the map holder - an invoked admiral, or the human
-  itself - opens the Walkthrough Ticket and asks the human to invoke `walkthrough` in that same session
-  before facilitating it; an admiral may also load it at its landing step.
+  itself - opens the Walkthrough Ticket and loads `walkthrough` itself before facilitating it.
 - **Human commands** are invoked by the human typing their name, and by nothing else.
 
 The [dydo glossary](../reference/dydo-glossary.md) names every member of each category. Every one of them is a native skill folder - see

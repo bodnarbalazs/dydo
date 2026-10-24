@@ -100,7 +100,7 @@ flowchart TD
   IQ --> OP
   OP -->|landing Merge Ticket: main into the feature, gates, merge review| LM[ticket-captain of the landing]:::officer
   LM -->|PR into main with its PASS, Ready to Merge| H3([human clicks the merge, one Project at a time, and tells the map holder]):::human
-  H3 -->|map holder commissions landing captain cleanup; the human invokes walkthrough| WT[Walkthrough Ticket: the human, with the admiral when one holds the map]:::officer
+  H3 -->|map holder commissions landing captain cleanup; the map holder loads walkthrough| WT[Walkthrough Ticket: the human, with the admiral when one holds the map]:::officer
   WT -->|findings: tickets, a second lap on the re-cut feature| OP
   WT -->|nothing: Project Completed| END([done]):::human
 ```

@@ -123,7 +123,7 @@ map and how the tickets move, integrate, and finish together.
    then a PR into main. Its `Ready to Merge`
    is the user's click, one Project at a time, as a merge commit. When the user tells you it landed,
    resume the landing captain to close and clean up the merged feature branch (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree); open a Walkthrough
-   Ticket and ask the user to invoke `walkthrough` in this session, then facilitate it here.
+   Ticket, load `walkthrough` yourself, and facilitate it here.
    Findings reopen the lap: commission the first fix Captain to re-cut the feature from main under
    the same name; another inquisition needs confirmation. **Done:** an empty walkthrough closes
    the Project `Completed`; commission spec retirement under `dydo/reference/feature-spec-convention.md`, and

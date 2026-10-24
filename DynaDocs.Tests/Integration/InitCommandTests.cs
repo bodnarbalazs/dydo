@@ -1504,6 +1504,43 @@ public class InitCommandTests : IntegrationTestBase
         Assert.DoesNotContain("CLAUDE.md", result.Stdout);
     }
 
+    [Fact]
+    public async Task Join_Claude_MigratesLegacyClaudeOnlyProject()
+    {
+        await MakeLegacyClaudeOnlyProjectAsync();
+
+        var result = await JoinProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertFileExists("AGENTS.md");
+        Assert.Equal(ScaffoldTree.EntryPoint(Path.GetFileName(TestDir)), ReadFile("AGENTS.md"));
+        AssertFileNotExists("CLAUDE.md");
+        result.AssertStdoutContains("Removed CLAUDE.md");
+    }
+
+    [Fact]
+    public async Task Join_All_FailedPreflightKeepsLegacyClaudeMdAndCreatesNoAgentsMd()
+    {
+        await MakeLegacyClaudeOnlyProjectAsync();
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".codex/config.toml", "[agents\nmax_depth = 3\n");
+        var preserved = Snapshot("CLAUDE.md");
+
+        var result = await JoinProjectAsync("all");
+
+        result.AssertExitCode(2);
+        AssertUnchanged(preserved);
+        AssertFileNotExists("AGENTS.md");
+    }
+
+    private async Task MakeLegacyClaudeOnlyProjectAsync()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        var generated = ReadFile("AGENTS.md");
+        File.Delete(Path.Combine(TestDir, "AGENTS.md"));
+        WriteFile("CLAUDE.md", generated);
+    }
+
     #endregion
 
     private Dictionary<string, byte[]> Snapshot(params string[] paths) =>

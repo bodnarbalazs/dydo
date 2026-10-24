@@ -1,0 +1,10 @@
+# Written by dydo init codex; dydo rewrites this file on every init and --join.
+# dydo clean archives uncommitted work and keeps unmerged branches before it removes a
+# worktree, so it runs without an approval prompt.
+prefix_rule(
+    pattern = ["dydo", "clean"],
+    decision = "allow",
+    justification = "dydo clean archives uncommitted work and keeps unmerged branches before it removes a worktree",
+    match = ["dydo clean --dry-run", "dydo clean --all"],
+    not_match = ["dydo init codex"],
+)

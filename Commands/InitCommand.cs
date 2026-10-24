@@ -499,10 +499,14 @@ public static class InitCommand
         _ => value.ToJsonString()
     };
 
+    // The dydo clean entries are narrow on purpose: Claude Code's auto mode drops blanket shell
+    // rules but keeps narrow ones, so dydo clean (safe by design) runs without a prompt there too.
     private static readonly string[] DydoAllowEntries =
     {
         "Bash(dydo:*)",
-        "PowerShell(dydo:*)"
+        "PowerShell(dydo:*)",
+        "Bash(dydo clean:*)",
+        "PowerShell(dydo clean:*)"
     };
 
     private static void ConfigureClaudeHooks(string projectRoot)
@@ -650,7 +654,26 @@ public static class InitCommand
         ConfigureStopHook(settings);
 
         File.WriteAllText(hooksPath, settings.ToJsonString(WriteOptions));
+
+        var rulesPath = Path.Combine(codexDir, "rules", "dydo.rules");
+        Directory.CreateDirectory(Path.GetDirectoryName(rulesPath)!);
+        File.WriteAllText(rulesPath, CodexRules);
     }
+
+    // Codex's exec-policy allow rule for dydo clean, committed beside .codex/hooks.json. Codex loads
+    // project rules only when the project's .codex/ layer is trusted, as it does the hooks. dydo owns
+    // the whole file and rewrites it on every init and --join.
+    internal const string CodexRules =
+        "# Written by dydo init codex; dydo rewrites this file on every init and --join.\n"
+        + "# dydo clean archives uncommitted work and keeps unmerged branches before it removes a\n"
+        + "# worktree, so it runs without an approval prompt.\n"
+        + "prefix_rule(\n"
+        + "    pattern = [\"dydo\", \"clean\"],\n"
+        + "    decision = \"allow\",\n"
+        + "    justification = \"dydo clean archives uncommitted work and keeps unmerged branches before it removes a worktree\",\n"
+        + "    match = [\"dydo clean --dry-run\", \"dydo clean --all\"],\n"
+        + "    not_match = [\"dydo init codex\"],\n"
+        + ")\n";
 
     internal static JsonNode BuildCodexHooks()
     {

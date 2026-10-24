@@ -105,20 +105,9 @@ public static class InitCommand
     private static void ScaffoldProject(DydoConfig config,
         string projectRoot, string[] integrations)
     {
-        var projectName = Path.GetFileName(projectRoot);
-
-        WriteIfNotExists(
-            Path.Combine(projectRoot, "CLAUDE.md"),
-            () => ScaffoldTree.EntryPoint(projectName),
-            "CLAUDE.md (entry point)");
-
-        if (integrations.Contains("codex"))
-        {
-            WriteIfNotExists(
-                Path.Combine(projectRoot, "AGENTS.md"),
-                () => GenerateAgentsMd(projectName),
-                "AGENTS.md (Codex entry point)");
-        }
+        WriteEntryPoint(projectRoot);
+        if (integrations.Contains("claude"))
+            ReconcileClaudeEntryFiles(projectRoot);
 
         var dydoRoot = Path.Combine(projectRoot, config.Structure.Root);
         Directory.CreateDirectory(dydoRoot);
@@ -151,12 +140,9 @@ public static class InitCommand
     {
         Console.WriteLine();
         Console.WriteLine("Documentation funnel created:");
-        if (integrations.Contains("codex"))
-            Console.WriteLine("  AGENTS.md -> dydo/index.md (orientation) -> the docs");
-        if (!integrations.Contains("codex") || integrations.Contains("claude"))
-        {
-            Console.WriteLine("  CLAUDE.md → dydo/index.md (orientation) → the docs");
-        }
+        Console.WriteLine("  AGENTS.md -> dydo/index.md (orientation) -> the docs");
+        if (integrations.Contains("claude"))
+            Console.WriteLine("  Claude Code 2.1.281 or later reads AGENTS.md; earlier versions may read only CLAUDE.md.");
         Console.WriteLine();
         Console.WriteLine("Next steps:");
         Console.WriteLine("  1. Customize dydo/understand/architecture.md for your project");
@@ -195,22 +181,18 @@ public static class InitCommand
             var config = configService.LoadConfig(projectRoot);
             var hostSettings = PrepareHostSettings(projectRoot, integrations);
 
+            if (integrations.Contains("claude") || integrations.Contains("codex"))
+                WriteEntryPoint(projectRoot);
+
             if (integrations.Contains("claude"))
             {
-                WriteIfNotExists(
-                    Path.Combine(projectRoot, "CLAUDE.md"),
-                    () => ScaffoldTree.EntryPoint(Path.GetFileName(projectRoot)),
-                    "CLAUDE.md (entry point)");
+                ReconcileClaudeEntryFiles(projectRoot);
                 ConfigureClaudeHooks(projectRoot);
                 Console.WriteLine("  ✓ Claude Code hooks configured");
             }
 
             if (integrations.Contains("codex"))
             {
-                WriteIfNotExists(
-                    Path.Combine(projectRoot, "AGENTS.md"),
-                    () => GenerateAgentsMd(Path.GetFileName(projectRoot)),
-                    "AGENTS.md (Codex entry point)");
                 ConfigureCodexHooks(projectRoot);
                 Console.WriteLine("  - Codex hooks configured");
             }
@@ -728,8 +710,41 @@ public static class InitCommand
         }
     }
 
-    // AGENTS.md gets the same entry-point content as CLAUDE.md (one authored source file).
-    private static string GenerateAgentsMd(string projectName) =>
-        ScaffoldTree.EntryPoint(projectName);
+    private static void WriteEntryPoint(string projectRoot) =>
+        WriteIfNotExists(
+            Path.Combine(projectRoot, "AGENTS.md"),
+            () => ScaffoldTree.EntryPoint(Path.GetFileName(projectRoot)),
+            "AGENTS.md (entry point)");
+
+    // Claude Code reads AGENTS.md only when no CLAUDE.md, CLAUDE.local.md or .claude/CLAUDE.md
+    // is present. A CLAUDE.md that is dydo's own copy goes; anything the user wrote stays and warns.
+    private static void ReconcileClaudeEntryFiles(string projectRoot)
+    {
+        var claudeMd = Path.Combine(projectRoot, "CLAUDE.md");
+        if (File.Exists(claudeMd))
+        {
+            var content = NormalizeEntry(File.ReadAllText(claudeMd));
+            var isDydoCopy =
+                content == NormalizeEntry(File.ReadAllText(Path.Combine(projectRoot, "AGENTS.md"))) ||
+                content == NormalizeEntry(ScaffoldTree.EntryPoint(Path.GetFileName(projectRoot)));
+            if (isDydoCopy)
+            {
+                File.Delete(claudeMd);
+                Console.WriteLine("  ✓ Removed CLAUDE.md, a copy of the entry point: Claude Code reads AGENTS.md");
+            }
+            else
+            {
+                ConsoleOutput.WriteWarning("  ! CLAUDE.md hides AGENTS.md from Claude Code. Move its content into AGENTS.md, or put @AGENTS.md at its top.");
+            }
+        }
+
+        if (File.Exists(Path.Combine(projectRoot, "CLAUDE.local.md")))
+            ConsoleOutput.WriteWarning("  ! CLAUDE.local.md stops Claude Code reading AGENTS.md. Put @AGENTS.md at its top, or set Project instructions to claude-md-and-agents-md.");
+        if (File.Exists(Path.Combine(projectRoot, ".claude", "CLAUDE.md")))
+            ConsoleOutput.WriteWarning("  ! .claude/CLAUDE.md stops Claude Code reading AGENTS.md. Put @AGENTS.md at its top.");
+    }
+
+    private static string NormalizeEntry(string content) =>
+        content.Replace("\r\n", "\n", StringComparison.Ordinal).TrimEnd('\n');
 
 }

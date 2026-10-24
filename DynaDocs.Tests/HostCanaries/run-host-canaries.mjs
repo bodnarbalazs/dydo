@@ -329,9 +329,9 @@ async function runClaudeCanary() {
   const claudeConfig = join(hostsRoot, "claude-config");
   await mkdir(claudeConfig, { recursive: true });
   const env = { ...process.env, CLAUDE_CONFIG_DIR: claudeConfig };
-  const claudeInstructionsPath = join(checkout, "CLAUDE.md");
+  const claudeInstructionsPath = join(checkout, "AGENTS.md");
   const claudeInstructions = await readFile(claudeInstructionsPath, "utf8");
-  await writeArtifact("candidate-CLAUDE.md", claudeInstructions);
+  await writeArtifact("candidate-claude-AGENTS.md", claudeInstructions);
   const version = (await run("claude", ["--version"], { env })).stdout.trim();
   manifest.environment.claude = { version, configDir: claudeConfig, settingSources: ["project"], strictMcpConfig: true, chrome: false, instructions: { path: claudeInstructionsPath, sha256: await sha256(claudeInstructionsPath), bytes: (await stat(claudeInstructionsPath)).size } };
   const common = ["--output-format", "stream-json", "--verbose", "--no-session-persistence", "--setting-sources", "project", "--strict-mcp-config", "--no-chrome", "--permission-mode", "dontAsk", "--allowedTools", "Skill,Read"];

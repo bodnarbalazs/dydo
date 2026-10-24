@@ -82,9 +82,7 @@ rule for `dydo clean`, so a host's auto mode does not stop it: `Bash(dydo clean:
 
 The `PreToolUse` hook sends matched tool calls to `dydo guard`. Exit `0` with empty stdout allows
 the action; exit `0` with one `permissionDecision: "deny"` object on stdout blocks it, a contract
-that survives Codex running hooks through PowerShell (see [Guard System](../understand/guard-system.md)). Codex includes `apply_patch` in its matcher because file edits use that tool. The
-retained `Stop` hook calls `dydo guard --stop`, a compatibility no-op after dydo ceded lifecycle
-orchestration to the host runtime.
+that survives Codex running hooks through PowerShell (see [Guard System](../understand/guard-system.md)). Codex includes `apply_patch` in its matcher because file edits use that tool.
 
 ## Model and effort at dispatch
 

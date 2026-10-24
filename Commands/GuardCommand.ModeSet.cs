@@ -24,7 +24,7 @@ public static partial class GuardCommand
     private static readonly HashSet<string> AskingPermissionModes =
         new(StringComparer.Ordinal) { "default", "acceptEdits", "plan", "auto" };
 
-    // Codex's shell tools. Codex now names its shell calls Bash, told apart by its turn_id.
+    // Codex's non-Bash shell tool names (issue 0295); its Bash calls are told apart by turn_id.
     private static readonly HashSet<string> CodexShellToolNames =
         new(StringComparer.OrdinalIgnoreCase) { "shell_command", "exec", "local_shell", "unified_exec" };
 
@@ -59,7 +59,7 @@ public static partial class GuardCommand
 
     /// <summary>
     /// The shell a hook's tool call runs in. Claude Code's PowerShell tool runs PowerShell and its
-    /// Bash tool runs bash, Git Bash on Windows. Codex (a turn_id in the payload, or one of its legacy
+    /// Bash tool runs bash, Git Bash on Windows. Codex (a turn_id in the payload, or one of its other
     /// shell tool names) runs PowerShell on Windows and the user's shell elsewhere. An unmarked Bash
     /// call on Windows may be either host, so it and any other call are Unknown, read both ways.
     /// </summary>

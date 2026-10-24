@@ -5,9 +5,6 @@ using DynaDocs.Rules;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
-/// <summary>
-/// Runs documentation validation rules for CheckCommand.
-/// </summary>
 internal static class CheckDocValidator
 {
     public static ValidationResult Validate(string basePath, string? reportScope = null)

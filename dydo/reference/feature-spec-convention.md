@@ -49,8 +49,8 @@ bounded outcomes and exact gates. Linear owns status, assignment, blockers and d
 
 ## Changes and evidence
 
-The Project's map holder—the human or an explicitly invoked admiral—maintains current intent in
-place. When it shifts, hold affected work until open ticket contracts are reconciled; existing human
+The Project's map holder—the user or an explicitly invoked admiral—maintains current intent in
+place. When it shifts, hold affected work until open ticket contracts are reconciled; existing user
 approval rules for scope, acceptance and architecture still apply. Git
 supplies history; the body states today's intent.
 

@@ -29,23 +29,23 @@ Markdown. Linear links to durable repository artifacts; knowledge discovered dur
 back into the appropriate Decision, guide, plan, audit, or assimilation brief.
 
 FutureFeatures are distinct unscheduled strategic possibilities in Linear. They stay in `FutureFeature`
-until the human promotes or cancels them; durable knowledge they uncover flows into dydo. The
+until the user promotes or cancels them; durable knowledge they uncover flows into dydo. The
 [Linear Workspace Standard](./linear-workspace-standard.md) defines the promotion paths.
 
 ## Stop Doing Agent Work Yourself
 
-Humans should spend their attention on intent and value choices. Agents implement, test, document,
+The user should spend attention on intent and value choices. Agents implement, test, document,
 review, coordinate, and audit from independently reviewable contracts.
 
 - Officers hold one thing and never switch: the ticket-captain, the default officer, holds a ticket,
-  and the chief-of-staff the board; an admiral holds a Project only when the human invokes one. They
+  and the chief-of-staff the board; an admiral holds a Project only when the user invokes one. They
   keep Linear current.
-- A Project's map holder, the human or an admiral the human invoked, charts it with `wayfinder`.
+- A Project's map holder, the user or an admiral the user invoked, charts it with `wayfinder`.
 - Crew are spawned for one bounded job, hold nothing, and return their result: code-writer,
   docs-writer, reviewer, inquisitor, research, scout.
 - Every other skill, `co-thinker` among them, is a plain skill any session loads when the work needs
   it.
-- A fresh agent independently reviews each implementation ticket before human harmonization.
+- A fresh agent independently reviews each implementation ticket before the user harmonizes it.
 - The [Working-Tree Contract](../guides/working-tree-contract.md) governs Project integration,
   optional Inquisition record delivery, and landing.
 
@@ -95,9 +95,9 @@ management, including FutureFeatures.
    work links to one reviewed repository Project plan.
 3. **Execute tickets** - native agents work in isolated branches/worktrees and attach governing commits,
    tests, reviews, and delivery evidence to the ticket.
-4. **Inquisition, when confirmed** - this optional, human-confirmed audit files Bugs and delivers its
+4. **Inquisition, when confirmed** - this optional, user-confirmed audit files Bugs and delivers its
    record to the feature before landing, following the Working-Tree Contract above.
-5. **Land and inspect** - the landing Merge obtains acceptance review, the human lands the feature,
+5. **Land and inspect** - the landing Merge obtains acceptance review, the user lands the feature,
    then a Walkthrough inspects it. An empty Walkthrough closes the Project; findings reopen the lap
    in the same Project.
 

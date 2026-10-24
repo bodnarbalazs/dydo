@@ -143,7 +143,7 @@ flowchart TD
   IQ --> OP
   OP -->|landing Merge Ticket: main into the feature, gates, merge review| LM[ticket-captain of the landing]:::officer
   LM -->|PR into main with its PASS, Ready to Merge| H3([human clicks the merge, one Project at a time, and tells an invoked admiral]):::human
-  H3 -->|map holder commissions landing captain cleanup; the human invokes walkthrough| WT[Walkthrough Ticket: the map holder with the human]:::officer
+  H3 -->|map holder commissions landing captain cleanup; the map holder loads walkthrough| WT[Walkthrough Ticket: the map holder with the human]:::officer
   WT -->|findings: tickets, a second lap on the re-cut feature| OP
   WT -->|nothing: Project Completed| END([done]):::human
 ```
@@ -287,8 +287,8 @@ Step by step, with the Linear status each step leaves behind:
     the PR into `main`, sets `Ready to Merge`, and prepares the walkthrough. The human clicks, one
     Project at a time; the PR lands as a merge commit.
 15. **Walk through.** The map holder commissions the landing Captain to clean up after the human
-    lands, opens the Walkthrough Ticket and asks the human to invoke `walkthrough` in the same
-    session before facilitating it. Findings become tickets; the map holder commissions the first fix
+    lands, opens the Walkthrough Ticket and loads `walkthrough` itself, then
+    facilitates it. Findings become tickets; the map holder commissions the first fix
     Captain to re-cut the feature from `main` under the same name. Nothing found sets the Project
     `Completed`, with the landing Captain's artifact cleanup confirmed.
 
@@ -405,7 +405,7 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 43 | admiral → Linear (landing) | L | the landing Merge Ticket: `main` into the feature, gates, merge review with acceptance proof, the PR into `main`, the walkthrough prepared | - | `Todo`, blocked by unresolved prerequisites for this landing: delivery, confirmed Inquisition/record and required fixes; exclude self and later/deferred work |
 | 44 | landing captain → Git, admiral | G, R | the PR into `main` with its PASS block; `done <key>: PR ready` | - | landing `Ready to Merge` |
 | 45 | admiral → human → Git | C, G | the PR to click and the walkthrough that follows; the feature merged into `main` as a merge commit, one Project at a time; the human tells the admiral, which resumes the landing captain to close and clean up the merged feature: `done <key>: merged` | - | landing `Done`, set by its captain |
-| 46 | admiral → Walkthrough Ticket, human | L, C | the ticket; request for the human to invoke `walkthrough` in this session, then the four-part tour; commission first fix Captain to re-cut the feature if findings reopen the lap | - | `In Progress` → `Done`; findings as tickets; Project `Completed` when none |
+| 46 | admiral → Walkthrough Ticket, human | L, C | the ticket; `walkthrough` loaded by the admiral, then the four-part tour; commission first fix Captain to re-cut the feature if findings reopen the lap | - | `In Progress` → `Done`; findings as tickets; Project `Completed` when none |
 | 47 | crew → ticket-captain (hand-raise) | R | the question, what was searched, why it blocks, facts or options found | - | - |
 | 48 | ticket-captain → research | R (spawn) | the question and where the findings land | the question and destination, about, architecture | - |
 | 49 | research → ticket-captain | R, L or F | one-line answer, destination, unsettled points; the report as a ticket comment or scratch file | - | Research Ticket `Done` by the map holder |

@@ -15,27 +15,43 @@ public sealed class CleanCommandTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "dydo-clean-" + Guid.NewGuid().ToString("N")[..8]);
     private readonly string _originalDirectory = Environment.CurrentDirectory;
-    private readonly string _main;
-    private readonly string _t3Root;
+    private string _main;
+    private string _t3Root;
 
     public CleanCommandTests()
     {
-        _main = Path.Combine(_root, "main");
-        _t3Root = Path.Combine(_root, "t3-worktrees");
-        Directory.CreateDirectory(_main);
-        Git(_root, "init", "--bare", "-b", "master", "origin.git");
-        Git(_main, "init", "-b", "master");
-        Git(_main, "config", "user.name", "Test");
-        Git(_main, "config", "user.email", "test@example.com");
-        Git(_main, "config", "commit.gpgsign", "false");
-        File.WriteAllText(Path.Combine(_main, ".gitignore"), ".claude/worktrees/\n.claude/skills/\nnode_modules/\nbin/\ndydo/agents/\n");
-        File.WriteAllText(Path.Combine(_main, "readme.md"), "hello\n");
-        File.WriteAllBytes(Path.Combine(_main, "logo.bin"), [0, 1, 2, 3, 0, 255]);
-        Commit(_main, "seed");
-        Git(_main, "remote", "add", "origin", Path.Combine(_root, "origin.git"));
-        Git(_main, "push", "-u", "origin", "master");
-        Git(_main, "remote", "set-head", "origin", "master");
-        Environment.CurrentDirectory = _main;
+        (_main, _t3Root) = Seed(_root);
+    }
+
+    // A bare origin, a main checkout pushed to it and the T3 root beside them, all under root; the
+    // current directory is the main checkout.
+    private static (string Main, string T3Root) Seed(string root, string objectFormat = "sha1")
+    {
+        var main = Path.Combine(root, "main");
+        Directory.CreateDirectory(main);
+        Git(root, "init", "--bare", "-b", "master", $"--object-format={objectFormat}", "origin.git");
+        Git(main, "init", "-b", "master", $"--object-format={objectFormat}");
+        Git(main, "config", "user.name", "Test");
+        Git(main, "config", "user.email", "test@example.com");
+        Git(main, "config", "commit.gpgsign", "false");
+        File.WriteAllText(Path.Combine(main, ".gitignore"), ".claude/worktrees/\n.claude/skills/\nnode_modules/\nbin/\ndydo/agents/\n");
+        File.WriteAllText(Path.Combine(main, "readme.md"), "hello\n");
+        File.WriteAllBytes(Path.Combine(main, "logo.bin"), [0, 1, 2, 3, 0, 255]);
+        Commit(main, "seed");
+        Git(main, "remote", "add", "origin", Path.Combine(root, "origin.git"));
+        Git(main, "push", "-u", "origin", "master");
+        Git(main, "remote", "set-head", "origin", "master");
+        Environment.CurrentDirectory = main;
+        return (main, Path.Combine(root, "t3-worktrees"));
+    }
+
+    // Replaces the SHA-1 repositories with SHA-256 ones; the test is skipped when this git cannot make them.
+    private void UseSha256Repositories()
+    {
+        var probe = Path.Combine(_root, "sha256-probe");
+        Directory.CreateDirectory(probe);
+        Skip.IfNot(GitRunner.Run(probe, "init", "--quiet", "--object-format=sha256").Ok, "this git cannot create SHA-256 repositories");
+        (_main, _t3Root) = Seed(Path.Combine(_root, "sha256"), "sha256");
     }
 
     public void Dispose()
@@ -191,6 +207,292 @@ public sealed class CleanCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task SquashMerged_MultiCommitBranch_IsDeleted()
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, "one.txt", "first\n");
+        Commit(tree, "one");
+        Write(tree, "two.txt", "second\n");
+        Commit(tree, "two");
+        SquashIntoOriginMaster("feature");
+        Write(_main, "later.txt", "landed after the squash\n");
+        Commit(_main, "later");
+        Git(_main, "push", "origin", "master");
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains($"removed {tree}; branch feature deleted (no changes left to merge into origin/master)", stdout);
+        Assert.False(HasBranch("feature"));
+    }
+
+    [Fact]
+    public async Task SquashMergedThenAnUnmergedCommit_KeepsTheBranch()
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, "one.txt", "first\n");
+        Commit(tree, "one");
+        SquashIntoOriginMaster("feature");
+        Write(tree, "after.txt", "not on origin\n");
+        Commit(tree, "after the squash");
+        var tip = Git(tree, "rev-parse", "HEAD").Text.Trim();
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("branch feature kept (not merged into origin/master)", stdout);
+        Assert.Equal(tip, Git(_main, "rev-parse", "refs/heads/feature").Text.Trim());
+    }
+
+    // A SHA-256 repository's objects are readable only by a scratch repository of the same format.
+    [SkippableFact]
+    public async Task SquashMerged_InASha256Repository_IsDeleted()
+    {
+        UseSha256Repositories();
+        var tree = AddWorktree("feature");
+        Write(tree, "one.txt", "first\n");
+        Commit(tree, "one");
+        Write(tree, "two.txt", "second\n");
+        Commit(tree, "two");
+        SquashIntoOriginMaster("feature");
+
+        var (exit, stdout, stderr) = await Clean("feature");
+
+        Assert.True(exit == 0, stdout + stderr);
+        Assert.Contains($"removed {tree}; branch feature deleted (no changes left to merge into origin/master)", stdout);
+        Assert.False(HasBranch("feature"));
+    }
+
+    [SkippableFact]
+    public async Task SquashMergedThenAnUnmergedCommit_InASha256Repository_KeepsTheBranch()
+    {
+        UseSha256Repositories();
+        var tree = AddWorktree("feature");
+        Write(tree, "one.txt", "first\n");
+        Commit(tree, "one");
+        SquashIntoOriginMaster("feature");
+        Write(tree, "after.txt", "not on origin\n");
+        Commit(tree, "after the squash");
+        var tip = Git(tree, "rev-parse", "HEAD").Text.Trim();
+
+        var (exit, stdout, stderr) = await Clean("feature");
+
+        Assert.True(exit == 0, stdout + stderr);
+        Assert.Contains("branch feature kept (not merged into origin/master)", stdout);
+        Assert.Equal(tip, Git(_main, "rev-parse", "refs/heads/feature").Text.Trim());
+    }
+
+    [Fact]
+    public async Task RebaseMerged_IsDeleted()
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, "one.txt", "first\n");
+        Commit(tree, "one");
+        Write(tree, "two.txt", "second\n");
+        Commit(tree, "two");
+        var fork = Git(_main, "rev-parse", "HEAD").Text.Trim();
+        Write(_main, "other.txt", "moved master on\n");
+        Commit(_main, "other");
+        Git(_main, "cherry-pick", $"{fork}..feature");
+        Git(_main, "push", "origin", "master");
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("branch feature deleted (no changes left to merge into origin/master)", stdout);
+        Assert.False(HasBranch("feature"));
+    }
+
+    // A "keep mine" merge driver would resolve the branch's edit away and make the merge look empty.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ConfiguredKeepMineMergeDriver_DoesNotHideAnUnmergedChange(bool committedAttributes)
+    {
+        Write(_main, "F", "1\n2\n3\n4\n5\n6\n7\n8\n");
+        if (committedAttributes)
+            Write(_main, ".gitattributes", "F merge=keep\n");
+        else
+            Write(_main, Path.Combine(".git", "info", "attributes"), "F merge=keep\n");
+        Commit(_main, "eight lines");
+        Git(_main, "push", "origin", "master");
+        Git(_main, "config", "merge.keep.driver", "true");
+        var tree = AddWorktree("feature");
+        Write(tree, "F", "one\n2\n3\n4\n5\n6\n7\n8\n");
+        Commit(tree, "line one");
+        Write(_main, "F", "1\n2\n3\n4\n5\n6\n7\neight\n");
+        Commit(_main, "line eight");
+        Git(_main, "push", "origin", "master");
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("branch feature kept (not merged into origin/master)", stdout);
+        Assert.True(HasBranch("feature"));
+    }
+
+    // Config dydo's own environment carries (GIT_CONFIG_COUNT or GIT_CONFIG_PARAMETERS) must not reach the squash check.
+    [Theory]
+    [InlineData("count", true)]
+    [InlineData("count", false)]
+    [InlineData("parameters", true)]
+    [InlineData("parameters", false)]
+    public async Task KeepMineMergeDriverFromTheEnvironment_DoesNotHideAnUnmergedChange(string source, bool dryRun)
+    {
+        Write(_main, "F", "1\n2\n3\n4\n5\n6\n7\n8\n");
+        Commit(_main, "eight lines");
+        Git(_main, "push", "origin", "master");
+        var tree = AddWorktree("feature");
+        Write(tree, "F", "one\n2\n3\n4\n5\n6\n7\n8\n");
+        Commit(tree, "line one");
+        Write(_main, "F", "1\n2\n3\n4\n5\n6\n7\neight\n");
+        Commit(_main, "line eight");
+        Git(_main, "push", "origin", "master");
+        var keepMine = source == "count"
+            ? new Dictionary<string, string?>
+            {
+                ["GIT_CONFIG_COUNT"] = "2",
+                ["GIT_CONFIG_KEY_0"] = "merge.default",
+                ["GIT_CONFIG_VALUE_0"] = "keep",
+                ["GIT_CONFIG_KEY_1"] = "merge.keep.driver",
+                ["GIT_CONFIG_VALUE_1"] = "true"
+            }
+            : new Dictionary<string, string?>
+            {
+                ["GIT_CONFIG_PARAMETERS"] = "'merge.default'='keep' 'merge.keep.driver'='true'"
+            };
+
+        var (exit, stdout, _) = await WithEnvironment(keepMine, () => dryRun ? Clean("feature", "--dry-run") : Clean("feature"));
+
+        Assert.Equal(0, exit);
+        Assert.Contains(dryRun ? "branch feature would be kept (not merged" : "branch feature kept (not merged", stdout);
+        Assert.True(HasBranch("feature"));
+    }
+
+    // A builtin driver needs no config, so system gitattributes ($(prefix)/etc/gitattributes) must be shut out too:
+    // the scratch git carries exactly these GIT_* variables, whatever dydo inherits.
+    [Fact]
+    public async Task ScratchGitEnvironment_ShutsOutSystemAttributesAndConfig_WhateverIsInherited()
+    {
+        var scratch = Path.Combine(_root, "scratch");
+        var inherited = new Dictionary<string, string?>
+        {
+            ["GIT_ATTR_NOSYSTEM"] = "0",
+            ["GIT_ATTR_SOURCE"] = "HEAD",
+            ["GIT_CONFIG_NOSYSTEM"] = "0",
+            ["GIT_CONFIG_SYSTEM"] = Path.Combine(_root, "system-config"),
+            ["GIT_CONFIG_GLOBAL"] = Path.Combine(_root, "global-config"),
+            ["GIT_TEMPLATE_DIR"] = _root
+        };
+
+        var environment = await WithEnvironment(inherited, () => Task.FromResult(
+            GitRunner.IsolatedStartInfo(scratch, MergedBranchJudge.ScratchEnvironment(scratch)).Environment));
+
+        var git = environment.Where(entry => entry.Key.StartsWith("GIT_", StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(entry => entry.Key.ToUpperInvariant(), entry => entry.Value);
+        Assert.Equal(new Dictionary<string, string?>
+        {
+            ["GIT_ATTR_NOSYSTEM"] = "1",
+            ["GIT_CONFIG_NOSYSTEM"] = "1",
+            ["GIT_CONFIG_GLOBAL"] = Path.Combine(scratch, "config"),
+            ["GIT_TERMINAL_PROMPT"] = "0",
+            ["GIT_OPTIONAL_LOCKS"] = "0"
+        }.OrderBy(entry => entry.Key), git.OrderBy(entry => entry.Key));
+        Assert.Equal(scratch, environment["XDG_CONFIG_HOME"]);
+    }
+
+    // A driver a committed .gitattributes names but nothing defines falls back to git's own merge.
+    [Fact]
+    public async Task UndefinedMergeDriverInCommittedAttributes_StillJudgesBySquash()
+    {
+        Write(_main, ".gitattributes", "F merge=nowhere\n");
+        Write(_main, "F", "1\n2\n");
+        Commit(_main, "attributes");
+        Git(_main, "push", "origin", "master");
+        var tree = AddWorktree("feature");
+        Write(tree, "F", "one\n2\n");
+        Commit(tree, "line one");
+        SquashIntoOriginMaster("feature");
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("branch feature deleted (no changes left to merge into origin/master)", stdout);
+    }
+
+    [Fact]
+    public async Task SquashedThenRevertedOnOrigin_KeepsTheBranch()
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, "one.txt", "first\n");
+        Commit(tree, "one");
+        SquashIntoOriginMaster("feature");
+        Git(_main, "revert", "--no-edit", "HEAD");
+        Git(_main, "push", "origin", "master");
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("branch feature kept (not merged into origin/master)", stdout);
+        Assert.True(HasBranch("feature"));
+    }
+
+    // Git splits GIT_ALTERNATE_OBJECT_DIRECTORIES on ';' on Windows, so the object store must not travel in it.
+    [Fact]
+    public async Task SquashMerged_InARepositoryWhosePathHoldsASemicolonAndASpace_IsDeleted()
+    {
+        var main = Path.Combine(_root, "odd; path", "main");
+        Directory.CreateDirectory(Path.GetDirectoryName(main)!);
+        Git(_root, "clone", Path.Combine(_root, "origin.git"), main);
+        Git(main, "config", "user.name", "Test");
+        Git(main, "config", "user.email", "test@example.com");
+        Git(main, "config", "commit.gpgsign", "false");
+        var tree = Path.Combine(main, ".claude", "worktrees", "feature");
+        Git(main, "worktree", "add", "-b", "feature", tree);
+        Write(tree, "one.txt", "first\n");
+        Commit(tree, "one");
+        Git(main, "merge", "--squash", "feature");
+        Git(main, "commit", "-m", "squash feature");
+        Git(main, "push", "origin", "master");
+        Environment.CurrentDirectory = main;
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains($"removed {tree}; branch feature deleted (no changes left to merge into origin/master)", stdout);
+        Assert.False(GitRunner.Run(main, "rev-parse", "--verify", "--quiet", "refs/heads/feature").Ok);
+    }
+
+    // One branch merges to origin's tree, the other to a new tree: neither verdict may write an object.
+    [Fact]
+    public async Task DryRun_JudgingASquash_WritesNoObject_AndMovesNoRef()
+    {
+        var squashed = AddWorktree("squashed");
+        var extended = AddWorktree("extended");
+        Write(squashed, "one.txt", "first\n");
+        Commit(squashed, "one");
+        SquashIntoOriginMaster("squashed");
+        Write(_main, "later.txt", "landed after the squash\n");
+        Commit(_main, "later");
+        Git(_main, "push", "origin", "master");
+        Write(extended, "one.txt", "first\n");
+        Commit(extended, "one");
+        Write(extended, "two.txt", "only here\n");
+        Commit(extended, "two");
+        var objects = Path.Combine(_main, ".git", "objects");
+        var filesBefore = Directory.GetFiles(objects, "*", SearchOption.AllDirectories).Length;
+        var refsBefore = Git(_main, "for-each-ref").Text;
+
+        var (exit, stdout, _) = await Clean("squashed", "extended", "--dry-run");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("branch squashed would be deleted (no changes left to merge into origin/master as of the last fetch)", stdout);
+        Assert.Contains("branch extended would be kept (not merged into origin/master as of the last fetch)", stdout);
+        Assert.Equal(filesBefore, Directory.GetFiles(objects, "*", SearchOption.AllDirectories).Length);
+        Assert.Equal(refsBefore, Git(_main, "for-each-ref").Text);
+    }
+
+    [Fact]
     public async Task DirtyTrackedChanges_AreArchivedAsAPatchThatReapplies()
     {
         var tree = AddWorktree("feature");
@@ -241,6 +543,70 @@ public sealed class CleanCommandTests : IDisposable
         Assert.Contains("untracked  notes/todo.txt", stderr);
         Assert.Contains("evidence   dydo/agents/captain/evidence.md", stderr);
         Assert.Contains("2 file(s)", await ListOutput());
+    }
+
+    // An agent that built or installed inside its workspace leaves bin, obj, node_modules or .vs there.
+    [Fact]
+    public async Task BuildOutputUnderAgentsEvidence_IsSkippedAndCounted_RealEvidenceIsArchived()
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, "dydo/agents/crew/Bin/Debug/app.dll", "binary\n");
+        Write(tree, "dydo/agents/crew/obj/project.assets.json", "{}\n");
+        Write(tree, "dydo/agents/crew/web/node_modules/pkg/index.js", "module\n");
+        Write(tree, "dydo/agents/crew/.VS/state.bin", "ide\n");
+        Write(tree, "dydo/agents/crew/report.md", "proof\n");
+        Write(tree, "dydo/agents/crew/state.json", "{}\n");
+        Write(tree, "dydo/agents/crew/run.log", "log\n");
+        Write(tree, "dydo/agents/crew/notes.txt", "notes\n");
+
+        var (exit, stdout, stderr) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("4 build-output file(s) under agents/ not archived (bin, obj, node_modules, .vs)", stdout);
+        Assert.Contains("  4 build-output file(s) under agents/ not archived (bin, obj, node_modules, .vs)", stderr);
+        foreach (var dropped in new[] { "app.dll", "project.assets.json", "index.js", "state.bin" })
+            Assert.DoesNotContain(dropped, stderr);
+        var entry = ArchiveEntries().Single();
+        foreach (var kept in new[] { "report.md", "state.json", "run.log", "notes.txt" })
+        {
+            Assert.Contains($"evidence   dydo/agents/crew/{kept}", stderr);
+            Assert.True(File.Exists(Path.Combine(entry, "evidence", "dydo", "agents", "crew", kept)));
+        }
+
+        Assert.False(Directory.Exists(Path.Combine(entry, "evidence", "dydo", "agents", "crew", "Bin")));
+        Assert.Contains("4 file(s)", await ListOutput());
+    }
+
+    // dydo.json accepts any spelling Path.Combine resolves; git lists the same folder in its own spelling,
+    // so build output under a ./docs root is skipped and counted like the default root's.
+    [Theory]
+    [InlineData("./docs", false)]
+    [InlineData("./docs", true)]
+    [InlineData(".\\docs\\", false)]
+    [InlineData("docs//./", false)]
+    public async Task DotPrefixedCustomRoot_BuildOutputIsSkippedAndCounted_RealEvidenceIsArchived(string root, bool dryRun)
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, ".gitignore", ".claude/\ndocs/agents/\n");
+        Write(tree, "dydo.json", JsonSerializer.Serialize(new { structure = new { root } }));
+        Commit(tree, "custom root");
+        Write(tree, "docs/agents/crew/obj/assets.json", "{}\n");
+        Write(tree, "docs/agents/crew/bin/app.dll", "binary\n");
+        Write(tree, "docs/agents/crew/report.md", "proof\n");
+
+        var (exit, stdout, stderr) = await Clean(dryRun ? ["feature", "--dry-run"] : ["feature"]);
+
+        Assert.True(exit == 0, stdout + stderr);
+        Assert.Contains("2 build-output file(s) under agents/ not archived (bin, obj, node_modules, .vs)", stdout);
+        Assert.Contains("evidence   docs/agents/crew/report.md", stderr);
+        Assert.DoesNotContain("assets.json", stderr);
+        Assert.DoesNotContain("app.dll", stderr);
+        if (dryRun)
+            return;
+        var evidence = Path.Combine(ArchiveEntries().Single(), "evidence", "docs", "agents", "crew");
+        Assert.Equal("proof\n", File.ReadAllText(Path.Combine(evidence, "report.md")));
+        Assert.False(Directory.Exists(Path.Combine(evidence, "obj")));
+        Assert.False(Directory.Exists(Path.Combine(evidence, "bin")));
     }
 
     // dydo.json at HEAD names one root, the tree's edited copy another, and the default holds evidence
@@ -767,7 +1133,24 @@ public sealed class CleanCommandTests : IDisposable
     private async Task<(int Exit, string Stdout, string Stderr)> Clean(params string[] args) =>
         await ConsoleCapture.AllAsync(() => CleanCommand.Create(_t3Root).Parse(args).InvokeAsync());
 
-    private async Task<string> ListOutput() => (await Clean("--archive")).Stdout;
+    // Runs action with variables set in this process, restoring them after; test parallelization is off assembly-wide.
+    private static async Task<T> WithEnvironment<T>(IReadOnlyDictionary<string, string?> variables, Func<Task<T>> action)
+    {
+        var saved = variables.Keys.ToDictionary(name => name, Environment.GetEnvironmentVariable);
+        try
+        {
+            foreach (var (name, value) in variables)
+                Environment.SetEnvironmentVariable(name, value);
+            return await action();
+        }
+        finally
+        {
+            foreach (var (name, value) in saved)
+                Environment.SetEnvironmentVariable(name, value);
+        }
+    }
+
+    private async Task<string> ListOutput()=> (await Clean("--archive")).Stdout;
 
     private string AddWorktree(string branch)
     {
@@ -825,6 +1208,14 @@ public sealed class CleanCommandTests : IDisposable
     {
         Git(directory, "add", "-A");
         Git(directory, "commit", "-m", message);
+    }
+
+    // Lands branch's changes on origin's master as one squash commit from the main checkout.
+    private void SquashIntoOriginMaster(string branch)
+    {
+        Git(_main, "merge", "--squash", branch);
+        Git(_main, "commit", "-m", $"squash {branch}");
+        Git(_main, "push", "origin", "master");
     }
 
     private bool HasBranch(string branch) =>

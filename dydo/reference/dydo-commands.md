@@ -313,8 +313,10 @@ failed worktree always keeps its branch, and its line says so.
   --binary`), `untracked/` and `evidence/` with their paths, and `manifest.json` (worktree, branch,
   HEAD, files, sizes, time, links). A link among those paths is never followed or copied: its
   `links` record keeps its path, whether it links a directory or a file, and its target. Other ignored
-  files (`bin`, `obj`, `node_modules`, skill links) are regenerable and dropped. A `WARNING:` on stderr lists every
-  archived file and the archive path; there is no confirmation step. If the archive cannot be
+  files (`bin`, `obj`, `node_modules`, skill links) are regenerable and dropped, and so is build output
+  under `<root>/agents/`: a file below a `bin`, `obj`, `node_modules` or `.vs` folder there, in any case,
+  is not evidence, and the worktree's line counts the files skipped. A `WARNING:` on stderr lists every
+  archived file, the count of build output skipped, and the archive path; there is no confirmation step. If the archive cannot be
   written, that worktree's line is `failed` and nothing is removed: no unlinking, no removal, no
   prune, and the branch is kept. When `<git common dir>/dydo` or `clean-archive` is a link, dydo does
   not follow it: no work is archived (so those worktrees fail), nothing is pruned or listed, the run
@@ -325,9 +327,14 @@ failed worktree always keeps its branch, and its line says so.
 - **Retention:** every run except `--dry-run` and `--archive` prunes entries older than 90 days, then
   the oldest entries until the archive fits `clean.archiveSizeCapMb` in `dydo.json` (default 1024).
   Entries written by the same run are never pruned.
-- **Branches:** the local branch is deleted only when its tip is reachable from `origin/<default>`
-  after `git fetch --prune origin`; otherwise it is kept and the line says why (not merged, no origin,
-  fetch failed). The default is the branch origin advertises now (`git ls-remote --symref origin HEAD`),
+- **Branches:** after `git fetch --prune origin`, the local branch is deleted when its tip is
+  reachable from `origin/<default>`, or when no changes are left to merge into it, as after a squash or
+  rebase merge: `git merge-tree --write-tree origin/<default> <tip>` merges cleanly to exactly
+  `origin/<default>`'s tree, so the branch holds nothing origin lacks. That merge runs in a scratch bare
+  repository that borrows the real object store, in its object format (SHA-1 or SHA-256), and reads no repository, global or system config, no
+  inherited `GIT_*` variable and no attributes, so no merge driver, builtin or configured, can resolve a change away, and even a dry run adds nothing
+  to the repository. Otherwise the branch is kept and the line says why (not merged,
+  no origin, fetch failed, or the squash check failed, as with a git older than 2.38). The default is the branch origin advertises now (`git ls-remote --symref origin HEAD`),
   so a stale local `origin/HEAD` never decides; only when origin cannot answer do the local
   `origin/HEAD`, then `origin/main` or `origin/master`, stand in. `git branch -d` runs first; it also
   wants the branch merged into the current checkout's HEAD, so when it refuses,

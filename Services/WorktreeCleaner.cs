@@ -7,7 +7,7 @@ using DynaDocs.Utils;
 /// <c>dydo clean</c>: removes linked worktrees of the repository around <paramref name="currentDirectory"/>
 /// without losing work. Uncommitted work is archived first (<see cref="CleanArchive"/>), links inside a
 /// tree are unlinked before anything recursive runs (<see cref="LinkSafeDelete"/>), and a local branch
-/// is deleted only when <see cref="MergedBranchJudge"/> finds its tip on origin's default branch. The main
+/// is deleted only when <see cref="MergedBranchJudge"/> finds its tip merged into origin's default branch. The main
 /// checkout, the tree holding the current directory, locked trees, trees whose submodules hold work
 /// (<see cref="SubmoduleWork"/>), trees whose dydo.json cannot be parsed, trees in use and trees under T3's root are skipped with the reason.
 /// Prints one line per worktree, ending with what happened to its branch. A dry run changes nothing, so it runs no
@@ -136,14 +136,14 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
         string? error = null;
         var plan = Directory.Exists(tree.Path)
             ? ArchivePlan.Collect(tree.Path, evidenceRoots, out error)
-            : new ArchivePlan([], [], [], []);
+            : new ArchivePlan([], [], [], [], 0);
         if (plan == null)
             return Failure(tree, error!);
         var entry = plan.IsEmpty ? null : run.Archive.NewEntryPath(tree.Label, run.Now);
         Warn(tree, plan, entry, run.DryRun);
 
         if (run.DryRun)
-            return new Outcome(Describe(tree, entry, "would remove", "would archive and remove")
+            return new Outcome(Describe(tree, entry, "would remove", "would archive and remove") + BuildOutputNote(plan)
                 + BranchNote(tree, verdict, verdict.Delete ? "would be deleted" : "would be kept") + "; busy check not run in a dry run",
                 Removed: true, Failed: false);
 
@@ -164,7 +164,7 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
         if (!DeleteWorktree(tree.Path))
             return Failure(tree, "the folder could not be deleted" + (entry == null ? "" : $"; its work is archived in {entry}"));
         var deleted = verdict.Delete && DeleteMergedBranch(currentDirectory, tree.Branch!, tree.Head!);
-        return new Outcome(Describe(tree, entry, "removed", "archived and removed")
+        return new Outcome(Describe(tree, entry, "removed", "archived and removed") + BuildOutputNote(plan)
             + BranchNote(tree, verdict, deleted ? "deleted" : "kept"), Removed: true, Failed: false);
     }
 
@@ -186,7 +186,7 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
     }
 
     // git branch -d also demands the branch be merged into HEAD (or its upstream), which a stale
-    // main checkout fails. The judge proved verifiedTip is on origin's default branch, so the fallback
+    // main checkout fails. The judge proved verifiedTip merged into origin's default branch, so the fallback
     // deletes the ref only while it still points there: a ref that moved since the verdict is kept.
     internal static bool DeleteMergedBranch(string repository, string branch, string verifiedTip) =>
         GitRunner.Run(repository, "branch", "-d", branch).Ok
@@ -194,6 +194,12 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
 
     private static string Describe(WorktreeEntry tree, string? entry, string plain, string archived) =>
         entry == null ? $"{plain} {tree.Path}" : $"{archived} {tree.Path} -> {entry}";
+
+    private static string BuildOutputNote(ArchivePlan plan) =>
+        plan.SkippedBuildOutput == 0 ? "" : $"; {BuildOutputSkipped(plan)}";
+
+    private static string BuildOutputSkipped(ArchivePlan plan) =>
+        $"{plan.SkippedBuildOutput} build-output file(s) under agents/ not archived (bin, obj, node_modules, .vs)";
 
     private static string BranchNote(WorktreeEntry tree, (bool Delete, string Reason) verdict, string outcome) =>
         tree.Branch == null ? "; no branch (detached HEAD)" : $"; branch {tree.Branch} {outcome} ({verdict.Reason})";
@@ -212,6 +218,8 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
             error.WriteLine($"  evidence   {path}");
         foreach (var link in plan.Links)
             error.WriteLine($"  link       {link.Path} -> {link.Target} (recorded, not followed)");
+        if (plan.SkippedBuildOutput > 0)
+            error.WriteLine($"  {BuildOutputSkipped(plan)}");
         error.WriteLine($"  Archive: {entry}");
     }
 

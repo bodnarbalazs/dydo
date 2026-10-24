@@ -6,7 +6,9 @@ using DynaDocs.Serialization;
 /// <summary>
 /// What a worktree holds that removal would lose: tracked changes against HEAD (staged or not),
 /// untracked files git does not ignore, and dydo's ignored evidence under <c>&lt;dydo root&gt;/agents/</c>
-/// for every root in <see cref="EvidenceRoots"/>.
+/// for every root in <see cref="EvidenceRoots"/>. Build output an agent left there (a <c>bin</c>, <c>obj</c>,
+/// <c>node_modules</c> or <c>.vs</c> folder below <c>agents/</c>, in any case) is regenerable: it is not
+/// evidence and only counted in <see cref="SkippedBuildOutput"/>.
 /// Paths are worktree-relative with forward slashes. A link among those paths, or one a path sits under,
 /// is never read through: it goes to <see cref="Links"/> once, with its target, so the archive records it
 /// without copying anything out of the tree. Ignored links outside the evidence paths, such as skill
@@ -16,8 +18,11 @@ internal sealed record ArchivePlan(
     IReadOnlyList<string> Tracked,
     IReadOnlyList<string> Untracked,
     IReadOnlyList<string> Evidence,
-    IReadOnlyList<ArchiveLink> Links)
+    IReadOnlyList<ArchiveLink> Links,
+    int SkippedBuildOutput)
 {
+    private static readonly string[] BuildFolders = ["bin", "obj", "node_modules", ".vs"];
+
     public bool IsEmpty => Tracked.Count + Untracked.Count + Evidence.Count + Links.Count == 0;
 
     /// <summary>Reads the plan from git; null with <paramref name="error"/> set when git cannot answer.</summary>
@@ -37,12 +42,21 @@ internal sealed record ArchivePlan(
 
         error = null;
         var links = new List<ArchiveLink>();
+        var kept = evidence.Entries.Where(path => !IsBuildOutput(path, dydoRoots)).ToArray();
         return new ArchivePlan(
             [.. tracked.Entries.Select(entry => entry[3..])],
             WithoutLinks(worktree, untracked.Entries, links),
-            WithoutLinks(worktree, evidence.Entries, links),
-            links);
+            WithoutLinks(worktree, kept, links),
+            links,
+            evidence.Entries.Length - kept.Length);
     }
+
+    // A path below <root>/agents/ with a build folder among its folders.
+    private static bool IsBuildOutput(string path, IReadOnlyList<string> dydoRoots) =>
+        dydoRoots.Select(root => $"{root}/agents/")
+            .Where(agents => path.StartsWith(agents, StringComparison.OrdinalIgnoreCase))
+            .Any(agents => path[agents.Length..].Split('/').SkipLast(1)
+                .Any(folder => BuildFolders.Contains(folder, StringComparer.OrdinalIgnoreCase)));
 
     /// <summary>
     /// The dydo roots whose <c>agents/</c> may hold evidence: the one <c>dydo.json</c> names at

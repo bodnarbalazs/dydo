@@ -191,6 +191,94 @@ public sealed class CleanCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task SquashMerged_MultiCommitBranch_IsDeleted()
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, "one.txt", "first\n");
+        Commit(tree, "one");
+        Write(tree, "two.txt", "second\n");
+        Commit(tree, "two");
+        SquashIntoOriginMaster("feature");
+        Write(_main, "later.txt", "landed after the squash\n");
+        Commit(_main, "later");
+        Git(_main, "push", "origin", "master");
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains($"removed {tree}; branch feature deleted (squash- or rebase-merged into origin/master)", stdout);
+        Assert.False(HasBranch("feature"));
+    }
+
+    [Fact]
+    public async Task SquashMergedThenAnUnmergedCommit_KeepsTheBranch()
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, "one.txt", "first\n");
+        Commit(tree, "one");
+        SquashIntoOriginMaster("feature");
+        Write(tree, "after.txt", "not on origin\n");
+        Commit(tree, "after the squash");
+        var tip = Git(tree, "rev-parse", "HEAD").Text.Trim();
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("branch feature kept (not merged into origin/master)", stdout);
+        Assert.Equal(tip, Git(_main, "rev-parse", "refs/heads/feature").Text.Trim());
+    }
+
+    [Fact]
+    public async Task RebaseMerged_IsDeleted()
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, "one.txt", "first\n");
+        Commit(tree, "one");
+        Write(tree, "two.txt", "second\n");
+        Commit(tree, "two");
+        var fork = Git(_main, "rev-parse", "HEAD").Text.Trim();
+        Write(_main, "other.txt", "moved master on\n");
+        Commit(_main, "other");
+        Git(_main, "cherry-pick", $"{fork}..feature");
+        Git(_main, "push", "origin", "master");
+
+        var (exit, stdout, _) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("branch feature deleted (squash- or rebase-merged into origin/master)", stdout);
+        Assert.False(HasBranch("feature"));
+    }
+
+    // One branch merges to origin's tree, the other to a new tree: neither verdict may write an object.
+    [Fact]
+    public async Task DryRun_JudgingASquash_WritesNoObject_AndMovesNoRef()
+    {
+        var squashed = AddWorktree("squashed");
+        var extended = AddWorktree("extended");
+        Write(squashed, "one.txt", "first\n");
+        Commit(squashed, "one");
+        SquashIntoOriginMaster("squashed");
+        Write(_main, "later.txt", "landed after the squash\n");
+        Commit(_main, "later");
+        Git(_main, "push", "origin", "master");
+        Write(extended, "one.txt", "first\n");
+        Commit(extended, "one");
+        Write(extended, "two.txt", "only here\n");
+        Commit(extended, "two");
+        var objects = Path.Combine(_main, ".git", "objects");
+        var filesBefore = Directory.GetFiles(objects, "*", SearchOption.AllDirectories).Length;
+        var refsBefore = Git(_main, "for-each-ref").Text;
+
+        var (exit, stdout, _) = await Clean("squashed", "extended", "--dry-run");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("branch squashed would be deleted (squash- or rebase-merged into origin/master as of the last fetch)", stdout);
+        Assert.Contains("branch extended would be kept (not merged into origin/master as of the last fetch)", stdout);
+        Assert.Equal(filesBefore, Directory.GetFiles(objects, "*", SearchOption.AllDirectories).Length);
+        Assert.Equal(refsBefore, Git(_main, "for-each-ref").Text);
+    }
+
+    [Fact]
     public async Task DirtyTrackedChanges_AreArchivedAsAPatchThatReapplies()
     {
         var tree = AddWorktree("feature");
@@ -241,6 +329,37 @@ public sealed class CleanCommandTests : IDisposable
         Assert.Contains("untracked  notes/todo.txt", stderr);
         Assert.Contains("evidence   dydo/agents/captain/evidence.md", stderr);
         Assert.Contains("2 file(s)", await ListOutput());
+    }
+
+    // An agent that built or installed inside its workspace leaves bin, obj, node_modules or .vs there.
+    [Fact]
+    public async Task BuildOutputUnderAgentsEvidence_IsSkippedAndCounted_RealEvidenceIsArchived()
+    {
+        var tree = AddWorktree("feature");
+        Write(tree, "dydo/agents/crew/Bin/Debug/app.dll", "binary\n");
+        Write(tree, "dydo/agents/crew/obj/project.assets.json", "{}\n");
+        Write(tree, "dydo/agents/crew/web/node_modules/pkg/index.js", "module\n");
+        Write(tree, "dydo/agents/crew/.VS/state.bin", "ide\n");
+        Write(tree, "dydo/agents/crew/report.md", "proof\n");
+        Write(tree, "dydo/agents/crew/state.json", "{}\n");
+        Write(tree, "dydo/agents/crew/run.log", "log\n");
+        Write(tree, "dydo/agents/crew/notes.txt", "notes\n");
+
+        var (exit, stdout, stderr) = await Clean("feature");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("4 build-output file(s) under agents/ not archived (bin, obj, node_modules, .vs)", stdout);
+        foreach (var dropped in new[] { "app.dll", "project.assets.json", "index.js", "state.bin" })
+            Assert.DoesNotContain(dropped, stderr);
+        var entry = ArchiveEntries().Single();
+        foreach (var kept in new[] { "report.md", "state.json", "run.log", "notes.txt" })
+        {
+            Assert.Contains($"evidence   dydo/agents/crew/{kept}", stderr);
+            Assert.True(File.Exists(Path.Combine(entry, "evidence", "dydo", "agents", "crew", kept)));
+        }
+
+        Assert.False(Directory.Exists(Path.Combine(entry, "evidence", "dydo", "agents", "crew", "Bin")));
+        Assert.Contains("4 file(s)", await ListOutput());
     }
 
     // dydo.json at HEAD names one root, the tree's edited copy another, and the default holds evidence
@@ -825,6 +944,14 @@ public sealed class CleanCommandTests : IDisposable
     {
         Git(directory, "add", "-A");
         Git(directory, "commit", "-m", message);
+    }
+
+    // Lands branch's changes on origin's master as one squash commit from the main checkout.
+    private void SquashIntoOriginMaster(string branch)
+    {
+        Git(_main, "merge", "--squash", branch);
+        Git(_main, "commit", "-m", $"squash {branch}");
+        Git(_main, "push", "origin", "master");
     }
 
     private bool HasBranch(string branch) =>

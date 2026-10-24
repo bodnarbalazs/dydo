@@ -9,7 +9,11 @@ using System.Diagnostics;
 /// </summary>
 internal static class GitRunner
 {
-    public static GitResult Run(string workingDirectory, params string[] arguments)
+    public static GitResult Run(string workingDirectory, params string[] arguments) =>
+        Run(workingDirectory, new Dictionary<string, string>(), arguments);
+
+    /// <summary>Runs git with <paramref name="environment"/> added to its environment.</summary>
+    public static GitResult Run(string workingDirectory, IReadOnlyDictionary<string, string> environment, params string[] arguments)
     {
         var start = new ProcessStartInfo("git")
         {
@@ -22,6 +26,8 @@ internal static class GitRunner
         };
         start.Environment["GIT_TERMINAL_PROMPT"] = "0";
         start.Environment["GIT_OPTIONAL_LOCKS"] = "0";
+        foreach (var (name, value) in environment)
+            start.Environment[name] = value;
         foreach (var argument in arguments)
             start.ArgumentList.Add(argument);
 

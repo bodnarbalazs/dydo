@@ -1,8 +1,11 @@
 namespace DynaDocs.Services;
 
 /// <summary>
-/// Decides whether a removed worktree's local branch may go: only when its tip is reachable from
-/// <c>origin/&lt;default&gt;</c>. A real run fetches with <c>--prune</c> once, before the first verdict, and
+/// Decides whether a removed worktree's local branch may go: when its tip is reachable from
+/// <c>origin/&lt;default&gt;</c>, or when merging the tip into it changes nothing, as after a squash or rebase
+/// merge (<c>git merge-tree --write-tree</c> prints exactly origin's tree). That merge writes its objects into
+/// a temporary object directory that borrows the real store as an alternate, so no verdict writes an object
+/// into the repository; a git without <c>merge-tree --write-tree</c>, or one that fails, keeps the branch. A real run fetches with <c>--prune</c> once, before the first verdict, and
 /// keeps every branch when the fetch fails; a dry run fetches nothing and judges the last fetch. The
 /// default branch is the one origin advertises now (<c>git ls-remote --symref origin HEAD</c>), so a
 /// stale local <c>origin/HEAD</c> never decides; only when origin cannot answer does the local
@@ -21,10 +24,45 @@ internal sealed class MergedBranchJudge(string repository, bool dryRun)
         if (_target == null)
             return (false, _unavailable!);
 
-        var merged = GitRunner.Run(repository, "merge-base", "--is-ancestor", tip, _target).Ok;
-        return merged
-            ? (true, $"merged into {_target}{Staleness}")
+        if (GitRunner.Run(repository, "merge-base", "--is-ancestor", tip, _target).Ok)
+            return (true, $"merged into {_target}{Staleness}");
+        var unavailable = MergeChangesNothing(tip, out var contentMerged);
+        if (unavailable != null)
+            return (false, $"not merged into {_target}{Staleness}; the squash check failed: {unavailable}");
+        return contentMerged
+            ? (true, $"squash- or rebase-merged into {_target}{Staleness}")
             : (false, $"not merged into {_target}{Staleness}");
+    }
+
+    // Whether merging tip into the target yields the target's own tree; the reason when git cannot tell.
+    private string? MergeChangesNothing(string tip, out bool unchanged)
+    {
+        unchanged = false;
+        var targetTree = GitRunner.Run(repository, "rev-parse", "--verify", "--quiet", $"{_target}^{{tree}}");
+        var store = GitRunner.Run(repository, "rev-parse", "--path-format=absolute", "--git-path", "objects");
+        if (!targetTree.Ok || !store.Ok)
+            return (targetTree.Ok ? store : targetTree).Error;
+
+        var scratch = Path.Combine(Path.GetTempPath(), "dydo-merge-tree-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(scratch);
+        try
+        {
+            var merge = GitRunner.Run(repository, new Dictionary<string, string>
+            {
+                ["GIT_OBJECT_DIRECTORY"] = scratch,
+                ["GIT_ALTERNATE_OBJECT_DIRECTORIES"] = store.Text.Trim()
+            }, "merge-tree", "--write-tree", "--no-messages", _target!, tip);
+            // Exit 1 is a conflicted merge: the tip holds changes origin does not.
+            if (merge.ExitCode is not (0 or 1))
+                return string.IsNullOrEmpty(merge.Error) ? $"git merge-tree exited {merge.ExitCode}" : merge.Error;
+            // A clean merge with --no-messages prints only the merged tree.
+            unchanged = merge.ExitCode == 0 && merge.Text.Trim() == targetTree.Text.Trim();
+            return null;
+        }
+        finally
+        {
+            LinkSafeDelete.DeleteTree(scratch);
+        }
     }
 
     private string Staleness => dryRun ? " as of the last fetch" : "";

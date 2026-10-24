@@ -81,7 +81,7 @@ a softer verdict - a fifth consecutive FAIL on one review loop is itself an esca
 ## 7. Silent waiting, and its opposite
 
 **Symptom:** a ticket sits in progress with no comment for hours, or a question that the plan already
-answers arrives at the human.
+answers arrives at the user.
 
 **Mechanism:** an agent that meets fog can neither wait for an answer nor invent one. Both failures come
 from skipping the middle: discovery first, then a question that is on the record.
@@ -89,9 +89,9 @@ from skipping the middle: discovery first, then a question that is on the record
 **Rule:** run bounded discovery - the Decision Records, the plan, the ticket's links, the glossary, the
 code - and only when it comes up empty file a Question Ticket listing what you searched, wire it as a
 blocker, then release with branch pushed, resume SHA posted, worktree cleaned (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree), parent Todo and
-unassigned. The admiral resumes blocker-cleared work on the next captain return or human word. Settle operational conflicts by
-precedence: the human's live instruction, then the Decision Record, the reviewed plan at its governing
-commit, the pinned feature spec, the ticket contract, coding standards, existing code. The ladder is crew → Ticket Captain → admiral → human, and the human is
+unassigned. The admiral resumes blocker-cleared work on the next captain return or user word. Settle operational conflicts by
+precedence: the user's live instruction, then the Decision Record, the reviewed plan at its governing
+commit, the pinned feature spec, the ticket contract, coding standards, existing code. The ladder is crew → Ticket Captain → admiral → user, and the user is
 reached for a conflict with a Decision Record, live external state no agent can coordinate, or authority
 the contract cannot supply.
 
@@ -106,7 +106,7 @@ worktree supplied it, or whether an edit landed afterwards.
 that candidate with its command, environment, exit and where the output can be seen - posted on the
 ticket and in the PR body. Every merge that has a Merge Ticket is followed by its own review of the
 integrated state, and the last one proves the plan's acceptance criteria. An atomic ticket's merge
-into main has none; its ticket review PASS, green CI and the human's click stand in its place.
+into main has none; its ticket review PASS, green CI and the user's click stand in its place.
 
 ## 9. A spawned agent without its methodology
 
@@ -116,7 +116,7 @@ into main has none; its ticket review PASS, green CI and the human's click stand
 exposes it through each discovery root; a Claude agent definition may preload that skill, and a Codex
 child is told to load it by name - what else it inherits is not documented. A sandbox setting requests
 a boundary; its presence does not prove the host enforced it. Hook trust is pinned by hash, so changing
-the hook configuration leaves sessions unguarded until the human re-trusts it.
+the hook configuration leaves sessions unguarded until the user re-trusts it.
 
 **Rule:** before relying on a new spawn path, ask the agent to name what it loaded and record the
 answer. Prove any load-bearing restriction with a live host check. A spawn that cannot see its skill

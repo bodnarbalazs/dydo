@@ -41,7 +41,7 @@ host discovery links and is not a dydo CLI command.
 The `Scaffold/` tree is copied verbatim by `dydo init`; keep
 `Scaffold/dydo/reference/dydo-commands.md` and `dydo/reference/dydo-commands.md` aligned by hand.
 
-Do not hand-edit the protected `dydo/index.md`, `dydo/files-off-limits.md` or `dydo.json`; the human
+Do not hand-edit the protected `dydo/index.md`, `dydo/files-off-limits.md` or `dydo.json`; the user
 owns them and the guard blocks direct writes.
 
 ## Verification

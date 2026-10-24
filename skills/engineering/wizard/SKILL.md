@@ -24,7 +24,7 @@ Work out every manual step the user must take and every value that gets captured
 
 Then show the user the ordered list of stages and the values each produces, and confirm: he may add, drop, or reorder.
 
-Never put a decision in a wizard, in prose or any other form: a decision needs context and a way to ask back, so settle each one in conversation before you author; the script asks the human only for operational confirmations (y/N or Enter to continue) and captured values (a secret, an identifier, a path).
+Never put a decision in a wizard, in prose or any other form: a decision needs context and a way to ask back, so settle each one in conversation before you author; the script asks the user only for operational confirmations (y/N or Enter to continue) and captured values (a secret, an identifier, a path).
 
 **Done when:** every stage is named in order, and for each captured value you know (a) where the user gets it, (b) where it's written (`.env`, a GitHub secret, both, or nowhere; some stages are pure actions), and (c) whether it's secret (hidden entry) or public.
 

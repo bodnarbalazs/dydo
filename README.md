@@ -58,7 +58,7 @@ These are the types of tickets:
 - Bug
 	- A bug gets reported, then it gets reproduced and fixed
 - Enablement
-	- Some human-involved setup which other work depends on (creating an api key)
+	- Some user-involved setup which other work depends on (creating an api key)
 - Inquisition
 	- An audit where sub agents not only look at the code like reviewers, but also try to come up with ways which it could break and they test these hypotheses out to verify them
 - Grilling
@@ -86,21 +86,21 @@ flowchart TD
   classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
 
-  H0([human: an idea]):::human --> CT[co-thinker]:::session
-  CT -->|ripe| TP([human: to-project, Project in Backlog]):::human
+  H0([user: an idea]):::human --> CT[co-thinker]:::session
+  CT -->|ripe| TP([user: to-project, Project in Backlog]):::human
   TP --> AD[map holder: me, or an admiral I invoke, reads the Project and acts]:::officer
   AD -->|Project Planning| PP[map holder charts with wayfinder: the map, first tickets]:::session
   PP -->|plan commit, only for a cross-cutting architecture contract| RP{{reviewer: project-plan, two rounds at most}}:::reviewer
   PP -->|no plan file| H1
-  RP -->|PASS| H1([human approves, in the admiral's session when one holds the map, Project Planned]):::human
+  RP -->|PASS| H1([user approves, in the admiral's session when one holds the map, Project Planned]):::human
   H1 --> OP[map holder commissions first captain to open feature; wires merge order]:::officer
   OP <-->|"one captain per pickable AFK ticket: commission · done &lt;key&gt;: PR ready · merge, when its turn comes · done &lt;key&gt;: merged"| IC[ticket-captain]:::officer
-  OP -->|all landed: Inquisition Ticket in Backlog, scope and cost| H2([human moves it to Todo and tells the map holder, or cancels]):::human
+  OP -->|all landed: Inquisition Ticket in Backlog, scope and cost| H2([user moves it to Todo and tells the map holder, or cancels]):::human
   H2 -->|the map holder commissions| IQ[ticket-captain of the inquisition: Bugs filed]:::officer
   IQ --> OP
   OP -->|landing Merge Ticket: main into the feature, gates, merge review| LM[ticket-captain of the landing]:::officer
-  LM -->|PR into main with its PASS, Ready to Merge| H3([human clicks the merge, one Project at a time, and tells the map holder]):::human
-  H3 -->|map holder commissions landing captain cleanup; the map holder loads walkthrough| WT[Walkthrough Ticket: the human, with the admiral when one holds the map]:::officer
+  LM -->|PR into main with its PASS, Ready to Merge| H3([user clicks the merge, one Project at a time, and tells the map holder]):::human
+  H3 -->|map holder commissions landing captain cleanup; the map holder loads walkthrough| WT[Walkthrough Ticket: the user, with the admiral when one holds the map]:::officer
   WT -->|findings: tickets, a second lap on the re-cut feature| OP
   WT -->|nothing: Project Completed| END([done]):::human
 ```

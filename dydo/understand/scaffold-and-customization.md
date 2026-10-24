@@ -52,14 +52,13 @@ collision deliberately and rerun the same command.
 
 ## Framework documents
 
-`dydo init` scaffolds the `dydo/` documentation tree, the runtime entry points (`CLAUDE.md`,
-`AGENTS.md`), `files-off-limits.md`, the host hooks, and `_system/types.json`. The framework
+`dydo init` scaffolds the `dydo/` documentation tree, the runtime entry point (`AGENTS.md`), `files-off-limits.md`, the host hooks, and `_system/types.json`. The framework
 documents under `dydo/reference/` and `dydo/guides/` are written once; from then on a project edits
 them in place. `dydo init` tops up `_system/types.json` rather than comparing it.
 
 Their source is the `Scaffold/` directory in the dydo repository, embedded in the binary file by
 file. It mirrors the layout it produces under their final names - `Scaffold/dydo/**` becomes the
-project's `dydo/` tree, and `Scaffold/entry-point.md` becomes both `CLAUDE.md` and `AGENTS.md` with
+project's `dydo/` tree, and `Scaffold/entry-point.md` becomes `AGENTS.md` with
 `{{PROJECT_NAME}}` substituted. There is no template language and no placeholder anywhere else:
 each file is copied verbatim, and only a file that does not already exist is written.
 

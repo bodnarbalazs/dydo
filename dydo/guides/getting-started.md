@@ -36,10 +36,9 @@ Fresh tree:
 dydo init codex       # or: dydo init claude / dydo init all / dydo init none
 ```
 
-Every mode creates the documentation tree and `CLAUDE.md`, and adds both skill projection folders
+Every mode creates the documentation tree and `AGENTS.md`, the one entry file Claude Code and Codex both read, and adds both skill projection folders
 to `.gitignore` - `/.claude/skills/` for Claude Code and `/.agents/skills/` for Codex. The `claude`,
-`codex` and `all` modes also wire the guard hooks for the chosen runtimes; Codex selections add
-`AGENTS.md`. The [command reference](../reference/dydo-commands.md#dydo-init) lists every file init
+`codex` and `all` modes also wire the guard hooks for the chosen runtimes. Claude Code must be 2.1.281 or later to read `AGENTS.md`. The [command reference](../reference/dydo-commands.md#dydo-init) lists every file init
 writes. Initialization creates durable Decisions, changelog, pitfalls and FutureFeature
 documentation; live work stays in Linear.
 
@@ -51,7 +50,7 @@ projection lines in `.gitignore`.
 
 ## 3. Install the skills
 
-Do this before the first agent session: the scaffolded `CLAUDE.md` and `AGENTS.md` send a session
+Do this before the first agent session: the scaffolded `AGENTS.md` sends a session
 that thinks with the user to the `co-thinker` skill, and every role is a skill. The skills do not
 come with the npm or .NET package, and `dydo init` does not write them.
 

@@ -133,7 +133,7 @@ holds the detail; the captain posts each crew hop's SHA. A Merge Sub-ticket neve
 An atomic ticket has no Merge Sub-ticket: its captain sets `Ready to Merge` once CI is green, and after
 the human's click closes it `Done`, cleans up and returns `done <key>: merged`.
 
-For an uncleared blocker or human takeover: push, post the resume SHA, remove the worktree, set the
+For an uncleared blocker or human takeover: push, post the resume SHA, clean the worktree (`dydo clean --dry-run`, then `dydo clean`), set the
 parent `Todo`, unassign and wire any blocker; return `released <key>: <reason>`. A dead session is
 treated as release from its last recorded hop without a final push. Fresh commission from the
 record works on both hosts. An invoked admiral wakes on a captain's return or the human's word and rereads
@@ -147,7 +147,7 @@ use a following fix ticket. Each corrected candidate gets fresh merge review.
 
 The Inquisition captain pins the completed evidence packet on its ticket: audited feature SHA,
 scope, parts and lenses, findings, hypotheses with verdicts, and deduplicated Bugs with their
-reproduction SHAs, or a prose Bug's quoted passages. The captain pushes and posts its resume state, removes its worktree, sets the
+reproduction SHAs, or a prose Bug's quoted passages. The captain pushes and posts its resume state, cleans its worktree (`dydo clean --dry-run`, then `dydo clean`), sets the
 Inquisition `Todo`, unassigns and returns `released <key>: record delivery`. The record Feature and
 its blocker do not exist yet; this release return reaches the Project's map holder.
 
@@ -177,7 +177,7 @@ chain. This is ordinary Feature delivery and release, not a new Type or a serial
 
 | Artifact | Accountable | Completion |
 |---|---|---|
-| Parent ticket and lane worktrees | `ticket-captain` | Every worktree it or its crew created is removed. A spawned Ticket Captain first pushes the parent branch and opens its PR so the work survives its return. |
+| Parent ticket and lane worktrees | `ticket-captain` | Every worktree it or its crew created is cleaned with `dydo clean --dry-run`, then `dydo clean`. A spawned Ticket Captain first pushes the parent branch and opens its PR so the work survives its return. |
 | Integrated lane Sub-ticket branch | `ticket-captain` | The branch is deleted after it passes review and is integrated into the parent ticket branch. |
 | Merged Project ticket branch | `ticket-captain` | The branch is deleted after the merge. |
 | Merged atomic ticket branch | `ticket-captain` | The branch is deleted after the human clicks its PR into main. |
@@ -185,7 +185,7 @@ chain. This is ordinary Feature delivery and release, not a new Type or a serial
 | Prototype branch | `ticket-captain`, tracked by the map holder | Keep the winning code linked as delivery-spec input; delete when that delivery ticket is Done or with feature cleanup. |
 | Inquisition branch | `ticket-captain` | Delete at Done after the record/proof retention checks above; never merge it or delete the independently retained Bug refs. |
 
-Deleting a branch here means the local branch. GitHub deletes a merged PR's remote branch on merge,
+`dydo clean` deletes a local branch only once origin's default branch holds it. Deleting a branch here means the local branch. GitHub deletes a merged PR's remote branch on merge,
 and the guard blocks agents from deleting remote branches, so the accountable officer names any
 other remote branch due for deletion on its record for the human.
 

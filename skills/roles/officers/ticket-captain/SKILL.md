@@ -122,8 +122,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    reviewed PR and waits for the user's merge-commit click. An atomic ticket has no Merge
    Sub-ticket: the user clicks its PR, then you resume from the record. **Done:** merge review
    passes, or the user's click has landed the atomic ticket; the operation and source ticket close
-   `Done`, captain-owned worktrees and local branches are removed (`git worktree remove`,
-   `git branch -d`, `git fetch --prune`), and you return `done <key>: merged`. GitHub deletes a
+   `Done`, captain-owned worktrees and merged local branches are cleaned (`dydo clean --dry-run`,
+   then `dydo clean`), and you return `done <key>: merged`. GitHub deletes a
    merged PR's remote branch itself; the guard blocks remote deletion, so name any other remote
    branch due for deletion, an `inquisition/` or `prototype/` branch included, on the record for
    the user. On the map holder's landing-cleanup commission,
@@ -173,7 +173,7 @@ Project's destination. Put the packet and all evidence on the record. Set priori
 user's next pick is the answer that frees the most AFK work.
 
 A blocker you cannot clear, the user's takeover, or a dying session releases the ticket: push the
-branch, post the resume SHA, remove the worktree, set the parent `Todo`, unassign and wire any
+branch, post the resume SHA, clean the worktree (`dydo clean --dry-run`, then `dydo clean`), set the parent `Todo`, unassign and wire any
 blocker. The next captain reads the record and resumes from the branch. After a dead session the
 map holder uses the last posted hop, without assuming a final push. Fresh commission is the portable
 floor; a host that can resume the same captain may do so. Takeover always goes through release.

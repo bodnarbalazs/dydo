@@ -122,7 +122,7 @@ map and how the tickets move, integrate, and finish together.
    itself and later or deferred work. Its scope is main into feature, combined gates, merge review,
    then a PR into main. Its `Ready to Merge`
    is the user's click, one Project at a time, as a merge commit. When the user tells you it landed,
-   resume the landing captain to close and clean up the merged feature branch; open a Walkthrough
+   resume the landing captain to close and clean up the merged feature branch (`dydo clean --dry-run`, then `dydo clean`); open a Walkthrough
    Ticket and ask the user to invoke `walkthrough` in this session, then facilitate it here.
    Findings reopen the lap: commission the first fix Captain to re-cut the feature from main under
    the same name; another inquisition needs confirmation. **Done:** an empty walkthrough closes

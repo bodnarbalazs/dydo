@@ -741,7 +741,7 @@ public static class InitCommand
         if (File.Exists(Path.Combine(projectRoot, "CLAUDE.local.md")))
             ConsoleOutput.WriteWarning("  ! CLAUDE.local.md stops Claude Code reading AGENTS.md. Put @AGENTS.md at its top, or set Project instructions to claude-md-and-agents-md.");
         if (File.Exists(Path.Combine(projectRoot, ".claude", "CLAUDE.md")))
-            ConsoleOutput.WriteWarning("  ! .claude/CLAUDE.md stops Claude Code reading AGENTS.md. Put @AGENTS.md at its top.");
+            ConsoleOutput.WriteWarning("  ! .claude/CLAUDE.md stops Claude Code reading AGENTS.md. Put @../AGENTS.md at its top.");
     }
 
     private static string NormalizeEntry(string content) =>

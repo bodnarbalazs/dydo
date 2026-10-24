@@ -60,8 +60,9 @@ or overwriting the tree, and records the integration in `dydo.json`.
 Claude Code 2.1.281 or later reads `AGENTS.md` when no `CLAUDE.md` is in the way. With `claude` or
 `all`, init and `--join` therefore remove a `CLAUDE.md` that is dydo's own generated copy (equal to
 `AGENTS.md` or the template). A `CLAUDE.md` you wrote is kept, with a warning that it hides
-`AGENTS.md`; move its content into `AGENTS.md`, or put `@AGENTS.md` at its top. A `CLAUDE.local.md` or
-`.claude/CLAUDE.md` gets the same warning and is never removed.
+`AGENTS.md`; move its content into `AGENTS.md`, or put `@AGENTS.md` at its top. `CLAUDE.local.md` and `.claude/CLAUDE.md` are never removed, and each gets its own warning:
+`CLAUDE.local.md` needs `@AGENTS.md` at its top (or Project instructions set to
+`claude-md-and-agents-md`); `.claude/CLAUDE.md` needs `@../AGENTS.md` at its top.
 
 dydo does not compile or install skills, and none ship with the package. A skill is one folder under
 `skills/<category>/<name>/`: copy `skills/`, `setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` (the

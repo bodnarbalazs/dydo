@@ -1476,7 +1476,7 @@ public class InitCommandTests : IntegrationTestBase
 
     [Theory]
     [InlineData("CLAUDE.local.md", "CLAUDE.local.md stops Claude Code reading AGENTS.md")]
-    [InlineData(".claude/CLAUDE.md", ".claude/CLAUDE.md stops Claude Code reading AGENTS.md")]
+    [InlineData(".claude/CLAUDE.md", ".claude/CLAUDE.md stops Claude Code reading AGENTS.md. Put @../AGENTS.md at its top.")]
     public async Task Join_Claude_WarnsAboutOtherFilesThatHideAgentsMd(string path, string warning)
     {
         (await InitProjectAsync("none")).AssertSuccess();

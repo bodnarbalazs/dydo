@@ -6,7 +6,7 @@ using DynaDocs.Utils;
 
 /// <summary>
 /// <c>dydo mode</c>: show and set this machine's mode flags. An agent's <c>dydo mode set</c> meets
-/// the guard's built-in mode-set nudge (GuardCommand.ModeSet.cs); a human's terminal does not.
+/// the guard's built-in mode-set nudge (GuardCommand.ModeSet.cs); the user's terminal does not.
 /// </summary>
 public static class ModeCommand
 {

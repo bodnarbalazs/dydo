@@ -67,7 +67,7 @@ public static class ConfigFactory
             Message = "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`. Open-ended polls have caused agent crashes (issue 0177).",
             Severity = "warn"
         },
-        // DR 045 §3: nothing reaches the human that an independent agent has not reviewed, and
+        // DR 045 §3: nothing reaches the user that an independent agent has not reviewed, and
         // the PR body is where that proof lands. Warn = block once, run again to proceed, so an
         // honest exception costs one retry; DR 042's rule escalates it to block if discipline erodes.
         new()

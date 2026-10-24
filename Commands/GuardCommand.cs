@@ -407,7 +407,7 @@ public static partial class GuardCommand
         Console.Error.WriteLine($"  Pattern: {protectedPattern}");
         if (detected != null)
             Console.Error.WriteLine($"  Detected: {detected}");
-        Console.Error.WriteLine("  This file is human-owned: read it freely, and ask the human for any change.");
+        Console.Error.WriteLine("  This file is human-owned: read it freely, and ask the user for any change.");
         return ExitCodes.ToolError;
     }
 

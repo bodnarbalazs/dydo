@@ -192,7 +192,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         (OndrejDiskRegex(), "Disk format or erase attempt"),
         (OndrejSudoRmRegex(), "Privileged delete attempt"),
         (OndrejCurlPipeRegex(), "Download and execute as shell"),
-        (OndrejGitPushRegex(), "Force push or remote branch deletion. GitHub deletes a merged PR's branch itself; clean up locally from outside the tree with dydo clean --dry-run <worktree>, then dydo clean <worktree>, which removes the worktree, keeps unmerged branches and runs git fetch --prune; name any other remote branch for the human"),
+        (OndrejGitPushRegex(), "Force push or remote branch deletion. GitHub deletes a merged PR's branch itself; clean up locally from outside the tree with dydo clean --dry-run <worktree>, then dydo clean <worktree>, which removes the worktree, keeps unmerged branches and runs git fetch --prune; name any other remote branch for the user"),
         (OndrejGitRecoveryRegex(), "Git recovery history destruction"),
         (OndrejSystemPermissionsRegex(), "System permission or ownership change"),
         (OndrejGhDeleteRegex(), "Destructive GitHub operation"),

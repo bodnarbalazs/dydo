@@ -397,7 +397,7 @@ def remove_worktree(worktree):
         _git("worktree", "remove", "--force", str(worktree))
     _git("worktree", "prune")
     if worktree.exists() or is_registered_worktree(worktree):
-        print(f"Failed to remove test worktree, a human must clear it: {worktree}", file=sys.stderr)
+        print(f"Failed to remove test worktree, the user must clear it: {worktree}", file=sys.stderr)
 
 
 def _registered_worktree_paths():
@@ -437,8 +437,8 @@ def prune_stale_test_worktrees(max_age_seconds=None):
     orphan it left behind; a crashed run, a re-cloned checkout, or a second clone whose
     `git worktree list` this runner never sees can all leave one that lingers in TEMP with no
     automated path back to it. `remove_worktree` still names its own failed removals loudly on
-    stderr, but only for the worktree the current run is cleaning up. Any such orphan is left for a
-    human: a full TEMP scan to catch that rare case is not worth paying on every run. Silent on a
+    stderr, but only for the worktree the current run is cleaning up. Any such orphan is left for the
+    user: a full TEMP scan to catch that rare case is not worth paying on every run. Silent on a
     no-op.
     """
     if max_age_seconds is None:

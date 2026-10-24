@@ -251,6 +251,56 @@ public class BashCommandAnalyzerTests
         Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
     }
 
+    [Theory]
+    [InlineData("git worktree remove --force .claude/worktrees/dyd-1")]
+    [InlineData("git worktree remove -f ../wt")]
+    [InlineData("git -C C:/repo worktree remove C:/repo/.claude/worktrees/x --force")]
+    [InlineData("git status && git worktree remove -f x")]
+    [InlineData("rm -rf .claude/worktrees/dyd-1")]
+    [InlineData("rm -fr /home/me/.t3/worktrees/DynaDocs/t3-1")]
+    [InlineData("rm -r -f \"C:/Users/me/repo/.claude/worktrees/x\"")]
+    [InlineData("rm --recursive worktrees/x")]
+    [InlineData("rm .claude/worktrees/x -rf")]
+    [InlineData("Remove-Item -Recurse -Force C:\\repo\\.claude\\worktrees\\x")]
+    [InlineData("Remove-Item 'C:\\repo\\.claude\\worktrees\\x' -Recurse")]
+    [InlineData("ri -r .claude\\worktrees\\x")]
+    [InlineData("rd /s /q C:\\repo\\.claude\\worktrees\\x")]
+    [InlineData("rm -rf .claude/worktrees")]
+    public void WorktreeRemoval_RawForms_AreBlockedWithTheDydoCleanHint(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, $"Expected dangerous: {command}");
+        Assert.Contains("dydo clean --dry-run, then dydo clean", reason);
+    }
+
+    [Theory]
+    [InlineData("dydo clean --dry-run")]
+    [InlineData("dydo clean --all")]
+    [InlineData("dydo clean .claude/worktrees/dyd-1")]
+    [InlineData("git worktree remove .claude/worktrees/dyd-1")]
+    [InlineData("git worktree prune")]
+    [InlineData("git worktree list --porcelain")]
+    [InlineData("rm -f .claude/worktrees/x/notes.txt")]
+    [InlineData("Remove-Item -Force .claude\\worktrees\\x\\notes.txt")]
+    [InlineData("rm -rf bin/obj")]
+    [InlineData("rm -rf /tmp/my-worktrees-backup")]
+    public void WorktreeRemoval_SafeForms_AreAllowed(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    [Fact]
+    public void ForcePushRefusal_NamesDydoCleanForLocalCleanup()
+    {
+        var (_, reason) = _analyzer.CheckDangerousPatterns("git push origin --delete feature");
+
+        Assert.Contains("dydo clean --dry-run, then dydo clean", reason);
+        Assert.DoesNotContain("git worktree remove", reason);
+    }
+
     #region Read Operations - Unix
 
     [Theory]

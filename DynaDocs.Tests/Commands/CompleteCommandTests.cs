@@ -32,7 +32,9 @@ public class CompleteCommandTests : IDisposable
         Assert.DoesNotContain("task", completions);
         Assert.DoesNotContain("issue", completions);
         Assert.DoesNotContain("review", completions);
-        Assert.DoesNotContain("clean", completions);
+        // The 2.x agent-workspace clean became `dydo agent clean` and was retired; 3.5's `dydo clean`
+        // removes worktrees.
+        Assert.Contains("clean", completions);
         Assert.Contains("completions", completions);
         Assert.Contains("gap-check", completions);
         Assert.Contains("map", completions);

@@ -1240,6 +1240,74 @@
       "tests": [
         "viewer/src/app/ProjectVisit.test.ts"
       ]
+    },
+    {
+      "module": "Commands/CleanCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Models/CleanConfig.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ArchivePlan.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/CleanArchive.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/GitResult.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/GitRunner.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/LinkSafeDelete.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/LinkSafeDeleteTests.cs",
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/MergedBranchJudge.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/WorktreeCleaner.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/WorktreeEntry.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/WorktreeProcessProbe.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/WorktreeProcessProbeTests.cs",
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
     }
   ]
 }

@@ -32,6 +32,9 @@ through Linear's official surfaces.
   "nudges": [],
   "testing": {
     "runner": ["python", "scripts/gap_check.py"]
+  },
+  "clean": {
+    "archiveSizeCapMb": 1024
   }
 }
 ```
@@ -47,6 +50,7 @@ through Linear's official surfaces.
 | `scanExclude` | string[] | Paths excluded from documentation scanning. |
 | `nudges` | object[] | Project guard rules. |
 | `testing.runner` | nonempty string[] | Executable followed by fixed arguments for `dydo gap-check`. The executable is the first item; later empty arguments are preserved. |
+| `clean.archiveSizeCapMb` | positive integer | Size cap of `dydo clean`'s archive in megabytes; past it the oldest entries are pruned. Defaults to 1024. |
 
 Older 2.x configuration may still contain repository work-path, `skills` or `frameworkHashes`
 fields. The 3.x runtime ignores those unknown properties safely. A fresh initialization emits
@@ -56,6 +60,10 @@ fields. The 3.x runtime ignores those unknown properties safely. A fresh initial
 strings, whose first item is a nonblank executable. The launcher starts that executable directly from
 the directory containing the nearest `dydo.json`, appends the caller's arguments without shell parsing,
 and inherits the terminal streams.
+
+`clean` is optional. `dydo clean` reads `clean.archiveSizeCapMb` from the nearest `dydo.json` and refuses to
+run, exit `2`, when it is not a positive whole number; without the field the cap is 1024 MB. Entries older
+than 90 days are pruned whatever the cap. See [CLI Commands](./dydo-commands.md#dydo-clean).
 
 ## Work-management boundary
 
@@ -67,7 +75,10 @@ briefs, changelog, and FutureFeature ideas.
 ## Hook configuration
 
 `dydo init claude` and `dydo init codex` wire the selected runtime's guard hooks automatically.
-Claude Code uses `.claude/settings.local.json`; Codex uses `.codex/hooks.json`.
+Claude Code uses `.claude/settings.local.json`; Codex uses `.codex/hooks.json`. Both also get an allow
+rule for `dydo clean`, so a host's auto mode does not stop it: `Bash(dydo clean:*)` and
+`PowerShell(dydo clean:*)` in Claude Code's `permissions.allow`, and a `prefix_rule` in
+`.codex/rules/dydo.rules` for Codex.
 
 The `PreToolUse` hook sends matched tool calls to `dydo guard`. Exit `0` with empty stdout allows
 the action; exit `0` with one `permissionDecision: "deny"` object on stdout blocks it, a contract

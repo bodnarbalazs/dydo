@@ -5,7 +5,7 @@ type: reference
 
 # CLI Commands Reference
 
-Complete reference for dydo's local setup, documentation, guard, validation, testing, and utility
+Complete reference for dydo's local setup, documentation, guard, worktree cleanup, validation, testing, and utility
 commands.
 Live work is managed in Linear through its official surfaces; no dydo command creates, updates,
 polls, or mirrors a Linear object; `dydo map` reads Linear on demand and keeps disposable saved maps. FutureFeatures live in Linear and are promoted by the human; historical repository records remain
@@ -40,11 +40,12 @@ runtime integration. The runtime modes add, per selected host:
 
 | Host | Files | What they carry |
 |---|---|---|
-| `claude` | `.claude/settings.local.json` | a `PreToolUse` hook running `dydo guard --host claude` on the matched tools, a `Stop` hook running `dydo guard --stop`, and the allow entries `Bash(dydo:*)` and `PowerShell(dydo:*)` |
+| `claude` | `.claude/settings.local.json` | a `PreToolUse` hook running `dydo guard --host claude` on the matched tools, a `Stop` hook running `dydo guard --stop`, and the allow entries `Bash(dydo:*)`, `PowerShell(dydo:*)`, `Bash(dydo clean:*)` and `PowerShell(dydo clean:*)` |
 | `claude` | `.claude/settings.json` | `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"` |
 | `claude` | `.gitignore` | `.claude/settings.local.json`, `/.claude/skills/` and `/.agents/skills/` |
 | `codex` | `AGENTS.md` | the same entry point as `CLAUDE.md` |
 | `codex` | `.codex/hooks.json` | a `PreToolUse` hook running `dydo guard` on the matched tools, and a `Stop` hook running `dydo guard --stop` |
+| `codex` | `.codex/rules/dydo.rules` | an exec-policy `prefix_rule` allowing `dydo clean`, which Codex loads when the project's `.codex/` layer is trusted; dydo rewrites the file on every init and `--join` |
 | `codex` | `.codex/config.toml` | `[agents]` with `max_depth = 3` and `max_concurrent_threads_per_session = 16` |
 | `codex` | `.gitignore` | `/.claude/skills/` and `/.agents/skills/` |
 
@@ -272,6 +273,61 @@ marker existed, it denies, and the user runs the command in their own terminal, 
 To get the prompt on an older install, run `dydo init claude --join` to rewrite the Claude Code hook.
 The guard stops a stray agent setting the mode by accident, not a deliberate bypass such as an agent
 forging the hook marker or writing the mode file directly.
+
+---
+
+## Worktree Command
+
+### dydo clean
+
+Remove this repository's linked worktrees without losing work.
+
+```bash
+dydo clean --all --dry-run           # what would happen to every linked worktree; changes nothing
+dydo clean <worktree>...             # remove the named worktrees, by path or branch name
+dydo clean --all                     # remove every linked worktree it may remove
+dydo clean --archive                 # list the archive of uncommitted work
+```
+
+Name the worktrees or pass `--all`; neither or both is a usage error with exit `2`. Run
+`--dry-run` first, look at what would be archived, and commit anything worth keeping. Each worktree
+gets one line: removed, archived and removed (with the archive entry), skipped (with the reason) or
+failed (with the reason), followed by whether its local branch was deleted or kept.
+
+- **Never touched:** the main checkout, the worktree holding the current directory, a locked worktree,
+  one a running process is using, and one under T3's worktree root `~/.t3/worktrees` (archive the T3
+  thread instead). Each is skipped with its reason.
+- **Uncommitted work is archived, then removed.** Staged, unstaged and untracked files git does not
+  ignore, plus dydo's ignored evidence under `dydo/agents/`, are copied to
+  `<git common dir>/dydo/clean-archive/<UTC timestamp>-<branch>/`: `tracked.patch` (`git diff HEAD
+  --binary`), `untracked/` and `evidence/` with their paths, and `manifest.json` (worktree, branch,
+  HEAD, files, sizes, time). A link inside the tree is listed, never followed or copied. Other ignored
+  files (`bin`, `obj`, `node_modules`, skill links) are dropped. A `WARNING:` on stderr lists every
+  archived file and the archive path; there is no confirmation step.
+- **Restore:** in a checkout of the entry's HEAD, `git apply <entry>/tracked.patch`, then copy
+  `untracked/` and `evidence/` back.
+- **Retention:** every run except `--dry-run` and `--archive` prunes entries older than 90 days, then
+  the oldest entries until the archive fits `clean.archiveSizeCapMb` in `dydo.json` (default 1024).
+  Entries written by the same run are never pruned.
+- **Branches:** the local branch is deleted only when its tip is reachable from `origin/<default>`
+  after `git fetch --prune origin`; otherwise it is kept and the line says why (not merged, no origin,
+  fetch failed). `git branch -d` runs first; it also wants the branch merged into the current checkout's
+  HEAD, so when it refuses, `git branch -D` follows, the tip having already been found on origin. Remote branches are never
+  touched.
+- **Removal:** every junction and symlink inside the tree is unlinked first, so nothing recursive can
+  follow one out of the tree. Then `git worktree remove --force` (the archive already holds the dirty
+  state); when that fails, as with paths past 260 characters on Windows, dydo deletes the folder
+  itself through the extended-length path and runs `git worktree prune`.
+- **Busy worktrees:** on Windows a worktree counts as in use when its folder cannot be renamed (a
+  process has its working directory or an open file inside); on Linux when a process's working
+  directory is inside it. macOS has no detection, so stop processes there first.
+- **`--dry-run`** prints the same lines and the same archive warning with `would`, and changes
+  nothing: no fetch (branches are judged against the last fetch), no archive, no removal, no prune.
+  On Windows the busy check still renames the folder and straight back.
+
+Exit `0` when nothing failed; exit `2` when a removal failed, or when a named worktree was not
+removed (unknown, main checkout, current directory, locked, busy or under T3). With `--all`, skips
+exit `0`.
 
 ---
 

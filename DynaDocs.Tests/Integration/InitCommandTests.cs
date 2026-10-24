@@ -970,6 +970,52 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Init_Claude_AddsNarrowDydoCleanAllowEntries_OnceAcrossJoin()
+    {
+        (await InitProjectAsync("claude")).AssertSuccess();
+        (await JoinProjectAsync("claude")).AssertSuccess();
+
+        var allow = Assert.IsType<JsonArray>(JsonNode.Parse(ReadFile(".claude/settings.local.json"))!["permissions"]!["allow"]);
+        var entries = allow.Select(entry => entry!.GetValue<string>()).ToList();
+        Assert.Equal(1, entries.Count(entry => entry == "Bash(dydo clean:*)"));
+        Assert.Equal(1, entries.Count(entry => entry == "PowerShell(dydo clean:*)"));
+        Assert.Contains("Bash(dydo:*)", entries);
+    }
+
+    [Theory]
+    [InlineData("codex")]
+    [InlineData("all")]
+    public async Task Init_Codex_WritesTheDydoCleanExecPolicyRule(string integration)
+    {
+        (await InitProjectAsync(integration)).AssertSuccess();
+
+        Assert.Equal(InitCommand.CodexRules, ReadFile(".codex/rules/dydo.rules"));
+        Assert.Contains("pattern = [\"dydo\", \"clean\"]", InitCommand.CodexRules);
+        Assert.Contains("decision = \"allow\"", InitCommand.CodexRules);
+    }
+
+    [Fact]
+    public async Task Join_Codex_RestoresTheDydoCleanRuleIdempotently()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        (await JoinProjectAsync("codex")).AssertSuccess();
+        WriteFile(".codex/rules/dydo.rules", "stale\n");
+
+        (await JoinProjectAsync("codex")).AssertSuccess();
+        (await JoinProjectAsync("codex")).AssertSuccess();
+
+        Assert.Equal(InitCommand.CodexRules, ReadFile(".codex/rules/dydo.rules"));
+    }
+
+    [Fact]
+    public async Task Init_Claude_WritesNoCodexRule()
+    {
+        (await InitProjectAsync("claude")).AssertSuccess();
+
+        AssertFileNotExists(".codex/rules/dydo.rules");
+    }
+
+    [Fact]
     public async Task Init_Claude_CreatesAllowArrayWhenMissing()
     {
         Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));

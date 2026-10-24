@@ -25,4 +25,8 @@ public class DydoConfig
     [JsonPropertyName("testing")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public TestingConfig? Testing { get; set; }
+
+    [JsonPropertyName("clean")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public CleanConfig? Clean { get; set; }
 }

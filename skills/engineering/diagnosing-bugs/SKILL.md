@@ -72,7 +72,8 @@ debugging superpower.
 
 The goal is not a clean repro but a **higher reproduction rate**. Loop the trigger 100×, parallelise,
 add stress, narrow timing windows, inject sleeps. A 50%-flake bug is debuggable; 1% is not, so keep
-raising the rate until it's debuggable.
+raising the rate until it's debuggable. The machine is shared: force a race with fake timers or a
+forced interleaving, never CPU load; any load you add stays small and cleans up after itself.
 
 ### When you genuinely cannot build a loop
 

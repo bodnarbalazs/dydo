@@ -41,7 +41,8 @@ hop is `implement`, `fix` after a FAIL, or `merge`; proof-only commits `<KEY> pr
 ## Bug or Feature
 
 - **Bug** ([bug](resources/bug.md)): a red reproduction, then the fix; revert it, watch the
-  reproduction fail, restore.
+  reproduction fail, restore. The machine is shared: force a race with fake timers or a forced
+  interleaving, never CPU load; any load you add stays small and cleans up after itself.
 - **Feature**: before code, turn each acceptance line into a named test case, empty bodies allowed.
   Write code and tests together. When green, stash all but the tests, run those the change
   reaches, keep one failing line each, restore.

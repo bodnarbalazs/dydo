@@ -183,14 +183,17 @@ dydo has no OpenCode init mode.
 |---|---|
 | `dydo init <integration>` | Initialize for `claude`, `codex`, `all`, or `none` |
 | `dydo init <integration> --join` | Wire another host or machine into an existing project |
+| `dydo adopt <version>` | Record the dydo release the project adopted (`dydoVersion` in `dydo.json`) |
 | `dydo check [path]` | Validate documentation |
 | `dydo fix [path]` | Apply supported documentation repairs |
-| `dydo index [path]` | Regenerate documentation indexes |
+| `dydo index [path]` | Overwrite `index.md` with a fixed navigation page |
 | `dydo graph <file>` | Show document graph connections |
 | `dydo graph stats [--top N]` | Rank documents by incoming links |
 | `dydo guard` | Evaluate one tool call against the hook rules and nudges (run by the hooks) |
 | `dydo validate` | Validate local configuration and nudges |
 | `dydo gap-check [args]` | Run the test runner configured in `dydo.json`, passing the arguments through |
+| `dydo mode show` / `dydo mode set <flag> <value>` | List or set this machine's mode flags (`overnight`) |
+| `dydo clean [<worktree>...] [--all]` | Remove linked worktrees, archiving their uncommitted work first (`--dry-run` previews) |
 | `dydo map [--no-browser]` | Serve a read-only map of a Linear Project on localhost (needs `LINEAR_API_KEY`) |
 | `dydo completions <shell>` | Print a completion script for `bash`, `zsh`, or `powershell` |
 | `dydo version` | Print the version |

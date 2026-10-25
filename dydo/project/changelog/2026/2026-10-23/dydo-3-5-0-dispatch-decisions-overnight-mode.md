@@ -8,13 +8,14 @@ date: 2026-10-23
 
 ## Summary
 
-Minor release adding overnight mode (a machine mode flag, a `dydo mode` command and a guard nudge
-on it), a decision skill that answers "what would balazs do", `dydo clean` for removing worktrees
-without losing work, a dispatch channel rule, formal verification skills, and a rule that wizards
-never carry decisions. `AGENTS.md` becomes the only entry file, "ticket" and "the user" become the
-preferred terms (`issue-captain` and `to-issue` are renamed), officers dispatch crew as children,
-and seven productivity skills become model-invoked. It removes the no-op Stop hook, the dead dydo 2
-audit trail and comments that only restated the code. Existing checkouts must rerun
+Minor release adding overnight mode (a machine mode flag, a `dydo mode` command and a guard nudge on
+it), a decision skill that answers "what would balazs do", `dydo clean` for removing worktrees
+without losing work, an `update-dydo` skill with `dydo adopt` to record the adopted release, a
+dispatch channel rule, formal verification skills, and a rule that wizards never carry decisions.
+`AGENTS.md` becomes the only entry file, "ticket" and "the user" become the preferred terms
+(`issue-captain` and `to-issue` are renamed), officers dispatch crew as children, and seven
+productivity skills become model-invoked. It removes the no-op Stop hook, the dead dydo 2 audit
+trail and comments that only restated the code. Existing checkouts must rerun
 `dydo init <host> --join`; see Upgrade steps.
 
 ## Added
@@ -62,6 +63,17 @@ audit trail and comments that only restated the code. Existing checkouts must re
 - The `create-formal-verification-skill` and `maintain-formal-verification-skill` skills
   (DYD-344), adapted from the cursor/plugins pstack at 5dba0b8d (MIT), registered in the skill
   READMEs, the control-flow table, the glossary and the third-party notices.
+- The `update-dydo` skill (DYD-360, PR #171) updates an installed dydo project to the latest
+  release and keeps the project's own edits. Run in the user's own top-level session, it updates
+  the CLI, applies each release entry's Upgrade steps, merges `skills/`, `setup-skills.mjs`,
+  `THIRD-PARTY-NOTICES.md`, `Scaffold/dydo/` and the entry point three-way, rewires the hosts,
+  proves the update took effect and records the new version. It does not install dydo into a
+  project that lacks it.
+- The `dydoVersion` field in `dydo.json` and `dydo adopt <version>` (DYD-360, PR #171).
+  `dydoVersion` names the release whose skills and documents the project adopted. A fresh
+  `dydo init` writes it, `--join` leaves it alone, and `dydo adopt 3.5.0` (or `v3.5.0`) sets it.
+  Only the top-level session may run `dydo adopt`. Each release entry now carries an Upgrade steps
+  section, which the skill reads.
 - A proposal for an overnight chief of staff, recorded in PR #153 and now marked `promoted` into
   the shipped overnight mode above (DYD-351).
 
@@ -69,10 +81,12 @@ audit trail and comments that only restated the code. Existing checkouts must re
 
 - `AGENTS.md` is the only entry file (DYD-368, PR #167). `dydo init` writes it in every mode and
   no longer writes `CLAUDE.md`; Claude Code 2.1.281 or later reads `AGENTS.md`. With `claude` or
-  `all`, `dydo init` and `--join` remove a `CLAUDE.md` that is dydo's own generated copy, one equal
-  to `AGENTS.md` or to the entry template. A `CLAUDE.md` the user wrote is kept, with a warning
-  that it hides `AGENTS.md`; `CLAUDE.local.md` and `.claude/CLAUDE.md` are never removed and each
-  gets its own warning.
+  `all`, `dydo init` and `--join` remove a `CLAUDE.md` that is dydo's own generated copy: one equal
+  to `AGENTS.md` or to the entry template, or one an older dydo release generated (DYD-372,
+  PR #170), recognised by its text below the title line, so a copy titled with another folder
+  name is removed too. A `CLAUDE.md` the user wrote is kept, with a warning that it hides
+  `AGENTS.md`; `CLAUDE.local.md` and `.claude/CLAUDE.md` are never removed and each gets its own
+  warning.
 - "Ticket" is the preferred term for Linear's Issue (DYD-361, PR #162). The `issue-captain` skill
   is now `ticket-captain` and `to-issue` is now `to-ticket`. The glossary is the one place that
   pairs the two words. The map viewer says "tickets" and "sub-ticket(s)", and future-feature
@@ -115,6 +129,13 @@ audit trail and comments that only restated the code. Existing checkouts must re
 - The decision-record hub states when to write a record (all three of hard to reverse, surprising
   without context, a real trade-off) and documents the `ratification: pending` frontmatter for a
   `proposed` record a tribunal decided while the user was away (DYD-350).
+- `diagnosing-bugs` and `code-writer` treat the machine as shared: a race is forced with fake
+  timers or a forced interleaving, never with synthetic CPU load, and any load a reproduction adds
+  stays small and cleans up after itself.
+- The `README.md` Commands table lists `dydo adopt`, `dydo mode` and `dydo clean`, and it and
+  `files-off-limits.md` say that `dydo index` overwrites `dydo/index.md` with a fixed navigation
+  page. The guard-system page names `adopt` among the top-level-only commands.
+- Fixed: the viewer's App refresh-in-place tests are deterministic (DYD-364).
 - Align runtime and npm versions to 3.5.0 and permit publication only on the exact v3.5.0 tag.
 
 ## Removed
@@ -164,29 +185,32 @@ audit trail and comments that only restated the code. Existing checkouts must re
 
 ## Files Changed
 
-`Commands/` (`ModeCommand.cs`, `CleanCommand.cs`, `GuardCommand.ModeSet.cs`, `GuardCommand.cs`,
-`GuardCommand.Refusal.cs`, `InitCommand.cs`, `HelpCommand.cs`, and comments in the check, fix and
-graph handlers), `Models/` (`HookInput.cs`, `CleanConfig.cs`, `DydoConfig.cs`, comments elsewhere),
-`Program.cs`, `Rules/` (`FutureFeatureRule.cs`, `OffLimitsRule.cs`), `Serialization/`,
-`Services/` (`ModeState.cs`, `ShellReader.cs`, `DydoInvocationScanner.cs`, `ConfigFactory.cs`,
-`ConfigService.cs`, `IConfigService.cs`, `BashCommandAnalyzer.cs`, `CompletionProvider.cs`,
-`ScaffoldTree.cs`, the `dydo clean` services `WorktreeCleaner.cs`, `MergedBranchJudge.cs`,
-`CleanArchive.cs`, `ArchivePlan.cs`, `ArchiveLink.cs`, `LinkSafeDelete.cs`, `GitRunner.cs`,
-`GitResult.cs`, `SubmoduleWork.cs`, `WorktreeEntry.cs`, `WorktreeProcessProbe.cs`,
-`ProbeStrandedException.cs`, `Map/`, comments elsewhere), `Utils/` (comments),
-`Scaffold/entry-point.md`, `Scaffold/dydo/` (guides, reference, understand, glossary, project
-hubs, files-off-limits), `AGENTS.md`, `CLAUDE.md` (removed), `README.md`, `npm/README.md`, `dydo/index.md`,
-`dydo/glossary.md`, `dydo/files-off-limits.md`, `dydo/guides/`, `dydo/reference/`,
-`dydo/understand/`, `dydo/project/decisions/054-what-would-balazs-do-tribunal.md`,
+`Commands/` (`ModeCommand.cs`, `CleanCommand.cs`, `AdoptCommand.cs`, `ReleasedEntryPoints.cs`,
+`GuardCommand.ModeSet.cs`, `GuardCommand.cs`, `GuardCommand.Refusal.cs`, `InitCommand.cs`,
+`HelpCommand.cs`, and comments in the check, fix and graph handlers), `Models/` (`HookInput.cs`,
+`CleanConfig.cs`, `DydoConfig.cs`, comments elsewhere), `Program.cs`, `Rules/`
+(`FutureFeatureRule.cs`, `OffLimitsRule.cs`), `Serialization/`, `Services/` (`ModeState.cs`,
+`ShellReader.cs`, `DydoInvocationScanner.cs`, `ConfigFactory.cs`, `ConfigService.cs`,
+`IConfigService.cs`, `BashCommandAnalyzer.cs`, `CompletionProvider.cs`, `ScaffoldTree.cs`, the
+`dydo clean` services `WorktreeCleaner.cs`, `MergedBranchJudge.cs`, `CleanArchive.cs`, `ArchivePlan.cs`,
+`ArchiveLink.cs`, `LinkSafeDelete.cs`, `GitRunner.cs`, `GitResult.cs`, `SubmoduleWork.cs`,
+`WorktreeEntry.cs`, `WorktreeProcessProbe.cs`, `ProbeStrandedException.cs`, `Map/`, comments
+elsewhere), `Utils/` (`DydoVersion.cs`, comments), `Scaffold/entry-point.md`, `Scaffold/dydo/`
+(guides, reference, understand, glossary, project hubs, files-off-limits), `AGENTS.md`, `CLAUDE.md`
+(removed), `README.md`, `npm/README.md`, `dydo/index.md`, `dydo/glossary.md`,
+`dydo/files-off-limits.md`, `dydo/guides/`, `dydo/reference/`, `dydo/understand/`,
+`dydo/project/decisions/054-what-would-balazs-do-tribunal.md`,
 `dydo/project/decisions/_decisions.md`, `dydo/project/future-features/`, `dydo/_system/audit/`
 (removed), `dydo.json`, `.codex/hooks.json`, `.codex/rules/`, `skills/` (overnight-mode,
-what-would-balazs-do, the two formal verification skills, wizard, the seven model-invoked
-productivity skills, to-ticket (was to-issue), wayfinder, admiral, ticket-captain (was
-issue-captain), chief-of-staff, engineering skills, READMEs), `setup-skills.mjs`,
-`THIRD-PARTY-NOTICES.md`, `npm/THIRD-PARTY-NOTICES.md`, `npm/` (`install.js`, `bin/`, `lib/`
-comments), `viewer/src/`, `DynaDocs.csproj`, `npm/package.json`, `.github/workflows/release.yml`,
-`DynaDocs.Tests/` (mode command, mode state, invocation scanner in
-`Services/DydoInvocationScannerTests.cs`, guard mode-set and worker lane, clean command, init,
+update-dydo, what-would-balazs-do, the two formal verification skills, wizard, the seven
+model-invoked productivity skills, to-ticket (was to-issue), wayfinder, admiral, ticket-captain (was
+issue-captain), chief-of-staff, code-writer, engineering skills including diagnosing-bugs, READMEs),
+`setup-skills.mjs`, `THIRD-PARTY-NOTICES.md`, `npm/THIRD-PARTY-NOTICES.md`, `npm/` (`install.js`,
+`bin/`, `lib/` comments), `viewer/src/`, `DynaDocs.csproj`, `npm/package.json`,
+`.github/workflows/release.yml`, `DynaDocs.Tests/` (adopt command in
+`Integration/AdoptCommandTests.cs`, `Utils/DydoVersionTests.cs`, released CLAUDE.md texts in
+`Integration/ReleasedEntryTexts.cs`, help, completion, mode command, mode state, invocation scanner
+in `Services/DydoInvocationScannerTests.cs`, guard mode-set and worker lane, clean command, init,
 fix, check, validate, config, doc scanner, off-limits, command smoke, entry-point parity, the
 `machine-mode.feature` scenarios and steps, canonical skill assertions and steps, host canaries,
 coverage associations and `coverage/run_tests.py`, the removed audit-large fixtures, and comment

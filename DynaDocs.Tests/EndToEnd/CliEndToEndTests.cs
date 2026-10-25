@@ -73,6 +73,7 @@ public class CliEndToEndTests : IDisposable
 
     [Theory]
     [InlineData("init")]
+    [InlineData("adopt")]
     [InlineData("check")]
     [InlineData("guard")]
     [InlineData("task")]
@@ -105,6 +106,17 @@ public class CliEndToEndTests : IDisposable
             "dydo.json was not created");
         Assert.True(Directory.Exists(Path.Combine(_testDir, "dydo")),
             "dydo/ directory was not created");
+    }
+
+    [Fact]
+    public async Task Init_RecordsTheVersionTheCliReports()
+    {
+        var initResult = await RunDydoAsync("init none");
+        Assert.True(initResult.ExitCode == 0, $"init failed: {initResult.Stderr}");
+        var version = await RunDydoAsync("version");
+
+        var config = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(_testDir, "dydo.json")))!;
+        Assert.Equal(version.Stdout.Trim(), $"dydo version {config["dydoVersion"]!.GetValue<string>()}");
     }
 
     [Fact]

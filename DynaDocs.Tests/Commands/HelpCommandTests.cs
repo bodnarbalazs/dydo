@@ -23,6 +23,7 @@ public class HelpCommandTests
         Assert.Contains("check", output);
         Assert.Contains("fix", output);
         Assert.Contains("init", output);
+        Assert.Contains("  adopt <version>", output);
         Assert.Contains("index", output);
         Assert.Contains("graph", output);
         Assert.Contains("guard", output);

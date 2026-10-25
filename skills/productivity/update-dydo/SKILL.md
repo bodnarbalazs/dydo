@@ -83,9 +83,7 @@ steps 7 and 8 are the heart of it.
      names `issue-captain`);
    - `dydo check` exits 0; warnings are fine.
 
-   Then set `dydoVersion` in `dydo.json` to the new tag without its `v`, as a one-line edit:
-   change the existing line, or insert `"dydoVersion": "<new>",` after the `"version"` line.
-   Leave the rest of the file as it is.
+   Then run `dydo adopt <new>` to record the new version as `dydoVersion` in `dydo.json`.
 9. **Report** to the user: old, new and CLI versions; files taken from upstream; files merged with
    both sides' edits; renamed skills moved; files left for them to decide; upgrade steps applied;
    the step 8 output. Add two notes:

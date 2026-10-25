@@ -27,6 +27,7 @@ rootCommand.Subcommands.Add(CheckCommand.Create());
 rootCommand.Subcommands.Add(FixCommand.Create());
 rootCommand.Subcommands.Add(IndexCommand.Create());
 rootCommand.Subcommands.Add(InitCommand.Create());
+rootCommand.Subcommands.Add(AdoptCommand.Create());
 rootCommand.Subcommands.Add(GraphCommand.Create());
 rootCommand.Subcommands.Add(GuardCommand.Create());
 rootCommand.Subcommands.Add(CompletionsCommand.Create());

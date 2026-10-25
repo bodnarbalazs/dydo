@@ -450,7 +450,7 @@ public static partial class GuardCommand
             Console.Error.WriteLine("BLOCKED: Sub-agents may run only these dydo commands: "
                 + string.Join(", ", WorkerAllowedDydoSubcommands) + " (plus -h/--help/--version).");
             Console.Error.WriteLine($"  Not allowed here: dydo {workerBlocked}");
-            Console.Error.WriteLine("  Setup, generation and hook commands (init, index, guard, map, completions, _complete)");
+            Console.Error.WriteLine("  Setup, generation and hook commands (init, adopt, index, guard, map, completions, _complete)");
             Console.Error.WriteLine("  belong to the top-level session that spawned you.");
             return ExitCodes.ToolError;
         }

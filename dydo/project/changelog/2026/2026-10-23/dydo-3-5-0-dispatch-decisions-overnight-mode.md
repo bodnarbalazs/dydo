@@ -46,7 +46,8 @@ audit trail.
   release with a three-way merge that keeps the project's edits, applies each release's upgrade
   steps, activates the result and proves it took effect.
 - A `dydoVersion` field in `dydo.json` (DYD-360): the dydo release the project has adopted. A
-  fresh `dydo init` writes it, `--join` leaves it alone, and `update-dydo` sets it after an update.
+  fresh `dydo init` writes it, `--join` leaves it alone, and the new `dydo adopt <version>` sets it;
+  `update-dydo` runs it after an update.
 
 ## Changed
 
@@ -90,13 +91,13 @@ audit trail.
    so is any dydo copy when Claude is not wired. Keep a user-written one and put `@AGENTS.md` at
    its top (`@../AGENTS.md` in `.claude/CLAUDE.md`).
 6. Run `node setup-skills.mjs` from the project root.
-7. Set `dydoVersion` in `dydo.json` to `3.5.0`.
+7. Run `dydo adopt 3.5.0`.
 
 ## Files Changed
 
 `Commands/` (`ModeCommand.cs`, `GuardCommand.ModeSet.cs`, `GuardCommand.cs`,
-`GuardCommand.Refusal.cs`, `InitCommand.cs`, `HelpCommand.cs`), `Models/HookInput.cs`, `Program.cs`,
-`Services/` (`ModeState.cs`, `ShellReader.cs`, `DydoInvocationScanner.cs`, `ConfigFactory.cs`,
+`GuardCommand.Refusal.cs`, `InitCommand.cs`, `AdoptCommand.cs`, `HelpCommand.cs`), `Models/HookInput.cs`, `Program.cs`,
+`Services/` (`CompletionProvider.cs`, `ModeState.cs`, `ShellReader.cs`, `DydoInvocationScanner.cs`, `ConfigFactory.cs`,
 `ConfigService.cs`, `IConfigService.cs`), `Scaffold/dydo/` (guides, reference, decisions hub),
 `dydo/guides/`, `dydo/reference/`, `dydo/understand/control-flow.md`,
 `dydo/project/decisions/054-what-would-balazs-do-tribunal.md`,

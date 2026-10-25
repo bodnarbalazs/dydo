@@ -30,7 +30,8 @@ Judge one candidate; corrections and status are the invoker's. Your independence
    item it asks of you.
 2. **Pin the contract and the candidate.** The contract as the brief pins it, the candidate at its
    SHA, the base SHA. Check the `IMPLEMENTED` line against them; rerun its proof only on a doubt you
-   state. Done when another reviewer could open the same contract and candidate.
+   state. A probe that edits files runs in your own detached worktree at the candidate SHA, removed
+   after. Done when another reviewer could open the same contract and candidate.
 3. **Work the rubric section by section.** Each item ends verified against the source or as a
    finding, whatever the size of the diff; a clean section never covers another section's finding.
 4. **Take the gates at this stage's scale.** Judging a `code-writer` hop, weigh the run it

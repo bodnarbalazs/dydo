@@ -11,7 +11,9 @@ date: 2026-10-23
 Minor release adding overnight mode (a machine mode flag, a `dydo mode` command and a guard nudge on
 it), a decision skill that answers "what would balazs do", `dydo clean` for removing worktrees
 without losing work, an `update-dydo` skill with `dydo adopt` to record the adopted release, a
-dispatch channel rule, formal verification skills, and a rule that wizards never carry decisions.
+dispatch channel rule, formal verification skills, a rule that wizards never carry decisions,
+`dydo pr-ready` with a guard refusal on opening a PR from unpushed work, and a soft notice for new
+Markdown outside `dydo/`.
 `AGENTS.md` becomes the only entry file, "ticket" and "the user" become the preferred terms
 (`issue-captain` and `to-issue` are renamed), officers dispatch crew as children, and seven
 productivity skills become model-invoked. It removes the no-op Stop hook, the dead dydo 2 audit
@@ -74,6 +76,18 @@ trail and comments that only restated the code. Existing checkouts must rerun
   `dydo init` writes it, `--join` leaves it alone, and `dydo adopt 3.5.0` (or `v3.5.0`) sets it.
   Only the top-level session may run `dydo adopt`. Each release entry now carries an Upgrade steps
   section, which the skill reads.
+- `dydo pr-ready [<path>] [--body <file>]` (DYD-374, PR #176) checks that the tree has no staged,
+  unstaged or untracked files and that HEAD equals its upstream; with `--body`, that the PR body
+  names a ticket key and has an `## Independent review` section holding a `PASS - ` block. It exits
+  1 listing every problem, otherwise prints `ready:`. It is on the sub-agent allow-list.
+- A soft notice for new Markdown outside the dydo tree (DYD-375, PR #175). A write tool creating a
+  new `.md` there gets "NOTICE: Docs usually live under `dydo/`. If this is a pointer README, or it
+  belongs here, carry on." and is never blocked. The root `README.md`, `CLAUDE.md`, `AGENTS.md`,
+  `CHANGELOG.md` and `THIRD-PARTY-NOTICES.md`, and anything under the root `dydo/`, `skills/`,
+  `.claude/`, `.agents/`, `.codex/` and `.github/`, get no notice; editing an existing file never
+  fires it. It is a new-file nudge with severity `notice` in the `dydo.json` defaults: `dydo init`
+  includes it, and `dydo adopt` adds it once, if missing, when crossing to 3.5.0 (a recorded
+  `dydoVersion` below 3.5.0 or none), so a later edit or removal stands. `--join` is unchanged.
 - A proposal for an overnight chief of staff, recorded in PR #153 and now marked `promoted` into
   the shipped overnight mode above (DYD-351).
 
@@ -135,7 +149,25 @@ trail and comments that only restated the code. Existing checkouts must rerun
 - The `README.md` Commands table lists `dydo adopt`, `dydo mode` and `dydo clean`, and it and
   `files-off-limits.md` say that `dydo index` overwrites `dydo/index.md` with a fixed navigation
   page. The guard-system page names `adopt` among the top-level-only commands.
+- The guard refuses `gh pr create`, `gh pr new` and `gh pr ready` from a tree whose work is not
+  committed and pushed (DYD-374, PR #176). It runs the tree half of `dydo pr-ready` on the
+  payload's working directory or the project root, and its deny decision points to
+  `dydo pr-ready`. It stops accidents: wrappers, `eval`, aliases and `gh -R x pr` are accepted
+  misses. The `pr` and `ticket-captain` skills each say to write the PR body outside the tree and
+  run `dydo pr-ready --body <file>` before opening the PR. The guard's shared command splitting
+  now treats a backslash inside single quotes as literal.
+- A README outside `dydo/` only points to the dydo doc that owns its folder (DYD-375, PR #175): the
+  convention is in both coding-standards copies and the `docs-writer` skill.
+- Reviewers run file-editing probes in their own detached worktree at the candidate SHA, removed
+  after, and the ticket captain seats parallel reviewers in separate worktrees when either may run
+  probes (DYD-380).
 - Fixed: the viewer's App refresh-in-place tests are deterministic (DYD-364).
+- Fixed: the `dydo clean` dry-run test compares the git object set instead of counting files under
+  `.git/objects`, and test repositories disable auto maintenance, so `git maintenance run --auto`
+  holding `maintenance.lock` no longer flakes it on Linux (DYD-376, PR #174).
+- Fixed: the viewer fitting tests wait on React Flow's public `onMoveEnd` instead of spying on the
+  App's internal `ProjectVisit.prototype.ready`; the `:841` mismatch was a source edit in a shared
+  reviewer worktree, not a race (DYD-377, PR #177).
 - Align runtime and npm versions to 3.5.0 and permit publication only on the exact v3.5.0 tag.
 
 ## Removed
@@ -183,42 +215,45 @@ trail and comments that only restated the code. Existing checkouts must rerun
 9. Re-trust the Codex hooks. Codex pins hook trust by hash and `.codex/hooks.json` changed, so an
    untrusted hook leaves Codex sessions unguarded.
 10. Run `node setup-skills.mjs` from the project root.
-11. Run `dydo adopt 3.5.0`.
+11. Run `dydo adopt 3.5.0`. It also adds the new-file nudge for Markdown outside `dydo/` to
+    `dydo.json` when missing (DYD-375).
 
 ## Files Changed
 
-`Commands/` (`ModeCommand.cs`, `CleanCommand.cs`, `AdoptCommand.cs`, `ReleasedEntryPoints.cs`,
-`GuardCommand.ModeSet.cs`, `GuardCommand.cs`, `GuardCommand.Refusal.cs`, `InitCommand.cs`,
-`HelpCommand.cs`, and comments in the check, fix and graph handlers), `Models/` (`HookInput.cs`,
-`CleanConfig.cs`, `DydoConfig.cs`, comments elsewhere), `Program.cs`, `Rules/`
-(`FutureFeatureRule.cs`, `OffLimitsRule.cs`), `Serialization/`, `Services/` (`ModeState.cs`,
-`ShellReader.cs`, `DydoInvocationScanner.cs`, `ConfigFactory.cs`, `ConfigService.cs`,
-`IConfigService.cs`, `BashCommandAnalyzer.cs`, `CompletionProvider.cs`, `ScaffoldTree.cs`, the
-`dydo clean` services `WorktreeCleaner.cs`, `MergedBranchJudge.cs`, `CleanArchive.cs`, `ArchivePlan.cs`,
-`ArchiveLink.cs`, `LinkSafeDelete.cs`, `GitRunner.cs`, `GitResult.cs`, `SubmoduleWork.cs`,
-`WorktreeEntry.cs`, `WorktreeProcessProbe.cs`, `ProbeStrandedException.cs`, `Map/`, comments
-elsewhere), `Utils/` (`DydoVersion.cs`, comments), `Scaffold/entry-point.md`, `Scaffold/dydo/`
-(guides, reference, understand, glossary, project hubs, files-off-limits), `AGENTS.md`, `CLAUDE.md`
-(removed), `README.md`, `npm/README.md`, `dydo/index.md`, `dydo/glossary.md`,
-`dydo/files-off-limits.md`, `dydo/guides/`, `dydo/reference/`, `dydo/understand/`,
-`dydo/project/decisions/054-what-would-balazs-do-tribunal.md`,
+`Commands/` (`ModeCommand.cs`, `CleanCommand.cs`, `AdoptCommand.cs`, `PrReadyCommand.cs`,
+`ReleasedEntryPoints.cs`, `GuardCommand.ModeSet.cs`, `GuardCommand.PrReady.cs`, `GuardCommand.cs`,
+`GuardCommand.Refusal.cs`, `InitCommand.cs`, `HelpCommand.cs`, and comments in the check, fix and
+graph handlers), `Models/` (`HookInput.cs`, `CleanConfig.cs`, `DydoConfig.cs`, comments elsewhere),
+`Program.cs`, `Rules/` (`FutureFeatureRule.cs`, `OffLimitsRule.cs`), `Serialization/`, `Services/`
+(`ModeState.cs`, `ShellReader.cs`, `DydoInvocationScanner.cs`, `PrReadyCheck.cs`,
+`ConfigFactory.cs`, `ConfigService.cs`, `IConfigService.cs`, `BashCommandAnalyzer.cs`,
+`CompletionProvider.cs`, `ScaffoldTree.cs`, the `dydo clean` services `WorktreeCleaner.cs`,
+`MergedBranchJudge.cs`, `CleanArchive.cs`, `ArchivePlan.cs`, `ArchiveLink.cs`, `LinkSafeDelete.cs`,
+`GitRunner.cs`, `GitResult.cs`, `SubmoduleWork.cs`, `WorktreeEntry.cs`, `WorktreeProcessProbe.cs`,
+`ProbeStrandedException.cs`, `Map/`, comments elsewhere), `Utils/` (`DydoVersion.cs`, comments),
+`Scaffold/entry-point.md`, `Scaffold/dydo/` (guides, reference, understand, glossary, project hubs,
+files-off-limits), `AGENTS.md`, `CLAUDE.md` (removed), `README.md`, `npm/README.md`,
+`dydo/index.md`, `dydo/glossary.md`, `dydo/files-off-limits.md`, `dydo/guides/`, `dydo/reference/`,
+`dydo/understand/`, `dydo/project/decisions/054-what-would-balazs-do-tribunal.md`,
 `dydo/project/decisions/_decisions.md`, `dydo/project/future-features/`, `dydo/_system/audit/`
 (removed), `dydo.json`, `.codex/hooks.json`, `.codex/rules/`, `skills/` (overnight-mode,
 update-dydo, what-would-balazs-do, the two formal verification skills, wizard, the seven
 model-invoked productivity skills, to-ticket (was to-issue), wayfinder, admiral, ticket-captain (was
-issue-captain), chief-of-staff, code-writer, engineering skills including diagnosing-bugs, READMEs),
-`setup-skills.mjs`, `THIRD-PARTY-NOTICES.md`, `npm/THIRD-PARTY-NOTICES.md`, `npm/` (`install.js`,
-`bin/`, `lib/` comments), `viewer/src/`, `DynaDocs.csproj`, `npm/package.json`,
+issue-captain), reviewer, docs-writer, chief-of-staff, code-writer, engineering skills including
+diagnosing-bugs and pr, READMEs), `setup-skills.mjs`, `THIRD-PARTY-NOTICES.md`,
+`npm/THIRD-PARTY-NOTICES.md`, `npm/` (`install.js`, `bin/`, `lib/` comments), `viewer/src/`
+(including `app/App.test.tsx`), `DynaDocs.csproj`, `npm/package.json`,
 `.github/workflows/release.yml`, `DynaDocs.Tests/` (adopt command in
 `Integration/AdoptCommandTests.cs`, `Utils/DydoVersionTests.cs`, released CLAUDE.md texts in
 `Integration/ReleasedEntryTexts.cs`, help, completion, mode command, mode state, invocation scanner
-in `Services/DydoInvocationScannerTests.cs`, guard mode-set and worker lane, clean command, init,
-fix, check, validate, config, doc scanner, off-limits, command smoke, entry-point parity, the
-`machine-mode.feature` scenarios and steps, canonical skill assertions and steps, host canaries,
-coverage associations and `coverage/run_tests.py`, the removed audit-large fixtures, and comment
-removals across the suite), `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`,
-`DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs`, `npm/test/install.test.cjs`, this entry and its
-changelog hub.
+in `Services/DydoInvocationScannerTests.cs`, guard mode-set, worker lane and PR-ready, pr-ready
+command and `Integration/PushedRepository.cs`, new-file nudge (command and integration), clean
+command, init, fix, check, validate, config and config factory, doc scanner, off-limits, command
+smoke, entry-point parity, the `machine-mode.feature` scenarios and steps, canonical skill
+assertions and steps, host canaries, coverage associations and `coverage/run_tests.py`, the removed
+audit-large fixtures, and comment removals across the suite),
+`DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`, `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs`,
+`npm/test/install.test.cjs`, this entry and its changelog hub.
 
 ## Related
 

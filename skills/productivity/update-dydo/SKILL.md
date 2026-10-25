@@ -44,9 +44,12 @@ steps 7 and 8 are the heart of it.
    The entry file: ours is the one of `AGENTS.md` and `CLAUDE.md` that derives from the old
    rendered entry point, keeping its first heading and most of its lines. Before 3.5.0 a
    Claude-only project had only `CLAUDE.md`. Both derive: merge `AGENTS.md`, then merge
-   `CLAUDE.md`'s edits into that result the same way. The result goes to `AGENTS.md`. Neither
-   derives: `AGENTS.md` is a new upstream file, rendered fresh, and a `CLAUDE.md` is the user's,
-   for step 6. Render both tags' entry points as dydo does, trailing newlines trimmed, with
+   `CLAUDE.md`'s edits into that result the same way. Neither derives: the result is the new entry
+   point, rendered fresh. Write the result to `AGENTS.md`. An `AGENTS.md` that does not derive is
+   the user's: put the result at its top, keep their text below it, and list the file for the
+   user; when their text already covers the entry point, ask the user instead. `dydo init --join`
+   leaves an existing `AGENTS.md` as it is, without a word. A `CLAUDE.md` that does not derive is
+   the user's, for step 6. Render both tags' entry points as dydo does, trailing newlines trimmed, with
    `{{PROJECT_NAME}}` set to the name in ours' first heading, or the folder name with no ours. dydo
    wrote the folder name there at init; the folder may have been renamed or cloned since.
 

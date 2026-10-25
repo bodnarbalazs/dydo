@@ -36,7 +36,7 @@ Use this template for writing the PR body:
 <reviewer PASS block, verbatim>
 ```
 
-Name the ticket in the body, then run `dydo pr-ready --body <file>` before opening or readying the PR, and fix what it reports.
+Write the body, naming the ticket, to a file outside the tree; run `dydo pr-ready --body <file>` before opening or readying the PR, and fix what it reports.
 
 ## Sections
 

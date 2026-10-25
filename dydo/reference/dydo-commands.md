@@ -388,14 +388,14 @@ Check that a tree is fit to open or ready a PR from. A PR shows the branch as th
 so uncommitted or unpushed work is not in it.
 
 ```bash
-dydo pr-ready                     # check the current directory's tree
-dydo pr-ready <path>              # check another tree
-dydo pr-ready --body pr-body.md   # also check the PR body file
+dydo pr-ready                          # check the current directory's tree
+dydo pr-ready <path>                   # check another tree
+dydo pr-ready --body /tmp/pr-body.md   # also check a PR body kept outside the tree
 ```
 
 The tree must have no staged, unstaged or untracked files git does not ignore, and HEAD must have
 an upstream and equal it. The upstream is read from the local remote-tracking ref; nothing is
-fetched. With `--body`, the body must name a ticket key (such as `DYD-123`) and hold a
+fetched. Keep the body file outside the tree, where it is not an untracked file. With `--body`, the body must name a ticket key (such as `DYD-123`) and hold a
 `## Independent review` section with the reviewer's `PASS - rubric/type: ...` block, fenced or not.
 Each problem prints as one `not ready:` line on stderr and the exit is `1`; a path outside a git
 work tree is a problem too. When all hold, it prints one `ready:` line and exits `0`. The guard

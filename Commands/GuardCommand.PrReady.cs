@@ -8,13 +8,15 @@ using DynaDocs.Utils;
 /// The PR-ready rule (DYD-374): a PR shows the branch as the remote holds it, so a plain
 /// <c>gh pr create</c>, <c>gh pr new</c> or <c>gh pr ready</c> is refused while the tree is dirty or
 /// HEAD differs from its upstream. It stops an accident, not a deliberate bypass: wrapped, encoded
-/// or <c>-R</c>-redirected calls are not decoded. A directory outside git is not this rule's business.
+/// or <c>-R</c>-redirected calls are not decoded. The call must start a shell segment as the bash
+/// analyzer splits them, so a separator inside quoted text, such as a commit message, starts none. A
+/// directory outside git is not this rule's business.
 /// </summary>
 public static partial class GuardCommand
 {
     internal static int? CheckPrReady(string command, string? cwd, GuardEnv env)
     {
-        if (!PrOpenRegex().IsMatch(command))
+        if (!BashCommandAnalyzer.SplitCommand(command).Any(segment => PrOpenRegex().IsMatch(segment)))
             return null;
 
         var directory = cwd ?? env.ProjectRoot ?? Environment.CurrentDirectory;
@@ -32,6 +34,6 @@ public static partial class GuardCommand
         return ExitCodes.ToolError;
     }
 
-    [GeneratedRegex(@"(?:^|&&|;)\s*gh\s+pr\s+(?:create|new|ready)\b")]
+    [GeneratedRegex(@"^\s*gh\s+pr\s+(?:create|new|ready)\b")]
     private static partial Regex PrOpenRegex();
 }

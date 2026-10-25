@@ -68,6 +68,19 @@ public sealed class PrReadyCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task StagedRename_NamesOnlyTheNewPath()
+    {
+        Git(_tree, "mv", "readme.md", "renamed.md");
+
+        var (exit, _, stderr) = await PrReady(_tree);
+
+        Assert.Equal(1, exit);
+        var lines = stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        Assert.Equal(["not ready: staged changes: renamed.md"], lines);
+        Assert.DoesNotContain("dme.md", stderr.Replace("renamed.md", ""));
+    }
+
+    [Fact]
     public async Task IgnoredFile_DoesNotCount()
     {
         Directory.CreateDirectory(Path.Combine(_tree, "dydo", "agents"));

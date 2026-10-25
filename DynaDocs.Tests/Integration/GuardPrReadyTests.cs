@@ -102,6 +102,20 @@ public class GuardPrReadyTests : IntegrationTestBase
         result.AssertPreToolUseAllowed();
     }
 
+    [Theory]
+    [InlineData("git commit -m 'Document workflow; gh pr ready follows review'")]
+    [InlineData("git commit -m \"Document workflow && gh pr new follows review\"")]
+    public async Task PrCallInsideQuotedText_FromAStagedTree_IsAllowed(string command)
+    {
+        await InitPushedProject();
+        WriteFile("docs.md", "d\n");
+        Git(TestDir, "add", "docs.md");
+
+        var result = await GuardWithStdinAsync(Payload(command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
     [Fact]
     public async Task CodexPayloadWithoutCwd_ChecksTheProjectRoot()
     {

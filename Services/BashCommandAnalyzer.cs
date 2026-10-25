@@ -564,7 +564,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return true;
     }
 
-    private static IEnumerable<string> SplitCommand(string command)
+    internal static IEnumerable<string> SplitCommand(string command)
     {
         var parts = new List<string>();
         var current = new StringBuilder();

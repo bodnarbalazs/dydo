@@ -17,12 +17,14 @@ steps 7 and 8 are the heart of it.
    Read a file at a tag with `git show <tag>:<path>`.
 3. **Versions.**
    - New = the latest release tag: `gh release view -R bodnarbalazs/dydo --json tagName`. Without
-     a signed-in `gh`: the newest `v3.*` from `git ls-remote --tags https://github.com/bodnarbalazs/dydo`.
+     a signed-in `gh`: the newest `v*` release tag by version from
+     `git ls-remote --tags https://github.com/bodnarbalazs/dydo`, skipping pre-release tags (a `-`
+     after the version) and the peeled `^{}` refs.
    - CLI = `dydo version`. Older than new: tell the user, then update it with the tool that
      installed it: `npm install -g dydo` when `npm ls -g dydo` lists it, `dotnet tool update -g dydo`
      when `dotnet tool list -g` does. From here on `dydo` is the updated CLI.
    - Old = `dydoVersion` in `dydo.json`. Absent (every project before 3.5.0), guess it: for each
-     `v3.*` tag, count the files that differ, or exist on one side only, across `skills/` and
+     `v3.*` release tag (later projects record the field), count the files that differ, or exist on one side only, across `skills/` and
      `Scaffold/dydo/` against `dydo/`, line endings normalised. Fewest wins; a tie goes to the
      newer tag. Tell the user it is a guess.
    - Old equals new: tell the user the project is current, then still run steps 6 to 8.
@@ -34,9 +36,15 @@ steps 7 and 8 are the heart of it.
 5. **Merge**, file by file, three ways: base = old tag, ours = the project, theirs = new tag. The
    files are `skills/**`, `setup-skills.mjs`, `THIRD-PARTY-NOTICES.md`, upstream `Scaffold/dydo/**`
    against the project's `dydo/**`, and upstream `Scaffold/entry-point.md` against the project's
-   `AGENTS.md`. Render both tags' entry points as dydo does, trailing newlines trimmed, with
-   `{{PROJECT_NAME}}` set to the name in the project's `AGENTS.md` first heading. dydo wrote the
-   folder name there at init; the folder may have been renamed or cloned since.
+   entry file.
+
+   The entry file: ours is whichever of `AGENTS.md` and `CLAUDE.md` carries the project's edits to
+   the old entry point; with neither edited, whichever exists, `AGENTS.md` first. Before 3.5.0 a
+   Claude-only project had only `CLAUDE.md`. Both edited: merge `AGENTS.md`, then merge
+   `CLAUDE.md`'s edits into that result the same way. The result goes to `AGENTS.md`. Render both
+   tags' entry points as dydo does, trailing newlines trimmed, with `{{PROJECT_NAME}}` set to the
+   name in ours' first heading. dydo wrote the folder name there at init; the folder may have been
+   renamed or cloned since.
 
    Normalise line endings to LF before comparing or merging; a CRLF checkout against `git show`'s
    LF otherwise reads as an edit on every line. Write each result back with the project file's
@@ -54,11 +62,11 @@ steps 7 and 8 are the heart of it.
    - Remove directories the deletions leave empty.
    - A skill only the project has (its own `verify-<name>`, say): leave it alone.
    - A doc under `dydo/` that upstream never had: leave it alone.
-6. **CLAUDE.md.** `AGENTS.md` is the only entry file. Step 7's `dydo init claude --join` removes a
-   `CLAUDE.md` identical to `AGENTS.md` or to the new template, and warns about any other. Remove
-   now the dydo copies it cannot recognise: a `CLAUDE.md` matching the old tag's
-   `Scaffold/entry-point.md` (rendered as in step 5), or any dydo copy when `claude` is not wired.
-   A file the user wrote stays, with an import line at its top so Claude Code still reads
+6. **CLAUDE.md.** `AGENTS.md` is the only entry file. Step 7's `dydo init claude --join` removes
+   `CLAUDE.md` only when it equals the new `AGENTS.md` or the new template, and warns about any
+   other. Remove now the dydo copies it cannot recognise: a `CLAUDE.md` matching the old rendered
+   entry point, one whose edits step 5 merged into `AGENTS.md`, and any dydo copy when `claude` is
+   not wired. A file the user wrote stays, with an import line at its top so Claude Code still reads
    `AGENTS.md`: `@AGENTS.md` in `CLAUDE.md` or `CLAUDE.local.md`, `@../AGENTS.md` in
    `.claude/CLAUDE.md`. Tell the user you added it; step 7 still warns about the file.
 7. **Activate.** For each host set `true` under `integrations` in `dydo.json`, run
@@ -66,7 +74,8 @@ steps 7 and 8 are the heart of it.
    tell the user to open Codex in the project and trust the changed hooks; an untrusted hook leaves
    every session unguarded.
 8. **Prove.** All of these hold, or the update is not done:
-   - every entry in `.claude/skills/` and `.agents/skills/` resolves to a `skills/**/<name>/SKILL.md`;
+   - every link in `.claude/skills/` and `.agents/skills/` that points into the project's `skills/`
+     resolves to a `skills/**/<name>/SKILL.md`; setup leaves other entries alone;
    - every skill the new release added is listed in both (a skill folder at the new tag and not
      at the old, rename targets included);
    - every project-only skill is still listed in both;

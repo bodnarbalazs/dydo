@@ -60,6 +60,10 @@ audit trail.
 - The decision-record hub states when to write a record (all three of hard to reverse, surprising
   without context, a real trade-off) and documents the `ratification: pending` frontmatter for a
   `proposed` record a tribunal decided while the human was away (DYD-350).
+- Two skills are renamed (DYD-361): `issue-captain` to `ticket-captain` and `to-issue` to
+  `to-ticket`.
+- `AGENTS.md` is the only entry file (DYD-368): `dydo init` writes it for every host, and
+  `dydo init claude` removes a `CLAUDE.md` that copies the entry point and warns about any other.
 - Align runtime and npm versions to 3.5.0 and permit publication only on the exact v3.5.0 tag.
 
 ## Removed
@@ -80,9 +84,11 @@ audit trail.
    names is now stale.
 4. For each wired host, run `dydo init <host> --join`; the Claude Code hook then carries
    `--host claude`.
-5. `AGENTS.md` is the only entry file: step 4 removes a dydo-generated `CLAUDE.md` (remove it
-   yourself when Claude is not wired). Keep a user-written one and put `@AGENTS.md` at its top
-   (`@../AGENTS.md` in `.claude/CLAUDE.md`).
+5. `AGENTS.md` is the only entry file. Step 4's `--join` removes `CLAUDE.md` only when it equals
+   the new `AGENTS.md` or the 3.5.0 template. A `CLAUDE.md` matching the 3.4.x entry point, or
+   carrying the project's edits to it, is merged into `AGENTS.md` in step 2, then deleted by hand;
+   so is any dydo copy when Claude is not wired. Keep a user-written one and put `@AGENTS.md` at
+   its top (`@../AGENTS.md` in `.claude/CLAUDE.md`).
 6. Run `node setup-skills.mjs` from the project root.
 7. Set `dydoVersion` in `dydo.json` to `3.5.0`.
 

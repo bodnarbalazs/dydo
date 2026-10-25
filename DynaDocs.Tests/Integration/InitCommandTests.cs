@@ -1461,6 +1461,60 @@ public class InitCommandTests : IntegrationTestBase
         Assert.DoesNotContain("Removed CLAUDE.md", result.Stdout);
     }
 
+    public static TheoryData<string, string> ReleasedClaudeMds => new()
+    {
+        { "3.5 base tree, LF", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V3_5Base, "\n") },
+        { "3.5 base tree, CRLF", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V3_5Base, "\r\n") },
+        { "v3.0.0..v3.4.1", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V3_0, "\n") + "\n" },
+        { "v2.1.0..v2.2.3, CRLF", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V2_1, "\r\n") },
+        { "v2.2.4..v2.2.5", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V2_2_4, "\n") },
+        { "v2.2.6..v2.2.9", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V2_2_6, "\n") },
+        { "v1.1.0..v2.0.15", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V1, "\n") },
+    };
+
+    [Theory]
+    [MemberData(nameof(ReleasedClaudeMds))]
+    public async Task Join_Claude_RemovesClaudeMdAnOlderReleaseGenerated(string release, string claudeMd)
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile("CLAUDE.md", claudeMd);
+
+        var result = await JoinProjectAsync("claude");
+
+        result.AssertSuccess();
+        Assert.False(File.Exists(Path.Combine(TestDir, "CLAUDE.md")), $"CLAUDE.md from {release} was kept");
+        result.AssertStdoutContains("Removed CLAUDE.md");
+    }
+
+    [Fact]
+    public async Task Join_Claude_KeepsCustomisedCopyOfAnOlderReleaseAndWarns()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile("CLAUDE.md", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V3_0 + "\n\nAlways run the tests.", "\n"));
+        var preserved = Snapshot("CLAUDE.md");
+
+        var result = await JoinProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertUnchanged(preserved);
+        result.AssertStdoutContains("CLAUDE.md hides AGENTS.md from Claude Code");
+        Assert.DoesNotContain("Removed CLAUDE.md", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Join_Claude_KeepsReleasedBodyUnderANonTitleFirstLine()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile("CLAUDE.md", ("Notes for Claude\n\n" + ReleasedEntryTexts.V3_0).ReplaceLineEndings("\n"));
+        var preserved = Snapshot("CLAUDE.md");
+
+        var result = await JoinProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertUnchanged(preserved);
+        result.AssertStdoutContains("CLAUDE.md hides AGENTS.md from Claude Code");
+    }
+
     [Fact]
     public async Task Init_Claude_KeepsUserWrittenClaudeMdAndWarns()
     {

@@ -726,7 +726,8 @@ public static class InitCommand
             var content = NormalizeEntry(File.ReadAllText(claudeMd));
             var isDydoCopy =
                 content == NormalizeEntry(File.ReadAllText(Path.Combine(projectRoot, "AGENTS.md"))) ||
-                content == NormalizeEntry(ScaffoldTree.EntryPoint(Path.GetFileName(projectRoot)));
+                content == NormalizeEntry(ScaffoldTree.EntryPoint(Path.GetFileName(projectRoot))) ||
+                ReleasedEntryPoints.Generated(content);
             if (isDydoCopy)
             {
                 File.Delete(claudeMd);

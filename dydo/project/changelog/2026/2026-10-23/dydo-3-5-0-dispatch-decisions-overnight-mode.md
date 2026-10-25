@@ -64,6 +64,30 @@ audit trail.
   exclusion. A stale `_system/audit/` entry in a project's `dydo.json` is left alone by `check`
   and `fix`.
 
+## Upgrade steps
+
+1. Install the 3.5.0 CLI: `npm install -g dydo` or `dotnet tool update -g dydo`.
+2. Merge the release's `skills/`, `setup-skills.mjs`, `THIRD-PARTY-NOTICES.md`, `Scaffold/dydo/` and
+   `Scaffold/entry-point.md` into the project's `skills/`, same-named files, `dydo/` and dydo entry
+   file, keeping the project's edits. The dydo entry file is whichever of `AGENTS.md` and
+   `CLAUDE.md` derives from the 3.4.x entry point (its first heading and most of its lines); with
+   neither, render `Scaffold/entry-point.md`, `{{PROJECT_NAME}}` set to the project name. Write the
+   result to `AGENTS.md`. An `AGENTS.md` that does not derive is the user's: put the result at its
+   top and keep their text below it; `--join` leaves an existing `AGENTS.md` alone. The guard blocks
+   agent writes to `dydo/index.md`, `dydo/files-off-limits.md` and the other paths under its
+   Protected Patterns, so a person applies those merges.
+3. Two skills are renamed: `issue-captain` to `ticket-captain` and `to-issue` to `to-ticket`
+   (DYD-361). Move each, with the project's edits, to the new path. Project text naming the old
+   names is now stale.
+4. For each wired host, run `dydo init <host> --join`; the Claude Code hook then carries
+   `--host claude`.
+5. `AGENTS.md` is the only entry file. Step 4's `--join` removes `CLAUDE.md` only when it equals
+   the new `AGENTS.md` or the 3.5.0 template. Delete by hand a `CLAUDE.md` that step 2 merged into
+   `AGENTS.md`, whether or not Claude is wired. Keep a user-written one and put `@AGENTS.md` at its
+   top (`@../AGENTS.md` in `.claude/CLAUDE.md`).
+6. Run `node setup-skills.mjs` from the project root.
+7. Run `dydo adopt 3.5.0`.
+
 ## Files Changed
 
 `Commands/` (`ModeCommand.cs`, `GuardCommand.ModeSet.cs`, `GuardCommand.cs`,

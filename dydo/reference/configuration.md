@@ -18,6 +18,7 @@ through Linear's official surfaces.
 ```json
 {
   "version": 1,
+  "dydoVersion": "3.5.0",
   "structure": {
     "root": "dydo"
   },
@@ -44,6 +45,7 @@ through Linear's official surfaces.
 | Field | Type | Purpose |
 |---|---|---|
 | `version` | integer | Configuration schema version. |
+| `dydoVersion` | string | The dydo release whose skills and documents the project last adopted. A fresh `dydo init` writes it, `--join` leaves it alone, and `dydo adopt <version>` sets it after an update (the `update-dydo` skill runs it). |
 | `structure.root` | string | Documentation root; defaults to `dydo`. |
 | `integrations.claude` | boolean | Whether Claude Code integration is wired. |
 | `integrations.codex` | boolean | Whether Codex integration is wired. |

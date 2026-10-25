@@ -44,6 +44,12 @@
       ]
     },
     {
+      "module": "Commands/AdoptCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/AdoptCommandTests.cs"
+      ]
+    },
+    {
       "module": "Commands/CheckCommand.cs",
       "tests": [
         "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
@@ -871,6 +877,14 @@
       "module": "Utils/ConsoleOutput.cs",
       "tests": [
         "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Utils/DydoVersion.cs",
+      "tests": [
+        "DynaDocs.Tests/Utils/DydoVersionTests.cs",
+        "DynaDocs.Tests/Integration/InitCommandTests.cs",
+        "DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs"
       ]
     },
     {

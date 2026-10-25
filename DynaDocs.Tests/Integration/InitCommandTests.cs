@@ -66,6 +66,70 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Empty(Directory.GetFiles(TestDir, "dydo.json.*.tmp"));
     }
 
+    #region Adopted dydo version
+
+    [Fact]
+    public async Task Init_Fresh_RecordsRunningCliVersion()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+
+        Assert.Equal(DydoVersion.Current, ReadDydoVersion());
+        Assert.Matches(@"^\d+\.\d+\.\d+", DydoVersion.Current);
+    }
+
+    [Fact]
+    public async Task Join_ExistingDydoVersion_StaysUntouched()
+    {
+        (await InitProjectAsync("codex")).AssertSuccess();
+        SetDydoVersion("1.2.3");
+
+        (await JoinProjectAsync("codex")).AssertSuccess();
+
+        Assert.Equal("1.2.3", ReadDydoVersion());
+    }
+
+    [Fact]
+    public async Task Join_RecordingNewIntegration_PreservesDydoVersion()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        SetDydoVersion("1.2.3");
+
+        var result = await JoinProjectAsync("codex");
+
+        result.AssertSuccess();
+        Assert.Contains("Recorded integration(s) in dydo.json: codex", result.Stdout);
+        Assert.Equal("1.2.3", ReadDydoVersion());
+    }
+
+    [Fact]
+    public async Task Join_WithoutDydoVersion_WritesNone()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        SetDydoVersion(null);
+
+        var result = await JoinProjectAsync("codex");
+
+        result.AssertSuccess();
+        Assert.Contains("Recorded integration(s) in dydo.json: codex", result.Stdout);
+        Assert.False(ReadConfigJson().ContainsKey("dydoVersion"));
+    }
+
+    private JsonObject ReadConfigJson() =>
+        JsonNode.Parse(File.ReadAllText(Path.Combine(TestDir, "dydo.json")))!.AsObject();
+
+    private string? ReadDydoVersion() => ReadConfigJson()["dydoVersion"]?.GetValue<string>();
+
+    private void SetDydoVersion(string? version)
+    {
+        var raw = ReadConfigJson();
+        raw.Remove("dydoVersion");
+        if (version != null)
+            raw["dydoVersion"] = version;
+        File.WriteAllText(Path.Combine(TestDir, "dydo.json"), raw.ToJsonString());
+    }
+
+    #endregion
+
     private static void AddLegacyModels(string configPath)
     {
         var raw = JsonNode.Parse(File.ReadAllText(configPath))!.AsObject();

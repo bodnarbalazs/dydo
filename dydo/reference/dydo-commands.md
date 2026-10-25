@@ -35,8 +35,9 @@ dydo init <integration> --join       # wire this machine, or an added runtime, i
 Every mode writes `dydo.json`, scaffolds the `dydo/` folders with their framework documents,
 `files-off-limits.md` and `_system/types.json`, writes the `AGENTS.md` entry point (never `CLAUDE.md`), and adds
 `dydo/agents/`, `dydo/_system/.local/`, `/.claude/skills/` and `/.agents/skills/` to `.gitignore`. A
-documentation or entry-point file that already exists is left as it is. `none` stops there: no
-runtime integration. The runtime modes add, per selected host:
+documentation or entry-point file that already exists is left as it is. A fresh init records the
+running dydo version in `dydo.json` as `dydoVersion`. `none` stops there: no runtime integration.
+The runtime modes add, per selected host:
 
 | Host | Files | What they carry |
 |---|---|---|
@@ -55,7 +56,9 @@ manages, init stops with an error before it writes anything. Init and `--join` a
 
 `--join` targets an already-initialized project: a fresh clone, or a second runtime added later. It
 writes the selected hosts' rows above, and the entry point when it is missing, without re-scaffolding
-or overwriting the tree, and records the integration in `dydo.json`.
+or overwriting the tree, and records the integration in `dydo.json`. It leaves `dydoVersion` alone and
+never adds it: a teammate's newer CLI has not adopted that release's skills and documents. `dydo adopt`
+records it.
 
 Claude Code 2.1.281 or later reads `AGENTS.md` when no `CLAUDE.md` is in the way. With `claude` or
 `all`, init and `--join` therefore remove a `CLAUDE.md` that is dydo's own generated copy (equal to
@@ -70,6 +73,18 @@ MIT notices of the adapted skills travel with them) from the dydo repository int
 commit them, and run `node setup-skills.mjs` to create the host discovery links. The script always
 creates both `.claude/skills/` and `.agents/skills/`, and init always gitignores both (the
 `.gitignore` rows above), in every mode including `none`.
+
+### dydo adopt
+
+Record the dydo release whose skills and documents the project has adopted.
+
+```bash
+dydo adopt 3.5.0                     # or v3.5.0; the leading v is dropped
+```
+
+Sets `dydoVersion` in `dydo.json`, rewriting the file the way `--join` does. The `update-dydo` skill
+runs it once an update is proven. The value is a release like `3.5.0` or `3.5.0-beta.3`. Anything else, a missing
+`dydo.json`, or one that does not parse, exits `2` and leaves the file as it was.
 
 ---
 

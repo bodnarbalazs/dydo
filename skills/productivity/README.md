@@ -1,6 +1,6 @@
 # Productivity
 
-18 skills for thinking, writing, and moving work along with the user.
+19 skills for thinking, writing, and moving work along with the user.
 
 - **bro** (user-invoked): Stop. That last message did not land: re-pitch it.
 - **co-thinker** (model-invoked): An idea not ripe yet. Use when a thought, a doubt or a preference is still open, when a question surfaces that is not yet a ticket, or when a trade-off needs testing before intent hardens into a plan or a Decision Record.
@@ -15,6 +15,7 @@
 - **teach** (model-invoked): Teach the user a new skill or concept, within this workspace. Load only when the user asks.
 - **to-ticket** (model-invoked): Break a plan, spec, or this conversation into pickable Linear tickets, tracer-bullet slices wired with native blocking relations. Load only when the user asks.
 - **to-project** (model-invoked): Turn this co-think into a Linear Project, with its settled intent and links. Load only when the user asks.
+- **update-dydo** (model-invoked): Update this project's dydo to the latest release, keeping every project tweak, and prove the update took effect. Load only when the user asks.
 - **walkthrough** (model-invoked): Show me what landed, where to look first, and how to try it. Load only when the user asks, or at the admiral's landing step.
 - **wayfinder** (model-invoked): Fog in a Project map or inside one ticket. Chart the visible route as Wayfinding Tickets and resolve them one at a time until the destination is reached.
 - **what-would-balazs-do** (model-invoked): A call Balazs would otherwise be asked. Use when an officer must decide one while he is away, prepare a DR-grade or irreversible one for him, or when he asks for it on any call.

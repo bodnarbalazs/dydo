@@ -22,6 +22,7 @@ public static class HelpCommand
         Console.WriteLine("Setup Commands:");
         Console.WriteLine("  init <integration>     Initialize DynaDocs (claude, codex, all, none)");
         Console.WriteLine("  init <int> --join      Join existing project as new team member");
+        Console.WriteLine("  adopt <version>        Record the dydo release the project adopted (dydoVersion)");
         Console.WriteLine();
         Console.WriteLine("Documentation Commands:");
         Console.WriteLine("  check [path]           Validate docs, report violations");

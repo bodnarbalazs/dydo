@@ -9,6 +9,7 @@ public class CompletionProviderTests
     [InlineData("fix")]
     [InlineData("index")]
     [InlineData("init")]
+    [InlineData("adopt")]
     [InlineData("graph")]
     [InlineData("guard")]
     [InlineData("version")]

@@ -165,8 +165,8 @@ Before the first agent session:
 
 1. Copy `skills/`, `setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` from the dydo repository into
    the project root. The notices carry the MIT licences of the adapted skills and travel with them.
-2. Commit them. They are the project's own from then on: edit them in place; nothing reconciles them
-   with later dydo versions.
+2. Commit them. They are the project's own from then on: edit them in place. To update them
+   later, load the `update-dydo` skill.
 3. Run `node setup-skills.mjs`. It links every skill folder, flat, into `.claude/skills/` and
    `.agents/skills/`.
 

@@ -60,7 +60,7 @@ come with the npm or .NET package, and `dydo init` does not write them.
    every other skill under `engineering/` or `productivity/`. The notices carry the MIT licences of
    the adapted skills and travel with them.
 2. Commit all three. From then on they are the project's own, edited in place; there is no compile
-   step and nothing reconciles them with later dydo versions.
+   step. To update them later, load the `update-dydo` skill.
 3. Run `node setup-skills.mjs` from the project root. It walks the tree by rule, so a folder holding
    `SKILL.md` is a skill and any other folder a category, and links each skill flat into
    `.claude/skills/<name>/` and `.agents/skills/<name>/`. Every fresh clone runs it once.

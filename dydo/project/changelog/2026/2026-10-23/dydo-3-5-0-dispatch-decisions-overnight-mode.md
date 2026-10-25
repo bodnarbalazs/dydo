@@ -42,6 +42,11 @@ audit trail.
   READMEs, the control-flow table, the glossary and the third-party notices.
 - A proposal for an overnight chief of staff, recorded in PR #153 and now marked `promoted` into
   the shipped overnight mode above (DYD-351).
+- The `update-dydo` skill (DYD-360): updates a project's skills and framework docs to the latest
+  release with a three-way merge that keeps the project's edits, applies each release's upgrade
+  steps, activates the result and proves it took effect.
+- A `dydoVersion` field in `dydo.json` (DYD-360): the dydo release the project has adopted. A
+  fresh `dydo init` writes it, `--join` leaves it alone, and `update-dydo` sets it after an update.
 
 ## Changed
 
@@ -64,6 +69,15 @@ audit trail.
   exclusion. A stale `_system/audit/` entry in a project's `dydo.json` is left alone by `check`
   and `fix`.
 
+## Upgrade steps
+
+1. Install the 3.5.0 CLI: `npm install -g dydo` or `dotnet tool update -g dydo`.
+2. Update the skill tree and framework docs: load the `update-dydo` skill.
+3. Run `dydo init claude --join` so the Claude Code hook carries `--host claude`.
+4. `AGENTS.md` is the only entry file: remove a dydo-generated `CLAUDE.md`, keep a user-written one.
+5. Run `node setup-skills.mjs` from the project root.
+6. Set `dydoVersion` in `dydo.json` to `3.5.0`.
+
 ## Files Changed
 
 `Commands/` (`ModeCommand.cs`, `GuardCommand.ModeSet.cs`, `GuardCommand.cs`,
@@ -74,10 +88,11 @@ audit trail.
 `dydo/project/decisions/054-what-would-balazs-do-tribunal.md`,
 `dydo/project/decisions/_decisions.md`,
 `dydo/project/future-features/overnight-chief-of-staff.md`, `dydo/_system/audit/` (removed),
-`dydo.json`, `skills/` (overnight-mode, what-would-balazs-do, the two formal verification skills,
+`dydo.json`, `skills/` (overnight-mode, what-would-balazs-do, update-dydo, the two formal verification skills,
 wizard, to-issue, wayfinder, admiral, issue-captain, chief-of-staff, READMEs), `THIRD-PARTY-NOTICES.md`,
 `npm/THIRD-PARTY-NOTICES.md`, `DynaDocs.csproj`, `npm/package.json`,
-`.github/workflows/release.yml`, `DynaDocs.Tests/` (mode command, mode state, invocation scanner
+`.github/workflows/release.yml`, `README.md`,
+`dydo/project/changelog/_changelog.md` (upgrade steps convention), `DynaDocs.Tests/` (mode command, mode state, invocation scanner
 in `Services/DydoInvocationScannerTests.cs`, guard mode-set and worker lane, init, fix, check,
 validate, config, doc scanner, off-limits, command smoke, the `machine-mode.feature` scenarios and
 steps, canonical skill assertions, coverage associations, the removed audit-large fixtures), `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`,

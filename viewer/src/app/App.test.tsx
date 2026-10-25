@@ -4,6 +4,7 @@ import type { ELK as ElkApi } from 'elkjs/lib/elk-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Graph, Project, Team } from '../api/types';
 import { blocks, makeGraph, makeIssue, related } from '../graph/testIssues';
+import { TIMING } from '../map/cascade';
 import { App } from './App';
 
 const teams: Team[] = [
@@ -687,6 +688,24 @@ describe('App refresh in place', () => {
   /** Lets React Flow apply the fits it queued for the latest nodes. */
   const settle = () => act(() => new Promise((done) => setTimeout(done, 50)));
 
+  // A failed test must not leave its setTimeout spy, with its calls, to the next one.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /** Holds the old map's exit fade open until `release`, so a slow test run cannot outlast it. */
+  function holdExits() {
+    const realTimeout = window.setTimeout.bind(window);
+    const held: (() => void)[] = [];
+    const timers = vi.spyOn(window, 'setTimeout').mockImplementation(((run: () => void, ms?: number) => {
+      if (ms !== TIMING.exit) return realTimeout(run, ms);
+      held.push(run);
+      return 0;
+    }) as typeof setTimeout);
+    const release = () => act(() => { for (const run of held.splice(0)) run(); });
+    return { timers, release };
+  }
+
   async function openMap(focus = '') {
     open(`?team=team-1&project=project-1${focus}`);
     await mapShown();
@@ -721,16 +740,16 @@ describe('App refresh in place', () => {
     expect(screen.getByText('Project One: 5 tickets, 1 plates')).toBeTruthy();
   });
 
-  it('fades a removed issue out on the old map before the new one replaces it', async () => {
+  it('fades a removed ticket out on the old map before the new one replaces it', async () => {
     await openMap();
-    const timers = vi.spyOn(window, 'setTimeout');
+    const exits = holdExits();
     graphAnswer = () => json(withoutX);
     fireEvent.click(refreshButton());
     expect((await notice()).textContent).toBe('1 removed · 1 link removed');
     expect(wrapper('T-X')?.classList.contains('refresh-removed')).toBe(true);
+    expect(exits.timers).toHaveBeenCalledWith(expect.any(Function), 300);
+    exits.release();
     await waitFor(() => expect(card('T-X')).toBeNull());
-    expect(timers).toHaveBeenCalledWith(expect.any(Function), 300);
-    timers.mockRestore();
   });
 
   it('reads No changes and marks nothing when a second refresh finds nothing new', async () => {
@@ -777,6 +796,7 @@ describe('App refresh in place', () => {
       if (shown !== null) placeholders.push(shown.textContent);
     });
     watch.observe(document.body, { childList: true, subtree: true });
+    const exits = holdExits();
     graphAnswer = () => json(makeGraph(withoutX.issues.map((issue) => (issue.id === 'A' ? { ...issue, title: 'Renamed' } : issue)), withoutX.relations, withoutX.external));
 
     fireEvent.click(refreshButton());
@@ -789,6 +809,7 @@ describe('App refresh in place', () => {
     fireEvent.click(refreshButton());
     expect(vi.mocked(fetch).mock.calls.length).toBe(fetches);
 
+    exits.release();
     await waitFor(() => expect(card('T-X')).toBeNull());
     expect(wrapper('T-A')?.classList.contains('refresh-changed')).toBe(true);
     expect(screen.getByRole('status').textContent).toBe('1 changed · 1 removed · 1 link removed');
@@ -864,6 +885,5 @@ describe('App refresh in place', () => {
     expect(document.querySelector('.refresh-ghost')).toBeNull();
     expect(document.querySelector('.refresh-glide')).toBeNull();
     expect(timers).not.toHaveBeenCalledWith(expect.any(Function), 300);
-    timers.mockRestore();
   });
 });

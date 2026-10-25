@@ -27,8 +27,9 @@ claims are checked by the other two members; at most 4 rounds; one retry for a m
 no decision. Away, a DR-grade call needs a unanimous ballot and a lower one a majority; present, the
 result is always a prepared Question carrying the predicted answer.
 
-Only his own words are precedent. Every tribunal output is unratified until he answers it
-`RATIFIED` or `OVERTURNED`; a DR-grade decision is written `proposed` with `ratification: pending`.
+Only his own words are precedent (read in their spirit since the 2026-10-25 amendment). Every
+tribunal output is unratified until he answers it `RATIFIED` or `OVERTURNED`; a DR-grade decision
+is written `proposed` with `ratification: pending`.
 
 ## Consequences
 
@@ -37,6 +38,13 @@ affected work. Each call is a `Question` Issue with a Linear Document log, so th
 answer form the self-improvement record and no separate ledger exists. A decided Question stays in
 `Todo` unwired. Whether he is away is a separate switch, not set here;
 DYD-351 made it the `overnight` mode flag.
+
+## Amendment 2026-10-25 - the spirit of his words
+
+[DYD-371](https://linear.app/bodnar-balazs/issue/DYD-371): his words are evidence of his intent,
+not a rulebook. The tribunal decides in the spirit of his DRs and core docs, also where no precedent
+exists, and that spirit overrides a recorded decision that goes against it or no longer fits the
+project. A departure names the decision and why, and makes the call DR-grade, or at least flagged.
 
 ## Related
 

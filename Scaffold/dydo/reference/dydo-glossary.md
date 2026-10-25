@@ -28,13 +28,13 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Fog** - the unknown unknowns: relevant uncertainty not yet sharp enough to state as a question.
   The rule is *fog → discovery → Question Ticket*. Search the Decision Records, the Project plan, the
   ticket's own links, the glossary, and the code first; file only what that leaves open.
-- **Question Ticket** - a Linear ticket of Type `Question` in `Todo` carrying one human judgment that remains
+- **Question Ticket** - a Linear ticket of Type `Question` in `Todo` carrying one judgment left to the user
   after discovery. It records the homework, options, recommendation and named waiters, and resolves
   into an **answer** on the ticket. The captain creates local Sub-tickets; the Project's map holder
   creates Project-level Questions.
-- **Tribunal** - three members testing one call against the human's own words through
+- **Tribunal** - three members testing one call against the user's own words through
   `what-would-balazs-do`: the officer that raised it and two fresh judges, one per vendor. Its output
-  is **unratified** and becomes precedent only when the human answers it `RATIFIED`.
+  is **unratified** and becomes precedent only when the user answers it `RATIFIED`.
 - **Frontier** - the open, unblocked, unassigned map tickets: the edge of what a Project knows.
   Linear's own blocking relations and assignment render it; there is no separate navigation object.
 
@@ -49,33 +49,33 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   architecture work, at low resolution: destination, acceptance, architecture, and a ticket
   map. Its `linear-project` URL is provenance, not synchronization.
 - **FutureFeature** - an unscheduled strategic possibility recorded as a Linear ticket, distinct from
-  a generic idea or delivery contract. It stays in `FutureFeature` until the human promotes or cancels it.
+  a generic idea or delivery contract. It stays in `FutureFeature` until the user promotes or cancels it.
 - **Assimilation brief** - the durable account of what changed, what was learned, and what remains.
 
 ## Roles and skills
 
 - **Skill** - an authored native skill folder: methodology and resources any session loads when the
   work needs it. A skill that carries an identity is a role; every other skill sorts by subject into
-  `engineering` (the craft) or `productivity` (thinking, writing and moving work along with the human).
+  `engineering` (the craft) or `productivity` (thinking, writing and moving work along with the user).
 - **Role** - a skill that carries an identity: an officer or crew.
 - **Officer** - a role that holds something and never switches: the ticket-captain, the default
-  officer, holds a ticket; an admiral, only when the human invokes one, holds a Project; the
+  officer, holds a ticket; an admiral, only when the user invokes one, holds a Project; the
   chief-of-staff holds the board. A session or agent has at most one officer role; a captain never
   becomes an admiral or the reverse.
-- **Map holder** - who holds a map and charts it: for a Project, the human, or an admiral the human
-  invoked until the human takes the map back, as the Project description names; for a ticket, its
+- **Map holder** - who holds a map and charts it: for a Project, the user, or an admiral the user
+  invoked until the user takes the map back, as the Project description names; for a ticket, its
   captain.
 - **Crew** - a role spawned for one bounded job that holds nothing and returns its result to whoever
   sent it: code-writer, docs-writer, reviewer, inquisitor, research, scout.
 - **Agent** - a native-platform instance of a spawned role: a crew member, or a Ticket Captain that
-  the human's session or an invoked admiral keeps in flight.
+  the user's session or an invoked admiral keeps in flight.
 - **Method** - a plain skill used inside other work, carrying no identity of its own: co-thinker,
   grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype, show-me,
   writing-for-agents, writing-for-humans, retro, wizard, overnight-mode, what-would-balazs-do, maintain-verification-skill,
   maintain-formal-verification-skill. These load only when the user asks: to-project, to-ticket,
   in-your-own-words, ketchup, teach, walkthrough (also at an admiral's landing) and handoff (also
   when an officer briefs an agent it dispatches).
-- **Human command** - a skill only the human invokes by name, never reached for by a model:
+- **User command** - a skill only the user invokes by name, never reached for by a model:
   grill-me, bro, improve-codebase-architecture, create-verification-skill,
   create-formal-verification-skill.
 - **Rubric** - the one named standard a reviewer judges a candidate against: code, docs,
@@ -100,12 +100,12 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Merge review** - the `merge` rubric run after every merge that has a Merge Ticket: a mechanical
   spot check of the integrated state that also proves the plan's acceptance criteria at a feature's
   final merge. An atomic ticket's merge into main has none; its ticket review PASS, green CI and the
-  human's click stand in its place.
-- **Inquisition** - a human-confirmed Type held by a captain: read-only sweeps, hypotheses proved
+  user's click stand in its place.
+- **Inquisition** - a user-confirmed Type held by a captain: read-only sweeps, hypotheses proved
   (one in code by a proof-only test, one in prose by its quoted passages), deduplicated Bugs and an
   inquisition record. It files outcomes, never PASS or FAIL.
 - **Merge** - a Type for one merge operation, with its own implement/review chain and
-  integrated gates. The human clicks the Project landing and an atomic ticket's PR, which has no Merge
+  integrated gates. The user clicks the Project landing and an atomic ticket's PR, which has no Merge
   Ticket; every operation preserves hop SHAs.
 - **Release** - a captain leaves a resume SHA on the record, pushes its branch, removes the worktree,
   returns the parent to `Todo`, unassigns and wires any blocker. A dead session has no final push.
@@ -129,7 +129,7 @@ These words survive only in older documents. Campaign, Sprint, Slice, backlog it
 separate observed-problem Issue are not dydo 3 PM objects: use the Linear Initiative, Project, and
 ticket where work is live, though a slice may still name an implementation technique. Tier-1
 manager, orchestrator, and the run-sprint workflow (internally
-run-issues) gave way to the officers - a Ticket Captain owns one ticket, and an admiral the human
+run-issues) gave way to the officers - a Ticket Captain owns one ticket, and an admiral the user
 invokes coordinates one Project. The Project Planner gave way to the map holder, who charts with
 `wayfinder` (DR 051). Hat and worker are retired too (DR 050): a session keeps the role it was given and loads skills
 as the work needs them, and a spawned role is crew. Issue planner and test-writer gave way to `code-writer`, which since 2026-09-21 also absorbs the

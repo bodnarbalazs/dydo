@@ -23,35 +23,35 @@ fields on both sides are in the edge table, section 5.
 
 | Colour | Kind | Meaning |
 |---|---|---|
-| gold | human | the one person; opens every session that talks to him, acts at the gates |
+| gold | user | the one person; opens every session that talks to him, acts at the gates |
 | blue | officer | holds a Project, a ticket or the board and never switches; the map holder at its level |
 | grey | session | a session without an officer role, loading a skill such as co-thinker |
-| green | crew | spawned for one bounded job, returns to its spawner, never talks to the human |
+| green | crew | spawned for one bounded job, returns to its spawner, never talks to the user |
 | red | reviewer | a crew member whose return is the review block: one rubric, one binding verdict |
 
 Channels: **L** a Linear field, comment or status · **G** a commit, branch or PR · **R** an agent's
 return to its spawner, or a message to a returned one · **F** a file in the repository · **C** the
-conversation with the human.
+conversation with the user.
 
-A Project's **map holder** is the human, in their own session, unless the human has invoked an
-admiral. Where the flows below name the admiral, they draw an invoked one; without it, the human
+A Project's **map holder** is the user, in their own session, unless the user has invoked an
+admiral. Where the flows below name the admiral, they draw an invoked one; without it, the user
 takes that step, and nobody needs telling.
 
 ## 1. Roster
 
 The actors: every officer and every crew role, plus the co-thinker skill a session without a role
-loads to think with the human. The ticket-captain is the default officer; an admiral exists only when
-the human invokes one, as a right hand for throughput that never takes the frontline. An officer is
-top-level when a session is opened with it; a captain is also spawned as an agent, so the human's
+loads to think with the user. The ticket-captain is the default officer; an admiral exists only when
+the user invokes one, as a right hand for throughput that never takes the frontline. An officer is
+top-level when a session is opened with it; a captain is also spawned as an agent, so the user's
 session or an invoked admiral can direct one per ticket.
 
 | Role | Kind | Runs as | Invoked by | Works in | Does | Returns to |
 |---|---|---|---|---|---|---|
-| human | human | the terminal | - | `main`, where his own commits need no ticket, and any session | thinks, files Projects, holds a Project's map by default and charts it with `wayfinder`, approves plans, answers Questions, confirms inquisitions, clicks the landing one Project at a time and an atomic ticket's reviewed PR, walks through; tells an invoked admiral after each of his board moves, and takes the map back at any time | - |
+| user | user | the terminal | - | `main`, where his own commits need no ticket, and any session | thinks, files Projects, holds a Project's map by default and charts it with `wayfinder`, approves plans, answers Questions, confirms inquisitions, clicks the landing one Project at a time and an atomic ticket's reviewed PR, walks through; tells an invoked admiral after each of his board moves, and takes the map back at any time | - |
 | co-thinker | skill | any session without an officer role | any session with an unripe idea | no branch; DRs and glossary on the current branch | homework, grilling, domain-modeling, recommendation; a DR when the ADR test passes; an atomic ticket with its five fields, Type and Mode | a DR (F), a Project through `to-project` (L), an atomic ticket (L) |
-| admiral | officer, optional | top-level session, explicit-only | the human, only when he wants a right hand for throughput, on a Project at any stage | `feature/<slug>` once the map holder opens one at Open; none before that, or on a Project with no feature branch | holds the map until the human takes it back; wakes on a captain's return or the human's word, reads the Project and acts: charts it with `wayfinder`, writes a plan only for a cross-cutting architecture contract and owns its review, puts approval to the human, commissions the first captain to open the feature, commissions captains, wires the merge order and re-wires it when a later PR is ready first, sets priority on what waits on the human, runs its wayfinding with the human, proposes the inquisition, files the landing and the walkthrough, closes | the human in its own session (C); the board (L) |
-| ticket-captain | officer, the default, also agent | top-level for an atomic or HITL ticket; spawned by the human's session or an invoked admiral for an AFK one | the human's session, or an invoked admiral | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, takes an adjacent ticket only on the human's word, sets the status at every chain spawn, directs [code-writer] → [reviewer] on the parent or each lane and adds a spec review only on a risk its contract records, divides when the writer names lanes, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-tickets or, on an atomic ticket, waits for the human's click, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
-| chief-of-staff | officer | top-level session, explicit-only | the human | none | the bird's-eye view over the Projects in flight: the three lists, grilling open Questions, mediating collisions, sweeping stale state and orphans | the human (C); delivery staged on its Project for the map holder (L) |
+| admiral | officer, optional | top-level session, explicit-only | the user, only when he wants a right hand for throughput, on a Project at any stage | `feature/<slug>` once the map holder opens one at Open; none before that, or on a Project with no feature branch | holds the map until the user takes it back; wakes on a captain's return or the user's word, reads the Project and acts: charts it with `wayfinder`, writes a plan only for a cross-cutting architecture contract and owns its review, puts approval to the user, commissions the first captain to open the feature, commissions captains, wires the merge order and re-wires it when a later PR is ready first, sets priority on what waits on the user, runs its wayfinding with the user, proposes the inquisition, files the landing and the walkthrough, closes | the user in its own session (C); the board (L) |
+| ticket-captain | officer, the default, also agent | top-level for an atomic or HITL ticket; spawned by the user's session or an invoked admiral for an AFK one | the user's session, or an invoked admiral | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, takes an adjacent ticket only on the user's word, sets the status at every chain spawn, directs [code-writer] → [reviewer] on the parent or each lane and adds a spec review only on a risk its contract records, divides when the writer names lanes, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-tickets or, on an atomic ticket, waits for the user's click, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
+| chief-of-staff | officer | top-level session, explicit-only | the user | none | the bird's-eye view over the Projects in flight: the three lists, grilling open Questions, mediating collisions, sweeping stale state and orphans | the user (C); delivery staged on its Project for the map holder (L) |
 | research | crew, delegates, web | agent | co-thinker, the map holder, ticket-captain | reads | one fact a choice waits on, cited; sends scouts | the invoker: one-line answer, destination, unsettled points (R); report as ticket comment (L) or scratch file (F) |
 | code-writer | crew | agent | ticket-captain, on the parent first, then per lane | the ticket branch; a Merge Sub-ticket; a proof branch off the audit SHA | one ticket's contract on the `implement` hop, test-driven by Type: a Bug red before its fix and red again with the fix reverted; a Feature's acceptance lines as named tests written with the code, proved to fail with the code stashed; the full suite and static gate of each changed stack once, HCRAP and cognitive complexity fixed in changed methods. Posts nothing before code unless it names lanes or an inexact contract. On a Merge: the merge commit and its resolutions. Proof-only: the test that would catch one hypothesis, committed as `<KEY> proof: <hypothesis>` | the captain: the `IMPLEMENTED` line with hop SHA, behaviour, red proof, gates run and blocker (R); for a hypothesis, `confirmed`, `not reproduced` or `inconclusive` |
 | docs-writer | crew | agent | ticket-captain, including the separate record Feature's captain for an inquisition | the delivery ticket branch | one documentation change with a witness per claim; the record Feature preserves the pinned inquisition packet | the delivery captain: ending SHA, exact record path/digest, files, witnesses, `dydo check` (R) |
@@ -67,37 +67,37 @@ floor.
 ## 2. Skills that are not actors
 
 Methods run inside the caller's thread and leave nothing of their own; some load only when the
-human asks, and human commands run only when the human types them.
+user asks, and user commands run only when the user types them.
 
 Agent-invoked methods:
 
 | Method | Reached by | When | Leaves behind |
 |---|---|---|---|
-| wayfinder | the map holder: the human's session, an invoked admiral, or a ticket-captain | charting, writing the contracts one level down, working the map, clearing local fog | the map in the Project description; tickets and Sub-tickets, wired |
-| grilling | co-thinker, chief-of-staff, any Grilling Ticket | a plan, decision or idea the human wants stress-tested, one round at a time | answers and reasoning recorded where the work lives |
+| wayfinder | the map holder: the user's session, an invoked admiral, or a ticket-captain | charting, writing the contracts one level down, working the map, clearing local fog | the map in the Project description; tickets and Sub-tickets, wired |
+| grilling | co-thinker, chief-of-staff, any Grilling Ticket | a plan, decision or idea the user wants stress-tested, one round at a time | answers and reasoning recorded where the work lives |
 | domain-modeling | co-thinker, wayfinder | a term keeps sliding, or a choice looks durable enough for a DR | `dydo/glossary.md` entries; a Decision Record |
 | codebase-design | code-writer, reviewer | shaping a module or interface, choosing a seam, judging depth | vocabulary applied, nothing written |
 | diagnosing-bugs | the code-writer reproducing a Bug, on the parent or its retained reproduce-or-identify Sub-ticket | a defect without a red reproduction | a tight loop that goes red; the regression test; the cause on the ticket |
 | prototype | the code-writer on a Prototype Ticket | how it should look or behave is the open question | `prototype/<name>`, never merged; kept and linked from the ticket until the delivery ticket is `Done`, read by the delivery ticket's code-writer as the template for a fresh rewrite, never a base or a copy (DR 047 §5) |
-| wizard | the captain on an Enablement Ticket | steps only the human can perform: credentials, dashboards, cutovers | a bash wizard that walks him through them |
+| wizard | the captain on an Enablement Ticket | steps only the user can perform: credentials, dashboards, cutovers | a bash wizard that walks him through them |
 | writing-for-agents | anyone editing a skill or a document an agent reaches by pointer; reviewer(docs) | a prompt file is created, edited, or fires wrong | the edited file |
 | retro | any session; chief-of-staff routes recurring friction to it | the same friction or workaround returns a second time | one small, authorized, testable harness change |
 | maintain-verification-skill | any agent driving the app through a project's verification skill; the map holder before a landing | a drive contradicts the feature map, a touched area has no map file, or the whole map needs an audit | `clean`, `changed` with one PR of proven map or harness corrections, or `blocked`; product regressions reported as Bugs |
 | maintain-formal-verification-skill | any agent or the map holder after merges, refactors or edits touched verified code without rechecking the verification | verified code changed since the verification's sync commit, or a verify skill's check passes on code that has since moved | each check `in sync`, `updated`, `bug` or `blocked`, with drift and code bugs told apart and verification updates kept in a change of their own |
 
-Methods loaded only when the human asks:
+Methods loaded only when the user asks:
 
-| Method | The human asks when | Produces |
+| Method | The user asks when | Produces |
 |---|---|---|
 | to-project | a co-think is ripe and belongs in Linear | a Project in `Backlog`: title, summary, the intent as description, links to the DR, the glossary entries and the source FutureFeature when one exists; no tickets |
 | to-ticket | a plan, spec or conversation is ready to become tickets | pickable tracer-bullet tickets in `Todo`, each with one Type, a Mode where a captain holds the Type, and the five fields or its Type's own template, wired with native blocking relations |
 | handoff | the session is ending and another agent continues; also loaded by an officer briefing an agent it dispatches | a handoff document in the scratch directory |
 | walkthrough | a Walkthrough Ticket is open; also loaded by an admiral at its landing step | the four-part tour: what changed, where to look, how to try it, what reviewers flagged |
-| teach | the human wants to learn a topic in the workspace | a mission and its learning records |
+| teach | the user wants to learn a topic in the workspace | a mission and its learning records |
 
-Human commands:
+User commands:
 
-| Command | The human types it when | Produces |
+| Command | The user types it when | Produces |
 |---|---|---|
 | grill-me | a plan or idea of theirs should be pressed | answers and reasoning, recorded by the session in play |
 | bro | an agent's pitch did not land | the same thing said plainly, with the two glossaries in hand |
@@ -105,7 +105,7 @@ Human commands:
 | create-verification-skill | the project has no scripted way to drive the app as a user | a proven `verify-<app>` skill, its control CLI and a seeded feature map |
 | create-formal-verification-skill | code where a bug costs the most and tests reach the least needs more than tests: concurrency, retries, state machines, parsers, unsafe code | a project-local skill that checks a change against one verified property, proven to catch a scratch break |
 
-The explicit-only officers admiral and chief-of-staff are also typed by the human; they are actors and
+The explicit-only officers admiral and chief-of-staff are also typed by the user; they are actors and
 stand in the roster.
 
 ## 3. The happy path
@@ -129,21 +129,21 @@ flowchart TD
   classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
 
-  H0([human: an idea]):::human --> CT[co-thinker]:::session
-  CT -->|ripe| TP([human: to-project, Project in Backlog]):::human
-  TP --> AD[map holder: the human, or an admiral the human invoked; reads the Project]:::officer
+  H0([user: an idea]):::human --> CT[co-thinker]:::session
+  CT -->|ripe| TP([user: to-project, Project in Backlog]):::human
+  TP --> AD[map holder: the user, or an admiral the user invoked; reads the Project]:::officer
   AD -->|Project Planning, wayfinder| MAP[the map in the Project description, first tickets, Questions]:::officer
   MAP -.->|only a cross-cutting architecture contract: plan commit| RP{{reviewer: project-plan, two rounds at most}}:::reviewer
-  MAP -->|route charted| H1([human approves, Project Planned]):::human
+  MAP -->|route charted| H1([user approves, Project Planned]):::human
   RP -->|PASS| H1
   H1 --> OP[map holder commissions first captain to open feature; wires merge order]:::officer
   OP <-->|"one captain per pickable AFK ticket, the loop in 3b: commission · done &lt;key&gt;: PR ready · merge, when its turn comes · done &lt;key&gt;: merged"| IC[ticket-captain]:::officer
-  OP -->|all landed: Inquisition Ticket in Backlog, scope and cost| H2([human moves it to Todo and tells an invoked admiral, or cancels]):::human
+  OP -->|all landed: Inquisition Ticket in Backlog, scope and cost| H2([user moves it to Todo and tells an invoked admiral, or cancels]):::human
   H2 -->|the map holder commissions| IQ[ticket-captain of the inquisition, 6.6: Bugs filed]:::officer
   IQ --> OP
   OP -->|landing Merge Ticket: main into the feature, gates, merge review| LM[ticket-captain of the landing]:::officer
-  LM -->|PR into main with its PASS, Ready to Merge| H3([human clicks the merge, one Project at a time, and tells an invoked admiral]):::human
-  H3 -->|map holder commissions landing captain cleanup; the map holder loads walkthrough| WT[Walkthrough Ticket: the map holder with the human]:::officer
+  LM -->|PR into main with its PASS, Ready to Merge| H3([user clicks the merge, one Project at a time, and tells an invoked admiral]):::human
+  H3 -->|map holder commissions landing captain cleanup; the map holder loads walkthrough| WT[Walkthrough Ticket: the map holder with the user]:::officer
   WT -->|findings: tickets, a second lap on the re-cut feature| OP
   WT -->|nothing: Project Completed| END([done]):::human
 ```
@@ -190,7 +190,7 @@ flowchart TD
   classDef ghost fill:#f7f7f7,stroke:#aaa,color:#777,stroke-dasharray:4 2
 
   AD[admiral: works the map, a dinner for eight on Saturday]:::admiral
-  AD -.-> G[Grilling, settled with the human: healthy, no refined sugar, one vegetarian, 19:00]:::ghost
+  AD -.-> G[Grilling, settled with the user: healthy, no refined sugar, one vegetarian, 19:00]:::ghost
   AD -.-> C1[captain: the starter]:::ghost
   AD -.-> C2[captain: the main]:::ghost
   AD ==> C3[captain: the dessert, brownie with vanilla ice cream]:::captain
@@ -201,12 +201,12 @@ flowchart TD
   C3 --> S[the parent's code-writer, before any code: two lanes named in one comment]:::lane
   S --> L1[Sub-ticket: the brownie<br>its own branch, worktree and crew loop]:::lane
   S --> L2[Sub-ticket: the ice cream<br>its own branch, worktree and crew loop]:::lane
-  C3 --> Q[Question, in Todo: which sweetener<br>blocks both Sub-tickets until the human answers]:::way
+  C3 --> Q[Question, in Todo: which sweetener<br>blocks both Sub-tickets until the user answers]:::way
   C3 --> M[two Merge Sub-tickets, one per lane into the parent, each with its merge review]:::lane
   C3 --> W[the parent: the plating once both are in<br>one review of the whole dish, the PR, then its Merge Sub-ticket into the feature]:::captain
 ```
 
-Charting settled the theme through one Grilling Ticket with the human: healthy, no refined sugar, one
+Charting settled the theme through one Grilling Ticket with the user: healthy, no refined sugar, one
 vegetarian, food on the table at 19:00. The admiral works that map: three courses cooked in parallel
 by three captains, and the shopping, blocked by all three menus. The diagram follows one captain.
 
@@ -221,7 +221,7 @@ by three captains, and the shopping, blocked by all three menus. The diagram fol
   rules out sugar. The captain's discovery finds "no refined sugar" on the Grilling and no
   replacement, and research cannot settle a matter of taste, so the captain files a Question
   Sub-ticket under the dessert ticket in `Todo`, wired to block both lanes, priority `Medium` since
-  two lanes wait. When the human answers, both resume. Had the question been which sweeteners the whole dinner allows, it would have gone to
+  two lanes wait. When the user answers, both resume. Had the question been which sweeteners the whole dinner allows, it would have gone to
   the admiral as a Project-level Question, because its answer reaches the other courses.
 
 The rules the captain applies:
@@ -232,31 +232,31 @@ The rules the captain applies:
 | Lane or parent | separate work that can run at the same time becomes a lane; ordinary sequential work, the joining step, the parent's scenarios, the one review and the PR stay on the parent |
 | What a lane carries | its parent's Type and Mode, a bounded outcome, a disjoint owned-path subset, exact gates, a child-key branch off the parent branch, an isolated worktree, its own status and evidence, its own [code-writer] → [reviewer] loop |
 | What proves a lane | its gates; the parent's scenarios prove the joined result |
-| Merges are Sub-tickets | each lane into the parent, in order, then the parent into the feature: one Merge Sub-ticket per merge, with its own merge review; never batched. An atomic ticket's own merge into main has none: the human clicks its reviewed PR |
+| Merges are Sub-tickets | each lane into the parent, in order, then the parent into the feature: one Merge Sub-ticket per merge, with its own merge review; never batched. An atomic ticket's own merge into main has none: the user clicks its reviewed PR |
 | Depth | one level: a lane that needs splitting is replaced by sibling lanes; the Bug Type-map exception in §6.11, Merge and map-holder-held Sub-tickets are the other children |
 | Local fog | a Question that touches only this ticket is a Sub-ticket here, in `Todo`; one whose answer reaches other tickets goes to the Project's map holder |
 
 Step by step, with the Linear status each step leaves behind:
 
-1. **Think.** The human brings an idea; the co-thinker does the homework, grills, fixes the words,
+1. **Think.** The user brings an idea; the co-thinker does the homework, grills, fixes the words,
    recommends. Output: a DR when the ADR test passes, or ripe intent.
-2. **File.** The human types `to-project`: a Linear Project in `Backlog` with the intent, its links
+2. **File.** The user types `to-project`: a Linear Project in `Backlog` with the intent, its links
    and its answers. An atomic ticket is filed by the co-thinker with its five fields, one Type and one Mode, in `Todo`.
 3. **Chart.** The map holder reads the Project, sets it `Planning`, and charts it with `wayfinder`:
-   the map in the Project description, the first pickable tickets in `Todo`, which the human can
+   the map in the Project description, the first pickable tickets in `Todo`, which the user can
    write with `to-ticket`, and the Project-level Questions in `Todo`, wired, with priority by the
    standard's guide. The Project and its tickets are the plan. Only a cross-cutting architecture
    contract earns a repository plan: the map holder commits it on `main` and loops a fresh
-   `reviewer(project-plan)` to PASS, two rounds at most; a second FAIL goes to the human with the
+   `reviewer(project-plan)` to PASS, two rounds at most; a second FAIL goes to the user with the
    findings as the choice.
-4. **Approve.** The human approves the charted route, in an invoked admiral's session when one holds
+4. **Approve.** The user approves the charted route, in an invoked admiral's session when one holds
    the map; a reviewed plan's status becomes `reviewed`, and the Project `Planned`.
 5. **Open.** The map holder commissions the first Ticket Captain to open `feature/<slug>` from the
    approved `main` SHA before claiming its ticket. The map holder keeps the map in the Project description, gives every ticket its base branch and every ticket that merges its final Merge Sub-ticket, wired in plan order, and sets the
    Project `In Progress`. Tickets in
    `Todo` with no open blocker are pickable.
 6. **Claim.** The map holder commissions a captain per pickable AFK ticket, and opens a HITL ticket's
-   captain in a new top-level thread the human works in. Assignment is the claim; branch, base SHA and worktree path go
+   captain in a new top-level thread the user works in. Assignment is the claim; branch, base SHA and worktree path go
    on the ticket before the first edit.
 7. **Write.** The captain spawns one `code-writer` and sets `Implementing`. The captain's contract
    says whether the ticket carries Gherkin. The writer posts nothing before code unless the work
@@ -280,13 +280,13 @@ Step by step, with the Linear status each step leaves behind:
     resolution that refactored leaving its code no worse than either side, before a fresh `reviewer(merge)` judges the integrated feature; PASS sets the Sub-ticket and the primary `Done`.
     The captain cleans up and returns `done <key>: merged`. PR by PR, in plan order, never batched.
 13. **Inquisition (rare).** The map holder files an Inquisition Ticket with scope and cost in `Backlog`;
-    the human moves it to `Todo` and tells an invoked admiral, or cancels; the map holder commissions
+    the user moves it to `Todo` and tells an invoked admiral, or cancels; the map holder commissions
     a captain who runs it and files Bugs, which land through the normal loop before the landing. Section 6.6.
 14. **Land.** The map holder files the landing Merge Ticket; its captain directs a code-writer to merge `main` into
     the feature, a resolution that refactored leaving its code no worse than either side, verifies combined gates, and obtains the merge review that proves the plan's acceptance criteria, opens
-    the PR into `main`, sets `Ready to Merge`, and prepares the walkthrough. The human clicks, one
+    the PR into `main`, sets `Ready to Merge`, and prepares the walkthrough. The user clicks, one
     Project at a time; the PR lands as a merge commit.
-15. **Walk through.** The map holder commissions the landing Captain to clean up after the human
+15. **Walk through.** The map holder commissions the landing Captain to clean up after the user
     lands, opens the Walkthrough Ticket and loads `walkthrough` itself, then
     facilitates it. Findings become tickets; the map holder commissions the first fix
     Captain to re-cut the feature from `main` under the same name. Nothing found sets the Project
@@ -311,7 +311,7 @@ stateDiagram-v2
   [*] --> Future: no Type yet
   Future --> Backlog: promoted with a Type
   [*] --> Backlog: retained with a Type
-  Backlog --> Todo: the human schedules it, one Type, one Mode
+  Backlog --> Todo: the user schedules it, one Type, one Mode
   Backlog --> Canceled: declined
   [*] --> Todo: a map holder, co-thinker or to-ticket creates it contracted
   Todo --> Implementing: captain spawns the author
@@ -321,7 +321,7 @@ stateDiagram-v2
   Todo --> InReview: a spec review of the contract, before any code
   InReview --> Implementing: FAIL, whatever it found; or a spec review's verdict
   InReview --> Ready: PR ready with its PASS
-  Ready --> Done: its Merge Sub-ticket PASS; for an atomic ticket, the human's click
+  Ready --> Done: its Merge Sub-ticket PASS; for an atomic ticket, the user's click
   Ready --> Implementing: merge review FAIL, reverted
   InReview --> Done: a Merge Sub-ticket's own review PASS
   Implementing --> Todo: released
@@ -337,14 +337,14 @@ stateDiagram-v2
 
 Who sets what: the captain sets every status of its ticket and Sub-tickets; the Project's map holder
 sets Project statuses and its own map-holder-held tickets'. A `Question` runs `Todo` → `Done` and `Todo` on it is
-the human's turn; `Research`, `Grilling` and `Walkthrough` run `Todo` → `In Progress` → `Done`. A
+the user's turn; `Research`, `Grilling` and `Walkthrough` run `Todo` → `In Progress` → `Done`. A
 captain-held ticket normally runs `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`,
 with `In Progress` while its lanes run; a spec review the captain buys shows `In Review` before
 `Implementing`. A Merge Sub-ticket runs `Todo` → `Implementing` → `In Review` →
 `Done` and never waits to be merged: one code-writer maps the conflicts and merges, a resolution
 that refactored leaving its code no worse than either side. An atomic ticket has no Merge Sub-ticket:
-it waits in `Ready to Merge` for the human's click. An Inquisition
-Ticket runs `Backlog` → `Todo`, the human's confirmation → `In Progress`, the captain writes the
+it waits in `Ready to Merge` for the user's click. An Inquisition
+Ticket runs `Backlog` → `Todo`, the user's confirmation → `In Progress`, the captain writes the
 contract, then the sweep and proofs → released `Todo` → resumed `In Progress` → `Done`. It is
 released while its separate record Feature runs the normal docs delivery chain, and resumed for
 retention verification. A Merge Sub-ticket
@@ -357,20 +357,20 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 
 | # | Edge | Channel | Sender returns or writes | Receiver reads | Status set |
 |---|---|---|---|---|---|
-| 1 | human → co-thinker | C | the idea | about, architecture, glossary, linear-workspace-standard | - |
+| 1 | user → co-thinker | C | the idea | about, architecture, glossary, linear-workspace-standard | - |
 | 2 | co-thinker → repository | F | a Decision Record; a glossary entry | - | - |
-| 3 | human → `to-project` → Linear | C, L | the Project: title, summary, intent, decisions taken, out of scope, links to the DR, glossary entries, source FutureFeature | - | Project `Backlog` |
+| 3 | user → `to-project` → Linear | C, L | the Project: title, summary, intent, decisions taken, out of scope, links to the DR, glossary entries, source FutureFeature | - | Project `Backlog` |
 | 4 | co-thinker → Linear (atomic ticket) | L | a ticket with one Type, one Mode, outcome, owned paths, blockers, exact gates, base branch | - | `Todo` |
-| 5 | human → admiral | C | the Project, at any stage | the Project, its plan at the governing commit when one exists, every ticket contract, working-tree contract | - |
+| 5 | user → admiral | C | the Project, at any stage | the Project, its plan at the governing commit when one exists, every ticket contract, working-tree contract | - |
 | 6 | map holder → Linear (chart) | L | through `wayfinder`: the map in the Project description; first tickets with one Type, a Mode where a captain holds the Type, the five fields or their Type's own template, and native blocking edges; Project-level Questions naming waiters, with priority | the Project, governing DRs, about, architecture, dydo-glossary, linear-workspace-standard | Project `Planning`; first tickets and Questions `Todo` |
 | 7 | map holder → repository, only for a cross-cutting architecture contract | F | the plan commit on `main` | - | - |
 | 8 | map holder → reviewer(project-plan) | R (spawn) | the plan path at its commit | the plan, the project-plan rubric, cited DRs and paths | - |
 | 9 | reviewer(project-plan) → map holder, Linear | R, L | the review block, as a Project update | - | - |
-| 10 | invoked admiral → human | C | the charted route and any passing plan, for approval; after two FAILs, the findings as the choice | - | any plan `reviewed`; Project `Planned` |
+| 10 | invoked admiral → user | C | the charted route and any passing plan, for approval; after two FAILs, the findings as the choice | - | any plan `reviewed`; Project `Planned` |
 | 11 | admiral → first Ticket Captain, Linear | R, L | commission to open `feature/<slug>` from the approved main SHA before claim; the map in the Project description; base branch and blockers on every ticket, priority on every HITL one; the final Merge Sub-ticket of every captain-held ticket that merges, created under it and blocked by the previous one in plan order | - | Project `In Progress` |
 | 12 | admiral → ticket-captain (AFK) | R (spawn), L | the ticket key; assignment | the ticket's five fields, the plan at its governing commit, working-tree contract | - |
-| 13 | human → ticket-captain (HITL, atomic, or any ticket without an invoked admiral) | C, L | the ticket key; assignment | the same | - |
-| 13b | ticket-captain (top-level) → human, admiral | C, L | `done <key>` or `released <key>: <reason>` in its own session; the human tells the admiral | the record | - |
+| 13 | user → ticket-captain (HITL, atomic, or any ticket without an invoked admiral) | C, L | the ticket key; assignment | the same | - |
+| 13b | ticket-captain (top-level) → user, admiral | C, L | `done <key>` or `released <key>: <reason>` in its own session; the user tells the admiral | the record | - |
 | 14 | ticket-captain → ticket | L, G | branch, base SHA, worktree path | - | - |
 | 15 | ticket-captain → code-writer | R (spawn) | the record to write, its kind | the owning ticket, and on a fix hop the FAIL block that sent it; the governing Project plan at its linked commit and the Decision Records it names; coding-standards | `Implementing` |
 | 16 | code-writer → ticket-captain | R, L, G | before code, only when needed: one comment naming the lanes or the inexact contract line; after: the `IMPLEMENTED` line with implement SHA, behaviour, red proof, the suites and static gates run with exits, blocker | - | - |
@@ -390,7 +390,7 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 30 | ticket-captain → admiral | R, L | `done <key>: merged`; worktrees and branches cleaned | - | - |
 | 31 | map holder → Linear, repository | L, F | new, split, dropped or resequenced tickets and Project-level map-holder-held tickets; dated amendments committed to a repository plan, where one exists | a fresh `reviewer(project-plan)` reads an amendment that moves destination, scope, acceptance or architecture | - |
 | 32 | admiral → Linear (inquisition proposal) | L | an Inquisition Ticket under the Project: scope, the parts and lenses, the cost, the feature SHA | - | `Backlog` |
-| 33 | human → Linear, admiral (inquisition confirmation) | L, C | the Inquisition Ticket moved to `Todo`, or `Canceled` with the reason; the human tells the admiral | - | `Todo` |
+| 33 | user → Linear, admiral (inquisition confirmation) | L, C | the Inquisition Ticket moved to `Todo`, or `Canceled` with the reason; the user tells the admiral | - | `Todo` |
 | 34 | admiral → ticket-captain (inquisition) | R (spawn), L | the Inquisition Ticket key; assignment | the ticket, the plan at its governing commit, the integrated feature SHA, working-tree contract | - |
 | 35 | inquisition captain → Git | G | `inquisition/<slug>` off the feature SHA, never merged; a child branch per proof | - | - |
 | 36 | inquisition captain → inquisitors | R (spawn) | one part or one lens each, the scope, the plan, the ticket review evidence | the assignment with its evidence, about, architecture, coding-standards | `In Progress` |
@@ -404,19 +404,19 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 42 | inquisition captain → admiral, Linear | R, L | `done <key>` after verifying Bugs, exact record content and delivery merge ancestry/reachability on retained feature; verification on ticket, audit branch deleted, open Bug proof refs retained with named owners | admiral reads durable completion evidence | Inquisition `Done` |
 | 43 | admiral → Linear (landing) | L | the landing Merge Ticket: `main` into the feature, gates, merge review with acceptance proof, the PR into `main`, the walkthrough prepared | - | `Todo`, blocked by unresolved prerequisites for this landing: delivery, confirmed Inquisition/record and required fixes; exclude self and later/deferred work |
 | 44 | landing captain → Git, admiral | G, R | the PR into `main` with its PASS block; `done <key>: PR ready` | - | landing `Ready to Merge` |
-| 45 | admiral → human → Git | C, G | the PR to click and the walkthrough that follows; the feature merged into `main` as a merge commit, one Project at a time; the human tells the admiral, which resumes the landing captain to close and clean up the merged feature: `done <key>: merged` | - | landing `Done`, set by its captain |
-| 46 | admiral → Walkthrough Ticket, human | L, C | the ticket; `walkthrough` loaded by the admiral, then the four-part tour; commission first fix Captain to re-cut the feature if findings reopen the lap | - | `In Progress` → `Done`; findings as tickets; Project `Completed` when none |
+| 45 | admiral → user → Git | C, G | the PR to click and the walkthrough that follows; the feature merged into `main` as a merge commit, one Project at a time; the user tells the admiral, which resumes the landing captain to close and clean up the merged feature: `done <key>: merged` | - | landing `Done`, set by its captain |
+| 46 | admiral → Walkthrough Ticket, user | L, C | the ticket; `walkthrough` loaded by the admiral, then the four-part tour; commission first fix Captain to re-cut the feature if findings reopen the lap | - | `In Progress` → `Done`; findings as tickets; Project `Completed` when none |
 | 47 | crew → ticket-captain (hand-raise) | R | the question, what was searched, why it blocks, facts or options found | - | - |
 | 48 | ticket-captain → research | R (spawn) | the question and where the findings land | the question and destination, about, architecture | - |
 | 49 | research → ticket-captain | R, L or F | one-line answer, destination, unsettled points; the report as a ticket comment or scratch file | - | Research Ticket `Done` by the map holder |
 | 50 | ticket-captain → Linear (local fog) | L | a Question Sub-ticket under the delivery parent, wired as blocker, with its priority by the standard's guide; the record is the whole report | - | Question `Todo` |
 | 51 | ticket-captain → admiral (Project-level fog, or any release) | R, L, G | `released <key>: <reason>`; prepared packet and resume SHA on the record, branch pushed, worktree removed, parent unassigned | - | parent `Todo`, blocker wired |
-| 52 | admiral → Linear, human | L | a Project-level Question Ticket with homework, options, recommendation, wired to every waiter, with its priority by the standard's guide | - | `Todo` |
-| 53 | human → Linear, repository, admiral | L, F, C | the answer on the ticket; a DR when it qualifies; the human tells the admiral | - | Question `Done` |
-| 54 | admiral (every wake: a return or the human's word) → Linear | L, R | commissions every pickable ticket, blocker-cleared ones included; re-wires the merge order when a later PR is ready first; resumes every Merge Sub-ticket whose turn came; re-sets priority on what waits on the human | the board | - |
-| 55 | human → chief-of-staff | C | a request for triage | the board: open Questions, the gates, Projects in flight; working-tree contract | - |
-| 56 | chief-of-staff → human, Linear | C, L | three lists with recommendations; mechanical fixes; delivery staged on its Project for the admiral | - | - |
-| 57 | human → ticket-captain (takeover) | C via the admiral, or the sub-agent's transcript | `release`: the captain releases as in row 51; the human opens a top-level captain on the ticket | the record's resume point | parent `Todo` |
+| 52 | admiral → Linear, user | L | a Project-level Question Ticket with homework, options, recommendation, wired to every waiter, with its priority by the standard's guide | - | `Todo` |
+| 53 | user → Linear, repository, admiral | L, F, C | the answer on the ticket; a DR when it qualifies; the user tells the admiral | - | Question `Done` |
+| 54 | admiral (every wake: a return or the user's word) → Linear | L, R | commissions every pickable ticket, blocker-cleared ones included; re-wires the merge order when a later PR is ready first; resumes every Merge Sub-ticket whose turn came; re-sets priority on what waits on the user | the board | - |
+| 55 | user → chief-of-staff | C | a request for triage | the board: open Questions, the gates, Projects in flight; working-tree contract | - |
+| 56 | chief-of-staff → user, Linear | C, L | three lists with recommendations; mechanical fixes; delivery staged on its Project for the admiral | - | - |
+| 57 | user → ticket-captain (takeover) | C via the admiral, or the sub-agent's transcript | `release`: the captain releases as in row 51; the user opens a top-level captain on the ticket | the record's resume point | parent `Todo` |
 
 ## 6. Exceptions
 
@@ -431,7 +431,7 @@ sequenceDiagram
   participant R as research
   participant A as admiral
   participant B as Linear
-  participant H as human
+  participant H as user
   W->>C: hand-raise: question, sources searched, why it blocks, options found
   C->>C: bounded discovery: DRs, plan, ticket links, glossary, code, tests
   alt the sources settle it
@@ -440,7 +440,7 @@ sequenceDiagram
     C->>R: the question and the destination
     R-->>C: one-line answer, report on the ticket
     C->>W: resume
-  else human judgment, inside this ticket's outcome and the Project destination
+  else user judgment, inside this ticket's outcome and the Project destination
     C->>B: Question Sub-ticket under the delivery parent, Todo, wired as blocker, with its priority
     C->>A: released &lt;key&gt;: &lt;reason&gt;
     Note over C,B: packet and resume SHA on the record; parent Todo, Question wired as blocker
@@ -462,13 +462,13 @@ sequenceDiagram
 
 The contract: the crew member never fills a gap with an assumption and never creates a ticket; the captain
 owns discovery and the local map; the scope rule in the workspace standard decides local Sub-ticket
-versus Project-level packet; the Project's map holder alone creates Project-level Questions; the human answers on
-the ticket, never in a chat that evaporates; the chief-of-staff surfaces open Questions when the human
+versus Project-level packet; the Project's map holder alone creates Project-level Questions; the user answers on
+the ticket, never in a chat that evaporates; the chief-of-staff surfaces open Questions when the user
 asks it to, it is never sent anything.
 
 A call above the officer's say goes through `what-would-balazs-do`
 ([DR 054](../project/decisions/054-what-would-balazs-do-tribunal.md)) when it is DR-grade or
-irreversible, or when the human is away. Only a call the tribunal decides while he is away stays
+irreversible, or when the user is away. Only a call the tribunal decides while he is away stays
 unwired, for him to ratify or overturn; every other call, present, irreversible or undecided, gets a
 prepared Question wired to its waiters.
 
@@ -483,7 +483,7 @@ flowchart LR
   RT -->|"every finding, whatever it is · Implementing"| IM[fresh author of the change's kind, code-writer or docs-writer: fix hop; it amends a scenario when the FAIL block names it]:::crew
   IM --> FR{{fresh reviewer, new Candidate SHA · In Review}}:::reviewer
   FR --> RV
-  RV -->|fifth consecutive FAIL| ESC[escalate: comment on the ticket, Question Ticket as blocker, admiral, then human]
+  RV -->|fifth consecutive FAIL| ESC[escalate: comment on the ticket, Question Ticket as blocker, admiral, then the user]
 ```
 
 The contract: FAIL is binding; every FAIL returns the record to `Implementing`, whatever it found,
@@ -522,9 +522,9 @@ repository plan - the initial plan and its amendments alike - on `main` through 
 when the Project has no feature branch yet, or none exists at all for a standalone cross-cutting
 plan, and on the Project's feature branch once one is open. Route-only amendments need no review. An amendment
 that changes destination, scope, acceptance criteria or governing architecture goes back through
-`reviewer(project-plan)`, when a plan exists, and human approval before the affected tickets are
+`reviewer(project-plan)`, when a plan exists, and user approval before the affected tickets are
 commissioned. The review
-loop is capped at two rounds at any time; the second FAIL is the human's choice.
+loop is capped at two rounds at any time; the second FAIL is the user's choice.
 
 ### 6.5 Merge review FAIL
 
@@ -546,7 +546,7 @@ no Merge Sub-ticket, so a defect found on `main` after its merge is a Bug.
 
 ### 6.6 The inquisition
 
-A ticket like any other, with its own captain, run once the feature is integrated and the human has
+A ticket like any other, with its own captain, run once the feature is integrated and the user has
 confirmed the spend. It does what a review does, at two scales a single review cannot reach: many
 read-only eyes on the parts and on the whole, and hypotheses of what could go wrong proved: one in
 code by a proof-only test, one in prose, docs or a prompt file by its quoted passages. It does not
@@ -558,7 +558,7 @@ flowchart TD
   classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
   classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
 
-  AD[map holder: the human, or an admiral the human invoked; the feature is integrated]:::officer -->|Inquisition Ticket in Backlog: scope, parts, lenses, cost| H([human]):::human
+  AD[map holder: the user, or an admiral the user invoked; the feature is integrated]:::officer -->|Inquisition Ticket in Backlog: scope, parts, lenses, cost| H([user]):::human
   H -->|moves it to Todo and tells an invoked admiral, or cancels; the map holder commissions| IC[ticket-captain of the inquisition]:::officer
   IC -->|inquisition branch off the feature SHA, never merged| BR[(inquisition/slug)]
   IC -->|contracts it: the parts, the lenses, the shape of a hypothesis| SP[(the Inquisition Ticket)]
@@ -582,7 +582,7 @@ flowchart TD
 ```
 
 The contract: the map holder proposes by filing the Inquisition Ticket in `Backlog` with the parts and
-lenses it wants swept and the cost; the human confirms by moving it to `Todo`, which is the gate DR
+lenses it wants swept and the cost; the user confirms by moving it to `Todo`, which is the gate DR
 045 reserves; the captain claims it like any ticket and works on `inquisition/<slug>`, cut from the
 integrated feature SHA and deleted when the ticket is `Done`, so nothing on it can leak into the
 product; inquisitors are read-only and refute their own catches, and their second product is the
@@ -602,13 +602,13 @@ the landing's merge review, and the Bugs the inquisition filed are landed before
 ### 6.7 An atomic ticket
 
 No Project, no admiral. The co-thinker reads the workspace standard and writes the ticket with its five fields, one Type
-and one Mode in `Todo`; the human opens a
+and one Mode in `Todo`; the user opens a
 captain on it, or spawns one from any session, and it claims from `main`, runs the same crew and the same
 reviewer, and opens the PR into `main` with its PASS block. There is no Merge Sub-ticket (DR 047,
 amended 2026-09-23): once CI is green the captain sets `Ready to Merge` and returns
-`done <key>: PR ready`; the human clicks the merge; the captain then closes the ticket `Done`, cleans
-up and returns `done <key>: merged`. Beyond that click, the human's only gate is the one the captain
-chooses to raise. The human's own commits on main are outside the model and need no ticket.
+`done <key>: PR ready`; the user clicks the merge; the captain then closes the ticket `Done`, cleans
+up and returns `done <key>: merged`. Beyond that click, the user's only gate is the one the captain
+chooses to raise. The user's own commits on main are outside the model and need no ticket.
 
 ### 6.8 Escalation and precedence
 
@@ -617,10 +617,10 @@ flowchart LR
   W[crew] -->|hand-raise, returned to the captain| C[ticket-captain]
   C -->|released &lt;key&gt;: &lt;reason&gt;| A[map holder]
   C --> R[(ticket record: prepared packet and resume SHA)]
-  A -->|a DR conflict, live external state, missing authority| H[human]
+  A -->|a DR conflict, live external state, missing authority| H[user]
 ```
 
-Agents settle operational conflicts themselves, highest first: the human's live instruction, a
+Agents settle operational conflicts themselves, highest first: the user's live instruction, a
 Decision Record, the reviewed architecture plan, the feature spec (both pinned), the ticket contract,
 coding standards, existing code. Beside that ladder stands the truth rule for live work: the Linear record is the
 default truth and its latest word wins; an agent that finds a conflict raises it, and a live
@@ -631,9 +631,9 @@ its scoped exception, not a hand-raise.
 
 ### 6.9 A prototype
 
-A Prototype Ticket is held by a captain and run for the human: fast sketches that settle a visual or
+A Prototype Ticket is held by a captain and run for the user: fast sketches that settle a visual or
 behavioural choice, co-thinking in code. Its contract names the question and the variants; its
-code-writer builds them on `prototype/<name>` in its own worktree; the human is the review, in the
+code-writer builds them on `prototype/<name>` in its own worktree; the user is the review, in the
 session. The verdict goes on the ticket with the winning commit. The
 branch is kept and linked from the ticket until the delivery ticket is `Done`; that ticket's code-writer
 reads it as the template for a fresh rewrite, never as a base or a copy, and nothing on it is ever submitted or merged (DR 047 §5).
@@ -647,18 +647,18 @@ flowchart LR
   classDef officer fill:#cfe2ff,stroke:#2c5aa0,color:#000
   classDef human fill:#f6d365,stroke:#8a6d00,color:#000
   B[a blocker the captain cannot clear] --> REL
-  T([the human wants to drive it]):::human -->|release, through the map holder| REL
+  T([the user wants to drive it]):::human -->|release, through the map holder| REL
   D[the session dies, no return] -.->|the map holder treats it as a release without the push| REL
   REL[the captain releases: branch pushed, worktree removed, parent to Todo, unassigned, blocker wired]:::officer --> REC[(the record: every hop's SHA, the last one is the resume point)]
   REC -->|blocker cleared, next wake| RC[a fresh captain resumes from the branch]:::officer
-  REC -->|a top-level captain session| H2([the human drives it]):::human
+  REC -->|a top-level captain session| H2([the user drives it]):::human
 ```
 
-On Claude Code a one-off steer needs no release: the human opens the captain's transcript from the
+On Claude Code a one-off steer needs no release: the user opens the captain's transcript from the
 subagent panel and sends it a message there. Anything longer is a release and a top-level captain.
 The steer is a Claude Code convenience; the floor on both hosts is the release.
 [DYD-88 - Codex sub-agent lifecycle observations - 2026-09-14](https://linear.app/bodnar-balazs/document/dyd-88-codex-sub-agent-lifecycle-observations-2026-09-14-37f58f170af1) established returned-sub-agent resume,
-while passive wake and human-origin steering remain unestablished on Codex.
+while passive wake and user-origin steering remain unestablished on Codex.
 
 ### 6.11 A Bug
 
@@ -679,25 +679,25 @@ is atomic.
 
 The walkthrough finds something. The Project stays open: the findings become tickets, the feature
 branch is re-cut from `main` under the same name, and the lap runs fixes → Merge Sub-tickets → the
-landing → another walkthrough, with an inquisition in between only when the human confirms one. The
+landing → another walkthrough, with an inquisition in between only when the user confirms one. The
 Project is `Completed` when a walkthrough finds nothing.
 
 ## 7. A day with three Projects
 
-The target the model is built for: the human's queue is never empty and never a wall. Every item on
-it has its homework done, so the human's minutes go to judgment, taste and direction: an answer, a
-reaction to a prototype, an approval, a landing, a walkthrough. Agents never wait on the human
-without a `Question` in `Todo`, and the human never waits on agents: when the queue empties, the next
+The target the model is built for: the user's queue is never empty and never a wall. Every item on
+it has its homework done, so the user's minutes go to judgment, taste and direction: an answer, a
+reaction to a prototype, an approval, a landing, a walkthrough. Agents never wait on the user
+without a `Question` in `Todo`, and the user never waits on agents: when the queue empties, the next
 idea goes to a co-thinker. Priority on what waits on him says which comes first: the one that frees
 the most AFK work.
 
-This day the human has invoked three admirals for throughput: three top-level sessions in three terminals, each in its feature worktree; their
-captains are sub-agents in ticket worktrees. The human's own terminal wears chief-of-staff to read the
+This day the user has invoked three admirals for throughput: three top-level sessions in three terminals, each in its feature worktree; their
+captains are sub-agents in ticket worktrees. The user's own terminal wears chief-of-staff to read the
 queue, and co-thinker or a HITL ticket's captain, a Prototype's among them, to act on it.
 
 A snapshot at 10:40:
 
-| Project | Status | Session | In flight | Waits on the human |
+| Project | Status | Session | In flight | Waits on the user |
 |---|---|---|---|---|
 | A: Reqnroll in DynaDocs | `In Progress` | admiral A | DYD-90 `Implementing`; DYD-91 `Todo`, blocked by DYD-90, whose outcome it builds on | nothing |
 | B: Notion export | `In Progress` | admiral B | DYD-95 `In Review`; DYD-96 `Implementing`; DYD-97 Prototype, HITL, `Todo`, `High`: its verdict frees DYD-98 | a captain session on the prototype |
@@ -719,31 +719,31 @@ flowchart LR
     C1[DYD-99 Question, Todo]
     C2[plan draft, blocked by DYD-99]
   end
-  H([human]):::human -->|1: answer, five minutes| C1
+  H([user]):::human -->|1: answer, five minutes| C1
   H -->|2: prototype session, half an hour| B3
   H -.->|3: nothing yet| A1
 ```
 
 The chief-of-staff's three lists at that moment: *Answer needed*, DYD-99, `High`, a five-minute
-answer; *Approval needed*, none; *Landing*, none. DYD-97, also `High`, waits on the human's captain
+answer; *Approval needed*, none; *Landing*, none. DYD-97, also `High`, waits on the user's captain
 session rather than an answer. Then, in order:
 
-1. **10:40.** The human answers DYD-99 on the ticket and tells admiral C; the blocker clears; admiral
+1. **10:40.** The user answers DYD-99 on the ticket and tells admiral C; the blocker clears; admiral
    C finishes the plan and sends it to `reviewer(project-plan)`.
-2. **10:45.** The human opens a captain session on DYD-97, the prototype: a UI question, two
+2. **10:45.** The user opens a captain session on DYD-97, the prototype: a UI question, two
    variants to react to in that session. While it runs, DYD-90's code-writer returns and its reviewer PASSes; its captain
    opens the PR, sets `Ready to Merge` and returns `done DYD-90: PR ready`; admiral A resumes it for the
    Merge Sub-ticket, whose review PASSes; DYD-91's blocker clears and it gets a captain. DYD-95's
    reviewer FAILs on one finding; its captain routes it to a fresh code-writer and the ticket shows
    `Implementing`.
-3. **11:15.** The prototype's verdict is on DYD-97 with the winning commit and the human tells
+3. **11:15.** The prototype's verdict is on DYD-97 with the winning commit and the user tells
    admiral B, which graduates the answer into DYD-98, a delivery ticket. Project C's plan has a PASS
    and waits for approval: the next item on the queue.
-4. **11:20.** The human reads the plan's destination and first tickets in admiral C's terminal and
+4. **11:20.** The user reads the plan's destination and first tickets in admiral C's terminal and
    approves; the Project is `Planned`; admiral C commissions its first captain to open the feature
    from the approved main SHA before claiming its ticket.
 5. **11:30.** The queue is empty. Admiral A has two captains running, admiral B one and a fresh
-   review, admiral C one. The human takes the next raw idea to a co-thinker, or reads the walkthrough
+   review, admiral C one. The user takes the next raw idea to a co-thinker, or reads the walkthrough
    of what landed since morning.
 
 ## 8. Prompt-file propagation - DYD-90
@@ -754,14 +754,14 @@ Completed rows below name the source, not a claim that generated runtime output 
 
 | File | Disposition |
 |---|---|
-| ~~admiral~~ | Authored: optional, only when the human invokes it (DR 051); charts with `wayfinder` as map holder; board wakes, planning/review/human approval, captain commissions and merge ordering; no Git beyond its plan's commits; landing and walkthrough. |
+| ~~admiral~~ | Authored: optional, only when the user invokes it (DR 051); charts with `wayfinder` as map holder; board wakes, planning/review/user approval, captain commissions and merge ordering; no Git beyond its plan's commits; landing and walkthrough. |
 | ~~ticket-captain~~ | Authored: specify first, lanes/empty hops, statuses, four-field reviewer brief, two-step returns, release and Merge FAIL. |
 | ~~project-planner~~ | Removed by DR 051: the map holder charts with `wayfinder`, and `to-ticket` carries upstream tracer bullets and blockers. |
 | ~~specifier, implementer, hardener~~ | Retired: the single `code-writer` absorbs all three (DYD-222); the `Specifying` and `Hardening` statuses retired on 2026-09-23. |
 | ~~reviewer~~ | Authored: four-field brief, pinned block on work judged, same merge rubric at every level. |
 | ~~docs-writer~~ | Authored: captain invocation, committed evidence and inquisition record. |
 | ~~inquisitor~~ | Authored: read-only captain assignment, findings/hypotheses with proof seam; no workflow verify job. |
-| ~~chief-of-staff~~ | Authored: Questions plus human gates, priority and released blockers; prototype retention follows delivery completion. |
+| ~~chief-of-staff~~ | Authored: Questions plus user gates, priority and released blockers; prototype retention follows delivery completion. |
 | ~~co-thinker~~ | Authored: explicit to-project graduation, atomic five-field contract, FutureFeature status. |
 | ~~wayfinder~~ | Authored: map holder at both levels, local/Project Question scope, Merge order. |
 | ~~to-project, wizard~~ | Authored imports with pinned MIT provenance; wizard shell example shipped through Markdown resource. |

@@ -8,7 +8,7 @@ type: reference
 Complete reference for dydo's local setup, documentation, guard, worktree cleanup, validation, testing, and utility
 commands.
 Live work is managed in Linear through its official surfaces; no dydo command creates, updates,
-polls, or mirrors a Linear object; `dydo map` reads Linear on demand and keeps disposable saved maps. FutureFeatures live in Linear and are promoted by the human; historical repository records remain
+polls, or mirrors a Linear object; `dydo map` reads Linear on demand and keeps disposable saved maps. FutureFeatures live in Linear and are promoted by the user; historical repository records remain
 durable evidence rather than a second work board.
 
 Commands find the project by walking up to the nearest `dydo.json`; `dydo validate` is the exception

@@ -13,7 +13,7 @@ repository records.
 
 - **decisions/** - accepted technical and product choices
 - **plans/** - reviewed contracts for coordinated, cross-cutting, or architecture-sensitive Linear Projects
-- **future-features/** - unscheduled repo-native ideas; only a human may promote one to Linear
+- **future-features/** - unscheduled repo-native ideas; only the user may promote one to Linear
 - **migrations/** - durable migration evidence and assimilation briefs
 - **inquisitions/** - multi-lens QA reports at meaningful product milestones
 - **changelog/** - completed change and release history

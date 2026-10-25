@@ -22,7 +22,7 @@ reads.
 |---|---|---|
 | `name` | the role name | Keep it equal to the folder name; it is the identity on both hosts. |
 | `description` | one line | The only text a model weighs before reaching for the role. |
-| `disable-model-invocation` | `true` | Claude-only: the skill is out of every model's reach; only the human, by name. |
+| `disable-model-invocation` | `true` | Claude-only: the skill is out of every model's reach; only the user, by name. |
 | `argument-hint` | one quoted line | Claude-only: the prompt the host shows after the name. Codex carries the same hint in the skill's `agents/openai.yaml`. |
 
 `automatic` discovery buys reach - the model can fire on the description, and other skills can reach

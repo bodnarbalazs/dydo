@@ -1,13 +1,13 @@
 ---
 name: wizard
-description: Human-only setup, credentials or cutover steps need a repeatable interactive bash procedure; the Enablement captain uses this method.
+description: User-only setup, credentials or cutover steps need a repeatable interactive bash procedure; the Enablement captain uses this method.
 ---
 
 <!-- Adapted from mattpocock/skills wizard at 6654f6b60cd9d5be8b54c6fafe44346dabeb3b76 (MIT). -->
 
 # Wizard
 
-A **wizard** is a bash script that walks a human, step by step, through a manual procedure that's tedious to do by hand and tedious to re-explain to an AI every time. It opens each URL, says exactly what to click and copy, captures the values, writes them where they belong (`.env`, GitHub secrets), confirms at every stage, and shows how many stages are left. It might configure third-party services, run a one-off migration, or move the project from one state to another.
+A **wizard** is a bash script that walks the user, step by step, through a manual procedure that's tedious to do by hand and tedious to re-explain to an AI every time. It opens each URL, says exactly what to click and copy, captures the values, writes them where they belong (`.env`, GitHub secrets), confirms at every stage, and shows how many stages are left. It might configure third-party services, run a one-off migration, or move the project from one state to another.
 
 The delightful UX is already solved by [template](resources/template.md): stage-by-stage progress, confirmation gates, cross-platform URL opening (including WSL), hidden secret entry, idempotent `.env` upserts, `gh secret`/`gh variable` writes, and a closing summary. **Your job is only to scope the procedure and author its stages.** The library above the `STAGES` marker is identical in every wizard; that consistency is the point: never hand-edit it.
 
@@ -24,13 +24,13 @@ Work out every manual step the user must take and every value that gets captured
 
 Then show the user the ordered list of stages and the values each produces, and confirm: he may add, drop, or reorder.
 
-Never put a decision in a wizard, in prose or any other form: a decision needs context and a way to ask back, so settle each one in conversation before you author; the script asks the human only for operational confirmations (y/N or Enter to continue) and captured values (a secret, an identifier, a path).
+Never put a decision in a wizard, in prose or any other form: a decision needs context and a way to ask back, so settle each one in conversation before you author; the script asks the user only for operational confirmations (y/N or Enter to continue) and captured values (a secret, an identifier, a path).
 
 **Done when:** every stage is named in order, and for each captured value you know (a) where the user gets it, (b) where it's written (`.env`, a GitHub secret, both, or nowhere; some stages are pure actions), and (c) whether it's secret (hidden entry) or public.
 
 ### 2. Map each stage's journey
 
-For each stage, write the precise path a human follows: which URL to open, what to do there, where a value is shown, which variable it fills: e.g. "Dashboard → Developers → API keys → Reveal test key → copy". Where you don't actually know the current UI or the exact command, say so and ask the user or check the docs: never invent steps that may not exist.
+For each stage, write the precise path the user follows: which URL to open, what to do there, where a value is shown, which variable it fills: e.g. "Dashboard → Developers → API keys → Reveal test key → copy". Where you don't actually know the current UI or the exact command, say so and ask the user or check the docs: never invent steps that may not exist.
 
 **Done when:** every stage traces to concrete instructions a stranger could follow.
 
@@ -44,5 +44,5 @@ Hold the bar the template sets: open the URL before asking for its value, use `a
 
 - `bash -n <script>`; run `shellcheck` if available.
 - `chmod +x <script>`.
-- Don't run it end-to-end yourself: it opens browsers and blocks on human input. Trace it statically instead: every value from step 1 is captured and lands where step 1 said, and every `set_secret` name exactly matches a `secrets.*` reference in CI.
+- Don't run it end-to-end yourself: it opens browsers and blocks on user input. Trace it statically instead: every value from step 1 is captured and lands where step 1 said, and every `set_secret` name exactly matches a `secrets.*` reference in CI.
 - Hand the user one line he pastes into his current terminal and runs with Enter, nothing before it. Use absolute paths, and launch bash in the line when the terminal isn't bash: from PowerShell, `& "C:\Program Files\Git\bin\bash.exe" "C:/abs/path/wizard.sh"`; on Linux and macOS, `bash /abs/path/wizard.sh`. If it's a repeatable setup path, commit it and link it from the README so the next person runs the script instead of asking an AI.

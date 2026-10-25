@@ -95,7 +95,7 @@ PageRank twist: concepts referenced by other highly-referenced concepts inherit 
 
 ## Rationale
 
-FutureFeature is a repo-native idea record. It remains unpromoted until a separate human decision creates Linear work.
+FutureFeature is a repo-native idea record. It remains unpromoted until a separate user decision creates Linear work.
 
 ## Related
 

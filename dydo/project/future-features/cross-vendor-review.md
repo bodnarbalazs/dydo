@@ -44,7 +44,7 @@ enough review blocks exist to compare verdicts by model.
 
 ## Rationale
 
-FutureFeature is a repo-native idea record. It remains unpromoted until the human promotes it to
+FutureFeature is a repo-native idea record. It remains unpromoted until the user promotes it to
 exactly one Linear Initiative, Project, or ticket.
 
 ## Related

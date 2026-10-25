@@ -171,7 +171,7 @@ off-limits and protected checks.
 ```json
 {
   "pattern": "^tools/(?!one-off/)",
-  "message": "New tools go under tools/one-off/ unless the human asked for a permanent one.",
+  "message": "New tools go under tools/one-off/ unless the user asked for a permanent one.",
   "severity": "warn",
   "match": "new-file"
 }

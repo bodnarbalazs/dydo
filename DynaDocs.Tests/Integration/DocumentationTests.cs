@@ -34,7 +34,7 @@ public class DocumentationTests : IntegrationTestBase
         var futureFeatureContract = File.ReadAllText(
             Path.Combine(futureFeaturesRoot, "_future-features.md"));
         Assert.Contains("repo-native ideas, not scheduled work", futureFeatureContract);
-        Assert.Contains("Human promotion creates exactly one appropriately shaped Linear Initiative, Project, or ticket",
+        Assert.Contains("User promotion creates exactly one appropriately shaped Linear Initiative, Project, or ticket",
             futureFeatureContract);
         Assert.Contains("only in Linear; the FutureFeature remains provenance", futureFeatureContract);
     }

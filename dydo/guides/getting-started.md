@@ -5,7 +5,7 @@ type: guide
 
 # Getting Started
 
-The framework setup checklist: how an agent, or a human, builds dydo into a project from install to
+The framework setup checklist: how an agent, or a user, builds dydo into a project from install to
 the first claimable ticket, Linear workspace and host configuration included. Follow it top to
 bottom. Every step says how to tell it is already done, so it also serves a project that has dydo
 half set up.
@@ -52,7 +52,7 @@ projection lines in `.gitignore`.
 ## 3. Install the skills
 
 Do this before the first agent session: the scaffolded `CLAUDE.md` and `AGENTS.md` send a session
-that thinks with the human to the `co-thinker` skill, and every role is a skill. The skills do not
+that thinks with the user to the `co-thinker` skill, and every role is a skill. The skills do not
 come with the npm or .NET package, and `dydo init` does not write them.
 
 1. Copy `skills/`, `setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` from the
@@ -73,7 +73,7 @@ OpenCode may read those roots as well; that is untested, and dydo has no OpenCod
 
 ## 4. Connect Linear
 
-Agents reach Linear through its official MCP server, which writes as the human who authorized it.
+Agents reach Linear through its official MCP server, which writes as the user who authorized it.
 Check first: list the team's tickets over the MCP. If that answers, go to step 5.
 
 Claude Code:
@@ -97,8 +97,8 @@ under `[features]` in `~/.codex/config.toml`.
 
 The [Linear Workspace Standard](../reference/linear-workspace-standard.md) is the target. Compare
 the team against it over the MCP and fix the differences. The MCP creates labels; statuses, project
-statuses and templates are the human's clicks, so list exactly what is missing, with the standard's
-names and order for statuses and names and colours for labels, and walk the human through it.
+statuses and templates are the user's clicks, so list exactly what is missing, with the standard's
+names and order for statuses and names and colours for labels, and walk the user through it.
 
 1. **Ticket statuses.** The ten, in the standard's categories and order. Linear draws the order as
    progress, so `Ready to Merge` is the last of the started ones.
@@ -123,7 +123,7 @@ Done when `dydo check` no longer warns about uncustomized foundation documents.
 
 ## 7. Host configuration
 
-The spawn tree needs three layers below the top-level session - the human's own, or an invoked
+The spawn tree needs three layers below the top-level session - the user's own, or an invoked
 admiral's: ticket-captain, crew, scout.
 
 - Claude Code: `.claude/settings.json` contains `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"`.
@@ -149,9 +149,9 @@ touching a status, which only a captain sets.
 ## Run work through Linear
 
 The operating model is in [Control Flow](../understand/control-flow.md): an idea goes to a
-co-thinker, a ripe one becomes a Project through `to-project`, the map holder - the human by default,
+co-thinker, a ripe one becomes a Project through `to-project`, the map holder - the user by default,
 or an invoked admiral - reads the Project and acts, captains own tickets, every merge inside a
-Project is a Merge Ticket, and the human acts at the gates,
+Project is a Merge Ticket, and the user acts at the gates,
 clicking an atomic ticket's reviewed PR into main. The
 [Working-Tree Contract](./working-tree-contract.md) says which branch and worktree each of them works
 in.

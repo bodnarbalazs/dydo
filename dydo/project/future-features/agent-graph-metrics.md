@@ -27,7 +27,7 @@ The goal is a small set of numbers that move when you change a prompt, so you ca
 
 - **First-pass approval rate** - % of tasks accepted on first review without further work
 - **Rework rate** - % of tasks returned from review for further work
-- **Chain completion rate** - % of coordination chains that finish without human intervention
+- **Chain completion rate** - % of coordination chains that finish without user intervention
 - **Mean chain depth** - average recorded execution steps per task from work start to approval
 - **Execution duration by role** - median wall-clock time, grouped by role
 - **Block rate** - guardrail blocks / total events (high = prompt or onboarding friction)
@@ -47,7 +47,7 @@ After the evidence contract exists, evaluate a small analysis capability that bu
 
 ## Rationale
 
-FutureFeature is a repo-native idea record. It remains unpromoted until a separate human decision creates Linear work.
+FutureFeature is a repo-native idea record. It remains unpromoted until a separate user decision creates Linear work.
 
 ## Related
 

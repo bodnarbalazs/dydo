@@ -39,7 +39,7 @@ The `project/` tree contains information that remains valuable after current exe
 accepted Decisions, reviewed coordinated-work plans, audits, assimilation briefs, migration evidence,
 release history, pitfalls, and FutureFeatures.
 
-A FutureFeature is an unscheduled idea, not actionable work. Only the human may promote it to exactly
+A FutureFeature is an unscheduled idea, not actionable work. Only the user may promote it to exactly
 one Linear Initiative, Project, or ticket. Its terminal promotion reference is provenance; delivery
 status remains in Linear.
 

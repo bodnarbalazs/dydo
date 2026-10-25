@@ -6,7 +6,7 @@ type: guide
 # Working-Tree Contract
 
 The bird's-eye view of how a Project moves through branches and worktrees. A Project's map holder,
-the human or an invoked admiral, uses it to know what to expect from Ticket Captains and their lane
+the user or an invoked admiral, uses it to know what to expect from Ticket Captains and their lane
 crew; Ticket Captains use it to know what they own and what they hand back. The `chief-of-staff` audits failures of this contract, not routine cleanup.
 
 ## Invariants
@@ -20,16 +20,16 @@ crew; Ticket Captains use it to know what they own and what they hand back. The 
 - Every crew **hop** ends on a commit: the return names its SHA, the Ticket Captain posts it on the
   record, and the ticket branch keeps its hops unsquashed and unrewritten.
 - Branch, base SHA and worktree path are posted on the relevant ticket or Sub-ticket before the first edit.
-- Project tickets integrate serially through their feature branch; the human alone lands the feature on
+- Project tickets integrate serially through their feature branch; the user alone lands the feature on
   `main`/`master` (the repository's default branch, whatever it is named).
 
 ## Branches and targets
 
 | Work | Branches from | Branch | PR targets | Merger |
 |---|---|---|---|---|
-| Project | `main` | `feature/<project-slug>` | `main` | human |
+| Project | `main` | `feature/<project-slug>` | `main` | user |
 | Project ticket | its feature branch | `DYD-123-<slug>` | its feature branch | its captain-directed Merge Sub-ticket |
-| Atomic ticket | `main` | `DYD-123-<slug>` | `main` | human, clicking its PR once it carries a reviewer PASS and CI is green; no Merge Sub-ticket |
+| Atomic ticket | `main` | `DYD-123-<slug>` | `main` | user, clicking its PR once it carries a reviewer PASS and CI is green; no Merge Sub-ticket |
 | Lane Sub-ticket | its parent ticket branch | `DYD-124-<slug>` | its parent ticket branch | its captain-directed Merge Sub-ticket |
 | Inquisition Ticket | integrated feature SHA | `inquisition/<slug>` | none; never merges | - |
 | Proof branch | the Inquisition's audit SHA | a child branch named in the proof-only brief | none; never merges | - |
@@ -50,8 +50,8 @@ provide the ticket worktree; otherwise place it beside the repository at
 | Build and prove | crew | Changes stay inside owned paths; exact gates pass; each hop ends on a commit `<KEY> <hop>: <what>`, the hop being `implement`, `fix` after a FAIL, `merge`, or `proof`, which commits as `<KEY> proof: <hypothesis>`; review evidence stays on the work item reviewed; every return comes back to the Ticket Captain. |
 | Review and offer | `ticket-captain` | Passed lane branches are integrated into the parent ticket branch; combined gates pass; a fresh parent ticket-review PASS block is on the ticket and in the PR; the branch is pushed and the PR targets the branch in the table above. |
 | Integrate a Project ticket | `ticket-captain` | Its final Merge Sub-ticket runs a code-writer - conflicts and combined gates mapped, the merge performed, a resolution that refactored leaving its code no worse than either side - then a fresh merge reviewer, preserving the merge commit and hop SHAs; the map holder wires the order and may advance an independent ready PR. Parent stays `Ready to Merge` until merge PASS, then both close `Done`. |
-| Integrate an atomic ticket | `ticket-captain` | No Merge Sub-ticket: the PR into main carries its reviewer PASS, the captain confirms CI green and sets `Ready to Merge`, and the human clicks the merge. The captain then closes the ticket `Done` and cleans up. |
-| Land the Project | human | The landing Merge Ticket prepares main into feature and obtains acceptance PASS; the human clicks feature into main as a merge commit, never squash. |
+| Integrate an atomic ticket | `ticket-captain` | No Merge Sub-ticket: the PR into main carries its reviewer PASS, the captain confirms CI green and sets `Ready to Merge`, and the user clicks the merge. The captain then closes the ticket `Done` and cleans up. |
+| Land the Project | user | The landing Merge Ticket prepares main into feature and obtains acceptance PASS; the user clicks feature into main as a merge commit, never squash. |
 
 ## Before the first edit
 
@@ -131,12 +131,12 @@ The captain offers a PR with its PASS block, sets `Ready to Merge`, and returns
 captain takes the record, and returns `done <key>: merged` after merge PASS and cleanup. The record
 holds the detail; the captain posts each crew hop's SHA. A Merge Sub-ticket never enters `Ready to Merge`.
 An atomic ticket has no Merge Sub-ticket: its captain sets `Ready to Merge` once CI is green, and after
-the human's click closes it `Done`, cleans up and returns `done <key>: merged`.
+the user's click closes it `Done`, cleans up and returns `done <key>: merged`.
 
-For an uncleared blocker or human takeover: push, post the resume SHA, clean the worktree (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree), set the
+For an uncleared blocker or user takeover: push, post the resume SHA, clean the worktree (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree), set the
 parent `Todo`, unassign and wire any blocker; return `released <key>: <reason>`. A dead session is
 treated as release from its last recorded hop without a final push. Fresh commission from the
-record works on both hosts. An invoked admiral wakes on a captain's return or the human's word and rereads
+record works on both hosts. An invoked admiral wakes on a captain's return or the user's word and rereads
 the board, including released and blocker-cleared tickets.
 
 Merge FAIL stays owned: fix integration defects inside Merge; revert a source defect there and
@@ -180,8 +180,8 @@ chain. This is ordinary Feature delivery and release, not a new Type or a serial
 | Parent ticket and lane worktrees | `ticket-captain` | Every worktree it or its crew created is cleaned with `dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree. A spawned Ticket Captain first pushes the parent branch and opens its PR so the work survives its return. |
 | Integrated lane Sub-ticket branch | `ticket-captain` | The branch is deleted after it passes review and is integrated into the parent ticket branch. |
 | Merged Project ticket branch | `ticket-captain` | The branch is deleted after the merge. |
-| Merged atomic ticket branch | `ticket-captain` | The branch is deleted after the human clicks its PR into main. |
-| Merged feature branch | the map holder, commissioning the landing Captain | The landing Captain deletes the branch after the human lands it and reports completion. |
+| Merged atomic ticket branch | `ticket-captain` | The branch is deleted after the user clicks its PR into main. |
+| Merged feature branch | the map holder, commissioning the landing Captain | The landing Captain deletes the branch after the user lands it and reports completion. |
 | Prototype branch | `ticket-captain`, tracked by the map holder | Keep the winning code linked as delivery-spec input; delete when that delivery ticket is Done or with feature cleanup. |
 | Inquisition branch | `ticket-captain` | Delete at Done after the record/proof retention checks above; never merge it or delete the independently retained Bug refs. |
 

@@ -8,12 +8,12 @@ status: idea
 # Routine Admiral
 
 An admiral that wakes on a cadence and keeps a Project moving while nobody is watching, instead of
-only for as long as a human keeps a session open.
+only for as long as a user keeps a session open.
 
 ## Today
 
 `admiral` is an officer role authored with the other skills at `skills/<category>/<name>` - specifically `skills/roles/officers/admiral` -
-and exposed to each host by setup. A human invokes it, and it carries one approved Project plan to a
+and exposed to each host by setup. A user invokes it, and it carries one approved Project plan to a
 feature branch he can land. Inside that one session it opens the feature branch, keeps N tickets in
 flight by spawning a `ticket-captain` per pickable ticket, merges serially, runs a merge review after
 every merge, amends the plan as fog clears, routes what the plan cannot answer, and offers the
@@ -21,13 +21,13 @@ inquisition. When the session ends, the Project stops advancing.
 
 ## What the feature adds
 
-One trigger: a cadence. The same method, started without a human present - read the Project's live
+One trigger: a cadence. The same method, started without a user present - read the Project's live
 state from Linear, top the in-flight tickets back up to N, merge what passed, and stop. Progress
-between the human's gates stops depending on his attention being on a session.
+between the user's gates stops depending on his attention being on a session.
 
 ## What it must not change
 
-- **The human's gates.** Plan approval, HITL question tickets, escalations that survive the ladder,
+- **The user's gates.** Plan approval, HITL question tickets, escalations that survive the ladder,
   inquisition confirmation, and the feature → main merge stay his. A routine admiral runs *between*
   gates and never passes one; unattended is not unreviewed.
 - **The review block.** Ticket review before every merge and merge review after it, each from a fresh
@@ -38,17 +38,17 @@ between the human's gates stops depending on his attention being on a session.
 
 ## Trigger
 
-Pick this up when the admiral has carried whole Projects end to end with the human reached only at
-his gates, and when a session can be started on a schedule without a human attached to it. Before
+Pick this up when the admiral has carried whole Projects end to end with the user reached only at
+his gates, and when a session can be started on a schedule without a user attached to it. Before
 both are true, a cadence only makes unreviewed work arrive faster.
 
 ## Rationale
 
-FutureFeature is a repo-native idea record. It remains unpromoted until the human promotes it to
+FutureFeature is a repo-native idea record. It remains unpromoted until the user promotes it to
 exactly one Linear Initiative, Project, or ticket.
 
 ## Related
 
-- [DR 045 - Flow Map, Hats, Review Tiers, and the Working-Tree Contract](../decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) - The admiral's stage, the review tiers, and the human's gates
+- [DR 045 - Flow Map, Hats, Review Tiers, and the Working-Tree Contract](../decisions/045-flow-map-hats-review-tiers-and-working-tree-contract.md) - The admiral's stage, the review tiers, and the user's gates
 - [DR 050 - Officers, Crew and Skills: Hats Retired](../decisions/050-officers-crew-and-skills-hats-retired.md) - The admiral as an officer role and its place in the skill tree
 - [Working-Tree Contract](../../guides/working-tree-contract.md) - Branch, worktree and cleanup rules a routine admiral still obeys

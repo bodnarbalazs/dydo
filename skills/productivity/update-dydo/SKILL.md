@@ -97,7 +97,8 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    - every skill `AGENTS.md` names, backticked or in prose, exists under `skills/` (3.4.1's text
      names `issue-captain`);
    - each protected file the user applied by hand equals its merge result, line endings aside;
-   - `dydo check` exits 0; warnings are fine.
+   - `dydo check` exits 0; warnings are fine;
+   - every line of What to compare, below, is in order, or its finding is listed for the user.
 
    With every proof holding, run `dydo adopt <new>` to record the new version as `dydoVersion` in
    `dydo.json`.
@@ -110,3 +111,56 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
      and `node setup-skills.mjs`. An older CLI fails on the hook's `dydo guard --host`.
 
    The commit is the user's.
+
+## What to compare
+
+Each line: what in order looks like, then how to check it, from the project root.
+
+**Host configs**
+- `.claude/settings.json`: `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` is `"3"` or more.
+  `cat .claude/settings.json`
+- `.codex/config.toml`: `[agents]` has `max_depth` 3 or more and
+  `max_concurrent_threads_per_session` 16 or more. `grep -A3 '^\[agents\]' .codex/config.toml`.
+  A lower value in either file stops step 7's `init` with an error.
+- Profile folders: every Claude config folder the user runs, `~/.claude` and any other set as
+  `CLAUDE_CONFIG_DIR` (`~/.claude-work`, say). `echo "$CLAUDE_CONFIG_DIR"; ls -d ~/.claude*/`,
+  then ask the user which are in use. Each has its own `settings.json` and memory store; walk
+  the memory and hook lines for each.
+- Memory: each switch and rule below reported, the user decides.
+  - Claude: `autoMemoryEnabled` and `autoMemoryDirectory` in `.claude/settings.json`,
+    `.claude/settings.local.json` and each profile's `settings.json`; env
+    `CLAUDE_CODE_DISABLE_AUTO_MEMORY`. In the same files, each `permissions.deny` entry covering a
+    memory folder (`Edit(//**/.claude*/projects/*/memory/**)`, say); deny rules apply without
+    workspace trust.
+    `grep -Hni -e memory -e '"deny"' .claude/settings*.json ~/.claude*/settings.json; echo "$CLAUDE_CODE_DISABLE_AUTO_MEMORY"`
+  - Codex: `[features] memories`, off unless `true`, and `memories.generate_memories`, in
+    `.codex/config.toml` and the user's `$CODEX_HOME/config.toml` (default `~/.codex/config.toml`).
+    `grep -n -e '^\[' -e memories .codex/config.toml "${CODEX_HOME:-$HOME/.codex}/config.toml"`
+  - Folders: every memory folder with files in it: `<profile>/projects/<this project>/memory/`,
+    the `autoMemoryDirectory` folder when set, `.claude/agent-memory*/`, `$CODEX_HOME/memories/`
+    (default `~/.codex/memories/`).
+
+**Hooks**
+- Claude guard: `.claude/settings.local.json` `hooks.PreToolUse` has one dydo entry, matcher
+  `Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit`,
+  command `dydo guard --host claude`, plus a `permissions.allow` list. No MultiEdit: Claude Code
+  ships no such tool; Edit covers multi-part edits.
+  `cat .claude/settings.local.json`
+- Codex guard: `.codex/hooks.json` `hooks.PreToolUse` has one dydo entry, matcher
+  `Bash|apply_patch|Edit|Write|Agent|shell_command|exec|local_shell|unified_exec`, command
+  `dydo guard`; `.codex/rules/dydo.rules` exists. `cat .codex/hooks.json; ls .codex/rules`
+- No `dydo guard --stop` Stop hook: step 7's `init` removes it. `grep -rn "guard --stop" .claude .codex`
+- Project hooks: every other hook in those files and in each profile's `settings.json`, named
+  with what it does. One a dydo command now covers (a PR-ready hook beside `dydo pr-ready`, say):
+  show both and ask the user whether to drop it.
+
+**Tooling**
+- CLI: `dydo version` equals the new release (step 3).
+- Skill links on both hosts: step 8's first three lines.
+- `AGENTS.md` the only entry file: no `CLAUDE.md`, or a user's one carrying the import line
+  (step 6). `ls AGENTS.md CLAUDE.md CLAUDE.local.md .claude/CLAUDE.md`
+- Codex hook trust: the user confirms Codex trusted the changed `.codex/` layer (step 7).
+
+**Skills**
+- Renamed, added, removed, project-only: steps 5 and 8. `git status --short skills/` shows only
+  the changes step 5 listed.

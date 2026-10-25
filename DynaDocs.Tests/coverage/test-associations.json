@@ -129,6 +129,25 @@
       ]
     },
     {
+      "module": "Commands/GuardCommand.PrReady.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/GuardPrReadyTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/PrReadyCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/PrReadyCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/PrReadyCheck.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/PrReadyCommandTests.cs",
+        "DynaDocs.Tests/Integration/GuardPrReadyTests.cs"
+      ]
+    },
+    {
       "module": "Commands/ModeCommand.cs",
       "tests": [
         "DynaDocs.Tests/Commands/ModeCommandTests.cs",

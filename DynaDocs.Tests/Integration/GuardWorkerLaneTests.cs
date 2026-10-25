@@ -157,6 +157,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     [InlineData("dydo graph stats")]
     [InlineData("dydo validate")]
     [InlineData("dydo version")]
+    [InlineData("dydo pr-ready --body pr-body.md")]
     [InlineData("dydo -h")]
     [InlineData("dydo --version")]
     [InlineData("dydo check \\\n  dydo/understand")]

@@ -117,8 +117,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    than either side. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-ticket
    PASS once all lanes are in. The full suites and the ticket's whole gate set
    run here, again at each Merge Sub-ticket's combined gates and at the landing; within one such run
-   each suite executes once. **Done:** push the branch, write the PR body with `pr`, open the PR with its PASS block on the
-   record and in the body; on an atomic ticket, also read CI green with `gh pr checks`; set
+   each suite executes once. **Done:** push the branch, write the PR body with `pr` to a file outside the tree, run `dydo pr-ready --body <file>`, then open the
+   PR with its PASS block on the record and in the body; on an atomic ticket, also read CI green with `gh pr checks`; set
    `Ready to Merge`, and return `done <key>: PR ready`.
 7. **Merge.** When the final Merge Sub-ticket's blocker clears, resume from the record and direct
    its chain as above into the contract's target. The parent stays `Ready to Merge` while the

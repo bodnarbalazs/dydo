@@ -292,8 +292,7 @@ public static partial class GuardCommand
 
         if (ShouldRouteToShellHandler(context.ToolName, context.BashCommand))
         {
-            return HandleBashCommand(context.BashCommand!, context.SessionId, offLimitsService, bashAnalyzer, env,
-                ModeSetCallerOf(context));
+            return HandleBashCommand(context, offLimitsService, bashAnalyzer, env);
         }
 
         if (context.ToolName != null && SearchTools.Contains(context.ToolName))
@@ -349,9 +348,7 @@ public static partial class GuardCommand
         GuardEnv env)
     {
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
-            return HandleBashCommand(
-                ctx.BashCommand!, ctx.SessionId,
-                offLimitsService, bashAnalyzer, env, ModeSetCallerOf(ctx), isWorker: true);
+            return HandleBashCommand(ctx, offLimitsService, bashAnalyzer, env, isWorker: true);
 
         var checkPath = filePath ?? searchPath;
         if (!string.IsNullOrEmpty(checkPath) && !IsNativeMemoryPath(checkPath))
@@ -434,15 +431,14 @@ public static partial class GuardCommand
     /// so a security-critical nudge cannot be bypassed by prefixing a dydo call (DR-041).
     /// </summary>
     private static int HandleBashCommand(
-        string command,
-        string? sessionId,
+        GuardContext ctx,
         OffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer,
         GuardEnv env,
-        ModeSetCaller caller,
         bool isWorker = false)
     {
-        var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
+        var command = ctx.BashCommand!;
+        var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(ctx.SessionId);
 
         var workerBlocked = isDydo && isWorker ? FindWorkerBlockedDydoCommand(command) : null;
         if (workerBlocked != null)
@@ -467,6 +463,9 @@ public static partial class GuardCommand
         var nudged = CheckNudges(command, env);
         if (nudged != null) return nudged.Value;
 
+        var prNotReady = CheckPrReady(command, ctx.Cwd, env);
+        if (prNotReady != null) return prNotReady.Value;
+
         // dydo commands skip the cd-chain coaching (they are never a needless cd compound);
         // everything else gets the auto-approval coaching block.
         if (!isDydo)
@@ -482,7 +481,7 @@ public static partial class GuardCommand
         }
 
         var verdict = AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer);
-        return verdict == ExitCodes.Success ? CheckModeSet(command, env, caller) : verdict;
+        return verdict == ExitCodes.Success ? CheckModeSet(command, env, ModeSetCallerOf(ctx)) : verdict;
     }
 
     internal static int? CheckNudges(string command, GuardEnv env)
@@ -719,11 +718,11 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// mode set still meets its nudge; clean is what Ticket Captains run on close-out. Setup,
-    /// generation and hook commands stay with the top-level session.
+    /// mode set still meets its nudge; clean is what Ticket Captains run on close-out, pr-ready before
+    /// they open a PR. Setup, generation and hook commands stay with the top-level session.
     /// </summary>
     internal static readonly string[] WorkerAllowedDydoSubcommands =
-        ["check", "fix", "gap-check", "graph", "validate", "mode", "clean", "help", "version"];
+        ["check", "fix", "gap-check", "graph", "validate", "mode", "clean", "pr-ready", "help", "version"];
 
     private static readonly HashSet<string> WorkerAllowedDydoWords =
         new([.. WorkerAllowedDydoSubcommands, "-h", "--help", "--version"], StringComparer.Ordinal);

@@ -218,6 +218,22 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"\$\(cat\s+<<-?'?""?(\w+)""?'?\s*\n[\s\S]*?\n\1\s*\)")]
     private static partial Regex CatHeredocRegex();
 
+    // Any heredoc (<<WORD, <<'WORD', <<"WORD", <<-WORD): group 1 keeps the opener line, the body
+    // and delimiter line go. With <<- the delimiter may be tab-indented.
+    [GeneratedRegex(@"(?<!<)(<<(-)?[ \t]*(['""]?)(\w+)\3[^\n]*\n)[\s\S]*?^(?(2)\t*)\4[ \t]*\r?$", RegexOptions.Multiline)]
+    private static partial Regex HeredocBodyRegex();
+
+    // A PowerShell here-string: @' or @" ends its line, '@ or "@ starts the closing line.
+    [GeneratedRegex(@"@(['""])[ \t]*\r?\n[\s\S]*?^\1@", RegexOptions.Multiline)]
+    private static partial Regex HereStringRegex();
+
+    /// <summary>
+    /// Removes heredoc and PowerShell here-string bodies, which are text a command reads, so a
+    /// line inside one does not split out as a command. Commands after the closing line remain.
+    /// </summary>
+    internal static string StripLiteralBodies(string command) =>
+        HereStringRegex().Replace(HeredocBodyRegex().Replace(command, "$1"), "''");
+
     // Bypass detection patterns
     [GeneratedRegex(@"\$\([^)]+\)|`[^`]+`")]
     private static partial Regex CommandSubstitutionRegex();
@@ -564,7 +580,32 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return true;
     }
 
-    private static IEnumerable<string> SplitCommand(string command)
+    // How many characters at i an unquoted separator or, with dropComments, a comment consumes;
+    // 0 when neither starts there. A comment stops before its newline, so the newline still splits.
+    private static int ConsumeUnquoted(string command, int i, StringBuilder current,
+        List<string> parts, bool dropComments)
+    {
+        if (dropComments && command[i] == '#' && (current.Length == 0 || char.IsWhiteSpace(current[^1])))
+        {
+            var newline = command.IndexOf('\n', i);
+            return (newline < 0 ? command.Length : newline) - i;
+        }
+
+        var sepLen = CheckCommandSeparator(command, i);
+        if (sepLen > 0 && current.Length > 0)
+        {
+            parts.Add(current.ToString());
+            current.Clear();
+        }
+        return sepLen;
+    }
+
+    /// <summary>
+    /// Splits a command at unquoted separators. A backslash is literal inside single quotes. With
+    /// <paramref name="dropComments"/>, an unquoted <c>#</c> that begins a word drops the rest of
+    /// its line, as a shell comment.
+    /// </summary>
+    internal static IEnumerable<string> SplitCommand(string command, bool dropComments = false)
     {
         var parts = new List<string>();
         var current = new StringBuilder();
@@ -583,7 +624,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
                 continue;
             }
 
-            if (c == '\\')
+            if (c == '\\' && !inSingleQuote)
             {
                 escapeNext = true;
                 current.Append(c);
@@ -595,15 +636,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
             if (!inSingleQuote && !inDoubleQuote)
             {
-                var sepLen = CheckCommandSeparator(command, i);
-                if (sepLen > 0)
+                var consumed = ConsumeUnquoted(command, i, current, parts, dropComments);
+                if (consumed > 0)
                 {
-                    if (current.Length > 0)
-                    {
-                        parts.Add(current.ToString());
-                        current.Clear();
-                    }
-                    i += sepLen - 1;
+                    i += consumed - 1;
                     continue;
                 }
             }

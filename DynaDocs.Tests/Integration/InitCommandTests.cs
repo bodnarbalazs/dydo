@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DynaDocs.Models;
+using DynaDocs.Services;
 using DynaDocs.Utils;
 
 namespace DynaDocs.Tests.Integration;
@@ -82,7 +83,8 @@ public class InitCommandTests : IntegrationTestBase
 
         result.AssertSuccess();
         AssertFileExists("dydo.json");
-        AssertFileExists("CLAUDE.md");
+        AssertFileExists("AGENTS.md");
+        AssertFileNotExists("CLAUDE.md");
         AssertDirectoryExists("dydo");
         AssertDirectoryExists("dydo/understand");
         AssertDirectoryExists("dydo/guides");
@@ -400,9 +402,12 @@ public class InitCommandTests : IntegrationTestBase
         Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
         WriteFile(".claude/settings.json", "{ \"env\": { \"custom\": \"preserve\" } }");
         WriteFile(".codex/config.toml", "[agents]\nmax_depth = 2\nmax_concurrent_threads_per_session = 16\n");
+        // A generated CLAUDE.md that a successful join would remove must survive the failed one.
+        WriteFile("CLAUDE.md", ReadFile("AGENTS.md"));
         var config = File.ReadAllBytes(Path.Combine(TestDir, "dydo.json"));
         var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
         var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+        var preserved = Snapshot("AGENTS.md", "CLAUDE.md");
 
         var result = await JoinProjectAsync("all");
 
@@ -410,9 +415,9 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Equal(config, File.ReadAllBytes(Path.Combine(TestDir, "dydo.json")));
         Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
         Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        AssertUnchanged(preserved);
         AssertFileNotExists(".claude/settings.local.json");
         AssertFileNotExists(".codex/hooks.json");
-        AssertFileNotExists("AGENTS.md");
     }
 
     [Theory]
@@ -454,7 +459,7 @@ public class InitCommandTests : IntegrationTestBase
         Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
         WriteFile(".claude/settings.json", "{ \"env\": { \"custom\": \"preserve\" } }");
         WriteFile(".codex/config.toml", toml);
-        var preserved = Snapshot("dydo.json", ".gitignore", "CLAUDE.md",
+        var preserved = Snapshot("dydo.json", ".gitignore", "AGENTS.md",
                                  ".claude/settings.json", ".codex/config.toml");
 
         var result = await JoinProjectAsync("all");
@@ -463,7 +468,7 @@ public class InitCommandTests : IntegrationTestBase
         result.AssertStderrContains(".codex/config.toml");
         result.AssertStderrContains("malformed");
         AssertUnchanged(preserved);
-        AssertFileNotExists("AGENTS.md");
+        AssertFileNotExists("CLAUDE.md");
         AssertFileNotExists(".claude/settings.local.json");
         AssertFileNotExists(".codex/hooks.json");
     }
@@ -504,7 +509,7 @@ public class InitCommandTests : IntegrationTestBase
         Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
         WriteFile(".claude/settings.json", "{ \"env\": { \"custom\": \"preserve\" } }");
         WriteFile(".codex/config.toml", toml);
-        var preserved = Snapshot("dydo.json", ".gitignore", "CLAUDE.md",
+        var preserved = Snapshot("dydo.json", ".gitignore", "AGENTS.md",
                                  ".claude/settings.json", ".codex/config.toml");
 
         var result = await JoinProjectAsync("all");
@@ -512,7 +517,7 @@ public class InitCommandTests : IntegrationTestBase
         result.AssertExitCode(2);
         result.AssertStderrContains(".codex/config.toml");
         AssertUnchanged(preserved);
-        AssertFileNotExists("AGENTS.md");
+        AssertFileNotExists("CLAUDE.md");
         AssertFileNotExists(".claude/settings.local.json");
         AssertFileNotExists(".codex/hooks.json");
     }
@@ -1125,7 +1130,7 @@ public class InitCommandTests : IntegrationTestBase
         result.AssertSuccess();
         AssertFileNotExists(".claude/settings.local.json");
         AssertFileNotExists(".codex/hooks.json");
-        AssertFileNotExists("AGENTS.md");
+        AssertFileExists("AGENTS.md");
     }
 
     #endregion
@@ -1138,17 +1143,14 @@ public class InitCommandTests : IntegrationTestBase
         var result = await InitProjectAsync("all");
 
         result.AssertSuccess();
-        AssertFileExists("CLAUDE.md");
+        AssertFileNotExists("CLAUDE.md");
         AssertFileExists("AGENTS.md");
         AssertFileExists(".claude/settings.local.json");
         AssertFileExists(".codex/hooks.json");
         AssertFileContains("dydo.json", "\"claude\": true");
         AssertFileContains("dydo.json", "\"codex\": true");
-
-        var claudeEntry = ReadFile("CLAUDE.md");
-        var codexEntry = ReadFile("AGENTS.md");
-
-        Assert.Equal(claudeEntry, codexEntry);
+        result.AssertStdoutContains("AGENTS.md -> dydo/index.md");
+        result.AssertStdoutContains("Claude Code 2.1.281 or later reads AGENTS.md");
     }
 
     [Fact]
@@ -1269,7 +1271,7 @@ public class InitCommandTests : IntegrationTestBase
         result.AssertSuccess();
         AssertFileExists(".claude/settings.local.json");
         AssertFileExists(".codex/hooks.json");
-        AssertFileExists("CLAUDE.md");
+        AssertFileNotExists("CLAUDE.md");
         AssertFileExists("AGENTS.md");
         AssertFileContains("dydo.json", "\"claude\": true");
         AssertFileContains("dydo.json", "\"codex\": true");
@@ -1379,6 +1381,164 @@ public class InitCommandTests : IntegrationTestBase
         var gitignore = ReadFile(".gitignore");
         Assert.Equal(1, gitignore.Split("/.claude/skills/").Length - 1);
         Assert.Equal(1, gitignore.Split("/.agents/skills/").Length - 1);
+    }
+
+    #endregion
+
+    #region Entry file
+
+    [Fact]
+    public async Task Init_Claude_WritesAgentsMdAndNoClaudeMd()
+    {
+        var result = await InitProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertFileExists("AGENTS.md");
+        AssertFileNotExists("CLAUDE.md");
+        Assert.Equal(ScaffoldTree.EntryPoint(Path.GetFileName(TestDir)), ReadFile("AGENTS.md"));
+        result.AssertStdoutContains("AGENTS.md (entry point)");
+        result.AssertStdoutContains("AGENTS.md -> dydo/index.md");
+        result.AssertStdoutContains("Claude Code 2.1.281 or later reads AGENTS.md");
+    }
+
+    [Theory]
+    [InlineData("none")]
+    [InlineData("codex")]
+    public async Task Init_WithoutClaude_WritesAgentsMdAndNoClaudeMd(string integration)
+    {
+        var result = await InitProjectAsync(integration);
+
+        result.AssertSuccess();
+        AssertFileExists("AGENTS.md");
+        AssertFileNotExists("CLAUDE.md");
+        result.AssertStdoutContains("AGENTS.md -> dydo/index.md");
+        Assert.DoesNotContain("Claude Code 2.1.281", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Join_Claude_RemovesClaudeMdIdenticalToAgentsMd()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile("AGENTS.md", "# Custom entry\n\nSee dydo/index.md.\n");
+        WriteFile("CLAUDE.md", "# Custom entry\r\n\r\nSee dydo/index.md.\r\n\r\n");
+
+        var result = await JoinProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertFileNotExists("CLAUDE.md");
+        Assert.Equal("# Custom entry\n\nSee dydo/index.md.\n", ReadFile("AGENTS.md"));
+        result.AssertStdoutContains("Removed CLAUDE.md");
+    }
+
+    [Fact]
+    public async Task Join_Claude_RemovesClaudeMdMatchingTheTemplateEvenWhenAgentsMdDiffers()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile("AGENTS.md", "# Custom entry\n");
+        WriteFile("CLAUDE.md", ScaffoldTree.EntryPoint(Path.GetFileName(TestDir)) + "\n");
+
+        var result = await JoinProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertFileNotExists("CLAUDE.md");
+        Assert.Equal("# Custom entry\n", ReadFile("AGENTS.md"));
+        result.AssertStdoutContains("Removed CLAUDE.md");
+    }
+
+    [Fact]
+    public async Task Join_Claude_KeepsUserWrittenClaudeMdAndWarns()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile("CLAUDE.md", "# My own rules\n\nAlways run the tests.\n");
+        var preserved = Snapshot("CLAUDE.md");
+
+        var result = await JoinProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertUnchanged(preserved);
+        result.AssertStdoutContains("CLAUDE.md hides AGENTS.md from Claude Code");
+        result.AssertStdoutContains("@AGENTS.md");
+        Assert.DoesNotContain("Removed CLAUDE.md", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Init_Claude_KeepsUserWrittenClaudeMdAndWarns()
+    {
+        WriteFile("CLAUDE.md", "# My own rules\n");
+        var preserved = Snapshot("CLAUDE.md");
+
+        var result = await InitProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertUnchanged(preserved);
+        result.AssertStdoutContains("CLAUDE.md hides AGENTS.md from Claude Code");
+    }
+
+    [Theory]
+    [InlineData("CLAUDE.local.md", "CLAUDE.local.md stops Claude Code reading AGENTS.md")]
+    [InlineData(".claude/CLAUDE.md", ".claude/CLAUDE.md stops Claude Code reading AGENTS.md. Put @../AGENTS.md at its top.")]
+    public async Task Join_Claude_WarnsAboutOtherFilesThatHideAgentsMd(string path, string warning)
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile(path, ReadFile("AGENTS.md"));
+        var preserved = Snapshot(path);
+
+        var result = await JoinProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertUnchanged(preserved);
+        result.AssertStdoutContains(warning);
+    }
+
+    [Fact]
+    public async Task Join_Codex_LeavesClaudeMdAlone()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile("CLAUDE.md", ReadFile("AGENTS.md"));
+        var preserved = Snapshot("CLAUDE.md");
+
+        var result = await JoinProjectAsync("codex");
+
+        result.AssertSuccess();
+        AssertUnchanged(preserved);
+        Assert.DoesNotContain("CLAUDE.md", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Join_Claude_MigratesLegacyClaudeOnlyProject()
+    {
+        await MakeLegacyClaudeOnlyProjectAsync();
+
+        var result = await JoinProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertFileExists("AGENTS.md");
+        Assert.Equal(ScaffoldTree.EntryPoint(Path.GetFileName(TestDir)), ReadFile("AGENTS.md"));
+        AssertFileNotExists("CLAUDE.md");
+        result.AssertStdoutContains("Removed CLAUDE.md");
+    }
+
+    [Fact]
+    public async Task Join_All_FailedPreflightKeepsLegacyClaudeMdAndCreatesNoAgentsMd()
+    {
+        await MakeLegacyClaudeOnlyProjectAsync();
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".codex/config.toml", "[agents\nmax_depth = 3\n");
+        var preserved = Snapshot("CLAUDE.md");
+
+        var result = await JoinProjectAsync("all");
+
+        result.AssertExitCode(2);
+        AssertUnchanged(preserved);
+        AssertFileNotExists("AGENTS.md");
+    }
+
+    private async Task MakeLegacyClaudeOnlyProjectAsync()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        var generated = ReadFile("AGENTS.md");
+        File.Delete(Path.Combine(TestDir, "AGENTS.md"));
+        WriteFile("CLAUDE.md", generated);
     }
 
     #endregion

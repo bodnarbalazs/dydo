@@ -33,7 +33,7 @@ dydo init <integration> --join       # wire this machine, or an added runtime, i
 ```
 
 Every mode writes `dydo.json`, scaffolds the `dydo/` folders with their framework documents,
-`files-off-limits.md` and `_system/types.json`, writes the `CLAUDE.md` entry point, and adds
+`files-off-limits.md` and `_system/types.json`, writes the `AGENTS.md` entry point (never `CLAUDE.md`), and adds
 `dydo/agents/`, `dydo/_system/.local/`, `/.claude/skills/` and `/.agents/skills/` to `.gitignore`. A
 documentation or entry-point file that already exists is left as it is. `none` stops there: no
 runtime integration. The runtime modes add, per selected host:
@@ -43,7 +43,6 @@ runtime integration. The runtime modes add, per selected host:
 | `claude` | `.claude/settings.local.json` | a `PreToolUse` hook running `dydo guard --host claude` on the matched tools, and the allow entries `Bash(dydo:*)`, `PowerShell(dydo:*)`, `Bash(dydo clean:*)` and `PowerShell(dydo clean:*)` |
 | `claude` | `.claude/settings.json` | `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"` |
 | `claude` | `.gitignore` | `.claude/settings.local.json`, `/.claude/skills/` and `/.agents/skills/` |
-| `codex` | `AGENTS.md` | the same entry point as `CLAUDE.md` |
 | `codex` | `.codex/hooks.json` | a `PreToolUse` hook running `dydo guard` on the matched tools |
 | `codex` | `.codex/rules/dydo.rules` | an exec-policy `prefix_rule` allowing `dydo clean`, which Codex loads when the project's `.codex/` layer is trusted; dydo rewrites the file on every init and `--join` |
 | `codex` | `.codex/config.toml` | `[agents]` with `max_depth = 3` and `max_concurrent_threads_per_session = 16` |
@@ -57,6 +56,13 @@ manages, init stops with an error before it writes anything. Init and `--join` a
 `--join` targets an already-initialized project: a fresh clone, or a second runtime added later. It
 writes the selected hosts' rows above, and the entry point when it is missing, without re-scaffolding
 or overwriting the tree, and records the integration in `dydo.json`.
+
+Claude Code 2.1.281 or later reads `AGENTS.md` when no `CLAUDE.md` is in the way. With `claude` or
+`all`, init and `--join` therefore remove a `CLAUDE.md` that is dydo's own generated copy (equal to
+`AGENTS.md` or the template). A `CLAUDE.md` you wrote is kept, with a warning that it hides
+`AGENTS.md`; move its content into `AGENTS.md`, or put `@AGENTS.md` at its top. `CLAUDE.local.md` and `.claude/CLAUDE.md` are never removed, and each gets its own warning:
+`CLAUDE.local.md` needs `@AGENTS.md` at its top (or Project instructions set to
+`claude-md-and-agents-md`); `.claude/CLAUDE.md` needs `@../AGENTS.md` at its top.
 
 dydo does not compile or install skills, and none ship with the package. A skill is one folder under
 `skills/<category>/<name>/`: copy `skills/`, `setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` (the

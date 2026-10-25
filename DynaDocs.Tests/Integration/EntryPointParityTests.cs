@@ -5,13 +5,12 @@ using DynaDocs.Services;
 public class EntryPointParityTests
 {
     [Fact]
-    public void RepositoryEntryPoints_MatchTheSharedSource()
+    public void RepositoryEntryPoint_MatchesTheSharedSource()
     {
         var repositoryRoot = FindRepositoryRoot();
         var expected = ScaffoldTree.EntryPoint("DynaDocs");
 
         Assert.Equal(Normalize(expected), Normalize(File.ReadAllText(Path.Combine(repositoryRoot, "AGENTS.md"))));
-        Assert.Equal(Normalize(expected), Normalize(File.ReadAllText(Path.Combine(repositoryRoot, "CLAUDE.md"))));
     }
 
     // The entry point is read at the start of every session on both hosts, so its budget is the

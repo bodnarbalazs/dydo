@@ -133,6 +133,8 @@ npm install -g dydo
 dotnet tool install -g dydo
 ```
 
+Claude Code must be 2.1.281 or later to read `AGENTS.md`, the one entry file dydo writes.
+
 ## Quick start
 
 Run from the project root:
@@ -143,9 +145,9 @@ dydo check            # validate the documentation tree
 dydo fix              # repair supported documentation issues
 ```
 
-Every mode writes `dydo.json`, the `dydo/` documentation tree and `CLAUDE.md`. The `claude`, `codex`
+Every mode writes `dydo.json`, the `dydo/` documentation tree and `AGENTS.md`, the one entry file Claude Code and Codex both read. The `claude`, `codex`
 and `all` modes also wire `dydo guard` as a hook for the chosen hosts, set the host's agent spawn
-depth, and add the host's skill folder to `.gitignore`; Codex selections add `AGENTS.md`. `none`
+depth, and add the host's skill folder to `.gitignore`. `none`
 wires no host. Initialization creates durable Decisions, changelog, pitfalls and FutureFeature
 documentation; live work stays in Linear.
 

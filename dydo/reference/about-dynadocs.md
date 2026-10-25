@@ -84,7 +84,7 @@ warnings, and blocks.
 ### 4. An opinionated scaffold
 
 `dydo init claude`, `dydo init codex`, or `dydo init all` creates the knowledge tree, guard wiring,
-and runtime entry files; `dydo init none` creates the tree and `CLAUDE.md` without guard wiring. It
+and runtime entry files; `dydo init none` creates the tree and `AGENTS.md` without guard wiring. It
 does not create a second live work graph; use Linear for work
 management, including FutureFeatures.
 
@@ -127,7 +127,7 @@ dydo fix              # repair supported documentation issues
 Fill in `dydo/understand/about.md` and `dydo/understand/architecture.md`, then adapt
 `dydo/guides/coding-standards.md` and `dydo.json` to the project. Use `--join` when wiring another
 runtime or machine into an existing project. Install the skills as described above before the first
-agent session: the `CLAUDE.md` and `AGENTS.md` entry points send a thinking session to `co-thinker`.
+agent session: the `AGENTS.md` entry point sends a thinking session to `co-thinker`.
 
 ## Customize
 
@@ -142,8 +142,7 @@ Edit the skill folder in place. A project's copy is its own; there is no automat
 ```
 project/
 |-- dydo.json                    # Integrations, scan exclusions, nudges, testing
-|-- CLAUDE.md                    # Claude Code entry point
-|-- AGENTS.md                    # Codex entry point
+|-- AGENTS.md                    # Entry point for Claude Code and Codex
 |-- setup-skills.mjs             # Copied from the dydo repository; creates the host projections
 |-- skills/                      # Copied from the dydo repository; roles/officers/, roles/crew/, engineering/, productivity/
 |-- THIRD-PARTY-NOTICES.md       # Copied from the dydo repository; MIT notices of the adapted skills

@@ -15,7 +15,7 @@ state.
 entry file → dydo/index.md → authored navigation → ticket-relevant durable docs
 ```
 
-1. The host loads `CLAUDE.md` or `AGENTS.md`.
+1. The host loads `AGENTS.md`.
 2. `dydo/index.md` establishes the knowledge and work boundary.
 3. Optional authored navigation pages or direct durable docs narrow the path to the material relevant to the ticket.
 4. The agent reads only the Decisions, plan, architecture, guide, or reference material needed now.

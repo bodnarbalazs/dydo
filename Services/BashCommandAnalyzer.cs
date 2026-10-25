@@ -218,6 +218,22 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"\$\(cat\s+<<-?'?""?(\w+)""?'?\s*\n[\s\S]*?\n\1\s*\)")]
     private static partial Regex CatHeredocRegex();
 
+    // Any heredoc (<<WORD, <<'WORD', <<"WORD", <<-WORD): group 1 keeps the opener line, the body
+    // and delimiter line go. With <<- the delimiter may be tab-indented.
+    [GeneratedRegex(@"(?<!<)(<<(-)?[ \t]*(['""]?)(\w+)\3[^\n]*\n)[\s\S]*?^(?(2)\t*)\4[ \t]*\r?$", RegexOptions.Multiline)]
+    private static partial Regex HeredocBodyRegex();
+
+    // A PowerShell here-string: @' or @" ends its line, '@ or "@ starts the closing line.
+    [GeneratedRegex(@"@(['""])[ \t]*\r?\n[\s\S]*?^\1@", RegexOptions.Multiline)]
+    private static partial Regex HereStringRegex();
+
+    /// <summary>
+    /// Removes heredoc and PowerShell here-string bodies, which are text a command reads, so a
+    /// line inside one does not split out as a command. Commands after the closing line remain.
+    /// </summary>
+    internal static string StripLiteralBodies(string command) =>
+        HereStringRegex().Replace(HeredocBodyRegex().Replace(command, "$1"), "''");
+
     // Bypass detection patterns
     [GeneratedRegex(@"\$\([^)]+\)|`[^`]+`")]
     private static partial Regex CommandSubstitutionRegex();

@@ -120,6 +120,52 @@ public class GuardPrReadyTests : IntegrationTestBase
         result.AssertPreToolUseAllowed();
     }
 
+    // A heredoc or PowerShell here-string body is text the command reads, not a command line.
+    [Theory]
+    [InlineData("cat <<'EOF'\ngh pr ready 12\nEOF")]
+    [InlineData("cat <<\"EOF\"\ngh pr ready 12\nEOF")]
+    [InlineData("cat <<EOF\ngh pr ready 12\nEOF")]
+    [InlineData("cat <<-EOF\n\tgh pr ready 12\n\tEOF")]
+    [InlineData("Write-Output @'\nIt's ready.\ngh pr ready 12\n'@")]
+    [InlineData("Write-Output @\"\nFits a 13\" screen.\ngh pr new --fill\n\"@")]
+    public async Task PrCallInsideALiteralBody_FromADirtyTree_IsAllowed(string command)
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload(command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // The guard's file-write analysis refuses a multi-line write on its own; this rule must not.
+    [Fact]
+    public async Task PrCallInsideAPrBodyHeredoc_FromADirtyTree_IsNotThisRulesBlock()
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(
+            Payload("cat > /tmp/b.md <<'EOF'\n## Steps\ngh pr create --title t --fill\nEOF"));
+
+        Assert.DoesNotContain("This PR would not match", result.Stderr);
+    }
+
+    [Theory]
+    [InlineData("cat <<'EOF'\nnotes\nEOF\n" + PrCreate)]
+    [InlineData("cat <<-EOF\n\tnotes\n\tEOF\n" + PrCreate)]
+    [InlineData("Write-Output @'\nIt's ready.\n'@\n" + PrCreate)]
+    public async Task PrCallAfterALiteralBody_FromADirtyTree_IsDenied(string command)
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload(command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("untracked files: wip.txt");
+    }
+
     [Fact]
     public async Task CodexPayloadWithoutCwd_ChecksTheProjectRoot()
     {

@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import type { Viewport } from '@xyflow/react';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import type { ELK as ElkApi } from 'elkjs/lib/elk-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,7 +7,33 @@ import type { Graph, Project, Team } from '../api/types';
 import { blocks, makeGraph, makeIssue, related } from '../graph/testIssues';
 import { TIMING } from '../map/cascade';
 import { App } from './App';
-import { ProjectVisit } from './ProjectVisit';
+
+/** Every viewport React Flow reported through its public onMoveEnd, oldest first. */
+const flow = vi.hoisted(() => ({ moveEnds: [] as Viewport[] }));
+
+// The real ReactFlow, called through, with each move end it reports while mounted recorded as well:
+// React Flow reports a move end a task after the move, so an unmounted map's late report is dropped.
+vi.mock('@xyflow/react', async (original) => {
+  const actual = await original<typeof import('@xyflow/react')>();
+  const { useEffect, useRef } = await import('react');
+  const ReactFlow = (props: React.ComponentProps<typeof actual.ReactFlow>) => {
+    const mounted = useRef(false);
+    useEffect(() => {
+      mounted.current = true;
+      return () => { mounted.current = false; };
+    }, []);
+    return (
+      <actual.ReactFlow
+        {...props}
+        onMoveEnd={(event, viewport) => {
+          if (mounted.current) flow.moveEnds.push(viewport);
+          props.onMoveEnd?.(event, viewport);
+        }}
+      />
+    );
+  };
+  return { ...actual, ReactFlow };
+});
 
 const teams: Team[] = [
   { id: 'team-1', key: 'T', name: 'Team One' },
@@ -81,22 +108,48 @@ async function mapShown() {
   await waitFor(() => expect(card('T-X')).not.toBeNull());
 }
 
-/** The tickets on screen each time the map reported its fit done and painted. */
-let painted: ReadonlySet<string | null>[] = [];
+/** Animation frames held for the test to run, so React Flow fits a map only when the test lets it. */
+let frames = new Map<number, FrameRequestCallback>();
 
-/** Records each fit the canvas reports to the visit, so a test waits on that report, not on the clock; restore mocks after each test. */
-function watchFits() {
-  painted = [];
-  const ready = Reflect.get(ProjectVisit.prototype, 'ready');
-  vi.spyOn(ProjectVisit.prototype, 'ready').mockImplementation(function (this: ProjectVisit, graph: Graph) {
-    painted.push(new Set([...document.querySelectorAll('[data-identifier]')].map((shown) => shown.getAttribute('data-identifier'))));
-    ready.call(this, graph);
+/** Holds every animation frame until `runFrames` runs it; `vi.unstubAllGlobals` gives the real ones back. */
+function holdFrames() {
+  frames = new Map();
+  let last = 0;
+  vi.stubGlobal('requestAnimationFrame', (run: FrameRequestCallback) => {
+    frames.set(++last, run);
+    return last;
   });
+  vi.stubGlobal('cancelAnimationFrame', (handle: number) => frames.delete(handle));
 }
 
-/** Waits until React Flow has finished fitting a map that shows every ticket in `shown` and none in `gone`. */
-const fitted = (shown: string[], gone: string[] = []) =>
-  waitFor(() => expect(painted.some((cards) => shown.every((id) => cards.has(id)) && gone.every((id) => !cards.has(id)))).toBe(true));
+/** Runs the held frames, and the frames they ask for, until none is left. */
+function runFrames() {
+  for (let round = 0; frames.size > 0; round++) {
+    if (round === 20) throw new Error('Animation frames keep asking for more frames.');
+    const due = [...frames.values()];
+    frames.clear();
+    for (const run of due) run(performance.now());
+  }
+}
+
+/** Runs held frames until React has rendered what they changed and asks for no further frame, so any fit due has landed. */
+function framesSettled() {
+  for (let round = 0; round < 20; round++) {
+    act(() => runFrames());
+    if (frames.size === 0) return;
+  }
+  throw new Error('Animation frames keep asking for more frames.');
+}
+
+/** Runs `operation`, then waits for the first move end React Flow reports after it, running held frames while the map lands. */
+async function fitBy(operation: () => unknown) {
+  const before = flow.moveEnds.length;
+  await operation();
+  await waitFor(() => {
+    runFrames();
+    expect(flow.moveEnds.length).toBeGreaterThan(before);
+  });
+}
 
 describe('App selectors and URL state', () => {
   it('asks for a team first, then lists its Projects and writes both into the URL', async () => {
@@ -614,12 +667,7 @@ describe('App ignores layouts it no longer needs', () => {
 describe('App navigation and fitting', () => {
   const scale = () => Number(/scale\(([\d.]+)\)/.exec(document.querySelector<HTMLElement>('.react-flow__viewport')?.style.transform ?? '')?.[1]);
 
-  beforeEach(watchFits);
-
-  // A failed test must not leave its spy, with its calls, to the next one.
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  beforeEach(holdFrames);
 
   it('asks for no Projects before a team is chosen', async () => {
     open('');
@@ -673,27 +721,26 @@ describe('App navigation and fitting', () => {
   });
 
   it('fits each newly opened Project into view', async () => {
-    open('?team=team-1&project=project-1');
+    await fitBy(() => open('?team=team-1&project=project-1'));
     await mapShown();
-    await fitted(['T-X']);
     expect(scale()).toBeLessThan(1);
-    act(() => {
-      window.history.pushState(null, '', '/?team=team-1&project=project-2');
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    });
+    await fitBy(() =>
+      act(() => {
+        window.history.pushState(null, '', '/?team=team-1&project=project-2');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }),
+    );
     await waitFor(() => expect(card('T-E')).not.toBeNull());
-    await fitted(['T-E'], ['T-X']);
+    expect(card('T-X')).toBeNull();
     expect(scale()).toBeGreaterThan(1);
   });
 
   it('fits the map again after Collapse all', async () => {
-    open('?team=team-1&project=project-1');
+    await fitBy(() => open('?team=team-1&project=project-1'));
     await mapShown();
-    await fitted(['T-X']);
     const expanded = scale();
-    fireEvent.click(screen.getByRole('button', { name: 'Collapse all' }));
+    await fitBy(() => fireEvent.click(screen.getByRole('button', { name: 'Collapse all' })));
     await waitFor(() => expect(card('T-A')).toBeNull());
-    await fitted(['T-X'], ['T-A']);
     expect(scale()).toBeGreaterThan(expanded);
   });
 });
@@ -709,7 +756,7 @@ describe('App refresh in place', () => {
     graphOne.external,
   );
 
-  beforeEach(watchFits);
+  beforeEach(holdFrames);
 
   // A failed test must not leave its spies, with their calls, to the next one.
   afterEach(() => {
@@ -730,19 +777,20 @@ describe('App refresh in place', () => {
   }
 
   async function openMap(focus = '') {
-    open(`?team=team-1&project=project-1${focus}`);
+    await fitBy(() => open(`?team=team-1&project=project-1${focus}`));
     await mapShown();
-    await fitted(['T-X']);
   }
 
   it('re-fetches the Project and keeps the viewport, plates, focus and Show related, marking what changed', async () => {
     // A focus opened from the URL is centred at once, where a clicked one glides there.
     await openMap('&focus=X');
-    fireEvent.click(screen.getByRole('button', { name: 'Collapse all' }));
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Show related' }));
+    await fitBy(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Collapse all' }));
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Show related' }));
+    });
     await waitFor(() => expect(card('T-A')).toBeNull());
     await waitFor(() => expect(card('T-R')).not.toBeNull());
-    await fitted(['T-R'], ['T-A']);
+    framesSettled();
     const viewport = transform();
     const search = window.location.search;
     graphAnswer = () => json(makeGraph([...graphOne.issues.map((issue) => (issue.id === 'X' ? { ...issue, assignee: 'Bo' } : issue)), makeIssue('Y')], graphOne.relations, graphOne.external));
@@ -757,7 +805,8 @@ describe('App refresh in place', () => {
     expect(card('T-X')?.className).toContain('selected');
     expect(card('T-A')).toBeNull();
     expect(card('T-R')).not.toBeNull();
-    await fitted(['T-Y']);
+    // The refreshed map is on screen; a refit it asked for would land with these frames.
+    framesSettled();
     expect(transform()).toBe(viewport);
     expect(window.location.search).toBe(search);
     expect(refreshButton().disabled).toBe(false);
@@ -837,7 +886,8 @@ describe('App refresh in place', () => {
     await waitFor(() => expect(card('T-X')).toBeNull());
     expect(wrapper('T-A')?.classList.contains('refresh-changed')).toBe(true);
     expect(screen.getByRole('status').textContent).toBe('1 changed · 1 removed · 1 link removed');
-    await fitted(['T-A'], ['T-X']);
+    // The refreshed map is on screen; a refit it asked for would land with these frames.
+    framesSettled();
     expect(transform()).toBe(viewport);
     expect(refreshButton().disabled).toBe(false);
     watch.disconnect();

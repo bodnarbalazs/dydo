@@ -3,9 +3,6 @@ namespace DynaDocs.Services;
 using System.Text.RegularExpressions;
 using DynaDocs.Utils;
 
-/// <summary>
-/// Loads the globally off-limits patterns from dydo/files-off-limits.md and matches paths against them.
-/// </summary>
 public class OffLimitsService : IOffLimitsService
 {
     public const string OffLimitsFileName = "files-off-limits.md";

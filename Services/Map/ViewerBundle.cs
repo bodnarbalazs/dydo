@@ -47,7 +47,6 @@ internal sealed class ViewerBundle(Func<string, byte[]?> read)
     internal static string ContentType(string name) =>
         ContentTypes.GetValueOrDefault(Path.GetExtension(name), "application/octet-stream");
 
-    /// <summary>Reads this assembly's embedded resources named <paramref name="root"/> + path.</summary>
     internal static Func<string, byte[]?> Resources(string root) => name =>
     {
         using var stream = typeof(ViewerBundle).Assembly.GetManifestResourceStream(root + name);

@@ -143,10 +143,6 @@ public static class ConfigFactory
         return added;
     }
 
-    /// <summary>
-    /// Returns the dydo-internal scan-exclude entries that are missing from
-    /// the config. An empty list means the invariants hold.
-    /// </summary>
     public static List<string> FindMissingScanExcludeInvariants(DydoConfig config)
     {
         var existing = new HashSet<string>(config.ScanExclude, StringComparer.OrdinalIgnoreCase);

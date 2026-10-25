@@ -28,7 +28,6 @@ public static partial class GuardCommand
     private static readonly HashSet<string> CodexShellToolNames =
         new(StringComparer.OrdinalIgnoreCase) { "shell_command", "exec", "local_shell", "unified_exec" };
 
-    /// <summary>Whether the caller's host can ask the user, and the shell that runs its command.</summary>
     private readonly record struct ModeSetCaller(bool CanAsk, ShellDialect Shell);
 
     private static readonly NudgeConfig ModeSetNudge = new()

@@ -168,8 +168,9 @@ trail and comments that only restated the code. Existing checkouts must rerun
 4. For each wired host, run `dydo init <host> --join`; the Claude Code hook then carries
    `--host claude`.
 5. `AGENTS.md` is the only entry file. Step 4's `--join` removes `CLAUDE.md` only when it equals
-   the new `AGENTS.md` or the 3.5.0 template. Delete by hand a `CLAUDE.md` that step 2 merged into
-   `AGENTS.md`, whether or not Claude is wired. Keep a user-written one and put `@AGENTS.md` at its
+   the new `AGENTS.md` or the 3.5.0 template, or an earlier dydo release generated it. Delete by
+   hand a `CLAUDE.md` that step 2 merged into `AGENTS.md`, whether or not Claude is wired. Keep a
+   user-written one and put `@AGENTS.md` at its
    top (`@../AGENTS.md` in `.claude/CLAUDE.md`).
 6. Run step 4 in every checkout of the project, since the Claude Code wiring lives in the
    machine-local `.claude/settings.local.json`. `--join` also removes dydo's Stop hook, which

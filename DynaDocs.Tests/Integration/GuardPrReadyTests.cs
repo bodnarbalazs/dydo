@@ -64,6 +64,9 @@ public class GuardPrReadyTests : IntegrationTestBase
     [Theory]
     [InlineData("git status && gh pr ready")]
     [InlineData("git status; gh pr new --fill")]
+    [InlineData(@"printf '%s\n' 'C:\'; gh pr ready 12")]
+    [InlineData("echo a#b; gh pr ready")]
+    [InlineData("gh pr create --title \"fix #12\" --body '## Independent review'")]
     public async Task ChainedPrCall_FromADirtyTree_IsDenied(string command)
     {
         await InitPushedProject();
@@ -92,6 +95,7 @@ public class GuardPrReadyTests : IntegrationTestBase
     [InlineData("gh pr view 12")]
     [InlineData("git status")]
     [InlineData("echo gh pr create")]
+    [InlineData("git status # reminder; gh pr ready 12")]
     public async Task UnrelatedCommand_FromADirtyTree_IsUntouched(string command)
     {
         await InitPushedProject();

@@ -564,7 +564,32 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return true;
     }
 
-    internal static IEnumerable<string> SplitCommand(string command)
+    // How many characters at i an unquoted separator or, with dropComments, a comment consumes;
+    // 0 when neither starts there. A comment stops before its newline, so the newline still splits.
+    private static int ConsumeUnquoted(string command, int i, StringBuilder current,
+        List<string> parts, bool dropComments)
+    {
+        if (dropComments && command[i] == '#' && (current.Length == 0 || char.IsWhiteSpace(current[^1])))
+        {
+            var newline = command.IndexOf('\n', i);
+            return (newline < 0 ? command.Length : newline) - i;
+        }
+
+        var sepLen = CheckCommandSeparator(command, i);
+        if (sepLen > 0 && current.Length > 0)
+        {
+            parts.Add(current.ToString());
+            current.Clear();
+        }
+        return sepLen;
+    }
+
+    /// <summary>
+    /// Splits a command at unquoted separators. A backslash is literal inside single quotes. With
+    /// <paramref name="dropComments"/>, an unquoted <c>#</c> that begins a word drops the rest of
+    /// its line, as a shell comment.
+    /// </summary>
+    internal static IEnumerable<string> SplitCommand(string command, bool dropComments = false)
     {
         var parts = new List<string>();
         var current = new StringBuilder();
@@ -583,7 +608,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
                 continue;
             }
 
-            if (c == '\\')
+            if (c == '\\' && !inSingleQuote)
             {
                 escapeNext = true;
                 current.Append(c);
@@ -595,15 +620,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
             if (!inSingleQuote && !inDoubleQuote)
             {
-                var sepLen = CheckCommandSeparator(command, i);
-                if (sepLen > 0)
+                var consumed = ConsumeUnquoted(command, i, current, parts, dropComments);
+                if (consumed > 0)
                 {
-                    if (current.Length > 0)
-                    {
-                        parts.Add(current.ToString());
-                        current.Clear();
-                    }
-                    i += sepLen - 1;
+                    i += consumed - 1;
                     continue;
                 }
             }

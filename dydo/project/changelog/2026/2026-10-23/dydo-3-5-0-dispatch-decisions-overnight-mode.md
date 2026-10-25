@@ -78,25 +78,30 @@ audit trail.
 
 1. Install the 3.5.0 CLI: `npm install -g dydo` or `dotnet tool update -g dydo`.
 2. Merge the release's `skills/`, `setup-skills.mjs`, `THIRD-PARTY-NOTICES.md`, `Scaffold/dydo/`
-   and `Scaffold/entry-point.md` into the project's `skills/`, same-named files, `dydo/` and
-   `AGENTS.md`, keeping the project's edits.
+   and `Scaffold/entry-point.md` into the project's `skills/`, same-named files, `dydo/` and dydo
+   entry file, keeping the project's edits. The dydo entry file is `AGENTS.md`, or `CLAUDE.md`
+   when only it derives from the 3.4.x entry point (its first heading and most of its lines); write
+   the result to `AGENTS.md`. With neither, render `Scaffold/entry-point.md` to `AGENTS.md`,
+   `{{PROJECT_NAME}}` set to the project name. Skip `dydo/index.md` and run `dydo index` instead.
+   The guard blocks agent writes to `dydo/files-off-limits.md` and the other paths under its
+   Protected Patterns, so a person applies those merges.
 3. Two skills are renamed: `issue-captain` to `ticket-captain` and `to-issue` to `to-ticket`
    (DYD-361). Move each, with the project's edits, to the new path. Project text naming the old
    names is now stale.
 4. For each wired host, run `dydo init <host> --join`; the Claude Code hook then carries
    `--host claude`.
 5. `AGENTS.md` is the only entry file. Step 4's `--join` removes `CLAUDE.md` only when it equals
-   the new `AGENTS.md` or the 3.5.0 template. A `CLAUDE.md` matching the 3.4.x entry point, or
-   carrying the project's edits to it, is merged into `AGENTS.md` in step 2, then deleted by hand;
-   so is any dydo copy when Claude is not wired. Keep a user-written one and put `@AGENTS.md` at
-   its top (`@../AGENTS.md` in `.claude/CLAUDE.md`).
+   the new `AGENTS.md` or the 3.5.0 template. Delete by hand a `CLAUDE.md` that step 2 merged into
+   `AGENTS.md`, whether or not Claude is wired. Keep a user-written one and put `@AGENTS.md` at its
+   top (`@../AGENTS.md` in `.claude/CLAUDE.md`).
 6. Run `node setup-skills.mjs` from the project root.
 7. Run `dydo adopt 3.5.0`.
 
 ## Files Changed
 
 `Commands/` (`ModeCommand.cs`, `GuardCommand.ModeSet.cs`, `GuardCommand.cs`,
-`GuardCommand.Refusal.cs`, `InitCommand.cs`, `AdoptCommand.cs`, `HelpCommand.cs`), `Models/HookInput.cs`, `Program.cs`,
+`GuardCommand.Refusal.cs`, `InitCommand.cs`, `AdoptCommand.cs`, `HelpCommand.cs`), `Models/`
+(`HookInput.cs`, `DydoConfig.cs`), `Utils/DydoVersion.cs`, `Program.cs`,
 `Services/` (`CompletionProvider.cs`, `ModeState.cs`, `ShellReader.cs`, `DydoInvocationScanner.cs`, `ConfigFactory.cs`,
 `ConfigService.cs`, `IConfigService.cs`), `Scaffold/dydo/` (guides, reference, decisions hub),
 `dydo/guides/`, `dydo/reference/`, `dydo/understand/control-flow.md`,
@@ -109,7 +114,8 @@ wizard, to-issue, wayfinder, admiral, issue-captain, chief-of-staff, READMEs), `
 `.github/workflows/release.yml`, `README.md`,
 `dydo/project/changelog/_changelog.md` (upgrade steps convention), `DynaDocs.Tests/` (mode command, mode state, invocation scanner
 in `Services/DydoInvocationScannerTests.cs`, guard mode-set and worker lane, init, fix, check,
-validate, config, doc scanner, off-limits, command smoke, the `machine-mode.feature` scenarios and
+validate, config, doc scanner, off-limits, command smoke, help, completion, the adopt command in
+`Integration/AdoptCommandTests.cs`, the version helper in `Utils/DydoVersionTests.cs`, the `machine-mode.feature` scenarios and
 steps, canonical skill assertions, coverage associations, the removed audit-large fixtures), `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`,
 `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs`, `npm/test/install.test.cjs`, this entry and its
 changelog hub.

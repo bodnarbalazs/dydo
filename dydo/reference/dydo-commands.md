@@ -182,6 +182,8 @@ them, their glob syntax, and the whitelist that lifts off-limits patterns. Nudge
 with `"match": "new-file"` matches the project-relative path of a file that Write, Edit, NotebookEdit
 or a Codex `apply_patch` is about to create, and never fires for a file that already exists or for a
 file a shell command creates.
+A plain `gh pr create`, `gh pr new` or `gh pr ready` is blocked while the tree fails the tree checks
+of [dydo pr-ready](#dydo-pr-ready).
 
 ---
 
@@ -295,7 +297,7 @@ forging the hook marker or writing the mode file directly.
 
 ---
 
-## Worktree Command
+## Worktree Commands
 
 ### dydo clean
 
@@ -379,6 +381,26 @@ failed worktree always keeps its branch, and its line says so.
 Exit `0` when nothing failed; exit `2` when a removal failed, or when a named worktree was not
 removed (unknown, main checkout, current directory, locked, submodule work, busy or under T3). With `--all`, skips
 exit `0`.
+
+### dydo pr-ready
+
+Check that a tree is fit to open or ready a PR from. A PR shows the branch as the remote holds it,
+so uncommitted or unpushed work is not in it.
+
+```bash
+dydo pr-ready                     # check the current directory's tree
+dydo pr-ready <path>              # check another tree
+dydo pr-ready --body pr-body.md   # also check the PR body file
+```
+
+The tree must have no staged, unstaged or untracked files git does not ignore, and HEAD must have
+an upstream and equal it. The upstream is read from the local remote-tracking ref; nothing is
+fetched. With `--body`, the body must name a ticket key (such as `DYD-123`) and hold a
+`## Independent review` section with the reviewer's `PASS - rubric/type: ...` block, fenced or not.
+Each problem prints as one `not ready:` line on stderr and the exit is `1`; a path outside a git
+work tree is a problem too. When all hold, it prints one `ready:` line and exits `0`. The guard
+runs the tree checks on `gh pr create`, `gh pr new` and `gh pr ready`
+([Guard System](../understand/guard-system.md)).
 
 ---
 

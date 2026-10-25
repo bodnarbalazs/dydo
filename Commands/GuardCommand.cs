@@ -292,7 +292,7 @@ public static partial class GuardCommand
 
         if (ShouldRouteToShellHandler(context.ToolName, context.BashCommand))
         {
-            return HandleBashCommand(context.BashCommand!, context.SessionId, offLimitsService, bashAnalyzer, env,
+            return HandleBashCommand(context.BashCommand!, context.SessionId, context.Cwd, offLimitsService, bashAnalyzer, env,
                 ModeSetCallerOf(context));
         }
 
@@ -350,7 +350,7 @@ public static partial class GuardCommand
     {
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
             return HandleBashCommand(
-                ctx.BashCommand!, ctx.SessionId,
+                ctx.BashCommand!, ctx.SessionId, ctx.Cwd,
                 offLimitsService, bashAnalyzer, env, ModeSetCallerOf(ctx), isWorker: true);
 
         var checkPath = filePath ?? searchPath;
@@ -436,6 +436,7 @@ public static partial class GuardCommand
     private static int HandleBashCommand(
         string command,
         string? sessionId,
+        string? cwd,
         OffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer,
         GuardEnv env,
@@ -466,6 +467,9 @@ public static partial class GuardCommand
 
         var nudged = CheckNudges(command, env);
         if (nudged != null) return nudged.Value;
+
+        var prNotReady = CheckPrReady(command, cwd, env);
+        if (prNotReady != null) return prNotReady.Value;
 
         // dydo commands skip the cd-chain coaching (they are never a needless cd compound);
         // everything else gets the auto-approval coaching block.
@@ -719,11 +723,11 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// mode set still meets its nudge; clean is what Ticket Captains run on close-out. Setup,
-    /// generation and hook commands stay with the top-level session.
+    /// mode set still meets its nudge; clean is what Ticket Captains run on close-out, pr-ready before
+    /// they open a PR. Setup, generation and hook commands stay with the top-level session.
     /// </summary>
     internal static readonly string[] WorkerAllowedDydoSubcommands =
-        ["check", "fix", "gap-check", "graph", "validate", "mode", "clean", "help", "version"];
+        ["check", "fix", "gap-check", "graph", "validate", "mode", "clean", "pr-ready", "help", "version"];
 
     private static readonly HashSet<string> WorkerAllowedDydoWords =
         new([.. WorkerAllowedDydoSubcommands, "-h", "--help", "--version"], StringComparer.Ordinal);

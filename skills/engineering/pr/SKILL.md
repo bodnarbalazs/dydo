@@ -36,6 +36,8 @@ Use this template for writing the PR body:
 <reviewer PASS block, verbatim>
 ```
 
+Name the ticket in the body, then run `dydo pr-ready --body <file>` before opening or readying the PR, and fix what it reports.
+
 ## Sections
 
 Skip all preambles and keep prose brief. Use the user's domain language from `dydo/glossary.md`.

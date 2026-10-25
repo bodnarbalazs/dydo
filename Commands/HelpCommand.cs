@@ -41,6 +41,7 @@ public static class HelpCommand
         Console.WriteLine("  mode set <flag> <val>  Set a mode flag, e.g. mode set overnight on");
         Console.WriteLine("  clean [<worktree>...]  Remove linked worktrees; archives uncommitted work, keeps unmerged branches");
         Console.WriteLine("  clean --all            Every linked worktree (--dry-run first; --archive lists the archive)");
+        Console.WriteLine("  pr-ready [path]        Check a PR can be opened: clean tree, HEAD pushed (--body checks the body)");
         Console.WriteLine();
         Console.WriteLine("Validation Commands:");
         Console.WriteLine("  validate               Validate local configuration and nudges");

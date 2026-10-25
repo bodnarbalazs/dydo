@@ -1,6 +1,6 @@
 using System.CommandLine;
-using System.Reflection;
 using DynaDocs.Commands;
+using DynaDocs.Utils;
 
 if (args.Length > 0 && args[0] == "gap-check")
 {
@@ -40,11 +40,7 @@ rootCommand.Subcommands.Add(CleanCommand.Create());
 var versionCommand = new Command("version", "Display version information");
 versionCommand.SetAction(_ =>
 {
-    var version = Assembly.GetExecutingAssembly()
-        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
-        ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString(3)
-        ?? "1.0.0";
-    Console.WriteLine($"dydo version {version}");
+    Console.WriteLine($"dydo version {DydoVersion.Current}");
     return 0;
 });
 rootCommand.Subcommands.Add(versionCommand);

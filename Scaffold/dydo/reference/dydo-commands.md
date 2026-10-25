@@ -35,8 +35,9 @@ dydo init <integration> --join       # wire this machine, or an added runtime, i
 Every mode writes `dydo.json`, scaffolds the `dydo/` folders with their framework documents,
 `files-off-limits.md` and `_system/types.json`, writes the `AGENTS.md` entry point (never `CLAUDE.md`), and adds
 `dydo/agents/`, `dydo/_system/.local/`, `/.claude/skills/` and `/.agents/skills/` to `.gitignore`. A
-documentation or entry-point file that already exists is left as it is. `none` stops there: no
-runtime integration. The runtime modes add, per selected host:
+documentation or entry-point file that already exists is left as it is. A fresh init records the
+running dydo version in `dydo.json` as `dydoVersion`. `none` stops there: no runtime integration.
+The runtime modes add, per selected host:
 
 | Host | Files | What they carry |
 |---|---|---|
@@ -55,7 +56,8 @@ manages, init stops with an error before it writes anything. Init and `--join` a
 
 `--join` targets an already-initialized project: a fresh clone, or a second runtime added later. It
 writes the selected hosts' rows above, and the entry point when it is missing, without re-scaffolding
-or overwriting the tree, and records the integration in `dydo.json`.
+or overwriting the tree, and records the integration in `dydo.json`. It leaves `dydoVersion` alone and
+never adds it: a teammate's newer CLI has not adopted that release's skills and documents.
 
 Claude Code 2.1.281 or later reads `AGENTS.md` when no `CLAUDE.md` is in the way. With `claude` or
 `all`, init and `--join` therefore remove a `CLAUDE.md` that is dydo's own generated copy (equal to

@@ -76,6 +76,7 @@ public static class InitCommand
         {
             var projectRoot = Environment.CurrentDirectory;
             var config = ConfigFactory.CreateDefault();
+            config.DydoVersion = DydoVersion.Current;
             var integrations = ExpandIntegrations(integration);
             foreach (var name in integrations)
                 config.Integrations[name] = true;

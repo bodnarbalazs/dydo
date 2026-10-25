@@ -874,6 +874,13 @@
       ]
     },
     {
+      "module": "Utils/DydoVersion.cs",
+      "tests": [
+        "DynaDocs.Tests/Utils/DydoVersionTests.cs",
+        "DynaDocs.Tests/Integration/InitCommandTests.cs"
+      ]
+    },
+    {
       "module": "Utils/ExitCodes.cs",
       "tests": [
         "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"

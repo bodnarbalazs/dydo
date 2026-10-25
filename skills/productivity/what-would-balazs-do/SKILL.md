@@ -41,8 +41,14 @@ He may invoke this skill on any call.
 
 Only his own words are his precedent: Decision Records (superseded ones as history), the docs, his
 answered Questions and grillings, and past conversations where available. A later word outranks an
-earlier one. Quote every citation. A tribunal's output is never precedent until he ratifies it.
-Search the current project unless he points it at another project's records.
+earlier one. A tribunal's output is never precedent until he ratifies it. Search the current
+project unless he points it at another project's records.
+
+Case law is evidence of his intent, not a rulebook. Read why he decided, from the DRs, the core docs
+such as `dydo/guides/coding-standards.md`, the project's stated purpose and common sense, and decide
+in that spirit, with or without a precedent. A recorded decision that goes against that spirit or
+no longer fits the project loses to it: the position names the decision and why, and the call
+becomes DR-grade, or at least flagged. A citation quotes his words with the reason behind them.
 
 ## Tribunal
 

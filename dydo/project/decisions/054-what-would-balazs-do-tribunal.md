@@ -38,6 +38,13 @@ answer form the self-improvement record and no separate ledger exists. A decided
 `Todo` unwired. Whether he is away is a separate switch, not set here;
 DYD-351 made it the `overnight` mode flag.
 
+## Amendment 2026-10-25 - the spirit of his words
+
+[DYD-371](https://linear.app/bodnar-balazs/issue/DYD-371): his words are evidence of his intent,
+not a rulebook. The tribunal decides in the spirit of his DRs and core docs, also where no precedent
+exists, and that spirit overrides a recorded decision that goes against it or no longer fits the
+project. A departure names the decision and why, and makes the call DR-grade, or at least flagged.
+
 ## Related
 
 - [Linear Workspace Standard](../../reference/linear-workspace-standard.md)

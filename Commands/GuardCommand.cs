@@ -569,11 +569,12 @@ public static partial class GuardCommand
     ];
 
     /// <summary>
-    /// A nudge's identity is its match form and pattern: the shipped defaults are all command
-    /// nudges, so a new-file entry never satisfies, replaces, or is rebuilt by one, whatever its
-    /// pattern. The block-severity system nudges (H19 indirect invocation) cannot be removed or
-    /// downgraded via dydo.json; a weakened severity is forced back to block without clobbering a
-    /// customized message.
+    /// A nudge's identity is its match form and pattern: a new-file entry never satisfies,
+    /// replaces, or is rebuilt by a command default, whatever its pattern. Only the block-severity
+    /// system nudges (H19 indirect invocation, all command nudges) are forced: they cannot be
+    /// removed or downgraded via dydo.json, and a weakened severity is forced back to block without
+    /// clobbering a customized message. Non-block defaults, the new-file notice included, are never
+    /// added back here.
     /// </summary>
     internal static List<NudgeConfig> MergeSystemNudges(List<NudgeConfig>? configNudges)
     {
@@ -584,7 +585,7 @@ public static partial class GuardCommand
             if (!nudges[i].IsCommandMatch || !StaleNudgeMessages.Contains(nudges[i].Message))
                 continue;
 
-            var current = ConfigFactory.DefaultNudges.FirstOrDefault(d => d.Pattern == nudges[i].Pattern);
+            var current = ConfigFactory.DefaultNudges.FirstOrDefault(d => d.IsCommandMatch && d.Pattern == nudges[i].Pattern);
             if (current == null)
                 nudges.RemoveAt(i);
             else
@@ -593,7 +594,7 @@ public static partial class GuardCommand
 
         foreach (var defaultNudge in ConfigFactory.DefaultNudges)
         {
-            if (!string.Equals(defaultNudge.Severity, "block", StringComparison.OrdinalIgnoreCase))
+            if (!defaultNudge.IsCommandMatch || !string.Equals(defaultNudge.Severity, "block", StringComparison.OrdinalIgnoreCase))
                 continue;
 
             var existingIndex = nudges.FindIndex(n => n.IsCommandMatch && n.Pattern == defaultNudge.Pattern);

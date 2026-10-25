@@ -219,4 +219,44 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
         Assert.DoesNotContain("file lane", result.Stderr);
         Assert.Contains("\"match\": \"new-file\"", File.ReadAllText(configService.FindConfigFile(TestDir)!));
     }
+
+    private const string DocsNotice = "NOTICE: Docs usually live under `dydo/`. If this is a pointer README, or it belongs here, carry on.";
+
+    [Theory]
+    [InlineData("src/notes.md")]
+    [InlineData("src/README.md")]
+    public async Task DefaultProject_NewMdOutsideDydo_NoticesAndAllows(string path)
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardWithStdinAsync(Payload("Write", new { file_path = path, content = "# x" }));
+
+        result.AssertPreToolUseAllowed();
+        result.AssertStderrContains(DocsNotice);
+    }
+
+    [Theory]
+    [InlineData("skills/a/SKILL.md")]
+    [InlineData(".github/x.md")]
+    public async Task DefaultProject_ExceptedMdPath_NoNotice(string path)
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardWithStdinAsync(Payload("Write", new { file_path = path, content = "# x" }));
+
+        result.AssertPreToolUseAllowed();
+        Assert.DoesNotContain("NOTICE: Docs usually", result.Stderr);
+    }
+
+    [Fact]
+    public async Task DefaultProject_EditToExistingMd_NoNotice()
+    {
+        await InitProjectAsync("none");
+        WriteFile("src/notes.md", "# old");
+
+        var result = await GuardWithStdinAsync(Payload("Edit", new { file_path = "src/notes.md", old_string = "old", new_string = "new" }));
+
+        result.AssertPreToolUseAllowed();
+        Assert.DoesNotContain("NOTICE: Docs usually", result.Stderr);
+    }
 }

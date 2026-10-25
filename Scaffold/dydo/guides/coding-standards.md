@@ -302,6 +302,10 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 ✓ // GDPR compliance - inactive users must not appear in exports
 ```
 
+### READMEs
+
+A README outside `dydo/` only points to the dydo doc that owns its folder.
+
 ---
 
 ## Related

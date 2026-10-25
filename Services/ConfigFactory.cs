@@ -17,6 +17,18 @@ public static class ConfigFactory
         "agents/"
     ];
 
+    /// <summary>
+    /// DYD-375: a soft notice when a write tool creates a .md outside the dydo tree. The root
+    /// files and tool folders dydo itself scaffolds are excepted; it never blocks.
+    /// </summary>
+    public static readonly NudgeConfig DocsOutsideDydoNudge = new()
+    {
+        Pattern = @"^(?!(?:README|CLAUDE|AGENTS|CHANGELOG|THIRD-PARTY-NOTICES)\.md$)(?!(?:dydo|skills|\.claude|\.agents|\.codex|\.github)/).*\.md$",
+        Message = "Docs usually live under `dydo/`. If this is a pointer README, or it belongs here, carry on.",
+        Severity = "notice",
+        Match = "new-file"
+    };
+
     public static readonly List<NudgeConfig> DefaultNudges =
     [
         new()
@@ -76,6 +88,7 @@ public static class ConfigFactory
             Message = "This PR carries no review block. Add the independent review under an 'Independent review' heading and follow this project's shared Communication and evidence standard.",
             Severity = "warn"
         },
+        DocsOutsideDydoNudge,
     ];
 
     public static DydoConfig CreateDefault()
@@ -85,19 +98,13 @@ public static class ConfigFactory
             Version = 1,
             Structure = new StructureConfig { Root = ConfigService.DefaultRoot },
             Integrations = new Dictionary<string, bool>(),
-            Nudges = DefaultNudges.Select(n => new NudgeConfig
-            {
-                Pattern = n.Pattern,
-                Message = n.Message,
-                Severity = n.Severity,
-                Audience = n.Audience
-            }).ToList(),
+            Nudges = DefaultNudges.Select(Copy).ToList(),
             ScanExclude = DydoInternalScanExclude.ToList()
         };
     }
 
     /// <summary>
-    /// Adds any default nudges missing from the config (matched by pattern).
+    /// Adds any default nudges missing from the config (matched by match form and pattern).
     /// Returns the number of nudges added.
     /// </summary>
     public static int EnsureDefaultNudges(DydoConfig config)
@@ -106,21 +113,28 @@ public static class ConfigFactory
 
         foreach (var nudge in DefaultNudges)
         {
-            if (config.Nudges.Any(current => current.Pattern == nudge.Pattern))
+            if (config.Nudges.Any(current => SameNudge(current, nudge)))
                 continue;
 
-            config.Nudges.Add(new NudgeConfig
-            {
-                Pattern = nudge.Pattern,
-                Message = nudge.Message,
-                Severity = nudge.Severity,
-                Audience = nudge.Audience
-            });
+            config.Nudges.Add(Copy(nudge));
             added++;
         }
 
         return added;
     }
+
+    /// <summary>A nudge's identity: its match form (absent = command) and its pattern.</summary>
+    public static bool SameNudge(NudgeConfig a, NudgeConfig b) =>
+        a.Pattern == b.Pattern && a.IsCommandMatch == b.IsCommandMatch && a.IsNewFileMatch == b.IsNewFileMatch;
+
+    public static NudgeConfig Copy(NudgeConfig nudge) => new()
+    {
+        Pattern = nudge.Pattern,
+        Message = nudge.Message,
+        Severity = nudge.Severity,
+        Audience = nudge.Audience,
+        Match = nudge.Match
+    };
 
     /// <summary>
     /// Adds any dydo-internal scan-exclude entries missing from the config.

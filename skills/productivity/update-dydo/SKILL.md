@@ -126,17 +126,25 @@ Each line: what in order looks like, then how to check it, from the project root
   `CLAUDE_CONFIG_DIR` (`~/.claude-work`, say). `echo "$CLAUDE_CONFIG_DIR"; ls -d ~/.claude*/`,
   then ask the user which are in use. Each has its own `settings.json` and memory store; walk
   the memory and hook lines for each.
-- Memory: each switch reported, the user decides. Claude: `autoMemoryEnabled` in
-  `.claude/settings.json`, `.claude/settings.local.json` and each profile's `settings.json`;
-  `autoMemoryDirectory` there; env `CLAUDE_CODE_DISABLE_AUTO_MEMORY`. Codex: `[features] memories`
-  in `.codex/config.toml`, off unless `true`. List every memory folder with files in it:
-  `<profile>/projects/<this project>/memory/`, `.claude/agent-memory*/`,
-  `$CODEX_HOME/memories/` (default `~/.codex/memories/`).
+- Memory: each switch and rule below reported, the user decides.
+  - Claude: `autoMemoryEnabled` and `autoMemoryDirectory` in `.claude/settings.json`,
+    `.claude/settings.local.json` and each profile's `settings.json`; env
+    `CLAUDE_CODE_DISABLE_AUTO_MEMORY`. In the same files, each `permissions.deny` entry covering a
+    memory folder (`Edit(//**/.claude*/projects/*/memory/**)`, say); deny rules apply without
+    workspace trust.
+    `grep -Hni -e memory -e '"deny"' .claude/settings*.json ~/.claude*/settings.json; echo "$CLAUDE_CODE_DISABLE_AUTO_MEMORY"`
+  - Codex: `[features] memories`, off unless `true`, and `memories.generate_memories`, in
+    `.codex/config.toml` and the user's `$CODEX_HOME/config.toml` (default `~/.codex/config.toml`).
+    `grep -n -e '^\[' -e memories .codex/config.toml "${CODEX_HOME:-$HOME/.codex}/config.toml"`
+  - Folders: every memory folder with files in it: `<profile>/projects/<this project>/memory/`,
+    the `autoMemoryDirectory` folder when set, `.claude/agent-memory*/`, `$CODEX_HOME/memories/`
+    (default `~/.codex/memories/`).
 
 **Hooks**
 - Claude guard: `.claude/settings.local.json` `hooks.PreToolUse` has one dydo entry, matcher
   `Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit`,
-  command `dydo guard --host claude`, plus a `permissions.allow` list.
+  command `dydo guard --host claude`, plus a `permissions.allow` list. MultiEdit is left out on
+  purpose; the guard still reads one that arrives.
   `cat .claude/settings.local.json`
 - Codex guard: `.codex/hooks.json` `hooks.PreToolUse` has one dydo entry, matcher
   `Bash|apply_patch|Edit|Write|Agent|shell_command|exec|local_shell|unified_exec`, command

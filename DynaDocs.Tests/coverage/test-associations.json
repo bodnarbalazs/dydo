@@ -1321,6 +1321,12 @@
         "DynaDocs.Tests/Services/WorktreeProcessProbeTests.cs",
         "DynaDocs.Tests/Integration/CleanCommandTests.cs"
       ]
+    },
+    {
+      "module": "Commands/ReleasedEntryPoints.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/InitCommandTests.cs"
+      ]
     }
   ]
 }

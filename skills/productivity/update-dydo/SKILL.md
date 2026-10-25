@@ -9,6 +9,9 @@ Take what the project already has, tweaks included, apply what upstream added an
 resolve the conflicts. Update only. An update that skips activation silently changes nothing, so
 steps 7 and 8 are the heart of it.
 
+Run this in the user's own top-level session, never a sub-agent: the guard denies sub-agents
+`dydo adopt`, and the CLI install and protected-file merges need the user.
+
 ## Steps
 
 1. **Installed?** No `dydo.json` at the project root: tell the user dydo is not installed here,

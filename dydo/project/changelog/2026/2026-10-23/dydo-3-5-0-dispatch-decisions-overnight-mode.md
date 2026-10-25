@@ -42,12 +42,6 @@ audit trail.
   READMEs, the control-flow table, the glossary and the third-party notices.
 - A proposal for an overnight chief of staff, recorded in PR #153 and now marked `promoted` into
   the shipped overnight mode above (DYD-351).
-- The `update-dydo` skill (DYD-360): updates a project's skills and framework docs to the latest
-  release with a three-way merge that keeps the project's edits, applies each release's upgrade
-  steps, activates the result and proves it took effect.
-- A `dydoVersion` field in `dydo.json` (DYD-360): the dydo release the project has adopted. A
-  fresh `dydo init` writes it, `--join` leaves it alone, and the new `dydo adopt <version>` sets it;
-  `update-dydo` runs it after an update.
 
 ## Changed
 
@@ -61,10 +55,6 @@ audit trail.
 - The decision-record hub states when to write a record (all three of hard to reverse, surprising
   without context, a real trade-off) and documents the `ratification: pending` frontmatter for a
   `proposed` record a tribunal decided while the human was away (DYD-350).
-- Two skills are renamed (DYD-361): `issue-captain` to `ticket-captain` and `to-issue` to
-  `to-ticket`.
-- `AGENTS.md` is the only entry file (DYD-368): `dydo init` writes it for every host, and
-  `dydo init claude` removes a `CLAUDE.md` that copies the entry point and warns about any other.
 - Align runtime and npm versions to 3.5.0 and permit publication only on the exact v3.5.0 tag.
 
 ## Removed
@@ -77,15 +67,15 @@ audit trail.
 ## Upgrade steps
 
 1. Install the 3.5.0 CLI: `npm install -g dydo` or `dotnet tool update -g dydo`.
-2. Merge the release's `skills/`, `setup-skills.mjs`, `THIRD-PARTY-NOTICES.md`, `Scaffold/dydo/`
-   and `Scaffold/entry-point.md` into the project's `skills/`, same-named files, `dydo/` and dydo
-   entry file, keeping the project's edits. The dydo entry file is whichever of `AGENTS.md` and
+2. Merge the release's `skills/`, `setup-skills.mjs`, `THIRD-PARTY-NOTICES.md`, `Scaffold/dydo/` and
+   `Scaffold/entry-point.md` into the project's `skills/`, same-named files, `dydo/` and dydo entry
+   file, keeping the project's edits. The dydo entry file is whichever of `AGENTS.md` and
    `CLAUDE.md` derives from the 3.4.x entry point (its first heading and most of its lines); with
    neither, render `Scaffold/entry-point.md`, `{{PROJECT_NAME}}` set to the project name. Write the
    result to `AGENTS.md`. An `AGENTS.md` that does not derive is the user's: put the result at its
-   top and keep their text below it; `--join` leaves an existing `AGENTS.md` alone. The guard blocks agent writes to `dydo/index.md`,
-   `dydo/files-off-limits.md` and the other paths under its Protected Patterns, so a person
-   applies those merges.
+   top and keep their text below it; `--join` leaves an existing `AGENTS.md` alone. The guard blocks
+   agent writes to `dydo/index.md`, `dydo/files-off-limits.md` and the other paths under its
+   Protected Patterns, so a person applies those merges.
 3. Two skills are renamed: `issue-captain` to `ticket-captain` and `to-issue` to `to-ticket`
    (DYD-361). Move each, with the project's edits, to the new path. Project text naming the old
    names is now stale.
@@ -101,22 +91,19 @@ audit trail.
 ## Files Changed
 
 `Commands/` (`ModeCommand.cs`, `GuardCommand.ModeSet.cs`, `GuardCommand.cs`,
-`GuardCommand.Refusal.cs`, `InitCommand.cs`, `AdoptCommand.cs`, `HelpCommand.cs`), `Models/`
-(`HookInput.cs`, `DydoConfig.cs`), `Utils/DydoVersion.cs`, `Program.cs`,
-`Services/` (`CompletionProvider.cs`, `ModeState.cs`, `ShellReader.cs`, `DydoInvocationScanner.cs`, `ConfigFactory.cs`,
+`GuardCommand.Refusal.cs`, `InitCommand.cs`, `HelpCommand.cs`), `Models/HookInput.cs`, `Program.cs`,
+`Services/` (`ModeState.cs`, `ShellReader.cs`, `DydoInvocationScanner.cs`, `ConfigFactory.cs`,
 `ConfigService.cs`, `IConfigService.cs`), `Scaffold/dydo/` (guides, reference, decisions hub),
 `dydo/guides/`, `dydo/reference/`, `dydo/understand/control-flow.md`,
 `dydo/project/decisions/054-what-would-balazs-do-tribunal.md`,
 `dydo/project/decisions/_decisions.md`,
 `dydo/project/future-features/overnight-chief-of-staff.md`, `dydo/_system/audit/` (removed),
-`dydo.json`, `skills/` (overnight-mode, what-would-balazs-do, update-dydo, the two formal verification skills,
+`dydo.json`, `skills/` (overnight-mode, what-would-balazs-do, the two formal verification skills,
 wizard, to-issue, wayfinder, admiral, issue-captain, chief-of-staff, READMEs), `THIRD-PARTY-NOTICES.md`,
 `npm/THIRD-PARTY-NOTICES.md`, `DynaDocs.csproj`, `npm/package.json`,
-`.github/workflows/release.yml`, `README.md`,
-`dydo/project/changelog/_changelog.md` (upgrade steps convention), `DynaDocs.Tests/` (mode command, mode state, invocation scanner
+`.github/workflows/release.yml`, `DynaDocs.Tests/` (mode command, mode state, invocation scanner
 in `Services/DydoInvocationScannerTests.cs`, guard mode-set and worker lane, init, fix, check,
-validate, config, doc scanner, off-limits, command smoke, help, completion, the adopt command in
-`Integration/AdoptCommandTests.cs`, the version helper in `Utils/DydoVersionTests.cs`, the `machine-mode.feature` scenarios and
+validate, config, doc scanner, off-limits, command smoke, the `machine-mode.feature` scenarios and
 steps, canonical skill assertions, coverage associations, the removed audit-large fixtures), `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`,
 `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs`, `npm/test/install.test.cjs`, this entry and its
 changelog hub.

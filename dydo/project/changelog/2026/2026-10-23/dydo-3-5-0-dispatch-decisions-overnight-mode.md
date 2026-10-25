@@ -82,9 +82,9 @@ audit trail.
    entry file, keeping the project's edits. The dydo entry file is `AGENTS.md`, or `CLAUDE.md`
    when only it derives from the 3.4.x entry point (its first heading and most of its lines); write
    the result to `AGENTS.md`. With neither, render `Scaffold/entry-point.md` to `AGENTS.md`,
-   `{{PROJECT_NAME}}` set to the project name. Skip `dydo/index.md` and run `dydo index` instead.
-   The guard blocks agent writes to `dydo/files-off-limits.md` and the other paths under its
-   Protected Patterns, so a person applies those merges.
+   `{{PROJECT_NAME}}` set to the project name. The guard blocks agent writes to `dydo/index.md`,
+   `dydo/files-off-limits.md` and the other paths under its Protected Patterns, so a person
+   applies those merges.
 3. Two skills are renamed: `issue-captain` to `ticket-captain` and `to-issue` to `to-ticket`
    (DYD-361). Move each, with the project's edits, to the new path. Project text naming the old
    names is now stale.

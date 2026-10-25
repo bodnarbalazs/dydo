@@ -51,9 +51,9 @@ steps 7 and 8 are the heart of it.
    wrote the folder name there at init; the folder may have been renamed or cloned since.
 
    Protected files: the guard blocks writes to the paths under Protected Patterns in the project's
-   `dydo/files-off-limits.md`. Skip `dydo/index.md`; step 7 rebuilds it. For each other protected
-   file the merge changes, write the result to a temp file outside the project, show the user the
-   diff, and ask them to apply it.
+   `dydo/files-off-limits.md`, `dydo/index.md` among them. For each protected file the merge
+   changes, write the result to a temp file outside the project, show the user the diff, and ask
+   them to apply it.
 
    Normalise line endings to LF before comparing or merging; a CRLF checkout against `git show`'s
    LF otherwise reads as an edit on every line. Write each result back with the project file's
@@ -81,7 +81,7 @@ steps 7 and 8 are the heart of it.
 7. **Activate.** For each host set `true` under `integrations` in `dydo.json`, run
    `dydo init <host> --join`. Then run `node setup-skills.mjs` from the project root. Codex wired:
    tell the user to open Codex in the project and trust the changed hooks; an untrusted hook leaves
-   every session unguarded. Run `dydo index` to rebuild `dydo/index.md`.
+   every session unguarded.
 8. **Prove.** All of these hold, or the update is not done:
    - every link in `.claude/skills/` and `.agents/skills/` that points into the project's `skills/`
      resolves to a `skills/**/<name>/SKILL.md`; setup leaves other entries alone;

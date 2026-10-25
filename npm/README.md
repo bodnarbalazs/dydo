@@ -68,6 +68,7 @@ init mode.
 | `dydo gap-check` | Run the test runner configured in `dydo.json`. |
 | `dydo mode` | List or set this machine's mode flags. |
 | `dydo clean` | Remove linked worktrees, archiving their uncommitted work first. |
+| `dydo pr-ready` | Check a tree is committed and pushed before a PR opens. |
 | `dydo map` | Serve a read-only map of a Linear Project on localhost. |
 | `dydo completions`, `version`, `help` | Shell and utility commands. |
 

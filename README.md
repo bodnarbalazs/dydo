@@ -194,6 +194,7 @@ dydo has no OpenCode init mode.
 | `dydo gap-check [args]` | Run the test runner configured in `dydo.json`, passing the arguments through |
 | `dydo mode show` / `dydo mode set <flag> <value>` | List or set this machine's mode flags (`overnight`) |
 | `dydo clean [<worktree>...] [--all]` | Remove linked worktrees, archiving their uncommitted work first (`--dry-run` previews) |
+| `dydo pr-ready [path] [--body <file>]` | Check a tree is committed and pushed before a PR opens (`--body` also checks the PR body) |
 | `dydo map [--no-browser]` | Serve a read-only map of a Linear Project on localhost (needs `LINEAR_API_KEY`) |
 | `dydo completions <shell>` | Print a completion script for `bash`, `zsh`, or `powershell` |
 | `dydo version` | Print the version |

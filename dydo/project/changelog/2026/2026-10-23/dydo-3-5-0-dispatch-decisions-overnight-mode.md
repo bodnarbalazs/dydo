@@ -81,7 +81,8 @@ audit trail.
 4. For each wired host, run `dydo init <host> --join`; the Claude Code hook then carries
    `--host claude`.
 5. `AGENTS.md` is the only entry file: step 4 removes a dydo-generated `CLAUDE.md` (remove it
-   yourself when Claude is not wired); keep a user-written one and put `@AGENTS.md` at its top.
+   yourself when Claude is not wired). Keep a user-written one and put `@AGENTS.md` at its top
+   (`@../AGENTS.md` in `.claude/CLAUDE.md`).
 6. Run `node setup-skills.mjs` from the project root.
 7. Set `dydoVersion` in `dydo.json` to `3.5.0`.
 

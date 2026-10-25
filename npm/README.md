@@ -61,10 +61,13 @@ init mode.
 | Command | Purpose |
 |---|---|
 | `dydo init <integration>` | Scaffold or join a project. |
+| `dydo adopt <version>` | Record the dydo release the project adopted. |
 | `dydo check`, `dydo fix`, `dydo index`, `dydo graph` | Maintain the documentation tree. |
 | `dydo guard` | Evaluate hook rules and nudges. |
 | `dydo validate` | Validate local configuration and nudges. |
 | `dydo gap-check` | Run the test runner configured in `dydo.json`. |
+| `dydo mode` | List or set this machine's mode flags. |
+| `dydo clean` | Remove linked worktrees, archiving their uncommitted work first. |
 | `dydo map` | Serve a read-only map of a Linear Project on localhost. |
 | `dydo completions`, `version`, `help` | Shell and utility commands. |
 

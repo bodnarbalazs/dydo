@@ -330,4 +330,76 @@ public class GuardNewFileNudgeTests : IDisposable
     }
 
     #endregion
+
+    #region Shipped default: soft notice for docs outside dydo/ (DYD-375)
+
+    private const string DocsNotice = "NOTICE: Docs usually live under `dydo/`. If this is a pointer README, or it belongs here, carry on.";
+
+    private GuardCommand.GuardEnv DefaultEnv() => new(ConfigFactory.CreateDefault(), _markerDir, _root);
+
+    [Theory]
+    [InlineData("src/notes.md")]
+    [InlineData("src/README.md")]
+    [InlineData("notes.md")]
+    [InlineData("docs/guide.MD")]
+    [InlineData("src/dydo/x.md")]
+    [InlineData("src/skills/x.md")]
+    [InlineData("dydo.md")]
+    public void DefaultDocsNudge_NewMdOutsideDydo_PrintsNoticeAndPasses(string target)
+    {
+        var (result, stderr) = Check(DefaultEnv(), target);
+
+        Assert.Null(result);
+        Assert.Contains(DocsNotice, stderr);
+    }
+
+    [Theory]
+    [InlineData("README.md")]
+    [InlineData("readme.md")]
+    [InlineData("CLAUDE.md")]
+    [InlineData("AGENTS.md")]
+    [InlineData("THIRD-PARTY-NOTICES.md")]
+    [InlineData("CHANGELOG.md")]
+    [InlineData("dydo/x.md")]
+    [InlineData("dydo/guides/new-guide.md")]
+    [InlineData("skills/a/SKILL.md")]
+    [InlineData(".claude/skills/a/SKILL.md")]
+    [InlineData(".agents/skills/a/SKILL.md")]
+    [InlineData(".codex/notes.md")]
+    [InlineData(".github/x.md")]
+    [InlineData("src/notes.txt")]
+    [InlineData("src/notes.md.bak")]
+    public void DefaultDocsNudge_ExceptedPath_PrintsNothing(string target)
+    {
+        var (result, stderr) = Check(DefaultEnv(), target);
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Fact]
+    public void DefaultDocsNudge_EditToExistingMd_PrintsNothing()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, "src"));
+        File.WriteAllText(Path.Combine(_root, "src", "notes.md"), "# notes");
+
+        var (result, stderr) = Check(DefaultEnv(), "src/notes.md");
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Fact]
+    public void Merge_NeverForcesTheDocsNotice()
+    {
+        var docs = ConfigFactory.DocsOutsideDydoNudge;
+
+        Assert.DoesNotContain(GuardCommand.MergeSystemNudges([]), n => n.Pattern == docs.Pattern);
+
+        var edited = new NudgeConfig { Pattern = docs.Pattern, Message = "mine", Severity = "notice", Match = "new-file" };
+        var kept = Assert.Single(GuardCommand.MergeSystemNudges([edited]), n => n.Pattern == docs.Pattern);
+        Assert.Same(edited, kept);
+    }
+
+    #endregion
 }

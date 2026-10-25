@@ -233,4 +233,40 @@ public class ConfigFactoryTests
         Assert.NotNull(nudge);
         return nudge;
     }
+
+    [Fact]
+    public void CreateDefault_IncludesTheDocsNoticeAsANewFileNudge()
+    {
+        var config = ConfigFactory.CreateDefault();
+
+        var nudge = Assert.Single(config.Nudges, n => n.IsNewFileMatch);
+        Assert.Equal(ConfigFactory.DocsOutsideDydoNudge.Pattern, nudge.Pattern);
+        Assert.Equal("notice", nudge.Severity);
+        Assert.Equal("Docs usually live under `dydo/`. If this is a pointer README, or it belongs here, carry on.", nudge.Message);
+        Assert.NotSame(ConfigFactory.DocsOutsideDydoNudge, nudge);
+    }
+
+    [Fact]
+    public void CreateDefault_SerializesTheDocsNoticeMatch()
+    {
+        var json = JsonSerializer.Serialize(ConfigFactory.CreateDefault(), DydoConfigJsonContext.Default.DydoConfig);
+
+        Assert.Contains("\"match\": \"new-file\"", json);
+    }
+
+    [Fact]
+    public void EnsureDefaultNudges_CopiesMatch_AndIdentityIsMatchPlusPattern()
+    {
+        var docs = ConfigFactory.DocsOutsideDydoNudge;
+        var config = new DydoConfig
+        {
+            Nudges = [new NudgeConfig { Pattern = docs.Pattern, Message = "command lane", Severity = "warn" }]
+        };
+
+        ConfigFactory.EnsureDefaultNudges(config);
+
+        var added = Assert.Single(config.Nudges, n => n.Pattern == docs.Pattern && n.IsNewFileMatch);
+        Assert.Equal("new-file", added.Match);
+        Assert.Single(config.Nudges, n => n.Pattern == docs.Pattern && n.IsCommandMatch);
+    }
 }

@@ -2,6 +2,7 @@ namespace DynaDocs.Commands;
 
 using System.CommandLine;
 using System.Text.RegularExpressions;
+using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
@@ -43,10 +44,12 @@ public static partial class AdoptCommand
             return ExitCodes.ToolError;
         }
 
+        List<NudgeConfig> added;
         try
         {
             // Strict, so a dydo.json that fails to parse is reported rather than overwritten.
             var config = configService.LoadConfigStrict(Path.GetDirectoryName(configPath))!;
+            added = ApplyMigrations(config, version);
             config.DydoVersion = version;
             configService.SaveConfig(config, configPath);
         }
@@ -56,8 +59,51 @@ public static partial class AdoptCommand
             return ExitCodes.ToolError;
         }
 
+        foreach (var nudge in added)
+            Console.WriteLine($"Added {nudge.Match ?? "command"} nudge: {nudge.Message}");
         Console.WriteLine($"Recorded dydoVersion {version} in {ConfigService.ConfigFileName}");
         return ExitCodes.Success;
+    }
+
+    /// <summary>
+    /// Nudges a release adds to existing projects, once: when the recorded dydoVersion is below
+    /// the release (or absent) and the adopted version is at or above it, and the config holds no
+    /// nudge with the same match and pattern. A later edit or removal stands.
+    /// </summary>
+    private static readonly (string Release, NudgeConfig Nudge)[] Migrations =
+    [
+        ("3.5.0", ConfigFactory.DocsOutsideDydoNudge),
+    ];
+
+    internal static List<NudgeConfig> ApplyMigrations(DydoConfig config, string adopted)
+    {
+        var added = new List<NudgeConfig>();
+        foreach (var (release, nudge) in Migrations)
+        {
+            var crossed = CompareCore(adopted, release) >= 0
+                && (config.DydoVersion == null || CompareCore(config.DydoVersion, release) < 0);
+            if (!crossed || config.Nudges.Any(n => ConfigFactory.SameNudge(n, nudge)))
+                continue;
+
+            var copy = ConfigFactory.Copy(nudge);
+            config.Nudges.Add(copy);
+            added.Add(copy);
+        }
+
+        return added;
+    }
+
+    /// <summary>
+    /// Orders versions by major.minor.patch only: a prerelease counts as its release, so
+    /// 3.5.0-beta.3 crosses 3.5.0 and adopting 3.5.0 afterwards adds nothing again. A recorded
+    /// value that is not a version sorts below every release.
+    /// </summary>
+    internal static int CompareCore(string a, string b) => ParseCore(a).CompareTo(ParseCore(b));
+
+    private static Version ParseCore(string value)
+    {
+        var core = (value.StartsWith('v') ? value[1..] : value).Split('-', 2)[0];
+        return Version.TryParse(core, out var parsed) ? parsed : new Version(0, 0);
     }
 
     [GeneratedRegex(@"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$")]

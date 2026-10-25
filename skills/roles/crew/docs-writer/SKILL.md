@@ -28,7 +28,7 @@ words.
 1. **Find the witness.** Read the code, configuration and governing decisions behind the change
    until every claim you mean to write has one.
 2. **Write it in its one home.** Concepts in `understand/`, procedures in `guides/`, exact contracts
-   in `reference/`, temporary specs under `reference/working-specs/`, delivery history under `project/`; a meaning another document owns is a link.
+   in `reference/`, temporary specs under `reference/working-specs/`, delivery history under `project/`; a meaning another document owns is a link. A README outside `dydo/` only points to the dydo doc that owns its folder.
    A dydo document takes its frontmatter and links from writing-docs.md; an agent-facing
    document (a skill, its resources, an entry point) is written by `writing-for-agents`.
    Cut whatever the code already states plainly. Done when each claim has one canonical home,

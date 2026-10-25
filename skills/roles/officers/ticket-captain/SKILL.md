@@ -104,6 +104,7 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    A candidate's first round seats two in parallel, one Claude and one Codex, their findings merged
    into one FAIL; later rounds take the model and vendor you choose, cross-vendor preferred. Reviews
    and gates keep the full strength the consequence of error deserves, whatever the work below cost.
+   Seat parallel reviewers in separate worktrees when either may run probes.
    Send the FAIL block with the brief and set `Implementing`. A change to acceptance,
    scope, destination or architecture goes to the Project's map holder for a map or plan amendment. **Done:** each fix
    has its own commit and fresh review; the fifth consecutive FAIL stops the loop, records the

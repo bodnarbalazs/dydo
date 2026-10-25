@@ -143,8 +143,8 @@ Each line: what in order looks like, then how to check it, from the project root
 **Hooks**
 - Claude guard: `.claude/settings.local.json` `hooks.PreToolUse` has one dydo entry, matcher
   `Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit`,
-  command `dydo guard --host claude`, plus a `permissions.allow` list. MultiEdit is left out on
-  purpose; the guard still reads one that arrives.
+  command `dydo guard --host claude`, plus a `permissions.allow` list. No MultiEdit: Claude Code
+  ships no such tool; Edit covers multi-part edits.
   `cat .claude/settings.local.json`
 - Codex guard: `.codex/hooks.json` `hooks.PreToolUse` has one dydo entry, matcher
   `Bash|apply_patch|Edit|Write|Agent|shell_command|exec|local_shell|unified_exec`, command

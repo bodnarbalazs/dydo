@@ -4,7 +4,9 @@ import type { ELK as ElkApi } from 'elkjs/lib/elk-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Graph, Project, Team } from '../api/types';
 import { blocks, makeGraph, makeIssue, related } from '../graph/testIssues';
+import { TIMING } from '../map/cascade';
 import { App } from './App';
+import { ProjectVisit } from './ProjectVisit';
 
 const teams: Team[] = [
   { id: 'team-1', key: 'T', name: 'Team One' },
@@ -78,6 +80,23 @@ const card = (identifier: string) => document.querySelector(`[data-identifier="$
 async function mapShown() {
   await waitFor(() => expect(card('T-X')).not.toBeNull());
 }
+
+/** The tickets on screen each time the map reported its fit done and painted. */
+let painted: ReadonlySet<string | null>[] = [];
+
+/** Records each fit the canvas reports to the visit, so a test waits on that report, not on the clock; restore mocks after each test. */
+function watchFits() {
+  painted = [];
+  const ready = Reflect.get(ProjectVisit.prototype, 'ready');
+  vi.spyOn(ProjectVisit.prototype, 'ready').mockImplementation(function (this: ProjectVisit, graph: Graph) {
+    painted.push(new Set([...document.querySelectorAll('[data-identifier]')].map((shown) => shown.getAttribute('data-identifier'))));
+    ready.call(this, graph);
+  });
+}
+
+/** Waits until React Flow has finished fitting a map that shows every ticket in `shown` and none in `gone`. */
+const fitted = (shown: string[], gone: string[] = []) =>
+  waitFor(() => expect(painted.some((cards) => shown.every((id) => cards.has(id)) && gone.every((id) => !cards.has(id)))).toBe(true));
 
 describe('App selectors and URL state', () => {
   it('asks for a team first, then lists its Projects and writes both into the URL', async () => {
@@ -594,7 +613,13 @@ describe('App ignores layouts it no longer needs', () => {
 
 describe('App navigation and fitting', () => {
   const scale = () => Number(/scale\(([\d.]+)\)/.exec(document.querySelector<HTMLElement>('.react-flow__viewport')?.style.transform ?? '')?.[1]);
-  const settle = () => act(() => new Promise((done) => setTimeout(done, 50)));
+
+  beforeEach(watchFits);
+
+  // A failed test must not leave its spy, with its calls, to the next one.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('asks for no Projects before a team is chosen', async () => {
     open('');
@@ -650,25 +675,25 @@ describe('App navigation and fitting', () => {
   it('fits each newly opened Project into view', async () => {
     open('?team=team-1&project=project-1');
     await mapShown();
-    await settle();
+    await fitted(['T-X']);
     expect(scale()).toBeLessThan(1);
     act(() => {
       window.history.pushState(null, '', '/?team=team-1&project=project-2');
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
     await waitFor(() => expect(card('T-E')).not.toBeNull());
-    await settle();
+    await fitted(['T-E'], ['T-X']);
     expect(scale()).toBeGreaterThan(1);
   });
 
   it('fits the map again after Collapse all', async () => {
     open('?team=team-1&project=project-1');
     await mapShown();
-    await settle();
+    await fitted(['T-X']);
     const expanded = scale();
     fireEvent.click(screen.getByRole('button', { name: 'Collapse all' }));
     await waitFor(() => expect(card('T-A')).toBeNull());
-    await settle();
+    await fitted(['T-X'], ['T-A']);
     expect(scale()).toBeGreaterThan(expanded);
   });
 });
@@ -684,13 +709,30 @@ describe('App refresh in place', () => {
     graphOne.external,
   );
 
-  /** Lets React Flow apply the fits it queued for the latest nodes. */
-  const settle = () => act(() => new Promise((done) => setTimeout(done, 50)));
+  beforeEach(watchFits);
+
+  // A failed test must not leave its spies, with their calls, to the next one.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /** Holds the old map's exit fade open until `release`, so a slow test run cannot outlast it. */
+  function holdExits() {
+    const realTimeout = window.setTimeout.bind(window);
+    const held: (() => void)[] = [];
+    const timers = vi.spyOn(window, 'setTimeout').mockImplementation(((run: () => void, ms?: number) => {
+      if (ms !== TIMING.exit) return realTimeout(run, ms);
+      held.push(run);
+      return 0;
+    }) as typeof setTimeout);
+    const release = () => act(() => { for (const run of held.splice(0)) run(); });
+    return { timers, release };
+  }
 
   async function openMap(focus = '') {
     open(`?team=team-1&project=project-1${focus}`);
     await mapShown();
-    await settle();
+    await fitted(['T-X']);
   }
 
   it('re-fetches the Project and keeps the viewport, plates, focus and Show related, marking what changed', async () => {
@@ -700,7 +742,7 @@ describe('App refresh in place', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Show related' }));
     await waitFor(() => expect(card('T-A')).toBeNull());
     await waitFor(() => expect(card('T-R')).not.toBeNull());
-    await settle();
+    await fitted(['T-R'], ['T-A']);
     const viewport = transform();
     const search = window.location.search;
     graphAnswer = () => json(makeGraph([...graphOne.issues.map((issue) => (issue.id === 'X' ? { ...issue, assignee: 'Bo' } : issue)), makeIssue('Y')], graphOne.relations, graphOne.external));
@@ -715,22 +757,23 @@ describe('App refresh in place', () => {
     expect(card('T-X')?.className).toContain('selected');
     expect(card('T-A')).toBeNull();
     expect(card('T-R')).not.toBeNull();
+    await fitted(['T-Y']);
     expect(transform()).toBe(viewport);
     expect(window.location.search).toBe(search);
     expect(refreshButton().disabled).toBe(false);
     expect(screen.getByText('Project One: 5 tickets, 1 plates')).toBeTruthy();
   });
 
-  it('fades a removed issue out on the old map before the new one replaces it', async () => {
+  it('fades a removed ticket out on the old map before the new one replaces it', async () => {
     await openMap();
-    const timers = vi.spyOn(window, 'setTimeout');
+    const exits = holdExits();
     graphAnswer = () => json(withoutX);
     fireEvent.click(refreshButton());
     expect((await notice()).textContent).toBe('1 removed · 1 link removed');
     expect(wrapper('T-X')?.classList.contains('refresh-removed')).toBe(true);
+    expect(exits.timers).toHaveBeenCalledWith(expect.any(Function), 300);
+    exits.release();
     await waitFor(() => expect(card('T-X')).toBeNull());
-    expect(timers).toHaveBeenCalledWith(expect.any(Function), 300);
-    timers.mockRestore();
   });
 
   it('reads No changes and marks nothing when a second refresh finds nothing new', async () => {
@@ -777,6 +820,7 @@ describe('App refresh in place', () => {
       if (shown !== null) placeholders.push(shown.textContent);
     });
     watch.observe(document.body, { childList: true, subtree: true });
+    const exits = holdExits();
     graphAnswer = () => json(makeGraph(withoutX.issues.map((issue) => (issue.id === 'A' ? { ...issue, title: 'Renamed' } : issue)), withoutX.relations, withoutX.external));
 
     fireEvent.click(refreshButton());
@@ -789,9 +833,11 @@ describe('App refresh in place', () => {
     fireEvent.click(refreshButton());
     expect(vi.mocked(fetch).mock.calls.length).toBe(fetches);
 
+    exits.release();
     await waitFor(() => expect(card('T-X')).toBeNull());
     expect(wrapper('T-A')?.classList.contains('refresh-changed')).toBe(true);
     expect(screen.getByRole('status').textContent).toBe('1 changed · 1 removed · 1 link removed');
+    await fitted(['T-A'], ['T-X']);
     expect(transform()).toBe(viewport);
     expect(refreshButton().disabled).toBe(false);
     watch.disconnect();
@@ -864,6 +910,5 @@ describe('App refresh in place', () => {
     expect(document.querySelector('.refresh-ghost')).toBeNull();
     expect(document.querySelector('.refresh-glide')).toBeNull();
     expect(timers).not.toHaveBeenCalledWith(expect.any(Function), 300);
-    timers.mockRestore();
   });
 });

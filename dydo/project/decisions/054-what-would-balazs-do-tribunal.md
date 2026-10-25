@@ -27,8 +27,9 @@ claims are checked by the other two members; at most 4 rounds; one retry for a m
 no decision. Away, a DR-grade call needs a unanimous ballot and a lower one a majority; present, the
 result is always a prepared Question carrying the predicted answer.
 
-Only his own words are precedent. Every tribunal output is unratified until he answers it
-`RATIFIED` or `OVERTURNED`; a DR-grade decision is written `proposed` with `ratification: pending`.
+Only his own words are precedent (read in their spirit since the 2026-10-25 amendment). Every
+tribunal output is unratified until he answers it `RATIFIED` or `OVERTURNED`; a DR-grade decision
+is written `proposed` with `ratification: pending`.
 
 ## Consequences
 

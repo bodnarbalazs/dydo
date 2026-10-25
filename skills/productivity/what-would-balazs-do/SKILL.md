@@ -31,7 +31,7 @@ to reverse, surprising without context, a real trade-off. Away means
 | The call | He is present | He is away |
 |---|---|---|
 | Easily reversible | you decide; no skill | you decide; no skill |
-| Above your say, below DR-grade | a plain Question; no skill | the tribunal decides; on thin case law, the most reversible option, flagged |
+| Above your say, below DR-grade | a plain Question; no skill | the tribunal decides; where his intent is unclear, the most reversible option, flagged |
 | DR-grade | the tribunal prepares the Question | the tribunal decides if unanimous, and writes the DR |
 | Irreversible | his alone; the tribunal prepares the Question | the same |
 

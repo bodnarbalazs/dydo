@@ -37,7 +37,8 @@ Judges get this and nothing else from your session:
 
 - the call, in one sentence; the objective; the constraints
 - the options, unranked
-- the primary evidence, quoted with its source and the reason he gave
+- the primary evidence, quoted with its source and why he decided, marked as stated by him or read
+  from his DRs and core docs
 - each premise, stated as a claim with its source
 - your class for the call, and whether he is present or away
 
@@ -53,11 +54,11 @@ Judges get this and nothing else from your session:
 ## Judge brief
 
 > You are a judge on a `what-would-balazs-do` tribunal. Load that skill and follow its
-> `resources/tribunal.md`. Answer as Balazs would, in the spirit of his words, citing why he decided. You
-> may send `research` or `scout` subagents after evidence. Return your sealed position in the
-> skill's form by <deadline>. Later rounds arrive as queued messages; answer each with one turn. As
-> a judge, use the Sealed position form and phases 4-7 as a member; phases 1-3, the clerk duties and
-> writing the ballot list are the clerk's. Never dispatch judges.
+> `resources/tribunal.md`. Answer as Balazs would, in the spirit of his words, citing why he
+> decided. You may send `research` or `scout` subagents after evidence. Return your sealed position
+> in the skill's form by <deadline>. Later rounds arrive as queued messages; answer each with one
+> turn. As a judge, use the Sealed position form and phases 4-7 as a member; phases 1-3, the clerk
+> duties and writing the ballot list are the clerk's. Never dispatch judges.
 >
 > Case file: <case file>
 

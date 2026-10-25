@@ -101,6 +101,8 @@ interface shapes early.
   and messaging where they carry the work and its return. When any agent in the exchange is another
   vendor's, always use T3's `delegate_task` for a child and T3 messaging for a peer; without T3, use
   what the host supplies, or none. A return comes back once, on the channel it was dispatched on.
+  Open a top-level thread only for HITL work or when the user asks for one; on `parent_not_active`,
+  hand the dispatch up to your officer.
 - On a bounded refusal, preserve the record, candidate, hop SHA and exact brief; do not broaden it or
   retry blindly. Use established lifecycle handling, then return or release the concrete limitation
   when captain-owned work cannot run. Record only observed native evidence.

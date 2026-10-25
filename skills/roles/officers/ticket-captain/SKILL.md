@@ -31,6 +31,10 @@ the default officer: a ticket gets a captain whether or not the user has invoked
   preserve the record, candidate, hop SHA and brief; do not broaden it or retry blindly. Use
   established lifecycle handling, then return or release the concrete limitation when captain-owned
   work cannot run. Every crew return comes back to you.
+- **Dispatch:** same vendor → native subagent (Claude's Agent tool, Codex's own spawn); other vendor
+  → T3 `delegate_task`, a child of you. Never `t3_thread_launch` or `create_threads` for crew: those
+  are the user's top-level threads. On `parent_not_active`, ask your officer (the Admiral, or the
+  user when none is invoked) to dispatch it. Full rule: working-tree contract.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Author no production
   change and never review your own candidate. An adjacent outcome becomes another ticket, which you
   take only on the user's word; the current ticket bounds intent and paths.

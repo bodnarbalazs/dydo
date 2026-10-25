@@ -36,9 +36,11 @@ steps 7 and 8 are the heart of it.
    - New upstream file: add it. Upstream deleted it: remove it only if the project never edited
      it; otherwise ask the user.
    - A skill only the project has (its own `verify-<name>`, say): leave it alone.
-6. **Entry file.** `AGENTS.md` is the only entry file. A `CLAUDE.md` dydo generated (identical to
-   `AGENTS.md`, or matching the old tag's `Scaffold/entry-point.md`): remove it. One the user wrote:
-   keep it, and warn the user that it hides `AGENTS.md` from Claude.
+6. **Entry file.** `AGENTS.md` is the only entry file. Step 7's `dydo init claude --join` removes a
+   `CLAUDE.md` identical to `AGENTS.md` or to the new template, and warns about any other. Remove
+   now the dydo copies it cannot recognise: a `CLAUDE.md` matching the old tag's
+   `Scaffold/entry-point.md`, or any dydo copy when `claude` is not wired. One the user wrote: keep
+   it, and pass the warning on to the user.
 7. **Activate.** For each host set `true` under `integrations` in `dydo.json`, run
    `dydo init <host> --join`. Then run `node setup-skills.mjs` from the project root. Codex wired:
    tell the user to open Codex in the project and trust the changed hooks; an untrusted hook leaves

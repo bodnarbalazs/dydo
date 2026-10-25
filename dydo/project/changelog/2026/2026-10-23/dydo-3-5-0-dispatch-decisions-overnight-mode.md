@@ -74,7 +74,8 @@ audit trail.
 1. Install the 3.5.0 CLI: `npm install -g dydo` or `dotnet tool update -g dydo`.
 2. Update the skill tree and framework docs: load the `update-dydo` skill.
 3. Run `dydo init claude --join` so the Claude Code hook carries `--host claude`.
-4. `AGENTS.md` is the only entry file: remove a dydo-generated `CLAUDE.md`, keep a user-written one.
+4. `AGENTS.md` is the only entry file: step 3 removes a dydo-generated `CLAUDE.md` (remove it
+   yourself when Claude is not wired); keep a user-written one and put `@AGENTS.md` at its top.
 5. Run `node setup-skills.mjs` from the project root.
 6. Set `dydoVersion` in `dydo.json` to `3.5.0`.
 

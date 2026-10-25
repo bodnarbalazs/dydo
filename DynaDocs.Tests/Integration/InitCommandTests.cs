@@ -1502,10 +1502,10 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Join_Claude_KeepsReleasedBodyWithoutItsTitleLine()
+    public async Task Join_Claude_KeepsReleasedBodyUnderANonTitleFirstLine()
     {
         (await InitProjectAsync("none")).AssertSuccess();
-        WriteFile("CLAUDE.md", ReleasedEntryTexts.V3_0.ReplaceLineEndings("\n"));
+        WriteFile("CLAUDE.md", ("Notes for Claude\n\n" + ReleasedEntryTexts.V3_0).ReplaceLineEndings("\n"));
         var preserved = Snapshot("CLAUDE.md");
 
         var result = await JoinProjectAsync("claude");

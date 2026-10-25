@@ -37,8 +37,8 @@ Judges get this and nothing else from your session:
 
 - the call, in one sentence; the objective; the constraints
 - the options, unranked
-- the primary evidence, quoted with its source and why he decided, marked as stated by him or read
-  from his DRs and core docs
+- the primary evidence, quoted with its source and why he decided: stated by him, or inferred and
+  naming the DRs or docs it rests on
 - each premise, stated as a claim with its source
 - your class for the call, and whether he is present or away
 

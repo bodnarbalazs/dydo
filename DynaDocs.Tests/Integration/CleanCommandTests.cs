@@ -31,6 +31,12 @@ public sealed class CleanCommandTests : IDisposable
         Directory.CreateDirectory(main);
         Git(root, "init", "--bare", "-b", "master", $"--object-format={objectFormat}", "origin.git");
         Git(main, "init", "-b", "master", $"--object-format={objectFormat}");
+        // No auto maintenance: on Linux it detaches and holds objects/maintenance.lock after the command returns.
+        foreach (var repository in new[] { Path.Combine(root, "origin.git"), main })
+        {
+            Git(repository, "config", "gc.auto", "0");
+            Git(repository, "config", "maintenance.auto", "false");
+        }
         Git(main, "config", "user.name", "Test");
         Git(main, "config", "user.email", "test@example.com");
         Git(main, "config", "commit.gpgsign", "false");
@@ -479,8 +485,7 @@ public sealed class CleanCommandTests : IDisposable
         Commit(extended, "one");
         Write(extended, "two.txt", "only here\n");
         Commit(extended, "two");
-        var objects = Path.Combine(_main, ".git", "objects");
-        var filesBefore = Directory.GetFiles(objects, "*", SearchOption.AllDirectories).Length;
+        var objectsBefore = AllObjects(_main);
         var refsBefore = Git(_main, "for-each-ref").Text;
 
         var (exit, stdout, _) = await Clean("squashed", "extended", "--dry-run");
@@ -488,7 +493,7 @@ public sealed class CleanCommandTests : IDisposable
         Assert.Equal(0, exit);
         Assert.Contains("branch squashed would be deleted (no changes left to merge into origin/master as of the last fetch)", stdout);
         Assert.Contains("branch extended would be kept (not merged into origin/master as of the last fetch)", stdout);
-        Assert.Equal(filesBefore, Directory.GetFiles(objects, "*", SearchOption.AllDirectories).Length);
+        Assert.Equal(objectsBefore, AllObjects(_main));
         Assert.Equal(refsBefore, Git(_main, "for-each-ref").Text);
     }
 
@@ -1203,6 +1208,12 @@ public sealed class CleanCommandTests : IDisposable
         Git(directory, "-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false",
             "commit", "-m", message);
     }
+
+    // Every object in the store, loose or packed, one "<id> <type> <size>" line each, sorted; packing changes no line.
+    private static string[] AllObjects(string repository) =>
+        [.. Git(repository, "cat-file", "--batch-all-objects", "--batch-check").Text
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Order(StringComparer.Ordinal)];
 
     private static void Commit(string directory, string message)
     {

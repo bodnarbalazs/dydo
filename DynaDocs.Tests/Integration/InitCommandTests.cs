@@ -1467,6 +1467,8 @@ public class InitCommandTests : IntegrationTestBase
         { "3.5 base tree, CRLF", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V3_5Base, "\r\n") },
         { "v3.0.0..v3.4.1", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V3_0, "\n") + "\n" },
         { "v2.1.0..v2.2.3, CRLF", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V2_1, "\r\n") },
+        { "v2.2.4..v2.2.5", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V2_2_4, "\n") },
+        { "v2.2.6..v2.2.9", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V2_2_6, "\n") },
         { "v1.1.0..v2.0.15", ReleasedEntryTexts.Generated("Old Clone", ReleasedEntryTexts.V1, "\n") },
     };
 

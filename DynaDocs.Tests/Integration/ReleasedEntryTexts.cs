@@ -23,6 +23,42 @@ internal static class ReleasedEntryTexts
         here — invoke it and follow it.
         """;
 
+    // v2.2.4 .. v2.2.5: Templates/entry-point.template.md, blob 547fa082.
+    public const string V2_2_4 = """
+        <!-- Describe the project here in 2-3 sentences: what it is, who it's for. -->
+
+        This project's knowledge lives in [dydo/](dydo/index.md) — the docs are the source of
+        truth. Read what bears on your task before acting.
+
+        Work happens through skills. Whatever you're about to do, a skill most likely defines how it's done
+        here — invoke it and follow it.
+
+        Practice kaizen: when a failure, correction, or workaround recurs, treat the pattern as evidence
+        that the harness may need one small, durable improvement. Invoke the `self-improvement` skill to
+        choose and route the smallest justified change without expanding the current task or silently
+        changing policy.
+        """;
+
+    // v2.2.6 .. v2.2.9: Templates/entry-point.template.md, blob 91747359.
+    public const string V2_2_6 = """
+        <!-- Describe the project here in 2-3 sentences: what it is, who it's for. -->
+
+        This project's knowledge lives in [dydo/](dydo/index.md) — the docs are the source of
+        truth. Read what bears on your task before acting.
+
+        Work happens through skills. Whatever you're about to do, a skill most likely defines how it's done
+        here — invoke it and follow it.
+
+        When work touches dydo records, planning, roles, skills, or workflows, consult
+        `dydo/reference/dydo-glossary.md` and treat defined terms as locked. For project-domain terms,
+        consult `dydo/glossary.md`.
+
+        Practice kaizen: when a failure, correction, or workaround recurs, treat the pattern as evidence
+        that the harness may need one small, durable improvement. Invoke the `self-improvement` skill to
+        choose and route the smallest justified change without expanding the current task or silently
+        changing policy.
+        """;
+
     // v3.0.0 .. v3.4.1: Scaffold/entry-point.md, blob 93c0ddb0.
     public const string V3_0 = """
         Linear owns live work. Git and dydo own durable knowledge and evidence.

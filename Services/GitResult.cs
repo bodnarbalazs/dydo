@@ -9,6 +9,5 @@ internal sealed record GitResult(int ExitCode, byte[] Output, string Error)
 
     public string Text => Encoding.UTF8.GetString(Output);
 
-    /// <summary>The NUL-separated entries of a <c>-z</c> listing.</summary>
     public string[] Entries => Text.Split('\0', StringSplitOptions.RemoveEmptyEntries);
 }

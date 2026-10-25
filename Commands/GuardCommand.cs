@@ -10,15 +10,11 @@ using DynaDocs.Services;
 using DynaDocs.Utils;
 
 /// <summary>
-/// Guard command for enforcing agent permissions.
-/// Designed to work as a hook for AI coding assistants (Claude Code, etc.)
-///
 /// Security layers (checked in order):
-/// 1. Global off-limits patterns (files-off-limits.md) - blocks ALL operations
-/// 1b. Protected patterns (files-off-limits.md) - blocks writes and deletes, allows reads
-/// 2. Dangerous command patterns (for Bash tool) - always blocked
-/// 3. Bash command analysis - extracts file operations and checks each
-/// 4. Role-based permissions - for write operations
+/// 1. Off-limits patterns (files-off-limits.md) - block every operation
+/// 1b. Protected patterns (files-off-limits.md) - block writes and deletes, allow reads
+/// 2. Dangerous shell-command patterns - always blocked
+/// 3. Shell command analysis - extracts file operations and checks each
 ///
 /// Input modes:
 /// 1. Stdin JSON (hook mode) - receives JSON from hook system
@@ -34,11 +30,9 @@ using DynaDocs.Utils;
 public static partial class GuardCommand
 {
     /// <summary>
-    /// Everything the guard needs from the project: the loaded config (nudges)
-    /// and the machine-local directory where warn-nudge pass-through markers live
-    /// (dydo/_system/.local/ - gitignored, scan-excluded). Replaces the old AgentRegistry:
-    /// with the roster/claim machinery gone (DR-041), the guard only ever needed these two.
-    /// ProjectRoot (the directory of the nearest dydo.json) anchors new-file nudge paths.
+    /// MarkerDir holds the warn-nudge pass-through markers in dydo/_system/.local/, which is
+    /// gitignored and scan-excluded. ProjectRoot (the directory of the nearest dydo.json) anchors
+    /// new-file nudge paths.
     /// </summary>
     internal sealed record GuardEnv(DydoConfig? Config, string MarkerDir, string? ProjectRoot = null)
     {
@@ -74,23 +68,14 @@ public static partial class GuardCommand
             Description = "The host whose hook runs the guard; dydo init writes 'claude' into the Claude Code hook"
         };
 
-        var stopOption = new Option<bool>("--stop")
-        {
-            Description = "Stop-hook mode: no-op retained so existing Stop-hook wiring keeps resolving"
-        };
-
         var command = new Command("guard", "Check if current agent can perform action (used by hooks)");
         command.Options.Add(actionOption);
         command.Options.Add(pathOption);
         command.Options.Add(commandOption);
         command.Options.Add(hostOption);
-        command.Options.Add(stopOption);
 
         command.SetAction(parseResult =>
         {
-            if (parseResult.GetValue(stopOption))
-                return ExecuteStop();
-
             var cliAction = parseResult.GetValue(actionOption);
             var cliPath = parseResult.GetValue(pathOption);
             var cliCommand = parseResult.GetValue(commandOption);
@@ -100,13 +85,11 @@ public static partial class GuardCommand
         return command;
     }
 
-    // Data-driven lookups to reduce cyclomatic complexity
     private static readonly HashSet<string> SearchTools = new(StringComparer.OrdinalIgnoreCase) { "glob", "grep", "agent" };
 
     // bash/powershell are Claude's shell tools; shell_command/exec/local_shell/unified_exec are
-    // codex's, one per mode (issue 0295). Without codex's names here the guard receives a codex
-    // shell call (it is in the hook matcher) but ShouldRouteToShellHandler never sends it to the
-    // shell analyzer, so off-limits / dangerous-bash / git-safety silently do not bind. Kept in
+    // Codex's, one per mode (issue 0295). Without Codex's names the call reaches the guard but never
+    // the shell analyzer, so off-limits, dangerous-bash and git-safety silently do not bind. Keep in
     // lockstep with InitCommand.CodexShellTools, which puts the same names in the hook matcher.
     private static readonly HashSet<string> ShellTools = new(StringComparer.OrdinalIgnoreCase)
         { "bash", "powershell", "shell_command", "exec", "local_shell", "unified_exec" };
@@ -270,47 +253,27 @@ public static partial class GuardCommand
         var filePath = normalized.FilePath;
         var searchPath = normalized.SearchPath;
 
-        // ============================================================
-        // TIER-2 WORKER LANE (Decision 024): calls carrying agent_id come from
-        // sub-agents / workflow workers. Workers are anonymous - no claim, no role
-        // state, no staged onboarding, no must-reads. Only the universal layers
-        // apply: off-limits, dangerous-bash patterns, nudges, and the shared bash
-        // safety checks (dydo-command handling).
-        // ============================================================
+        // Calls carrying agent_id come from sub-agents (Decision 024).
         if (!ctx.HasCliArgs && !string.IsNullOrEmpty(ctx.AgentId))
         {
             return HandleWorkerCall(normalized, filePath, searchPath, offLimitsService, bashAnalyzer, env);
         }
 
-        // Native auto-memory (~/.claude/projects/*/memory/) is exempt from off-limits enforcement.
         if (!string.IsNullOrEmpty(filePath) && IsNativeMemoryPath(filePath))
             return ExitCodes.Success;
 
         var routed = RouteToolLayers(normalized, offLimitsService, bashAnalyzer, env);
         if (routed != null) return routed.Value;
 
-        // Reads and writes are allowed for anyone once past off-limits (checked in RouteToolLayers).
         return ExitCodes.Success;
     }
 
     /// <summary>
-    /// Stop-hook entry point. The agent-identity needs-human machinery this used to drive was
-    /// carved out with the claim ceremony (DR-041) - there is no runtime agent state to reconcile
-    /// now - so the Stop hook is a no-op that always exits 0 (a Stop hook must never block turn end).
-    /// The option and hook wiring are retained so existing installs' Stop hook keeps resolving.
-    /// </summary>
-    private static int ExecuteStop() => ExitCodes.Success;
-
-    /// <summary>
-    /// Security layers 1–2.6: off-limits on direct file paths, Bash routing,
-    /// search-tool gating, and plan-mode blocking. Returns an exit code when the
-    /// call was fully handled, null to fall through to staged access control.
+    /// Returns an exit code when the call was fully handled, null to fall through.
     /// </summary>
     private static int? RouteToolLayers(GuardContext context, OffLimitsService offLimitsService,
         IBashCommandAnalyzer bashAnalyzer, GuardEnv env)
     {
-        // SECURITY LAYER 1: off-limits patterns for direct file operations, then the protected
-        // tier for the mutating ones.
         if (!string.IsNullOrEmpty(context.FilePath))
         {
             var blocked = BlockIfPathOffLimits(context.FilePath, offLimitsService);
@@ -323,25 +286,21 @@ public static partial class GuardCommand
             }
         }
 
-        // LAYER 1c: new-file nudges, after off-limits / protected so a nudge never masks a block.
+        // New-file nudges come after off-limits / protected so a nudge never masks a block.
         var newFileNudge = CheckNewFileNudges(context.WriteTargets, context.Cwd, env);
         if (newFileNudge != null) return newFileNudge.Value;
 
-        // SECURITY LAYER 2: Bash tool
         if (ShouldRouteToShellHandler(context.ToolName, context.BashCommand))
         {
             return HandleBashCommand(context.BashCommand!, context.SessionId, offLimitsService, bashAnalyzer, env,
                 ModeSetCallerOf(context));
         }
 
-        // SECURITY LAYER 2.5: Search tools (Glob/Grep) and Agent tool - off-limits applies
-        // to the search root, and the Agent tool gets the Tier-2 worker-lane notice.
         if (context.ToolName != null && SearchTools.Contains(context.ToolName))
         {
             return HandleSearchTool(context.SearchPath, context.ToolName, offLimitsService);
         }
 
-        // SECURITY LAYER 2.6: Dydo agents must not use Claude Code's built-in plan mode.
         if (context.ToolName == "enterplanmode" || context.ToolName == "exitplanmode")
         {
             Console.Error.WriteLine("BLOCKED: Dydo agents don't use Claude Code's built-in plan mode.");
@@ -380,11 +339,9 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Tier-2 worker lane: sub-agent / workflow-worker tool calls (agent_id present).
-    /// Workers are anonymous (no claim/role/onboarding). Bash reuses the shared
-    /// pipeline (dangerous patterns, nudges, git-safety, off-limits) minus the Tier-1
-    /// identity gates; direct file ops get the universal off-limits check (native
-    /// memory exempt). RBAC and must-reads do not apply.
+    /// Sub-agent tool calls (agent_id present). Bash runs the shared pipeline with the worker's
+    /// dydo-subcommand limit; direct file ops get off-limits and protected checks, native memory
+    /// exempt.
     /// </summary>
     private static int HandleWorkerCall(
         GuardContext ctx, string? filePath, string? searchPath,
@@ -416,9 +373,7 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Shared off-limits check for a direct (non-bash) file/search path. Returns an exit
-    /// code if the path is off-limits, null otherwise. One copy for every lane so the
-    /// block message and audit shape cannot drift.
+    /// One copy for every lane so the block message cannot drift.
     /// </summary>
     internal static int? BlockIfPathOffLimits(string path, IOffLimitsService offLimitsService)
     {
@@ -451,7 +406,7 @@ public static partial class GuardCommand
         Console.Error.WriteLine($"  Pattern: {protectedPattern}");
         if (detected != null)
             Console.Error.WriteLine($"  Detected: {detected}");
-        Console.Error.WriteLine("  This file is human-owned: read it freely, and ask the human for any change.");
+        Console.Error.WriteLine("  This file is human-owned: read it freely, and ask the user for any change.");
         return ExitCodes.ToolError;
     }
 
@@ -475,10 +430,8 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Handle Bash tool commands with comprehensive analysis. Dangerous-pattern and nudge
-    /// checks now run for EVERY shell command, dydo invocations included (DR-041): a dydo
-    /// command line is no longer exempt from nudge evaluation, so a security-critical nudge
-    /// can no longer be bypassed by prefixing a dydo call.
+    /// Dangerous-pattern and nudge checks run for every shell command, dydo invocations included,
+    /// so a security-critical nudge cannot be bypassed by prefixing a dydo call (DR-041).
     /// </summary>
     private static int HandleBashCommand(
         string command,
@@ -491,8 +444,6 @@ public static partial class GuardCommand
     {
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(sessionId);
 
-        // Sub-agents (Ticket Captains, crew) run the gates their work needs; setup, generation
-        // and hook commands stay with the top-level session.
         var workerBlocked = isDydo && isWorker ? FindWorkerBlockedDydoCommand(command) : null;
         if (workerBlocked != null)
         {
@@ -504,7 +455,6 @@ public static partial class GuardCommand
             return ExitCodes.ToolError;
         }
 
-        // Hardcoded dangerous patterns - security checks before configurable nudges
         var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
         if (isDangerous)
         {
@@ -514,7 +464,6 @@ public static partial class GuardCommand
             return ExitCodes.ToolError;
         }
 
-        // Configurable nudges - after hardcoded security checks, for every command.
         var nudged = CheckNudges(command, env);
         if (nudged != null) return nudged.Value;
 
@@ -538,8 +487,6 @@ public static partial class GuardCommand
 
     internal static int? CheckNudges(string command, GuardEnv env)
     {
-        // Always include block-severity default nudges (H19 indirect dydo invocation) even if
-        // removed from config. These are security-critical and must not be removable via dydo.json.
         foreach (var nudge in MergeSystemNudges(env.Config?.Nudges))
         {
             if (!nudge.IsCommandMatch) continue;
@@ -574,16 +521,13 @@ public static partial class GuardCommand
 
         if (string.Equals(nudge.Severity, "notice", StringComparison.OrdinalIgnoreCase))
         {
-            // Soft nudge: warn on stderr, never block (exit 0).
             Console.Error.WriteLine($"NOTICE: {message}");
             return null;
         }
 
         if (string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
         {
-            // Warn = "block once, run again to proceed". The pass-through marker lives in
-            // machine-local state (dydo/_system/.local/ - gitignored, scan-excluded), keyed
-            // by pattern hash - global rather than per-agent (DR-041, identity-free model).
+            // Block once, pass the rerun. The marker is global, not per-agent (DR-041).
             Directory.CreateDirectory(env.MarkerDir);
             var markerPath = Path.Combine(env.MarkerDir, markerName);
 
@@ -599,7 +543,6 @@ public static partial class GuardCommand
             return null;
         }
 
-        // Block severity: always block
         Console.Error.WriteLine($"BLOCKED: {message}");
         return ExitCodes.ToolError;
     }
@@ -611,34 +554,26 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Pre-2.1 shipped nudge message texts that must self-heal in existing installs.
-    /// EnsureDefaultNudges dedupes by pattern, so a config materialized before 2.1 keeps
-    /// these stale messages forever unless we rewrite them here. A message the USER edited
-    /// matches nothing in this set and is left untouched - docs promise message editability.
+    /// Shipped default texts that a dydo.json can still carry; nothing rewrites dydo.json nudges
+    /// (init --join included), so the guard refreshes a match to the current default for its
+    /// pattern, or drops it when none remains. A message the user edited matches nothing here and
+    /// stays.
     /// </summary>
     private static readonly HashSet<string> StaleNudgeMessages =
     [
-        // The three poll-loop warn nudges (until/tail/while) still recommend the deleted `dydo wait`.
         "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`, or `dydo wait` for dydo-native waits. Open-ended polls have caused agent crashes (issue 0177).",
-        // Retired worktree block/warn nudges - no current default, so they are removed outright.
         "Use dydo worktree commands instead of git worktree directly.",
         "Use dydo worktree cleanup instead of deleting worktree directories directly.",
         "dydo worktree merge --force bypasses the pre-merge safety check and WILL destroy uncommitted files. If the list shown was only generated artifacts (under 'N generated artifacts ignored'), --force is safe. If any source/test/task files were listed as suspicious, commit them first - re-run to proceed anyway.",
-        // Retired Decision 026 managers-doctrine nudge (DR 045): it points at the run-sprint
-        // workflow 3.0 deletes, so an install still carrying it must stop firing it.
         "Tier-1 agents are managers (Decision 026): delegate implementation to a run-sprint workflow unless this change is trivial. Rule of thumb: if it needs a reviewer, it needs a workflow.",
     ];
 
     /// <summary>
-    /// Reconcile config nudges with the shipped defaults. A nudge's identity is its match form
-    /// and pattern: the shipped defaults are all command nudges, so a new-file entry never
-    /// satisfies, replaces, or is rebuilt by one, whatever its pattern. Two independent passes:
-    ///   1. Self-heal known-stale shipped messages (ANY severity): a nudge still carrying a
-    ///      pre-2.1 default text is refreshed to the current default (matched by pattern) or
-    ///      dropped entirely when that default was retired. User-edited messages are untouched.
-    ///   2. Guarantee the block-severity system nudges (H19 indirect invocation): always
-    ///      present and never downgradable via dydo.json. A weakened severity is forced back
-    ///      to block WITHOUT clobbering a user-customized message.
+    /// A nudge's identity is its match form and pattern: the shipped defaults are all command
+    /// nudges, so a new-file entry never satisfies, replaces, or is rebuilt by one, whatever its
+    /// pattern. The block-severity system nudges (H19 indirect invocation) cannot be removed or
+    /// downgraded via dydo.json; a weakened severity is forced back to block without clobbering a
+    /// customized message.
     /// </summary>
     internal static List<NudgeConfig> MergeSystemNudges(List<NudgeConfig>? configNudges)
     {
@@ -691,7 +626,6 @@ public static partial class GuardCommand
         foreach (var warning in analysis.Warnings)
             Console.Error.WriteLine($"WARNING: {warning}");
 
-        // Block write/delete operations when bypass attempts make analysis unreliable
         if (analysis.HasBypassAttempt && analysis.Operations.Any(op =>
             op.Type is FileOperationType.Write or FileOperationType.Delete
             or FileOperationType.Move or FileOperationType.Copy
@@ -714,8 +648,6 @@ public static partial class GuardCommand
 
     internal static int? CheckBashFileOperation(FileOperation op, OffLimitsService offLimitsService)
     {
-        // Native memory is exempt for any op type (out of dydo's jurisdiction).
-        // Everything else is subject to the universal off-limits check.
         if (IsNativeMemoryPath(op.Path))
             return null;
 
@@ -733,8 +665,7 @@ public static partial class GuardCommand
         // permissions there: writes, deletes, moves, copies, chmod/chown/takeown. Stated as an
         // exclusion so a future op type is guarded by default instead of silently exempt, and
         // because the analyzer tags a copy's source and destination alike - `cp <protected>
-        // elsewhere` is blocked too. Conservative on purpose: no wider than the off-limits
-        // block these paths carried before, and the content stays readable through
+        // elsewhere` is blocked too. Conservative on purpose: the content stays readable through
         // Read, cat and head. Execute names a binary to run, not a file to change.
         if (op.Type is not (FileOperationType.Read or FileOperationType.Execute))
             return BlockIfPathProtected(op.Path, offLimitsService, $"{op.Type} via {op.Command}");
@@ -755,9 +686,6 @@ public static partial class GuardCommand
         return PathUtils.CollapseRelativeSegments(path);
     }
 
-    /// <summary>
-    /// Truncate a command for display in error messages.
-    /// </summary>
     internal static string TruncateCommand(string command)
     {
         const int maxLength = 100;
@@ -766,19 +694,14 @@ public static partial class GuardCommand
         return command[..maxLength] + "...";
     }
 
-    /// <summary>
-    /// Try to read JSON from stdin using a reliable detection method.
-    /// Uses Console.KeyAvailable which throws InvalidOperationException when stdin is redirected.
-    /// Includes a timeout to prevent indefinite blocking if the pipe stays open.
-    /// </summary>
     private static bool TryReadStdinJson(out string? json)
     {
         json = null;
         try
         {
-            // KeyAvailable throws InvalidOperationException when stdin is redirected
+            // KeyAvailable throws InvalidOperationException when stdin is redirected.
             _ = Console.KeyAvailable;
-            return false; // Not redirected, no stdin to read
+            return false;
         }
         catch (InvalidOperationException)
         {
@@ -790,17 +713,13 @@ public static partial class GuardCommand
                 json = readTask.Result;
                 return !string.IsNullOrWhiteSpace(json);
             }
-            return false; // Timed out - no stdin data available
+            return false;
         }
     }
 
     /// <summary>
-    /// dydo subcommands a sub-agent may run: the documentation and coverage gates
-    /// (check, fix, gap-check), read-only inspection (graph, validate), the machine mode every
-    /// agent reads (mode; mode set still meets its nudge), worktree cleanup (clean, which Ticket
-    /// Captains run on close-out) and help/version.
-    /// Setup, generation and hook commands (init, index, guard, map, completions, ...)
-    /// stay with the top-level session.
+    /// mode set still meets its nudge; clean is what Ticket Captains run on close-out. Setup,
+    /// generation and hook commands stay with the top-level session.
     /// </summary>
     internal static readonly string[] WorkerAllowedDydoSubcommands =
         ["check", "fix", "gap-check", "graph", "validate", "mode", "clean", "help", "version"];
@@ -810,15 +729,12 @@ public static partial class GuardCommand
 
     /// <summary>
     /// Returns the first word a sub-agent may not pass to dydo, or null when the command is allowed.
-    /// A command <see cref="IsDydoCommand"/> does not match is allowed, exactly as in 3.3.0. A matched
-    /// command is allowed only when every dydo token in it that is followed by a word is followed by
-    /// an allowed word; a bare dydo prints help. Before the scan, backslash-newline and
-    /// backtick-newline continuations are deleted, then quotes, backslashes, backticks and carets,
-    /// so d"y"do, d\ydo and `dydo init` read as dydo calls. The token matches anywhere,
-    /// case-insensitively, with an optional .exe/.cmd/.ps1/.bat suffix; dydo followed by a letter,
-    /// digit, '.', '-' or '/' is part of a longer word or a path (dydo/guides, dydo.json) and is
-    /// skipped. A matched line therefore blocks a dydo directory given as its own word, such as
-    /// dydo check dydo src.
+    /// A command <see cref="IsDydoCommand"/> does not match is allowed. A matched command is allowed
+    /// only when every dydo token in it that is followed by a word is followed by an allowed word; a
+    /// bare dydo prints help. The token matches anywhere, case-insensitively, with an optional
+    /// .exe/.cmd/.ps1/.bat suffix; dydo followed by a letter, digit, '.', '-' or '/' is part of a
+    /// longer word or a path (dydo/guides, dydo.json) and is skipped. A matched line therefore blocks
+    /// a dydo directory given as its own word, such as dydo check dydo src.
     /// </summary>
     internal static string? FindWorkerBlockedDydoCommand(string command)
     {
@@ -833,7 +749,7 @@ public static partial class GuardCommand
     /// <summary>
     /// The command as the shell reads its words: backslash-newline and backtick-newline
     /// continuations deleted, then quotes, backslashes, backticks and carets, so d"y"do, d\ydo and
-    /// `dydo init` read as dydo. Shared by the worker lane and the mode-set nudge.
+    /// `dydo init` read as dydo.
     /// </summary>
     private static string NormaliseForDydoScan(string command) =>
         WorkerScanStripRegex().Replace(LineContinuationRegex().Replace(command, ""), "");
@@ -846,13 +762,10 @@ public static partial class GuardCommand
 
     // dydo, then the word after any whitespace but a line break, or brace-expansion commas, up to
     // whitespace or a terminator. \s is Unicode-aware on both sides, so form feed, vertical tab, NBSP,
-    // U+2003 and NEL separate dydo from its word exactly as PowerShell and 3.3.0's dydo\s treat them.
+    // U+2003 and NEL separate dydo from its word exactly as PowerShell treats them.
     [GeneratedRegex(@"dydo(?:\.(?:exe|cmd|ps1|bat))?(?![\w.\-/])(?:[^\S\r\n]|,)*(?<word>[^\s;&|)}]*)", RegexOptions.IgnoreCase)]
     private static partial Regex DydoTokenRegex();
 
-    /// <summary>
-    /// Check if a command is a dydo command.
-    /// </summary>
     internal static bool IsDydoCommand(string command)
     {
         return DydoCommandRegex().IsMatch(command);
@@ -861,10 +774,6 @@ public static partial class GuardCommand
     [GeneratedRegex(@"(?:^|[;&|]\s*)(?:\./)?dydo\s", RegexOptions.IgnoreCase)]
     private static partial Regex DydoCommandRegex();
 
-    /// <summary>
-    /// Non-blocking daily validation. Runs on first guard call per 24h period.
-    /// Warns about config issues via stderr but never blocks enforcement.
-    /// </summary>
     private static void RunDailyValidationIfDue()
     {
         try
@@ -905,7 +814,7 @@ public static partial class GuardCommand
 
             if (dydoRoot != null)
             {
-                // Ensure .local/ dir exists (absent in worktrees)
+                // .local/ is absent in worktrees.
                 PathUtils.EnsureLocalDirExists(dydoRoot);
                 File.WriteAllText(timestampPath!, DateTime.UtcNow.ToString("O"));
             }

@@ -6,11 +6,8 @@ using DynaDocs.Commands;
 using DynaDocs.Services;
 
 /// <summary>
-/// Base class for CLI integration tests.
-/// Provides isolated temp directory, console capture, and environment management.
-///
-/// All derived classes must add [Collection("Integration")] attribute to ensure
-/// sequential execution, since tests share process-global state.
+/// Derived classes must add [Collection("Integration")]: tests share process-global state
+/// and must run sequentially.
 /// </summary>
 public abstract class IntegrationTestBase : IDisposable
 {
@@ -25,11 +22,9 @@ public abstract class IntegrationTestBase : IDisposable
 
     protected IntegrationTestBase()
     {
-        // Create unique temp directory
         TestDir = Path.Combine(Path.GetTempPath(), "dydo-integration-test-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(TestDir);
 
-        // Save original state
         _originalDir = Environment.CurrentDirectory;
         _originalWindow = Environment.GetEnvironmentVariable("DYDO_WINDOW");
         _originalOut = Console.Out;
@@ -38,20 +33,17 @@ public abstract class IntegrationTestBase : IDisposable
         // Clear env vars that leak into dispatch logic
         Environment.SetEnvironmentVariable("DYDO_WINDOW", null);
 
-        // Set working directory to test dir
         Environment.CurrentDirectory = TestDir;
     }
 
     public void Dispose()
     {
-        // Restore original state
         Environment.CurrentDirectory = _originalDir;
         Environment.SetEnvironmentVariable("DYDO_WINDOW", _originalWindow);
         Console.SetOut(_originalOut);
         Console.SetError(_originalErr);
         Console.SetIn(_originalIn);
 
-        // Clean up test directory
         if (Directory.Exists(TestDir))
         {
             try
@@ -67,9 +59,6 @@ public abstract class IntegrationTestBase : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    /// <summary>
-    /// Run a command and capture output.
-    /// </summary>
     protected async Task<CommandResult> RunAsync(Command command, params string[] args)
     {
         var (exitCode, stdout, stderr) = await ConsoleCapture.AllAsync(
@@ -77,30 +66,20 @@ public abstract class IntegrationTestBase : IDisposable
         return new CommandResult(exitCode, stdout, stderr);
     }
 
-    /// <summary>
-    /// Initialize a DynaDocs project with default settings.
-    /// </summary>
     protected async Task<CommandResult> InitProjectAsync(string integration = "none")
     {
         var command = InitCommand.Create();
         return await RunAsync(command, integration);
     }
 
-    /// <summary>
-    /// Join an existing DynaDocs project.
-    /// </summary>
     protected async Task<CommandResult> JoinProjectAsync(string integration = "none")
     {
         var command = InitCommand.Create();
         return await RunAsync(command, integration, "--join");
     }
 
-    // Test session ID for integration tests
     protected const string TestSessionId = "test-integration-session";
 
-    /// <summary>
-    /// Run check command.
-    /// </summary>
     protected async Task<CommandResult> CheckAsync(string? path = null)
     {
         var command = CheckCommand.Create();
@@ -108,18 +87,12 @@ public abstract class IntegrationTestBase : IDisposable
         return await RunAsync(command, args);
     }
 
-    /// <summary>
-    /// Run guard command.
-    /// </summary>
     protected async Task<CommandResult> GuardAsync(string action, string path)
     {
         var command = GuardCommand.Create();
         return await RunAsync(command, "--action", action, "--path", path);
     }
 
-    /// <summary>
-    /// Run guard command with JSON piped to stdin (simulates Claude Code hook).
-    /// </summary>
     protected async Task<CommandResult> GuardWithStdinAsync(string json, params string[] args)
     {
         var command = GuardCommand.Create();
@@ -132,36 +105,24 @@ public abstract class IntegrationTestBase : IDisposable
 
 
 
-    /// <summary>
-    /// Assert file exists in test directory.
-    /// </summary>
     protected void AssertFileExists(string relativePath)
     {
         var fullPath = Path.Combine(TestDir, relativePath);
         Assert.True(File.Exists(fullPath), $"Expected file to exist: {relativePath}");
     }
 
-    /// <summary>
-    /// Assert directory exists in test directory.
-    /// </summary>
     protected void AssertDirectoryExists(string relativePath)
     {
         var fullPath = Path.Combine(TestDir, relativePath);
         Assert.True(Directory.Exists(fullPath), $"Expected directory to exist: {relativePath}");
     }
 
-    /// <summary>
-    /// Assert file does NOT exist in test directory.
-    /// </summary>
     protected void AssertFileNotExists(string relativePath)
     {
         var fullPath = Path.Combine(TestDir, relativePath);
         Assert.False(File.Exists(fullPath), $"Expected file to NOT exist: {relativePath}");
     }
 
-    /// <summary>
-    /// Assert file contains text.
-    /// </summary>
     protected void AssertFileContains(string relativePath, string expectedContent)
     {
         var fullPath = Path.Combine(TestDir, relativePath);
@@ -170,18 +131,12 @@ public abstract class IntegrationTestBase : IDisposable
         Assert.Contains(expectedContent, content);
     }
 
-    /// <summary>
-    /// Read file content from test directory.
-    /// </summary>
     protected string ReadFile(string relativePath)
     {
         var fullPath = Path.Combine(TestDir, relativePath);
         return File.ReadAllText(fullPath);
     }
 
-    /// <summary>
-    /// Write file to test directory.
-    /// </summary>
     protected void WriteFile(string relativePath, string content)
     {
         var fullPath = Path.Combine(TestDir, relativePath);
@@ -192,9 +147,6 @@ public abstract class IntegrationTestBase : IDisposable
     }
 }
 
-/// <summary>
-/// Result of running a CLI command.
-/// </summary>
 public record CommandResult(int ExitCode, string Stdout, string Stderr)
 {
     public bool IsSuccess => ExitCode == 0;
@@ -212,7 +164,7 @@ public record CommandResult(int ExitCode, string Stdout, string Stderr)
 
     /// <summary>
     /// Asserts the guard allowed a hook-mode call: exit 0 and no decision on stdout. Exit 0 alone
-    /// no longer proves an allow, because a PreToolUse refusal also exits 0 (LC-1021).
+    /// does not prove an allow, because a PreToolUse refusal also exits 0 (LC-1021).
     /// </summary>
     public bool IsPreToolUseAllowed => ExitCode == 0 && Stdout.Length == 0;
 

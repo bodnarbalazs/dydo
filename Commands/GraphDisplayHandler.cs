@@ -2,9 +2,6 @@ namespace DynaDocs.Commands;
 
 using DynaDocs.Services;
 
-/// <summary>
-/// Handles graph output display for GraphCommand subcommands.
-/// </summary>
 internal static class GraphDisplayHandler
 {
     public static void ShowIncoming(IDocGraph graph, string targetPath, string file)

@@ -19,7 +19,6 @@ internal static class GitRunner
     public static GitResult RunIsolated(string workingDirectory, IReadOnlyDictionary<string, string> environment, params string[] arguments) =>
         Start(workingDirectory, environment, inheritGitVariables: false, arguments);
 
-    /// <summary>The process <see cref="RunIsolated"/> starts, its environment final.</summary>
     internal static ProcessStartInfo IsolatedStartInfo(string workingDirectory, IReadOnlyDictionary<string, string> environment,
         params string[] arguments) =>
         StartInfo(workingDirectory, environment, inheritGitVariables: false, arguments);

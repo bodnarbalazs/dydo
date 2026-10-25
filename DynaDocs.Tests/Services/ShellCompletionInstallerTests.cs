@@ -96,7 +96,6 @@ public class ShellCompletionInstallerTests : IDisposable
     {
         var (shell, profilePath) = ShellCompletionInstaller.DetectShell();
 
-        // On any platform, should return either a known shell or null
         if (shell != null)
         {
             Assert.True(shell is "bash" or "zsh" or "powershell",

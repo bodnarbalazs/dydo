@@ -11,8 +11,6 @@ public class CommandSmokeTests
     [Fact]
     public void AllCommands_CanBeInstantiated_WithoutThrowing()
     {
-        // This test ensures command construction doesn't throw due to
-        // issues like invalid aliases, missing parameters, etc.
         var commands = new Func<System.CommandLine.Command>[]
         {
             CheckCommand.Create,

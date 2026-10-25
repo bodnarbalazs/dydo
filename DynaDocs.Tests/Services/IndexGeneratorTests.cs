@@ -8,15 +8,12 @@ public class IndexGeneratorTests
     [Fact]
     public void Generate_ContainsDynaDocsbranding()
     {
-        // Arrange
         var generator = new IndexGenerator();
         var docs = new List<DocFile>();
         var basePath = "/test";
 
-        // Act
         var result = generator.Generate(docs, basePath);
 
-        // Assert
         Assert.Contains("DynaDocs", result);
     }
 
@@ -32,15 +29,12 @@ public class IndexGeneratorTests
     [Fact]
     public void Generate_ContainsNavigationSection()
     {
-        // Arrange
         var generator = new IndexGenerator();
         var docs = new List<DocFile>();
         var basePath = "/test";
 
-        // Act
         var result = generator.Generate(docs, basePath);
 
-        // Assert
         Assert.Contains("## How to Navigate", result);
         Assert.Contains("## Documentation Sections", result);
     }
@@ -48,7 +42,6 @@ public class IndexGeneratorTests
     [Fact]
     public void Generate_ShowsSectionLinkWhenAuthoredSectionExists()
     {
-        // Arrange
         var generator = new IndexGenerator();
         var docs = new List<DocFile>
         {
@@ -62,25 +55,20 @@ public class IndexGeneratorTests
         };
         var basePath = "/test";
 
-        // Act
         var result = generator.Generate(docs, basePath);
 
-        // Assert
         Assert.Contains("[Understanding the Platform](./understand/_understand.md)", result);
     }
 
     [Fact]
     public void Generate_ShowsFolderNotFoundWhenSectionPageMissing()
     {
-        // Arrange
         var generator = new IndexGenerator();
         var docs = new List<DocFile>();
         var basePath = "/test";
 
-        // Act
         var result = generator.Generate(docs, basePath);
 
-        // Assert
         Assert.Contains("*understand/ folder not found*", result);
     }
 

@@ -40,11 +40,11 @@ runtime integration. The runtime modes add, per selected host:
 
 | Host | Files | What they carry |
 |---|---|---|
-| `claude` | `.claude/settings.local.json` | a `PreToolUse` hook running `dydo guard --host claude` on the matched tools, a `Stop` hook running `dydo guard --stop`, and the allow entries `Bash(dydo:*)`, `PowerShell(dydo:*)`, `Bash(dydo clean:*)` and `PowerShell(dydo clean:*)` |
+| `claude` | `.claude/settings.local.json` | a `PreToolUse` hook running `dydo guard --host claude` on the matched tools, and the allow entries `Bash(dydo:*)`, `PowerShell(dydo:*)`, `Bash(dydo clean:*)` and `PowerShell(dydo clean:*)` |
 | `claude` | `.claude/settings.json` | `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"` |
 | `claude` | `.gitignore` | `.claude/settings.local.json`, `/.claude/skills/` and `/.agents/skills/` |
 | `codex` | `AGENTS.md` | the same entry point as `CLAUDE.md` |
-| `codex` | `.codex/hooks.json` | a `PreToolUse` hook running `dydo guard` on the matched tools, and a `Stop` hook running `dydo guard --stop` |
+| `codex` | `.codex/hooks.json` | a `PreToolUse` hook running `dydo guard` on the matched tools |
 | `codex` | `.codex/rules/dydo.rules` | an exec-policy `prefix_rule` allowing `dydo clean`, which Codex loads when the project's `.codex/` layer is trusted; dydo rewrites the file on every init and `--join` |
 | `codex` | `.codex/config.toml` | `[agents]` with `max_depth = 3` and `max_concurrent_threads_per_session = 16` |
 | `codex` | `.gitignore` | `/.claude/skills/` and `/.agents/skills/` |
@@ -143,7 +143,6 @@ echo '{"session_id":"manual","tool_name":"Edit","tool_input":{"file_path":"src/f
 # Diagnostic mode
 dydo guard --action edit --path src/file.cs
 dydo guard --command "git status"
-dydo guard --stop
 ```
 
 `--host claude` marks the Claude Code hook `dydo init` writes; it is not a diagnostic argument, so
@@ -161,8 +160,7 @@ them, their glob syntax, and the whitelist that lifts off-limits patterns. Nudge
 `dydo.json` - see [DynaDocs](./about-dynadocs.md). A nudge matches shell command lines by default; one
 with `"match": "new-file"` matches the project-relative path of a file that Write, Edit, NotebookEdit
 or a Codex `apply_patch` is about to create, and never fires for a file that already exists or for a
-file a shell command creates. `--stop` is a retained no-op (exit `0`, empty stdout) so existing Stop-hook
-wiring keeps resolving.
+file a shell command creates.
 
 ---
 

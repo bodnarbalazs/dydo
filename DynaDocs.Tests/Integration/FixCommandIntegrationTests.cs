@@ -266,20 +266,16 @@ public class FixCommandIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Fix_IgnoresObsidianFolder()
     {
-        // Arrange
         var initResult = await InitProjectAsync();
         initResult.AssertSuccess();
 
-        // Create .obsidian folder with typical config files
         WriteFile("dydo/.obsidian/app.json", "{\"alwaysUpdateLinks\": true}");
         WriteFile("dydo/.obsidian/appearance.json", "{\"theme\": \"obsidian\"}");
         WriteFile("dydo/.obsidian/workspace.json", "{\"main\": {}}");
 
-        // Act
         var fixCommand = FixCommand.Create();
         var fixResult = await RunAsync(fixCommand, DydoDir);
 
-        // Assert - Fix should succeed without creating hub for .obsidian
         fixResult.AssertSuccess();
         Assert.DoesNotContain(".obsidian", fixResult.Stdout);
         AssertFileNotExists("dydo/.obsidian/_index.md");
@@ -288,23 +284,18 @@ public class FixCommandIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Check_IgnoresObsidianFolder()
     {
-        // Arrange
         var initResult = await InitProjectAsync();
         initResult.AssertSuccess();
 
-        // Create .obsidian folder with typical config files
         WriteFile("dydo/.obsidian/app.json", "{\"alwaysUpdateLinks\": true}");
         WriteFile("dydo/.obsidian/appearance.json", "{\"theme\": \"obsidian\"}");
         WriteFile("dydo/.obsidian/workspace.json", "{\"main\": {}}");
 
-        // Run fix to generate hubs
         var fixCommand = FixCommand.Create();
         await RunAsync(fixCommand, DydoDir);
 
-        // Act
         var checkResult = await CheckAsync(DydoDir);
 
-        // Assert - Check should not complain about .obsidian folder
         checkResult.AssertSuccess();
         Assert.DoesNotContain(".obsidian", checkResult.Stdout);
     }

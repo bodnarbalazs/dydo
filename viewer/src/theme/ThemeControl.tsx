@@ -22,7 +22,6 @@ const OPTIONS: [ThemePreference, string, React.JSX.Element][] = [
   ['dark', 'Dark', <path d="M13.5 9.6A5.75 5.75 0 0 1 6.4 2.5a5.75 5.75 0 1 0 7.1 7.1z" {...stroke} />],
 ];
 
-/** The toolbar's System / Light / Dark switch. */
 export function ThemeControl({ preference, onChoose }: { preference: ThemePreference; onChoose: (next: ThemePreference) => void }) {
   return (
     <div className="theme-control" role="group" aria-label="Theme">

@@ -1,9 +1,7 @@
 import path from "node:path";
 
-// Extracted from openai-sse-provider.mjs (DYD-91): the provider starts an HTTP server at
-// module top level, so importing it to reach parseArgs would start a live listener. This
-// module holds only the pure argument shaping, kept behaviour-identical, so it can be
-// imported and tested without starting a host or a server.
+// Split out of openai-sse-provider.mjs, which starts an HTTP server at module top level: importing
+// it for parseArgs would start a live listener.
 export function parseArgs(argv) {
   const result = { mode: "opencode" };
   for (let index = 0; index < argv.length; index += 2) {

@@ -4,10 +4,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using DynaDocs.Models;
 
-/// <summary>
-/// JSON serializer context for dydo.json configuration files.
-/// Uses camelCase naming policy to match the config file format.
-/// </summary>
 [JsonSourceGenerationOptions(
     WriteIndented = true,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
@@ -40,5 +36,3 @@ internal partial class DydoDefaultJsonContext : JsonSerializerContext { }
     AllowTrailingCommas = true)]
 [JsonSerializable(typeof(string[]))]
 internal partial class TypesJsonContext : JsonSerializerContext { }
-
-/// <summary>

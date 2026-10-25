@@ -1,4 +1,3 @@
-// @test-tier: 2
 namespace DynaDocs.Tests.Utils;
 
 using DynaDocs.Utils;

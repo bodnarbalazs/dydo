@@ -2,7 +2,6 @@ namespace DynaDocs.Models;
 
 using System.Text.Json.Serialization;
 
-/// <summary><c>dydo clean</c> settings in dydo.json.</summary>
 public class CleanConfig
 {
     public const int DefaultArchiveSizeCapMb = 1024;

@@ -4,9 +4,8 @@ using System.Text.RegularExpressions;
 using DynaDocs.Commands;
 
 /// <summary>
-/// Integration tests for the guard command. Post-DR-041 the guard is identity-free: only the
-/// universal layers remain (off-limits, dangerous-bash, nudges, git-safety, worktree-allow,
-/// search-tool gating, plan-mode block). There is no claim/role/must-read setup.
+/// Integration tests for the guard command. The guard is identity-free (DR-041), so tests
+/// need no claim, role or must-read setup.
 /// </summary>
 [Collection("Integration")]
 public class GuardIntegrationTests : IntegrationTestBase
@@ -18,7 +17,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // .env is off-limits by default
         var result = await GuardAsync("edit", ".env");
 
         result.AssertExitCode(2);
@@ -31,7 +29,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // dydo/index.md is a system file - protected, so the edit is blocked
         var result = await GuardAsync("edit", "dydo/index.md");
 
         result.AssertExitCode(2);
@@ -54,8 +51,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // A Read tool-call against an off-limits secret (**/secrets.json) must be blocked -
-        // off-limits binds on every direct file op, reads included, not just writes.
+        // Off-limits binds on every direct file op, reads included, not just writes.
         var json = "{\"session_id\":\"" + TestSessionId
             + "\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"config/secrets.json\"}}";
         var result = await GuardWithStdinAsync(json);
@@ -70,7 +66,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // src/file.cs is not off-limits - allowed
         var result = await GuardAsync("edit", "src/file.cs");
 
         result.AssertSuccess();
@@ -101,7 +96,7 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("Write", "dydo/files-off-limits.md")]
     [InlineData("NotebookEdit", "dydo.json")]
     // Codex's apply_patch maps to no action, so the tier must recognize it by tool name or it
-    // would bind on Claude's lane only - and these files were writable on the Codex lane.
+    // binds on Claude's lane only.
     [InlineData("apply_patch", "dydo/index.md")]
     public async Task Guard_ProtectedPath_DirectWriteToolBlocked(string toolName, string path)
     {
@@ -129,8 +124,8 @@ public class GuardIntegrationTests : IntegrationTestBase
     [InlineData("cp evil.json dydo.json")]
     [InlineData("cp permissive.md dydo/files-off-limits.md")]
     [InlineData("cp dydo/index.md backup.md")]
-    // A permission change is not a content write, but it was blocked before the tier existed
-    // and it is the classic self-escalation lever against the guard's own config.
+    // A permission change is not a content write, but it is the classic self-escalation lever
+    // against the guard's own config.
     [InlineData("chmod 777 dydo.json")]
     public async Task Guard_ProtectedPath_BashMutatingOperationBlocked(string command)
     {
@@ -139,7 +134,7 @@ public class GuardIntegrationTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(
             $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Bash\",\"tool_input\":{{\"command\":\"{command}\"}}}}");
 
-        // "protected", not "off-limits": the tier, not the old block list, is what stops this.
+        // "protected", not "off-limits": the protected tier is what stops this.
         result.AssertPreToolUseDenied();
         result.AssertStderrContains("BLOCKED:");
         result.AssertStderrContains("protected");
@@ -204,7 +199,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // A file named workflow.md outside the agents folder should NOT be blocked
         var result = await GuardAsync("read", "docs/workflow.md");
 
         result.AssertSuccess();
@@ -254,9 +248,8 @@ public class GuardIntegrationTests : IntegrationTestBase
     [Fact]
     public async Task Guard_CommandOption_AppliesShellAnalysis()
     {
-        // Issue 0302: the documented manual-testing lane used to exit 0 for EVERYTHING -
-        // arg mode carried no tool name, so ShouldRouteToShellHandler never routed the
-        // command to the shell analyzer. A CLI --command is a shell command by definition.
+        // Issue 0302: arg mode carries no tool name, yet a CLI --command is a shell command by
+        // definition and must reach the shell analyzer.
         await InitProjectAsync("none");
 
         var cmd = GuardCommand.Create();
@@ -444,7 +437,6 @@ public class GuardIntegrationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // .env is off-limits by default - searching with it as the path should block
         var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{{\"path\":\".env\",\"pattern\":\"*\"}}}}";
         var result = await GuardWithStdinAsync(json);
 
@@ -475,7 +467,7 @@ public class GuardIntegrationTests : IntegrationTestBase
 
     #endregion
 
-    #region Git commands (git stash / merge are ordinary now - DR-041 Part B)
+    #region Git commands
 
     [Theory]
     [InlineData("git stash")]
@@ -542,9 +534,8 @@ public class GuardIntegrationTests : IntegrationTestBase
     public async Task Guard_PlanModeBlock_RoutesOnlyToSkillsThatExist()
     {
         // Copying the message's literals here would only prove the test file and the command file
-        // agree, which is what let the Specifier pointer rot unnoticed. Read the skill names out of
-        // the refusal the command actually printed and resolve each one against the canonical tree,
-        // so retiring or renaming a skill the message routes to goes red without touching this test.
+        // agree. Read the skill names out of the refusal the command printed and resolve each one
+        // against the canonical tree, so retiring or renaming a skill the message routes to goes red.
         await InitProjectAsync("none");
 
         var json = "{\"session_id\":\"" + TestSessionId + "\",\"tool_name\":\"EnterPlanMode\",\"tool_input\":{}}";

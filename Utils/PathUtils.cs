@@ -101,7 +101,6 @@ public static partial class PathUtils
     }
 
     /// <summary>
-    /// Detects if a directory is inside a worktree and returns the main project root.
     /// Returns null if the directory is not inside a worktree.
     /// </summary>
     public static string? GetMainProjectRoot(string cwd)

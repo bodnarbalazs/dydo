@@ -18,8 +18,6 @@ public class HookInputExtensionsTests
         };
     }
 
-    // ─── GetAction ───
-
     [Theory]
     [InlineData("write", "write")]
     [InlineData("edit", "edit")]
@@ -47,8 +45,6 @@ public class HookInputExtensionsTests
         Assert.Equal("unknown", input.GetAction());
     }
 
-    // ─── GetFilePath ───
-
     [Fact]
     public void GetFilePath_ReturnsFilePath()
     {
@@ -70,8 +66,6 @@ public class HookInputExtensionsTests
         Assert.Null(input.GetFilePath());
     }
 
-    // ─── GetSearchPath ───
-
     [Fact]
     public void GetSearchPath_ReturnsPath()
     {
@@ -85,8 +79,6 @@ public class HookInputExtensionsTests
         var input = new HookInput { ToolName = "glob" };
         Assert.Null(input.GetSearchPath());
     }
-
-    // ─── IsWriteOperation ───
 
     [Theory]
     [InlineData("write", true)]
@@ -102,8 +94,6 @@ public class HookInputExtensionsTests
         var input = MakeInput(toolName);
         Assert.Equal(expected, input.IsWriteOperation());
     }
-
-    // ─── IsReadOperation ───
 
     [Theory]
     [InlineData("read", true)]
@@ -121,8 +111,6 @@ public class HookInputExtensionsTests
         Assert.Equal(expected, input.IsReadOperation());
     }
 
-    // ─── IsBashTool ───
-
     [Theory]
     [InlineData("bash", true)]
     [InlineData("Bash", true)]
@@ -135,8 +123,6 @@ public class HookInputExtensionsTests
         var input = MakeInput(toolName);
         Assert.Equal(expected, input.IsBashTool());
     }
-
-    // ─── GetCommand ───
 
     [Fact]
     public void GetCommand_ReturnsCommand()
@@ -151,8 +137,6 @@ public class HookInputExtensionsTests
         var input = new HookInput { ToolName = "bash" };
         Assert.Null(input.GetCommand());
     }
-
-    // ─── GetWriteTargets ───
 
     [Theory]
     [InlineData("Write")]
@@ -216,8 +200,6 @@ public class HookInputExtensionsTests
     {
         Assert.Empty(MakeInput("apply_patch", filePath: "tools/x.py", command: patch).GetWriteTargets());
     }
-
-    // ─── IsFileOperation ───
 
     [Theory]
     [InlineData("edit", true)]

@@ -57,7 +57,6 @@ public static class ScaffoldTree
             .Replace("{{PROJECT_NAME}}", projectName)
             .TrimEnd('\r', '\n');
 
-    /// <summary>Reads one scaffold file by its repository-relative path.</summary>
     public static string Read(string resourceName)
     {
         using var stream = Assembly.GetManifestResourceStream(resourceName)

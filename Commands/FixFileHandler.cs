@@ -4,9 +4,6 @@ using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
-/// <summary>
-/// Handles file-level fixes: naming conventions and wikilink conversion.
-/// </summary>
 internal static class FixFileHandler
 {
     public static (int renamed, List<string> conflicts) FixNaming(List<DocFile> docs)

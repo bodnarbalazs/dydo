@@ -111,9 +111,8 @@ test('migrates a dangling link left by the old flat layout to the current canoni
     const hostSkillsAgents = path.join(root, '.agents', 'skills');
     fs.mkdirSync(hostSkillsClaude, { recursive: true });
     fs.mkdirSync(hostSkillsAgents, { recursive: true });
-    // What the old, pre-category setup would have created: a link straight at skills/alpha, which
-    // no longer exists now that the skill lives under skills/engineering/alpha (DYD-219), leaving
-    // both links dangling.
+    // Flat-layout links straight at skills/alpha; alpha lives under skills/engineering/alpha
+    // (DYD-219), so both dangle.
     fs.symlinkSync(path.join(root, 'skills', 'alpha'), path.join(hostSkillsClaude, 'alpha'), 'junction');
     fs.symlinkSync(path.join(root, 'skills', 'alpha'), path.join(hostSkillsAgents, 'alpha'), 'junction');
 
@@ -386,9 +385,7 @@ test('an explicit --root confines every projection to that root', () => {
     writeSkill(root, 'alpha');
     // A sibling tmpdir stands in for "somewhere else": proving nothing leaked there is the same
     // property as proving nothing leaked into the real checkout, but it holds regardless of
-    // whether this checkout happens to have .claude/skills or .agents/skills installed already
-    // (asserting against repoRoot itself made this test fail in any checkout where the documented
-    // `node setup-skills.mjs` had already been run).
+    // whether this checkout happens to have .claude/skills or .agents/skills installed already.
     const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'dyd219-setup-skills-elsewhere-'));
     try {
       const result = runSetup('--root', root);

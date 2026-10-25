@@ -1,22 +1,15 @@
 namespace DynaDocs.Services;
 
-/// <summary>
-/// Represents a format validation issue found in the off-limits file.
-/// </summary>
 public record FormatValidationIssue(
     string Message,
-    bool IsError // true = Error, false = Warning
+    bool IsError
 );
 
 /// <summary>
-/// Service for managing globally off-limits file patterns.
-/// These patterns apply to ALL agents regardless of role and block ALL operations (read, write, delete).
+/// Globally off-limits patterns: they apply to every agent and block reads, writes and deletes.
 /// </summary>
 public interface IOffLimitsService
 {
-    /// <summary>
-    /// Load patterns from files-off-limits.md in the dydo folder.
-    /// </summary>
     void LoadPatterns(string? basePath = null);
 
     /// <summary>
@@ -25,14 +18,8 @@ public interface IOffLimitsService
     /// </summary>
     string? IsPathOffLimits(string path);
 
-    /// <summary>
-    /// Get all configured off-limits patterns (for diagnostics).
-    /// </summary>
     IReadOnlyList<string> Patterns { get; }
 
-    /// <summary>
-    /// Get all configured whitelist patterns (exceptions to off-limits).
-    /// </summary>
     IReadOnlyList<string> WhitelistPatterns { get; }
 
     /// <summary>
@@ -41,14 +28,7 @@ public interface IOffLimitsService
     /// </summary>
     IEnumerable<string> ValidateLiteralPaths(string basePath);
 
-    /// <summary>
-    /// Check if the off-limits file exists.
-    /// </summary>
     bool OffLimitsFileExists(string? basePath = null);
 
-    /// <summary>
-    /// Validate the format of the off-limits file.
-    /// Returns a list of validation issues found.
-    /// </summary>
     IEnumerable<FormatValidationIssue> ValidateFormat(string? basePath = null);
 }

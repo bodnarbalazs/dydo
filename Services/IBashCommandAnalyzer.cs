@@ -1,19 +1,9 @@
 namespace DynaDocs.Services;
 
-/// <summary>
-/// Analyzes Bash/shell commands to detect file operations.
-/// Supports bash, zsh, PowerShell, and cmd.
-/// </summary>
 public interface IBashCommandAnalyzer
 {
-    /// <summary>
-    /// Analyze a command and return all detected file operations.
-    /// </summary>
     BashAnalysisResult Analyze(string command);
 
-    /// <summary>
-    /// Check if a command contains dangerous patterns that should always be blocked.
-    /// </summary>
     (bool IsDangerous, string? Reason) CheckDangerousPatterns(string command);
 
     /// <summary>
@@ -22,9 +12,6 @@ public interface IBashCommandAnalyzer
     (bool IsMatch, string? CdPath, string? RestCommand) DetectNeedlessCd(string command);
 }
 
-/// <summary>
-/// Result of analyzing a shell command.
-/// </summary>
 public class BashAnalysisResult
 {
     public List<FileOperation> Operations { get; } = [];
@@ -38,9 +25,6 @@ public class BashAnalysisResult
     public bool HasBypassAttempt { get; set; }
 }
 
-/// <summary>
-/// A detected file operation within a command.
-/// </summary>
 public class FileOperation
 {
     public FileOperationType Type { get; set; }
@@ -49,9 +33,6 @@ public class FileOperation
     public bool IsUncertain { get; set; } // True if path might be from variable/substitution
 }
 
-/// <summary>
-/// Types of file operations that can be detected in shell commands.
-/// </summary>
 public enum FileOperationType
 {
     Read,

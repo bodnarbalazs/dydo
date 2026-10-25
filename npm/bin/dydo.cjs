@@ -22,7 +22,6 @@ function main() {
     process.exit(2);
   }
 
-  // Spawn the native binary with all arguments passed through
   const child = spawn(binaryPath, process.argv.slice(2), {
     stdio: 'inherit',
     windowsHide: false

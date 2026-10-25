@@ -2,10 +2,6 @@ namespace DynaDocs.Utils;
 
 public static partial class PathUtils
 {
-    /// <summary>
-    /// Find the dydo root directory by looking for dydo.json.
-    /// Returns the dydo/ folder path if found, null otherwise.
-    /// </summary>
     public static string? FindDydoRoot(string? startPath = null)
     {
         var projectRoot = ConfigFileLocator.FindProjectRoot(startPath);
@@ -13,9 +9,6 @@ public static partial class PathUtils
         return ConfigFileLocator.GetDydoRoot(projectRoot);
     }
 
-    /// <summary>
-    /// Find the project root directory (where dydo.json lives).
-    /// </summary>
     public static string? FindProjectRoot(string? startPath = null)
     {
         return ConfigFileLocator.FindProjectRoot(startPath);
@@ -25,7 +18,6 @@ public static partial class PathUtils
     /// Find the main project root even when called from inside a worktree.
     /// Resolves via the <c>dydo/_system/.local/worktrees/</c> marker; falls back
     /// to <see cref="FindProjectRoot"/> when not inside a worktree.
-    /// Used by commands that need the main checkout rather than a worktree.
     /// </summary>
     public static string? FindMainProjectRoot(string? startPath = null)
     {

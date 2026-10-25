@@ -25,7 +25,6 @@ public class GuardCommandTests : IDisposable
         Directory.CreateDirectory(_dydoDir);
         Directory.CreateDirectory(Path.Combine(_dydoDir, "agents"));
 
-        // Create minimal dydo.json
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """
             {
                 "version": 1,
@@ -33,7 +32,6 @@ public class GuardCommandTests : IDisposable
             }
             """);
 
-        // Create off-limits file with default patterns
         File.WriteAllText(Path.Combine(_dydoDir, "files-off-limits.md"), """
             ---
             type: config
@@ -287,7 +285,6 @@ public class GuardCommandTests : IDisposable
         var analyzer = new BashCommandAnalyzer();
         var analysis = analyzer.Analyze("cat secrets.json && echo 'done'");
 
-        // Check if any operation targets an off-limits path
         var hasOffLimitsOperation = false;
         foreach (var op in analysis.Operations)
         {
@@ -309,7 +306,6 @@ public class GuardCommandTests : IDisposable
 
         var analyzer = new BashCommandAnalyzer();
 
-        // Command with both safe and unsafe operations
         var analysis = analyzer.Analyze("cat README.md && cat secrets.json > output.txt");
 
         var offLimitsPaths = new List<string>();
@@ -343,7 +339,6 @@ public class GuardCommandTests : IDisposable
         var service = new OffLimitsService();
         service.LoadPatterns(_testDir);
 
-        // Should allow everything
         Assert.Null(service.IsPathOffLimits(".env"));
         Assert.Null(service.IsPathOffLimits("secrets.json"));
     }
@@ -356,7 +351,6 @@ public class GuardCommandTests : IDisposable
         var service = new OffLimitsService();
         service.LoadPatterns(_testDir);
 
-        // Should allow everything when file doesn't exist
         Assert.Null(service.IsPathOffLimits(".env"));
         Assert.Empty(service.Patterns);
     }
@@ -660,7 +654,6 @@ public class GuardCommandTests : IDisposable
         var hash = GuardCommand.ComputeNudgeHash(pattern);
         var markerPath = Path.Combine(workspace, $".nudge-{hash}");
 
-        // Inject a custom warn nudge via dydo.json
         WriteConfigWithNudge(pattern, "Don't do that", "warn");
         env = GuardCommand.GuardEnv.Load(_testDir);
 
@@ -674,7 +667,7 @@ public class GuardCommandTests : IDisposable
     public void CheckNudges_WarnSeverity_AllowsSecondEncounter_DeletesMarker()
     {
         var env = GuardCommand.GuardEnv.Load(_testDir);
-        var workspace = env.MarkerDir;  // warn-nudge markers are global, machine-local state (DR-041)
+        var workspace = env.MarkerDir;
         var pattern = @"dangerous-command";
         var hash = GuardCommand.ComputeNudgeHash(pattern);
         var markerPath = Path.Combine(workspace, $".nudge-{hash}");
@@ -682,10 +675,8 @@ public class GuardCommandTests : IDisposable
         WriteConfigWithNudge(pattern, "Don't do that", "warn");
         env = GuardCommand.GuardEnv.Load(_testDir);
 
-        // First call: blocks
         GuardCommand.CheckNudges("dangerous-command", env);
 
-        // Second call: allows
         var result = GuardCommand.CheckNudges("dangerous-command", env);
 
         Assert.Null(result);
@@ -703,17 +694,15 @@ public class GuardCommandTests : IDisposable
             (patternB, "Warning B", "warn"));
         var env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var workspace = env.MarkerDir;  // warn-nudge markers are global, machine-local state (DR-041)
+        var workspace = env.MarkerDir;
         var markerA = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternA)}");
         var markerB = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternB)}");
 
-        // Trigger pattern A only
         GuardCommand.CheckNudges("risky-alpha", env);
 
         Assert.True(File.Exists(markerA), "Marker for pattern A should exist");
         Assert.False(File.Exists(markerB), "Marker for pattern B should not exist");
 
-        // Trigger pattern B
         GuardCommand.CheckNudges("risky-beta", env);
 
         Assert.True(File.Exists(markerA), "Marker for pattern A should still exist");

@@ -1,6 +1,5 @@
 const os = require('os');
 
-// Map Node.js platform/arch to .NET RID (Runtime Identifier)
 const PLATFORM_MAPPING = {
   'win32-x64': {
     rid: 'win-x64',

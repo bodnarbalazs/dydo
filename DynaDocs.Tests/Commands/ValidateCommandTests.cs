@@ -63,7 +63,6 @@ public class ValidateCommandTests : IDisposable
     [Fact]
     public void Validate_WithErrors_ReturnsOne()
     {
-        // No dydo.json → error
         var command = DynaDocs.Commands.ValidateCommand.Create();
         var exitCode = command.Parse("").Invoke();
 
@@ -73,7 +72,6 @@ public class ValidateCommandTests : IDisposable
     [Fact]
     public void Validate_WithErrors_PrintsErrorCount()
     {
-        // No dydo.json → error
         var (_, stderr) = CaptureOutput(() =>
         {
             var command = DynaDocs.Commands.ValidateCommand.Create();
@@ -143,7 +141,6 @@ public class ValidateCommandTests : IDisposable
 
     private void SetupValidProjectNoWarnings()
     {
-        // Minimal valid dydo.json with no roles → no warnings
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
             """{"version":1,"structure":{"root":"dydo"},"integrations":{"claude":false,"codex":false},"scanExclude":["_system/.local/","agents/"],"nudges":[],"frameworkHashes":{}}""");
         Directory.CreateDirectory(Path.Combine(_testDir, "dydo", "_system"));

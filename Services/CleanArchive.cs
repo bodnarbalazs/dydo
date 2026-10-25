@@ -30,7 +30,6 @@ internal sealed partial class CleanArchive(string gitCommonDirectory, long capBy
         return path;
     }
 
-    /// <summary>Copies everything <paramref name="plan"/> names out of the worktree into <paramref name="entry"/>.</summary>
     public void Write(string entry, ArchivePlan plan, WorktreeEntry tree, DateTime utcNow)
     {
         ThrowIfLinked();

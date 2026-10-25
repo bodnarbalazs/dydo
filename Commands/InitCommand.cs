@@ -14,10 +14,6 @@ using DynaDocs.Models;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
-/// <summary>
-/// Initialize DynaDocs in a project with explicit integration selection.
-/// Supports interactive setup for new projects or joining existing ones.
-/// </summary>
 public static class InitCommand
 {
     private static readonly JsonSerializerOptions WriteOptions = new()
@@ -103,7 +99,6 @@ public static class InitCommand
         }
     }
 
-    // "all" expands to every hook-wired integration; "claude"/"codex"/"none" stay themselves.
     private static string[] ExpandIntegrations(string integration) =>
         integration == "all" ? ["claude", "codex"] : [integration];
 
@@ -173,10 +168,8 @@ public static class InitCommand
             Console.WriteLine($"  {completionResult}");
     }
 
-    // With the 26-agent roster gone (DR-041), "join" no longer assigns a pool of agents to a new
-    // human - there is no roster to draw from. It reduces to "wire up this machine's local
-    // integration for an already-initialized project" (a fresh clone, or adding a second
-    // integration): configure hooks without re-scaffolding or overwriting the tree.
+    // Join wires this machine's integration into an already-initialized project (a fresh clone,
+    // or a second integration) without re-scaffolding or overwriting the tree.
     internal static int ExecuteJoin(string integration, Action? beforeConfigCommit = null)
     {
         if (!IsValidIntegration(integration))
@@ -518,34 +511,26 @@ public static class InitCommand
         var settings = LoadJsonSettings(settingsPath);
 
         ConfigureGuardHook(settings, GuardMatcher, ClaudeGuardHookCommand);
-        ConfigureStopHook(settings);
+        RemoveDydoStopHook(settings);
         ConfigureAllowList(settings);
 
         var json = settings.ToJsonString(WriteOptions);
         File.WriteAllText(settingsPath, json);
     }
 
-    // AskUserQuestion is kept in the matcher for legacy compatibility: it once let the guard set the
-    // derived needs-human flag (Decision 030 §1), machinery removed with the claim ceremony (DR-041).
-    // The guard now passes it through harmlessly; the entry stays so existing hook wiring is stable.
     private const string GuardMatcher =
-        "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion";
+        "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit";
 
-    // Codex exposes file edits as apply_patch and shell execution under several tool names
-    // depending on mode (shell_command interactive/exec, plus the code-mode aliases exec,
-    // local_shell, unified_exec). All must be in the matcher or the guard never sees codex
-    // shell commands - the PreToolUse hook fires but the tool name doesn't match, so no
-    // off-limits / dangerous-bash / nudge layer binds on the shell lane (issue 0295).
-    // These names must stay in lockstep with GuardCommand.ShellTools, which routes them to
-    // the shell analyzer once they reach the guard.
+    // Codex emits shell execution under several tool names depending on mode (shell_command
+    // interactive/exec, plus the code-mode aliases exec, local_shell, unified_exec). All must be in
+    // the matcher or the hook never binds on Codex's shell lane, silently (issue 0295). Keep them in
+    // lockstep with GuardCommand.ShellTools, which routes them to the shell analyzer.
     internal const string CodexShellTools = "shell_command|exec|local_shell|unified_exec";
 
-    // Codex's own matcher, not Claude's: the documented Codex names come first (shell and
-    // unified exec arrive as Bash, apply_patch also as Edit/Write, spawn_agent as Agent), and
-    // the legacy shell names above are retained on purpose - they were added empirically
-    // (issue 0295) and the documentation reading is unproven against the installed Codex.
-    // Claude-only UI names (Read, Glob, Grep, PowerShell, plan mode, AskUserQuestion) are
-    // dropped: Codex never emits them, so they could only ever be dead configuration.
+    // The documented Codex names come first (shell and unified exec arrive as Bash, apply_patch
+    // also as Edit/Write, spawn_agent as Agent). The shell names above stay too: the documented
+    // reading is unproven against the installed Codex (issue 0295). Claude-only names (Read, Glob,
+    // Grep, PowerShell, plan mode) are left out because Codex never emits them.
     private const string CodexGuardMatcher = "Bash|apply_patch|Edit|Write|Agent|" + CodexShellTools;
 
     // The Claude Code hook alone carries the host marker: it is the guard's only proof that the
@@ -580,34 +565,17 @@ public static class InitCommand
         preToolUse.Add((JsonNode)guardEntry);
     }
 
-    // Stop-hook wiring, retained for legacy compatibility: `dydo guard --stop` is now a no-op (the
-    // turn-end needs-human derivation of Decision 030 §1 was removed with the claim ceremony, DR-041),
-    // but the hook stays wired so existing installs keep resolving. EXTENDS the shared hooks block: the
-    // Stop array is created if absent, unknown Stop entries are preserved, and the dydo stop entry is
-    // de-duplicated so re-running init stays idempotent.
-    private static void ConfigureStopHook(JsonNode settings)
+    // dydo installs no Stop hook, and `dydo guard --stop` is not a guard option, so a Stop entry
+    // running it would fail every turn end. A Stop array dydo empties goes with it; one that was
+    // already empty is the user's and stays.
+    private static void RemoveDydoStopHook(JsonNode settings)
     {
-        var hooks = settings["hooks"]?.AsObject() ?? new JsonObject();
-        settings["hooks"] = hooks;
-
-        var stop = hooks["Stop"]?.AsArray() ?? new JsonArray();
-        hooks["Stop"] = stop;
+        if (settings["hooks"] is not JsonObject hooks || hooks["Stop"] is not JsonArray stop || stop.Count == 0)
+            return;
 
         RemoveDydoGuardEntries(stop, "dydo guard --stop");
-
-        var hookCommand = new JsonObject
-        {
-            ["type"] = "command",
-            ["command"] = "dydo guard --stop"
-        };
-        var hooksArray = new JsonArray();
-        hooksArray.Add((JsonNode)hookCommand);
-
-        var stopEntry = new JsonObject
-        {
-            ["hooks"] = hooksArray
-        };
-        stop.Add((JsonNode)stopEntry);
+        if (stop.Count == 0)
+            hooks.Remove("Stop");
     }
 
     private static void ConfigureAllowList(JsonNode settings)
@@ -651,7 +619,7 @@ public static class InitCommand
         var settings = LoadJsonSettings(hooksPath);
 
         ConfigureGuardHook(settings, CodexGuardMatcher);
-        ConfigureStopHook(settings);
+        RemoveDydoStopHook(settings);
 
         File.WriteAllText(hooksPath, settings.ToJsonString(WriteOptions));
 
@@ -679,7 +647,6 @@ public static class InitCommand
     {
         var settings = new JsonObject();
         ConfigureGuardHook(settings, CodexGuardMatcher);
-        ConfigureStopHook(settings);
         return settings;
     }
 

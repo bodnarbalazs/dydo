@@ -16,9 +16,8 @@ public class FolderScaffolder : IFolderScaffolder
         foreach (var folder in EmptyFolders)
             Directory.CreateDirectory(Path.Combine(basePath, folder));
 
-        // The single SHARED scratch folder (gitignored): agents drop temporary work products
-        // here instead of polluting the repo root. No per-agent subfolders (DR-041 - identity
-        // is assigned at spawn, nothing owns a named workspace).
+        // The single shared scratch folder (gitignored): agents drop temporary work products here
+        // instead of the repo root. No per-agent subfolders: nothing owns a named workspace (DR-041).
         Directory.CreateDirectory(Path.Combine(basePath, "agents", "workspace"));
 
         ScaffoldTree.WriteDydoTree(basePath);

@@ -2,9 +2,6 @@ namespace DynaDocs.Models;
 
 using System.Text.Json.Serialization;
 
-/// <summary>
-/// Root configuration object for dydo.json
-/// </summary>
 public class DydoConfig
 {
     [JsonPropertyName("version")]

@@ -1,7 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 
-// Binary is stored within the npm package directory
 function getInstallDir() {
   return path.dirname(__dirname);
 }
@@ -19,7 +18,6 @@ function isBinaryInstalled(platformInfo) {
   return fs.existsSync(binaryPath);
 }
 
-// Marker file to track installed version
 function getVersionMarkerPath() {
   return path.join(getBinaryDir(), '.version');
 }

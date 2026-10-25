@@ -2,10 +2,6 @@ namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
 
-/// <summary>
-/// Integration tests for documentation commands:
-/// check, fix, index, graph.
-/// </summary>
 [Collection("Integration")]
 public class DocumentationTests : IntegrationTestBase
 {
@@ -42,7 +38,7 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Check_ValidDocs_Passes()
     {
-        // Create a minimal valid doc structure (don't use init which creates docs with known issues)
+        // Not init: it creates docs with known issues.
         Directory.CreateDirectory(Path.Combine(TestDir, "dydo"));
         Directory.CreateDirectory(Path.Combine(TestDir, "dydo", "guides"));
 
@@ -83,7 +79,6 @@ public class DocumentationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // Create a doc with a broken link to trigger an error
         WriteFile("dydo/guides/test-broken.md", """
             ---
             area: guides
@@ -97,7 +92,6 @@ public class DocumentationTests : IntegrationTestBase
 
         var result = await CheckAsync();
 
-        // Should find the broken link
         result.AssertExitCode(1);
         result.AssertStdoutContains("Found");
         result.AssertStdoutContains("errors");
@@ -108,7 +102,6 @@ public class DocumentationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // Create a doc without frontmatter
         WriteFile("dydo/guides/bad-doc.md", "# Bad Doc\n\nNo frontmatter here.");
 
         var result = await CheckAsync();
@@ -121,7 +114,6 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Check_SpecificPath_ChecksOnlyThatPath()
     {
-        // Create a minimal structure with valid understand folder and invalid guides folder
         Directory.CreateDirectory(Path.Combine(TestDir, "dydo"));
         Directory.CreateDirectory(Path.Combine(TestDir, "dydo", "understand"));
         Directory.CreateDirectory(Path.Combine(TestDir, "dydo", "guides"));
@@ -137,13 +129,10 @@ public class DocumentationTests : IntegrationTestBase
             This is valid.
             """);
 
-        // Invalid doc in guides
         WriteFile("dydo/guides/invalid.md", "# No frontmatter");
 
-        // Check only understand folder (which is valid)
         var result = await CheckAsync("dydo/understand");
 
-        // Should pass because we're only checking understand folder
         result.AssertSuccess();
     }
 
@@ -152,7 +141,6 @@ public class DocumentationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // Create a doc with a broken link
         WriteFile("dydo/guides/broken-links.md", """
             ---
             area: guides
@@ -173,7 +161,6 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Check_NoDocsFolder_Fails()
     {
-        // Don't initialize, try to check non-existent path
         var command = CheckCommand.Create();
         var result = await RunAsync(command, "nonexistent/path");
 
@@ -190,7 +177,6 @@ public class DocumentationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // Create a doc with non-kebab-case name
         WriteFile("dydo/guides/BadName.md", """
             ---
             area: guides
@@ -270,7 +256,6 @@ public class DocumentationTests : IntegrationTestBase
         var result = await FixAsync();
 
         result.AssertSuccess();
-        // Should NOT create _index.md in agent modes folder
         Assert.False(File.Exists(Path.Combine(TestDir, "dydo/agents/sample/modes/_index.md")));
     }
 
@@ -286,7 +271,6 @@ public class DocumentationTests : IntegrationTestBase
         var result = await FixAsync();
 
         result.AssertSuccess();
-        // Should NOT create _index.md in _system
         Assert.False(File.Exists(Path.Combine(TestDir, "dydo/_system/_index.md")));
     }
 
@@ -298,7 +282,6 @@ public class DocumentationTests : IntegrationTestBase
         var result = await FixAsync();
 
         result.AssertSuccess();
-        // Should not report agent workspace files as needing fixes
         Assert.DoesNotContain("agents/sample", result.Stdout);
     }
 
@@ -313,7 +296,6 @@ public class DocumentationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // Modify index.md
         WriteFile("dydo/index.md", "# Old Index\n\nOld content.");
 
         var result = await IndexAsync();
@@ -321,7 +303,6 @@ public class DocumentationTests : IntegrationTestBase
         result.AssertSuccess();
         result.AssertStdoutContains("Generated");
 
-        // Index should be regenerated with proper structure
         var content = ReadFile("dydo/index.md");
         Assert.Contains("understand", content);
         Assert.Contains("guides", content);
@@ -371,7 +352,6 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Index_NoDocsFolder_Fails()
     {
-        // Don't initialize
         var command = IndexCommand.Create();
         var result = await RunAsync(command, "nonexistent");
 
@@ -399,7 +379,6 @@ public class DocumentationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // Check incoming links to a file that is linked from index.md
         var result = await GraphAsync("dydo/welcome.md", incoming: true);
 
         result.AssertSuccess();
@@ -455,7 +434,6 @@ public class DocumentationTests : IntegrationTestBase
     {
         await InitProjectAsync("none");
 
-        // Very large degree shouldn't cause infinite loops
         var result = await GraphAsync("dydo/index.md", degree: 100);
 
         result.AssertSuccess();
@@ -464,7 +442,6 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Graph_Stats_ShowsTopDocsByIncomingLinks()
     {
-        // Create docs with known link structure
         Directory.CreateDirectory(Path.Combine(TestDir, "dydo"));
 
         // Create minimal config for FindDocsFolder to work
@@ -547,8 +524,6 @@ public class DocumentationTests : IntegrationTestBase
     [Fact]
     public async Task Graph_Stats_NoDocsFolder_Fails()
     {
-        // Don't create any docs folder
-
         var result = await GraphStatsAsync();
 
         result.AssertExitCode(2);

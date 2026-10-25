@@ -150,7 +150,6 @@ internal sealed partial class DydoInvocationScanner
         return at + (takesDuration ? 1 : 0);
     }
 
-    /// <summary>The word's file name, lower case, without a .exe, .cmd, .bat, .com or .ps1 suffix.</summary>
     private static string ProgramName(string word)
     {
         var name = word[(word.LastIndexOfAny(['/', '\\']) + 1)..].ToLowerInvariant();

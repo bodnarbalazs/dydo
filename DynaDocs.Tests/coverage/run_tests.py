@@ -89,7 +89,6 @@ def _git(*args, capture=False):
 
 
 def create_worktree(path):
-    """Create a detached worktree at the attributed path."""
     result = _git("worktree", "add", "--detach", str(path), "HEAD")
     if result.returncode != 0:
         print(f"Failed to create worktree at {path}", file=sys.stderr)
@@ -98,7 +97,6 @@ def create_worktree(path):
 
 
 def is_registered_worktree(worktree):
-    """Return whether Git records the exact attributed worktree path."""
     stdout, rc = _git("worktree", "list", "--porcelain", capture=True)
     if rc != 0:
         return False
@@ -175,7 +173,6 @@ def _is_link_entry(entry):
 
 
 def _relative_if_inside(candidate, base):
-    """Return candidate's path relative to base if candidate is base or nested under it, else None."""
     candidate_norm = os.path.normcase(str(candidate))
     base_norm = os.path.normcase(str(base))
     if candidate_norm == base_norm:
@@ -400,7 +397,7 @@ def remove_worktree(worktree):
         _git("worktree", "remove", "--force", str(worktree))
     _git("worktree", "prune")
     if worktree.exists() or is_registered_worktree(worktree):
-        print(f"Failed to remove test worktree, a human must clear it: {worktree}", file=sys.stderr)
+        print(f"Failed to remove test worktree, the user must clear it: {worktree}", file=sys.stderr)
 
 
 def _registered_worktree_paths():
@@ -433,16 +430,16 @@ def prune_stale_test_worktrees(max_age_seconds=None):
     registered them there -- filtered by the temp-root and dydo-test- name predicates, then gated
     by a valid marker whose age exceeds max_age_seconds. NEVER a directory scan of the temp root:
     no iterdir, glob, scandir or listdir over it. A real machine's TEMP can hold well over 100,000
-    unrelated entries, and enumerating it cost seconds on every run.
+    unrelated entries, and enumerating it costs seconds on every run.
 
-    This deliberately no longer prunes a leftover directory that git no longer registers as a
-    worktree. Each run allocates a fresh `dydo-test-<uuid>` name, so this process never revisits or
-    names an orphan it left behind; a crashed run, a re-cloned checkout, or a second clone whose
-    `git worktree list` this runner never sees can all leave one that now lingers in TEMP with no
+    A leftover directory that git no longer registers as a worktree is deliberately not pruned.
+    Each run allocates a fresh `dydo-test-<uuid>` name, so this process never revisits or names an
+    orphan it left behind; a crashed run, a re-cloned checkout, or a second clone whose
+    `git worktree list` this runner never sees can all leave one that lingers in TEMP with no
     automated path back to it. `remove_worktree` still names its own failed removals loudly on
-    stderr, but only for the worktree the current run is cleaning up -- not for one an earlier run
-    abandoned. Any such orphan is left for a human. The cost of a full TEMP scan to also catch that
-    rare case is not worth paying on every run. Silent on a no-op.
+    stderr, but only for the worktree the current run is cleaning up. Any such orphan is left for the
+    user: a full TEMP scan to catch that rare case is not worth paying on every run. Silent on a
+    no-op.
     """
     if max_age_seconds is None:
         max_age_seconds = _stale_worktree_max_age_seconds()
@@ -564,7 +561,6 @@ def _stat_fields(pid):
 
 
 def _process_table():
-    """Map each running process id to its (parent pid, state)."""
     table = {}
     for name in os.listdir(PROC_ROOT):
         fields = _stat_fields(name) if name.isdigit() else None
@@ -669,8 +665,8 @@ def _run_assurance_campaign(worktree, extra_args, assurance_output):
 
 
 def run_tests(extra_args=None, assurance_output=None, job=None):
-    """Create worktree, run tests, clean up. Returns the dotnet exit code. `job`, from
-    contain_descendants, has its other members ended before the worktree is removed."""
+    """Returns the dotnet exit code. `job`, from contain_descendants, has its other members ended
+    before the worktree is removed."""
     worktree = None
     try:
         try:
@@ -727,7 +723,6 @@ def main():
     parser.add_argument("--assurance-output", help=argparse.SUPPRESS)
     args, extra = parser.parse_known_args()
 
-    # Strip leading "--" separator if present
     if extra and extra[0] == "--":
         extra = extra[1:]
 

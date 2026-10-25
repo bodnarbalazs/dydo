@@ -741,6 +741,7 @@ describe('App navigation and fitting', () => {
     const expanded = scale();
     await fitBy(() => fireEvent.click(screen.getByRole('button', { name: 'Collapse all' })));
     await waitFor(() => expect(card('T-A')).toBeNull());
+    expect(card('T-X')).not.toBeNull();
     expect(scale()).toBeGreaterThan(expanded);
   });
 });

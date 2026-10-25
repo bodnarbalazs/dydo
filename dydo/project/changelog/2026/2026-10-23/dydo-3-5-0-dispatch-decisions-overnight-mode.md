@@ -172,8 +172,9 @@ trail and comments that only restated the code. Existing checkouts must rerun
    hand a `CLAUDE.md` that step 2 merged into `AGENTS.md`, whether or not Claude is wired. Keep a
    user-written one and put `@AGENTS.md` at its
    top (`@../AGENTS.md` in `.claude/CLAUDE.md`).
-6. Run step 4 in every checkout of the project, since the Claude Code wiring lives in the
-   machine-local `.claude/settings.local.json`. `--join` also removes dydo's Stop hook, which
+6. Run steps 4 and 10 in every checkout of the project, since the Claude Code wiring in
+   `.claude/settings.local.json` and the skill links in `.claude/skills/` and `.agents/skills/`
+   are machine-local. `--join` also removes dydo's Stop hook, which
    otherwise fails on the removed `--stop` option at every turn end, and writes the `dydo clean`
    allow rules.
 7. If `--join` warns about `CLAUDE.local.md`, put `@AGENTS.md` at its top, or set Claude Code's

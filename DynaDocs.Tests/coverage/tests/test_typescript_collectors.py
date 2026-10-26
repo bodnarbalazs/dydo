@@ -83,6 +83,26 @@ class TypeScriptCollectorTests(unittest.TestCase):
         self.assertEqual([{"gate": "module-cycle", "members": ["viewer/src/left.ts", "viewer/src/right.ts"]}],
                          answer["findings"])
 
+    def graph_of(self, identities, sources=("viewer/src/a.ts", "viewer/src/b.ts")):
+        """The module graph measured from a dependency-cruiser output listing these module identities."""
+        modules = [{"source": name, "dependencies": []} for name in identities]
+        runner = self.collector([])
+        with mock.patch.object(runner, "sources", return_value=[{"path": name} for name in sources]),                 mock.patch.object(runner, "command_json", return_value={"modules": modules}):
+            return runner.typescript_dependencies()
+
+    def test_a_repeated_third_party_module_does_not_make_the_graph_ambiguous(self):
+        leaf = "viewer/node_modules/.pnpm/@xyflow+react@1/node_modules/@xyflow/react/dist/umd/index.js"
+
+        answer = self.graph_of(["viewer/src/a.ts", leaf, "viewer/src/b.ts", leaf])
+
+        self.assertEqual("pass", answer["status"])
+        self.assertEqual([], answer["errors"])
+
+    def test_a_repeated_or_missing_source_module_is_still_ambiguous(self):
+        for identities in (["viewer/src/a.ts", "viewer/src/b.ts", "viewer/src/a.ts"], ["viewer/src/a.ts"]):
+            with self.subTest(identities=identities),                     self.assertRaisesRegex(ValueError, "Missing or ambiguous dependency-cruiser source identity"):
+                self.graph_of(identities)
+
     def test_each_compiler_diagnostic_is_a_finding_and_a_silent_failure_is_a_gap(self):
         output = "> tsc --noEmit\nsrc/a.ts(3,7): error TS2322: Type 'string' is not assignable.\n"
         for stdout, exit_code, status in ((output, 2, "fail"), ("> tsc\n", 2, "error"), ("", 0, "pass")):

@@ -318,8 +318,67 @@ public class InitCommandTests : IntegrationTestBase
         var claude = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.json")));
         var env = Assert.IsType<JsonObject>(claude["env"]);
         Assert.Equal("3", env["CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH"]?.GetValue<string>());
-        Assert.Equal("[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n",
+        Assert.False(claude["autoMemoryEnabled"]?.GetValue<bool>());
+        Assert.Equal("[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n\n[features]\nmemories = false\n",
             ReadFile(".codex/config.toml"));
+        Assert.DoesNotContain("Turned native memory off", result.Stdout);
+    }
+
+    [Fact]
+    public async Task Join_All_TurnsNativeMemoryOffOverTrueAndSaysSo()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".claude/settings.json", "{ \"other\": \"keep\", \"autoMemoryEnabled\": true }");
+        WriteFile(".codex/config.toml",
+            "# keep\n[features]\nother = true\nmemories = true  # was on\n\n[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n");
+
+        var result = await JoinProjectAsync("all");
+
+        result.AssertSuccess();
+        var claude = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.json")));
+        Assert.False(claude["autoMemoryEnabled"]?.GetValue<bool>());
+        Assert.Equal("keep", claude["other"]?.GetValue<string>());
+        Assert.Equal(
+            "# keep\n[features]\nother = true\nmemories = false  # was on\n\n[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n",
+            ReadFile(".codex/config.toml"));
+        result.AssertStdoutContains("Turned native memory off: .claude/settings.json had autoMemoryEnabled = true");
+        result.AssertStdoutContains("Turned native memory off: .codex/config.toml had memories = true  # was on");
+    }
+
+    [Fact]
+    public async Task Join_Codex_AddsMemoriesIntoExistingFeaturesTable()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".codex/config.toml", "[features]\nother = true\n\n[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n");
+
+        var result = await JoinProjectAsync("codex");
+
+        result.AssertSuccess();
+        Assert.Equal(
+            "[features]\nother = true\nmemories = false\n\n[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n",
+            ReadFile(".codex/config.toml"));
+        Assert.DoesNotContain("Turned native memory off", result.Stdout);
+    }
+
+    [Theory]
+    [InlineData("features = { memories = true }\n")]
+    [InlineData("features.memories = true\n")]
+    [InlineData("[features]\n\"memories\" = true\n")]
+    public async Task Init_Codex_RejectsMemoriesFormItCannotEditBeforeAnySideEffect(string toml)
+    {
+        Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
+        WriteFile(".codex/config.toml", toml);
+        var original = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+
+        var result = await InitProjectAsync("codex");
+
+        result.AssertExitCode(2);
+        result.AssertStderrContains(".codex/config.toml");
+        Assert.Equal(original, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        AssertFileNotExists("dydo.json");
     }
 
     [Fact]
@@ -327,12 +386,14 @@ public class InitCommandTests : IntegrationTestBase
     {
         Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
         Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
-        WriteFile(".claude/settings.json", "{\n  \"other\": true,\n  \"env\": { \"CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH\": \"4\" }\n}\n");
-        WriteFile(".codex/config.toml", "# retain this\ncustom = true\n\n[agents]\nmax_depth = +5\nmax_concurrent_threads_per_session = +20\n");
-
-        (await InitProjectAsync("all")).AssertSuccess();
+        WriteFile(".claude/settings.json", "{\n  \"other\": true,\n  \"env\": { \"CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH\": \"4\" },\n  \"autoMemoryEnabled\": false\n}\n");
+        WriteFile(".codex/config.toml", "# retain this\ncustom = true\n\n[agents]\nmax_depth = +5\nmax_concurrent_threads_per_session = +20\n\n[features]\nmemories = false\n");
         var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
         var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
+
+        (await InitProjectAsync("all")).AssertSuccess();
+        Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
+        Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
 
         (await JoinProjectAsync("all")).AssertSuccess();
         Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
@@ -609,7 +670,7 @@ public class InitCommandTests : IntegrationTestBase
     public async Task Init_Codex_RetainsIntegerAgentCapacityValuesAndRepeatBytes(string depth, string concurrency)
     {
         Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
-        WriteFile(".codex/config.toml", $"[agents]\nmax_depth = {depth}\nmax_concurrent_threads_per_session = {concurrency}\n");
+        WriteFile(".codex/config.toml", $"[agents]\nmax_depth = {depth}\nmax_concurrent_threads_per_session = {concurrency}\n\n[features]\nmemories = false\n");
         var original = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
 
         (await InitProjectAsync("codex")).AssertSuccess();

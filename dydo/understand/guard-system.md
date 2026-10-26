@@ -55,7 +55,7 @@ There is no identity, no staging, no per-role permission matrix: the path tiers,
 - **Covered:** secrets and credentials (`.env*`, `*.pem`, `*.key`, `secrets.json`, database configs) plus the hardcoded `dydo/_system/**` machine state.
 - **Whitelist:** a `## Whitelist` section carves exceptions (e.g. `.env.example`) to the configured patterns - never to the hardcoded ones.
 - **Patterns** use glob syntax: `**/` for optional directory prefix, `**` for any path, `*` within a segment, `?` for a single character; matching is case-insensitive on every platform.
-- The one hardcoded exemption is the platform's native auto-memory directory outside the repo.
+- Host memory folders outside the repo (Claude's `projects/*/memory/` and `agent-memory*/`, Codex's `memories/`) are readable past these patterns, but every agent write to them is blocked ([DR 055](../project/decisions/055-native-agent-memory-off-and-guarded.md)): a lesson goes into a skill, a Decision Record or a doc.
 
 ```
 BLOCKED: Path is off-limits to all agents.

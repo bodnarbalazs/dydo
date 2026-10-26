@@ -150,7 +150,7 @@ use a following fix ticket. Each corrected candidate gets fresh merge review.
 
 The Inquisition captain pins the completed evidence packet on its ticket: audited feature SHA,
 scope, parts and lenses, findings, hypotheses with verdicts, and deduplicated Bugs with their
-reproduction SHAs, or a prose Bug's quoted passages. The captain pushes and posts its resume state, cleans its worktree (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree), sets the
+reproduction SHAs, a prose Bug's quoted passages, or an unused-member Bug's definition and reference search. The captain pushes and posts its resume state, cleans its worktree (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree), sets the
 Inquisition `Todo`, unassigns and returns `released <key>: record delivery`. The record Feature and
 its blocker do not exist yet; this release return reaches the Project's map holder.
 
@@ -171,7 +171,7 @@ audit branch cannot satisfy this check.
 
 Before release or audit cleanup, every open Bug with a reproduction commit keeps its SHA reachable
 from a pushed named ref independent of the audit branch, linked on that Bug. A prose Bug carries
-its quoted passages instead and has no ref to retain. The Inquisition captain owns
+its quoted passages instead, an unused-member Bug its definition and reference search; neither has a ref to retain. The Inquisition captain owns
 that retention until the Bug captain records adoption of the reproduction and transfer of cleanup
 responsibility. Audit cleanup never deletes those refs; they remain input to each Bug's normal
 chain. This is ordinary Feature delivery and release, not a new Type or a serial-lane exception.

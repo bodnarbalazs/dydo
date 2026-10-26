@@ -92,7 +92,7 @@ Methods loaded only when the user asks:
 | to-project | a co-think is ripe and belongs in Linear | a Project in `Backlog`: title, summary, the intent as description, links to the DR, the glossary entries and the source FutureFeature when one exists; no tickets |
 | to-ticket | a plan, spec or conversation is ready to become tickets | pickable tracer-bullet tickets in `Todo`, each with one Type, a Mode where a captain holds the Type, and the five fields or its Type's own template, wired with native blocking relations |
 | handoff | the session is ending and another agent continues; also loaded by an officer briefing an agent it dispatches | a handoff document in the scratch directory |
-| walkthrough | a Walkthrough Ticket is open; also loaded by an admiral at its landing step | the four-part tour: what changed, where to look, how to try it, what reviewers flagged |
+| walkthrough | a Walkthrough Ticket is open; also loaded at the map holder's landing step | the four-part tour: what changed, where to look, how to try it, what reviewers flagged |
 | teach | the user wants to learn a topic in the workspace | a mission and its learning records |
 
 User commands:
@@ -395,18 +395,18 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 34 | admiral → ticket-captain (inquisition) | R (spawn), L | the Inquisition Ticket key; assignment | the ticket, the plan at its governing commit, the integrated feature SHA, working-tree contract | - |
 | 35 | inquisition captain → Git | G | `inquisition/<slug>` off the feature SHA, never merged; a child branch per proof | - | - |
 | 36 | inquisition captain → inquisitors | R (spawn) | one part or one lens each, the scope, the plan, the ticket review evidence | the assignment with its evidence, about, architecture, coding-standards | `In Progress` |
-| 37 | inquisitor → inquisition captain | R | findings with `file:line`, severity and proof; hypotheses of what could go wrong, each with the test that would decide it, or, in prose, docs or a prompt file, both contradicting passages quoted at `file:line`, which are its reproduction with no test and no proof branch | - | - |
+| 37 | inquisitor → inquisition captain | R | findings with `file:line`, severity and proof; hypotheses of what could go wrong, each with the test that would decide it, or, in prose, docs or a prompt file, both contradicting passages quoted at `file:line`, which are its reproduction with no test and no proof branch; an unused member, export or field is proved by its definition and a reference search, with no test either | - | - |
 | 38 | inquisition captain → code-writer (proof-only) | R (spawn) | one code hypothesis, its child branch off the inquisition branch, source read-only | the hypothesis as the ticket, coding-standards | - |
 | 39 | code-writer (proof-only) → inquisition captain | R, G | `confirmed` with the red test at its SHA, `not reproduced`, or `inconclusive`, with the observation that decided it | - | - |
-| 40 | inquisition captain → Linear, Git, Bug captain | L, G | one Bug per confirmed problem under the Project, feature base, reproduction SHA and pushed independent named ref (a prose Bug: its quoted passages), Inquisition link; retention ownership transfers only on recorded Bug-captain adoption | Bug captain reads the reproduction as normal-chain input and records cleanup responsibility | Bugs `Todo` |
+| 40 | inquisition captain → Linear, Git, Bug captain | L, G | one Bug per confirmed problem under the Project, feature base, reproduction SHA and pushed independent named ref (a prose Bug: its quoted passages; an unused-member Bug: its definition and search), Inquisition link; retention ownership transfers only on recorded Bug-captain adoption | Bug captain reads the reproduction as normal-chain input and records cleanup responsibility | Bugs `Todo` |
 | 41 | inquisition captain → admiral, Linear | R, L, G | completed pinned packet: feature SHA, scope, parts/lenses, findings, hypotheses/verdicts and Bugs; pushed/posted resume state; `released <key>: record delivery` before record Feature/blocker exists | this return wakes admiral to read packet and working-tree retention contract | Inquisition released `Todo`, unassigned, worktree removed; no not-yet-created blocker required |
 | 41a | admiral → record Feature captain, Linear | R (spawn), L | on row41 wake, first contract separate primary Feature/AFK on retained feature with exact record and authored navigation paths, packet and gates; wire only Inquisition blocked by Feature before generic pickup, then commission record captain | record captain reads contract/packet and directs docs-writer → docs review → final Merge Sub-ticket | record Feature `Todo`, pickable from packet; audit is not recommissioned from temporary Todo gap |
 | 41b | record Feature captain → admiral, Inquisition Ticket | R, L, G | `done <key>: merged`; exact record path/blob or digest, delivery merge SHA and retained feature ref, review/gates on delivery records | normal board loop reads delivery `Done` and resumes released Inquisition captain | record Feature `Done`; Inquisition resumes `In Progress` |
 | 42 | inquisition captain → admiral, Linear | R, L | `done <key>` after verifying Bugs, exact record content and delivery merge ancestry/reachability on retained feature; verification on ticket, audit branch deleted, open Bug proof refs retained with named owners | admiral reads durable completion evidence | Inquisition `Done` |
-| 43 | admiral → Linear (landing) | L | the landing Merge Ticket: `main` into the feature, gates, merge review with acceptance proof, the PR into `main`, the walkthrough prepared | - | `Todo`, blocked by unresolved prerequisites for this landing: delivery, confirmed Inquisition/record and required fixes; exclude self and later/deferred work |
+| 43 | map holder → Linear (landing) | L | the landing Merge Ticket: `main` into the feature, gates, merge review with acceptance proof, the PR into `main`, the walkthrough prepared | - | `Todo`, blocked by unresolved prerequisites for this landing: delivery, confirmed Inquisition/record and required fixes; exclude self and later/deferred work |
 | 44 | landing captain → Git, admiral | G, R | the PR into `main` with its PASS block; `done <key>: PR ready` | - | landing `Ready to Merge` |
 | 45 | admiral → user → Git | C, G | the PR to click and the walkthrough that follows; the feature merged into `main` as a merge commit, one Project at a time; the user tells the admiral, which resumes the landing captain to close and clean up the merged feature: `done <key>: merged` | - | landing `Done`, set by its captain |
-| 46 | admiral → Walkthrough Ticket, user | L, C | the ticket; `walkthrough` loaded by the admiral, then the four-part tour; commission first fix Captain to re-cut the feature if findings reopen the lap | - | `In Progress` → `Done`; findings as tickets; Project `Completed` when none |
+| 46 | map holder → Walkthrough Ticket, user | L, C | the ticket; `walkthrough` loaded by the map holder, then the four-part tour; commission first fix Captain to re-cut the feature if findings reopen the lap | - | `In Progress` → `Done`; findings as tickets; Project `Completed` when none |
 | 47 | crew → ticket-captain (hand-raise) | R | the question, what was searched, why it blocks, facts or options found | - | - |
 | 48 | ticket-captain → research | R (spawn) | the question and where the findings land | the question and destination, about, architecture | - |
 | 49 | research → ticket-captain | R, L or F | one-line answer, destination, unsettled points; the report as a ticket comment or scratch file | - | Research Ticket `Done` by the map holder |
@@ -571,7 +571,7 @@ flowchart TD
   P1 & P2 & P3 & P4 -->|findings with proof, and hypotheses of what could go wrong| IC
   IC -->|one code hypothesis each, proof-only, on a child branch| IM[code-writers: write the test that would catch it]:::crew
   IM -->|confirmed with a red test, not reproduced, or inconclusive| IC
-  IC -->|dedupe, reproduction SHA on pushed independent ref with retention owner, or quoted passages| BUG[(Bug Tickets in Todo, under the Project)]
+  IC -->|dedupe, reproduction SHA on pushed independent ref with retention owner, quoted passages, or the definition and search| BUG[(Bug Tickets in Todo, under the Project)]
   IC -->|completed pinned packet and pushed/posted resume state| REL[Inquisition captain: release Todo, unassign, remove worktree; Feature and blocker do not exist yet]:::officer
   REL -->|released &lt;key&gt;: record delivery wakes the map holder| AD2[map holder]:::officer
   AD2 -->|before generic pickup: contract Feature, wire only audit blocked by it, then commission| RC[record Feature captain: normal delivery chain, exact record and navigation paths]:::officer
@@ -678,7 +678,7 @@ the defect shows at the product's boundary, else a red test written through diag
 fix proves itself by reverting and watching that reproduction fail again. An unused member needs no
 test or revert: its definition and a reference search showing no caller outside the tests are its
 reproduction. A Bug the inquisition filed arrives with its red
-test at a commit, which the fixing code-writer adopts, or, from prose, with its quoted passages. Under a Project it lands like any ticket; outside one it
+test at a commit, which the fixing code-writer adopts, or, from prose, with its quoted passages, or with an unused-member finding's definition and quoted reference search. Under a Project it lands like any ticket; outside one it
 is atomic.
 
 ### 6.12 The second lap

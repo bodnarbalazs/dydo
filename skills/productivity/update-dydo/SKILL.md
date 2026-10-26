@@ -12,6 +12,11 @@ conflicts. Update only. Skipping activation changes nothing, so steps 7 and 8 ar
 Find every concrete thing you compare in the project, the tags and a fresh reference install.
 Release-specific work lives in each release's changelog entry, not here.
 
+Leave each destination the guard keeps off-limits out of every comparison and merge, the
+old-version guess included: the off-limits patterns in the docs root's `files-off-limits.md`,
+dydo's system folders (`dydo/_system/`, say) and any path whose read it refuses. The new tag and
+step 3's reference show which ones dydo writes; list those for the user, like protected files.
+
 Run this in the user's own top-level session, never a sub-agent: the guard denies sub-agents
 `dydo adopt`, and the CLI install and protected-file merges need the user.
 
@@ -94,8 +99,9 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
 
    With every proof holding, run `dydo adopt <new>` to record the new version in `dydo.json`.
 9. **Report** to the user: old, new and CLI versions; files taken from upstream; files merged with
-   both sides' edits; protected files they applied; renamed skills moved; files left for them to
-   decide; upgrade steps applied; project tweaks kept; the step 8 output. Add two notes:
+   both sides' edits; protected files they applied; protected and off-limits files for them to
+   handle; renamed skills moved; files left for them to decide; upgrade steps applied; project
+   tweaks kept; the step 8 output. Add two notes:
    - Project text naming a renamed skill by its old name is now stale.
    - The machine-local files: the git-ignored files `init` and `setup-skills.mjs` write, found
      from `.gitignore` and the reference install; name them. After pulling, each teammate needs a

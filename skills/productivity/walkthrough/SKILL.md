@@ -7,8 +7,8 @@ description: Show me what landed, where to look first, and how to try it. Load o
 
 Give the user the tour of what landed.
 
-The map holder runs the Walkthrough Ticket with the user after landing. Its findings decide whether
-the Project needs another lap.
+For a Project landing, the map holder runs the Walkthrough Ticket with the user after landing. Its
+findings decide whether the Project needs another lap.
 
 The argument names what to walk - a feature branch, a Project, a ticket, a diff range. Ask which one
 when it is missing.
@@ -27,8 +27,8 @@ user in four parts.
 - **What reviewers flagged or deferred** - the findings the review blocks recorded and where each
   deferred one now lives, reported as they stand.
 
-The tour ends when the user has inspected the files and tried the behavior. Record findings as
-tickets in the same Project; the map holder commissions the first fix Captain to re-cut its feature
+The tour ends when the user has inspected the files and tried the behavior. Other tours route
+findings through ordinary tickets. For a Project landing, record findings as tickets in the same Project; the map holder commissions the first fix Captain to re-cut its feature
 branch from main for fixes and another landing/walkthrough. An empty walkthrough lets the Project close;
 the map holder commissions spec retirement following `dydo/reference/feature-spec-convention.md`, read from
 the repository root.

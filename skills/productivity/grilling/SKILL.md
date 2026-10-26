@@ -41,5 +41,5 @@ prerequisite, so only the questions downstream of it wait for the sub-agent to r
 of the frontier now. The _decisions_ are the user's: put each to him and wait.
 
 The session is done when the frontier is empty: every branch of the design tree visited, nothing
-left silently assumed. Do not act on it until the user confirms you have reached a shared
-understanding.
+left silently assumed. Do not implement the plan until the user confirms you have reached
+a shared understanding. Record settled terms and qualifying decisions inline through domain-modeling.

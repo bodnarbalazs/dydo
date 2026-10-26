@@ -19,7 +19,7 @@ A wizard is ephemeral by default: built for one run, saved to a scratch or `scri
 
 Work out every manual step the user must take and every value that gets captured along the way. Read the repo first, don't ask cold:
 
-- For setup: `.env`, `.env.example`, `.env.*`, `README`, `docker-compose*`, framework config, and `.github/workflows/*` (every `secrets.*` / `vars.*` reference is a value the wizard must produce).
+- For setup: the permitted templates and config, respecting off-limits (no `.env*` reads): `.env.example`, `README`, `docker-compose*`, framework config, and `.github/workflows/*` (every `secrets.*` / `vars.*` reference is a value the wizard must produce).
 - For a migration or transition: the current state, the target state, and the irreversible actions between them.
 
 Then show the user the ordered list of stages and the values each produces, and confirm: he may add, drop, or reorder.
@@ -38,7 +38,7 @@ For each stage, write the precise path the user follows: which URL to open, what
 
 Copy the bash code block from [template](resources/template.md) to the target script path. Replace the example stage with one `stage` per step, in dependency order. Use the library helpers: `stage`, `say`/`step`, `open_url`, `ask`/`ask_secret`, `write_env`, `set_secret`/`set_var`, `pause`/`confirm`. Set `TOTAL_STAGES` to the number of stages you wrote.
 
-Hold the bar the template sets: open the URL before asking for its value, use `ask_secret` for anything secret, `write_env` every persisted value, `set_secret` only the values CI actually needs, and `confirm` before any irreversible action. Each `stage` clears the screen so only the current step is visible: keep a stage to one focused task so nothing the user needs scrolls away. Don't touch the library above the marker. The script runs from any directory: below the marker, set `ENV_FILE` to an absolute path and export `GH_REPO=<owner>/<repo>` when it writes GitHub secrets.
+Hold the bar the template sets: open the URL before asking for its value, use `ask_secret` for anything secret, `write_env` only the values whose destination includes `.env`, `set_secret` only the values CI actually needs, and `confirm` before any irreversible action. Each `stage` clears the screen so only the current step is visible: keep a stage to one focused task so nothing the user needs scrolls away. Don't touch the library above the marker. The script runs from any directory: below the marker, set `ENV_FILE` to an absolute path and export `GH_REPO=<owner>/<repo>` when it writes GitHub secrets.
 
 ### 4. Verify and hand off
 

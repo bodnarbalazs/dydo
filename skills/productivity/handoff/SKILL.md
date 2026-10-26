@@ -12,8 +12,8 @@ Write a handoff document summarising the current conversation so a fresh agent c
 work. Save to the session's scratch directory when the host names one, otherwise to the temporary
 directory of the user's OS - not the current workspace - and report its absolute path.
 
-Include a "suggested skills" section in the document, naming which skills the next agent should call
-the Skill tool for.
+Include a "suggested skills" section in the document, naming which skills the next agent should
+load.
 
 Do not duplicate content already captured in other artifacts (Linear tickets and Projects, plans,
 Decision Records, commits, diffs). Reference them by key, path or URL instead.

@@ -84,7 +84,7 @@ protocol. Assets created while resolving a ticket are linked from it, not pasted
 
 For the Project's map holder, contracts are tickets under the Project; for a captain they are
 Sub-tickets under its ticket. The same Types, statuses and chain hold. The captain specifies its parent before naming
-disjoint parallel lanes, and each merging lane or ticket gets its own Merge Sub-ticket in order.
+disjoint parallel lanes, and each merging lane or ticket gets its own Merge Sub-ticket in order, except an atomic ticket's own merge into main.
 The standard owns the full Type set and status/priority rules: from the repository root, read
 `dydo/reference/linear-workspace-standard.md`.
 
@@ -199,8 +199,8 @@ Charting starts from a Linear Project and a loose destination.
 4. **Create the tickets you can specify now**, both Tasks and Wayfinding Tickets, then wire blocking
    edges in a **second pass** (tickets need keys before they can reference each other). Wiring sorts
    them into the frontier and the blocked; everything you cannot yet specify stays in the fog.
-5. **Fire the Research subagents.** For each Research Ticket just created, spin up a subagent that uses
-   `research` to resolve it in parallel, recording its cited findings as a comment on that ticket.
+5. **Fire the Research subagents.** For each Research Ticket just created that is unassigned, in
+   `Todo` and unblocked, claim it, then spin up a subagent that uses `research` to resolve it in parallel, recording its cited findings as a comment on that ticket.
 6. Stop: charting is one session's work; it resolves nothing itself.
 
 ### Work through the map
@@ -209,7 +209,7 @@ Working starts from a Project or parent delivery ticket. Naming a frontier ticke
 one, take the next ticket rather than asking the user to choose.
 
 1. Load the **map**: the low-resolution view, not every ticket body.
-2. Choose the ticket. If one was named, use it. Otherwise take the first frontier ticket in order.
+2. Choose the ticket. If one was named, use it. Otherwise take the first pickable frontier ticket in `Todo`.
    A captain-held Type goes to its Ticket Captain, which claims it. For a map-holder-held Type,
    claim it before work; a Question still waits for the user's answer.
 3. Resolve a Wayfinding Ticket. **Zoom as needed**: fetch the full body of any related or closed ticket

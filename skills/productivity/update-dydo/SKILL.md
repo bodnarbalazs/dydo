@@ -126,7 +126,9 @@ Each line: what in order looks like, then how to check it, from the project root
   `CLAUDE_CONFIG_DIR` (`~/.claude-work`, say). `echo "$CLAUDE_CONFIG_DIR"; ls -d ~/.claude*/`,
   then ask the user which are in use. Each has its own `settings.json` and memory store; walk
   the memory and hook lines for each.
-- Memory: each switch and rule below reported, the user decides.
+- Memory: in order means off (DR 055): each switch below false, the guard denying memory writes
+  (`dydo guard --action write --path ~/.claude/projects/p/memory/x.md` exits 2), each folder
+  empty. Step 7's `init` sets the project's two switches false.
   - Claude: `autoMemoryEnabled` and `autoMemoryDirectory` in `.claude/settings.json`,
     `.claude/settings.local.json` and each profile's `settings.json`; env
     `CLAUDE_CODE_DISABLE_AUTO_MEMORY`. In the same files, each `permissions.deny` entry covering a

@@ -156,6 +156,17 @@ trail and comments that only restated the code. Existing checkouts must rerun
   misses. The `pr` and `ticket-captain` skills each say to write the PR body outside the tree and
   run `dydo pr-ready --body <file>` before opening the PR. The guard's shared command splitting
   now treats a backslash inside single quotes as literal.
+- Native agent memory is off and guarded (DYD-383, DR 055). `dydo init` and `--join` write
+  `"autoMemoryEnabled": false` into `.claude/settings.json` and `memories = false` under
+  `[features]` in `.codex/config.toml`, keeping the rest of each file; an existing `true` is set to
+  false and the output says so. The guard blocks agent writes, by file tool or shell, on the main
+  and sub-agent lanes, to every host memory folder: Claude's `projects/*/memory/` and
+  `agent-memory*/` under `~/.claude`, any `~/.claude*` profile and `CLAUDE_CONFIG_DIR`, the
+  `autoMemoryDirectory` folder named in the project or user settings, the project's
+  `.claude/agent-memory*/`, and Codex's `$CODEX_HOME/memories/` (default `~/.codex/memories/`).
+  Reads stay allowed. The block names the path and points to DR 055: a lesson goes into a skill,
+  a Decision Record or a doc. It replaces the guard's old exemption for
+  `~/.claude/projects/*/memory/`, and amends DR 038.
 - A README outside `dydo/` only points to the dydo doc that owns its folder (DYD-375, PR #175): the
   convention is in both coding-standards copies and the `docs-writer` skill.
 - Reviewers run file-editing probes in their own detached worktree at the candidate SHA, removed
@@ -198,7 +209,8 @@ trail and comments that only restated the code. Existing checkouts must rerun
    (DYD-361). Move each, with the project's edits, to the new path. Project text naming the old
    names is now stale.
 4. For each wired host, run `dydo init <host> --join`; the Claude Code hook then carries
-   `--host claude`.
+   `--host claude`, and native memory is turned off in `.claude/settings.json` and
+   `.codex/config.toml` (DR 055).
 5. `AGENTS.md` is the only entry file. Step 4's `--join` removes `CLAUDE.md` only when it equals
    the new `AGENTS.md` or the 3.5.0 template, or an earlier dydo release generated it. Delete by
    hand a `CLAUDE.md` that step 2 merged into `AGENTS.md`, whether or not Claude is wired. Keep a
@@ -215,7 +227,12 @@ trail and comments that only restated the code. Existing checkouts must rerun
 9. Re-trust the Codex hooks. Codex pins hook trust by hash and `.codex/hooks.json` changed, so an
    untrusted hook leaves Codex sessions unguarded.
 10. Run `node setup-skills.mjs` from the project root.
-11. Run `dydo adopt 3.5.0`. It also adds the new-file nudge for Markdown outside `dydo/` to
+11. Empty each host memory folder that holds notes for this project (DR 055): Claude's
+    `<profile>/projects/<project>/memory/`, the `autoMemoryDirectory` folder, `.claude/agent-memory*/`
+    and Codex's `$CODEX_HOME/memories/`. Triage each note into a skill, a Decision Record or a doc,
+    facts about the user into the user's own global `CLAUDE.md` or `AGENTS.md`, or drop it, then
+    delete the folder. The guard blocks agent writes there, so a person does a delete it refuses.
+12. Run `dydo adopt 3.5.0`. It also adds the new-file nudge for Markdown outside `dydo/` to
     `dydo.json` when missing (DYD-375).
 
 ## Files Changed
@@ -235,6 +252,8 @@ graph handlers), `Models/` (`HookInput.cs`, `CleanConfig.cs`, `DydoConfig.cs`, c
 files-off-limits), `AGENTS.md`, `CLAUDE.md` (removed), `README.md`, `npm/README.md`,
 `dydo/index.md`, `dydo/glossary.md`, `dydo/files-off-limits.md`, `dydo/guides/`, `dydo/reference/`,
 `dydo/understand/`, `dydo/project/decisions/054-what-would-balazs-do-tribunal.md`,
+`dydo/project/decisions/038-auto-memory-policy.md`,
+`dydo/project/decisions/055-native-agent-memory-off-and-guarded.md`,
 `dydo/project/decisions/_decisions.md`, `dydo/project/future-features/`, `dydo/_system/audit/`
 (removed), `dydo.json`, `.codex/hooks.json`, `.codex/rules/`, `skills/` (overnight-mode,
 update-dydo, what-would-balazs-do, the two formal verification skills, wizard, the seven
@@ -246,7 +265,7 @@ diagnosing-bugs and pr, READMEs), `setup-skills.mjs`, `THIRD-PARTY-NOTICES.md`,
 `.github/workflows/release.yml`, `DynaDocs.Tests/` (adopt command in
 `Integration/AdoptCommandTests.cs`, `Utils/DydoVersionTests.cs`, released CLAUDE.md texts in
 `Integration/ReleasedEntryTexts.cs`, help, completion, mode command, mode state, invocation scanner
-in `Services/DydoInvocationScannerTests.cs`, guard mode-set, worker lane and PR-ready, pr-ready
+in `Services/DydoInvocationScannerTests.cs`, guard mode-set, worker lane, host memory and PR-ready, pr-ready
 command and `Integration/PushedRepository.cs`, new-file nudge (command and integration), clean
 command, init, fix, check, validate, config and config factory, doc scanner, off-limits, command
 smoke, entry-point parity, the `machine-mode.feature` scenarios and steps, canonical skill

@@ -325,7 +325,7 @@ public class GuardWorkerLaneTests : IntegrationTestBase
 
     #endregion
 
-    #region Native Memory Whitelist
+    #region Host Memory (DR 055)
 
     private static string MemoryPath(params string[] tail)
     {
@@ -333,51 +333,126 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         return $"{home}/.claude/projects/proj/memory/{string.Join('/', tail)}";
     }
 
+    private string MainJson(string toolName, string inputJson) =>
+        $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"{toolName}\",\"tool_input\":{inputJson}}}";
+
     [Fact]
     public async Task Memory_NoIdentity_ReadAllowed()
     {
         await InitProjectAsync();
 
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Read\","
-            + $"\"tool_input\":{{\"file_path\":\"{MemoryPath("debugging.md")}\"}}}}";
-        var result = await GuardWithStdinAsync(json);
+        var result = await GuardWithStdinAsync(MainJson("Read", $"{{\"file_path\":\"{MemoryPath("debugging.md")}\"}}"));
 
         result.AssertPreToolUseAllowed();
-    }
-
-    [Fact]
-    public async Task Memory_NoIdentity_WriteAllowed()
-    {
-        await InitProjectAsync();
-
-        var json = $"{{\"session_id\":\"{TestSessionId}\",\"tool_name\":\"Write\","
-            + $"\"tool_input\":{{\"file_path\":\"{MemoryPath("MEMORY.md")}\"}}}}";
-        var result = await GuardWithStdinAsync(json);
-
-        result.AssertPreToolUseAllowed();
-    }
-
-    [Fact]
-    public void IsNativeMemoryPath_RealMemoryDir_Matches()
-    {
-        Assert.True(GuardCommand.IsNativeMemoryPath(MemoryPath("MEMORY.md")));
-        Assert.True(GuardCommand.IsNativeMemoryPath(MemoryPath("topics", "api.md")));
-    }
-
-    [Fact]
-    public void IsNativeMemoryPath_Traversal_DoesNotMatch()
-    {
-        Assert.False(GuardCommand.IsNativeMemoryPath(MemoryPath("..", "..", "..", "secret.md")));
     }
 
     [Theory]
-    [InlineData("C:/Users/u/.claude/projects/my-proj/memory/MEMORY.md")]  // wrong home root
-    [InlineData("dydo/.claude/projects/x/memory/y.md")]                   // repo-internal lookalike
-    [InlineData("dydo/scratch/memory/notes.md")]
-    [InlineData("src/Foo.cs")]
-    public void IsNativeMemoryPath_NonMemoryPaths_DoNotMatch(string path)
+    [InlineData("Write")]
+    [InlineData("Edit")]
+    public async Task Memory_NoIdentity_WriteBlocked_NamesPathAndDecision(string tool)
     {
-        Assert.False(GuardCommand.IsNativeMemoryPath(path));
+        await InitProjectAsync();
+
+        var result = await GuardWithStdinAsync(MainJson(tool, $"{{\"file_path\":\"{MemoryPath("MEMORY.md")}\"}}"));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains(MemoryPath("MEMORY.md"));
+        result.AssertStderrContains("DR 055");
+        result.AssertStderrContains("skill, a Decision Record or a doc");
+    }
+
+    [Fact]
+    public async Task Memory_TraversalIntoMemory_WriteBlocked()
+    {
+        await InitProjectAsync();
+
+        var sneaky = MemoryPath("..", "..", "other", "..", "proj", "memory", "MEMORY.md");
+        var result = await GuardWithStdinAsync(MainJson("Write", $"{{\"file_path\":\"{sneaky}\"}}"));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("DR 055");
+    }
+
+    [Fact]
+    public async Task Memory_ApplyPatchIntoCodexMemories_Blocked()
+    {
+        await InitProjectAsync();
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).Replace('\\', '/');
+        var codexHome = Environment.GetEnvironmentVariable("CODEX_HOME")?.Replace('\\', '/') ?? $"{home}/.codex";
+
+        var patch = $"*** Begin Patch\\n*** Add File: {codexHome}/memories/note.md\\n+x\\n*** End Patch";
+        var result = await GuardWithStdinAsync(MainJson("apply_patch", $"{{\"command\":\"{patch}\"}}"));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("DR 055");
+    }
+
+    [Fact]
+    public async Task Memory_ClaudeConfigDirProfile_WriteBlocked()
+    {
+        await InitProjectAsync();
+        var profile = Path.Combine(TestDir, "profile").Replace('\\', '/');
+        var original = Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR");
+        Environment.SetEnvironmentVariable("CLAUDE_CONFIG_DIR", profile);
+        try
+        {
+            var result = await GuardWithStdinAsync(
+                MainJson("Write", $"{{\"file_path\":\"{profile}/projects/p/memory/MEMORY.md\"}}"));
+
+            result.AssertPreToolUseDenied();
+            result.AssertStderrContains("DR 055");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("CLAUDE_CONFIG_DIR", original);
+        }
+    }
+
+    [Fact]
+    public async Task Worker_MemoryWrite_Blocked_ReadAllowed()
+    {
+        await InitProjectAsync();
+
+        var write = await GuardWithStdinAsync(WorkerJson("Write", $"{{\"file_path\":\"{MemoryPath("MEMORY.md")}\"}}"));
+        write.AssertPreToolUseDenied();
+        write.AssertStderrContains("DR 055");
+
+        var read = await GuardWithStdinAsync(WorkerJson("Read", $"{{\"file_path\":\"{MemoryPath("MEMORY.md")}\"}}"));
+        read.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("echo note > ~/.claude/projects/proj/memory/MEMORY.md")]
+    [InlineData("echo note | tee ~/.claude/projects/proj/memory/MEMORY.md")]
+    [InlineData("cp notes.md ~/.claude/projects/proj/memory/notes.md")]
+    [InlineData("mv notes.md ~/.claude/agent-memory/reviewer/notes.md")]
+    [InlineData("rm .claude/agent-memory/reviewer/MEMORY.md")]
+    [InlineData("rm -r ~/.codex/memories")]
+    public async Task Memory_ShellWrite_Blocked(string command)
+    {
+        await InitProjectAsync();
+
+        var main = await GuardWithStdinAsync(MainJson("Bash", $"{{\"command\":\"{command}\"}}"));
+        main.AssertPreToolUseDenied();
+        main.AssertStderrContains("DR 055");
+
+        var worker = await GuardWithStdinAsync(WorkerJson("Bash", $"{{\"command\":\"{command}\"}}"));
+        worker.AssertPreToolUseDenied();
+        worker.AssertStderrContains("DR 055");
+    }
+
+    [Theory]
+    [InlineData("cat ~/.claude/projects/proj/memory/MEMORY.md")]
+    [InlineData("ls ~/.claude/projects/proj/memory")]
+    [InlineData("grep -r lesson ~/.codex/memories")]
+    [InlineData("echo note > notes/memory/MEMORY.md")]
+    public async Task Memory_ShellReadOrOrdinaryWrite_Allowed(string command)
+    {
+        await InitProjectAsync();
+
+        var result = await GuardWithStdinAsync(MainJson("Bash", $"{{\"command\":\"{command}\"}}"));
+
+        result.AssertPreToolUseAllowed();
     }
 
     #endregion

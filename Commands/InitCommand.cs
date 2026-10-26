@@ -255,34 +255,42 @@ public static class InitCommand
         };
     }
 
-    private static List<(string Path, string Content)> PrepareHostSettings(string projectRoot, string[] integrations)
+    // Notice is the one line init and join print when a setting overrode the user's value.
+    private sealed record HostSetting(string Path, string Content, string? Notice);
+
+    private static List<HostSetting> PrepareHostSettings(string projectRoot, string[] integrations)
     {
-        var prepared = new List<(string Path, string Content)>();
+        var prepared = new List<HostSetting>();
         if (integrations.Contains("claude"))
         {
             var setting = PrepareClaudeSettings(projectRoot);
             if (setting != null)
-                prepared.Add(setting.Value);
+                prepared.Add(setting);
         }
         if (integrations.Contains("codex"))
         {
             var setting = PrepareCodexSettings(projectRoot);
             if (setting != null)
-                prepared.Add(setting.Value);
+                prepared.Add(setting);
         }
         return prepared;
     }
 
-    private static void WriteHostSettings(List<(string Path, string Content)> prepared)
+    private static void WriteHostSettings(List<HostSetting> prepared)
     {
-        foreach (var (path, content) in prepared)
+        foreach (var (path, content, notice) in prepared)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, content);
+            if (notice != null)
+                Console.WriteLine(notice);
         }
     }
 
-    private static (string Path, string Content)? PrepareClaudeSettings(string projectRoot)
+    private static string MemoryOffNotice(string relativePath, string found) =>
+        $"  ✓ Turned native memory off: {relativePath} had {found}, now false (DR 055)";
+
+    private static HostSetting? PrepareClaudeSettings(string projectRoot)
     {
         const string relativePath = ".claude/settings.json";
         const string key = "env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH";
@@ -334,10 +342,21 @@ public static class InitCommand
                 DescribeJson(depthNode));
         }
 
-        return changed ? (path, root.ToJsonString(WriteOptions)) : null;
+        // DR 055: native memory is off; a user's true is overridden and reported, not refused.
+        string? notice = null;
+        var hasMemory = root.TryGetPropertyValue("autoMemoryEnabled", out var memoryNode);
+        if (!hasMemory || memoryNode is not JsonValue memory || !memory.TryGetValue<bool>(out var on) || on)
+        {
+            if (hasMemory)
+                notice = MemoryOffNotice(relativePath, $"autoMemoryEnabled = {memoryNode?.ToJsonString() ?? "null"}");
+            root["autoMemoryEnabled"] = false;
+            changed = true;
+        }
+
+        return changed ? new HostSetting(path, root.ToJsonString(WriteOptions), notice) : null;
     }
 
-    private static (string Path, string Content)? PrepareCodexSettings(string projectRoot)
+    private static HostSetting? PrepareCodexSettings(string projectRoot)
     {
         const string relativePath = ".codex/config.toml";
         var path = Path.Combine(projectRoot, ".codex", "config.toml");
@@ -346,14 +365,58 @@ public static class InitCommand
         var agents = document.RootNode["agents"u8];
         var hasAgentsTable = ValidateAgentsTable(agents, relativePath);
         var original = Encoding.UTF8.GetString(originalBytes);
-        var (agentsStart, agentsEnd) = FindAgentsTable(original, relativePath);
+        var (agentsStart, agentsEnd) = FindTable(original, "agents", relativePath);
         if (hasAgentsTable && agentsStart < 0)
             throw HostSettingError(relativePath, "plain [agents] table", "quoted or otherwise ambiguous table header");
 
         var additions = MissingAgentSettings(agents, hasAgentsTable);
-        if (additions.Count == 0)
-            return null;
-        return (path, InsertAgentSettings(original, agentsStart, agentsEnd, additions));
+        var updated = additions.Count == 0
+            ? original
+            : InsertTableSettings(original, "agents", agentsStart, agentsEnd, additions);
+        var (content, notice) = TurnCodexMemoriesOff(document, updated, relativePath);
+        return content == original ? null : new HostSetting(path, content, notice);
+    }
+
+    /// <summary>
+    /// DR 055: Codex memories run only when [features] memories is true, so dydo writes false and
+    /// overrides a true. The edited text is parsed again, so a features form the line edit cannot
+    /// reach (inline table, dotted or quoted key) is refused rather than written broken.
+    /// </summary>
+    private static (string Content, string? Notice) TurnCodexMemoriesOff(
+        TomlDocument document, string text, string relativePath)
+    {
+        if (IsCodexMemoriesOff(document))
+            return (text, null);
+
+        var (start, end) = FindTable(text, "features", relativePath);
+        var section = start < 0 ? "" : text[start..end];
+        var line = Regex.Match(section, @"^[ \t]*memories[ \t]*=[^\r\n]*", RegexOptions.Multiline);
+        string content;
+        string? notice = null;
+        if (!line.Success)
+        {
+            content = InsertTableSettings(text, "features", start, end, ["memories = false"]);
+        }
+        else
+        {
+            content = text[..start] + section[..line.Index] + "memories = false"
+                + section[(line.Index + line.Length)..] + text[end..];
+            notice = MemoryOffNotice(relativePath, line.Value.Trim());
+        }
+
+        if (!IsCodexMemoriesOff(ReadTomlDocument(Encoding.UTF8.GetBytes(content), relativePath)))
+            throw HostSettingError(relativePath, "features.memories in a plain [features] table", "another form");
+        return (content, notice);
+    }
+
+    private static bool IsCodexMemoriesOff(TomlDocument document)
+    {
+        var features = document.RootNode["features"u8];
+        if (!features.HasValue)
+            return false;
+        var memories = features["memories"u8];
+        return memories.HasValue && memories.ValueType == TomlValueType.Boolean
+            && memories.TryGetBool(out var on) && !on;
     }
 
     private static TomlDocument ReadTomlDocument(byte[] bytes, string relativePath)
@@ -386,11 +449,12 @@ public static class InitCommand
         return hasAgentsTable;
     }
 
-    private static (int Start, int End) FindAgentsTable(string original, string relativePath)
+    private static (int Start, int End) FindTable(string original, string name, string relativePath)
     {
         var lines = Regex.Matches(original, @"[^\r\n]*(?:\r\n|\r|\n|$)");
-        var agentsStart = -1;
-        var agentsEnd = original.Length;
+        var header = new Regex($@"^\[{Regex.Escape(name)}\](?:\s*#.*)?$");
+        var tableStart = -1;
+        var tableEnd = original.Length;
         foreach (Match lineMatch in lines)
         {
             if (lineMatch.Length == 0)
@@ -400,18 +464,17 @@ public static class InitCommand
             if (trimmed.Length == 0 || trimmed.StartsWith('#'))
                 continue;
 
-            var table = Regex.Match(trimmed, @"^\[(?<name>agents)\](?:\s*#.*)?$");
-            if (table.Success)
+            if (header.IsMatch(trimmed))
             {
-                if (agentsStart >= 0)
-                    throw HostSettingError(relativePath, "one unambiguous [agents] table", "duplicate [agents] table");
-                agentsStart = lineMatch.Index;
+                if (tableStart >= 0)
+                    throw HostSettingError(relativePath, $"one unambiguous [{name}] table", $"duplicate [{name}] table");
+                tableStart = lineMatch.Index;
                 continue;
             }
-            if (agentsStart >= 0 && agentsEnd == original.Length && trimmed.StartsWith('['))
-                agentsEnd = lineMatch.Index;
+            if (tableStart >= 0 && tableEnd == original.Length && trimmed.StartsWith('['))
+                tableEnd = lineMatch.Index;
         }
-        return (agentsStart, agentsEnd);
+        return (tableStart, tableEnd);
     }
 
     private static List<string> MissingAgentSettings(TomlDocumentNode agents, bool hasAgentsTable)
@@ -424,20 +487,28 @@ public static class InitCommand
         return additions;
     }
 
-    private static string InsertAgentSettings(string original, int agentsStart, int agentsEnd,
+    private static string InsertTableSettings(string original, string table, int tableStart, int tableEnd,
         List<string> additions)
     {
         var newline = original.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
-        if (agentsStart < 0)
+        if (tableStart < 0)
         {
             var separator = "";
             if (original.Length > 0)
                 separator = original.EndsWith("\n", StringComparison.Ordinal) ||
                             original.EndsWith("\r", StringComparison.Ordinal) ? newline : newline + newline;
-            return original + separator + "[agents]" + newline + string.Join(newline, additions) + newline;
+            return original + separator + $"[{table}]" + newline + string.Join(newline, additions) + newline;
         }
-        var prefix = original[..agentsEnd];
-        var suffix = original[agentsEnd..];
+        // After the table's last line, so blank lines before the next table stay below the additions.
+        var contentEnd = original[..tableEnd].TrimEnd('\r', '\n').Length;
+        var lineEnd = original.AsSpan(contentEnd, tableEnd - contentEnd) switch
+        {
+            ['\r', '\n', ..] => contentEnd + 2,
+            ['\n', ..] or ['\r', ..] => contentEnd + 1,
+            _ => contentEnd
+        };
+        var prefix = original[..lineEnd];
+        var suffix = original[lineEnd..];
         var joiner = prefix.EndsWith("\n", StringComparison.Ordinal) ||
                      prefix.EndsWith("\r", StringComparison.Ordinal) ? "" : newline;
         return prefix + joiner + string.Join(newline, additions) + newline + suffix;

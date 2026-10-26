@@ -8,6 +8,8 @@ participants: [balazs, Leo]
 
 # 038 - Auto-Memory Policy: dydo-First Routing, Memory as Buffer, Chief-of-Staff Sweep
 
+**Amended by [DR 055](./055-native-agent-memory-off-and-guarded.md) (2026-10-26):** native memory is off and the guard denies agent writes to every host memory folder; memory stops being a buffer, and the routing line and the sweep give way to the config switches and the guard.
+
 Harness auto-memory (the per-user, per-project memory directory the agent runtime maintains **outside the repo**) is kept, but demoted from archive to **buffer**. One routing line in the dydo-generated CLAUDE.md steers writes toward dydo records; a recurring **chief-of-staff sweep** drains the store. Steady state: a handful of human-facts and pending-fix notes, each carrying its own path to obsolescence. This is generic dydo policy for every project, not a DynaDocs-repo special.
 
 ## Context

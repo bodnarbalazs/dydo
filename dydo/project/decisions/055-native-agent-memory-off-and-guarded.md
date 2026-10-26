@@ -1,7 +1,7 @@
 ---
 area: general
 type: decision
-status: proposed
+status: accepted
 date: 2026-10-25
 ---
 
@@ -58,13 +58,13 @@ enforcement into the guard.
 - Migration, per memory folder: route each entry to a skill, DR, doc or ticket, or delete it, then
   empty the folder. Facts about the user go to the project's docs or the user's own global
   `CLAUDE.md` or `AGENTS.md`, files the user owns.
-- `update-dydo`'s What to compare list reports each memory switch and folder until this lands.
+- `update-dydo`'s What to compare list holds memory in order when it is off: the switches false,
+  the guard deny in place, the folders empty.
 
 ## Supersedes
 
-On acceptance this amends [DR 038](./038-auto-memory-policy.md): memory stops being a buffer,
-and its routing line and sweep give way to the config switches and the guard. DR 038 is not edited
-while this record is proposed.
+This amends [DR 038](./038-auto-memory-policy.md): memory stops being a buffer, and its routing
+line and sweep give way to the config switches and the guard.
 
 ## Related
 

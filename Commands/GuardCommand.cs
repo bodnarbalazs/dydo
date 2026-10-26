@@ -3,6 +3,7 @@ namespace DynaDocs.Commands;
 using System.CommandLine;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using DynaDocs.Models;
 using DynaDocs.Serialization;
@@ -36,6 +37,11 @@ public static partial class GuardCommand
     /// </summary>
     internal sealed record GuardEnv(DydoConfig? Config, string MarkerDir, string? ProjectRoot = null)
     {
+        private HostMemoryFolders? _memory;
+
+        // Loaded on first use: only a call that names a path pays for the settings reads.
+        public HostMemoryFolders Memory => _memory ??= HostMemoryFolders.Load(ProjectRoot);
+
         public static GuardEnv Load(string? basePath = null)
         {
             var configService = new ConfigService();
@@ -259,7 +265,11 @@ public static partial class GuardCommand
             return HandleWorkerCall(normalized, filePath, searchPath, offLimitsService, bashAnalyzer, env);
         }
 
-        if (!string.IsNullOrEmpty(filePath) && IsNativeMemoryPath(filePath))
+        var memoryWrite = BlockIfHostMemoryWrite(normalized, env);
+        if (memoryWrite != null) return memoryWrite.Value;
+
+        // Host memory sits outside the repo: reads skip the repo's off-limits patterns.
+        if (!string.IsNullOrEmpty(filePath) && env.Memory.Contains(filePath))
             return ExitCodes.Success;
 
         var routed = RouteToolLayers(normalized, offLimitsService, bashAnalyzer, env);
@@ -311,36 +321,135 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Native auto-memory paths (~/.claude/projects/&lt;project&gt;/memory/) are outside the
-    /// repo and outside dydo's jurisdiction - always readable and writable. Anchored to
-    /// the real user profile and requires 'memory' to be the immediate child of the
-    /// project directory, so neither a repo-internal lookalike nor a '..' escape qualifies.
+    /// The host memory folders DR 055 closes to agent writes. Claude: projects/*/memory/ and
+    /// agent-memory*/ under every ~/.claude* profile and CLAUDE_CONFIG_DIR, any .claude/agent-memory*/
+    /// (the project's), and each autoMemoryDirectory the settings name. Codex: $CODEX_HOME/memories/.
+    /// Reads stay open; the guard stops accidents, so only plain paths are matched.
     /// </summary>
-    internal static bool IsNativeMemoryPath(string filePath)
+    internal sealed record HostMemoryFolders(
+        string Home, string? ClaudeConfigDir, string CodexHome, IReadOnlyList<string> AutoMemoryDirectories)
     {
-        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).Replace('\\', '/').TrimEnd('/');
-        if (string.IsNullOrEmpty(home))
-            return false;
+        public static HostMemoryFolders Load(string? projectRoot)
+        {
+            var home = Normalize(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "");
+            var configDir = Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR");
+            configDir = string.IsNullOrWhiteSpace(configDir) ? null : Normalize(configDir, home);
+            var codexHome = Environment.GetEnvironmentVariable("CODEX_HOME");
+            codexHome = string.IsNullOrWhiteSpace(codexHome) ? $"{home}/.codex" : Normalize(codexHome, home);
 
-        var normalized = PathUtils.CollapseRelativeSegments(filePath);
-        var root = $"{home}/.claude/projects/";
-        if (!normalized.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-            return false;
+            var settingsFiles = new List<string> { Path.Combine(configDir ?? $"{home}/.claude", "settings.json") };
+            if (projectRoot != null)
+            {
+                settingsFiles.Add(Path.Combine(projectRoot, ".claude", "settings.json"));
+                settingsFiles.Add(Path.Combine(projectRoot, ".claude", "settings.local.json"));
+            }
 
-        var afterProject = normalized[root.Length..];
-        var slash = afterProject.IndexOf('/');
-        if (slash < 0)
-            return false;
+            var autoMemory = settingsFiles
+                .Select(ReadAutoMemoryDirectory)
+                .Where(dir => dir != null)
+                .Select(dir => Normalize(dir!, home))
+                .Where(dir => Path.IsPathRooted(dir))
+                .ToList();
+            return new HostMemoryFolders(home, configDir, codexHome, autoMemory);
+        }
 
-        var rest = afterProject[(slash + 1)..];
-        return rest.Equals("memory", StringComparison.OrdinalIgnoreCase)
-            || rest.StartsWith("memory/", StringComparison.OrdinalIgnoreCase);
+        public bool Contains(string path)
+        {
+            var normalized = Normalize(path, Home);
+            if (AutoMemoryDirectories.Append($"{CodexHome}/memories").Any(dir => IsUnder(normalized, dir)))
+                return true;
+
+            var segments = normalized.Split('/');
+            for (var i = 0; i + 1 < segments.Length; i++)
+            {
+                if (segments[i].Equals(".claude", StringComparison.OrdinalIgnoreCase) && IsAgentMemory(segments[i + 1]))
+                    return true;
+            }
+
+            return ClaudeRootRemainders(normalized).Any(rest =>
+                (rest.Length > 0 && IsAgentMemory(rest[0]))
+                || (rest.Length >= 3 && rest[0].Equals("projects", StringComparison.OrdinalIgnoreCase)
+                    && rest[2].Equals("memory", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        // The segments below each Claude config root the path sits under: a ~/.claude* profile, or
+        // CLAUDE_CONFIG_DIR.
+        private IEnumerable<string[]> ClaudeRootRemainders(string normalized)
+        {
+            if (!string.IsNullOrEmpty(Home) && normalized.StartsWith(Home + "/", StringComparison.OrdinalIgnoreCase))
+            {
+                var underHome = normalized[(Home.Length + 1)..].Split('/');
+                if (underHome[0].StartsWith(".claude", StringComparison.OrdinalIgnoreCase))
+                    yield return underHome[1..];
+            }
+
+            if (ClaudeConfigDir != null && normalized.StartsWith(ClaudeConfigDir + "/", StringComparison.OrdinalIgnoreCase))
+                yield return normalized[(ClaudeConfigDir.Length + 1)..].Split('/');
+        }
+
+        private static bool IsAgentMemory(string segment) =>
+            segment.StartsWith("agent-memory", StringComparison.OrdinalIgnoreCase);
+
+        private static bool IsUnder(string path, string folder) =>
+            path.Equals(folder, StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase);
+
+        // Forward slashes, '~' expanded, a Git Bash /c/ drive mount read as C:/, '..' collapsed.
+        private static string Normalize(string path, string home)
+        {
+            var p = path.Trim().Replace('\\', '/');
+            if (p == "~" || p.StartsWith("~/", StringComparison.Ordinal))
+                p = home + p[1..];
+            if (OperatingSystem.IsWindows() && p.Length >= 3 && p[0] == '/' && char.IsLetter(p[1]) && p[2] == '/')
+                p = $"{char.ToUpperInvariant(p[1])}:{p[2..]}";
+            return PathUtils.CollapseRelativeSegments(p).TrimEnd('/');
+        }
+
+        private static string? ReadAutoMemoryDirectory(string settingsPath)
+        {
+            try
+            {
+                if (!File.Exists(settingsPath))
+                    return null;
+                var value = JsonNode.Parse(File.ReadAllText(settingsPath))?["autoMemoryDirectory"];
+                return value is JsonValue json && json.TryGetValue<string>(out var dir) && dir.Length > 0 ? dir : null;
+            }
+            catch (Exception)
+            {
+                // A settings file the guard cannot read names no memory folder; Claude reports it.
+                return null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Blocks a file-tool write (Write, Edit, NotebookEdit, apply_patch) whose target is a host
+    /// memory folder (DR 055). Reads fall through.
+    /// </summary>
+    private static int? BlockIfHostMemoryWrite(GuardContext ctx, GuardEnv env)
+    {
+        var targets = IsMutatingCall(ctx.Action, ctx.ToolName) && !string.IsNullOrEmpty(ctx.FilePath)
+            ? ctx.WriteTargets.Prepend(ctx.FilePath)
+            : ctx.WriteTargets;
+        var hit = targets.FirstOrDefault(env.Memory.Contains);
+        return hit == null ? null : ReportHostMemoryWrite(hit, null);
+    }
+
+    private static int ReportHostMemoryWrite(string path, string? detected)
+    {
+        Console.Error.WriteLine("BLOCKED: Agents do not write host memory (DR 055).");
+        Console.Error.WriteLine($"  Path: {path}");
+        if (detected != null)
+            Console.Error.WriteLine($"  Detected: {detected}");
+        Console.Error.WriteLine("  Put the lesson in a skill, a Decision Record or a doc instead.");
+        Console.Error.WriteLine("  See dydo/project/decisions/055-native-agent-memory-off-and-guarded.md");
+        return ExitCodes.ToolError;
     }
 
     /// <summary>
     /// Sub-agent tool calls (agent_id present). Bash runs the shared pipeline with the worker's
-    /// dydo-subcommand limit; direct file ops get off-limits and protected checks, native memory
-    /// exempt.
+    /// dydo-subcommand limit; direct file ops get the host-memory write block, then off-limits and
+    /// protected checks, host memory reads exempt from off-limits.
     /// </summary>
     private static int HandleWorkerCall(
         GuardContext ctx, string? filePath, string? searchPath,
@@ -350,8 +459,11 @@ public static partial class GuardCommand
         if (ShouldRouteToShellHandler(ctx.ToolName, ctx.BashCommand))
             return HandleBashCommand(ctx, offLimitsService, bashAnalyzer, env, isWorker: true);
 
+        var memoryWrite = BlockIfHostMemoryWrite(ctx, env);
+        if (memoryWrite != null) return memoryWrite.Value;
+
         var checkPath = filePath ?? searchPath;
-        if (!string.IsNullOrEmpty(checkPath) && !IsNativeMemoryPath(checkPath))
+        if (!string.IsNullOrEmpty(checkPath) && !env.Memory.Contains(checkPath))
         {
             var offLimitsBlock = BlockIfPathOffLimits(checkPath, offLimitsService);
             if (offLimitsBlock != null) return offLimitsBlock.Value;
@@ -359,7 +471,7 @@ public static partial class GuardCommand
 
         if (!string.IsNullOrEmpty(filePath))
         {
-            if (IsMutatingCall(ctx.Action, ctx.ToolName) && !IsNativeMemoryPath(filePath))
+            if (IsMutatingCall(ctx.Action, ctx.ToolName))
             {
                 var protectedBlock = BlockIfPathProtected(filePath, offLimitsService);
                 if (protectedBlock != null) return protectedBlock.Value;
@@ -480,7 +592,7 @@ public static partial class GuardCommand
             }
         }
 
-        var verdict = AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer);
+        var verdict = AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer, env.Memory);
         return verdict == ExitCodes.Success ? CheckModeSet(command, env, ModeSetCallerOf(ctx)) : verdict;
     }
 
@@ -619,7 +731,8 @@ public static partial class GuardCommand
     }
 
     private static int AnalyzeAndCheckBashOperations(
-        string command, OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer)
+        string command, OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
+        HostMemoryFolders memory)
     {
         var analysis = bashAnalyzer.Analyze(command);
 
@@ -639,17 +752,21 @@ public static partial class GuardCommand
 
         foreach (var op in analysis.Operations)
         {
-            var blocked = CheckBashFileOperation(op, offLimitsService);
+            var blocked = CheckBashFileOperation(op, offLimitsService, memory);
             if (blocked != null) return blocked.Value;
         }
 
         return ExitCodes.Success;
     }
 
-    internal static int? CheckBashFileOperation(FileOperation op, OffLimitsService offLimitsService)
+    internal static int? CheckBashFileOperation(
+        FileOperation op, OffLimitsService offLimitsService, HostMemoryFolders memory)
     {
-        if (IsNativeMemoryPath(op.Path))
-            return null;
+        // DR 055: a shell op that can change a host memory file is blocked; reading one is not.
+        if (memory.Contains(op.Path))
+            return op.Type is FileOperationType.Read or FileOperationType.Execute
+                ? null
+                : ReportHostMemoryWrite(op.Path, $"{op.Type} via {op.Command}");
 
         var offLimitsPattern = offLimitsService.IsPathOffLimits(op.Path);
         if (offLimitsPattern != null)
@@ -676,7 +793,7 @@ public static partial class GuardCommand
     /// <summary>
     /// Collapses '.'/'..' segments lexically so no traversal sequence
     /// ('.../memory/../../secret') can slip past a path-based guard check (off-limits,
-    /// native-memory). Pure normalization - no filesystem or worktree remapping.
+    /// host memory). Pure normalization - no filesystem or worktree remapping.
     /// </summary>
     internal static string? ResolveTraversal(string? path)
     {

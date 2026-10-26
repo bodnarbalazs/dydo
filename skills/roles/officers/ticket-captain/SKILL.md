@@ -146,6 +146,8 @@ and any shared paths transfer only after reproduction closes and its evidence is
 each stage its own contract, chain, branch and worktree; create a Merge Sub-ticket for each actual
 integration. Keep the joined acceptance and final review on the parent.
 
+A guard-rule ticket says in its contract and every reviewer brief: guards stop accidents, not rogue agents.
+
 A Prototype
 uses `prototype` and closes on the user's verdict with its winning branch linked, never submitted. Enablement uses `wizard` for the steps only the user can perform.
 

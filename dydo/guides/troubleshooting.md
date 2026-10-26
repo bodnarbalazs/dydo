@@ -72,6 +72,11 @@ is user-owned and remains untouched. Decide whether to keep or relocate it, then
 Existing correct links are accepted. There is no compile step, copy reconciliation, or generated
 agent definition. Run `dydo check` to validate the documentation tree.
 
+## Line endings look wrong
+
+A Windows checkout with `core.autocrlf=true` shows CRLF while Git stores LF. Measure endings from
+the blob (`git cat-file -p :<path>`), not the file on disk.
+
 ## Linear boundary mistakes
 
 dydo has no Linear poller or mirror; its only Linear client is the read-only `dydo map`, whose

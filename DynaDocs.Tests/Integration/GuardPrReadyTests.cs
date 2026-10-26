@@ -1,6 +1,8 @@
 namespace DynaDocs.Tests.Integration;
 
 using System.Text.Json;
+using DynaDocs.Commands;
+using DynaDocs.Services;
 using static DynaDocs.Tests.Integration.PushedRepository;
 
 /// <summary>
@@ -176,6 +178,41 @@ public class GuardPrReadyTests : IntegrationTestBase
 
         var reason = result.AssertPreToolUseDenied();
         Assert.Contains($"Checked: {TestDir} (the project root; the host sent no cwd)", reason);
+    }
+
+    // DYD-386: the review-block warn must not arm or spend its once-only marker while the tree
+    // check refuses the call anyway, or the two messages alternate and "run again" is false.
+    [Fact]
+    public async Task PrCreateWithoutReviewBlock_FromADirtyTree_RefusesEveryTryAndLeavesTheWarnMarker()
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+        var reviewBlockWarn = ConfigFactory.DefaultNudges
+            .Single(n => n.Message.StartsWith("This PR carries no review block"));
+        var marker = Path.Combine(TestDir, "dydo", "_system", ".local",
+            $".nudge-{GuardCommand.ComputeNudgeHash(reviewBlockWarn.Pattern)}");
+
+        for (var attempt = 1; attempt <= 4; attempt++)
+        {
+            var result = await GuardWithStdinAsync(Payload("gh pr create --fill"));
+
+            var reason = result.AssertPreToolUseDenied();
+            Assert.True(reason.Contains("This PR would not match the branch in your tree."),
+                $"try {attempt}: {reason}");
+            Assert.False(File.Exists(marker), $"try {attempt} left the warn marker armed");
+        }
+    }
+
+    [Fact]
+    public async Task PrCreateWithoutReviewBlock_FromACleanPushedTree_WarnsOnceThenPasses()
+    {
+        await InitPushedProject();
+
+        var first = await GuardWithStdinAsync(Payload("gh pr create --fill"));
+        var second = await GuardWithStdinAsync(Payload("gh pr create --fill"));
+
+        Assert.Contains("carries no review block", first.AssertPreToolUseDenied());
+        second.AssertPreToolUseAllowed();
     }
 
     [Fact]

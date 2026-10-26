@@ -179,6 +179,9 @@ trail and comments that only restated the code. Existing checkouts must rerun
 - Fixed: the viewer fitting tests wait on React Flow's public `onMoveEnd` instead of spying on the
   App's internal `ProjectVisit.prototype.ready`; the `:841` mismatch was a source edit in a shared
   reviewer worktree, not a race (DYD-377, PR #177).
+- Fixed: `gh pr create` on a dirty or unpushed tree gets the pr-ready refusal on every try instead
+  of alternating with the review-block warning; warn nudges now run after block nudges and the
+  pr-ready check, so a refused call neither arms nor spends their once-only marker (DYD-386).
 - Align runtime and npm versions to 3.5.0 and permit publication only on the exact v3.5.0 tag.
 
 ## Removed

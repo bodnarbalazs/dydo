@@ -572,11 +572,12 @@ public static partial class GuardCommand
             return ExitCodes.ToolError;
         }
 
-        var nudged = CheckNudges(command, env);
-        if (nudged != null) return nudged.Value;
-
-        var prNotReady = CheckPrReady(command, ctx.Cwd, env);
-        if (prNotReady != null) return prNotReady.Value;
+        // Warn nudges go after the PR-ready refusal, so a refused call neither arms nor spends
+        // their once-only marker (DYD-386).
+        var blocked = CheckCommandNudges(command, env, warnPass: false)
+            ?? CheckPrReady(command, ctx.Cwd, env)
+            ?? CheckCommandNudges(command, env, warnPass: true);
+        if (blocked != null) return blocked.Value;
 
         // dydo commands skip the cd-chain coaching (they are never a needless cd compound);
         // everything else gets the auto-approval coaching block.
@@ -596,11 +597,18 @@ public static partial class GuardCommand
         return verdict == ExitCodes.Success ? CheckModeSet(command, env, ModeSetCallerOf(ctx)) : verdict;
     }
 
-    internal static int? CheckNudges(string command, GuardEnv env)
+    /// <summary>
+    /// Notice and block nudges run before warn nudges, so a warn arms or spends its once-only
+    /// marker only when no block nudge refuses the call.
+    /// </summary>
+    internal static int? CheckNudges(string command, GuardEnv env) =>
+        CheckCommandNudges(command, env, warnPass: false) ?? CheckCommandNudges(command, env, warnPass: true);
+
+    private static int? CheckCommandNudges(string command, GuardEnv env, bool warnPass)
     {
         foreach (var nudge in MergeSystemNudges(env.Config?.Nudges))
         {
-            if (!nudge.IsCommandMatch) continue;
+            if (!nudge.IsCommandMatch || IsWarn(nudge) != warnPass) continue;
 
             var match = CompileNudgePattern(nudge.Pattern)?.Match(command);
             if (match is not { Success: true }) continue;
@@ -612,6 +620,9 @@ public static partial class GuardCommand
 
         return null;
     }
+
+    private static bool IsWarn(NudgeConfig nudge) =>
+        string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase);
 
     private static Regex? CompileNudgePattern(string pattern)
     {
@@ -636,7 +647,7 @@ public static partial class GuardCommand
             return null;
         }
 
-        if (string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
+        if (IsWarn(nudge))
         {
             // Block once, pass the rerun. The marker is global, not per-agent (DR-041).
             Directory.CreateDirectory(env.MarkerDir);

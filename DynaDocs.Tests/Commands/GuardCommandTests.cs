@@ -709,6 +709,24 @@ public class GuardCommandTests : IDisposable
         Assert.True(File.Exists(markerB), "Marker for pattern B should now exist");
     }
 
+    // DYD-386: a block nudge listed after a warn still refuses first, and the warn's marker stays
+    // untouched, so successive tries do not alternate between the two messages.
+    [Fact]
+    public void CheckNudges_BlockAfterWarnInConfigOrder_BlocksEveryTryWithoutArmingTheWarn()
+    {
+        WriteConfigWithNudges(
+            ("risky", "Warning", "warn"),
+            ("risky-gamma", "Blocked", "block"));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var warnMarker = Path.Combine(env.MarkerDir, $".nudge-{GuardCommand.ComputeNudgeHash("risky")}");
+
+        for (var attempt = 1; attempt <= 2; attempt++)
+        {
+            Assert.Equal(ExitCodes.ToolError, GuardCommand.CheckNudges("risky-gamma", env));
+            Assert.False(File.Exists(warnMarker), $"try {attempt} armed the warn marker");
+        }
+    }
+
     [Theory]
     [InlineData("until [ -s /tmp/claude/foo ]; do sleep 1; done")]
     [InlineData("tail -f /tmp/claude.log")]

@@ -165,6 +165,31 @@ public class GuardNewFileNudgeTests : IDisposable
         Assert.False(File.Exists(marker));
     }
 
+    // DYD-386: a block listed after a warn on the same new path still refuses every try, and the
+    // warn neither arms nor spends its marker while it does.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BlockAfterWarnInConfigOrder_RefusesEveryTryAndLeavesTheWarnMarker(bool markerBefore)
+    {
+        var env = Env(NewFile(ToolsPattern, "warn", "file warn"), NewFile("x[.]py", "block", "file block"));
+        var marker = Path.Combine(_markerDir, $".nudge-new-file-{GuardCommand.ComputeNudgeHash(ToolsPattern)}");
+        if (markerBefore)
+        {
+            Directory.CreateDirectory(_markerDir);
+            File.WriteAllText(marker, "armed before the first try");
+        }
+
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            var (result, stderr) = Check(env, "tools/x.py");
+
+            Assert.Equal(ExitCodes.ToolError, result);
+            Assert.True(stderr.Contains("BLOCKED: file block") && !stderr.Contains("file warn"), $"try {attempt}: {stderr}");
+            Assert.True(File.Exists(marker) == markerBefore, $"try {attempt} changed the warn marker");
+        }
+    }
+
     [Fact]
     public void WarnMarker_DoesNotCollideWithCommandNudgeOfSamePattern()
     {
@@ -172,7 +197,7 @@ public class GuardNewFileNudgeTests : IDisposable
         var env = Env(command, NewFile(ToolsPattern, "warn", "file lane"));
 
         // The command nudge blocks once and leaves its pass-through marker.
-        Assert.Equal(ExitCodes.ToolError, GuardCommand.CheckNudges("tools/run.sh", env));
+        Assert.Equal(ExitCodes.ToolError, GuardCommand.CheckWarnNudges("tools/run.sh", env));
 
         // That marker must not let the first new-file write through.
         var (result, stderr) = Check(env, "tools/x.py");
@@ -180,7 +205,7 @@ public class GuardNewFileNudgeTests : IDisposable
         Assert.Contains("BLOCKED: file lane", stderr);
 
         // And the command nudge still has its own pass waiting.
-        Assert.Null(GuardCommand.CheckNudges("tools/run.sh", env));
+        Assert.Null(GuardCommand.CheckWarnNudges("tools/run.sh", env));
     }
 
     #endregion
@@ -190,7 +215,9 @@ public class GuardNewFileNudgeTests : IDisposable
     [Fact]
     public void NewFileNudge_NeverMatchesCommandLine()
     {
-        Assert.Null(GuardCommand.CheckNudges("tools/x.py", Env(NewFile("tools/"))));
+        var env = Env(NewFile("tools/"));
+
+        Assert.Null(GuardCommand.CheckBlockNudges("tools/x.py", env) ?? GuardCommand.CheckWarnNudges("tools/x.py", env));
     }
 
     [Fact]
@@ -206,7 +233,7 @@ public class GuardNewFileNudgeTests : IDisposable
     {
         var nudge = new NudgeConfig { Pattern = "tools/", Message = "m", Severity = "block", Match = "path" };
 
-        Assert.Null(GuardCommand.CheckNudges("tools/x.py", Env(nudge)));
+        Assert.Null(GuardCommand.CheckBlockNudges("tools/x.py", Env(nudge)));
         Assert.Null(GuardCommand.CheckNewFileNudges(["tools/x.py"], _root, Env(nudge)));
     }
 
@@ -301,7 +328,7 @@ public class GuardNewFileNudgeTests : IDisposable
         var h19 = H19();
         var env = Env(NewFile(h19.Pattern, "notice", "file lane"));
 
-        Assert.Equal(ExitCodes.ToolError, GuardCommand.CheckNudges("npx dydo agent claim auto", env));
+        Assert.Equal(ExitCodes.ToolError, GuardCommand.CheckBlockNudges("npx dydo agent claim auto", env));
     }
 
     [Fact]

@@ -304,7 +304,7 @@ public sealed class GuardModeSetTests : IntegrationTestBase
         if (OperatingSystem.IsWindows())
             result.AssertPreToolUseAllowed();
         else
-            Assert.Contains("BLOCKED: dydo mode set changes the mode", result.AssertPreToolUseDenied());
+            Assert.StartsWith("BLOCKED: This host cannot ask", result.AssertPreToolUseDenied());
     }
 
     [Theory]

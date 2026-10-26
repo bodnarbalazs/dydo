@@ -643,10 +643,10 @@ public class GuardCommandTests : IDisposable
 
     #endregion
 
-    #region CheckNudges - Warn-then-Allow Marker Flow
+    #region Command nudges - Warn-then-Allow Marker Flow
 
     [Fact]
-    public void CheckNudges_WarnSeverity_BlocksFirstEncounter_CreatesMarker()
+    public void CheckWarnNudges_WarnSeverity_BlocksFirstEncounter_CreatesMarker()
     {
         var env = GuardCommand.GuardEnv.Load(_testDir);
         var workspace = env.MarkerDir;  // warn-nudge markers are global, machine-local state (DR-041)
@@ -657,14 +657,14 @@ public class GuardCommandTests : IDisposable
         WriteConfigWithNudge(pattern, "Don't do that", "warn");
         env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var result = GuardCommand.CheckNudges("dangerous-command", env);
+        var result = GuardCommand.CheckWarnNudges("dangerous-command", env);
 
         Assert.Equal(ExitCodes.ToolError, result);
         Assert.True(File.Exists(markerPath), "Marker file should be created on first encounter");
     }
 
     [Fact]
-    public void CheckNudges_WarnSeverity_AllowsSecondEncounter_DeletesMarker()
+    public void CheckWarnNudges_WarnSeverity_AllowsSecondEncounter_DeletesMarker()
     {
         var env = GuardCommand.GuardEnv.Load(_testDir);
         var workspace = env.MarkerDir;
@@ -675,16 +675,16 @@ public class GuardCommandTests : IDisposable
         WriteConfigWithNudge(pattern, "Don't do that", "warn");
         env = GuardCommand.GuardEnv.Load(_testDir);
 
-        GuardCommand.CheckNudges("dangerous-command", env);
+        GuardCommand.CheckWarnNudges("dangerous-command", env);
 
-        var result = GuardCommand.CheckNudges("dangerous-command", env);
+        var result = GuardCommand.CheckWarnNudges("dangerous-command", env);
 
         Assert.Null(result);
         Assert.False(File.Exists(markerPath), "Marker file should be deleted on second encounter");
     }
 
     [Fact]
-    public void CheckNudges_WarnSeverity_DifferentPatterns_ProduceDifferentMarkers()
+    public void CheckWarnNudges_WarnSeverity_DifferentPatterns_ProduceDifferentMarkers()
     {
         var patternA = @"risky-alpha";
         var patternB = @"risky-beta";
@@ -698,33 +698,15 @@ public class GuardCommandTests : IDisposable
         var markerA = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternA)}");
         var markerB = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternB)}");
 
-        GuardCommand.CheckNudges("risky-alpha", env);
+        GuardCommand.CheckWarnNudges("risky-alpha", env);
 
         Assert.True(File.Exists(markerA), "Marker for pattern A should exist");
         Assert.False(File.Exists(markerB), "Marker for pattern B should not exist");
 
-        GuardCommand.CheckNudges("risky-beta", env);
+        GuardCommand.CheckWarnNudges("risky-beta", env);
 
         Assert.True(File.Exists(markerA), "Marker for pattern A should still exist");
         Assert.True(File.Exists(markerB), "Marker for pattern B should now exist");
-    }
-
-    // DYD-386: a block nudge listed after a warn still refuses first, and the warn's marker stays
-    // untouched, so successive tries do not alternate between the two messages.
-    [Fact]
-    public void CheckNudges_BlockAfterWarnInConfigOrder_BlocksEveryTryWithoutArmingTheWarn()
-    {
-        WriteConfigWithNudges(
-            ("risky", "Warning", "warn"),
-            ("risky-gamma", "Blocked", "block"));
-        var env = GuardCommand.GuardEnv.Load(_testDir);
-        var warnMarker = Path.Combine(env.MarkerDir, $".nudge-{GuardCommand.ComputeNudgeHash("risky")}");
-
-        for (var attempt = 1; attempt <= 2; attempt++)
-        {
-            Assert.Equal(ExitCodes.ToolError, GuardCommand.CheckNudges("risky-gamma", env));
-            Assert.False(File.Exists(warnMarker), $"try {attempt} armed the warn marker");
-        }
     }
 
     [Theory]
@@ -732,12 +714,12 @@ public class GuardCommandTests : IDisposable
     [InlineData("tail -f /tmp/claude.log")]
     [InlineData("while true; do check_status; sleep 1; done")]
     [InlineData("while :; do check_status; sleep 1; done")]
-    public void CheckNudges_OpenEndedPollLoop_BlocksFirstEncounter(string command)
+    public void CheckWarnNudges_OpenEndedPollLoop_BlocksFirstEncounter(string command)
     {
         WriteConfigWithOpenEndedPollNudges();
         var env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var (result, stderr) = RunNudge(command, env);
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
 
         Assert.Equal(ExitCodes.ToolError, result);
         Assert.Contains("Open-ended Bash poll-loop detected", stderr);
@@ -746,12 +728,12 @@ public class GuardCommandTests : IDisposable
     [Theory]
     [InlineData("for i in {1..5}; do test -f x; sleep 1; done")]
     [InlineData("echo ready")]
-    public void CheckNudges_SafeCommand_DoesNotBlock(string command)
+    public void CommandNudges_SafeCommand_DoesNotBlock(string command)
     {
         WriteConfigWithOpenEndedPollNudges();
         var env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var (result, stderr) = RunNudge(command, env);
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckBlockNudges(command, env) ?? GuardCommand.CheckWarnNudges(command, env));
 
         Assert.Null(result);
         Assert.Empty(stderr);
@@ -760,7 +742,7 @@ public class GuardCommandTests : IDisposable
     // The third severity: a notice speaks and steps aside. It must never block and never leave a
     // pass-through marker, or it would behave like a warn on its second encounter.
     [Fact]
-    public void CheckNudges_NoticeSeverity_AllowsAndWritesTheMessageToStderr()
+    public void CheckBlockNudges_NoticeSeverity_AllowsAndWritesTheMessageToStderr()
     {
         var pattern = @"noticeable-command";
         WriteConfigWithNudge(pattern, "Prefer the wrapper script.", "notice");
@@ -768,21 +750,21 @@ public class GuardCommandTests : IDisposable
         var markerPath = Path.Combine(
             env.MarkerDir, $".nudge-{GuardCommand.ComputeNudgeHash(pattern)}");
 
-        var (result, stderr) = RunNudge("noticeable-command --now", env);
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckBlockNudges("noticeable-command --now", env));
 
         Assert.Null(result);
         Assert.Contains("NOTICE: Prefer the wrapper script.", stderr);
         Assert.False(File.Exists(markerPath), "a notice must not create a pass-through marker");
     }
 
-    private static (int? Result, string Stderr) RunNudge(string command, GuardCommand.GuardEnv env)
+    private static (int? Result, string Stderr) RunNudge(Func<int?> check)
     {
         var original = Console.Error;
         var capture = new StringWriter();
         Console.SetError(capture);
         try
         {
-            return (GuardCommand.CheckNudges(command, env), capture.ToString());
+            return (check(), capture.ToString());
         }
         finally
         {
@@ -833,7 +815,7 @@ public class GuardCommandTests : IDisposable
         WriteConfigWithNudges((nudge.Pattern, "Paste the review block.", nudge.Severity));
         var env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var (result, stderr) = RunNudge("gh pr create --title x --body 'ships the fix'", env);
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges("gh pr create --title x --body 'ships the fix'", env));
 
         Assert.Equal(ExitCodes.ToolError, result);
         Assert.Contains("BLOCKED: Paste the review block.", stderr);
@@ -846,8 +828,8 @@ public class GuardCommandTests : IDisposable
         WriteConfigWithNudges((nudge.Pattern, "Paste the review block.", nudge.Severity));
         var env = GuardCommand.GuardEnv.Load(_testDir);
 
-        var (result, stderr) = RunNudge(
-            "gh pr create --body '## Independent review - rubric: code, verdict: PASS'", env);
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(
+            "gh pr create --body '## Independent review - rubric: code, verdict: PASS'", env));
 
         Assert.Null(result);
         Assert.Empty(stderr);

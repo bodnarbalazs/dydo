@@ -7,9 +7,9 @@ using DynaDocs.Utils;
 
 /// <summary>
 /// The built-in mode-set nudge (DYD-351). <c>dydo mode set</c> changes the mode every agent on the
-/// machine reads, so an agent's first try is blocked with a reminder, as a warn nudge. The rerun
-/// asks the user where a hook's ask is a real prompt, and is denied everywhere else so the user runs
-/// the command in his own terminal. It lives in code, not dydo.json, so no config can drop or soften it.
+/// machine reads. Where a hook's ask is a real prompt, the first try is blocked with a reminder, as a
+/// warn nudge, and the rerun asks the user. Everywhere else every try is denied, so the user runs the
+/// command in his own terminal (DYD-386). It lives in code, not dydo.json, so no config can drop or soften it.
 /// </summary>
 public static partial class GuardCommand
 {
@@ -75,30 +75,27 @@ public static partial class GuardCommand
     private static bool IsPowerShell(string? shellPath) =>
         Path.GetFileNameWithoutExtension(shellPath ?? "").ToLowerInvariant() is "pwsh" or "powershell";
 
-    private static int CheckModeSet(string command, GuardEnv env, ModeSetCaller caller)
+    // The reminder joins the call's warn nudges; only a host that can ask reaches it.
+    private static readonly WarnStep ModeSetWarn = new(ModeSetNudge, Match.Empty, ".nudge-mode-set",
+        "Chief of staff: run the same command again; the user then approves it or runs it himself.");
+
+    // A host that cannot ask refuses every try, so the reminder's marker is neither armed nor spent.
+    private static int RefuseModeSet(IReadOnlyList<string> args)
     {
-        var args = FindModeSetArgs(command, caller.Shell);
-        if (args == null)
-            return ExitCodes.Success;
-
-        var firstTry = EnforceNudge(ModeSetNudge, Match.Empty, ".nudge-mode-set",
-            "Chief of staff: run the same command again; the user then approves it or runs it himself.", env);
-        if (firstTry != null)
-            return firstTry.Value;
-
-        var modeSet = string.Join(' ', args.Prepend("dydo mode set"));
-        if (caller.CanAsk)
-        {
-            Console.Error.WriteLine($"ASK: An agent wants to run `{modeSet}`, which changes the mode of every agent "
-                + "on this machine. Approve only if you started or are ending overnight mode.");
-            return AskUser;
-        }
-
         Console.Error.WriteLine("BLOCKED: This host cannot ask the user to approve dydo mode set "
             + "(only Claude Code through the hook dydo init writes, in default, acceptEdits, plan or auto mode, can).");
-        Console.Error.WriteLine($"  Ask the user to run it in their own terminal: {modeSet}");
+        Console.Error.WriteLine($"  Ask the user to run it in their own terminal: {ModeSetCommand(args)}");
         return ExitCodes.ToolError;
     }
+
+    private static int AskModeSet(IReadOnlyList<string> args)
+    {
+        Console.Error.WriteLine($"ASK: An agent wants to run `{ModeSetCommand(args)}`, which changes the mode of every agent "
+            + "on this machine. Approve only if you started or are ending overnight mode.");
+        return AskUser;
+    }
+
+    private static string ModeSetCommand(IReadOnlyList<string> args) => string.Join(' ', args.Prepend("dydo mode set"));
 
     /// <summary>
     /// The words after <c>dydo mode set</c> when the command runs it, or null. The

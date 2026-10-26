@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Integration;
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DynaDocs.Commands;
 using DynaDocs.Services;
 using static DynaDocs.Tests.Integration.PushedRepository;
@@ -182,24 +183,55 @@ public class GuardPrReadyTests : IntegrationTestBase
 
     // DYD-386: the review-block warn must not arm or spend its once-only marker while the tree
     // check refuses the call anyway, or the two messages alternate and "run again" is false.
-    [Fact]
-    public async Task PrCreateWithoutReviewBlock_FromADirtyTree_RefusesEveryTryAndLeavesTheWarnMarker()
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task PrCreateWithoutReviewBlock_FromATreeNotReady_RefusesEveryTryAndLeavesTheWarnMarker(
+        bool unpushed, bool markerBefore)
     {
         await InitPushedProject();
         WriteFile("wip.txt", "w\n");
+        if (unpushed) Commit(TestDir, "wip");
         var reviewBlockWarn = ConfigFactory.DefaultNudges
             .Single(n => n.Message.StartsWith("This PR carries no review block"));
-        var marker = Path.Combine(TestDir, "dydo", "_system", ".local",
+        var marker = Path.Combine(GuardCommand.GuardEnv.Load(TestDir).MarkerDir,
             $".nudge-{GuardCommand.ComputeNudgeHash(reviewBlockWarn.Pattern)}");
+        if (markerBefore)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(marker)!);
+            File.WriteAllText(marker, "armed before the first try");
+        }
 
         for (var attempt = 1; attempt <= 4; attempt++)
         {
             var result = await GuardWithStdinAsync(Payload("gh pr create --fill"));
 
             var reason = result.AssertPreToolUseDenied();
-            Assert.True(reason.Contains("This PR would not match the branch in your tree."),
+            Assert.True(reason.StartsWith("BLOCKED: This PR would not match the branch in your tree."),
                 $"try {attempt}: {reason}");
-            Assert.False(File.Exists(marker), $"try {attempt} left the warn marker armed");
+            Assert.True(File.Exists(marker) == markerBefore, $"try {attempt} changed the warn marker");
+        }
+    }
+
+    // A block nudge on a PR-opening call wins over the tree check, every try.
+    [Fact]
+    public async Task BlockNudgeOnPrCreate_FromADirtyTree_RefusesWithTheNudgeEveryTry()
+    {
+        await InitPushedProject();
+        var config = JsonNode.Parse(ReadFile("dydo.json"))!.AsObject();
+        var nudges = config["nudges"] as JsonArray ?? [];
+        nudges.Add(new JsonObject { ["pattern"] = @"gh\s+pr\s+create", ["message"] = "Custom PR block.", ["severity"] = "block" });
+        config["nudges"] = nudges;
+        WriteFile("dydo.json", config.ToJsonString());
+        WriteFile("wip.txt", "w\n");
+
+        for (var attempt = 1; attempt <= 2; attempt++)
+        {
+            var reason = (await GuardWithStdinAsync(Payload(PrCreate))).AssertPreToolUseDenied();
+
+            Assert.True(reason.StartsWith("BLOCKED: Custom PR block."), $"try {attempt}: {reason}");
         }
     }
 

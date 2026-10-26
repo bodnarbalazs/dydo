@@ -52,8 +52,9 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    its own text puts it: one that acts on merge results right after step 7, one that acts on
    `init` output or the new wiring right after step 8, any other before step 7.
 7. **Merge**, file by file, three ways: base = old tag, ours = the project, theirs = new tag. The
-   set is found at the new tag: the files its `README.md` tells a project to copy, and its sources,
-   each against the project file where the README or the reference install puts it.
+   set is every file at the old tag or the new tag that the tag's `README.md` tells a project to
+   copy or that is among its sources, each against the project file where the README or the
+   reference install puts it. Files upstream deleted are in the set, so the deletion rules fire.
 
    The entry file: ours is the project file that derives from the old rendered entry point,
    keeping its first heading and most of its lines. More than one derives: merge the one at the
@@ -78,9 +79,11 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    - Upstream never changed it: keep the project's.
    - Both changed: `git merge-file ours base theirs`, resolve keeping the project's intent, and
      list the file for the user.
-   - Upstream renamed it (an upgrade step or `git diff --find-renames <old> <new>` shows it):
-     merge it as a move. Merge the project's edits into the new path, delete the old path, and
-     list the move for the user. A file the rename dropped follows the deletion rule.
+   - Upstream renamed it (an Upgrade step names the rename, or its whole folder moved): merge it
+     as a move. Merge the project's edits into the new path, delete the old path, and list the
+     move for the user. A file the rename dropped follows the deletion rule. Git's rename
+     detection also pairs identical files across unrelated skills; any pair it shows that neither
+     test confirms is a deletion plus an addition.
    - New upstream file: add it.
    - Upstream deleted it: remove it only if the project never edited it; otherwise ask the user.
    - Project deleted a file upstream changed: ask the user.
@@ -149,6 +152,7 @@ covers (see `dydo --help`): show both and ask the user whether to drop it.
   any other entry file, for the user.
 - Codex hook trust: the user confirms Codex trusted the changed hooks.
 
-**Skills.** `git diff --find-renames --stat <old> <new> -- skills/` in the clone lists the added,
-renamed and removed skills; `skills/` at the new tag against the project's shows the project-local
-ones. `git status --short skills/` shows only the changes step 7 listed.
+**Skills.** `git diff --no-renames --name-status <old> <new> -- skills/` in the clone lists the
+added and removed files; step 7's rename rule says which are moves. `skills/` at the new tag
+against the project's shows the project-local ones. `git status --short skills/` shows only the
+changes step 7 listed.

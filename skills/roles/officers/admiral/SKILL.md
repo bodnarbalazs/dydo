@@ -93,15 +93,14 @@ map and how the tickets move, integrate, and finish together.
    commission a fresh one from the record. Rewire the order when a later ready PR is independent
    of an earlier unready one. **Done:** every merge has its own captain-directed chain and fresh
    merge review; the record shows the order that ran and `done <key>: merged` wakes the next work.
-5. **Wayfind.** Rechart as discovery clears fog: create, split, drop, or resequence tickets and record
-   the discoveries on the Project. Maintain shared feature intent following `dydo/reference/feature-spec-convention.md`,
-   read from the repository root; reconcile affected contracts, each carrying every earlier ruling the user gave on its artifact as an acceptance line. Where a repository plan exists,
-   commit dated
-   `## Amendment - <YYYY-MM-DD>` sections to it; give every new implementation ticket one Type,
-   one Mode, and `Todo`; re-review
-   changes to destination, scope, acceptance criteria, or governing architecture and obtain human
-   approval before affected work resumes. **Done:** the
-   Project map matches the work in flight.
+5. **Wayfind.** Rechart as discovery clears fog: create, split, drop, or resequence tickets and
+   record the discoveries on the Project. Maintain shared feature intent following
+   `dydo/reference/feature-spec-convention.md`, read from the repository root; reconcile affected
+   contracts, each carrying every earlier ruling the user gave on its artifact as an acceptance
+   line. Where a repository plan exists, commit dated `## Amendment - <YYYY-MM-DD>` sections to
+   it; give every new implementation ticket one Type, one Mode, and `Todo`; re-review changes to
+   destination, scope, acceptance criteria, or governing architecture and obtain human approval
+   before affected work resumes. **Done:** the Project map matches the work in flight.
 6. **Clear fog.** Do small discovery inline; create a Wayfinding Ticket when the investigation needs
    its own status, owner, blocker, or evidence. Dispatch Research agents, use Prototype in its captain's session
    or Grilling in this session, present one prepared Question only when

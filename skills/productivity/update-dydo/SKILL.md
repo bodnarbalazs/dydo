@@ -67,8 +67,8 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    its first heading and most of its lines. Several derive: merge the one at the reference's entry
    path first, then the others' edits into that. None derives: render the new one fresh. Write the
    result where the reference writes the entry point. A non-derived file there is the user's: put
-   the result at its top, keep their text below and list it; ask the user when their text already
-   covers the entry point. Render both tags' entry points as `init` does, trailing newlines
+   the result at its top, keep their text below and list it; when their text already
+   covers the entry point, ask the user instead. Render both tags' entry points as `init` does, trailing newlines
    trimmed, naming the project from ours' first heading (init wrote the folder name there; the
    folder may since be renamed or cloned), or the folder name with no ours.
 
@@ -92,7 +92,7 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    - `dydo check` exits 0; warnings are fine;
    - every What to compare category is walked, each finding resolved or listed for the user.
 
-   Then run `dydo adopt <new>` to record the new version in `dydo.json`.
+   With every proof holding, run `dydo adopt <new>` to record the new version in `dydo.json`.
 9. **Report** to the user: old, new and CLI versions; files taken from upstream; files merged with
    both sides' edits; protected files they applied; renamed skills moved; files left for them to
    decide; upgrade steps applied; project tweaks kept; the step 8 output. Add two notes:

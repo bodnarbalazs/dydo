@@ -1,8 +1,8 @@
 @machine-mode
 Feature: Machine mode
   A machine mode flag is read by every agent on this machine; overnight is the one flag.
-  An agent's mode set is blocked once with a reminder. On the rerun the user approves it where the
-  host can ask, and otherwise runs it in his own terminal.
+  Where the host can ask, an agent's mode set is blocked once with a reminder and the user approves
+  the rerun. Where it cannot, every try is denied and the user runs it in his own terminal.
 
   Scenario: Show lists every flag with its value
     Given a fresh machine mode
@@ -58,10 +58,10 @@ Feature: Machine mode
       | plan            |
       | auto            |
 
-  Scenario Outline: The rerun is denied where the host cannot ask
+  Scenario Outline: Every try is denied where the host cannot ask
     Given an agent on "<host>" in "<permission mode>" permission mode
-    When the agent runs "dydo mode set overnight on" twice
-    Then the guard denies it and asks the user to run "dydo mode set overnight on" in their own terminal
+    When the agent runs "dydo mode set overnight on" three times
+    Then the guard denies every try and asks the user to run "dydo mode set overnight on" in their own terminal
 
     Examples:
       | host                                    | permission mode   |

@@ -17,20 +17,27 @@ public static partial class GuardCommand
             return null;
 
         var newPaths = NewProjectPaths(targets, cwd ?? Environment.CurrentDirectory, env.ProjectRoot);
+        var warns = new List<WarnStep>();
         foreach (var nudge in nudges)
         {
             var regex = CompileNudgePattern(nudge.Pattern);
             var match = regex == null ? null : newPaths.Select(p => regex.Match(p)).FirstOrDefault(m => m.Success);
             if (match == null) continue;
 
-            // A distinct marker prefix: a command nudge with the same pattern hashes to
-            // ".nudge-<hash>", so neither lane can consume the other's pass-through.
-            var verdict = EnforceNudge(nudge, match, $".nudge-new-file-{ComputeNudgeHash(nudge.Pattern)}",
-                "Retry the same write to proceed anyway.", env);
+            // Warns wait until no block refuses the write. A distinct marker prefix: a command nudge
+            // with the same pattern hashes to ".nudge-<hash>", so neither lane spends the other's.
+            if (IsWarn(nudge))
+            {
+                warns.Add(new WarnStep(nudge, match, $".nudge-new-file-{ComputeNudgeHash(nudge.Pattern)}",
+                    "Retry the same write to proceed anyway."));
+                continue;
+            }
+
+            var verdict = EnforceNudge(nudge, match);
             if (verdict != null) return verdict;
         }
 
-        return null;
+        return EnforceWarns(warns, env);
     }
 
     private static List<string> NewProjectPaths(IEnumerable<string> targets, string cwd, string projectRoot)

@@ -15,6 +15,7 @@ public sealed class MachineModeSteps : IntegrationTestBase
     private string _permissionMode = "default";
     private string? _agentId;
     private CommandResult _result = new(-1, "", "");
+    private readonly List<CommandResult> _tries = [];
 
     private ModeState State => new(Path.Combine(TestDir, "machine"));
 
@@ -96,6 +97,16 @@ public sealed class MachineModeSteps : IntegrationTestBase
         await AgentRuns(command);
     }
 
+    [When("the agent runs {string} three times")]
+    public async Task AgentRunsThreeTimes(string command)
+    {
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            await AgentRuns(command);
+            _tries.Add(_result);
+        }
+    }
+
     [Then("the guard blocks it and tells the chief of staff to run it again")]
     public void AssertFirstTryBlocked()
     {
@@ -118,12 +129,16 @@ public sealed class MachineModeSteps : IntegrationTestBase
         Assert.Contains($"`{command}`", output.GetProperty("permissionDecisionReason").GetString());
     }
 
-    [Then("the guard denies it and asks the user to run {string} in their own terminal")]
-    public void DeniesForTerminal(string command)
+    [Then("the guard denies every try and asks the user to run {string} in their own terminal")]
+    public void DeniesEveryTryForTerminal(string command)
     {
-        var reason = _result.AssertPreToolUseDenied();
-        Assert.StartsWith("BLOCKED: This host cannot ask the user to approve dydo mode set", reason);
-        Assert.EndsWith($"Ask the user to run it in their own terminal: {command}", reason);
+        Assert.Equal(3, _tries.Count);
+        foreach (var attempt in _tries)
+        {
+            var reason = attempt.AssertPreToolUseDenied();
+            Assert.StartsWith("BLOCKED: This host cannot ask the user to approve dydo mode set", reason);
+            Assert.EndsWith($"Ask the user to run it in their own terminal: {command}", reason);
+        }
     }
 
     private string Hook(string command)

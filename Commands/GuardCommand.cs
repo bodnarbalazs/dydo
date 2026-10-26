@@ -540,7 +540,9 @@ public static partial class GuardCommand
 
     /// <summary>
     /// Dangerous-pattern and nudge checks run for every shell command, dydo invocations included,
-    /// so a security-critical nudge cannot be bypassed by prefixing a dydo call (DR-041).
+    /// so a security-critical nudge cannot be bypassed by prefixing a dydo call (DR-041). Every hard
+    /// block runs before any warn nudge, so a refused call neither arms nor spends a warn's once-only
+    /// marker and the refusal repeats on every try (DYD-386).
     /// </summary>
     private static int HandleBashCommand(
         GuardContext ctx,
@@ -552,66 +554,109 @@ public static partial class GuardCommand
         var command = ctx.BashCommand!;
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(ctx.SessionId);
 
-        var workerBlocked = isDydo && isWorker ? FindWorkerBlockedDydoCommand(command) : null;
-        if (workerBlocked != null)
-        {
-            Console.Error.WriteLine("BLOCKED: Sub-agents may run only these dydo commands: "
-                + string.Join(", ", WorkerAllowedDydoSubcommands) + " (plus -h/--help/--version).");
-            Console.Error.WriteLine($"  Not allowed here: dydo {workerBlocked}");
-            Console.Error.WriteLine("  Setup, generation and hook commands (init, adopt, index, guard, map, completions, _complete)");
-            Console.Error.WriteLine("  belong to the top-level session that spawned you.");
-            return ExitCodes.ToolError;
-        }
+        // dydo commands skip the cd-chain coaching (they are never a needless cd compound).
+        var hardBlock = (isDydo && isWorker ? BlockIfWorkerDydoCommand(command) : null)
+            ?? BlockIfDangerous(command, bashAnalyzer)
+            ?? CheckBlockNudges(command, env)
+            ?? CheckPrReady(command, ctx.Cwd, env)
+            ?? (isDydo ? null : BlockIfCdChain(command, bashAnalyzer))
+            ?? AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer, env.Memory);
+        if (hardBlock != null) return hardBlock.Value;
 
-        var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
-        if (isDangerous)
-        {
-            Console.Error.WriteLine("BLOCKED: Dangerous command pattern detected.");
-            Console.Error.WriteLine($"  Reason: {dangerReason}");
-            Console.Error.WriteLine($"  Command: {TruncateCommand(command)}");
-            return ExitCodes.ToolError;
-        }
+        var caller = ModeSetCallerOf(ctx);
+        var modeSet = FindModeSetArgs(command, caller.Shell);
+        if (modeSet != null && !caller.CanAsk)
+            return RefuseModeSet(modeSet);
 
-        var nudged = CheckNudges(command, env);
-        if (nudged != null) return nudged.Value;
-
-        var prNotReady = CheckPrReady(command, ctx.Cwd, env);
-        if (prNotReady != null) return prNotReady.Value;
-
-        // dydo commands skip the cd-chain coaching (they are never a needless cd compound);
-        // everything else gets the auto-approval coaching block.
-        if (!isDydo)
-        {
-            var (isCdChain, _, restCmd) = bashAnalyzer.DetectNeedlessCd(command);
-            if (isCdChain)
-            {
-                Console.Error.WriteLine("BLOCKED: Don't chain cd / Set-Location with other commands - it breaks auto-approval for whitelisted commands.");
-                Console.Error.WriteLine($"  If you need to change directory, run it separately first.");
-                Console.Error.WriteLine($"  Otherwise just run: {restCmd}");
-                return ExitCodes.ToolError;
-            }
-        }
-
-        var verdict = AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer, env.Memory);
-        return verdict == ExitCodes.Success ? CheckModeSet(command, env, ModeSetCallerOf(ctx)) : verdict;
+        return CheckWarnNudges(command, env, modeSet != null)
+            ?? (modeSet == null ? ExitCodes.Success : AskModeSet(modeSet));
     }
 
-    internal static int? CheckNudges(string command, GuardEnv env)
+    private static int? BlockIfWorkerDydoCommand(string command)
+    {
+        var workerBlocked = FindWorkerBlockedDydoCommand(command);
+        if (workerBlocked == null)
+            return null;
+
+        Console.Error.WriteLine("BLOCKED: Sub-agents may run only these dydo commands: "
+            + string.Join(", ", WorkerAllowedDydoSubcommands) + " (plus -h/--help/--version).");
+        Console.Error.WriteLine($"  Not allowed here: dydo {workerBlocked}");
+        Console.Error.WriteLine("  Setup, generation and hook commands (init, adopt, index, guard, map, completions, _complete)");
+        Console.Error.WriteLine("  belong to the top-level session that spawned you.");
+        return ExitCodes.ToolError;
+    }
+
+    private static int? BlockIfDangerous(string command, IBashCommandAnalyzer bashAnalyzer)
+    {
+        var (isDangerous, dangerReason) = bashAnalyzer.CheckDangerousPatterns(command);
+        if (!isDangerous)
+            return null;
+
+        Console.Error.WriteLine("BLOCKED: Dangerous command pattern detected.");
+        Console.Error.WriteLine($"  Reason: {dangerReason}");
+        Console.Error.WriteLine($"  Command: {TruncateCommand(command)}");
+        return ExitCodes.ToolError;
+    }
+
+    // The auto-approval coaching block.
+    private static int? BlockIfCdChain(string command, IBashCommandAnalyzer bashAnalyzer)
+    {
+        var (isCdChain, _, restCmd) = bashAnalyzer.DetectNeedlessCd(command);
+        if (!isCdChain)
+            return null;
+
+        Console.Error.WriteLine("BLOCKED: Don't chain cd / Set-Location with other commands - it breaks auto-approval for whitelisted commands.");
+        Console.Error.WriteLine($"  If you need to change directory, run it separately first.");
+        Console.Error.WriteLine($"  Otherwise just run: {restCmd}");
+        return ExitCodes.ToolError;
+    }
+
+    /// <summary>
+    /// The command nudges that are not warns: a notice prints and passes, a block refuses.
+    /// </summary>
+    internal static int? CheckBlockNudges(string command, GuardEnv env)
+    {
+        foreach (var (nudge, match) in MatchingCommandNudges(command, env))
+        {
+            if (IsWarn(nudge)) continue;
+
+            var verdict = EnforceNudge(nudge, match);
+            if (verdict != null) return verdict;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The command warn nudges, and the mode-set reminder when <paramref name="modeSet"/>, as one
+    /// once-only step (<see cref="EnforceWarns"/>).
+    /// </summary>
+    internal static int? CheckWarnNudges(string command, GuardEnv env, bool modeSet = false)
+    {
+        var warns = MatchingCommandNudges(command, env)
+            .Where(m => IsWarn(m.Nudge))
+            .Select(m => new WarnStep(m.Nudge, m.Match, $".nudge-{ComputeNudgeHash(m.Nudge.Pattern)}",
+                "Run the same command again to proceed anyway."))
+            .ToList();
+        if (modeSet)
+            warns.Add(ModeSetWarn);
+        return EnforceWarns(warns, env);
+    }
+
+    private static IEnumerable<(NudgeConfig Nudge, Match Match)> MatchingCommandNudges(string command, GuardEnv env)
     {
         foreach (var nudge in MergeSystemNudges(env.Config?.Nudges))
         {
             if (!nudge.IsCommandMatch) continue;
 
             var match = CompileNudgePattern(nudge.Pattern)?.Match(command);
-            if (match is not { Success: true }) continue;
-
-            var verdict = EnforceNudge(nudge, match, $".nudge-{ComputeNudgeHash(nudge.Pattern)}",
-                "Run the same command again to proceed anyway.", env);
-            if (verdict != null) return verdict;
+            if (match is { Success: true })
+                yield return (nudge, match);
         }
-
-        return null;
     }
+
+    private static bool IsWarn(NudgeConfig nudge) =>
+        string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase);
 
     private static Regex? CompileNudgePattern(string pattern)
     {
@@ -620,41 +665,63 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// Applies a matched nudge's severity. Returns an exit code when the call is blocked, null
-    /// to continue with the next nudge. <paramref name="markerName"/> names the warn pass-through
-    /// marker, so each nudge lane keys its own.
+    /// Applies a matched notice or block nudge. Returns an exit code when the call is blocked, null
+    /// to continue with the next nudge.
     /// </summary>
-    private static int? EnforceNudge(NudgeConfig nudge, Match match, string markerName, string retryHint, GuardEnv env)
+    private static int? EnforceNudge(NudgeConfig nudge, Match match)
     {
-        var message = nudge.Message;
-        for (int i = 1; i < match.Groups.Count; i++)
-            message = message.Replace($"${i}", match.Groups[i].Value.Trim());
-
+        var message = ExpandNudgeMessage(nudge, match);
         if (string.Equals(nudge.Severity, "notice", StringComparison.OrdinalIgnoreCase))
         {
             Console.Error.WriteLine($"NOTICE: {message}");
             return null;
         }
 
-        if (string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase))
+        Console.Error.WriteLine($"BLOCKED: {message}");
+        return ExitCodes.ToolError;
+    }
+
+    private static string ExpandNudgeMessage(NudgeConfig nudge, Match match)
+    {
+        var message = nudge.Message;
+        for (int i = 1; i < match.Groups.Count; i++)
+            message = message.Replace($"${i}", match.Groups[i].Value.Trim());
+        return message;
+    }
+
+    /// <summary>
+    /// A matched warn nudge. <see cref="MarkerName"/> names its pass-through marker, so each nudge
+    /// lane keys its own.
+    /// </summary>
+    private readonly record struct WarnStep(NudgeConfig Nudge, Match Match, string MarkerName, string RetryHint);
+
+    /// <summary>
+    /// Warns block once and pass the rerun, all of a call's warns together: while any has no marker,
+    /// each unmarked one gets its marker and its message and the call is blocked; once all are
+    /// marked, the call spends every marker and passes. The marker is global, not per-agent (DR-041).
+    /// Callers run this only after every hard block on the call has passed (DYD-386).
+    /// </summary>
+    private static int? EnforceWarns(IReadOnlyList<WarnStep> warns, GuardEnv env)
+    {
+        if (warns.Count == 0)
+            return null;
+
+        Directory.CreateDirectory(env.MarkerDir);
+        var unmarked = warns.Where(w => !File.Exists(Path.Combine(env.MarkerDir, w.MarkerName))).ToList();
+        if (unmarked.Count == 0)
         {
-            // Block once, pass the rerun. The marker is global, not per-agent (DR-041).
-            Directory.CreateDirectory(env.MarkerDir);
-            var markerPath = Path.Combine(env.MarkerDir, markerName);
-
-            if (!File.Exists(markerPath))
-            {
-                File.WriteAllText(markerPath, DateTime.UtcNow.ToString("o"));
-                Console.Error.WriteLine($"BLOCKED: {message}");
-                Console.Error.WriteLine($"  ({retryHint})");
-                return ExitCodes.ToolError;
-            }
-
-            File.Delete(markerPath);
+            foreach (var warn in warns)
+                File.Delete(Path.Combine(env.MarkerDir, warn.MarkerName));
             return null;
         }
 
-        Console.Error.WriteLine($"BLOCKED: {message}");
+        foreach (var warn in unmarked)
+        {
+            File.WriteAllText(Path.Combine(env.MarkerDir, warn.MarkerName), DateTime.UtcNow.ToString("o"));
+            Console.Error.WriteLine($"BLOCKED: {ExpandNudgeMessage(warn.Nudge, warn.Match)}");
+            Console.Error.WriteLine($"  ({warn.RetryHint})");
+        }
+
         return ExitCodes.ToolError;
     }
 
@@ -730,7 +797,7 @@ public static partial class GuardCommand
         return nudges;
     }
 
-    private static int AnalyzeAndCheckBashOperations(
+    private static int? AnalyzeAndCheckBashOperations(
         string command, OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,
         HostMemoryFolders memory)
     {
@@ -756,7 +823,7 @@ public static partial class GuardCommand
             if (blocked != null) return blocked.Value;
         }
 
-        return ExitCodes.Success;
+        return null;
     }
 
     internal static int? CheckBashFileOperation(

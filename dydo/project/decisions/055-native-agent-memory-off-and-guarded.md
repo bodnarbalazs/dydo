@@ -58,8 +58,7 @@ enforcement into the guard.
 - Migration, per memory folder: route each entry to a skill, DR, doc or ticket, or delete it, then
   empty the folder. Facts about the user go to the project's docs or the user's own global
   `CLAUDE.md` or `AGENTS.md`, files the user owns.
-- `update-dydo`'s What to compare list holds memory in order when it is off: the switches false,
-  the guard deny in place, the folders empty.
+- The 3.5.0 changelog's Upgrade steps 4, 11 and 12 hold memory in order when it is off: the switches false, the folders empty, the rest checked by hand.
 
 ## Supersedes
 

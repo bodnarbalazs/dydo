@@ -61,7 +61,7 @@ public sealed class GuardModeSetTests : IntegrationTestBase
 
         var result = await Twice(Hook("dydo mode set overnight on", permissionMode: null));
 
-        Assert.StartsWith("BLOCKED: This host cannot ask", result.AssertPreToolUseDenied());
+        Assert.Contains("BLOCKED: This host cannot ask", result.AssertPreToolUseDenied());
     }
 
     [Fact]
@@ -304,7 +304,7 @@ public sealed class GuardModeSetTests : IntegrationTestBase
         if (OperatingSystem.IsWindows())
             result.AssertPreToolUseAllowed();
         else
-            Assert.Contains("BLOCKED: dydo mode set changes the mode", result.AssertPreToolUseDenied());
+            Assert.Contains("BLOCKED: This host cannot ask", result.AssertPreToolUseDenied());
     }
 
     [Theory]

@@ -77,7 +77,7 @@ Agent-invoked methods:
 | grilling | co-thinker, chief-of-staff, any Grilling Ticket | a plan, decision or idea the user wants stress-tested, one round at a time | answers and reasoning recorded where the work lives |
 | domain-modeling | co-thinker, wayfinder | a term keeps sliding, or a choice looks durable enough for a DR | `dydo/glossary.md` entries; a Decision Record |
 | codebase-design | code-writer, reviewer | shaping a module or interface, choosing a seam, judging depth | vocabulary applied, nothing written |
-| diagnosing-bugs | the code-writer reproducing a Bug, on the parent or its retained reproduce-or-identify Sub-ticket | a defect without a red reproduction | a tight loop that goes red; the regression test; the cause on the ticket |
+| diagnosing-bugs | the code-writer reproducing a Bug, on the parent or its retained reproduce-or-identify Sub-ticket | a Bug other than an unused member without a red reproduction | a tight loop that goes red; the regression test; the cause on the ticket |
 | prototype | the code-writer on a Prototype Ticket | how it should look or behave is the open question | `prototype/<name>`, never merged; kept and linked from the ticket until the delivery ticket is `Done`, read by the delivery ticket's code-writer as the template for a fresh rewrite, never a base or a copy (DR 047 §5) |
 | wizard | the captain on an Enablement Ticket | steps only the user can perform: credentials, dashboards, cutovers | a bash wizard that walks him through them |
 | writing-for-agents | anyone editing a skill or a document an agent reaches by pointer; reviewer(docs) | a prompt file is created, edited, or fires wrong | the edited file |

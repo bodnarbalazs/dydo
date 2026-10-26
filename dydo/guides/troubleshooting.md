@@ -74,7 +74,8 @@ agent definition. Run `dydo check` to validate the documentation tree.
 
 ## Line endings look wrong
 
-A Windows checkout with `core.autocrlf=true` shows CRLF while Git stores LF. Measure endings from
+A Windows checkout with `core.autocrlf=true` shows CRLF on text files `.gitattributes` does not pin
+to LF, while Git stores LF. Measure endings from
 the blob (`git cat-file -p :<path>`), not the file on disk.
 
 ## Linear boundary mistakes

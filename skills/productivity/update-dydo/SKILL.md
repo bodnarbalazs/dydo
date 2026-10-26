@@ -37,10 +37,9 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    writes. Like any `init`, it may also add dydo's shell completion block to the user's shell
    profile, once; tell the user.
 
-   A tag's **sources** are what `init` renders from: the folder whose files match, path for path,
-   the reference's files under its docs root (`git ls-tree -r --name-only <tag>`), and the file
-   that is the reference's entry point with the project name as a placeholder. Find them at each
-   tag you read; the repo may move them.
+   A tag's **sources** are the docs folder and entry-point template its own `init` code embeds or
+   copies; find them there (`git grep` at the tag) for each tag you read. The reference shows
+   where each lands in a project.
 5. **Old** = the release `dydo.json` records as adopted. None recorded: guess it. For each release
    tag with a `skills/` folder, count the files that differ, or exist on one side only, across
    `skills/` and the tag's docs source against the project's `skills/` and docs root (`dydo.json`
@@ -79,9 +78,9 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    - Upstream never changed it: keep the project's.
    - Both changed: `git merge-file ours base theirs`, resolve keeping the project's intent, and
      list the file for the user.
-   - Upstream renamed it (an upgrade step or the Skills diff below shows it): merge it as a move.
-     Merge the project's edits into the new path, delete the old path, and list the move for the
-     user. A file the rename dropped follows the deletion rule.
+   - Upstream renamed it (an upgrade step or `git diff --find-renames <old> <new>` shows it):
+     merge it as a move. Merge the project's edits into the new path, delete the old path, and
+     list the move for the user. A file the rename dropped follows the deletion rule.
    - New upstream file: add it.
    - Upstream deleted it: remove it only if the project never edited it; otherwise ask the user.
    - Project deleted a file upstream changed: ask the user.
@@ -139,10 +138,11 @@ reference `init` wires. Name every other project hook with what it does. One a d
 covers (see `dydo --help`): show both and ask the user whether to drop it.
 
 **Tooling.**
-- Adaptations of dydo's own tooling: project files that share a name and most of their content
-  with a file in the dydo repo at the new tag, beyond the skills and docs it took (a copy of its
-  coverage `gap_check.py` or `run_tests.py`, say). Diff each against old and new tag; list
-  upstream's changes for the user to carry over.
+- Adaptations of dydo's own tooling: project files, beyond the skills and docs it took, whose
+  content derives from a dydo repo file at the old or the new tag (a copy of its coverage
+  `gap_check.py` or `run_tests.py`, say), whatever their name. Follow that file across the tags
+  (`git log --follow`, `git diff --find-renames <old> <new>`); list upstream's edits, rename or
+  deletion for the user to carry over.
 - CLI: `dydo version` equals new.
 - Skill projection: step 9's link lines.
 - Entry file: the entry point sits where the reference writes it; step 8's `init` warnings name

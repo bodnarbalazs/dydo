@@ -28,12 +28,12 @@ trail and comments that only restated the code. Existing checkouts must rerun
   `dydo mode set <flag> <value>` stores one in a per-user file (`dydo/mode.json` under the local
   application data), so every project and agent on the machine reads the same values. One flag
   ships: `overnight`, `on` or `off`, default `off`.
-- A built-in guard nudge on `dydo mode set` (DYD-351). An agent's first try is blocked with a
-  reminder that only the chief of staff sets the mode. On the rerun the guard answers an `ask`
-  decision only on a Claude Code hook that carries the new `--host claude` marker, in the
-  `default`, `acceptEdits`, `plan` or `auto` permission modes; everywhere else (Codex,
-  `bypassPermissions`, `dontAsk`, an unmarked hook) it denies and the user runs the command in his
-  own terminal. The nudge lives in code, so `dydo.json` cannot drop or weaken it. The guard reads
+- A built-in guard nudge on `dydo mode set` (DYD-351). On a Claude Code hook that carries the
+  new `--host claude` marker, in the `default`, `acceptEdits`, `plan` or `auto` permission modes,
+  an agent's first try is blocked with a reminder that only the chief of staff sets the mode, and
+  the rerun gets an `ask` decision. Everywhere else (Codex, `bypassPermissions`, `dontAsk`, an
+  unmarked hook) every try is denied, with no reminder, and the user runs the command in his own
+  terminal. The nudge lives in code, so `dydo.json` cannot drop or weaken it. The guard reads
   the command with the rules of the shell that runs it (bash, PowerShell, `cmd /c`), so quotes,
   here-strings, `$(...)` substitutions and wrappers such as `env` or `sudo` are seen, while a
   commit message that only mentions `dydo mode set` is not. `dydo init claude --join` rewrites an
@@ -244,8 +244,8 @@ trail and comments that only restated the code. Existing checkouts must rerun
 12. After step 4, check by hand what no step sets (DR 055). `autoMemoryEnabled` is not `true` in
     `.claude/settings.local.json` or in any Claude profile's `settings.json`, and
     `CLAUDE_CODE_DISABLE_AUTO_MEMORY` does not turn memory back on. In the user's
-    `$CODEX_HOME/config.toml` (default `~/.codex/config.toml`), neither `[features] memories` nor
-    `memories.generate_memories` is `true`. Note any `permissions.deny` rule covering a memory
+    `$CODEX_HOME/config.toml` (default `~/.codex/config.toml`), `[features] memories` is not `true`;
+    it is off by default and is the switch. Note any `permissions.deny` rule covering a memory
     folder as found. `dydo guard --action write --path ~/.claude/projects/p/memory/x.md` exits 2.
 13. Run `dydo adopt 3.5.0`. It also adds the new-file nudge for Markdown outside `dydo/` to
     `dydo.json` when missing (DYD-375).

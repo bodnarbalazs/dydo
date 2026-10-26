@@ -46,7 +46,7 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    section: take its steps from its Changed and Removed sections.
 6. **Merge**, file by file, three ways: base = old tag, ours = the project, theirs = new tag. The
    set is found at the new tag: the files its `README.md` tells a project to copy, and what
-   `dydo init` renders from its `Scaffold/`, each against the project file at the place the
+   `dydo init` renders from its `Scaffold/`, each against the project file where the README or the
    reference install puts it.
 
    The entry file: ours is the project file that derives from the old rendered entry point,
@@ -117,6 +117,10 @@ project's own (the folders the reference writes), the hosts' config-dir env vars
 (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`) and the home folders (`ls -d ~/.claude* ~/.codex*`). Ask the
 user which are in use. Compare each setting the reference writes with the project's and each
 profile's. A setting only the project or a profile has is a project tweak: keep it and list it.
+A profile value that contradicts what the reference writes in the project (a profile turning back
+on what the project turns off, say) is a finding: show both and ask the user. List each host
+memory folder that holds notes for this project, found from the host's settings and docs; the
+release entries say what to do with them.
 
 **Hooks.** Per host, read what the project and each profile wire, and compare it with what the
 reference `init` wires. Name every other project hook with what it does. One a dydo command now

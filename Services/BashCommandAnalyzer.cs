@@ -798,15 +798,58 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private static void AddPathOperations(BashAnalysisResult result, IEnumerable<string> tokens, FileOperationType type, string cmdName)
     {
-        foreach (var path in ExtractPaths(tokens))
+        var args = tokens.ToList();
+        var paths = ExtractPaths(args).ToList();
+        var destination = type == FileOperationType.Copy ? FindCopyDestination(args, paths, cmdName) : null;
+        if (destination != null && !paths.Contains(destination))
+            paths.Add(destination);
+
+        foreach (var path in paths)
         {
             result.Operations.Add(new FileOperation
             {
                 Type = type,
                 Path = path,
-                Command = cmdName
+                Command = cmdName,
+                IsCopySource = destination != null && path != destination
             });
         }
+    }
+
+    // The flags that name a copy's destination, per command. Without one, a copy writes its last
+    // path; robocopy its second (`robocopy <src> <dst> [files]`).
+    private static readonly Dictionary<string, string[]> CopyTargetFlags = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["cp"] = ["-t", "--target-directory"],
+        ["copy-item"] = ["-destination"],
+        ["ci"] = ["-destination"],
+        ["cpi"] = ["-destination"],
+    };
+
+    private static string? FindCopyDestination(List<string> args, List<string> paths, string cmdName)
+    {
+        var flags = CopyTargetFlags.GetValueOrDefault(cmdName, []);
+        for (var i = 0; i < args.Count; i++)
+        {
+            var flagged = FlagValue(args, i, flags);
+            if (flagged != null)
+                return flagged;
+        }
+
+        var index = cmdName.Equals("robocopy", StringComparison.OrdinalIgnoreCase) ? 1 : paths.Count - 1;
+        return paths.ElementAtOrDefault(index);
+    }
+
+    private static string? FlagValue(List<string> args, int i, string[] flags)
+    {
+        foreach (var flag in flags)
+        {
+            if (args[i].Equals(flag, StringComparison.OrdinalIgnoreCase))
+                return args.ElementAtOrDefault(i + 1);
+            if (args[i].StartsWith(flag + "=", StringComparison.OrdinalIgnoreCase))
+                return args[i][(flag.Length + 1)..];
+        }
+        return null;
     }
 
     private static void AnalyzeRedirection(string command, BashAnalysisResult result)

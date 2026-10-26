@@ -31,6 +31,7 @@ public class FileOperation
     public string Path { get; set; } = string.Empty;
     public string Command { get; set; } = string.Empty;
     public bool IsUncertain { get; set; } // True if path might be from variable/substitution
+    public bool IsCopySource { get; set; } // True for a copy's source path: the copy reads it and writes only its destination
 }
 
 public enum FileOperationType

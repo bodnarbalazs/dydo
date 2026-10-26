@@ -332,7 +332,7 @@ public class InitCommandTests : IntegrationTestBase
         Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
         WriteFile(".claude/settings.json", "{ \"other\": \"keep\", \"autoMemoryEnabled\": true }");
         WriteFile(".codex/config.toml",
-            "# keep\n[features]\nother = true\nmemories = true # was on\n\n[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n");
+            "# keep\n[features]\nother = true\nmemories = true  # was on\n\n[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n");
 
         var result = await JoinProjectAsync("all");
 
@@ -341,10 +341,10 @@ public class InitCommandTests : IntegrationTestBase
         Assert.False(claude["autoMemoryEnabled"]?.GetValue<bool>());
         Assert.Equal("keep", claude["other"]?.GetValue<string>());
         Assert.Equal(
-            "# keep\n[features]\nother = true\nmemories = false\n\n[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n",
+            "# keep\n[features]\nother = true\nmemories = false  # was on\n\n[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n",
             ReadFile(".codex/config.toml"));
         result.AssertStdoutContains("Turned native memory off: .claude/settings.json had autoMemoryEnabled = true");
-        result.AssertStdoutContains("Turned native memory off: .codex/config.toml had memories = true # was on");
+        result.AssertStdoutContains("Turned native memory off: .codex/config.toml had memories = true  # was on");
     }
 
     [Fact]

@@ -531,6 +531,31 @@ public class BashCommandAnalyzerTests
         Assert.True(result.Operations.Count >= 1);
     }
 
+    [Theory]
+    [InlineData("cp a.md b.md c.md", "c.md")]
+    [InlineData("cp -t dir/x a.md b.md", "dir/x")]
+    [InlineData("cp --target-directory=dir/x a.md", "dir/x")]
+    [InlineData("rsync -t a.md b.md", "b.md")]
+    [InlineData("scp a.md host:b.md", "host:b.md")]
+    [InlineData("Copy-Item -Destination dir/x -Path a.md", "dir/x")]
+    [InlineData("robocopy src/x dst/x a.md", "dst/x")]
+    public void Analyze_Copy_MarksOnlyTheDestinationAsWritten(string command, string destination)
+    {
+        var copies = _analyzer.Analyze(command).Operations.Where(op => op.Type == FileOperationType.Copy).ToList();
+
+        var written = Assert.Single(copies, op => !op.IsCopySource);
+        Assert.Equal(destination, written.Path);
+        Assert.Contains(copies, op => op.IsCopySource);
+    }
+
+    [Theory]
+    [InlineData("cp a.md")]
+    [InlineData("mv a.md b.md")]
+    public void Analyze_SinglePathCopyOrMove_MarksNoSource(string command)
+    {
+        Assert.DoesNotContain(_analyzer.Analyze(command).Operations, op => op.IsCopySource);
+    }
+
     #endregion
 
     #region Permission Operations

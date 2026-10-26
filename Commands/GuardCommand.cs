@@ -762,9 +762,10 @@ public static partial class GuardCommand
     internal static int? CheckBashFileOperation(
         FileOperation op, OffLimitsService offLimitsService, HostMemoryFolders memory)
     {
-        // DR 055: a shell op that can change a host memory file is blocked; reading one is not.
+        // DR 055: a shell op that can change a host memory file is blocked; reading one is not,
+        // and a copy only reads its sources (`cp <memory>/MEMORY.md notes.md`).
         if (memory.Contains(op.Path))
-            return op.Type is FileOperationType.Read or FileOperationType.Execute
+            return op.Type is FileOperationType.Read or FileOperationType.Execute || op.IsCopySource
                 ? null
                 : ReportHostMemoryWrite(op.Path, $"{op.Type} via {op.Command}");
 

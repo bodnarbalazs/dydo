@@ -390,7 +390,9 @@ public static class InitCommand
 
         var (start, end) = FindTable(text, "features", relativePath);
         var section = start < 0 ? "" : text[start..end];
-        var line = Regex.Match(section, @"^[ \t]*memories[ \t]*=[^\r\n]*", RegexOptions.Multiline);
+        var line = Regex.Match(section,
+            @"^[ \t]*memories[ \t]*=[ \t]*(?<value>""(?:[^""\\\r\n]|\\.)*""|'[^'\r\n]*'|[^\s#]+)[^\r\n]*",
+            RegexOptions.Multiline);
         string content;
         string? notice = null;
         if (!line.Success)
@@ -399,8 +401,10 @@ public static class InitCommand
         }
         else
         {
-            content = text[..start] + section[..line.Index] + "memories = false"
-                + section[(line.Index + line.Length)..] + text[end..];
+            // Only the value changes: indentation, spacing and a trailing comment stay the user's.
+            var value = line.Groups["value"];
+            content = text[..start] + section[..value.Index] + "false" + section[(value.Index + value.Length)..]
+                + text[end..];
             notice = MemoryOffNotice(relativePath, line.Value.Trim());
         }
 

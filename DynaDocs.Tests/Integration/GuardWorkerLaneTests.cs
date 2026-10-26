@@ -428,6 +428,10 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     [InlineData("mv notes.md ~/.claude/agent-memory/reviewer/notes.md")]
     [InlineData("rm .claude/agent-memory/reviewer/MEMORY.md")]
     [InlineData("rm -r ~/.codex/memories")]
+    [InlineData("cp notes.md ~/.claude/projects/proj/memory/")]
+    [InlineData("cp -t ~/.claude/projects/proj/memory notes.md")]
+    [InlineData("cp ~/.claude/projects/proj/memory/a.md ~/.claude/projects/proj/memory/b.md")]
+    [InlineData("mv ~/.claude/projects/proj/memory/x.md notes.md")]
     public async Task Memory_ShellWrite_Blocked(string command)
     {
         await InitProjectAsync();
@@ -453,6 +457,21 @@ public class GuardWorkerLaneTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(MainJson("Bash", $"{{\"command\":\"{command}\"}}"));
 
         result.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("cp ~/.claude/projects/proj/memory/MEMORY.md notes.md")]
+    [InlineData("cp -r ~/.claude/projects/proj/memory backup")]
+    [InlineData("cp -t backup ~/.claude/projects/proj/memory/MEMORY.md")]
+    public async Task Memory_ShellCopyOut_Allowed(string command)
+    {
+        await InitProjectAsync();
+
+        var main = await GuardWithStdinAsync(MainJson("Bash", $"{{\"command\":\"{command}\"}}"));
+        main.AssertPreToolUseAllowed();
+
+        var worker = await GuardWithStdinAsync(WorkerJson("Bash", $"{{\"command\":\"{command}\"}}"));
+        worker.AssertPreToolUseAllowed();
     }
 
     #endregion

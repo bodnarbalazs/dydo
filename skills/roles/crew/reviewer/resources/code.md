@@ -22,10 +22,11 @@ its pinned architecture plan and applicable feature-spec sections, on four axes 
 - The candidate matches the pinned contract, the owned paths and the requested outcome
 - Every scenario the contract calls for stands unweakened, and every scenario passes
 - The `IMPLEMENTED` line the brief carries holds its red proof line: a Bug's reproduction failing
-  with the fix reverted, a Feature's tests failing with the code stashed; rerun it only on a doubt
-  you state
+  with the fix reverted, a Feature's tests failing with the code stashed, an unused-member Bug's
+  definition and reference search; rerun it only on a doubt you state
 - Every behaviour, edge case and risk the contract names is claimed by a scenario or a test; a bug
-  fix carries the test that reproduces the bug
+  fix carries the test that reproduces the bug, an unused-member fix its definition and reference
+  search instead
 - Nothing the implement hop had that the contract needed was dropped by a later hop
 - Nothing beyond the contract: an unrelated improvement is scope creep and a finding
 - Every deviation the implementation reported is justified or raised

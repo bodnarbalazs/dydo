@@ -52,7 +52,8 @@ everything else you read.
 
 ## Return
 
-Given a Wayfinding Ticket, post the report as a named evidence comment using the `DECIDED` form in the
-communication protocol; the map holder closes the ticket and updates the map. Otherwise write it as
-`dydo/agents/workspace/research-<slug>.md`, the shared scratch folder git ignores. Either way,
+Post the report to the ticket the invoker named, as a named evidence comment using the `DECIDED`
+form in the communication protocol. On a Wayfinding Ticket, the map holder closes the ticket and
+updates the map. Without a named ticket, write it as `dydo/agents/workspace/research-<slug>.md`,
+the shared scratch folder git ignores. Either way,
 report the answer, destination, and what stayed unsettled.

@@ -39,8 +39,8 @@ takes that step, and nobody needs telling.
 
 ## 1. Roster
 
-The actors: every officer and every crew role, plus the co-thinker skill a session without a role
-loads to think with the user. The ticket-captain is the default officer; an admiral exists only when
+The actors: every officer and every crew role, plus the co-thinker skill any session loads to think
+with the user, keeping its role. The ticket-captain is the default officer; an admiral exists only when
 the user invokes one, as a right hand for throughput that never takes the frontline. An officer is
 top-level when a session is opened with it; a captain is also spawned as an agent, so the user's
 session or an invoked admiral can direct one per ticket.
@@ -48,12 +48,12 @@ session or an invoked admiral can direct one per ticket.
 | Role | Kind | Runs as | Invoked by | Works in | Does | Returns to |
 |---|---|---|---|---|---|---|
 | user | user | the terminal | - | `main`, where his own commits need no ticket, and any session | thinks, files Projects, holds a Project's map by default and charts it with `wayfinder`, approves plans, answers Questions, confirms inquisitions, clicks the landing one Project at a time and an atomic ticket's reviewed PR, walks through; tells an invoked admiral after each of his board moves, and takes the map back at any time | - |
-| co-thinker | skill | any session without an officer role | any session with an unripe idea | no branch; DRs and glossary on the current branch | homework, grilling, domain-modeling, recommendation; a DR when the ADR test passes; an atomic ticket with its five fields, Type and Mode | a DR (F), a Project through `to-project` (L), an atomic ticket (L) |
+| co-thinker | skill | any session, keeping its role | any session with an unripe idea | no branch; DRs and glossary on the current branch | homework, grilling, domain-modeling, recommendation; a DR when the ADR test passes; an atomic ticket with its five fields, Type and Mode | a DR (F), a Project through `to-project` (L), an atomic ticket (L) |
 | admiral | officer, optional | top-level session, explicit-only | the user, only when he wants a right hand for throughput, on a Project at any stage | `feature/<slug>` once the map holder opens one at Open; none before that, or on a Project with no feature branch | holds the map until the user takes it back; wakes on a captain's return or the user's word, reads the Project and acts: charts it with `wayfinder`, writes a plan only for a cross-cutting architecture contract and owns its review, puts approval to the user, commissions the first captain to open the feature, commissions captains, wires the merge order and re-wires it when a later PR is ready first, sets priority on what waits on the user, runs its wayfinding with the user, proposes the inquisition, files the landing and the walkthrough, closes | the user in its own session (C); the board (L) |
 | ticket-captain | officer, the default, also agent | top-level for an atomic or HITL ticket; spawned by the user's session or an invoked admiral for an AFK one | the user's session, or an invoked admiral | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, takes an adjacent ticket only on the user's word, sets the status at every chain spawn, directs [code-writer] → [reviewer] on the parent or each lane and adds a spec review only on a risk its contract records, divides when the writer names lanes, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-tickets or, on an atomic ticket, waits for the user's click, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
 | chief-of-staff | officer | top-level session, explicit-only | the user | none | the bird's-eye view over the Projects in flight: the three lists, grilling open Questions, mediating collisions, sweeping stale state and orphans | the user (C); delivery staged on its Project for the map holder (L) |
 | research | crew, delegates, web | agent | co-thinker, the map holder, ticket-captain | reads | one fact a choice waits on, cited; sends scouts | the invoker: one-line answer, destination, unsettled points (R); report as ticket comment (L) or scratch file (F) |
-| code-writer | crew | agent | ticket-captain, on the parent first, then per lane | the ticket branch; a Merge Sub-ticket; a proof branch off the audit SHA | one ticket's contract on the `implement` hop, test-driven by Type: a Bug red before its fix and red again with the fix reverted; a Feature's acceptance lines as named tests written with the code, proved to fail with the code stashed; the full suite and static gate of each changed stack once, HCRAP and cognitive complexity fixed in changed methods. Posts nothing before code unless it names lanes or an inexact contract. On a Merge: the merge commit and its resolutions. Proof-only: the test that would catch one hypothesis, committed as `<KEY> proof: <hypothesis>` | the captain: the `IMPLEMENTED` line with hop SHA, behaviour, red proof, gates run and blocker (R); for a hypothesis, `confirmed`, `not reproduced` or `inconclusive` |
+| code-writer | crew | agent | ticket-captain, on the parent first, then per lane | the ticket branch; a Merge Sub-ticket; a proof branch off the brief's pinned source SHA (the audit SHA for an Inquisition) | one ticket's contract on the `implement` hop, test-driven by Type: an unused-member Bug its definition and a reference search, any other Bug red before its fix and red again with the fix reverted; a Feature's acceptance lines as named tests written with the code, proved to fail with the code stashed; the full suite and static gate of each changed stack once, HCRAP and cognitive complexity fixed in changed methods. Posts nothing before code unless it names lanes or an inexact contract. On a Merge: the merge commit and its resolutions. Proof-only: the test that would catch one hypothesis, committed as `<KEY> proof: <hypothesis>` | the captain: the `IMPLEMENTED` line with hop SHA, behaviour, red proof, gates run and blocker (R); for a hypothesis, `confirmed`, `not reproduced` or `inconclusive` |
 | docs-writer | crew | agent | ticket-captain, including the separate record Feature's captain for an inquisition | the delivery ticket branch | one documentation change with a witness per claim; the record Feature preserves the pinned inquisition packet | the delivery captain: ending SHA, exact record path/digest, files, witnesses, `dydo check` (R) |
 | reviewer | crew, non-authoring | agent | the map holder, ticket-captain | reads a pinned candidate | one rubric: code, docs, project-plan, spec, merge | the invoker: the review block (R), posted on the record and in the PR body (L, G) |
 | scout | crew, non-authoring, web | agent | research | reads one source family | passages back, no conclusions | research (R) |
@@ -81,7 +81,7 @@ Agent-invoked methods:
 | prototype | the code-writer on a Prototype Ticket | how it should look or behave is the open question | `prototype/<name>`, never merged; kept and linked from the ticket until the delivery ticket is `Done`, read by the delivery ticket's code-writer as the template for a fresh rewrite, never a base or a copy (DR 047 §5) |
 | wizard | the captain on an Enablement Ticket | steps only the user can perform: credentials, dashboards, cutovers | a bash wizard that walks him through them |
 | writing-for-agents | anyone editing a skill or a document an agent reaches by pointer; reviewer(docs) | a prompt file is created, edited, or fires wrong | the edited file |
-| retro | any session; chief-of-staff routes recurring friction to it | the same friction or workaround returns a second time | one small, authorized, testable harness change |
+| retro | any session; chief-of-staff routes recurring friction to it | the same friction or workaround returns a second time | one small, testable harness-change suggestion, with proof and rollback |
 | maintain-verification-skill | any agent driving the app through a project's verification skill; the map holder before a landing | a drive contradicts the feature map, a touched area has no map file, or the whole map needs an audit | `clean`, `changed` with one PR of proven map or harness corrections, or `blocked`; product regressions reported as Bugs |
 | maintain-formal-verification-skill | any agent or the map holder after merges, refactors or edits touched verified code without rechecking the verification | verified code changed since the verification's sync commit, or a verify skill's check passes on code that has since moved | each check `in sync`, `updated`, `bug` or `blocked`, with drift and code bugs told apart and verification updates kept in a change of their own |
 
@@ -268,8 +268,8 @@ Step by step, with the Linear status each step leaves behind:
 8. **Shape.** Only when the writer names lanes: the captain writes the lane contracts and opens lane
    Sub-tickets in `Todo`, each with its own branch and worktree off the parent branch, plus one Merge
    Sub-ticket per lane, wired in order; the parent sits `In Progress` while its lanes run. Section 3c.
-9. **Prove red.** The writer's `IMPLEMENTED` return carries its red proof: a Bug's reproduction
-   failing with the fix reverted, a Feature's tests failing with the code stashed.
+9. **Prove red.** The writer's `IMPLEMENTED` return carries its red proof: an unused-member Bug's definition and
+   reference search, any other Bug's reproduction failing with the fix reverted, a Feature's tests failing with the code stashed.
 10. **Review.** `In Review`; a fresh reviewer with one rubric returns the standard's one-line
     block. PASS binds that candidate under that contract. FAIL returns the record to
     `Implementing`, whatever it found.
@@ -469,9 +469,9 @@ asks it to, it is never sent anything.
 
 A call above the officer's say goes through `what-would-balazs-do`
 ([DR 054](../project/decisions/054-what-would-balazs-do-tribunal.md)) when it is DR-grade or
-irreversible, or when the user is away. Only a call the tribunal decides while he is away stays
-unwired, for him to ratify or overturn; every other call, present, irreversible or undecided, gets a
-prepared Question wired to its waiters.
+irreversible, or when the user is away. Only a call the tribunal decides while he is away, or on his
+own invocation, stays unwired, for him to ratify or overturn; every other call, irreversible or
+undecided, gets a prepared Question wired to its waiters.
 
 ### 6.2 Review FAIL
 
@@ -524,7 +524,8 @@ when the Project has no feature branch yet, or none exists at all for a standalo
 plan, and on the Project's feature branch once one is open. Route-only amendments need no review. An amendment
 that changes destination, scope, acceptance criteria or governing architecture goes back through
 `reviewer(project-plan)`, when a plan exists, and user approval before the affected tickets are
-commissioned. The review
+commissioned. A unanimous away `what-would-balazs-do` verdict is that approval and work resumes;
+only an irreversible change waits for his word. The review
 loop is capped at two rounds at any time; the second FAIL is the user's choice.
 
 ### 6.5 Merge review FAIL
@@ -589,10 +590,12 @@ integrated feature SHA and deleted when the ticket is `Done`, so nothing on it c
 product; inquisitors are read-only and refute their own catches, and their second product is the
 hypothesis list; each hypothesis in code goes to a proof-only code-writer whose only output is a test,
 red if the hypothesis holds, while one in prose, docs or a prompt file is proved by both contradicting
-passages quoted at `file:line` on the feature SHA, with no test and no proof branch; a confirmed
+passages quoted at `file:line` on the feature SHA, with no test and no proof branch; an unused
+member, export or field is proved by its definition and a reference search, with no test either,
+by `skills/roles/officers/ticket-captain/resources/inquisition.md`; a confirmed
 hypothesis is no longer a hypothesis and joins the findings; the captain deduplicates and files one
-Bug per problem under the Project, with the feature as base branch and the red test's commit, or the
-quoted passages, as reproduction, so each is picked up by a captain and fixed through the normal loop. The completed packet goes to the map holder, whose separate record Feature delivers
+Bug per problem under the Project, with the feature as base branch and the red test's commit, the
+quoted passages, or the definition and search, as reproduction, so each is picked up by a captain and fixed through the normal loop. The completed packet goes to the map holder, whose separate record Feature delivers
 `dydo/project/inquisitions/` through its own captain, docs-writer, reviews and Merge Sub-ticket.
 The [working-tree contract](../guides/working-tree-contract.md#retaining-an-inquisitions-record-and-proofs)
 owns the one-way blocker, release/resume, durable-content checks and independent Bug proof refs.
@@ -672,7 +675,9 @@ actual integration has a Merge Sub-ticket. This Type-map exception does not rela
 for parallel lanes; joining acceptance and final review stay on the parent. An elusive defect turns identification into hypotheses and proof tests,
 as the inquisition does; a trivial one collapses to one record. The reproduction is a scenario when
 the defect shows at the product's boundary, else a red test written through diagnosing-bugs; the
-fix proves itself by reverting and watching that reproduction fail again. A Bug the inquisition filed arrives with its red
+fix proves itself by reverting and watching that reproduction fail again. An unused member needs no
+test or revert: its definition and a reference search showing no caller outside the tests are its
+reproduction. A Bug the inquisition filed arrives with its red
 test at a commit, which the fixing code-writer adopts, or, from prose, with its quoted passages. Under a Project it lands like any ticket; outside one it
 is atomic.
 

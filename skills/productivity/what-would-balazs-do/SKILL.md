@@ -32,10 +32,12 @@ to reverse, surprising without context, a real trade-off. Away means
 |---|---|---|
 | Easily reversible | you decide; no skill | you decide; no skill |
 | Above your say, below DR-grade | a plain Question; no skill | the tribunal decides; where his intent is unclear, the most reversible option, flagged |
-| DR-grade | the tribunal prepares the Question | the tribunal decides if unanimous, and writes the DR |
+| DR-grade | the tribunal prepares the Question | the tribunal decides if unanimous, and writes the DR; that verdict is his approval |
 | Irreversible | his alone; the tribunal prepares the Question | the same |
 
-He may invoke this skill on any call.
+He may invoke this skill on any call. Invoked by him, it still follows this table, read in the away
+column: a reversible call is decided by the Verdict rules, and only an irreversible one, or one
+the tribunal cannot decide, waits for his word.
 
 ## Case law
 
@@ -63,18 +65,20 @@ Each member's ballot names one exact, written action.
 | DR-grade | all three naming the same text | no decision: a prepared Question |
 | below DR-grade | two naming the same text | three different actions: the most reversible option, flagged |
 
-While he is present, the result is always a prepared Question carrying the predicted answer and any
-dissent. An incomplete tribunal decides nothing; the call becomes a prepared Question.
+While he is present and has not invoked it, the result is always a prepared Question carrying the
+predicted answer and any dissent. An incomplete tribunal decides nothing; the call becomes a
+prepared Question.
 
 ## Record
 
-Every call is a `Question` ticket in `Todo`, his turn, with the tribunal log attached as a Linear
-Document.
+Every call the tribunal takes is a `Question` ticket in `Todo`, his turn, with the tribunal log
+attached as a Linear Document. A call you decide without the skill needs no record here.
 
 - **Decided:** post
   `DECIDED - by: what-would-balazs-do tribunal, unratified; result: <action>; vote: <n of 3, or split; most reversible>; log: <link>; undo: <steps>; next: <action>.`
-  Leave the Question unwired; work proceeds. A DR-grade decision also writes the repo DR
-  `status: proposed`, `ratification: pending`, linking the log.
+  Leave the Question unwired; work resumes, and any review the work requires still runs. A
+  DR-grade decision also writes the repo DR `status: proposed`, `ratification: pending`, linking
+  the log.
 - **Prepared or not decided:** no `DECIDED` post. The Question's body carries the prediction, any
   dissent, the stop reason and the log link; wire it as a blocker of every waiter.
 - **His answer:** post `RATIFIED` or `OVERTURNED` in the standard's form, quoting him, and move the

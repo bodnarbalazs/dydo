@@ -21,11 +21,11 @@ sweep and its proofs bounded. It files findings; it has no PASS/FAIL verdict.
    Bug and each open Bug's reproduction commit, where it has one (a prose or unused-member Bug has
    none), is linked through a pushed named ref independent of the audit branch, with its
    retention owner recorded.
-4. Name the completed evidence packet for the admiral: scope, feature SHA, parts/lenses, findings,
+4. Name the completed evidence packet for the Project's map holder: scope, feature SHA, parts/lenses, findings,
    hypotheses/verdicts and Bugs. Follow **Retaining an Inquisition's record and proofs** in the
    working-tree contract: a separate primary Feature/AFK owns record delivery through its own
    captain and ordinary chain. The Inquisition releases with the completed packet before that
-   Feature/blocker exists; on this return's wake the admiral contracts delivery and wires the
+   Feature/blocker exists; on this return's wake the Project's map holder contracts delivery and wires the
    one-way blocker before generic pickup. The Inquisition resumes after delivery
    to verify durable record content and merge reachability before Done and audit cleanup. Done
    when the packet, one-way dependency, verification and proof-ref ownership are exact. The sweep

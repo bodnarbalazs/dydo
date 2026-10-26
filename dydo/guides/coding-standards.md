@@ -319,7 +319,7 @@ Write comments for **why**, never for **what**. If code needs a comment explaini
 
 ### READMEs
 
-A README outside `dydo/` only points to the dydo doc that owns its folder.
+A README outside `dydo/` only points to the dydo doc that owns its folder; skill-owned resources are exempt.
 
 ---
 

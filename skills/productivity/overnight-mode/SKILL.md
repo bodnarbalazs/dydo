@@ -33,8 +33,8 @@ Done when every admiral has the announcement.
 ## Standing orders
 
 1. **Keep the conn.** Project decisions are the admiral's.
-2. **Decide by weight.** Easily reversible and not grave: decide and record `DECIDED`. Anything
-   weightier: `what-would-balazs-do`, whose trigger map decides it or prepares the Question;
+2. **Decide by weight.** Easily reversible: decide and record `DECIDED`. Other calls:
+   `what-would-balazs-do`, whose trigger map decides it or prepares the Question;
    irreversible calls are always a Question.
 3. **Merge into the feature branch**, never into master or main.
 4. **The board is the report.** Send the chief of staff no status. Contact it for cross-Project
@@ -42,8 +42,9 @@ Done when every admiral has the announcement.
    affect other agents. It relays down admiral → captain → crew. Answer a nudge in one line.
 5. **Keep moving.** One blocker never stops the night: take the next pickable work. Stop only at the
    night orders' stop line or when nothing is pickable.
-6. **Write for a reader who wasn't there**, every Question and `DECIDED`. Withdraw a Question the
-   night has already answered.
+6. **Write for a reader who wasn't there**, every Question and `DECIDED`. Withdraw only Questions
+   made obsolete by discovered facts or completed work; keep tribunal-decided Questions awaiting
+   ratification.
 
 ## Night watch
 

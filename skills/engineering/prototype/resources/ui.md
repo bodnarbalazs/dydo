@@ -91,7 +91,7 @@ return (
 For sub-shape A (existing page): keep all the existing data fetching above the switcher; only the
 rendered subtree changes per variant.
 
-For sub-shape B (new page): the throwaway route under `/prototype/<name>` mounts the same switcher.
+For sub-shape B (new page): the throwaway route, chosen by the project's routing convention, mounts the same switcher.
 
 ### 4. Build the floating switcher
 

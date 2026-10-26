@@ -32,7 +32,7 @@ crew; Ticket Captains use it to know what they own and what they hand back. The 
 | Atomic ticket | `main` | `DYD-123-<slug>` | `main` | user, clicking its PR once it carries a reviewer PASS and CI is green; no Merge Sub-ticket |
 | Lane Sub-ticket | its parent ticket branch | `DYD-124-<slug>` | its parent ticket branch | its captain-directed Merge Sub-ticket |
 | Inquisition Ticket | integrated feature SHA | `inquisition/<slug>` | none; never merges | - |
-| Proof branch | the Inquisition's audit SHA | a child branch named in the proof-only brief | none; never merges | - |
+| Proof branch | the pinned source SHA its brief names (an Inquisition's audit SHA by default) | a child branch named in the proof-only brief | none; never merges | - |
 | Prototype Ticket | its feature branch, else `main` | `prototype/<name>` | none; never merges | - |
 
 `DYD-123` is an example: use the ticket's key so Linear attaches the branch and PR. The host may
@@ -65,9 +65,10 @@ proves all five checks and returns a failure to its Ticket Captain instead of wo
 5. Every path the work item will touch is in the ticket's owned paths.
 
 Merge work proves instead the pins of the code-writer's `merge` resource: source and target at their
-SHAs, the source's PASS, the governing contract and the combined gates. Proof-only work proves three
-things: `HEAD` is on a child branch cut from the audit SHA and named in its brief, the worktree is
-clean, and only the test path is touched.
+SHAs, the source's PASS, the governing contract and the combined gates. A proof-only brief names the
+commissioning captain, the pinned source SHA (an Inquisition's audit SHA by default) and the test
+path. Proof-only work proves three things: `HEAD` is on a child branch cut from that SHA and named
+in its brief, the worktree is clean, and only the test path is touched.
 
 ## Delivery scale and evidence
 
@@ -94,8 +95,8 @@ interface shapes early.
 ## Delegation
 
 - The Admiral budgets open native capacity before commissioning or resuming a captain. The captain alone
-  commissions exact-scope crew, budgets that capacity and preserves the fresh reviewer
-  obligation. A saved brief is not Admiral-to-crew authority.
+  commissions exact-scope delivery crew, budgets that capacity and preserves the fresh reviewer
+  obligation; `research` still sends its own scouts. A saved brief is not Admiral-to-crew authority.
 - AFK work, captain or crew, runs as a child task of its dispatcher; HITL work, which the user joins,
   runs as a new top-level thread, never a child. Within one vendor, use the host's native subagents
   and messaging where they carry the work and its return. When any agent in the exchange is another

@@ -11,6 +11,8 @@ Uses the vocabulary in the `codebase-design` skill: **module**, **interface**, *
 
 ## Process
 
+Crew loading this keeps its role: return any step that shows the user or dispatches agents to your captain.
+
 ### 1. Frame the problem space
 
 Before spawning sub-agents, write a human-facing explanation of the problem space for the chosen

@@ -71,9 +71,8 @@ debugging superpower.
 ### Non-deterministic bugs
 
 The goal is not a clean repro but a **higher reproduction rate**. Loop the trigger 100×, narrow
-timing windows, inject sleeps. A 50%-flake bug is debuggable; 1% is not, so keep raising the rate
-until it's debuggable. Shared machine: force races with fake timers or interleaving, never synthetic
-CPU load; any load stays small and cleans up.
+timing windows, force timing with fake timers or explicit interleaving. A 50%-flake bug is debuggable; 1% is not, so keep raising the rate
+until it's debuggable. Shared machine: never synthetic CPU load; any load stays small and cleans up.
 
 ### When you genuinely cannot build a loop
 

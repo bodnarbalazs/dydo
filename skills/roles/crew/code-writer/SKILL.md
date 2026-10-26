@@ -34,7 +34,7 @@ captain and stop:
 5. Every path the work item will touch is in the ticket's owned paths.
 
 Merge proves the pins in [merge](resources/merge.md); proof-only, `HEAD` on its brief's child branch
-off the audit SHA, a clean worktree and only the test path touched.
+off the brief's pinned source SHA, a clean worktree and only the brief's test path touched.
 
 Commits touch owned paths only. Each hop ends on one commit named `<KEY> <hop>: <what>`, where the
 hop is `implement`, `fix` after a FAIL, or `merge`; proof-only commits `<KEY> proof: <hypothesis>`.
@@ -42,19 +42,23 @@ hop is `implement`, `fix` after a FAIL, or `merge`; proof-only commits `<KEY> pr
 ## Bug or Feature
 
 - **Bug** ([bug](resources/bug.md)): a red reproduction, then the fix; revert it, watch the
-  reproduction fail, restore. Shared machine: force races with fake timers or interleaving,
-  never synthetic CPU load; any load stays small and cleans up.
+  reproduction fail, restore. An unused member's definition and reference search are its
+  reproduction, with no revert. Shared machine: force races with fake timers or interleaving, never synthetic CPU load; any load stays small and cleans up.
 - **Feature**: before code, turn each acceptance line into a named test case, empty bodies allowed.
   Write code and tests together. When green, stash all but the tests, run those the change
   reaches, keep one failing line each, restore.
 - **Merge**: [merge](resources/merge.md).
-- **Prototype**: load `prototype`; the user's verdict is its review.
-- **Proof-only**: run only the one test deciding the hypothesis;
-  return to the inquisition's captain `confirmed` with its red-test SHA, `not reproduced`, or
+- **Prototype**: load `prototype`; return runnable-demo evidence and its commit, not the Prove
+  section. The user's verdict is its review.
+- **Proof-only**: the brief names the commissioning captain, the pinned source SHA (an
+  Inquisition's audit SHA by default) and the test path. Run only the one test deciding the
+  hypothesis; return to that captain `confirmed` with its red-test SHA, `not reproduced`, or
   `inconclusive` with the deciding observation.
 
 A test green before any code exists is a finding about the test. An existing failing test is the
-red. Deleting or disabling a test, removing an assertion or weakening a scenario is
+red. Delete a test only with code whose removal the contract or a FAIL requires: dead code with its
+test-only callers, or obsolete internal tests replaced by interface tests that still prove their
+behaviour. Disabling a test of kept behaviour, removing its assertion or weakening its scenario is
 forbidden. A test needing a sleep or timeout is wrong. Platform-specific code (processes, paths,
 signals) is proved on CI's platform too, not only on yours. Shapes and mocks:
 [tests](resources/tests.md).
@@ -63,7 +67,7 @@ signals) is proved on CI's platform too, not only on yours. Shapes and mocks:
 
 Load a skill when its trigger fires:
 
-- `diagnosing-bugs`: a Bug lacks a red reproduction.
+- `diagnosing-bugs`: a Bug other than an unused member lacks a red reproduction.
 - `codebase-design`: you design a seam or interface.
 - `domain-modeling`: you touch a glossary term or Decision Record.
 - `writing-for-agents`: you edit a skill or entry file.
@@ -78,7 +82,7 @@ Leave what you touched no worse than you found it.
 ## Prove
 
 The ticket's exact gates name the test, suite and static-gate commands. While building, run only the
-tests you wrote. When done, run the full suite of every stack you changed once, then the static gate
+tests relevant to the change. When done, run the full suite of every stack you changed once, then the static gate
 for that stack once. Any failure is yours: you were handed a green suite. Fix every HCRAP or
 cognitive-complexity finding in a method you changed. Mutation is the reviewer's.
 
@@ -88,7 +92,8 @@ Before code, post only when the work splits into disjoint lanes or the contract 
 comment naming them, then stop. Sign every comment and return `code-writer/model: <truthful identity>`.
 
 Outside proof-only, return to the Ticket Captain in the standard's form, proof carrying the red
-lines and gates run with exits:
+lines, or for an unused-member Bug its definition and reference search,
+and gates run with exits; a Prototype hop returns runnable-demo evidence and its commit:
 
 `IMPLEMENTED - hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
 

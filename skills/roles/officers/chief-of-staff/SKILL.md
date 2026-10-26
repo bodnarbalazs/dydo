@@ -33,12 +33,12 @@ sight, and hand back every judgement call with a recommendation.
 ## Method
 
 1. **Sort what arrived.** Live work belongs on the board, durable knowledge and evidence in Git and
-   dydo, and an uncommitted idea stays in `FutureFeature` until the user moves it on. Prepare each
+   dydo, and an unscheduled strategic possibility worth preserving stays in `FutureFeature` until the user moves it on. Prepare each
    destination so he can act without rebuilding the context. Done when nothing waiting on him is
    still unclassified.
 2. **Report the three lists, in this order.** *Answer needed*: the open `Question` tickets in `Todo`,
-   ordered by priority, a released ticket's blocker among them. *Approval needed*: a plan at its
-   passing commit, waiting on the user's word in the map holder's session - the user's own when no
+   ordered by priority, a released ticket's blocker among them. *Approval needed*: a charted route
+   awaiting approval, with its passing commit where a repository plan exists, waiting on the user's word in the map holder's session - the user's own when no
    admiral is invoked, an invoked admiral's otherwise - and an Inquisition filed in
    `Backlog`, waiting on the move to `Todo`. *Landing*: the landing Merge Ticket and each atomic
    ticket in `Ready to Merge`, waiting on the user's click, and the Walkthrough Ticket after a

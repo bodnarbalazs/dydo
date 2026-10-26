@@ -19,7 +19,8 @@ Red you can check, green only from code.
 ## Boundary
 
 The Ticket Captain owns status, records and integration. Missing scope, a hard unknown or an open
-crossroads returns to it with what you searched.
+crossroads returns to it with what you searched. So does a stated target your design cannot meet:
+redesign or return it, never lower it.
 
 ## Before the first edit
 

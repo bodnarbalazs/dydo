@@ -95,7 +95,7 @@ map and how the tickets move, integrate, and finish together.
    merge review; the record shows the order that ran and `done <key>: merged` wakes the next work.
 5. **Wayfind.** Rechart as discovery clears fog: create, split, drop, or resequence tickets and record
    the discoveries on the Project. Maintain shared feature intent following `dydo/reference/feature-spec-convention.md`,
-   read from the repository root; reconcile affected contracts. Where a repository plan exists,
+   read from the repository root; reconcile affected contracts, each carrying every earlier ruling the user gave on its artifact as an acceptance line. Where a repository plan exists,
    commit dated
    `## Amendment - <YYYY-MM-DD>` sections to it; give every new implementation ticket one Type,
    one Mode, and `Todo`; re-review

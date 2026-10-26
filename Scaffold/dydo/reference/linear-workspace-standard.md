@@ -160,8 +160,8 @@ that waits. Its body carries:
 
 If the answer determines which implementation ticket should exist, resolve the Question first.
 
-A Question a `what-would-balazs-do` tribunal decided while the user was away stays in `Todo`
-unwired, and work proceeds; he answers it with `RATIFIED` or `OVERTURNED`.
+A Question a `what-would-balazs-do` tribunal decided while the user was away, or on his own
+invocation, stays in `Todo` unwired, and work proceeds; he answers it with `RATIFIED` or `OVERTURNED`.
 
 ## Ticket templates
 

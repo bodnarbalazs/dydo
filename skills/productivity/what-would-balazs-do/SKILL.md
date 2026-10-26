@@ -36,7 +36,8 @@ to reverse, surprising without context, a real trade-off. Away means
 | Irreversible | his alone; the tribunal prepares the Question | the same |
 
 He may invoke this skill on any call. Invoked by him, it still follows this table, read in the away
-column: a reversible call is decided, and only an irreversible one waits for his word.
+column: a reversible call is decided by the Verdict rules, and only an irreversible one, or one
+the tribunal cannot decide, waits for his word.
 
 ## Case law
 

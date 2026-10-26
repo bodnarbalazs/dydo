@@ -75,10 +75,10 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    permitted children.
 4. **Direct the crew.** Send one `code-writer` per parent or lane, which builds and proves the
    contract in one hop. Route docs to `docs-writer`; the code-writer uses
-   `diagnosing-bugs` when a defect lacks a red reproduction. Set `Implementing` on each spawn and
+   `diagnosing-bugs` when a Bug other than an unused member lacks a red reproduction. Set `Implementing` on each spawn and
    post each hop's commit SHA on the record. Inquisition sweeps and proofs stay `In Progress`; its separate record Feature
    runs the normal docs delivery chain as below.
-   The writer's `IMPLEMENTED` return carries its red proof. Run disjoint lanes concurrently and keep every attempt on
+   The writer's `IMPLEMENTED` return carries its red proof, or for an unused-member Bug its definition and reference search. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
    Wayfinding loop before production resumes. Choose each crew member's capability as you brief it: the
    strongest supported model for real engineering challenges, the smallest adequate one otherwise,

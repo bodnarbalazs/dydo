@@ -9,4 +9,5 @@
    its test-only callers, and step 3's revert does not apply.
    Done when one observation could refute the reproduction.
 3. Fix it, then revert the fix, watch the reproduction fail, and restore. The fix claims success
-   only with that red line in the return, and with the unchanged behaviour still green.
+   only with that red line in the return, or for an unused member its definition and reference
+   search, and with the unchanged behaviour still green.

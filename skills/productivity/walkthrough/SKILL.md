@@ -1,6 +1,6 @@
 ---
 name: walkthrough
-description: Show me what landed, where to look first, and how to try it. Load only when the user asks, or at the admiral's landing step.
+description: Show me what landed, where to look first, and how to try it. Load only when the user asks, or at the map holder's landing step.
 ---
 
 # Walkthrough

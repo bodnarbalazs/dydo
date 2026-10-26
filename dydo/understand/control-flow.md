@@ -53,7 +53,7 @@ session or an invoked admiral can direct one per ticket.
 | ticket-captain | officer, the default, also agent | top-level for an atomic or HITL ticket; spawned by the user's session or an invoked admiral for an AFK one | the user's session, or an invoked admiral | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, takes an adjacent ticket only on the user's word, sets the status at every chain spawn, directs [code-writer] → [reviewer] on the parent or each lane and adds a spec review only on a risk its contract records, divides when the writer names lanes, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-tickets or, on an atomic ticket, waits for the user's click, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
 | chief-of-staff | officer | top-level session, explicit-only | the user | none | the bird's-eye view over the Projects in flight: the three lists, grilling open Questions, mediating collisions, sweeping stale state and orphans | the user (C); delivery staged on its Project for the map holder (L) |
 | research | crew, delegates, web | agent | co-thinker, the map holder, ticket-captain | reads | one fact a choice waits on, cited; sends scouts | the invoker: one-line answer, destination, unsettled points (R); report as ticket comment (L) or scratch file (F) |
-| code-writer | crew | agent | ticket-captain, on the parent first, then per lane | the ticket branch; a Merge Sub-ticket; a proof branch off the audit SHA | one ticket's contract on the `implement` hop, test-driven by Type: a Bug red before its fix and red again with the fix reverted; a Feature's acceptance lines as named tests written with the code, proved to fail with the code stashed; the full suite and static gate of each changed stack once, HCRAP and cognitive complexity fixed in changed methods. Posts nothing before code unless it names lanes or an inexact contract. On a Merge: the merge commit and its resolutions. Proof-only: the test that would catch one hypothesis, committed as `<KEY> proof: <hypothesis>` | the captain: the `IMPLEMENTED` line with hop SHA, behaviour, red proof, gates run and blocker (R); for a hypothesis, `confirmed`, `not reproduced` or `inconclusive` |
+| code-writer | crew | agent | ticket-captain, on the parent first, then per lane | the ticket branch; a Merge Sub-ticket; a proof branch off the brief's pinned source SHA (the audit SHA for an Inquisition) | one ticket's contract on the `implement` hop, test-driven by Type: an unused-member Bug its definition and a reference search, any other Bug red before its fix and red again with the fix reverted; a Feature's acceptance lines as named tests written with the code, proved to fail with the code stashed; the full suite and static gate of each changed stack once, HCRAP and cognitive complexity fixed in changed methods. Posts nothing before code unless it names lanes or an inexact contract. On a Merge: the merge commit and its resolutions. Proof-only: the test that would catch one hypothesis, committed as `<KEY> proof: <hypothesis>` | the captain: the `IMPLEMENTED` line with hop SHA, behaviour, red proof, gates run and blocker (R); for a hypothesis, `confirmed`, `not reproduced` or `inconclusive` |
 | docs-writer | crew | agent | ticket-captain, including the separate record Feature's captain for an inquisition | the delivery ticket branch | one documentation change with a witness per claim; the record Feature preserves the pinned inquisition packet | the delivery captain: ending SHA, exact record path/digest, files, witnesses, `dydo check` (R) |
 | reviewer | crew, non-authoring | agent | the map holder, ticket-captain | reads a pinned candidate | one rubric: code, docs, project-plan, spec, merge | the invoker: the review block (R), posted on the record and in the PR body (L, G) |
 | scout | crew, non-authoring, web | agent | research | reads one source family | passages back, no conclusions | research (R) |
@@ -268,8 +268,8 @@ Step by step, with the Linear status each step leaves behind:
 8. **Shape.** Only when the writer names lanes: the captain writes the lane contracts and opens lane
    Sub-tickets in `Todo`, each with its own branch and worktree off the parent branch, plus one Merge
    Sub-ticket per lane, wired in order; the parent sits `In Progress` while its lanes run. Section 3c.
-9. **Prove red.** The writer's `IMPLEMENTED` return carries its red proof: a Bug's reproduction
-   failing with the fix reverted, a Feature's tests failing with the code stashed.
+9. **Prove red.** The writer's `IMPLEMENTED` return carries its red proof: an unused-member Bug's definition and
+   reference search, any other Bug's reproduction failing with the fix reverted, a Feature's tests failing with the code stashed.
 10. **Review.** `In Review`; a fresh reviewer with one rubric returns the standard's one-line
     block. PASS binds that candidate under that contract. FAIL returns the record to
     `Implementing`, whatever it found.
@@ -469,9 +469,9 @@ asks it to, it is never sent anything.
 
 A call above the officer's say goes through `what-would-balazs-do`
 ([DR 054](../project/decisions/054-what-would-balazs-do-tribunal.md)) when it is DR-grade or
-irreversible, or when the user is away. Only a call the tribunal decides while he is away stays
-unwired, for him to ratify or overturn; every other call, present, irreversible or undecided, gets a
-prepared Question wired to its waiters.
+irreversible, or when the user is away. Only a call the tribunal decides while he is away, or on his
+own invocation, stays unwired, for him to ratify or overturn; every other call, irreversible or
+undecided, gets a prepared Question wired to its waiters.
 
 ### 6.2 Review FAIL
 
@@ -675,7 +675,9 @@ actual integration has a Merge Sub-ticket. This Type-map exception does not rela
 for parallel lanes; joining acceptance and final review stay on the parent. An elusive defect turns identification into hypotheses and proof tests,
 as the inquisition does; a trivial one collapses to one record. The reproduction is a scenario when
 the defect shows at the product's boundary, else a red test written through diagnosing-bugs; the
-fix proves itself by reverting and watching that reproduction fail again. A Bug the inquisition filed arrives with its red
+fix proves itself by reverting and watching that reproduction fail again. An unused member needs no
+test or revert: its definition and a reference search showing no caller outside the tests are its
+reproduction. A Bug the inquisition filed arrives with its red
 test at a commit, which the fixing code-writer adopts, or, from prose, with its quoted passages. Under a Project it lands like any ticket; outside one it
 is atomic.
 

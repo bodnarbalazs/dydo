@@ -76,7 +76,7 @@ Iterate until the user approves the breakdown.
 
 ### 5. Publish the tickets to Linear
 
-Publish one ticket per approved slice in dependency order (blockers first), so each ticket's blocking edges can reference real keys, and wire every edge as Linear's native blocked-by relation. Create each ticket in `Todo` unless its Type's status rule says otherwise (an unconfirmed Inquisition starts in `Backlog`), unassigned, with its Type label, its Mode label where a captain holds the Type, and settled owned paths: pickable by construction.
+Publish one ticket per approved slice in dependency order (blockers first), so each ticket's blocking edges can reference real keys, and wire every edge as Linear's native blocked-by relation. Create each ticket in `Todo` unless its Type's status rule says otherwise (an unconfirmed Inquisition starts in `Backlog`), unassigned, with its Type label, its Mode label where a captain holds the Type, and settled owned paths: pickable by construction once in `Todo`.
 
 Set priority, per the standard's Priority section in `dydo/reference/linear-workspace-standard.md`, on a `Question` or HITL ticket it creates; leave AFK tickets without one.
 

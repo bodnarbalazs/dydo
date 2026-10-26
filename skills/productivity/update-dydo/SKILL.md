@@ -63,14 +63,14 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    - Remove directories the deletions leave empty.
    - A skill, or a doc under the docs root, that only the project has: leave it alone.
 
-   **Entry file.** Ours is the project file derived from the old rendered entry point: it keeps
-   its first heading and most of its lines. Several derive: merge the one at the reference's entry
+   **Entry file.** Ours is the project file derived from the old rendered entry point: it keeps its
+   first heading and most of its lines. Several derive: merge the one at the reference's entry
    path first, then the others' edits into that. None derives: render the new one fresh. Write the
    result where the reference writes the entry point. A non-derived file there is the user's: put
-   the result at its top, keep their text below and list it; when their text already
-   covers the entry point, ask the user instead. Render both tags' entry points as `init` does, trailing newlines
-   trimmed, naming the project from ours' first heading (init wrote the folder name there; the
-   folder may since be renamed or cloned), or the folder name with no ours.
+   the result at its top, keep their text below and list it; when their text already covers the
+   entry point, ask the user instead. Render both tags' entry points as `init` does, trailing
+   newlines trimmed, naming the project from ours' first heading (init wrote the folder name
+   there; the folder may since be renamed or cloned), or the folder name with no ours.
 
    **Protected files.** The guard blocks writes to the Protected Patterns in the docs root's
    `files-off-limits.md`. For each one the merge changes, write the result to a temp file outside

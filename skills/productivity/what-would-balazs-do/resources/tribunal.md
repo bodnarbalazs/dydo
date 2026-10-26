@@ -8,8 +8,8 @@ verbatim, tracks turns and claims, and tallies ballots; its view enters only thr
 
 Set every phase's deadline when you open the case file. Append each finished phase to the log before the next.
 
-1. **Case file.** Research the case law, sending `research` or `scout` sparingly where a source is
-   out of reach. Write the case file below. Done when it holds every option, unranked.
+1. **Case file.** Research the case law, sending `research` sparingly where a source is out of
+   reach. Write the case file below. Done when it holds every option, unranked.
 2. **Seal.** Write and log your own sealed position before any judge starts.
 3. **Dispatch.** Start two fresh judges as T3 `delegate_task` children, one Claude and one Codex,
    each with the strongest model and effort set explicitly. Send each the judge brief with the case
@@ -29,7 +29,8 @@ Set every phase's deadline when you open the case file. Append each finished pha
 
 A missing or stalled member gets one retry. After that the tribunal is incomplete and ends without a
 decision; never swap a vendor silently. An experiment goes to a proof-only `code-writer` in an
-isolated worktree, its effects contained; members otherwise only read.
+isolated worktree, its effects contained; its brief names the commissioning captain, the pinned
+source SHA and the test path. Members otherwise only read.
 
 ## Case file
 
@@ -55,7 +56,7 @@ Judges get this and nothing else from your session:
 
 > You are a judge on a `what-would-balazs-do` tribunal. Load that skill and follow its
 > `resources/tribunal.md`. Answer as Balazs would, in the spirit of his words, citing why he
-> decided. You may send `research` or `scout` subagents after evidence. Return your sealed position
+> decided. You may send `research` subagents after evidence. Return your sealed position
 > in the skill's form by <deadline>. Later rounds arrive as queued messages; answer each with one
 > turn. As a judge, use the Sealed position form and phases 4-7 as a member; phases 1-3, the clerk
 > duties and writing the ballot list are the clerk's. Never dispatch judges.

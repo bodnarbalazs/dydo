@@ -65,6 +65,7 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    where workable, some code never. When one risk buys a spec review, record that risk in the
    contract, brief a fresh `reviewer(spec)` on the contract text and set `In Review`; either verdict
    sets `Implementing`. A target lowered for cost goes back up once new evidence makes it reachable.
+   A re-contract of an artifact carries every earlier ruling the user gave on it as an acceptance line.
    **Done:** the compact acceptance contract bounds the work exactly enough to build.
 3. **Shape.** Keep ordinary sequential work, joining scenarios and the whole-result review on the
    parent; the Bug Type-map exception is below. Where the writer's comment names disjoint parallel lanes, open them in `Todo`, with the parent's Type and Mode, bounded

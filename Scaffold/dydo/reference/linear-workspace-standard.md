@@ -193,7 +193,8 @@ crew briefed for one hop take the first list alone.
 
 Use metadata first: the current active contract and named evidence only. Keep the stable current
 contract and state in the description. Read comments only for a named missing fact or binding review;
-comments have no assumed order. Filter tool output before it enters model context.
+comments have no assumed order. Filter tool output before it enters model context. Name an agent
+without its `@` unless you mean to delegate: an `@mention` starts that agent's session.
 
 Keep existing historical originals accessible. Put new full raw proof and native gate logs once in a
 durable, linked Git or document artifact; do not dump them into PRs or comments. Each gate result

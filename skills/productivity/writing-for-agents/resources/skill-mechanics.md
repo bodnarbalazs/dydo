@@ -10,7 +10,10 @@ universal reference in this skill's body.
 format; there is no template and no compile step. The canonical artifact is
 `skills/<category>/<name>/SKILL.md`, per the [agentskills.io](https://agentskills.io) standard: `name` and
 `description` in the frontmatter and the methodology in the body. `<category>` is the category path:
-`roles/officers`, `roles/crew`, `engineering` or `productivity`.
+`roles/officers`, `roles/crew`, `engineering` or `productivity`. Borrow ideas, not whole upstream
+flows; each borrowed passage carries `<!-- Adapted from <repo> <skill> at <sha> (<license>). -->`, as
+this file does. A rule may rely only on what both hosts support; one host's extra is a named
+convenience.
 
 ## Frontmatter
 

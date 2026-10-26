@@ -55,6 +55,10 @@ dydo fix
 | Broken link | Correct or remove the relative target. |
 | Unreachable document | Add a useful authored navigation or durable-parent link. |
 
+In the dydo repository itself, an installed `dydo` older than the source can disagree with it. When
+`dydo version` is below `<Version>` in `DynaDocs.csproj`, run `dotnet build -c Release`, then
+`dotnet bin/Release/net10.0/dydo.dll check` (or `fix`).
+
 The dydo 2.x PM corpus has been migrated and retired. Use frozen Git commit permalinks when historical
 evidence is needed; do not recreate repository work records to address a current problem.
 
@@ -67,6 +71,12 @@ collision, the existing file, directory, or link to a target outside the reposit
 is user-owned and remains untouched. Decide whether to keep or relocate it, then rerun setup.
 Existing correct links are accepted. There is no compile step, copy reconciliation, or generated
 agent definition. Run `dydo check` to validate the documentation tree.
+
+## Line endings look wrong
+
+A Windows checkout with `core.autocrlf=true` shows CRLF on text files `.gitattributes` does not pin
+to LF, while Git stores LF. Measure endings from
+the blob (`git cat-file -p :<path>`), not the file on disk.
 
 ## Linear boundary mistakes
 

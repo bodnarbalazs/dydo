@@ -99,3 +99,5 @@ A prohibition earns its place only as a hard guardrail you cannot phrase positiv
 - Hunt **no-ops** sentence by sentence: an instruction the model already obeys by default pays load to say nothing. The test (does it change behaviour versus the default?) is model-relative, not reader-relative: two people disagreeing about a no-op disagree about the default, and settle it by running the document, not by debate. When a sentence fails, delete the whole sentence rather than trim words from it.
 
   The test also grades leading words: a word too weak to beat the default (_be thorough_ when the agent is already thorough-ish) is a no-op, and the fix is a stronger word (_relentless_), not a different technique.
+- Say each **rule** in about twelve plain words; keep precision only where a real failure needs it.
+- Keep one project's tooling and names out of shared, generic skill and Scaffold text.

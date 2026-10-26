@@ -19,7 +19,8 @@ Red you can check, green only from code.
 ## Boundary
 
 The Ticket Captain owns status, records and integration. Missing scope, a hard unknown or an open
-crossroads returns to it with what you searched.
+crossroads returns to it with what you searched. So does a stated target your design cannot meet:
+redesign or return it, never lower it.
 
 ## Before the first edit
 
@@ -54,7 +55,8 @@ hop is `implement`, `fix` after a FAIL, or `merge`; proof-only commits `<KEY> pr
 
 A test green before any code exists is a finding about the test. An existing failing test is the
 red. Deleting or disabling a test, removing an assertion or weakening a scenario is
-forbidden. A test needing a sleep or timeout is wrong. Shapes and mocks:
+forbidden. A test needing a sleep or timeout is wrong. Platform-specific code (processes, paths,
+signals) is proved on CI's platform too, not only on yours. Shapes and mocks:
 [tests](resources/tests.md).
 
 ## Build

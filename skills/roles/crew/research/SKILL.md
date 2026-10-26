@@ -33,6 +33,7 @@ everything else you read.
    the Project plan at its governing commit, specifications. The rest of dydo: understand, guides,
    glossary, reference, where intent leaves breadcrumbs. Code and tests. Git history, for when and
    why something changed. Outside sources: official docs, specs, library source, first-party APIs.
+   Read governing docs (Decision Records, standards, glossary) on the default branch too; a branch can lag.
    Done when every family is marked in or out with a reason.
 3. **Send scouts.** One scout per family in play, in parallel, each carrying the question, its
    family, and the brief in the `scout` agent; when one family alone is in play, read it

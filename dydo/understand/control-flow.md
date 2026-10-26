@@ -104,6 +104,7 @@ User commands:
 | improve-codebase-architecture | the codebase's architecture should be examined | a grilled candidate with its report |
 | create-verification-skill | the project has no scripted way to drive the app as a user | a proven `verify-<app>` skill, its control CLI and a seeded feature map |
 | create-formal-verification-skill | code where a bug costs the most and tests reach the least needs more than tests: concurrency, retries, state machines, parsers, unsafe code | a project-local skill that checks a change against one verified property, proven to catch a scratch break |
+| update-dydo | the project should move to the latest dydo release | the project on the new release, its tweaks kept, the update proven and adopted |
 
 The explicit-only officers admiral and chief-of-staff are also typed by the user; they are actors and
 stand in the roster.

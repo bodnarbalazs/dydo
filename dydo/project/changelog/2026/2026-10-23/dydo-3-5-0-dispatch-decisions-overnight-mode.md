@@ -70,7 +70,9 @@ trail and comments that only restated the code. Existing checkouts must rerun
   the CLI, applies each release entry's Upgrade steps, merges `skills/`, `setup-skills.mjs`,
   `THIRD-PARTY-NOTICES.md`, `Scaffold/dydo/` and the entry point three-way, rewires the hosts,
   proves the update took effect and records the new version. It does not install dydo into a
-  project that lacks it.
+  project that lacks it. It is user-invoked and version-agnostic: it finds what to compare in the
+  project, the release tags and a fresh `dydo init`, so it holds no checklist to update per
+  release; release work comes from each entry's Upgrade steps.
 - The `dydoVersion` field in `dydo.json` and `dydo adopt <version>` (DYD-360, PR #171).
   `dydoVersion` names the release whose skills and documents the project adopted. A fresh
   `dydo init` writes it, `--join` leaves it alone, and `dydo adopt 3.5.0` (or `v3.5.0`) sets it.
@@ -119,12 +121,14 @@ trail and comments that only restated the code. Existing checkouts must rerun
   `parent_not_active` a captain hands the dispatch to its officer and the chief of staff asks the
   user; the admiral dispatches the captain's crew for it. The working-tree contract opens a
   top-level thread only for HITL work or when the user asks for one.
-- `what-would-balazs-do` judges by the spirit of his words, not by matching case law (DYD-371,
+- `what-would-balazs-do` judges by the spirit of his words, not just by matching case law (DYD-371,
   PR #169). Case law is evidence of his intent: the tribunal decides in that spirit with or without
   a precedent, and a recorded decision that goes against it or no longer fits loses to it. The
   position names that decision and why, and the call becomes DR-grade, or at least flagged. A
   citation carries the reason behind his words; an inferred reason is marked inferred and names
   the DRs or docs it rests on. DR 054 records the amendment.
+- The admiral's memory notes moved into short lines across the skills and guides (DYD-384,
+  PR #181).
 - Code comments keep only the why (DYD-366, PR #168): a sweep across the hand-written source
   removed comments that restated the code, recorded history or duplicated another. The Claude
   guard matcher no longer names `AskUserQuestion`. CLI messages say "the user" where they meant
@@ -201,7 +205,8 @@ trail and comments that only restated the code. Existing checkouts must rerun
    file, keeping the project's edits. The dydo entry file is whichever of `AGENTS.md` and
    `CLAUDE.md` derives from the 3.4.x entry point (its first heading and most of its lines); with
    neither, render `Scaffold/entry-point.md`, `{{PROJECT_NAME}}` set to the project name. Write the
-   result to `AGENTS.md`. An `AGENTS.md` that does not derive is the user's: put the result at its
+   result to `AGENTS.md`. When both derive, merge `AGENTS.md`, then merge `CLAUDE.md`'s edits into
+   that result. An `AGENTS.md` that does not derive is the user's: put the result at its
    top and keep their text below it; `--join` leaves an existing `AGENTS.md` alone. The guard blocks
    agent writes to `dydo/index.md`, `dydo/files-off-limits.md` and the other paths under its
    Protected Patterns, so a person applies those merges.
@@ -218,7 +223,8 @@ trail and comments that only restated the code. Existing checkouts must rerun
    top (`@../AGENTS.md` in `.claude/CLAUDE.md`).
 6. Run steps 4 and 10 in every checkout of the project, since the Claude Code wiring in
    `.claude/settings.local.json` and the skill links in `.claude/skills/` and `.agents/skills/`
-   are machine-local. `--join` also removes dydo's Stop hook, which
+   are machine-local. Each checkout needs the 3.5.0 CLI first: an older one fails on the hook's
+   `dydo guard --host claude`. `--join` also removes dydo's Stop hook, which
    otherwise fails on the removed `--stop` option at every turn end, and writes the `dydo clean`
    allow rules.
 7. If `--join` warns about `CLAUDE.local.md`, put `@AGENTS.md` at its top, or set Claude Code's
@@ -232,7 +238,13 @@ trail and comments that only restated the code. Existing checkouts must rerun
     and Codex's `$CODEX_HOME/memories/`. Triage each note into a skill, a Decision Record or a doc,
     facts about the user into the user's own global `CLAUDE.md` or `AGENTS.md`, or drop it, then
     delete the folder. The guard blocks agent writes there, so a person does a delete it refuses.
-12. Run `dydo adopt 3.5.0`. It also adds the new-file nudge for Markdown outside `dydo/` to
+12. After step 4, check by hand what no step sets (DR 055). `autoMemoryEnabled` is not `true` in
+    `.claude/settings.local.json` or in any Claude profile's `settings.json`, and
+    `CLAUDE_CODE_DISABLE_AUTO_MEMORY` does not turn memory back on. In the user's
+    `$CODEX_HOME/config.toml` (default `~/.codex/config.toml`), neither `[features] memories` nor
+    `memories.generate_memories` is `true`. Note any `permissions.deny` rule covering a memory
+    folder as found. `dydo guard --action write --path ~/.claude/projects/p/memory/x.md` exits 2.
+13. Run `dydo adopt 3.5.0`. It also adds the new-file nudge for Markdown outside `dydo/` to
     `dydo.json` when missing (DYD-375).
 
 ## Files Changed

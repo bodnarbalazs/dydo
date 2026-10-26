@@ -377,7 +377,8 @@ class Collectors:
             self.coverage / 'node_modules/dependency-cruiser/bin/dependency-cruise.mjs',
             '--no-config', '--output-type', 'json', '--do-not-follow', 'node_modules', *options, *sorted(paths)])
         modules = native['modules']
-        identities = [row['source'] for row in modules]
+        # A third-party module may repeat (node_modules leaves stay listed); only our own sources must be unique.
+        identities = [row['source'] for row in modules if row['source'] in paths]
         if len(identities) != len(set(identities)) or not paths <= set(identities):
             raise ValueError('Missing or ambiguous dependency-cruiser source identity')
         edges, errors = [], []

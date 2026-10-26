@@ -12,10 +12,8 @@ conflicts. Update only. Skipping activation changes nothing, so steps 7 and 8 ar
 Find every concrete thing you compare in the project, the tags and a fresh reference install.
 Release-specific work lives in each release's changelog entry, not here.
 
-Leave each destination the guard keeps off-limits out of every comparison and merge, the
-old-version guess included: the off-limits patterns in the docs root's `files-off-limits.md`,
-dydo's system folders (`dydo/_system/`, say) and any path whose read it refuses. The new tag and
-step 3's reference show which ones dydo writes; list those for the user, like protected files.
+Exclude off-limits destinations from every comparison and merge, including the old-version guess.
+List them for the user to handle, like protected files, and continue.
 
 Run this in the user's own top-level session, never a sub-agent: the guard denies sub-agents
 `dydo adopt`, and the CLI install and protected-file merges need the user.

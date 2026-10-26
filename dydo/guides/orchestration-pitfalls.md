@@ -42,7 +42,8 @@ before the first edit. Keep the ticket blocked in Linear until its blockers land
 temporary union into permanent history.
 
 **Rule:** stage the paths you own, by name. One writer per worktree; edits you meet that you do not own
-are left where they are and reported.
+are left where they are and reported. Before committing, read `git diff --cached --name-only`: files
+someone else already staged ride into your commit even when you stage by name.
 
 ## 4. Disjoint paths, shared gates
 

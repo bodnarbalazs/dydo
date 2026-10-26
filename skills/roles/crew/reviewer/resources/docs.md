@@ -14,8 +14,9 @@ Every item below is a FAIL when it holds.
    acceptance criteria and gates are named; an unmet criterion or an edit outside the owned paths
    is a finding.
 2. **Sort every changed file** into one of the two lists below, then work that list entire.
-3. **Verify from source.** Open the paths, run the commands, read the code; rerun the ticket's gates
-   yourself, `dydo check` among them. Drift lives in the sentence nobody rechecked. Done when every
+3. **Verify from source.** Open the paths, run the commands, read the code; check this stage's
+   exact-candidate gate evidence, `dydo check` among it, and rerun a gate only on a doubt you
+   state. Drift lives in the sentence nobody rechecked. Done when every
    claim the change makes has met its source.
 
 ## Human-facing dydo documents

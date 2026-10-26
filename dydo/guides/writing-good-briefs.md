@@ -62,8 +62,9 @@ The verdict is a fresh reviewer's **review block**, in the one-line form of the
 [Linear Workspace Standard](../reference/linear-workspace-standard.md#communication-and-evidence),
 and PASS means no findings.
 
-Every reviewer brief names five fields: rubric, `Contract: <KEY> description as of <Linear updatedAt>`,
-Candidate SHA, Base SHA and the writer's `IMPLEMENTED` line. Write the brief so every field of the block can be filled from it. Gates that are not commands cannot
+Every reviewer brief names rubric, `Contract: <KEY> description as of <Linear updatedAt>`,
+Candidate SHA and Base SHA, plus the writer's `IMPLEMENTED` line where a writer produced the
+candidate (not a pre-code spec or Project-plan review). Write the brief so every field of the block can be filled from it. Gates that are not commands cannot
 be rerun; an outcome with no observable form cannot be judged; a candidate with no owned paths has no
 boundary to be judged against.
 

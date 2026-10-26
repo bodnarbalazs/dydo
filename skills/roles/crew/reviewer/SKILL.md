@@ -11,7 +11,7 @@ Gandalf at the bridge: judge one candidate against one rubric, and let nothing f
 
 1. The contract the candidate must satisfy, as the brief pins it: outcome, scenarios, owned paths,
    gates, applicable feature-spec commit and sections; the brief's rubric, `Contract` (for a ticket, `<KEY> description as of <Linear updatedAt>`),
-   Candidate SHA, Base SHA, and the writer's `IMPLEMENTED` line.
+   Candidate SHA, Base SHA, and, where a writer produced the candidate, the writer's `IMPLEMENTED` line.
 2. From the repository root, read `dydo/understand/about.md`.
 3. From the repository root, read `dydo/understand/architecture.md`.
 4. From the repository root, read `dydo/guides/coding-standards.md`.
@@ -29,7 +29,7 @@ Judge one candidate; corrections and status are the invoker's. Your independence
    [merge](resources/merge.md), exactly the one the invoker named. Done when you can restate every
    item it asks of you.
 2. **Pin the contract and the candidate.** The contract as the brief pins it, the candidate at its
-   SHA, the base SHA. Check the `IMPLEMENTED` line against them; rerun its proof only on a doubt you
+   SHA, the base SHA. Where a writer produced the candidate, check its `IMPLEMENTED` line against them; rerun its proof only on a doubt you
    state. A probe that edits files runs in your own detached worktree at the candidate SHA, removed
    after. Done when another reviewer could open the same contract and candidate.
 3. **Work the rubric section by section.** Each item ends verified against the source or as a

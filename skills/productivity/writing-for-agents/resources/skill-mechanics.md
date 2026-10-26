@@ -12,7 +12,8 @@ format; there is no template and no compile step. The canonical artifact is
 `description` in the frontmatter and the methodology in the body. `<category>` is the category path:
 `roles/officers`, `roles/crew`, `engineering` or `productivity`. Borrow ideas, not whole upstream
 flows; each borrowed passage carries `<!-- Adapted from <repo> <skill> at <sha> (<license>). -->`, as
-this file does.
+this file does. A rule may rely only on what both hosts support; one host's extra is a named
+convenience.
 
 ## Frontmatter
 

@@ -57,7 +57,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
 
 1. **Claim.** Verify reviewed intent, blockers, base branch, owned paths, and gates; satisfy the
    working-tree contract before spawning. When the Project's map holder commissions Project setup, open the
-   feature branch from its named approved main SHA before creating the ticket branch. **Done:** the parent is assigned and records its Type,
+   feature branch from its named approved main SHA before creating the ticket branch. A move or
+   rename also owns every file it breaks: links, tests, notices. **Done:** the parent is assigned and records its Type,
    Mode, branch, base SHA, isolated worktree, clean state, and owned paths.
 2. **Contract.** Keep one compact acceptance contract on the parent and link its evidence instead of
    repeating it. Say in it whether the ticket carries Gherkin: user journeys yes, backend processes

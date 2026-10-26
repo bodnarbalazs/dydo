@@ -57,7 +57,7 @@ dydo fix
 
 In the dydo repository itself, an installed `dydo` older than the source can disagree with it. When
 `dydo version` is below `<Version>` in `DynaDocs.csproj`, run `dotnet build -c Release`, then
-`dotnet bin/Release/net10.0/dydo.dll check`.
+`dotnet bin/Release/net10.0/dydo.dll check` (or `fix`).
 
 The dydo 2.x PM corpus has been migrated and retired. Use frozen Git commit permalinks when historical
 evidence is needed; do not recreate repository work records to address a current problem.

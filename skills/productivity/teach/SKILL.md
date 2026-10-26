@@ -31,7 +31,7 @@ directory in several files:
   future sessions. These should be used to calculate the zone of proximal development. They are
   titled `0001-<dash-case-name>.md`, where the number increments each time. Use the format in
   [learning-record-format](resources/learning-record-format.md).
-- `./lessons/*.html`: A directory of lessons. A **lesson** is one HTML lesson file linking reusable
+- `./lessons/*.html`: A directory of lessons. A **lesson** is one HTML file linking reusable
   components from `../assets/`, that teaches one tightly-scoped thing tied to the mission. This is the primary unit of teaching in
   this workspace.
 - `./assets/*`: Reusable **components** shared across lessons. See [Assets](#assets).
@@ -69,7 +69,7 @@ design lessons which build long-term retention by desirable difficulty:
 ## Lessons
 
 A lesson is the main thing you produce: the unit in which knowledge and skills reach the user. Each
-lesson is one HTML lesson file linking reusable components from `../assets/`, saved to `./lessons/` and titled `0001-<dash-case-name>.html`
+lesson is one HTML file linking reusable components from `../assets/`, saved to `./lessons/` and titled `0001-<dash-case-name>.html`
 where the number increments each time.
 
 A lesson should be **beautiful**, with clean, readable typography and layout, since the user will

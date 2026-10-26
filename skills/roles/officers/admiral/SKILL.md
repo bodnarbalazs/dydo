@@ -101,7 +101,7 @@ map and how the tickets move, integrate, and finish together.
    `## Amendment - <YYYY-MM-DD>` sections to it; give every new implementation ticket one Type,
    one Mode, and `Todo`; re-review
    changes to destination, scope, acceptance criteria, or governing architecture and obtain human
-   approval before affected work resumes. **Done:** the
+   approval before affected work resumes; a unanimous away `what-would-balazs-do` verdict is that approval, and only an irreversible change waits for his word. **Done:** the
    Project map matches the work in flight.
 6. **Clear fog.** Do small discovery inline; create a Wayfinding Ticket when the investigation needs
    its own status, owner, blocker, or evidence. Dispatch Research agents, use Prototype in its captain's session

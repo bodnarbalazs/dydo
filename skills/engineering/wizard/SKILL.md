@@ -19,7 +19,7 @@ A wizard is ephemeral by default: built for one run, saved to a scratch or `scri
 
 Work out every manual step the user must take and every value that gets captured along the way. Read the repo first, don't ask cold:
 
-- For setup: the permitted templates and config, respecting off-limits (no `.env*` reads): `.env.example`, `README`, `docker-compose*`, framework config, and `.github/workflows/*` (every `secrets.*` / `vars.*` reference is a value the wizard must produce).
+- For setup: the permitted templates and config, respecting off-limits (off-limits blocks `.env*` reads; the whitelist exempts `.env.example`): `.env.example`, `README`, `docker-compose*`, framework config, and `.github/workflows/*` (every `secrets.*` / `vars.*` reference is a value the wizard must produce).
 - For a migration or transition: the current state, the target state, and the irreversible actions between them.
 
 Then show the user the ordered list of stages and the values each produces, and confirm: he may add, drop, or reorder.

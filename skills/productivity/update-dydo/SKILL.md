@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Take what the project already has, tweaks included, apply what upstream added and changed, and
 resolve the conflicts. Update only. An update that skips activation silently changes nothing, so
-steps 7 and 8 are the heart of it.
+steps 8 and 9 are the heart of it.
 
 Every concrete thing you compare is found, never recalled: read the project, the tags and a fresh
 reference install. Release-specific work lives in each release's changelog entry, not here.
@@ -24,7 +24,7 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    https://github.com/bodnarbalazs/dydo/blob/master/dydo/project/changelog/_changelog.md, and stop.
 2. **Fetch.** Clone https://github.com/bodnarbalazs/dydo into a temp directory outside the project.
    Read a file at a tag with `git show <tag>:<path>`.
-3. **Versions.**
+3. **New and CLI.**
    - New = the latest release tag: `gh release view -R bodnarbalazs/dydo --json tagName`. Without
      a signed-in `gh`: the newest `v*` release tag by version from
      `git ls-remote --tags https://github.com/bodnarbalazs/dydo`, skipping pre-release tags (a `-`
@@ -32,22 +32,29 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    - CLI = `dydo version`. Older than new: tell the user, then update it with the tool that
      installed it: `npm install -g dydo` when `npm ls -g dydo` lists it, `dotnet tool update -g dydo`
      when `dotnet tool list -g` does. From here on `dydo` is the updated CLI.
-   - Old = the release `dydo.json` records as adopted. None recorded: guess it. For each release
-     tag with a `skills/` folder, count the files that differ, or exist on one side only, across
-     `skills/` and `Scaffold/dydo/` against the project's `skills/` and `dydo/`, line endings
-     normalised. Fewest wins; a tie goes to the newer tag. Tell the user it is a guess.
-   - Old equals new: tell the user the project is current, then still run steps 7 and 8.
 4. **Reference install.** In an empty temp folder outside the project, with no `dydo.json` in any
-   folder above it, run `dydo init all`. It writes only there and asks nothing. Its files are what
-   the new release writes.
-5. **Upgrade steps.** For each release after old, up to new, open its entry from the Releases list
-   in `dydo/project/changelog/_changelog.md` at the new tag. Apply its `## Upgrade steps`, skipping
-   those this skill already performs: CLI install, merge, activation, adopt. An entry without that
-   section: take its steps from its Changed and Removed sections.
-6. **Merge**, file by file, three ways: base = old tag, ours = the project, theirs = new tag. The
-   set is found at the new tag: the files its `README.md` tells a project to copy, and what
-   `dydo init` renders from its `Scaffold/`, each against the project file where the README or the
-   reference install puts it.
+   folder above it, run `dydo init all`. It asks nothing, and its files are what the new release
+   writes. Like any `init`, it may also add dydo's shell completion block to the user's shell
+   profile, once; tell the user.
+
+   A tag's **sources** are what `init` renders from: the folder whose files match, path for path,
+   the reference's files under its docs root (`git ls-tree -r --name-only <tag>`), and the file
+   that is the reference's entry point with the project name as a placeholder. Find them at each
+   tag you read; the repo may move them.
+5. **Old** = the release `dydo.json` records as adopted. None recorded: guess it. For each release
+   tag with a `skills/` folder, count the files that differ, or exist on one side only, across
+   `skills/` and the tag's docs source against the project's `skills/` and docs root (`dydo.json`
+   names it), line endings normalised. Fewest wins; a tie goes to the newer tag. Tell the user it
+   is a guess. Old equals new: tell the user the project is current, then still run steps 8 and 9.
+6. **Upgrade steps.** For each release after old, up to new, open its entry from the Releases list
+   in `dydo/project/changelog/_changelog.md` at the new tag and read its `## Upgrade steps`; an
+   entry without that section: take its steps from its Changed and Removed sections. Skip those
+   this skill already performs: CLI install, merge, activation, adopt. Apply each other step where
+   its own text puts it: one that acts on merge results right after step 7, one that acts on
+   `init` output or the new wiring right after step 8, any other before step 7.
+7. **Merge**, file by file, three ways: base = old tag, ours = the project, theirs = new tag. The
+   set is found at the new tag: the files its `README.md` tells a project to copy, and its sources,
+   each against the project file where the README or the reference install puts it.
 
    The entry file: ours is the project file that derives from the old rendered entry point,
    keeping its first heading and most of its lines. More than one derives: merge the one at the
@@ -60,8 +67,8 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    folder name with no ours. dydo wrote the folder name there at init; the folder may have been
    renamed or cloned since.
 
-   Protected files: the guard blocks writes to the paths under Protected Patterns in the project's
-   `dydo/files-off-limits.md`. For each protected file the merge changes, write the result to a
+   Protected files: the guard blocks writes to the paths under Protected Patterns in the
+   `files-off-limits.md` in the project's docs root. For each protected file the merge changes, write the result to a
    temp file outside the project, show the user the diff, and ask them to apply it.
 
    Normalise line endings to LF before comparing or merging; a CRLF checkout against `git show`'s
@@ -78,11 +85,14 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    - Upstream deleted it: remove it only if the project never edited it; otherwise ask the user.
    - Project deleted a file upstream changed: ask the user.
    - Remove directories the deletions leave empty.
-   - A skill, or a doc under `dydo/`, that only the project has: leave it alone.
-7. **Activate.** For each host `dydo.json` wires, run `dydo init <host> --join`. Then run
+   - A skill, or a doc under the docs root, that only the project has: leave it alone.
+
+   Then apply the Upgrade steps step 6 put after the merge.
+8. **Activate.** For each host `dydo.json` wires, run `dydo init <host> --join`. Then run
    `node setup-skills.mjs` from the project root. Codex wired: tell the user to open Codex in the
-   project and trust the changed hooks; an untrusted hook leaves every session unguarded.
-8. **Prove.** All of these hold, or the update is not done:
+   project and trust the changed hooks; an untrusted hook leaves every session unguarded. Then
+   apply the Upgrade steps step 6 put after activation.
+9. **Prove.** All of these hold, or the update is not done:
    - every link `setup-skills.mjs` makes into the project's `skills/` resolves to a
      `skills/**/<name>/SKILL.md`; read its host folders from the script; it leaves other entries
      alone;
@@ -90,14 +100,15 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
      linked in each of those folders;
    - every skill the entry file names, backticked or in prose, exists under `skills/`;
    - each protected file the user applied by hand equals its merge result, line endings aside;
+   - every Upgrade step step 6 kept is applied, or listed for the user;
    - `dydo check` exits 0; warnings are fine;
    - every category of What to compare, below, is walked, each finding resolved or listed for the
      user.
 
    With every proof holding, run `dydo adopt <new>` to record the new version in `dydo.json`.
-9. **Report** to the user: old, new and CLI versions; files taken from upstream; files merged with
+10. **Report** to the user: old, new and CLI versions; files taken from upstream; files merged with
    both sides' edits; protected files they applied by hand; renamed skills moved; files left for
-   them to decide; upgrade steps applied; project tweaks kept; the step 8 output. Add two notes:
+   them to decide; upgrade steps applied; project tweaks kept; the step 9 output. Add two notes:
    - Project text that names a renamed skill by its old name is now stale.
    - The machine-local files: the git-ignored files `init` and `setup-skills.mjs` write, found
      from `.gitignore` and the reference install. Name them. Each teammate, after pulling, needs a
@@ -127,16 +138,16 @@ reference `init` wires. Name every other project hook with what it does. One a d
 covers (see `dydo --help`): show both and ask the user whether to drop it.
 
 **Tooling.**
-- Adaptations of dydo's own tooling: project files sharing a name or origin with a file in the
-  dydo repo at the new tag, beyond the skills and docs it took (a copy of `gap_check.py` or
-  `run_tests.py`, say). Diff each against old and new tag; list upstream's changes for the user to
-  carry over.
+- Adaptations of dydo's own tooling: project files that share a name and most of their content
+  with a file in the dydo repo at the new tag, beyond the skills and docs it took (a copy of its
+  coverage `gap_check.py` or `run_tests.py`, say). Diff each against old and new tag; list
+  upstream's changes for the user to carry over.
 - CLI: `dydo version` equals new.
-- Skill projection: step 8's link lines.
-- Entry file: the entry point sits where the reference writes it; step 7's `init` warnings name
+- Skill projection: step 9's link lines.
+- Entry file: the entry point sits where the reference writes it; step 8's `init` warnings name
   any other entry file, for the user.
 - Codex hook trust: the user confirms Codex trusted the changed hooks.
 
 **Skills.** `git diff --find-renames --stat <old> <new> -- skills/` in the clone lists the added,
 renamed and removed skills; `skills/` at the new tag against the project's shows the project-local
-ones. `git status --short skills/` shows only the changes step 6 listed.
+ones. `git status --short skills/` shows only the changes step 7 listed.

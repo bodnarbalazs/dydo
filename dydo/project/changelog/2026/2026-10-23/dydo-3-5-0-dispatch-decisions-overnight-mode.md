@@ -238,7 +238,13 @@ trail and comments that only restated the code. Existing checkouts must rerun
     and Codex's `$CODEX_HOME/memories/`. Triage each note into a skill, a Decision Record or a doc,
     facts about the user into the user's own global `CLAUDE.md` or `AGENTS.md`, or drop it, then
     delete the folder. The guard blocks agent writes there, so a person does a delete it refuses.
-12. Run `dydo adopt 3.5.0`. It also adds the new-file nudge for Markdown outside `dydo/` to
+12. After step 4, check by hand what no step sets (DR 055). `autoMemoryEnabled` is not `true` in
+    `.claude/settings.local.json` and is `false` in each Claude profile's `settings.json`, and
+    `CLAUDE_CODE_DISABLE_AUTO_MEMORY` does not turn memory back on. In the user's
+    `$CODEX_HOME/config.toml` (default `~/.codex/config.toml`), neither `[features] memories` nor
+    `memories.generate_memories` is `true`. Note any `permissions.deny` rule covering a memory
+    folder as found. `dydo guard --action write --path ~/.claude/projects/p/memory/x.md` exits 2.
+13. Run `dydo adopt 3.5.0`. It also adds the new-file nudge for Markdown outside `dydo/` to
     `dydo.json` when missing (DYD-375).
 
 ## Files Changed

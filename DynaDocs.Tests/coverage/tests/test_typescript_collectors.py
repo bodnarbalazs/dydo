@@ -86,8 +86,8 @@ class TypeScriptCollectorTests(unittest.TestCase):
     def graph_of(self, identities, sources=("viewer/src/a.ts", "viewer/src/b.ts")):
         """The module graph measured from a dependency-cruiser output listing these module identities."""
         modules = [{"source": name, "dependencies": []} for name in identities]
-        runner = self.collector([])
-        with mock.patch.object(runner, "sources", return_value=[{"path": name} for name in sources]),                 mock.patch.object(runner, "command_json", return_value={"modules": modules}):
+        runner = self.collector(list(sources))
+        with mock.patch.object(runner, "command_json", return_value={"modules": modules}):
             return runner.typescript_dependencies()
 
     def test_a_repeated_third_party_module_does_not_make_the_graph_ambiguous(self):
@@ -100,7 +100,8 @@ class TypeScriptCollectorTests(unittest.TestCase):
 
     def test_a_repeated_or_missing_source_module_is_still_ambiguous(self):
         for identities in (["viewer/src/a.ts", "viewer/src/b.ts", "viewer/src/a.ts"], ["viewer/src/a.ts"]):
-            with self.subTest(identities=identities),                     self.assertRaisesRegex(ValueError, "Missing or ambiguous dependency-cruiser source identity"):
+            with self.subTest(identities=identities), \
+                    self.assertRaisesRegex(ValueError, "Missing or ambiguous dependency-cruiser source identity"):
                 self.graph_of(identities)
 
     def test_each_compiler_diagnostic_is_a_finding_and_a_silent_failure_is_a_gap(self):

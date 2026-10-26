@@ -239,7 +239,7 @@ trail and comments that only restated the code. Existing checkouts must rerun
     facts about the user into the user's own global `CLAUDE.md` or `AGENTS.md`, or drop it, then
     delete the folder. The guard blocks agent writes there, so a person does a delete it refuses.
 12. After step 4, check by hand what no step sets (DR 055). `autoMemoryEnabled` is not `true` in
-    `.claude/settings.local.json` and is `false` in each Claude profile's `settings.json`, and
+    `.claude/settings.local.json` or in any Claude profile's `settings.json`, and
     `CLAUDE_CODE_DISABLE_AUTO_MEMORY` does not turn memory back on. In the user's
     `$CODEX_HOME/config.toml` (default `~/.codex/config.toml`), neither `[features] memories` nor
     `memories.generate_memories` is `true`. Note any `permissions.deny` rule covering a memory

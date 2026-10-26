@@ -68,8 +68,9 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    renamed or cloned since.
 
    Protected files: the guard blocks writes to the paths under Protected Patterns in the
-   `files-off-limits.md` in the project's docs root. For each protected file the merge changes, write the result to a
-   temp file outside the project, show the user the diff, and ask them to apply it.
+   `files-off-limits.md` in the project's docs root. For each protected file the merge changes,
+   write the result to a temp file outside the project, show the user the diff, and ask them to
+   apply it.
 
    Normalise line endings to LF before comparing or merging; a CRLF checkout against `git show`'s
    LF otherwise reads as an edit on every line. Write each result back with the project file's

@@ -7,8 +7,8 @@
         <Nullable>enable</Nullable>
         <RootNamespace>DynaDocs</RootNamespace>
         <AssemblyName>dydo</AssemblyName>
-        <Version>3.5.0</Version>
-        <InformationalVersion>3.5.0</InformationalVersion>
+        <Version>3.5.1</Version>
+        <InformationalVersion>3.5.1</InformationalVersion>
         <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
         <Description>Documentation, native skill authoring, and guardrails for AI coding assistants.</Description>
         <Authors>Balazs Bodnar</Authors>

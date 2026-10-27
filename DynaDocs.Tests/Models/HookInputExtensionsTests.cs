@@ -205,6 +205,35 @@ public class HookInputExtensionsTests
             targets);
     }
 
+    // A file that quotes patch syntax: inside an Update hunk a line led by ' ', '+' or '-' is body,
+    // never a header, whatever follows; the header after the hunk still counts.
+    [Theory]
+    [InlineData(" *** Update File: dydo/index.md", "\n")]
+    [InlineData(" *** Update File: dydo/index.md", "\r\n")]
+    [InlineData(" *** Delete File: dydo/index.md", "\n")]
+    [InlineData("+*** Update File: dydo/index.md", "\r\n")]
+    [InlineData("-*** Add File: dydo/index.md", "\n")]
+    public void GetWriteTargets_ApplyPatch_QuotedHeaderInUpdateHunk_IsBody(string quoted, string newline)
+    {
+        var patch = string.Join(newline,
+            "*** Begin Patch",
+            "*** Update File: docs/patch-syntax.md",
+            "@@ example",
+            quoted,
+            "-old",
+            "+new",
+            "*** End of File",
+            "*** Delete File: docs/old.md",
+            "*** End Patch");
+
+        Assert.Equal(
+            [
+                new WriteTarget("docs/patch-syntax.md", WriteTargetKind.Update),
+                new WriteTarget("docs/old.md", WriteTargetKind.Delete),
+            ],
+            MakeInput("apply_patch", command: patch).GetWriteTargets());
+    }
+
     [Theory]
     [InlineData(WriteTargetKind.ToolPath, true)]
     [InlineData(WriteTargetKind.Add, true)]

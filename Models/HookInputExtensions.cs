@@ -91,20 +91,46 @@ public static class HookInputExtensions
             : [];
     }
 
+    // The file section a patch line sits in decides whether it can be a header at all.
+    private enum PatchSection { None, AddFile, UpdateFile }
+
     private static List<WriteTarget> ParsePatchTargets(string? patch)
     {
         var targets = new List<WriteTarget>();
+        var section = PatchSection.None;
         foreach (var line in (patch ?? "").Split('\n'))
         {
+            if (IsHunkBody(line, section))
+                continue;
+
             var trimmed = line.Trim();
             foreach (var (header, kind) in PatchTargetHeaders)
             {
-                if (trimmed.StartsWith(header, StringComparison.Ordinal))
-                    targets.Add(new WriteTarget(trimmed[header.Length..].Trim(), kind));
+                if (!trimmed.StartsWith(header, StringComparison.Ordinal))
+                    continue;
+                targets.Add(new WriteTarget(trimmed[header.Length..].Trim(), kind));
+                section = SectionAfter(kind);
             }
         }
         return targets;
     }
+
+    // Codex's grammar: an Add File body line starts with '+'; an Update File hunk line starts with
+    // ' ', '+' or '-' (or is an @@ / End of File marker, which no header matches). Body is never a
+    // header, so a file quoting patch syntax names no target.
+    private static bool IsHunkBody(string line, PatchSection section) => section switch
+    {
+        PatchSection.AddFile => line.StartsWith('+'),
+        PatchSection.UpdateFile => line.Length > 0 && line[0] is ' ' or '+' or '-',
+        _ => false,
+    };
+
+    private static PatchSection SectionAfter(WriteTargetKind kind) => kind switch
+    {
+        WriteTargetKind.Add => PatchSection.AddFile,
+        WriteTargetKind.Update or WriteTargetKind.MoveTo => PatchSection.UpdateFile,
+        _ => PatchSection.None,
+    };
 
     public static string? GetCommand(this HookInput input)
     {

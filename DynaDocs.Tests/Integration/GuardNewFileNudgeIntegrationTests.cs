@@ -27,15 +27,21 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
     private static NudgeConfig ToolsNudge(string severity) =>
         new() { Pattern = ToolsPattern, Message = ToolsMessage, Severity = severity, Match = "new-file" };
 
-    private string Payload(string toolName, object toolInput, string? agentId = null) =>
-        JsonSerializer.Serialize(new Dictionary<string, object?>
+    // Codex's apply_patch payload carries a turn_id; Claude's tool payloads do not.
+    private string Payload(string toolName, object toolInput, string? agentId = null)
+    {
+        var payload = new Dictionary<string, object?>
         {
             ["session_id"] = TestSessionId,
             ["agent_id"] = agentId,
             ["tool_name"] = toolName,
             ["tool_input"] = toolInput,
             ["cwd"] = TestDir,
-        });
+        };
+        if (toolName == "apply_patch")
+            payload["turn_id"] = "turn-1";
+        return JsonSerializer.Serialize(payload);
+    }
 
     private string ApplyPatch(params string[] body) =>
         Payload("apply_patch", new { command = string.Join("\n", ["*** Begin Patch", .. body, "*** End Patch"]) });

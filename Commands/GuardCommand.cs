@@ -253,7 +253,8 @@ public static partial class GuardCommand
         var normalized = ctx with
         {
             FilePath = ResolveTraversal(ctx.FilePath),
-            SearchPath = ResolveTraversal(ctx.SearchPath)
+            SearchPath = ResolveTraversal(ctx.SearchPath),
+            WriteTargets = ResolvePatchTargets(ctx.WriteTargets, ctx.Cwd)
         };
         var sessionId = normalized.SessionId;
         var filePath = normalized.FilePath;
@@ -489,21 +490,34 @@ public static partial class GuardCommand
 
     /// <summary>
     /// A Codex apply_patch carries no file_path, so the off-limits and protected tiers judge each
-    /// of its targets, Update File and Delete File included; every one writes or deletes. A
-    /// relative target resolves against the hook cwd, where Codex applies it.
+    /// of its targets, Update File and Delete File included; every one writes or deletes. Targets
+    /// arrive resolved by <see cref="ResolvePatchTargets"/>.
     /// </summary>
     private static int? BlockIfPatchTargetOffLimitsOrProtected(GuardContext ctx, OffLimitsService offLimitsService)
     {
         foreach (var target in ctx.WriteTargets.Where(t => t.FromPatch))
         {
-            var path = string.IsNullOrEmpty(ctx.Cwd)
-                ? target.Path
-                : PathUtils.CollapseRelativeSegments(Path.Combine(ctx.Cwd, target.Path));
-            var block = BlockIfPathOffLimits(path, offLimitsService) ?? BlockIfPathProtected(path, offLimitsService);
+            var block = BlockIfPathOffLimits(target.Path, offLimitsService) ?? BlockIfPathProtected(target.Path, offLimitsService);
             if (block != null) return block;
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// One resolver for every tier that judges a patch target (host memory, off-limits, protected),
+    /// so they cannot drift: a relative target resolves where Codex applies it, the hook cwd or,
+    /// without one, the process working directory, '..' collapsed. A '~' path stays as written for
+    /// host memory to expand. A Claude tool path is left to its own normalisation.
+    /// </summary>
+    internal static IReadOnlyList<WriteTarget> ResolvePatchTargets(IReadOnlyList<WriteTarget> targets, string? cwd)
+    {
+        var baseDir = string.IsNullOrEmpty(cwd) ? Environment.CurrentDirectory : cwd;
+        return targets
+            .Select(t => t.FromPatch && !t.Path.StartsWith('~')
+                ? t with { Path = PathUtils.CollapseRelativeSegments(Path.Combine(baseDir, t.Path)) }
+                : t)
+            .ToList();
     }
 
     // New-file nudges stay new-file by tier: only targets that can create a file, whatever is on disk.

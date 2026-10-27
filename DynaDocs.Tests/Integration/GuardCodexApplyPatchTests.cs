@@ -10,8 +10,9 @@ using System.Text.Json;
 [Collection("Integration")]
 public class GuardCodexApplyPatchTests : IntegrationTestBase
 {
-    private string CodexApplyPatch(string patch, string? agentId = null, string? cwd = null) =>
-        JsonSerializer.Serialize(new Dictionary<string, object?>
+    private string CodexApplyPatch(string patch, string? agentId = null, string? cwd = null, bool omitCwd = false)
+    {
+        var payload = new Dictionary<string, object?>
         {
             ["session_id"] = TestSessionId,
             ["turn_id"] = "turn-1",
@@ -20,7 +21,17 @@ public class GuardCodexApplyPatchTests : IntegrationTestBase
             ["hook_event_name"] = "PreToolUse",
             ["tool_name"] = "apply_patch",
             ["tool_input"] = new { command = patch },
-        });
+        };
+        if (omitCwd)
+            payload.Remove("cwd");
+        return JsonSerializer.Serialize(payload);
+    }
+
+    private static string CodexHome()
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        return Environment.GetEnvironmentVariable("CODEX_HOME") ?? Path.Combine(home, ".codex");
+    }
 
     private static string Patch(string newline, params string[] body) =>
         string.Join(newline, ["*** Begin Patch", .. body, "*** End Patch"]) + newline;
@@ -43,9 +54,7 @@ public class GuardCodexApplyPatchTests : IntegrationTestBase
     public async Task UpdateFileIntoCodexMemories_Denied(string newline, string? agentId)
     {
         await InitProjectAsync("none");
-        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var codexHome = Environment.GetEnvironmentVariable("CODEX_HOME") ?? Path.Combine(home, ".codex");
-        var target = Path.Combine(codexHome, "memories", "note.md");
+        var target = Path.Combine(CodexHome(), "memories", "note.md");
 
         var result = await GuardWithStdinAsync(CodexApplyPatch(
             Patch(Newline(newline), $"*** Update File: {target}", "@@", "-old", "+new"), agentId));
@@ -127,6 +136,67 @@ public class GuardCodexApplyPatchTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(CodexApplyPatch(
             Patch(Newline(newline), $"*** Update File: {Path.Combine(TestDir, "src", "Foo.cs")}", "@@", "-old", "+new",
                 "*** Delete File: src/Gone.cs"), agentId));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // A relative target reaches host memory once resolved against the hook cwd: from a sibling of
+    // CODEX_HOME through '..', or from CODEX_HOME itself.
+    [Theory]
+    [InlineData("sibling", "lf", null)]
+    [InlineData("sibling", "crlf", "wkr-1")]
+    [InlineData("codex-home", "crlf", null)]
+    [InlineData("codex-home", "lf", "wkr-1")]
+    public async Task RelativeUpdateFileIntoCodexMemories_Denied(string from, string newline, string? agentId)
+    {
+        await InitProjectAsync("none");
+        var codexHome = Path.TrimEndingDirectorySeparator(CodexHome());
+        var (cwd, target) = from == "sibling"
+            ? (Path.Combine(Path.GetDirectoryName(codexHome)!, "project"), $"../{Path.GetFileName(codexHome)}/memories/x.md")
+            : (codexHome, "memories/x.md");
+
+        var result = await GuardWithStdinAsync(CodexApplyPatch(
+            Patch(Newline(newline), $"*** Update File: {target}", "@@", "-old", "+new"), agentId, cwd));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("DR 055");
+    }
+
+    // No payload cwd: a relative target resolves against the process working directory, '..'
+    // collapsed, as Codex would apply it there.
+    [Theory]
+    [InlineData("src", "*** Delete File: ../dydo/index.md", "lf", null)]
+    [InlineData("src", "*** Delete File: ../dydo/index.md", "crlf", "wkr-1")]
+    [InlineData("dydo", "*** Update File: index.md", "crlf", null)]
+    [InlineData("dydo", "*** Update File: index.md", "lf", "wkr-1")]
+    public async Task OmittedCwd_RelativeTargetResolvesAgainstProcessDirectory_Denied(
+        string processDir, string header, string newline, string? agentId)
+    {
+        await InitProjectAsync("none");
+        var dir = Path.Combine(TestDir, processDir);
+        Directory.CreateDirectory(dir);
+        Environment.CurrentDirectory = dir;
+
+        var result = await GuardWithStdinAsync(CodexApplyPatch(
+            Patch(Newline(newline), header, "@@", "-a", "+b"), agentId, omitCwd: true));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("protected");
+    }
+
+    // An ordinary doc that quotes patch syntax: the quoted header is hunk context, not a target.
+    [Theory]
+    [InlineData(" *** Update File: dydo/index.md", "lf", null)]
+    [InlineData(" *** Delete File: dydo/index.md", "crlf", null)]
+    [InlineData("+*** Update File: dydo/index.md", "crlf", "wkr-1")]
+    [InlineData("-*** Add File: dydo.json", "lf", "wkr-1")]
+    public async Task UpdateFileQuotingPatchHeader_Allowed(string quoted, string newline, string? agentId)
+    {
+        await InitProjectAsync("none");
+        await File.WriteAllTextAsync(Path.Combine(TestDir, "notes.md"), "old");
+
+        var result = await GuardWithStdinAsync(CodexApplyPatch(
+            Patch(Newline(newline), "*** Update File: notes.md", "@@", quoted, "-old", "+new"), agentId));
 
         result.AssertPreToolUseAllowed();
     }

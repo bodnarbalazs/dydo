@@ -48,9 +48,10 @@ None when a release has no steps.
 
 A release whose commits rename terms mechanically also carries `### Merge normalisations` under
 its Upgrade steps: one numbered entry per rename, in the order to apply them, each naming its
-source, replacement, matching rule, scope and exceptions. `update-dydo` applies them to temporary
-copies of base, ours and theirs before a three-way merge, so a renamed line does not conflict with
-a project's edit to it.
+source, replacement, matching rule, scope and exceptions. Every change the commit makes in that
+scope fits the rule or is named as carried by the merge; every use it keeps fits an exception.
+`update-dydo` applies them to temporary copies of base, ours and theirs before a three-way merge,
+so a renamed line does not conflict with a project's edit to it.
 
 - [dydo 3.5.0 - Dispatch rule, decision skill and overnight mode](./2026/2026-10-23/dydo-3-5-0-dispatch-decisions-overnight-mode.md)
 - [dydo 3.4.1 - Guard refusals as a deny decision](./2026/2026-10-18/dydo-3-4-1-guard-deny-decision.md)

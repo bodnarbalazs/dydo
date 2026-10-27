@@ -36,13 +36,13 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    copies; `git grep` at each tag finds them. The reference shows where each lands.
 4. **Bases.** The merge set is every file a tag up to new tells a project to copy in its
    `README.md`, or holds among its sources, paired with the project file where the README or the
-   reference puts it. Each file's base is the upstream text it derives from: match each revision
-   in its project history (`git log --follow`), line endings normalised, against that upstream
-   file at each tag, moves followed, templates rendered as `init` does. Only an exact match is
-   proof; similarity is not ancestry. Base = the newest tag holding that text, not after new.
-   Nothing at the path, at a rename's source or in their history: new upstream; step 6 adds it.
-   A project file with no proven ancestor: list it for manual reconciliation, base unknown, leave
-   it. Every base new, nothing to add: tell the user the project is current; go on to step 7.
+   reference puts it. Each file's base is the upstream text it derives from: match each revision in
+   its project history (`git log --follow`), line endings normalised, against that upstream file
+   at each tag, moves followed, templates rendered as `init` does. Only an exact match is proof;
+   similarity is not ancestry. Base = the newest tag holding that text, not after new. Nothing at
+   the path, at a rename's source or in their history: new upstream if new holds it; else skip
+   it. A project file with no proven ancestor: list it for manual reconciliation, base unknown,
+   leave it. Every base new, nothing to add: tell the user the project is current; go to step 7.
    **Old** (reported only) = `dydo.json`'s adopted release, else the commonest base, a guess.
 5. **Upgrade steps.** For each release after the oldest base, up to new, read the
    `## Upgrade steps` of its entry in the Releases list of `dydo/project/changelog/_changelog.md`

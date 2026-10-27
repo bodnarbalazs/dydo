@@ -37,11 +37,14 @@ Apply them in this order.
    spacing around it kept. Scope: every text file, history, code messages and comments included.
    Exception: the protected `dydo/index.md`. En dashes (U+2013) are not part of it.
 2. "the human" to "the user" in the skills (d3e64b92), for the person running dydo. Matching:
-   "the human" becomes "the user", case kept, possessive included ("the human's" to "the
-   user's"). Scope: `skills/`. Exceptions: "a human" and other uses of human as opposed to agent
-   ("human-readable", "Human-only", HITL's "human in the loop", `writing-for-humans`); external
-   names (HumanLayer). Not mechanical, so the merge carries them: the pronoun change from they
-   to he, and one "human-facing" to "user-facing" in `codebase-design`'s `design-it-twice.md`.
+   "the human" becomes "the user", case kept, in every form ("the human's", "the human-facing").
+   Bare "human" too, where the `admiral` and `issue-captain` skills end a chain with it:
+   "**Precedence:** human's live instruction" to "user's", "→ human." to "→ user.". Scope:
+   `skills/`. Exceptions, every other "human": "a human"; "Human rejects" in
+   `improve-codebase-architecture`; modifiers (human approval, human judgment, human takeover,
+   Human loop, a human-facing, Human-only); human as opposed to agent ("human-readable", HITL's
+   "human in the loop", `writing-for-humans`); external names (HumanLayer). Not mechanical, so
+   the merge carries it: the pronoun change from they to he.
 
 ## Files Changed
 

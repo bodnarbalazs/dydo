@@ -11,16 +11,12 @@ using CsToml;
 using CsToml.Error;
 using CsToml.Values;
 using DynaDocs.Models;
+using DynaDocs.Serialization;
 using DynaDocs.Services;
 using DynaDocs.Utils;
 
 public static class InitCommand
 {
-    private static readonly JsonSerializerOptions WriteOptions = new()
-    {
-        WriteIndented = true
-    };
-
     public static Command Create()
     {
         var integrationArgument = new Argument<string>("integration")
@@ -255,8 +251,9 @@ public static class InitCommand
         };
     }
 
-    // Notice is the one line init and join print when a setting overrode the user's value.
-    private sealed record HostSetting(string Path, string Content, string? Notice);
+    // Content is the file's bytes in its own encoding; Notice is the one line init and join print
+    // when a setting overrode the user's value.
+    private sealed record HostSetting(string Path, byte[] Content, string? Notice);
 
     private static List<HostSetting> PrepareHostSettings(string projectRoot, string[] integrations)
     {
@@ -281,7 +278,7 @@ public static class InitCommand
         foreach (var (path, content, notice) in prepared)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, content);
+            File.WriteAllBytes(path, content);
             if (notice != null)
                 Console.WriteLine(notice);
         }
@@ -295,13 +292,13 @@ public static class InitCommand
         const string relativePath = ".claude/settings.json";
         const string key = "env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH";
         var path = Path.Combine(projectRoot, ".claude", "settings.json");
-        var changed = !File.Exists(path);
+        var original = JsonText.Read(path);
         JsonObject root;
-        if (!changed)
+        if (original != null)
         {
             try
             {
-                root = JsonNode.Parse(File.ReadAllText(path)) as JsonObject
+                root = JsonText.Parse(original.Text) as JsonObject
                     ?? throw HostSettingError(relativePath, "JSON object root", "non-object root");
             }
             catch (JsonException ex)
@@ -319,7 +316,6 @@ public static class InitCommand
         {
             env = new JsonObject();
             root["env"] = env;
-            changed = true;
         }
         else if (envNode is JsonObject existingEnv)
         {
@@ -333,7 +329,6 @@ public static class InitCommand
         if (!env.TryGetPropertyValue("CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH", out var depthNode))
         {
             env["CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH"] = "3";
-            changed = true;
         }
         else if (depthNode is not JsonValue value ||
                  !value.TryGetValue<string>(out var depth) || !IsCanonicalDepth(depth, 3))
@@ -350,10 +345,14 @@ public static class InitCommand
             if (hasMemory)
                 notice = MemoryOffNotice(relativePath, $"autoMemoryEnabled = {memoryNode?.ToJsonString() ?? "null"}");
             root["autoMemoryEnabled"] = false;
-            changed = true;
         }
 
-        return changed ? new HostSetting(path, root.ToJsonString(WriteOptions), notice) : null;
+        // The guard is project wiring every clone needs, so it rides the committed file.
+        ConfigureGuardHook(root, GuardMatcher, ClaudeGuardHookCommand);
+        RemoveDydoHooks(root, "Stop", DydoStopHookCommand);
+
+        var content = JsonText.Render(original?.Text, root);
+        return content == original?.Text ? null : new HostSetting(path, JsonText.Encode(original, content), notice);
     }
 
     private static HostSetting? PrepareCodexSettings(string projectRoot)
@@ -374,7 +373,7 @@ public static class InitCommand
             ? original
             : InsertTableSettings(original, "agents", agentsStart, agentsEnd, additions);
         var (content, notice) = TurnCodexMemoriesOff(document, updated, relativePath);
-        return content == original ? null : new HostSetting(path, content, notice);
+        return content == original ? null : new HostSetting(path, Encoding.UTF8.GetBytes(content), notice);
     }
 
     /// <summary>
@@ -463,7 +462,8 @@ public static class InitCommand
         {
             if (lineMatch.Length == 0)
                 continue;
-            var line = lineMatch.Value.TrimEnd('\r', '\n');
+            // A BOM is not whitespace to Trim, yet TOML readers skip it: the first header follows it.
+            var line = lineMatch.Value.TrimEnd('\r', '\n').TrimStart('﻿');
             var trimmed = line.Trim();
             if (trimmed.Length == 0 || trimmed.StartsWith('#'))
                 continue;
@@ -560,20 +560,23 @@ public static class InitCommand
         "PowerShell(dydo clean:*)"
     };
 
+    // The Claude guard rides the committed .claude/settings.json (PrepareClaudeSettings). This
+    // machine's settings.local.json keeps only the allow list; a guard an older dydo wired here goes,
+    // or every tool call would run the guard twice.
     private static void ConfigureClaudeHooks(string projectRoot)
     {
         var claudeDir = Path.Combine(projectRoot, ".claude");
         Directory.CreateDirectory(claudeDir);
 
         var settingsPath = Path.Combine(claudeDir, "settings.local.json");
-        var settings = LoadJsonSettings(settingsPath);
+        var original = JsonText.Read(settingsPath);
+        var settings = LoadJsonSettings(original?.Text);
 
-        ConfigureGuardHook(settings, GuardMatcher, ClaudeGuardHookCommand);
-        RemoveDydoStopHook(settings);
+        RemoveDydoHooks(settings, "PreToolUse", GuardHookCommand, ClaudeGuardHookCommand);
+        RemoveDydoHooks(settings, "Stop", DydoStopHookCommand);
         ConfigureAllowList(settings);
 
-        var json = settings.ToJsonString(WriteOptions);
-        File.WriteAllText(settingsPath, json);
+        JsonText.Write(settingsPath, original, settings);
     }
 
     private const string GuardMatcher =
@@ -596,6 +599,12 @@ public static class InitCommand
     private const string GuardHookCommand = "dydo guard";
     private const string ClaudeGuardHookCommand = GuardHookCommand + " --host " + GuardCommand.ClaudeHost;
 
+    // dydo installs no Stop hook, and `dydo guard --stop` is not a guard option, so a Stop entry
+    // running it would fail every turn end.
+    private const string DydoStopHookCommand = "dydo guard --stop";
+
+    // Exactly one dydo guard entry, standing where dydo's first one stood, so a rerun changes
+    // nothing and foreign entries keep their place.
     private static void ConfigureGuardHook(JsonNode settings, string matcher, string guardCommand = GuardHookCommand)
     {
         var hooks = settings["hooks"]?.AsObject() ?? new JsonObject();
@@ -604,8 +613,11 @@ public static class InitCommand
         var preToolUse = hooks["PreToolUse"]?.AsArray() ?? new JsonArray();
         hooks["PreToolUse"] = preToolUse;
 
-        RemoveDydoGuardEntries(preToolUse, GuardHookCommand);
-        RemoveDydoGuardEntries(preToolUse, ClaudeGuardHookCommand);
+        var first = preToolUse.ToList().FindIndex(entry => entry is JsonObject candidate &&
+            candidate["hooks"] is JsonArray entryHooks &&
+            entryHooks.Any(hook => IsCommand(hook, GuardHookCommand, ClaudeGuardHookCommand)));
+        // Every entry before the first holds no dydo command and survives, so first stays in range.
+        RemoveDydoGuardEntries(preToolUse, GuardHookCommand, ClaudeGuardHookCommand);
 
         var hookCommand = new JsonObject
         {
@@ -620,20 +632,22 @@ public static class InitCommand
             ["matcher"] = matcher,
             ["hooks"] = hooksArray
         };
-        preToolUse.Add((JsonNode)guardEntry);
+        preToolUse.Insert(first < 0 ? preToolUse.Count : first, guardEntry);
     }
 
-    // dydo installs no Stop hook, and `dydo guard --stop` is not a guard option, so a Stop entry
-    // running it would fail every turn end. A Stop array dydo empties goes with it; one that was
-    // already empty is the user's and stays.
-    private static void RemoveDydoStopHook(JsonNode settings)
+    // An event array dydo empties goes with it, and so does a hooks object it empties; one that
+    // was already empty is the user's and stays.
+    private static void RemoveDydoHooks(JsonObject settings, string eventName, params string[] commands)
     {
-        if (settings["hooks"] is not JsonObject hooks || hooks["Stop"] is not JsonArray stop || stop.Count == 0)
+        if (settings["hooks"] is not JsonObject hooks || hooks[eventName] is not JsonArray entries || entries.Count == 0)
             return;
 
-        RemoveDydoGuardEntries(stop, "dydo guard --stop");
-        if (stop.Count == 0)
-            hooks.Remove("Stop");
+        RemoveDydoGuardEntries(entries, commands);
+        if (entries.Count > 0)
+            return;
+        hooks.Remove(eventName);
+        if (hooks.Count == 0)
+            settings.Remove("hooks");
     }
 
     private static void ConfigureAllowList(JsonNode settings)
@@ -652,34 +666,36 @@ public static class InitCommand
         }
     }
 
-    private static JsonNode LoadJsonSettings(string settingsPath)
+    // A missing, malformed or non-object file starts fresh.
+    private static JsonObject LoadJsonSettings(string? original)
     {
-        if (File.Exists(settingsPath))
+        if (original == null)
+            return new JsonObject();
+        try
         {
-            try
-            {
-                return JsonNode.Parse(File.ReadAllText(settingsPath)) ?? new JsonObject();
-            }
-            catch
-            {
-                // Invalid JSON - start fresh
-            }
+            return JsonText.Parse(original) as JsonObject ?? new JsonObject();
         }
-        return new JsonObject();
+        catch (JsonException)
+        {
+            return new JsonObject();
+        }
     }
 
+    // Written as an edit of the committed text: Codex trusts its hooks by hash, so a rewrite that
+    // reflowed or re-escaped the project's own hooks would ask every machine to trust them again.
     internal static void ConfigureCodexHooks(string projectRoot)
     {
         var codexDir = Path.Combine(projectRoot, ".codex");
         Directory.CreateDirectory(codexDir);
 
         var hooksPath = Path.Combine(codexDir, "hooks.json");
-        var settings = LoadJsonSettings(hooksPath);
+        var original = JsonText.Read(hooksPath);
+        var settings = LoadJsonSettings(original?.Text);
 
         ConfigureGuardHook(settings, CodexGuardMatcher);
-        RemoveDydoStopHook(settings);
+        RemoveDydoHooks(settings, "Stop", DydoStopHookCommand);
 
-        File.WriteAllText(hooksPath, settings.ToJsonString(WriteOptions));
+        JsonText.Write(hooksPath, original, settings);
 
         var rulesPath = Path.Combine(codexDir, "rules", "dydo.rules");
         Directory.CreateDirectory(Path.GetDirectoryName(rulesPath)!);
@@ -709,20 +725,19 @@ public static class InitCommand
     }
 
     // Removes only exact dydo-managed hook commands, leaving custom hooks in mixed entries intact.
-    private static void RemoveDydoGuardEntries(JsonArray entries, string managedCommand)
+    // An entry goes only when that empties it; one already empty is the user's.
+    private static void RemoveDydoGuardEntries(JsonArray entries, params string[] managedCommands)
     {
         for (int i = entries.Count - 1; i >= 0; i--)
         {
             if (entries[i] is not JsonObject entry ||
-                entry["hooks"] is not JsonArray entryHooks)
+                entry["hooks"] is not JsonArray entryHooks ||
+                entryHooks.Count == 0)
                 continue;
 
             for (int hookIndex = entryHooks.Count - 1; hookIndex >= 0; hookIndex--)
             {
-                if (entryHooks[hookIndex] is JsonObject hook &&
-                    hook["command"] is JsonValue commandNode &&
-                    commandNode.TryGetValue<string>(out var command) &&
-                    command == managedCommand)
+                if (IsCommand(entryHooks[hookIndex], managedCommands))
                     entryHooks.RemoveAt(hookIndex);
             }
 
@@ -731,10 +746,15 @@ public static class InitCommand
         }
     }
 
-    // The Claude guard wiring lives in .claude/settings.local.json - personal-scope by Claude
-    // Code convention, so each machine runs `dydo init claude --join` and the file never gets
-    // committed. Codex has no local-settings tier: its wiring (.codex/hooks.json) is committed
-    // and works from a fresh clone (issue 0303 records this deliberate asymmetry).
+    private static bool IsCommand(JsonNode? hook, params string[] commands) =>
+        hook is JsonObject entry &&
+        entry["command"] is JsonValue commandNode &&
+        commandNode.TryGetValue<string>(out var command) &&
+        commands.Contains(command);
+
+    // The guard, in both hosts, is committed wiring that works from a fresh clone: Claude's in
+    // .claude/settings.json, Codex's in .codex/hooks.json. settings.local.json stays machine-local
+    // for the allow list init writes there (ruling 2026-10-27, reversing issue 0303).
     private const string ClaudeSettingsEntry = ".claude/settings.local.json";
 
     // setup-skills.mjs always projects the authored /skills tree into BOTH host-local discovery

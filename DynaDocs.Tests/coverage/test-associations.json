@@ -148,10 +148,24 @@
       ]
     },
     {
+      "module": "Services/PrCallScanner.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/PrCallScannerTests.cs"
+      ]
+    },
+    {
       "module": "Commands/ModeCommand.cs",
       "tests": [
         "DynaDocs.Tests/Commands/ModeCommandTests.cs",
         "DynaDocs.Tests/Steps/MachineModeSteps.cs"
+      ]
+    },
+    {
+      "module": "Services/CommandPosition.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/CommandPositionTests.cs",
+        "DynaDocs.Tests/Services/PrCallScannerTests.cs",
+        "DynaDocs.Tests/Services/DydoInvocationScannerTests.cs"
       ]
     },
     {

@@ -403,10 +403,11 @@ dydo pr-ready --body /tmp/pr-body.md   # also check a PR body kept outside the t
 The tree must have no staged, unstaged or untracked files git does not ignore, and HEAD must have
 an upstream and equal it. The upstream is read from the local remote-tracking ref; nothing is
 fetched. Keep the body file outside the tree, where it is not an untracked file. With `--body`, the body must name a ticket key (such as `DYD-123`) and hold a
-`## Independent review` section with the reviewer's `PASS - rubric/type: ...` block, fenced or not.
+`## Independent review` section with the reviewer's `PASS - rubric/type: ...` block, fenced or not;
+the dash after `PASS` may be a hyphen, an en dash or an em dash.
 Each problem prints as one `not ready:` line on stderr and the exit is `1`; a path outside a git
 work tree is a problem too. When all hold, it prints one `ready:` line and exits `0`. The guard
-runs the tree checks on `gh pr create`, `gh pr new` and `gh pr ready` ([dydo guard](#dydo-guard)).
+runs the tree checks on `gh pr create`, `gh pr new`, `gh pr ready` and their `gh api` forms ([dydo guard](#dydo-guard)).
 
 ---
 

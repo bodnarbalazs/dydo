@@ -128,7 +128,8 @@ public static partial class GuardCommand
         string? ToolName, string? SessionId, string? SearchPath,
         bool HasCliArgs, string? AgentId, string? AgentType,
         IReadOnlyList<WriteTarget> WriteTargets, string? Cwd, string? HookEventName,
-        string? PermissionMode, string? Host, bool FromCodex);
+        string? PermissionMode, string? Host, bool FromCodex, string? ToolCwd,
+        IReadOnlyList<string>? CommandArgv);
 
     // --host is the hook's own marker, not a diagnostic argument: a call carrying only it still
     // reads its payload from stdin and answers as a hook.
@@ -137,9 +138,10 @@ public static partial class GuardCommand
         var hasCliArgs = cliAction != null || cliPath != null || cliCommand != null;
         string? filePath = null, action = null, bashCommand = null;
         string? toolName = null, sessionId = null, searchPath = null;
-        string? agentId = null, agentType = null, cwd = null, hookEventName = null, permissionMode = null;
+        string? agentId = null, agentType = null, cwd = null, hookEventName = null, permissionMode = null, toolCwd = null;
         var fromCodex = false;
         IReadOnlyList<WriteTarget> writeTargets = [];
+        IReadOnlyList<string>? commandArgv = null;
 
         if (!hasCliArgs && TryReadStdinJson(out var json) && json != null)
         {
@@ -158,6 +160,8 @@ public static partial class GuardCommand
                     searchPath = hookInput.GetSearchPath();
                     writeTargets = hookInput.GetWriteTargets();
                     cwd = hookInput.Cwd;
+                    toolCwd = ToolDirectory(hookInput.ToolInput?.Cwd ?? hookInput.ToolInput?.Workdir, cwd);
+                    commandArgv = hookInput.ToolInput?.CommandArgv;
                     hookEventName = hookInput.HookEventName;
                     permissionMode = hookInput.PermissionMode;
                     fromCodex = hookInput.TurnId != null;
@@ -180,8 +184,15 @@ public static partial class GuardCommand
             action ?? cliAction ?? "edit",
             bashCommand ?? cliCommand,
             toolName, sessionId, searchPath, hasCliArgs,
-            agentId, agentType, writeTargets, cwd, hookEventName, permissionMode, host, fromCodex);
+            agentId, agentType, writeTargets, cwd, hookEventName, permissionMode, host, fromCodex, toolCwd, commandArgv);
     }
+
+    // A relative per-call directory names a directory under the session's cwd; under the
+    // process's only when the host sent no cwd.
+    private static string? ToolDirectory(string? toolCwd, string? sessionCwd) =>
+        toolCwd == null || sessionCwd == null || Path.IsPathRooted(toolCwd)
+            ? toolCwd
+            : Path.GetFullPath(Path.Combine(sessionCwd, toolCwd));
 
     private static int Execute(string? cliAction, string? cliPath, string? cliCommand, string? host)
     {
@@ -599,16 +610,17 @@ public static partial class GuardCommand
         var command = ctx.BashCommand!;
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(ctx.SessionId);
 
+        var caller = ModeSetCallerOf(ctx);
+
         // dydo commands skip the cd-chain coaching (they are never a needless cd compound).
         var hardBlock = (isDydo && isWorker ? BlockIfWorkerDydoCommand(command) : null)
             ?? BlockIfDangerous(command, bashAnalyzer)
             ?? CheckBlockNudges(command, env)
-            ?? CheckPrReady(command, ctx.Cwd, env)
+            ?? CheckPrReady(command, ctx.CommandArgv, ctx.ToolCwd ?? ctx.Cwd, caller.Shell, env)
             ?? (isDydo ? null : BlockIfCdChain(command, bashAnalyzer))
             ?? AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer, env.Memory);
         if (hardBlock != null) return hardBlock.Value;
 
-        var caller = ModeSetCallerOf(ctx);
         var modeSet = FindModeSetArgs(command, caller.Shell);
         if (modeSet != null && !caller.CanAsk)
             return RefuseModeSet(modeSet);

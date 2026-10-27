@@ -7,8 +7,8 @@ using DynaDocs.Utils;
 /// <c>dydo pr-ready</c>: a PR shows what its branch holds on the remote, so the tree must be clean and
 /// HEAD must equal its upstream before a PR is opened or readied. The comparison reads the local
 /// remote-tracking ref; nothing is fetched. A PR body must name its ticket and carry the reviewer's
-/// <c>PASS</c> block under <c>## Independent review</c>. The guard runs the tree half on
-/// <c>gh pr create</c>, <c>gh pr new</c> and <c>gh pr ready</c>.
+/// <c>PASS</c> block under <c>## Independent review</c>. The guard runs the tree half on the
+/// PR-opening gh calls <see cref="PrCallScanner"/> finds.
 /// </summary>
 internal static partial class PrReadyCheck
 {
@@ -103,7 +103,7 @@ internal static partial class PrReadyCheck
         if (!review.Success)
             problems.Add("the body has no '## Independent review' section");
         else if (!PassBlockRegex().IsMatch(review.Groups["section"].Value))
-            problems.Add("the '## Independent review' section holds no reviewer 'PASS - rubric/type: ...' block");
+            problems.Add("the '## Independent review' section holds no reviewer 'PASS - rubric/type: ...' block (a hyphen, en dash or em dash after PASS)");
         return problems;
     }
 
@@ -115,6 +115,7 @@ internal static partial class PrReadyCheck
         RegexOptions.Multiline | RegexOptions.IgnoreCase)]
     private static partial Regex ReviewSectionRegex();
 
-    [GeneratedRegex(@"^[ \t]*PASS - rubric/type: ", RegexOptions.Multiline)]
+    // The dash may be a hyphen, an en dash or an em dash; downstream PR bodies use all three.
+    [GeneratedRegex(@"^[ \t]*PASS[ \t]*[-–—][ \t]*rubric/type:", RegexOptions.Multiline)]
     private static partial Regex PassBlockRegex();
 }

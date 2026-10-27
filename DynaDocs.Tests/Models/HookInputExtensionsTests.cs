@@ -144,7 +144,8 @@ public class HookInputExtensionsTests
     [InlineData("MultiEdit")]
     public void GetWriteTargets_ClaudeWriteTool_ReturnsFilePath(string toolName)
     {
-        Assert.Equal(["tools/x.py"], MakeInput(toolName, filePath: "tools/x.py").GetWriteTargets());
+        Assert.Equal([new WriteTarget("tools/x.py", WriteTargetKind.ToolPath)],
+            MakeInput(toolName, filePath: "tools/x.py").GetWriteTargets());
     }
 
     [Fact]
@@ -152,7 +153,7 @@ public class HookInputExtensionsTests
     {
         var input = new HookInput { ToolName = "NotebookEdit", ToolInput = new ToolInputData { NotebookPath = "tools/n.ipynb" } };
 
-        Assert.Equal(["tools/n.ipynb"], input.GetWriteTargets());
+        Assert.Equal([new WriteTarget("tools/n.ipynb", WriteTargetKind.ToolPath)], input.GetWriteTargets());
     }
 
     [Theory]
@@ -171,7 +172,7 @@ public class HookInputExtensionsTests
     }
 
     [Fact]
-    public void GetWriteTargets_ApplyPatch_ReturnsAddedAndMovedToPathsInOrder()
+    public void GetWriteTargets_ApplyPatch_ReturnsEveryTargetWithItsKindInOrder()
     {
         var patch = string.Join("\r\n",
             "*** Begin Patch",
@@ -185,17 +186,44 @@ public class HookInputExtensionsTests
             "+*** Add File: tools/not-a-header.py",
             "  *** Add File: tools/indented.py  ",
             "*** Delete File: tools/gone.py",
+            @"*** Update File: C:\repo\dydo\index.md",
+            "*** Delete File: /abs/dydo.json\t",
             "*** End Patch");
 
         var targets = MakeInput("apply_patch", command: patch).GetWriteTargets();
 
-        Assert.Equal(["tools/moved.py", "tools/x.py", "tools/indented.py"], targets);
+        Assert.Equal(
+            [
+                new WriteTarget("src/a.cs", WriteTargetKind.Update),
+                new WriteTarget("tools/moved.py", WriteTargetKind.MoveTo),
+                new WriteTarget("tools/x.py", WriteTargetKind.Add),
+                new WriteTarget("tools/indented.py", WriteTargetKind.Add),
+                new WriteTarget("tools/gone.py", WriteTargetKind.Delete),
+                new WriteTarget(@"C:\repo\dydo\index.md", WriteTargetKind.Update),
+                new WriteTarget("/abs/dydo.json", WriteTargetKind.Delete),
+            ],
+            targets);
+    }
+
+    [Theory]
+    [InlineData(WriteTargetKind.ToolPath, true)]
+    [InlineData(WriteTargetKind.Add, true)]
+    [InlineData(WriteTargetKind.MoveTo, true)]
+    [InlineData(WriteTargetKind.Update, false)]
+    [InlineData(WriteTargetKind.Delete, false)]
+    public void WriteTarget_MayCreate_OnlyForKindsThatCanBringAFileIntoBeing(WriteTargetKind kind, bool mayCreate)
+    {
+        var target = new WriteTarget("x", kind);
+
+        Assert.Equal(mayCreate, target.MayCreate);
+        Assert.Equal(kind != WriteTargetKind.ToolPath, target.FromPatch);
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("not a patch")]
     [InlineData("*** Add File:")]
+    [InlineData("*** Update File:   \r\n*** Delete File:")]
     public void GetWriteTargets_UnparseablePatch_ReturnsNothing(string? patch)
     {
         Assert.Empty(MakeInput("apply_patch", filePath: "tools/x.py", command: patch).GetWriteTargets());

@@ -127,7 +127,7 @@ public static partial class GuardCommand
         string? FilePath, string? Action, string? BashCommand,
         string? ToolName, string? SessionId, string? SearchPath,
         bool HasCliArgs, string? AgentId, string? AgentType,
-        IReadOnlyList<string> WriteTargets, string? Cwd, string? HookEventName,
+        IReadOnlyList<WriteTarget> WriteTargets, string? Cwd, string? HookEventName,
         string? PermissionMode, string? Host, bool FromCodex);
 
     // --host is the hook's own marker, not a diagnostic argument: a call carrying only it still
@@ -139,7 +139,7 @@ public static partial class GuardCommand
         string? toolName = null, sessionId = null, searchPath = null;
         string? agentId = null, agentType = null, cwd = null, hookEventName = null, permissionMode = null;
         var fromCodex = false;
-        IReadOnlyList<string> writeTargets = [];
+        IReadOnlyList<WriteTarget> writeTargets = [];
 
         if (!hasCliArgs && TryReadStdinJson(out var json) && json != null)
         {
@@ -296,8 +296,11 @@ public static partial class GuardCommand
             }
         }
 
+        var patchBlock = BlockIfPatchTargetOffLimitsOrProtected(context, offLimitsService);
+        if (patchBlock != null) return patchBlock.Value;
+
         // New-file nudges come after off-limits / protected so a nudge never masks a block.
-        var newFileNudge = CheckNewFileNudges(context.WriteTargets, context.Cwd, env);
+        var newFileNudge = CheckNewFileNudges(NewFileCandidates(context), context.Cwd, env);
         if (newFileNudge != null) return newFileNudge.Value;
 
         if (ShouldRouteToShellHandler(context.ToolName, context.BashCommand))
@@ -429,8 +432,8 @@ public static partial class GuardCommand
     private static int? BlockIfHostMemoryWrite(GuardContext ctx, GuardEnv env)
     {
         var targets = IsMutatingCall(ctx.Action, ctx.ToolName) && !string.IsNullOrEmpty(ctx.FilePath)
-            ? ctx.WriteTargets.Prepend(ctx.FilePath)
-            : ctx.WriteTargets;
+            ? ctx.WriteTargets.Select(t => t.Path).Prepend(ctx.FilePath)
+            : ctx.WriteTargets.Select(t => t.Path);
         var hit = targets.FirstOrDefault(env.Memory.Contains);
         return hit == null ? null : ReportHostMemoryWrite(hit, null);
     }
@@ -478,8 +481,34 @@ public static partial class GuardCommand
             }
         }
 
-        return CheckNewFileNudges(ctx.WriteTargets, ctx.Cwd, env) ?? ExitCodes.Success;
+        var patchBlock = BlockIfPatchTargetOffLimitsOrProtected(ctx, offLimitsService);
+        if (patchBlock != null) return patchBlock.Value;
+
+        return CheckNewFileNudges(NewFileCandidates(ctx), ctx.Cwd, env) ?? ExitCodes.Success;
     }
+
+    /// <summary>
+    /// A Codex apply_patch carries no file_path, so the off-limits and protected tiers judge each
+    /// of its targets, Update File and Delete File included; every one writes or deletes. A
+    /// relative target resolves against the hook cwd, where Codex applies it.
+    /// </summary>
+    private static int? BlockIfPatchTargetOffLimitsOrProtected(GuardContext ctx, OffLimitsService offLimitsService)
+    {
+        foreach (var target in ctx.WriteTargets.Where(t => t.FromPatch))
+        {
+            var path = string.IsNullOrEmpty(ctx.Cwd)
+                ? target.Path
+                : PathUtils.CollapseRelativeSegments(Path.Combine(ctx.Cwd, target.Path));
+            var block = BlockIfPathOffLimits(path, offLimitsService) ?? BlockIfPathProtected(path, offLimitsService);
+            if (block != null) return block;
+        }
+
+        return null;
+    }
+
+    // New-file nudges stay new-file by tier: only targets that can create a file, whatever is on disk.
+    private static List<string> NewFileCandidates(GuardContext ctx) =>
+        ctx.WriteTargets.Where(t => t.MayCreate).Select(t => t.Path).ToList();
 
     /// <summary>
     /// One copy for every lane so the block message cannot drift.

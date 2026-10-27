@@ -72,6 +72,22 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
         result.AssertPreToolUseAllowed();
     }
 
+    // New-file by tier, not by disk: Update File and Delete File never create, so the nudge stays
+    // silent even when the path does not exist.
+    [Theory]
+    [InlineData("*** Update File: tools/missing.py", null)]
+    [InlineData("*** Delete File: tools/missing.py", null)]
+    [InlineData("*** Update File: tools/missing.py", "wkr-1")]
+    public async Task CodexApplyPatch_UpdateOrDeleteMissingTool_NotNudged(string header, string? agentId)
+    {
+        await InitWithNudges(ToolsNudge("block"));
+
+        var patch = string.Join("\r\n", "*** Begin Patch", header, "@@", "-a", "+b", "*** End Patch");
+        var result = await GuardWithStdinAsync(Payload("apply_patch", new { command = patch }, agentId));
+
+        result.AssertPreToolUseAllowed();
+    }
+
     [Fact]
     public async Task CodexApplyPatch_MoveToNewToolPath_Blocked()
     {

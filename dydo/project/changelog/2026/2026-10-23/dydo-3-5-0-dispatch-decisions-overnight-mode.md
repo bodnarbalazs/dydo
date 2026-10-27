@@ -214,8 +214,9 @@ trail and comments that only restated the code. Existing checkouts must rerun
    agent writes to `dydo/index.md`, `dydo/files-off-limits.md` and the other paths under its
    Protected Patterns, so a person applies those merges.
 3. Two skills are renamed: `issue-captain` to `ticket-captain` and `to-issue` to `to-ticket`
-   (DYD-361). Move each, with the project's edits, to the new path. Project text naming the old
-   names is now stale.
+   (DYD-361). Move each, with the project's edits, to the new path. Rename each live reference to
+   the old names (project instructions, skill text, the entry file) to the new ones; keep
+   historical records and quotations as they are.
 4. For each wired host, run `dydo init <host> --join`; the Claude Code hook then carries
    `--host claude`, and native memory is turned off in `.claude/settings.json` and
    `.codex/config.toml` (DR 055).
@@ -227,9 +228,11 @@ trail and comments that only restated the code. Existing checkouts must rerun
 6. Run steps 4 and 10 in every checkout of the project, since the Claude Code wiring in
    `.claude/settings.local.json` and the skill links in `.claude/skills/` and `.agents/skills/`
    are machine-local. Each checkout needs the 3.5.0 CLI first: an older one fails on the hook's
-   `dydo guard --host claude`. `--join` also removes dydo's Stop hook, which
-   otherwise fails on the removed `--stop` option at every turn end, and writes the `dydo clean`
-   allow rules.
+   `dydo guard --host claude`. `--join` also writes the `dydo clean` allow rules and removes
+   dydo's Stop hook, which otherwise fails on the removed `--stop` option at every turn end. The
+   3.5.0 CLI removes it from `.claude/settings.local.json` and `.codex/hooks.json` only. Remove a
+   copy anywhere else, such as one committed in `.claude/settings.json`, by hand, or rerun
+   `--join` with a later CLI that also removes dydo's own entries there (DYD-392).
 7. If `--join` warns about `CLAUDE.local.md`, put `@AGENTS.md` at its top, or set Claude Code's
    Project instructions setting to `claude-md-and-agents-md`.
 8. Update Claude Code to 2.1.281 or later; earlier versions may read only `CLAUDE.md`.
@@ -249,6 +252,33 @@ trail and comments that only restated the code. Existing checkouts must rerun
     folder as found. `dydo guard --action write --path ~/.claude/projects/p/memory/x.md` exits 2.
 13. Run `dydo adopt 3.5.0`. It also adds the new-file nudge for Markdown outside `dydo/` to
     `dydo.json` when missing (DYD-375).
+
+### Merge normalisations
+
+Apply them in this order.
+
+1. "issue" to "ticket" (DYD-361, PR #162), for Linear's Issue. Matching: plural and possessive
+   kept, the article with it ("an Issue" to "a ticket"). A generic use becomes lowercase (`Issue`
+   and `issue` to `ticket`) unless it starts a sentence; a named kind stays capitalised (Issue
+   Captain, Merge Issue, Question Issue, `<Type> Issue` to their Ticket forms). Compounds follow:
+   Sub-issue to Sub-ticket, issue review, issue Type, and the skill names `issue-captain` and
+   `to-issue` (step 3). Scope: live text in `skills/`, the entry files, `README.md`,
+   `Scaffold/`, and the docs root's guides, reference, understand, future-features and hubs.
+   Exceptions, left as they are: Linear tool and API names and `/issue/` URLs; code identifiers
+   such as `MapIssue*`; the future-feature frontmatter values `issue` and `sub-issue`, which stay
+   refused; GitHub issues; "issues" meaning problems; history (changelog, Decision Records,
+   inquisitions, plans, migrations, reviews, the agent workspace, viewer fixtures) and quotations;
+   the glossary's Ticket entry, the one place that pairs the two words.
+2. "the human" to "the user" (DYD-367, PR #165), for the person running dydo. Matching: case
+   kept, possessive included ("the human's" to "the user's"), and in compounds: the glossary term
+   and role label Human command to User command, "human-owned", "human-only", "human takeover",
+   "human approval" and "a human owns" to their user forms. Scope: the entry files, `README.md`,
+   `Scaffold/`, the docs root's guides, reference, understand, future-features, project hubs and
+   `files-off-limits.md`, and the `wizard` skill, where "a human" and "Human-only" naming the user
+   change too (3.2.0 changed the other skills). Exceptions: human as opposed to agent
+   (`writing-for-humans`, "human-readable", "human entry point", "human navigation"); external
+   names (HumanLayer, Linear's `Waiting for Human` status, HITL's "human in the loop");
+   identifiers such as the mermaid style class `human`; quoted CLI text; history and quotations.
 
 ## Files Changed
 

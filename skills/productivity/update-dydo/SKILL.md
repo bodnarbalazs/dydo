@@ -12,7 +12,7 @@ conflicts. Update only. Skipping activation changes nothing, so steps 7 and 8 ar
 Find every concrete thing you compare in the project, the tags and a fresh reference install.
 Release-specific work lives in each release's changelog entry, not here.
 
-Exclude off-limits destinations from every comparison and merge, including the old-version guess.
+Exclude off-limits destinations from every comparison and merge, including the search for bases.
 List them for the user to handle, like protected files, and continue.
 
 Run this in the user's own top-level session, never a sub-agent: the guard denies sub-agents
@@ -36,42 +36,49 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
 
    A tag's **sources** are the docs folder and entry-point template its `init` code embeds or
    copies; `git grep` at each tag finds them. The reference shows where each lands.
-4. **Old** = the release `dydo.json` records as adopted. None recorded: guess it. For every release
-   tag, count the files that differ or exist on one side only, across `skills/` and the tag's docs
-   source against the project's `skills/` and docs root (`dydo.json` names it), line endings
-   normalised. Fewest wins; a tie goes to the newer tag. Tell the user it is a guess. Old equals
-   new: tell the user the project is current and go on to step 7.
-5. **Upgrade steps.** For each release after old, up to new, read the `## Upgrade steps` of its
-   entry in the Releases list of `dydo/project/changelog/_changelog.md` at the new tag, else its
-   Changed and Removed sections. Skip what this skill does: CLI install, merge, activation, adopt.
-   Run each other step where its text puts it: acting on merge results, after step 6; on `init`
-   output or the new wiring, after step 7; else before step 6.
-6. **Merge** file by file, three ways: base = old tag, ours = the project, theirs = new tag. The
-   set is every file at the old or new tag that the tag's `README.md` tells a project to copy, or
-   that is among its sources, against the project file where the README or the reference puts it.
-   Upstream deletions are in the set, so the deletion rules fire.
+4. **Bases.** The merge set is every file a tag up to new tells a project to copy in its
+   `README.md`, or holds among its sources, paired with the project file where the README or the
+   reference puts it. Each file's base is the upstream text it derives from: match each revision
+   in its project history (`git log --follow`), line endings normalised, against that upstream
+   file at each tag, moves followed, templates rendered as `init` does. Only an exact match is
+   proof; similarity is not ancestry. Base = the newest tag holding that text, not after new. None
+   proven: list the file for manual reconciliation, base unknown, and leave it. Every base is new:
+   tell the user the project is current and go on to step 7. **Old** = the release `dydo.json`
+   records as adopted, else the most common base marked a guess; it is only reported.
+5. **Upgrade steps.** For each release after the oldest base, up to new, read the
+   `## Upgrade steps` of its entry in the Releases list of `dydo/project/changelog/_changelog.md`
+   at the new tag, else its Changed and Removed sections. A step about files applies to those
+   whose base predates its release. Skip what this skill does: CLI install, merge, normalisations,
+   activation, adopt. Run each other step where its text puts it: acting on merge results, after
+   step 6; on `init` output or the new wiring, after step 7; else before step 6.
+6. **Merge** file by file, three ways: base = the file's step 4 base, ours = the project, theirs =
+   new tag. Upstream deletions are in the set, so the deletion rules fire.
 
    Normalise line endings to LF first; a CRLF checkout against `git show`'s LF otherwise reads as
    an edit on every line. Write each result back with the project file's line endings.
+   Then apply the `### Merge normalisations` of each release after the file's base, up to new, in
+   release order, to temporary copies of base, ours and theirs, and merge the copies. Keep the
+   originals. Review each copy's diff against its original: restore any exception it rewrote.
    - Project never changed it: take upstream's.
    - Upstream never changed it: keep the project's.
    - Both changed: `git merge-file ours base theirs`, resolve keeping the project's intent, list it.
    - Upstream renamed it (an Upgrade step names the rename, or its whole folder moved): merge the
      project's edits into the new path, delete the old one, list the move. A file the rename
      dropped follows the deletion rule. Git's rename detection also pairs identical files across
-     unrelated skills; a pair neither test confirms is a deletion plus an addition.
+     unrelated skills; a pair neither test confirms is a deletion plus an addition. Rename each
+     live reference (instructions, skill text, entry file); keep historical records and quotations.
    - New upstream file: add it.
    - Upstream deleted it: remove it if the project never edited it; otherwise ask the user.
    - Project deleted a file upstream changed: ask the user.
    - Remove directories the deletions leave empty.
    - A skill, or a doc under the docs root, that only the project has: leave it alone.
 
-   **Entry file.** Ours is the project file derived from the old rendered entry point: it keeps its
+   **Entry file.** Ours is the project file derived from a rendered entry point: it keeps its
    first heading and most of its lines. Several derive: merge the one at the reference's entry
    path first, then the others' edits into that. None derives: render the new one fresh. Write the
    result where the reference writes the entry point. A non-derived file there is the user's: put
    the result at its top, keep their text below and list it; when their text already covers the
-   entry point, ask the user instead. Render both tags' entry points as `init` does, trailing
+   entry point, ask the user instead. Render the base and new entry points as `init` does, trailing
    newlines trimmed, naming the project from ours' first heading (init wrote the folder name
    there; the folder may since be renamed or cloned), or the folder name with no ours.
 
@@ -93,19 +100,21 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    - each protected file the user applied equals its merge result, line endings aside;
    - every Upgrade step step 5 kept is applied or listed for the user;
    - `dydo check` exits 0; warnings are fine;
-   - every What to compare category is walked, each finding resolved or listed for the user.
+   - every What to compare category is walked, each finding resolved or listed for the user;
+   - `git status --short` in each checkout the update touched shows only the update's changes;
+     an untracked leftover of a path an upstream release removed is listed for the user to delete.
 
    With every proof holding, run `dydo adopt <new>` to record the new version in `dydo.json`.
 9. **Report** to the user: old, new and CLI versions; files taken from upstream; files merged with
-   both sides' edits; protected files they applied; protected and off-limits files for them to
-   handle; renamed skills moved; files left for them to decide; upgrade steps applied; project
-   tweaks kept; the step 8 output. Add two notes:
-   - Project text naming a renamed skill by its old name is now stale.
-   - The machine-local files: the git-ignored files `init` and `setup-skills.mjs` write, found
-     from `.gitignore` and the reference install; name them. After pulling, each teammate needs a
-     CLI at new or later, then runs `dydo init <host> --join` and `node setup-skills.mjs`.
+   both sides' edits; files with base unknown, to reconcile; protected files they applied;
+   protected and off-limits files for them to handle; renamed skills moved and references renamed;
+   files left for them to decide; leftovers to delete; upgrade steps applied; project tweaks kept;
+   dydo defects found; the step 8 output. Name the machine-local files, the git-ignored ones `init`
+   and `setup-skills.mjs` write (`.gitignore`, the reference install): after pulling, each teammate
+   needs a CLI at new or later, then runs `dydo init <host> --join` and `node setup-skills.mjs`.
 
-   The commit is the user's.
+   The commit is the user's. Once he has committed and pushed it, run
+   `dydo pr-ready <the tree the PR comes from>` and fix what it lists until it prints `ready:`.
 
 ## What to compare
 
@@ -121,21 +130,28 @@ value contradicting what the reference writes in the project (turning back on wh
 turns off, say): show both and ask the user. List each host memory folder holding notes for this
 project, found from the host's settings and docs; the release entries say what to do with them.
 
-**Hooks.** Per host, compare what the project and each profile wire with what the reference
-`init` wires. Name every other project hook and what it does; one a dydo command now covers (see
-`dydo --help`): show both and ask the user whether to drop it.
+**Hooks.** Per host, list every hook in every file it reads hooks from, in the project and each
+profile, found from the host's docs and those folders (committed and local settings, say).
+Compare each with what the reference `init` wires. A dydo command in a file where the reference
+wires none is a copy: give it the reference's form, or remove it if the reference has it nowhere.
+Remove a dydo hook command the new CLI cannot parse: one passing an option `dydo <cmd> --help` omits.
+
+Name every other project hook or tool and what it does. One overlapping a dydo command (see
+`dydo --help`): run both on the project tool's own tests or recorded inputs. dydo covers every
+case: ask the user whether to drop it. dydo covers less or behaves differently: keep it without
+asking, and report each such case as a dydo defect with its repro.
 
 **Tooling.**
 - Adaptations of dydo's own tooling: project files, beyond the skills and docs it took, derived
-  from a dydo repo file at the old or new tag (a copy of `gap_check.py` or `run_tests.py`, say),
-  whatever their name. Follow that file across the tags (`git log --follow`,
-  `git diff --find-renames <old> <new>`); list upstream's edits, rename or deletion to carry over.
+  from a dydo repo file at a tag up to new (a copy of `gap_check.py` or `run_tests.py`, say),
+  whatever their name. Follow that file from the file's base to new (`git log --follow`,
+  `git diff --find-renames <base> <new>`); list upstream's edits, rename or deletion to carry over.
 - CLI: `dydo version` equals new.
 - Skill projection: step 8's link lines.
 - Entry file: the entry point sits where the reference writes it; step 7's `init` warnings name
   any other entry file, for the user.
 - Codex hook trust: the user confirms Codex trusted the changed hooks.
 
-**Skills.** In the clone, `git diff --no-renames --name-status <old> <new> -- skills/` lists added
-and removed files; step 6's rename rule says which are moves. `skills/` at the new tag against the
-project's shows the project-local ones. `git status --short skills/` shows only step 6's changes.
+**Skills.** In the clone, `git diff --no-renames --name-status <base> <new> -- skills/` lists added
+and removed files; step 6's rename rule says which are moves. `skills/` at new against the
+project's shows the project-local ones; `git status --short skills/` shows only step 6's changes.

@@ -25,6 +25,23 @@ Minor release adding the `sitrep` skill and aligning the voice of every skill. I
 - Align the runtime and npm package versions to 3.2.0, point NuGet release notes to this entry, and
   permit publication only on a push of the exact v3.2.0 tag.
 
+## Upgrade steps
+
+None: every change arrives with the merge of the release's skills and docs.
+
+### Merge normalisations
+
+Apply them in this order.
+
+1. Em dash to hyphen (d3e64b92). Matching: every em dash (U+2014) becomes a hyphen (`-`), the
+   spacing around it kept. Scope: every text file, history, code messages and comments included.
+   Exception: the protected `dydo/index.md`. En dashes (U+2013) are not part of it.
+2. "the human" to "the user" in the skills (d3e64b92), for the person running dydo. Matching:
+   "the human" becomes "the user", case kept, possessive included ("the human's" to "the
+   user's"). Scope: `skills/`. Exceptions: "a human" and other uses of human as opposed to agent
+   ("human-readable", "Human-only", HITL's "human in the loop", `writing-for-humans`); external
+   names (HumanLayer). The pronoun change from they to he is not mechanical; the merge carries it.
+
 ## Files Changed
 
 `skills/` (new `skills/productivity/sitrep/`, wording across the tree, skill and category READMEs),

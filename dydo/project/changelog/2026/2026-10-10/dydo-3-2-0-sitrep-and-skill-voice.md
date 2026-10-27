@@ -40,7 +40,8 @@ Apply them in this order.
    "the human" becomes "the user", case kept, possessive included ("the human's" to "the
    user's"). Scope: `skills/`. Exceptions: "a human" and other uses of human as opposed to agent
    ("human-readable", "Human-only", HITL's "human in the loop", `writing-for-humans`); external
-   names (HumanLayer). The pronoun change from they to he is not mechanical; the merge carries it.
+   names (HumanLayer). Not mechanical, so the merge carries them: the pronoun change from they
+   to he, and one "human-facing" to "user-facing" in `codebase-design`'s `design-it-twice.md`.
 
 ## Files Changed
 

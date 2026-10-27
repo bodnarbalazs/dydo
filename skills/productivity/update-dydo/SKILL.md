@@ -10,10 +10,9 @@ Take the project as it is, tweaks included, apply what upstream added and change
 conflicts. Update only. Skipping activation changes nothing, so steps 7 and 8 are the heart.
 
 Find every concrete thing you compare in the project, the tags and a fresh reference install.
-Release-specific work lives in each release's changelog entry, not here.
-
-Exclude off-limits destinations from every comparison and merge, including the search for bases.
-List them for the user to handle, like protected files, and continue.
+Release-specific work lives in each release's changelog entry, not here. Exclude off-limits
+destinations from every comparison and merge, the search for bases included; list them for the
+user to handle, like protected files, and continue.
 
 Run this in the user's own top-level session, never a sub-agent: the guard denies sub-agents
 `dydo adopt`, and the CLI install and protected-file merges need the user.
@@ -23,10 +22,9 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
 1. **Fetch.** Clone https://github.com/bodnarbalazs/dydo into a temp directory outside the project.
    Read a file at a tag with `git show <tag>:<path>`.
 2. **New and CLI.**
-   - New = the latest release tag: `gh release view -R bodnarbalazs/dydo --json tagName`. Without
-     a signed-in `gh`: the newest `v*` tag by version from
-     `git ls-remote --tags https://github.com/bodnarbalazs/dydo`, skipping pre-releases (a `-`
-     after the version) and peeled `^{}` refs.
+   - New = the latest release tag: `gh release view -R bodnarbalazs/dydo --json tagName`. No
+     signed-in `gh`: the newest `v*` tag by version in the clone's `git ls-remote --tags origin`,
+     skipping pre-releases (a `-` after the version) and peeled `^{}` refs.
    - CLI = `dydo version`. Older than new: update it with the tool that installed it and tell the
      user: `npm install -g dydo` when `npm ls -g dydo` lists it, `dotnet tool update -g dydo` when
      `dotnet tool list -g` does. From here on `dydo` is the updated CLI.
@@ -41,10 +39,11 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    reference puts it. Each file's base is the upstream text it derives from: match each revision
    in its project history (`git log --follow`), line endings normalised, against that upstream
    file at each tag, moves followed, templates rendered as `init` does. Only an exact match is
-   proof; similarity is not ancestry. Base = the newest tag holding that text, not after new. None
-   proven: list the file for manual reconciliation, base unknown, and leave it. Every base is new:
-   tell the user the project is current and go on to step 7. **Old** = the release `dydo.json`
-   records as adopted, else the most common base marked a guess; it is only reported.
+   proof; similarity is not ancestry. Base = the newest tag holding that text, not after new.
+   Nothing at the path, at a rename's source or in their history: new upstream; step 6 adds it.
+   A project file with no proven ancestor: list it for manual reconciliation, base unknown, leave
+   it. Every base new, nothing to add: tell the user the project is current; go on to step 7.
+   **Old** (reported only) = `dydo.json`'s adopted release, else the commonest base, a guess.
 5. **Upgrade steps.** For each release after the oldest base, up to new, read the
    `## Upgrade steps` of its entry in the Releases list of `dydo/project/changelog/_changelog.md`
    at the new tag, else its Changed and Removed sections. A step about files applies to those
@@ -87,10 +86,10 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    the project, show the user the diff, ask them to apply it, and carry on.
 
    Then run the Upgrade steps step 5 put after the merge.
-7. **Activate.** For each host `dydo.json` wires, run `dydo init <host> --join`, then
-   `node setup-skills.mjs` from the project root. Codex wired: ask the user to open Codex in the
-   project and trust the changed hooks; an untrusted hook leaves every session unguarded. Then run
-   the Upgrade steps step 5 put after activation.
+7. **Activate.** In each checkout `git worktree list` shows, for each host `dydo.json` wires, run
+   `dydo init <host> --join`, then `node setup-skills.mjs` from its root. Codex wired: ask the
+   user to open Codex in the project and trust the changed hooks; an untrusted hook leaves every
+   session unguarded. Then run the Upgrade steps step 5 put after activation.
 8. **Prove.** The update is done only when all of these hold:
    - every link `setup-skills.mjs` makes into `skills/` resolves to a `skills/**/<name>/SKILL.md`
      (read its host folders from the script; it leaves other entries alone);
@@ -101,8 +100,8 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    - every Upgrade step step 5 kept is applied or listed for the user;
    - `dydo check` exits 0; warnings are fine;
    - every What to compare category is walked, each finding resolved or listed for the user;
-   - `git status --short` in each checkout the update touched shows only the update's changes;
-     an untracked leftover of a path an upstream release removed is listed for the user to delete.
+   - in each checkout `git worktree list` shows, `git status --short` lists only the update's
+     changes; each untracked leftover of a path upstream removed is listed for the user to delete.
 
    With every proof holding, run `dydo adopt <new>` to record the new version in `dydo.json`.
 9. **Report** to the user: old, new and CLI versions; files taken from upstream; files merged with
@@ -132,9 +131,11 @@ project, found from the host's settings and docs; the release entries say what t
 
 **Hooks.** Per host, list every hook in every file it reads hooks from, in the project and each
 profile, found from the host's docs and those folders (committed and local settings, say).
-Compare each with what the reference `init` wires. A dydo command in a file where the reference
-wires none is a copy: give it the reference's form, or remove it if the reference has it nowhere.
-Remove a dydo hook command the new CLI cannot parse: one passing an option `dydo <cmd> --help` omits.
+Compare each with what the reference `init` wires. Each host runs each dydo hook once, where the
+reference wires it; a dydo command anywhere else is a copy: remove and list it, or in a profile
+other projects share, show the user and ask. A dydo hook parses under the new CLI when
+`dydo <cmd> --help` succeeds and lists each option it passes, each has its required value, and
+it passes nothing else. Remove one that does not parse.
 
 Name every other project hook or tool and what it does. One overlapping a dydo command (see
 `dydo --help`): run both on the project tool's own tests or recorded inputs. dydo covers every
@@ -144,14 +145,13 @@ asking, and report each such case as a dydo defect with its repro.
 **Tooling.**
 - Adaptations of dydo's own tooling: project files, beyond the skills and docs it took, derived
   from a dydo repo file at a tag up to new (a copy of `gap_check.py` or `run_tests.py`, say),
-  whatever their name. Follow that file from the file's base to new (`git log --follow`,
+  whatever their name. Follow that file from each one's base (step 4) to new (`git log --follow`,
   `git diff --find-renames <base> <new>`); list upstream's edits, rename or deletion to carry over.
 - CLI: `dydo version` equals new.
 - Skill projection: step 8's link lines.
-- Entry file: the entry point sits where the reference writes it; step 7's `init` warnings name
-  any other entry file, for the user.
+- Entry file: where the reference writes it; step 7's `init` warnings name others for the user.
 - Codex hook trust: the user confirms Codex trusted the changed hooks.
 
-**Skills.** In the clone, `git diff --no-renames --name-status <base> <new> -- skills/` lists added
-and removed files; step 6's rename rule says which are moves. `skills/` at new against the
-project's shows the project-local ones; `git status --short skills/` shows only step 6's changes.
+**Skills.** In the clone, `git diff --no-renames --name-status <oldest base> <new> -- skills/`
+lists added and removed files; step 6's rename rule says which are moves. `skills/` at new
+against the project's shows the project-local ones.

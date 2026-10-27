@@ -259,26 +259,33 @@ Apply them in this order.
 
 1. "issue" to "ticket" (DYD-361, PR #162), for Linear's Issue. Matching: plural and possessive
    kept, the article with it ("an Issue" to "a ticket"). A generic use becomes lowercase (`Issue`
-   and `issue` to `ticket`) unless it starts a sentence; a named kind stays capitalised (Issue
-   Captain, Merge Issue, Question Issue, `<Type> Issue` to their Ticket forms). Compounds follow:
-   Sub-issue to Sub-ticket, issue review, issue Type, and the skill names `issue-captain` and
+   and `issue` to `ticket`) unless it starts a sentence or heading, or sits in a title-case title
+   (Linear Ticket Lifecycle); a qualifier that is not a Type goes with it (Atomic Issue, Project
+   Issue, Linear Issue to atomic ticket, Project ticket, Linear ticket). A named kind stays
+   capitalised: Issue Captain and each `<Type> Issue` (Merge, Question, Inquisition, Wayfinding,
+   say) to their Ticket forms. Compounds follow: Sub-issue to Sub-ticket, issue review, issue
+   Type, multi-Issue, the `<issue-template>` tag, and the skill names `issue-captain` and
    `to-issue` (step 3). Scope: live text in `skills/`, the entry files, `README.md`,
-   `Scaffold/`, and the docs root's guides, reference, understand, future-features and hubs.
-   Exceptions, left as they are: Linear tool and API names and `/issue/` URLs; code identifiers
-   such as `MapIssue*`; the future-feature frontmatter values `issue` and `sub-issue`, which stay
-   refused; GitHub issues; "issues" meaning problems; history (changelog, Decision Records,
-   inquisitions, plans, migrations, reviews, the agent workspace, viewer fixtures) and quotations;
-   the glossary's Ticket entry, the one place that pairs the two words.
-2. "the human" to "the user" (DYD-367, PR #165), for the person running dydo. Matching: case
-   kept, possessive included ("the human's" to "the user's"), and in compounds: the glossary term
-   and role label Human command to User command, "human-owned", "human-only", "human takeover",
-   "human approval" and "a human owns" to their user forms. Scope: the entry files, `README.md`,
-   `Scaffold/`, the docs root's guides, reference, understand, future-features, project hubs and
-   `files-off-limits.md`, and the `wizard` skill, where "a human" and "Human-only" naming the user
-   change too (3.2.0 changed the other skills). Exceptions: human as opposed to agent
-   (`writing-for-humans`, "human-readable", "human entry point", "human navigation"); external
-   names (HumanLayer, Linear's `Waiting for Human` status, HITL's "human in the loop");
-   identifiers such as the mermaid style class `human`; quoted CLI text; history and quotations.
+   `Scaffold/`, and the docs root's guides, reference, understand, future-features, `glossary.md`
+   and hubs. Exceptions, left as they are: Linear tool and API names and `/issue/` URLs; code
+   identifiers such as `MapIssue*`; the future-feature frontmatter values `issue` and
+   `sub-issue`, which stay refused; GitHub issues; "issues" meaning problems; history (changelog,
+   Decision Records, inquisitions, plans, migrations, reviews, the agent workspace, viewer
+   fixtures) and quotations; the glossary's Ticket entry, the one place that pairs the two words,
+   and its Retired PM terms section (Issue planner, the Issue-resolution plan).
+2. "human" to "user" (DYD-367, PR #165), wherever it names the person running dydo. Matching:
+   case kept, in every form: "the human" and its possessive; "a human" and "Humans" to "the user"
+   ("a user" where any user is meant); bare labels, such as the diagrams' `human: an idea` and
+   the tables' `| human |`; modifiers and compounds, such as the glossary term and role label
+   Human command, human approval, human decision, human judgment, human input, human takeover,
+   human-owned, human-confirmed and Human-only, to their user forms. Scope: the entry files,
+   `README.md`, `Scaffold/`, the docs root's guides, reference, understand, future-features,
+   project hubs and `files-off-limits.md`, the `wizard` skill and its line in the skills README
+   (3.2.0 changed "the human" in the other skills). Exceptions: human as opposed to agent
+   (`writing-for-humans`, "human-readable", "human entry point", "human navigation", HITL's "live
+   human participation"); external names (HumanLayer, Linear's `Waiting for Human` status, HITL's
+   "human in the loop"); identifiers such as the mermaid style class (`classDef human`,
+   `:::human`); quoted CLI text (the guard's "human-owned" refusal); history and quotations.
 
 ## Files Changed
 

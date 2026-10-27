@@ -8,7 +8,9 @@
 #   2. Run `update-dydo` on a scratch copy of a real downstream project (LC) with the
 #      release-candidate CLI built from the release branch, never on the real
 #      checkout. Replay that project's own hook tests through `dydo guard`.
-#   3. Check the DYD-392 LC-shaped fixture is green in the ci.yml test run.
+#   3. Check DynaDocs.Tests/Integration/DownstreamConfigTests.cs, which runs init
+#      --join and adopt on the LC fixture in DynaDocs.Tests/TestData/downstream-lc/,
+#      is green in ci.yml's `dotnet test` run.
 #   4. Run this workflow with `workflow_dispatch` on master. It runs the viewer,
 #      build and Windows `validation` jobs only. The release, nuget and npm jobs run
 #      only on a pushed tag matching their `refs/tags/v...` gate, so a dispatch

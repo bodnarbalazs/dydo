@@ -12,11 +12,12 @@ Patch release fixing what a real downstream project (LC) hit while updating to 3
 reads the Update File and Delete File targets of a Codex `apply_patch`. The host-memory refusal
 cites a Decision Record a project can open. FutureFeatures go to Linear in every shipped doc. The
 `update-dydo` skill now handles a project whose files come from several releases, its own hooks and
-its own tools.
-<!-- SLOT DYD-391: one sentence on the PR-ready guard checking the right tree and covering the plain forms (LC claims 1, 2), witnessed by its merged PR. -->
-<!-- SLOT DYD-392: one sentence on `dydo init --join` and `dydo adopt` respecting real downstream files and the committed Claude guard (LC claims 3, 4, 5), witnessed by its merged PR. -->
-Existing projects take the new `update-dydo` skill and rerun `dydo init <host> --join`; see
-Upgrade steps.
+its own tools. The PR-ready guard checks the tree a PR shows, a named branch's worktree or Codex's
+`workdir` included, and catches the plain `gh` forms it missed. `dydo init --join` and `dydo adopt`
+edit a project's JSON files in place instead of rewriting them, `--join` reads a BOM-led
+`.codex/config.toml`, and the Claude guard moves into the committed `.claude/settings.json`.
+Existing projects take the new `update-dydo` skill, rerun `dydo init <host> --join` and commit the
+moved Claude guard; see Upgrade steps.
 
 ## Fixed
 
@@ -59,16 +60,56 @@ Upgrade steps.
   renames live references to the old skill names. The 3.5.0 and 3.2.0 entries gained the
   `### Merge normalisations` their mechanical renames needed, and the changelog hub defines that
   section (DYD-394).
-<!-- SLOT DYD-391: Fixed bullet(s) for the PR-ready guard checking the tree the PR is opened from and covering the plain `gh pr create` forms (LC claims 1, 2); every claim witnessed by the merged PR diff. -->
-<!-- SLOT DYD-392: Fixed bullet(s) for `dydo init --join` and `dydo adopt` respecting real downstream files, the committed Claude guard, and the LC-shaped fixture added to CI (LC claims 3, 4, 5); every claim witnessed by the merged PR diff. -->
+- PR-ready guard (DYD-391, LC update claims 1 and 2;
+  [Guard System](../../../../understand/guard-system.md)):
+  - It checked only the hook payload's `cwd`, so `gh pr create --head topic` from a dirty main was
+    denied for main, and a dirty Codex `workdir` passed from a clean session. The tree is now the
+    tool input's `cwd`, else Codex's `workdir` (a relative one under the payload's `cwd`), else
+    the payload's `cwd`, else the project root. A call naming its branch (`--head [OWNER:]BRANCH`,
+    `gh pr ready BRANCH`, a REST `head` field) is checked in every worktree holding that branch,
+    and refused when none does. The refusal names every tree it checked.
+  - It now catches the plain forms that went unchecked: `gh` under any path, case or `.exe`;
+    `-R`/`--repo` before `pr`; `VAR=value`, `env`, `timeout`, `nice`, `sudo` and similar runner
+    prefixes; `$(...)` and bash backtick substitutions; a `gh api` POST to
+    `repos/OWNER/REPO/pulls`; and `gh api graphql` naming `createPullRequest` or
+    `markPullRequestReadyForReview`. The PowerShell tool and Codex on Windows are read as
+    PowerShell. A Codex argv-array `command` no longer fails the payload: a shell envelope such as
+    `["bash", "-lc", script]` is checked as its script.
+  - A call acting on a repository other than the tree's `origin`, through `-R`, `GH_REPO`, a PR
+    URL or a `gh api` endpoint, is refused: run it from that repository's checkout. A
+    `bash -c`, `pwsh -Command`, `-EncodedCommand`, `cmd /c`, `eval` or `env -S` holding a PR call
+    is refused unread, asking to run `gh` directly. Both passed unchecked before.
+  - `dydo pr-ready --body` accepts a hyphen, an en dash or an em dash after `PASS`.
+- `dydo init codex --join` stopped with exit 2 on a `.codex/config.toml` that starts with a BOM. It
+  now reads it, keeps the BOM and sets `memories = false` in its one `[features]` table (DYD-392).
+- `dydo init`, `--join` and `dydo adopt` rewrote `dydo.json`, `.claude/settings.json`,
+  `.claude/settings.local.json` and `.codex/hooks.json` from scratch: values re-escaped, CRLF on
+  Windows, the final newline dropped, and `dydo.json`'s unknown keys lost. They now edit the
+  file's text: unchanged values keep their bytes, key order and unknown keys survive, the file
+  keeps its BOM, encoding, line endings and trailing newline, and a file with nothing to change is
+  not written. A `--join` that changes nothing in `.codex/hooks.json` no longer changes the hash
+  Codex trusts (DYD-392, LC update claims 3 to 5).
+- `DynaDocs.Tests/Integration/DownstreamConfigTests.cs` runs `init claude --join`,
+  `init codex --join` and `adopt` on byte-exact copies of LC's config in
+  `DynaDocs.Tests/TestData/downstream-lc/`, which `.gitattributes` keeps out of line-ending
+  normalisation. Only dydo's own lines may change, and a rerun must leave every file
+  byte-identical. It runs in `ci.yml`'s `dotnet test` (DYD-392).
 
 ## Changed
 
+- The Claude guard is committed ([DR 056](../../../decisions/056-claude-guard-in-committed-settings.md),
+  DYD-392, reversing issue 0303). `dydo init claude` and `--join` write one `PreToolUse` entry
+  running `dydo guard --host claude` into `.claude/settings.json`, where dydo's earlier entry
+  stood. They remove any other dydo guard entry and a Stop entry running `dydo guard --stop`, and
+  leave hooks dydo did not write alone. `.claude/settings.local.json` keeps only the allow list
+  and loses the guard and Stop hooks an older dydo wired there. A fresh clone is now guarded on
+  Claude Code as on Codex; a teammate without the dydo CLI on the path gets a non-blocking hook
+  error on each matched tool call.
 - `.github/workflows/release.yml` now opens with the pre-tag release checklist. It lists every
   version pin to bump and requires an `update-dydo` dry run, with the release-candidate CLI, on a
   scratch copy of a real downstream project, with that project's hook tests replayed through
-  `dydo guard`. The DYD-392 LC-shaped fixture must be green in `ci.yml`. The workflow's
-  `workflow_dispatch` run on master publishes nothing. The tag is pushed only after the
+  `dydo guard`. The LC fixture in `DownstreamConfigTests.cs` must be green in `ci.yml`. The
+  workflow's `workflow_dispatch` run on master publishes nothing. The tag is pushed only after the
   maintainer's go.
 - Align runtime and npm versions to 3.5.1, point the package release notes at this entry, and
   permit publication only on the exact v3.5.1 tag.
@@ -79,46 +120,63 @@ Upgrade steps.
 2. Take `skills/productivity/update-dydo/SKILL.md` from the v3.5.1 tag before running it, so the
    update runs with the new procedure rather than the 3.5.0 skill.
 3. Merge the release's `skills/` and `Scaffold/dydo/` changes into the project, keeping its edits.
-   Those are `project/future-features/_future-features.md`, `index.md`, `project/_project.md` and
-   `_system/types.json`. The guard blocks agent writes to `dydo/index.md`, so a person applies that
-   merge. New FutureFeatures go to Linear from now on.
+   Those are `project/future-features/_future-features.md`, `index.md`, `project/_project.md`,
+   `reference/dydo-commands.md` and `_system/types.json`. The guard blocks agent writes to
+   `dydo/index.md`, so a person applies that merge. New FutureFeatures go to Linear from now on.
 4. In every checkout `git worktree list` shows, run `dydo init <host> --join` for each wired host,
-   then `node setup-skills.mjs` from its root.
-   <!-- SLOT DYD-392: what `--join` now does to an existing project's committed Claude guard and real downstream files, and any hand step that leaves, witnessed by its merged PR. -->
-5. Remove by hand any copy of a dydo hook outside where `--join` wires it, such as `dydo guard`
-   or `dydo guard --stop` committed in `.claude/settings.json`; `--stop` no longer parses and fails
-   at every turn end.
+   then `node setup-skills.mjs` from its root. For Claude Code, `--join` moves the guard into the
+   committed `.claude/settings.json` and removes dydo's hooks from `.claude/settings.local.json`.
+   Check that `git diff -- .claude/settings.json` shows one `PreToolUse` entry running
+   `dydo guard --host claude` with the current matcher, no `dydo guard --stop`, and the project's
+   other hooks unchanged, then commit it. `settings.local.json` stays uncommitted and keeps only
+   the allow entries. Everyone who opens the project in Claude Code needs the dydo CLI on the
+   path from now on.
+5. `--join` replaces or removes the exact dydo commands `dydo guard`, `dydo guard --host claude`
+   and `dydo guard --stop` in `.claude/settings.json`, `.claude/settings.local.json` and
+   `.codex/hooks.json`. Remove by hand any other copy of a dydo hook, such as one spelled
+   differently or wired in a file `--join` does not edit; a leftover `dydo guard --stop` no longer
+   parses and fails at every turn end.
 6. Delete a local `dydo/_system/audit/` folder if one is left; 3.5.0 removed it, and an untracked
    leftover makes `dydo pr-ready` report the tree not ready.
-7. Codex hooks: no 3.5.1 change touches the Codex hook template `dydo init` writes, nor this
-   repository's `.codex/hooks.json`. Re-trust the hooks in Codex only if step 4 or 5 changed
-   `.codex/hooks.json`; Codex pins hook trust by hash, and an untrusted hook leaves Codex sessions
-   unguarded.
-   <!-- SLOT DYD-392: if its merged PR changes the Codex hooks template, say so here and make the re-trust unconditional. -->
-   <!-- SLOT DYD-391: any upgrade step the merged PR-ready guard change requires of an existing project, or remove this slot if none. -->
+7. Codex hooks: no 3.5.1 change alters the Codex hook entry `dydo init` writes, its matcher or
+   its `dydo guard` command, nor this repository's `.codex/hooks.json`. `--join` now writes
+   `.codex/hooks.json` only when dydo's entries in it need a change: an older matcher or a
+   `dydo guard --stop` Stop entry, both in LC's file, or a second dydo guard entry. After steps 4 and 5, run
+   `git diff --stat -- .codex/hooks.json`. If it lists the file, commit it and re-trust the hooks
+   in Codex; Codex pins hook trust by hash, and an untrusted hook leaves Codex sessions unguarded.
 8. Run `dydo adopt 3.5.1` last, once `dydo check` exits 0 and the update is proven.
 
 No 3.5.1 commit renames a term mechanically, so this release has no merge normalisations.
 
 ## Files Changed
 
-`Commands/GuardCommand.cs`, `Models/HookInputExtensions.cs`, `Utils/PathUtils.cs`,
-`Scaffold/dydo/` (`index.md`, `project/_project.md`, `project/future-features/_future-features.md`,
+`Commands/GuardCommand.cs`, `Commands/GuardCommand.PrReady.cs`, `Commands/InitCommand.cs`,
+`Models/HookInputExtensions.cs`, `Models/ToolInputData.cs`, `Utils/PathUtils.cs`, `Services/`
+(`CommandPosition.cs`, `PrCall.cs`, `PrCallScanner.cs`, `DydoInvocationScanner.cs`,
+`PrReadyCheck.cs`, `ConfigService.cs`), `Serialization/` (`JsonText.cs`, `StoredText.cs`),
+`.gitattributes`, `Scaffold/dydo/` (`index.md`, `project/_project.md`,
+`project/future-features/_future-features.md`, `reference/dydo-commands.md`,
 `_system/types.json`), `dydo/index.md`, `dydo/project/_project.md`,
 `dydo/project/future-features/` (the guide and five legacy records), `dydo/_system/types.json`,
+`dydo/project/decisions/056-claude-guard-in-committed-settings.md`,
 `dydo/guides/getting-started.md`, `dydo/reference/configuration.md`,
-`dydo/understand/documentation-model.md`, `README.md`, `npm/README.md`,
+`dydo/reference/dydo-commands.md`, `dydo/understand/documentation-model.md`,
+`dydo/understand/guard-system.md`, `README.md`, `npm/README.md`,
 `skills/productivity/update-dydo/SKILL.md`, the 3.5.0 and 3.2.0 changelog entries,
 `DynaDocs.csproj`, `npm/package.json`, `.github/workflows/release.yml`, `DynaDocs.Tests/`
 (`Commands/GuardCommandTests.cs`, `Integration/GuardCodexApplyPatchTests.cs`,
 `Integration/GuardNewFileNudgeIntegrationTests.cs`, `Integration/GuardWorkerLaneTests.cs`,
-`Integration/GuardIntegrationTests.cs`, `Integration/DocumentationTests.cs`,
-`Integration/InitCommandTests.cs`, `Integration/IntegrationTestBase.cs`,
+`Integration/GuardIntegrationTests.cs`, `Integration/GuardModeSetTests.cs`,
+`Integration/GuardPrReadyTests.cs`, `Integration/PrReadyCommandTests.cs`,
+`Integration/DocumentationTests.cs`, `Integration/InitCommandTests.cs`,
+`Integration/IntegrationTestBase.cs`, `Integration/DownstreamConfigTests.cs`,
+`TestData/downstream-lc/` (`claude-settings.json`, `codex-config.toml`, `codex-hooks.json`,
+`dydo.json`), `PreservedText.cs`, `PreservedTextTests.cs`, `Serialization/JsonTextTests.cs`,
 `Models/HookInputExtensionsTests.cs`, `Services/PathUtilsTests.cs`,
-`EndToEnd/CliEndToEndTests.cs`, `Workflow/ReleaseWorkflowTests.cs`), this entry and its changelog
-hub.
-<!-- SLOT DYD-391: the files its merged PR changes. -->
-<!-- SLOT DYD-392: the files its merged PR changes, the LC-shaped CI fixture and DR 056 included if they land. -->
+`Services/CommandPositionTests.cs`, `Services/DydoInvocationScannerTests.cs`,
+`Services/PrCallScannerTests.cs`, `Services/ConfigServiceTests.cs`,
+`coverage/test-associations.json`, `EndToEnd/CliEndToEndTests.cs`,
+`Workflow/ReleaseWorkflowTests.cs`), this entry and its changelog hub.
 
 ## Related
 

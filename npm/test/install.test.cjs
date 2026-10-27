@@ -5,6 +5,7 @@ const installPath = require.resolve('../install');
 const platform = require('../lib/platform');
 const download = require('../lib/download');
 const paths = require('../lib/paths');
+const { version } = require('../package.json');
 
 const originals = {
   getPlatformInfo: platform.getPlatformInfo,
@@ -71,7 +72,7 @@ test('an installed current binary skips the download', async function currentBin
     } },
     download: { async downloadBinary() { downloads += 1; } },
     paths: {
-      getInstalledVersion() { return '3.5.0'; },
+      getInstalledVersion() { return version; },
       isBinaryInstalled() { return true; }
     }
   });
@@ -102,8 +103,8 @@ test('a successful download records the installed version', async function succe
   await install();
 
   assert.deepEqual(calls, [
-    ['download', '3.5.0', { supported: true, binaryName: 'dydo' }, 'native-fixture'],
-    ['version', '3.5.0']
+    ['download', version, { supported: true, binaryName: 'dydo' }, 'native-fixture'],
+    ['version', version]
   ]);
 });
 
@@ -130,5 +131,5 @@ test('a failed download reports recovery instructions and exits one', async func
 
   assert.deepEqual(exits, [1]);
   assert.match(errors.join('\n'), /fixture failure/);
-  assert.match(errors.join('\n'), /releases\/tag\/v3\.5\.0(?:\n|$)/);
+  assert.match(errors.join('\n'), new RegExp(`releases/tag/v${version.replaceAll('.', '\\.')}(?:\\n|$)`));
 });

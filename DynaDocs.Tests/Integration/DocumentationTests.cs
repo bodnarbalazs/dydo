@@ -85,18 +85,80 @@ public partial class DocumentationTests : IntegrationTestBase
     {
         (await InitProjectAsync("none")).AssertSuccess();
 
-        var missing = Directory.EnumerateFiles(DydoDir, "*", SearchOption.AllDirectories)
-            .SelectMany(file => DydoDocumentPath().Matches(File.ReadAllText(file))
-                .Select(match => (Citer: Path.GetRelativePath(TestDir, file), Cited: match.Value)))
+        Assert.Empty(MissingCitations());
+    }
+
+    [Theory]
+    [InlineData("see dydo/reference/configuration.md now", "dydo/reference/configuration.md")]
+    [InlineData("see ./dydo/reference/configuration.md now", "dydo/reference/configuration.md")]
+    [InlineData(@"see dydo\reference\configuration.md now", "dydo/reference/configuration.md")]
+    [InlineData(@"see .\dydo\reference\configuration.md now", "dydo/reference/configuration.md")]
+    [InlineData(@"see ./dydo\reference/configuration.md now", "dydo/reference/configuration.md")]
+    [InlineData(@"see dydo\\reference\\configuration.md (JSON-escaped)", "dydo/reference/configuration.md")]
+    [InlineData("(`./dydo/guides/a.md`) and [x](dydo/guides/b.md)", "dydo/guides/a.md|dydo/guides/b.md")]
+    // The lookbehind anchors a citation at the repo's own `dydo` folder; these must not match.
+    [InlineData("hub/dydo/reference/configuration.md", "")]
+    [InlineData("https://example.com/dydo/reference/configuration.md", "")]
+    [InlineData("../dydo/reference/configuration.md", "")]
+    [InlineData("../../dydo/reference/configuration.md", "")]
+    [InlineData(@"..\dydo\reference\configuration.md", "")]
+    [InlineData(@"other\dydo\reference\configuration.md", "")]
+    [InlineData("mydydo/reference/configuration.md", "")]
+    [InlineData("my-dydo/reference/configuration.md", "")]
+    [InlineData("dydo/reference/configuration.txt", "")]
+    public void CitedDydoDocuments_RecognisesEveryForm_AndOnlyWhereDydoStartsThePath(string text, string expected) =>
+        Assert.Equal(expected, string.Join("|", CitedDydoDocuments(text)));
+
+    [Theory]
+    [InlineData("guides/mutated.md", "see dydo/reference/missing-doc.md")]
+    [InlineData("guides/mutated.md", "see ./dydo/reference/missing-doc.md")]
+    [InlineData("guides/mutated.md", @"see dydo\reference\missing-doc.md")]
+    [InlineData("guides/mutated.md", @"see .\dydo\reference/missing-doc.md")]
+    [InlineData("mutated.json", """{ "_comment": "see dydo/reference/missing-doc.md" }""")]
+    [InlineData("mutated.json", """{ "_comment": "see ./dydo/reference/missing-doc.md" }""")]
+    [InlineData("mutated.json", """{ "_comment": "see dydo\\reference\\missing-doc.md" }""")]
+    [InlineData("mutated.json", """{ "_comment": "see .\\dydo\\reference/missing-doc.md" }""")]
+    public async Task MissingCitations_FlagsAMissingTargetInEveryForm_InMarkdownAndNonMarkdown(string file, string content)
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        Assert.Empty(MissingCitations());
+
+        WriteFile($"dydo/{file}", content);
+
+        var citer = Path.Combine("dydo", file.Replace('/', Path.DirectorySeparatorChar));
+        Assert.Equal(new[] { $"{citer} -> dydo/reference/missing-doc.md" }, MissingCitations());
+    }
+
+    [Fact]
+    public async Task MissingCitations_AcceptsEveryFormOfAShippedTarget()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile("dydo/guides/shipped.md", @"dydo/index.md ./dydo/index.md dydo\index.md .\dydo\index.md");
+
+        Assert.Empty(MissingCitations());
+    }
+
+    private string[] MissingCitations() =>
+        Directory.EnumerateFiles(DydoDir, "*", SearchOption.AllDirectories)
+            .SelectMany(file => CitedDydoDocuments(File.ReadAllText(file))
+                .Select(cited => (Citer: Path.GetRelativePath(TestDir, file), Cited: cited)))
             .Where(citation => !File.Exists(Path.Combine(TestDir, citation.Cited)))
             .Select(citation => $"{citation.Citer} -> {citation.Cited}")
             .Distinct()
             .ToArray();
 
-        Assert.Empty(missing);
-    }
+    /// <summary>
+    /// Every `dydo/...md` citation in the text, normalised to forward slashes without a leading `./`,
+    /// so `dydo/x.md`, `./dydo/x.md`, `dydo\x.md` and a mix all name the same file. The lookbehind
+    /// keeps a citation anchored at the repo's own `dydo` folder: a path that merely contains
+    /// `dydo/` (`hub/dydo/x.md`, a URL, `../dydo/x.md`, `mydydo/x.md`) names some other file.
+    /// </summary>
+    private static IEnumerable<string> CitedDydoDocuments(string text) =>
+        DydoDocumentPath().Matches(text)
+            .Select(match => Regex.Replace(match.Value, @"[/\\]+", "/"))
+            .Select(path => path.StartsWith("./", StringComparison.Ordinal) ? path[2..] : path);
 
-    [GeneratedRegex(@"(?<![\w./-])dydo/[A-Za-z0-9_./-]+\.md")]
+    [GeneratedRegex(@"(?<![\w./\\-])(?:\.[/\\]+)?dydo[/\\]+[A-Za-z0-9_./\\-]+\.md")]
     private static partial Regex DydoDocumentPath();
 
     /// <summary>

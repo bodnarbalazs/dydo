@@ -16,24 +16,74 @@ public class GuardPrReadyTests : IntegrationTestBase
     // "Independent review" in the text keeps the shipped review-block nudge quiet.
     private const string PrCreate = "gh pr create --title t --body '## Independent review'";
 
-    private async Task InitPushedProject()
+    private const string Origin = "https://github.com/Acme/LC.git";
+
+    private string Worktree => Path.Combine(TestDir, "wt");
+
+    // A temp path may reach git through a symlink or a short name; the refusal names git's path.
+    private string WorktreeAsGitListsIt => Path.GetFullPath(Git(Worktree, "rev-parse", "--show-toplevel").Text.Trim());
+
+    // The origin is a bare repository on disk; after the pushes it is renamed to LC's URL so a
+    // call naming acme/lc names this tree's repository. Upstream refs stay local, so nothing fetches.
+    private async Task InitPushedProject(bool withWorktree = false)
     {
         await InitProjectAsync("none");
-        File.AppendAllText(Path.Combine(TestDir, ".gitignore"), "\n/origin.git/\n");
+        File.AppendAllText(Path.Combine(TestDir, ".gitignore"), "\n/origin.git/\n/wt/\n");
         Create(TestDir, Path.Combine(TestDir, "origin.git"));
+        if (withWorktree)
+        {
+            Git(TestDir, "worktree", "add", "-b", "topic", Worktree);
+            Git(Worktree, "push", "-u", "origin", "topic");
+        }
+        Git(TestDir, "remote", "set-url", "origin", Origin);
     }
 
-    private string Payload(string command, bool withCwd = true, bool codex = false)
+    // Dirty main checkout on feature, clean pushed worktree on topic.
+    private async Task InitDirtyMainWithCleanWorktree()
     {
+        await InitPushedProject(withWorktree: true);
+        WriteFile("wip.txt", "w\n");
+    }
+
+    private void SilenceReviewBlockWarn()
+    {
+        var reviewBlockWarn = ConfigFactory.DefaultNudges.Single(n => n.Message.StartsWith("This PR carries no review block"));
+        var marker = Path.Combine(GuardCommand.GuardEnv.Load(TestDir).MarkerDir,
+            $".nudge-{GuardCommand.ComputeNudgeHash(reviewBlockWarn.Pattern)}");
+        Directory.CreateDirectory(Path.GetDirectoryName(marker)!);
+        File.WriteAllText(marker, "spent");
+    }
+
+    private string Payload(object command, bool withCwd = true, bool codex = false,
+        string? cwd = null, string? toolCwd = null, string? workdir = null)
+    {
+        var toolInput = new Dictionary<string, object?> { ["command"] = command };
+        if (toolCwd != null) toolInput["cwd"] = toolCwd;
+        if (workdir != null) toolInput["workdir"] = workdir;
         var payload = new Dictionary<string, object?>
         {
             ["session_id"] = TestSessionId,
             ["tool_name"] = "Bash",
-            ["tool_input"] = new { command },
+            ["tool_input"] = toolInput,
         };
-        if (withCwd) payload["cwd"] = TestDir;
+        if (withCwd) payload["cwd"] = cwd ?? TestDir;
         if (codex) payload["turn_id"] = "turn-1";
         return JsonSerializer.Serialize(payload);
+    }
+
+    // Runs each command once and returns every one whose decision is not the expected one, so a
+    // replayed table reports all its misses at once.
+    private async Task<List<string>> Misses(bool denied, IEnumerable<string> commands, string? reasonPart = null)
+    {
+        List<string> misses = [];
+        foreach (var command in commands)
+        {
+            var result = await GuardWithStdinAsync(Payload(command));
+            var wasDenied = !result.IsPreToolUseAllowed;
+            if (wasDenied != denied || (denied && reasonPart != null && !result.Stderr.Contains(reasonPart)))
+                misses.Add($"{(wasDenied ? "denied" : "allowed")}: {command}\n    {result.Stderr.Trim().Replace("\n", "\n    ")}");
+        }
+        return misses;
     }
 
     [Fact]
@@ -255,5 +305,304 @@ public class GuardPrReadyTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(Payload(PrCreate));
 
         result.AssertPreToolUseAllowed();
+    }
+
+    // DYD-391: a PR naming its branch is checked where that branch is checked out, not where the
+    // call runs. LC check-pr-ready.test.mjs:454-464, 1661-1668; pr-ready-guard.test.mjs:149.
+    [Theory]
+    [InlineData("gh pr create --head topic --fill")]
+    [InlineData("gh pr create -H topic --fill")]
+    [InlineData("gh pr create -Htopic --fill")]
+    [InlineData("gh pr create --head=topic --fill")]
+    [InlineData("gh pr create -dH \"topic\" --title x")]
+    [InlineData("gh pr create --head other --fill --head me:topic")]
+    [InlineData("gh -R acme/lc pr create --repo acme/lc --head 'topic'")]
+    [InlineData("gh pr new --head topic --fill")]
+    [InlineData("gh pr ready topic")]
+    [InlineData("gh pr ready -R acme/lc topic")]
+    [InlineData("gh pr ready --undo me:topic")]
+    [InlineData("gh api repos/acme/lc/pulls -f head=topic -f base=master -f title=x")]
+    [InlineData("gh api -X POST /repos/acme/lc/pulls -f head=me:topic")]
+    [InlineData("gh api 'repos/{owner}/{repo}/pulls' -F head=topic")]
+    [InlineData("gh pr create --head topic --fill && gh pr ready topic")]
+    public async Task BranchNamedCall_FromADirtyMain_ChecksTheCleanBranchWorktree(string command)
+    {
+        await InitDirtyMainWithCleanWorktree();
+        SilenceReviewBlockWarn();
+
+        var result = await GuardWithStdinAsync(Payload(command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("gh pr create --head topic --fill")]
+    [InlineData("gh pr ready topic")]
+    [InlineData("gh api repos/acme/lc/pulls -f head=topic")]
+    public async Task BranchNamedCall_OfADirtyWorktree_IsDeniedNamingThatTree(string command)
+    {
+        await InitPushedProject(withWorktree: true);
+        File.WriteAllText(Path.Combine(Worktree, "draft.txt"), "d\n");
+
+        var reason = (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseDenied();
+
+        Assert.Contains("untracked files: draft.txt", reason);
+        Assert.Contains($"Checked: {WorktreeAsGitListsIt}", reason);
+    }
+
+    [Fact]
+    public async Task BranchNamedCall_OfAnUnpushedWorktree_IsDenied()
+    {
+        await InitPushedProject(withWorktree: true);
+        File.WriteAllText(Path.Combine(Worktree, "more.txt"), "m\n");
+        Commit(Worktree, "more");
+
+        var reason = (await GuardWithStdinAsync(Payload("gh pr ready topic"))).AssertPreToolUseDenied();
+
+        Assert.Contains("HEAD differs from its upstream origin/topic", reason);
+    }
+
+    [Theory]
+    [InlineData("gh pr create --head nope --fill", "--head nope")]
+    [InlineData("gh pr ready nope", "gh pr ready nope")]
+    [InlineData("gh api repos/acme/lc/pulls -f head=nope", "head=nope")]
+    public async Task BranchNoWorktreeHas_IsDeniedNamingTheBranchForm(string command, string form)
+    {
+        await InitPushedProject(withWorktree: true);
+
+        var reason = (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseDenied();
+
+        Assert.Contains($"{form} names branch nope, which no worktree of this repository has checked out", reason);
+    }
+
+    // Every call in one command is checked against its own tree, and each tree is named.
+    [Fact]
+    public async Task TwoCalls_OfTwoDirtyTrees_NameBothTrees()
+    {
+        await InitDirtyMainWithCleanWorktree();
+        File.WriteAllText(Path.Combine(Worktree, "draft.txt"), "d\n");
+
+        var reason = (await GuardWithStdinAsync(Payload("gh pr create --head topic --fill && gh pr create --fill")))
+            .AssertPreToolUseDenied();
+
+        Assert.Contains("untracked files: draft.txt", reason);
+        Assert.Contains($"Checked: {WorktreeAsGitListsIt}", reason);
+        Assert.Contains("untracked files: wip.txt", reason);
+        Assert.Contains($"Checked: {TestDir}", reason);
+    }
+
+    // A value that looks like --head is not the head. LC check-pr-ready.test.mjs:492-497, 1514, 1549-1555.
+    [Theory]
+    [InlineData("gh --head topic pr create --fill")]
+    [InlineData("gh -H topic pr create --fill")]
+    [InlineData("gh pr create --title -H topic --fill")]
+    [InlineData("gh pr create --title=x --body --head topic")]
+    [InlineData("gh pr ready 12")]
+    [InlineData("gh pr ready https://github.com/acme/lc/pull/12")]
+    public async Task CallNamingNoBranch_FromADirtyMain_ChecksTheDirectory(string command)
+    {
+        await InitDirtyMainWithCleanWorktree();
+
+        var reason = (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseDenied();
+
+        Assert.Contains("untracked files: wip.txt", reason);
+    }
+
+    // LC's plain forms (the PR body's table names each source line), each from a dirty tree.
+    [Fact]
+    public async Task PlainForms_FromADirtyTree_AreDenied()
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+        string[] commands =
+        [
+            "gh pr create --fill", "gh pr new --fill", "gh pr ready 12",
+            "git status && gh -R acme/lc pr create --fill", "gh.exe pr create --fill",
+            "GH_TOKEN=x gh pr create --fill", "env gh pr create --fill", "time gh pr create --fill",
+            "{ gh pr create --fill; }", "if true; then gh pr create --fill; fi",
+            "for i in 1; do gh pr create --fill; done", "if false; then :; else gh pr create --fill; fi",
+            "env -u GH_TOKEN gh pr create --fill", "env GH_TOKEN=x gh pr create --fill",
+            "timeout 60 gh pr create --fill", "nice gh pr create --fill", "nice -n 5 gh pr create --fill",
+            "GH pr create --fill", "Gh.exe pr create --fill", "C:/bin/GH.EXE pr ready 12",
+            "\"C:/Program Files/GitHub CLI/gh.exe\" pr create --fill", "(gh pr create --fill)",
+            "gh -R acme/lc pr new --fill", "gh --repo acme/lc pr create --fill", "gh pr -R acme/lc create --fill",
+            "gh pr create -R acme/lc --fill", "gh pr create --repo=Acme/LC.git --fill", "gh pr create -Racme/lc --fill",
+            "GH_REPO=acme/lc gh pr create --fill", "  gh  pr create   --fill  ",
+            "gh pr create --fill > out.txt", "git status\ngh pr create --fill",
+            "cat <<EOF\njust notes\nEOF\ngh pr create --fill", "cat <<EOF; gh pr create --fill\njust notes\nEOF",
+            "gh api repos/acme/lc/pulls -f title=t -f base=master", "gh api -X POST repos/acme/lc/pulls",
+            "gh api --method=post repos/acme/lc/pulls -ftitle=x", "gh api -XPOST repos/acme/lc/pulls --field=title=x",
+            "gh api https://api.github.com/repos/acme/lc/pulls -f title=t", "gh api REPOS/ACME/LC/PULLS -f title=t",
+            "env GH_TOKEN=x gh api repos/acme/lc/pulls -f title=t", "gh api repos/{owner}/{repo}/pulls -f title=t",
+            "gh api graphql -f query='mutation{markPullRequestReadyForReview(input:{pullRequestId:\"P\"}){clientMutationId}}'",
+            "gh api graphql -f query='mutation{createPullRequest(input:{repositoryId:\"R\",baseRefName:\"master\",headRefName:\"h\",title:\"t\"}){clientMutationId}}'",
+            "gh api https://ghe.example.com/api/graphql -f query='mutation{createPullRequest(input:{headRefName:\"h\"}){clientMutationId}}'",
+        ];
+
+        Assert.Empty(await Misses(denied: true, commands, "untracked files: wip.txt"));
+    }
+
+    // LC's commands that open no PR, from a dirty tree: the rule stays out of the way.
+    [Fact]
+    public async Task CommandsOpeningNoPr_FromADirtyTree_PassUntouched()
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+        SilenceReviewBlockWarn();
+        string[] commands =
+        [
+            "gh pr view 12", "ls", "git commit -m \"gh pr create later\"", "grep -rn \"gh pr create\" dydo",
+            "gh pr view $n", "gh pr create-notes", "echo gh pr create --fill", "gh pr view 12 --json title",
+            "gh api graphql -F query=@viewer.graphql", "gh api graphql -f query='{viewer{login}}'",
+            "gh api repos/acme/lc/pulls", "gh api repos/acme/lc/pulls/12/comments -f body=x",
+            "git commit -m \"$(cat <<'EOF'\nfix the hook\n\ngh pr create now checks the tree\nEOF\n)\"",
+            "cat <<'EOF'\ngh pr create --fill\nEOF", "bash -c \"gh pr view 12\"",
+            "pwsh -NoProfile -Command \"git status\"", "cmd /c dir", "eval \"$(ssh-agent -s)\"",
+        ];
+
+        Assert.Empty(await Misses(denied: false, commands));
+    }
+
+    // -R, --repo, GH_REPO or a REST endpoint naming another repository cannot be checked here.
+    [Theory]
+    [InlineData("gh pr create -R other/x --fill")]
+    [InlineData("gh -R other/x pr create --head topic")]
+    [InlineData("gh pr create --repo=github.com/other/x --head topic")]
+    [InlineData("gh pr create -R https://github.com/Other/X.git --fill")]
+    [InlineData("GH_REPO=other/x gh pr create --fill")]
+    [InlineData("env GH_REPO=other/x gh pr create --fill")]
+    [InlineData("gh -R acme/lc pr create --repo other/x --fill")]
+    [InlineData("gh pr ready topic -R github.com/other/x")]
+    [InlineData("gh pr create -R acme/lc-docs --fill")]
+    [InlineData("gh api repos/other/x/pulls -f head=topic")]
+    public async Task CallNamingAnotherRepository_FromACleanTree_IsRefused(string command)
+    {
+        await InitPushedProject(withWorktree: true);
+
+        var reason = (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseDenied();
+
+        Assert.Contains("names another repository", reason);
+        Assert.Contains("run it from that repo's checkout", reason);
+    }
+
+    [Theory]
+    [InlineData("gh pr create -R Acme/LC --fill")]
+    [InlineData("gh pr create --repo https://github.com/acme/lc.git --fill")]
+    [InlineData("gh pr create -R git@github.com:Acme/LC.git --fill")]
+    [InlineData("GH_REPO=github.com/acme/lc gh pr create --fill")]
+    public async Task CallNamingThisRepository_FromACleanTree_Proceeds(string command)
+    {
+        await InitPushedProject();
+        SilenceReviewBlockWarn();
+
+        var result = await GuardWithStdinAsync(Payload(command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // Balazs's 2026-10-27 ruling: a PR call inside a shell wrapper fails closed, with no decoding,
+    // whatever the tree's state. LC check-pr-ready.test.mjs:328-347, 2454-2455, 2506, 2530.
+    [Fact]
+    public async Task WrappedPrCall_FromACleanTree_IsRefused()
+    {
+        await InitPushedProject();
+        SilenceReviewBlockWarn();
+        string[] commands =
+        [
+            "bash -c \"gh pr create --fill\"", "sh -c 'git status; gh pr ready 12'",
+            "pwsh -NoProfile -Command \"gh pr create --fill\"", "powershell -c \"gh pr create --fill\"",
+            "eval \"gh pr create --fill\"", "eval gh pr create --fill", "cmd /c gh pr create --fill",
+            "cmd.exe /c \"gh pr create --fill\"", "cmd /k gh pr create --fill", "cmd //c gh pr create --fill",
+            "cmd.exe /s /C \"git status && gh pr ready 12\"", "bash -lc 'gh -R acme/lc pr create --fill'",
+            "bash -c 'gh api repos/acme/lc/pulls -f head=feature'",
+            "pwsh -NoProfile -Command \"gh api repos/acme/lc/pulls -f head=feature\"",
+            "bash -c \"gh api -X POST repos/acme/lc/pulls -F head=feature -f base=main\"",
+            "bash -c 'pwsh -NoProfile -Command \"gh pr create --head feature --fill\"'",
+            "pwsh -EncodedCommand ZwBoACAAcAByACAAYwByAGUAYQB0AGUAIAAtAC0AZgBpAGwAbAA=",
+            "powershell.exe -ec ZwBoACAAcAByACAAYwByAGUAYQB0AGUAIAAtAC0AZgBpAGwAbAA=",
+        ];
+
+        Assert.Empty(await Misses(denied: true, commands, "run gh directly so the PR check can see it"));
+    }
+
+    // Codex runs a call in tool_input.workdir, which may not be the session's directory.
+    [Fact]
+    public async Task CodexDirtyWorkdir_FromACleanSession_IsDenied()
+    {
+        await InitDirtyMainWithCleanWorktree();
+
+        var result = await GuardWithStdinAsync(Payload(PrCreate, cwd: Worktree, codex: true, workdir: TestDir));
+
+        var reason = result.AssertPreToolUseDenied();
+        Assert.Contains("untracked files: wip.txt", reason);
+        Assert.Contains($"Checked: {TestDir}", reason);
+    }
+
+    [Fact]
+    public async Task CleanWorkdir_FromADirtySession_IsAllowed()
+    {
+        await InitDirtyMainWithCleanWorktree();
+
+        var result = await GuardWithStdinAsync(Payload(PrCreate, codex: true, workdir: Worktree));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // LC check-pr-ready.test.mjs:1683: tool_input.cwd is read before tool_input.workdir.
+    [Fact]
+    public async Task ToolInputCwd_IsReadBeforeWorkdir()
+    {
+        await InitDirtyMainWithCleanWorktree();
+
+        var result = await GuardWithStdinAsync(Payload(PrCreate, cwd: Worktree, toolCwd: TestDir, workdir: Worktree));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("untracked files: wip.txt");
+    }
+
+    // Codex may send the command as an argv array. LC check-pr-ready.test.mjs:1695-1707, 2782.
+    [Theory]
+    [InlineData(true, new[] { "gh", "pr", "new", "--fill" })]
+    [InlineData(true, new[] { "bash", "-lc", "gh pr create --fill" })]
+    [InlineData(true, new[] { @"C:\Program Files\PowerShell\7\pwsh.exe", "-NoProfile", "-Command", "gh pr ready" })]
+    [InlineData(false, new[] { "bash", "-lc", "gh pr view 12" })]
+    [InlineData(false, new[] { "gh", "api", "repos/acme/lc/pulls/12/comments", "-f", "body=x" })]
+    public async Task ArgvCommand_FromADirtyTree_IsReadAsItsScript(bool opensAPr, string[] argv)
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload(argv, codex: true));
+
+        if (opensAPr)
+        {
+            result.AssertPreToolUseDenied();
+            result.AssertStderrContains("untracked files: wip.txt");
+        }
+        else
+            result.AssertPreToolUseAllowed();
+    }
+
+    [Fact]
+    public async Task ArgvCommand_FromACleanTree_IsAllowed()
+    {
+        await InitPushedProject();
+        SilenceReviewBlockWarn();
+
+        var result = await GuardWithStdinAsync(Payload(new[] { "bash", "-lc", "gh pr create --fill" }, codex: true));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // LC check-pr-ready.test.mjs:2920: a PR call split across pwsh's arguments is still a wrapped call.
+    [Fact]
+    public async Task ArgvWrapperSplittingThePrCall_IsRefused()
+    {
+        await InitPushedProject();
+
+        var result = await GuardWithStdinAsync(Payload(new[] { "pwsh", "-Command", "gh", "pr", "create", "--fill" }, codex: true));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("run gh directly so the PR check can see it");
     }
 }

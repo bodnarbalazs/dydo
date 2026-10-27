@@ -27,12 +27,33 @@ public class DocumentationTests : IntegrationTestBase
             .ToArray();
         Assert.Equal(new[] { "_future-features.md" }, futureFeatureFiles);
 
-        var futureFeatureContract = File.ReadAllText(
-            Path.Combine(futureFeaturesRoot, "_future-features.md"));
-        Assert.Contains("repo-native ideas, not scheduled work", futureFeatureContract);
-        Assert.Contains("User promotion creates exactly one appropriately shaped Linear Initiative, Project, or ticket",
-            futureFeatureContract);
-        Assert.Contains("only in Linear; the FutureFeature remains provenance", futureFeatureContract);
+        AssertLegacyFutureFeatureGuide(File.ReadAllText(Path.Combine(futureFeaturesRoot, "_future-features.md")));
+    }
+
+    [Fact]
+    public void RepositoryFutureFeatureGuide_SendsNewIntakeToLinear()
+    {
+        AssertLegacyFutureFeatureGuide(File.ReadAllText(Path.Combine(
+            RepositoryRoot(), "dydo", "project", "future-features", "_future-features.md")));
+    }
+
+    /// <summary>
+    /// DR 044 and DR 047: a new FutureFeature is a Linear ticket in status `FutureFeature`; the
+    /// folder only keeps legacy records until their migration is verified.
+    /// </summary>
+    private static void AssertLegacyFutureFeatureGuide(string guide)
+    {
+        Assert.Contains("A new FutureFeature is a Linear ticket in status `FutureFeature`", guide);
+        Assert.Contains("stays until its migration to Linear is verified", guide);
+        foreach (var repoOnlyIntake in new[] { "repo-native ideas", "stay out of", "stay in this folder" })
+            Assert.DoesNotContain(repoOnlyIntake, guide);
+    }
+
+    private static string RepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj"))) return directory.FullName;
+        throw new DirectoryNotFoundException($"Could not locate repository root from {AppContext.BaseDirectory}");
     }
 
     [Fact]

@@ -561,7 +561,7 @@ public static class InitCommand
     };
 
     // The Claude guard rides the committed .claude/settings.json (PrepareClaudeSettings). This
-    // machine's settings.local.json keeps only the allow list; a guard an older dydo wired here goes,
+    // machine's settings.local.json keeps its allow list and own hooks; a guard an older dydo wired here goes,
     // or every tool call would run the guard twice.
     private static void ConfigureClaudeHooks(string projectRoot)
     {

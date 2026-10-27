@@ -82,7 +82,8 @@ moved Claude guard; see Upgrade steps.
   - `dydo pr-ready --body` accepts a hyphen, an en dash or an em dash after `PASS`.
 - The mode-change approval read `env -S`'s split string as one word, so
   `env -S "dydo mode set overnight on"` changed the mode without asking. It now reads that string
-  as a command and asks (DYD-391).
+  as a command, so it meets the same approval as a plain `dydo mode set`: Claude Code asks the
+  user, and a host that cannot ask refuses it (DYD-391).
 - `dydo init codex --join` stopped with exit 2 on a `.codex/config.toml` that starts with a BOM. It
   now reads it, keeps the BOM and sets `memories = false` in its one `[features]` table (DYD-392).
 - `dydo init`, `--join` and `dydo adopt` rewrote `dydo.json`, `.claude/settings.json`,

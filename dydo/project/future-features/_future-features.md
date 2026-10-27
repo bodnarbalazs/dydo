@@ -28,4 +28,4 @@ Linear; a promoted record is provenance and is never synchronized with that work
 Both states prohibit delivery fields: `assigned`, `assignee`, `priority`, `blocked-by`, `blocks`,
 `dependency`, `dependencies`, `project`, `initiative`, `cycle`, `milestone`, `sprint`, `campaign`,
 `slice`, `task`, `issue`, `ticket`, `workflow`, `state`, `due-date`, `estimate`, `labels`, `parent`, `sub-issue`, `sub-ticket`,
-and `team`. Strict content validation begins only after Project 3 normalizes the retained ideas.
+and `team`. `dydo check` enforces this shape on every legacy record.

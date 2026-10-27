@@ -137,6 +137,14 @@ public abstract class IntegrationTestBase : IDisposable
         return File.ReadAllText(fullPath);
     }
 
+    /// <summary>The DynaDocs checkout the test assembly was built from.</summary>
+    protected static string RepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj"))) return directory.FullName;
+        throw new DirectoryNotFoundException($"Could not locate repository root from {AppContext.BaseDirectory}");
+    }
+
     protected void WriteFile(string relativePath, string content)
     {
         var fullPath = Path.Combine(TestDir, relativePath);

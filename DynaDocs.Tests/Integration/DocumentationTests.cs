@@ -1,9 +1,10 @@
 namespace DynaDocs.Tests.Integration;
 
+using System.Text.RegularExpressions;
 using DynaDocs.Commands;
 
 [Collection("Integration")]
-public class DocumentationTests : IntegrationTestBase
+public partial class DocumentationTests : IntegrationTestBase
 {
     #region Check
 
@@ -37,23 +38,82 @@ public class DocumentationTests : IntegrationTestBase
             RepositoryRoot(), "dydo", "project", "future-features", "_future-features.md")));
     }
 
+    [Fact]
+    public void RepositoryLegacyFutureFeatureRecords_ClaimNoRepoNativeIntake()
+    {
+        var folder = Path.Combine(RepositoryRoot(), "dydo", "project", "future-features");
+        var records = Directory.GetFiles(folder, "*.md")
+            .Where(path => Path.GetFileName(path) != "_future-features.md")
+            .ToArray();
+        Assert.NotEmpty(records);
+
+        foreach (var record in records)
+            Assert.False(File.ReadAllText(record).Contains("repo-native", StringComparison.OrdinalIgnoreCase),
+                $"{Path.GetFileName(record)} still calls a FutureFeature repo-native");
+    }
+
+    [Fact]
+    public async Task Check_ProjectWithoutFutureFeaturesFolder_Passes()
+    {
+        // LC's shape: every FutureFeature lives in Linear and the folder does not exist.
+        (await InitProjectAsync("none")).AssertSuccess();
+        Directory.Delete(Path.Combine(DydoDir, "project", "future-features"), recursive: true);
+
+        var check = await RunAsync(CheckCommand.Create());
+
+        check.AssertSuccess();
+        Assert.DoesNotContain("future-features", check.Stdout + check.Stderr);
+        Assert.DoesNotContain("FutureFeature", check.Stdout + check.Stderr);
+    }
+
+    [Fact]
+    public async Task Check_FutureFeaturesFolderHoldingOnlyItsMetaFile_Passes()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        var folder = Path.Combine(DydoDir, "project", "future-features");
+        Assert.Equal(new[] { "_future-features.md" },
+            Directory.GetFileSystemEntries(folder).Select(Path.GetFileName).ToArray());
+
+        var check = await RunAsync(CheckCommand.Create());
+
+        check.AssertSuccess();
+        Assert.DoesNotContain("FutureFeature", check.Stdout + check.Stderr);
+    }
+
+    [Fact]
+    public async Task FreshInit_EveryCitedDydoDocumentShips()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+
+        var missing = Directory.EnumerateFiles(DydoDir, "*", SearchOption.AllDirectories)
+            .SelectMany(file => DydoDocumentPath().Matches(File.ReadAllText(file))
+                .Select(match => (Citer: Path.GetRelativePath(TestDir, file), Cited: match.Value)))
+            .Where(citation => !File.Exists(Path.Combine(TestDir, citation.Cited)))
+            .Select(citation => $"{citation.Citer} -> {citation.Cited}")
+            .Distinct()
+            .ToArray();
+
+        Assert.Empty(missing);
+    }
+
+    [GeneratedRegex(@"(?<![\w./-])dydo/[A-Za-z0-9_./-]+\.md")]
+    private static partial Regex DydoDocumentPath();
+
     /// <summary>
     /// DR 044 and DR 047: a new FutureFeature is a Linear ticket in status `FutureFeature`; the
-    /// folder only keeps legacy records until their migration is verified.
+    /// folder only keeps legacy records until their migration is verified, and `dydo check`
+    /// validates each of them now.
     /// </summary>
     private static void AssertLegacyFutureFeatureGuide(string guide)
     {
         Assert.Contains("A new FutureFeature is a Linear ticket in status `FutureFeature`", guide);
         Assert.Contains("stays until its migration to Linear is verified", guide);
-        foreach (var repoOnlyIntake in new[] { "repo-native ideas", "stay out of", "stay in this folder" })
-            Assert.DoesNotContain(repoOnlyIntake, guide);
-    }
-
-    private static string RepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj"))) return directory.FullName;
-        throw new DirectoryNotFoundException($"Could not locate repository root from {AppContext.BaseDirectory}");
+        Assert.Contains("`dydo check` enforces this shape on every legacy record.", guide);
+        foreach (var stale in new[]
+                 {
+                     "repo-native", "stay out of", "stay in this folder", "Project 3", "Strict content validation begins",
+                 })
+            Assert.DoesNotContain(stale, guide);
     }
 
     [Fact]

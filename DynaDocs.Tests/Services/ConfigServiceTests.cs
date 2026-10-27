@@ -161,6 +161,48 @@ public class ConfigServiceTests : IDisposable
     }
 
     [Fact]
+    public void SaveConfig_ExistingFile_ChangesOnlyWhatTheConfigChanged()
+    {
+        var path = Path.Combine(_testDir, "dydo.json");
+        const string body = "{\r\n    \"version\": 1,\r\n    \"zeta\": { \"keep\": \"it\\u0027s & <b>\" },\r\n    \"structure\": { \"root\": \"dydo\" }";
+        File.WriteAllText(path, "﻿" + body + "\r\n}");
+        var service = new ConfigService();
+        var config = service.LoadConfig(_testDir)!;
+        config.DydoVersion = "3.5.0";
+
+        service.SaveConfig(config, path);
+
+        Assert.Equal("﻿" + body + ",\r\n    \"dydoVersion\": \"3.5.0\"\r\n}", PreservedText.Read(path));
+    }
+
+    [Fact]
+    public void SaveConfig_UnchangedConfig_WritesNothing()
+    {
+        var path = Path.Combine(_testDir, "dydo.json");
+        var service = new ConfigService();
+        var config = service.LoadConfig(_testDir)!;
+
+        service.SaveConfig(config, path, ConfigSaveOperations.Default with
+        {
+            CreateNew = _ => throw new InvalidOperationException("an unchanged config was written")
+        });
+    }
+
+    [Fact]
+    public void SaveConfig_NewFile_IsLfTerminatedAndRelaxedEscaped()
+    {
+        var path = Path.Combine(_testDir, "fresh.json");
+
+        new ConfigService().SaveConfig(new DydoConfig { Nudges = [new NudgeConfig { Pattern = "a&b", Message = "don't <x>" }] }, path);
+
+        var text = PreservedText.Read(path);
+        Assert.DoesNotContain("\r", text);
+        Assert.EndsWith("}\n", text);
+        Assert.Contains("\"don't <x>\"", text);
+        Assert.Contains("\"a&b\"", text);
+    }
+
+    [Fact]
     public void LoadConfigStrict_PreservesValidTestingRunnerAndSecondSaveIsByteIdentical()
     {
         var path = Path.Combine(_testDir, "dydo.json");

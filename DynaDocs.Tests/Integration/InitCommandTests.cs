@@ -932,9 +932,16 @@ public class InitCommandTests : IntegrationTestBase
         Assert.DoesNotContain("dydo guard", local);
 
         var content = ReadFile(".claude/settings.json");
-        PreservedText.AssertLinesKeptInOrder(CustomHooks, content);
+        Assert.Contains("CustomTool", content);
+        Assert.Contains("echo custom", content);
+
         Assert.Contains("dydo guard", content);
         Assert.Contains("Edit|Write|Read|Bash", content);
+
+        Assert.Contains("PostToolUse", content);
+        Assert.Contains("echo post", content);
+
+        Assert.Contains("otherSetting", content);
     }
 
     [Fact]

@@ -19,7 +19,7 @@
         <PackageTags>codex;claude;documentation;ai-agents;cli</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <Copyright>Copyright (c) Balazs Bodnar 2026</Copyright>
-        <PackageReleaseNotes>https://github.com/bodnarbalazs/dydo/blob/v3.5.0/dydo/project/changelog/2026/2026-10-23/dydo-3-5-0-dispatch-decisions-overnight-mode.md</PackageReleaseNotes>
+        <PackageReleaseNotes>https://github.com/bodnarbalazs/dydo/blob/v3.5.1/dydo/project/changelog/2026/2026-10-27/dydo-3-5-1-downstream-update-fixes.md</PackageReleaseNotes>
 
         <!-- .NET Tool configuration -->
         <PackAsTool>true</PackAsTool>

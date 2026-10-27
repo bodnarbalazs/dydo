@@ -2,6 +2,7 @@ namespace DynaDocs.Models;
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DynaDocs.Services;
 
 public class ToolInputData
 {
@@ -18,23 +19,29 @@ public class ToolInputData
     public string? NewString { get; set; }
 
     /// <summary>
-    /// The shell command line. Codex may send it as an argv array instead: a shell running one
-    /// script (<c>["bash", "-lc", script]</c>, <c>[pwsh, "-Command", script]</c>) reads as that
-    /// script, any other array as its words joined into one POSIX line.
+    /// The shell command line. Codex may send it as an argv array instead: its shell envelope
+    /// (<c>["bash", "-lc", script]</c>, <c>[pwsh, "-Command", script]</c>, see
+    /// <see cref="CommandPosition.Envelope"/>) reads as that script, any other array as its words
+    /// joined into one POSIX line. <see cref="CommandArgv"/> keeps the array.
     /// </summary>
     [JsonIgnore]
     public string? Command { get; set; }
 
+    /// <summary>The command as Codex sent it when it sent an argv array, else null.</summary>
+    [JsonIgnore]
+    internal IReadOnlyList<string>? CommandArgv { get; private set; }
+
     [JsonPropertyName("command")]
     public JsonElement? CommandValue
     {
-        get => Command == null ? null : StringElement(Command);
-        set => Command = value?.ValueKind switch
+        set
         {
-            JsonValueKind.String => value.Value.GetString(),
-            JsonValueKind.Array => ScriptOf([.. value.Value.EnumerateArray().Select(WordOf)]),
-            _ => null,
-        };
+            CommandArgv = value?.ValueKind == JsonValueKind.Array ? [.. value.Value.EnumerateArray().Select(WordOf)] : null;
+            if (CommandArgv != null)
+                Command = CommandPosition.Envelope(CommandArgv)?.Text ?? string.Join(' ', CommandArgv.Select(Quoted));
+            else
+                Command = value?.ValueKind == JsonValueKind.String ? value.Value.GetString() : null;
+        }
     }
 
     [JsonPropertyName("path")]
@@ -55,28 +62,8 @@ public class ToolInputData
     [JsonPropertyName("workdir")]
     public string? Workdir { get; set; }
 
-    private static readonly HashSet<string> Shells =
-        new(StringComparer.OrdinalIgnoreCase) { "bash", "sh", "zsh", "dash", "ksh", "pwsh", "powershell", "cmd" };
-
-    private static readonly HashSet<string> ScriptFlags =
-        new(StringComparer.OrdinalIgnoreCase) { "-c", "-lc", "-ic", "-Command", "/c" };
-
-    private static JsonElement StringElement(string text)
-    {
-        using var document = JsonDocument.Parse($"\"{JsonEncodedText.Encode(text)}\"");
-        return document.RootElement.Clone();
-    }
-
     private static string WordOf(JsonElement element) =>
         element.ValueKind == JsonValueKind.String ? element.GetString()! : element.GetRawText();
-
-    private static string ScriptOf(string[] argv)
-    {
-        var shell = System.IO.Path.GetFileNameWithoutExtension(argv.FirstOrDefault()?.Replace('\\', '/'));
-        if (argv.Length >= 3 && ScriptFlags.Contains(argv[^2]) && Shells.Contains(shell ?? ""))
-            return argv[^1];
-        return string.Join(' ', argv.Select(Quoted));
-    }
 
     private static string Quoted(string word) =>
         word.Length > 0 && word.All(c => char.IsLetterOrDigit(c) || "-_./:=@,+%".Contains(c))

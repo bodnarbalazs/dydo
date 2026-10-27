@@ -3,31 +3,20 @@ namespace DynaDocs.Services;
 using System.Text.RegularExpressions;
 
 /// <summary>
-/// The PR-opening gh calls a command line makes, read as bash reads it (DYD-391): <c>gh pr create</c>,
-/// <c>gh pr new</c>, <c>gh pr ready</c>, a <c>gh api</c> POST to <c>repos/OWNER/REPO/pulls</c>, and
-/// <c>gh api graphql</c> naming createPullRequest or markPullRequestReadyForReview. gh counts at
-/// command position past VAR=value words, shell keywords and env, time, nice and timeout, with any
-/// path, case or .exe. Text a command only reads (quotes, heredoc and here-string bodies, comments)
-/// is no call. A shell or eval given a command string is not read: gh text shaped like such a call
-/// in its words, or an encoded PowerShell command, makes it a wrapped call. It stops accidents, not
-/// a deliberate bypass: substitutions, aliases, functions and other wrappers are not followed.
+/// The PR-opening gh calls a command line makes (DYD-391): <c>gh pr create</c>, <c>gh pr new</c>,
+/// <c>gh pr ready</c>, a <c>gh api</c> POST to <c>repos/OWNER/REPO/pulls</c>, and <c>gh api graphql</c>
+/// naming createPullRequest or markPullRequestReadyForReview. The line is read as its shell reads
+/// it: bash, PowerShell, or both ways when the shell is unknown or a bash line uses PowerShell syntax
+/// (a backtick line continuation, the &amp; call operator, <c>$env:</c>). gh counts at command position
+/// (<see cref="CommandPosition"/>), with any path, case or .exe. Text a command only reads (quotes,
+/// heredoc and here-string bodies, comments) is no call. A shell or eval given a command string is a
+/// wrapper: when that string, read with the same rules, makes a PR call, or the shell is given an
+/// encoded PowerShell command, the wrapper is the call, never decoded. It stops accidents, not a
+/// deliberate bypass: substitutions, aliases, functions and other programs are not followed.
 /// </summary>
 internal static partial class PrCallScanner
 {
-    private static readonly HashSet<string> Keywords =
-        new(StringComparer.Ordinal) { "!", "if", "elif", "then", "else", "do", "while", "until" };
-
-    // Programs that run their remaining words, with the options that take a value.
-    private static readonly Dictionary<string, string[]> Prefixes = new(StringComparer.Ordinal)
-    {
-        ["env"] = ["-u", "--unset", "-C", "--chdir"],
-        ["time"] = ["-f", "-o", "--format", "--output"],
-        ["nice"] = ["-n", "--adjustment"],
-        ["timeout"] = ["-s", "-k", "--signal", "--kill-after"],
-    };
-
-    private static readonly HashSet<string> Wrappers =
-        new(StringComparer.Ordinal) { "pwsh", "powershell", "bash", "sh", "zsh", "dash", "ksh", "cmd", "eval" };
+    private const int MaxDepth = 8;
 
     private static readonly HashSet<string> PrVerbs = new(StringComparer.OrdinalIgnoreCase) { "create", "new", "ready" };
 
@@ -48,92 +37,117 @@ internal static partial class PrCallScanner
 
     private sealed record Options(Dictionary<char, string> Short, HashSet<string> Long);
 
-    public static List<PrCall> Find(string command)
+    /// <summary>
+    /// The PR calls <paramref name="command"/> makes when <paramref name="dialect"/> runs it.
+    /// <paramref name="inheritedRepo"/> is the GH_REPO the command inherits, if any.
+    /// </summary>
+    public static List<PrCall> Find(string command, ShellDialect dialect = ShellDialect.Unknown, string? inheritedRepo = null) =>
+        Scan(command, dialect, NonEmpty(inheritedRepo), 0);
+
+    /// <summary>
+    /// The PR calls an argv array runs. Codex's shell envelope (<see cref="CommandPosition.Envelope"/>)
+    /// runs its script as a direct command line. Any other array runs its first word: gh directly, a
+    /// shell or eval as a wrapper, and any other program given a word that reads as a PR call is a
+    /// wrapper too (admiral ruling 2026-10-27).
+    /// </summary>
+    public static List<PrCall> FindInArgv(IReadOnlyList<string> argv, string? inheritedRepo = null)
     {
-        // gh's {owner}, {repo} and {branch} placeholders, spelt as its :owner form, so braces split no command.
-        var reading = ShellReader.Read(GhPlaceholderRegex().Replace(command, ":$1"), posix: true);
-        return [.. reading.Commands.Select(c => Match(c.Words)).OfType<PrCall>()];
+        if (argv.Count == 0)
+            return [];
+        if (CommandPosition.Envelope(argv) is { } envelope)
+            return Find(envelope.Text, envelope.Dialect, inheritedRepo);
+        if (Match(argv, NonEmpty(inheritedRepo), 0) is { } call)
+            return [call];
+
+        var program = CommandPosition.ProgramName(argv[0]);
+        return program != "gh" && argv.Skip(1).Any(word => Scan(word, ShellDialect.Unknown, null, 1).Count > 0)
+            ? [new PrCall(null, Wrapper: program)]
+            : [];
     }
 
-    private static PrCall? Match(IReadOnlyList<string> words)
+    private static List<PrCall> Scan(string text, ShellDialect dialect, string? inheritedRepo, int depth)
     {
-        var (at, envRepos) = SkipPrefixes(words);
+        // gh's {owner}, {repo} and {branch} placeholders, spelt as its :owner form, so braces split no command.
+        var line = GhPlaceholderRegex().Replace(text, ":$1");
+        return [.. Readings(dialect, line)
+            .SelectMany(posix => ShellReader.Read(line, posix).Commands)
+            .Select(command => Match(command.Words, inheritedRepo, depth))
+            .OfType<PrCall>()
+            .Distinct()];
+    }
+
+    private static bool[] Readings(ShellDialect dialect, string line) => dialect switch
+    {
+        ShellDialect.PowerShell => [false],
+        ShellDialect.Posix when !PowerShellSyntaxRegex().IsMatch(line) => [true],
+        _ => [true, false],
+    };
+
+    private static PrCall? Match(IReadOnlyList<string> words, string? inheritedRepo, int depth)
+    {
+        List<(string Name, string Value)> assignments = [];
+        var at = CommandPosition.Skip(words, assignments);
         if (at >= words.Count)
             return null;
 
-        var program = ProgramName(words[at]);
+        var program = CommandPosition.ProgramName(words[at]);
         var rest = words.Skip(at + 1).ToList();
         if (program == "gh")
-            return GhCall(rest, envRepos);
-        if (Wrappers.Contains(program) && (IsEncodedPowerShell(program, rest) || WrappedPrTextRegex().IsMatch(string.Join(' ', rest))))
-            return new PrCall([], Wrapper: program);
-        return null;
-    }
-
-    private static (int At, List<string> EnvRepos) SkipPrefixes(IReadOnlyList<string> words)
-    {
-        var at = 0;
-        List<string> envRepos = [];
-        while (at < words.Count)
         {
-            var assignment = AssignmentRegex().Match(words[at]);
-            if (assignment.Success)
-            {
-                if (assignment.Groups["name"].Value == "GH_REPO")
-                    envRepos.Add(assignment.Groups["value"].Value);
-                at++;
-            }
-            else if (Keywords.Contains(words[at]))
-                at++;
-            else if (Prefixes.TryGetValue(ProgramName(words[at]), out var valueOptions))
-                at = SkipOptions(words, at + 1, valueOptions, takesOperand: ProgramName(words[at]) == "timeout");
-            else
-                break;
+            // An inline GH_REPO, even an empty one, overrides the inherited one.
+            var inline = assignments.Where(a => a.Name == "GH_REPO").Select(a => a.Value).LastOrDefault();
+            return GhCall(rest, inline != null ? NonEmpty(inline) : inheritedRepo);
         }
-        return (at, envRepos);
+
+        return CommandPosition.ScriptOf(program, rest) is { } script && Wraps(script, depth)
+            ? new PrCall(null, Wrapper: program)
+            : null;
     }
 
-    private static int SkipOptions(IReadOnlyList<string> words, int at, string[] valueOptions, bool takesOperand)
-    {
-        while (at < words.Count && IsFlag(words[at]))
-            at += valueOptions.Contains(words[at]) ? 2 : 1;
-        return takesOperand ? at + 1 : at;
-    }
+    // A command string wraps a PR call when it is encoded or makes one; nesting past the limit fails closed.
+    private static bool Wraps(ShellScript script, int depth) =>
+        script.Encoded || depth >= MaxDepth || Scan(script.Text, script.Dialect, null, depth + 1).Count > 0;
 
     // gh's own flags may precede its subcommand, each with at most one value word.
-    private static PrCall? GhCall(List<string> rest, List<string> envRepos)
+    private static PrCall? GhCall(List<string> rest, string? envRepo)
     {
         var sub = rest.FindIndex(w => w.Equals("pr", StringComparison.OrdinalIgnoreCase) || w.Equals("api", StringComparison.OrdinalIgnoreCase));
         if (sub < 0 || Enumerable.Range(0, sub).Any(i => !IsFlag(rest[i]) && (i == 0 || !IsFlag(rest[i - 1]))))
             return null;
 
-        List<string> repos = [.. envRepos, .. Values(Parse(rest[..sub], RepoOptions).Options, "repo")];
         var args = rest[(sub + 1)..];
-        return rest[sub].Equals("pr", StringComparison.OrdinalIgnoreCase) ? PrVerbCall(args, repos) : ApiCall(args, repos);
+        if (!rest[sub].Equals("pr", StringComparison.OrdinalIgnoreCase))
+            return ApiCall(args, envRepo);
+        return PrVerbCall(args, Values(Parse(rest[..sub], RepoOptions).Options, "repo").LastOrDefault() ?? envRepo);
     }
 
-    private static PrCall? PrVerbCall(List<string> args, List<string> repos)
+    private static PrCall? PrVerbCall(List<string> args, string? repo)
     {
         var parsed = Parse(args, PrOptions);
         var verb = parsed.Positionals.FirstOrDefault();
         if (verb == null || !PrVerbs.Contains(verb))
             return null;
 
-        repos.AddRange(Values(parsed.Options, "repo"));
+        repo = Values(parsed.Options, "repo").LastOrDefault() ?? repo;
         verb = verb.ToLowerInvariant();
         if (verb == "ready")
-        {
-            var target = parsed.Positionals.ElementAtOrDefault(1);
-            return target == null || target.All(char.IsAsciiDigit) || target.Contains("://")
-                ? new PrCall(repos)
-                : new PrCall(repos, BranchOf(target), $"gh pr ready {target}");
-        }
+            return ReadyCall(parsed.Positionals.ElementAtOrDefault(1), repo);
 
         var head = Values(parsed.Options, "head").LastOrDefault();
-        return head == null ? new PrCall(repos) : new PrCall(repos, BranchOf(head), $"gh pr {verb} --head {head}");
+        return head == null ? new PrCall(repo) : new PrCall(repo, BranchOf(head), $"gh pr {verb} --head {head}");
     }
 
-    private static PrCall? ApiCall(List<string> args, List<string> repos)
+    // gh pr ready takes a number, a PR URL (whose repository it readies) or a branch.
+    private static PrCall ReadyCall(string? target, string? repo)
+    {
+        if (target != null && PrUrlRegex().Match(target) is { Success: true } url)
+            return new PrCall($"{url.Groups["host"].Value}/{url.Groups["owner"].Value}/{url.Groups["repo"].Value}");
+        return target == null || target.All(char.IsAsciiDigit) || target.Contains("://")
+            ? new PrCall(repo)
+            : new PrCall(repo, BranchOf(target), $"gh pr ready {target}");
+    }
+
+    private static PrCall? ApiCall(List<string> args, string? envRepo)
     {
         var parsed = Parse(args, ApiOptions);
         var endpoint = parsed.Positionals.FirstOrDefault();
@@ -142,7 +156,7 @@ internal static partial class PrCallScanner
 
         var fields = parsed.Options.Where(o => o.Name is "field" or "raw-field").Select(o => o.Value).ToList();
         if (GraphQlEndpointRegex().IsMatch(endpoint))
-            return fields.Any(f => GraphQlPrMutationRegex().IsMatch(f)) ? new PrCall(repos) : null;
+            return fields.Any(f => GraphQlPrMutationRegex().IsMatch(f)) ? new PrCall(null) : null;
 
         var pulls = RestPullsRegex().Match(endpoint);
         var sendsBody = fields.Count > 0 || Values(parsed.Options, "input").Any();
@@ -150,29 +164,30 @@ internal static partial class PrCallScanner
         if (!pulls.Success || !method.Equals("POST", StringComparison.OrdinalIgnoreCase))
             return null;
 
-        if (pulls.Groups["owner"].Value != ":owner")
-            repos.Add($"{pulls.Groups["owner"].Value}/{pulls.Groups["repo"].Value}");
+        // {owner}/{repo} is the current repository, which GH_REPO names when set.
+        var repo = pulls.Groups["owner"].Value == ":owner"
+            ? envRepo
+            : EndpointRepo(pulls, Values(parsed.Options, "hostname").LastOrDefault());
         var head = fields.LastOrDefault(f => f.StartsWith("head=", StringComparison.Ordinal))?["head=".Length..];
-        return head is null or ":branch" ? new PrCall(repos) : new PrCall(repos, BranchOf(head), $"gh api {endpoint} head={head}");
+        return head is null or ":branch" ? new PrCall(repo) : new PrCall(repo, BranchOf(head), $"gh api {endpoint} head={head}");
+    }
+
+    // An endpoint's repository with its host: the URL's (api.github.com is github.com's API), else --hostname's.
+    private static string EndpointRepo(Match pulls, string? hostname)
+    {
+        var host = pulls.Groups["host"].Success ? pulls.Groups["host"].Value : hostname;
+        if (string.Equals(host, "api.github.com", StringComparison.OrdinalIgnoreCase))
+            host = "github.com";
+        var repo = $"{pulls.Groups["owner"].Value}/{pulls.Groups["repo"].Value}";
+        return host == null ? repo : $"{host}/{repo}";
     }
 
     // A head may name its fork's owner: OWNER:BRANCH.
     private static string BranchOf(string head) => head[(head.IndexOf(':') + 1)..];
 
-    private static bool IsEncodedPowerShell(string program, List<string> rest) =>
-        program is "pwsh" or "powershell" && rest.Any(w => w.Length > 1 && w[0] is '-' or '/' && IsEncodedCommandFlag(w[1..].ToLowerInvariant()));
-
-    private static bool IsEncodedCommandFlag(string flag) =>
-        flag is "e" or "ec" || (flag.Length >= 2 && "encodedcommand".StartsWith(flag, StringComparison.Ordinal));
+    private static string? NonEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
     private static bool IsFlag(string word) => word.Length > 1 && word[0] == '-';
-
-    private static string ProgramName(string word)
-    {
-        var name = word.Replace('\\', '/');
-        name = name[(name.LastIndexOf('/') + 1)..].ToLowerInvariant();
-        return name.EndsWith(".exe", StringComparison.Ordinal) ? name[..^4] : name;
-    }
 
     private static (List<(string Name, string Value)> Options, List<string> Positionals) Parse(List<string> words, Options options)
     {
@@ -217,11 +232,11 @@ internal static partial class PrCallScanner
     [GeneratedRegex(@"\{(owner|repo|branch)\}")]
     private static partial Regex GhPlaceholderRegex();
 
-    [GeneratedRegex(@"^(?<name>[A-Za-z_][A-Za-z0-9_]*)=(?<value>.*)$", RegexOptions.Singleline)]
-    private static partial Regex AssignmentRegex();
-
-    [GeneratedRegex(@"^(?:https?://[^/]+(?:/api/v3)?)?/?repos/(?<owner>[^/]+)/(?<repo>[^/?]+)/pulls/?(?:\?.*)?$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(?:https?://(?<host>[^/]+)(?:/api/v3)?)?/?repos/(?<owner>[^/]+)/(?<repo>[^/?]+)/pulls/?(?:\?.*)?$", RegexOptions.IgnoreCase)]
     private static partial Regex RestPullsRegex();
+
+    [GeneratedRegex(@"^https?://(?<host>[^/]+)/(?<owner>[^/]+)/(?<repo>[^/]+)/pull/\d+(?:[/?#].*)?$", RegexOptions.IgnoreCase)]
+    private static partial Regex PrUrlRegex();
 
     [GeneratedRegex(@"(?:^|/)graphql$", RegexOptions.IgnoreCase)]
     private static partial Regex GraphQlEndpointRegex();
@@ -229,8 +244,7 @@ internal static partial class PrCallScanner
     [GeneratedRegex(@"createPullRequest|markPullRequestReadyForReview", RegexOptions.IgnoreCase)]
     private static partial Regex GraphQlPrMutationRegex();
 
-    // The textual backstop for wrapped calls: gh, a few flag or value words, then a PR verb or a PR API.
-    [GeneratedRegex(@"\bgh(?:\.exe)?[""']?\s+(?:[^\s;&|]+\s+)*?(?:pr\s+(?:[^\s;&|]+\s+)*?(?:create|new|ready)\b|api\b[^;&|]*?(?:/pulls\b|createPullRequest|markPullRequestReadyForReview))",
-        RegexOptions.IgnoreCase)]
-    private static partial Regex WrappedPrTextRegex();
+    // PowerShell syntax a bash line would not use: a backtick ending a line, & starting one, $env:.
+    [GeneratedRegex(@"`\r?$|^\s*&\s|\$env:", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
+    private static partial Regex PowerShellSyntaxRegex();
 }

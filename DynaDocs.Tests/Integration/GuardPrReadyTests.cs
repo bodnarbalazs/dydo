@@ -55,7 +55,7 @@ public class GuardPrReadyTests : IntegrationTestBase
     }
 
     private string Payload(object command, bool withCwd = true, bool codex = false,
-        string? cwd = null, string? toolCwd = null, string? workdir = null)
+        string? cwd = null, string? toolCwd = null, string? workdir = null, string toolName = "Bash")
     {
         var toolInput = new Dictionary<string, object?> { ["command"] = command };
         if (toolCwd != null) toolInput["cwd"] = toolCwd;
@@ -63,7 +63,7 @@ public class GuardPrReadyTests : IntegrationTestBase
         var payload = new Dictionary<string, object?>
         {
             ["session_id"] = TestSessionId,
-            ["tool_name"] = "Bash",
+            ["tool_name"] = toolName,
             ["tool_input"] = toolInput,
         };
         if (withCwd) payload["cwd"] = cwd ?? TestDir;
@@ -73,12 +73,13 @@ public class GuardPrReadyTests : IntegrationTestBase
 
     // Runs each command once and returns every one whose decision is not the expected one, so a
     // replayed table reports all its misses at once.
-    private async Task<List<string>> Misses(bool denied, IEnumerable<string> commands, string? reasonPart = null)
+    private async Task<List<string>> Misses(bool denied, IEnumerable<string> commands, string? reasonPart = null,
+        string toolName = "Bash")
     {
         List<string> misses = [];
         foreach (var command in commands)
         {
-            var result = await GuardWithStdinAsync(Payload(command));
+            var result = await GuardWithStdinAsync(Payload(command, toolName: toolName));
             var wasDenied = !result.IsPreToolUseAllowed;
             if (wasDenied != denied || (denied && reasonPart != null && !result.Stderr.Contains(reasonPart)))
                 misses.Add($"{(wasDenied ? "denied" : "allowed")}: {command}\n    {result.Stderr.Trim().Replace("\n", "\n    ")}");
@@ -604,5 +605,347 @@ public class GuardPrReadyTests : IntegrationTestBase
 
         result.AssertPreToolUseDenied();
         result.AssertStderrContains("run gh directly so the PR check can see it");
+    }
+
+    // ---- DYD-391 round 1 FAIL ----
+
+    // C1, B2: the PowerShell tool's command is read as PowerShell reads it.
+    [Theory]
+    [InlineData(@"C:\tools\gh.exe pr create --fill")]
+    [InlineData(@"& C:\tools\gh.exe pr create --fill")]
+    [InlineData(@"& 'C:\Program Files\GitHub CLI\gh.exe' pr ready 12")]
+    public async Task PowerShellToolPrCall_FromADirtyTree_IsDenied(string command)
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload(command, toolName: "PowerShell"));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("untracked files: wip.txt");
+    }
+
+    // B2: a backtick carries a PowerShell call onto the next line, so --head still names the branch,
+    // whether the tool says PowerShell or the text uses PowerShell syntax.
+    [Theory]
+    [InlineData("PowerShell", "gh pr create `\n  --head topic `\n  --fill")]
+    [InlineData("Bash", "gh pr create `\n  --head topic `\n  --fill")]
+    [InlineData("Bash", "gh pr create `\r\n  --head topic `\r\n  --fill")]
+    [InlineData("Bash", @"& C:\Tools\gh.exe pr create --head topic --fill")]
+    public async Task PowerShellContinuation_NamingADirtyWorktree_IsDenied(string toolName, string command)
+    {
+        await InitPushedProject(withWorktree: true);
+        File.WriteAllText(Path.Combine(Worktree, "draft.txt"), "d\n");
+        SilenceReviewBlockWarn();
+
+        var reason = (await GuardWithStdinAsync(Payload(command, toolName: toolName))).AssertPreToolUseDenied();
+
+        Assert.Contains("untracked files: draft.txt", reason);
+    }
+
+    // C3: a directory outside git is not this rule's business, wrapped or encoded.
+    [Theory]
+    [InlineData("pwsh -EncodedCommand ZwBpAHQAIABzAHQAYQB0AHUAcwA=")]
+    [InlineData("bash -c 'gh pr create --fill'")]
+    [InlineData("cmd /c gh pr ready 12")]
+    public async Task WrappedOrEncoded_OutsideGit_IsAllowed(string command)
+    {
+        await InitProjectAsync("none");
+
+        var result = await GuardWithStdinAsync(Payload(command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // A1: a relative tool cwd or workdir is the session's subdirectory, not the hook process's.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RelativeWorkdir_ResolvesAgainstTheSessionCwd(bool asToolCwd)
+    {
+        await InitDirtyMainWithCleanWorktree();
+
+        var result = await GuardWithStdinAsync(asToolCwd
+            ? Payload(PrCreate, cwd: Worktree, toolCwd: "..")
+            : Payload(PrCreate, cwd: Worktree, codex: true, workdir: ".."));
+
+        var reason = result.AssertPreToolUseDenied();
+        Assert.Contains("untracked files: wip.txt", reason);
+    }
+
+    [Fact]
+    public async Task RelativeWorkdir_WithoutASessionCwd_ResolvesAgainstTheProcessDirectory()
+    {
+        await InitDirtyMainWithCleanWorktree();
+
+        var result = await GuardWithStdinAsync(Payload(PrCreate, withCwd: false, codex: true, workdir: "wt"));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // A2: the host is part of the repository.
+    [Theory]
+    [InlineData("gh pr create -R ghe.example.com/acme/lc --fill")]
+    [InlineData("gh pr create --repo https://ghe.example.com/acme/lc.git --fill")]
+    [InlineData("GH_REPO=ghe.example.com/acme/lc gh pr create --fill")]
+    [InlineData("gh api https://ghe.example.com/api/v3/repos/acme/lc/pulls -f head=topic")]
+    [InlineData("gh api --hostname ghe.example.com repos/acme/lc/pulls -f head=topic")]
+    public async Task SameOwnerAndName_OnAnotherHost_IsRefused(string command)
+    {
+        await InitPushedProject(withWorktree: true);
+
+        var reason = (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseDenied();
+
+        Assert.Contains("names another repository", reason);
+        Assert.Contains("run it from that repo's checkout", reason);
+    }
+
+    [Theory]
+    [InlineData("gh pr create -R GitHub.com/ACME/lc.git --fill")]
+    [InlineData("gh pr create -R ssh://git@GITHUB.COM/acme/LC.git --fill")]
+    [InlineData("gh api https://api.github.com/repos/Acme/LC/pulls -f head=feature -f title=t")]
+    [InlineData("gh api --hostname github.com repos/acme/lc/pulls -f head=feature -f title=t")]
+    public async Task SameHostInAnotherCase_IsThisRepository(string command)
+    {
+        await InitPushedProject();
+        SilenceReviewBlockWarn();
+
+        var result = await GuardWithStdinAsync(Payload(command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // A3: gh pr ready given a PR URL readies that URL's repository's PR.
+    [Theory]
+    [InlineData("gh pr ready https://github.com/other/x/pull/12")]
+    [InlineData("gh pr ready https://ghe.example.com/acme/lc/pull/12")]
+    public async Task PrReadyOfAnotherRepositorysUrl_FromACleanTree_IsRefused(string command)
+    {
+        await InitPushedProject();
+
+        var reason = (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseDenied();
+
+        Assert.Contains("names another repository", reason);
+        Assert.Contains("run it from that repo's checkout", reason);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PrReadyOfThisRepositorysUrl_ChecksTheTree(bool dirty)
+    {
+        await InitPushedProject();
+        if (dirty) WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload("gh pr ready https://GitHub.com/acme/LC/pull/12"));
+
+        if (dirty)
+            Assert.Contains("untracked files: wip.txt", result.AssertPreToolUseDenied());
+        else
+            result.AssertPreToolUseAllowed();
+    }
+
+    // A4: a worktree git still lists for the branch but whose directory is gone cannot be checked.
+    [Fact]
+    public async Task BranchHeldOnlyByAPrunableWorktree_IsRefused()
+    {
+        await InitPushedProject(withWorktree: true);
+        var listed = WorktreeAsGitListsIt;
+        Directory.Delete(Worktree, recursive: true);
+
+        var reason = (await GuardWithStdinAsync(Payload("gh pr ready topic"))).AssertPreToolUseDenied();
+
+        Assert.Contains($"{listed} holds branch topic but is not an available work tree", reason);
+    }
+
+    // A5: the wrapper check reads the wrapped script as a command line: a PR call there is refused
+    // even across a quoted separator, and a read is not a PR call.
+    [Fact]
+    public async Task WrappedPrCallAcrossAQuotedSeparator_IsRefused()
+    {
+        await InitPushedProject();
+        SilenceReviewBlockWarn();
+        string[] commands =
+        [
+            "bash -c 'gh api -X POST -H \"Content-Type: application/json; charset=utf-8\" repos/acme/lc/pulls --input body.json'",
+            "pwsh -Command \"gh pr create --title 'a; b' --fill\"",
+            "bash -c 'echo \"x | y\" && gh pr ready 12'",
+        ];
+
+        Assert.Empty(await Misses(denied: true, commands, "run gh directly so the PR check can see it"));
+    }
+
+    [Fact]
+    public async Task WrappedRead_FromADirtyTree_PassesUntouched()
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+        string[] commands =
+        [
+            "bash -c 'gh api repos/acme/lc/pulls'", "bash -c 'gh pr list --search ready'",
+            "sh -c 'gh pr view 12 --json title'", "pwsh -Command \"gh api repos/acme/lc/pulls?state=open\"",
+            "bash -c 'gh api repos/acme/lc/pulls/12/comments -f body=x'", "cmd /c gh pr list --search create",
+            "eval \"gh pr status\"", "bash -c 'echo gh pr create'",
+        ];
+
+        Assert.Empty(await Misses(denied: false, commands));
+    }
+
+    // Admiral ruling 2026-10-27: GitHub's REST API cannot take a PR out of draft, so a PATCH is no
+    // PR-readying call and refusing it would be a false block.
+    [Fact]
+    public async Task RestPatchDraftFalse_FromADirtyTree_PassesUntouched()
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload("gh api -X PATCH repos/acme/lc/pulls/12 -f draft=false"));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // A6: two worktrees may hold one branch (git worktree add --force); each is checked and named.
+    [Fact]
+    public async Task BranchHeldByTwoWorktrees_ChecksAndNamesBoth()
+    {
+        await InitPushedProject(withWorktree: true);
+        var second = Path.Combine(TestDir, "wt2");
+        File.AppendAllText(Path.Combine(TestDir, ".gitignore"), "/wt2/\n");
+        Git(TestDir, "worktree", "add", "--force", second, "topic");
+        File.WriteAllText(Path.Combine(Worktree, "one.txt"), "1\n");
+        File.WriteAllText(Path.Combine(second, "two.txt"), "2\n");
+
+        var reason = (await GuardWithStdinAsync(Payload("gh pr ready topic"))).AssertPreToolUseDenied();
+
+        Assert.Contains("untracked files: one.txt", reason);
+        Assert.Contains("untracked files: two.txt", reason);
+    }
+
+    // A6 on a case-sensitive filesystem: holders whose paths differ only in case are two trees.
+    [SkippableFact]
+    public async Task BranchHeldByWorktreesDifferingInCase_ChecksAndNamesBoth()
+    {
+        await InitPushedProject(withWorktree: true);
+        var upper = Path.Combine(TestDir, "WT");
+        Skip.If(Directory.Exists(upper), "this filesystem ignores case");
+        File.AppendAllText(Path.Combine(TestDir, ".gitignore"), "/WT/\n");
+        Git(TestDir, "worktree", "add", "--force", upper, "topic");
+        File.WriteAllText(Path.Combine(Worktree, "one.txt"), "1\n");
+        File.WriteAllText(Path.Combine(upper, "two.txt"), "2\n");
+
+        var reason = (await GuardWithStdinAsync(Payload("gh pr ready topic"))).AssertPreToolUseDenied();
+
+        Assert.Contains("untracked files: one.txt", reason);
+        Assert.Contains("untracked files: two.txt", reason);
+    }
+
+    // A7: a refusal names every tree it checked, the clean ones marked clean.
+    [Fact]
+    public async Task MixedCleanAndDirtyTrees_RefusalNamesEveryCheckedTree()
+    {
+        await InitDirtyMainWithCleanWorktree();
+
+        var reason = (await GuardWithStdinAsync(Payload("gh pr ready topic && gh pr ready feature")))
+            .AssertPreToolUseDenied();
+
+        Assert.Contains("untracked files: wip.txt", reason);
+        Assert.Contains($"Checked: {TestDir}", reason);
+        Assert.Contains($"Checked: {WorktreeAsGitListsIt} (clean, HEAD matches its upstream)", reason);
+    }
+
+    // B1 (admiral ruling): Codex's shell envelope, a shell and its script flag, is read as its
+    // script; LC check-pr-ready.test.mjs:1695-1705. A pwsh envelope's script is PowerShell.
+    [Theory]
+    [InlineData(new object[] { new[] { "pwsh", "-Command", @"& C:\tools\gh.exe pr create --fill" } })]
+    [InlineData(new object[] { new[] { @"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe", "-NoProfile", "-Command", "gh pr create `\n  --fill" } })]
+    [InlineData(new object[] { new[] { "/bin/zsh", "-c", "gh pr ready 12" } })]
+    [InlineData(new object[] { new[] { "sh", "-c", "gh pr ready 12" } })]
+    public async Task ShellEnvelope_FromADirtyTree_IsDenied(string[] argv)
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload(argv, codex: true));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("untracked files: wip.txt");
+    }
+
+    // A wrapper inside the envelope's script, or an argv array of another shape, fails closed.
+    [Theory]
+    [InlineData(new object[] { new[] { "bash", "-lc", "bash -c 'gh pr create --fill'" } })]
+    [InlineData(new object[] { new[] { "pwsh", "-Command", "cmd /c gh pr ready 12" } })]
+    [InlineData(new object[] { new[] { "cmd", "/c", "gh pr create --fill" } })]
+    [InlineData(new object[] { new[] { "cmd.exe", "/c", "gh pr ready 12" } })]
+    [InlineData(new object[] { new[] { "eval", "gh pr ready 12" } })]
+    public async Task WrapperInsideOrBesideTheEnvelope_FromACleanTree_IsRefused(string[] argv)
+    {
+        await InitPushedProject();
+        SilenceReviewBlockWarn();
+
+        var result = await GuardWithStdinAsync(Payload(argv, codex: true));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("run gh directly so the PR check can see it");
+    }
+
+    // B3: the effective repository is the last -R/--repo, else an inline GH_REPO, else the inherited one.
+    [Theory]
+    [InlineData(null, "GH_REPO=other/x gh pr create -R acme/lc --fill", false)]
+    [InlineData(null, "GH_REPO=other/x gh -R acme/lc pr create --fill", false)]
+    [InlineData("other/x", "gh pr create --fill", true)]
+    [InlineData("other/x", "gh pr ready 12", true)]
+    [InlineData("other/x", "gh pr create -R acme/lc --fill", false)]
+    [InlineData("other/x", "GH_REPO=acme/lc gh pr create --fill", false)]
+    [InlineData("acme/lc", "GH_REPO=other/x gh pr create --fill", true)]
+    public async Task EffectiveRepository_DecidesTheForeignRefusal(string? inherited, string command, bool refused)
+    {
+        await InitPushedProject();
+        SilenceReviewBlockWarn();
+        var before = Environment.GetEnvironmentVariable("GH_REPO");
+        Environment.SetEnvironmentVariable("GH_REPO", inherited);
+        try
+        {
+            var result = await GuardWithStdinAsync(Payload(command));
+
+            if (refused)
+                Assert.Contains("names another repository", result.AssertPreToolUseDenied());
+            else
+                result.AssertPreToolUseAllowed();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("GH_REPO", before);
+        }
+    }
+
+    // C2: command position is the reading the dydo scanner uses, so these prefixes reach gh too.
+    [Theory]
+    [InlineData("nohup gh pr create --fill")]
+    [InlineData("command gh pr create --fill")]
+    [InlineData("exec gh pr ready 12")]
+    [InlineData("env -- gh pr create --fill")]
+    [InlineData("sudo -u me gh pr create --fill")]
+    public async Task RunnerPrefixedPrCall_FromADirtyTree_IsDenied(string command)
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload(command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("untracked files: wip.txt");
+    }
+
+    // B1: the envelope's script is the command every other guard rule reads too.
+    [Fact]
+    public async Task ShellEnvelope_OtherGuardRulesSeeTheScript()
+    {
+        await InitPushedProject();
+
+        var result = await GuardWithStdinAsync(Payload(new[] { "bash", "-lc", "git push --force origin main" }, codex: true));
+
+        result.AssertPreToolUseDenied();
+        Assert.DoesNotContain("PR check", result.Stderr);
     }
 }

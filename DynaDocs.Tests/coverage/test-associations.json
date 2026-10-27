@@ -161,6 +161,14 @@
       ]
     },
     {
+      "module": "Services/CommandPosition.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/CommandPositionTests.cs",
+        "DynaDocs.Tests/Services/PrCallScannerTests.cs",
+        "DynaDocs.Tests/Services/DydoInvocationScannerTests.cs"
+      ]
+    },
+    {
       "module": "Services/DydoInvocationScanner.cs",
       "tests": [
         "DynaDocs.Tests/Services/DydoInvocationScannerTests.cs"

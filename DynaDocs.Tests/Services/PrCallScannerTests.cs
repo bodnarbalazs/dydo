@@ -215,6 +215,21 @@ public class PrCallScannerTests
         Assert.Equal(wrapper, Single(command).Wrapper);
     }
 
+    // A substitution's command runs, so its PR call is a call: $(...), and a bash backtick substitution
+    // anywhere a bash line expands it. Single quotes and PowerShell's backtick escape substitute nothing.
+    [Theory]
+    [InlineData("echo `gh pr create --fill`", "Posix", 1)]
+    [InlineData("git commit -m \"`gh pr create --fill`\"", "Posix", 1)]
+    [InlineData("echo \"$(gh pr ready 12)\"", "Posix", 1)]
+    [InlineData("echo `bash -c 'gh pr create'`", "Posix", 1)]
+    [InlineData("git commit -m '`gh pr create --fill`'", "Posix", 0)]
+    [InlineData("Write-Host \"`gh pr create --fill`\"", "PowerShell", 0)]
+    [InlineData("Write-Host `\"hi`\"", "PowerShell", 0)]
+    public void Substitution_IsReadLikeADirectCall(string command, string dialect, int calls)
+    {
+        Assert.Equal(calls, PrCallScanner.Find(command, Enum.Parse<ShellDialect>(dialect)).Count);
+    }
+
     // R2-1: a reading that loses the head another reading names adds no headless call.
     [Theory]
     [InlineData("Posix", "gh pr create `\n  --head topic `\n  --fill")]

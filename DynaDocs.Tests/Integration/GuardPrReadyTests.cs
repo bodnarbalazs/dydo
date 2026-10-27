@@ -489,6 +489,32 @@ public class GuardPrReadyTests : IntegrationTestBase
         Assert.Empty(await Misses(denied: true, commands, "untracked files: wip.txt"));
     }
 
+    // A bash backtick substitution mid-line or inside double quotes runs its command too.
+    [Fact]
+    public async Task PrCallInABacktickSubstitution_FromADirtyTree_IsDenied()
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+        string[] commands = ["echo `gh pr create --fill`", "git commit -m \"`gh pr create --fill`\""];
+
+        Assert.Empty(await Misses(denied: true, commands, "untracked files: wip.txt"));
+    }
+
+    // Single quotes substitute nothing in bash, and a PowerShell backtick is an escape, not a substitution.
+    [Theory]
+    [InlineData("Bash", "git commit -m '`gh pr create --fill`'")]
+    [InlineData("PowerShell", "Write-Host `\"hi`\"")]
+    [InlineData("PowerShell", "Write-Host \"`gh pr create --fill`\"")]
+    public async Task BacktickThatSubstitutesNothing_FromADirtyTree_IsAllowed(string toolName, string command)
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload(command, toolName: toolName));
+
+        result.AssertPreToolUseAllowed();
+    }
+
     // LC CPR:251-281: a staged-only change and a branch with no upstream are each not ready.
     [Fact]
     public async Task PrCreate_FromAStagedOnlyTree_IsDenied()

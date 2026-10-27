@@ -11,8 +11,9 @@ using System.Text.RegularExpressions;
 /// (<see cref="CommandPosition"/>), with any path, case or .exe. Text a command only reads (quotes,
 /// heredoc and here-string bodies, comments) is no call. A shell, eval or env -S given a command string is a
 /// wrapper: when that string, read with the same rules, makes a PR call, or the shell is given an
-/// encoded PowerShell command, the wrapper is the call, never decoded. It stops accidents, not a
-/// deliberate bypass: substitutions, aliases, functions and other programs are not followed.
+/// encoded PowerShell command, the wrapper is the call, never decoded. A command substitution's
+/// command runs, so <c>$(...)</c> and a bash backtick substitution are read like a direct line. It
+/// stops accidents, not a deliberate bypass: aliases, functions and other programs are not followed.
 /// </summary>
 internal static partial class PrCallScanner
 {
@@ -70,10 +71,7 @@ internal static partial class PrCallScanner
         // gh's {owner}, {repo} and {branch} placeholders, spelt as its :owner form, so braces split no command.
         var line = GhPlaceholderRegex().Replace(text, ":$1");
         var readings = Readings(dialect, line)
-            .Select(posix => ShellReader.Read(line, posix).Commands
-                .Select(command => Match(command.Words, inheritedRepo, depth))
-                .OfType<PrCall>()
-                .ToList())
+            .Select(posix => Calls(ShellReader.Read(line, posix), inheritedRepo, depth))
             .ToList();
 
         // A reading missing a head another reading names lost that call's target, so its headless calls are not added.
@@ -82,6 +80,13 @@ internal static partial class PrCallScanner
             .SelectMany(calls => named.All(calls.Contains) ? calls : calls.Where(call => call.Branch != null || call.Wrapper != null))
             .Distinct()];
     }
+
+    // A reading's calls: its commands', then those its bash backtick substitutions run, read as bash.
+    private static List<PrCall> Calls(ShellReader.Reading reading, string? inheritedRepo, int depth) =>
+    [
+        .. reading.Commands.Select(command => Match(command.Words, inheritedRepo, depth)).OfType<PrCall>(),
+        .. reading.Substitutions.SelectMany(text => Scan(text, ShellDialect.Posix, inheritedRepo, depth + 1)),
+    ];
 
     private static bool[] Readings(ShellDialect dialect, string line) => dialect switch
     {

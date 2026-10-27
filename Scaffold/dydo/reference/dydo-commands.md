@@ -41,15 +41,21 @@ The runtime modes add, per selected host:
 
 | Host | Files | What they carry |
 |---|---|---|
-| `claude` | `.claude/settings.local.json` | a `PreToolUse` hook running `dydo guard --host claude` on the matched tools, and the allow entries `Bash(dydo:*)`, `PowerShell(dydo:*)`, `Bash(dydo clean:*)` and `PowerShell(dydo clean:*)` |
-| `claude` | `.claude/settings.json` | `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"` |
+| `claude` | `.claude/settings.json` (committed) | a `PreToolUse` hook running `dydo guard --host claude` on the matched tools, `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"` and `"autoMemoryEnabled": false` |
+| `claude` | `.claude/settings.local.json` (gitignored) | the allow entries `Bash(dydo:*)`, `PowerShell(dydo:*)`, `Bash(dydo clean:*)` and `PowerShell(dydo clean:*)` |
 | `claude` | `.gitignore` | `.claude/settings.local.json`, `/.claude/skills/` and `/.agents/skills/` |
 | `codex` | `.codex/hooks.json` | a `PreToolUse` hook running `dydo guard` on the matched tools |
 | `codex` | `.codex/rules/dydo.rules` | an exec-policy `prefix_rule` allowing `dydo clean`, which Codex loads when the project's `.codex/` layer is trusted; dydo rewrites the file on every init and `--join` |
 | `codex` | `.codex/config.toml` | `[agents]` with `max_depth = 3` and `max_concurrent_threads_per_session = 16` |
 | `codex` | `.gitignore` | `/.claude/skills/` and `/.agents/skills/` |
 
-`all` selects both hosts. Only tool calls the hook's matcher names reach `dydo guard`. When
+`all` selects both hosts. Only tool calls the hook's matcher names reach `dydo guard`. The guard
+hook is committed for both hosts, so a fresh clone is guarded; `settings.local.json` holds only
+this machine's allow list. Init keeps one dydo guard entry where dydo's earlier one stood, removes other dydo guard entries,
+a Stop entry running `dydo guard --stop` and any dydo hook in `settings.local.json`, and leaves
+hooks it did not write alone. A JSON file init or `adopt` edits keeps its text: unchanged values
+keep their bytes, key order and unknown keys, the file keeps its BOM, line endings and trailing
+newline, and a file with nothing to change is not written. When
 `.claude/settings.json` or `.codex/config.toml` already holds a conflicting value for a key init
 manages, init stops with an error before it writes anything. Init and `--join` also append a
 `dydo completions` line to the shell profile they detect, when they detect one.

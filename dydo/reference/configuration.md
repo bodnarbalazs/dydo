@@ -76,11 +76,12 @@ briefs, and changelog.
 
 ## Hook configuration
 
-`dydo init claude` and `dydo init codex` wire the selected runtime's guard hooks automatically.
-Claude Code uses `.claude/settings.local.json`; Codex uses `.codex/hooks.json`. Both also get an allow
-rule for `dydo clean`, so a host's auto mode does not stop it: `Bash(dydo clean:*)` and
-`PowerShell(dydo clean:*)` in Claude Code's `permissions.allow`, and a `prefix_rule` in
-`.codex/rules/dydo.rules` for Codex.
+`dydo init claude` and `dydo init codex` wire the selected runtime's guard hooks automatically,
+into committed files, so a fresh clone is guarded: Claude Code uses `.claude/settings.json`, Codex
+uses `.codex/hooks.json` ([DR 056](../project/decisions/056-claude-guard-in-committed-settings.md)).
+Both also get an allow rule for `dydo clean`, so a host's auto mode does not stop it:
+`Bash(dydo clean:*)` and `PowerShell(dydo clean:*)` in the `permissions.allow` of Claude Code's
+gitignored `.claude/settings.local.json`, and a `prefix_rule` in `.codex/rules/dydo.rules` for Codex.
 
 The `PreToolUse` hook sends matched tool calls to `dydo guard`. Exit `0` with empty stdout allows
 the action; exit `0` with one `permissionDecision: "deny"` object on stdout blocks it, a contract

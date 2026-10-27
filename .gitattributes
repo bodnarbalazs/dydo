@@ -16,3 +16,7 @@ DynaDocs.Tests/HostCanaries/*.mjs text eol=lf
 # packet materializes as checkout artifacts no manifest entry vouches for.
 dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/** -text
 dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence/**/*.opencover.xml text eol=crlf
+
+# A byte-exact copy of a real downstream project's config (LC origin/master 8ab5a88b): BOMs and
+# LF line endings are the point of the DYD-392 tests, so git must never normalize these bytes.
+DynaDocs.Tests/TestData/downstream-lc/** -text

@@ -1,0 +1,53 @@
+﻿{
+  "autoMemoryEnabled": false,
+  "disableClaudeAiConnectors": true,
+  "env": {
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "3"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit|AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "dydo guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const c=require('child_process'),s=require('fs').readFileSync(0,'utf8');let d=process.env.CLAUDE_PROJECT_DIR;try{d=d||c.execFileSync('git',['rev-parse','--show-toplevel'],{stdio:['ignore','pipe','ignore']}).toString().trim()}catch{}import(require('url').pathToFileURL(d+'/tools/hooks/check-pr-ready.mjs')).then(m=>m.main(s)).catch(()=>{const v=[],k=String.fromCharCode,q=k(34,39,96,94,92,36),b=k(9,10,13,32),w=x=>{if(typeof x=='string')v.push(x);else if(x&&typeof x=='object')Object.values(x).forEach(w)};try{w(JSON.parse(s))}catch{v.push(s)}const j=v.join(' '),e=j.indexOf(k(36))>=0||j.indexOf(k(96))>=0||RegExp(k(37)+'[a-z_][^'+k(37)+b+']{0,64}'+k(37),'i').test(j),t=j.replace(RegExp(k(37)+'([0-9a-f]{2})','gi'),(m,h)=>k(parseInt(h,16))).split('').filter(ch=>q.indexOf(ch)<0).join(''),f=(r,i)=>{if(i<0)return i;r.lastIndex=i;return r.exec(t)?r.lastIndex:-1};if(f(/create|new|ready/gi,f(/pr/gi,f(/gh/gi,0)))>=0||e&&f(/pr/gi,f(/gh/gi,0))>=0||/\\bgh(?:[.]exe)?[\\s]+(?!pr\\b|api\\b)/i.test(t)||f(/api/gi,f(/gh/gi,0))>=0&&(RegExp('repos(?:[/]+[^/'+b+']{1,256}){2,16}[/]+pulls(?![a-z0-9_])','i').test(t)||/graphql/i.test(t)&&(e||/createPullRequest|markPullRequestReadyForReview|=@|--input/i.test(t)))){process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'PreToolUse',permissionDecision:'deny',permissionDecisionReason:'BLOCKED: this looks like gh pr create/new/ready or a gh api PR call, but tools/hooks/check-pr-ready.mjs could not be loaded to check the tree. Run it from inside the repository.'}}))}})\""
+          },
+          {
+            "type": "command",
+            "command": "node -e \"const f=require('fs'),p=require('path');let s='';try{s=f.readFileSync(0,'utf8');let d=process.env.CLAUDE_PROJECT_DIR||process.cwd();while(!f.existsSync(p.join(d,'tools/hooks/check-pr-body.mjs'))&&p.dirname(d)!==d&&!process.env.CLAUDE_PROJECT_DIR)d=p.dirname(d);import(require('url').pathToFileURL(p.join(d,'tools/hooks/check-pr-body.mjs'))).then(m=>m.main(s)).catch(()=>{if(/gh[\\s\\S]*pr[\\s\\S]*(create|edit)/.test(s))console.error('WARNING: PR body not checked: advisory hook unavailable; consult skills/engineering/pr/SKILL.md.')})}catch{console.error('WARNING: PR body not checked: advisory loader unavailable; consult skills/engineering/pr/SKILL.md.')}\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "dydo guard --stop"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(node tools/control-lc/control-lc.mjs *)",
+      "PowerShell(node tools/control-lc/control-lc.mjs *)",
+      "Bash(python tools/verify-stack/verify_stack.py reap)",
+      "PowerShell(python tools/verify-stack/verify_stack.py reap)",
+      "Bash(python tools/verify-stack/verify_stack.py stop *)",
+      "PowerShell(python tools/verify-stack/verify_stack.py stop *)"
+    ]
+  }
+}

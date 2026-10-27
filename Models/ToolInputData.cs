@@ -1,6 +1,8 @@
 namespace DynaDocs.Models;
 
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using DynaDocs.Services;
 
 public class ToolInputData
 {
@@ -16,8 +18,31 @@ public class ToolInputData
     [JsonPropertyName("new_string")]
     public string? NewString { get; set; }
 
-    [JsonPropertyName("command")]
+    /// <summary>
+    /// The shell command line. Codex may send it as an argv array instead: its shell envelope
+    /// (<c>["bash", "-lc", script]</c>, <c>[pwsh, "-Command", script]</c>, see
+    /// <see cref="CommandPosition.Envelope"/>) reads as that script, any other array as its words
+    /// joined into one POSIX line. <see cref="CommandArgv"/> keeps the array.
+    /// </summary>
+    [JsonIgnore]
     public string? Command { get; set; }
+
+    /// <summary>The command as Codex sent it when it sent an argv array, else null.</summary>
+    [JsonIgnore]
+    internal IReadOnlyList<string>? CommandArgv { get; private set; }
+
+    [JsonPropertyName("command")]
+    public JsonElement? CommandValue
+    {
+        set
+        {
+            CommandArgv = value?.ValueKind == JsonValueKind.Array ? [.. value.Value.EnumerateArray().Select(WordOf)] : null;
+            if (CommandArgv != null)
+                Command = CommandPosition.Envelope(CommandArgv)?.Text ?? string.Join(' ', CommandArgv.Select(Quoted));
+            else
+                Command = value?.ValueKind == JsonValueKind.String ? value.Value.GetString() : null;
+        }
+    }
 
     [JsonPropertyName("path")]
     public string? Path { get; set; }
@@ -28,4 +53,20 @@ public class ToolInputData
 
     [JsonPropertyName("run_in_background")]
     public bool? RunInBackground { get; set; }
+
+    /// <summary>The directory a shell call runs in, when the host names one per call.</summary>
+    [JsonPropertyName("cwd")]
+    public string? Cwd { get; set; }
+
+    /// <summary>Codex's name for the directory a shell call runs in.</summary>
+    [JsonPropertyName("workdir")]
+    public string? Workdir { get; set; }
+
+    private static string WordOf(JsonElement element) =>
+        element.ValueKind == JsonValueKind.String ? element.GetString()! : element.GetRawText();
+
+    private static string Quoted(string word) =>
+        word.Length > 0 && word.All(c => char.IsLetterOrDigit(c) || "-_./:=@,+%".Contains(c))
+            ? word
+            : $"'{word.Replace("'", "'\\''")}'";
 }

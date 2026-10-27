@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "structure": {
+    "root": "dydo"
+  },
+  "integrations": {
+    "claude": true,
+    "codex": true
+  },
+  "scanExclude": [
+    "agents/",
+    "_system/.local/",
+    "_system/audit/"
+  ],
+  "nudges": [
+    {
+      "pattern": "(?:^|[\\s\"'/\\\\])(?:py|uv)(?:[^;&|\\n]|[\\\\`]\\r?\\n)*run_tests\\.py(?:[^;&|\\n]|[\\\\`]\\r?\\n)*--hea",
+      "message": "Periodic suite blocked: run_tests.py --heavy runs the whole backend Heavy suite. The human runs periodic suites. Fast suite: python tools/coverage/run_tests.py --stack=<stack>, then python tools/coverage/gap_check.py --strict --skip-tests --stack=<stack>. For named Heavy tests: python tools/test.py --feature <id> --heavy.",
+      "severity": "block"
+    },
+    {
+      "pattern": "npm(?:[^;&|\\n]|[\\\\`]\\r?\\n)*(?:build:gate:serial|architecture:test:heavy)",
+      "message": "Periodic suite blocked: build:gate:serial and architecture:test:heavy. The human runs periodic suites. Fast suite: python tools/coverage/run_tests.py --stack=<stack>, then python tools/coverage/gap_check.py --strict --skip-tests --stack=<stack>. pnpm build:gate stays allowed.",
+      "severity": "block"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)npx\\s+(?:(?:-\\w+|--[\\w-]+(?:\\s+\\S+)?)\\s+)*dydo\\b(.*)",
+      "message": "Don't use npx to run dydo — it's already on your PATH. Just use: dydo $1",
+      "severity": "block"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)dotnet\\s+(?:tool\\s+run\\s+)?dydo\\b(.*)",
+      "message": "Don't use dotnet to run dydo — it's already on your PATH. Just use: dydo $1",
+      "severity": "block"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)dotnet\\s+run\\b(?:\\s+(?:-\\w+|--[\\w-]+(?:[=\\s]\\S+)?))*\\s+--\\s+((?:check|fix|index|init|graph|guard|completions|complete|validate|version|help)\\b.*)",
+      "message": "Don't use dotnet run to invoke dydo — it's already on your PATH. Just use: dydo $1",
+      "severity": "block"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)(bash|sh|zsh|cmd|powershell|pwsh)\\s+(?:(?:-\\w+|--[\\w-]+(?:\\s+\\S+)?)\\s+)*(?:[\"'])?dydo(?=[\\s\"']|$)(.*?)(?:[\"'])?$",
+      "message": "Don't use '$1' to run dydo — it's already on your PATH. Just use: dydo $2",
+      "severity": "block"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)(python3?|py)\\s+(?:(?:-\\w+|--[\\w-]+(?:\\s+\\S+)?)\\s+)*(?:[\"'])?dydo(?=[\\s\"']|$)(.*?)(?:[\"'])?$",
+      "message": "Don't use '$1' to run dydo — it's already on your PATH. Just use: dydo $2",
+      "severity": "block"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)dotnet\\s+run\\b(?=[^;&|]*(?:LC[.]AppHost|LC[.]Api)(?:[\\\\/]|[.]csproj\\b|\\s|$))[^;&|]*",
+      "message": "Don't launch LC.AppHost or LC.Api directly from an agent worktree. A developer instance may already own the Aspire dashboard or service ports, and detached startup failures can surface as Windows crash dialogs. Use `python tools/test.py --suite light --stack backend` for backend verification. For a full-stack run, the only sanctioned route is `node tools/control-lc/control-lc.mjs launch`: it gives this worktree its own stack on free ports, and `node tools/control-lc/control-lc.mjs cleanup` removes it (see skills/engineering/verify-lc/SKILL.md and dydo/guides/running-lc.md).",
+      "severity": "block"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)dotnet\\s+(?:exec\\s+)?(?=[^;&|]*(?:LC[.]AppHost|LC[.]Api)[.]dll\\b)[^;&|]*",
+      "message": "Don't launch LC.AppHost or LC.Api directly from an agent worktree. Use `python tools/test.py --suite light --stack backend` for backend verification. For a full-stack run, the only sanctioned route is `node tools/control-lc/control-lc.mjs launch`: it gives this worktree its own stack on free ports, and `node tools/control-lc/control-lc.mjs cleanup` removes it (see skills/engineering/verify-lc/SKILL.md and dydo/guides/running-lc.md).",
+      "severity": "block"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)(?:&\\s+)?(?:\"[^\"]*(?:LC[.]AppHost|LC[.]Api)[.]exe\\b\"|'[^']*(?:LC[.]AppHost|LC[.]Api)[.]exe\\b'|[^\\s;&|]*(?:LC[.]AppHost|LC[.]Api)[.]exe\\b)",
+      "message": "Don't launch LC.AppHost or LC.Api executables directly from an agent worktree. Use `python tools/test.py --suite light --stack backend` for backend verification. For a full-stack run, the only sanctioned route is `node tools/control-lc/control-lc.mjs launch`: it gives this worktree its own stack on free ports, and `node tools/control-lc/control-lc.mjs cleanup` removes it (see skills/engineering/verify-lc/SKILL.md and dydo/guides/running-lc.md).",
+      "severity": "block"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)Start-Process\\b(?=[^;&|]*(?:LC[.]AppHost|LC[.]Api)[.]exe\\b)[^;&|]*",
+      "message": "Don't start LC.AppHost or LC.Api as a detached process from an agent worktree. Detached hosts outlive the test command, collide with developer ports, and can surface failures as Windows crash dialogs. Use `python tools/test.py --suite light --stack backend` for backend verification. For a full-stack run, the only sanctioned route is `node tools/control-lc/control-lc.mjs launch`: it gives this worktree its own stack on free ports, and `node tools/control-lc/control-lc.mjs cleanup` removes it (see skills/engineering/verify-lc/SKILL.md and dydo/guides/running-lc.md).",
+      "severity": "block"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)dotnet\\s+test\\b(.*)",
+      "message": "Use the one test command instead: python tools/test.py --feature <id> (--heavy adds its Heavy tests), or python tools/test.py --suite light --stack backend.\nIt runs dotnet test through the suite manifest and queues Heavy runs on the machine-wide lock.",
+      "severity": "warn"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)dotnet\\s+stryker\\b(.*)",
+      "message": "Use the governed mutation wrapper instead: py tools/mutation/run.py --profile <name>",
+      "severity": "warn"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)(?:npx\\s+stryker|pnpm\\s+(?:(?:--dir(?:\\s+\\S+|=\\S+)|-C(?:\\s+\\S+|=\\S+)|exec)\\s+)*stryker)\\b(.*)",
+      "message": "Use the governed mutation wrapper instead: py tools/mutation/run.py --profile <name>",
+      "severity": "warn"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)npm\\s+run\\s+test:coverage\\b(.*)",
+      "message": "Use the isolated test runner instead: python tools/coverage/run_tests.py --stack=frontend\nThis avoids cross-process collisions on vitest's istanbul .tmp/ shard staging dir (issue #40).",
+      "severity": "warn"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)(?:npx\\s+)?vitest\\s+run\\s+--coverage\\b(.*)",
+      "message": "Use the isolated test runner instead: python tools/coverage/run_tests.py --stack=frontend\nThis avoids cross-process collisions on vitest's istanbul .tmp/ shard staging dir (issue #40).",
+      "severity": "warn"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)cs2ts\\b(.*)",
+      "message": "Use the wrapper script instead: python tools/types/regen_types.py\nIt handles the cd to LC.Domain and passes the project-specific regen hint to cs2ts.",
+      "severity": "warn"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)dotnet\\s+ef\\s+migrations\\b(.*)",
+      "message": "Use the wrapper instead: python tools/migrations/run_migrations.py $1\nIt invokes `dotnet ef` with the right paths and updates the hash manifest the drift test checks.",
+      "severity": "warn"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)npm\\s+(.*)",
+      "message": "Use pnpm, not npm — frontend migrated per Decision 030. Try: pnpm $1\nSee dydo/project/decisions/030-frontend-package-manager-pnpm.md",
+      "severity": "warn"
+    },
+    {
+      "pattern": "\\btail\\b(?=[^;|&\\r\\n]*(?:\\s-\\S*f\\S*|\\s--follow(?:=\\S+)?)(?:\\s|$))",
+      "message": "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`. Open-ended polls have caused agent crashes (issue 0177).",
+      "severity": "warn"
+    },
+    {
+      "pattern": "\\bwhile\\s+(?:true|:)\\s*;\\s*do\\b(?:(?!\\bdone\\b)[\\s\\S])*\\bsleep\\b",
+      "message": "Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`. Open-ended polls have caused agent crashes (issue 0177).",
+      "severity": "warn"
+    }
+  ],
+  "testing": {
+    "runner": [
+      "py",
+      "tools/coverage/gap_check.py"
+    ]
+  }
+}

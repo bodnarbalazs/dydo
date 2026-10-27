@@ -2,6 +2,7 @@ namespace DynaDocs.Services;
 
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DynaDocs.Models;
 using DynaDocs.Serialization;
 using DynaDocs.Utils;
@@ -62,8 +63,10 @@ public class ConfigService : IConfigService
     }
 
     /// <summary>
-    /// Save configuration to dydo.json. The bytes go to a flushed sibling that is then renamed
-    /// over the target, so a failure at any step leaves the original file untouched.
+    /// Save configuration to dydo.json as an edit of the existing text: only members the config
+    /// changed are rewritten, and nothing is written when none did. The bytes go to a flushed
+    /// sibling that is then renamed over the target, so a failure at any step leaves the original
+    /// file untouched.
     /// </summary>
     public void SaveConfig(DydoConfig config, string path)
         => SaveConfig(config, path, ConfigSaveOperations.Default);
@@ -77,8 +80,11 @@ public class ConfigService : IConfigService
 
     internal void SaveConfig(DydoConfig config, string path, ConfigSaveOperations operations)
     {
-        var json = JsonSerializer.Serialize(config, DydoConfigJsonContext.Default.DydoConfig);
-        var bytes = Encoding.UTF8.GetBytes(json);
+        var original = JsonText.Read(path);
+        var json = JsonText.Render(original?.Text, Patch(original?.Text, config));
+        if (json == original?.Text)
+            return;
+        var bytes = JsonText.Encode(original, json);
         var temporaryPath = operations.ChooseTemporaryPath(path);
         FileStream? stream = null;
         // Only a sibling this invocation created is ours to delete: a collision owns nothing,
@@ -108,6 +114,28 @@ public class ConfigService : IConfigService
                 try { File.Delete(temporaryPath); }
                 catch { }
             }
+        }
+    }
+
+    // dydo.json is the user's file: only what changed between the model of the original and the
+    // config being saved touches it, so unknown keys and members the model would default stay out.
+    private static JsonNode Patch(string? original, DydoConfig config)
+    {
+        var updated = JsonSerializer.SerializeToNode(config, DydoConfigJsonContext.Default.DydoConfig)!;
+        if (original == null)
+            return updated;
+        try
+        {
+            var current = JsonText.Parse(original);
+            var model = JsonSerializer.Deserialize(original.TrimStart('﻿'), DydoConfigJsonContext.Default.DydoConfig);
+            if (current is not JsonObject || model == null)
+                return updated;
+            var baseline = JsonSerializer.SerializeToNode(model, DydoConfigJsonContext.Default.DydoConfig);
+            return JsonText.Merge(current, baseline, updated)!;
+        }
+        catch (JsonException)
+        {
+            return updated;
         }
     }
 

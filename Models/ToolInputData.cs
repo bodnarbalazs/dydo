@@ -2,7 +2,6 @@ namespace DynaDocs.Models;
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using DynaDocs.Services;
 
 public class ToolInputData
 {
@@ -19,10 +18,9 @@ public class ToolInputData
     public string? NewString { get; set; }
 
     /// <summary>
-    /// The shell command line. Codex may send it as an argv array instead: its shell envelope
-    /// (<c>["bash", "-lc", script]</c>, <c>[pwsh, "-Command", script]</c>, see
-    /// <see cref="CommandPosition.Envelope"/>) reads as that script, any other array as its words
-    /// joined into one POSIX line. <see cref="CommandArgv"/> keeps the array.
+    /// The shell command line. Codex may send it as an argv array instead, which reads as its words
+    /// joined into one POSIX line; <see cref="CommandArgv"/> keeps the array, and the guard reads a
+    /// shell envelope in it as that script.
     /// </summary>
     [JsonIgnore]
     public string? Command { get; set; }
@@ -38,7 +36,7 @@ public class ToolInputData
         {
             CommandArgv = value?.ValueKind == JsonValueKind.Array ? [.. value.Value.EnumerateArray().Select(WordOf)] : null;
             if (CommandArgv != null)
-                Command = CommandPosition.Envelope(CommandArgv)?.Text ?? string.Join(' ', CommandArgv.Select(Quoted));
+                Command = string.Join(' ', CommandArgv.Select(Quoted));
             else
                 Command = value?.ValueKind == JsonValueKind.String ? value.Value.GetString() : null;
         }

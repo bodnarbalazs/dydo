@@ -156,7 +156,10 @@ public static partial class GuardCommand
                     filePath = hookInput.GetFilePath();
                     action = hookInput.GetAction();
                     toolName = hookInput.ToolName?.ToLowerInvariant();
-                    bashCommand = hookInput.GetCommand();
+                    // A Codex shell envelope (["bash", "-lc", script]) reads as its script.
+                    bashCommand = hookInput.ToolInput?.CommandArgv is { } argv && CommandPosition.Envelope(argv) is { } envelope
+                        ? envelope.Text
+                        : hookInput.GetCommand();
                     searchPath = hookInput.GetSearchPath();
                     writeTargets = hookInput.GetWriteTargets();
                     cwd = Blank(hookInput.Cwd);

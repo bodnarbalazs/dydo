@@ -81,10 +81,10 @@ public class ConfigService : IConfigService
     internal void SaveConfig(DydoConfig config, string path, ConfigSaveOperations operations)
     {
         var original = JsonText.Read(path);
-        var json = JsonText.Render(original, Patch(original, config));
-        if (json == original)
+        var json = JsonText.Render(original?.Text, Patch(original?.Text, config));
+        if (json == original?.Text)
             return;
-        var bytes = Encoding.UTF8.GetBytes(json);
+        var bytes = JsonText.Encode(original, json);
         var temporaryPath = operations.ChooseTemporaryPath(path);
         FileStream? stream = null;
         // Only a sibling this invocation created is ours to delete: a collision owns nothing,

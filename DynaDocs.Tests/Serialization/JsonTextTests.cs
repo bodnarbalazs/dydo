@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Serialization;
 
+using System.Text;
 using System.Text.Json.Nodes;
 using DynaDocs.Serialization;
 
@@ -95,5 +96,30 @@ public class JsonTextTests
 
         Assert.Same(original, merged);
         Assert.True(JsonNode.DeepEquals(Parse("[1, 2]"), merged));
+    }
+
+    [Fact]
+    public void Write_MalformedUtf16File_RendersFreshAndKeepsTheEncodingAndBom()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"jsontext-{Guid.NewGuid():N}.json");
+        var utf16 = new UnicodeEncoding(bigEndian: false, byteOrderMark: false);
+        try
+        {
+            File.WriteAllBytes(path, utf16.GetBytes("﻿{"));
+
+            JsonText.Write(path, JsonText.Read(path), Parse("{\"a\": 1}"));
+
+            Assert.Equal(utf16.GetBytes("﻿{\n  \"a\": 1\n}\n"), File.ReadAllBytes(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void Encode_NewFile_IsUtf8WithoutBom()
+    {
+        Assert.Equal("{}"u8.ToArray(), JsonText.Encode(null, "{}"));
     }
 }

@@ -251,8 +251,9 @@ public static class InitCommand
         };
     }
 
-    // Notice is the one line init and join print when a setting overrode the user's value.
-    private sealed record HostSetting(string Path, string Content, string? Notice);
+    // Content is the file's bytes in its own encoding; Notice is the one line init and join print
+    // when a setting overrode the user's value.
+    private sealed record HostSetting(string Path, byte[] Content, string? Notice);
 
     private static List<HostSetting> PrepareHostSettings(string projectRoot, string[] integrations)
     {
@@ -277,7 +278,7 @@ public static class InitCommand
         foreach (var (path, content, notice) in prepared)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, content);
+            File.WriteAllBytes(path, content);
             if (notice != null)
                 Console.WriteLine(notice);
         }
@@ -297,7 +298,7 @@ public static class InitCommand
         {
             try
             {
-                root = JsonText.Parse(original) as JsonObject
+                root = JsonText.Parse(original.Text) as JsonObject
                     ?? throw HostSettingError(relativePath, "JSON object root", "non-object root");
             }
             catch (JsonException ex)
@@ -350,8 +351,8 @@ public static class InitCommand
         ConfigureGuardHook(root, GuardMatcher, ClaudeGuardHookCommand);
         RemoveDydoHooks(root, "Stop", DydoStopHookCommand);
 
-        var content = JsonText.Render(original, root);
-        return content == original ? null : new HostSetting(path, content, notice);
+        var content = JsonText.Render(original?.Text, root);
+        return content == original?.Text ? null : new HostSetting(path, JsonText.Encode(original, content), notice);
     }
 
     private static HostSetting? PrepareCodexSettings(string projectRoot)
@@ -372,7 +373,7 @@ public static class InitCommand
             ? original
             : InsertTableSettings(original, "agents", agentsStart, agentsEnd, additions);
         var (content, notice) = TurnCodexMemoriesOff(document, updated, relativePath);
-        return content == original ? null : new HostSetting(path, content, notice);
+        return content == original ? null : new HostSetting(path, Encoding.UTF8.GetBytes(content), notice);
     }
 
     /// <summary>
@@ -569,7 +570,7 @@ public static class InitCommand
 
         var settingsPath = Path.Combine(claudeDir, "settings.local.json");
         var original = JsonText.Read(settingsPath);
-        var settings = LoadJsonSettings(original);
+        var settings = LoadJsonSettings(original?.Text);
 
         RemoveDydoHooks(settings, "PreToolUse", GuardHookCommand, ClaudeGuardHookCommand);
         RemoveDydoHooks(settings, "Stop", DydoStopHookCommand);
@@ -689,7 +690,7 @@ public static class InitCommand
 
         var hooksPath = Path.Combine(codexDir, "hooks.json");
         var original = JsonText.Read(hooksPath);
-        var settings = LoadJsonSettings(original);
+        var settings = LoadJsonSettings(original?.Text);
 
         ConfigureGuardHook(settings, CodexGuardMatcher);
         RemoveDydoHooks(settings, "Stop", DydoStopHookCommand);

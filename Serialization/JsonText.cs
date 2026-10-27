@@ -9,25 +9,59 @@ using System.Text.Json.Nodes;
 /// Writes a JSON file a user owns as an edit of its original text, not a fresh serialization:
 /// every value the edit left alone keeps its bytes (spacing, escapes, key order, unknown keys),
 /// and the BOM, line endings and trailing newline stay the file's own. Only new or changed values
-/// are serialized, with relaxed escaping and the file's indent.
+/// are serialized, with relaxed escaping and the file's indent. The encoding stays the file's own
+/// too: <see cref="Read"/> detects it from the BOM and <see cref="Encode"/> writes in it.
 /// </summary>
 internal static class JsonText
 {
     private const char Bom = '﻿';
 
-    /// <summary>The file's text exactly as stored (a BOM stays as U+FEFF), or null when absent.</summary>
-    public static string? Read(string path) =>
-        File.Exists(path) ? Encoding.UTF8.GetString(File.ReadAllBytes(path)) : null;
+    private static readonly Encoding Utf8 = new UTF8Encoding(false);
+
+    // Detected by BOM, as File.ReadAllText does; UTF-32LE first, since its BOM begins with UTF-16LE's.
+    private static readonly Encoding[] BomEncodings =
+    [
+        new UTF32Encoding(bigEndian: false, byteOrderMark: true),
+        new UTF32Encoding(bigEndian: true, byteOrderMark: true),
+        new UTF8Encoding(true),
+        new UnicodeEncoding(bigEndian: false, byteOrderMark: true),
+        new UnicodeEncoding(bigEndian: true, byteOrderMark: true),
+    ];
+
+    /// <summary>
+    /// The file's text exactly as stored (a BOM stays as U+FEFF) in the encoding its BOM names,
+    /// UTF-8 without one; null when absent.
+    /// </summary>
+    public static StoredText? Read(string path)
+    {
+        if (!File.Exists(path))
+            return null;
+        var bytes = File.ReadAllBytes(path);
+        var encoding = BomEncodings.FirstOrDefault(candidate => bytes.AsSpan().StartsWith(candidate.Preamble)) ?? Utf8;
+        return new StoredText(encoding.GetString(bytes), encoding);
+    }
+
+    /// <summary>
+    /// The bytes of <paramref name="text"/> in the encoding of <paramref name="original"/>, UTF-8
+    /// for a new file. A UTF-16 or UTF-32 file keeps its BOM even when the text was rendered fresh.
+    /// </summary>
+    public static byte[] Encode(StoredText? original, string text)
+    {
+        var encoding = original?.Encoding ?? Utf8;
+        if (encoding is not UTF8Encoding && !text.StartsWith(Bom))
+            text = Bom + text;
+        return encoding.GetBytes(text);
+    }
 
     /// <summary>Parses text <see cref="Read"/> returned; throws <see cref="JsonException"/> when malformed.</summary>
     public static JsonNode? Parse(string text) => JsonNode.Parse(text.TrimStart(Bom));
 
     /// <summary>Writes <paramref name="target"/> over <paramref name="original"/> only when the text changes.</summary>
-    public static void Write(string path, string? original, JsonNode target)
+    public static void Write(string path, StoredText? original, JsonNode target)
     {
-        var text = Render(original, target);
-        if (text != original)
-            File.WriteAllText(path, text);
+        var text = Render(original?.Text, target);
+        if (text != original?.Text)
+            File.WriteAllBytes(path, Encode(original, text));
     }
 
     /// <summary>

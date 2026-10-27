@@ -706,6 +706,13 @@
       ]
     },
     {
+      "module": "Serialization/StoredText.cs",
+      "tests": [
+        "DynaDocs.Tests/Serialization/JsonTextTests.cs",
+        "DynaDocs.Tests/Integration/DownstreamConfigTests.cs"
+      ]
+    },
+    {
       "module": "Services/AnchorExtractor.cs",
       "tests": [
         "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"

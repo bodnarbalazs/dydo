@@ -133,9 +133,9 @@ project, found from the host's settings and docs; the release entries say what t
 profile, found from the host's docs and those folders (committed and local settings, say).
 Each host runs each dydo hook once, where the reference `init` wires it. A copy runs a command the
 reference or a base's tag wires, elsewhere: remove and list it, or in a shared profile, show the
-user and ask. Any other hook running a dydo command is a tweak: keep and list it if it parses. A
-dydo hook parses under the new CLI when `dydo <cmd> --help` succeeds and lists each option it
-passes, each has its required value, and it passes nothing else. Remove one that does not parse.
+user and ask. Any other hook running a dydo command is a tweak: keep and list it. Remove only one
+whose subcommand `dydo --help` does not list, or passing an option `dydo <cmd> --help` does not
+list, an option without its value, or positional arguments beyond what that help documents.
 
 Name every other project hook or tool and what it does. One overlapping a dydo command (see
 `dydo --help`): run both on the project tool's own tests or recorded inputs. dydo covers every

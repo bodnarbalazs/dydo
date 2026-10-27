@@ -33,14 +33,20 @@ None: every change arrives with the merge of the release's skills and docs.
 
 Apply them in this order.
 
-1. Em dash to hyphen (d3e64b92). Matching: every em dash (U+2014) becomes a hyphen (`-`), the
-   spacing around it kept. Scope: every text file, history, code messages and comments included.
-   Exception: the protected `dydo/index.md`. En dashes (U+2013) are not part of it.
+1. Em dash to hyphen (d3e64b92). Matching: every em dash character (U+2014) becomes a hyphen
+   (`-`), the spacing around it kept; a JSON `—` escape is not one and stays. Scope: every
+   file in the merge set: `skills/`, the entry file and the docs-root files from `Scaffold/dydo/`,
+   the docs root's `index.md` included (`setup-skills.mjs` and `THIRD-PARTY-NOTICES.md` held
+   none). No exception in a project. dydo's own repository was swept whole, history, code messages
+   and comments included, except dydo's own protected `dydo/index.md`; no project holds those
+   files. A project's `dydo.json` is not merged: its nudge messages keep the `—` an older
+   `init` wrote, as dydo's own `dydo.json` does. En dashes (U+2013) are not part of it.
 2. "the human" to "the user" in the skills (d3e64b92), for the person running dydo. Matching:
    "the human" becomes "the user", case kept, in every form ("the human's", "the human-facing").
    Bare "human" too, where the `admiral` and `issue-captain` skills end a chain with it:
    "**Precedence:** human's live instruction" to "user's", "→ human." to "→ user.". Scope:
-   `skills/`. Exceptions, every other "human": "a human"; "Human rejects" in
+   `skills/`; the entry file, the docs root and `setup-skills.mjs` are out (3.5.0 renames "human"
+   in the first two). Exceptions, every other "human": "a human"; "Human rejects" in
    `improve-codebase-architecture`; modifiers (human approval, human judgment, human takeover,
    Human loop, a human-facing, Human-only); human as opposed to agent ("human-readable", HITL's
    "human in the loop", `writing-for-humans`); external names (HumanLayer). Not mechanical, so

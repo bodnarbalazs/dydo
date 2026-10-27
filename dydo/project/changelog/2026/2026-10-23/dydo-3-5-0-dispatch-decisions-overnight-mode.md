@@ -267,21 +267,23 @@ Apply them in this order.
    Wayfinding, say) to their Ticket forms. Compounds follow the generic rule (Issue-review,
    issue-relevant, multi-Issue, cross-Issue to ticket-review, ticket-relevant, multi-ticket,
    cross-ticket); Sub-issue to Sub-ticket keeps its case; so do the `<issue-template>` tag and
-   the skill names `issue-captain` and `to-issue` (step 3). Scope: live text in `skills/`, the
-   entry files, `README.md`, `Scaffold/`, and the docs root's guides, reference, understand,
-   future-features, `glossary.md` and hubs. dydo's own code, tests and viewer changed too,
-   identifiers kept; no project holds them. Exceptions, left as they are: Linear tool and API
-   names and `/issue/` URLs; code identifiers such as `MapIssue*` and `issueId`; placeholders
-   such as `~/work/<issue>`; the future-feature frontmatter values `issue` and `sub-issue`, which
-   stay refused; GitHub issues; "issue" meaning a problem, and the verb (issue, issued); history
-   (changelog, Decision Records, inquisitions, plans, migrations, reviews, the agent workspace,
-   viewer fixtures), the file names links to it carry, and quotations; the glossary's Ticket
-   entry, the one place that pairs the two words ("Linear calls it an Issue"); in its Retired
-   PM terms, the retired names (the observed-problem Issue, run-issues, Issue planner, the
-   Issue-resolution plan), while the section's live references are normalised ("an Issue Captain
-   owns one Issue" to "a Ticket Captain owns one ticket"). Not mechanical, so the merge carries
-   them: Ticket leaves that section's retired list, the glossary's Ticket entry gains its pairing
-   sentence, and the refused frontmatter list gains `ticket` and `sub-ticket`.
+   the skill names `issue-captain` and `to-issue` (step 3), in a name or a path. Scope, in the
+   merge set: live text in `skills/`, `THIRD-PARTY-NOTICES.md` (its `to-issue/SKILL.md` path),
+   the entry file and the docs-root files from `Scaffold/dydo/` (`setup-skills.mjs` holds none).
+   dydo's own `README.md`, entry files, docs, code, tests and viewer changed too, identifiers
+   kept; no project holds them. Exceptions, left as they are: Linear tool and API names and
+   `/issue/` URLs; the future-feature frontmatter values `issue` and `sub-issue`, which stay
+   refused; GitHub issues; "issue" meaning a problem ("Known issues", "Find issues"), and the
+   verb (issue, issued); quotations; in `reference/dydo-glossary.md`, the Ticket entry, the one
+   place that pairs the two words ("Linear calls it an Issue"), and in its Retired PM terms the
+   retired names (the observed-problem Issue, run-issues, Issue planner, the Issue-resolution
+   plan), while the section's live references are normalised ("an Issue Captain owns one Issue"
+   to "a Ticket Captain owns one ticket"). In dydo's own files only: code identifiers such as
+   `MapIssue*` and `issueId`, placeholders such as `~/work/<issue>`, and history (changelog,
+   Decision Records, inquisitions, plans, migrations, reviews, the agent workspace, viewer
+   fixtures) with the file names links to it carry. Not mechanical, so the merge carries them:
+   Ticket leaves that section's retired list, the Ticket entry gains its pairing sentence, and the
+   refused frontmatter list gains `ticket` and `sub-ticket`.
 2. "human" to "user" (DYD-367, PR #165), wherever it names the person running dydo. Matching:
    case kept, in every form: "the human" and its possessive; "a human" and "Humans" to "the
    user" ("a user" where any user is meant); a bare noun takes the article ("human owns"
@@ -289,15 +291,17 @@ Apply them in this order.
    `| human |` and a chain's `→ human`; modifiers and compounds, such as the glossary term
    and role label Human command, human approval, human decision, human judgment, human input,
    human takeover, human-owned, human-confirmed, human-origin and Human-only, to their user forms
-   ("The user's approval" where the person's own is meant). Scope: the entry files, `README.md`,
-   `Scaffold/`, the docs root's guides, reference, understand, future-features, project hubs
-   and `files-off-limits.md`, the `wizard` skill's `SKILL.md` and its line in the skills README
-   (3.2.0 changed "the human" in the other skills). dydo's own tests changed too; no project holds
-   them. Exceptions: human as opposed to agent (`writing-for-humans`, "human-readable", "human
-   entry point", "human navigation", HITL's "live human participation"); "a human" in `wizard`'s
-   template; external names (HumanLayer, Linear's `Waiting for Human` status); identifiers
-   such as the mermaid style class (`classDef human`, `:::human`); quoted CLI text (the guard's
-   "human-owned ... ask the human" refusal); history and quotations. Not mechanical, so the merge
+   ("The user's approval" where the person's own is meant). Scope, in the merge set: the entry
+   file, the docs-root files from `Scaffold/dydo/`, the `wizard` skill's `SKILL.md` and its line
+   in `skills/engineering/README.md` (3.2.0 changed "the human" in the other skills). Out:
+   `setup-skills.mjs` (its "human-owned" refusal), `THIRD-PARTY-NOTICES.md`, `wizard`'s
+   `resources/template.md` and every other skill file. dydo's own `README.md`, entry files, docs
+   and tests changed too; no project holds them. Exceptions: human as opposed to agent
+   (`writing-for-humans`, "human-readable", "human entry point", HITL's "live human
+   participation"); external names (HumanLayer, Linear's `Waiting for Human` status); history and
+   quotations. In dydo's own files only: "human navigation", the mermaid style class
+   (`classDef human`, `:::human`) and the guard's quoted refusal ("human-owned ... ask the
+   human"). Not mechanical, so the merge
    carries them: rewordings such as "before human harmonization" to "before the user harmonizes
    it" and "one human judgment that remains" to "one judgment left to the user".
 

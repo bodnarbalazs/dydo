@@ -80,6 +80,8 @@ moved Claude guard; see Upgrade steps.
     `bash -c`, `pwsh -Command`, `-EncodedCommand`, `cmd /c`, `eval` or `env -S` holding a PR call
     is refused unread, asking to run `gh` directly. Both passed unchecked before.
   - `dydo pr-ready --body` accepts a hyphen, an en dash or an em dash after `PASS`.
+  - A blank `cwd`, `tool_input.cwd` or `workdir` counts as one the host did not send. A payload
+    `cwd` of `""` used to crash the check, and the guard then allowed the PR call.
 - `dydo init codex --join` stopped with exit 2 on a `.codex/config.toml` that starts with a BOM. It
   now reads it, keeps the BOM and sets `memories = false` in its one `[features]` table (DYD-392).
 - `dydo init`, `--join` and `dydo adopt` rewrote `dydo.json`, `.claude/settings.json`,

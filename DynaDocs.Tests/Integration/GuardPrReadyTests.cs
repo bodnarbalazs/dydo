@@ -232,6 +232,22 @@ public class GuardPrReadyTests : IntegrationTestBase
         Assert.Contains($"Checked: {TestDir} (the project root; the host sent no cwd)", reason);
     }
 
+    [Theory]
+    [InlineData("", null, null)]
+    [InlineData("  ", null, null)]
+    [InlineData("", "", null)]
+    [InlineData("", null, "")]
+    public async Task PayloadWithBlankCwd_ChecksTheProjectRoot(string cwd, string? toolCwd, string? workdir)
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload("gh pr create --fill", cwd: cwd, toolCwd: toolCwd, workdir: workdir));
+
+        var reason = result.AssertPreToolUseDenied();
+        Assert.Contains($"Checked: {TestDir} (the project root; the host sent no cwd)", reason);
+    }
+
     // DYD-386: the review-block warn must not arm or spend its once-only marker while the tree
     // check refuses the call anyway, or the two messages alternate and "run again" is false.
     [Theory]

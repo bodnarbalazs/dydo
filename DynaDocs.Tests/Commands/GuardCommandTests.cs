@@ -864,13 +864,9 @@ public class GuardCommandTests : IDisposable
             ?? GuardCommand.BlockIfPathProtected(resolved.Path, offLimits));
     }
 
+    // Forward-slash UNC forms are absolute on every platform, so they run everywhere.
     [Theory]
-    [InlineData(@"\\server\share\repo", "dydo.json", "protected")]
     [InlineData("//server/share/repo", "dydo.json", "protected")]
-    [InlineData(@"\\server\share\repo\src", "../dydo.json", "protected")]
-    [InlineData(@"\\server\share\repo", @"\\server\share\repo\dydo.json", "protected")]
-    [InlineData(@"\\elsewhere\x", "//server/share/repo/src/../dydo.json", "protected")]
-    [InlineData(@"\\server\share\repo", @"dydo\_system\.local\state.json", "off-limits")]
     [InlineData("//server/share/repo/src", "../dydo/_system/x.md", "off-limits")]
     public void PatchTargetOnUncCheckout_IntoGuardedPath_Blocked(string cwd, string target, string tier)
     {
@@ -880,9 +876,29 @@ public class GuardCommandTests : IDisposable
         Assert.Contains(tier, stderr);
     }
 
+    // A backslash UNC path is a Windows form: elsewhere a backslash is not a separator, so
+    // Path.Combine reads it as a relative name.
+    [Theory]
+    [InlineData(@"\\server\share\repo", "dydo.json", "protected")]
+    [InlineData(@"\\server\share\repo\src", "../dydo.json", "protected")]
+    [InlineData(@"\\server\share\repo", @"\\server\share\repo\dydo.json", "protected")]
+    [InlineData(@"\\elsewhere\x", "//server/share/repo/src/../dydo.json", "protected")]
+    [InlineData(@"\\server\share\repo", @"dydo\_system\.local\state.json", "off-limits")]
+    public void PatchTargetOnBackslashUncCheckout_IntoGuardedPath_Blocked(string cwd, string target, string tier)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var (result, stderr) = JudgePatchTarget(cwd, target);
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains(tier, stderr);
+    }
+
     [Fact]
     public void PatchTargetOnUncCheckout_OrdinaryFile_Allowed()
     {
+        if (!OperatingSystem.IsWindows()) return; // a backslash UNC cwd is a Windows form
+
         var (result, stderr) = JudgePatchTarget(@"\\server\share\repo", "src/Foo.cs");
 
         Assert.Null(result);

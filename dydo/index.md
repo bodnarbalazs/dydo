@@ -16,7 +16,7 @@ comes after you.
   [about-dynadocs](reference/about-dynadocs.md) explains the machinery: native skills, the
   guard, the scaffold.
 - [project/](project/_project.md) - what was decided and what happened: Decision Records, plans, evidence,
-  release history, pitfalls, and FutureFeatures.
+  release history, pitfalls, and legacy FutureFeature records.
 - [dydo glossary](reference/dydo-glossary.md) - locked definitions of how work is named: the Linear
   work graph, fog and question tickets, roles and skills, evidence - and the retired PM terms to avoid.
 - [glossary.md](glossary.md) - this project's own domain vocabulary.

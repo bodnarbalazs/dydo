@@ -237,11 +237,11 @@ public class InitCommandTests : IntegrationTestBase
 
         AssertFileExists("dydo/project/future-features/_future-features.md");
         AssertFileContains("dydo/project/future-features/_future-features.md",
-            "repo-native ideas, not scheduled work");
+            "A new FutureFeature is a Linear ticket in status `FutureFeature`");
         AssertFileContains("dydo/project/future-features/_future-features.md",
-            "User promotion creates exactly one appropriately shaped Linear Initiative, Project, or ticket");
-        AssertFileContains("dydo/project/future-features/_future-features.md",
-            "only in Linear; the FutureFeature remains provenance");
+            "stays until its migration to Linear is verified");
+        Assert.DoesNotContain("repo-native ideas",
+            File.ReadAllText(Path.Combine(TestDir, "dydo", "project", "future-features", "_future-features.md")));
 
         var futureFeatureFiles = Directory.GetFiles(
                 Path.Combine(TestDir, "dydo", "project", "future-features"), "*.md")

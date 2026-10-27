@@ -104,8 +104,8 @@ moved Claude guard; see Upgrade steps.
   DYD-392, reversing issue 0303). `dydo init claude` and `--join` write one `PreToolUse` entry
   running `dydo guard --host claude` into `.claude/settings.json`, where dydo's earlier entry
   stood. They remove any other dydo guard entry and a Stop entry running `dydo guard --stop`, and
-  leave hooks dydo did not write alone. `.claude/settings.local.json` keeps only the allow list
-  and loses the guard and Stop hooks an older dydo wired there. A fresh clone is now guarded on
+  leave hooks dydo did not write alone. `.claude/settings.local.json` loses the guard and Stop
+  hooks an older dydo wired there; its allow list and the project's own hooks stay. A fresh clone is now guarded on
   Claude Code as on Codex; a teammate without the dydo CLI on the path gets a non-blocking hook
   error on each matched tool call.
 - `.github/workflows/release.yml` now opens with the pre-tag release checklist. It lists every
@@ -131,8 +131,8 @@ moved Claude guard; see Upgrade steps.
    committed `.claude/settings.json` and removes dydo's hooks from `.claude/settings.local.json`.
    Check that `git diff -- .claude/settings.json` shows one `PreToolUse` entry running
    `dydo guard --host claude` with the current matcher, no `dydo guard --stop`, and the project's
-   other hooks unchanged, then commit it. `settings.local.json` stays uncommitted and keeps only
-   the allow entries. Everyone who opens the project in Claude Code needs the dydo CLI on the
+   other hooks unchanged, then commit it. `settings.local.json` stays uncommitted and keeps its
+   allow entries and any hooks the project added itself. Everyone who opens the project in Claude Code needs the dydo CLI on the
    path from now on.
 5. `--join` replaces or removes the exact dydo commands `dydo guard`, `dydo guard --host claude`
    and `dydo guard --stop` in `.claude/settings.json`, `.claude/settings.local.json` and

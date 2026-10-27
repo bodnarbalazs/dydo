@@ -10,8 +10,8 @@ identity, delegation, scheduling, and worktree isolation.
 
 ## What it provides
 
-- A structured knowledge tree for architecture, decisions, guides, plans, audits, changelog, and
-  FutureFeature ideas.
+- A structured knowledge tree for architecture, decisions, guides, plans, audits, and changelog;
+  FutureFeatures live in Linear.
 - One canonical `skills/<category>/<name>/` tree (`roles/officers/`, `roles/crew/`, `engineering/`,
   `productivity/`), walked by rule rather than depth and exposed flat through host-native discovery
   paths (no category level) by the dependency-free `setup-skills.mjs`, with no compile step. Both

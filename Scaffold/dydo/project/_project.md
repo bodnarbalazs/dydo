@@ -13,7 +13,7 @@ repository records.
 
 - **decisions/** - accepted technical and product choices
 - **plans/** - reviewed contracts for coordinated, cross-cutting, or architecture-sensitive Linear Projects
-- **future-features/** - unscheduled repo-native ideas; only the user may promote one to Linear
+- **future-features/** - legacy FutureFeature records awaiting migration; a new FutureFeature is a Linear ticket
 - **migrations/** - durable migration evidence and assimilation briefs
 - **inquisitions/** - multi-lens QA reports at meaningful product milestones
 - **changelog/** - completed change and release history
@@ -26,7 +26,7 @@ grow. Use Linear Initiatives, Projects, tickets, optional Milestones, and Cycles
 
 Add a repository document when the information must remain reviewable and useful after current Linear
 state changes: a Decision, reviewed Project plan, audit, assimilation brief, migration receipt,
-FutureFeature, changelog entry, or durable pitfall. Link the Linear Project or ticket to that artifact and
+changelog entry, or durable pitfall. Link the Linear Project or ticket to that artifact and
 use an exact commit permalink when the content is historical evidence.
 
 For technical specifications, use `reference/`. For how-to guides, use `guides/`.

@@ -1,9 +1,10 @@
 namespace DynaDocs.Tests.Integration;
 
+using System.Text.RegularExpressions;
 using DynaDocs.Commands;
 
 [Collection("Integration")]
-public class DocumentationTests : IntegrationTestBase
+public partial class DocumentationTests : IntegrationTestBase
 {
     #region Check
 
@@ -27,12 +28,154 @@ public class DocumentationTests : IntegrationTestBase
             .ToArray();
         Assert.Equal(new[] { "_future-features.md" }, futureFeatureFiles);
 
-        var futureFeatureContract = File.ReadAllText(
-            Path.Combine(futureFeaturesRoot, "_future-features.md"));
-        Assert.Contains("repo-native ideas, not scheduled work", futureFeatureContract);
-        Assert.Contains("User promotion creates exactly one appropriately shaped Linear Initiative, Project, or ticket",
-            futureFeatureContract);
-        Assert.Contains("only in Linear; the FutureFeature remains provenance", futureFeatureContract);
+        AssertLegacyFutureFeatureGuide(File.ReadAllText(Path.Combine(futureFeaturesRoot, "_future-features.md")));
+    }
+
+    [Fact]
+    public void RepositoryFutureFeatureGuide_SendsNewIntakeToLinear()
+    {
+        AssertLegacyFutureFeatureGuide(File.ReadAllText(Path.Combine(
+            RepositoryRoot(), "dydo", "project", "future-features", "_future-features.md")));
+    }
+
+    [Fact]
+    public void RepositoryLegacyFutureFeatureRecords_ClaimNoRepoNativeIntake()
+    {
+        var folder = Path.Combine(RepositoryRoot(), "dydo", "project", "future-features");
+        var records = Directory.GetFiles(folder, "*.md")
+            .Where(path => Path.GetFileName(path) != "_future-features.md")
+            .ToArray();
+        Assert.NotEmpty(records);
+
+        foreach (var record in records)
+            Assert.False(File.ReadAllText(record).Contains("repo-native", StringComparison.OrdinalIgnoreCase),
+                $"{Path.GetFileName(record)} still calls a FutureFeature repo-native");
+    }
+
+    [Fact]
+    public async Task Check_ProjectWithoutFutureFeaturesFolder_Passes()
+    {
+        // LC's shape: every FutureFeature lives in Linear and the folder does not exist.
+        (await InitProjectAsync("none")).AssertSuccess();
+        Directory.Delete(Path.Combine(DydoDir, "project", "future-features"), recursive: true);
+
+        var check = await RunAsync(CheckCommand.Create());
+
+        check.AssertSuccess();
+        Assert.DoesNotContain("future-features", check.Stdout + check.Stderr);
+        Assert.DoesNotContain("FutureFeature", check.Stdout + check.Stderr);
+    }
+
+    [Fact]
+    public async Task Check_FutureFeaturesFolderHoldingOnlyItsMetaFile_Passes()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        var folder = Path.Combine(DydoDir, "project", "future-features");
+        Assert.Equal(new[] { "_future-features.md" },
+            Directory.GetFileSystemEntries(folder).Select(Path.GetFileName).ToArray());
+
+        var check = await RunAsync(CheckCommand.Create());
+
+        check.AssertSuccess();
+        Assert.DoesNotContain("FutureFeature", check.Stdout + check.Stderr);
+    }
+
+    [Fact]
+    public async Task FreshInit_EveryCitedDydoDocumentShips()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+
+        Assert.Empty(MissingCitations());
+    }
+
+    [Theory]
+    [InlineData("see dydo/reference/configuration.md now", "dydo/reference/configuration.md")]
+    [InlineData("see ./dydo/reference/configuration.md now", "dydo/reference/configuration.md")]
+    [InlineData(@"see dydo\reference\configuration.md now", "dydo/reference/configuration.md")]
+    [InlineData(@"see .\dydo\reference\configuration.md now", "dydo/reference/configuration.md")]
+    [InlineData(@"see ./dydo\reference/configuration.md now", "dydo/reference/configuration.md")]
+    [InlineData(@"see dydo\\reference\\configuration.md (JSON-escaped)", "dydo/reference/configuration.md")]
+    [InlineData("(`./dydo/guides/a.md`) and [x](dydo/guides/b.md)", "dydo/guides/a.md|dydo/guides/b.md")]
+    // The lookbehind anchors a citation at the repo's own `dydo` folder; these must not match.
+    [InlineData("hub/dydo/reference/configuration.md", "")]
+    [InlineData("https://example.com/dydo/reference/configuration.md", "")]
+    [InlineData("../dydo/reference/configuration.md", "")]
+    [InlineData("../../dydo/reference/configuration.md", "")]
+    [InlineData(@"..\dydo\reference\configuration.md", "")]
+    [InlineData(@"other\dydo\reference\configuration.md", "")]
+    [InlineData("mydydo/reference/configuration.md", "")]
+    [InlineData("my-dydo/reference/configuration.md", "")]
+    [InlineData("dydo/reference/configuration.txt", "")]
+    public void CitedDydoDocuments_RecognisesEveryForm_AndOnlyWhereDydoStartsThePath(string text, string expected) =>
+        Assert.Equal(expected, string.Join("|", CitedDydoDocuments(text)));
+
+    [Theory]
+    [InlineData("guides/mutated.md", "see dydo/reference/missing-doc.md")]
+    [InlineData("guides/mutated.md", "see ./dydo/reference/missing-doc.md")]
+    [InlineData("guides/mutated.md", @"see dydo\reference\missing-doc.md")]
+    [InlineData("guides/mutated.md", @"see .\dydo\reference/missing-doc.md")]
+    [InlineData("mutated.json", """{ "_comment": "see dydo/reference/missing-doc.md" }""")]
+    [InlineData("mutated.json", """{ "_comment": "see ./dydo/reference/missing-doc.md" }""")]
+    [InlineData("mutated.json", """{ "_comment": "see dydo\\reference\\missing-doc.md" }""")]
+    [InlineData("mutated.json", """{ "_comment": "see .\\dydo\\reference/missing-doc.md" }""")]
+    public async Task MissingCitations_FlagsAMissingTargetInEveryForm_InMarkdownAndNonMarkdown(string file, string content)
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        Assert.Empty(MissingCitations());
+
+        WriteFile($"dydo/{file}", content);
+
+        var citer = Path.Combine("dydo", file.Replace('/', Path.DirectorySeparatorChar));
+        Assert.Equal(new[] { $"{citer} -> dydo/reference/missing-doc.md" }, MissingCitations());
+    }
+
+    [Fact]
+    public async Task MissingCitations_AcceptsEveryFormOfAShippedTarget()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile("dydo/guides/shipped.md", @"dydo/index.md ./dydo/index.md dydo\index.md .\dydo\index.md");
+
+        Assert.Empty(MissingCitations());
+    }
+
+    private string[] MissingCitations() =>
+        Directory.EnumerateFiles(DydoDir, "*", SearchOption.AllDirectories)
+            .SelectMany(file => CitedDydoDocuments(File.ReadAllText(file))
+                .Select(cited => (Citer: Path.GetRelativePath(TestDir, file), Cited: cited)))
+            .Where(citation => !File.Exists(Path.Combine(TestDir, citation.Cited)))
+            .Select(citation => $"{citation.Citer} -> {citation.Cited}")
+            .Distinct()
+            .ToArray();
+
+    /// <summary>
+    /// Every `dydo/...md` citation in the text, normalised to forward slashes without a leading `./`,
+    /// so `dydo/x.md`, `./dydo/x.md`, `dydo\x.md` and a mix all name the same file. The lookbehind
+    /// keeps a citation anchored at the repo's own `dydo` folder: a path that merely contains
+    /// `dydo/` (`hub/dydo/x.md`, a URL, `../dydo/x.md`, `mydydo/x.md`) names some other file.
+    /// </summary>
+    private static IEnumerable<string> CitedDydoDocuments(string text) =>
+        DydoDocumentPath().Matches(text)
+            .Select(match => Regex.Replace(match.Value, @"[/\\]+", "/"))
+            .Select(path => path.StartsWith("./", StringComparison.Ordinal) ? path[2..] : path);
+
+    [GeneratedRegex(@"(?<![\w./\\-])(?:\.[/\\]+)?dydo[/\\]+[A-Za-z0-9_./\\-]+\.md")]
+    private static partial Regex DydoDocumentPath();
+
+    /// <summary>
+    /// DR 044 and DR 047: a new FutureFeature is a Linear ticket in status `FutureFeature`; the
+    /// folder only keeps legacy records until their migration is verified, and `dydo check`
+    /// validates each of them now.
+    /// </summary>
+    private static void AssertLegacyFutureFeatureGuide(string guide)
+    {
+        Assert.Contains("A new FutureFeature is a Linear ticket in status `FutureFeature`", guide);
+        Assert.Contains("stays until its migration to Linear is verified", guide);
+        Assert.Contains("`dydo check` enforces this shape on every legacy record.", guide);
+        foreach (var stale in new[]
+                 {
+                     "repo-native", "stay out of", "stay in this folder", "Project 3", "Strict content validation begins",
+                 })
+            Assert.DoesNotContain(stale, guide);
     }
 
     [Fact]

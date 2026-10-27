@@ -571,13 +571,6 @@ public class GuardIntegrationTests : IntegrationTestBase
             .Any(body => Path.GetFileName(Path.GetDirectoryName(body)) == slug);
     }
 
-    private static string RepositoryRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            if (File.Exists(Path.Combine(directory.FullName, "DynaDocs.csproj"))) return directory.FullName;
-        throw new DirectoryNotFoundException($"Could not locate repository root from {AppContext.BaseDirectory}");
-    }
-
     #endregion
 
     #region Agent Tool - Nudge

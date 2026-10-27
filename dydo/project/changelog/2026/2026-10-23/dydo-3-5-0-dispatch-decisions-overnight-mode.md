@@ -214,8 +214,9 @@ trail and comments that only restated the code. Existing checkouts must rerun
    agent writes to `dydo/index.md`, `dydo/files-off-limits.md` and the other paths under its
    Protected Patterns, so a person applies those merges.
 3. Two skills are renamed: `issue-captain` to `ticket-captain` and `to-issue` to `to-ticket`
-   (DYD-361). Move each, with the project's edits, to the new path. Project text naming the old
-   names is now stale.
+   (DYD-361). Move each, with the project's edits, to the new path. Rename each live reference to
+   the old names (project instructions, skill text, the entry file) to the new ones; keep
+   historical records and quotations as they are.
 4. For each wired host, run `dydo init <host> --join`; the Claude Code hook then carries
    `--host claude`, and native memory is turned off in `.claude/settings.json` and
    `.codex/config.toml` (DR 055).
@@ -227,9 +228,11 @@ trail and comments that only restated the code. Existing checkouts must rerun
 6. Run steps 4 and 10 in every checkout of the project, since the Claude Code wiring in
    `.claude/settings.local.json` and the skill links in `.claude/skills/` and `.agents/skills/`
    are machine-local. Each checkout needs the 3.5.0 CLI first: an older one fails on the hook's
-   `dydo guard --host claude`. `--join` also removes dydo's Stop hook, which
-   otherwise fails on the removed `--stop` option at every turn end, and writes the `dydo clean`
-   allow rules.
+   `dydo guard --host claude`. `--join` also writes the `dydo clean` allow rules and removes
+   dydo's Stop hook, which otherwise fails on the removed `--stop` option at every turn end. The
+   3.5.0 CLI removes it from `.claude/settings.local.json` and `.codex/hooks.json` only. Remove a
+   copy anywhere else, such as one committed in `.claude/settings.json`, by hand, or rerun
+   `--join` with a later CLI that also removes dydo's own entries there (DYD-392).
 7. If `--join` warns about `CLAUDE.local.md`, put `@AGENTS.md` at its top, or set Claude Code's
    Project instructions setting to `claude-md-and-agents-md`.
 8. Update Claude Code to 2.1.281 or later; earlier versions may read only `CLAUDE.md`.
@@ -249,6 +252,58 @@ trail and comments that only restated the code. Existing checkouts must rerun
     folder as found. `dydo guard --action write --path ~/.claude/projects/p/memory/x.md` exits 2.
 13. Run `dydo adopt 3.5.0`. It also adds the new-file nudge for Markdown outside `dydo/` to
     `dydo.json` when missing (DYD-375).
+
+### Merge normalisations
+
+Apply them in this order.
+
+1. "issue" to "ticket" (DYD-361, PR #162), for Linear's Issue. Matching: plural and possessive
+   kept, the article with it ("an Issue" to "a ticket"). A generic use becomes lowercase (`Issue`
+   and `issue` to `ticket`) unless it starts a sentence, heading or table cell, sits in a
+   title-case title (Linear Ticket Lifecycle) or names a heading (the Ticket labels section). A
+   qualifier that is not a Type goes with it, a hyphen dropped (Atomic Issue, Atomic-Issue,
+   Project-Issue, Linear Issue to atomic ticket, Project ticket, Linear ticket). A named kind
+   stays capitalised: Issue Captain and each `<Type> Issue` (Merge, Question, Inquisition,
+   Wayfinding, say) to their Ticket forms. Compounds follow the generic rule (Issue-review,
+   issue-relevant, multi-Issue, cross-Issue to ticket-review, ticket-relevant, multi-ticket,
+   cross-ticket); Sub-issue to Sub-ticket keeps its case; so do the `<issue-template>` tag and
+   the skill names `issue-captain` and `to-issue` (step 3), in a name or a path. Scope, in the
+   merge set: live text in `skills/`, `THIRD-PARTY-NOTICES.md` (its `to-issue/SKILL.md` path),
+   the entry file and the docs-root files from `Scaffold/dydo/` (`setup-skills.mjs` holds none).
+   dydo's own `README.md`, entry files, docs, code, tests and viewer changed too, identifiers
+   kept; no project holds them. Exceptions, left as they are: Linear tool and API names and
+   `/issue/` URLs; the future-feature frontmatter values `issue` and `sub-issue`, which stay
+   refused; GitHub issues; "issue" meaning a problem ("Known issues", "Find issues"), and the
+   verb (issue, issued); quotations; in `reference/dydo-glossary.md`, the Ticket entry, the one
+   place that pairs the two words ("Linear calls it an Issue"), and in its Retired PM terms the
+   retired names (the observed-problem Issue, run-issues, Issue planner, the Issue-resolution
+   plan), while the section's live references are normalised ("an Issue Captain owns one Issue"
+   to "a Ticket Captain owns one ticket"). In dydo's own files only: code identifiers such as
+   `MapIssue*` and `issueId`, placeholders such as `~/work/<issue>`, and history (changelog,
+   Decision Records, inquisitions, plans, migrations, reviews, the agent workspace, viewer
+   fixtures) with the file names links to it carry. Not mechanical, so the merge carries them:
+   Ticket leaves that section's retired list, the Ticket entry gains its pairing sentence, and the
+   refused frontmatter list gains `ticket` and `sub-ticket`.
+2. "human" to "user" (DYD-367, PR #165), wherever it names the person running dydo. Matching:
+   case kept, in every form: "the human" and its possessive; "a human" and "Humans" to "the
+   user" ("a user" where any user is meant); a bare noun takes the article ("human owns"
+   to "the user owns"); bare labels, such as the diagrams' `human: an idea`, the tables'
+   `| human |` and a chain's `→ human`; modifiers and compounds, such as the glossary term
+   and role label Human command, human approval, human decision, human judgment, human input,
+   human takeover, human-owned, human-confirmed, human-origin and Human-only, to their user forms
+   ("The user's approval" where the person's own is meant). Scope, in the merge set: the entry
+   file, the docs-root files from `Scaffold/dydo/`, the `wizard` skill's `SKILL.md` and its line
+   in `skills/engineering/README.md` (3.2.0 changed "the human" in the other skills). Out:
+   `setup-skills.mjs` (its "human-owned" refusal), `THIRD-PARTY-NOTICES.md`, `wizard`'s
+   `resources/template.md` and every other skill file. dydo's own `README.md`, entry files, docs
+   and tests changed too; no project holds them. Exceptions: human as opposed to agent
+   (`writing-for-humans`, "human-readable", "human entry point", HITL's "live human
+   participation"); external names (HumanLayer, Linear's `Waiting for Human` status); history and
+   quotations. In dydo's own files only: "human navigation", the mermaid style class
+   (`classDef human`, `:::human`) and the guard's quoted refusal ("human-owned ... ask the
+   human"). Not mechanical, so the merge
+   carries them: rewordings such as "before human harmonization" to "before the user harmonizes
+   it" and "one human judgment that remains" to "one judgment left to the user".
 
 ## Files Changed
 

@@ -31,17 +31,18 @@ contracts. Copying volatile Linear state into Markdown creates drift and is not 
 | `understand/` | Domain concepts, architecture, system overview | Building a mental model |
 | `guides/` | Procedures and coding conventions | Performing a known activity |
 | `reference/` | Exact commands, schemas, and rules | Looking up precise behavior |
-| `project/` | Decisions, reviewed plans, audits, changelog, pitfalls, ideas | Needing durable intent or proof |
+| `project/` | Decisions, reviewed plans, audits, changelog, pitfalls | Needing durable intent or proof |
 
 ## Project knowledge
 
 The `project/` tree contains information that remains valuable after current execution state changes:
 accepted Decisions, reviewed coordinated-work plans, audits, assimilation briefs, migration evidence,
-release history, pitfalls, and FutureFeatures.
+release history, pitfalls, and legacy FutureFeature records.
 
-A FutureFeature is an unscheduled idea, not actionable work. Only the user may promote it to exactly
-one Linear Initiative, Project, or ticket. Its terminal promotion reference is provenance; delivery
-status remains in Linear.
+A FutureFeature is an unscheduled strategic possibility, not actionable work: a Linear ticket in
+status `FutureFeature` that only the user promotes or cancels. Legacy records in
+`project/future-features/` stay until their migration to Linear is verified; a promoted record's
+reference is provenance, and delivery status remains in Linear.
 
 ## File conventions
 

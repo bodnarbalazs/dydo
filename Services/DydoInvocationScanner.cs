@@ -19,7 +19,7 @@ internal enum ShellDialect
 /// assignments, shell keywords and transparent wrappers (env, sudo, nohup, xargs, ...; see <see cref="CommandPosition"/>). Words inside
 /// quotes, here-strings and heredocs are arguments, never commands, except where a shell runs them:
 /// <c>$(...)</c> and backtick substitutions, and the command string of cmd /c, pwsh -Command,
-/// bash -c, eval or Invoke-Expression, which is read again with that shell's rules. Start-Process runs its FilePath with
+/// bash -c, env -S, eval or Invoke-Expression, which is read again with that shell's rules. Start-Process runs its FilePath with
 /// its ArgumentList. <see cref="Scan.Uncertain"/> is set when a reading cannot finish (an unbalanced
 /// quote, nesting past the limit) or a shell reads commands from a pipe.
 /// </summary>
@@ -87,6 +87,8 @@ internal sealed partial class DydoInvocationScanner
             RunPwsh(rest, stdin, depth);
         else if (CommandPosition.PosixShells.Contains(program))
             RunCommandString(CommandPosition.PosixShellString(rest), stdin, depth, ShellDialect.Posix);
+        else if (program == "env")
+            RunCommandString(CommandPosition.EnvSplitString(rest), stdin, depth, ShellDialect.Posix);
         else if (program == "eval")
             RunCommandString(CommandPosition.EvalString(rest), stdin, depth, ShellDialect.Posix);
         else if (program is "iex" or "invoke-expression")

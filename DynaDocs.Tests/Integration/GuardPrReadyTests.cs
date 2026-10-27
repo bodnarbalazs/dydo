@@ -464,6 +464,56 @@ public class GuardPrReadyTests : IntegrationTestBase
         Assert.Empty(await Misses(denied: false, commands));
     }
 
+    // LC CPR:283: run from a subdirectory, the check reads the repository that directory is in.
+    [Fact]
+    public async Task PrCreate_FromASubdirectoryOfADirtyRepo_IsDenied()
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+        var subdirectory = Path.Combine(TestDir, "src", "app");
+        Directory.CreateDirectory(subdirectory);
+
+        var result = await GuardWithStdinAsync(Payload("gh pr create --fill", cwd: subdirectory));
+
+        Assert.Contains("untracked files: wip.txt", result.AssertPreToolUseDenied());
+    }
+
+    // LC CPR:328-349: a substitution's command runs, so its PR call is checked.
+    [Fact]
+    public async Task PrCallInACommandSubstitution_FromADirtyTree_IsDenied()
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+        string[] commands = ["`gh pr create --fill`", "echo $(gh pr create --fill)", "git commit -m \"$(gh pr create --fill)\""];
+
+        Assert.Empty(await Misses(denied: true, commands, "untracked files: wip.txt"));
+    }
+
+    // LC CPR:251-281: a staged-only change and a branch with no upstream are each not ready.
+    [Fact]
+    public async Task PrCreate_FromAStagedOnlyTree_IsDenied()
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+        Git(TestDir, "add", "wip.txt");
+
+        var reason = (await GuardWithStdinAsync(Payload("gh pr create --fill"))).AssertPreToolUseDenied();
+
+        Assert.Contains("staged changes: wip.txt", reason);
+        Assert.DoesNotContain("untracked files", reason);
+    }
+
+    [Fact]
+    public async Task PrCreate_FromABranchWithNoUpstream_IsDenied()
+    {
+        await InitPushedProject();
+        Git(TestDir, "checkout", "-b", "local-only");
+
+        var reason = (await GuardWithStdinAsync(Payload("gh pr create --fill"))).AssertPreToolUseDenied();
+
+        Assert.Contains("HEAD has no upstream", reason);
+    }
+
     // -R, --repo, GH_REPO or a REST endpoint naming another repository cannot be checked here.
     [Theory]
     [InlineData("gh pr create -R other/x --fill")]

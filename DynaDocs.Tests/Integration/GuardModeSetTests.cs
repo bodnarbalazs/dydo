@@ -64,6 +64,20 @@ public sealed class GuardModeSetTests : IntegrationTestBase
         Assert.Contains("BLOCKED: This host cannot ask", result.AssertPreToolUseDenied());
     }
 
+    // env -S's split string is the command env runs, so its dydo mode set still needs the user (DYD-391 r3).
+    [Theory]
+    [InlineData("env -S dydo mode set overnight on")]
+    [InlineData("env -S 'dydo' mode set overnight on")]
+    public async Task EnvSplitStringModeSet_OnAHostThatCannotAsk_IsDenied(string command)
+    {
+        await InitProjectAsync("none");
+
+        var result = await Twice(Hook(command, permissionMode: null));
+
+        Assert.False(result.IsPreToolUseAllowed, $"allowed: exit={result.ExitCode}, stdout=[{result.Stdout}], stderr=[{result.Stderr}]");
+        Assert.Contains("BLOCKED: This host cannot ask", result.AssertPreToolUseDenied());
+    }
+
     [Fact]
     public async Task OtherHookEvent_NeverAsks()
     {

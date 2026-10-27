@@ -63,6 +63,23 @@ public class DydoInvocationScannerTests
             Assert.Contains(expected, All(command));
     }
 
+    // env -S runs its split string as a command: the dydo it starts is an invocation, read-only text is not (DYD-391 r3).
+    [Theory]
+    [InlineData("env -S dydo mode set overnight on", "mode set overnight on")]
+    [InlineData("env -S 'dydo' mode set overnight on", "mode set overnight on")]
+    [InlineData("env -S 'dydo mode set overnight on'", "mode set overnight on")]
+    [InlineData("env -i --split-string='dydo check'", "check")]
+    [InlineData("timeout 30 env -Sdydo check", "check")]
+    [InlineData("env -S 'echo dydo check'", null)]
+    public void EnvSplitString_RunsItsStringAsACommand(string command, string? expected)
+    {
+        var found = DydoInvocationScanner.Find(command, ShellDialect.Posix).Invocations.Select(words => string.Join(' ', words)).ToList();
+        if (expected == null)
+            Assert.Empty(found);
+        else
+            Assert.Contains(expected, found);
+    }
+
     [Theory]
     [InlineData("PowerShell", "Start-Process dydo -ArgumentList @('check', '--strict') -Wait", "check --strict")]
     [InlineData("PowerShell", "Start-Process dydo -ArgumentList ('check') -NoNewWindow", "check")]

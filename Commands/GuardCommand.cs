@@ -446,7 +446,9 @@ public static partial class GuardCommand
         if (detected != null)
             Console.Error.WriteLine($"  Detected: {detected}");
         Console.Error.WriteLine("  Put the lesson in a skill, a Decision Record or a doc instead.");
-        Console.Error.WriteLine("  See dydo/project/decisions/055-native-agent-memory-off-and-guarded.md");
+        // Projects carry no DR 055 of their own: cite the record at this CLI's release tag.
+        Console.Error.WriteLine($"  See https://github.com/bodnarbalazs/dydo/blob/v{DydoVersion.Current}" +
+            "/dydo/project/decisions/055-native-agent-memory-off-and-guarded.md");
         return ExitCodes.ToolError;
     }
 

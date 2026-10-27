@@ -131,11 +131,11 @@ project, found from the host's settings and docs; the release entries say what t
 
 **Hooks.** Per host, list every hook in every file it reads hooks from, in the project and each
 profile, found from the host's docs and those folders (committed and local settings, say).
-Compare each with what the reference `init` wires. Each host runs each dydo hook once, where the
-reference wires it; a dydo command anywhere else is a copy: remove and list it, or in a profile
-other projects share, show the user and ask. A dydo hook parses under the new CLI when
-`dydo <cmd> --help` succeeds and lists each option it passes, each has its required value, and
-it passes nothing else. Remove one that does not parse.
+Each host runs each dydo hook once, where the reference `init` wires it. A copy runs a command the
+reference or a base's tag wires, elsewhere: remove and list it, or in a shared profile, show the
+user and ask. Any other hook running a dydo command is a tweak: keep and list it if it parses. A
+dydo hook parses under the new CLI when `dydo <cmd> --help` succeeds and lists each option it
+passes, each has its required value, and it passes nothing else. Remove one that does not parse.
 
 Name every other project hook or tool and what it does. One overlapping a dydo command (see
 `dydo --help`): run both on the project tool's own tests or recorded inputs. dydo covers every

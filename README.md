@@ -148,8 +148,8 @@ dydo fix              # repair supported documentation issues
 Every mode writes `dydo.json`, the `dydo/` documentation tree and `AGENTS.md`, the one entry file Claude Code and Codex both read. The `claude`, `codex`
 and `all` modes also wire `dydo guard` as a hook for the chosen hosts, set the host's agent spawn
 depth, and add the host's skill folder to `.gitignore`. `none`
-wires no host. Initialization creates durable Decisions, changelog, pitfalls and FutureFeature
-documentation; live work stays in Linear.
+wires no host. Initialization creates durable Decisions, changelog and pitfalls documentation;
+live work, FutureFeatures included, stays in Linear.
 
 Fill in `dydo/understand/about.md` and `dydo/understand/architecture.md`, then adapt
 `dydo/guides/coding-standards.md` and `dydo.json` to the project. Use `dydo init <integration> --join`

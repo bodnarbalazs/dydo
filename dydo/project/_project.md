@@ -5,7 +5,7 @@ type: folder-meta
 
 # Project
 
-Durable project knowledge: decisions, history, migration evidence, and FutureFeatures.
+Durable project knowledge: decisions, history, migration evidence, and legacy FutureFeature records.
 
 ## Purpose
 
@@ -14,7 +14,7 @@ reviewable context and evidence.
 
 ## Contents
 
-- **future-features/** - Ideas not in scope for the current version
+- **future-features/** - legacy FutureFeature records awaiting migration; a new FutureFeature is a Linear ticket
 - **decisions/** - Decision records
 - **changelog/** - History of completed work
 - **pitfalls/** - Known gotchas and issues

@@ -27,15 +27,21 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
     private static NudgeConfig ToolsNudge(string severity) =>
         new() { Pattern = ToolsPattern, Message = ToolsMessage, Severity = severity, Match = "new-file" };
 
-    private string Payload(string toolName, object toolInput, string? agentId = null) =>
-        JsonSerializer.Serialize(new Dictionary<string, object?>
+    // Codex's apply_patch payload carries a turn_id; Claude's tool payloads do not.
+    private string Payload(string toolName, object toolInput, string? agentId = null)
+    {
+        var payload = new Dictionary<string, object?>
         {
             ["session_id"] = TestSessionId,
             ["agent_id"] = agentId,
             ["tool_name"] = toolName,
             ["tool_input"] = toolInput,
             ["cwd"] = TestDir,
-        });
+        };
+        if (toolName == "apply_patch")
+            payload["turn_id"] = "turn-1";
+        return JsonSerializer.Serialize(payload);
+    }
 
     private string ApplyPatch(params string[] body) =>
         Payload("apply_patch", new { command = string.Join("\n", ["*** Begin Patch", .. body, "*** End Patch"]) });
@@ -68,6 +74,22 @@ public class GuardNewFileNudgeIntegrationTests : IntegrationTestBase
         WriteFile("tools/existing.py", "print(0)");
 
         var result = await GuardWithStdinAsync(ApplyPatch("*** Update File: tools/existing.py", "@@", "-print(0)", "+print(1)"));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // New-file by tier, not by disk: Update File and Delete File never create, so the nudge stays
+    // silent even when the path does not exist.
+    [Theory]
+    [InlineData("*** Update File: tools/missing.py", null)]
+    [InlineData("*** Delete File: tools/missing.py", null)]
+    [InlineData("*** Update File: tools/missing.py", "wkr-1")]
+    public async Task CodexApplyPatch_UpdateOrDeleteMissingTool_NotNudged(string header, string? agentId)
+    {
+        await InitWithNudges(ToolsNudge("block"));
+
+        var patch = string.Join("\r\n", "*** Begin Patch", header, "@@", "-a", "+b", "*** End Patch");
+        var result = await GuardWithStdinAsync(Payload("apply_patch", new { command = patch }, agentId));
 
         result.AssertPreToolUseAllowed();
     }

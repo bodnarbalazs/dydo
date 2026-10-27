@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Integration;
 
 using DynaDocs.Commands;
+using DynaDocs.Utils;
 
 /// <summary>
 /// Guard pipeline integration tests for the worker lane (Decision 024). Worker calls carry
@@ -355,10 +356,22 @@ public class GuardWorkerLaneTests : IntegrationTestBase
 
         var result = await GuardWithStdinAsync(MainJson(tool, $"{{\"file_path\":\"{MemoryPath("MEMORY.md")}\"}}"));
 
-        result.AssertPreToolUseDenied();
+        var reason = result.AssertPreToolUseDenied();
         result.AssertStderrContains(MemoryPath("MEMORY.md"));
         result.AssertStderrContains("DR 055");
         result.AssertStderrContains("skill, a Decision Record or a doc");
+
+        // A fresh project has no DR 055 of its own: the refusal cites the upstream record at the
+        // running CLI's release tag, never a repo-local decisions path.
+        var upstream = $"https://github.com/bodnarbalazs/dydo/blob/v{DydoVersion.Current}" +
+            "/dydo/project/decisions/055-native-agent-memory-off-and-guarded.md";
+        Assert.False(File.Exists(Path.Combine(TestDir, "dydo", "project", "decisions",
+            "055-native-agent-memory-off-and-guarded.md")));
+        foreach (var text in new[] { result.Stderr, reason })
+        {
+            Assert.Contains(upstream, text);
+            Assert.DoesNotContain("dydo/project/decisions/", text.Replace(upstream, ""));
+        }
     }
 
     [Fact]

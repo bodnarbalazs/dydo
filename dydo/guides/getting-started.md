@@ -38,15 +38,16 @@ dydo init codex       # or: dydo init claude / dydo init all / dydo init none
 
 Every mode creates the documentation tree and `AGENTS.md`, the one entry file Claude Code and Codex both read, and adds both skill projection folders
 to `.gitignore` - `/.claude/skills/` for Claude Code and `/.agents/skills/` for Codex. The `claude`,
-`codex` and `all` modes also wire the guard hooks for the chosen runtimes. Claude Code must be 2.1.281 or later to read `AGENTS.md`. The [command reference](../reference/dydo-commands.md#dydo-init) lists every file init
+`codex` and `all` modes also wire the guard hooks for the chosen runtimes into committed files, so a
+fresh clone is guarded. Claude Code must be 2.1.281 or later to read `AGENTS.md`. The [command reference](../reference/dydo-commands.md#dydo-init) lists every file init
 writes. Initialization creates durable Decisions, changelog, pitfalls and FutureFeature
 documentation; live work stays in Linear.
 
 An existing tree, which has `dydo.json` at its root, is not re-initialized. The framework documents
 under `dydo/` are the project's own from then on; edit them in place. Another machine or runtime
 joining an already-initialized project runs `dydo init codex --join` or `dydo init claude --join`,
-which wires the local runtime without touching the documentation tree, and keeps both skill
-projection lines in `.gitignore`.
+which wires the runtime without touching the documentation tree, writes this machine's allow list
+for Claude Code, and keeps both skill projection lines in `.gitignore`.
 
 ## 3. Install the skills
 

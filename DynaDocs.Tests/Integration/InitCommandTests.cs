@@ -288,9 +288,11 @@ public class InitCommandTests : IntegrationTestBase
         var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
+        // The guard is committed project wiring; the local file carries only the allow list.
+        AssertFileContains(".claude/settings.json", "PreToolUse");
+        AssertFileContains(".claude/settings.json", "dydo guard");
         AssertFileExists(".claude/settings.local.json");
-        AssertFileContains(".claude/settings.local.json", "PreToolUse");
-        AssertFileContains(".claude/settings.local.json", "dydo guard");
+        Assert.DoesNotContain("dydo guard", ReadFile(".claude/settings.local.json"));
     }
 
     [Fact]
@@ -388,16 +390,47 @@ public class InitCommandTests : IntegrationTestBase
         Directory.CreateDirectory(Path.Combine(TestDir, ".codex"));
         WriteFile(".claude/settings.json", "{\n  \"other\": true,\n  \"env\": { \"CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH\": \"4\" },\n  \"autoMemoryEnabled\": false\n}\n");
         WriteFile(".codex/config.toml", "# retain this\ncustom = true\n\n[agents]\nmax_depth = +5\nmax_concurrent_threads_per_session = +20\n\n[features]\nmemories = false\n");
-        var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
+        var claudeOriginal = ReadFile(".claude/settings.json");
         var codex = File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml"));
 
         (await InitProjectAsync("all")).AssertSuccess();
-        Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
+        // The satisfying values stay as written; the only addition is the committed guard hook.
+        var claudeAfterInit = ReadFile(".claude/settings.json");
+        PreservedText.AssertLinesKeptInOrder(claudeOriginal, claudeAfterInit);
+        var preToolUse = Assert.IsType<JsonArray>(JsonNode.Parse(claudeAfterInit)?["hooks"]?["PreToolUse"]);
+        Assert.Equal(1, HookTestAssertions.Count(preToolUse, "dydo guard --host claude"));
         Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+        var claude = File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json"));
 
         (await JoinProjectAsync("all")).AssertSuccess();
         Assert.Equal(claude, File.ReadAllBytes(Path.Combine(TestDir, ".claude/settings.json")));
         Assert.Equal(codex, File.ReadAllBytes(Path.Combine(TestDir, ".codex/config.toml")));
+    }
+
+    [Fact]
+    public async Task Join_Codex_BomAgentsTable_IsReadAndTheBomKept()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile(".codex/config.toml", "﻿[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n");
+
+        var result = await JoinProjectAsync("codex");
+
+        result.AssertSuccess();
+        Assert.Equal("﻿[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n\n[features]\nmemories = false\n",
+            PreservedText.Read(Path.Combine(TestDir, ".codex/config.toml")));
+    }
+
+    [Fact]
+    public async Task Join_Codex_BomFeaturesTable_GetsMemoriesInsideItsOneTable()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile(".codex/config.toml", "﻿[features]\nother = true\n");
+
+        var result = await JoinProjectAsync("codex");
+
+        result.AssertSuccess();
+        Assert.Equal("﻿[features]\nother = true\nmemories = false\n\n[agents]\nmax_depth = 3\nmax_concurrent_threads_per_session = 16\n",
+            PreservedText.Read(Path.Combine(TestDir, ".codex/config.toml")));
     }
 
     [Theory]
@@ -858,7 +891,7 @@ public class InitCommandTests : IntegrationTestBase
         var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
-        var content = ReadFile(".claude/settings.local.json");
+        var content = ReadFile(".claude/settings.json");
         Assert.Contains("Edit|Write|Read|Bash", content);
     }
 
@@ -868,7 +901,7 @@ public class InitCommandTests : IntegrationTestBase
         var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
-        var content = ReadFile(".claude/settings.local.json");
+        var content = ReadFile(".claude/settings.json");
         Assert.Contains("EnterPlanMode", content);
         Assert.Contains("ExitPlanMode", content);
     }
@@ -880,7 +913,7 @@ public class InitCommandTests : IntegrationTestBase
         var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
-        var content = ReadFile(".claude/settings.local.json");
+        var content = ReadFile(".claude/settings.json");
         Assert.Contains("PowerShell", content);
     }
 
@@ -889,22 +922,80 @@ public class InitCommandTests : IntegrationTestBase
     {
         Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
         WriteFile(".claude/settings.local.json", CustomHooks);
+        WriteFile(".claude/settings.json", CustomHooks);
 
         var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
-        var content = ReadFile(".claude/settings.local.json");
+        var local = ReadFile(".claude/settings.local.json");
+        PreservedText.AssertLinesKeptInOrder(CustomHooks, local);
+        Assert.DoesNotContain("dydo guard", local);
 
-        Assert.Contains("CustomTool", content);
-        Assert.Contains("echo custom", content);
-
+        var content = ReadFile(".claude/settings.json");
+        PreservedText.AssertLinesKeptInOrder(CustomHooks, content);
         Assert.Contains("dydo guard", content);
         Assert.Contains("Edit|Write|Read|Bash", content);
+    }
 
-        Assert.Contains("PostToolUse", content);
-        Assert.Contains("echo post", content);
+    [Fact]
+    public async Task Join_Claude_MovesDydosGuardOutOfTheLocalSettings_KeepingForeignHooks()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile(".claude/settings.local.json", """
+            {
+              "hooks": {
+                "PreToolUse": [
+                  { "matcher": "Edit|AskUserQuestion", "hooks": [ { "type": "command", "command": "dydo guard" } ] },
+                  { "matcher": "Bash", "hooks": [ { "type": "command", "command": "dydo guard --host claude" }, { "type": "command", "command": "echo mine" } ] }
+                ],
+                "Stop": [ { "hooks": [ { "type": "command", "command": "dydo guard --stop" } ] } ]
+              }
+            }
+            """);
 
-        Assert.Contains("otherSetting", content);
+        (await JoinProjectAsync("claude")).AssertSuccess();
+
+        var local = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.local.json")));
+        var localHooks = Assert.IsType<JsonObject>(local["hooks"]);
+        Assert.False(localHooks.ContainsKey("Stop"));
+        var localPreToolUse = Assert.IsType<JsonArray>(localHooks["PreToolUse"]);
+        Assert.Equal(["echo mine"], HookTestAssertions.Commands(Assert.Single(localPreToolUse)));
+        Assert.Contains("Bash(dydo:*)", ReadFile(".claude/settings.local.json"));
+
+        var committed = Assert.IsType<JsonArray>(JsonNode.Parse(ReadFile(".claude/settings.json"))?["hooks"]?["PreToolUse"]);
+        Assert.Equal(1, HookTestAssertions.Count(committed, "dydo guard --host claude"));
+    }
+
+    [Fact]
+    public async Task Join_Claude_LeavesExactlyOneDydoGuardInTheCommittedSettings()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile(".claude/settings.json", """
+            {
+              "hooks": {
+                "PreToolUse": [
+                  { "matcher": "Edit|AskUserQuestion", "hooks": [ { "type": "command", "command": "dydo guard" } ] },
+                  { "matcher": "Bash", "hooks": [ { "type": "command", "command": "echo mine" } ] },
+                  { "matcher": "Edit", "hooks": [ { "type": "command", "command": "dydo guard --host claude" } ] }
+                ],
+                "Stop": [ { "hooks": [ { "type": "command", "command": "dydo guard --stop" } ] } ]
+              }
+            }
+            """);
+
+        (await JoinProjectAsync("claude")).AssertSuccess();
+
+        var content = ReadFile(".claude/settings.json");
+        var hooks = Assert.IsType<JsonObject>(JsonNode.Parse(content)?["hooks"]);
+        Assert.False(hooks.ContainsKey("Stop"));
+        var preToolUse = Assert.IsType<JsonArray>(hooks["PreToolUse"]);
+        Assert.Equal(2, preToolUse.Count);
+        var guard = Assert.Single(preToolUse, entry => HookTestAssertions.Commands(entry).Contains("dydo guard --host claude"));
+        Assert.Equal("Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit",
+            guard?["matcher"]?.GetValue<string>());
+        Assert.Equal(["dydo guard --host claude"], HookTestAssertions.Commands(guard));
+        Assert.Equal(0, HookTestAssertions.Count(preToolUse, "dydo guard"));
+        Assert.Contains("{ \"matcher\": \"Bash\", \"hooks\": [ { \"type\": \"command\", \"command\": \"echo mine\" } ] }", content);
     }
 
     [Fact]
@@ -916,7 +1007,7 @@ public class InitCommandTests : IntegrationTestBase
         var result = await JoinProjectAsync("claude");
 
         result.AssertSuccess();
-        var content = ReadFile(".claude/settings.local.json");
+        var content = ReadFile(".claude/settings.json");
 
         var guardCount = content.Split("\"dydo guard --host claude\"").Length - 1;
         Assert.Equal(1, guardCount);
@@ -928,7 +1019,7 @@ public class InitCommandTests : IntegrationTestBase
         var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
-        var settings = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.local.json")));
+        var settings = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.json")));
         var entry = Assert.Single(Assert.IsType<JsonArray>(settings["hooks"]?["PreToolUse"]));
         Assert.Equal("Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit",
             entry?["matcher"]?.GetValue<string>());
@@ -940,7 +1031,7 @@ public class InitCommandTests : IntegrationTestBase
         var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
-        var settings = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.local.json")));
+        var settings = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.json")));
         var preToolUse = Assert.IsType<JsonArray>(settings["hooks"]?["PreToolUse"]);
         Assert.Equal(1, HookTestAssertions.Count(preToolUse, "dydo guard --host claude"));
         Assert.Equal(0, HookTestAssertions.Count(preToolUse, "dydo guard"));
@@ -950,7 +1041,7 @@ public class InitCommandTests : IntegrationTestBase
     public async Task Init_Claude_ReplacesAnUnmarkedGuardHook()
     {
         Directory.CreateDirectory(Path.Combine(TestDir, ".claude"));
-        WriteFile(".claude/settings.local.json", """
+        WriteFile(".claude/settings.json", """
             {
               "hooks": {
                 "PreToolUse": [
@@ -963,7 +1054,7 @@ public class InitCommandTests : IntegrationTestBase
         var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
-        var settings = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.local.json")));
+        var settings = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.json")));
         var preToolUse = Assert.IsType<JsonArray>(settings["hooks"]?["PreToolUse"]);
         Assert.Equal(0, HookTestAssertions.Count(preToolUse, "dydo guard"));
         Assert.Equal(1, HookTestAssertions.Count(preToolUse, "dydo guard --host claude"));
@@ -975,7 +1066,7 @@ public class InitCommandTests : IntegrationTestBase
         var result = await InitProjectAsync("all");
 
         result.AssertSuccess();
-        Assert.Contains("\"dydo guard --host claude\"", ReadFile(".claude/settings.local.json"));
+        Assert.Contains("\"dydo guard --host claude\"", ReadFile(".claude/settings.json"));
         Assert.DoesNotContain("--host", ReadFile(".codex/hooks.json"));
     }
 
@@ -985,7 +1076,7 @@ public class InitCommandTests : IntegrationTestBase
         var result = await InitProjectAsync("claude");
 
         result.AssertSuccess();
-        var settings = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.local.json")));
+        var settings = Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(".claude/settings.json")));
         Assert.False(Assert.IsType<JsonObject>(settings["hooks"]).ContainsKey("Stop"));
     }
 

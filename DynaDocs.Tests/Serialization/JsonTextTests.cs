@@ -58,6 +58,7 @@ public class JsonTextTests
     [Theory]
     [InlineData(null)]
     [InlineData("{ nope")]
+    [InlineData("{} {}")]
     public void Render_NoParseableOriginal_IsAFreshLfDocument(string? original)
     {
         Assert.Equal("{\n  \"a\": \"don't\"\n}\n", JsonText.Render(original, Parse("{\"a\": \"don't\"}")));

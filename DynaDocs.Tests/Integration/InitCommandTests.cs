@@ -1005,6 +1005,106 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Contains("{ \"matcher\": \"Bash\", \"hooks\": [ { \"type\": \"command\", \"command\": \"echo mine\" } ] }", content);
     }
 
+    private const string ClaudeGuard = "dydo guard --host claude";
+    private const string CodexGuard = "dydo guard";
+
+    private JsonArray JoinedPreToolUse(string file, string guard)
+    {
+        var preToolUse = Assert.IsType<JsonArray>(JsonNode.Parse(ReadFile(file))?["hooks"]?["PreToolUse"]);
+        Assert.Equal(1, HookTestAssertions.Count(preToolUse, guard));
+        Assert.Equal(1, HookTestAssertions.Count(preToolUse, CodexGuard) + HookTestAssertions.Count(preToolUse, ClaudeGuard));
+        return preToolUse;
+    }
+
+    [Theory]
+    [InlineData("claude", ".claude/settings.json", ClaudeGuard)]
+    [InlineData("codex", ".codex/hooks.json", CodexGuard)]
+    public async Task Join_MixedGuardEntry_KeepsTheForeignHookBytes(string host, string file, string guard)
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile(file, """{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"dydo guard"},{"type":"command","command":"echo it's"}]}]}}""");
+
+        (await JoinProjectAsync(host)).AssertSuccess();
+
+        Assert.Contains("""{"matcher":"Bash","hooks":[{"type":"command","command":"echo it's"}]}""", ReadFile(file));
+        Assert.Equal(2, JoinedPreToolUse(file, guard).Count);
+    }
+
+    [Theory]
+    [InlineData("claude", ".claude/settings.json", ClaudeGuard)]
+    [InlineData("codex", ".codex/hooks.json", CodexGuard)]
+    public async Task Join_GuardDuplicatesAroundForeignEntries_KeepTheForeignEntriesBytes(string host, string file, string guard)
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile(file, """{"hooks":{"PreToolUse":[{"matcher":"Edit","hooks":[{"type":"command","command":"dydo guard"}]}, {"matcher":"Bash", "hooks":[ {"type":"command","command":"echo it's"} ]},{"matcher":"Mixed","hooks":[{"type":"command","command":"dydo guard --host claude"},{"type":"command","command":"echo  two"}]},{"matcher":"Edit","hooks":[{"type":"command","command":"dydo guard"}]}]}}""");
+
+        (await JoinProjectAsync(host)).AssertSuccess();
+
+        var content = ReadFile(file);
+        Assert.Contains("""{"matcher":"Bash", "hooks":[ {"type":"command","command":"echo it's"} ]}""", content);
+        Assert.Contains("""{"matcher":"Mixed","hooks":[{"type":"command","command":"echo  two"}]}""", content);
+        var preToolUse = JoinedPreToolUse(file, guard);
+        Assert.Equal(3, preToolUse.Count);
+        Assert.Equal([guard], HookTestAssertions.Commands(preToolUse[0]));
+    }
+
+    [Theory]
+    [InlineData("claude", ".claude/settings.json", ClaudeGuard)]
+    [InlineData("codex", ".codex/hooks.json", CodexGuard)]
+    public async Task Join_AlreadyEmptyForeignEntry_StaysBeforeTheGuard(string host, string file, string guard)
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile(file, """{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[]},{"matcher":"Edit","hooks":[{"type":"command","command":"dydo guard"}]}]}}""");
+
+        (await JoinProjectAsync(host)).AssertSuccess();
+
+        Assert.Contains("""{"matcher":"Bash","hooks":[]}""", ReadFile(file));
+        var preToolUse = JoinedPreToolUse(file, guard);
+        Assert.Equal(2, preToolUse.Count);
+        Assert.Empty(HookTestAssertions.Commands(preToolUse[0]));
+        Assert.Equal([guard], HookTestAssertions.Commands(preToolUse[1]));
+    }
+
+    [Fact]
+    public async Task Join_Claude_KeepsAnAlreadyEmptyForeignEntryInTheLocalSettings()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile(".claude/settings.local.json", """{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[]},{"matcher":"Edit","hooks":[{"type":"command","command":"dydo guard"}]}]}}""");
+
+        (await JoinProjectAsync("claude")).AssertSuccess();
+
+        var local = ReadFile(".claude/settings.local.json");
+        Assert.Contains("""{"matcher":"Bash","hooks":[]}""", local);
+        Assert.DoesNotContain("dydo guard", local);
+    }
+
+    // A malformed hooks file starts fresh; one root followed by another is malformed.
+    [Theory]
+    [InlineData("claude", ".claude/settings.local.json")]
+    [InlineData("codex", ".codex/hooks.json")]
+    public async Task Join_TrailingRootInAHooksFile_StartsItFresh(string host, string file)
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile(file, "{} {}");
+
+        (await JoinProjectAsync(host)).AssertSuccess();
+
+        Assert.IsType<JsonObject>(JsonNode.Parse(ReadFile(file)));
+    }
+
+    [Fact]
+    public async Task Join_Claude_TrailingRootInTheCommittedSettings_IsRefusedAndLeftUntouched()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile(".claude/settings.json", "{} {}");
+
+        var result = await JoinProjectAsync("claude");
+
+        Assert.NotEqual(0, result.ExitCode);
+        result.AssertStderrContains("malformed");
+        Assert.Equal("{} {}", ReadFile(".claude/settings.json"));
+    }
+
     [Fact]
     public async Task Init_Claude_DoesNotDuplicateDydoHook()
     {

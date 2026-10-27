@@ -159,8 +159,8 @@ public static partial class GuardCommand
                     bashCommand = hookInput.GetCommand();
                     searchPath = hookInput.GetSearchPath();
                     writeTargets = hookInput.GetWriteTargets();
-                    cwd = hookInput.Cwd;
-                    toolCwd = ToolDirectory(hookInput.ToolInput?.Cwd ?? hookInput.ToolInput?.Workdir, cwd);
+                    cwd = Blank(hookInput.Cwd);
+                    toolCwd = ToolDirectory(Blank(hookInput.ToolInput?.Cwd) ?? Blank(hookInput.ToolInput?.Workdir), cwd);
                     commandArgv = hookInput.ToolInput?.CommandArgv;
                     hookEventName = hookInput.HookEventName;
                     permissionMode = hookInput.PermissionMode;
@@ -186,6 +186,9 @@ public static partial class GuardCommand
             toolName, sessionId, searchPath, hasCliArgs,
             agentId, agentType, writeTargets, cwd, hookEventName, permissionMode, host, fromCodex, toolCwd, commandArgv);
     }
+
+    // A blank directory is one the host did not send.
+    private static string? Blank(string? directory) => string.IsNullOrWhiteSpace(directory) ? null : directory;
 
     // A relative per-call directory names a directory under the session's cwd; under the
     // process's only when the host sent no cwd.

@@ -130,12 +130,12 @@ turns off, say): show both and ask the user. List each host memory folder holdin
 project, found from the host's settings and docs; the release entries say what to do with them.
 
 **Hooks.** Per host, list every hook in every file it reads hooks from, in the project and each
-profile, found from the host's docs and those folders (committed and local settings, say).
-Each host runs each dydo hook once, where the reference `init` wires it. A copy runs a command the
-reference or a base's tag wires, elsewhere: remove and list it, or in a shared profile, show the
-user and ask. Any other hook running a dydo command is a tweak: keep and list it. Remove only one
-whose subcommand `dydo --help` does not list, or passing an option `dydo <cmd> --help` does not
-list, an option without its value, or positional arguments beyond what that help documents.
+profile, found from the host's docs and those folders (committed and local settings, say). Each host
+runs each dydo hook once, where the reference `init` wires it. A copy runs a command the reference
+or a base's tag wires, elsewhere: remove and list it, or in a shared profile, show the user and ask.
+Any other hook running a dydo command is a tweak: keep and list it. Remove only one whose subcommand
+`dydo --help` does not list, or passing an option `dydo <cmd> --help` does not list, an option
+without its value, or more positional arguments than that help documents, or missing a required one.
 
 Name every other project hook or tool and what it does. One overlapping a dydo command (see
 `dydo --help`): run both on the project tool's own tests or recorded inputs. dydo covers every

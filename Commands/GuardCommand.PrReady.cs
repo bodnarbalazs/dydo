@@ -41,8 +41,11 @@ public static partial class GuardCommand
             return RefusePr($"BLOCKED: This command runs a PR call through {wrapped.Wrapper}, which the PR check does not read.",
                 "  Wrapped PR calls are refused unread: run gh directly so the PR check can see it.");
 
-        var origin = RepositoryId(GitRunner.Run(directory, "remote", "get-url", "origin").Text);
-        if (calls.Select(c => c.Repo).OfType<string>().FirstOrDefault(r => RepositoryId(r) is not { } named || named != origin) is { } foreign)
+        // A placeholder api path names the checkout's own owner or name for the part it leaves out.
+        var originUrl = GitRunner.Run(directory, "remote", "get-url", "origin").Text;
+        var origin = RepositoryId(originUrl);
+        if (calls.Select(c => c.Repo).OfType<string>().Select(r => PrCallScanner.InRepository(r, originUrl))
+                .FirstOrDefault(r => RepositoryId(r) is not { } named || named != origin) is { } foreign)
             return RefusePr($"BLOCKED: This PR names another repository, {foreign}; {directory} is a checkout of {origin ?? "no origin"}.",
                 "  Its branch is not in these trees, so run it from that repo's checkout.");
 

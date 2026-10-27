@@ -215,6 +215,98 @@ public class PrCallScannerTests
         Assert.Equal(wrapper, Single(command).Wrapper);
     }
 
+    // R2-1: a reading that loses the head another reading names adds no headless call.
+    [Theory]
+    [InlineData("Posix", "gh pr create `\n  --head topic `\n  --fill")]
+    [InlineData("Unknown", "gh pr create `\n  --head topic `\n  --title t --body '## Independent review'")]
+    [InlineData("Unknown", "gh pr create `\r\n  --head topic `\r\n  --fill")]
+    public void AmbiguousContinuation_AddsNoHeadlessCall(string dialect, string command)
+    {
+        var call = Assert.Single(PrCallScanner.Find(command, Enum.Parse<ShellDialect>(dialect)));
+
+        Assert.Equal("topic", call.Branch);
+    }
+
+    [Fact]
+    public void AmbiguousLine_KeepsAHeadlessCallBothReadingsMake()
+    {
+        var calls = PrCallScanner.Find("gh pr ready 12; gh pr create `\n  --head topic `\n  --fill", ShellDialect.Unknown);
+
+        Assert.Equal(2, calls.Count);
+        Assert.Contains(calls, c => c.Branch == null);
+        Assert.Contains(calls, c => c.Branch == "topic");
+    }
+
+    // R2-2: env's -u/--unset, -i and VAR= act on GH_REPO in order, left to right.
+    [Theory]
+    [InlineData("env -u GH_REPO gh pr ready 12", "x/y", null)]
+    [InlineData("env --unset=GH_REPO gh pr ready 12", "x/y", null)]
+    [InlineData("env --unset GH_REPO gh pr ready 12", "x/y", null)]
+    [InlineData("env -i gh pr ready 12", "x/y", null)]
+    [InlineData("env --ignore-environment gh pr ready 12", "x/y", null)]
+    [InlineData("env GH_REPO= gh pr ready 12", "x/y", null)]
+    [InlineData("env -u OTHER gh pr ready 12", "x/y", "x/y")]
+    [InlineData("GH_REPO=a/b env -u GH_REPO gh pr ready 12", null, null)]
+    [InlineData("env -u GH_REPO GH_REPO=a/b gh pr ready 12", "x/y", "a/b")]
+    [InlineData("GH_REPO=a/b env -i gh pr ready 12", null, null)]
+    [InlineData("env -i GH_REPO=a/b gh pr ready 12", "x/y", "a/b")]
+    [InlineData("env GH_REPO=a/b env -u GH_REPO gh pr ready 12", null, null)]
+    public void EnvEffects_OnGhRepo_ApplyInOrder(string command, string? inherited, string? repo)
+    {
+        Assert.Equal(repo, Assert.Single(PrCallScanner.Find(command, inheritedRepo: inherited)).Repo);
+    }
+
+    // R2-3: each api path placeholder resolves on its own; a literal owner or name stays.
+    [Theory]
+    [InlineData("gh api repos/{owner}/other/pulls -X POST", null, ":owner/other")]
+    [InlineData("gh api repos/other/{repo}/pulls -X POST", null, "other/:repo")]
+    [InlineData("gh api repos/{owner}/other/pulls -X POST", "acme/lc", "acme/other")]
+    [InlineData("gh api repos/other/{repo}/pulls -X POST", "acme/lc", "other/lc")]
+    [InlineData("gh api repos/{owner}/{repo}/pulls -X POST", "acme/lc", "acme/lc")]
+    [InlineData("gh api repos/{owner}/{repo}/pulls -X POST", null, null)]
+    public void ApiPathPlaceholders_ResolveSegmentBySegment(string command, string? inherited, string? repo)
+    {
+        Assert.Equal(repo, Assert.Single(PrCallScanner.Find(command, inheritedRepo: inherited)).Repo);
+    }
+
+    [Theory]
+    [InlineData(":owner/other", "https://github.com/Acme/LC.git", "https://github.com/Acme/other")]
+    [InlineData("other/:repo", "git@github.com:Acme/LC.git", "git@github.com:other/LC")]
+    [InlineData(":owner/lc", "ghe.example.com/acme/lc", "ghe.example.com/acme/lc")]
+    [InlineData("ghe.example.com/:owner/lc", "https://github.com/acme/lc", "ghe.example.com/acme/lc")]
+    [InlineData("other/x", "https://github.com/acme/lc", "other/x")]
+    [InlineData(":owner/other", "", ":owner/other")]
+    public void InRepository_FillsPlaceholdersFromTheCurrentRepository(string repo, string current, string resolved)
+    {
+        Assert.Equal(resolved, PrCallScanner.InRepository(repo, current));
+    }
+
+    // R2-4: env -S and --split-string are a string wrapper.
+    [Theory]
+    [InlineData("env -S 'gh pr ready 12'")]
+    [InlineData("env --split-string='gh pr ready 12'")]
+    [InlineData("env --split-string 'gh pr ready 12'")]
+    [InlineData("env -u X -S'gh pr create' --fill")]
+    public void EnvSplitStringMakingAPrCall_IsAWrapper(string command)
+    {
+        Assert.Equal("env", Single(command).Wrapper);
+    }
+
+    [Theory]
+    [InlineData("env -S 'gh pr view 12'")]
+    [InlineData("env --split-string='git status'")]
+    [InlineData("env -S")]
+    public void EnvSplitStringMakingNoPrCall_HasNoCall(string command)
+    {
+        Assert.Empty(PrCallScanner.Find(command));
+    }
+
+    [Fact]
+    public void EnvSplitStringArgv_IsAWrapper()
+    {
+        Assert.Equal("env", Assert.Single(PrCallScanner.FindInArgv(["env", "-S", "gh pr ready 12"])).Wrapper);
+    }
+
     [Fact]
     public void EveryCallInALine_IsFound()
     {

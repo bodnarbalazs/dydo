@@ -28,6 +28,41 @@ public class CommandPositionTests
         Assert.Equal([("GH_REPO", "a/b"), ("X", "")], assignments);
     }
 
+    // R2-2: env's -u/--unset and -i are reported in order with the assignments.
+    [Fact]
+    public void Skip_ReportsEnvsEffectsInOrder()
+    {
+        List<(string Name, string Value)> assignments = [];
+
+        var at = CommandPosition.Skip(["A=1", "env", "-u", "B", "--unset=C", "--unset", "D", "-i", "E=2", "gh"], assignments);
+
+        Assert.Equal(9, at);
+        Assert.Equal([("A", "1"), ("B", ""), ("C", ""), ("D", ""), (CommandPosition.AllVariables, ""), ("E", "2")], assignments);
+    }
+
+    // R2-4: env -S runs a string, so env itself is the program.
+    [Theory]
+    [InlineData(new[] { "env", "-S", "gh pr" }, 0)]
+    [InlineData(new[] { "X=1", "env", "-u", "Y", "--split-string=gh pr" }, 1)]
+    [InlineData(new[] { "nohup", "env", "-Sgh" }, 1)]
+    public void Skip_StopsAtEnvSplittingAString(string[] words, int at)
+    {
+        Assert.Equal(at, CommandPosition.Skip(words));
+    }
+
+    [Theory]
+    [InlineData(new[] { "-S", "gh pr ready", "12" }, "gh pr ready 12")]
+    [InlineData(new[] { "--split-string=gh pr ready" }, "gh pr ready")]
+    [InlineData(new[] { "--split-string", "gh pr ready" }, "gh pr ready")]
+    [InlineData(new[] { "-u", "X", "-Sgh pr ready" }, "gh pr ready")]
+    public void ScriptOfEnv_IsItsSplitString(string[] rest, string script)
+    {
+        var shell = CommandPosition.ScriptOf("env", rest);
+
+        Assert.NotNull(shell);
+        Assert.Equal(script, shell.Text);
+    }
+
     [Theory]
     [InlineData(@"C:\Program Files\GitHub CLI\gh.exe", "gh")]
     [InlineData("/usr/bin/GH", "gh")]

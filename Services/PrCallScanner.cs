@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 /// it: bash, PowerShell, or both ways when the shell is unknown or a bash line uses PowerShell syntax
 /// (a backtick line continuation, the &amp; call operator, <c>$env:</c>). gh counts at command position
 /// (<see cref="CommandPosition"/>), with any path, case or .exe. Text a command only reads (quotes,
-/// heredoc and here-string bodies, comments) is no call. A shell or eval given a command string is a
+/// heredoc and here-string bodies, comments) is no call. A shell, eval or env -S given a command string is a
 /// wrapper: when that string, read with the same rules, makes a PR call, or the shell is given an
 /// encoded PowerShell command, the wrapper is the call, never decoded. It stops accidents, not a
 /// deliberate bypass: substitutions, aliases, functions and other programs are not followed.
@@ -69,10 +69,17 @@ internal static partial class PrCallScanner
     {
         // gh's {owner}, {repo} and {branch} placeholders, spelt as its :owner form, so braces split no command.
         var line = GhPlaceholderRegex().Replace(text, ":$1");
-        return [.. Readings(dialect, line)
-            .SelectMany(posix => ShellReader.Read(line, posix).Commands)
-            .Select(command => Match(command.Words, inheritedRepo, depth))
-            .OfType<PrCall>()
+        var readings = Readings(dialect, line)
+            .Select(posix => ShellReader.Read(line, posix).Commands
+                .Select(command => Match(command.Words, inheritedRepo, depth))
+                .OfType<PrCall>()
+                .ToList())
+            .ToList();
+
+        // A reading missing a head another reading names lost that call's target, so its headless calls are not added.
+        var named = readings.SelectMany(calls => calls).Where(call => call.Branch != null).ToList();
+        return [.. readings
+            .SelectMany(calls => named.All(calls.Contains) ? calls : calls.Where(call => call.Branch != null || call.Wrapper != null))
             .Distinct()];
     }
 
@@ -93,16 +100,21 @@ internal static partial class PrCallScanner
         var program = CommandPosition.ProgramName(words[at]);
         var rest = words.Skip(at + 1).ToList();
         if (program == "gh")
-        {
-            // An inline GH_REPO, even an empty one, overrides the inherited one.
-            var inline = assignments.Where(a => a.Name == "GH_REPO").Select(a => a.Value).LastOrDefault();
-            return GhCall(rest, inline != null ? NonEmpty(inline) : inheritedRepo);
-        }
+            return GhCall(rest, GhRepo(assignments, inheritedRepo));
 
         return CommandPosition.ScriptOf(program, rest) is { } script && Wraps(script, depth)
             ? new PrCall(null, Wrapper: program)
             : null;
     }
+
+    // GH_REPO after the assignments and env changes, left to right: set, emptied, unset, or cleared by env -i.
+    private static string? GhRepo(List<(string Name, string Value)> changes, string? inheritedRepo) =>
+        changes.Aggregate(inheritedRepo, (repo, change) => change.Name switch
+        {
+            "GH_REPO" => NonEmpty(change.Value),
+            CommandPosition.AllVariables => null,
+            _ => repo,
+        });
 
     // A command string wraps a PR call when it is encoded or makes one; nesting past the limit fails closed.
     private static bool Wraps(ShellScript script, int depth) =>
@@ -164,10 +176,13 @@ internal static partial class PrCallScanner
         if (!pulls.Success || !method.Equals("POST", StringComparison.OrdinalIgnoreCase))
             return null;
 
-        // {owner}/{repo} is the current repository, which GH_REPO names when set.
-        var repo = pulls.Groups["owner"].Value == ":owner"
+        // {owner}/{repo} is the current repository, which GH_REPO names when set. A lone placeholder takes
+        // its own part of it, from GH_REPO here or from the checkout's origin later (InRepository).
+        var repo = pulls.Groups["owner"].Value == ":owner" && pulls.Groups["repo"].Value == ":repo"
             ? envRepo
             : EndpointRepo(pulls, Values(parsed.Options, "hostname").LastOrDefault());
+        if (repo != null && envRepo != null)
+            repo = InRepository(repo, envRepo);
         var head = fields.LastOrDefault(f => f.StartsWith("head=", StringComparison.Ordinal))?["head=".Length..];
         return head is null or ":branch" ? new PrCall(repo) : new PrCall(repo, BranchOf(head), $"gh api {endpoint} head={head}");
     }
@@ -180,6 +195,36 @@ internal static partial class PrCallScanner
             host = "github.com";
         var repo = $"{pulls.Groups["owner"].Value}/{pulls.Groups["repo"].Value}";
         return host == null ? repo : $"{host}/{repo}";
+    }
+
+    /// <summary>
+    /// <paramref name="repo"/> with gh's :owner and :repo placeholder segments filled from
+    /// <paramref name="current"/>, the current repository in any form gh or git spells it, and its
+    /// host when <paramref name="repo"/> names none; unchanged when it has none or either is unreadable.
+    /// </summary>
+    public static string InRepository(string repo, string current)
+    {
+        if (RepoParts(repo) is not { } call || (call.Owner != ":owner" && call.Name != ":repo") || RepoParts(current) is not { } here)
+            return repo;
+        var prefix = call.Prefix.Length > 0 ? call.Prefix : here.Prefix;
+        return $"{prefix}{(call.Owner == ":owner" ? here.Owner : call.Owner)}/{(call.Name == ":repo" ? here.Name : call.Name)}";
+    }
+
+    // A repository name's last two segments, owner and name, and the text before them (a host or URL prefix).
+    private static (string Prefix, string Owner, string Name)? RepoParts(string repo)
+    {
+        var text = repo.Trim().TrimEnd('/');
+        if (text.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+            text = text[..^4];
+        var slash = text.LastIndexOf('/');
+        if (slash <= 0)
+            return null;
+        // scp's host:owner splits at a colon inside the segment; :owner, a placeholder, starts with one.
+        var start = text.LastIndexOf('/', slash - 1) + 1;
+        var colon = text.LastIndexOf(':', slash - 1, slash - start);
+        if (colon > start)
+            start = colon + 1;
+        return (text[..start], text[start..slash], text[(slash + 1)..]);
     }
 
     // A head may name its fork's owner: OWNER:BRANCH.

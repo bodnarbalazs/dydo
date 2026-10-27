@@ -948,4 +948,122 @@ public class GuardPrReadyTests : IntegrationTestBase
         result.AssertPreToolUseDenied();
         Assert.DoesNotContain("PR check", result.Stderr);
     }
+
+    // ---- DYD-391 round 2 FAIL ----
+
+    private async Task<CommandResult> GuardWithInheritedGhRepo(string? inherited, string payload)
+    {
+        var before = Environment.GetEnvironmentVariable("GH_REPO");
+        Environment.SetEnvironmentVariable("GH_REPO", inherited);
+        try
+        {
+            return await GuardWithStdinAsync(payload);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("GH_REPO", before);
+        }
+    }
+
+    // R2-1: the bash reading of a backtick continuation loses --head; it must not add a call on the dirty main tree.
+    [Theory]
+    [InlineData("gh pr create `\n  --head topic `\n  --title t --body '## Independent review'")]
+    [InlineData("gh pr create `\r\n  --head topic `\r\n  --title t --body '## Independent review'")]
+    public async Task BashLabelledContinuationNamingACleanWorktree_FromADirtyMain_IsAllowed(string command)
+    {
+        await InitDirtyMainWithCleanWorktree();
+        SilenceReviewBlockWarn();
+
+        var result = await GuardWithStdinAsync(Payload(command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // R2-2: env's unset, ignore-environment and an empty GH_REPO drop the inherited GH_REPO, in order.
+    [Theory]
+    [InlineData("env -u GH_REPO gh pr ready 12", false)]
+    [InlineData("env --unset=GH_REPO gh pr ready 12", false)]
+    [InlineData("env --unset GH_REPO gh pr ready 12", false)]
+    [InlineData("env -i gh pr ready 12", false)]
+    [InlineData("GH_REPO= gh pr ready 12", false)]
+    [InlineData("env -u GH_REPO GH_REPO=other/y gh pr ready 12", true)]
+    [InlineData("env -i GH_REPO=other/y gh pr ready 12", true)]
+    [InlineData("GH_REPO=acme/lc env -u OTHER gh pr ready 12", false)]
+    public async Task EnvDroppingTheInheritedGhRepo_UsesTheCheckout(string command, bool refused)
+    {
+        await InitPushedProject();
+
+        var result = await GuardWithInheritedGhRepo("other/x", Payload(command));
+
+        if (refused)
+            Assert.Contains("names another repository", result.AssertPreToolUseDenied());
+        else
+            result.AssertPreToolUseAllowed();
+    }
+
+    // R2-3: a literal owner or name in a placeholder api path is compared, each placeholder resolved on its own.
+    [Theory]
+    [InlineData("gh api repos/{owner}/other/pulls -X POST", true)]
+    [InlineData("gh api repos/other/{repo}/pulls -X POST", true)]
+    [InlineData("gh api repos/{owner}/{repo}/pulls -X POST -f title=t", false)]
+    [InlineData("gh api repos/{owner}/LC/pulls -X POST -f title=t", false)]
+    [InlineData("gh api repos/Acme/{repo}/pulls -X POST -f title=t", false)]
+    public async Task ApiPathWithPlaceholders_ComparesItsLiteralSegments(string command, bool refused)
+    {
+        await InitPushedProject();
+        SilenceReviewBlockWarn();
+
+        var result = await GuardWithStdinAsync(Payload(command));
+
+        if (refused)
+            Assert.Contains("names another repository", result.AssertPreToolUseDenied());
+        else
+            result.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("acme/zz", "gh api repos/{owner}/lc/pulls -X POST -f title=t", false)]
+    [InlineData("other/x", "gh api repos/{owner}/lc/pulls -X POST -f title=t", true)]
+    [InlineData("other/lc", "gh api repos/acme/{repo}/pulls -X POST -f title=t", false)]
+    public async Task ApiPathPlaceholder_ResolvesAgainstGhRepo(string inherited, string command, bool refused)
+    {
+        await InitPushedProject();
+        SilenceReviewBlockWarn();
+
+        var result = await GuardWithInheritedGhRepo(inherited, Payload(command));
+
+        if (refused)
+            Assert.Contains("names another repository", result.AssertPreToolUseDenied());
+        else
+            result.AssertPreToolUseAllowed();
+    }
+
+    // R2-4: env -S and --split-string are a string wrapper; a PR-shaped string is refused, a read-only one is not.
+    [Theory]
+    [InlineData("env -S 'gh pr ready 12'")]
+    [InlineData("env --split-string='gh pr ready 12'")]
+    [InlineData("env --split-string 'gh pr ready 12'")]
+    public async Task EnvSplitStringPrCall_IsRefusedAsAWrapper(string command)
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload(command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("run gh directly so the PR check can see it");
+    }
+
+    [Theory]
+    [InlineData("env -S 'gh pr view 12'")]
+    [InlineData("env --split-string='gh pr list --search ready'")]
+    public async Task EnvSplitStringReadOnlyCall_FromADirtyTree_IsAllowed(string command)
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload(command));
+
+        result.AssertPreToolUseAllowed();
+    }
 }

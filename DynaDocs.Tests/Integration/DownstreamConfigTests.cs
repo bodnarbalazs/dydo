@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json.Nodes;
 using DynaDocs.Commands;
 using DynaDocs.Services;
@@ -133,6 +134,83 @@ public class DownstreamConfigTests : IntegrationTestBase
 
         for (var i = 0; i < files.Length; i++)
             Assert.True(first[i].SequenceEqual(File.ReadAllBytes(At(files[i]))), $"{files[i]} changed on the repeat");
+    }
+
+    // Windows PowerShell 5.1 `'...' > dydo.json` writes UTF-16LE with a BOM; other editors pick the rest.
+    public static TheoryData<string> BomEncodings => ["utf-16le", "utf-8", "utf-16be", "utf-32le", "utf-32be"];
+
+    [Theory]
+    [MemberData(nameof(BomEncodings))]
+    public async Task Adopt_NothingToChange_LeavesABomEncodedConfigByteIdentical(string encoding)
+    {
+        var bytes = Encode(encoding, "{\"version\":1,\"dydoVersion\":\"3.5.0\",\"projectTag\":\"keep\"}\r\n");
+        File.WriteAllBytes(At(ConfigService.ConfigFileName), bytes);
+
+        (await RunAsync(AdoptCommand.Create(), "3.5.0")).AssertSuccess();
+
+        Assert.Equal(bytes, File.ReadAllBytes(At(ConfigService.ConfigFileName)));
+    }
+
+    [Theory]
+    [MemberData(nameof(BomEncodings))]
+    public async Task Adopt_Upgrade_KeepsTheEncodingBomAndUnknownKeysOfTheConfig(string encoding)
+    {
+        const string original = "{\"version\":1,\"dydoVersion\":\"3.4.0\",\"projectTag\":\"keep\"}\r\n";
+        File.WriteAllBytes(At(ConfigService.ConfigFileName), Encode(encoding, original));
+
+        (await RunAsync(AdoptCommand.Create(), "3.5.0")).AssertSuccess();
+
+        var result = Decode(encoding, File.ReadAllBytes(At(ConfigService.ConfigFileName)));
+        Assert.StartsWith("{\"version\":1,\"dydoVersion\":\"3.5.0\",\"projectTag\":\"keep\",", result);
+        Assert.EndsWith("}\r\n", result);
+        var adopted = Parse(result);
+        Assert.NotNull(adopted["nudges"]);
+        adopted.Remove("nudges");
+        Assert.True(JsonNode.DeepEquals(Parse(original.Replace("3.4.0", "3.5.0")), adopted),
+            "adopt changed more than dydoVersion and its nudge");
+    }
+
+    [Fact]
+    public async Task JoinAll_Utf16LeHookFiles_KeepTheirEncodingBomAndForeignContent()
+    {
+        var settings = Text(ClaudeSettings).TrimStart('﻿');
+        var hooks = Text(CodexHooks);
+        const string local = "{\r\n  \"foreign\": \"keep\"\r\n}\r\n";
+        File.WriteAllBytes(At(ClaudeSettings), Encode("utf-16le", settings));
+        File.WriteAllBytes(At(CodexHooks), Encode("utf-16le", hooks));
+        File.WriteAllBytes(At(ClaudeLocalSettings), Encode("utf-16le", local));
+
+        (await JoinProjectAsync("all")).AssertSuccess();
+
+        Assert.Equal(WithoutStopBlock(settings
+            .Replace($"\"{OldClaudeMatcher}\"", $"\"{ClaudeMatcher}\"")
+            .Replace("\"command\": \"dydo guard\"", "\"command\": \"dydo guard --host claude\"")),
+            Decode("utf-16le", File.ReadAllBytes(At(ClaudeSettings))));
+        Assert.Equal(WithoutStopBlock(hooks.Replace($"\"{OldCodexMatcher}\"", $"\"{CodexMatcher}\"")),
+            Decode("utf-16le", File.ReadAllBytes(At(CodexHooks))));
+        var localResult = Decode("utf-16le", File.ReadAllBytes(At(ClaudeLocalSettings)));
+        Assert.StartsWith("{\r\n  \"foreign\": \"keep\",", localResult);
+        Assert.Contains("Bash(dydo:*)", localResult);
+    }
+
+    private static Encoding Named(string encoding) => encoding switch
+    {
+        "utf-8" => new UTF8Encoding(false),
+        "utf-16le" => new UnicodeEncoding(bigEndian: false, byteOrderMark: false),
+        "utf-16be" => new UnicodeEncoding(bigEndian: true, byteOrderMark: false),
+        "utf-32le" => new UTF32Encoding(bigEndian: false, byteOrderMark: false),
+        _ => new UTF32Encoding(bigEndian: true, byteOrderMark: false),
+    };
+
+    // The BOM in front, as the encoding's own bytes of U+FEFF.
+    private static byte[] Encode(string encoding, string text) => Named(encoding).GetBytes("﻿" + text);
+
+    // Asserts the encoding's BOM still leads the bytes and returns the text after it.
+    private static string Decode(string encoding, byte[] bytes)
+    {
+        var bom = Named(encoding).GetBytes("﻿");
+        Assert.True(bytes.AsSpan().StartsWith(bom), $"the {encoding} BOM is gone");
+        return Named(encoding).GetString(bytes, bom.Length, bytes.Length - bom.Length);
     }
 
     private string At(string relative) => System.IO.Path.Combine(TestDir, relative);

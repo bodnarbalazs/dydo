@@ -61,23 +61,20 @@ public static partial class PathUtils
 
     /// <summary>
     /// Lexically collapses '.' and '..' segments without touching the filesystem,
-    /// preserving the path's form (drive prefix, leading slash, relative-ness).
-    /// A '..' that would escape a relative root is kept verbatim so the result can
-    /// never be mistaken for a path under a trusted root. Used to defeat
-    /// traversal evasion ('.../memory/../../secret') before any path-based guard check.
+    /// preserving the path's form (drive prefix, Windows UNC or device root, leading slash,
+    /// relative-ness). A '..' that would escape a relative root is kept verbatim so the result can
+    /// never be mistaken for a path under a trusted root; a rooted '..' stops at the root, which
+    /// for '//server/share' is the share. Used to defeat traversal evasion
+    /// ('.../memory/../../secret') before any path-based guard check.
     /// </summary>
     public static string CollapseRelativeSegments(string path)
     {
         var p = path.Replace('\\', '/');
 
-        var prefix = "";
-        if (p.Length >= 2 && char.IsLetter(p[0]) && p[1] == ':')
-        {
-            prefix = p[..2];
-            p = p[2..];
-        }
+        var prefix = RootPrefix(p);
+        p = p[prefix.Length..];
 
-        var rooted = p.StartsWith('/');
+        var rooted = p.StartsWith('/') || prefix.StartsWith("//", StringComparison.Ordinal);
         var stack = new List<string>();
         foreach (var seg in p.Split('/', StringSplitOptions.RemoveEmptyEntries))
         {
@@ -98,6 +95,41 @@ public static partial class PathUtils
         }
 
         return prefix + (rooted ? "/" : "") + string.Join('/', stack);
+    }
+
+    /// <summary>
+    /// The part of a slash-normalised path that '..' cannot climb above and that is not a
+    /// segment: a drive ('C:'); on Windows also a UNC share ('//server/share') or a device root
+    /// ('//?/C:', '//?/UNC/server/share', '//.'). Elsewhere a leading '//' reads as '/'.
+    /// </summary>
+    private static string RootPrefix(string p)
+    {
+        if (IsDrive(p))
+            return p[..2];
+        if (!OperatingSystem.IsWindows() || p.Length < 3 || !p.StartsWith("//", StringComparison.Ordinal) || p[2] == '/')
+            return "";
+
+        var isDevice = p.Length >= 4 && (p[2] is '?' or '.') && p[3] == '/';
+        if (!isDevice)
+            return p[..(2 + ServerShareLength(p[2..]))];
+
+        if (IsDrive(p[4..]))
+            return p[..6];
+        if (p[4..].StartsWith("UNC/", StringComparison.OrdinalIgnoreCase) && ServerShareLength(p[8..]) > 0)
+            return p[..(8 + ServerShareLength(p[8..]))];
+        return p[..3];
+    }
+
+    private static bool IsDrive(string p) => p.Length >= 2 && char.IsLetter(p[0]) && p[1] == ':';
+
+    // Length of a leading 'server/share' in s: up to the share's end, or all of s; 0 without a server.
+    private static int ServerShareLength(string s)
+    {
+        if (s.Length == 0 || s[0] == '/')
+            return 0;
+        var server = s.IndexOf('/');
+        var share = server < 0 ? -1 : s.IndexOf('/', server + 1);
+        return share < 0 ? s.Length : share;
     }
 
     /// <summary>

@@ -36,6 +36,30 @@ public class PathUtilsTests
         Assert.Equal(expected, PathUtils.CollapseRelativeSegments(input));
     }
 
+    // On Windows a UNC share root (and a \\?\ or \\.\ device root) is the root '..' cannot climb
+    // above, kept as written after slash normalisation (DYD-396). Elsewhere a leading '//' is
+    // just '/', as the OS reads it.
+    [Theory]
+    [InlineData(@"\\server\share\repo\dydo\index.md", "//server/share/repo/dydo/index.md", "/server/share/repo/dydo/index.md")]
+    [InlineData("//server/share/repo/dydo/index.md", "//server/share/repo/dydo/index.md", "/server/share/repo/dydo/index.md")]
+    [InlineData(@"\\server\share\repo\src\..\dydo\index.md", "//server/share/repo/dydo/index.md", "/server/share/repo/dydo/index.md")]
+    [InlineData("//server/share/repo/./src/../dydo/index.md", "//server/share/repo/dydo/index.md", "/server/share/repo/dydo/index.md")]
+    [InlineData(@"\\server\share\repo\..\..\..\etc", "//server/share/etc", "/etc")]
+    [InlineData("//server/share/../other/x", "//server/share/other/x", "/server/other/x")]
+    [InlineData(@"\\server\share\..", "//server/share/", "/server")]
+    [InlineData(@"\\server\share", "//server/share/", "/server/share")]
+    [InlineData(@"\\server", "//server/", "/server")]
+    [InlineData(@"\\?\C:\x\..\y", "//?/C:/y", "/?/C:/y")]
+    [InlineData(@"\\?\C:\..\..\y", "//?/C:/y", "/y")]
+    [InlineData(@"\\?\UNC\server\share\..\x", "//?/UNC/server/share/x", "/?/UNC/server/x")]
+    [InlineData("//./pipe/../x", "//./x", "/x")]
+    [InlineData("///x/../y", "/y", "/y")]                // an empty server name is no UNC root
+    public void CollapseRelativeSegments_KeepsUncRootOnWindows(string input, string windowsExpected, string otherExpected)
+    {
+        var expected = OperatingSystem.IsWindows() ? windowsExpected : otherExpected;
+        Assert.Equal(expected, PathUtils.CollapseRelativeSegments(input));
+    }
+
     [Theory]
     [InlineData("Coding Standards", "coding-standards")]
     [InlineData("CodingStandards", "coding-standards")]

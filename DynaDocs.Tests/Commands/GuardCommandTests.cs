@@ -836,4 +836,70 @@ public class GuardCommandTests : IDisposable
     }
 
     #endregion
+
+    #region Patch Targets On A UNC Checkout (DYD-396)
+
+    // A checkout on a network share cannot be built here, so the seam is faked: the project root
+    // the off-limits service relativizes against is a UNC string, and each target goes through
+    // ResolvePatchTargets, the one resolution Decide makes before the main and worker lanes split,
+    // then the per-target off-limits and protected checks both lanes run on it.
+    private const string UncProjectRoot = "//server/share/repo";
+
+    private sealed class FixedRootConfigService(string root) : IConfigService
+    {
+        public string? FindConfigFile(string? startPath = null) => null;
+        public DydoConfig? LoadConfig(string? startPath = null) => null;
+        public void SaveConfig(DydoConfig config, string path) { }
+        public string? GetProjectRoot(string? startPath = null) => root;
+        public string GetDydoRoot(string? startPath = null) => root + "/dydo";
+        public string GetDocsPath(string? startPath = null) => root + "/dydo";
+        public string GetChangelogPath(string? startPath = null) => root + "/dydo";
+    }
+
+    private static (int? Result, string Stderr) JudgePatchTarget(string cwd, string target)
+    {
+        var offLimits = new OffLimitsService(new FixedRootConfigService(UncProjectRoot));
+        var resolved = Assert.Single(GuardCommand.ResolvePatchTargets([new WriteTarget(target, WriteTargetKind.Delete)], cwd));
+        return RunNudge(() => GuardCommand.BlockIfPathOffLimits(resolved.Path, offLimits)
+            ?? GuardCommand.BlockIfPathProtected(resolved.Path, offLimits));
+    }
+
+    [Theory]
+    [InlineData(@"\\server\share\repo", "dydo.json", "protected")]
+    [InlineData("//server/share/repo", "dydo.json", "protected")]
+    [InlineData(@"\\server\share\repo\src", "../dydo.json", "protected")]
+    [InlineData(@"\\server\share\repo", @"\\server\share\repo\dydo.json", "protected")]
+    [InlineData(@"\\elsewhere\x", "//server/share/repo/src/../dydo.json", "protected")]
+    [InlineData(@"\\server\share\repo", @"dydo\_system\.local\state.json", "off-limits")]
+    [InlineData("//server/share/repo/src", "../dydo/_system/x.md", "off-limits")]
+    public void PatchTargetOnUncCheckout_IntoGuardedPath_Blocked(string cwd, string target, string tier)
+    {
+        var (result, stderr) = JudgePatchTarget(cwd, target);
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains(tier, stderr);
+    }
+
+    [Fact]
+    public void PatchTargetOnUncCheckout_OrdinaryFile_Allowed()
+    {
+        var (result, stderr) = JudgePatchTarget(@"\\server\share\repo", "src/Foo.cs");
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Fact]
+    public void PatchTargetOnUncCheckout_DotDotCannotClimbAboveTheShare_Blocked()
+    {
+        if (!OperatingSystem.IsWindows()) return; // a UNC share root is a Windows form
+
+        // From the share root, '..' stays at //server/share, so the target is the repo's dydo.json.
+        var (result, stderr) = JudgePatchTarget(@"\\server\share", "../../repo/dydo.json");
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("protected", stderr);
+    }
+
+    #endregion
 }

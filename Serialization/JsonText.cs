@@ -143,7 +143,10 @@ internal static class JsonText
             var reader = new Utf8JsonReader(Bytes);
             if (!reader.Read())
                 throw new JsonException("empty document");
-            return ReadValue(ref reader);
+            var root = ReadValue(ref reader);
+            // Anything but whitespace after the root makes the reader throw: the document is malformed.
+            reader.Read();
+            return root;
         }
 
         private Span ReadValue(ref Utf8JsonReader reader)
@@ -231,11 +234,10 @@ internal static class JsonText
         }
 
         // An item keeps its original text when an equal one is still ahead; an item that changed
-        // takes the unused original of the same kind between its matched neighbours.
+        // takes an unused original of the same kind between its matched neighbours.
         private static int[] Match(List<JsonNode?> originals, JsonArray target)
         {
             var matched = Enumerable.Repeat(-1, target.Count).ToArray();
-            var used = new bool[originals.Count];
             var next = 0;
             for (var i = 0; i < target.Count; i++)
             {
@@ -243,27 +245,35 @@ internal static class JsonText
                 if (at < 0)
                     continue;
                 matched[i] = at;
-                used[at] = true;
                 next = at + 1;
             }
 
-            for (var i = 0; i < target.Count; i++)
-            {
-                if (matched[i] >= 0)
-                    continue;
-                var low = matched.Take(i).Where(at => at >= 0).DefaultIfEmpty(-1).Max() + 1;
-                var high = matched.Skip(i + 1).Where(at => at >= 0).DefaultIfEmpty(originals.Count).First();
-                for (var at = low; at < high; at++)
-                {
-                    if (used[at] || originals[at]?.GetValueKind() != target[i]?.GetValueKind())
-                        continue;
-                    matched[i] = at;
-                    used[at] = true;
-                    break;
-                }
-            }
+            while (Reuse(originals, target, matched) is { } reuse)
+                matched[reuse.Item] = reuse.Original;
             return matched;
         }
+
+        // Of the changed items and the originals free between their matched neighbours (matches
+        // ascend, so none there is taken), the pair sharing the most members; on a tie the later
+        // pair. An entry edited down keeps its text, and one inserted before it is the new one.
+        private static (int Item, int Original)? Reuse(List<JsonNode?> originals, JsonArray target, int[] matched)
+        {
+            var pairs =
+                from i in Enumerable.Range(0, target.Count)
+                where matched[i] < 0
+                let low = matched.Take(i).Where(at => at >= 0).DefaultIfEmpty(-1).Max() + 1
+                let high = matched.Skip(i + 1).Where(at => at >= 0).DefaultIfEmpty(originals.Count).First()
+                from at in Enumerable.Range(low, high - low)
+                where originals[at]?.GetValueKind() == target[i]?.GetValueKind()
+                select ((int Item, int Original)?)(i, at);
+            return pairs.Reverse().MaxBy(pair => SharedMembers(originals[pair!.Value.Original], target[pair.Value.Item]));
+        }
+
+        private static int SharedMembers(JsonNode? original, JsonNode? item) =>
+            original is JsonObject members && item is JsonObject itemMembers
+                ? itemMembers.Count(member => members.TryGetPropertyValue(member.Key, out var value)
+                    && JsonNode.DeepEquals(value, member.Value))
+                : 0;
 
         private string NewLead(Span container) => container.Parts.Count > 0
             ? container.Parts[^1].Lead

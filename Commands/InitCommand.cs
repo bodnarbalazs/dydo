@@ -615,6 +615,7 @@ public static class InitCommand
         var first = preToolUse.ToList().FindIndex(entry => entry is JsonObject candidate &&
             candidate["hooks"] is JsonArray entryHooks &&
             entryHooks.Any(hook => IsCommand(hook, GuardHookCommand, ClaudeGuardHookCommand)));
+        // Every entry before the first holds no dydo command and survives, so first stays in range.
         RemoveDydoGuardEntries(preToolUse, GuardHookCommand, ClaudeGuardHookCommand);
 
         var hookCommand = new JsonObject
@@ -723,12 +724,14 @@ public static class InitCommand
     }
 
     // Removes only exact dydo-managed hook commands, leaving custom hooks in mixed entries intact.
+    // An entry goes only when that empties it; one already empty is the user's.
     private static void RemoveDydoGuardEntries(JsonArray entries, params string[] managedCommands)
     {
         for (int i = entries.Count - 1; i >= 0; i--)
         {
             if (entries[i] is not JsonObject entry ||
-                entry["hooks"] is not JsonArray entryHooks)
+                entry["hooks"] is not JsonArray entryHooks ||
+                entryHooks.Count == 0)
                 continue;
 
             for (int hookIndex = entryHooks.Count - 1; hookIndex >= 0; hookIndex--)

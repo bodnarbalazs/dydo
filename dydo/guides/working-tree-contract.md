@@ -31,8 +31,11 @@ crew; Ticket Captains use it to know what they own and what they hand back. The 
 | Project ticket | its feature branch | `DYD-123-<slug>` | its feature branch | its captain-directed Merge Sub-ticket |
 | Atomic ticket | `main` | `DYD-123-<slug>` | `main` | user, clicking its PR once it carries a reviewer PASS and CI is green; no Merge Sub-ticket |
 | Lane Sub-ticket | its parent ticket branch | `DYD-124-<slug>` | its parent ticket branch | its captain-directed Merge Sub-ticket |
-| Inquisition Ticket | integrated feature SHA | `inquisition/<slug>` | none; never merges | - |
-| Proof branch | the pinned source SHA its brief names (an Inquisition's audit SHA by default) | a child branch named in the proof-only brief | none; never merges | - |
+| Inquisition audit | the audit SHA, the integrated feature commit | `inquisition/<slug>`; a group Sub-ticket's `inquisition/<slug>-<group>` | none; never merges | - |
+| Inquisition proof | the audit SHA | `inquisition/<slug>-proof-<area>`, written by the Break inquisitor | none; never merges | - |
+| Inquisition patch | the audit SHA | its Bug's own `<BUG-KEY>-<slug>` | as its Bug | as its Bug, through the Bug's own chain |
+| Inquisition record | the feature tip; `main` for an audit of main | the Inquisition's `DYD-123-<slug>` | its feature branch; `main` for an audit of main | its captain-directed Merge Sub-ticket; for an audit of main, as an atomic ticket |
+| Proof branch | the pinned source SHA its brief names | a child branch named in the proof-only brief | none; never merges | - |
 | Prototype Ticket | its feature branch, else `main` | `prototype/<name>` | none; never merges | - |
 
 `DYD-123` is an example: use the ticket's key so Linear attaches the branch and PR. The host may
@@ -66,9 +69,10 @@ proves all five checks and returns a failure to its Ticket Captain instead of wo
 
 Merge work proves instead the pins of the code-writer's `merge` resource: source and target at their
 SHAs, the source's PASS, the governing contract and the combined gates. A proof-only brief names the
-commissioning captain, the pinned source SHA (an Inquisition's audit SHA by default) and the test
-path. Proof-only work proves three things: `HEAD` is on a child branch cut from that SHA and named
-in its brief, the worktree is clean, and only the test path is touched.
+commissioning captain, the pinned source SHA and the test path. Proof work, a proof-only brief or an
+Inquisition's Break phase, proves three things: `HEAD` is on the proof branch its brief names, cut
+from that SHA (the audit SHA for Break); the worktree is clean; and every path it touches is a test
+path.
 
 ## Delivery scale and evidence
 
@@ -113,7 +117,7 @@ interface shapes early.
    work. A captain-directed Merge code-writer performs the specified merge and conflict resolutions;
    a fresh reviewer judges that integrated candidate.
 - Fan-out is safe only across disjoint paths. Each independently trackable parallel lane is a direct
-  Sub-ticket of the captain's ticket. Lanes have one level; the Bug stages below, Merge and map-holder-held Sub-tickets are the other permitted children. If a lane needs splitting, replace
+  Sub-ticket of the captain's ticket. Lanes have one level; the Bug stages below, Merge, an Inquisition's group Sub-tickets and map-holder-held Sub-tickets are the other permitted children. If a lane needs splitting, replace
   it with sibling lanes under the parent ticket.
 - An agent invocation is recorded as comments and evidence on the relevant ticket or Sub-ticket, never
   as another child. Successive agents may work through the same record.
@@ -149,33 +153,31 @@ use a following fix ticket. Each corrected candidate gets fresh merge review.
 
 ## Retaining an Inquisition's record and proofs
 
-The Inquisition captain pins the completed evidence packet on its ticket: audited feature SHA,
-scope, parts and lenses, findings, hypotheses with verdicts, and deduplicated Bugs with their
-reproduction SHAs, a prose Bug's quoted passages, or an unused-member Bug's definition and reference search. The captain pushes and posts its resume state, cleans its worktree (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree), sets the
-Inquisition `Todo`, unassigns and returns `released <key>: record delivery`. The record Feature and
-its blocker do not exist yet; this release return reaches the Project's map holder.
+An Inquisition runs its sweep, delivers its own record and closes once. It releases in two cases
+only, by [Return and release](#return-and-release): `released <key>: verification skill first`
+when a project with a runnable surface has no verification skill, and `released <key>: groups
+<keys>` when its area map is cut into group Sub-tickets, resuming as parent for the cross-group
+triage once every group closes. Each group Sub-ticket closes `Done` with its findings register
+final and pushed.
 
-On that return, before generic pickable commissioning, the map holder uses the packet to contract a
-separate primary `Feature` / `AFK` record-delivery ticket from the retained feature branch. Its ownership names the exact
-`dydo/project/inquisitions/` record file and exact authored navigation paths only when the record-delivery ticket contract requires them. Its own
-captain directs the ordinary specification, docs-writer, docs review and final Merge Sub-ticket
-into the feature. Audit and proof branches never merge.
+The audit branch carries the findings register, `inquisition-register.md`, pushed after every
+return. Audit, group and proof branches never merge. Before the sweep closes, every open Bug with a
+reproduction commit keeps its SHA reachable from a pushed named ref independent of the audit
+branch, linked on that Bug: its proof branch, or its patch branch when a fix was prepared. A prose
+Bug carries its quoted passages, an unused-member Bug its definition and reference search, and a
+drive Bug its rerunnable drive steps; none has a ref to retain. The Inquisition captain owns that
+retention until each Bug captain records adopting the reproduction and the cleanup responsibility.
+Audit cleanup never deletes those refs; they remain input to each Bug's normal chain.
 
-First wire the Inquisition **blocked by the record Feature**, never the reverse, then commission
-record delivery from the completed packet. The map holder does not recommission the Inquisition from
-its temporary `Todo` gap. On the normal board loop after record delivery is `Done`, the map holder
-resumes that captain from the ticket. It returns to
-`In Progress`, verifies the filed Bugs and the exact record path and blob or content digest on the
-retained feature, and records the delivery merge's ancestry/reachability there. Only then does it
-close `Done`, return `done <key>` and delete the audit branch. A record present only on an unmerged
-audit branch cannot satisfy this check.
-
-Before release or audit cleanup, every open Bug with a reproduction commit keeps its SHA reachable
-from a pushed named ref independent of the audit branch, linked on that Bug. A prose Bug carries
-its quoted passages instead, an unused-member Bug its definition and reference search; neither has a ref to retain. The Inquisition captain owns
-that retention until the Bug captain records adoption of the reproduction and transfer of cleanup
-responsibility. Audit cleanup never deletes those refs; they remain input to each Bug's normal
-chain. This is ordinary Feature delivery and release, not a new Type or a serial-lane exception.
+The record is the Inquisition's last step, on its own ticket branch from the Branches table. A
+docs-writer writes it in `dydo/project/inquisitions/` from the pushed register, a fresh docs
+reviewer checks it, and it merges into the feature through the Inquisition's Merge Sub-ticket as
+any Project ticket's work does; an audit of main merges its record as an atomic ticket does. The
+captain returns `done <key>: PR ready` when it offers the record's PR. After the record merges, it
+verifies on the feature the record at its path, every Bug filed and wired, and every retained ref
+live; a record only on an unmerged branch cannot satisfy this check. Only then does it delete the
+audit branch, name its remote and any proof branch no open Bug needs on the record for the user,
+close `Done` and return `done <key>: merged`.
 
 ## Cleanup
 
@@ -187,7 +189,7 @@ chain. This is ordinary Feature delivery and release, not a new Type or a serial
 | Merged atomic ticket branch | `ticket-captain` | The branch is deleted after the user clicks its PR into main. |
 | Merged feature branch | the map holder, commissioning the landing Captain | The landing Captain deletes the branch after the user lands it and reports completion. |
 | Prototype branch | `ticket-captain`, tracked by the map holder | Keep the winning code linked as delivery-spec input; delete when that delivery ticket is Done or with feature cleanup. |
-| Inquisition branch | `ticket-captain` | Delete at Done after the record/proof retention checks above; never merge it or delete the independently retained Bug refs. |
+| Inquisition audit and proof branches | `ticket-captain` | Delete the audit branch at Done after the record and retention checks above, and name any proof branch no open Bug needs; never merge them or delete the independently retained Bug refs. |
 
 `dydo clean` deletes a local branch only once origin's default branch holds it. Deleting a branch here means the local branch. GitHub deletes a merged PR's remote branch on merge,
 and the guard blocks agents from deleting remote branches, so the accountable officer names any

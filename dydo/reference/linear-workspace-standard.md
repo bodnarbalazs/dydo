@@ -36,7 +36,7 @@ every chain spawn, and nothing else flips it.
 | `FutureFeature` | backlog | An unscheduled strategic possibility with no Type yet. Only the user promotes it. |
 | `Backlog` | backlog | Retained with a Type, unscheduled, waiting to become a Todo: no contract yet, or one awaiting the user's go, as an Inquisition's. |
 | `Todo` | unstarted | The incoming list: contracted and to be started soon. An open native blocker still prevents pickup. A `Question` in `Todo` is the user's turn. |
-| `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding ticket, an Inquisition's sweep, proofs and final retention verification. |
+| `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding ticket, an Inquisition's sweep (its map, phases, triage and patch lane) until its record enters the chain. |
 | `Implementing` | started | The author of the change's kind is spawned for one hop - a `code-writer`, or a `docs-writer` for a documentation change - a fix hop after a FAIL included. |
 | `In Review` | started | Any reviewer is spawned, the optional spec review of the contract before any code included. A FAIL, one or more blockers, returns the record to `Implementing`; a spec review returns it there on either verdict. |
 | `Ready to Merge` | started | The PR carries its PASS block and waits for its merge turn. The record stays here while its own Merge Sub-ticket runs; the landing, one Project at a time, and an atomic ticket wait here for the user's click. A merge review FAIL that reverts sends it back to `Implementing`. |
@@ -67,7 +67,7 @@ ticket carries exactly one Type. Mode sits on every Type a captain holds.
 | `Bug` | captain | any | Restore intended behaviour. The record holds the defect and its fix. | the behaviour restored | `#EB5757` |
 | `Merge` | captain | any; the landing is the only primary one | One merge operation: lanes into a parent, a primary into the feature, the feature into main. | the merge review PASS | `#4EA7FC` |
 | `Enablement` | captain | any | Access, environment, credentials or material other work needs; `wizard` guides the steps only the user can do. | the condition true, with evidence | `#26B5CE` |
-| `Inquisition` | captain | primary only | Many read-only eyes on the integrated feature; hypotheses proved, one in code by a proof-only test, one in prose by its quoted passages; Bugs filed. | Bugs filed, record delivered to the retained feature, exact content and merge reachability verified | `#5E6AD2` |
+| `Inquisition` | captain | primary; its group Sub-tickets above about 10 areas | One round of audit of the integrated feature: an area map, each area run through Read, Break and Drive by `inquisitor` crew, every finding triaged by severity into Bugs, one nit ticket and Questions. Each round starts from zero. | its record merged and verified on the feature, Bugs filed and their proof refs retained; a group Sub-ticket, its register final and pushed | `#5E6AD2` |
 | `Prototype` | captain | any | A design question raised to fidelity the user can react to; fast sketches, the user is the review. | the user's verdict on the ticket | `#F2994A` |
 | `Question` | map holder | any | One prepared, discrete question whose answer blocks named work. | the user's answer on the ticket | `#F2C94C` |
 | `Research` | map holder | any | A factual answer whose investigation needs its own owner, status or evidence. | cited findings on the ticket | `#95A2B3` |
@@ -122,7 +122,7 @@ files a `Question` only when judgment remains.
 | `Research` | `Todo` → `In Progress` → `Done` |
 | `Grilling`, `Walkthrough` | `Todo` → `In Progress` → `Done` |
 | `Question` | `Todo` → `Done` |
-| `Inquisition` | `Backlog` → `Todo`, the user's confirmation → `In Progress`, the captain writes the contract, then the sweep and proofs → released `Todo` → resumed `In Progress` → `Done`; follow the [working-tree contract](../guides/working-tree-contract.md) |
+| `Inquisition` | `Backlog` → `Todo`, the user's confirmation → `In Progress`, the commission inputs, area map, phases, triage and patch lane → `Implementing` → `In Review` → `Ready to Merge` → `Done`, its record's docs chain. It releases to `Todo` with `released <key>: verification skill first`, resuming once the skill exists, or with `released <key>: groups <keys>`, resuming `In Progress` once its group Sub-tickets, each `Todo` → `In Progress` → `Done`, close; follow the [working-tree contract](../guides/working-tree-contract.md#retaining-an-inquisitions-record-and-proofs) |
 | captain-held default, subject to the Type exceptions | `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
 | Merge Sub-ticket | `Todo` → `Implementing` → `In Review` → `Done`; it merges, it is never merged |
 
@@ -176,7 +176,7 @@ required connector capability.
 | `Bug` | the five fields, then `## Observed`, `## Expected`, `## Reproduction` (a scenario at the boundary, else the red test; a prose Bug quotes both contradicting passages at `file:line`; an unused member, export or field quotes its definition at `file:line` and a reference search showing no caller outside the tests); default Sub-tickets: *reproduce or identify*, *fix*. |
 | `Merge` | `## Source` and `## Target` at their SHAs, `## Plan order` (the Merge Sub-ticket this one is blocked by), `## Combined gates`, `## Conflicts expected`. |
 | `Enablement` | `## Condition` that must become true, `## Steps only the user can do`, `## Evidence` when done. |
-| `Inquisition` | `## Scope`: the feature SHA, the parts and the lenses to sweep, the cost; `## Findings`, `## Hypotheses` with their verdicts, `## Bugs filed`, `## Record` path. |
+| `Inquisition` | `## Scope`: the commission inputs - the audit SHA, the integrated feature commit and the landing base, the governing intent, a provider and model per phase and the swarm width, the Codex cap, the crew context limit, and the verification skill or why nothing runs; `## Area map`, drawn fresh each round; `## Findings`, the register's link and each finding's disposition: Bugs, patches, the nit ticket, Questions; `## Record` path. |
 | `Prototype` | `## Question` the sketch must settle, `## Variants`, `## Verdict` and the winning commit on `prototype/<name>`. |
 | `Question` | the four items above. |
 | `Research` | `## Question` and `## Destination` for the cited report. |

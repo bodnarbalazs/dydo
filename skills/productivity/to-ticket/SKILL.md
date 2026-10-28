@@ -17,7 +17,7 @@ Every ticket carries exactly one Type:
 - `Bug`: restore intended behaviour.
 - `Merge`: one merge operation.
 - `Enablement`: access, environment, credentials or material other work needs.
-- `Inquisition`: many read-only eyes on the integrated feature; Bugs filed.
+- `Inquisition`: one round of audit of the integrated feature, area by area through Read, Break and Drive; Bugs filed.
 - `Prototype`: a design question raised to fidelity the user can react to.
 - `Question`: one prepared, discrete question whose answer blocks named work.
 - `Research`: a factual answer whose investigation needs its own owner, status or evidence.

@@ -47,7 +47,7 @@ review, coordinate, and audit from independently reviewable contracts.
   it.
 - A fresh agent independently reviews each implementation ticket before the user harmonizes it.
 - The [Working-Tree Contract](../guides/working-tree-contract.md) governs Project integration,
-  optional Inquisition record delivery, and landing.
+  an Inquisition's audit, proof and record branches, and landing.
 
 Branches, worktrees, sessions, subagents, commits, PRs, and reviewer attempts are execution evidence
 linked to a ticket. They are not additional work types.
@@ -95,8 +95,10 @@ management, including FutureFeatures.
    work links to one reviewed repository Project plan.
 3. **Execute tickets** - native agents work in isolated branches/worktrees and attach governing commits,
    tests, reviews, and delivery evidence to the ticket.
-4. **Inquisition, when confirmed** - this optional, user-confirmed audit files Bugs and delivers its
-   record to the feature before landing, following the Working-Tree Contract above.
+4. **Inquisition, when confirmed** - this optional, user-confirmed audit maps the landed work into
+   small areas, reads each, breaks and drives each where its behaviour changed, files Bugs and
+   delivers its own record to the feature. Rounds repeat from zero until one finds no blocker and no
+   should, then the Project lands.
 5. **Land and inspect** - the landing Merge obtains acceptance review, the user lands the feature,
    then a Walkthrough inspects it. An empty Walkthrough closes the Project; findings reopen the lap
    in the same Project.

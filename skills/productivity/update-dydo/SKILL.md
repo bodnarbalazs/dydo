@@ -41,14 +41,23 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    reference puts it. Each file's base is the upstream text it derives from: match each revision in
    its project history (`git log --follow`), line endings normalised, against that upstream file
    at each tag, moves followed, templates rendered as `init` does. An exact match proves its tag;
-   similarity is not ancestry. A recorded update to tag T is the commit setting `dydoVersion` to T,
-   those its record names with it, and that record (commit messages, PR) of each file. It proves T
-   for the revision left at the path when the record shows the file, or a folder holding it,
-   merged, not skipped, base unknown or left to the user, and either its commits wrote that
-   revision, or the record names the file kept, or upstream's file is unchanged from the file's
-   proven base, or with none from its first tag, to T. A revision an update's commits wrote that
-   its record does not prove, the record missing or contradicting itself or the history, leaves
-   the base unknown whatever older revisions match. Base = the newest proven tag, not after new.
+   similarity is not ancestry.
+
+   A **recorded update** to tag T is the commit setting `dydoVersion` to T, the commits its record
+   names with it, and that record (commit messages, PR). It proves T for the revision it left at a
+   file's path when any one of these holds:
+   - **Written**: its commits wrote that revision, and the record lists the file, or a folder
+     holding it, merged.
+   - **Kept**: the record names the file kept.
+   - **Unchanged**: the record lists the file, or a folder holding it, merged, and upstream's file
+     is unchanged from the file's proven base, or with none from its first tag, to T.
+
+   A folder listed merged proves nothing alone. None holds for a file the record lists, by name or
+   by a folder holding it, as skipped, base unknown or left to the user. A revision an update's
+   commits wrote that none proves, the record missing or contradicting itself or the history,
+   leaves the base unknown whatever older revisions match. Base = the newest proven tag, not after
+   new.
+
    Nothing at the path, at a rename's source or in their history: new upstream if new holds it;
    else skip it. A project file with no proven ancestor: list it for manual reconciliation, base
    unknown, leave it. Every base new, nothing to add: tell the user the project is current; go to

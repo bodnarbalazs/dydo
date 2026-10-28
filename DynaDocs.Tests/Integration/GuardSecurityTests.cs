@@ -992,6 +992,39 @@ public class GuardSecurityTests : IntegrationTestBase
         Assert.Equal(before, File.ReadAllBytes(canary));
     }
 
+    // GS-02: a runner named only in a comment or an argument runs no body, and the blank or
+    // comment-only lines after a heredoc separate no commands.
+    [Theory]
+    [InlineData("Bash", "cat > helper.sh <<'EOF' # bash script\necho hello\nEOF")]
+    [InlineData("Bash", "grep -c bash <<'EOF'\nline one\nline two\nEOF")]
+    [InlineData("Bash", "cat > /tmp/python <<'EOF'\n$HOME\nEOF")]
+    [InlineData("PowerShell", "Set-Content -LiteralPath notes.md -Value @'\n$HOME\n'@ # bash example")]
+    [InlineData("Bash", "cat > notes.md <<'EOF'\n$HOME\nEOF\n\n")]
+    [InlineData("Bash", "cat > notes.md <<'EOF'\nplain\nEOF\n\n# written\n")]
+    public async Task Gs02_LiteralBody_WithARunnerInACommentOrTrailingBlankLines_IsAllowed(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("Bash", "bash <<'EOF' # bash script\necho x > $OUT\nEOF")]
+    [InlineData("Bash", "cat <<'EOF' | bash # bash script\necho x > $OUT\nEOF")]
+    [InlineData("PowerShell", "@'\necho x > $OUT\n'@ | pwsh -Command - # runs it")]
+    [InlineData("Bash", "cat > notes.md <<'EOF'\nplain\nEOF\n\nrm secret.txt")]
+    public async Task Gs02_BodyARunnerIsFed_OrACommandAfterABlankLine_IsStillDenied(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("bypass");
+    }
+
     [Theory]
     [InlineData("echo \"$(python3 tools/rewrite.py)\"")]
     [InlineData("printf x | (python3 tools/rewrite.py)")]

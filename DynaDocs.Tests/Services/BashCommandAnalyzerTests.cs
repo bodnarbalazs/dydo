@@ -1609,5 +1609,60 @@ public class BashCommandAnalyzerTests
         Assert.Contains(result.Operations, op => op.Type == FileOperationType.Read && op.Path == "dydo/guides/x.md");
     }
 
+    // A runner named in a comment or an argument, or one the body is not fed to, runs no body.
+    [Theory]
+    [InlineData("cat > helper.sh <<'EOF' # bash script\necho hello\nEOF")]
+    [InlineData("grep -c bash <<'EOF'\nline one\nline two\nEOF")]
+    [InlineData("cat > run.sh <<'EOF' && bash run.sh\necho hello\nEOF")]
+    [InlineData("cat > helper.sh <<'EOF' # bash script\necho \"$HOME\"\nEOF")]
+    [InlineData("cat > /tmp/python <<'EOF'\n$HOME\nEOF")]
+    [InlineData("cat > notes.md <<'EOF' | grep bash\n$HOME\nEOF")]
+    [InlineData("Set-Content -LiteralPath notes.md -Value @'\n$HOME\n'@ # bash example")]
+    public void Analyze_RunnerNotRunningTheBody_LeavesItLiteral(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+    }
+
+    [Theory]
+    [InlineData("bash <<'EOF' # bash script\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' | bash # bash script\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' | sudo bash\necho x > $OUT\nEOF")]
+    [InlineData("@'\necho x > $OUT\n'@ | pwsh -Command - # runs it")]
+    [InlineData("iex @'\necho x > $OUT\n'@")]
+    public void Analyze_RunnerFedTheBody_RunsItAsCode(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt, $"Expected a bypass: {command}");
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "$OUT");
+    }
+
+    // A blank or comment-only line separates no commands, so the trailing line breaks after a heredoc are layout.
+    [Theory]
+    [InlineData("cat > notes.md <<'EOF'\nplain\nEOF\n\n")]
+    [InlineData("cat > notes.md <<'EOF'\r\nplain\r\nEOF\r\n\r\n")]
+    [InlineData("cat > notes.md <<'EOF'\nplain\nEOF\n\n# written\n")]
+    [InlineData("cat > notes.md <<'EOF'\n$HOME\nEOF\n\n")]
+    public void Analyze_LiteralWriteFollowedByBlankOrCommentLines_IsNoBypass(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+    }
+
+    [Theory]
+    [InlineData("cat > notes.md <<'EOF'\nplain\nEOF\n\nrm secret.txt")]
+    [InlineData("cat > notes.md <<'EOF'\nplain\nEOF\n# then\nrm secret.txt")]
+    [InlineData("rm secret.txt\\\n#x")]
+    public void Analyze_CommandOnALaterLine_IsStillAnEmbeddedNewline(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains("Command contains embedded newlines", result.Warnings);
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Delete && op.Path.StartsWith("secret.txt"));
+    }
+
     #endregion
 }

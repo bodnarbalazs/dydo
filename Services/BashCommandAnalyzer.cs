@@ -230,9 +230,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"@(['""])[ \t]*\r?\n[\s\S]*?^\1@", RegexOptions.Multiline)]
     private static partial Regex HereStringRegex();
 
-    // A shell or interpreter named around a heredoc or here-string runs its body (bash <<'EOF',
-    // @'...'@ | python -), so that body is code, not data.
-    [GeneratedRegex(@"(?:^|[\s;&|(])(?:[^\s;&|()'""]*[/\\])?(?:bash|sh|zsh|dash|ksh|pwsh|powershell|cmd|python[0-9.]*|py|node|ruby|perl|php|eval|source|iex|invoke-expression)(?:\.exe)?(?=$|[\s;&|)])", RegexOptions.IgnoreCase)]
+    // A shell or interpreter named around a heredoc or here-string (bash <<'EOF', @'...'@ | python -),
+    // the word that may run its body.
+    [GeneratedRegex(@"(?:^|[\s;&|(])(?<runner>(?:[^\s;&|()'""]*[/\\])?(?:bash|sh|zsh|dash|ksh|pwsh|powershell|cmd|python[0-9.]*|py|node|ruby|perl|php|eval|source|iex|invoke-expression)(?:\.exe)?)(?=$|[\s;&|)])", RegexOptions.IgnoreCase)]
     private static partial Regex BodyRunnerRegex();
 
     /// <summary>
@@ -258,12 +258,39 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // A heredoc's opener line ends where its body begins, before that line's break.
     private static int OpenerLineEnd(Match heredoc) => heredoc.Index + heredoc.Groups[1].Value.TrimEnd().Length;
 
-    // Whether a runner is named on the line before start or after end: a heredoc's opener line, or the
-    // lines a here-string opens and closes on, the body's own lines left out.
+    // Whether a runner named on the line before start or after end (a heredoc's opener line, or the
+    // lines a here-string opens and closes on) runs the body: see RunsBodyAt.
     private static bool IsRunBody(string text, int start, int end)
     {
+        var opening = LineStart(text, start);
         var lineEnd = text.IndexOf('\n', end);
-        return BodyRunnerRegex().IsMatch(text[LineStart(text, start)..start] + " " + text[end..(lineEnd < 0 ? text.Length : lineEnd)]);
+        var closing = lineEnd < 0 ? text.Length : lineEnd;
+        return BodyRunnerRegex().Matches(text[opening..start]).Select(runner => opening + runner.Groups["runner"].Index)
+            .Concat(BodyRunnerRegex().Matches(text[end..closing]).Select(runner => end + runner.Groups["runner"].Index))
+            .Any(index => RunsBodyAt(text, index));
+    }
+
+    /// <summary>
+    /// Whether the runner word at <paramref name="index"/> runs a body: with a mark written there, the
+    /// line read as its shell reads it has the mark in a program word, and that command is fed (a pipe,
+    /// a &lt; redirection, a heredoc or here-string, <see cref="MarkFeeds"/>) or given a command
+    /// string (eval, iex, bash -c). A runner in a comment, an argument or a redirection target runs
+    /// nothing, and neither does one the body is not fed to (cat > run.sh &lt;&lt;'EOF' &amp;&amp; bash
+    /// run.sh). A line that cannot be read for certain counts, failing closed.
+    /// </summary>
+    private static bool RunsBodyAt(string text, int index)
+    {
+        var (lines, uncertain) = CommandLines(MarkFeeds(text.Insert(index, LaunchMark)), ShellDialect.Unknown);
+        return uncertain || lines.SelectMany(line => line.Commands).Any(RunsMarkedBody);
+    }
+
+    private static bool RunsMarkedBody(ReadCommand read)
+    {
+        var at = CommandPosition.Skip(read.Words);
+        if (at >= read.Words.Count || !read.Words[at].Contains(LaunchMark, StringComparison.Ordinal))
+            return false;
+        var program = CommandPosition.ProgramName(read.Words[at].Replace(LaunchMark, ""));
+        return read.Fed || CommandPosition.ScriptOf(program, [.. read.Words.Skip(at + 1)]) != null;
     }
 
     private static int LineStart(string text, int index) => index == 0 ? 0 : text.LastIndexOf('\n', index - 1) + 1;
@@ -843,8 +870,18 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         ((code, _) => Base64DecodeRegex().IsMatch(code), "Command contains base64 decode - potential obfuscation"),
         ((code, _) => HexDecodeRegex().IsMatch(code), "Command contains hex decode - potential obfuscation"),
         ((code, _) => VariableExpansionRegex().IsMatch(code), "Command contains variable expansion - paths may be dynamic"),
-        ((code, layout) => layout.Contains('\n') || code.Contains("$'\\n'") || code.Contains("%0a"), "Command contains embedded newlines"),
+        ((code, layout) => SeparatesCommandLines(layout) || code.Contains("$'\\n'") || code.Contains("%0a"), "Command contains embedded newlines"),
     ];
+
+    // Whether more than one line of the layout holds a command. A blank or comment-only line, such as
+    // the one a heredoc's trailing line break leaves, holds none unless the line before continues
+    // into it (a trailing \ or `), where its # no longer starts a comment.
+    private static bool SeparatesCommandLines(string layout)
+    {
+        var lines = layout.Split('\n');
+        return lines.Where((line, i) => line.TrimStart() is [not '#', ..] || (i > 0 && lines[i - 1].TrimEnd('\r') is [.., '\\' or '`']))
+            .Skip(1).Any();
+    }
 
     private static void CheckBypassAttempts(string expanding, string layout, BashAnalysisResult result)
     {

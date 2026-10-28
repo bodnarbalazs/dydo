@@ -91,8 +91,8 @@ cognitive-complexity finding in a method you changed. Mutation is the reviewer's
 Before code, post only when the work splits into disjoint lanes or the contract is inexact: one
 comment naming them, then stop. Sign every comment and return `code-writer/model: <truthful identity>`.
 
-Outside proof-only, return to the Ticket Captain in the standard's form, proof carrying the red
-lines, or for an unused-member Bug its definition and reference search,
+Outside proof-only, return to the Ticket Captain in the standard's form, proof carrying the proof
+recipe of `maintain-verification-skill`'s Proof: the red lines, or for an unused-member Bug its definition and reference search,
 and gates run with exits; a Prototype hop returns runnable-demo evidence and its commit:
 
 `IMPLEMENTED - hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`

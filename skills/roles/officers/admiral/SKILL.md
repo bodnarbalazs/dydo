@@ -95,6 +95,7 @@ map and how the tickets move, integrate, and finish together.
    commission a fresh one from the record. Rewire the order when a later ready PR is independent
    of an earlier unready one. **Done:** every merge has its own captain-directed chain and fresh
    merge review; the record shows the order that ran and `done <key>: merged` wakes the next work.
+   A captain's own rerun of its crew's proof recipe is the proof of record; you neither observe nor rerun it.
 5. **Wayfind.** Rechart as discovery clears fog: create, split, drop, or resequence tickets and
    record the discoveries on the Project. Maintain shared feature intent following
    `dydo/reference/feature-spec-convention.md`, read from the repository root; reconcile affected

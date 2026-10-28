@@ -113,9 +113,10 @@ user's own return to the board when none is invoked - picks up blocker-cleared w
 
 Project-plan approval; Questions and HITL work; an escalation that survived the ladder; each
 Milestone's Walkthrough, where only the walking skeleton's verdict holds back the work built on it,
-except overnight; confirming an Inquisition; the feature → main merge-commit click; and the
-landing's Walkthrough after it. A Milestone's findings become tickets in the Project as they
-arrive; the landing's reopen a lap in the same Project. An atomic ticket branches from main and has no Merge Sub-ticket: once its
+except overnight; confirming an Inquisition and its commission, a model per phase and the swarm
+width; the feature → main merge-commit click; and the landing's Walkthrough after it. A Milestone's
+findings become tickets in the Project as they arrive; the landing's reopen a lap in the same
+Project. An atomic ticket branches from main and has no Merge Sub-ticket: once its
 PR carries a reviewer PASS and CI is green, the user clicks it, and its captain closes it Done.
 The [workspace standard](../reference/linear-workspace-standard.md) owns the Type/Mode and priority rules.
 

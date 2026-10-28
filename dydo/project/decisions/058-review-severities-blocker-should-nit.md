@@ -7,6 +7,8 @@ date: 2026-10-28
 
 # 058 - Review Severities: Blocker, Should, Nit
 
+> **Partially superseded by [059 - Inquisition Rebuilt: Area Map, Three Phases, Rounds Until Clean](./059-inquisition-rebuilt-area-map-three-phases-rounds-until-clean.md)** for §1's *a nit gets no Linear ticket*, in inquisitions only: an inquisition's nits go on its round's nit ticket. The rest remains in force.
+
 Every review finding carries one of three severities, `blocker`, `should` or `nit`, and only a
 blocker makes the verdict FAIL. Should and nit findings are deferred, never dropped. Ruled by Balazs
 on 2026-10-27 in [DYD-398](https://linear.app/bodnar-balazs/issue/DYD-398).

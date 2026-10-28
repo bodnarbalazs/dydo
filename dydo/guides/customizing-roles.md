@@ -82,7 +82,8 @@ order and the limits worth knowing before a claim rests on one.
 - The template pipeline: `dydo sync`, `dydo template update`, the `dydo.json.skills` switchboard,
   `frameworkHashes`, include tags and their re-anchoring, and compiler-owned output cleanup.
 - Generated agent definitions (`.claude/agents/*.md`, `.codex/agents/*.toml`). A role is a skill.
-  Reviewer, inquisitor and scout are non-authoring by commission and method. Native agent
+  Reviewer, inquisitor and scout are non-authoring by commission and method; an inquisitor's Break
+  phase commits only proof tests, to a proof branch that never merges. Native agent
   configuration may request a restrictive sandbox, but its presence is not proof that the host
   enforces the restriction.
 

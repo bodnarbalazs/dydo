@@ -42,7 +42,7 @@ the default officer: a ticket gets a captain whether or not the user has invoked
   take only on the user's word; the current ticket bounds intent and paths. A review's `should` is
   the one exception: you file its ticket yourself (Review below).
 - **Record:** every captain-held ticket carries one Type and one Mode (`AFK` or `HITL`). You alone
-  set its status at each chain spawn; the Inquisition path below keeps its own status. The board is your inbox and each hop's SHA its resume point.
+  set its status at each chain spawn; an Inquisition's sweep holds `In Progress` until its record enters the chain. The board is your inbox and each hop's SHA its resume point.
 - **Human loop:** HITL runs in its own top-level thread. A spawned captain returns to
   its spawner; a Question in `Todo` carries judgment the user must supply.
 - **Precedence:** user's live instruction → DR → reviewed architecture plan → feature spec (both pinned) → ticket
@@ -75,13 +75,13 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    outcome, paths, gates and isolated branch/worktree off the parent. Contract each lane and give
    each merge into the parent its own Merge Sub-ticket, wired in order. **Done:** the parent is
    `In Progress` while lanes run; each has its own chain and evidence. A lane needing another split
-   becomes siblings; the Bug stages below, Merge and map-holder-held Sub-tickets are the other
-   permitted children.
+   becomes siblings; the Bug stages below, Merge, an Inquisition's group Sub-tickets and
+   map-holder-held Sub-tickets are the other permitted children.
 4. **Direct the crew.** Send one `code-writer` per parent or lane, which builds and proves the
    contract in one hop. Route docs to `docs-writer`; the code-writer uses
    `diagnosing-bugs` when a Bug other than an unused member lacks a red reproduction. Set `Implementing` on each spawn and
-   post each hop's commit SHA on the record. Inquisition sweeps and proofs stay `In Progress`; its separate record Feature
-   runs the normal docs delivery chain as below.
+   post each hop's commit SHA on the record. An Inquisition's phases, proofs and patches stay `In Progress`; its own record
+   then runs the normal docs delivery chain, as below.
    The writer's `IMPLEMENTED` return carries its red proof, or for an unused-member Bug its definition and reference search. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
    Wayfinding loop before production resumes. Choose each crew member's capability as you brief it: the
@@ -160,7 +160,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
 ## Kinds and failure paths
 
 Start from the Type's shape in the workspace standard; when used, your contract makes the map exact. A Bug normally
-reproduces or identifies, then fixes; adopt an inquisition's red-test SHA when one exists. Collapse
+reproduces or identifies, then fixes; adopt an inquisition's red-test SHA when one exists, and its
+prepared patch branch when one is attached: verify and review it rather than rebuilding it. Collapse
 simple Bug template placeholders into parent hops, recording why and closing the unused records
 `Canceled`. Under the workspace standard's Bug exception, you may retain reproduce-or-identify and fix
 as direct Bug Sub-tickets: fix is natively blocked by reproduction, both carry the parent's Mode,
@@ -174,18 +175,13 @@ A Prototype
 uses `prototype` and closes on the user's verdict with its winning branch linked, never submitted. Enablement uses `wizard` for the steps only the user can perform.
 
 An Inquisition gets `inquisition/<slug>` from the integrated feature SHA, never merged. Set
-`In Progress` on the user's confirmation, contract it by [inquisition](resources/inquisition.md),
-then brief read-only inquisitors sweeping parts/lenses and proof-only
-code-writers testing code hypotheses on child proof branches. A prose or unused-member finding
-needs no proof branch. Deduplicate confirmed findings into Bugs with their red-test SHAs, a prose
-finding's quoted passages, or an unused-member finding's definition and quoted reference search
-(rerun by you, its fix deleting the member with its test-only callers), and pin the completed packet on the
-ticket. Retain each open Bug's reproduction commit on a pushed independent ref. Follow **Retaining an Inquisition's record and proofs**
-in the working-tree contract: record the delivery need, push/post the resume state and release before the record Feature
-or blocker exists. Return `released <key>: record delivery` to the Project's map holder, which creates and
-wires that delivery before generic pickup. Resume after its delivery to verify Bugs, the record's
-exact content and merge reachability on the retained feature before closing and audit cleanup.
-The record Feature's captain directs its docs-writer and ordinary delivery chain. The Inquisition
+`In Progress` on the user's confirmation and run it by [inquisition](resources/inquisition.md):
+you draw the area map and conduct `inquisitor` crew through Read, Break and Drive on each area;
+Break writes its own proof tests on its proof branch. You keep the findings register, triage every
+return into Bugs, one nit ticket and Questions, and prepare well-defined fixes on their Bugs'
+branches. Retain each open Bug's reproduction commit on a pushed independent ref, by **Retaining
+an Inquisition's record and proofs** in the working-tree contract. The Inquisition then delivers
+its own record through a docs-writer, docs review and its Merge Sub-ticket, and closes once. It
 files, never PASSes or FAILs.
 
 Merge review FAIL has an owner: fix an integration defect inside the Merge Ticket, then re-review.

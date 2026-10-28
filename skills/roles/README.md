@@ -18,7 +18,7 @@ Crew are spawned for one bounded job, hold nothing, and return their result to w
 
 - **code-writer** (model-invoked): A contracted ticket to build, a review FAIL to close, a merge to perform, or a hypothesis to prove or refute with one test.
 - **docs-writer** (model-invoked): Documentation the repository can witness. Write or correct one reviewed change, including an inquisition's record through its delivery Feature, for its Ticket Captain.
-- **inquisitor** (model-invoked): Refute-first sweep of landed work. Use when the inquisition's Captain assigns one part of the named scope, or one lens across it.
+- **inquisitor** (model-invoked): Refute-first sweep of landed work, one phase - Read, Break or Drive - over a queue of areas. Use when an inquisition's captain sends you a phase and its queue.
 - **research** (model-invoked): Primary sources, cited. Use when a fact a choice waits on could hide in Decision Records, plans, code, history, or outside sources, or when docs, specs, or API behaviour must be established before work depends on them.
 - **reviewer** (model-invoked): A ticket's code or docs, a spec, a Project plan, or a merged tree - one candidate, one named rubric, one binding verdict.
 - **scout** (model-invoked): One question, one source family, passages back, for a researcher who verifies and pools them.

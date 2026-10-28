@@ -1448,6 +1448,49 @@ public class BashCommandAnalyzerTests
         Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
     }
 
+    // A comment feeds nothing: a < or | in it is text, not a redirection or a pipe.
+    [Theory]
+    [InlineData("python # <stdin>")]
+    [InlineData("python # input < program.py")]
+    [InlineData("python # input | python")]
+    public void PythonWithAFeedOnlyInAComment_IsNoProgramOnStdin(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    // A real feed stays refused with a comment after it, and through a group or a substitution the
+    // pipe leads into, double-quoted or not.
+    [Theory]
+    [InlineData("python < program.py # input")]
+    [InlineData("printf 'print(1)' | python # input")]
+    [InlineData("echo \"$(printf 'print(1)' | python3)\"")]
+    [InlineData("echo $(printf 'print(1)' | python3)")]
+    [InlineData("echo \"`printf 'print(1)' | python3`\"")]
+    [InlineData("printf 'print(1)' | (python3)")]
+    [InlineData("printf 'print(1)' | { python3; }")]
+    [InlineData("printf 'print(1)' | ( ( python3 ) )")]
+    [InlineData("echo \"$(python3 < prog.py)\"")]
+    public void PythonFedThroughACommentGroupOrSubstitution_IsRefused(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, $"Expected dangerous: {command}");
+        Assert.Contains("stdin", reason);
+    }
+
+    [Theory]
+    [InlineData("echo \"$(python3 tools/gen.py)\"")]
+    [InlineData("printf 'x' | (python3 tools/gen.py)")]
+    [InlineData("echo \"$(printf 'x' | grep python3)\"")]
+    public void PythonScriptFileInAGroupOrSubstitution_StaysAllowed(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
     // GS-01: a PowerShell assignment from a literal Get-Content is a read of that path, not an
     // unknown command writing it.
     [Theory]
@@ -1516,6 +1559,37 @@ public class BashCommandAnalyzerTests
 
         Assert.True(result.HasBypassAttempt);
         Assert.Contains(result.Operations, op => op.Type != FileOperationType.Read);
+    }
+
+    // eval, iex, cmd /c, env -S, pwsh -Command, ssh and watch join every later word into the code
+    // they run, so a single-quoted word anywhere among them is code; so is one a shell reads from a
+    // pipe the line does not show.
+    [Theory]
+    [InlineData("eval 'echo x' '> $OUT'")]
+    [InlineData("eval echo 'x > $OUT'")]
+    [InlineData("iex 'echo x' '> $OUT'")]
+    [InlineData("env -S 'echo x' '> $OUT'")]
+    [InlineData("pwsh -Command 'echo x' '> $OUT'")]
+    [InlineData("cmd /c echo 'x > $OUT'")]
+    [InlineData("ssh host 'echo x' '> $OUT'")]
+    [InlineData("ssh host echo 'x > $OUT'")]
+    [InlineData("watch -n 1 'echo x > $OUT'")]
+    [InlineData("printf 'echo x > $OUT' | bash")]
+    public void Analyze_SingleQuotedWordACommandRuns_IsCode(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt, $"Expected a bypass: {command}");
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "$OUT");
+    }
+
+    // bash -c runs its first operand; the next is $0, data.
+    [Fact]
+    public void Analyze_WordAfterAShellCommandString_IsData()
+    {
+        var result = _analyzer.Analyze("bash -c 'echo x' 'name $HOME'");
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
     }
 
     [Fact]

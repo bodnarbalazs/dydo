@@ -940,4 +940,67 @@ public class GuardSecurityTests : IntegrationTestBase
 
         result.AssertPreToolUseAllowed();
     }
+
+    // GS-02: every word eval, ssh or watch joins into the code it runs is code, and so is a line a
+    // shell reads from a pipe, so a dynamic write in any of them is still denied.
+    [Theory]
+    [InlineData("eval 'echo x' '> $OUT'")]
+    [InlineData("eval echo 'x > $OUT'")]
+    [InlineData("ssh host 'echo x' '> $OUT'")]
+    [InlineData("watch -n 1 'echo x > $OUT'")]
+    [InlineData("printf 'echo x > $OUT' | bash")]
+    public async Task Gs02_DynamicWrite_InAnyWordACommandRuns_IsDenied(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("bypass");
+    }
+
+    // GS-05: a < or | in a comment feeds nothing.
+    [Theory]
+    [InlineData("python # <stdin>")]
+    [InlineData("python # input < program.py")]
+    [InlineData("python # input | python")]
+    public async Task Gs05_PythonWithAFeedOnlyInAComment_IsAllowed(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // A real feed is still refused after a comment, into a group, and inside a substitution.
+    [Theory]
+    [InlineData("printf \"open('dydo/files-off-limits.md','w').write('changed')\" | python3 # feeds it")]
+    [InlineData("echo \"$(printf \"open('dydo/files-off-limits.md','w').write('changed')\" | python3)\"")]
+    [InlineData("printf \"open('dydo/files-off-limits.md','w').write('changed')\" | (python3)")]
+    [InlineData("printf \"open('dydo/files-off-limits.md','w').write('changed')\" | { python3; }")]
+    public async Task Gs05_PythonFedThroughACommentGroupOrSubstitution_IsDeniedAndTheCanaryUnchanged(string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "files-off-limits.md");
+        var before = File.ReadAllBytes(canary);
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        var reason = result.AssertPreToolUseDenied();
+        Assert.Contains("Python program on stdin", reason);
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    [Theory]
+    [InlineData("echo \"$(python3 tools/rewrite.py)\"")]
+    [InlineData("printf x | (python3 tools/rewrite.py)")]
+    public async Task Gs05_PythonScriptFileInAGroupOrSubstitution_IsAllowed(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        result.AssertPreToolUseAllowed();
+    }
 }

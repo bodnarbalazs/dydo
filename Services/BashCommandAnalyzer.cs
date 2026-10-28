@@ -274,8 +274,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex QuotedTextRegex();
 
     // The text before a quote that makes it a command string a shell or eval runs: -c, -Command and its
-    // prefixes, cmd's /c or /k, env -S, eval, iex, trap, watch, or an ssh remote command.
-    [GeneratedRegex(@"(?:^|\s)(?:-[A-Za-z]*c|-co(?:m(?:m(?:a(?:n(?:d)?)?)?)?)?|/[ck]|-S|--split-string=?|eval|iex|invoke-expression|trap|watch|ssh(?:\s+\S+)+)\s*$", RegexOptions.IgnoreCase)]
+    // prefixes, cmd's /c or /k, env -S, eval, iex, trap, or any word of a watch or an ssh remote command.
+    [GeneratedRegex(@"(?:^|\s)(?:-[A-Za-z]*c|-co(?:m(?:m(?:a(?:n(?:d)?)?)?)?)?|/[ck]|-S|--split-string=?|eval|iex|invoke-expression|trap|watch(?:\s+\S+)*|ssh(?:\s+\S+)+)\s*$", RegexOptions.IgnoreCase)]
     private static partial Regex CommandStringContextRegex();
 
     /// <summary>
@@ -285,20 +285,28 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static string ExpandingText(string command)
     {
         var text = StripLiteralBodies(command, keepExpanding: true);
-        var words = new Lazy<List<string>>(() => [.. new[] { true, false }
-            .SelectMany(posix => ShellReader.Read(text, posix).Commands).SelectMany(read => read.Words)]);
-        return QuotedTextRegex().Replace(text, quoted => IsLiteralSingleQuoted(text, quoted, words) ? "''" : quoted.Value);
+        var read = new Lazy<(List<CommandLine> Lines, bool Uncertain)>(() => CommandLines(text, ShellDialect.Unknown));
+        return QuotedTextRegex().Replace(text, quoted => IsLiteralSingleQuoted(text, quoted, read) ? "''" : quoted.Value);
     }
 
-    // Single-quoted text taken literally: not bash's $'...' and not a command string something runs
-    // (bash -c '...'). Text spanning lines must also be in a word as the line reads, so an apostrophe
-    // in a comment or an expanding heredoc body, which quotes nothing, cannot hide the lines after it.
-    private static bool IsLiteralSingleQuoted(string text, Match quoted, Lazy<List<string>> words)
+    // Single-quoted text taken literally: not bash's $'...' and not code something runs. Code is a
+    // command string (bash -c '...') or any word of one, since eval, cmd /c, env -S and pwsh -Command
+    // join every word after them into theirs, and any text of a line that cannot be read for certain,
+    // such as one whose pipe a shell reads. Text spanning lines must also be in a word as the line
+    // reads, so an apostrophe in a comment or an expanding heredoc body, which quotes nothing, cannot
+    // hide the lines after it.
+    private static bool IsLiteralSingleQuoted(string text, Match quoted, Lazy<(List<CommandLine> Lines, bool Uncertain)> read)
     {
         var single = quoted.Groups["single"];
-        return single.Success && !quoted.Groups["ansi"].Success
-            && !CommandStringContextRegex().IsMatch(text[LineStart(text, quoted.Index)..quoted.Index])
-            && (!single.Value.Contains('\n') || words.Value.Any(word => word.Contains(single.Value, StringComparison.Ordinal)));
+        if (!single.Success || quoted.Groups["ansi"].Success
+            || CommandStringContextRegex().IsMatch(text[LineStart(text, quoted.Index)..quoted.Index]))
+            return false;
+
+        var (lines, uncertain) = read.Value;
+        bool Holds(string held) => held.Contains(single.Value, StringComparison.Ordinal);
+        return !uncertain && !lines.Any(line => line.Text != text && Holds(line.Text))
+            && (!single.Value.Contains('\n') || lines.Any(line => line.Text == text
+                && line.Commands.Any(command => command.Words.Any(Holds))));
     }
 
     // The command's layout: bodies gone and every quoted string emptied, so a line break left in it
@@ -487,9 +495,32 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             return false;
         var (dash, uncertain) = Runs(command, words => PythonSourceOf(words) == PythonSource.Dash);
         return dash || (uncertain && PythonDashRegex().IsMatch(command))
-            || CommandLines(command, ShellDialect.Unknown).Lines.Select(line => line.Text).Distinct().SelectMany(FedStages)
-                .Any(stage => Runs(stage, words => PythonSourceOf(words) == PythonSource.NoOperand).Found);
+            || CommandLines(MarkFeeds(command), ShellDialect.Unknown).Lines.SelectMany(line => line.Commands)
+                .Any(read => read.Fed && PythonSourceOf(read.Words) == PythonSource.NoOperand);
     }
+
+    // Written as words of their own after a pipe and before a < redirection; no command line holds them.
+    private const string PipeMark = "\u0002";
+    private const string RedirectMark = "\u0003";
+
+    // A pipe (| or |&, not ||, >| or \|), with the spaces and the ( or { of a group it leads into.
+    [GeneratedRegex(@"(?<![|>\\])\|&?(?!\|)[ \t({]*")]
+    private static partial Regex PipeRegex();
+
+    // A < redirection, with any fd digits that start its word; << and <<< are one, \< is no
+    // redirection and <# opens a PowerShell comment.
+    [GeneratedRegex(@"(?:(?<=^|[\s;&|(){}])\d+|(?<![<\d\\]))<(?!#)")]
+    private static partial Regex InputRedirectionRegex();
+
+    /// <summary>
+    /// The command line with a mark word after each pipe and before each &lt; redirection, so the
+    /// reading (<see cref="CommandLines"/>) finds a mark only where the shell pipes or redirects: as the
+    /// first word of the command a pipe leads into, the first in a group or a substitution included,
+    /// or as a word of the command a &lt; feeds. In quotes, a comment or a body a command reads, a mark
+    /// is text of that word or body, and in a command string it is read with that string.
+    /// </summary>
+    private static string MarkFeeds(string command) =>
+        InputRedirectionRegex().Replace(PipeRegex().Replace(command, pipe => pipe.Value + PipeMark + " "), redirect => $" {RedirectMark} {redirect.Value}");
 
     /// <summary>
     /// Where a Python call (python, python3.12, pythonw or py, under any path, case or .exe) takes its
@@ -524,35 +555,27 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         words.Take(program).SkipWhile(word => CommandPosition.ProgramName(word) != "command").Skip(1)
             .TakeWhile(word => word.StartsWith('-')).Any(word => word.AsSpan(1).IndexOfAny('v', 'V') >= 0);
 
-    // A command separator in a layout: a list operator, a pipe (| or |&), an & that is no
-    // redirection, a parenthesis or brace, or a line break.
-    [GeneratedRegex(@"\|\||&&|\|&?|(?<![<>])&(?!>)|[;\n(){}]")]
-    private static partial Regex SeparatorRegex();
-
-    /// <summary>
-    /// The commands of one command line whose stdin something feeds: each after a pipe, and each
-    /// holding a &lt; redirection, a heredoc or a here-string. Bodies a command only reads are left
-    /// out, and a separator inside quotes splits nothing.
-    /// </summary>
-    private static IEnumerable<string> FedStages(string text)
-    {
-        var code = StripLiteralBodies(text);
-        var layout = QuotedTextRegex().Replace(code, quoted => new string(' ', quoted.Length));
-        var start = 0;
-        var piped = false;
-        foreach (Match separator in SeparatorRegex().Matches(layout + "\n"))
-        {
-            if (piped || layout.AsSpan(start, separator.Index - start).Contains('<'))
-                yield return code[start..separator.Index];
-            piped = separator.Value is "|" or "|&";
-            start = separator.Index + separator.Length;
-        }
-    }
-
     private const int MaxCommandLineDepth = 8;
 
-    /// <summary>One reading of one command line: its text and its commands' words.</summary>
-    private sealed record CommandLine(string Text, List<IReadOnlyList<string>> Commands);
+    /// <summary>One reading of one command line: its text and its commands.</summary>
+    private sealed record CommandLine(string Text, List<ReadCommand> Commands);
+
+    /// <summary>
+    /// One command as its shell reads it: its words, and whether something feeds its stdin, a heredoc
+    /// or here-string, or in a line from <see cref="MarkFeeds"/> a pipe or a &lt; redirection.
+    /// </summary>
+    private sealed record ReadCommand(IReadOnlyList<string> Words, bool Fed);
+
+    // Takes the marks MarkFeeds wrote out of the command's words, so its program and its script read
+    // as the line has them.
+    private static ReadCommand Unmark(ShellReader.Command command)
+    {
+        var piped = command.Words is [PipeMark, ..];
+        var redirected = command.Words.RemoveAll(word => word == RedirectMark) > 0;
+        if (piped)
+            command.Words.RemoveAt(0);
+        return new ReadCommand(command.Words, piped || redirected || command.Stdin.Count > 0);
+    }
 
     /// <summary>
     /// The command lines a command line runs, read as its shell reads them (<see cref="ShellReader"/>;
@@ -585,7 +608,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         foreach (var posix in readings)
         {
             var reading = ShellReader.Read(text, posix);
-            lines.Add(new CommandLine(text, [.. reading.Commands.Select(command => (IReadOnlyList<string>)command.Words)]));
+            lines.Add(new CommandLine(text, [.. reading.Commands.Select(Unmark)]));
             uncertain |= reading.Failed;
             foreach (var substitution in reading.Substitutions)
                 uncertain |= ReadCommandLines(substitution, ShellDialect.Posix, depth + 1, lines);
@@ -635,7 +658,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static (bool Found, bool Uncertain) Runs(string command, Func<IReadOnlyList<string>, bool> isCall)
     {
         var (lines, uncertain) = CommandLines(command, ShellDialect.Unknown);
-        return (lines.SelectMany(line => line.Commands).Any(isCall), uncertain);
+        return (lines.SelectMany(line => line.Commands).Any(command => isCall(command.Words)), uncertain);
     }
 
     // Written where a nudge's match starts; no command line holds it.
@@ -651,7 +674,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     internal static bool RunsAt(string command, int index, ShellDialect dialect)
     {
         var (lines, uncertain) = CommandLines(command.Insert(index, LaunchMark), dialect);
-        return uncertain || lines.SelectMany(line => line.Commands)
+        return uncertain || lines.SelectMany(line => line.Commands).Select(command => command.Words)
             .Any(words => CommandPosition.Skip(words) is var at && at < words.Count && words[at].Contains(LaunchMark, StringComparison.Ordinal));
     }
 

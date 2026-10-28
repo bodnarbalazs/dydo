@@ -39,11 +39,12 @@ map and how the tickets move, integrate, and finish together.
   turn, and no native background subagents. Without T3, the host's native subagents. A native child
   lives only inside its dispatcher's turn and cannot `delegate_task` (`parent_not_active`): when a
   captain reports it, dispatch its crew for it. Stay in your turn while you wait on a native child.
-  Every brief that sends out Codex agents names a cap: around 8 at once, toward 16 only while clean;
-  a capacity 429 means retry in a few minutes, never a blocker; never "maximise parallelism". Never
-  `t3_thread_launch` or `create_threads` for AFK captains or crew: top-level threads are the user's,
-  only for HITL work or when the user asks. Needing the user while work runs, ask through the host's
-  question tool; the Linear Question ticket stays the record. Full rule: working-tree contract.
+  Every brief that sends out Codex agents names a cap: around 8 at once, toward 16 only while clean,
+  fewer on `429 turn_rate_limit_exceeded` ("Codex is at capacity"); a capacity 429 means retry in a
+  few minutes, never a blocker; never "maximise parallelism". Never `t3_thread_launch` or
+  `create_threads` for AFK captains or crew: top-level threads are the user's, only for HITL work or
+  when the user asks. Needing the user while work runs, ask through the host's question tool; the
+  Linear Question ticket stays the record. Full rule: working-tree contract.
 - **Wayfinding:** perfect plans are fiction; the approved plan fixes the destination, not every turn.
   As fog clears, use `wayfinder` to settle the visible route. Hold Research, Grilling, Question and
   Walkthrough yourself; commission captains for Prototype and Enablement. Pull shared or

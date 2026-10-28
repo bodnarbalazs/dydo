@@ -37,11 +37,12 @@ the default officer: a ticket gets a captain whether or not the user has invoked
   child or a result you own; work that outlasts the turn goes by `delegate_task`. A native child
   lives only inside its dispatcher's turn and cannot `delegate_task`: on `parent_not_active`, ask
   your officer (the Admiral, or the user when none is invoked) to dispatch it. Every brief that
-  sends out Codex agents names a cap: around 8 at once, toward 16 only while clean; a capacity 429
-  means retry in a few minutes, never a blocker; never "maximise parallelism". Never
-  `t3_thread_launch` or `create_threads` for crew: top-level threads are the user's, only for HITL
-  work or when the user asks. Needing the user while work runs, ask through the host's question
-  tool; the Linear Question ticket stays the record. Full rule: working-tree contract.
+  sends out Codex agents names a cap: around 8 at once, toward 16 only while clean, fewer on
+  `429 turn_rate_limit_exceeded` ("Codex is at capacity"); a capacity 429 means retry in a few
+  minutes, never a blocker; never "maximise parallelism". Never `t3_thread_launch` or
+  `create_threads` for crew: top-level threads are the user's, only for HITL work or when the user
+  asks. Needing the user while work runs, ask through the host's question tool; the Linear Question
+  ticket stays the record. Full rule: working-tree contract.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Author no production
   change and never review your own candidate. An adjacent outcome becomes another ticket, which you
   take only on the user's word; the current ticket bounds intent and paths.

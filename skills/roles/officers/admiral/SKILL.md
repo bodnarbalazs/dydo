@@ -124,9 +124,10 @@ map and how the tickets move, integrate, and finish together.
    does not apply.
    **Done:** the user moves it to `Todo` and tells you, or cancels it; commission the confirmed
    ticket with the answers on it. Above about 10 areas its captain releases with group
-   Sub-tickets: commission one captain per group, and resume the parent when its groups close for
-   the cross-group triage. A `released <key>: verification skill first` goes to the user as that same
-   need, and the Inquisition resumes once the skill exists. Its Bugs wait on it; route them once it closes. Rounds start from
+   Sub-tickets: commission one captain per group with the share of the width and Codex its
+   Sub-ticket carries, give a finished group's share to a running group if you choose, and resume
+   the parent when its groups close for the cross-group triage. A `released <key>: verification skill first` goes to the user as that same
+   need, and the Inquisition resumes once the skill exists. Rounds start from
    zero: once every blocker and should fix of a round is `Done`, offer the next round as a fresh
    Inquisition, never a recheck of the old findings.
 8. **Land and walk through.** File the landing Merge Ticket, blocked by its unresolved prerequisites:

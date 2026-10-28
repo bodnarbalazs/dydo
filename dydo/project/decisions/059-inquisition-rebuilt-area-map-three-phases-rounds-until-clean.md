@@ -81,10 +81,13 @@ The tracks are called **phases** below.
    healthy inquisition. When a project with a runnable surface has none, the admiral raises it at
    commission and the skill is created before the inquisition. A project with nothing to run has
    no verification skill by its nature, and Drive does not apply there.
-5. **Crew are workers.** Nesting stays at two levels. Each agent works a queue of areas for its
-   phase, in order. There are no per-phase quotas of hypotheses or journeys. The only budget rule:
+5. **Crew are workers.** Nesting stays at two levels. One agent per area per phase: its queue is
+   that area's work items, its hypotheses, journeys, routed findings and follow-ups. Tiny areas are
+   merged into one area when the map is drawn, never packed into one dispatch. Inquisition crew run
+   as their own sessions, dispatched through T3 `delegate_task` per DR 057, because they outlive the
+   captain's turn. There are no per-phase quotas of hypotheses or journeys. The only budget rule:
    an inquisition crew agent past its context limit finishes its current item, documents, and
-   hands the rest of its queue back to its captain, who dispatches a fresh agent. The limit
+   hands the rest of its area back to its captain, who dispatches a fresh agent. The limit
    defaults to 110k tokens and is tunable at commission. It applies to inquisition crew only:
    officers and other agents compact well, while inquisition crew run long and autonomous, without
    the user's messages that trigger a session's compaction. The threshold is a tunable for today's
@@ -108,8 +111,10 @@ The tracks are called **phases** below.
    own branch off the feature SHA, its red test turning green. Well-defined means one obvious fix,
    inside one area, small, touching no contract, DR or public interface. The Bug is filed with the
    patch attached and reviewed once, in its own chain; its captain uses the prepared fix, verifies
-   and reviews it rather than starting from zero. Nothing merges mid-round, and nits are never
-   auto-patched.
+   and reviews it rather than starting from zero. Nits are never auto-patched. The inquisition
+   merges nothing but its own record; a filed Bug is pickable at once and its fix may merge into
+   the feature mid-round, since the audit is pinned to its SHA (the captain's provisional call,
+   pending Balazs).
 8. **The record.** The inquisition delivers its own record as its last step: a docs-writer writes
    it, a docs reviewer checks it, and it merges into the feature branch. Audit and proof branches
    never merge, and each open Bug's reproduction ref is retained as before.
@@ -155,11 +160,13 @@ Partially supersedes [DR 047](./047-supersymmetry-hop-statuses-merge-issues-and-
 proof-only implementer whose only output is a test, and its one inquisition per landing offered
 once the feature is integrated, with another only when the human confirms one after a walkthrough.
 Partially supersedes [DR 045](./045-flow-map-hats-review-tiers-and-working-tree-contract.md)'s
-Audit row and §3, "rare, fan-out across lenses", for the same question. Retires the separate
+Audit row and §3, "rare, fan-out across lenses", for the same question. Partially supersedes
+[DR 058](./058-review-severities-blocker-should-nit.md) §1's "no Linear ticket" for a nit, for
+inquisitions only: an inquisition's nits go on its round's nit ticket. Retires the separate
 primary record-delivery Feature and its release-and-reopen loop, which DYD-90 added to the
 working-tree contract without a Decision Record. The Inquisition stays a captain-held primary
 Type, cut from the integrated feature SHA on a branch that never merges, filing outcomes rather
-than a PASS or FAIL; both DRs stay `accepted` otherwise.
+than a PASS or FAIL; all three DRs stay `accepted` otherwise.
 
 ## Related
 

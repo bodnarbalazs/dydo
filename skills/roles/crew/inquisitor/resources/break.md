@@ -7,7 +7,7 @@ area fails and decides each with a test it writes itself, on its proof branch.
 
 Prove three things and return a failure to the captain instead of working around it:
 
-1. `HEAD` is on the proof branch your brief names, cut from the audit SHA.
+1. `HEAD` is on the proof branch your brief names, `proof/<KEY>-<area>-<n>`, cut from the audit SHA.
 2. The worktree is clean.
 3. Every path you will touch is a test path: a test project, a test folder or a test file.
 

@@ -73,8 +73,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    outcome, paths, gates and isolated branch/worktree off the parent. Contract each lane and give
    each merge into the parent its own Merge Sub-ticket, wired in order. **Done:** the parent is
    `In Progress` while lanes run; each has its own chain and evidence. A lane needing another split
-   becomes siblings; the Bug stages below, Merge and map-holder-held Sub-tickets are the other
-   permitted children.
+   becomes siblings; the Bug stages below, Merge, an Inquisition's group Sub-tickets and
+   map-holder-held Sub-tickets are the other permitted children.
 4. **Direct the crew.** Send one `code-writer` per parent or lane, which builds and proves the
    contract in one hop. Route docs to `docs-writer`; the code-writer uses
    `diagnosing-bugs` when a Bug other than an unused member lacks a red reproduction. Set `Implementing` on each spawn and

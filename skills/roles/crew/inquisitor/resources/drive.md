@@ -33,5 +33,6 @@ apply and the area's map row says so.
 
 6. **Write the area's entries** in the return shape. A finding's proof is the rerunnable steps:
    launch, each action or request with its input, then the observed against the expected output.
-   A verification gap's `wrong` names the user action and the capability the skill lacks. Done when
-   another agent could rerun every finding and sighting from the return alone.
+   A verification gap's `wrong` names the user action and the capability the skill lacks. Each
+   unreachable journey goes under `Unreachable` with its prerequisite and the route you tried. Done
+   when another agent could rerun every finding and sighting from the return alone.

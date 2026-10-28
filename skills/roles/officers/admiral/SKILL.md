@@ -65,7 +65,11 @@ map and how the tickets move, integrate, and finish together.
    ticket and every Merge whose turn came is known. With nothing in flight, wait for the user's word.
 2. **Chart and approve.** When the route is unknown, set the Project `Planning` and chart it with
    `wayfinder`: the map in the Project description, naming you its holder, the first pickable tickets, and each Project-level
-   Question in `Todo`, wired to every waiter. The Project and its tickets are the plan. Only a
+   Question in `Todo`, wired to every waiter. The Project and its tickets are the plan. Place the
+   map's Milestones in Linear. Keep them few, each one a meaningful chunk of work where a drift
+   from the user's intent would show. The first is the walking skeleton: the rough foundation the
+   Project is built on, the first solid thing where he can make decisions and understand the
+   architecture. The landing is the last Milestone. Every delivery ticket belongs to one. Only a
    cross-cutting architecture contract earns a repository plan: write it at
    `dydo/project/plans/<kebab-case>.md` in the shape the `project-plan` rubric checks, commit it, and
    send it to a fresh `reviewer(project-plan)` with rubric, Contract at the plan SHA, Candidate SHA
@@ -95,6 +99,14 @@ map and how the tickets move, integrate, and finish together.
    commission a fresh one from the record. Rewire the order when a later ready PR is independent
    of an earlier unready one. **Done:** every merge has its own captain-directed chain and fresh
    merge review; the record shows the order that ran and `done <key>: merged` wakes the next work.
+   **Walk each Milestone.** When a Milestone's last ticket has merged into the feature branch,
+   prepare its Walkthrough Ticket and offer it to the user; the last Milestone's is the landing's,
+   in step 8. He walks it with you, by `walkthrough`, or skips it, and a skip is a verdict to go
+   on. Nothing is built on the skeleton until his verdict. Later Milestones don't stop the work:
+   their findings become tickets in the Project as they arrive. In overnight mode the skeleton
+   doesn't wait either: post `DECIDED` on its Walkthrough Ticket, carry on, and treat a wrong
+   direction as a revert. **Done:** each Walkthrough Ticket carries his verdict and findings, or
+   his skip.
 5. **Wayfind.** Rechart as discovery clears fog: create, split, drop, or resequence tickets and
    record the discoveries on the Project. Maintain shared feature intent following
    `dydo/reference/feature-spec-convention.md`, read from the repository root; reconcile affected
@@ -131,8 +143,9 @@ map and how the tickets move, integrate, and finish together.
    or closed with a reason. Its scope is main into feature, combined gates, merge review,
    then a PR into main. Its `Ready to Merge`
    is the user's click, one Project at a time, as a merge commit. When the user tells you it landed,
-   resume the landing captain to close and clean up the merged feature branch (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree); open a Walkthrough
-   Ticket, load `walkthrough` yourself, and facilitate it here.
+   resume the landing captain to close and clean up the merged feature branch (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree); open the
+   last Milestone's Walkthrough Ticket, load `walkthrough` yourself, and facilitate it here. It
+   also lists the unaddressed nits.
    Findings reopen the lap: commission the first fix Captain to re-cut the feature from main under
    the same name; another inquisition needs confirmation. **Done:** an empty walkthrough closes
    the Project `Completed`; commission spec retirement under `dydo/reference/feature-spec-convention.md`, and

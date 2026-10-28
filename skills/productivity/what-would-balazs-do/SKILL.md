@@ -42,8 +42,9 @@ the tribunal cannot decide, waits for his word.
 ## Case law
 
 Only his own words are his precedent: Decision Records (superseded ones as history), the docs, his
-answered Questions and grillings, and past conversations where available. A later word outranks an
-earlier one. A tribunal's output is never precedent until he ratifies it. Search the current
+answered Questions and grillings, and past conversations where available. His Walkthrough
+verdicts, findings and skips are his own words too, and samples of his taste; a skip is a chunk he
+trusted without looking. A later word outranks an earlier one. A tribunal's output is never precedent until he ratifies it. Search the current
 project unless he points it at another project's records.
 
 Case law is evidence of his intent, not a rulebook. Read why he decided, from the DRs, the core docs

@@ -90,8 +90,10 @@ from skipping the middle: discovery first, then a question that is on the record
 
 **Rule:** run bounded discovery - the Decision Records, the plan, the ticket's links, the glossary, the
 code - and only when it comes up empty file a Question Ticket listing what you searched, wire it as a
-blocker, then release with branch pushed, resume SHA posted, worktree cleaned (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree), parent Todo and
-unassigned. The admiral resumes blocker-cleared work on the next captain return or user word. Settle operational conflicts by
+blocker, then release with branch pushed, resume SHA posted, the worktrees the captain or its crew
+made (lanes, merge checkouts, temp checkouts) cleaned with `dydo clean --dry-run <worktree>`, then
+`dydo clean <worktree>`, run from outside that tree, parent Todo and unassigned. The worktree the
+captain's thread runs in belongs to T3: leave it. The admiral resumes blocker-cleared work on the next captain return or user word. Settle operational conflicts by
 precedence: the user's live instruction, then the Decision Record, the reviewed plan at its governing
 commit, the pinned feature spec, the ticket contract, coding standards, existing code. The ladder is crew → Ticket Captain → admiral → user, and the user is
 reached for a conflict with a Decision Record, live external state no agent can coordinate, or authority

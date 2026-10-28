@@ -20,7 +20,7 @@ status circle from its position in its category.
 | `Planning` | The map holder is charting the first low-resolution map with `wayfinder`; a repository plan, when one is written, runs its review loop. |
 | `Planned` | The user approved the charted route, and any repository plan passed independent review; the map holder commissions the first Ticket Captain to open the feature. |
 | `In Progress` | The map holder is working the map through Ticket Captains toward the destination. |
-| `Completed` | The destination landed and a walkthrough found nothing more; commission [spec retirement](./feature-spec-convention.md#retirement). |
+| `Completed` | The destination landed and the landing's walkthrough found nothing more; commission [spec retirement](./feature-spec-convention.md#retirement). |
 | `Canceled` | The destination was consciously abandoned; record why and commission [spec retirement](./feature-spec-convention.md#retirement). |
 
 There are no canonical Project labels: a Project's status and ticket graph carry the information.
@@ -72,7 +72,7 @@ ticket carries exactly one Type. Mode sits on every Type a captain holds.
 | `Question` | map holder | any | One prepared, discrete question whose answer blocks named work. | the user's answer on the ticket | `#F2C94C` |
 | `Research` | map holder | any | A factual answer whose investigation needs its own owner, status or evidence. | cited findings on the ticket | `#95A2B3` |
 | `Grilling` | map holder | any | A tree of intent or specification choices resolved with the user. | shared understanding recorded, with its Decision Records linked | `#D4A017` |
-| `Walkthrough` | map holder | primary only | The user inspects what landed: what changed, where to look, how to try it, what reviewers flagged. | the user has walked it; findings filed as tickets | `#C69C6D` |
+| `Walkthrough` | map holder | primary only | The user walks the whole product as it stands: the feature branch at a Milestone, or main at the landing. The emphasis is on what changed since the last walkthrough and what needs the most careful look. The tour also covers where to look, how to try it, and what reviewers left open. There's one per Milestone, prepared even if he skips it, and the landing's comes last. | his verdict quoted on the ticket, or his skip recorded; findings filed as tickets | `#C69C6D` |
 
 A captain-held ticket normally uses one author - `code-writer`, or `docs-writer` for a documentation
 change - and review at the working-tree contract's [Delivery scale](../guides/working-tree-contract.md#delivery-scale-and-evidence). A spec review of the contract before any
@@ -125,6 +125,13 @@ files a `Question` only when judgment remains.
 | `Inquisition` | `Backlog` → `Todo`, the user's confirmation → `In Progress`, the captain writes the contract, then the sweep and proofs → released `Todo` → resumed `In Progress` → `Done`; follow the [working-tree contract](../guides/working-tree-contract.md) |
 | captain-held default, subject to the Type exceptions | `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
 | Merge Sub-ticket | `Todo` → `Implementing` → `In Review` → `Done`; it merges, it is never merged |
+
+A Project's map holder places its Milestones in Linear while charting: few, each a meaningful chunk
+of work where a drift from the user's intent would show, the walking skeleton first and the landing
+last. Every delivery ticket belongs to one, and each Milestone has one Walkthrough Ticket. Only the
+walking skeleton's holds back the work built on it: filed with the map, it is a native blocker of
+the next Milestone's delivery tickets until his verdict or skip closes it. In overnight mode it
+blocks nothing, and later Milestones' Walkthrough Tickets never block.
 
 A captain creates Sub-tickets one level deep: lanes for separate work that can run at the same time,
 each carrying its parent's Type and Mode,
@@ -181,7 +188,7 @@ required connector capability.
 | `Question` | the four items above. |
 | `Research` | `## Question` and `## Destination` for the cited report. |
 | `Grilling` | `## Subject` (the plan, decision or idea), `## Tree` of choices with their answers and reasoning, `## Records` linked. |
-| `Walkthrough` | `## What landed` (branch, SHA, final PASS), the four-part tour, `## Findings` as linked tickets. |
+| `Walkthrough` | `## Checkpoint` (the Milestone or the landing, its branch and SHA), the four-part tour, `## Verdict` (his words, or the skip), `## Findings` as linked tickets. |
 
 `## Exact gates` lists its two scales separately: the cheap checks and change-relevant tests that
 prove one hop, and the full suites and whole gate set that run at the ticket's final gates, its Merge

@@ -49,7 +49,7 @@ session or an invoked admiral can direct one per ticket.
 |---|---|---|---|---|---|---|
 | user | user | the terminal | - | `main`, where his own commits need no ticket, and any session | thinks, files Projects, holds a Project's map by default and charts it with `wayfinder`, approves plans, answers Questions, confirms inquisitions, clicks the landing one Project at a time and an atomic ticket's reviewed PR, walks through; tells an invoked admiral after each of his board moves, and takes the map back at any time | - |
 | co-thinker | skill | any session, keeping its role | any session with an unripe idea | no branch; DRs and glossary on the current branch | homework, grilling, domain-modeling, recommendation; a DR when the ADR test passes; an atomic ticket with its five fields, Type and Mode | a DR (F), a Project through `to-project` (L), an atomic ticket (L) |
-| admiral | officer, optional | top-level session, explicit-only | the user, only when he wants a right hand for throughput, on a Project at any stage | `feature/<slug>` once the map holder opens one at Open; none before that, or on a Project with no feature branch | holds the map until the user takes it back; wakes on a captain's return or the user's word, reads the Project and acts: charts it with `wayfinder`, writes a plan only for a cross-cutting architecture contract and owns its review, puts approval to the user, commissions the first captain to open the feature, commissions captains, wires the merge order and re-wires it when a later PR is ready first, sets priority on what waits on the user, runs its wayfinding with the user, proposes the inquisition, files the landing and the walkthrough, closes | the user in its own session (C); the board (L) |
+| admiral | officer, optional | top-level session, explicit-only | the user, only when he wants a right hand for throughput, on a Project at any stage | `feature/<slug>` once the map holder opens one at Open; none before that, or on a Project with no feature branch | holds the map until the user takes it back; wakes on a captain's return or the user's word, reads the Project and acts: charts it with `wayfinder`, writes a plan only for a cross-cutting architecture contract and owns its review, puts approval to the user, commissions the first captain to open the feature, commissions captains, wires the merge order and re-wires it when a later PR is ready first, sets priority on what waits on the user, runs its wayfinding with the user, prepares each Milestone's walkthrough, proposes the inquisition, files the landing and its walkthrough, closes | the user in its own session (C); the board (L) |
 | ticket-captain | officer, the default, also agent | top-level for an atomic or HITL ticket; spawned by the user's session or an invoked admiral for an AFK one | the user's session, or an invoked admiral | `DYD-123-<slug>` in an isolated worktree; `inquisition/<slug>` for an inquisition | claims, takes an adjacent ticket only on the user's word, sets the status at every chain spawn, directs [code-writer] → [reviewer] on the parent or each lane and adds a spec review only on a risk its contract records, divides when the writer names lanes, sets `Ready to Merge` when the PR carries its PASS, runs its Merge Sub-tickets or, on an atomic ticket, waits for the user's click, cleans up | the spawner: `done <key>` or `released <key>: <reason>` (R); everything else on the record (L) |
 | chief-of-staff | officer | top-level session, explicit-only | the user | none | the bird's-eye view over the Projects in flight: the three lists, grilling open Questions, mediating collisions, sweeping stale state and orphans | the user (C); delivery staged on its Project for the map holder (L) |
 | research | crew, delegates, web | agent | co-thinker, the map holder, ticket-captain | reads | one fact a choice waits on, cited; sends scouts | the invoker: one-line answer, destination, unsettled points (R); report as ticket comment (L) or scratch file (F) |
@@ -93,7 +93,7 @@ Methods loaded only when the user asks:
 | to-project | a co-think is ripe and belongs in Linear | a Project in `Backlog`: title, summary, the intent as description, links to the DR, the glossary entries and the source FutureFeature when one exists; no tickets |
 | to-ticket | a plan, spec or conversation is ready to become tickets | pickable tracer-bullet tickets in `Todo`, each with one Type, a Mode where a captain holds the Type, and the five fields or its Type's own template, wired with native blocking relations |
 | handoff | the session is ending and another agent continues; also loaded by an officer briefing an agent it dispatches | a handoff document in the scratch directory |
-| walkthrough | a Walkthrough Ticket is open; also loaded at the map holder's landing step | the four-part tour: what changed, where to look, how to try it, what reviewers flagged |
+| walkthrough | a Walkthrough Ticket is open; also loaded at the map holder's Milestone and landing steps | the four-part tour of the whole product as it stands, newest changes first: what changed, where to look, how to try it, what reviewers flagged or deferred |
 | teach | the user wants to learn a topic in the workspace | a mission and its learning records |
 
 User commands:
@@ -140,12 +140,14 @@ flowchart TD
   RP -->|PASS| H1
   H1 --> OP[map holder commissions first captain to open feature; wires merge order]:::officer
   OP <-->|"one captain per pickable AFK ticket, the loop in 3b: commission · done &lt;key&gt;: PR ready · merge, when its turn comes · done &lt;key&gt;: merged"| IC[ticket-captain]:::officer
+  OP -->|"a Milestone's last ticket merged: its Walkthrough Ticket"| MW([user walks it with the map holder, or skips it]):::human
+  MW -->|"verdict or skip; findings as tickets; only the walking skeleton's holds the work, except overnight"| OP
   OP -->|all landed: Inquisition Ticket in Backlog, cost and the commission question| H2([user moves it to Todo with the commission and tells an invoked admiral, or cancels]):::human
   H2 -->|the map holder commissions| IQ[ticket-captain of the inquisition, 6.6: Bugs filed, record merged]:::officer
   IQ -->|blocker and should fixes Done: the next round from zero, until one is clean| OP
   OP -->|landing Merge Ticket: main into the feature, gates, merge review| LM[ticket-captain of the landing]:::officer
   LM -->|PR into main with its PASS, Ready to Merge| H3([user clicks the merge, one Project at a time, and tells an invoked admiral]):::human
-  H3 -->|map holder commissions landing captain cleanup; the map holder loads walkthrough| WT[Walkthrough Ticket: the map holder with the user]:::officer
+  H3 -->|map holder commissions landing captain cleanup; the map holder loads walkthrough| WT[the landing's Walkthrough Ticket, the last Milestone's: the map holder with the user]:::officer
   WT -->|findings: tickets, a second lap on the re-cut feature| OP
   WT -->|nothing: Project Completed| END([done]):::human
 ```
@@ -282,6 +284,10 @@ Step by step, with the Linear status each step leaves behind:
     does not depend on it, the map holder re-wires the order first. Its code-writer merges with `--no-ff`, a
     resolution that refactored leaving its code no worse than either side, before a fresh `reviewer(merge)` judges the integrated feature; PASS sets the Sub-ticket and the primary `Done`.
     The captain cleans up and returns `done <key>: merged`. PR by PR, in plan order, never batched.
+    When a Milestone's last ticket has merged, the map holder offers its Walkthrough Ticket; the
+    user walks it or skips it, and a skip is a verdict to go on. The walking skeleton's, filed with
+    the map, natively blocks the next Milestone's tickets until it closes, except overnight; a later
+    Milestone's blocks nothing, and its findings become tickets as they arrive.
 13. **Inquisition, rounds until clean.** The map holder files an Inquisition Ticket with its cost
     in `Backlog` and puts the commission question to the user; the user moves it to `Todo` and tells
     an invoked admiral, or cancels; the map holder commissions a captain who runs it, files Bugs,
@@ -290,10 +296,11 @@ Step by step, with the Linear status each step leaves behind:
     finds no blocker and no should. Section 6.6.
 14. **Land.** The map holder files the landing Merge Ticket, blocked by every open should-ticket; its captain directs a code-writer to merge `main` into
     the feature, a resolution that refactored leaving its code no worse than either side, verifies combined gates, and obtains the merge review that proves the plan's acceptance criteria, opens
-    the PR into `main`, sets `Ready to Merge`, and prepares the walkthrough. The user clicks, one
+    the PR into `main`, sets `Ready to Merge`, and prepares the landing's walkthrough, the last
+    Milestone's. The user clicks, one
     Project at a time; the PR lands as a merge commit.
 15. **Walk through.** The map holder commissions the landing Captain to clean up after the user
-    lands, opens the Walkthrough Ticket and loads `walkthrough` itself, then
+    lands, opens the last Milestone's Walkthrough Ticket and loads `walkthrough` itself, then
     facilitates it. Findings become tickets; the map holder commissions the first fix
     Captain to re-cut the feature from `main` under the same name. Nothing found sets the Project
     `Completed`, with the landing Captain's artifact cleanup confirmed.
@@ -409,10 +416,10 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 41a | inquisition captain → docs-writer, reviewer(docs) (record) | R (spawn), G | on the Inquisition's own ticket branch from the feature tip: `dydo/project/inquisitions/<YYYY-MM-DD>-<slug>.md` from the pushed register, then a fresh docs review | the register, the ticket, writing-docs | `Implementing`, then `In Review` |
 | 41b | inquisition captain → admiral | G, L, R | the record's PR into the feature with its PASS block; `done <key>: PR ready`; then its Merge Sub-ticket as any Project ticket's | the record | `Ready to Merge` |
 | 42 | inquisition captain → admiral, Linear | R, L | after the record merges: the record at its path, every Bug filed and wired and every retained ref live, verified on the feature; the audit branch deleted; `done <key>: merged` | when this round found a blocker or a should, the admiral offers the next round once every such fix is `Done` | Inquisition `Done` |
-| 43 | map holder → Linear (landing) | L | the landing Merge Ticket: `main` into the feature, gates, merge review with acceptance proof, the PR into `main`, the walkthrough prepared | - | `Todo`, blocked by unresolved prerequisites for this landing: delivery, each confirmed Inquisition round, required fixes and every should-ticket; exclude self and later/deferred work; it lands only after a round with no blocker and no should |
+| 43 | map holder → Linear (landing) | L | the landing Merge Ticket: `main` into the feature, gates, merge review with acceptance proof, the PR into `main`, the landing's walkthrough prepared | - | `Todo`, blocked by unresolved prerequisites for this landing: delivery, each confirmed Inquisition round, required fixes and every should-ticket; exclude self and later/deferred work; it lands only after a round with no blocker and no should |
 | 44 | landing captain → Git, admiral | G, R | the PR into `main` with its PASS block; `done <key>: PR ready` | - | landing `Ready to Merge` |
-| 45 | admiral → user → Git | C, G | the PR to click and the walkthrough that follows; the feature merged into `main` as a merge commit, one Project at a time; the user tells the admiral, which resumes the landing captain to close and clean up the merged feature: `done <key>: merged` | - | landing `Done`, set by its captain |
-| 46 | map holder → Walkthrough Ticket, user | L, C | the ticket; `walkthrough` loaded by the map holder, then the four-part tour; commission first fix Captain to re-cut the feature if findings reopen the lap | - | `In Progress` → `Done`; findings as tickets; Project `Completed` when none |
+| 45 | admiral → user → Git | C, G | the PR to click and the landing's walkthrough that follows; the feature merged into `main` as a merge commit, one Project at a time; the user tells the admiral, which resumes the landing captain to close and clean up the merged feature: `done <key>: merged` | - | landing `Done`, set by its captain |
+| 46 | map holder → Walkthrough Ticket, user | L, C | the ticket, one per Milestone and the landing's last; `walkthrough` loaded by the map holder, then the four-part tour of the whole product, or the user's skip; only the walking skeleton's verdict holds back the work built on it, except overnight; at the landing, commission first fix Captain to re-cut the feature if findings reopen the lap | - | `In Progress` → `Done`; his verdict quoted or his skip recorded; findings as tickets; Project `Completed` when the landing's finds none |
 | 47 | crew → ticket-captain (hand-raise) | R | the question, what was searched, why it blocks, facts or options found | - | - |
 | 48 | ticket-captain → research | R (spawn) | the question and where the findings land | the question and destination, about, architecture | - |
 | 49 | research → ticket-captain | R, L or F | one-line answer, destination, unsettled points; the report as a ticket comment or scratch file | - | Research Ticket `Done` by the map holder |
@@ -696,16 +703,16 @@ is atomic.
 
 ### 6.12 The second lap
 
-The walkthrough finds something. The Project stays open: the findings become tickets, the feature
+The landing's walkthrough finds something. The Project stays open: the findings become tickets, the feature
 branch is re-cut from `main` under the same name, and the lap runs fixes → Merge Sub-tickets → the
 landing → another walkthrough, with an inquisition in between only when the user confirms one. The
-Project is `Completed` when a walkthrough finds nothing.
+Project is `Completed` when the landing's walkthrough finds nothing.
 
 ## 7. A day with three Projects
 
 The target the model is built for: the user's queue is never empty and never a wall. Every item on
 it has its homework done, so the user's minutes go to judgment, taste and direction: an answer, a
-reaction to a prototype, an approval, a landing, a walkthrough. Agents never wait on the user
+reaction to a prototype, an approval, a Milestone walkthrough, a landing. Agents never wait on the user
 without a `Question` in `Todo`, and the user never waits on agents: when the queue empties, the next
 idea goes to a co-thinker. Priority on what waits on him says which comes first: the one that frees
 the most AFK work.
@@ -762,8 +769,8 @@ session rather than an answer. Then, in order:
    approves; the Project is `Planned`; admiral C commissions its first captain to open the feature
    from the approved main SHA before claiming its ticket.
 5. **11:30.** The queue is empty. Admiral A has two captains running, admiral B one and a fresh
-   review, admiral C one. The user takes the next raw idea to a co-thinker, or reads the walkthrough
-   of what landed since morning.
+   review, admiral C one. The user takes the next raw idea to a co-thinker, or walks a Milestone
+   that merged since morning.
 
 ## 8. Prompt-file propagation - DYD-90
 

@@ -25,7 +25,7 @@ officer never becomes another officer ([Decision 050](../project/decisions/050-o
 | Coordinate | the map holder, the user or an invoked admiral | captains in flight, wired Merge Sub-tickets, plan amendments | each captain directs its own merge review |
 | Inquisition | ticket-captain | an area map, each area read, broken with proof tests and driven through the app; Bugs, a nit ticket and its own inquisition record; rounds from zero until clean | the user confirms Backlog → Todo and sets the commission; it files rather than gates |
 | Land | the user | the feature branch merged into main | the user's own hands |
-| Walkthrough | an invoked admiral with the user, or the user alone | inspected landing, findings as tickets in the same Project | an empty walkthrough closes the Project |
+| Walkthrough | an invoked admiral with the user, or the user alone, at each Milestone and after the landing | the product inspected as it stands, his verdict or skip, findings as tickets in the same Project | the walking skeleton's verdict holds back the work built on it, except overnight; an empty landing walkthrough closes the Project |
 
 Some work has no stage of its own: chief-of-staff triages the user's attention and never delivers,
 and any session may reach for retro, writing-for-agents and diagnosing-bugs; bro is the user's
@@ -40,8 +40,9 @@ corrective for agent-speak, at any stage.
 - **Methods** are plain skills - reference and procedure a session applies inside its own thread, never a separate
   session.
 - Some methods load only when the user asks for them; `handoff` also when an officer briefs an
-  agent it dispatches. For the post-landing tour, the map holder - an invoked admiral, or the user
-  itself - opens the Walkthrough Ticket and loads `walkthrough` itself before facilitating it.
+  agent it dispatches. For each Milestone's tour and the landing's, the map holder - an invoked
+  admiral, or the user itself - opens the Walkthrough Ticket and loads `walkthrough` itself before
+  facilitating it ([DR 060](../project/decisions/060-milestone-walkthroughs-and-the-walking-skeleton.md)).
 - **User commands** are invoked by the user typing their name, and by nothing else.
 
 The [dydo glossary](../reference/dydo-glossary.md) names every member of each category. Every one of them is a native skill folder - see

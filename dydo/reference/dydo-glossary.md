@@ -14,7 +14,10 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Project** - a bounded product or technical outcome owned by one Linear team. The Linear Project
   and its tickets are its plan; a cross-cutting architecture contract links one reviewed repository
   Project plan.
-- **Milestone** - an optional meaningful checkpoint inside a Linear Project.
+- **Milestone** - a meaningful checkpoint inside a Linear Project, a chunk of work where a drift
+  from the user's intent would show. The map holder places few; every delivery ticket belongs to
+  one, and each has a Walkthrough Ticket. The first is the **walking skeleton**, the rough
+  foundation the Project is built on; the landing is the last.
 - **Ticket** - the only actionable tracked work item. Linear calls it an Issue. Status, priority,
   assignment, blockers, updates, and current execution evidence live in Linear.
 - **Task** - the role a captain-held ticket plays on a Wayfinder map; a name for that role, not a
@@ -73,7 +76,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype, show-me,
   writing-for-agents, writing-for-humans, retro, wizard, overnight-mode, what-would-balazs-do, maintain-verification-skill,
   maintain-formal-verification-skill. These load only when the user asks: to-project, to-ticket,
-  in-your-own-words, ketchup, teach, walkthrough (also at the map holder's landing) and handoff (also
+  in-your-own-words, ketchup, teach, walkthrough (also at the map holder's Milestone and landing steps) and handoff (also
   when an officer briefs an agent it dispatches).
 - **User command** - a skill only the user invokes by name, never reached for by a model:
   grill-me, bro, improve-codebase-architecture, create-verification-skill,

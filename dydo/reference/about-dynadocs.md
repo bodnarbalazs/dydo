@@ -100,8 +100,8 @@ management, including FutureFeatures.
    delivers its own record to the feature. Rounds repeat from zero until one finds no blocker and no
    should, then the Project lands.
 5. **Land and inspect** - the landing Merge obtains acceptance review, the user lands the feature,
-   then a Walkthrough inspects it. An empty Walkthrough closes the Project; findings reopen the lap
-   in the same Project.
+   then its last Milestone's Walkthrough inspects it; each earlier Milestone had its own. An empty
+   landing Walkthrough closes the Project; findings reopen the lap in the same Project.
 
 No dydo command writes, polls, provisions, or mirrors Linear. The one command that reads it is
 `dydo map`, an on-demand view of one Project that uses the user's `LINEAR_API_KEY` and keeps one

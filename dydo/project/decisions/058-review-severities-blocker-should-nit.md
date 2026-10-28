@@ -72,8 +72,10 @@ silently dropped.
 
 Partially supersedes [DR 045](./045-flow-map-hats-review-tiers-and-working-tree-contract.md)'s
 "a note is a finding, and a finding is a FAIL" and
-[DR 031](./031-sprint-auditor-charter-rewrite.md)'s "no pass with notes", for that question only.
-Both stay `accepted` otherwise.
+[DR 031](./031-sprint-auditor-charter-rewrite.md)'s "no pass with notes", for that question only,
+and [DR 047](./047-supersymmetry-hop-statuses-merge-issues-and-the-release-protocol.md)'s "every
+review FAIL returns the Issue to `Implementing` whatever it found": a FAIL now means a blocker, and
+only blockers go to the fix hop. All three stay `accepted` otherwise.
 
 ## Related
 

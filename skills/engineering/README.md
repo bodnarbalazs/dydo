@@ -9,7 +9,7 @@
 - **domain-modeling** (model-invoked): Build and sharpen a project's domain model. Use when discussing codebase terminology, writing or editing the glossary, or recording or editing a Decision Record.
 - **improve-codebase-architecture** (user-invoked): Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick.
 - **maintain-formal-verification-skill** (model-invoked): Bring a project's formal verification back in line with the code after the code changes. Use when merges, refactors or edits touched verified code without rechecking the model, harness or properties.
-- **maintain-verification-skill** (model-invoked): Keep a project's verification skill and feature map true to the running app. Use when a drive contradicts the feature map, a touched area has no map file, or a landing wants the whole map audited.
+- **maintain-verification-skill** (model-invoked): What counts as proof, and keeping a project's verification skill and feature map true to the running app. Use when work must be proved, a drive contradicts the feature map, a touched area has no map file, or a landing wants the whole map audited.
 - **pr** (model-invoked): Use when writing a PR body.
 - **prototype** (model-invoked): Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like.
 - **wizard** (model-invoked): User-only setup, credentials or cutover steps need a repeatable interactive bash procedure; the Enablement captain uses this method.

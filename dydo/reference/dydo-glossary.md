@@ -102,7 +102,8 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   wrong; only a blocker FAILs a review and sends a fix hop. A `should`: a real bug callers will hit,
   inside the intent; the captain files it as its own ticket, and a Project lands only once each is
   `Done` or closed with a reason. A `nit`: everything else, one line on the ticket's record, listed
-  at the final walkthrough for the user to promote. The fix-hop author checks each label against
+  at the final walkthrough for the user to promote; an inquisition's nits go on its round's nit
+  ticket instead (DR 059). The fix-hop author checks each label against
   the source and may change it with evidence; the captain records the change and its reason.
 - **Merge review** - the `merge` rubric run after every merge that has a Merge Ticket: a mechanical
   spot check of the integrated state that also proves the plan's acceptance criteria at a feature's
@@ -130,9 +131,10 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Verification gap** - something a user can do that the project's verification skill cannot;
   Drive files it as a should, owned by `maintain-verification-skill`.
 - **Patch lane** - a proven, well-defined blocker or should whose fix the inquisition prepares
-  mid-round on its Bug's own branch, reviewed once in the Bug's chain; nothing merges mid-round.
-- **Nit ticket** - the one ticket per round that holds the round's nits, linked to its Inquisition;
-  a nit needs no proof.
+  mid-round on its Bug's own branch, reviewed once in the Bug's chain.
+- **Nit ticket** - the one `Feature` per round that holds the round's nits, held by the map holder
+  and linked to its Inquisition; a nit needs no proof, and the user decides each at the Project's
+  final walkthrough.
 - **Group Sub-ticket** - one slice of an area map above about 10 areas, with its own captain and
   audit branch; the parent captain runs the cross-group triage and delivers the one record.
 - **Merge** - a Type for one merge operation, with its own implement/review chain and

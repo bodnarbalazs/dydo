@@ -57,7 +57,7 @@ session or an invoked admiral can direct one per ticket.
 | docs-writer | crew | agent | ticket-captain, an inquisition's captain included | the ticket branch, an Inquisition's record branch included | one documentation change with a witness per claim; an inquisition's record from its pushed findings register | the captain: ending SHA, files, witnesses, `dydo check`; for a record, its path and digest (R) |
 | reviewer | crew, non-authoring | agent | the map holder, ticket-captain | reads a pinned candidate | one rubric: code, docs, project-plan, spec, merge | the invoker: the review block (R), posted on the record and in the PR body (L, G) |
 | scout | crew, non-authoring, web | agent | research | reads one source family | passages back, no conclusions | research (R) |
-| inquisitor | crew, non-authoring | agent | an inquisition's ticket-captain | Read and Drive: a worktree at the audit SHA; Break: its proof branch `inquisition/<slug>-proof-<area>`, test paths only | one phase, Read, Break or Drive, over a queue of areas, refuting its own catch; past its context limit it hands the rest of the queue back | the inquisition captain: findings, sightings and not-reproduced hypotheses in the fixed return shape; Break's red tests at their SHAs (R) |
+| inquisitor | crew, non-authoring | agent | an inquisition's ticket-captain | Read and Drive: a worktree at the audit SHA; Break: its proof branch `proof/<KEY>-<area>-<n>`, one per dispatch, test paths only | one phase, Read, Break or Drive, on one area, refuting its own catch; past its context limit it hands the rest of the area back | the inquisition captain: findings, sightings and not-reproduced hypotheses in the fixed return shape; Break's red tests at their SHAs (R) |
 
 For these three roles, non-authoring names the commission and method; an inquisitor's Break phase
 commits only proof tests, to a proof branch that never merges. It does not assert filesystem
@@ -400,9 +400,9 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 34 | admiral → ticket-captain (inquisition) | R (spawn), L | the Inquisition Ticket key; assignment | the ticket and its commission, the governing intent, the integrated feature SHA, working-tree contract | - |
 | 35 | inquisition captain → Linear, Git | L, G | `## Scope` with the commission inputs; `inquisition/<slug>` off the audit SHA, never merged, its `inquisition-register.md` pushed; the area map on the ticket, every phase cell `yes` or a one-line reason; `released <key>: verification skill first` instead, when a runnable project has none | the admiral reads the release as the user's verification-skill need | `In Progress`, or released `Todo` |
 | 35a | inquisition captain → Linear, admiral (above about 10 areas) | L, R | group Sub-tickets with the Inquisition Type, the parent's Mode and commission, their map rows and `inquisition/<slug>-<group>` branches off the audit SHA; the parent blocked by every group; this round's nit ticket; `released <key>: groups <keys>` | the admiral commissions one captain per group, each running its rows and closing with its register pushed, then resumes the parent for the cross-group triage | parent released `Todo` |
-| 36 | inquisition captain → inquisitors | R (spawn) | one phase and a queue of areas: their map rows and register entries, the audit SHA and landing base, the governing intent, the context limit, the worktree; for Break, its proof branch and test paths; for Drive, the verification skill and API base | the brief, the phase checklist, context-size, about, architecture, coding-standards | `In Progress` |
-| 37 | inquisitor → inquisition captain | R, G | the fixed return: phase, areas documented and handed back, context against its limit; each finding with area, severity, `file:line`, wrong outcome and proof, or a `testable` or `drivable` tag; sightings under register IDs; not-reproduced hypotheses with the deciding observation; Break's red tests committed on its proof branch | - | - |
-| 38 | inquisition captain → Git, inquisitors (routing) | G, R (spawn) | every return in the register, pushed before the next dispatch; duplicates joined as sightings; a tagged finding routed to the phase that can prove it, a short follow-up agent when that phase already ran; a fresh agent for areas handed back | - | - |
+| 36 | inquisition captain → inquisitors | R (spawn) | one agent per area per phase, each its own session through T3 `delegate_task`: its map row and register entries, the audit SHA and landing base, the governing intent, the context limit, the worktree; for Break, its proof branch and test paths; for Drive, the verification skill and API base | the brief, the phase checklist, context-size, about, architecture, coding-standards | `In Progress` |
+| 37 | inquisitor → inquisition captain | R, G | the fixed return: phase, area, items handed back, context against its limit; each finding with area, severity, `file:line`, wrong outcome and proof, or a `testable` or `drivable` tag; sightings under register IDs; not-reproduced hypotheses with the deciding observation; unreachable journeys with prerequisite and route tried; Break's red tests committed on its proof branch | - | - |
+| 38 | inquisition captain → Git, inquisitors (routing) | G, R (spawn) | every return in the register, pushed before the next dispatch; duplicates joined as sightings; a tagged finding routed to the phase that can prove it, a short follow-up agent when that phase already ran; a fresh agent for the rest of an area handed back | - | - |
 | 39 | inquisition captain → Linear, Bug captain (triage) | L | each severity checked against the source; a proven blocker or should as a Bug under the Project, feature base, its proof in `## Reproduction` (red-test SHA, quoted passages, definition and search, or rerunnable drive steps), Inquisition link; a verification gap as a should for `maintain-verification-skill`; a nit as one line on the round's nit ticket; a judgment call as a Question | the Bug captain reads the reproduction as normal-chain input | Bug status and blockers as `skills/roles/officers/ticket-captain/resources/inquisition.md` sets them |
 | 40 | inquisition captain → code-writer (patch lane) | R (spawn), G | a proven, well-defined blocker or should: the Bug's own branch `<BUG-KEY>-<slug>` off the audit SHA, the red-test commit cherry-picked, then the fix that turns it green; branch and SHA attached to the Bug | the Bug's captain verifies and reviews it once, in the Bug's own chain | - |
 | 41 | inquisition captain → Git, Linear (sweep closed) | G, L | every applicable phase of every area returned; every register row with its final disposition; register and proof branches pushed; each open Bug's reproduction SHA on a pushed independent ref, its proof or patch branch, retention owned until its Bug captain adopts it | - | - |
@@ -576,7 +576,7 @@ flowchart TD
   IC -->|audit branch off the audit SHA, never merged, with the findings register| BR[(inquisition/slug)]
   IC -->|area map from the landing diff and file layout, fresh each round| MAP[(the Inquisition Ticket)]
   IC -->|above about 10 areas: group Sub-tickets, released for one captain per group| AD
-  IC --> R[inquisitor: Read, a queue of areas]:::crew
+  IC --> R[inquisitor: Read, one per area]:::crew
   R -->|findings, testable and drivable tags| IC
   IC --> K[inquisitor: Break, on its proof branch]:::crew
   K -->|red tests at their SHAs, not reproduced| IC
@@ -606,7 +606,7 @@ and reference search. The captain triages each return by severity: a proven bloc
 becomes a Bug under the Project, with the feature as base branch and its proof as reproduction,
 picked up by a captain and fixed through the normal loop; a nit goes on the round's one nit ticket;
 a judgment call becomes a Question. A well-defined fix is prepared mid-round on its Bug's own branch
-and reviewed once in that Bug's chain; nothing merges mid-round. The steps are
+and reviewed once in that Bug's chain; the inquisition merges only its own record. The steps are
 `skills/roles/officers/ticket-captain/resources/inquisition.md`'s. The Inquisition then delivers its
 own record to `dydo/project/inquisitions/` through a docs-writer, docs review and its Merge
 Sub-ticket. The [working-tree contract](../guides/working-tree-contract.md#retaining-an-inquisitions-record-and-proofs)
@@ -778,7 +778,7 @@ Completed rows below name the source, not a claim that generated runtime output 
 | ~~specifier, implementer, hardener~~ | Retired: the single `code-writer` absorbs all three (DYD-222); the `Specifying` and `Hardening` statuses retired on 2026-09-23. |
 | ~~reviewer~~ | Authored: four-field brief, pinned block on work judged, same merge rubric at every level. |
 | ~~docs-writer~~ | Authored: captain invocation, committed evidence and inquisition record. |
-| ~~inquisitor~~ | Authored: read-only captain assignment, findings/hypotheses with proof seam; no workflow verify job. |
+| ~~inquisitor~~ | Authored: read-only captain assignment, findings/hypotheses with proof seam; no workflow verify job. History: DR 059 rebuilt it as the Read, Break and Drive phases. |
 | ~~chief-of-staff~~ | Authored: Questions plus user gates, priority and released blockers; prototype retention follows delivery completion. |
 | ~~co-thinker~~ | Authored: explicit to-project graduation, atomic five-field contract, FutureFeature status. |
 | ~~wayfinder~~ | Authored: map holder at both levels, local/Project Question scope, Merge order. |

@@ -32,7 +32,7 @@ crew; Ticket Captains use it to know what they own and what they hand back. The 
 | Atomic ticket | `main` | `DYD-123-<slug>` | `main` | user, clicking its PR once it carries a reviewer PASS and CI is green; no Merge Sub-ticket |
 | Lane Sub-ticket | its parent ticket branch | `DYD-124-<slug>` | its parent ticket branch | its captain-directed Merge Sub-ticket |
 | Inquisition audit | the audit SHA, the integrated feature commit | `inquisition/<slug>`; a group Sub-ticket's `inquisition/<slug>-<group>` | none; never merges | - |
-| Inquisition proof | the audit SHA | `inquisition/<slug>-proof-<area>`, written by the Break inquisitor | none; never merges | - |
+| Inquisition proof | the audit SHA | `proof/<KEY>-<area>-<n>`, one per Break dispatch, `<n>` counting that area's dispatches, a follow-up or hand-back included | none; never merges | - |
 | Inquisition patch | the audit SHA | its Bug's own `<BUG-KEY>-<slug>` | as its Bug | as its Bug, through the Bug's own chain |
 | Inquisition record | the feature tip; `main` for an audit of main | the Inquisition's `DYD-123-<slug>` | its feature branch; `main` for an audit of main | its captain-directed Merge Sub-ticket; for an audit of main, as an atomic ticket |
 | Proof branch | the pinned source SHA its brief names | a child branch named in the proof-only brief | none; never merges | - |
@@ -157,8 +157,9 @@ An Inquisition runs its sweep, delivers its own record and closes once. It relea
 only, by [Return and release](#return-and-release): `released <key>: verification skill first`
 when a project with a runnable surface has no verification skill, and `released <key>: groups
 <keys>` when its area map is cut into group Sub-tickets, resuming as parent for the cross-group
-triage once every group closes. Each group Sub-ticket closes `Done` with its findings register
-final and pushed.
+triage once every group closes. Each group Sub-ticket owns its own Bugs' retention below and
+closes `Done` with its findings register final and pushed; the parent rechecks retention over the
+merged register before its record.
 
 The audit branch carries the findings register, `inquisition-register.md`, pushed after every
 return. Audit, group and proof branches never merge. Before the sweep closes, every open Bug with a
@@ -176,7 +177,7 @@ any Project ticket's work does; an audit of main merges its record as an atomic 
 captain returns `done <key>: PR ready` when it offers the record's PR. After the record merges, it
 verifies on the feature the record at its path, every Bug filed and wired, and every retained ref
 live; a record only on an unmerged branch cannot satisfy this check. Only then does it delete the
-audit branch, name its remote and any proof branch no open Bug needs on the record for the user,
+audit branch and, as parent, every group's audit branch, name their remotes and any proof branch no open Bug needs on the record for the user,
 close `Done` and return `done <key>: merged`.
 
 ## Cleanup
@@ -189,7 +190,7 @@ close `Done` and return `done <key>: merged`.
 | Merged atomic ticket branch | `ticket-captain` | The branch is deleted after the user clicks its PR into main. |
 | Merged feature branch | the map holder, commissioning the landing Captain | The landing Captain deletes the branch after the user lands it and reports completion. |
 | Prototype branch | `ticket-captain`, tracked by the map holder | Keep the winning code linked as delivery-spec input; delete when that delivery ticket is Done or with feature cleanup. |
-| Inquisition audit and proof branches | `ticket-captain` | Delete the audit branch at Done after the record and retention checks above, and name any proof branch no open Bug needs; never merge them or delete the independently retained Bug refs. |
+| Inquisition audit and proof branches | `ticket-captain` | Delete the audit branch at Done after the record and retention checks above, and the group audit branches at the parent's Done, and name any proof branch no open Bug needs; never merge them or delete the independently retained Bug refs. |
 
 `dydo clean` deletes a local branch only once origin's default branch holds it. Deleting a branch here means the local branch. GitHub deletes a merged PR's remote branch on merge,
 and the guard blocks agents from deleting remote branches, so the accountable officer names any

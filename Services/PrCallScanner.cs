@@ -258,18 +258,23 @@ internal static partial class PrCallScanner
 
             help |= word is "--help" or "-h";
             if (word.StartsWith("--", StringComparison.Ordinal) && word.Length > 2)
-            {
-                var eq = word.IndexOf('=');
-                var name = eq > 0 ? word[2..eq] : word[2..];
-                if (options.Long.Contains(name))
-                    values.Add((name, eq > 0 ? word[(eq + 1)..] : Next(words, ref i)));
-            }
+                ReadLongOption(words, ref i, options, values);
             else if (IsFlag(word))
                 ReadShortFlags(words, ref i, options, values);
             else
                 positionals.Add(word);
         }
         return (values, positionals, help);
+    }
+
+    // --name=value or --name value, kept when name is one of options' long options.
+    private static void ReadLongOption(List<string> words, ref int i, Options options, List<(string Name, string Value)> values)
+    {
+        var word = words[i];
+        var eq = word.IndexOf('=');
+        var name = eq > 0 ? word[2..eq] : word[2..];
+        if (options.Long.Contains(name))
+            values.Add((name, eq > 0 ? word[(eq + 1)..] : Next(words, ref i)));
     }
 
     // Short flags combine (-dH b); the first one taking a value takes the rest of the word or the next.

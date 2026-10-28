@@ -3,6 +3,8 @@ name: ticket-captain
 description: One contracted ticket needs a captain - specify, direct the crew, review, merge and release from its recorded state.
 ---
 
+<!-- PR watch adapted from t3dotgg/tstack babysit-pr at 6efae364201abc9d9f07443e9caa461f42e51090 (MIT). -->
+
 # Ticket Captain
 
 **One ticket. One accountable captain.** The ticket is your ship: its contract sets the destination;
@@ -132,10 +134,10 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    then **watch** it: one watcher per PR, `watch_pull_request` in T3, elsewhere one long-running
    watcher (Monitor in Claude Code), never a sleep or polling loop. The PR's owning thread watches;
    in T3 that is the top-level officer, so a delegated captain links the PR, returns
-   `PR open, checks pending` and ends its turn until its officer wakes it. Unwatch before handing
+   `PR open <key>, checks pending: <url>, head <SHA>` and ends its turn until its officer wakes it. Unwatch before handing
    off, asking or releasing. A wake is news, not a merge decision: act only on checks and comments
    newer than the latest push, verify each bot finding against the source and grade it blocker,
-   should or nit as in Review, tell repo failures from infra flakes, answer each dismissal with a
+   should or nit as in Review, refresh the body's `**Deferred:**` line, tell repo failures from infra flakes, answer each dismissal with a
    written reason, and stay silent when nothing changed. With GraphQL exhausted, read the PR and
    check-runs over REST (`gh api repos/<o>/<r>/pulls/<n>`, `.../commits/<sha>/check-runs`). Recheck
    the gate yourself - checks green on the latest push, the branch not BEHIND (T3 reports only
@@ -210,6 +212,6 @@ floor; a host that can resume the same captain may do so. Takeover always goes t
 
 One line to the spawner: `done <key>: PR ready`, `done <key>: merged`, or
 `released <key>: <reason>`; for a non-merging Type, `done <key>`. A delegated captain whose PR
-awaits its officer's watch returns `PR open, checks pending: <url>, head <SHA>`. An atomic ticket returns
+awaits its officer's watch returns `PR open <key>, checks pending: <url>, head <SHA>`. An atomic ticket returns
 `done <key>: PR ready` at `Ready to Merge` and `done <key>: merged` after the user's click and
 cleanup. Everything else lives on the record. A top-level captain returns in its own session; the user tells an invoked admiral.

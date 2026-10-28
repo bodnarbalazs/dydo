@@ -819,6 +819,8 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("Bash", GuardRetroCommands.Gs02SedBacktickSingleLine)]
     [InlineData("Bash", GuardRetroCommands.Gs02CatAppendEvidence)]
     [InlineData("Bash", "cat > notes.md <<'EOF'\nplain words\nEOF")]
+    [InlineData("Bash", "printf '%s' 'first line\n$HOME is literal' > notes.md")]
+    [InlineData("PowerShell", "Set-Content notes.md 'first line\n$HOME is literal'")]
     public async Task Gs02_LiteralDataWrite_ToALiteralDestination_IsAllowed(string toolName, string command)
     {
         await SetupClaimedAgent();
@@ -835,6 +837,8 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("Bash", "cat > notes.md <<'EOF'\nplain words\nEOF\nrm $TARGET")]
     [InlineData("Bash", "bash <<'EOF'\necho x > $OUT\nEOF")]
     [InlineData("Bash", "bash -c 'echo x > $OUT'")]
+    [InlineData("Bash", "bash -c 'cd build\necho x > $OUT'")]
+    [InlineData("Bash", "echo hi # don't\necho x > $OUT\necho 'ok'")]
     [InlineData("PowerShell", "Set-Content -LiteralPath $p -Value @'\nplain words\n'@")]
     [InlineData("PowerShell", "@\"\n$(Remove-Item build -Recurse)\n\"@ | Set-Content notes.md")]
     public async Task Gs02_DynamicWrite_NextToLiteralData_IsStillDenied(string toolName, string command)
@@ -896,6 +900,7 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("Bash", "printf \"open('dydo/files-off-limits.md','w').write('changed')\" | python3")]
     [InlineData("PowerShell", "@'\nopen('dydo/files-off-limits.md','w').write('changed')\n'@ | py -")]
     [InlineData("Bash", GuardRetroCommands.Gs05ProtectedRewrite)]
+    [InlineData("Bash", "python3 < tools/rewrite.py")]
     public async Task Gs05_PythonOnStdin_WritingTheProtectedCanary_IsDeniedAndTheCanaryUnchanged(string toolName, string command)
     {
         await SetupClaimedAgent();
@@ -916,6 +921,22 @@ public class GuardSecurityTests : IntegrationTestBase
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(ShellJson("Bash", "python tools/rewrite.py"));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // Nothing feeds stdin, so no program is read from it: a lookup, xargs operands, a prompt.
+    [Theory]
+    [InlineData("command -v python3")]
+    [InlineData("command -V python3")]
+    [InlineData("command -v python3 || command -v python")]
+    [InlineData("ls *.py | xargs python3")]
+    [InlineData("python")]
+    public async Task Gs05_PythonWithNothingFedToIt_IsAllowed(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
 
         result.AssertPreToolUseAllowed();
     }

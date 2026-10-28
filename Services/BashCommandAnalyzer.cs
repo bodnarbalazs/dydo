@@ -285,16 +285,20 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static string ExpandingText(string command)
     {
         var text = StripLiteralBodies(command, keepExpanding: true);
-        return QuotedTextRegex().Replace(text, quoted => IsLiteralSingleQuoted(text, quoted) ? "''" : quoted.Value);
+        var words = new Lazy<List<string>>(() => [.. new[] { true, false }
+            .SelectMany(posix => ShellReader.Read(text, posix).Commands).SelectMany(read => read.Words)]);
+        return QuotedTextRegex().Replace(text, quoted => IsLiteralSingleQuoted(text, quoted, words) ? "''" : quoted.Value);
     }
 
-    // Single-quoted text taken literally: not bash's $'...', not spanning lines, and not a command
-    // string something runs (bash -c '...').
-    private static bool IsLiteralSingleQuoted(string text, Match quoted)
+    // Single-quoted text taken literally: not bash's $'...' and not a command string something runs
+    // (bash -c '...'). Text spanning lines must also be in a word as the line reads, so an apostrophe
+    // in a comment or an expanding heredoc body, which quotes nothing, cannot hide the lines after it.
+    private static bool IsLiteralSingleQuoted(string text, Match quoted, Lazy<List<string>> words)
     {
         var single = quoted.Groups["single"];
-        return single.Success && !quoted.Groups["ansi"].Success && !single.Value.Contains('\n')
-            && !CommandStringContextRegex().IsMatch(text[LineStart(text, quoted.Index)..quoted.Index]);
+        return single.Success && !quoted.Groups["ansi"].Success
+            && !CommandStringContextRegex().IsMatch(text[LineStart(text, quoted.Index)..quoted.Index])
+            && (!single.Value.Contains('\n') || words.Value.Any(word => word.Contains(single.Value, StringComparison.Ordinal)));
     }
 
     // The command's layout: bodies gone and every quoted string emptied, so a line break left in it
@@ -453,75 +457,120 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     {
         if (!OndrejPassRegex().IsMatch(command))
             return false;
-        var (found, uncertain) = Runs(command, (program, _) => program is "pass" or "gopass");
+        var (found, uncertain) = Runs(command, words => ProgramCall(words) is { Program: "pass" or "gopass" });
         return found || uncertain;
     }
 
-    [GeneratedRegex(@"\bpy(?:thon[0-9.]*)?(?:\.exe)?\b", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\bpy(?:thon[0-9.]*)?w?(?:\.exe)?\b", RegexOptions.IgnoreCase)]
     private static partial Regex PythonWordRegex();
 
     // python -, the form a command line that cannot be read for certain is still refused for.
-    [GeneratedRegex(@"\bpy(?:thon[0-9.]*)?(?:\.exe)?(?:\s+-\S+)*\s+-(?=\s|$|[;&|)])", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\bpy(?:thon[0-9.]*)?w?(?:\.exe)?(?:\s+-\S+)*\s+-(?=\s|$|[;&|)])", RegexOptions.IgnoreCase)]
     private static partial Regex PythonDashRegex();
 
-    [GeneratedRegex(@"^(?:python[0-9.]*|pythonw|py)$")]
+    [GeneratedRegex(@"^py(?:thon[0-9.]*)?w?$")]
     private static partial Regex PythonProgramRegex();
 
     private static readonly HashSet<string> PythonInfoFlags = new(StringComparer.Ordinal)
         { "-V", "-VV", "--version", "-h", "-?", "--help", "--help-env", "--help-xoptions", "--help-all", "--list", "--list-paths", "-0", "-0p" };
 
+    // Where a Python call takes its program from, when not from a script, -c or -m.
+    private enum PythonSource { None, Dash, NoOperand }
+
+    /// <summary>
+    /// A Python program is read from stdin when a Python call names - as its program, or names none
+    /// while something feeds its stdin: a pipe, a &lt; redirection, a heredoc or a here-string.
+    /// </summary>
     private static bool RunsPythonFromStdin(string command)
     {
         if (!PythonWordRegex().IsMatch(command))
             return false;
-        var (found, uncertain) = Runs(command, ReadsPythonProgramFromStdin);
-        return found || (uncertain && PythonDashRegex().IsMatch(command));
+        var (dash, uncertain) = Runs(command, words => PythonSourceOf(words) == PythonSource.Dash);
+        return dash || (uncertain && PythonDashRegex().IsMatch(command))
+            || CommandLines(command, ShellDialect.Unknown).Lines.Select(line => line.Text).Distinct().SelectMany(FedStages)
+                .Any(stage => Runs(stage, words => PythonSourceOf(words) == PythonSource.NoOperand).Found);
     }
 
     /// <summary>
-    /// Python (or the py launcher) reads its program from stdin when its first operand is -, or when it
-    /// has no operand: a heredoc, a here-string or a pipe feeds it, or it would prompt. A script operand,
-    /// -c or -m (a short option cluster naming c or m), and help or version flags read none.
+    /// Where a Python call (python, python3.12, pythonw or py, under any path, case or .exe) takes its
+    /// program: <c>Dash</c> when its first operand is -, <c>NoOperand</c> when it has none, so it reads
+    /// stdin when something feeds it and prompts otherwise. A script operand, -c or -m (a short option
+    /// cluster naming c or m), a help or version flag, operands xargs supplies, a lookup by
+    /// command -v or -V, and any other command are <c>None</c>.
     /// </summary>
-    private static bool ReadsPythonProgramFromStdin(string program, IReadOnlyList<string> rest)
+    private static PythonSource PythonSourceOf(IReadOnlyList<string> words)
     {
-        if (!PythonProgramRegex().IsMatch(program))
-            return false;
+        var at = CommandPosition.Skip(words);
+        if (at >= words.Count || !PythonProgramRegex().IsMatch(CommandPosition.ProgramName(words[at])) || LooksUp(words, at))
+            return PythonSource.None;
 
-        for (var i = 0; i < rest.Count; i++)
+        for (var i = at + 1; i < words.Count; i++)
         {
-            var word = rest[i];
+            var word = words[i];
             if (word == "-")
-                return true;
+                return PythonSource.Dash;
             if (word.Length < 2 || word[0] != '-' || PythonInfoFlags.Contains(word)
                 || (word[1] != '-' && word.AsSpan(1).IndexOfAny('c', 'm') >= 0))
-                return false;
+                return PythonSource.None;
             if (word is "-W" or "-X" or "--check-hash-based-pycs")
                 i++;
         }
 
-        return true;
+        return words.Take(at).Any(word => CommandPosition.ProgramName(word) == "xargs") ? PythonSource.None : PythonSource.NoOperand;
+    }
+
+    // command -v or -V before the program only names it.
+    private static bool LooksUp(IReadOnlyList<string> words, int program) =>
+        words.Take(program).SkipWhile(word => CommandPosition.ProgramName(word) != "command").Skip(1)
+            .TakeWhile(word => word.StartsWith('-')).Any(word => word.AsSpan(1).IndexOfAny('v', 'V') >= 0);
+
+    // A command separator in a layout: a list operator, a pipe (| or |&), an & that is no
+    // redirection, a parenthesis or brace, or a line break.
+    [GeneratedRegex(@"\|\||&&|\|&?|(?<![<>])&(?!>)|[;\n(){}]")]
+    private static partial Regex SeparatorRegex();
+
+    /// <summary>
+    /// The commands of one command line whose stdin something feeds: each after a pipe, and each
+    /// holding a &lt; redirection, a heredoc or a here-string. Bodies a command only reads are left
+    /// out, and a separator inside quotes splits nothing.
+    /// </summary>
+    private static IEnumerable<string> FedStages(string text)
+    {
+        var code = StripLiteralBodies(text);
+        var layout = QuotedTextRegex().Replace(code, quoted => new string(' ', quoted.Length));
+        var start = 0;
+        var piped = false;
+        foreach (Match separator in SeparatorRegex().Matches(layout + "\n"))
+        {
+            if (piped || layout.AsSpan(start, separator.Index - start).Contains('<'))
+                yield return code[start..separator.Index];
+            piped = separator.Value is "|" or "|&";
+            start = separator.Index + separator.Length;
+        }
     }
 
     private const int MaxCommandLineDepth = 8;
 
+    /// <summary>One reading of one command line: its text and its commands' words.</summary>
+    private sealed record CommandLine(string Text, List<IReadOnlyList<string>> Commands);
+
     /// <summary>
-    /// The commands a command line runs, read as its shell reads them (<see cref="ShellReader"/>; both
-    /// ways when the shell is unknown): each list is one reading of one command line, each command its
-    /// words. Quotes, comments, heredoc and here-string bodies are no commands. The command string a
-    /// shell, eval or env -S is given (<see cref="CommandPosition.ScriptOf"/>), the heredoc or
-    /// here-string a shell given none reads, and a bash backtick substitution are command lines of
-    /// their own. <c>Uncertain</c> when a reading cannot finish, a command string is encoded, a shell
-    /// reads a pipe the line does not show, or nesting passes the limit.
+    /// The command lines a command line runs, read as its shell reads them (<see cref="ShellReader"/>;
+    /// both ways when the shell is unknown): one per reading of each. Quotes, comments, heredoc and
+    /// here-string bodies are no commands. The command string a shell, eval or env -S is given
+    /// (<see cref="CommandPosition.ScriptOf"/>), the heredoc or here-string a shell given none reads,
+    /// and a bash backtick substitution are command lines of their own. <c>Uncertain</c> when a
+    /// reading cannot finish, a command string is encoded, a shell reads a pipe the line does not
+    /// show, or nesting passes the limit.
     /// </summary>
-    internal static (List<List<IReadOnlyList<string>>> Lines, bool Uncertain) CommandLines(string command, ShellDialect dialect)
+    private static (List<CommandLine> Lines, bool Uncertain) CommandLines(string command, ShellDialect dialect)
     {
-        List<List<IReadOnlyList<string>>> lines = [];
+        List<CommandLine> lines = [];
         var uncertain = ReadCommandLines(command, dialect, 0, lines);
         return (lines, uncertain);
     }
 
-    private static bool ReadCommandLines(string text, ShellDialect dialect, int depth, List<List<IReadOnlyList<string>>> lines)
+    private static bool ReadCommandLines(string text, ShellDialect dialect, int depth, List<CommandLine> lines)
     {
         if (depth > MaxCommandLineDepth)
             return true;
@@ -536,7 +585,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         foreach (var posix in readings)
         {
             var reading = ShellReader.Read(text, posix);
-            lines.Add([.. reading.Commands.Select(command => (IReadOnlyList<string>)command.Words)]);
+            lines.Add(new CommandLine(text, [.. reading.Commands.Select(command => (IReadOnlyList<string>)command.Words)]));
             uncertain |= reading.Failed;
             foreach (var substitution in reading.Substitutions)
                 uncertain |= ReadCommandLines(substitution, ShellDialect.Posix, depth + 1, lines);
@@ -548,7 +597,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     }
 
     // The command lines one command runs: its command string, or the stdin bodies a shell reads.
-    private static bool ReadRunLines(ShellReader.Command command, int depth, List<List<IReadOnlyList<string>>> lines)
+    private static bool ReadRunLines(ShellReader.Command command, int depth, List<CommandLine> lines)
     {
         if (ProgramCall(command.Words) is not { } call)
             return false;
@@ -582,13 +631,28 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return at < words.Count ? (CommandPosition.ProgramName(words[at]), words.Skip(at + 1).ToList()) : null;
     }
 
-    // Whether a command the line runs, read both ways, meets isCall, and whether the reading was certain.
-    private static (bool Found, bool Uncertain) Runs(string command, Func<string, IReadOnlyList<string>, bool> isCall)
+    // Whether a command the line runs, read both ways, meets isCall on its words, and whether the reading was certain.
+    private static (bool Found, bool Uncertain) Runs(string command, Func<IReadOnlyList<string>, bool> isCall)
     {
         var (lines, uncertain) = CommandLines(command, ShellDialect.Unknown);
-        var found = lines.SelectMany(line => line)
-            .Any(words => ProgramCall(words) is { } call && isCall(call.Program, call.Arguments));
-        return (found, uncertain);
+        return (lines.SelectMany(line => line.Commands).Any(isCall), uncertain);
+    }
+
+    // Written where a nudge's match starts; no command line holds it.
+    private const string LaunchMark = "\u0001";
+
+    /// <summary>
+    /// Whether a program named at <paramref name="index"/> of <paramref name="command"/> would run
+    /// (DYD-406): with a mark written there, the line read as its shell reads it has the mark in a
+    /// program word, past assignments and runners, rather than in an argument, a comment or a body a
+    /// command reads. A shell's command string is read as commands. A line that cannot be read for
+    /// certain counts, failing closed.
+    /// </summary>
+    internal static bool RunsAt(string command, int index, ShellDialect dialect)
+    {
+        var (lines, uncertain) = CommandLines(command.Insert(index, LaunchMark), dialect);
+        return uncertain || lines.SelectMany(line => line.Commands)
+            .Any(words => CommandPosition.Skip(words) is var at && at < words.Count && words[at].Contains(LaunchMark, StringComparison.Ordinal));
     }
 
     [GeneratedRegex(CommandStart + @"op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]

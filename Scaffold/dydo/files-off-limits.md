@@ -123,9 +123,10 @@ Paths listed here are **readable by every agent and writable by none**. `Edit`, 
 `NotebookEdit` and every shell operation a command names that changes them - write, delete,
 move, copy, permission change - is blocked; read them with `Read`, `cat` or `head`. Code
 whose file operations the command does not show is refused whatever it touches: inline
-interpreter code (`python -c`, `node -e`) and a Python program on stdin (`python -`, or a
-heredoc, here-string or pipe into `python`). A script file runs and its own file operations
-are not followed, so the tier stops accidents, not a deliberate route around it. These are
+interpreter code (`python -c`, `node -e`) and a Python program on stdin (`python -`, or
+`python` with no script while a heredoc, here-string, pipe or `<` redirection feeds it). A
+script file runs and its own file operations are not followed, so the tier stops accidents,
+not a deliberate route around it. These are
 dydo's own system files: agents read them to orient themselves and never write them directly,
 and the user owns their content. dydo's own commands still rewrite what they manage -
 `dydo index` overwrites `dydo/index.md` with a fixed navigation page, and `dydo init`,

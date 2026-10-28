@@ -1394,6 +1394,13 @@ public class BashCommandAnalyzerTests
     [InlineData("bash -c \"python - <<'EOF'\nprint(1)\nEOF\"")]
     [InlineData("echo 'python - <<EOF' | bash")]
     [InlineData("pwsh -EncodedCommand ZQBjAGgAbwA= # then python -")]
+    [InlineData("python3 < prog.py")]
+    [InlineData("cat prog.py | sudo python3")]
+    [InlineData("cat prog.py |& python3")]
+    [InlineData("x=$(cat prog.py | python3)")]
+    [InlineData("bash -c \"cat prog.py | python3\"")]
+    [InlineData("bash <<'EOF'\ncat prog.py | python3\nEOF")]
+    [InlineData("pythonw -")]
     public void PythonProgramOnStdin_IsRefusedLikeInlineCode(string command)
     {
         var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
@@ -1418,6 +1425,23 @@ public class BashCommandAnalyzerTests
     [InlineData("echo \"python - <<EOF\" > notes.md")]
     [InlineData("grep -n 'python -' notes.md")]
     public void PythonScriptFile_StaysAllowed(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    // A Python call with no script reads its program from stdin only when something feeds it: a
+    // lookup only names it, xargs supplies its operands, and a bare python with nothing fed prompts.
+    [Theory]
+    [InlineData("command -v python3")]
+    [InlineData("command -V python3")]
+    [InlineData("command -v python3 || command -v python")]
+    [InlineData("ls *.py | xargs python3")]
+    [InlineData("python")]
+    [InlineData("python3 -q; echo done")]
+    [InlineData("echo \"cat x | python3\" > notes.md")]
+    public void PythonWithNothingFedToIt_IsNoProgramOnStdin(string command)
     {
         var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
 
@@ -1463,6 +1487,8 @@ public class BashCommandAnalyzerTests
     [InlineData(GuardRetroCommands.Gs02CatAppendEvidence)]
     [InlineData("cat > notes.md <<'EOF'\ncost: $5 and `date`\nEOF")]
     [InlineData("cat > notes.md <<\"EOF\"\n$HOME\nEOF")]
+    [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md")]
+    [InlineData("Set-Content notes.md 'first line\n$HOME is literal'")]
     public void Analyze_LiteralDataWrite_IsNoBypass(string command)
     {
         var result = _analyzer.Analyze(command);
@@ -1481,6 +1507,9 @@ public class BashCommandAnalyzerTests
     [InlineData("Set-Content -LiteralPath $p -Value @'\nplain words\n'@")]
     [InlineData("@\"\n$(Remove-Item build -Recurse)\n\"@ | Set-Content notes.md")]
     [InlineData("echo hello\nrm secret.txt")]
+    [InlineData("bash -c 'cd build\necho x > $OUT'")]
+    [InlineData("echo hi # don't\necho x > $OUT\necho 'ok'")]
+    [InlineData("cat > notes.md <<EOF\nit's $PRICE\nyou're welcome\nEOF")]
     public void Analyze_ExpansionNextToLiteralData_IsStillABypass(string command)
     {
         var result = _analyzer.Analyze(command);

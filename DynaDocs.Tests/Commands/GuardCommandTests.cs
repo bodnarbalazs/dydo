@@ -927,6 +927,21 @@ public class GuardCommandTests : IDisposable
         Assert.Contains(expected, stderr);
     }
 
+    // The captures come from the match that runs, not from an earlier one in quoted text.
+    [Theory]
+    [InlineData("echo 'text; npm install example'; npm install real", "Try: pnpm install real")]
+    [InlineData("echo \"a; npm run example\" && npm install real", "Try: pnpm install real")]
+    [InlineData("git log --grep 'npm ci' && npm run lint", "Try: pnpm run lint")]
+    public void CommandNudges_QuotedExampleThenRealLaunch_CapturesTheRealLaunch(string command, string expected)
+    {
+        var (result, stderr) = RunLcNudges(command);
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains(expected, stderr);
+        Assert.DoesNotContain("example", stderr);
+        Assert.DoesNotContain("'", stderr);
+    }
+
     [Theory]
     [InlineData("npx dydo check --all", "Just use: dydo check --all")]
     [InlineData("bash -c \"dydo check\"", "Don't use 'bash' to run dydo - it's already on your PATH. Just use: dydo check")]
@@ -955,8 +970,26 @@ public class GuardCommandTests : IDisposable
     }
 
     [Theory]
+    [InlineData("tail --follow build.log")]
+    [InlineData("rg tail docs; tail -f build.log")]
+    [InlineData("sudo /usr/bin/tail -n 5 -f build.log")]
+    public void PollLoopNudge_RealTailLaunch_StillWarns(string command)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("Open-ended Bash poll-loop detected", stderr);
+    }
+
+    // A launch word an argument holds, quoted or not, runs nothing.
+    [Theory]
     [InlineData("rg -n 'tail -f' docs")]
     [InlineData("git commit -m \"stop the while true; do sleep loop\"")]
+    [InlineData("rg 'tail' --follow docs")]
+    [InlineData("rg tail --follow docs")]
     public void PollLoopNudge_InQuotedText_StaysSilent(string command)
     {
         WriteConfigWithOpenEndedPollNudges();

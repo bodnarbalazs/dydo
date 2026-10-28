@@ -5,7 +5,8 @@ using System.Text.RegularExpressions;
 /// <summary>
 /// The PR-opening gh calls a command line makes (DYD-391): <c>gh pr create</c>, <c>gh pr new</c>,
 /// <c>gh pr ready</c>, a <c>gh api</c> POST to <c>repos/OWNER/REPO/pulls</c>, and <c>gh api graphql</c>
-/// naming createPullRequest or markPullRequestReadyForReview. The line is read as its shell reads
+/// naming createPullRequest or markPullRequestReadyForReview; a PR verb given --help or -h only prints
+/// gh's help, so it is no call. The line is read as its shell reads
 /// it: bash, PowerShell, or both ways when the shell is unknown or a bash line uses PowerShell syntax
 /// (a backtick line continuation, the &amp; call operator, <c>$env:</c>). gh counts at command position
 /// (<see cref="CommandPosition"/>), with any path, case or .exe. Text a command only reads (quotes,
@@ -142,7 +143,7 @@ internal static partial class PrCallScanner
     {
         var parsed = Parse(args, PrOptions);
         var verb = parsed.Positionals.FirstOrDefault();
-        if (verb == null || !PrVerbs.Contains(verb))
+        if (verb == null || !PrVerbs.Contains(verb) || parsed.Help)
             return null;
 
         repo = Values(parsed.Options, "repo").LastOrDefault() ?? repo;
@@ -239,13 +240,23 @@ internal static partial class PrCallScanner
 
     private static bool IsFlag(string word) => word.Length > 1 && word[0] == '-';
 
-    private static (List<(string Name, string Value)> Options, List<string> Positionals) Parse(List<string> words, Options options)
+    // Help is --help or -h as a flag of its own (gh 2.88.1 prints help for either and acts on
+    // nothing), not a flag's value; after --, every word is an operand.
+    private static (List<(string Name, string Value)> Options, List<string> Positionals, bool Help) Parse(List<string> words, Options options)
     {
         List<(string Name, string Value)> values = [];
         List<string> positionals = [];
+        var help = false;
         for (var i = 0; i < words.Count; i++)
         {
             var word = words[i];
+            if (word == "--")
+            {
+                positionals.AddRange(words.Skip(i + 1));
+                break;
+            }
+
+            help |= word is "--help" or "-h";
             if (word.StartsWith("--", StringComparison.Ordinal) && word.Length > 2)
             {
                 var eq = word.IndexOf('=');
@@ -258,7 +269,7 @@ internal static partial class PrCallScanner
             else
                 positionals.Add(word);
         }
-        return (values, positionals);
+        return (values, positionals, help);
     }
 
     // Short flags combine (-dH b); the first one taking a value takes the rest of the word or the next.

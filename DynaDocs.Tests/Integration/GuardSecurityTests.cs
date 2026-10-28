@@ -798,4 +798,125 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertStderrContains("off-limits");
     }
 
+    // ================================================================
+    // DYD-406: the 3.6.0 session retro's guard misreadings, through the hook
+    // ================================================================
+
+    private static string ShellJson(string toolName, string command) =>
+        System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["session_id"] = TestSessionId,
+            ["tool_name"] = toolName,
+            ["tool_input"] = new Dictionary<string, string> { ["command"] = command },
+        });
+
+    // GS-02: literal data written to a literal destination is no bypass.
+    [Theory]
+    [InlineData("PowerShell", GuardRetroCommands.Gs02SetContentEvidence)]
+    [InlineData("PowerShell", GuardRetroCommands.Gs02SetContentVerdict)]
+    [InlineData("Bash", GuardRetroCommands.Gs02CatSlotScript)]
+    [InlineData("Bash", GuardRetroCommands.Gs02SedBacktickCommit)]
+    [InlineData("Bash", GuardRetroCommands.Gs02SedBacktickSingleLine)]
+    [InlineData("Bash", GuardRetroCommands.Gs02CatAppendEvidence)]
+    [InlineData("Bash", "cat > notes.md <<'EOF'\nplain words\nEOF")]
+    public async Task Gs02_LiteralDataWrite_ToALiteralDestination_IsAllowed(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("Bash", "cat > $OUT <<'EOF'\nplain words\nEOF")]
+    [InlineData("Bash", "cat > notes.md <<EOF\n$(rm -rf build)\nEOF")]
+    [InlineData("Bash", "cat > notes.md <<EOF\nprice: $PRICE\nEOF")]
+    [InlineData("Bash", "cat > notes.md <<'EOF'\nplain words\nEOF\nrm $TARGET")]
+    [InlineData("Bash", "bash <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData("Bash", "bash -c 'echo x > $OUT'")]
+    [InlineData("PowerShell", "Set-Content -LiteralPath $p -Value @'\nplain words\n'@")]
+    [InlineData("PowerShell", "@\"\n$(Remove-Item build -Recurse)\n\"@ | Set-Content notes.md")]
+    public async Task Gs02_DynamicWrite_NextToLiteralData_IsStillDenied(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("bypass");
+    }
+
+    [Theory]
+    [InlineData("Bash", "cat > dydo/files-off-limits.md <<'EOF'\nplain words\nEOF")]
+    [InlineData("Bash", "cat > notes.md <<'EOF'\nplain words\nEOF\nrm dydo/index.md")]
+    [InlineData("PowerShell", "Set-Content -LiteralPath 'dydo/index.md' -Value @'\nplain words\n'@")]
+    [InlineData("Bash", "cat > .env <<'EOF'\nplain words\nEOF")]
+    public async Task Gs02_LiteralDataWrite_ToAGuardedPath_IsStillDenied(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+    }
+
+    // GS-01: a PowerShell variable assigned from a literal Get-Content is a read.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs01SlicedRead)]
+    [InlineData(GuardRetroCommands.Gs01SelectStringRead)]
+    [InlineData("$p = Get-Content dydo/index.md; $p[0..5]")]
+    public async Task Gs01_LiteralReadAssignment_IsAllowed(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("$p = Get-Content notes.md; Set-Content notes.md $p")]
+    [InlineData("$x = Remove-Item notes.md")]
+    [InlineData("$p=Get-Content notes.md | Set-Content dydo/index.md")]
+    [InlineData("$CMD dydo/files-off-limits.md")]
+    [InlineData("$p = Get-Content .env")]
+    public async Task Gs01_AssignmentNextToAMutationOrAGuardedRead_IsStillDenied(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+
+        result.AssertPreToolUseDenied();
+    }
+
+    // GS-05: a Python program on stdin is refused before it runs, so the protected canary keeps its bytes.
+    [Theory]
+    [InlineData("Bash", "python - <<'EOF'\nopen('dydo/files-off-limits.md','w').write('changed')\nEOF")]
+    [InlineData("Bash", "printf \"open('dydo/files-off-limits.md','w').write('changed')\" | python3")]
+    [InlineData("PowerShell", "@'\nopen('dydo/files-off-limits.md','w').write('changed')\n'@ | py -")]
+    [InlineData("Bash", GuardRetroCommands.Gs05ProtectedRewrite)]
+    public async Task Gs05_PythonOnStdin_WritingTheProtectedCanary_IsDeniedAndTheCanaryUnchanged(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "files-off-limits.md");
+        var before = File.ReadAllBytes(canary);
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        var reason = result.AssertPreToolUseDenied();
+        Assert.Contains("Python program on stdin", reason);
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // A script file runs and its own file operations are not followed: the documented limit.
+    [Fact]
+    public async Task Gs05_PythonScriptFile_IsAllowed()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", "python tools/rewrite.py"));
+
+        result.AssertPreToolUseAllowed();
+    }
 }

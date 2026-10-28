@@ -120,13 +120,17 @@ agent may read but none may write or delete. Both bind on every caller, Claude a
 ## Protected Patterns
 
 Paths listed here are **readable by every agent and writable by none**. `Edit`, `Write`,
-`NotebookEdit` and every shell operation that changes them - write, delete, move, copy,
-permission change - is blocked; read them with `Read`, `cat` or `head`. These are dydo's
-own system files: agents read them to orient themselves and never write them directly, and
-the user owns their content. dydo's own commands still rewrite what they manage - `dydo index`
-overwrites `dydo/index.md` with a fixed navigation page, and `dydo init`, `dydo fix` and
-`dydo adopt` write `dydo.json` - so the tier stops hand edits, not dydo's tooling. Whitelist
-entries do not apply to this section.
+`NotebookEdit` and every shell operation a command names that changes them - write, delete,
+move, copy, permission change - is blocked; read them with `Read`, `cat` or `head`. Code
+whose file operations the command does not show is refused whatever it touches: inline
+interpreter code (`python -c`, `node -e`) and a Python program on stdin (`python -`, or a
+heredoc, here-string or pipe into `python`). A script file runs and its own file operations
+are not followed, so the tier stops accidents, not a deliberate route around it. These are
+dydo's own system files: agents read them to orient themselves and never write them directly,
+and the user owns their content. dydo's own commands still rewrite what they manage -
+`dydo index` overwrites `dydo/index.md` with a fixed navigation page, and `dydo init`,
+`dydo fix` and `dydo adopt` write `dydo.json` - so the tier stops hand edits, not dydo's
+tooling. Whitelist entries do not apply to this section.
 
 ```
 # DynaDocs entry point - every entry prompt tells agents to read it

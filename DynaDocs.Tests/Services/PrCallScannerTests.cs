@@ -327,4 +327,28 @@ public class PrCallScannerTests
     {
         Assert.Equal(2, PrCallScanner.Find("gh pr create --head a && git push; gh pr ready b").Count);
     }
+
+    // GS-06: gh prints a command's help for --help or -h (gh 2.88.1, new as create's alias) and acts on nothing.
+    [Theory]
+    [InlineData("gh version; gh pr create --help; gh pr ready --help")]
+    [InlineData("gh pr create --help")]
+    [InlineData("gh pr new -h")]
+    [InlineData("gh pr ready 12 -h")]
+    [InlineData("gh pr create --title x --help")]
+    [InlineData("gh pr create --help | Select-String draft")]
+    public void HelpForAPrVerb_IsNoCall(string command)
+    {
+        Assert.Empty(PrCallScanner.Find(command));
+    }
+
+    [Theory]
+    [InlineData("gh pr create --help; gh pr create --fill")]
+    [InlineData("gh pr create --title --help")]
+    [InlineData("gh pr create -t -h --fill")]
+    [InlineData("gh pr create --fill -- --help")]
+    [InlineData("gh pr ready -- -h")]
+    public void HelpOnlyAsAValueOrAfterTheEndOfFlags_StaysACall(string command)
+    {
+        Assert.NotEmpty(PrCallScanner.Find(command));
+    }
 }

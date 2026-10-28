@@ -151,88 +151,156 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private const string CommandEndContext = @"\s|$|['""`);&|]";
     private const string CommandEnd = "(?=" + CommandEndContext + ")";
 
-    private static readonly (Regex Pattern, string Reason)[] DangerousPatterns =
+    private static readonly (Func<string, bool> IsMatch, string Reason)[] DangerousPatterns =
     [
-        (RecursiveDeleteRootRegex(), "Recursive delete of root or home directory"),
-        (RecursiveDeleteGlobRegex(), "Recursive delete with dangerous glob pattern"),
+        (RecursiveDeleteRootRegex().IsMatch, "Recursive delete of root or home directory"),
+        (RecursiveDeleteGlobRegex().IsMatch, "Recursive delete with dangerous glob pattern"),
 
-        (PowerShellRecursiveDeleteRegex(), "PowerShell recursive delete of root directory"),
+        (PowerShellRecursiveDeleteRegex().IsMatch, "PowerShell recursive delete of root directory"),
 
-        (ForkBombClassicRegex(), "Fork bomb detected"),
-        (ForkBombAltRegex(), "Fork bomb variant detected"),
+        (ForkBombClassicRegex().IsMatch, "Fork bomb detected"),
+        (ForkBombAltRegex().IsMatch, "Fork bomb variant detected"),
 
-        (DirectDiskWriteRegex(), "Direct disk write attempt"),
-        (DdDiskWriteRegex(), "Direct disk write via dd"),
-        (DdKnownDiskWriteRegex(), "Direct disk write via dd"),
+        (DirectDiskWriteRegex().IsMatch, "Direct disk write attempt"),
+        (DdDiskWriteRegex().IsMatch, "Direct disk write via dd"),
+        (DdKnownDiskWriteRegex().IsMatch, "Direct disk write via dd"),
 
-        (Base64DecodePipeExecRegex(), "Base64 decode piped to interpreter"),
+        (Base64DecodePipeExecRegex().IsMatch, "Base64 decode piped to interpreter"),
 
-        (CurlPipeShRegex(), "Download and execute pattern (curl | sh)"),
-        (WgetPipeShRegex(), "Download and execute pattern (wget | sh)"),
-        (WgetOutputPipeShRegex(), "Download and execute pattern (wget -O | sh)"),
+        (CurlPipeShRegex().IsMatch, "Download and execute pattern (curl | sh)"),
+        (WgetPipeShRegex().IsMatch, "Download and execute pattern (wget | sh)"),
+        (WgetOutputPipeShRegex().IsMatch, "Download and execute pattern (wget -O | sh)"),
 
-        (PowerShellIwrIexRegex(), "Download and execute pattern (PowerShell IWR | IEX)"),
-        (PowerShellIwrIexShortRegex(), "Download and execute pattern (PowerShell iwr | iex)"),
-        (PowerShellDownloadStringRegex(), "Download and execute pattern (DownloadString | IEX)"),
+        (PowerShellIwrIexRegex().IsMatch, "Download and execute pattern (PowerShell IWR | IEX)"),
+        (PowerShellIwrIexShortRegex().IsMatch, "Download and execute pattern (PowerShell iwr | iex)"),
+        (PowerShellDownloadStringRegex().IsMatch, "Download and execute pattern (DownloadString | IEX)"),
 
-        (EvalVariableRegex(), "Eval of variable content"),
+        (EvalVariableRegex().IsMatch, "Eval of variable content"),
 
-        (HistoryClearRegex(), "History clearing detected"),
-        (HistoryFileTruncateRegex(), "History file truncation"),
-        (PowerShellHistoryDeleteRegex(), "PowerShell history deletion"),
+        (HistoryClearRegex().IsMatch, "History clearing detected"),
+        (HistoryFileTruncateRegex().IsMatch, "History file truncation"),
+        (PowerShellHistoryDeleteRegex().IsMatch, "PowerShell history deletion"),
 
-        (SelinuxDisableRegex(), "SELinux disable attempt"),
-        (FirewallFlushRegex(), "Firewall flush attempt"),
+        (SelinuxDisableRegex().IsMatch, "SELinux disable attempt"),
+        (FirewallFlushRegex().IsMatch, "Firewall flush attempt"),
 
-        (ShadowFileAccessRegex(), "Shadow file access attempt"),
-        (PasswdModifyRegex(), "Password file modification attempt"),
+        (ShadowFileAccessRegex().IsMatch, "Shadow file access attempt"),
+        (PasswdModifyRegex().IsMatch, "Password file modification attempt"),
 
         // David Ondrej's global command denylist, pinned in DYD-188.
-        (OndrejRmRegex(), "Deletion of system or home directory"),
-        (OndrejDiskRegex(), "Disk format or erase attempt"),
-        (OndrejSudoRmRegex(), "Privileged delete attempt"),
-        (OndrejCurlPipeRegex(), "Download and execute as shell"),
-        (OndrejGitPushRegex(), "Force push or remote branch deletion. GitHub deletes a merged PR's branch itself; clean up locally from outside the tree with dydo clean --dry-run <worktree>, then dydo clean <worktree>, which removes the worktree, keeps unmerged branches and runs git fetch --prune; name any other remote branch for the user"),
-        (OndrejGitRecoveryRegex(), "Git recovery history destruction"),
-        (OndrejSystemPermissionsRegex(), "System permission or ownership change"),
-        (OndrejGhDeleteRegex(), "Destructive GitHub operation"),
-        (OndrejGhApiDeleteRegex(), "GitHub API delete operation"),
-        (OndrejGhVisibilityRegex(), "GitHub repository visibility change"),
-        (OndrejGhTokenRegex(), "GitHub authentication token access"),
-        (OndrejPasswordCliRegex(), "Password manager access"),
-        (OndrejPassRegex(), "Password store access"),
-        (OndrejOpRegex(), "1Password secret access"),
-        (OndrejKeychainRegex(), "Keychain password access"),
-        (OndrejGpgSecretRegex(), "GPG secret key export"),
-        (OndrejPasswordStorePathRegex(), "Password store path access"),
-        (OndrejPasswordAppRegex(), "Password manager application access"),
+        (OndrejRmRegex().IsMatch, "Deletion of system or home directory"),
+        (OndrejDiskRegex().IsMatch, "Disk format or erase attempt"),
+        (OndrejSudoRmRegex().IsMatch, "Privileged delete attempt"),
+        (OndrejCurlPipeRegex().IsMatch, "Download and execute as shell"),
+        (OndrejGitPushRegex().IsMatch, "Force push or remote branch deletion. GitHub deletes a merged PR's branch itself; clean up locally from outside the tree with dydo clean --dry-run <worktree>, then dydo clean <worktree>, which removes the worktree, keeps unmerged branches and runs git fetch --prune; name any other remote branch for the user"),
+        (OndrejGitRecoveryRegex().IsMatch, "Git recovery history destruction"),
+        (OndrejSystemPermissionsRegex().IsMatch, "System permission or ownership change"),
+        (OndrejGhDeleteRegex().IsMatch, "Destructive GitHub operation"),
+        (OndrejGhApiDeleteRegex().IsMatch, "GitHub API delete operation"),
+        (OndrejGhVisibilityRegex().IsMatch, "GitHub repository visibility change"),
+        (OndrejGhTokenRegex().IsMatch, "GitHub authentication token access"),
+        (OndrejPasswordCliRegex().IsMatch, "Password manager access"),
+        (RunsPasswordStore, "Password store access"),
+        (OndrejOpRegex().IsMatch, "1Password secret access"),
+        (OndrejKeychainRegex().IsMatch, "Keychain password access"),
+        (OndrejGpgSecretRegex().IsMatch, "GPG secret key export"),
+        (OndrejPasswordStorePathRegex().IsMatch, "Password store path access"),
+        (OndrejPasswordAppRegex().IsMatch, "Password manager application access"),
 
         // Raw worktree removal - dydo clean archives uncommitted work and never follows a link.
-        (ForcedWorktreeRemoveRegex(), WorktreeRemovalReason),
-        (RecursiveWorktreeDeleteRegex(), WorktreeRemovalReason),
+        (ForcedWorktreeRemoveRegex().IsMatch, WorktreeRemovalReason),
+        (RecursiveWorktreeDeleteRegex().IsMatch, WorktreeRemovalReason),
 
-        (InlineInterpreterRegex(), "Inline interpreter execution bypasses file operation analysis. Write a script file instead."),
+        (InlineInterpreterRegex().IsMatch, "Inline interpreter execution bypasses file operation analysis. Write a script file instead."),
+        (RunsPythonFromStdin, "Python program on stdin bypasses file operation analysis, as python -c does. "
+            + "Change files with the file tools or write a script file; a change to a protected file goes to the user."),
     ];
 
     // Heredoc detection - strip $(cat <<'WORD'...WORD) to prevent false positives
     [GeneratedRegex(@"\$\(cat\s+<<-?'?""?(\w+)""?'?\s*\n[\s\S]*?\n\1\s*\)")]
     private static partial Regex CatHeredocRegex();
 
-    // Any heredoc (<<WORD, <<'WORD', <<"WORD", <<-WORD): group 1 keeps the opener line, the body
-    // and delimiter line go. With <<- the delimiter may be tab-indented.
-    [GeneratedRegex(@"(?<!<)(<<(-)?[ \t]*(['""]?)(\w+)\3[^\n]*\n)[\s\S]*?^(?(2)\t*)\4[ \t]*\r?$", RegexOptions.Multiline)]
+    // Any heredoc (<<WORD, <<'WORD', <<"WORD", <<-WORD): group 1 is the opener line, then the body and
+    // the delimiter line with its line break. Group 3 is the delimiter's quote: a quoted delimiter
+    // makes the body literal. With <<- the delimiter may be tab-indented.
+    [GeneratedRegex(@"(?<!<)(<<(-)?[ \t]*(['""]?)(\w+)\3[^\n]*\n)[\s\S]*?^(?(2)\t*)\4[ \t]*\r?$\n?", RegexOptions.Multiline)]
     private static partial Regex HeredocBodyRegex();
 
-    // A PowerShell here-string: @' or @" ends its line, '@ or "@ starts the closing line.
+    // A PowerShell here-string: @' or @" ends its line, '@ or "@ starts the closing line. @' is literal.
     [GeneratedRegex(@"@(['""])[ \t]*\r?\n[\s\S]*?^\1@", RegexOptions.Multiline)]
     private static partial Regex HereStringRegex();
 
+    // A shell or interpreter named around a heredoc or here-string runs its body (bash <<'EOF',
+    // @'...'@ | python -), so that body is code, not data.
+    [GeneratedRegex(@"(?:^|[\s;&|(])(?:[^\s;&|()'""]*[/\\])?(?:bash|sh|zsh|dash|ksh|pwsh|powershell|cmd|python[0-9.]*|py|node|ruby|perl|php|eval|source|iex|invoke-expression)(?:\.exe)?(?=$|[\s;&|)])", RegexOptions.IgnoreCase)]
+    private static partial Regex BodyRunnerRegex();
+
     /// <summary>
-    /// Removes heredoc and PowerShell here-string bodies, which are text a command reads, so a
-    /// line inside one does not split out as a command. Commands after the closing line remain.
+    /// Removes heredoc and PowerShell here-string bodies, which are text a command reads, so a line
+    /// inside one does not split out as a command and its newlines and $ signs are data. A heredoc
+    /// leaves its opener line and a separator, a here-string an empty string, so commands after the
+    /// closing line remain. A body a shell or interpreter around it runs stays. With
+    /// <paramref name="keepExpanding"/>, the bodies a shell expands (&lt;&lt;EOF, @"...") stay too,
+    /// so their substitutions and variables are still seen.
     /// </summary>
-    internal static string StripLiteralBodies(string command) =>
-        HereStringRegex().Replace(HeredocBodyRegex().Replace(command, "$1"), "''");
+    internal static string StripLiteralBodies(string command, bool keepExpanding = false)
+    {
+        var heredocsOut = HeredocBodyRegex().Replace(command, body =>
+            (keepExpanding && body.Groups[3].Length == 0) || IsRunBody(command, OpenerLineEnd(body), OpenerLineEnd(body))
+                ? body.Value
+                : body.Groups[1].Value.TrimEnd() + "; ");
+        return HereStringRegex().Replace(heredocsOut, body =>
+            (keepExpanding && body.Groups[1].Value == "\"") || IsRunBody(heredocsOut, body.Index, body.Index + body.Length)
+                ? body.Value
+                : "''");
+    }
+
+    // A heredoc's opener line ends where its body begins, before that line's break.
+    private static int OpenerLineEnd(Match heredoc) => heredoc.Index + heredoc.Groups[1].Value.TrimEnd().Length;
+
+    // Whether a runner is named on the line before start or after end: a heredoc's opener line, or the
+    // lines a here-string opens and closes on, the body's own lines left out.
+    private static bool IsRunBody(string text, int start, int end)
+    {
+        var lineEnd = text.IndexOf('\n', end);
+        return BodyRunnerRegex().IsMatch(text[LineStart(text, start)..start] + " " + text[end..(lineEnd < 0 ? text.Length : lineEnd)]);
+    }
+
+    private static int LineStart(string text, int index) => index == 0 ? 0 : text.LastIndexOf('\n', index - 1) + 1;
+
+    // A double-quoted string (backslash escapes skipped, lines spanned) or a single-quoted one, the
+    // first that starts; $'...' is bash's escape-reading form.
+    [GeneratedRegex(@"""(?:[^""\\]|\\.)*""|(?<ansi>\$)?'(?<single>[^']*)'")]
+    private static partial Regex QuotedTextRegex();
+
+    // The text before a quote that makes it a command string a shell or eval runs: -c, -Command and its
+    // prefixes, cmd's /c or /k, env -S, eval, iex, trap, watch, or an ssh remote command.
+    [GeneratedRegex(@"(?:^|\s)(?:-[A-Za-z]*c|-co(?:m(?:m(?:a(?:n(?:d)?)?)?)?)?|/[ck]|-S|--split-string=?|eval|iex|invoke-expression|trap|watch|ssh(?:\s+\S+)+)\s*$", RegexOptions.IgnoreCase)]
+    private static partial Regex CommandStringContextRegex();
+
+    /// <summary>
+    /// What a shell expands: the text without literal bodies and with each literal single-quoted
+    /// string emptied.
+    /// </summary>
+    private static string ExpandingText(string command)
+    {
+        var text = StripLiteralBodies(command, keepExpanding: true);
+        return QuotedTextRegex().Replace(text, quoted => IsLiteralSingleQuoted(text, quoted) ? "''" : quoted.Value);
+    }
+
+    // Single-quoted text taken literally: not bash's $'...', not spanning lines, and not a command
+    // string something runs (bash -c '...').
+    private static bool IsLiteralSingleQuoted(string text, Match quoted)
+    {
+        var single = quoted.Groups["single"];
+        return single.Success && !quoted.Groups["ansi"].Success && !single.Value.Contains('\n')
+            && !CommandStringContextRegex().IsMatch(text[LineStart(text, quoted.Index)..quoted.Index]);
+    }
+
+    // The command's layout: bodies gone and every quoted string emptied, so a line break left in it
+    // separates commands.
+    private static string Layout(string analysed) =>
+        QuotedTextRegex().Replace(analysed, quoted => quoted.Groups["single"].Success ? "''" : "\"\"");
 
     // Bypass detection patterns
     [GeneratedRegex(@"\$\([^)]+\)|`[^`]+`")]
@@ -370,13 +438,158 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // letter and a hyphen, so "pass show-stopper" would otherwise match "show". After the name,
     // optional spaces lead to one terminator: end, newline, a separator or quote, a redirect with
     // at most one fd digit tied to it (`pass x > f`, `pass x 2>&1`, `pass x &> f`), or a `#`
-    // comment. A digit not followed by a redirect is prose ("pass stage 2"). A body whose last
-    // line is `pass <one word>` before its closing quote is still blocked: it is shaped exactly
-    // like `bash -c "pass github"`. The lead-in skips only spaces and tabs, the path prefix stops
+    // comment. A digit not followed by a redirect is prose ("pass stage 2"). gopass takes the same
+    // shapes. The lead-in skips only spaces and tabs, the path prefix stops
     // at `{`, and the quoted and `$(...)` names stop at a newline, quote or paren: each newline
     // or `{` is its own start, so a long run of them cannot rescan the input from every start.
-    [GeneratedRegex(@"(?:^|(?<cell>(?<!\|)\|(?!\|))|\|\||[;&\r\n({`])[ \t]*(?:[^\s;&|'""`(){]*/)?pass(?:\s+(?:show|insert|add|edit|generate|rm|remove|delete|mv|rename|cp|copy|git|init|ls|list|find|search|grep|otp)(?=[ \t]|$|[\r\n;&|<>'""`)])|\s+-\S|\s+(?:(?<q>['""])[^'""\r\n]+\k<q>|\$\([^()\r\n]*\)|(?![0-9]+(?:[\s;&|'""`()<>]|$))[^\s;&|'""`()<>]+)(?=[ \t]*(?:[0-9]?[<>]|$|[\r\n;&|'""`)])|[ \t]+#)(?(cell)(?![ \t]*\|(?!\|))))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
+    // These shapes are read on the raw text; RunsPasswordStore then asks that a pass or gopass
+    // runs at command position, so a heredoc body, a quoted grep pattern or a PR body saying
+    // "pass" is no password-store access (DYD-406).
+    [GeneratedRegex(@"(?:^|(?<cell>(?<!\|)\|(?!\|))|\|\||[;&\r\n({`])[ \t]*(?:[^\s;&|'""`(){]*/)?(?:go)?pass(?:\s+(?:show|insert|add|edit|generate|rm|remove|delete|mv|rename|cp|copy|git|init|ls|list|find|search|grep|otp)(?=[ \t]|$|[\r\n;&|<>'""`)])|\s+-\S|\s+(?:(?<q>['""])[^'""\r\n]+\k<q>|\$\([^()\r\n]*\)|(?![0-9]+(?:[\s;&|'""`()<>]|$))[^\s;&|'""`()<>]+)(?=[ \t]*(?:[0-9]?[<>]|$|[\r\n;&|'""`)])|[ \t]+#)(?(cell)(?![ \t]*\|(?!\|))))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejPassRegex();
+
+    // A command line that cannot be read for certain keeps the raw shape's verdict, failing closed.
+    private static bool RunsPasswordStore(string command)
+    {
+        if (!OndrejPassRegex().IsMatch(command))
+            return false;
+        var (found, uncertain) = Runs(command, (program, _) => program is "pass" or "gopass");
+        return found || uncertain;
+    }
+
+    [GeneratedRegex(@"\bpy(?:thon[0-9.]*)?(?:\.exe)?\b", RegexOptions.IgnoreCase)]
+    private static partial Regex PythonWordRegex();
+
+    // python -, the form a command line that cannot be read for certain is still refused for.
+    [GeneratedRegex(@"\bpy(?:thon[0-9.]*)?(?:\.exe)?(?:\s+-\S+)*\s+-(?=\s|$|[;&|)])", RegexOptions.IgnoreCase)]
+    private static partial Regex PythonDashRegex();
+
+    [GeneratedRegex(@"^(?:python[0-9.]*|pythonw|py)$")]
+    private static partial Regex PythonProgramRegex();
+
+    private static readonly HashSet<string> PythonInfoFlags = new(StringComparer.Ordinal)
+        { "-V", "-VV", "--version", "-h", "-?", "--help", "--help-env", "--help-xoptions", "--help-all", "--list", "--list-paths", "-0", "-0p" };
+
+    private static bool RunsPythonFromStdin(string command)
+    {
+        if (!PythonWordRegex().IsMatch(command))
+            return false;
+        var (found, uncertain) = Runs(command, ReadsPythonProgramFromStdin);
+        return found || (uncertain && PythonDashRegex().IsMatch(command));
+    }
+
+    /// <summary>
+    /// Python (or the py launcher) reads its program from stdin when its first operand is -, or when it
+    /// has no operand: a heredoc, a here-string or a pipe feeds it, or it would prompt. A script operand,
+    /// -c or -m (a short option cluster naming c or m), and help or version flags read none.
+    /// </summary>
+    private static bool ReadsPythonProgramFromStdin(string program, IReadOnlyList<string> rest)
+    {
+        if (!PythonProgramRegex().IsMatch(program))
+            return false;
+
+        for (var i = 0; i < rest.Count; i++)
+        {
+            var word = rest[i];
+            if (word == "-")
+                return true;
+            if (word.Length < 2 || word[0] != '-' || PythonInfoFlags.Contains(word)
+                || (word[1] != '-' && word.AsSpan(1).IndexOfAny('c', 'm') >= 0))
+                return false;
+            if (word is "-W" or "-X" or "--check-hash-based-pycs")
+                i++;
+        }
+
+        return true;
+    }
+
+    private const int MaxCommandLineDepth = 8;
+
+    /// <summary>
+    /// The commands a command line runs, read as its shell reads them (<see cref="ShellReader"/>; both
+    /// ways when the shell is unknown): each list is one reading of one command line, each command its
+    /// words. Quotes, comments, heredoc and here-string bodies are no commands. The command string a
+    /// shell, eval or env -S is given (<see cref="CommandPosition.ScriptOf"/>), the heredoc or
+    /// here-string a shell given none reads, and a bash backtick substitution are command lines of
+    /// their own. <c>Uncertain</c> when a reading cannot finish, a command string is encoded, a shell
+    /// reads a pipe the line does not show, or nesting passes the limit.
+    /// </summary>
+    internal static (List<List<IReadOnlyList<string>>> Lines, bool Uncertain) CommandLines(string command, ShellDialect dialect)
+    {
+        List<List<IReadOnlyList<string>>> lines = [];
+        var uncertain = ReadCommandLines(command, dialect, 0, lines);
+        return (lines, uncertain);
+    }
+
+    private static bool ReadCommandLines(string text, ShellDialect dialect, int depth, List<List<IReadOnlyList<string>>> lines)
+    {
+        if (depth > MaxCommandLineDepth)
+            return true;
+
+        var uncertain = false;
+        bool[] readings = dialect switch
+        {
+            ShellDialect.Posix => [true],
+            ShellDialect.PowerShell => [false],
+            _ => [true, false],
+        };
+        foreach (var posix in readings)
+        {
+            var reading = ShellReader.Read(text, posix);
+            lines.Add([.. reading.Commands.Select(command => (IReadOnlyList<string>)command.Words)]);
+            uncertain |= reading.Failed;
+            foreach (var substitution in reading.Substitutions)
+                uncertain |= ReadCommandLines(substitution, ShellDialect.Posix, depth + 1, lines);
+            foreach (var command in reading.Commands)
+                uncertain |= ReadRunLines(command, depth, lines);
+        }
+
+        return uncertain;
+    }
+
+    // The command lines one command runs: its command string, or the stdin bodies a shell reads.
+    private static bool ReadRunLines(ShellReader.Command command, int depth, List<List<IReadOnlyList<string>>> lines)
+    {
+        if (ProgramCall(command.Words) is not { } call)
+            return false;
+        if (CommandPosition.ScriptOf(call.Program, call.Arguments) is { } script)
+            return script.Encoded || ReadCommandLines(script.Text, script.Dialect, depth + 1, lines);
+        if (StdinShellDialect(call.Program, call.Arguments) is not { } dialect)
+            return false;
+
+        var uncertain = command.Stdin.Count == 0;
+        foreach (var body in command.Stdin)
+            uncertain |= ReadCommandLines(body, dialect, depth + 1, lines);
+        return uncertain;
+    }
+
+    // The dialect of a shell that reads its commands from stdin, or null for any other program.
+    private static ShellDialect? StdinShellDialect(string program, List<string> rest)
+    {
+        if (CommandPosition.PosixShells.Contains(program))
+            return CommandPosition.PosixShellString(rest) == null ? ShellDialect.Posix : null;
+        if (program is not ("pwsh" or "powershell"))
+            return null;
+        return CommandPosition.ReadPwsh(rest) is (CommandPosition.PwshMode.Command, [] or ["-"]) or (CommandPosition.PwshMode.Positional, [])
+            ? ShellDialect.PowerShell
+            : null;
+    }
+
+    /// <summary>A command's program name and the words after it, past assignments and runners; null when it has none.</summary>
+    private static (string Program, List<string> Arguments)? ProgramCall(IReadOnlyList<string> words)
+    {
+        var at = CommandPosition.Skip(words);
+        return at < words.Count ? (CommandPosition.ProgramName(words[at]), words.Skip(at + 1).ToList()) : null;
+    }
+
+    // Whether a command the line runs, read both ways, meets isCall, and whether the reading was certain.
+    private static (bool Found, bool Uncertain) Runs(string command, Func<string, IReadOnlyList<string>, bool> isCall)
+    {
+        var (lines, uncertain) = CommandLines(command, ShellDialect.Unknown);
+        var found = lines.SelectMany(line => line)
+            .Any(words => ProgramCall(words) is { } call && isCall(call.Program, call.Arguments));
+        return (found, uncertain);
+    }
 
     [GeneratedRegex(CommandStart + @"op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejOpRegex();
@@ -480,9 +693,13 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         // Strip cat heredoc blocks - literal text, not shell code
         var strippedCommand = CatHeredocRegex().Replace(command, "HEREDOC_STRIPPED");
 
-        CheckBypassAttempts(strippedCommand, result);
+        // Literal data - a quoted heredoc, an @' here-string, single-quoted text - is neither
+        // expansion nor code, so only the expanding text is searched for bypasses (DYD-406).
+        var analysed = StripLiteralBodies(strippedCommand);
+        var expanding = ExpandingText(strippedCommand);
+        CheckBypassAttempts(expanding, Layout(analysed), result);
 
-        var subCommands = SplitCommand(strippedCommand);
+        var subCommands = SplitCommand(analysed);
 
         foreach (var subCmd in subCommands)
         {
@@ -491,7 +708,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
         // Analyze contents of command substitutions so hidden operations are detected
         if (result.HasBypassAttempt)
-            AnalyzeCommandSubstitutions(strippedCommand, result);
+            AnalyzeCommandSubstitutions(expanding, result);
 
         return result;
     }
@@ -518,9 +735,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     {
         try
         {
-            foreach (var (pattern, reason) in DangerousPatterns)
+            foreach (var (isMatch, reason) in DangerousPatterns)
             {
-                if (pattern.IsMatch(command))
+                if (isMatch(command))
                     return (true, reason);
             }
         }
@@ -531,20 +748,22 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return (false, null);
     }
 
-    private static readonly (Func<string, bool> Check, string Warning)[] BypassChecks =
+    // Each check reads the expanding text; a line break counts only in the layout, where it separates
+    // commands rather than sitting in quoted text or a body.
+    private static readonly (Func<string, string, bool> Check, string Warning)[] BypassChecks =
     [
-        (cmd => CommandSubstitutionRegex().IsMatch(cmd), "Command contains command substitution - paths may be dynamic"),
-        (cmd => Base64DecodeRegex().IsMatch(cmd), "Command contains base64 decode - potential obfuscation"),
-        (cmd => HexDecodeRegex().IsMatch(cmd), "Command contains hex decode - potential obfuscation"),
-        (cmd => VariableExpansionRegex().IsMatch(cmd), "Command contains variable expansion - paths may be dynamic"),
-        (cmd => cmd.Contains('\n') || cmd.Contains("$'\\n'") || cmd.Contains("%0a"), "Command contains embedded newlines"),
+        ((code, _) => CommandSubstitutionRegex().IsMatch(code), "Command contains command substitution - paths may be dynamic"),
+        ((code, _) => Base64DecodeRegex().IsMatch(code), "Command contains base64 decode - potential obfuscation"),
+        ((code, _) => HexDecodeRegex().IsMatch(code), "Command contains hex decode - potential obfuscation"),
+        ((code, _) => VariableExpansionRegex().IsMatch(code), "Command contains variable expansion - paths may be dynamic"),
+        ((code, layout) => layout.Contains('\n') || code.Contains("$'\\n'") || code.Contains("%0a"), "Command contains embedded newlines"),
     ];
 
-    private static void CheckBypassAttempts(string command, BashAnalysisResult result)
+    private static void CheckBypassAttempts(string expanding, string layout, BashAnalysisResult result)
     {
         foreach (var (check, warning) in BypassChecks)
         {
-            if (check(command))
+            if (check(expanding, layout))
             {
                 result.Warnings.Add(warning);
                 result.HasBypassAttempt = true;
@@ -661,6 +880,12 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         if (string.IsNullOrWhiteSpace(command))
             return;
 
+        if (ReadAssignmentSource(command) is { } source)
+        {
+            AnalyzeSubCommand(source, result);
+            return;
+        }
+
         var tokens = TokenizeCommand(command);
         if (tokens.Count == 0)
             return;
@@ -680,6 +905,27 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             AddPathOperations(result, tokens.Skip(1), opType, cmdName);
         else
             AnalyzeUncertainCommand(cmdName, tokens, result);
+    }
+
+    [GeneratedRegex(@"^\$[A-Za-z_]\w*\s*=\s*(?<source>\S.*)$", RegexOptions.Singleline)]
+    private static partial Regex VariableAssignmentRegex();
+
+    private static readonly HashSet<string> ContentReaders = new(StringComparer.OrdinalIgnoreCase)
+        { "get-content", "gc", "cat", "type", "select-string" };
+
+    /// <summary>
+    /// The read a PowerShell assignment makes (<c>$p = Get-Content notes.md</c>, spaced or not): its
+    /// right side when that is a content reader, read on its own. Any other right side stays an unknown
+    /// <c>$</c> command, flagged as an uncertain write. No PowerShell evaluation beyond this.
+    /// </summary>
+    private static string? ReadAssignmentSource(string command)
+    {
+        var assignment = VariableAssignmentRegex().Match(command);
+        if (!assignment.Success)
+            return null;
+
+        var source = assignment.Groups["source"].Value;
+        return TokenizeCommand(source) is [var reader, ..] && ContentReaders.Contains(reader) ? source : null;
     }
 
     private bool TryAnalyzeShellC(List<string> tokens, BashAnalysisResult result)

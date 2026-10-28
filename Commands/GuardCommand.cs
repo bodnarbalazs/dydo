@@ -2,6 +2,7 @@ namespace DynaDocs.Commands;
 
 using System.CommandLine;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -621,7 +622,7 @@ public static partial class GuardCommand
         // dydo commands skip the cd-chain coaching (they are never a needless cd compound).
         var hardBlock = (isDydo && isWorker ? BlockIfWorkerDydoCommand(command) : null)
             ?? BlockIfDangerous(command, bashAnalyzer)
-            ?? CheckBlockNudges(command, env)
+            ?? CheckBlockNudges(command, env, caller.Shell)
             ?? CheckPrReady(command, ctx.CommandArgv, ctx.ToolCwd ?? ctx.Cwd, caller.Shell, env)
             ?? (isDydo ? null : BlockIfCdChain(command, bashAnalyzer))
             ?? AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer, env.Memory);
@@ -631,7 +632,7 @@ public static partial class GuardCommand
         if (modeSet != null && !caller.CanAsk)
             return RefuseModeSet(modeSet);
 
-        return CheckWarnNudges(command, env, modeSet != null)
+        return CheckWarnNudges(command, env, modeSet != null, caller.Shell)
             ?? (modeSet == null ? ExitCodes.Success : AskModeSet(modeSet));
     }
 
@@ -677,9 +678,9 @@ public static partial class GuardCommand
     /// <summary>
     /// The command nudges that are not warns: a notice prints and passes, a block refuses.
     /// </summary>
-    internal static int? CheckBlockNudges(string command, GuardEnv env)
+    internal static int? CheckBlockNudges(string command, GuardEnv env, ShellDialect shell = ShellDialect.Unknown)
     {
-        foreach (var (nudge, match) in MatchingCommandNudges(command, env))
+        foreach (var (nudge, match) in MatchingCommandNudges(command, env, shell))
         {
             if (IsWarn(nudge)) continue;
 
@@ -694,9 +695,9 @@ public static partial class GuardCommand
     /// The command warn nudges, and the mode-set reminder when <paramref name="modeSet"/>, as one
     /// once-only step (<see cref="EnforceWarns"/>).
     /// </summary>
-    internal static int? CheckWarnNudges(string command, GuardEnv env, bool modeSet = false)
+    internal static int? CheckWarnNudges(string command, GuardEnv env, bool modeSet = false, ShellDialect shell = ShellDialect.Unknown)
     {
-        var warns = MatchingCommandNudges(command, env)
+        var warns = MatchingCommandNudges(command, env, shell)
             .Where(m => IsWarn(m.Nudge))
             .Select(m => new WarnStep(m.Nudge, m.Match, $".nudge-{ComputeNudgeHash(m.Nudge.Pattern)}",
                 "Run the same command again to proceed anyway."))
@@ -706,16 +707,117 @@ public static partial class GuardCommand
         return EnforceWarns(warns, env);
     }
 
-    private static IEnumerable<(NudgeConfig Nudge, Match Match)> MatchingCommandNudges(string command, GuardEnv env)
+    // A nudge's pattern is matched on the raw text, which its captures and lookaheads read; the match
+    // counts only when the pattern also matches where a command runs (DYD-406).
+    private static IEnumerable<(NudgeConfig Nudge, Match Match)> MatchingCommandNudges(string command, GuardEnv env, ShellDialect shell)
     {
+        RunText? runText = null;
         foreach (var nudge in MergeSystemNudges(env.Config?.Nudges))
         {
             if (!nudge.IsCommandMatch) continue;
 
-            var match = CompileNudgePattern(nudge.Pattern)?.Match(command);
-            if (match is { Success: true })
+            var pattern = CompileNudgePattern(nudge.Pattern);
+            var match = pattern?.Match(command);
+            if (match is not { Success: true })
+                continue;
+
+            runText ??= RunText.Of(command, shell);
+            if (runText.Matches(pattern!))
                 yield return (nudge, match);
         }
+    }
+
+    /// <summary>
+    /// The commands a command line runs, as text a command nudge's pattern can match (DYD-406). Each
+    /// reading of each command line (<see cref="BashCommandAnalyzer.CommandLines"/>) is its commands'
+    /// words joined by spaces and its commands joined by "; ". A word holding a space or a separator is
+    /// written in double quotes, so a quoted program path stays one word, and an argument written so is
+    /// text the command reads: a match whose first word character falls inside one does not count. A
+    /// comment or a heredoc or here-string body is no word at all, while a shell's command string
+    /// (bash -c, pwsh -Command) is read as commands. A line that cannot be read for certain keeps its
+    /// raw-text match, failing closed.
+    /// </summary>
+    private sealed class RunText
+    {
+        private readonly List<(string Text, List<Range> Arguments)> _lines;
+        private readonly bool _uncertain;
+
+        private RunText(List<(string Text, List<Range> Arguments)> lines, bool uncertain)
+        {
+            _lines = lines;
+            _uncertain = uncertain;
+        }
+
+        public static RunText Of(string command, ShellDialect shell)
+        {
+            var (lines, uncertain) = BashCommandAnalyzer.CommandLines(command, shell);
+            return new RunText([.. lines.Select(Render)], uncertain);
+        }
+
+        public bool Matches(Regex pattern) =>
+            _uncertain || _lines.Any(line => MatchesOutsideArguments(pattern, line.Text, line.Arguments));
+
+        // Each match is tried until one starts outside every quoted argument; the search resumes past
+        // the argument a match fell in.
+        private static bool MatchesOutsideArguments(Regex pattern, string text, List<Range> arguments)
+        {
+            var match = pattern.Match(text);
+            while (match.Success)
+            {
+                var at = FirstWordCharacter(text, match);
+                var argument = arguments.FindIndex(range => range.Start.Value <= at && at < range.End.Value);
+                if (argument < 0)
+                    return true;
+
+                var next = Math.Max(match.Index + 1, arguments[argument].End.Value);
+                if (next > text.Length)
+                    return false;
+                match = pattern.Match(text, next);
+            }
+
+            return false;
+        }
+
+        // Where a match's text starts past any separator, space or quote it opens with.
+        private static int FirstWordCharacter(string text, Match match)
+        {
+            var at = match.Index;
+            while (at < match.Index + match.Length && (char.IsWhiteSpace(text[at]) || text[at] is ';' or '&' or '|' or '"' or '\''))
+                at++;
+            return at < match.Index + match.Length ? at : match.Index;
+        }
+
+        private static (string Text, List<Range> Arguments) Render(List<IReadOnlyList<string>> commands)
+        {
+            var text = new StringBuilder();
+            List<Range> arguments = [];
+            foreach (var words in commands)
+            {
+                if (text.Length > 0)
+                    text.Append("; ");
+                var program = CommandPosition.Skip(words);
+                for (var i = 0; i < words.Count; i++)
+                {
+                    if (i > 0)
+                        text.Append(' ');
+                    if (!NeedsQuotes(words[i]))
+                    {
+                        text.Append(words[i]);
+                        continue;
+                    }
+
+                    text.Append('"');
+                    if (i > program)
+                        arguments.Add(text.Length..(text.Length + words[i].Length));
+                    text.Append(words[i]).Append('"');
+                }
+            }
+
+            return (text.ToString(), arguments);
+        }
+
+        private static bool NeedsQuotes(string word) =>
+            word.Length == 0 || word.Any(c => char.IsWhiteSpace(c) || c is ';' or '&' or '|');
     }
 
     private static bool IsWarn(NudgeConfig nudge) =>

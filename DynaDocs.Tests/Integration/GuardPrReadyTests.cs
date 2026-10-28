@@ -174,6 +174,34 @@ public class GuardPrReadyTests : IntegrationTestBase
         result.AssertPreToolUseAllowed();
     }
 
+    // GS-06: help is no PR. The first line is the retro's original Codex batch. The review-block warn
+    // is a configured nudge on the gh pr create text, not this rule, so it is spent first.
+    [Theory]
+    [InlineData("gh version; gh pr create --help; gh pr ready --help", "exec")]
+    [InlineData("gh pr new -h", "Bash")]
+    public async Task HelpForAPrVerb_FromADirtyTree_IsAllowed(string command, string toolName)
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+        SilenceReviewBlockWarn();
+
+        var result = await GuardWithStdinAsync(Payload(command, codex: toolName == "exec", toolName: toolName));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    [Fact]
+    public async Task HelpThenARealPrCall_FromADirtyTree_IsDenied()
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload("gh pr create --help; " + PrCreate));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("untracked files: wip.txt");
+    }
+
     // A heredoc or PowerShell here-string body is text the command reads, not a command line.
     [Theory]
     [InlineData("cat <<'EOF'\ngh pr ready 12\nEOF")]
@@ -192,7 +220,7 @@ public class GuardPrReadyTests : IntegrationTestBase
         result.AssertPreToolUseAllowed();
     }
 
-    // The guard's file-write analysis refuses a multi-line write on its own; this rule must not.
+    // A PR body heredoc quoting a PR call is no call for this rule.
     [Fact]
     public async Task PrCallInsideAPrBodyHeredoc_FromADirtyTree_IsNotThisRulesBlock()
     {

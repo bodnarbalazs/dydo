@@ -1343,4 +1343,168 @@ public class BashCommandAnalyzerTests
     }
 
     #endregion
+
+    #region Guard retro regressions (DYD-406)
+
+    // GS-04: the word pass in a Python body, a quoted grep verdict or a PR body runs no password store.
+    // The last three are the shapes DYD-294 reported: a PR-body heredoc, a quoted --body and a grep.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs04PreflightDeclarations)]
+    [InlineData(GuardRetroCommands.Gs04LightLanesDeclarations)]
+    [InlineData(GuardRetroCommands.Gs04ReviewVerdictGrep)]
+    [InlineData("cat > /tmp/lc129-body.md <<'EOF'\n## Review\nPASS —\nEvery gate passes.\nEOF")]
+    [InlineData("gh pr create --title x --body \"Keeps the vectors password-blind.\npass blind\"")]
+    [InlineData("gh pr view 43 --json body | grep -n -iE \"^PASS|PASS -\"")]
+    public void PasswordStoreRule_PassOutsideACommand_IsNotPasswordStoreAccess(string command)
+    {
+        var (_, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.NotEqual("Password store access", reason);
+    }
+
+    [Theory]
+    [InlineData("gopass show x")]
+    [InlineData("echo ok; gopass show prod/aws")]
+    [InlineData("gopass -c github")]
+    [InlineData("bash <<'EOF'\npass show x\nEOF")]
+    [InlineData("bash -c \"echo ok; pass show x\"")]
+    [InlineData("@'\npass show x\n'@ | pwsh -Command -")]
+    [InlineData("echo \"x\npass show y")]
+    public void PasswordStoreRule_PassACommandLineRuns_IsBlocked(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, $"Expected dangerous: {command}");
+        Assert.Equal("Password store access", reason);
+    }
+
+    // GS-05: a Python program read from stdin hides its file operations exactly as python -c does.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs05ProtectedRewrite)]
+    [InlineData(GuardRetroCommands.Gs05ProtectedRewrap)]
+    [InlineData(GuardRetroCommands.Gs04PreflightDeclarations)]
+    [InlineData("py -3 - <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("python3 -u - <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("@'\nprint(1)\n'@ | python -")]
+    [InlineData("python <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("python3 <<< 'print(1)'")]
+    [InlineData("echo \"print(1)\" | python3")]
+    [InlineData("cat prog.py | python -u")]
+    [InlineData("python -X dev - <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("bash -c \"python - <<'EOF'\nprint(1)\nEOF\"")]
+    [InlineData("echo 'python - <<EOF' | bash")]
+    [InlineData("pwsh -EncodedCommand ZQBjAGgAbwA= # then python -")]
+    public void PythonProgramOnStdin_IsRefusedLikeInlineCode(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, $"Expected dangerous: {command}");
+        Assert.Contains("stdin", reason);
+        Assert.Contains("file tools", reason);
+    }
+
+    [Theory]
+    [InlineData("python script.py")]
+    [InlineData("python3 -u tools/run.py --stack dotnet")]
+    [InlineData("py -3 tools/gen.py")]
+    [InlineData("python -m pytest -q")]
+    [InlineData("python --version")]
+    [InlineData("python -V")]
+    [InlineData("python script.py < input.json")]
+    [InlineData("python tools/gen.py - out.txt")]
+    [InlineData("python -W ignore tools/gen.py")]
+    [InlineData("python -Im json.tool data.json")]
+    [InlineData("py --list")]
+    [InlineData("echo \"python - <<EOF\" > notes.md")]
+    [InlineData("grep -n 'python -' notes.md")]
+    public void PythonScriptFile_StaysAllowed(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    // GS-01: a PowerShell assignment from a literal Get-Content is a read of that path, not an
+    // unknown command writing it.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs01SlicedRead, "dydo/project/plans/ripple-selection.md")]
+    [InlineData(GuardRetroCommands.Gs01SelectStringRead, "dydo/reference/linear-workspace-standard.md")]
+    [InlineData("$p = Get-Content notes.md; $p[0..5]", "notes.md")]
+    [InlineData("$p =Get-Content notes.md | Select-String TODO", "notes.md")]
+    public void Analyze_ReadAssignment_IsAReadOfItsPath(string command, string path)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Read && op.Path == path);
+        Assert.DoesNotContain(result.Operations, op => op.Type != FileOperationType.Read);
+    }
+
+    [Theory]
+    [InlineData("$x = Remove-Item notes.md", "notes.md")]
+    [InlineData("$x = Set-Content notes.md hi", "notes.md")]
+    [InlineData("$p = Get-Content a.md; Set-Content b.md $p", "b.md")]
+    [InlineData("$CMD notes.md", "notes.md")]
+    public void Analyze_AssignmentOfAMutation_StaysAWrite(string command, string path)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt);
+        Assert.Contains(result.Operations, op => op.Type != FileOperationType.Read && op.Path == path);
+    }
+
+    // GS-02: literal data - a quoted heredoc, a single-quoted here-string or single-quoted text - is
+    // not expansion or code, so it does not make the write it feeds unverifiable.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs02SetContentEvidence)]
+    [InlineData(GuardRetroCommands.Gs02SetContentVerdict)]
+    [InlineData(GuardRetroCommands.Gs02CatSlotScript)]
+    [InlineData(GuardRetroCommands.Gs02SedBacktickCommit)]
+    [InlineData(GuardRetroCommands.Gs02SedBacktickSingleLine)]
+    [InlineData(GuardRetroCommands.Gs02CatAppendEvidence)]
+    [InlineData("cat > notes.md <<'EOF'\ncost: $5 and `date`\nEOF")]
+    [InlineData("cat > notes.md <<\"EOF\"\n$HOME\nEOF")]
+    public void Analyze_LiteralDataWrite_IsNoBypass(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+    }
+
+    [Theory]
+    [InlineData("cat > $OUT <<'EOF'\nplain words\nEOF")]
+    [InlineData("cat > notes.md <<EOF\n$(rm -rf build)\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nprice: $PRICE\nEOF")]
+    [InlineData("cat > notes.md <<'EOF'\nplain words\nEOF\nrm $TARGET")]
+    [InlineData("bash <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' | sh\necho x > $OUT\nEOF")]
+    [InlineData("bash -c 'echo x > $OUT'")]
+    [InlineData("Set-Content -LiteralPath $p -Value @'\nplain words\n'@")]
+    [InlineData("@\"\n$(Remove-Item build -Recurse)\n\"@ | Set-Content notes.md")]
+    [InlineData("echo hello\nrm secret.txt")]
+    public void Analyze_ExpansionNextToLiteralData_IsStillABypass(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt);
+        Assert.Contains(result.Operations, op => op.Type != FileOperationType.Read);
+    }
+
+    [Fact]
+    public void Analyze_SubstitutionInAnExpandingBody_IsAnalysed()
+    {
+        var result = _analyzer.Analyze("cat > notes.md <<EOF\n$(rm -rf build)\nEOF");
+
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Delete && op.Path == "build");
+    }
+
+    [Fact]
+    public void Analyze_LiteralBodyLines_AreNotCommands()
+    {
+        var result = _analyzer.Analyze("cat > notes.md <<'EOF'\nrm dydo/index.md\nEOF\ncat dydo/guides/x.md");
+
+        Assert.DoesNotContain(result.Operations, op => op.Path == "dydo/index.md");
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Read && op.Path == "dydo/guides/x.md");
+    }
+
+    #endregion
 }

@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Commands;
 
 using System.Reflection;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using DynaDocs.Commands;
 using DynaDocs.Models;
@@ -788,7 +789,7 @@ public class GuardCommandTests : IDisposable
     private void WriteConfigWithNudges(params (string Pattern, string Message, string Severity)[] nudges)
     {
         var nudgeJson = string.Join(",\n          ",
-            nudges.Select(n => $$"""{"pattern": "{{n.Pattern.Replace("\\", "\\\\")}}", "message": "{{n.Message}}", "severity": "{{n.Severity}}"}"""));
+            nudges.Select(n => $$"""{"pattern": {{JsonSerializer.Serialize(n.Pattern)}}, "message": {{JsonSerializer.Serialize(n.Message)}}, "severity": "{{n.Severity}}"}"""));
 
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), $$"""
             {
@@ -830,6 +831,138 @@ public class GuardCommandTests : IDisposable
 
         var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(
             "gh pr create --body '## Independent review - rubric: code, verdict: PASS'", env));
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Theory]
+    [InlineData("git commit -m \"docs: checks pass; gh pr create follows\"")]
+    [InlineData("echo 'build && gh pr create --draft'")]
+    [InlineData("cat > notes.md <<'EOF'\nthen; gh pr create --fill\nEOF")]
+    public void ReviewBlockNudge_PrCreateInTextACommandReads_StaysSilent(string command)
+    {
+        var nudge = ReviewBlockNudge();
+        WriteConfigWithNudges((nudge.Pattern, "Paste the review block.", nudge.Severity));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Theory]
+    [InlineData("echo ok && gh pr create --title x --body 'ships the fix'")]
+    [InlineData("git push; gh pr create --fill")]
+    public void ReviewBlockNudge_PrCreateAfterASeparator_StillWarns(string command)
+    {
+        var nudge = ReviewBlockNudge();
+        WriteConfigWithNudges((nudge.Pattern, "Paste the review block.", nudge.Severity));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("BLOCKED: Paste the review block.", stderr);
+    }
+
+    #endregion
+
+    #region Command Nudges Read Only What Runs (DYD-406 GS-03)
+
+    // The LC dydo.json nudges the retro's refusals came from (LC master fe021e2e), messages shortened.
+    private static readonly (string Pattern, string Message, string Severity)[] LcNudges =
+    [
+        (@"(?:^|[;&|]\s*)dotnet\s+test\b(.*)", "Use the one test command instead: python tools/test.py", "warn"),
+        (@"(?:^|[;&|]\s*)cs2ts\b(.*)", "Use the wrapper script instead: python tools/types/regen_types.py", "warn"),
+        (@"(?:^|[;&|]\s*)npm\s+(.*)", "Use pnpm, not npm. Try: pnpm $1", "warn"),
+        (@"(?:^|[;&|]\s*)(?:&\s+)?(?:""[^""]*(?:LC[.]AppHost|LC[.]Api)[.]exe\b""|'[^']*(?:LC[.]AppHost|LC[.]Api)[.]exe\b'|[^\s;&|]*(?:LC[.]AppHost|LC[.]Api)[.]exe\b)",
+            "Don't launch LC.AppHost or LC.Api executables directly.", "block"),
+    ];
+
+    private (int? Result, string Stderr) RunLcNudges(string command)
+    {
+        WriteConfigWithNudges(LcNudges);
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        return RunNudge(() => GuardCommand.CheckBlockNudges(command, env) ?? GuardCommand.CheckWarnNudges(command, env));
+    }
+
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs03ProcessListing)]
+    [InlineData(GuardRetroCommands.Gs03RgPattern)]
+    [InlineData(GuardRetroCommands.Gs03QuotedProcessListing)]
+    [InlineData(GuardRetroCommands.Gs03PowerShellProcessListing)]
+    [InlineData(GuardRetroCommands.Gs03GitGrepPattern)]
+    [InlineData(GuardRetroCommands.Gs03LogGrep)]
+    [InlineData("rg -n \"build|dotnet test\" docs")]
+    [InlineData("git log --grep 'npm ci; cs2ts'")]
+    [InlineData("echo ready # then; dotnet test")]
+    [InlineData("cat > notes.md <<'EOF'\nrun it | dotnet test\nEOF")]
+    [InlineData("Write-Output @'\nthen; npm install\n'@")]
+    public void CommandNudges_LaunchWordsInTextACommandReads_StaySilent(string command)
+    {
+        var (result, stderr) = RunLcNudges(command);
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Theory]
+    [InlineData("dotnet test --filter Foo", "BLOCKED: Use the one test command instead")]
+    [InlineData("git status; dotnet test --no-build", "BLOCKED: Use the one test command instead")]
+    [InlineData("& dotnet test", "BLOCKED: Use the one test command instead")]
+    [InlineData("rg -l foo | cs2ts --check", "BLOCKED: Use the wrapper script instead")]
+    [InlineData("npm install left-pad", "Try: pnpm install left-pad")]
+    [InlineData("git status && npm run lint", "Try: pnpm run lint")]
+    [InlineData("& \"C:\\Program Files\\LC\\LC.AppHost.exe\" --urls http://x", "BLOCKED: Don't launch LC.AppHost")]
+    [InlineData("'C:/x y/LC.Api.exe' --urls http://x", "BLOCKED: Don't launch LC.AppHost")]
+    [InlineData("C:/LC/bin/LC.Api.exe", "BLOCKED: Don't launch LC.AppHost")]
+    [InlineData("echo \"unbalanced; dotnet test", "BLOCKED: Use the one test command instead")]
+    public void CommandNudges_RealLaunch_KeepsSeverityAndCaptures(string command, string expected)
+    {
+        var (result, stderr) = RunLcNudges(command);
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains(expected, stderr);
+    }
+
+    [Theory]
+    [InlineData("npx dydo check --all", "Just use: dydo check --all")]
+    [InlineData("bash -c \"dydo check\"", "Don't use 'bash' to run dydo - it's already on your PATH. Just use: dydo check")]
+    public void ShippedDydoNudge_KeepsItsCaptures(string command, string expected)
+    {
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckBlockNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains(expected, stderr);
+    }
+
+    [Theory]
+    [InlineData("bash -c \"tail -f build.log\"")]
+    [InlineData("sh -c 'while true; do sleep 1; done'")]
+    public void PollLoopNudge_InsideAShellCommandString_StillWarns(string command)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("Open-ended Bash poll-loop detected", stderr);
+    }
+
+    [Theory]
+    [InlineData("rg -n 'tail -f' docs")]
+    [InlineData("git commit -m \"stop the while true; do sleep loop\"")]
+    public void PollLoopNudge_InQuotedText_StaysSilent(string command)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
 
         Assert.Null(result);
         Assert.Empty(stderr);

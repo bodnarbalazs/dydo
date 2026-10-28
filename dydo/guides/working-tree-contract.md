@@ -136,6 +136,9 @@ captain takes the record, and returns `done <key>: merged` after merge PASS and 
 holds the detail; the captain posts each crew hop's SHA. A Merge Sub-ticket never enters `Ready to Merge`.
 An atomic ticket has no Merge Sub-ticket: its captain sets `Ready to Merge` once CI is green, and after
 the user's click closes it `Done`, cleans up and returns `done <key>: merged`.
+A delegated captain whose PR still awaits checks returns `PR open <key>, checks pending: <url>, head <SHA>`;
+its officer, the top-level thread that owns the PR in T3, watches it and wakes the captain, which
+rechecks the gate before `Ready to Merge`.
 
 For an uncleared blocker or user takeover: push, post the resume SHA, clean the worktree (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree), set the
 parent `Todo`, unassign and wire any blocker; return `released <key>: <reason>`. A dead session is

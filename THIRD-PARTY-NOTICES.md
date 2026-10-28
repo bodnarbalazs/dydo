@@ -143,13 +143,14 @@ SOFTWARE.
 ## tstack
 
 These dydo skills contain adaptations of material from
-[t3dotgg/tstack](https://github.com/t3dotgg/tstack), `skills/full-send`, pinned at the commit each
-row names. Each adapted file repeats the attribution in its own header.
+[t3dotgg/tstack](https://github.com/t3dotgg/tstack), `skills/full-send` and `skills/babysit-pr`,
+pinned at the commit each row names. Each adapted file repeats the attribution in its own header.
 
 | Upstream skill | Commit | Adapted in |
 |---|---|---|
 | `full-send`: Proof | `1085050f3baed1ac724caa4a8166145fb2ac88af` | `skills/engineering/maintain-verification-skill/SKILL.md` |
 | `full-send`: Merge gate | `1085050f3baed1ac724caa4a8166145fb2ac88af` | `skills/roles/officers/ticket-captain/SKILL.md` |
+| `babysit-pr`: PR watch | `6efae364201abc9d9f07443e9caa461f42e51090` | `skills/roles/officers/ticket-captain/SKILL.md` |
 
 MIT License
 

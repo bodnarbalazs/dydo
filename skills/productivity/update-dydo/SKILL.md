@@ -28,9 +28,11 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    - CLI = `dydo version`. Older than new: update it with the tool that installed it and tell the
      user: `npm install -g dydo` when `npm ls -g dydo` lists it, `dotnet tool update -g dydo` when
      `dotnet tool list -g` does. From here on `dydo` is the updated CLI.
-3. **Reference install.** In an empty temp folder outside the project, with no `dydo.json` in any
-   folder above it, run `dydo init all`. It asks nothing; its files are what the new release
-   writes. It may add dydo's shell completion block to the user's shell profile once; tell the user.
+3. **Reference install.** Make an empty temp folder outside the project, with no `dydo.json` in
+   any folder above it, and run `cd <temp> && dydo init all` as one command: init installs into
+   its working directory and in the project refuses as already initialized; the guard passes a
+   dydo command after `cd`. It asks nothing; its files are what the new release writes. It may add
+   dydo's shell completion block to the user's shell profile once; tell the user.
 
    A tag's **sources** are the docs folder and entry-point template its `init` code embeds or
    copies; `git grep` at each tag finds them. The reference shows where each lands.
@@ -38,11 +40,15 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    `README.md`, or holds among its sources, paired with the project file where the README or the
    reference puts it. Each file's base is the upstream text it derives from: match each revision in
    its project history (`git log --follow`), line endings normalised, against that upstream file
-   at each tag, moves followed, templates rendered as `init` does. Only an exact match is proof;
-   similarity is not ancestry. Base = the newest tag holding that text, not after new. Nothing at
-   the path, at a rename's source or in their history: new upstream if new holds it; else skip
-   it. A project file with no proven ancestor: list it for manual reconciliation, base unknown,
-   leave it. Every base new, nothing to add: tell the user the project is current; go to step 7.
+   at each tag, moves followed, templates rendered as `init` does. An exact match proves its tag;
+   similarity is not ancestry. A revision in that history a recorded update to tag T left at the
+   path proves T: the update's commits set `dydoVersion` to T, and its record (commit messages, PR)
+   shows the file, or a folder holding it, merged, not skipped, base unknown or left to the user.
+   `dydoVersion` alone proves no file; a record contradicting itself or the history proves
+   nothing. Base = the newest proven tag, not after new. Nothing at the path, at a rename's source
+   or in their history: new upstream if new holds it; else skip it. A project file with no proven
+   ancestor: list it for manual reconciliation, base unknown, leave it. Every base new, nothing to
+   add: tell the user the project is current; go to step 7.
    **Old** (reported only) = `dydo.json`'s adopted release, else the commonest base, a guess.
 5. **Upgrade steps.** For each release after the oldest base, up to new, read the
    `## Upgrade steps` of its entry in the Releases list of `dydo/project/changelog/_changelog.md`
@@ -69,6 +75,8 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    - New upstream file: add it.
    - Upstream deleted it: remove it if the project never edited it; otherwise ask the user.
    - Project deleted a file upstream changed: ask the user.
+   - Either deletion an Upgrade step of a release after the file's base settles (it retires, moves
+     or deletes the file): follow the step instead of asking, and list it.
    - Remove directories the deletions leave empty.
    - A skill, or a doc under the docs root, that only the project has: leave it alone.
 
@@ -86,8 +94,12 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    the project, show the user the diff, ask them to apply it, and carry on.
 
    Then run the Upgrade steps step 5 put after the merge.
-7. **Activate.** In each checkout `git worktree list` shows, for each host `dydo.json` wires, run
-   `dydo init <host> --join`, then `node setup-skills.mjs` from its root. Codex wired: ask the
+7. **Activate** the update's own checkout: for each host `dydo.json` wires, run
+   `dydo init <host> --join`, then `node setup-skills.mjs` from its root. Another checkout
+   `git worktree list` shows waits until its own HEAD contains the update (`git -C <checkout>
+   merge-base --is-ancestor <update commit> HEAD`), or until the user says go naming it: `--join`
+   writes the committed `.claude/settings.json` (DR 056), so on a branch lacking the update it
+   edits that branch. List each deferred checkout with what to run there. Codex wired: ask the
    user to open Codex in the project and trust the changed hooks; an untrusted hook leaves every
    session unguarded. Then run the Upgrade steps step 5 put after activation.
 8. **Prove.** The update is done only when all of these hold:
@@ -100,19 +112,21 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    - every Upgrade step step 5 kept is applied or listed for the user;
    - `dydo check` exits 0; warnings are fine;
    - every What to compare category is walked, each finding resolved or listed for the user;
-   - in each checkout `git worktree list` shows, `git status --short` lists only the update's
-     changes; each untracked leftover of a path upstream removed is listed for the user to delete.
+   - in each checkout step 7 activated, `git status --short` lists only the update's changes;
+     each untracked leftover of a path upstream removed is listed for the user to delete.
 
    With every proof holding, run `dydo adopt <new>` to record the new version in `dydo.json`.
 9. **Report** to the user: old, new and CLI versions; files taken from upstream; files merged with
    both sides' edits; files with base unknown, to reconcile; protected files they applied;
    protected and off-limits files for them to handle; renamed skills moved and references renamed;
    files left for them to decide; leftovers to delete; upgrade steps applied; project tweaks kept;
-   dydo defects found; the step 8 output. Name the machine-local files, the git-ignored ones `init`
-   and `setup-skills.mjs` write (`.gitignore`, the reference install): after pulling, each teammate
-   needs a CLI at new or later, then runs `dydo init <host> --join` and `node setup-skills.mjs`.
+   checkouts step 7 deferred, each with what to run there; dydo defects found; the step 8 output.
+   Name the machine-local files, the git-ignored ones `init` and `setup-skills.mjs` write
+   (`.gitignore`, the reference install): after pulling, each teammate needs a CLI at new or
+   later, then runs `dydo init <host> --join` and `node setup-skills.mjs`.
 
-   The commit is the user's. Once he has committed and pushed it, run
+   The commit is the user's; its message keeps the file lists above, the record the next update's
+   step 4 reads. Once he has committed and pushed it, run
    `dydo pr-ready <the tree the PR comes from>` and fix what it lists until it prints `ready:`.
 
 ## What to compare

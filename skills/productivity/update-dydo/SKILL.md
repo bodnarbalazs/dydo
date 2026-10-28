@@ -41,14 +41,18 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    reference puts it. Each file's base is the upstream text it derives from: match each revision in
    its project history (`git log --follow`), line endings normalised, against that upstream file
    at each tag, moves followed, templates rendered as `init` does. An exact match proves its tag;
-   similarity is not ancestry. A revision in that history a recorded update to tag T left at the
-   path proves T: the update's commits set `dydoVersion` to T, and its record (commit messages, PR)
-   shows the file, or a folder holding it, merged, not skipped, base unknown or left to the user.
-   `dydoVersion` alone proves no file; a record contradicting itself or the history proves
-   nothing. Base = the newest proven tag, not after new. Nothing at the path, at a rename's source
-   or in their history: new upstream if new holds it; else skip it. A project file with no proven
-   ancestor: list it for manual reconciliation, base unknown, leave it. Every base new, nothing to
-   add: tell the user the project is current; go to step 7.
+   similarity is not ancestry. A recorded update to tag T is the commit setting `dydoVersion` to T,
+   those its record names with it, and that record (commit messages, PR) of each file. It proves T
+   for the revision left at the path when the record shows the file, or a folder holding it,
+   merged, not skipped, base unknown or left to the user, and either its commits wrote that
+   revision, or the record names the file kept, or upstream's file is unchanged from the file's
+   proven base, or with none from its first tag, to T. A revision an update's commits wrote that
+   its record does not prove, the record missing or contradicting itself or the history, leaves
+   the base unknown whatever older revisions match. Base = the newest proven tag, not after new.
+   Nothing at the path, at a rename's source or in their history: new upstream if new holds it;
+   else skip it. A project file with no proven ancestor: list it for manual reconciliation, base
+   unknown, leave it. Every base new, nothing to add: tell the user the project is current; go to
+   step 7.
    **Old** (reported only) = `dydo.json`'s adopted release, else the commonest base, a guess.
 5. **Upgrade steps.** For each release after the oldest base, up to new, read the
    `## Upgrade steps` of its entry in the Releases list of `dydo/project/changelog/_changelog.md`
@@ -95,13 +99,15 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
 
    Then run the Upgrade steps step 5 put after the merge.
 7. **Activate** the update's own checkout: for each host `dydo.json` wires, run
-   `dydo init <host> --join`, then `node setup-skills.mjs` from its root. Another checkout
-   `git worktree list` shows waits until its own HEAD contains the update (`git -C <checkout>
-   merge-base --is-ancestor <update commit> HEAD`), or until the user says go naming it: `--join`
-   writes the committed `.claude/settings.json` (DR 056), so on a branch lacking the update it
-   edits that branch. List each deferred checkout with what to run there. Codex wired: ask the
-   user to open Codex in the project and trust the changed hooks; an untrusted hook leaves every
-   session unguarded. Then run the Upgrade steps step 5 put after activation.
+   `dydo init <host> --join`, then `node setup-skills.mjs` from its root. Every other checkout
+   `git worktree list` shows is deferred unless the user says go naming it: `--join` writes the
+   committed `.claude/settings.json` (DR 056), so on a branch lacking the update it edits that
+   branch. List each deferred checkout with what to run there once it holds the update: its
+   `git -C <checkout> show HEAD:dydo.json` records `dydoVersion` new, without its `v`, or later.
+   Step 8's `dydo adopt` writes that and the update's commit carries it, so the test holds under
+   any merge style. Codex wired: ask the user to open Codex in the project and trust the changed
+   hooks; an untrusted hook leaves every session unguarded. Then run the Upgrade steps step 5 put
+   after activation.
 8. **Prove.** The update is done only when all of these hold:
    - every link `setup-skills.mjs` makes into `skills/` resolves to a `skills/**/<name>/SKILL.md`
      (read its host folders from the script; it leaves other entries alone);
@@ -125,8 +131,9 @@ Run this in the user's own top-level session, never a sub-agent: the guard denie
    (`.gitignore`, the reference install): after pulling, each teammate needs a CLI at new or
    later, then runs `dydo init <host> --join` and `node setup-skills.mjs`.
 
-   The commit is the user's; its message keeps the file lists above, the record the next update's
-   step 4 reads. Once he has committed and pushed it, run
+   The commit is the user's: hand them a commit message and PR text holding the report's file
+   lists, exceptions included (skipped, base unknown, left to them, protected not applied), the
+   record the next update's step 4 reads. Once they have committed and pushed it, run
    `dydo pr-ready <the tree the PR comes from>` and fix what it lists until it prints `ready:`.
 
 ## What to compare

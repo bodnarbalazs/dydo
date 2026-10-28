@@ -271,8 +271,9 @@ Step by step, with the Linear status each step leaves behind:
 9. **Prove red.** The writer's `IMPLEMENTED` return carries its red proof: an unused-member Bug's definition and
    reference search, any other Bug's reproduction failing with the fix reverted, a Feature's tests failing with the code stashed.
 10. **Review.** `In Review`; a fresh reviewer with one rubric returns the standard's one-line
-    block. PASS binds that candidate under that contract. FAIL returns the record to
-    `Implementing`, whatever it found.
+    block, every finding labelled `blocker`, `should` or `nit`. PASS binds that candidate under that
+    contract. FAIL, one or more blockers, returns the record to `Implementing`. From either verdict
+    the captain files each should as its own ticket and records each nit as one line.
 11. **Offer.** The captain pushes the branch, opens the PR into the feature branch with the block in
     its body, sets `Ready to Merge`, and returns `done <key>: PR ready`.
 12. **Merge.** When the Merge Sub-ticket's blocker clears, the previous ticket's merge, the map holder
@@ -283,7 +284,7 @@ Step by step, with the Linear status each step leaves behind:
 13. **Inquisition (rare).** The map holder files an Inquisition Ticket with scope and cost in `Backlog`;
     the user moves it to `Todo` and tells an invoked admiral, or cancels; the map holder commissions
     a captain who runs it and files Bugs, which land through the normal loop before the landing. Section 6.6.
-14. **Land.** The map holder files the landing Merge Ticket; its captain directs a code-writer to merge `main` into
+14. **Land.** The map holder files the landing Merge Ticket, blocked by every open should-ticket; its captain directs a code-writer to merge `main` into
     the feature, a resolution that refactored leaving its code no worse than either side, verifies combined gates, and obtains the merge review that proves the plan's acceptance criteria, opens
     the PR into `main`, sets `Ready to Merge`, and prepares the walkthrough. The user clicks, one
     Project at a time; the PR lands as a merge commit.
@@ -320,7 +321,7 @@ stateDiagram-v2
   InProgress --> InReview: lanes merged, review of the whole
   Implementing --> InReview: implement hop posted
   Todo --> InReview: a spec review of the contract, before any code
-  InReview --> Implementing: FAIL, whatever it found; or a spec review's verdict
+  InReview --> Implementing: FAIL, a blocker; or a spec review's verdict
   InReview --> Ready: PR ready with its PASS
   Ready --> Done: its Merge Sub-ticket PASS; for an atomic ticket, the user's click
   Ready --> Implementing: merge review FAIL, reverted
@@ -377,12 +378,12 @@ a field read that nobody returns, or returned that nobody reads, is a finding.
 | 16 | code-writer → ticket-captain | R, L, G | before code, only when needed: one comment naming the lanes or the inexact contract line; after: the `IMPLEMENTED` line with implement SHA, behaviour, red proof, the suites and static gates run with exits, blocker | - | - |
 | 17 | ticket-captain → Sub-tickets | L, G | lane Sub-tickets with the parent's Type and Mode, disjoint paths and branches, or retained Bug stages with native ordering and serial path transfer; one Merge Sub-ticket per actual integration; a Question Sub-ticket for local fog | - | lanes `Todo`; parent `In Progress` |
 | 18 | ticket-captain → reviewer(spec), optional, for one risk the contract records, before the code | R (spawn) | the record carrying the captain's contract | that text on the ticket, the five fields, base SHA, branch, worktree, owned paths | `In Review` → `Implementing` |
-| 19 | ticket-captain → code-writer, or docs-writer for a documentation change (fix hop) | R (spawn) | the ticket, the candidate, the review block that sent it | the ticket, the block, the plan, standards | `Implementing`, whatever the FAIL found |
-| 20 | code-writer or docs-writer (fix hop) → ticket-captain | R, G | ticket key, fix SHA, each finding with what closed it, gates rerun | - | - |
+| 19 | ticket-captain → code-writer, or docs-writer for a documentation change (fix hop) | R (spawn) | the ticket, the candidate, the review block that sent it | the ticket, the block, the plan, standards | `Implementing`, on the FAIL's blockers |
+| 20 | code-writer or docs-writer (fix hop) → ticket-captain | R, G | ticket key, fix SHA, each blocker with what closed it, any label changed with its evidence, gates rerun | - | - |
 | 21 | delivery ticket-captain → docs-writer | R (spawn) | the docs ticket and linked plan; for a record Feature, its exact owned record/navigation paths and the Inquisition's pinned packet | the delivery ticket, packet, about, writing-docs and working-tree retention contract | record Feature or other docs ticket `Implementing` |
 | 22 | docs-writer → ticket-captain | R | ending commit SHA, files changed, what each says and why, witnesses, `dydo check` and gate results | - | - |
 | 23 | ticket-captain → reviewer(code \| docs) | R (spawn) | rubric name, `Contract: <KEY> description as of <Linear updatedAt>`, Candidate SHA, Base SHA, the writer's `IMPLEMENTED` line | the contract as of that `updatedAt` with outcome, scenarios, owned paths, gates; the rubric; the hops; the `IMPLEMENTED` line, rerun only on a stated doubt | `In Review` |
-| 24 | reviewer → ticket-captain, record, PR | R, L, G | the review block in the standard's one-line `PASS` or `FAIL` form; observations after it | - | `Implementing` on FAIL, whatever it found |
+| 24 | reviewer → ticket-captain, record, PR | R, L, G | the review block in the standard's one-line `PASS` or `FAIL` form, every finding with its severity; observations after it | - | `Implementing` on FAIL, one or more blockers |
 | 25 | ticket-captain → Merge Sub-ticket (one per lane) | L, R (spawn), G | the lane branch at its PASS SHA; a code-writer maps conflicts and gates, merges it into the parent, a resolution that refactored leaving its code no worse than either side, then a fresh `reviewer(merge)` over the parent | the Merge template's fields: source, target, combined gates | lane `Ready to Merge` at its PASS, `Done` when merged; after the last, parent `In Review` for the review of the whole |
 | 26 | ticket-captain → admiral | G, L, R | the PR into the feature branch with the block; `done <key>: PR ready` | the record | parent `Ready to Merge` |
 | 27 | admiral → ticket-captain | R (message) | `merge`, when the Merge Sub-ticket's blocker clears, after re-wiring the order when a later PR was ready first; or a fresh commission from the record | the Merge Sub-ticket, the PR, the feature SHA | - |
@@ -479,17 +480,20 @@ undecided, gets a prepared Question wired to its waiters.
 flowchart LR
   classDef crew fill:#d4edda,stroke:#2e7d32,color:#000
   classDef reviewer fill:#f8d7da,stroke:#a71d2a,color:#000
-  RV{{reviewer verdict}}:::reviewer -->|PASS block| OK[captain records block, opens PR, returns done &lt;key&gt;: PR ready to admiral]
+  RV{{reviewer verdict}}:::reviewer -->|PASS block| OK[captain records block, files its shoulds and nits, opens PR, returns done &lt;key&gt;: PR ready to admiral]
   RV -->|"FAIL, fewer than five in a row"| RT{captain takes the findings}
-  RT -->|"every finding, whatever it is · Implementing"| IM[fresh author of the change's kind, code-writer or docs-writer: fix hop; it amends a scenario when the FAIL block names it]:::crew
+  RT -->|"should · nit"| DF[captain files each should as a ticket, records each nit as a line]
+  RT -->|"blockers · Implementing"| IM[fresh author of the change's kind, code-writer or docs-writer: fix hop; it amends a scenario when the FAIL block names it]:::crew
   IM --> FR{{fresh reviewer, new Candidate SHA · In Review}}:::reviewer
   FR --> RV
   RV -->|fifth consecutive FAIL| ESC[escalate: comment on the ticket, Question Ticket as blocker, admiral, then the user]
 ```
 
-The contract: FAIL is binding; every FAIL returns the record to `Implementing`, whatever it found,
-and a wrong or missing scenario is amended by the next fix hop; every
-correction is its own commit and the re-review pins the new SHA; a note is a finding; the fifth consecutive FAIL
+The contract: FAIL, one or more blockers, is binding and returns the record to `Implementing`; the
+fix hop closes the blockers only, checks each label against the source, and amends a wrong or
+missing scenario; every correction is its own commit and the re-review pins the new SHA; every
+finding carries a severity and none is dropped
+([DR 058](../project/decisions/058-review-severities-blocker-should-nit.md)); the fifth consecutive FAIL
 in one review loop stops the loop rather than softening the verdict. A contract amendment that changes
 acceptance is an amendment of the contract and, under a Project, goes to the map holder as a plan
 amendment.

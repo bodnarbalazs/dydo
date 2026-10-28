@@ -9,6 +9,8 @@ participants: [balazs, Claude (Fable)]
 
 # 045 - Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract
 
+> **Partially superseded by [058 - Review Severities: Blocker, Should, Nit](./058-review-severities-blocker-should-nit.md)** for the *a finding is a FAIL* question only: a FAIL now means a blocker. The rest remains in force.
+
 Fixes the operating model the harmonized dydo 3 skill system compiles to: one flow map every agent can
 place itself on, a taxonomy of hats, workers, methods and commands, three review tiers with a
 regex-checkable review block, question Issues as the fog-clearing unit, planning at two resolutions, an

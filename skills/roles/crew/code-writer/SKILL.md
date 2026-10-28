@@ -99,7 +99,11 @@ and gates run with exits; a Prototype hop returns runnable-demo evidence and its
 
 ## When you are the fix hop
 
-The FAIL block is your contract: close its findings and nothing else. Fix at the root: a gap
+The FAIL block's blockers are your contract: close them and nothing else. Check each finding's
+severity against the source, not the reviewer's label; a label you change goes in your
+`IMPLEMENTED` behaviour with its evidence (file:line, test, output). Shoulds and nits are the
+captain's to file. Prefer the change that deletes or narrows code; review never grows the PR.
+Fix at the root: a gap
 gets its test first; cut what the contract does not need; split or flatten what is complex; hide
 what leaks across a seam; a surviving mutant sharpens its test or deletes its code; a surviving
 example value gets its step wired.

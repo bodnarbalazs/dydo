@@ -74,7 +74,8 @@ in its brief, the worktree is clean, and only the test path is touched.
 
 The default crew is one author - `code-writer`, or `docs-writer` for a documentation change - and
 fresh independent whole-change review, whose first round on a candidate seats two reviewers in
-parallel, one Claude and one Codex. Add a spec review of the contract before any code only
+parallel, one Claude and one Codex, their findings merged into one block that FAILs only on a
+blocker. Add a spec review of the contract before any code only
 when one short, concrete risk reason, recorded in the contract, calls for it; persistence, migrations,
 permissions and uncertain native interfaces are examples of such a risk. Keep one compact acceptance contract and point to evidence rather than copying
 it. This scale rule does not weaken required G/M, integration or release gates, and skipped native
@@ -142,7 +143,7 @@ treated as release from its last recorded hop without a final push. Fresh commis
 record works on both hosts. An invoked admiral wakes on a captain's return or the user's word and rereads
 the board, including released and blocker-cleared tickets.
 
-Merge FAIL stays owned: fix integration defects inside Merge; revert a source defect there and
+Merge FAIL, a blocker, stays owned: fix integration defects inside Merge; revert a source defect there and
 close Merge `Canceled`, returning the source to `Implementing`. If a later merge depends on it,
 use a following fix ticket. Each corrected candidate gets fresh merge review.
 

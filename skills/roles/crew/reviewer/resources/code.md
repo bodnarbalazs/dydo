@@ -79,5 +79,5 @@ its pinned architecture plan and applicable feature-spec sections, on four axes 
 
 ## Verdict
 
-Each finding in the FAIL form carries its axis in the `wrong:` slot, as `wrong: <axis>: <fact>`, the
-axis being `contract`, `standards`, `gates` or `security`.
+Each finding, in a FAIL or a PASS tail, carries its severity and its axis in the `wrong:` slot, as
+`wrong: <axis>: <fact>`, the axis being `contract`, `standards`, `gates` or `security`.

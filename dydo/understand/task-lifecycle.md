@@ -82,10 +82,11 @@ The captain directs the merge by one code-writer and a fresh merge review, then 
 Done and returns `done <key>: merged`. A Merge Sub-ticket never waits in Ready to Merge. The landing
 Merge does: the user clicks its reviewed PR as a merge commit.
 
-Every FAIL returns to Implementing, whatever it found: a fresh author of the change's kind -
+A FAIL, one or more blockers, returns to Implementing: a fresh author of the change's kind -
 `code-writer`, or `docs-writer` for a documentation change - takes the next fix hop
-with the FAIL block as its contract, amending a scenario only where the block names it. Corrections carry new
-commits and fresh reviews. Merge FAIL
+with the FAIL block's blockers as its contract, amending a scenario only where the block names it. Corrections carry new
+commits and fresh reviews. From either verdict, the captain files each should as its own ticket and
+records each nit as one line on the ticket ([severity](../reference/dydo-glossary.md)). Merge FAIL
 fixes integration defects inside Merge. A source defect is reverted there, Merge closes Canceled
 and source returns to Implementing; if a later merge depends on it, a following fix ticket replaces
 the revert. Plan review has its own two-round cap before the user chooses.

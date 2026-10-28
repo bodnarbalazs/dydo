@@ -104,8 +104,11 @@ to a ticket. They are not extra levels in the work graph.
 Every reviewer verdict is the same **review block**: a Project update for a plan, on the Merge
 Ticket for a merge, otherwise on its ticket, and in the PR body when one exists; its one-line form is locked in the
 [Linear Workspace Standard](../reference/linear-workspace-standard.md#communication-and-evidence). Independence here is independence of *context*: the
-reviewer arrives fresh and reads the candidate itself rather than the story told about it. There is
-no PASS with notes; a note is a finding, and a finding is a FAIL.
+reviewer arrives fresh and reads the candidate itself rather than the story told about it. Every
+finding carries a [severity](../reference/dydo-glossary.md), `blocker`, `should` or `nit`, and only
+a blocker FAILs; a should becomes its own ticket the Project's landing waits on, and a nit one line
+on the record. Fixes are deferred, never dropped
+([DR 058](../project/decisions/058-review-severities-blocker-should-nit.md)).
 
 Reviewer, inquisitor and scout are non-authoring roles: their commissions and methods produce
 verdicts, findings or source passages, never candidate edits. This is a methodological boundary, not

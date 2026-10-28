@@ -69,8 +69,9 @@ map and how the tickets move, integrate, and finish together.
    cross-cutting architecture contract earns a repository plan: write it at
    `dydo/project/plans/<kebab-case>.md` in the shape the `project-plan` rubric checks, commit it, and
    send it to a fresh `reviewer(project-plan)` with rubric, Contract at the plan SHA, Candidate SHA
-   and Base SHA. The block is a Project update. Correct a FAIL at a new commit and review afresh;
-   the second FAIL goes to the user as the choice. Put the charted route, with any PASS, to the
+   and Base SHA. The block is a Project update. Correct a FAIL's blockers at a new commit and review
+   afresh; the second FAIL goes to the user as the choice. File each `should` as its own `Backlog`
+   ticket in the Project and record each `nit` as one line on the Project update. Put the charted route, with any PASS, to the
    user in this session. **Done:** approval is recorded, any plan is `reviewed`, and the Project
    `Planned`.
 3. **Open and commission.** Commission the first Ticket Captain to open
@@ -124,8 +125,10 @@ map and how the tickets move, integrate, and finish together.
    the working-tree contract's retention route.
    On delivery `Done`, resume the released Inquisition captain for durable-evidence verification.
 8. **Land and walk through.** File the landing Merge Ticket, blocked by its unresolved prerequisites:
-   delivery, a confirmed Inquisition and its record delivery, and required fixes. Exclude the landing
-   itself and later or deferred work. Its scope is main into feature, combined gates, merge review,
+   delivery, a confirmed Inquisition and its record delivery, required fixes, and every
+   should-ticket a review filed, wired now where it is not yet. Exclude the landing itself and other
+   later or deferred work. Sequence the should-tickets; the Project lands only when each is `Done`
+   or closed with a reason. Its scope is main into feature, combined gates, merge review,
    then a PR into main. Its `Ready to Merge`
    is the user's click, one Project at a time, as a merge commit. When the user tells you it landed,
    resume the landing captain to close and clean up the merged feature branch (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree); open a Walkthrough

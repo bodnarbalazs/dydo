@@ -38,7 +38,7 @@ every chain spawn, and nothing else flips it.
 | `Todo` | unstarted | The incoming list: contracted and to be started soon. An open native blocker still prevents pickup. A `Question` in `Todo` is the user's turn. |
 | `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding ticket, an Inquisition's sweep, proofs and final retention verification. |
 | `Implementing` | started | The author of the change's kind is spawned for one hop - a `code-writer`, or a `docs-writer` for a documentation change - a fix hop after a FAIL included. |
-| `In Review` | started | Any reviewer is spawned, the optional spec review of the contract before any code included. A FAIL returns the record to `Implementing`, whatever it found; a spec review returns it there on either verdict. |
+| `In Review` | started | Any reviewer is spawned, the optional spec review of the contract before any code included. A FAIL, one or more blockers, returns the record to `Implementing`; a spec review returns it there on either verdict. |
 | `Ready to Merge` | started | The PR carries its PASS block and waits for its merge turn. The record stays here while its own Merge Sub-ticket runs; the landing, one Project at a time, and an atomic ticket wait here for the user's click. A merge review FAIL that reverts sends it back to `Implementing`. |
 | `Done` | completed | Merged, or the outcome the Type names reached, with its evidence. |
 | `Canceled` | canceled | The ticket will not be completed; the record says why. |
@@ -208,8 +208,8 @@ updates, or token, cost, or latency claims. Review gates stay where their workfl
 
 Start each post with the applicable form:
 
-- `PASS - rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>.`
-- `FAIL - rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; gates <N/N>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
+- `PASS - rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Deferred (optional): 1. Where: <place>; severity: <should|nit>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
+- `FAIL - rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; gates <N/N>. 1. Where: <place>; severity: <blocker|should|nit>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
 - `IMPLEMENTED - hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
 - `DECIDED - result: <result>; immutable contract: <contract>; next: <action>.`
 - `DECIDED - by: what-would-balazs-do tribunal, unratified; result: <action>; vote: <n of 3, or split; most reversible>; log: <link>; undo: <steps>; next: <action>.`
@@ -218,7 +218,9 @@ Start each post with the applicable form:
 - `STATE - <status>; owner: <role>; candidate or PR: <reference>; next or blocker: <fact>; evidence: <link>.`
 
 A review block's `contract <ref>` is the contract its brief pinned, for a ticket
-`<KEY> description as of <Linear updatedAt>`; `base <SHA>` is the brief's base.
+`<KEY> description as of <Linear updatedAt>`; `base <SHA>` is the brief's base. A FAIL carries at
+least one blocker; a PASS carries none and lists its should and nit findings under `Deferred`. The
+captain files each should as its own ticket and records each nit as one line on the record.
 
 Brevity is soft: ordinary events aim for at most 800 characters, descriptions and state for at most
 1,500 characters or 12 lines. A necessary finding, gap, blocker, or evidence may exceed those aims;

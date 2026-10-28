@@ -37,7 +37,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
   user when none is invoked) to dispatch it. Full rule: working-tree contract.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Author no production
   change and never review your own candidate. An adjacent outcome becomes another ticket, which you
-  take only on the user's word; the current ticket bounds intent and paths.
+  take only on the user's word; the current ticket bounds intent and paths. A review's `should` is
+  the one exception: you file its ticket yourself (Review below).
 - **Record:** every captain-held ticket carries one Type and one Mode (`AFK` or `HITL`). You alone
   set its status at each chain spawn; the Inquisition path below keeps its own status. The board is your inbox and each hop's SHA its resume point.
 - **Human loop:** HITL runs in its own top-level thread. A spawned captain returns to
@@ -99,12 +100,18 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    its gates, ends on a posted commit, and carries no unresolved choice.
 5. **Review.** Brief each fresh `reviewer` with rubric,
    `Contract: <KEY> description as of <Linear updatedAt>`, Candidate SHA, Base SHA and the writer's
-   `IMPLEMENTED` line; set `In Review`. Treat FAIL as binding: every finding goes back to a fresh
-   author of the change's kind - `code-writer`, or `docs-writer` for a documentation change - at
-   `Implementing`, whatever it is, and a wrong scenario is amended by that fix hop when the FAIL
-   block names it.
+   `IMPLEMENTED` line; set `In Review`. Treat FAIL, one or more blockers, as binding: its blockers
+   go back to a fresh author of the change's kind - `code-writer`, or `docs-writer` for a
+   documentation change - at `Implementing`, and a wrong scenario is amended by that fix hop when
+   the FAIL block names it. Answer every `should` and `nit`, from either verdict. File each should
+   as its own ticket: Type matching the finding (Bug by default), Mode AFK, `Backlog`, in the
+   source's Project, linked to the source ticket and the review block, natively blocking the
+   Project's landing Merge Ticket when it exists; outside a Project, a team ticket in `Backlog` the
+   user sees. Record each nit as one line on the ticket; the final walkthrough lists those left
+   unaddressed for the user to promote. Record every label the fix-hop author changed, with its
+   reason; a should-ticket's own author may close it with a reason. Nothing is dropped.
    A candidate's first round seats two in parallel, one Claude and one Codex, their findings merged
-   into one FAIL; later rounds take the model and vendor you choose, cross-vendor preferred. Reviews
+   into one deduplicated block that FAILs if either found a blocker; later rounds take the model and vendor you choose, cross-vendor preferred. Reviews
    and gates keep the full strength the consequence of error deserves, whatever the work below cost.
    Seat parallel reviewers in separate worktrees when either may run probes.
    Send the FAIL block with the brief and set `Implementing`. A change to acceptance,
@@ -120,7 +127,7 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    than either side. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-ticket
    PASS once all lanes are in. The full suites and the ticket's whole gate set
    run here, again at each Merge Sub-ticket's combined gates and at the landing; within one such run
-   each suite executes once. **Done:** push the branch, write the PR body with `pr` to a file outside the tree, run `dydo pr-ready --body <file>`, then open the
+   each suite executes once. **Done:** push the branch, write the PR body with `pr` to a file outside the tree, listing the should-tickets filed and the nits recorded, run `dydo pr-ready --body <file>`, then open the
    PR with its PASS block on the record and in the body; read CI green with `gh pr checks`; set
    `Ready to Merge`, and return `done <key>: PR ready`.
 7. **Merge.** When the final Merge Sub-ticket's blocker clears, resume from the record and direct

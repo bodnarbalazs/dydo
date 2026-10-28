@@ -117,8 +117,9 @@ reason in the row. Then:
   definition and reference search, or the rerunnable drive steps), linked to this Inquisition.
   A blocker goes to `Todo`, a should to `Backlog`, natively blocking the Project's landing Merge
   Ticket when it exists. An audit with no Project files a team ticket, base `main`, with no landing
-  relation. A filed Bug is pickable at once, and its fix may merge into the feature mid-round: the
-  audit is pinned to its SHA. A later sighting of a Bug, even a fixed one, adds a reproduction to
+  relation. A Bug whose fix step 9 will prepare is filed assigned to you, the claim that keeps it
+  unpicked, naming its patch branch; any other Bug is filed unassigned and pickable at once. Its fix
+  may merge into the feature mid-round: the audit is pinned to its SHA. A later sighting of a Bug, even a fixed one, adds a reproduction to
   it. A verification gap is a should whose Bug names `maintain-verification-skill` as its method.
 - **Nit:** one line on this round's nit ticket, with its `file:line` and the wrong outcome; it
   needs no proof. Open the nit ticket with the first nit: Type `Feature`, Mode `AFK`, `Backlog`,
@@ -141,9 +142,11 @@ no patch. Nits are never patched.
 Brief a `code-writer` in Bug mode on the Bug's own branch, `<BUG-KEY>-<slug>`, cut from the audit
 SHA, with the Bug's base SHA and owned paths posted on it. It cherry-picks the finding's red-test
 commit first, then commits the fix that turns that test green. Attach the branch and SHA to the
-Bug; the Bug's captain verifies and reviews it once, in the Bug's own chain. The inquisition
-merges nothing but its own record. Done when every well-defined finding has its patch attached or a one-line reason it got
-none.
+Bug, then unassign it: it is pickable at once. The Bug's captain verifies and reviews the patch
+once, in the Bug's own chain. When the lane fails, the fix not well-defined after all or the
+code-writer returning blocked, record the reason on the Bug and unassign it without a patch. The
+inquisition merges nothing but its own record. Done when every Bug filed for the lane is
+unassigned with its patch attached or its reason recorded.
 
 ## 10. Close the sweep
 

@@ -131,7 +131,8 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Verification gap** - something a user can do that the project's verification skill cannot;
   Drive files it as a should, owned by `maintain-verification-skill`.
 - **Patch lane** - a proven, well-defined blocker or should whose fix the inquisition prepares
-  mid-round on its Bug's own branch, reviewed once in the Bug's chain.
+  mid-round on its Bug's own branch, reviewed once in the Bug's chain. The Bug stays assigned to
+  the inquisition's captain until the patch is attached, then becomes pickable.
 - **Nit ticket** - the one `Feature` per round that holds the round's nits, held by the map holder
   and linked to its Inquisition; a nit needs no proof, and the user decides each at the Project's
   final walkthrough.

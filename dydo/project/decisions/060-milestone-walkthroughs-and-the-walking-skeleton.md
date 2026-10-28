@@ -44,10 +44,12 @@ Option B.
    feature branch, the map holder prepares its Walkthrough Ticket and offers it to the user; the last
    Milestone's is the landing's, after the landing. He walks it with the map holder, by `walkthrough`,
    or skips it. **A skip is a verdict to go on.** The ticket is prepared even when he skips it.
-3. **Only the walking skeleton blocks.** Nothing is built on the skeleton until his verdict. Later
-   Milestones never stop the work: their findings become tickets in the Project as they arrive.
-4. **Overnight, the skeleton does not wait either.** The admiral posts `DECIDED` on its Walkthrough
-   Ticket, carries on, and treats a wrong direction as a revert. A call above its say goes through
+3. **Only the walking skeleton blocks.** Nothing is built on the skeleton until his verdict: its
+   Walkthrough Ticket, filed with the map, is a native blocker of the next Milestone's delivery
+   tickets until his verdict or skip closes it (Balazs, 2026-10-29). Later Milestones never stop
+   the work: their findings become tickets in the Project as they arrive.
+4. **Overnight, the skeleton does not wait either.** Its Walkthrough Ticket blocks nothing; the
+   admiral posts `DECIDED` on it, carries on, and treats a wrong direction as a revert. A call above its say goes through
    `what-would-balazs-do` as usual.
 5. **The walkthrough walks the whole current state**: the feature branch at a Milestone's SHA, or main
    at the landing. It must make sense to a user who is not close in, with the emphasis on what

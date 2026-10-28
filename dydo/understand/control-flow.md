@@ -283,15 +283,20 @@ Step by step, with the Linear status each step leaves behind:
     does not depend on it, the map holder re-wires the order first. Its code-writer merges with `--no-ff`, a
     resolution that refactored leaving its code no worse than either side, before a fresh `reviewer(merge)` judges the integrated feature; PASS sets the Sub-ticket and the primary `Done`.
     The captain cleans up and returns `done <key>: merged`. PR by PR, in plan order, never batched.
+    When a Milestone's last ticket has merged, the map holder offers its Walkthrough Ticket; the
+    user walks it or skips it, and a skip is a verdict to go on. The walking skeleton's, filed with
+    the map, natively blocks the next Milestone's tickets until it closes, except overnight; a later
+    Milestone's blocks nothing, and its findings become tickets as they arrive.
 13. **Inquisition (rare).** The map holder files an Inquisition Ticket with scope and cost in `Backlog`;
     the user moves it to `Todo` and tells an invoked admiral, or cancels; the map holder commissions
     a captain who runs it and files Bugs, which land through the normal loop before the landing. Section 6.6.
 14. **Land.** The map holder files the landing Merge Ticket, blocked by every open should-ticket; its captain directs a code-writer to merge `main` into
     the feature, a resolution that refactored leaving its code no worse than either side, verifies combined gates, and obtains the merge review that proves the plan's acceptance criteria, opens
-    the PR into `main`, sets `Ready to Merge`, and prepares the walkthrough. The user clicks, one
+    the PR into `main`, sets `Ready to Merge`, and prepares the landing's walkthrough, the last
+    Milestone's. The user clicks, one
     Project at a time; the PR lands as a merge commit.
 15. **Walk through.** The map holder commissions the landing Captain to clean up after the user
-    lands, opens the Walkthrough Ticket and loads `walkthrough` itself, then
+    lands, opens the last Milestone's Walkthrough Ticket and loads `walkthrough` itself, then
     facilitates it. Findings become tickets; the map holder commissions the first fix
     Captain to re-cut the feature from `main` under the same name. Nothing found sets the Project
     `Completed`, with the landing Captain's artifact cleanup confirmed.

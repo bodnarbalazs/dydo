@@ -129,7 +129,9 @@ files a `Question` only when judgment remains.
 A Project's map holder places its Milestones in Linear while charting: few, each a meaningful chunk
 of work where a drift from the user's intent would show, the walking skeleton first and the landing
 last. Every delivery ticket belongs to one, and each Milestone has one Walkthrough Ticket. Only the
-walking skeleton's verdict holds back the work built on it, and not in overnight mode.
+walking skeleton's holds back the work built on it: filed with the map, it is a native blocker of
+the next Milestone's delivery tickets until his verdict or skip closes it. In overnight mode it
+blocks nothing, and later Milestones' Walkthrough Tickets never block.
 
 A captain creates Sub-tickets one level deep: lanes for separate work that can run at the same time,
 each carrying its parent's Type and Mode,

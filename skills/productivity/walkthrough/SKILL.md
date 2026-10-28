@@ -29,10 +29,10 @@ or a review left doubt.
   seams the change moved.
 - **How to try it** - the exact commands to build it and see the new behaviour, in order, each one run
   once by you so it is true when he types it.
-- **What reviewers flagged or deferred** - in the severities of
-  `dydo/project/decisions/058-review-severities-blocker-should-nit.md`: each `should` deferred and the
-  ticket where it now lives, reported as it stands. At the landing, also every unaddressed `nit`
-  from the tickets' records, for the user to promote any.
+- **What reviewers flagged or deferred** - in the severities the Communication and evidence section
+  of `dydo/reference/linear-workspace-standard.md` defines: each `should` deferred and the ticket
+  where it now lives, reported as it stands. At the landing, also every unaddressed `nit` with the
+  ticket record where it sits, for the user to promote any.
 
 The tour ends when the user has inspected the files and tried the behavior, or skipped it. Record
 his verdict on the Walkthrough Ticket in his own words, or the skip. Other tours route findings

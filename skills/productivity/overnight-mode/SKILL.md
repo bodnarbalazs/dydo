@@ -42,7 +42,8 @@ Done when every admiral has the announcement.
    affect other agents. It relays down admiral → captain → crew. Answer a nudge in one line.
 5. **Keep moving.** One blocker never stops the night: take the next pickable work. Stop only at the
    night orders' stop line or when nothing is pickable. The walking skeleton does not wait either:
-   post `DECIDED` on its Walkthrough Ticket, carry on, and treat a wrong direction as a revert.
+   its Walkthrough Ticket blocks nothing; post `DECIDED` on it, carry on, and treat a wrong
+   direction as a revert.
 6. **Write for a reader who wasn't there**, every Question and `DECIDED`. Withdraw only Questions
    made obsolete by discovered facts or completed work; keep tribunal-decided Questions awaiting
    ratification.

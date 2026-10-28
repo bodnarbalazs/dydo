@@ -29,8 +29,8 @@ or a review left doubt.
   seams the change moved.
 - **How to try it** - the exact commands to build it and see the new behaviour, in order, each one run
   once by you so it is true when he types it.
-- **What reviewers flagged or deferred** - in the severities the Communication and evidence section
-  of `dydo/reference/linear-workspace-standard.md` defines: each `should` deferred and the ticket
+- **What reviewers flagged or deferred** - in the severities the **Severity** entry of
+  `dydo/reference/dydo-glossary.md` defines: each `should` deferred and the ticket
   where it now lives, reported as it stands. At the landing, also every unaddressed `nit` with the
   ticket record where it sits, for the user to promote any.
 

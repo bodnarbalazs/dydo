@@ -34,10 +34,16 @@ map and how the tickets move, integrate, and finish together.
   its record. A saved brief is not Admiral-to-crew authority. On a bounded refusal, preserve the
   state and avoid blind retries; use established lifecycle handling, then escalate or release the
   concrete limitation when captain-owned work cannot run.
-- **Dispatch:** same vendor → native subagent (Claude's Agent tool, Codex's own spawn); other vendor
-  → T3 `delegate_task` from your own turn, a child of you. Never `t3_thread_launch` or
-  `create_threads` for AFK captains or crew: those are the user's top-level threads. When a
-  captain reports `parent_not_active`, dispatch its crew for it. Full rule: working-tree contract.
+- **Dispatch:** under T3, captains and anything else that returns to you go by `delegate_task` from
+  your own turn, a child of you; a native foreground subagent only for a job you wait on within this
+  turn, and no native background subagents. Without T3, the host's native subagents. A native child
+  lives only inside its dispatcher's turn and cannot `delegate_task` (`parent_not_active`): when a
+  captain reports it, dispatch its crew for it. Stay in your turn while you wait on a native child.
+  Every brief that sends out Codex agents names a cap: around 8 at once, toward 16 only while clean;
+  a capacity 429 means retry in a few minutes, never a blocker; never "maximise parallelism". Never
+  `t3_thread_launch` or `create_threads` for AFK captains or crew: top-level threads are the user's,
+  only for HITL work or when the user asks. Needing the user while work runs, ask through the host's
+  question tool; the Linear Question ticket stays the record. Full rule: working-tree contract.
 - **Wayfinding:** perfect plans are fiction; the approved plan fixes the destination, not every turn.
   As fog clears, use `wayfinder` to settle the visible route. Hold Research, Grilling, Question and
   Walkthrough yourself; commission captains for Prototype and Enablement. Pull shared or

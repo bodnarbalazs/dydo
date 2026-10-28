@@ -60,7 +60,7 @@ a product decision to finish, the brief is not ready.
 
 The verdict is a fresh reviewer's **review block**, in the one-line form of the
 [Linear Workspace Standard](../reference/linear-workspace-standard.md#communication-and-evidence),
-and PASS means no findings.
+and PASS means no blocker; its should and nit findings are deferred, never dropped.
 
 Every reviewer brief names rubric, `Contract: <KEY> description as of <Linear updatedAt>`,
 Candidate SHA and Base SHA, plus the writer's `IMPLEMENTED` line where a writer produced the

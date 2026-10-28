@@ -118,7 +118,7 @@ internal sealed class WorktreeCleaner(string currentDirectory, string t3Worktree
         if (SamePath(tree.Path, repository.CurrentTop) || IsWithin(currentDirectory, tree.Path))
             return "the current directory is inside it";
         if (IsWithin(tree.Path, t3WorktreeRoot))
-            return $"T3 owns worktrees under {t3WorktreeRoot}; archive the thread instead";
+            return $"T3 owns worktrees under {t3WorktreeRoot}; leave them to T3";
         if (tree.Locked)
             return "it is locked";
         if (!Directory.Exists(tree.Path))

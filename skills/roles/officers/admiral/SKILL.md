@@ -100,6 +100,7 @@ map and how the tickets move, integrate, and finish together.
    commission a fresh one from the record. Rewire the order when a later ready PR is independent
    of an earlier unready one. **Done:** every merge has its own captain-directed chain and fresh
    merge review; the record shows the order that ran and `done <key>: merged` wakes the next work.
+   A captain's own rerun of its crew's proof recipe is the proof of record; you neither observe nor rerun it.
    **Walk each Milestone.** When a Milestone's last ticket has merged into the feature branch,
    prepare its Walkthrough Ticket and offer it to the user; the last Milestone's is the landing's,
    in step 8. He walks it with you, by `walkthrough`, or skips it, and a skip is a verdict to go

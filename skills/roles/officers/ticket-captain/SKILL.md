@@ -4,6 +4,7 @@ description: One contracted ticket needs a captain - specify, direct the crew, r
 ---
 
 <!-- PR watch adapted from t3dotgg/tstack babysit-pr at 6efae364201abc9d9f07443e9caa461f42e51090 (MIT). -->
+<!-- Merge gate adapted from t3dotgg/tstack full-send at 1085050f3baed1ac724caa4a8166145fb2ac88af (MIT). -->
 
 # Ticket Captain
 
@@ -82,7 +83,7 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    `diagnosing-bugs` when a Bug other than an unused member lacks a red reproduction. Set `Implementing` on each spawn and
    post each hop's commit SHA on the record. An Inquisition's phases, proofs and patches stay `In Progress`; its own record
    then runs the normal docs delivery chain, as below.
-   The writer's `IMPLEMENTED` return carries its red proof, or for an unused-member Bug its definition and reference search. Run disjoint lanes concurrently and keep every attempt on
+   The writer's `IMPLEMENTED` return carries its red proof, or for an unused-member Bug its definition and reference search, in the proof recipe `maintain-verification-skill` defines. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
    Wayfinding loop before production resumes. Choose each crew member's capability as you brief it: the
    strongest supported model for real engineering challenges, the smallest adequate one otherwise,
@@ -116,6 +117,9 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    into one deduplicated block that FAILs if either found a blocker; later rounds take the model and vendor you choose, cross-vendor preferred. Reviews
    and gates keep the full strength the consequence of error deserves, whatever the work below cost.
    Seat parallel reviewers in separate worktrees when either may run probes.
+   A reviewer without Linear access, a Codex seat, gets the contract pasted verbatim into its brief
+   or as a snapshot file, never a pointer to the ticket. Cancel and replace a reviewer stuck on an
+   approval prompt nobody can grant.
    Send the FAIL block with the brief and set `Implementing`. A change to acceptance,
    scope, destination or architecture goes to the Project's map holder for a map or plan amendment. **Done:** each fix
    has its own commit and fresh review; the fifth consecutive FAIL stops the loop, records the
@@ -129,7 +133,7 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    than either side. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-ticket
    PASS once all lanes are in. The full suites and the ticket's whole gate set
    run here, again at each Merge Sub-ticket's combined gates and at the landing; within one such run
-   each suite executes once. **Done:** push the branch, write the PR body with `pr` to a file outside the tree, listing the should-tickets filed and the nits recorded, run `dydo pr-ready --body <file>`, then open the
+   each suite executes once. Before offering, rerun each writer's proof recipe yourself; that rerun, posted on the record, is the proof of record. **Done:** push the branch, write the PR body with `pr` to a file outside the tree, listing the should-tickets filed and the nits recorded, run `dydo pr-ready --body <file>`, then open the
    PR with its PASS block on the record and in the body. Handle its existing checks and comments,
    then **watch** it: one watcher per PR, `watch_pull_request` in T3, elsewhere one long-running
    watcher (Monitor in Claude Code), never a sleep or polling loop. The PR's owning thread watches;
@@ -140,9 +144,15 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    should or nit as in Review, refresh the body's `**Deferred:**` line, tell repo failures from infra flakes, answer each dismissal with a
    written reason, and stay silent when nothing changed. With GraphQL exhausted, read the PR and
    check-runs over REST (`gh api repos/<o>/<r>/pulls/<n>`, `.../commits/<sha>/check-runs`). Recheck
-   the gate yourself - checks green on the latest push, the branch not BEHIND (T3 reports only
-   conflicts), every bot finding answered - then set
-   `Ready to Merge`, and return `done <key>: PR ready`.
+   the merge gate yourself:
+   - [ ] the proof of record covers every change in the diff;
+   - [ ] required checks are green on the latest push;
+   - [ ] review bots have finished, each finding fixed or answered;
+   - [ ] no human review requests changes;
+   - [ ] the branch is up to date with its target (not BEHIND; T3 reports only conflicts), and
+     GitHub reports it mergeable.
+
+   Then set `Ready to Merge`, and return `done <key>: PR ready`.
 7. **Merge.** When the final Merge Sub-ticket's blocker clears, resume from the record and direct
    its chain as above into the contract's target. The parent stays `Ready to Merge` while the
    Sub-ticket runs; a Merge Sub-ticket never enters that status. A landing Merge instead offers its

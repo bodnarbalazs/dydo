@@ -12,7 +12,7 @@ Agents merge a reviewed PR into a `feature/*` branch through `dydo merge`, whose
 with no override flag; a merge into the default branch stays the user's click
 ([DR 061](../../../decisions/061-agents-merge-only-into-feature-branches.md), DYD-417, DYD-424).
 It replaces a classifier hint that Claude Code applied by judgment, for Claude and LC only.
-`dydo init` and `--join` allow the command on Claude Code and Codex alike. Existing projects rerun
+`dydo init` and `--join` write narrow allow rules for Claude Code and Codex. Existing projects rerun
 `--join` in every checkout and re-trust Codex; see Upgrade steps.
 
 ## Added
@@ -26,11 +26,15 @@ It replaces a classifier hint that Claude Code applied by judgment, for Claude a
   - its head is the SHA;
   - the PR body's `## Independent review` holds a `code`, `docs` or `merge` PASS for that SHA and no
     FAIL;
-  - every check on the SHA has finished green and every required check is present.
+  - every check on the SHA has finished green, subject to the inert-app exception below, and every
+    required check is present.
 
   A closed PR whose SHA is already in its feature base reports `already integrated` and exits 0.
-  Refusals exit 1 with one `refused:` line; tool errors exit 2. A check suite that has not completed
-  and holds no run does not count as CI, since some apps leave one queued on every commit.
+  Refusals exit 1 with one `refused:` line; tool errors exit 2. The fixed in-code inert-app list,
+  keyed by GitHub App slug, contains only `blacksmith-sh`. Its suite is ignored only while unfinished
+  with zero runs; once it has runs, it is judged like any other suite. An unlisted app's unfinished
+  suite refuses regardless of run count; outside the exception, unknown states refuse too.
+  A suite refusal names the app slug and status. With no suite left, `no checks reported` refuses.
 - `dydo init` and `--join` write `Bash(dydo merge:*)` and `PowerShell(dydo merge:*)` into
   `.claude/settings.local.json`, and a `prefix_rule` for `dydo` and `dydo.exe merge` into
   `.codex/rules/dydo.rules` ([Configuration](../../../../reference/configuration.md#hook-configuration)).
@@ -43,6 +47,11 @@ It replaces a classifier hint that Claude Code applied by judgment, for Claude a
   working-tree contract, the code-writer's `merge` resource, `ticket-captain` step 7 and `admiral`
   step 4. In `overnight-mode`, standing order 3 merges through the captain's Merge chain, and muster
   preflight proves the path with `dydo merge … --dry-run`.
+
+Guard hard blocks for raw `gh pr merge`, `gh api` merge paths, GraphQL merge mutations, pushes to the
+default branch and default-branch changes are planned, delivery pending in DYD-425. The genuine
+Claude bash/Codex PowerShell parity gate is planned, pending in DYD-426; allow-rule delivery does not
+satisfy it.
 
 ## Upgrade steps
 
@@ -57,8 +66,8 @@ It replaces a classifier hint that Claude Code applied by judgment, for Claude a
    refuses every merge with `no checks reported`.
 5. A machine carrying a stopgap for agent merges, such as a free-text `autoMode.allow` merge entry or
    a user-level `Bash(gh pr merge:*)` allow rule, keeps it until the Claude/Codex parity gate
-   (DYD-426) passes in that project. Then the user removes it; agents cannot edit their own
-   permissions.
+   (planned, pending in DYD-426) passes in that project. Then the user removes it; agents cannot edit
+   their own permissions.
 6. Run `dydo adopt 3.6.1` last, once `dydo check` exits 0 and the update is proven.
 
 No change in this entry renames a term mechanically, so it has no merge normalisations.

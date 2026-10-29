@@ -79,13 +79,16 @@ briefs, and changelog.
 `dydo init claude` and `dydo init codex` wire the selected runtime's guard hooks automatically,
 into committed files, so a fresh clone is guarded: Claude Code uses `.claude/settings.json`, Codex
 uses `.codex/hooks.json` ([DR 056](../project/decisions/056-claude-guard-in-committed-settings.md)).
-Both also get allow rules for `dydo clean` and `dydo merge`, so a host's auto mode does not stop
-them: `Bash(dydo clean:*)`, `PowerShell(dydo clean:*)`, `Bash(dydo merge:*)` and
+Both also get narrow allow rules for `dydo clean` and `dydo merge`:
+`Bash(dydo clean:*)`, `PowerShell(dydo clean:*)`, `Bash(dydo merge:*)` and
 `PowerShell(dydo merge:*)` in the `permissions.allow` of Claude Code's gitignored
 `.claude/settings.local.json`, and one `prefix_rule` each in `.codex/rules/dydo.rules` for Codex,
 the merge rule matching `[["dydo", "dydo.exe"], "merge"]` because a Windows session may write
 either. Each command refuses in code what it must not do, so the narrow rule is safe, and both hosts
-must reach the same allow or block outcome ([DR 061](../project/decisions/061-agents-merge-only-into-feature-branches.md)).
+must reach the same allow or block outcome. The Claude bash/Codex PowerShell parity gate is planned,
+pending in DYD-426; writing allow rules does not establish parity. The guard hard blocks for raw merge
+paths, pushes to the default branch and default-branch changes are planned, pending in DYD-425
+([DR 061](../project/decisions/061-agents-merge-only-into-feature-branches.md)).
 
 The `PreToolUse` hook sends matched tool calls to `dydo guard`. Exit `0` with empty stdout allows
 the action; exit `0` with one `permissionDecision: "deny"` object on stdout blocks it, a contract

@@ -442,12 +442,15 @@ and it is what merges. There is no repository or base option. In order, it check
   rubric must be `code`, `docs` or `merge`, and a `FAIL` line for the same candidate refuses. When the
   PASS names a `base`, the target's tip must contain it; when it names none, a `note:` line says the
   base check was skipped.
-- **Checks:** every check suite, latest check run and legacy commit status on the SHA, read to the
-  last page, must have finished: suites and runs `success`, `neutral` or `skipped`, statuses
-  `success`. Every check the target's branch protection or rulesets require must be among them. A
-  suite that has not completed and holds no run is not CI (some apps leave one queued on every
-  commit); with no other suite the run refuses `no checks reported`, which also means the
-  repository's CI does not run on PRs into that branch.
+- **Checks:** every check suite, latest check run and legacy commit status on the SHA is read to
+  the last page. The fixed in-code inert-app list, matched by GitHub App slug, contains only
+  `blacksmith-sh`. A listed app's suite is ignored only while unfinished with zero runs; once it
+  has runs, it is judged like any other suite. Outside that exception, any unfinished suite refuses,
+  whatever its run count, and unknown states refuse. Suites and runs must finish with `success`,
+  `neutral` or `skipped`; legacy statuses must be `success`. Every check the target's branch
+  protection or rulesets require must be present. A suite refusal names the app slug and status,
+  for example `refused: checks on <sha12> are not green: circleci-checks queued`.
+  With no suite left after the exception, the command refuses `no checks reported`.
 
 Then it merges: `POST repos/<owner>/<repo>/merges` names the validated base and the SHA, so a later
 retarget or push cannot change where or what lands. When the base tip is an ancestor of the SHA,
@@ -471,8 +474,10 @@ line for each other candidate the review section passed. A tool error prints one
 answer such as a `403`, `422` or ruleset rejection, with GitHub's message. A merge that succeeded
 exits `0` even when the PR could not be reread (`unverified`).
 
-`dydo init` and `--join` allow the command without a prompt on both hosts (see [dydo init](#dydo-init)),
-and the guard lets a sub-agent run it: a Merge Sub-ticket's code-writer runs it.
+`dydo init` and `--join` write narrow allow rules for both hosts (see [dydo init](#dydo-init)),
+and the guard lets a sub-agent run it: a Merge Sub-ticket's code-writer runs it. The guard hard blocks
+for alternative merge paths are planned, pending in DYD-425. The Claude bash/Codex PowerShell parity
+gate is planned, pending in DYD-426; writing these rules does not prove host parity.
 
 ---
 

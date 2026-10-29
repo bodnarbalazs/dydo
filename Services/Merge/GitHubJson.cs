@@ -21,9 +21,6 @@ internal static class GitHubJson
     public static bool Flag(JsonNode? node, params string[] path) =>
         At(node, path) is JsonValue value && value.TryGetValue<bool>(out var flag) && flag;
 
-    public static long Number(JsonNode? node, params string[] path) =>
-        At(node, path) is JsonValue value && value.TryGetValue<long>(out var number) ? number : 0;
-
     public static IEnumerable<JsonNode> Items(JsonNode? node, params string[] path) =>
         At(node, path) is JsonArray items ? items.OfType<JsonNode>() : [];
 }

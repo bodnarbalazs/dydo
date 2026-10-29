@@ -1522,8 +1522,6 @@ public class BashCommandAnalyzerTests
     // GS-02: literal data - a quoted heredoc, a single-quoted here-string or single-quoted text - is
     // not expansion or code, so it does not make the write it feeds unverifiable.
     [Theory]
-    [InlineData(GuardRetroCommands.Gs02SetContentEvidence)]
-    [InlineData(GuardRetroCommands.Gs02SetContentVerdict)]
     [InlineData(GuardRetroCommands.Gs02CatSlotScript)]
     [InlineData(GuardRetroCommands.Gs02SedBacktickCommit)]
     [InlineData(GuardRetroCommands.Gs02SedBacktickSingleLine)]
@@ -1535,6 +1533,20 @@ public class BashCommandAnalyzerTests
     public void Analyze_LiteralDataWrite_IsNoBypass(string command)
     {
         var result = _analyzer.Analyze(command);
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+    }
+
+    // The GS-02 here-strings are PowerShell's, read as the guard reads a PowerShell tool call: their
+    // prose apostrophes would be quotes to bash, so the dialect decides.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs02SetContentEvidence)]
+    [InlineData(GuardRetroCommands.Gs02SetContentVerdict)]
+    [InlineData("@'\nIt's ready.\n'@ | Set-Content notes.md")]
+    [InlineData("Write-Output @'\nplain $HOME\n'@ | Out-File notes.md")]
+    public void Analyze_PowerShellLiteralHereStringWrite_IsNoBypass(string command)
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.PowerShell).Analyze(command);
 
         Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
     }
@@ -1662,6 +1674,95 @@ public class BashCommandAnalyzerTests
 
         Assert.Contains("Command contains embedded newlines", result.Warnings);
         Assert.Contains(result.Operations, op => op.Type == FileOperationType.Delete && op.Path.StartsWith("secret.txt"));
+    }
+
+
+    // Round 4 (DYD-406): a body is literal data only when data commands alone read it (cat, tee,
+    // grep, echo, Write-Output, Set-Content, Add-Content, Out-File), named as such, on a line of
+    // simple commands; every other consumer, quoted or under a path, keeps it code.
+    [Theory]
+    [InlineData("\"C:/Program Files/Git/bin/bash.exe\" <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData("\"bash\" <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData("'bash' <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData(". /dev/stdin <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData("fish <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' | \"C:/Program Files/Git/bin/bash.exe\"\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' | . /dev/stdin\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' |\necho x > $OUT\nEOF\nbash")]
+    [InlineData("cat <<'EOF' \\\n| bash\necho x > $OUT\nEOF")]
+    [InlineData("{\ncat <<'EOF'\necho x > $OUT\nEOF\n} | bash")]
+    [InlineData("(\ncat <<'EOF'\necho x > $OUT\nEOF\n) | bash")]
+    [InlineData("while read l; do cat <<'EOF'\necho x > $OUT\nEOF\ndone < /dev/null | bash")]
+    [InlineData("if true; then cat <<'EOF'\necho x > $OUT\nEOF\nfi | bash")]
+    [InlineData("cat <<'EOF' > >(bash)\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' | tee >(bash)\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' & bash\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF'x\nplain\nEOFx\necho x > $OUT\nEOF")]
+    [InlineData("@'\necho x > $OUT\n'@ | & \"C:\\Program Files\\Git\\bin\\bash.exe\"")]
+    [InlineData("@'\necho x > $OUT\n'@ | & 'C:\\Program Files\\Git\\bin\\bash.exe'")]
+    [InlineData("@'\necho x > $OUT\n'@ | wsl bash")]
+    [InlineData("@'\necho x > $OUT\n'@\n| iex")]
+    [InlineData("@'\necho x > $OUT\n'@ |\niex")]
+    [InlineData("& {\n@'\necho x > $OUT\n'@\n} | iex")]
+    public void Analyze_BodyFedToAnythingButADataCommand_StaysCode(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt, $"Expected a bypass: {command}");
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "$OUT");
+    }
+
+    // A command after the terminator is read from the original text: no quote or comment of the
+    // opener line reaches into it, an opener inside quoted text opens no body, and bash, which may
+    // run the line, reads a here-string's apostrophes as quotes.
+    [Theory]
+    [InlineData("@'\nx'; rm dydo/index.md; echo '\n'@ | Set-Content notes.md")]
+    [InlineData("cat > notes.md <<'EOF' # don't expand\nplain\nEOF\nrm dydo/index.md")]
+    [InlineData("cat > notes.md <<'END-OF-FILE'\nplain\nEND-OF-FILE\nrm dydo/index.md")]
+    [InlineData("echo \"\ncat <<'EOF'\n\"; rm dydo/index.md; echo \"\nEOF\n\"")]
+    public void Analyze_CommandAfterALiteralBody_IsReadFromTheOriginalText(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Delete && op.Path == "dydo/index.md");
+    }
+
+    // An apostrophe in a comment quotes nothing, so the line break after it still separates commands.
+    [Theory]
+    [InlineData("echo hi # don't\nrm 'dydo/index.md'; echo x > notes.md")]
+    [InlineData("cat > notes.md # don't\nrm 'dydo/index.md'")]
+    public void Analyze_ApostropheInAComment_HidesNoLineBreak(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains("Command contains embedded newlines", result.Warnings);
+    }
+
+    // Ordinary quoted delimiters, a comment on the opener line, data commands piped on, commands
+    // before the body's command, and literal writes one after another.
+    [Theory]
+    [InlineData("cat > notes.md <<'END-OF-FILE'\nplain $HOME\nEND-OF-FILE")]
+    [InlineData("cat > notes.md <<\"END_OF_FILE\"\nplain $HOME\nEND_OF_FILE")]
+    [InlineData("cat > notes.md <<-'END-OF-FILE'\n\tplain $HOME\n\tEND-OF-FILE")]
+    [InlineData("cat > notes.md <<'EOF' # don't expand\nplain $HOME\nEOF")]
+    [InlineData("cat <<'EOF' | grep -v x | tee notes.md\nplain $HOME\nEOF")]
+    [InlineData("mkdir -p docs && cat > docs/a.md <<'EOF'\nplain $HOME\nEOF")]
+    [InlineData("cat > a.md <<'A'\none $HOME\nA\ncat > b.md <<'B'\ntwo\nB")]
+    public void Analyze_LiteralBodyOnlyDataCommandsRead_IsNoBypass(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+    }
+
+    [Theory]
+    [InlineData("cat > $OUT <<'END-OF-FILE'\nplain\nEND-OF-FILE")]
+    [InlineData("cat > notes.md <<END-OF-FILE\n$(rm -rf build)\nEND-OF-FILE")]
+    public void Analyze_HyphenatedDelimiter_KeepsTheDynamicChecks(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt, $"Expected a bypass: {command}");
     }
 
     #endregion

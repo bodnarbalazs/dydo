@@ -1025,6 +1025,50 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertStderrContains("bypass");
     }
 
+    // Round 4: a body is data only when data commands alone read it; a quoted or pathed runner, a
+    // stdin source, a group piped on, a later line of code and a comment's apostrophe hide nothing.
+    [Theory]
+    [InlineData("Bash", "cat > notes.md <<'EOF' # don't expand\nplain\nEOF\nrm dydo/index.md")]
+    [InlineData("Bash", "\"C:/Program Files/Git/bin/bash.exe\" <<'EOF'\necho y > dydo/index.md\nEOF")]
+    [InlineData("Bash", "\"bash\" <<'EOF'\necho y > dydo/index.md\nEOF")]
+    [InlineData("Bash", ". /dev/stdin <<'EOF'\necho y > dydo/index.md\nEOF")]
+    [InlineData("Bash", "fish <<'EOF'\necho y > dydo/index.md\nEOF")]
+    [InlineData("Bash", "cat <<'EOF' | \"C:/Program Files/Git/bin/bash.exe\"\necho y > dydo/index.md\nEOF")]
+    [InlineData("Bash", "cat <<'EOF' |\necho y > dydo/index.md\nEOF\nbash")]
+    [InlineData("Bash", "{\ncat <<'EOF'\necho y > dydo/index.md\nEOF\n} | bash")]
+    [InlineData("Bash", "cat <<'EOF' > >(bash)\necho y > dydo/index.md\nEOF")]
+    [InlineData("Bash", "echo hi # don't\nrm 'dydo/index.md'; echo x > notes.md")]
+    [InlineData("PowerShell", "@'\necho y > dydo/index.md\n'@ | & \"C:\\Program Files\\Git\\bin\\bash.exe\"")]
+    [InlineData("PowerShell", "@'\necho y > dydo/index.md\n'@ | wsl bash")]
+    [InlineData("PowerShell", "@'\necho y > dydo/index.md\n'@\n| iex")]
+    [InlineData("PowerShell", "@'\nplain\n'@ | Set-Content notes.md # don't\nRemove-Item 'dydo/index.md'")]
+    public async Task Gs02_ProtectedChangeABodyOrALaterLineHolds_IsDenied(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    [Theory]
+    [InlineData("Bash", "cat > notes.md <<'END-OF-FILE'\nplain\nEND-OF-FILE")]
+    [InlineData("Bash", "cat > notes.md <<\"END_OF_FILE\"\nplain\nEND_OF_FILE")]
+    [InlineData("Bash", "cat > notes.md <<-'END-OF-FILE'\n\tplain\n\tEND-OF-FILE")]
+    [InlineData("Bash", "cat > notes.md <<'EOF' # don't expand\nplain $HOME\nEOF")]
+    [InlineData("PowerShell", "@'\nIt's ready.\n'@ | Set-Content notes.md")]
+    public async Task Gs02_LiteralBodyOnlyDataCommandsRead_IsAllowed(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
     [Theory]
     [InlineData("echo \"$(python3 tools/rewrite.py)\"")]
     [InlineData("printf x | (python3 tools/rewrite.py)")]

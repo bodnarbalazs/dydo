@@ -8,6 +8,15 @@ using System.Text.RegularExpressions;
 /// </summary>
 public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 {
+    // The shell the analysed command runs in; Unknown reads it as either.
+    private readonly ShellDialect _shell;
+
+    public BashCommandAnalyzer() : this(ShellDialect.Unknown)
+    {
+    }
+
+    internal BashCommandAnalyzer(ShellDialect shell) => _shell = shell;
+
     private static readonly Dictionary<string, FileOperationType> ReadCommands = new(StringComparer.OrdinalIgnoreCase)
     {
         // Unix/Linux/macOS
@@ -220,77 +229,189 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"\$\(cat\s+<<-?'?""?(\w+)""?'?\s*\n[\s\S]*?\n\1\s*\)")]
     private static partial Regex CatHeredocRegex();
 
-    // Any heredoc (<<WORD, <<'WORD', <<"WORD", <<-WORD): group 1 is the opener line, then the body and
+    // Any heredoc (<<WORD, <<'WORD', <<"WORD", <<-WORD; a word of letters, digits, _ and -, such as
+    // END-OF-FILE, ending where the shell's word ends): group 1 is the opener line, then the body and
     // the delimiter line with its line break. Group 3 is the delimiter's quote: a quoted delimiter
-    // makes the body literal. With <<- the delimiter may be tab-indented.
-    [GeneratedRegex(@"(?<!<)(<<(-)?[ \t]*(['""]?)(\w+)\3[^\n]*\n)[\s\S]*?^(?(2)\t*)\4[ \t]*\r?$\n?", RegexOptions.Multiline)]
+    // makes the body literal. With <<- the delimiter may be tab-indented. A delimiter line with
+    // trailing blanks, which the shell does not take, ends the match early, never late.
+    [GeneratedRegex(@"(?<!<)(<<(-)?[ \t]*(['""]?)([\w-]+)\3(?=[\s;&|<>()])[^\n]*\n)[\s\S]*?^(?(2)\t*)\4[ \t]*\r?$\n?", RegexOptions.Multiline)]
     private static partial Regex HeredocBodyRegex();
 
     // A PowerShell here-string: @' or @" ends its line, '@ or "@ starts the closing line. @' is literal.
     [GeneratedRegex(@"@(['""])[ \t]*\r?\n[\s\S]*?^\1@", RegexOptions.Multiline)]
     private static partial Regex HereStringRegex();
 
-    // A shell or interpreter named around a heredoc or here-string (bash <<'EOF', @'...'@ | python -),
-    // the word that may run its body.
-    [GeneratedRegex(@"(?:^|[\s;&|(])(?<runner>(?:[^\s;&|()'""]*[/\\])?(?:bash|sh|zsh|dash|ksh|pwsh|powershell|cmd|python[0-9.]*|py|node|ruby|perl|php|eval|source|iex|invoke-expression)(?:\.exe)?)(?=$|[\s;&|)])", RegexOptions.IgnoreCase)]
-    private static partial Regex BodyRunnerRegex();
+    [GeneratedRegex(@"(?<!<)<<(?!<)")]
+    private static partial Regex HeredocOperatorRegex();
 
     /// <summary>
-    /// Removes heredoc and PowerShell here-string bodies, which are text a command reads, so a line
-    /// inside one does not split out as a command and its newlines and $ signs are data. A heredoc
-    /// leaves its opener line and a separator, a here-string an empty string, so commands after the
-    /// closing line remain. A body a shell or interpreter around it runs stays. With
-    /// <paramref name="keepExpanding"/>, the bodies a shell expands (&lt;&lt;EOF, @"...") stay too,
-    /// so their substitutions and variables are still seen.
+    /// The commands a heredoc or here-string body may feed and stay literal data (DYD-406): each
+    /// prints, filters or writes the text it is given and runs none of it. Any other program, under
+    /// any path or quoting, runs or may run its stdin, so a body fed to it stays code, as before.
     /// </summary>
-    internal static string StripLiteralBodies(string command, bool keepExpanding = false)
-    {
-        var heredocsOut = HeredocBodyRegex().Replace(command, body =>
-            (keepExpanding && body.Groups[3].Length == 0) || IsRunBody(command, OpenerLineEnd(body), OpenerLineEnd(body))
-                ? body.Value
-                : body.Groups[1].Value.TrimEnd() + "; ");
-        return HereStringRegex().Replace(heredocsOut, body =>
-            (keepExpanding && body.Groups[1].Value == "\"") || IsRunBody(heredocsOut, body.Index, body.Index + body.Length)
-                ? body.Value
-                : "''");
-    }
+    private static readonly HashSet<string> DataCommands = new(StringComparer.OrdinalIgnoreCase)
+        { "cat", "tee", "grep", "echo", "write-output", "set-content", "add-content", "out-file" };
 
-    // A heredoc's opener line ends where its body begins, before that line's break.
-    private static int OpenerLineEnd(Match heredoc) => heredoc.Index + heredoc.Groups[1].Value.TrimEnd().Length;
+    // Words that open or close a compound command, whose output a later line may pipe on.
+    private static readonly HashSet<string> CompoundWords = new(StringComparer.OrdinalIgnoreCase)
+        { "if", "then", "elif", "else", "fi", "for", "select", "while", "until", "do", "done", "case", "esac", "function", "coproc" };
 
-    // Whether a runner named on the line before start or after end (a heredoc's opener line, or the
-    // lines a here-string opens and closes on) runs the body: see RunsBodyAt.
-    private static bool IsRunBody(string text, int start, int end)
+    // Written into a body's command line where the body is, after ; && ||, and before ( ) { }; no
+    // command line holds them.
+    private const string BodyMark = "\u0004";
+    private const string SequenceMark = "\u0005";
+    private const string GroupMark = "\u0006";
+
+    [GeneratedRegex(@";|&&|\|\|")]
+    private static partial Regex SequenceRegex();
+
+    [GeneratedRegex(@"[(){}]")]
+    private static partial Regex GroupRegex();
+
+    // What bash could read, outside quotes, as more than word text: a line break, a separator, a
+    // group, a substitution, a redirection, a quote or a comment.
+    [GeneratedRegex(@"[\r\n;&|()<>`$\\#""{}]")]
+    private static partial Regex BashStructureRegex();
+
+    /// <summary>One piece of a command's code, and the same piece with its expanding body kept.</summary>
+    private sealed record CodePiece(string Code, string Expanding);
+
+    // A literal-data body cut from text: the piece before it, and where the next piece starts.
+    private sealed record DataBodyCut(CodePiece Piece, int Resume);
+
+    /// <summary>
+    /// The command cut at its literal-data bodies into the pieces a shell runs as code, each read on
+    /// its own (DYD-406). A piece ends at a data body's opener line (a here-string leaves '' in its
+    /// place and keeps the rest of its closing line); the next starts on the line after the
+    /// terminator, in the original text, so no quote or comment of one piece reaches into another.
+    /// A body is data only as <see cref="DataBody"/> says; the first that is not stays in its piece
+    /// as code, and so does everything after it.
+    /// </summary>
+    private List<CodePiece> CodePieces(string command)
     {
-        var opening = LineStart(text, start);
-        var lineEnd = text.IndexOf('\n', end);
-        var closing = lineEnd < 0 ? text.Length : lineEnd;
-        return BodyRunnerRegex().Matches(text[opening..start]).Select(runner => opening + runner.Groups["runner"].Index)
-            .Concat(BodyRunnerRegex().Matches(text[end..closing]).Select(runner => end + runner.Groups["runner"].Index))
-            .Any(index => RunsBodyAt(text, index));
+        List<CodePiece> pieces = [];
+        var rest = command;
+        while (DataBody(rest) is { } cut)
+        {
+            pieces.Add(cut.Piece);
+            rest = rest[cut.Resume..];
+        }
+
+        pieces.Add(new CodePiece(rest, rest));
+        return pieces;
     }
 
     /// <summary>
-    /// Whether the runner word at <paramref name="index"/> runs a body: with a mark written there, the
-    /// line read as its shell reads it has the mark in a program word, and that command is fed (a pipe,
-    /// a &lt; redirection, a heredoc or here-string, <see cref="MarkFeeds"/>) or given a command
-    /// string (eval, iex, bash -c). A runner in a comment, an argument or a redirection target runs
-    /// nothing, and neither does one the body is not fed to (cat > run.sh &lt;&lt;'EOF' &amp;&amp; bash
-    /// run.sh). A line that cannot be read for certain counts, failing closed.
+    /// The first heredoc or here-string of <paramref name="text"/> cut out, when it is literal data:
+    /// its line is the first line of code, and every command it feeds is a data command
+    /// (<see cref="FeedsDataOnly"/>). Otherwise null, failing closed.
     /// </summary>
-    private static bool RunsBodyAt(string text, int index)
+    private DataBodyCut? DataBody(string text)
     {
-        var (lines, uncertain) = CommandLines(MarkFeeds(text.Insert(index, LaunchMark)), ShellDialect.Unknown);
-        return uncertain || lines.SelectMany(line => line.Commands).Any(RunsMarkedBody);
+        var heredoc = HeredocBodyRegex().Match(text);
+        var hereString = HereStringRegex().Match(text);
+        if (hereString.Success && (!heredoc.Success || hereString.Index < heredoc.Index))
+            return HereStringData(text, hereString);
+        return heredoc.Success ? HeredocData(text, heredoc) : null;
     }
 
-    private static bool RunsMarkedBody(ReadCommand read)
+    // A heredoc is bash's: bash reads its opener line, and PowerShell too when it may run the command.
+    private DataBodyCut? HeredocData(string text, Match heredoc)
     {
-        var at = CommandPosition.Skip(read.Words);
-        if (at >= read.Words.Count || !read.Words[at].Contains(LaunchMark, StringComparison.Ordinal))
+        var lineStart = LineStart(text, heredoc.Index);
+        var openerEnd = heredoc.Index + heredoc.Groups[1].Value.TrimEnd().Length;
+        var end = heredoc.Index + heredoc.Length;
+        var line = text[lineStart..heredoc.Index] + $" {BodyMark} " + text[heredoc.Index..openerEnd];
+        bool[] readings = _shell == ShellDialect.Posix ? [true] : [true, false];
+        if (!StartsItsPiece(text, lineStart) || HeredocOperatorRegex().Count(line) != 1
+            || !FeedsDataOnly(line, readings, hereString: false, text[end..]))
+            return null;
+
+        var code = text[..openerEnd];
+        return new DataBodyCut(new CodePiece(code, heredoc.Groups[3].Length == 0 ? text[..end] : code), end);
+    }
+
+    // A here-string is PowerShell's: PowerShell reads its line, and bash too when it may run the
+    // command, which then must read the here-string as words of that line (BashReadsAsWords).
+    private DataBodyCut? HereStringData(string text, Match hereString)
+    {
+        var lineStart = LineStart(text, hereString.Index);
+        var end = hereString.Index + hereString.Length;
+        var lineEnd = text.IndexOf('\n', end) is var at and >= 0 ? at : text.Length;
+        var resume = Math.Min(lineEnd + 1, text.Length);
+        var line = text[lineStart..hereString.Index] + $" {BodyMark} " + text[end..lineEnd];
+        var powerShell = _shell == ShellDialect.PowerShell;
+        bool[] readings = powerShell ? [false] : [false, true];
+        if (!StartsItsPiece(text, lineStart) || HeredocOperatorRegex().IsMatch(line)
+            || (!powerShell && !BashReadsAsWords(hereString.Value))
+            || !FeedsDataOnly(line, readings, hereString: true, text[resume..]))
+            return null;
+
+        var code = text[..hereString.Index] + "''" + text[end..lineEnd];
+        return new DataBodyCut(new CodePiece(code, hereString.Groups[1].Value == "\"" ? text[..lineEnd] : code), resume);
+    }
+
+    // Only blank and comment lines come before the body's line, so no group, quote or pipe is open there.
+    private static bool StartsItsPiece(string text, int lineStart) => !CodeLines(text[..lineStart]).Any();
+
+    // The lines of text that hold code: neither blank nor a comment.
+    private static IEnumerable<string> CodeLines(string text) =>
+        text.Split('\n').Select(line => line.Trim()).Where(line => line is [not '#', ..]);
+
+    /// <summary>
+    /// Whether a body, at the mark in its command <paramref name="line"/>, feeds only data commands
+    /// in every reading of that line: the line reads for certain as simple commands joined by
+    /// <c>;</c>, <c>&amp;&amp;</c>, <c>||</c> and pipes, with no group, substitution or compound
+    /// command; the command reading the body is a data command named as such (a here-string may
+    /// also stand alone), and so is each command its output is piped on to. The line does not go
+    /// on past its break: no trailing \ or `, and no next line of code starting with a pipe.
+    /// </summary>
+    private static bool FeedsDataOnly(string line, bool[] readings, bool hereString, string after)
+    {
+        if (line.TrimEnd() is [.., '\\' or '`'] || CodeLines(after).FirstOrDefault() is ['|', ..])
             return false;
-        var program = CommandPosition.ProgramName(read.Words[at].Replace(LaunchMark, ""));
-        return read.Fed || CommandPosition.ScriptOf(program, [.. read.Words.Skip(at + 1)]) != null;
+
+        var marked = PipeRegex().Replace(
+            SequenceRegex().Replace(GroupRegex().Replace(line, $" {GroupMark} $0"), $"$0{SequenceMark} "),
+            pipe => pipe.Value + PipeMark + " ");
+        return readings.All(posix => ReadsAsDataOnly(ShellReader.Read(marked, posix), hereString));
+    }
+
+    private static bool ReadsAsDataOnly(ShellReader.Reading reading, bool hereString)
+    {
+        var commands = reading.Commands.Select(command => command.Words).ToList();
+        var body = commands.FindIndex(words => words.Contains(BodyMark));
+        return !reading.Failed && reading.Substitutions.Count == 0 && body >= 0
+            && commands.All(IsSimple) && commands.Skip(1).All(words => words is [PipeMark or SequenceMark, ..])
+            && commands.Count(words => words.Any(word => word.Contains(BodyMark, StringComparison.Ordinal))) == 1
+            && ReadsBody(Unmarked(commands[body]), hereString)
+            && commands.Skip(body + 1).TakeWhile(words => words is not [SequenceMark, ..])
+                .All(words => Unmarked(words) is [var program, ..] && DataCommands.Contains(program));
+    }
+
+    // A command with no group mark, not part of a compound command.
+    private static bool IsSimple(List<string> words) =>
+        !words.Contains(GroupMark) && !(Unmarked(words) is [var first, ..] && CompoundWords.Contains(first));
+
+    // The command reading the body: a data command, or for a here-string the here-string alone.
+    private static bool ReadsBody(List<string> words, bool hereString) =>
+        (hereString && words is [BodyMark]) || (words is [var program, ..] && program != BodyMark && DataCommands.Contains(program));
+
+    private static List<string> Unmarked(List<string> words) =>
+        words is [PipeMark or SequenceMark, .. var rest] ? rest : words;
+
+    /// <summary>
+    /// Whether bash reads a here-string as words of the command it stands in: @'...'@ is @ and
+    /// single-quoted text, and each stretch an even number of ' in the body leaves outside quotes
+    /// holds only word text (<see cref="BashStructureRegex"/>); @"..."@ holds no " or \.
+    /// </summary>
+    private static bool BashReadsAsWords(string hereString)
+    {
+        var inner = hereString[2..^2];
+        if (hereString[1] == '"')
+            return !inner.Contains('"') && !inner.Contains('\\');
+        var stretches = inner.Split('\'');
+        return stretches.Length % 2 == 1 && stretches.Where((_, i) => i % 2 == 1).All(stretch => !BashStructureRegex().IsMatch(stretch));
     }
 
     private static int LineStart(string text, int index) => index == 0 ? 0 : text.LastIndexOf('\n', index - 1) + 1;
@@ -306,12 +427,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex CommandStringContextRegex();
 
     /// <summary>
-    /// What a shell expands: the text without literal bodies and with each literal single-quoted
-    /// string emptied.
+    /// What a shell expands of a piece: the piece with each literal single-quoted string emptied.
     /// </summary>
-    private static string ExpandingText(string command)
+    private static string ExpandingText(string text)
     {
-        var text = StripLiteralBodies(command, keepExpanding: true);
         var read = new Lazy<(List<CommandLine> Lines, bool Uncertain)>(() => CommandLines(text, ShellDialect.Unknown));
         return QuotedTextRegex().Replace(text, quoted => IsLiteralSingleQuoted(text, quoted, read) ? "''" : quoted.Value);
     }
@@ -336,10 +455,33 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
                 && line.Commands.Any(command => command.Words.Any(Holds))));
     }
 
-    // The command's layout: bodies gone and every quoted string emptied, so a line break left in it
-    // separates commands.
-    private static string Layout(string analysed) =>
-        QuotedTextRegex().Replace(analysed, quoted => quoted.Groups["single"].Success ? "''" : "\"\"");
+    // A piece's layout: every quoted string emptied, so a line break left in it separates commands.
+    // A quoted string spanning lines is emptied only where each reading of the piece holds it in a
+    // word: an apostrophe in a comment quotes nothing, so it hides no line break after it.
+    private static string Layout(string code)
+    {
+        var read = new Lazy<(List<CommandLine> Lines, bool Uncertain)>(() => CommandLines(code, ShellDialect.Unknown));
+        return QuotedTextRegex().Replace(code, quoted =>
+        {
+            if (quoted.Value.Contains('\n') && !IsQuotedWord(code, quoted, read.Value))
+                return quoted.Value;
+            return quoted.Groups["single"].Success ? "''" : "\"\"";
+        });
+    }
+
+    // bash's escapes inside double quotes: \$, \`, \" and \\.
+    [GeneratedRegex(@"\\([$`""\\])")]
+    private static partial Regex DoubleQuotedEscapeRegex();
+
+    private static bool IsQuotedWord(string code, Match quoted, (List<CommandLine> Lines, bool Uncertain) read)
+    {
+        var single = quoted.Groups["single"];
+        var raw = single.Success ? single.Value : quoted.Value[1..^1];
+        var unescaped = single.Success ? raw : DoubleQuotedEscapeRegex().Replace(raw, "$1");
+        bool Holds(string word) => word.Contains(raw, StringComparison.Ordinal) || word.Contains(unescaped, StringComparison.Ordinal);
+        return !read.Uncertain && read.Lines.Where(line => line.Text == code)
+            .All(line => line.Commands.Any(command => command.Words.Any(Holds)));
+    }
 
     // Bypass detection patterns
     [GeneratedRegex(@"\$\([^)]+\)|`[^`]+`")]
@@ -807,22 +949,19 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         // Strip cat heredoc blocks - literal text, not shell code
         var strippedCommand = CatHeredocRegex().Replace(command, "HEREDOC_STRIPPED");
 
-        // Literal data - a quoted heredoc, an @' here-string, single-quoted text - is neither
-        // expansion nor code, so only the expanding text is searched for bypasses (DYD-406).
-        var analysed = StripLiteralBodies(strippedCommand);
-        var expanding = ExpandingText(strippedCommand);
-        CheckBypassAttempts(expanding, Layout(analysed), result);
+        // Literal data - a body only data commands read, single-quoted text - is neither expansion
+        // nor code, so each piece of code is read on its own and only its expanding text is
+        // searched for bypasses (DYD-406).
+        var pieces = CodePieces(strippedCommand);
+        List<string> expanding = [.. pieces.Select(piece => ExpandingText(piece.Expanding))];
+        CheckBypassAttempts(expanding, string.Join("; ", pieces.Select(piece => Layout(piece.Code))), result);
 
-        var subCommands = SplitCommand(analysed);
-
-        foreach (var subCmd in subCommands)
-        {
+        foreach (var subCmd in pieces.SelectMany(piece => SplitCommand(piece.Code)))
             AnalyzeSubCommand(subCmd.Trim(), result);
-        }
 
         // Analyze contents of command substitutions so hidden operations are detected
         if (result.HasBypassAttempt)
-            AnalyzeCommandSubstitutions(expanding, result);
+            expanding.ForEach(piece => AnalyzeCommandSubstitutions(piece, result));
 
         return result;
     }
@@ -862,8 +1001,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return (false, null);
     }
 
-    // Each check reads the expanding text; a line break counts only in the layout, where it separates
-    // commands rather than sitting in quoted text or a body.
+    // Each check reads the expanding text of each piece; a line break counts only in the layout of the
+    // pieces, joined, where it separates commands rather than sitting in quoted text or a body.
     private static readonly (Func<string, string, bool> Check, string Warning)[] BypassChecks =
     [
         ((code, _) => CommandSubstitutionRegex().IsMatch(code), "Command contains command substitution - paths may be dynamic"),
@@ -883,11 +1022,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             .Skip(1).Any();
     }
 
-    private static void CheckBypassAttempts(string expanding, string layout, BashAnalysisResult result)
+    private static void CheckBypassAttempts(List<string> expanding, string layout, BashAnalysisResult result)
     {
         foreach (var (check, warning) in BypassChecks)
         {
-            if (check(expanding, layout))
+            if (expanding.Any(code => check(code, layout)))
             {
                 result.Warnings.Add(warning);
                 result.HasBypassAttempt = true;

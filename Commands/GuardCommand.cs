@@ -263,7 +263,7 @@ public static partial class GuardCommand
 
     private static int Decide(GuardContext ctx, OffLimitsService offLimitsService, GuardEnv env)
     {
-        var bashAnalyzer = new BashCommandAnalyzer();
+        var bashAnalyzer = new BashCommandAnalyzer(ModeSetCallerOf(ctx).Shell);
 
         RunDailyValidationIfDue();
 

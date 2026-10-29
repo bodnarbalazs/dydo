@@ -1796,5 +1796,28 @@ public class BashCommandAnalyzerTests
         Assert.True(result.HasBypassAttempt, $"Expected a bypass: {command}");
     }
 
+    // GS-03 (review round 6): a runner's command, and the command string ssh or watch runs, is at command position.
+    [Theory]
+    [InlineData("stdbuf -oL tail -f app.log", true)]
+    [InlineData("stdbuf -o L tail -f app.log", true)]
+    [InlineData("stdbuf --output=L tail -f app.log", true)]
+    [InlineData("ionice -c 3 tail -f app.log", true)]
+    [InlineData("setsid tail -f app.log", true)]
+    [InlineData("unbuffer tail -f app.log", true)]
+    [InlineData("caffeinate -t 60 tail -f app.log", true)]
+    [InlineData("wsl -d Ubuntu tail -f app.log", true)]
+    [InlineData("wsl bash -c 'tail -f app.log'", true)]
+    [InlineData("ssh host 'tail -f app.log'", true)]
+    [InlineData("ssh -p 22 host tail -f app.log", true)]
+    [InlineData("ssh host -t tail -f app.log", true)]
+    [InlineData("watch -n 1 'tail -f app.log'", true)]
+    [InlineData("echo stdbuf -oL tail -f app.log", false)]
+    [InlineData("grep 'ssh host tail -f' notes.md", false)]
+    [InlineData("ssh tail -f app.log", false)]
+    public void RunsAt_RunnersAndRemoteCommands(string command, bool runs)
+    {
+        Assert.Equal(runs, BashCommandAnalyzer.RunsAt(command, command.IndexOf("tail", StringComparison.Ordinal), ShellDialect.Posix));
+    }
+
     #endregion
 }

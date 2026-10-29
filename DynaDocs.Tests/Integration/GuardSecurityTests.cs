@@ -901,6 +901,43 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertPreToolUseDenied();
     }
 
+    // GS-03 (review round 6): a launch a runner makes, or the command string ssh or watch runs, keeps
+    // master's poll-loop nudge; the same words as an argument stay silent.
+    [Theory]
+    [InlineData("Bash", "stdbuf -oL tail -f app.log")]
+    [InlineData("Bash", "stdbuf -o L tail -f app.log")]
+    [InlineData("Bash", "stdbuf --output=L tail -f app.log")]
+    [InlineData("Bash", "ionice -c 3 tail -f app.log")]
+    [InlineData("Bash", "setsid tail -f app.log")]
+    [InlineData("Bash", "unbuffer tail -f app.log")]
+    [InlineData("Bash", "caffeinate -t 60 tail -f app.log")]
+    [InlineData("Bash", "wsl -d Ubuntu -- tail -f app.log")]
+    [InlineData("PowerShell", "wsl bash -c 'tail -f app.log'")]
+    [InlineData("Bash", "ssh host 'tail -f app.log'")]
+    [InlineData("Bash", "watch -n 1 'tail -f app.log'")]
+    public async Task Gs03_RunnerAndRemoteLaunch_KeepsThePollLoopNudge(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("Open-ended Bash poll-loop detected");
+    }
+
+    [Theory]
+    [InlineData("echo stdbuf -oL tail -f app.log")]
+    [InlineData("grep 'ssh host tail -f' notes.md")]
+    public async Task Gs03_RunnerWordsAsArguments_StaySilent(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        result.AssertPreToolUseAllowed();
+        Assert.DoesNotContain("poll-loop", result.Stderr);
+    }
+
     // GS-01: a PowerShell variable assigned from a literal Get-Content is a read.
     [Theory]
     [InlineData(GuardRetroCommands.Gs01SlicedRead)]

@@ -13,6 +13,14 @@ public class CommandPositionTests
     [InlineData(new[] { "nohup", "nice", "-n", "5", "gh" }, 4)]
     [InlineData(new[] { "if", "!", "gh" }, 2)]
     [InlineData(new[] { "env" }, 1)]
+    [InlineData(new[] { "stdbuf", "-oL", "tail" }, 2)]
+    [InlineData(new[] { "stdbuf", "-o", "L", "tail" }, 3)]
+    [InlineData(new[] { "stdbuf", "--output=L", "-e0", "tail" }, 3)]
+    [InlineData(new[] { "ionice", "-c", "3", "tail" }, 3)]
+    [InlineData(new[] { "setsid", "-w", "tail" }, 2)]
+    [InlineData(new[] { "unbuffer", "-p", "tail" }, 2)]
+    [InlineData(new[] { "caffeinate", "-i", "-t", "60", "tail" }, 4)]
+    [InlineData(new[] { "wsl", "-d", "Ubuntu", "--", "tail" }, 4)]
     public void Skip_FindsTheProgramWord(string[] words, int at)
     {
         Assert.Equal(at, CommandPosition.Skip(words));
@@ -61,6 +69,32 @@ public class CommandPositionTests
 
         Assert.NotNull(shell);
         Assert.Equal(script, shell.Text);
+    }
+
+    // ssh's remote command and the command watch runs are command strings, past their options (and ssh's host).
+    [Theory]
+    [InlineData("ssh", new[] { "host", "tail -f app.log" }, "tail -f app.log")]
+    [InlineData("ssh", new[] { "-p", "22", "-i", "key", "-o", "BatchMode=yes", "-t", "user@host", "tail", "-f", "x" }, "tail -f x")]
+    [InlineData("ssh", new[] { "-J", "jump", "--", "host", "tail -f x" }, "tail -f x")]
+    [InlineData("ssh", new[] { "host", "-t", "-l", "me", "tail -f x" }, "tail -f x")]
+    [InlineData("watch", new[] { "-n", "1", "tail -f app.log" }, "tail -f app.log")]
+    [InlineData("watch", new[] { "--interval=1", "-d", "-t", "tail", "-f", "x" }, "tail -f x")]
+    public void ScriptOfSshAndWatch_IsTheCommandTheyRun(string program, string[] rest, string script)
+    {
+        var shell = CommandPosition.ScriptOf(program, rest);
+
+        Assert.NotNull(shell);
+        Assert.Equal(script, shell.Text);
+        Assert.Equal(ShellDialect.Posix, shell.Dialect);
+    }
+
+    // An interactive ssh session or a watch with no command runs no command string.
+    [Theory]
+    [InlineData("ssh", new[] { "-p", "22", "host" })]
+    [InlineData("watch", new[] { "-n", "1" })]
+    public void ScriptOfSshAndWatch_WithoutACommand_IsNone(string program, string[] rest)
+    {
+        Assert.Null(CommandPosition.ScriptOf(program, rest));
     }
 
     [Theory]

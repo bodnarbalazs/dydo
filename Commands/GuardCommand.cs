@@ -967,10 +967,11 @@ public static partial class GuardCommand
 
     /// <summary>
     /// mode set still meets its nudge; clean is what Ticket Captains run on close-out, pr-ready before
-    /// they open a PR. Setup, generation and hook commands stay with the top-level session.
+    /// they open a PR, merge what a Merge Sub-ticket's code-writer runs to integrate a reviewed PR into
+    /// its feature branch. Setup, generation and hook commands stay with the top-level session.
     /// </summary>
     internal static readonly string[] WorkerAllowedDydoSubcommands =
-        ["check", "fix", "gap-check", "graph", "validate", "mode", "clean", "pr-ready", "help", "version"];
+        ["check", "fix", "gap-check", "graph", "validate", "mode", "clean", "pr-ready", "merge", "help", "version"];
 
     private static readonly HashSet<string> WorkerAllowedDydoWords =
         new([.. WorkerAllowedDydoSubcommands, "-h", "--help", "--version"], StringComparer.Ordinal);

@@ -1388,6 +1388,92 @@
       "tests": [
         "DynaDocs.Tests/Integration/InitCommandTests.cs"
       ]
+    },
+    {
+      "module": "Commands/MergeCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/MergeCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/PullRequestMerge.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/PullRequestMergeTests.cs",
+        "DynaDocs.Tests/Merge/IndependentReviewTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/CommitChecks.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/CommitChecksTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/CommitSha.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/PullRequestMergeTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/FeatureBranch.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/FeatureBranchTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/GhApi.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/GhApiTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/GitHubJson.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/CommitChecksTests.cs",
+        "DynaDocs.Tests/Merge/PullRequestMergeTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/GitHubReply.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/GhApiTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/IGitHubApi.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/PullRequestMergeTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/IndependentReview.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/IndependentReviewTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/MergeCheckout.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/MergeCheckoutTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/MergeStop.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/PullRequestMergeTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/OriginRepository.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/MergeCheckoutTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/ReviewVerdict.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/IndependentReviewTests.cs"
+      ]
     }
   ]
 }

@@ -410,6 +410,21 @@ work tree is a problem too. When all hold, it prints one `ready:` line and exits
 runs the tree checks on `gh pr create`, `gh pr new`, `gh pr ready` and their `gh api` forms
 ([Guard System](../understand/guard-system.md)).
 
+### dydo merge
+
+Merge a reviewed PR into its `feature/*` branch with a merge commit.
+
+```bash
+dydo merge <pr> --match-head-commit <sha> --dry-run   # every read and check; merges nothing
+dydo merge <pr> --match-head-commit <sha>             # merge exactly <sha> into the PR's feature/* base
+```
+
+`--match-head-commit` takes the full 40-character SHA the reviewer passed: the PR head must equal it,
+and it is what merges. The repository is the one the project's `origin` names; there is no repository,
+base or override option. Each refusal prints one `refused:` line on stderr and exits `1`; a tool error
+(gh missing or signed out, the network, an unexpected GitHub answer) exits `2`. A merge, a SHA already
+integrated, and a `--dry-run` whose checks pass exit `0`.
+
 ---
 
 ## Validation Command

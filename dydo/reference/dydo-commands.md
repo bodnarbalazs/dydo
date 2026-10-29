@@ -445,9 +445,12 @@ and it is what merges. There is no repository or base option. In order, it check
   base check was skipped.
 - **Checks:** every check suite, latest check run and legacy commit status on the SHA is read to
   the last page. The fixed in-code inert-app list, matched by GitHub App slug, contains only
-  `blacksmith-sh`. A listed app's suite is ignored only while unfinished with zero runs; once it
-  has runs, it is judged like any other suite. Outside that exception, any unfinished suite refuses,
-  whatever its run count, and unknown states refuse. Suites and runs must finish with `success`,
+  `blacksmith-sh`. A listed app's suite is ignored only when its status is `queued`, `in_progress`,
+  `pending`, `requested` or `waiting` and `latest_check_runs_count` is present as a valid integer
+  zero. Unknown, missing or malformed status and missing or invalid count never establish the
+  exception, even for `blacksmith-sh`. Every non-exempt suite is judged normally; any unfinished
+  suite then refuses, whatever its run count. Unknown states always refuse.
+  Suites and runs must finish with `success`,
   `neutral` or `skipped`; legacy statuses must be `success`. Every check the target's branch
   protection or rulesets require must be present. A suite refusal names the app slug and status,
   for example `refused: checks on <sha12> are not green: circleci-checks queued`.

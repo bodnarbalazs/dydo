@@ -31,9 +31,11 @@ It replaces a classifier hint that Claude Code applied by judgment, for Claude a
 
   A closed PR whose SHA is already in its feature base reports `already integrated` and exits 0.
   Refusals exit 1 with one `refused:` line; tool errors exit 2. The fixed in-code inert-app list,
-  keyed by GitHub App slug, contains only `blacksmith-sh`. Its suite is ignored only while unfinished
-  with zero runs; once it has runs, it is judged like any other suite. An unlisted app's unfinished
-  suite refuses regardless of run count; outside the exception, unknown states refuse too.
+  keyed by GitHub App slug, contains only `blacksmith-sh`. Its suite is ignored only when its status
+  is `queued`, `in_progress`, `pending`, `requested` or `waiting` and `latest_check_runs_count` is
+  present as a valid integer zero. Unknown, missing or malformed status and missing or invalid count
+  never establish the exception, even for `blacksmith-sh`. Every non-exempt suite is judged normally;
+  any unfinished suite then refuses regardless of run count. Unknown states always refuse.
   A suite refusal names the app slug and status. With no suite left, `no checks reported` refuses.
 - `dydo init` and `--join` write `Bash(dydo merge:*)` and `PowerShell(dydo merge:*)` into
   `.claude/settings.local.json`, and a `prefix_rule` for `dydo` and `dydo.exe merge` into

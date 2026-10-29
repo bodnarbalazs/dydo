@@ -59,9 +59,12 @@ server-side. Balazs ruled it unnecessary.
 5. **CI is green, with a fixed inert-app exception.** Every check suite, latest check run and
    legacy status on the SHA must finish green, and every check the target requires must be present.
    The in-code inert-app list, keyed by GitHub App slug, contains only `blacksmith-sh`: it leaves a
-   queued suite with zero runs on every dydo and LC commit. Its suite is ignored only while
-   unfinished with zero runs; once it has runs, it is judged like any other suite. Outside that
-   exception, any unfinished suite refuses, whatever its run count, and unknown states refuse.
+   queued suite with zero runs on every dydo and LC commit. Its suite is ignored only when its
+   status is `queued`, `in_progress`, `pending`, `requested` or `waiting` and
+   `latest_check_runs_count` is present as a valid integer zero. Unknown, missing or malformed
+   status and missing or invalid count never establish the exception, even for `blacksmith-sh`.
+   Every non-exempt suite is judged normally; any unfinished suite then refuses, whatever its run
+   count. Unknown states always refuse.
    A suite refusal names the app slug and status, for example
    `refused: checks on <sha12> are not green: circleci-checks queued`.
    With no suite left after the exception, the command refuses `no checks reported`.
@@ -92,8 +95,9 @@ server-side. Balazs ruled it unnecessary.
   - **Wrapped or opaque shell payloads** (`bash -c`, `eval`, a GraphQL body in a file) remain a
     text-reading limitation of the planned DYD-425 guard blocks; those blocks are not yet shipped.
   - **A workflow that registers late**, after every other check has finished green. A listed inert
-    app registering a real suite before its runs exist is also ignored while that suite is unfinished
-    with zero runs; an unlisted app's unfinished suite refuses even with zero runs.
+    app registering a real suite before its runs exist is also ignored when its status is `queued`,
+    `in_progress`, `pending`, `requested` or `waiting` and `latest_check_runs_count` is present as a
+    valid integer zero; an unlisted app's unfinished suite refuses even with zero runs.
   - **The default-branch-switch race:** an admin switching the default branch to the feature branch
     during a run. The command re-reads `default_branch` after merging and warns when it changed;
     blocking agent default-branch changes is planned, delivery pending in DYD-425.

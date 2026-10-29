@@ -815,12 +815,8 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("PowerShell", GuardRetroCommands.Gs02SetContentEvidence)]
     [InlineData("PowerShell", GuardRetroCommands.Gs02SetContentVerdict)]
     [InlineData("Bash", GuardRetroCommands.Gs02CatSlotScript)]
-    [InlineData("Bash", GuardRetroCommands.Gs02SedBacktickCommit)]
-    [InlineData("Bash", GuardRetroCommands.Gs02SedBacktickSingleLine)]
     [InlineData("Bash", GuardRetroCommands.Gs02CatAppendEvidence)]
     [InlineData("Bash", "cat > notes.md <<'EOF'\nplain words\nEOF")]
-    [InlineData("Bash", "printf '%s' 'first line\n$HOME is literal' > notes.md")]
-    [InlineData("PowerShell", "Set-Content notes.md 'first line\n$HOME is literal'")]
     public async Task Gs02_LiteralDataWrite_ToALiteralDestination_IsAllowed(string toolName, string command)
     {
         await SetupClaimedAgent();
@@ -828,6 +824,46 @@ public class GuardSecurityTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(ShellJson(toolName, command));
 
         result.AssertPreToolUseAllowed();
+    }
+
+    // DYD-421 DECIDED: single-quoted text is searched for bypasses as on master, so these
+    // single-quoted GS-02 writes stay refused until DYD-422 designs a relaxation.
+    [Theory]
+    [InlineData("Bash", GuardRetroCommands.Gs02SedBacktickCommit)]
+    [InlineData("Bash", GuardRetroCommands.Gs02SedBacktickSingleLine)]
+    [InlineData("Bash", "sed -i 's/`x`/y/' f")]
+    [InlineData("Bash", "printf '%s' 'first line\n$HOME is literal' > notes.md")]
+    [InlineData("PowerShell", "Set-Content notes.md 'first line\n$HOME is literal'")]
+    public async Task Gs02_SingleQuotedDataWrite_IsDeniedAsOnMaster(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("bypass");
+    }
+
+    // DYD-421 DECIDED: apostrophes around a substitution or a variable, on a command line or in an
+    // expanding heredoc body, hide nothing; the protected canary keeps its bytes.
+    [Theory]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("cat > notes.md <<EOF\nDon't $(rm dydo/index.md) it's\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nDon't $(echo y > dydo/index.md) it's\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nthe user's file: $(cat dydo/index.md > /dev/null; rm dydo/index.md) isn't kept\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nDon't run $(date) or it's late\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nDon't touch $HOME, it's mine\nEOF")]
+    public async Task Gs02_ExpansionBetweenApostrophes_IsDeniedAndTheCanaryUnchanged(string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("Command contains bypass patterns (command substitution or variable expansion)");
+        Assert.Equal(before, File.ReadAllBytes(canary));
     }
 
     [Theory]

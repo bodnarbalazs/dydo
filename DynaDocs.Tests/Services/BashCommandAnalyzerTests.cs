@@ -1519,22 +1519,62 @@ public class BashCommandAnalyzerTests
         Assert.Contains(result.Operations, op => op.Type != FileOperationType.Read && op.Path == path);
     }
 
-    // GS-02: literal data - a quoted heredoc, a single-quoted here-string or single-quoted text - is
-    // not expansion or code, so it does not make the write it feeds unverifiable.
+    // GS-02: literal data - a quoted heredoc or a single-quoted here-string - is not expansion or
+    // code, so it does not make the write it feeds unverifiable.
     [Theory]
     [InlineData(GuardRetroCommands.Gs02CatSlotScript)]
-    [InlineData(GuardRetroCommands.Gs02SedBacktickCommit)]
-    [InlineData(GuardRetroCommands.Gs02SedBacktickSingleLine)]
     [InlineData(GuardRetroCommands.Gs02CatAppendEvidence)]
     [InlineData("cat > notes.md <<'EOF'\ncost: $5 and `date`\nEOF")]
     [InlineData("cat > notes.md <<\"EOF\"\n$HOME\nEOF")]
-    [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md")]
-    [InlineData("Set-Content notes.md 'first line\n$HOME is literal'")]
     public void Analyze_LiteralDataWrite_IsNoBypass(string command)
     {
         var result = _analyzer.Analyze(command);
 
         Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+    }
+
+    // DYD-421 DECIDED: single-quoted text is searched for bypasses exactly as on master; these
+    // single-quoted GS-02 writes stay refused until DYD-422 designs a relaxation.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs02SedBacktickCommit, "Command contains command substitution - paths may be dynamic")]
+    [InlineData(GuardRetroCommands.Gs02SedBacktickSingleLine, "Command contains command substitution - paths may be dynamic")]
+    [InlineData("sed -i 's/`x`/y/' f", "Command contains command substitution - paths may be dynamic")]
+    [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md", "Command contains variable expansion - paths may be dynamic")]
+    [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md", "Command contains embedded newlines")]
+    [InlineData("Set-Content notes.md 'first line\n$HOME is literal'", "Command contains variable expansion - paths may be dynamic")]
+    [InlineData("bash -c 'echo x' 'name $HOME'", "Command contains variable expansion - paths may be dynamic")]
+    public void Analyze_SingleQuotedDataWrite_IsABypassAsOnMaster(string command, string warning)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt, $"Expected a bypass: {command}");
+        Assert.Contains(warning, result.Warnings);
+    }
+
+    // DYD-421 DECIDED: apostrophes around a substitution, on a command line or in an expanding
+    // heredoc body, hide nothing: it is a bypass, and the change inside it is analysed, as on master.
+    [Theory]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t", FileOperationType.Delete)]
+    [InlineData("cat > notes.md <<EOF\nDon't $(rm dydo/index.md) it's\nEOF", FileOperationType.Delete)]
+    [InlineData("cat > notes.md <<EOF\nDon't $(echo y > dydo/index.md) it's\nEOF", FileOperationType.Write)]
+    [InlineData("cat > notes.md <<EOF\nthe user's file: $(cat dydo/index.md > /dev/null; rm dydo/index.md) isn't kept\nEOF", FileOperationType.Delete)]
+    public void Analyze_SubstitutionBetweenApostrophes_IsABypassWhoseChangeIsSeen(string command, FileOperationType type)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains("Command contains command substitution - paths may be dynamic", result.Warnings);
+        Assert.Contains(result.Operations, op => op.Type == type && op.Path == "dydo/index.md");
+    }
+
+    [Theory]
+    [InlineData("cat > notes.md <<EOF\nDon't run $(date) or it's late\nEOF", "Command contains command substitution - paths may be dynamic")]
+    [InlineData("cat > notes.md <<EOF\nDon't touch $HOME, it's mine\nEOF", "Command contains variable expansion - paths may be dynamic")]
+    public void Analyze_ExpansionBetweenApostrophesInAnExpandingBody_IsABypass(string command, string warning)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains(warning, result.Warnings);
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
     }
 
     // The GS-02 here-strings are PowerShell's, read as the guard reads a PowerShell tool call: their
@@ -1593,15 +1633,6 @@ public class BashCommandAnalyzerTests
 
         Assert.True(result.HasBypassAttempt, $"Expected a bypass: {command}");
         Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "$OUT");
-    }
-
-    // bash -c runs its first operand; the next is $0, data.
-    [Fact]
-    public void Analyze_WordAfterAShellCommandString_IsData()
-    {
-        var result = _analyzer.Analyze("bash -c 'echo x' 'name $HOME'");
-
-        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
     }
 
     [Fact]

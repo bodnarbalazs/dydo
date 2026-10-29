@@ -417,56 +417,21 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static int LineStart(string text, int index) => index == 0 ? 0 : text.LastIndexOf('\n', index - 1) + 1;
 
     // A double-quoted string (backslash escapes skipped, lines spanned) or a single-quoted one, the
-    // first that starts; $'...' is bash's escape-reading form.
-    [GeneratedRegex(@"""(?:[^""\\]|\\.)*""|(?<ansi>\$)?'(?<single>[^']*)'")]
+    // first that starts.
+    [GeneratedRegex(@"""(?:[^""\\]|\\.)*""|(?<single>'[^']*')")]
     private static partial Regex QuotedTextRegex();
 
-    // The text before a quote that makes it a command string a shell or eval runs: -c, -Command and its
-    // prefixes, cmd's /c or /k, env -S, eval, iex, trap, or any word of a watch or an ssh remote command.
-    [GeneratedRegex(@"(?:^|\s)(?:-[A-Za-z]*c|-co(?:m(?:m(?:a(?:n(?:d)?)?)?)?)?|/[ck]|-S|--split-string=?|eval|iex|invoke-expression|trap|watch(?:\s+\S+)*|ssh(?:\s+\S+)+)\s*$", RegexOptions.IgnoreCase)]
-    private static partial Regex CommandStringContextRegex();
-
-    /// <summary>
-    /// What a shell expands of a piece: the piece with each literal single-quoted string emptied.
-    /// </summary>
-    private static string ExpandingText(string text)
-    {
-        var read = new Lazy<(List<CommandLine> Lines, bool Uncertain)>(() => CommandLines(text, ShellDialect.Unknown));
-        return QuotedTextRegex().Replace(text, quoted => IsLiteralSingleQuoted(text, quoted, read) ? "''" : quoted.Value);
-    }
-
-    // Single-quoted text taken literally: not bash's $'...' and not code something runs. Code is a
-    // command string (bash -c '...') or any word of one, since eval, cmd /c, env -S and pwsh -Command
-    // join every word after them into theirs, and any text of a line that cannot be read for certain,
-    // such as one whose pipe a shell reads. Text spanning lines must also be in a word as the line
-    // reads, so an apostrophe in a comment or an expanding heredoc body, which quotes nothing, cannot
-    // hide the lines after it.
-    private static bool IsLiteralSingleQuoted(string text, Match quoted, Lazy<(List<CommandLine> Lines, bool Uncertain)> read)
-    {
-        var single = quoted.Groups["single"];
-        if (!single.Success || quoted.Groups["ansi"].Success
-            || CommandStringContextRegex().IsMatch(text[LineStart(text, quoted.Index)..quoted.Index]))
-            return false;
-
-        var (lines, uncertain) = read.Value;
-        bool Holds(string held) => held.Contains(single.Value, StringComparison.Ordinal);
-        return !uncertain && !lines.Any(line => line.Text != text && Holds(line.Text))
-            && (!single.Value.Contains('\n') || lines.Any(line => line.Text == text
-                && line.Commands.Any(command => command.Words.Any(Holds))));
-    }
-
-    // A piece's layout: every quoted string emptied, so a line break left in it separates commands.
-    // A quoted string spanning lines is emptied only where each reading of the piece holds it in a
-    // word: an apostrophe in a comment quotes nothing, so it hides no line break after it.
+    // A piece's layout: each double-quoted string emptied, so a line break left in the piece separates
+    // commands. One spanning lines is emptied only where each reading of the piece holds it in a word:
+    // an apostrophe in a comment quotes nothing, so it hides no line break after it. Single-quoted text
+    // is kept, so a line break in it counts, as on master (DYD-421).
     private static string Layout(string code)
     {
         var read = new Lazy<(List<CommandLine> Lines, bool Uncertain)>(() => CommandLines(code, ShellDialect.Unknown));
         return QuotedTextRegex().Replace(code, quoted =>
-        {
-            if (quoted.Value.Contains('\n') && !IsQuotedWord(code, quoted, read.Value))
-                return quoted.Value;
-            return quoted.Groups["single"].Success ? "''" : "\"\"";
-        });
+            quoted.Groups["single"].Success || (quoted.Value.Contains('\n') && !IsQuotedWord(code, quoted, read.Value))
+                ? quoted.Value
+                : "\"\"");
     }
 
     // bash's escapes inside double quotes: \$, \`, \" and \\.
@@ -475,9 +440,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private static bool IsQuotedWord(string code, Match quoted, (List<CommandLine> Lines, bool Uncertain) read)
     {
-        var single = quoted.Groups["single"];
-        var raw = single.Success ? single.Value : quoted.Value[1..^1];
-        var unescaped = single.Success ? raw : DoubleQuotedEscapeRegex().Replace(raw, "$1");
+        var raw = quoted.Value[1..^1];
+        var unescaped = DoubleQuotedEscapeRegex().Replace(raw, "$1");
         bool Holds(string word) => word.Contains(raw, StringComparison.Ordinal) || word.Contains(unescaped, StringComparison.Ordinal);
         return !read.Uncertain && read.Lines.Where(line => line.Text == code)
             .All(line => line.Commands.Any(command => command.Words.Any(Holds)));
@@ -949,11 +913,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         // Strip cat heredoc blocks - literal text, not shell code
         var strippedCommand = CatHeredocRegex().Replace(command, "HEREDOC_STRIPPED");
 
-        // Literal data - a body only data commands read, single-quoted text - is neither expansion
-        // nor code, so each piece of code is read on its own and only its expanding text is
-        // searched for bypasses (DYD-406).
+        // A literal body only data commands read is neither expansion nor code, so each piece of code
+        // is read on its own and only its expanding text is searched for bypasses (DYD-406).
+        // Single-quoted text is searched as on master (DYD-421).
         var pieces = CodePieces(strippedCommand);
-        List<string> expanding = [.. pieces.Select(piece => ExpandingText(piece.Expanding))];
+        List<string> expanding = [.. pieces.Select(piece => piece.Expanding)];
         CheckBypassAttempts(expanding, string.Join("; ", pieces.Select(piece => Layout(piece.Code))), result);
 
         foreach (var subCmd in pieces.SelectMany(piece => SplitCommand(piece.Code)))

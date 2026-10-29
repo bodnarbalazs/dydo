@@ -8,6 +8,8 @@ participants: [balazs, Adele]
 
 # 031 - Sprint-Auditor Charter Rewrite: One Identity, One Invariant, a Budget Instead of a Prohibition
 
+> **Partially superseded by [058 - Review Severities: Blocker, Should, Nit](./058-review-severities-blocker-should-nit.md)** for the *no pass with notes* question only: every finding is labelled and answered, and only a blocker FAILs. The rest remains in force.
+
 The sprint-auditor skill is rewritten from scratch. Its identity is a single question - **"do the
 slices compose?"** - not the current "inquisitor + judge" dual-character framing. The blanket
 subagent prohibition ("you have no Agent tool, by design") is replaced by an **invariant plus a

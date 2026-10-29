@@ -82,10 +82,11 @@ The captain directs the merge by one code-writer and a fresh merge review, then 
 Done and returns `done <key>: merged`. A Merge Sub-ticket never waits in Ready to Merge. The landing
 Merge does: the user clicks its reviewed PR as a merge commit.
 
-Every FAIL returns to Implementing, whatever it found: a fresh author of the change's kind -
+A FAIL, one or more blockers, returns to Implementing: a fresh author of the change's kind -
 `code-writer`, or `docs-writer` for a documentation change - takes the next fix hop
-with the FAIL block as its contract, amending a scenario only where the block names it. Corrections carry new
-commits and fresh reviews. Merge FAIL
+with the FAIL block's blockers as its contract, amending a scenario only where the block names it. Corrections carry new
+commits and fresh reviews. From either verdict, the captain files each should as its own ticket and
+records each nit as one line on the ticket ([severity](../reference/dydo-glossary.md)). Merge FAIL
 fixes integration defects inside Merge. A source defect is reverted there, Merge closes Canceled
 and source returns to Implementing; if a later merge depends on it, a following fix ticket replaces
 the revert. Plan review has its own two-round cap before the user chooses.
@@ -112,9 +113,12 @@ user's own return to the board when none is invoked - picks up blocker-cleared w
 
 ## Where the user is asked
 
-Project-plan approval; Questions and HITL work; an escalation that survived the ladder; confirming
-an Inquisition; the feature → main merge-commit click; and the Walkthrough after it. Findings reopen
-a lap in the same Project. An atomic ticket branches from main and has no Merge Sub-ticket: once its
+Project-plan approval; Questions and HITL work; an escalation that survived the ladder; each
+Milestone's Walkthrough, where only the walking skeleton's verdict holds back the work built on it,
+except overnight; confirming an Inquisition and its commission, a model per phase and the swarm
+width; the feature → main merge-commit click; and the landing's Walkthrough after it. A Milestone's
+findings become tickets in the Project as they arrive; the landing's reopen a lap in the same
+Project. An atomic ticket branches from main and has no Merge Sub-ticket: once its
 PR carries a reviewer PASS and CI is green, the user clicks it, and its captain closes it Done.
 The [workspace standard](../reference/linear-workspace-standard.md) owns the Type/Mode and priority rules.
 

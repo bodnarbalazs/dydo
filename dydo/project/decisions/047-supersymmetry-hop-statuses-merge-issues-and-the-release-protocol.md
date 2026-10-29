@@ -9,6 +9,12 @@ participants: [balazs, Claude (Fable)]
 
 # 047 - Supersymmetry, Hop Statuses, Merge Issues, and the Release Protocol
 
+> **Partially superseded by [058 - Review Severities: Blocker, Should, Nit](./058-review-severities-blocker-should-nit.md)** for the *FAIL returns to `Implementing` whatever it found* question only: a FAIL now means a blocker, and only blockers go to the fix hop. The rest remains in force.
+
+> **Partially superseded by [059 - Inquisition Rebuilt: Area Map, Three Phases, Rounds Until Clean](./059-inquisition-rebuilt-area-map-three-phases-rounds-until-clean.md)** for §9, *the inquisition is an Issue*, only: read-only inquisitors over parts and lenses, the proof-only implementer and one inquisition per landing give way to an area map run through Read, Break and Drive, rounds until clean, and a record the Inquisition delivers itself. The rest remains in force.
+
+> **Partially superseded by [060 - Milestone Walkthroughs and the Walking Skeleton](./060-milestone-walkthroughs-and-the-walking-skeleton.md)** for the *Walkthrough Type* and *the single walkthrough after landing* questions only: the user now walks the whole product at each Milestone, the landing's last. The rest remains in force.
+
 Reshapes the dydo 3 operating model where the control-flow map found its contracts disagreeing: a
 captain's Issue is a Project one level down and the same Types, statuses and chain hold at both
 levels; every spawn flips a status; every merge is an Issue with its own review; a captain returns a

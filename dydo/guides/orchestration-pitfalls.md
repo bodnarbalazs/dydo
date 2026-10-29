@@ -71,14 +71,19 @@ claimed green. The review block names the model, so who judged what stays observ
 
 ## 6. "PASS with notes"
 
-**Symptom:** a merge on a verdict that carried leftovers, or a candidate on its eighth review pass.
+**Symptom:** a merge on a verdict that carried leftovers nobody answered, or a candidate on its
+eighth review pass.
 
-**Mechanism:** a note is a finding and a finding is a FAIL. Softening the verdict moves the finding into
-the integrated state, where it costs more to find. Looping instead is the opposite failure: the same
-candidate keeps failing because something outside it is wrong.
+**Mechanism:** an unlabelled note is a finding nobody owns; it slips into the integrated state, where
+it costs more to find. Making every note a FAIL is the opposite failure: each nit becomes a fix hop,
+the PR grows, and the same candidate keeps failing.
 
-**Rule:** fix and re-review; there is no verdict between PASS and FAIL. The relief valve is the cap, not
-a softer verdict - a fifth consecutive FAIL on one review loop is itself an escalation.
+**Rule:** every finding carries a severity and an answer
+([DR 058](../project/decisions/058-review-severities-blocker-should-nit.md)). Only a `blocker` FAILs and goes to a fix hop; a
+`should` becomes its own ticket the Project's landing waits on; a `nit` is one line on the record,
+listed at the final walkthrough. Fixes are deferred, never dropped. There is no verdict between PASS
+and FAIL, and the relief valve for a looping blocker is the cap - a fifth consecutive FAIL on one
+review loop is itself an escalation.
 
 ## 7. Silent waiting, and its opposite
 

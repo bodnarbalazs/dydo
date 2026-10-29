@@ -5,7 +5,7 @@ description: A ticket's code or docs, a spec, a Project plan, or a merged tree -
 
 # Reviewer
 
-Gandalf at the bridge: judge one candidate against one rubric, and let nothing flawed past.
+Gandalf at the bridge: judge one candidate against one rubric, and let no blocker past.
 
 ## Must-Reads
 
@@ -41,7 +41,11 @@ Judge one candidate; corrections and status are the invoker's. Your independence
    is that exact candidate's own gate record: candidate, command, environment or session, exit and
    result location. Check that record; a rerun needs a concrete doubt you state. Real output is
    evidence; a gate that cannot run yet is named with why.
-5. **Write the block.** Done when the invoker can act on every finding without asking you a question.
+5. **Write the block.** Label each finding by the intent, not by how it looks: `blocker`, the
+   intended case is wrong; `should`, a real bug callers will hit, inside the intent; `nit`,
+   everything else. Another code path, a rare case, a small perf cost, extra compat or style is a
+   nit, however serious it looks. Done when every finding carries one severity and the invoker can
+   act on each without asking you a question.
 
 6. Work the gates this stage owes with the commands that contract names: at a `code-writer` hop,
    its full-suite and static-gate run; at another crew hop, the tests the change reaches; at either,
@@ -64,6 +68,8 @@ a Project update for a project-plan review, the Merge Ticket for merge review, o
 the PR body carries it under `## Independent review` when a PR exists. Return it to the invoker
 even when a read-only host prevents posting.
 
-PASS means no findings, and binds this candidate under this contract. There is no PASS with notes: a
-note is a finding, and a finding is a FAIL - YOU SHALL NOT PASS. A defect the candidate neither
-created nor exposed is one line after the block, `Observation (out of scope, non-binding):`.
+FAIL means at least one blocker - YOU SHALL NOT PASS. PASS means no blocker, and binds this
+candidate under this contract; it lists its should and nit findings in the form's `Deferred` tail.
+There is no unlabelled note: every finding carries its severity and is answered - fixed, ticketed,
+recorded, or relabelled with evidence - never dropped. A defect the candidate neither created nor
+exposed is one line after the block, `Observation (out of scope, non-binding):`.

@@ -543,6 +543,46 @@ public sealed class PullRequestMergeTests : IDisposable
         AssertRefused(_s.Merge(), "checks on 0123456789ab are not green: build failure");
     }
 
+    [Theory]
+    [InlineData("\"mystery\"", "mystery")]
+    [InlineData(null, "unknown")]
+    [InlineData("null", "unknown")]
+    [InlineData("0", "unknown")]
+    [InlineData("{}", "unknown")]
+    public void Refusal15_InertAppWithUnknownStatusBesideGreenCi(string? statusJson, string status)
+    {
+        var suite = Suite("blacksmith.sh", "queued", null, runs: 0, slug: "blacksmith-sh");
+        suite.Remove("status");
+        if (statusJson != null)
+            suite["status"] = JsonNode.Parse(statusJson);
+        _s.GitHub.On("GET", Suites, Reply(200, SuitePage(suite, Suite("GitHub Actions", "completed", "success"))));
+
+        AssertRefused(_s.Merge(), $"checks on 0123456789ab are not green: blacksmith-sh {status}");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("null")]
+    [InlineData("\"0\"")]
+    [InlineData("\"invalid\"")]
+    [InlineData("true")]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    [InlineData("0.5")]
+    [InlineData("-1")]
+    [InlineData("1")]
+    [InlineData("9223372036854775808")]
+    public void Refusal15_InertAppWithoutValidZeroCountBesideGreenCi(string? countJson)
+    {
+        var suite = Suite("blacksmith.sh", "queued", null, runs: 0, slug: "blacksmith-sh");
+        suite.Remove("latest_check_runs_count");
+        if (countJson != null)
+            suite["latest_check_runs_count"] = JsonNode.Parse(countJson);
+        _s.GitHub.On("GET", Suites, Reply(200, SuitePage(suite, Suite("GitHub Actions", "completed", "success"))));
+
+        AssertRefused(_s.Merge(), "checks on 0123456789ab are not green: blacksmith-sh queued");
+    }
+
     [Fact]
     public void Refusal16_AConflict()
     {

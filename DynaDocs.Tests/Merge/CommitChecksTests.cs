@@ -187,10 +187,15 @@ public sealed class CommitChecksTests : IDisposable
     }
 
     // blacksmith-sh leaves a queued suite with no runs on every bodnarbalazs/dydo and LC commit.
-    [Fact]
-    public void AnInertAppsQueuedSuiteThatHoldsNoRun_IsIgnored()
+    [Theory]
+    [InlineData("queued")]
+    [InlineData("in_progress")]
+    [InlineData("pending")]
+    [InlineData("requested")]
+    [InlineData("waiting")]
+    public void AnInertAppsKnownUnfinishedSuiteThatHoldsNoRun_IsIgnored(string status)
     {
-        SuitesAre(Suite("blacksmith.sh", "queued", null, runs: 0, slug: "blacksmith-sh"), Suite("GitHub Actions", "completed", "success"));
+        SuitesAre(Suite("blacksmith.sh", status, null, runs: 0, slug: "blacksmith-sh"), Suite("GitHub Actions", "completed", "success"));
 
         Assert.Null(Refusal());
     }
@@ -230,6 +235,17 @@ public sealed class CommitChecksTests : IDisposable
         RunsAre();
 
         Assert.Equal(NotGreen + "GitHub Actions startup_failure", Refusal());
+    }
+
+    [Theory]
+    [InlineData("success", null)]
+    [InlineData("failure", "blacksmith-sh failure")]
+    [InlineData(null, "blacksmith-sh no conclusion")]
+    public void AnInertAppsCompletedEmptySuite_IsJudged(string? conclusion, string? problem)
+    {
+        SuitesAre(Suite("blacksmith.sh", "completed", conclusion, runs: 0, slug: "blacksmith-sh"), Suite("GitHub Actions", "completed", "success"));
+
+        Assert.Equal(problem == null ? null : NotGreen + problem, Refusal());
     }
 
     [Fact]

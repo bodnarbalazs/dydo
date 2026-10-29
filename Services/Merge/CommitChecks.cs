@@ -46,10 +46,11 @@ internal static class CommitChecks
         return problems.Count == 0 ? null : $"checks on {Short(sha)} are not green: {string.Join("; ", problems)}";
     }
 
-    // A listed app's suite is ignored only while it is unfinished and empty; once it holds a run it is judged.
+    // Only recognized unfinished states and a valid zero run count establish the listed-app exception.
     private static bool IsInert(JsonNode suite) =>
         Text(suite, "app", "slug") is { } slug && InertApps.Contains(slug)
-        && Text(suite, "status") != "completed" && Number(suite, "latest_check_runs_count") == 0;
+        && Text(suite, "status") is "queued" or "in_progress" or "pending" or "requested" or "waiting"
+        && At(suite, "latest_check_runs_count") is JsonValue count && count.TryGetValue<long>(out var runs) && runs == 0;
 
     private static string? CheckProblem(string? name, JsonNode check)
     {

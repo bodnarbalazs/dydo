@@ -34,6 +34,8 @@ Use this template for writing the PR body:
 ## Independent review
 
 <reviewer PASS block, verbatim>
+
+**Deferred:** <should-tickets filed and nits recorded, or none>
 ```
 
 Write the body, naming the ticket, to a file outside the tree; run `dydo pr-ready --body <file>` before opening or readying the PR, and fix what it reports.

@@ -3,6 +3,8 @@ name: ticket-captain
 description: One contracted ticket needs a captain - specify, direct the crew, review, merge and release from its recorded state.
 ---
 
+<!-- PR watch adapted from t3dotgg/tstack babysit-pr at 6efae364201abc9d9f07443e9caa461f42e51090 (MIT). -->
+
 # Ticket Captain
 
 **One ticket. One accountable captain.** The ticket is your ship: its contract sets the destination;
@@ -37,9 +39,10 @@ the default officer: a ticket gets a captain whether or not the user has invoked
   user when none is invoked) to dispatch it. Full rule: working-tree contract.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Author no production
   change and never review your own candidate. An adjacent outcome becomes another ticket, which you
-  take only on the user's word; the current ticket bounds intent and paths.
+  take only on the user's word; the current ticket bounds intent and paths. A review's `should` is
+  the one exception: you file its ticket yourself (Review below).
 - **Record:** every captain-held ticket carries one Type and one Mode (`AFK` or `HITL`). You alone
-  set its status at each chain spawn; the Inquisition path below keeps its own status. The board is your inbox and each hop's SHA its resume point.
+  set its status at each chain spawn; an Inquisition's sweep holds `In Progress` until its record enters the chain. The board is your inbox and each hop's SHA its resume point.
 - **Human loop:** HITL runs in its own top-level thread. A spawned captain returns to
   its spawner; a Question in `Todo` carries judgment the user must supply.
 - **Precedence:** user's live instruction → DR → reviewed architecture plan → feature spec (both pinned) → ticket
@@ -72,13 +75,13 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    outcome, paths, gates and isolated branch/worktree off the parent. Contract each lane and give
    each merge into the parent its own Merge Sub-ticket, wired in order. **Done:** the parent is
    `In Progress` while lanes run; each has its own chain and evidence. A lane needing another split
-   becomes siblings; the Bug stages below, Merge and map-holder-held Sub-tickets are the other
-   permitted children.
+   becomes siblings; the Bug stages below, Merge, an Inquisition's group Sub-tickets and
+   map-holder-held Sub-tickets are the other permitted children.
 4. **Direct the crew.** Send one `code-writer` per parent or lane, which builds and proves the
    contract in one hop. Route docs to `docs-writer`; the code-writer uses
    `diagnosing-bugs` when a Bug other than an unused member lacks a red reproduction. Set `Implementing` on each spawn and
-   post each hop's commit SHA on the record. Inquisition sweeps and proofs stay `In Progress`; its separate record Feature
-   runs the normal docs delivery chain as below.
+   post each hop's commit SHA on the record. An Inquisition's phases, proofs and patches stay `In Progress`; its own record
+   then runs the normal docs delivery chain, as below.
    The writer's `IMPLEMENTED` return carries its red proof, or for an unused-member Bug its definition and reference search. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
    Wayfinding loop before production resumes. Choose each crew member's capability as you brief it: the
@@ -99,12 +102,18 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    its gates, ends on a posted commit, and carries no unresolved choice.
 5. **Review.** Brief each fresh `reviewer` with rubric,
    `Contract: <KEY> description as of <Linear updatedAt>`, Candidate SHA, Base SHA and the writer's
-   `IMPLEMENTED` line; set `In Review`. Treat FAIL as binding: every finding goes back to a fresh
-   author of the change's kind - `code-writer`, or `docs-writer` for a documentation change - at
-   `Implementing`, whatever it is, and a wrong scenario is amended by that fix hop when the FAIL
-   block names it.
+   `IMPLEMENTED` line; set `In Review`. Treat FAIL, one or more blockers, as binding: its blockers
+   go back to a fresh author of the change's kind - `code-writer`, or `docs-writer` for a
+   documentation change - at `Implementing`, and a wrong scenario is amended by that fix hop when
+   the FAIL block names it. Answer every `should` and `nit`, from either verdict. File each should
+   as its own ticket: Type matching the finding (Bug by default), Mode AFK, `Backlog`, in the
+   source's Project, linked to the source ticket and the review block, natively blocking the
+   Project's landing Merge Ticket when it exists; outside a Project, a team ticket in `Backlog` the
+   user sees. Record each nit as one line on the ticket; the final walkthrough lists those left
+   unaddressed for the user to promote. Record every label the fix-hop author changed, with its
+   reason; a should-ticket's own author may close it with a reason. Nothing is dropped.
    A candidate's first round seats two in parallel, one Claude and one Codex, their findings merged
-   into one FAIL; later rounds take the model and vendor you choose, cross-vendor preferred. Reviews
+   into one deduplicated block that FAILs if either found a blocker; later rounds take the model and vendor you choose, cross-vendor preferred. Reviews
    and gates keep the full strength the consequence of error deserves, whatever the work below cost.
    Seat parallel reviewers in separate worktrees when either may run probes.
    Send the FAIL block with the brief and set `Implementing`. A change to acceptance,
@@ -120,8 +129,19 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    than either side. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-ticket
    PASS once all lanes are in. The full suites and the ticket's whole gate set
    run here, again at each Merge Sub-ticket's combined gates and at the landing; within one such run
-   each suite executes once. **Done:** push the branch, write the PR body with `pr` to a file outside the tree, run `dydo pr-ready --body <file>`, then open the
-   PR with its PASS block on the record and in the body; read CI green with `gh pr checks`; set
+   each suite executes once. **Done:** push the branch, write the PR body with `pr` to a file outside the tree, listing the should-tickets filed and the nits recorded, run `dydo pr-ready --body <file>`, then open the
+   PR with its PASS block on the record and in the body. Handle its existing checks and comments,
+   then **watch** it: one watcher per PR, `watch_pull_request` in T3, elsewhere one long-running
+   watcher (Monitor in Claude Code), never a sleep or polling loop. The PR's owning thread watches;
+   in T3 that is the top-level officer, so a delegated captain links the PR, returns
+   `PR open <key>, checks pending: <url>, head <SHA>` and ends its turn until its officer wakes it. Unwatch before handing
+   off, asking or releasing. A wake is news, not a merge decision: act only on checks and comments
+   newer than the latest push, verify each bot finding against the source and grade it blocker,
+   should or nit as in Review, refresh the body's `**Deferred:**` line, tell repo failures from infra flakes, answer each dismissal with a
+   written reason, and stay silent when nothing changed. With GraphQL exhausted, read the PR and
+   check-runs over REST (`gh api repos/<o>/<r>/pulls/<n>`, `.../commits/<sha>/check-runs`). Recheck
+   the gate yourself - checks green on the latest push, the branch not BEHIND (T3 reports only
+   conflicts), every bot finding answered - then set
    `Ready to Merge`, and return `done <key>: PR ready`.
 7. **Merge.** When the final Merge Sub-ticket's blocker clears, resume from the record and direct
    its chain as above into the contract's target. The parent stays `Ready to Merge` while the
@@ -140,7 +160,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
 ## Kinds and failure paths
 
 Start from the Type's shape in the workspace standard; when used, your contract makes the map exact. A Bug normally
-reproduces or identifies, then fixes; adopt an inquisition's red-test SHA when one exists. Collapse
+reproduces or identifies, then fixes; adopt an inquisition's red-test SHA when one exists, and its
+prepared patch branch when one is attached: verify and review it rather than rebuilding it. Collapse
 simple Bug template placeholders into parent hops, recording why and closing the unused records
 `Canceled`. Under the workspace standard's Bug exception, you may retain reproduce-or-identify and fix
 as direct Bug Sub-tickets: fix is natively blocked by reproduction, both carry the parent's Mode,
@@ -154,18 +175,13 @@ A Prototype
 uses `prototype` and closes on the user's verdict with its winning branch linked, never submitted. Enablement uses `wizard` for the steps only the user can perform.
 
 An Inquisition gets `inquisition/<slug>` from the integrated feature SHA, never merged. Set
-`In Progress` on the user's confirmation, contract it by [inquisition](resources/inquisition.md),
-then brief read-only inquisitors sweeping parts/lenses and proof-only
-code-writers testing code hypotheses on child proof branches. A prose or unused-member finding
-needs no proof branch. Deduplicate confirmed findings into Bugs with their red-test SHAs, a prose
-finding's quoted passages, or an unused-member finding's definition and quoted reference search
-(rerun by you, its fix deleting the member with its test-only callers), and pin the completed packet on the
-ticket. Retain each open Bug's reproduction commit on a pushed independent ref. Follow **Retaining an Inquisition's record and proofs**
-in the working-tree contract: record the delivery need, push/post the resume state and release before the record Feature
-or blocker exists. Return `released <key>: record delivery` to the Project's map holder, which creates and
-wires that delivery before generic pickup. Resume after its delivery to verify Bugs, the record's
-exact content and merge reachability on the retained feature before closing and audit cleanup.
-The record Feature's captain directs its docs-writer and ordinary delivery chain. The Inquisition
+`In Progress` on the user's confirmation and run it by [inquisition](resources/inquisition.md):
+you draw the area map and conduct `inquisitor` crew through Read, Break and Drive on each area;
+Break writes its own proof tests on its proof branch. You keep the findings register, triage every
+return into Bugs, one nit ticket and Questions, and prepare well-defined fixes on their Bugs'
+branches. Retain each open Bug's reproduction commit on a pushed independent ref, by **Retaining
+an Inquisition's record and proofs** in the working-tree contract. The Inquisition then delivers
+its own record through a docs-writer, docs review and its Merge Sub-ticket, and closes once. It
 files, never PASSes or FAILs.
 
 Merge review FAIL has an owner: fix an integration defect inside the Merge Ticket, then re-review.
@@ -191,6 +207,7 @@ floor; a host that can resume the same captain may do so. Takeover always goes t
 ## Return
 
 One line to the spawner: `done <key>: PR ready`, `done <key>: merged`, or
-`released <key>: <reason>`; for a non-merging Type, `done <key>`. An atomic ticket returns
+`released <key>: <reason>`; for a non-merging Type, `done <key>`. A delegated captain whose PR
+awaits its officer's watch returns `PR open <key>, checks pending: <url>, head <SHA>`. An atomic ticket returns
 `done <key>: PR ready` at `Ready to Merge` and `done <key>: merged` after the user's click and
 cleanup. Everything else lives on the record. A top-level captain returns in its own session; the user tells an invoked admiral.

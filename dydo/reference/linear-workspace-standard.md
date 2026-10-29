@@ -20,7 +20,7 @@ status circle from its position in its category.
 | `Planning` | The map holder is charting the first low-resolution map with `wayfinder`; a repository plan, when one is written, runs its review loop. |
 | `Planned` | The user approved the charted route, and any repository plan passed independent review; the map holder commissions the first Ticket Captain to open the feature. |
 | `In Progress` | The map holder is working the map through Ticket Captains toward the destination. |
-| `Completed` | The destination landed and a walkthrough found nothing more; commission [spec retirement](./feature-spec-convention.md#retirement). |
+| `Completed` | The destination landed and the landing's walkthrough found nothing more; commission [spec retirement](./feature-spec-convention.md#retirement). |
 | `Canceled` | The destination was consciously abandoned; record why and commission [spec retirement](./feature-spec-convention.md#retirement). |
 
 There are no canonical Project labels: a Project's status and ticket graph carry the information.
@@ -36,9 +36,9 @@ every chain spawn, and nothing else flips it.
 | `FutureFeature` | backlog | An unscheduled strategic possibility with no Type yet. Only the user promotes it. |
 | `Backlog` | backlog | Retained with a Type, unscheduled, waiting to become a Todo: no contract yet, or one awaiting the user's go, as an Inquisition's. |
 | `Todo` | unstarted | The incoming list: contracted and to be started soon. An open native blocker still prevents pickup. A `Question` in `Todo` is the user's turn. |
-| `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding ticket, an Inquisition's sweep, proofs and final retention verification. |
+| `In Progress` | started | A record not running the chain itself: a parent while its lanes run, a wayfinding ticket, an Inquisition's sweep (its map, phases, triage and patch lane) until its record enters the chain. |
 | `Implementing` | started | The author of the change's kind is spawned for one hop - a `code-writer`, or a `docs-writer` for a documentation change - a fix hop after a FAIL included. |
-| `In Review` | started | Any reviewer is spawned, the optional spec review of the contract before any code included. A FAIL returns the record to `Implementing`, whatever it found; a spec review returns it there on either verdict. |
+| `In Review` | started | Any reviewer is spawned, the optional spec review of the contract before any code included. A FAIL, one or more blockers, returns the record to `Implementing`; a spec review returns it there on either verdict. |
 | `Ready to Merge` | started | The PR carries its PASS block and waits for its merge turn. The record stays here while its own Merge Sub-ticket runs; the landing, one Project at a time, and an atomic ticket wait here for the user's click. A merge review FAIL that reverts sends it back to `Implementing`. |
 | `Done` | completed | Merged, or the outcome the Type names reached, with its evidence. |
 | `Canceled` | canceled | The ticket will not be completed; the record says why. |
@@ -67,12 +67,12 @@ ticket carries exactly one Type. Mode sits on every Type a captain holds.
 | `Bug` | captain | any | Restore intended behaviour. The record holds the defect and its fix. | the behaviour restored | `#EB5757` |
 | `Merge` | captain | any; the landing is the only primary one | One merge operation: lanes into a parent, a primary into the feature, the feature into main. | the merge review PASS | `#4EA7FC` |
 | `Enablement` | captain | any | Access, environment, credentials or material other work needs; `wizard` guides the steps only the user can do. | the condition true, with evidence | `#26B5CE` |
-| `Inquisition` | captain | primary only | Many read-only eyes on the integrated feature; hypotheses proved, one in code by a proof-only test, one in prose by its quoted passages; Bugs filed. | Bugs filed, record delivered to the retained feature, exact content and merge reachability verified | `#5E6AD2` |
+| `Inquisition` | captain | primary; its group Sub-tickets above about 10 areas | One round of audit of the integrated feature: an area map, each area run through Read, Break and Drive by `inquisitor` crew, every finding triaged by severity into Bugs, one nit ticket and Questions. Each round starts from zero. | its record merged and verified on the feature, Bugs filed and their proof refs retained; a group Sub-ticket, its register final and pushed | `#5E6AD2` |
 | `Prototype` | captain | any | A design question raised to fidelity the user can react to; fast sketches, the user is the review. | the user's verdict on the ticket | `#F2994A` |
 | `Question` | map holder | any | One prepared, discrete question whose answer blocks named work. | the user's answer on the ticket | `#F2C94C` |
 | `Research` | map holder | any | A factual answer whose investigation needs its own owner, status or evidence. | cited findings on the ticket | `#95A2B3` |
 | `Grilling` | map holder | any | A tree of intent or specification choices resolved with the user. | shared understanding recorded, with its Decision Records linked | `#D4A017` |
-| `Walkthrough` | map holder | primary only | The user inspects what landed: what changed, where to look, how to try it, what reviewers flagged. | the user has walked it; findings filed as tickets | `#C69C6D` |
+| `Walkthrough` | map holder | primary only | The user walks the whole product as it stands: the feature branch at a Milestone, or main at the landing. The emphasis is on what changed since the last walkthrough and what needs the most careful look. The tour also covers where to look, how to try it, and what reviewers left open. There's one per Milestone, prepared even if he skips it, and the landing's comes last. | his verdict quoted on the ticket, or his skip recorded; findings filed as tickets | `#C69C6D` |
 
 A captain-held ticket normally uses one author - `code-writer`, or `docs-writer` for a documentation
 change - and review at the working-tree contract's [Delivery scale](../guides/working-tree-contract.md#delivery-scale-and-evidence). A spec review of the contract before any
@@ -122,9 +122,16 @@ files a `Question` only when judgment remains.
 | `Research` | `Todo` → `In Progress` → `Done` |
 | `Grilling`, `Walkthrough` | `Todo` → `In Progress` → `Done` |
 | `Question` | `Todo` → `Done` |
-| `Inquisition` | `Backlog` → `Todo`, the user's confirmation → `In Progress`, the captain writes the contract, then the sweep and proofs → released `Todo` → resumed `In Progress` → `Done`; follow the [working-tree contract](../guides/working-tree-contract.md) |
+| `Inquisition` | `Backlog` → `Todo`, the user's confirmation → `In Progress`, the commission inputs, area map, phases, triage and patch lane → `Implementing` → `In Review` → `Ready to Merge` → `Done`, its record's docs chain. It releases to `Todo` with `released <key>: verification skill first`, resuming once the skill exists, or with `released <key>: groups <keys>`, resuming `In Progress` once its group Sub-tickets, each `Todo` → `In Progress` → `Done`, close; follow the [working-tree contract](../guides/working-tree-contract.md#retaining-an-inquisitions-record-and-proofs) |
 | captain-held default, subject to the Type exceptions | `Todo` → `Implementing` → `In Review` → `Ready to Merge` → `Done`, with `In Progress` while lanes run |
 | Merge Sub-ticket | `Todo` → `Implementing` → `In Review` → `Done`; it merges, it is never merged |
+
+A Project's map holder places its Milestones in Linear while charting: few, each a meaningful chunk
+of work where a drift from the user's intent would show, the walking skeleton first and the landing
+last. Every delivery ticket belongs to one, and each Milestone has one Walkthrough Ticket. Only the
+walking skeleton's holds back the work built on it: filed with the map, it is a native blocker of
+the next Milestone's delivery tickets until his verdict or skip closes it. In overnight mode it
+blocks nothing, and later Milestones' Walkthrough Tickets never block.
 
 A captain creates Sub-tickets one level deep: lanes for separate work that can run at the same time,
 each carrying its parent's Type and Mode,
@@ -176,12 +183,12 @@ required connector capability.
 | `Bug` | the five fields, then `## Observed`, `## Expected`, `## Reproduction` (a scenario at the boundary, else the red test; a prose Bug quotes both contradicting passages at `file:line`; an unused member, export or field quotes its definition at `file:line` and a reference search showing no caller outside the tests); default Sub-tickets: *reproduce or identify*, *fix*. |
 | `Merge` | `## Source` and `## Target` at their SHAs, `## Plan order` (the Merge Sub-ticket this one is blocked by), `## Combined gates`, `## Conflicts expected`. |
 | `Enablement` | `## Condition` that must become true, `## Steps only the user can do`, `## Evidence` when done. |
-| `Inquisition` | `## Scope`: the feature SHA, the parts and the lenses to sweep, the cost; `## Findings`, `## Hypotheses` with their verdicts, `## Bugs filed`, `## Record` path. |
+| `Inquisition` | `## Scope`: the commission inputs - the audit SHA, the integrated feature commit and the landing base, the governing intent, a provider and model per phase and the swarm width, the Codex cap, the crew context limit, and the verification skill or why nothing runs; `## Area map`, drawn fresh each round; `## Findings`, the register's link and each finding's disposition: Bugs, patches, the nit ticket, Questions; `## Record` path. The round's nit ticket is a `Feature`, Mode `AFK`, `Backlog`, held by the map holder and linked to its Inquisition; it is listed at the Project's final walkthrough, where the user decides each nit, and closes `Done` once every nit is fixed or accepted as is. |
 | `Prototype` | `## Question` the sketch must settle, `## Variants`, `## Verdict` and the winning commit on `prototype/<name>`. |
 | `Question` | the four items above. |
 | `Research` | `## Question` and `## Destination` for the cited report. |
 | `Grilling` | `## Subject` (the plan, decision or idea), `## Tree` of choices with their answers and reasoning, `## Records` linked. |
-| `Walkthrough` | `## What landed` (branch, SHA, final PASS), the four-part tour, `## Findings` as linked tickets. |
+| `Walkthrough` | `## Checkpoint` (the Milestone or the landing, its branch and SHA), the four-part tour, `## Verdict` (his words, or the skip), `## Findings` as linked tickets. |
 
 `## Exact gates` lists its two scales separately: the cheap checks and change-relevant tests that
 prove one hop, and the full suites and whole gate set that run at the ticket's final gates, its Merge
@@ -208,8 +215,8 @@ updates, or token, cost, or latency claims. Review gates stay where their workfl
 
 Start each post with the applicable form:
 
-- `PASS - rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Evidence: <link>.`
-- `FAIL - rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; gates <N/N>. 1. Where: <place>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
+- `PASS - rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; applicable tests <N/N>, gates <N/N>. Checks: <one substantive sentence>. Deferred (optional): 1. Where: <place>; severity: <should|nit>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
+- `FAIL - rubric/type: <rubric>; contract <ref>; candidate <SHA>; base <SHA>; reviewer/model: <name>; gates <N/N>. 1. Where: <place>; severity: <blocker|should|nit>; wrong: <fact>; why: <impact>; required correction: <action>; owner: <role>. Evidence: <link>.`
 - `IMPLEMENTED - hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
 - `DECIDED - result: <result>; immutable contract: <contract>; next: <action>.`
 - `DECIDED - by: what-would-balazs-do tribunal, unratified; result: <action>; vote: <n of 3, or split; most reversible>; log: <link>; undo: <steps>; next: <action>.`
@@ -218,7 +225,9 @@ Start each post with the applicable form:
 - `STATE - <status>; owner: <role>; candidate or PR: <reference>; next or blocker: <fact>; evidence: <link>.`
 
 A review block's `contract <ref>` is the contract its brief pinned, for a ticket
-`<KEY> description as of <Linear updatedAt>`; `base <SHA>` is the brief's base.
+`<KEY> description as of <Linear updatedAt>`; `base <SHA>` is the brief's base. A FAIL carries at
+least one blocker; a PASS carries none and lists its should and nit findings under `Deferred`. The
+captain files each should as its own ticket and records each nit as one line on the record.
 
 Brevity is soft: ordinary events aim for at most 800 characters, descriptions and state for at most
 1,500 characters or 12 lines. A necessary finding, gap, blocker, or evidence may exceed those aims;

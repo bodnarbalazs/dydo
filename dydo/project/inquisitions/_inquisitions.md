@@ -5,7 +5,7 @@ type: folder-meta
 
 # Inquisitions
 
-Investigation reports - targeted, dispatched audits of a specific subsystem or behavior. Each inquisition documents scope, files investigated, scout dispatches, and findings; resulting bugs land in `../issues/` rather than in the inquisition file itself.
+Inquisition records. Since DR 059, each round's record names its audit SHA, commission and area map, every finding with its sightings and disposition, and the Bugs, nit ticket and Questions it filed in Linear. Older records are earlier audit reports.
 
 ## Records
 

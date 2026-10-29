@@ -34,10 +34,17 @@ map and how the tickets move, integrate, and finish together.
   its record. A saved brief is not Admiral-to-crew authority. On a bounded refusal, preserve the
   state and avoid blind retries; use established lifecycle handling, then escalate or release the
   concrete limitation when captain-owned work cannot run.
-- **Dispatch:** same vendor → native subagent (Claude's Agent tool, Codex's own spawn); other vendor
-  → T3 `delegate_task` from your own turn, a child of you. Never `t3_thread_launch` or
-  `create_threads` for AFK captains or crew: those are the user's top-level threads. When a
-  captain reports `parent_not_active`, dispatch its crew for it. Full rule: working-tree contract.
+- **Dispatch:** under T3, captains and anything else that returns to you go by `delegate_task` from
+  your own turn, a child of you; a native foreground subagent only for a job you wait on within this
+  turn, and no native background subagents. Without T3, the host's native subagents. A native child
+  lives only inside its dispatcher's turn and cannot `delegate_task` (`parent_not_active`): when a
+  captain reports it, dispatch its crew for it. Stay in your turn while you wait on a native child.
+  Every brief that sends out Codex agents names a cap: around 8 at once, toward 16 only while clean,
+  fewer on `429 turn_rate_limit_exceeded` ("Codex is at capacity"); a capacity 429 means retry in a
+  few minutes, never a blocker; never "maximise parallelism". Never `t3_thread_launch` or
+  `create_threads` for AFK captains or crew: top-level threads are the user's, only for HITL work or
+  when the user asks. Needing the user while work runs, ask through the host's question tool; the
+  Linear Question ticket stays the record. Full rule: working-tree contract.
 - **Wayfinding:** perfect plans are fiction; the approved plan fixes the destination, not every turn.
   As fog clears, use `wayfinder` to settle the visible route. Hold Research, Grilling, Question and
   Walkthrough yourself; commission captains for Prototype and Enablement. Pull shared or
@@ -96,11 +103,14 @@ map and how the tickets move, integrate, and finish together.
    dispatch them.
    **Done:** each pickable ticket has a captain or a stated reason.
 4. **Order merges.** A captain's `done <key>: PR ready` leaves its ticket `Ready to Merge` with a
-   reviewed PR. Call a PR ready only when `gh pr checks <number>` is green. When its Merge Sub-ticket's blocker clears, resume that captain with `merge`, or
+   reviewed PR; its captain rechecked the gate before setting it. On `PR open <key>, checks pending: <url>, head <SHA>`,
+   watch that PR (`watch_pull_request` in T3) and wake its captain on news; unwatch when it returns
+   `done <key>: PR ready` or is released. When its Merge Sub-ticket's blocker clears, resume that captain with `merge`, or
    commission a fresh one from the record; its Merge code-writer runs `dydo merge`, which refuses
    master, main and the default branch. Rewire the order when a later ready PR is independent
    of an earlier unready one. **Done:** every merge has its own captain-directed chain and fresh
    merge review; the record shows the order that ran and `done <key>: merged` wakes the next work.
+   A captain's own rerun of its crew's proof recipe is the proof of record; you neither observe nor rerun it.
    **Walk each Milestone.** When a Milestone's last ticket has merged into the feature branch,
    prepare its Walkthrough Ticket and offer it to the user; the last Milestone's is the landing's,
    in step 8. He walks it with you, by `walkthrough`, or skips it, and a skip is a verdict to go

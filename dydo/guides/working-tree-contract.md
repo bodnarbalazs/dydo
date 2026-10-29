@@ -102,13 +102,27 @@ interface shapes early.
 - The Admiral budgets open native capacity before commissioning or resuming a captain. The captain alone
   commissions exact-scope delivery crew, budgets that capacity and preserves the fresh reviewer
   obligation; `research` still sends its own scouts. A saved brief is not Admiral-to-crew authority.
-- AFK work, captain or crew, runs as a child task of its dispatcher; HITL work, which the user joins,
-  runs as a new top-level thread, never a child. Within one vendor, use the host's native subagents
-  and messaging where they carry the work and its return. When any agent in the exchange is another
-  vendor's, always use T3's `delegate_task` for a child and T3 messaging for a peer; without T3, use
-  what the host supplies, or none. A return comes back once, on the channel it was dispatched on.
-  Open a top-level thread only for HITL work or when the user asks for one; on `parent_not_active`,
-  hand the dispatch up to your officer.
+- Under T3, the channel follows where the child's result is awaited. A native foreground subagent
+  only when the dispatcher waits for it within its own turn. `delegate_task` for every other child
+  that returns to its dispatcher: captains, crew, reviewers, and any agent of another vendor. A new
+  top-level T3 thread only for HITL work the user takes over, or when the user asks for one. No
+  native background subagents. A peer of another vendor is reached by T3 messaging. Without T3, use
+  the host's native subagents and messaging, or none. A return comes back once, on the channel it
+  was dispatched on.
+- A native child lives only inside its dispatcher's turn and cannot itself call `delegate_task`;
+  T3 refuses with `parent_not_active` ("Delegated tasks require an active run owned by this MCP
+  provider session"). A native captain therefore cannot send its own Codex reviewer; a
+  `delegate_task` captain can. On `parent_not_active`, hand the dispatch up to your officer.
+- A dispatcher waiting on a native child, or a child awaiting a result it owns (a reviewer, a
+  suite), stays in its turn until the result arrives. Work that cannot finish inside the turn goes
+  through `delegate_task` instead.
+- Every brief that sends out Codex agents names their concurrency cap: start around 8 at once, rise
+  toward 16 only while runs stay clean, and back off on `429 turn_rate_limit_exceeded` ("Codex is
+  at capacity"). A capacity 429 means retry after a few minutes, never a blocker. A brief asks for a
+  capped count, never for "maximise parallelism".
+- An officer that needs the user while its work runs asks through the host's question tool; T3
+  then lifts the thread into the user's queue. The Linear Question ticket stays the record. Crew
+  hand their questions up to their captain and never ask the user directly.
 - On a bounded refusal, preserve the record, candidate, hop SHA and exact brief; do not broaden it or
   retry blindly. Use established lifecycle handling, then return or release the concrete limitation
   when captain-owned work cannot run. Record only observed native evidence.
@@ -144,8 +158,10 @@ A delegated captain whose PR still awaits checks returns `PR open <key>, checks 
 its officer, the top-level thread that owns the PR in T3, watches it and wakes the captain, which
 rechecks the gate before `Ready to Merge`.
 
-For an uncleared blocker or user takeover: push, post the resume SHA, clean the worktree (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree), set the
-parent `Todo`, unassign and wire any blocker; return `released <key>: <reason>`. A dead session is
+For an uncleared blocker or user takeover: push, post the resume SHA, clean the worktrees the captain
+or its crew made (lanes, merge checkouts, temp checkouts) with `dydo clean --dry-run <worktree>`, then
+`dydo clean <worktree>`, run from outside that tree, set the parent `Todo`, unassign and wire any
+blocker; return `released <key>: <reason>`. The worktree its thread runs in belongs to T3: leave it. A dead session is
 treated as release from its last recorded hop without a final push. Fresh commission from the
 record works on both hosts. An invoked admiral wakes on a captain's return or the user's word and rereads
 the board, including released and blocker-cleared tickets.
@@ -187,7 +203,7 @@ close `Done` and return `done <key>: merged`.
 
 | Artifact | Accountable | Completion |
 |---|---|---|
-| Parent ticket and lane worktrees | `ticket-captain` | Every worktree it or its crew created is cleaned with `dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree. A spawned Ticket Captain first pushes the parent branch and opens its PR so the work survives its return. |
+| Parent ticket and lane worktrees | `ticket-captain` | Every worktree it or its crew made (lanes, merge checkouts, temp checkouts) is cleaned with `dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree. The worktree its thread runs in belongs to T3: leave it. Any worktree under `~/.t3/worktrees` was made by T3, a crew member's `delegate_task` checkout included, and `dydo clean` skips it. A spawned Ticket Captain first pushes the parent branch and opens its PR so the work survives its return. |
 | Integrated lane Sub-ticket branch | `ticket-captain` | The branch is deleted after it passes review and is integrated into the parent ticket branch. |
 | Merged Project ticket branch | `ticket-captain` | The branch is deleted after the merge. |
 | Merged atomic ticket branch | `ticket-captain` | The branch is deleted after the user clicks its PR into main. |

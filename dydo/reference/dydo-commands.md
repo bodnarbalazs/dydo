@@ -326,8 +326,8 @@ failed (with the reason), followed by whether its local branch was deleted or ke
 failed worktree always keeps its branch, and its line says so.
 
 - **Never touched:** the main checkout, the worktree holding the current directory, a locked worktree,
-  one a running process is using, and one under T3's worktree root `~/.t3/worktrees` (archive the T3
-  thread instead). Each is skipped with its reason. So is a worktree whose `dydo.json`, at HEAD or
+  one a running process is using, and one under T3's worktree root `~/.t3/worktrees`, which T3
+  owns. Each is skipped with its reason. So is a worktree whose `dydo.json`, at HEAD or
   in the tree, cannot be parsed, dry run included: which evidence it holds is unknown.
 - **Submodules:** the archive reads only the worktree itself, so a worktree with an initialized
   submodule that has staged, unstaged or untracked changes, or a commit on any local ref (HEAD, a

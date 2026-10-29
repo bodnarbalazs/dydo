@@ -29,8 +29,8 @@ Judge one candidate; corrections and status are the invoker's. Your independence
    [merge](resources/merge.md), exactly the one the invoker named. Done when you can restate every
    item it asks of you.
 2. **Pin the contract and the candidate.** The contract as the brief pins it, the candidate at its
-   SHA, the base SHA. Where a writer produced the candidate, check its `IMPLEMENTED` line against them; rerun its proof only on a doubt you
-   state. A probe that edits files runs in your own detached worktree at the candidate SHA, removed
+   SHA, the base SHA. Where a writer produced the candidate, check its `IMPLEMENTED` line against them and its proof against
+   `maintain-verification-skill`'s Proof; rerun its proof only on a doubt you state. A probe that edits files runs in your own detached worktree at the candidate SHA, removed
    after. Done when another reviewer could open the same contract and candidate.
 3. **Work the rubric section by section.** Each item ends verified against the source or as a
    finding, whatever the size of the diff; a clean section never covers another section's finding.

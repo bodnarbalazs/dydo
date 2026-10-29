@@ -104,8 +104,10 @@ external state agents cannot coordinate, or for authority the contract cannot su
 A crew member raises its hand by returning to its Ticket Captain; a comment on the ticket and, when
 the work is blocked, a Question Ticket wired as a blocker are the captain's rungs. The code-writer's
 one pre-code comment naming lanes or an inexact contract is its scoped exception, not a hand-raise.
-A blocked captain releases: post the resume SHA, push the branch, clean the worktree (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree),
-return the parent to Todo and unassign. A user takeover does the same; a dead session leaves its
+A blocked captain releases: post the resume SHA, push the branch, clean the worktrees it or its crew
+made (lanes, merge checkouts, temp checkouts) with `dydo clean --dry-run <worktree>`, then
+`dydo clean <worktree>`, run from outside that tree, return the parent to Todo and unassign. The
+worktree its thread runs in belongs to T3: leave it. A user takeover does the same; a dead session leaves its
 last recorded hop without a final push. The map holder's next wake - an invoked admiral's, or the
 user's own return to the board when none is invoked - picks up blocker-cleared work.
 

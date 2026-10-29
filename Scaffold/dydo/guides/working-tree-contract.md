@@ -141,8 +141,10 @@ holds the detail; the captain posts each crew hop's SHA. A Merge Sub-ticket neve
 An atomic ticket has no Merge Sub-ticket: its captain sets `Ready to Merge` once CI is green, and after
 the user's click closes it `Done`, cleans up and returns `done <key>: merged`.
 
-For an uncleared blocker or user takeover: push, post the resume SHA, clean the worktree (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree), set the
-parent `Todo`, unassign and wire any blocker; return `released <key>: <reason>`. A dead session is
+For an uncleared blocker or user takeover: push, post the resume SHA, clean the worktrees the captain
+or its crew made (lanes, merge checkouts, temp checkouts) with `dydo clean --dry-run <worktree>`, then
+`dydo clean <worktree>`, run from outside that tree, set the parent `Todo`, unassign and wire any
+blocker; return `released <key>: <reason>`. The worktree its thread runs in belongs to T3: leave it. A dead session is
 treated as release from its last recorded hop without a final push. Fresh commission from the
 record works on both hosts. An invoked admiral wakes on a captain's return or the user's word and rereads
 the board, including released and blocker-cleared tickets.
@@ -184,7 +186,7 @@ close `Done` and return `done <key>: merged`.
 
 | Artifact | Accountable | Completion |
 |---|---|---|
-| Parent ticket and lane worktrees | `ticket-captain` | Every worktree it or its crew created is cleaned with `dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree. A spawned Ticket Captain first pushes the parent branch and opens its PR so the work survives its return. |
+| Parent ticket and lane worktrees | `ticket-captain` | Every worktree it or its crew made (lanes, merge checkouts, temp checkouts) is cleaned with `dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree. The worktree its thread runs in belongs to T3: leave it. Any worktree under `~/.t3/worktrees` was made by T3, a crew member's `delegate_task` checkout included, and `dydo clean` skips it. A spawned Ticket Captain first pushes the parent branch and opens its PR so the work survives its return. |
 | Integrated lane Sub-ticket branch | `ticket-captain` | The branch is deleted after it passes review and is integrated into the parent ticket branch. |
 | Merged Project ticket branch | `ticket-captain` | The branch is deleted after the merge. |
 | Merged atomic ticket branch | `ticket-captain` | The branch is deleted after the user clicks its PR into main. |

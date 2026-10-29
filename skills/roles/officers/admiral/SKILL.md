@@ -96,7 +96,9 @@ map and how the tickets move, integrate, and finish together.
    dispatch them.
    **Done:** each pickable ticket has a captain or a stated reason.
 4. **Order merges.** A captain's `done <key>: PR ready` leaves its ticket `Ready to Merge` with a
-   reviewed PR. Call a PR ready only when `gh pr checks <number>` is green. When its Merge Sub-ticket's blocker clears, resume that captain with `merge`, or
+   reviewed PR; its captain rechecked the gate before setting it. On `PR open <key>, checks pending: <url>, head <SHA>`,
+   watch that PR (`watch_pull_request` in T3) and wake its captain on news; unwatch when it returns
+   `done <key>: PR ready` or is released. When its Merge Sub-ticket's blocker clears, resume that captain with `merge`, or
    commission a fresh one from the record. Rewire the order when a later ready PR is independent
    of an earlier unready one. **Done:** every merge has its own captain-directed chain and fresh
    merge review; the record shows the order that ran and `done <key>: merged` wakes the next work.

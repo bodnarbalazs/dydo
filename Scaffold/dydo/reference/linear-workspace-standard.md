@@ -7,7 +7,8 @@ type: reference
 
 The canonical Linear vocabulary for Projects and tickets. Status records where work is now and which
 role is at work; Type records why a ticket exists and who holds it; Mode records how a captain works
-with the user; Priority records which of the user's tickets comes next. The model is
+with the user; Severity records how serious the finding behind a ticket is; Priority records which
+of the user's tickets comes next. The model is
 supersymmetric: a captain's ticket is a Project one level down, and the same statuses, Types and
 chain hold at both levels. The order of the statuses is part of the standard: Linear draws each
 status circle from its position in its category.
@@ -56,8 +57,9 @@ the FutureFeature is marked `Done`. A rejected one becomes `Canceled` with the r
 
 ## Ticket labels
 
-Two label groups, `Type` and `Mode`, because one label per group is the rule Linear enforces. Every
-ticket carries exactly one Type. Mode sits on every Type a captain holds.
+Three label groups, `Type`, `Mode` and `Severity`, because one label per group is the rule Linear
+enforces. Every ticket carries exactly one Type. Mode sits on every Type a captain holds. Severity
+sits only on a ticket born from a finding.
 
 ### Type
 
@@ -93,6 +95,21 @@ ticket only when the work needs independent tracking or blocks other work.
 | `HITL` | The user and the captain work the ticket together in a session the user opened. | `#F76B15` |
 
 The user's approval or inspection at a universal gate does not make a ticket HITL.
+
+### Severity
+
+A ticket born from a finding carries that finding's severity, by DR 058's names; whoever files the
+ticket sets it. Most tickets carry none.
+
+| Label | Meaning | Carried by | Colour |
+|---|---|---|---|
+| `blocker` | The intended case is wrong. | each blocker Bug an inquisition files | `#E5484D` |
+| `should` | A real bug callers will hit, inside the intent. | each should ticket filed from a review; each should Bug an inquisition files | `#FFB224` |
+| `nit` | Everything else. | each inquisition round's nit ticket | `#8B8D98` |
+
+A review blocker stays a FAIL and never becomes a ticket; a review nit stays one line on its
+ticket's record. Priority keeps its meaning and never carries severity. The landing check is a
+query: no open `blocker` or `should` ticket in the Project, unless the user explicitly deferred it.
 
 ## Priority
 

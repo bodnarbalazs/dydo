@@ -188,20 +188,39 @@ public sealed class CommitChecksTests : IDisposable
 
     // blacksmith-sh leaves a queued suite with no runs on every bodnarbalazs/dydo and LC commit.
     [Fact]
-    public void AQueuedSuiteThatHoldsNoRun_IsNoCiYet()
+    public void AnInertAppsQueuedSuiteThatHoldsNoRun_IsIgnored()
     {
-        SuitesAre(Suite("blacksmith.sh", "queued", null, runs: 0), Suite("GitHub Actions", "completed", "success"));
+        SuitesAre(Suite("blacksmith.sh", "queued", null, runs: 0, slug: "blacksmith-sh"), Suite("GitHub Actions", "completed", "success"));
 
         Assert.Null(Refusal());
     }
 
     [Fact]
-    public void OnlyAQueuedSuiteThatHoldsNoRun_IsNoChecks()
+    public void OnlyAnInertAppsQueuedSuiteThatHoldsNoRun_IsNoChecks()
     {
-        SuitesAre(Suite("blacksmith.sh", "queued", null, runs: 0));
+        SuitesAre(Suite("blacksmith.sh", "queued", null, runs: 0, slug: "blacksmith-sh"));
         RunsAre();
 
         Assert.Equal("no checks reported on 0123456789ab; wait for CI, or this repo runs no CI for PRs into feature/x", Refusal());
+    }
+
+    [Fact]
+    public void AnInertAppsSuiteWithARun_IsJudged()
+    {
+        SuitesAre(Suite("blacksmith.sh", "in_progress", null, runs: 1, slug: "blacksmith-sh"), Suite("GitHub Actions", "completed", "success"));
+
+        Assert.Equal(NotGreen + "blacksmith-sh in_progress", Refusal());
+    }
+
+    [Theory]
+    [InlineData("queued")]
+    [InlineData("requested")]
+    [InlineData("mystery")]
+    public void AnotherAppsUnfinishedSuiteThatHoldsNoRun_IsNotGreen(string status)
+    {
+        SuitesAre(Suite("CircleCI Checks", status, null, runs: 0, slug: "circleci-checks"), Suite("GitHub Actions", "completed", "success"));
+
+        Assert.Equal(NotGreen + $"circleci-checks {status}", Refusal());
     }
 
     [Fact]

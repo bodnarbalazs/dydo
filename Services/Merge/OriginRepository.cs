@@ -13,6 +13,8 @@ internal sealed partial record OriginRepository(string Host, string Owner, strin
     // which has a dot.
     public bool IsSshAlias => IsSsh && !Host.Contains('.');
 
+    public string RealHostHint => $"point origin at the real host, such as git@github.com:{FullName}.git";
+
     public override string ToString() => $"{Host}/{Owner}/{Name}";
 
     public static OriginRepository? Parse(string url)

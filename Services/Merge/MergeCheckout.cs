@@ -23,8 +23,7 @@ internal sealed record MergeCheckout(string Root, OriginRepository Origin, strin
         var origin = (url.Ok ? OriginRepository.Parse(url.Text.Trim()) : null)
             ?? throw MergeStop.Refused($"{root} has no origin remote naming HOST/OWNER/REPO");
         if (origin.IsSshAlias)
-            throw MergeStop.ToolError($"origin's host {origin.Host} is an SSH alias dydo merge cannot resolve; "
-                + $"point origin at the real host, such as git@github.com:{origin.FullName}.git");
+            throw MergeStop.ToolError($"origin's host {origin.Host} is an SSH alias dydo merge cannot resolve; {origin.RealHostHint}");
 
         var head = Git(root, "symbolic-ref", "refs/remotes/origin/HEAD");
         const string remoteBranches = "refs/remotes/origin/";

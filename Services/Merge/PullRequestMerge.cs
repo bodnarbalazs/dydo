@@ -18,12 +18,13 @@ internal sealed partial class PullRequestMerge
 {
     private static readonly HashSet<string> MergeRubrics = ["code", "docs", "merge"];
 
+    private static readonly HashSet<string> DefaultBranchNames = new(["master", "main"], StringComparer.OrdinalIgnoreCase);
+
     private readonly MergeCheckout _checkout;
     private readonly IGitHubApi _github;
     private readonly int _number;
     private readonly string _sha;
     private readonly string _repo;
-    private readonly Dictionary<string, string?> _resolved = [];
 
     private PullRequestMerge(MergeCheckout checkout, IGitHubApi github, int number, string sha)
     {
@@ -85,6 +86,9 @@ internal sealed partial class PullRequestMerge
     private PullRequest ReadPull()
     {
         var reply = _github.Send("GET", $"{_repo}/pulls/{_number}");
+        if (reply.Status == 0 && _checkout.Origin.IsSsh)
+            throw MergeStop.ToolError($"could not read PR #{_number} from {_checkout.Origin}: {reply.Error}; "
+                + $"if {_checkout.Origin.Host} is an SSH alias, {_checkout.Origin.RealHostHint}");
         var pull = reply.Status == 404 ? null : PullRequest.From(Expect(reply, 200, $"could not read PR #{_number} from {_checkout.Origin}"));
         return pull != null && string.Equals(pull.BaseRepo, _checkout.Origin.FullName, StringComparison.OrdinalIgnoreCase)
             ? pull
@@ -116,6 +120,9 @@ internal sealed partial class PullRequestMerge
             throw MergeStop.Refused($"PR #{_number} comes from {pull.HeadRepo ?? pull.HeadLabel}; dydo merge merges same-repository PRs only");
         if (DefaultNamed(pull.Base, defaultBranch) is { } named)
             throw MergeStop.Refused($"{pull.Base} is this repository's default branch ({named}); that merge is the user's click");
+        if (DefaultBranchNames.Contains(pull.Base))
+            throw MergeStop.Refused($"{pull.Base} is a default branch name (this repository's default is {defaultBranch}); "
+                + "that merge is the user's click");
         if (!FeatureBranch.IsValid(pull.Base, _checkout.Root))
             throw MergeStop.Refused($"PR #{_number} targets {pull.Base}; dydo merge merges only into feature/* branches - "
                 + "master, main and the default branch are the user's click");
@@ -159,13 +166,8 @@ internal sealed partial class PullRequestMerge
             return false;
         if (candidate.Length == _sha.Length)
             return true;
-        if (!_resolved.TryGetValue(candidate, out var resolved))
-        {
-            var reply = _github.Send("GET", $"{_repo}/commits/{candidate}");
-            resolved = reply.Status is 404 or 422 ? null : Text(Expect(reply, 200, $"could not resolve candidate {candidate}"), "sha");
-            _resolved[candidate] = resolved;
-        }
-        return resolved == _sha;
+        var reply = _github.Send("GET", $"{_repo}/commits/{candidate}");
+        return reply.Status is not (404 or 422) && Text(Expect(reply, 200, $"could not resolve candidate {candidate}"), "sha") == _sha;
     }
 
     private JsonNode? ReadBranch(string name)

@@ -18,8 +18,6 @@ internal sealed class FakeGitHub : IGitHubApi
 
     public void On(string method, string path, params GitHubReply[] replies) => _routes[Key(method, path)] = [.. replies];
 
-    public bool Has(string method, string path) => _routes.ContainsKey(Key(method, path));
-
     public static GitHubReply Reply(int status, JsonNode? json = null) => new(status, json, status == 0 ? "network down" : "");
 
     public static GitHubReply Reply(int status, string json) => Reply(status, JsonNode.Parse(json));

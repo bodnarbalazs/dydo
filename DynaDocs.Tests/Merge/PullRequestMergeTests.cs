@@ -107,6 +107,20 @@ public sealed class PullRequestMergeTests : IDisposable
         Assert.Equal("error: could not read PR #7 from github.com/acme/widgets: network down", Lines(stderr)[0]);
     }
 
+    // A dotted SSH config alias (Host github.com-work) looks like a real host until gh fails to reach it.
+    [Fact]
+    public void AnSshOriginGhCannotReach_HintsAtAnAlias()
+    {
+        using var s = new MergeScenario("git@github.com-work:acme/widgets.git");
+        s.GitHub.On("GET", Pulls, Reply(0));
+
+        var (exit, _, stderr) = s.Merge();
+
+        Assert.Equal(ExitCodes.ToolError, exit);
+        Assert.Equal("error: could not read PR #7 from github.com-work/acme/widgets: network down; if github.com-work is an "
+            + "SSH alias, point origin at the real host, such as git@github.com:acme/widgets.git", Lines(stderr)[0]);
+    }
+
     #endregion
 
     #region Fast-forward eligible: the two-parent Git Data path
@@ -144,6 +158,18 @@ public sealed class PullRequestMergeTests : IDisposable
     {
         FastForwardEligible();
         _s.GitHub.On("PATCH", $"{Repo}/git/refs/heads/feature/x", Reply(422, """{ "message": "Update is not a fast forward" }"""));
+
+        var (exit, _, stderr) = _s.Merge();
+
+        Assert.Equal(1, exit);
+        Assert.Equal("refused: feature/x moved or no longer exists on acme/widgets; nothing merged - rerun", Lines(stderr)[0]);
+    }
+
+    [Fact]
+    public void BaseGoneBeforeTheRefUpdate_Refused17()
+    {
+        FastForwardEligible();
+        _s.GitHub.On("PATCH", $"{Repo}/git/refs/heads/feature/x", Reply(404, """{ "message": "Reference does not exist" }"""));
 
         var (exit, _, stderr) = _s.Merge();
 
@@ -381,7 +407,6 @@ public sealed class PullRequestMergeTests : IDisposable
 
     [Theory]
     [InlineData("develop")]
-    [InlineData("main")]
     [InlineData("feature/x.lock")]
     public void Refusal7_ABaseOutsideTheFeaturePattern(string baseRef)
     {
@@ -401,6 +426,18 @@ public sealed class PullRequestMergeTests : IDisposable
         _s.GitHub.On("GET", Repo, Reply(200, new JsonObject { ["full_name"] = "acme/widgets", ["default_branch"] = defaultBranch }));
 
         AssertRefused(_s.Merge(), $"{baseRef} is this repository's default branch ({defaultBranch}); that merge is the user's click");
+    }
+
+    [Theory]
+    [InlineData("master")]
+    [InlineData("main")]
+    [InlineData("Main")]
+    public void Refusal8_MasterOrMainThatIsNotTheDefault(string baseRef)
+    {
+        _s.PullJson["base"]!["ref"] = baseRef;
+        _s.GitHub.On("GET", Repo, Reply(200, """{ "full_name": "acme/widgets", "default_branch": "trunk" }"""));
+
+        AssertRefused(_s.Merge(), $"{baseRef} is a default branch name (this repository's default is trunk); that merge is the user's click");
     }
 
     [Fact]

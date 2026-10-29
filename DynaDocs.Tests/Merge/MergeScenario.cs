@@ -114,12 +114,12 @@ internal sealed class MergeScenario : IDisposable
         return pull;
     }
 
-    public static JsonObject Suite(string app, string status, string? conclusion, int runs = 1) => new()
+    public static JsonObject Suite(string app, string status, string? conclusion, int runs = 1, string? slug = null) => new()
     {
         ["status"] = status,
         ["conclusion"] = conclusion,
         ["latest_check_runs_count"] = runs,
-        ["app"] = new JsonObject { ["name"] = app }
+        ["app"] = new JsonObject { ["name"] = app, ["slug"] = slug }
     };
 
     public static JsonObject Run(string name, string status, string? conclusion) => new()

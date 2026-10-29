@@ -32,6 +32,8 @@ Never put a decision in a wizard, in prose or any other form: a decision needs c
 
 For each stage, write the precise path the user follows: which URL to open, what to do there, where a value is shown, which variable it fills: e.g. "Dashboard → Developers → API keys → Reveal test key → copy". Where you don't actually know the current UI or the exact command, say so and ask the user or check the docs: never invent steps that may not exist.
 
+Give each stage an outcome you can inspect without seeing a secret: a file exists, a command answers, a service responds, a non-secret config value is set; after the user runs the stage, check it yourself.
+
 **Done when:** every stage traces to concrete instructions a stranger could follow.
 
 ### 3. Author the wizard
@@ -39,6 +41,8 @@ For each stage, write the precise path the user follows: which URL to open, what
 Copy the bash code block from [template](resources/template.md) to the target script path. Replace the example stage with one `stage` per step, in dependency order. Use the library helpers: `stage`, `say`/`step`, `open_url`, `ask`/`ask_secret`, `write_env`, `set_secret`/`set_var`, `pause`/`confirm`. Set `TOTAL_STAGES` to the number of stages you wrote.
 
 Hold the bar the template sets: open the URL before asking for its value, use `ask_secret` for anything secret, `write_env` only the values whose destination includes `.env`, `set_secret` only the values CI actually needs, and `confirm` before any irreversible action. Each `stage` clears the screen so only the current step is visible: keep a stage to one focused task so nothing the user needs scrolls away. Don't touch the library above the marker. The script runs from any directory: below the marker, set `ENV_FILE` to an absolute path and export `GH_REPO=<owner>/<repo>` when it writes GitHub secrets.
+
+Only when a step would otherwise have the user paste output back, the script may log that output (never a secret) to a file in the OS temp folder, which you delete after reading; the log is context, not proof, so check the result with a fresh command (a logged install isn't an installed package until you run it).
 
 ### 4. Verify and hand off
 

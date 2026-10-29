@@ -21,6 +21,15 @@ Pick one, and say which:
 
 Edit only the verification skill's own directory (its `SKILL.md`, `resources/features/`) and the control CLI it drives. Product code stays untouched during a run: a behaviour the map describes that the app no longer does is either doc drift (fix the map) or a product regression (report it to the user as a Bug, keep the map describing intended behaviour).
 
+## Verification gaps from an inquisition
+
+An inquisition's Drive phase files a *verification gap*, severity should, wherever a user can do
+something the verification skill cannot. Its ticket names the user action, the drive steps that
+stopped, and the capability the skill lacks. Take the ticket as this skill's input: run the pass
+with the gap's feature in it, triage the gap in step 5 as a harness gap, or as doc drift or a
+product gap if that is what it proves to be, and say which on the ticket. A fixed gap is re-driven
+live before it ships, like any harness fix.
+
 ## Pass
 
 0. **Locate the target.** Find the verification skill to maintain: the project-local skill whose body has launch/drive sections and a feature map (usually `skills/engineering/verify-*/`). Several candidates → ask which one; none → stop and point at `create-verification-skill` instead of inventing a target.

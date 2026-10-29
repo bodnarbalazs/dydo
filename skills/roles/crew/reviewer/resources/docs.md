@@ -5,7 +5,7 @@ dydo documents under `dydo/`, judged against code for delivered behavior or gove
 (skills, their resources, entry points), judged as prompt files that must fire and route.
 **Drift** is the failure both kinds share: a claim the tree no longer supports, or an environment
 restated in prose (directory layout, `--help`, config) where a pointer would not have gone stale.
-Every item below is a FAIL when it holds.
+Every item below is a finding when it holds, labelled with its severity.
 
 ## Method
 

@@ -50,10 +50,10 @@ hop is `implement`, `fix` after a FAIL, or `merge`; proof-only commits `<KEY> pr
 - **Merge**: [merge](resources/merge.md).
 - **Prototype**: load `prototype`; return runnable-demo evidence and its commit, not the Prove
   section. The user's verdict is its review.
-- **Proof-only**: the brief names the commissioning captain, the pinned source SHA (an
-  Inquisition's audit SHA by default) and the test path. Run only the one test deciding the
-  hypothesis; return to that captain `confirmed` with its red-test SHA, `not reproduced`, or
-  `inconclusive` with the deciding observation.
+- **Proof-only**: the brief names the commissioning captain, the pinned source SHA and the test
+  path. Run only the one test deciding the hypothesis; return to that captain `confirmed` with its
+  red-test SHA, `not reproduced`, or `inconclusive` with the deciding observation. An Inquisition's
+  proofs are its Break-phase inquisitor's, not yours; its patch lane briefs you as a Bug.
 
 A test green before any code exists is a finding about the test. An existing failing test is the
 red. Delete a test only with code whose removal the contract or a FAIL requires: dead code with its
@@ -99,7 +99,11 @@ and gates run with exits; a Prototype hop returns runnable-demo evidence and its
 
 ## When you are the fix hop
 
-The FAIL block is your contract: close its findings and nothing else. Fix at the root: a gap
+The FAIL block's blockers are your contract: close them and nothing else. Check each finding's
+severity against the source, not the reviewer's label; a label you change goes in your
+`IMPLEMENTED` behaviour with its evidence (file:line, test, output). Shoulds and nits are the
+captain's to file. Prefer the change that deletes or narrows code; review never grows the PR.
+Fix at the root: a gap
 gets its test first; cut what the contract does not need; split or flatten what is complex; hide
 what leaks across a seam; a surviving mutant sharpens its test or deletes its code; a surviving
 example value gets its step wired.

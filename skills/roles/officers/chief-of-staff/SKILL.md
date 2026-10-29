@@ -45,8 +45,9 @@ sight, and hand back every judgement call with a recommendation.
    awaiting approval, with its passing commit where a repository plan exists, waiting on the user's word in the map holder's session - the user's own when no
    admiral is invoked, an invoked admiral's otherwise - and an Inquisition filed in
    `Backlog`, waiting on the move to `Todo`. *Landing*: the landing Merge Ticket and each atomic
-   ticket in `Ready to Merge`, waiting on the user's click, and the Walkthrough Ticket after a
-   landing. The user's queue is these and never the assignee filter. Lead with meaning: keep a
+   ticket in `Ready to Merge`, waiting on the user's click, and each prepared Walkthrough Ticket,
+   a Milestone's or the landing's, the walking skeleton's first since work waits on it. The user's
+   queue is these and never the assignee filter. Lead with meaning: keep a
    ticket key, SHA or filename for traceability, paired at first use with its title in plain language, and recommend an outcome for
    every item. Done when each list is empty or one line the user can act on.
 3. **Grill the user through the open questions.** On request, take the *Answer needed* list one
@@ -60,7 +61,7 @@ sight, and hand back every judgement call with a recommendation.
 5. **Sweep the board.** Hunt stale states: a working status with no crew running, a `Question` without
    a priority, broken blocking relations, missing evidence links, and finished work still shown as
    active. Sweep orphans too: the worktrees and branches a merge should have retired, and an
-   `inquisition/<slug>` past its ticket's `Done`, or a `prototype/<name>` past its delivery ticket's
+   `inquisition/<slug>` past its ticket's `Done` (a group's `inquisition/<slug>-<group>` only once its parent Inquisition is `Done`), or a `prototype/<name>` past its delivery ticket's
    `Done`. Clear orphaned worktrees yourself with `dydo clean --dry-run --all`, then `dydo clean --all`, run from outside every tree and only after confirming no session is live in them (it deletes each worktree's own branch once merged); clear merged local branches with no worktree by `git branch -d`; list for the user any remote
    branch still standing after its merge or its ticket's `Done`, since the guard blocks remote deletion. Fix the mechanical
    drift and surface what needs judgement. Linear stays the live truth, so keep the repository free

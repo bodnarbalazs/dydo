@@ -73,6 +73,18 @@ sight, and hand back every judgement call with a recommendation.
    recurring across sessions goes to `retro` with the occurrences named. Done when
    everything you did not close has a named owner.
 
+## Overnight duties
+
+- **Muster:** before activation, complete [the muster checklist](resources/muster.md) with the user.
+- **Watch:** use one fresh surveyor per scheduled tick with [the fixed survey brief](resources/night-survey.md).
+  Give the child that resource alone, not this officer role. If a survey is pending, consume that
+  child instead of dispatching another. Follow the dispatch lifecycle above: T3 background
+  completion is event-driven, without polling; wait for native foreground work within this turn.
+  Treat the result as inspection: perform the nudge, escalation or intervention yourself. Handle
+  incoming messages when received. Resolve `INCOMPLETE` inspection gaps; a complete `NO_ACTION`
+  ends the tick.
+- **Return:** after `overnight-mode` shutdown, fill [the morning brief](resources/morning-brief.md).
+
 ## Return
 
 Give the user the three lists in order, one line each: what it is, why it waits on him, your

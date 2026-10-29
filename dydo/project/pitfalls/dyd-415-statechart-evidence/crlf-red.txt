@@ -1,0 +1,54 @@
+TAP version 13
+# Subtest: Windows TLC CRLF message frames parse identically from streamed lines
+not ok 1 - Windows TLC CRLF message frames parse identically from streamed lines
+  ---
+  duration_ms: 4.6125
+  type: 'test'
+  location: 'C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\test\\messages.test.ts:11:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      [
+    +   '@!@!@STARTMSG 2110:1 @!@!@\r',
+    +   'Invariant Safe is violated.\r',
+    +   '@!@!@ENDMSG 2110 @!@!@\r'
+    -   {
+    -     body: [
+    -       'Invariant Safe is violated.'
+    -     ],
+    -     code: 2110,
+    -     level: 1
+    -   }
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      code: 2110
+      level: 1
+      body:
+        0: 'Invariant Safe is violated.'
+  actual:
+    0: '@!@!@STARTMSG 2110:1 @!@!@\r'
+    1: 'Invariant Safe is violated.\r'
+    2: '@!@!@ENDMSG 2110 @!@!@\r'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/messages.test.ts:14:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 283.9412

@@ -44,6 +44,8 @@ Edit only the verification: models, harnesses, property files, and the verify sk
 
 6. **Update the verify skill.** Update the code that each check covers, the commands, the bounds, the assumptions, and the sync commit. Set the sync commit to the commit that you checked. Do not move the sync commit for a blocked check, and say so in the report. Then follow the verify skill once as the next agent would, so that you know its steps still run.
 
+For a TLA+ result, point the user to `statechart` to read the checked graph and shortest bug paths. It requires user invocation. Use the same checked model, config, bounds and sync commit; a chart of the old model is not evidence for the updated check. Refer to the skill by name and keep its launcher instructions there.
+
 ## Report
 
 Tell the user, for each check:

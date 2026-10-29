@@ -1,0 +1,2077 @@
+
+> test
+> node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test/*.test.ts
+
+TAP version 13
+# Subtest: A broken model shows its shortest bug path
+ok 1 - A broken model shows its shortest bug path
+  ---
+  duration_ms: 9875.2709
+  type: 'test'
+  ...
+# Subtest: Correcting the model preserves the invariant
+ok 2 - Correcting the model preserves the invariant
+  ---
+  duration_ms: 3066.2488
+  type: 'test'
+  ...
+# Subtest: The chart budget preserves counterexamples
+ok 3 - The chart budget preserves counterexamples
+  ---
+  duration_ms: 5042.6955
+  type: 'test'
+  ...
+# Subtest: Both hosts require user invocation
+ok 4 - Both hosts require user invocation
+  ---
+  duration_ms: 2.1999
+  type: 'test'
+  ...
+# Subtest: TLA+ values reach the view as the skill says: sequences from 1, sets as arrays
+ok 5 - TLA+ values reach the view as the skill says: sequences from 1, sets as arrays
+  ---
+  duration_ms: 1.69
+  type: 'test'
+  ...
+# Subtest: a value outside the grammar TLC prints is an error, never a guess
+ok 6 - a value outside the grammar TLC prints is an error, never a guess
+  ---
+  duration_ms: 0.7743
+  type: 'test'
+  ...
+# Subtest: a label prints each value in TLA+, so values that TLC tells apart look apart
+ok 7 - a label prints each value in TLA+, so values that TLC tells apart look apart
+  ---
+  duration_ms: 0.3199
+  type: 'test'
+  ...
+# Subtest: equal TLA+ values share one key and unequal ones do not, as TLC compares them
+ok 8 - equal TLA+ values share one key and unequal ones do not, as TLC compares them
+  ---
+  duration_ms: 1.0812
+  type: 'test'
+  ...
+# Subtest: each corpus bug path is the shortest way to its rule
+ok 9 - each corpus bug path is the shortest way to its rule
+  ---
+  duration_ms: 255.7338
+  type: 'test'
+  ...
+# Subtest: a chart of only the bug paths words each one with the view, asked once for each state and step
+ok 10 - a chart of only the bug paths words each one with the view, asked once for each state and step
+  ---
+  duration_ms: 26.7446
+  type: 'test'
+  ...
+# Subtest: the graph that parseDot returns keeps none of the text it read
+ok 11 - the graph that parseDot returns keeps none of the text it read
+  ---
+  duration_ms: 21.4884
+  type: 'test'
+  ...
+# Subtest: TLC's marks place on their states even when TLC wraps them over lines
+ok 12 - TLC's marks place on their states even when TLC wraps them over lines
+  ---
+  duration_ms: 3.6846
+  type: 'test'
+  ...
+# Subtest: a chart tuple that TLC prints inside one of its messages is not a mark
+ok 13 - a chart tuple that TLC prints inside one of its messages is not a mark
+  ---
+  duration_ms: 0.1828
+  type: 'test'
+  ...
+# Subtest: a line that the spec prints in the shape of a mark is spec output, not a mark
+ok 14 - a line that the spec prints in the shape of a mark is spec output, not a mark
+  ---
+  duration_ms: 0.2705
+  type: 'test'
+  ...
+# Subtest: a wrapped mark with a model value named constructor places on its state
+ok 15 - a wrapped mark with a model value named constructor places on its state
+  ---
+  duration_ms: 0.1294
+  type: 'test'
+  ...
+# Subtest: a tagged line in the wrong shape is an error, not spec output
+ok 16 - a tagged line in the wrong shape is an error, not spec output
+  ---
+  duration_ms: 0.1985
+  type: 'test'
+  ...
+# Subtest: starts: the chart uses regions only when they show the model's moves exactly
+ok 17 - starts: the chart uses regions only when they show the model's moves exactly
+  ---
+  duration_ms: 1.3477
+  type: 'test'
+  ...
+# Subtest: xor: the chart uses regions only when they show the model's moves exactly
+ok 18 - xor: the chart uses regions only when they show the model's moves exactly
+  ---
+  duration_ms: 1.038
+  type: 'test'
+  ...
+# Subtest: fork: the chart uses regions only when they show the model's moves exactly
+ok 19 - fork: the chart uses regions only when they show the model's moves exactly
+  ---
+  duration_ms: 0.4276
+  type: 'test'
+  ...
+# Subtest: partial: the chart uses regions only when they show the model's moves exactly
+ok 20 - partial: the chart uses regions only when they show the model's moves exactly
+  ---
+  duration_ms: 0.8297
+  type: 'test'
+  ...
+# Subtest: lockstep: the chart uses regions only when they show the model's moves exactly
+ok 21 - lockstep: the chart uses regions only when they show the model's moves exactly
+  ---
+  duration_ms: 0.4166
+  type: 'test'
+  ...
+# Subtest: interleaved: the chart uses regions only when they show the model's moves exactly
+ok 22 - interleaved: the chart uses regions only when they show the model's moves exactly
+  ---
+  duration_ms: 0.2407
+  type: 'test'
+  ...
+# Subtest: the report says why regions cannot show a shared step that forks
+ok 23 - the report says why regions cannot show a shared step that forks
+  ---
+  duration_ms: 0.2808
+  type: 'test'
+  ...
+# Subtest: a chart that draws parent states in place of regions still names each region in a bug path
+ok 24 - a chart that draws parent states in place of regions still names each region in a bug path
+  ---
+  duration_ms: 0.5513
+  type: 'test'
+  ...
+# Subtest: the view answers once for each state and step, so a chart of parent states agrees with its report
+ok 25 - the view answers once for each state and step, so a chart of parent states agrees with its report
+  ---
+  duration_ms: 0.5283
+  type: 'test'
+  ...
+# Subtest: a region state is marked when every combination with it can break a rule
+ok 26 - a region state is marked when every combination with it can break a rule
+  ---
+  duration_ms: 0.5234
+  type: 'test'
+  ...
+# Subtest: a combination that breaks a rule marks its states when no state of it has a mark
+ok 27 - a combination that breaks a rule marks its states when no state of it has a mark
+  ---
+  duration_ms: 0.3603
+  type: 'test'
+  ...
+# Subtest: a bug-path step that stays in one state is a loop in a flat chart only
+ok 28 - a bug-path step that stays in one state is a loop in a flat chart only
+  ---
+  duration_ms: 0.4371
+  type: 'test'
+  ...
+# Subtest: a step that leaves every child of a parent the same way is one arrow from the parent
+ok 29 - a step that leaves every child of a parent the same way is one arrow from the parent
+  ---
+  duration_ms: 0.3419
+  type: 'test'
+  ...
+# Subtest: a label codes only the characters that Mermaid reads as syntax, so TLA+ values stay as TLC prints them
+ok 30 - a label codes only the characters that Mermaid reads as syntax, so TLA+ values stay as TLC prints them
+  ---
+  duration_ms: 0.2682
+  type: 'test'
+  ...
+# Subtest: a label with %% stays text and cannot open a Mermaid directive
+ok 31 - a label with %% stays text and cannot open a Mermaid directive
+  ---
+  duration_ms: 0.2274
+  type: 'test'
+  ...
+# Subtest: each line break in a label or a colors key is a space, so it cannot start a chart line
+ok 32 - each line break in a label or a colors key is a space, so it cannot start a chart line
+  ---
+  duration_ms: 0.3516
+  type: 'test'
+  ...
+# Subtest: a label of only white space or with a lone surrogate still has text in the chart
+ok 33 - a label of only white space or with a lone surrogate still has text in the chart
+  ---
+  duration_ms: 0.4529
+  type: 'test'
+  ...
+# Subtest: NUL and C1 controls in a label are left out, since a browser draws their character references as other characters
+ok 34 - NUL and C1 controls in a label are left out, since a browser draws their character references as other characters
+  ---
+  duration_ms: 0.328
+  type: 'test'
+  ...
+# Subtest: a label puts a word joiner inside ﬂ° and ¶ß, since Mermaid decodes a label's text a second time
+ok 35 - a label puts a word joiner inside ﬂ° and ¶ß, since Mermaid decodes a label's text a second time
+  ---
+  duration_ms: 0.9336
+  type: 'test'
+  ...
+# Subtest: a label puts a word joiner inside marker-end=", since Mermaid rewrites marker-end="url(…\# in the drawn SVG
+ok 36 - a label puts a word joiner inside marker-end=", since Mermaid rewrites marker-end="url(…\# in the drawn SVG
+  ---
+  duration_ms: 0.3405
+  type: 'test'
+  ...
+# Subtest: a parent or region name with [[fork]], [[join]], or [[choice]] stays text
+ok 37 - a parent or region name with [[fork]], [[join]], or [[choice]] stays text
+  ---
+  duration_ms: 0.7248
+  type: 'test'
+  ...
+# Subtest: a label with C4Container, C4Component, C4Dynamic, or C4Deployment keeps the chart a state diagram
+ok 38 - a label with C4Container, C4Component, C4Dynamic, or C4Deployment keeps the chart a state diagram
+  ---
+  duration_ms: 0.289
+  type: 'test'
+  ...
+# Subtest: a title with < cannot open an HTML tag that rewrites the chart's quotes
+ok 39 - a title with < cannot open an HTML tag that rewrites the chart's quotes
+  ---
+  duration_ms: 0.2201
+  type: 'test'
+  ...
+# Subtest: the title writes each character outside the allow list in the form Mermaid decodes in a title
+ok 40 - the title writes each character outside the allow list in the form Mermaid decodes in a title
+  ---
+  duration_ms: 0.4014
+  type: 'test'
+  ...
+# Subtest: labels write the space between direction and LR, RL, TB, or BT as \#32;
+ok 41 - labels write the space between direction and LR, RL, TB, or BT as \#32;
+  ---
+  duration_ms: 0.326
+  type: 'test'
+  ...
+# Subtest: a view that cannot give a chart says what to change
+ok 42 - a view that cannot give a chart says what to change
+  ---
+  duration_ms: 0.3617
+  type: 'test'
+  ...
+# Subtest: a loop's trace finds its states when TLC prints record fields in another order
+ok 43 - a loop's trace finds its states when TLC prints record fields in another order
+  ---
+  duration_ms: 0.3529
+  type: 'test'
+  ...
+# Subtest: a view may hide a step inside a loop, but not a step out of it
+ok 44 - a view may hide a step inside a loop, but not a step out of it
+  ---
+  duration_ms: 0.6644
+  type: 'test'
+  ...
+# Subtest: a loop that passes one state twice names it once
+ok 45 - a loop that passes one state twice names it once
+  ---
+  duration_ms: 0.3119
+  type: 'test'
+  ...
+# Subtest: a chart that draws a way out of a loop that the loop cannot take stops the command
+ok 46 - a chart that draws a way out of a loop that the loop cannot take stops the command
+  ---
+  duration_ms: 0.5025
+  type: 'test'
+  ...
+# Subtest: a region named __proto__ is a region like any other
+ok 47 - a region named __proto__ is a region like any other
+  ---
+  duration_ms: 0.3114
+  type: 'test'
+  ...
+# Subtest: checkView takes a full view and refuses each wrong kind and every bad color
+ok 48 - checkView takes a full view and refuses each wrong kind and every bad color
+  ---
+  duration_ms: 0.3593
+  type: 'test'
+  ...
+# Subtest: a group named like an Object method still needs its own color
+ok 49 - a group named like an Object method still needs its own color
+  ---
+  duration_ms: 0.1925
+  type: 'test'
+  ...
+# Subtest: a message writes each value the way JavaScript shows it
+ok 50 - a message writes each value the way JavaScript shows it
+  ---
+  duration_ms: 1.2872
+  type: 'test'
+  ...
+# Subtest: checkView takes colors only as a plain object
+ok 51 - checkView takes colors only as a plain object
+  ---
+  duration_ms: 0.1728
+  type: 'test'
+  ...
+# Subtest: the chart uses the colors that checkView read once from the view's own keys
+ok 52 - the chart uses the colors that checkView read once from the view's own keys
+  ---
+  duration_ms: 0.5071
+  type: 'test'
+  ...
+# Subtest: a chart state with mixed groups gets no color, even when colors names undefined
+ok 53 - a chart state with mixed groups gets no color, even when colors names undefined
+  ---
+  duration_ms: 0.172
+  type: 'test'
+  ...
+# Subtest: a graph of 10,000 states draws in seconds with no view
+ok 54 - a graph of 10,000 states draws in seconds with no view
+  ---
+  duration_ms: 115.4789
+  type: 'test'
+  ...
+# Subtest: Counter writes the committed chart and report from TLC's output
+ok 55 - Counter writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.9449
+  type: 'test'
+  ...
+# Subtest: CounterAction writes the committed chart and report from TLC's output
+ok 56 - CounterAction writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.102
+  type: 'test'
+  ...
+# Subtest: CounterDeadlock writes the committed chart and report from TLC's output
+ok 57 - CounterDeadlock writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0469
+  type: 'test'
+  ...
+# Subtest: CounterFan writes the committed chart and report from TLC's output
+ok 58 - CounterFan writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0466
+  type: 'test'
+  ...
+# Subtest: CounterGuard writes the committed chart and report from TLC's output
+ok 59 - CounterGuard writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0464
+  type: 'test'
+  ...
+# Subtest: CounterInitPast writes the committed chart and report from TLC's output
+ok 60 - CounterInitPast writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0467
+  type: 'test'
+  ...
+# Subtest: CounterInitPastHolds writes the committed chart and report from TLC's output
+ok 61 - CounterInitPastHolds writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0367
+  type: 'test'
+  ...
+# Subtest: CounterInstance writes the committed chart and report from TLC's output
+ok 62 - CounterInstance writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0364
+  type: 'test'
+  ...
+# Subtest: CounterJump writes the committed chart and report from TLC's output
+ok 63 - CounterJump writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.1514
+  type: 'test'
+  ...
+# Subtest: CounterLoop writes the committed chart and report from TLC's output
+ok 64 - CounterLoop writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.205
+  type: 'test'
+  ...
+# Subtest: CounterOrder writes the committed chart and report from TLC's output
+ok 65 - CounterOrder writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.075
+  type: 'test'
+  ...
+# Subtest: CounterRules writes the committed chart and report from TLC's output
+ok 66 - CounterRules writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0356
+  type: 'test'
+  ...
+# Subtest: CounterStart writes the committed chart and report from TLC's output
+ok 67 - CounterStart writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0237
+  type: 'test'
+  ...
+# Subtest: CounterStop writes the committed chart and report from TLC's output
+ok 68 - CounterStop writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0369
+  type: 'test'
+  ...
+# Subtest: CounterTie writes the committed chart and report from TLC's output
+ok 69 - CounterTie writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.028
+  type: 'test'
+  ...
+# Subtest: CounterTieInGraph writes the committed chart and report from TLC's output
+ok 70 - CounterTieInGraph writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0204
+  type: 'test'
+  ...
+# Subtest: CounterView writes the committed chart and report from TLC's output
+ok 71 - CounterView writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0199
+  type: 'test'
+  ...
+# Subtest: DieHard writes the committed chart and report from TLC's output
+ok 72 - DieHard writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0224
+  type: 'test'
+  ...
+# Subtest: FirstRule writes the committed chart and report from TLC's output
+ok 73 - FirstRule writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0213
+  type: 'test'
+  ...
+# Subtest: HiddenClock writes the committed chart and report from TLC's output
+ok 74 - HiddenClock writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0195
+  type: 'test'
+  ...
+# Subtest: Login writes the committed chart and report from TLC's output
+ok 75 - Login writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0218
+  type: 'test'
+  ...
+# Subtest: LoginGuarded writes the committed chart and report from TLC's output
+ok 76 - LoginGuarded writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0262
+  type: 'test'
+  ...
+# Subtest: LoginParallel writes the committed chart and report from TLC's output
+ok 77 - LoginParallel writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0481
+  type: 'test'
+  ...
+# Subtest: MediaPlayer writes the committed chart and report from TLC's output
+ok 78 - MediaPlayer writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0228
+  type: 'test'
+  ...
+# Subtest: MediaPlayerFixed writes the committed chart and report from TLC's output
+ok 79 - MediaPlayerFixed writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0201
+  type: 'test'
+  ...
+# Subtest: MediaPlayerProps writes the committed chart and report from TLC's output
+ok 80 - MediaPlayerProps writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0195
+  type: 'test'
+  ...
+# Subtest: PickWorker writes the committed chart and report from TLC's output
+ok 81 - PickWorker writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0276
+  type: 'test'
+  ...
+# Subtest: Shadow writes the committed chart and report from TLC's output
+ok 82 - Shadow writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0217
+  type: 'test'
+  ...
+# Subtest: SpacedNames writes the committed chart and report from TLC's output
+ok 83 - SpacedNames writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0194
+  type: 'test'
+  ...
+# Subtest: TwoPhase writes the committed chart and report from TLC's output
+ok 84 - TwoPhase writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0276
+  type: 'test'
+  ...
+# Subtest: TwoPhaseFixed writes the committed chart and report from TLC's output
+ok 85 - TwoPhaseFixed writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0206
+  type: 'test'
+  ...
+# Subtest: TypeGuard writes the committed chart and report from TLC's output
+ok 86 - TypeGuard writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0195
+  type: 'test'
+  ...
+# Subtest: UserNoDeadlock writes the committed chart and report from TLC's output
+ok 87 - UserNoDeadlock writes the committed chart and report from TLC's output # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0222
+  type: 'test'
+  ...
+# Subtest: the launcher reached by its own path writes the committed chart on this Node
+ok 88 - the launcher reached by its own path writes the committed chart on this Node # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0216
+  type: 'test'
+  ...
+# Subtest: the launcher reached through an absolute and a relative symlink writes the committed chart on this Node
+ok 89 - the launcher reached through an absolute and a relative symlink writes the committed chart on this Node # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.026
+  type: 'test'
+  ...
+# Subtest: the launcher runs statechart.ts on Bun 1.1.5 when PATH has no Node
+ok 90 - the launcher runs statechart.ts on Bun 1.1.5 when PATH has no Node # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.023
+  type: 'test'
+  ...
+# Subtest: the launcher stops with exit 127 and names only the runtimes when PATH has none
+ok 91 - the launcher stops with exit 127 and names only the runtimes when PATH has none # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0194
+  type: 'test'
+  ...
+# Subtest: the launcher stops with exit 127 and names only the runtimes when PATH has only a node that fails --version
+ok 92 - the launcher stops with exit 127 and names only the runtimes when PATH has only a node that fails --version # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.021
+  type: 'test'
+  ...
+# Subtest: the launcher stops with exit 127 and names only the runtimes when PATH has only Bun 1.1.4
+ok 93 - the launcher stops with exit 127 and names only the runtimes when PATH has only Bun 1.1.4 # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0233
+  type: 'test'
+  ...
+# Subtest: the order of TLC's dump and its state IDs do not change the chart or the report
+ok 94 - the order of TLC's dump and its state IDs do not change the chart or the report # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0249
+  type: 'test'
+  ...
+# Subtest: a SIGKILL of the command stops TLC, removes the temporary folder, and writes nothing
+ok 95 - a SIGKILL of the command stops TLC, removes the temporary folder, and writes nothing # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0238
+  type: 'test'
+  ...
+# Subtest: a SIGKILL of the command while the view draws the chart leaves no folder behind
+ok 96 - a SIGKILL of the command while the view draws the chart leaves no folder behind # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0228
+  type: 'test'
+  ...
+# Subtest: a check killed by a signal stops the command with exit 2, and it writes nothing
+ok 97 - a check killed by a signal stops the command with exit 2, and it writes nothing # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0207
+  type: 'test'
+  ...
+# Subtest: SIGINT stops TLC, removes the temporary folder, and writes nothing
+ok 98 - SIGINT stops TLC, removes the temporary folder, and writes nothing # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0287
+  type: 'test'
+  ...
+# Subtest: SIGINT while the view draws the chart stops the command, and it writes nothing
+ok 99 - SIGINT while the view draws the chart stops the command, and it writes nothing # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0257
+  type: 'test'
+  ...
+# Subtest: SIGINT while the command writes its files stops it, and it writes nothing
+ok 100 - SIGINT while the command writes its files stops it, and it writes nothing # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0243
+  type: 'test'
+  ...
+# Subtest: SIGTERM stops TLC, removes the temporary folder, and writes nothing
+ok 101 - SIGTERM stops TLC, removes the temporary folder, and writes nothing # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0234
+  type: 'test'
+  ...
+# Subtest: SIGTERM while the view draws the chart stops the command, and it writes nothing
+ok 102 - SIGTERM while the view draws the chart stops the command, and it writes nothing # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0204
+  type: 'test'
+  ...
+# Subtest: SIGTERM while the command writes its files stops it, and it writes nothing
+ok 103 - SIGTERM while the command writes its files stops it, and it writes nothing # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0205
+  type: 'test'
+  ...
+# Subtest: SIGINT while the command reads TLC's last output stops the check and writes nothing
+ok 104 - SIGINT while the command reads TLC's last output stops the check and writes nothing # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0229
+  type: 'test'
+  ...
+# Subtest: SIGTERM while the command reads TLC's last output stops the check and writes nothing
+ok 105 - SIGTERM while the command reads TLC's last output stops the check and writes nothing # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0198
+  type: 'test'
+  ...
+# Subtest: a broken property is named in the report, and its TLC trace is in tlc-NAME.out
+ok 106 - a broken property is named in the report, and its TLC trace is in tlc-NAME.out # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0209
+  type: 'test'
+  ...
+# Subtest: TLC checks the rules and draws the chart with VIEW and SYMMETRY, and the report says an arrow can lead to a representative
+ok 107 - TLC checks the rules and draws the chart with VIEW and SYMMETRY, and the report says an arrow can lead to a representative # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0196
+  type: 'test'
+  ...
+# Subtest: a check above the chart budget skips the drawing run and draws only the bug paths
+ok 108 - a check above the chart budget skips the drawing run and draws only the bug paths # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0201
+  type: 'test'
+  ...
+# Subtest: a passing check above the chart budget writes no chart.mmd and gives the state count
+ok 109 - a passing check above the chart budget writes no chart.mmd and gives the state count # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0219
+  type: 'test'
+  ...
+# Subtest: a property that INSTANCE actions break above the chart budget draws their qualified names and the loop
+ok 110 - a property that INSTANCE actions break above the chart budget draws their qualified names and the loop # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0637
+  type: 'test'
+  ...
+# Subtest: a drawing run that counts more states than the chart budget gives only the bug paths
+ok 111 - a drawing run that counts more states than the chart budget gives only the bug paths # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.027
+  type: 'test'
+  ...
+# Subtest: a property with no temporal operator says TLC checked it only in the initial states
+ok 112 - a property with no temporal operator says TLC checked it only in the initial states # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0212
+  type: 'test'
+  ...
+# Subtest: a property that the config replaces with a state predicate gets the initial-states note
+ok 113 - a property that the config replaces with a state predicate gets the initial-states note # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0201
+  type: 'test'
+  ...
+# Subtest: a property that an extended module also defines as LOCAL takes the root definition's level
+ok 114 - a property that an extended module also defines as LOCAL takes the root definition's level # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0203
+  type: 'test'
+  ...
+# Subtest: a property from an extended module gets the initial-states note too
+ok 115 - a property from an extended module gets the initial-states note too # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0193
+  type: 'test'
+  ...
+# Subtest: a spec that SANY cannot read stops the command with exit 2
+ok 116 - a spec that SANY cannot read stops the command with exit 2 # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0199
+  type: 'test'
+  ...
+# Subtest: a first verdict run that TLC cannot finish stops the command with exit 2
+ok 117 - a first verdict run that TLC cannot finish stops the command with exit 2 # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0194
+  type: 'test'
+  ...
+# Subtest: a later verdict run that TLC cannot finish keeps the exit and leaves its rules not checked
+ok 118 - a later verdict run that TLC cannot finish keeps the exit and leaves its rules not checked # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0201
+  type: 'test'
+  ...
+# Subtest: a drawing run that TLC cannot finish stops the command with exit 2
+ok 119 - a drawing run that TLC cannot finish stops the command with exit 2 # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0192
+  type: 'test'
+  ...
+# Subtest: a java that cannot start stops the command with exit 2 on a runtime that emits no close for it
+ok 120 - a java that cannot start stops the command with exit 2 on a runtime that emits no close for it # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0202
+  type: 'test'
+  ...
+# Subtest: a step hidden by the view is not drawn, and the report counts it
+ok 121 - a step hidden by the view is not drawn, and the report counts it # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0377
+  type: 'test'
+  ...
+# Subtest: a view that hides a step of a bug path stops the command with exit 2
+ok 122 - a view that hides a step of a bug path stops the command with exit 2 # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0189
+  type: 'test'
+  ...
+# Subtest: a view whose state() returns a number stops the command with exit 2
+ok 123 - a view whose state() returns a number stops the command with exit 2 # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0185
+  type: 'test'
+  ...
+# Subtest: a view whose state() reads a missing variable stops the command with exit 2
+ok 124 - a view whose state() reads a missing variable stops the command with exit 2 # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0186
+  type: 'test'
+  ...
+# Subtest: a view whose step() returns an empty label stops the command with exit 2
+ok 125 - a view whose step() returns an empty label stops the command with exit 2 # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0192
+  type: 'test'
+  ...
+# Subtest: a view whose group() names no color stops the command with exit 2
+ok 126 - a view whose group() names no color stops the command with exit 2 # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.019
+  type: 'test'
+  ...
+# Subtest: a view that gives a group a mark class as its color stops the command with exit 2 before TLC runs
+ok 127 - a view that gives a group a mark class as its color stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0189
+  type: 'test'
+  ...
+# Subtest: a view that gives a group a color outside the theme stops the command with exit 2 before TLC runs
+ok 128 - a view that gives a group a color outside the theme stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0183
+  type: 'test'
+  ...
+# Subtest: a view that exports colors as a Map stops the command with exit 2 before TLC runs
+ok 129 - a view that exports colors as a Map stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0182
+  type: 'test'
+  ...
+# Subtest: a view that exports group() but no colors stops the command with exit 2 before TLC runs
+ok 130 - a view that exports group() but no colors stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0201
+  type: 'test'
+  ...
+# Subtest: a view that misspells an export stops the command with exit 2 before TLC runs
+ok 131 - a view that misspells an export stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.019
+  type: 'test'
+  ...
+# Subtest: a view that has a default export stops the command with exit 2 before TLC runs
+ok 132 - a view that has a default export stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0182
+  type: 'test'
+  ...
+# Subtest: a view that exports colors as a string stops the command with exit 2 before TLC runs
+ok 133 - a view that exports colors as a string stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0184
+  type: 'test'
+  ...
+# Subtest: a view that exports a number as its title stops the command with exit 2 before TLC runs
+ok 134 - a view that exports a number as its title stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0183
+  type: 'test'
+  ...
+# Subtest: a view module that throws null stops the command with exit 2 and no stack trace
+ok 135 - a view module that throws null stops the command with exit 2 and no stack trace # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0187
+  type: 'test'
+  ...
+# Subtest: a view module that throws an object with no prototype stops the command with exit 2
+ok 136 - a view module that throws an object with no prototype stops the command with exit 2 # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0187
+  type: 'test'
+  ...
+# Subtest: a view module that throws a plain object with a message prints the message
+ok 137 - a view module that throws a plain object with a message prints the message # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0184
+  type: 'test'
+  ...
+# Subtest: a view that ends the check while TLC runs stops TLC, and the command exits 2 and writes nothing
+ok 138 - a view that ends the check while TLC runs stops TLC, and the command exits 2 and writes nothing # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.038
+  type: 'test'
+  ...
+# Subtest: a group that only a mixed chart state gets still needs a color
+ok 139 - a group that only a mixed chart state gets still needs a color # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0191
+  type: 'test'
+  ...
+# Subtest: a view with a group in a theme color draws that color and names the group in the Legend
+ok 140 - a view with a group in a theme color draws that color and names the group in the Legend # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0219
+  type: 'test'
+  ...
+# Subtest: a flat view names a label with U+0000 as written when a loop cannot take a step out of it
+ok 141 - a flat view names a label with U+0000 as written when a loop cannot take a step out of it # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0196
+  type: 'test'
+  ...
+# Subtest: a parent-state view keeps a label with U+0000 apart from the parent path it spells
+ok 142 - a parent-state view keeps a label with U+0000 apart from the parent path it spells # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0242
+  type: 'test'
+  ...
+# Subtest: a regions view keeps a label with U+0000 apart from the parent path it spells, and the report names it as written
+ok 143 - a regions view keeps a label with U+0000 apart from the parent path it spells, and the report names it as written # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0224
+  type: 'test'
+  ...
+# Subtest: a flat view with U+0001 in a label draws each arrow between the states it joins
+ok 144 - a flat view with U+0001 in a label draws each arrow between the states it joins # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0262
+  type: 'test'
+  ...
+# Subtest: a parent-state view with U+0001 in a label draws the chart
+ok 145 - a parent-state view with U+0001 in a label draws the chart # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0198
+  type: 'test'
+  ...
+# Subtest: a regions view with U+0001 in a label draws the chart
+ok 146 - a regions view with U+0001 in a label draws the chart # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0194
+  type: 'test'
+  ...
+# Subtest: a flat view reports a state with U+0002 in its label that breaks a rule
+ok 147 - a flat view reports a state with U+0002 in its label that breaks a rule # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0222
+  type: 'test'
+  ...
+# Subtest: a parent-state view reports a state with U+0002 in its label that breaks a rule
+ok 148 - a parent-state view reports a state with U+0002 in its label that breaks a rule # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0192
+  type: 'test'
+  ...
+# Subtest: a regions view reports a state with U+0002 in its label that breaks a rule
+ok 149 - a regions view reports a state with U+0002 in its label that breaks a rule # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0191
+  type: 'test'
+  ...
+# Subtest: a regions view with U+0003 in labels draws parent states when the regions chart would invent a move
+ok 150 - a regions view with U+0003 in labels draws parent states when the regions chart would invent a move # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0221
+  type: 'test'
+  ...
+# Subtest: an unknown option stops the command with exit 2 before TLC runs
+ok 151 - an unknown option stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.019
+  type: 'test'
+  ...
+# Subtest: a second spec stops the command with exit 2 before TLC runs
+ok 152 - a second spec stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0201
+  type: 'test'
+  ...
+# Subtest: a config that does not exist stops the command with exit 2 before TLC runs
+ok 153 - a config that does not exist stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0206
+  type: 'test'
+  ...
+# Subtest: an --out that is a folder of the user's files stops the command with exit 2 before TLC runs, and keeps what is there
+ok 154 - an --out that is a folder of the user's files stops the command with exit 2 before TLC runs, and keeps what is there # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.021
+  type: 'test'
+  ...
+# Subtest: an --out that is a folder that holds only a dotfile stops the command with exit 2 before TLC runs, and keeps what is there
+ok 155 - an --out that is a folder that holds only a dotfile stops the command with exit 2 before TLC runs, and keeps what is there # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0214
+  type: 'test'
+  ...
+# Subtest: an --out that is the folder of an earlier run stops the command with exit 2 before TLC runs, and keeps what is there
+ok 156 - an --out that is the folder of an earlier run stops the command with exit 2 before TLC runs, and keeps what is there # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.024
+  type: 'test'
+  ...
+# Subtest: an --out that is a file stops the command with exit 2 before TLC runs, and keeps what is there
+ok 157 - an --out that is a file stops the command with exit 2 before TLC runs, and keeps what is there # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0194
+  type: 'test'
+  ...
+# Subtest: an --out that is a broken link stops the command with exit 2 before TLC runs, and keeps what is there
+ok 158 - an --out that is a broken link stops the command with exit 2 before TLC runs, and keeps what is there # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0207
+  type: 'test'
+  ...
+# Subtest: a file that appears in --out while TLC runs is kept, and the command stops with exit 2
+ok 159 - a file that appears in --out while TLC runs is kept, and the command stops with exit 2 # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0232
+  type: 'test'
+  ...
+# Subtest: an empty --out folder gets the chart and the report
+ok 160 - an empty --out folder gets the chart and the report # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0196
+  type: 'test'
+  ...
+# Subtest: a config with a misspelled first keyword stops the command with exit 2 before TLC runs
+ok 161 - a config with a misspelled first keyword stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0359
+  type: 'test'
+  ...
+# Subtest: a config with a CHECK_DEADLOCK value in lower case stops the command with exit 2 before TLC runs
+ok 162 - a config with a CHECK_DEADLOCK value in lower case stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0348
+  type: 'test'
+  ...
+# Subtest: a config with an ALIAS line stops the command with exit 2 before TLC runs
+ok 163 - a config with an ALIAS line stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0217
+  type: 'test'
+  ...
+# Subtest: a config with a comma between invariants stops the command with exit 2 before TLC runs
+ok 164 - a config with a comma between invariants stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0218
+  type: 'test'
+  ...
+# Subtest: a config with a keyword two times stops the command with exit 2 before TLC runs
+ok 165 - a config with a keyword two times stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0221
+  type: 'test'
+  ...
+# Subtest: a config with a constant value that TLC cannot read stops the command with exit 2 before TLC runs
+ok 166 - a config with a constant value that TLC cannot read stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0277
+  type: 'test'
+  ...
+# Subtest: a config with both SPECIFICATION and NEXT stops the command with exit 2 before TLC runs
+ok 167 - a config with both SPECIFICATION and NEXT stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0237
+  type: 'test'
+  ...
+# Subtest: a config with no SPECIFICATION and no INIT stops the command with exit 2 before TLC runs
+ok 168 - a config with no SPECIFICATION and no INIT stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0194
+  type: 'test'
+  ...
+# Subtest: a config with an operator constant with no arguments stops the command with exit 2 before TLC runs
+ok 169 - a config with an operator constant with no arguments stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0258
+  type: 'test'
+  ...
+# Subtest: a config with operator arguments with no closing parenthesis stops the command with exit 2 before TLC runs
+ok 170 - a config with operator arguments with no closing parenthesis stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0766
+  type: 'test'
+  ...
+# Subtest: a config with a CONSTANT keyword on its own line before operator arguments with no closing parenthesis stops the command with exit 2 before TLC runs
+ok 171 - a config with a CONSTANT keyword on its own line before operator arguments with no closing parenthesis stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0213
+  type: 'test'
+  ...
+# Subtest: a config with a comma invariant before a CHECK_DEADLOCK value in lower case stops the command with exit 2 before TLC runs
+ok 172 - a config with a comma invariant before a CHECK_DEADLOCK value in lower case stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0578
+  type: 'test'
+  ...
+# Subtest: a config with a comment that does not end stops the command with exit 2 before TLC runs
+ok 173 - a config with a comment that does not end stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0312
+  type: 'test'
+  ...
+# Subtest: a config with CHECK_DEADLOCK FALSE in a comment that does not end stops the command with exit 2 before TLC runs
+ok 174 - a config with CHECK_DEADLOCK FALSE in a comment that does not end stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0184
+  type: 'test'
+  ...
+# Subtest: a config with a no-break space before CHECK_DEADLOCK FALSE stops the command with exit 2 before TLC runs
+ok 175 - a config with a no-break space before CHECK_DEADLOCK FALSE stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0176
+  type: 'test'
+  ...
+# Subtest: a config with a line separator before CHECK_DEADLOCK FALSE stops the command with exit 2 before TLC runs
+ok 176 - a config with a line separator before CHECK_DEADLOCK FALSE stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0181
+  type: 'test'
+  ...
+# Subtest: a config with a byte order mark stops the command with exit 2 before TLC runs
+ok 177 - a config with a byte order mark stops the command with exit 2 before TLC runs # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0197
+  type: 'test'
+  ...
+# Subtest: a nested comment hides all of its text, as in TLC
+ok 178 - a nested comment hides all of its text, as in TLC # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0194
+  type: 'test'
+  ...
+# Subtest: a string constant keeps the keywords and comment markers in it
+ok 179 - a string constant keeps the keywords and comment markers in it # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0615
+  type: 'test'
+  ...
+# Subtest: TYPE and TYPE_CONSTRAINT are config keywords, as in TLC
+ok 180 - TYPE and TYPE_CONSTRAINT are config keywords, as in TLC # SKIP POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows
+  ---
+  duration_ms: 0.0191
+  type: 'test'
+  ...
+# Subtest: 4000 configs from seed 1 read in the skill as in TLC, or stop before TLC runs
+ok 181 - 4000 configs from seed 1 read in the skill as in TLC, or stop before TLC runs
+  ---
+  duration_ms: 3803.3475
+  type: 'test'
+  ...
+# Subtest: Counter gives the committed chart and report when TLC runs
+ok 182 - Counter gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.8155
+  type: 'test'
+  ...
+# Subtest: CounterAction gives the committed chart and report when TLC runs
+ok 183 - CounterAction gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.1054
+  type: 'test'
+  ...
+# Subtest: CounterDeadlock gives the committed chart and report when TLC runs
+ok 184 - CounterDeadlock gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0471
+  type: 'test'
+  ...
+# Subtest: CounterFan gives the committed chart and report when TLC runs
+ok 185 - CounterFan gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0411
+  type: 'test'
+  ...
+# Subtest: CounterGuard gives the committed chart and report when TLC runs
+ok 186 - CounterGuard gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0445
+  type: 'test'
+  ...
+# Subtest: CounterInitPast gives the committed chart and report when TLC runs
+ok 187 - CounterInitPast gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0396
+  type: 'test'
+  ...
+# Subtest: CounterInitPastHolds gives the committed chart and report when TLC runs
+ok 188 - CounterInitPastHolds gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0942
+  type: 'test'
+  ...
+# Subtest: CounterInstance gives the committed chart and report when TLC runs
+ok 189 - CounterInstance gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0545
+  type: 'test'
+  ...
+# Subtest: CounterJump gives the committed chart and report when TLC runs
+ok 190 - CounterJump gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.2028
+  type: 'test'
+  ...
+# Subtest: CounterLoop gives the committed chart and report when TLC runs
+ok 191 - CounterLoop gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.2106
+  type: 'test'
+  ...
+# Subtest: CounterOrder gives the committed chart and report when TLC runs
+ok 192 - CounterOrder gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0714
+  type: 'test'
+  ...
+# Subtest: CounterRules gives the committed chart and report when TLC runs
+ok 193 - CounterRules gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.037
+  type: 'test'
+  ...
+# Subtest: CounterStart gives the committed chart and report when TLC runs
+ok 194 - CounterStart gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0276
+  type: 'test'
+  ...
+# Subtest: CounterStop gives the committed chart and report when TLC runs
+ok 195 - CounterStop gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.02
+  type: 'test'
+  ...
+# Subtest: CounterTie gives the committed chart and report when TLC runs
+ok 196 - CounterTie gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0199
+  type: 'test'
+  ...
+# Subtest: CounterTieInGraph gives the committed chart and report when TLC runs
+ok 197 - CounterTieInGraph gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0192
+  type: 'test'
+  ...
+# Subtest: CounterView gives the committed chart and report when TLC runs
+ok 198 - CounterView gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0199
+  type: 'test'
+  ...
+# Subtest: DieHard gives the committed chart and report when TLC runs
+ok 199 - DieHard gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0192
+  type: 'test'
+  ...
+# Subtest: FirstRule gives the committed chart and report when TLC runs
+ok 200 - FirstRule gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0187
+  type: 'test'
+  ...
+# Subtest: HiddenClock gives the committed chart and report when TLC runs
+ok 201 - HiddenClock gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0207
+  type: 'test'
+  ...
+# Subtest: Login gives the committed chart and report when TLC runs
+ok 202 - Login gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0231
+  type: 'test'
+  ...
+# Subtest: LoginGuarded gives the committed chart and report when TLC runs
+ok 203 - LoginGuarded gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0229
+  type: 'test'
+  ...
+# Subtest: LoginParallel gives the committed chart and report when TLC runs
+ok 204 - LoginParallel gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0228
+  type: 'test'
+  ...
+# Subtest: MediaPlayer gives the committed chart and report when TLC runs
+ok 205 - MediaPlayer gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0192
+  type: 'test'
+  ...
+# Subtest: MediaPlayerFixed gives the committed chart and report when TLC runs
+ok 206 - MediaPlayerFixed gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0198
+  type: 'test'
+  ...
+# Subtest: MediaPlayerProps gives the committed chart and report when TLC runs
+ok 207 - MediaPlayerProps gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0302
+  type: 'test'
+  ...
+# Subtest: PickWorker gives the committed chart and report when TLC runs
+ok 208 - PickWorker gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.025
+  type: 'test'
+  ...
+# Subtest: Shadow gives the committed chart and report when TLC runs
+ok 209 - Shadow gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0197
+  type: 'test'
+  ...
+# Subtest: SpacedNames gives the committed chart and report when TLC runs
+ok 210 - SpacedNames gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0216
+  type: 'test'
+  ...
+# Subtest: TwoPhase gives the committed chart and report when TLC runs
+ok 211 - TwoPhase gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0198
+  type: 'test'
+  ...
+# Subtest: TwoPhaseFixed gives the committed chart and report when TLC runs
+ok 212 - TwoPhaseFixed gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0338
+  type: 'test'
+  ...
+# Subtest: TypeGuard gives the committed chart and report when TLC runs
+ok 213 - TypeGuard gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0211
+  type: 'test'
+  ...
+# Subtest: UserNoDeadlock gives the committed chart and report when TLC runs
+ok 214 - UserNoDeadlock gives the committed chart and report when TLC runs # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.023
+  type: 'test'
+  ...
+# Subtest: a spec in a folder whose name is not ASCII checks under the POSIX locale
+ok 215 - a spec in a folder whose name is not ASCII checks under the POSIX locale # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.024
+  type: 'test'
+  ...
+# Subtest: an invariant named NoDeadlock and a deadlock break as two rules
+ok 216 - an invariant named NoDeadlock and a deadlock break as two rules # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.022
+  type: 'test'
+  ...
+# Subtest: a spec with a `(*` inside a `\\*` comment gives plain TLC's exit and path
+ok 217 - a spec with a `(*` inside a `\\*` comment gives plain TLC's exit and path # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0233
+  type: 'test'
+  ...
+# Subtest: a spec with a nested block comment gives plain TLC's exit and path
+ok 218 - a spec with a nested block comment gives plain TLC's exit and path # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0235
+  type: 'test'
+  ...
+# Subtest: a spec with a "(*" string gives plain TLC's exit and path
+ok 219 - a spec with a "(*" string gives plain TLC's exit and path # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0214
+  type: 'test'
+  ...
+# Subtest: a spec with text before the module header gives plain TLC's exit and path
+ok 220 - a spec with text before the module header gives plain TLC's exit and path # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0391
+  type: 'test'
+  ...
+# Subtest: a property that breaks on a loop draws the loop and reports it
+ok 221 - a property that breaks on a loop draws the loop and reports it # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0235
+  type: 'test'
+  ...
+# Subtest: a property's loop comes from the whole state graph when TLC explores for over 3 seconds
+ok 222 - a property's loop comes from the whole state graph when TLC explores for over 3 seconds # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0226
+  type: 'test'
+  ...
+# Subtest: TLC keeps the chart within its budget of 500 states on a 20 by 25 grid with INVARIANT Typed
+ok 223 - TLC keeps the chart within its budget of 500 states on a 20 by 25 grid with INVARIANT Typed # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0226
+  type: 'test'
+  ...
+# Subtest: TLC keeps the chart within its budget of 500 states on a 3 by 167 grid with INVARIANT Typed
+ok 224 - TLC keeps the chart within its budget of 500 states on a 3 by 167 grid with INVARIANT Typed # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0227
+  type: 'test'
+  ...
+# Subtest: TLC keeps the chart within its budget of 500 states on a 40 by 40 grid with INVARIANT Typed
+ok 225 - TLC keeps the chart within its budget of 500 states on a 40 by 40 grid with INVARIANT Typed # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0267
+  type: 'test'
+  ...
+# Subtest: TLC keeps the chart within its budget of 500 states on a 40 by 40 grid with INVARIANT Near
+ok 226 - TLC keeps the chart within its budget of 500 states on a 40 by 40 grid with INVARIANT Near # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0224
+  type: 'test'
+  ...
+# Subtest: TLC keeps the chart within its budget of 500 states on a 40 by 40 grid with INVARIANT Far
+ok 227 - TLC keeps the chart within its budget of 500 states on a 40 by 40 grid with INVARIANT Far # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0215
+  type: 'test'
+  ...
+# Subtest: check() leaves no statechart- folder in the temp dir when it returns and when it throws
+ok 228 - check() leaves no statechart- folder in the temp dir when it returns and when it throws # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.0205
+  type: 'test'
+  ...
+# Subtest: the compiler answers each rule as plain TLC does for generated models
+ok 229 - the compiler answers each rule as plain TLC does for generated models
+  ---
+  duration_ms: 74497.1544
+  type: 'test'
+  ...
+# Subtest: a string and a model value with one name are two states, and the path to the string has no steps, as plain TLC answers
+ok 230 - a string and a model value with one name are two states, and the path to the string has no steps, as plain TLC answers
+  ---
+  duration_ms: 4568.1265
+  type: 'test'
+  ...
+# Subtest: a state that holds an interval reads, and equals the set that TLC builds for it, as plain TLC answers
+ok 231 - a state that holds an interval reads, and equals the set that TLC builds for it, as plain TLC answers
+  ---
+  duration_ms: 4611.5071
+  type: 'test'
+  ...
+# Subtest: a string with quotes, backslashes, newlines, and tabs prints escaped on one path line, as plain TLC answers
+ok 232 - a string with quotes, backslashes, newlines, and tabs prints escaped on one path line, as plain TLC answers
+  ---
+  duration_ms: 3445.0491
+  type: 'test'
+  ...
+# Subtest: a variable and a record field named __proto__ reach the view as their own fields, as plain TLC answers
+ok 233 - a variable and a record field named __proto__ reach the view as their own fields, as plain TLC answers
+  ---
+  duration_ms: 3206.4951
+  type: 'test'
+  ...
+# Subtest: a spec that prints a line in the shape of a mark breaks no rule, as plain TLC answers
+ok 234 - a spec that prints a line in the shape of a mark breaks no rule, as plain TLC answers
+  ---
+  duration_ms: 4511.5109
+  type: 'test'
+  ...
+# Subtest: a spec that prints a line in the shape of a bad mark is not an error, as plain TLC answers
+ok 235 - a spec that prints a line in the shape of a bad mark is not an error, as plain TLC answers
+  ---
+  duration_ms: 3310.701
+  type: 'test'
+  ...
+# Subtest: a spec that prints a mark for a rule the config does not have is not an error, as plain TLC answers
+ok 236 - a spec that prints a mark for a rule the config does not have is not an error, as plain TLC answers
+  ---
+  duration_ms: 3197.7455
+  type: 'test'
+  ...
+# Subtest: Windows TLC CRLF message frames parse identically from streamed lines
+ok 237 - Windows TLC CRLF message frames parse identically from streamed lines
+  ---
+  duration_ms: 1.2065
+  type: 'test'
+  ...
+# Subtest: TLC's -tool output prints as plain TLC prints it
+ok 238 - TLC's -tool output prints as plain TLC prints it
+  ---
+  duration_ms: 0.7564
+  type: 'test'
+  ...
+# Subtest: a message that TLC prints inside another prints as plain TLC prints it
+ok 239 - a message that TLC prints inside another prints as plain TLC prints it
+  ---
+  duration_ms: 0.2161
+  type: 'test'
+  ...
+# Subtest: an end line closes the innermost message whatever code it names
+ok 240 - an end line closes the innermost message whatever code it names
+  ---
+  duration_ms: 0.8256
+  type: 'test'
+  ...
+# Subtest: a message that TLC starts at the end of a line of text prints on that line
+ok 241 - a message that TLC starts at the end of a line of text prints on that line
+  ---
+  duration_ms: 0.1297
+  type: 'test'
+  ...
+# Subtest: output that ends where TLC died prints as plain TLC's output cut at the same point
+ok 242 - output that ends where TLC died prints as plain TLC's output cut at the same point
+  ---
+  duration_ms: 0.1441
+  type: 'test'
+  ...
+# Subtest: text outside TLC's messages, such as SANY's output, passes through unchanged
+ok 243 - text outside TLC's messages, such as SANY's output, passes through unchanged
+  ---
+  duration_ms: 0.0907
+  type: 'test'
+  ...
+# Subtest: TLC's run time prints as plain TLC prints it, with each field wrapping
+ok 244 - TLC's run time prints as plain TLC prints it, with each field wrapping
+  ---
+  duration_ms: 0.1403
+  type: 'test'
+  ...
+# Subtest: ir.ts imports nothing
+ok 245 - ir.ts imports nothing
+  ---
+  duration_ms: 68.7656
+  type: 'test'
+  ...
+# Subtest: each pass imports only ir.ts
+ok 246 - each pass imports only ir.ts
+  ---
+  duration_ms: 80.7296
+  type: 'test'
+  ...
+# Subtest: pipeline.ts reaches no node: module
+ok 247 - pipeline.ts reaches no node: module
+  ---
+  duration_ms: 79.062
+  type: 'test'
+  ...
+# Subtest: ir.ts, the passes, pipeline.ts, the frontends, the backends, and every file they load are .ts files that name no listed runtime global and call no import()
+ok 248 - ir.ts, the passes, pipeline.ts, the frontends, the backends, and every file they load are .ts files that name no listed runtime global and call no import()
+  ---
+  duration_ms: 108.9579
+  type: 'test'
+  ...
+# Subtest: no frontend or backend loads a node: module when imported, even through another file
+ok 249 - no frontend or backend loads a node: module when imported, even through another file
+  ---
+  duration_ms: 1004.5624
+  type: 'test'
+  ...
+# Subtest: the pipeline turns a hand-built graph into the out folder's files with no TLC
+ok 250 - the pipeline turns a hand-built graph into the out folder's files with no TLC
+  ---
+  duration_ms: 4.3537
+  type: 'test'
+  ...
+# Subtest: an invariant and a property with one name stay two rules
+ok 251 - an invariant and a property with one name stay two rules
+  ---
+  duration_ms: 1.3048
+  type: 'test'
+  ...
+# Subtest: a PROPERTY that breaks with no path writes TLC's counterexample
+ok 252 - a PROPERTY that breaks with no path writes TLC's counterexample
+  ---
+  duration_ms: 0.657
+  type: 'test'
+  ...
+# Subtest: a rule named NoDeadlock leaves the deadlock rule a name of its own
+ok 253 - a rule named NoDeadlock leaves the deadlock rule a name of its own
+  ---
+  duration_ms: 0.7887
+  type: 'test'
+  ...
+# Subtest: a run that does not check for deadlock never names CHECK_DEADLOCK
+ok 254 - a run that does not check for deadlock never names CHECK_DEADLOCK
+  ---
+  duration_ms: 0.4617
+  type: 'test'
+  ...
+# Subtest: a rule that breaks before another rule fails to evaluate breaks in either order
+ok 255 - a rule that breaks before another rule fails to evaluate breaks in either order
+  ---
+  duration_ms: 13810.1068
+  type: 'test'
+  ...
+# Subtest: a rule that breaks before a step fails to evaluate breaks
+ok 256 - a rule that breaks before a step fails to evaluate breaks
+  ---
+  duration_ms: 12772.7989
+  type: 'test'
+  ...
+# Subtest: a rule that breaks before it fails to evaluate breaks
+ok 257 - a rule that breaks before it fails to evaluate breaks
+  ---
+  duration_ms: 7883.3132
+  type: 'test'
+  ...
+# Subtest: a rule that fails to evaluate before TLC reaches a break exits 2
+ok 258 - a rule that fails to evaluate before TLC reaches a break exits 2
+  ---
+  duration_ms: 6505.3112
+  type: 'test'
+  ...
+# Subtest: a rule that no verdict run checks stays not checked under a SYMMETRY
+ok 259 - a rule that no verdict run checks stays not checked under a SYMMETRY
+  ---
+  duration_ms: 7406.2606
+  type: 'test'
+  ...
+# Subtest: a deadlock breaks whatever shape the SPECIFICATION has
+ok 260 - a deadlock breaks whatever shape the SPECIFICATION has
+  ---
+  duration_ms: 24402.9637
+  type: 'test'
+  ...
+# Subtest: a SPECIFICATION from an INSTANCE checks deadlock and finds none
+ok 261 - a SPECIFICATION from an INSTANCE checks deadlock and finds none
+  ---
+  duration_ms: 8121.7193
+  type: 'test'
+  ...
+# Subtest: a state at a CONSTRAINT bound is no deadlock
+ok 262 - a state at a CONSTRAINT bound is no deadlock
+  ---
+  duration_ms: 5611.7624
+  type: 'test'
+  ...
+# Subtest: a model with no initial state passes as it does in TLC, and the report says why
+ok 263 - a model with no initial state passes as it does in TLC, and the report says why
+  ---
+  duration_ms: 6406.5611
+  type: 'test'
+  ...
+# Subtest: a run after a break stops at the state bound and leaves its rules not checked
+ok 264 - a run after a break stops at the state bound and leaves its rules not checked
+  ---
+  duration_ms: 6741.8694
+  type: 'test'
+  ...
+# Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+#     at module.exports (C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-render-cache\\statechart\\test-mermaid-11.16.0\\node_modules\\jsdom\\lib\\jsdom\\browser\\not-implemented.js:9:17)
+#     at HTMLCanvasElementImpl.getContext (C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-render-cache\\statechart\\test-mermaid-11.16.0\\node_modules\\jsdom\\lib\\jsdom\\living\\nodes\\HTMLCanvasElement-impl.js:42:5)
+#     at HTMLCanvasElement.getContext (C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-render-cache\\statechart\\test-mermaid-11.16.0\\node_modules\\jsdom\\lib\\jsdom\\living\\generated\\HTMLCanvasElement.js:131:58)
+#     at VS (file:///C:/Users/User/AppData/Local/Temp/dyd415-render-cache/statechart/test-pele-1.9.0/node_modules/pele/dist/pele.js:40:1957)
+#     at qS (file:///C:/Users/User/AppData/Local/Temp/dyd415-render-cache/statechart/test-pele-1.9.0/node_modules/pele/dist/pele.js:40:2179)
+#     at Je (file:///C:/Users/User/AppData/Local/Temp/dyd415-render-cache/statechart/test-pele-1.9.0/node_modules/pele/dist/pele.js:41:30)
+#     at J0 (file:///C:/Users/User/AppData/Local/Temp/dyd415-render-cache/statechart/test-pele-1.9.0/node_modules/pele/dist/pele.js:129:4527)
+#     at Object.eA [as render] (file:///C:/Users/User/AppData/Local/Temp/dyd415-render-cache/statechart/test-pele-1.9.0/node_modules/pele/dist/pele.js:129:4406)
+#     at file:///C:/Users/User/AppData/Local/Temp/dyd415-render-cache/statechart/test-pele-1.9.0/node_modules/pele/dist/pele.js:43:894
+#     at zp (file:///C:/Users/User/AppData/Local/Temp/dyd415-render-cache/statechart/test-pele-1.9.0/node_modules/pele/dist/pele.js:8:2687) undefined
+# Subtest: charts\\Braces.mmd renders in Pele 1.9.0 with each class on its node
+ok 265 - charts\\Braces.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 14210.5646
+  type: 'test'
+  ...
+# Subtest: charts\\Braces.mmd parses in mermaid.js, which chat views use
+ok 266 - charts\\Braces.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 19.4912
+  type: 'test'
+  ...
+# Subtest: charts\\Escapes.mmd renders in Pele 1.9.0 with each class on its node
+ok 267 - charts\\Escapes.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 3.3637
+  type: 'test'
+  ...
+# Subtest: charts\\Escapes.mmd parses in mermaid.js, which chat views use
+ok 268 - charts\\Escapes.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 3.8622
+  type: 'test'
+  ...
+# Subtest: charts\\Phases.mmd renders in Pele 1.9.0 with each class on its node
+ok 269 - charts\\Phases.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 2.0408
+  type: 'test'
+  ...
+# Subtest: charts\\Phases.mmd parses in mermaid.js, which chat views use
+ok 270 - charts\\Phases.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 7.0149
+  type: 'test'
+  ...
+# Subtest: corpus\\Counter\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 271 - corpus\\Counter\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.5549
+  type: 'test'
+  ...
+# Subtest: corpus\\Counter\\chart.mmd parses in mermaid.js, which chat views use
+ok 272 - corpus\\Counter\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 3.0575
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterAction\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 273 - corpus\\CounterAction\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 1.5392
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterAction\\chart.mmd parses in mermaid.js, which chat views use
+ok 274 - corpus\\CounterAction\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 4.6448
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterDeadlock\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 275 - corpus\\CounterDeadlock\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.7789
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterDeadlock\\chart.mmd parses in mermaid.js, which chat views use
+ok 276 - corpus\\CounterDeadlock\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 4.8118
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterFan\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 277 - corpus\\CounterFan\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 2.9594
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterFan\\chart.mmd parses in mermaid.js, which chat views use
+ok 278 - corpus\\CounterFan\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 18.3697
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterGuard\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 279 - corpus\\CounterGuard\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.489
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterGuard\\chart.mmd parses in mermaid.js, which chat views use
+ok 280 - corpus\\CounterGuard\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 1.7447
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterInitPast\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 281 - corpus\\CounterInitPast\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.5594
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterInitPast\\chart.mmd parses in mermaid.js, which chat views use
+ok 282 - corpus\\CounterInitPast\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 1.829
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterInitPastHolds\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 283 - corpus\\CounterInitPastHolds\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.1255
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterInitPastHolds\\chart.mmd parses in mermaid.js, which chat views use
+ok 284 - corpus\\CounterInitPastHolds\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 0.6071
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterInstance\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 285 - corpus\\CounterInstance\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.5167
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterInstance\\chart.mmd parses in mermaid.js, which chat views use
+ok 286 - corpus\\CounterInstance\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 2.9185
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterJump\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 287 - corpus\\CounterJump\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.5764
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterJump\\chart.mmd parses in mermaid.js, which chat views use
+ok 288 - corpus\\CounterJump\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 5.0398
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterLoop\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 289 - corpus\\CounterLoop\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.5444
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterLoop\\chart.mmd parses in mermaid.js, which chat views use
+ok 290 - corpus\\CounterLoop\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 2.927
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterOrder\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 291 - corpus\\CounterOrder\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.5464
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterOrder\\chart.mmd parses in mermaid.js, which chat views use
+ok 292 - corpus\\CounterOrder\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 2.7914
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterRules\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 293 - corpus\\CounterRules\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.5092
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterRules\\chart.mmd parses in mermaid.js, which chat views use
+ok 294 - corpus\\CounterRules\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 3.1662
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterStart\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 295 - corpus\\CounterStart\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.5166
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterStart\\chart.mmd parses in mermaid.js, which chat views use
+ok 296 - corpus\\CounterStart\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 3.6643
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterStop\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 297 - corpus\\CounterStop\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.3612
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterStop\\chart.mmd parses in mermaid.js, which chat views use
+ok 298 - corpus\\CounterStop\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 2.1815
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterTie\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 299 - corpus\\CounterTie\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.7209
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterTie\\chart.mmd parses in mermaid.js, which chat views use
+ok 300 - corpus\\CounterTie\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 4.506
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterTieInGraph\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 301 - corpus\\CounterTieInGraph\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.6748
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterTieInGraph\\chart.mmd parses in mermaid.js, which chat views use
+ok 302 - corpus\\CounterTieInGraph\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 3.9555
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterView\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 303 - corpus\\CounterView\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.8381
+  type: 'test'
+  ...
+# Subtest: corpus\\CounterView\\chart.mmd parses in mermaid.js, which chat views use
+ok 304 - corpus\\CounterView\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 4.5368
+  type: 'test'
+  ...
+# Subtest: corpus\\DieHard\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 305 - corpus\\DieHard\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 9.5302
+  type: 'test'
+  ...
+# Subtest: corpus\\DieHard\\chart.mmd parses in mermaid.js, which chat views use
+ok 306 - corpus\\DieHard\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 22.9723
+  type: 'test'
+  ...
+# Subtest: corpus\\FirstRule\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 307 - corpus\\FirstRule\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.5533
+  type: 'test'
+  ...
+# Subtest: corpus\\FirstRule\\chart.mmd parses in mermaid.js, which chat views use
+ok 308 - corpus\\FirstRule\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 3.2255
+  type: 'test'
+  ...
+# Subtest: corpus\\HiddenClock\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 309 - corpus\\HiddenClock\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.4564
+  type: 'test'
+  ...
+# Subtest: corpus\\HiddenClock\\chart.mmd parses in mermaid.js, which chat views use
+ok 310 - corpus\\HiddenClock\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 2.1325
+  type: 'test'
+  ...
+# Subtest: corpus\\Login\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 311 - corpus\\Login\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 3.2018
+  type: 'test'
+  ...
+# Subtest: corpus\\Login\\chart.mmd parses in mermaid.js, which chat views use
+ok 312 - corpus\\Login\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 7.2802
+  type: 'test'
+  ...
+# Subtest: corpus\\LoginGuarded\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 313 - corpus\\LoginGuarded\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.9302
+  type: 'test'
+  ...
+# Subtest: corpus\\LoginGuarded\\chart.mmd parses in mermaid.js, which chat views use
+ok 314 - corpus\\LoginGuarded\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 4.6761
+  type: 'test'
+  ...
+# Subtest: corpus\\LoginParallel\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 315 - corpus\\LoginParallel\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 1.1426
+  type: 'test'
+  ...
+# Subtest: corpus\\LoginParallel\\chart.mmd parses in mermaid.js, which chat views use
+ok 316 - corpus\\LoginParallel\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 5.4913
+  type: 'test'
+  ...
+# Subtest: corpus\\MediaPlayer\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 317 - corpus\\MediaPlayer\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 1.1903
+  type: 'test'
+  ...
+# Subtest: corpus\\MediaPlayer\\chart.mmd parses in mermaid.js, which chat views use
+ok 318 - corpus\\MediaPlayer\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 6.542
+  type: 'test'
+  ...
+# Subtest: corpus\\MediaPlayerFixed\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 319 - corpus\\MediaPlayerFixed\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 1.111
+  type: 'test'
+  ...
+# Subtest: corpus\\MediaPlayerFixed\\chart.mmd parses in mermaid.js, which chat views use
+ok 320 - corpus\\MediaPlayerFixed\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 5.5466
+  type: 'test'
+  ...
+# Subtest: corpus\\MediaPlayerProps\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 321 - corpus\\MediaPlayerProps\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 1.1625
+  type: 'test'
+  ...
+# Subtest: corpus\\MediaPlayerProps\\chart.mmd parses in mermaid.js, which chat views use
+ok 322 - corpus\\MediaPlayerProps\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 6.6397
+  type: 'test'
+  ...
+# Subtest: corpus\\PickWorker\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 323 - corpus\\PickWorker\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.3152
+  type: 'test'
+  ...
+# Subtest: corpus\\PickWorker\\chart.mmd parses in mermaid.js, which chat views use
+ok 324 - corpus\\PickWorker\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 1.8405
+  type: 'test'
+  ...
+# Subtest: corpus\\Shadow\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 325 - corpus\\Shadow\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.3207
+  type: 'test'
+  ...
+# Subtest: corpus\\Shadow\\chart.mmd parses in mermaid.js, which chat views use
+ok 326 - corpus\\Shadow\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 2.5741
+  type: 'test'
+  ...
+# Subtest: corpus\\SpacedNames\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 327 - corpus\\SpacedNames\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.6414
+  type: 'test'
+  ...
+# Subtest: corpus\\SpacedNames\\chart.mmd parses in mermaid.js, which chat views use
+ok 328 - corpus\\SpacedNames\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 3.4864
+  type: 'test'
+  ...
+# Subtest: corpus\\TwoPhase\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 329 - corpus\\TwoPhase\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 1.6145
+  type: 'test'
+  ...
+# Subtest: corpus\\TwoPhase\\chart.mmd parses in mermaid.js, which chat views use
+ok 330 - corpus\\TwoPhase\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 7.4638
+  type: 'test'
+  ...
+# Subtest: corpus\\TwoPhaseFixed\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 331 - corpus\\TwoPhaseFixed\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 1.1103
+  type: 'test'
+  ...
+# Subtest: corpus\\TwoPhaseFixed\\chart.mmd parses in mermaid.js, which chat views use
+ok 332 - corpus\\TwoPhaseFixed\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 5.8041
+  type: 'test'
+  ...
+# Subtest: corpus\\TypeGuard\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 333 - corpus\\TypeGuard\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.4726
+  type: 'test'
+  ...
+# Subtest: corpus\\TypeGuard\\chart.mmd parses in mermaid.js, which chat views use
+ok 334 - corpus\\TypeGuard\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 3.0381
+  type: 'test'
+  ...
+# Subtest: corpus\\UserNoDeadlock\\chart.mmd renders in Pele 1.9.0 with each class on its node
+ok 335 - corpus\\UserNoDeadlock\\chart.mmd renders in Pele 1.9.0 with each class on its node
+  ---
+  duration_ms: 0.7546
+  type: 'test'
+  ...
+# Subtest: corpus\\UserNoDeadlock\\chart.mmd parses in mermaid.js, which chat views use
+ok 336 - corpus\\UserNoDeadlock\\chart.mmd parses in mermaid.js, which chat views use
+  ---
+  duration_ms: 3.0208
+  type: 'test'
+  ...
+# Subtest: random labels and colors keep their text and the chart's shape in Mermaid and Pele
+ok 337 - random labels and colors keep their text and the chart's shape in Mermaid and Pele
+  ---
+  duration_ms: 1586.8448
+  type: 'test'
+  ...
+# Subtest: the theme in references/render.md colors each class that the charts use
+ok 338 - the theme in references/render.md colors each class that the charts use
+  ---
+  duration_ms: 0.1507
+  type: 'test'
+  ...
+# Subtest: each corpus spec's TLC output reads as plain TLC prints it at -workers 1
+ok 339 - each corpus spec's TLC output reads as plain TLC prints it at -workers 1 # SKIP POSIX executable Java recording shim; native TLC cases run in acceptance, differential and plain-tlc
+  ---
+  duration_ms: 0.4107
+  type: 'test'
+  ...
+# Subtest: Windows job owns descendants and scratch on normal parent exit
+ok 340 - Windows job owns descendants and scratch on normal parent exit
+  ---
+  duration_ms: 341.5149
+  type: 'test'
+  ...
+# Subtest: Windows job owns descendants and scratch on killed parent exit
+ok 341 - Windows job owns descendants and scratch on killed parent exit
+  ---
+  duration_ms: 305.4595
+  type: 'test'
+  ...
+# Subtest: Windows resolves relative TLC overrides from the caller and accepts empty output
+ok 342 - Windows resolves relative TLC overrides from the caller and accepts empty output
+  ---
+  duration_ms: 4204.0976
+  type: 'test'
+  ...
+1..342
+# tests 342
+# suites 0
+# pass 168
+# fail 0
+# cancelled 0
+# skipped 174
+# todo 0
+# duration_ms 248809.1041

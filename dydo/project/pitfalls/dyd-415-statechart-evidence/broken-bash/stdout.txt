@@ -1,0 +1,14 @@
+# Safety
+
+TLC reached 5 states and 6 steps. The chart draws 5 states and 5 arrows.
+The chart does not draw 1 steps that stay in one chart state.
+
+## Safe breaks
+The shortest path has 1 step:
+0. Count 0
+1. jump: Count 3
+
+## Rules that hold
+NoDeadlock
+
+Wrote C:\Users\User\AppData\Local\Temp\dyd415-test-temp\statechart-acceptance-Lvl9Wl\out

@@ -1,0 +1,234 @@
+TAP version 13
+# Subtest: A broken model shows its shortest bug path
+not ok 1 - A broken model shows its shortest bug path
+  ---
+  duration_ms: 76.1844
+  type: 'test'
+  location: 'C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\test\\acceptance.test.ts:128:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    The argument 'C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\skills\engineering\statechart\scripts\statechart.ps1' to the -File parameter does not exist. Provide the path to an existing '.ps1' file as an argument to the -File parameter.
+    
+    + actual - expected
+    
+    + "The argument 'C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\statechart.ps1' to the -File parameter does not exist. Provide the path to an existing '.ps1' file as an argument to the -File parameter.\r\n"
+    - ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: |-
+    The argument 'C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\skills\engineering\statechart\scripts\statechart.ps1' to the -File parameter does not exist. Provide the path to an existing '.ps1' file as an argument to the -File parameter.
+    
+  operator: 'strictEqual'
+  stack: |-
+    drive (file:///C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/acceptance.test.ts:43:10)
+    TestContext.run (file:///C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/acceptance.test.ts:65:21)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: Correcting the model preserves the invariant
+not ok 2 - Correcting the model preserves the invariant
+  ---
+  duration_ms: 51.8359
+  type: 'test'
+  location: 'C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\test\\acceptance.test.ts:128:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    node:internal/modules/cjs/loader:1433
+      throw err;
+      ^
+    
+    Error: Cannot find module 'C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\skills\engineering\statechart\scripts\statechart.ts'
+        at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+        at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+        at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+        at Function._load (node:internal/modules/cjs/loader:1216:25)
+        at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+        at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+        at node:internal/main/run_main_module:36:49 {
+      code: 'MODULE_NOT_FOUND',
+      requireStack: []
+    }
+    
+    Node.js v22.23.2
+    
+    + actual - expected
+    
+    + 'node:internal/modules/cjs/loader:1433\r\n' +
+    +   '  throw err;\r\n' +
+    +   '  ^\r\n' +
+    +   '\r\n' +
+    +   "Error: Cannot find module 'C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\statechart.ts'\r\n" +
+    +   '    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\r\n' +
+    +   '    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\r\n' +
+    +   '    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\r\n' +
+    +   '    at Function._load (node:internal/modules/cjs/loader:1216:25)\r\n' +
+    +   '    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\r\n' +
+    +   '    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\r\n' +
+    +   '    at node:internal/main/run_main_module:36:49 {\r\n' +
+    +   "  code: 'MODULE_NOT_FOUND',\r\n" +
+    +   '  requireStack: []\r\n' +
+    +   '}\r\n' +
+    +   '\r\n' +
+    +   'Node.js v22.23.2\r\n'
+    - ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: |-
+    node:internal/modules/cjs/loader:1433
+      throw err;
+      ^
+    
+    Error: Cannot find module 'C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\skills\engineering\statechart\scripts\statechart.ts'
+        at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+        at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+        at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+        at Function._load (node:internal/modules/cjs/loader:1216:25)
+        at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+        at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+        at node:internal/main/run_main_module:36:49 {
+      code: 'MODULE_NOT_FOUND',
+      requireStack: []
+    }
+    
+    Node.js v22.23.2
+    
+  operator: 'strictEqual'
+  stack: |-
+    Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+    defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    Function._load (node:internal/modules/cjs/loader:1216:25)
+    wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    node:internal/main/run_main_module:36:49 {
+    drive (file:///C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/acceptance.test.ts:43:10)
+    TestContext.run (file:///C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/acceptance.test.ts:88:17)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: The chart budget preserves counterexamples
+not ok 3 - The chart budget preserves counterexamples
+  ---
+  duration_ms: 58.1617
+  type: 'test'
+  location: 'C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\test\\acceptance.test.ts:128:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    node:internal/modules/cjs/loader:1433
+      throw err;
+      ^
+    
+    Error: Cannot find module 'C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\skills\engineering\statechart\scripts\statechart.ts'
+        at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+        at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+        at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+        at Function._load (node:internal/modules/cjs/loader:1216:25)
+        at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+        at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+        at node:internal/main/run_main_module:36:49 {
+      code: 'MODULE_NOT_FOUND',
+      requireStack: []
+    }
+    
+    Node.js v22.23.2
+    
+    + actual - expected
+    
+    + 'node:internal/modules/cjs/loader:1433\r\n' +
+    +   '  throw err;\r\n' +
+    +   '  ^\r\n' +
+    +   '\r\n' +
+    +   "Error: Cannot find module 'C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\statechart.ts'\r\n" +
+    +   '    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\r\n' +
+    +   '    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\r\n' +
+    +   '    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\r\n' +
+    +   '    at Function._load (node:internal/modules/cjs/loader:1216:25)\r\n' +
+    +   '    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\r\n' +
+    +   '    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\r\n' +
+    +   '    at node:internal/main/run_main_module:36:49 {\r\n' +
+    +   "  code: 'MODULE_NOT_FOUND',\r\n" +
+    +   '  requireStack: []\r\n' +
+    +   '}\r\n' +
+    +   '\r\n' +
+    +   'Node.js v22.23.2\r\n'
+    - ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: |-
+    node:internal/modules/cjs/loader:1433
+      throw err;
+      ^
+    
+    Error: Cannot find module 'C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\skills\engineering\statechart\scripts\statechart.ts'
+        at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+        at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+        at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+        at Function._load (node:internal/modules/cjs/loader:1216:25)
+        at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+        at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+        at node:internal/main/run_main_module:36:49 {
+      code: 'MODULE_NOT_FOUND',
+      requireStack: []
+    }
+    
+    Node.js v22.23.2
+    
+  operator: 'strictEqual'
+  stack: |-
+    Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+    defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    Function._load (node:internal/modules/cjs/loader:1216:25)
+    wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    node:internal/main/run_main_module:36:49 {
+    drive (file:///C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/acceptance.test.ts:43:10)
+    TestContext.run (file:///C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/acceptance.test.ts:99:22)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Both hosts require user invocation
+not ok 4 - Both hosts require user invocation
+  ---
+  duration_ms: 3.2695
+  type: 'test'
+  location: 'C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\test\\acceptance.test.ts:128:3'
+  failureType: 'testCodeFailure'
+  error: "ENOENT: no such file or directory, open 'C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\SKILL.md'"
+  code: 'ENOENT'
+  stack: |-
+    Object.readFileSync (node:fs:440:20)
+    read (file:///C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/acceptance.test.ts:11:35)
+    TestContext.run (file:///C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/acceptance.test.ts:114:20)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 0
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 277.1365

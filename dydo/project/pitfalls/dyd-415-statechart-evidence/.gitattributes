@@ -1,0 +1,5 @@
+# Recorded input/output digests describe these exact bytes on every checkout.
+* -text
+# Machine output contains significant CRLF frames and trailing blank lines.
+*.out -diff
+*.txt -diff

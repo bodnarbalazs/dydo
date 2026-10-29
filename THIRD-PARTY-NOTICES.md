@@ -117,6 +117,8 @@ names. Each adapted file repeats the attribution in its own header.
 | `maintain-verification-skill` | `ecc249f1e306fc64ddf83c7bed16cacf7c2239db` | `skills/engineering/maintain-verification-skill/SKILL.md` |
 | `create-formal-verification-skill` | `5dba0b8d0bb778182411b2544f7a801d1529aef1` | `skills/engineering/create-formal-verification-skill/SKILL.md` |
 | `maintain-formal-verification-skill` | `5dba0b8d0bb778182411b2544f7a801d1529aef1` | `skills/engineering/maintain-formal-verification-skill/SKILL.md` |
+| `statechart`: skill, runtime, references and test corpus | `1ba91fc25c0977741dd0e267849e6234b037ed0a` | `skills/engineering/statechart/` (local Windows adaptations listed in `PROVENANCE.md`; full MIT license included) |
+| `create-formal-verification-skill`: statechart companion paragraph | `1ba91fc25c0977741dd0e267849e6234b037ed0a` | `skills/engineering/create-formal-verification-skill/SKILL.md` (matching local reference also in `maintain-formal-verification-skill`) |
 
 MIT License
 

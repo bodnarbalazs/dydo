@@ -60,8 +60,8 @@ map and how the tickets move, integrate, and finish together.
 ## Method
 
 1. **Read the board.** Wake on a captain's return or the user's word. Read the Project, its map,
-   blockers, hop SHAs and reviews; resume at the stage the record proves. Process a record-delivery
-   release through step7 before generic pickable commissioning. **Done:** every pickable
+   blockers, hop SHAs and reviews; resume at the stage the record proves. Process an Inquisition's
+   release through step 7 before generic pickable commissioning. **Done:** every pickable
    ticket and every Merge whose turn came is known. With nothing in flight, wait for the user's word.
 2. **Chart and approve.** When the route is unknown, set the Project `Planning` and chart it with
    `wayfinder`: the map in the Project description, naming you its holder, the first pickable tickets, and each Project-level
@@ -131,24 +131,32 @@ map and how the tickets move, integrate, and finish together.
    is resolved or has the right owner, record, and blocker. Set and revisit priority on every human
    waiter by the standard's guide; AFK order remains in the map and blockers.
 7. **Offer the inquisition.** Once the feature is integrated, file an Inquisition in `Backlog` with
-   its feature SHA, parts, lenses and cost. **Done:** the user moves it to `Todo` and tells you, or
-   cancels it; commission the confirmed ticket and route the Bugs it files. On its
-   `released <key>: record delivery` wake, read the completed packet and first contract a separate
-   primary Feature/AFK record-delivery ticket on the retained feature with exact record and required
-   navigation paths. Wire only the Inquisition blocked by record delivery before generic pickup, then
-   commission the record captain. Do not recommission the audit from its temporary Todo gap; follow
-   the working-tree contract's retention route.
-   On delivery `Done`, resume the released Inquisition captain for durable-evidence verification.
+   its feature SHA and cost, and put the commission question to the user: a provider and model for
+   each phase (Read, Break, Drive), the swarm width, the Codex cap (start about 8 at once, toward 16
+   while runs stay clean, back off on a 429), and the crew context limit, 110k tokens by default.
+   A project with a runnable surface and no verification skill needs one first: raise it with the
+   user, who makes it with `create-verification-skill`; one with nothing to run records that Drive
+   does not apply.
+   **Done:** the user moves it to `Todo` and tells you, or cancels it; commission the confirmed
+   ticket with the answers on it. Above about 10 areas its captain releases with group
+   Sub-tickets: commission one captain per group with the share of the width and Codex its
+   Sub-ticket carries, give a finished group's share to a running group if you choose, and resume
+   the parent when its groups close for the cross-group triage. A patch-lane Bug stays assigned to
+   the inquisition's captain until its patch is attached; it is pickable once unassigned. A `released <key>: verification skill first` goes to the user as that same
+   need, and the Inquisition resumes once the skill exists. Rounds start from
+   zero: once every blocker and should fix of a round is `Done`, offer the next round as a fresh
+   Inquisition, never a recheck of the old findings.
 8. **Land and walk through.** File the landing Merge Ticket, blocked by its unresolved prerequisites:
-   delivery, a confirmed Inquisition and its record delivery, required fixes, and every
-   should-ticket a review filed, wired now where it is not yet. Exclude the landing itself and other
+   delivery, each confirmed Inquisition round, required fixes, and every
+   should-ticket a review or an inquisition filed, wired now where it is not yet. Exclude the landing itself and other
    later or deferred work. Sequence the should-tickets; the Project lands only when each is `Done`
-   or closed with a reason. Its scope is main into feature, combined gates, merge review,
+   or closed with a reason, and only after an inquisition round that found no blocker and no
+   should. Only the user defers an inquisition's should, at the end of the Project. Its scope is main into feature, combined gates, merge review,
    then a PR into main. Its `Ready to Merge`
    is the user's click, one Project at a time, as a merge commit. When the user tells you it landed,
    resume the landing captain to close and clean up the merged feature branch (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree); open the
    last Milestone's Walkthrough Ticket, load `walkthrough` yourself, and facilitate it here. It
-   also lists the unaddressed nits.
+   also lists the unaddressed nits and every open inquisition nit ticket.
    Findings reopen the lap: commission the first fix Captain to re-cut the feature from main under
    the same name; another inquisition needs confirmation. **Done:** an empty walkthrough closes
    the Project `Completed`; commission spec retirement under `dydo/reference/feature-spec-convention.md`, and

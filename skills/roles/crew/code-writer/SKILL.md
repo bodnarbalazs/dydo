@@ -50,10 +50,10 @@ hop is `implement`, `fix` after a FAIL, or `merge`; proof-only commits `<KEY> pr
 - **Merge**: [merge](resources/merge.md).
 - **Prototype**: load `prototype`; return runnable-demo evidence and its commit, not the Prove
   section. The user's verdict is its review.
-- **Proof-only**: the brief names the commissioning captain, the pinned source SHA (an
-  Inquisition's audit SHA by default) and the test path. Run only the one test deciding the
-  hypothesis; return to that captain `confirmed` with its red-test SHA, `not reproduced`, or
-  `inconclusive` with the deciding observation.
+- **Proof-only**: the brief names the commissioning captain, the pinned source SHA and the test
+  path. Run only the one test deciding the hypothesis; return to that captain `confirmed` with its
+  red-test SHA, `not reproduced`, or `inconclusive` with the deciding observation. An Inquisition's
+  proofs are its Break-phase inquisitor's, not yours; its patch lane briefs you as a Bug.
 
 A test green before any code exists is a finding about the test. An existing failing test is the
 red. Delete a test only with code whose removal the contract or a FAIL requires: dead code with its

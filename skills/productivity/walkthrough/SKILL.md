@@ -32,7 +32,7 @@ or a review left doubt.
 - **What reviewers flagged or deferred** - in the severities the **Severity** entry of
   `dydo/reference/dydo-glossary.md` defines: each `should` deferred and the ticket
   where it now lives, reported as it stands. At the landing, also every unaddressed `nit` with the
-  ticket record where it sits, for the user to promote any.
+  ticket record where it sits, and every open inquisition nit ticket, for the user to promote any.
 
 The tour ends when the user has inspected the files and tried the behavior, or skipped it. Record
 his verdict on the Walkthrough Ticket in his own words, or the skip. Other tours route findings

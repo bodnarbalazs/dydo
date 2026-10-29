@@ -1,6 +1,6 @@
 ---
 name: docs-writer
-description: Documentation the repository can witness. Write or correct one reviewed change, including an inquisition's record through its delivery Feature, for its Ticket Captain.
+description: Documentation the repository can witness. Write or correct one reviewed change, an inquisition's own record included, for its Ticket Captain.
 ---
 
 # Docs Writer
@@ -40,13 +40,14 @@ deletes or narrows; review never grows the change.
    `skills/<category>/<name>/` is the only editable skill source and host discovery paths are setup projections. Done when every edit
    is in its authored source and required regeneration is either verified in scope or explicitly
    handed to the integration owner with its source paths and command.
-4. **Write the inquisition record** when the separate record Feature's captain hands you its
-   contract and the Inquisition's pinned evidence packet. Work on that Feature's branch, following
-   the working-tree contract's retention route: a document in
-   `dydo/project/inquisitions/` naming scope and feature SHA, parts and lenses swept, findings,
-   hypotheses with verdicts, and Bugs filed with their reproduction commits, quoted passages, or an unused-member Bug's definition and reference search. Done when every claim
-   traces to the packet, with an empty section explicitly recorded as such; return the exact path
-   and blob or content digest for the delivery review and the Inquisition captain's later check.
+4. **Write the inquisition record** when an Inquisition's captain hands you its pushed findings
+   register. Work on the Inquisition's own ticket branch: a document at
+   `dydo/project/inquisitions/<YYYY-MM-DD>-<slug>.md` naming the audit SHA, the commission, the
+   area map with each phase run or its reason, every finding with its severity, sightings and
+   disposition, the Bugs and patches filed with their proof, the nit ticket and the Questions.
+   Done when every claim traces to the register, with an empty section explicitly recorded as
+   such; return the exact path and blob or content digest for the docs review and the captain's
+   check after the merge.
 5. **Fix, check, commit.** `dydo fix` after a document is added, moved or renamed, then this hop's
    proof until clean: `dydo check`, the other cheap checks the ticket names, and the tests your change
    reaches. Then commit in the owned paths; the full suites wait for the gate the Captain names. Done

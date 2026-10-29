@@ -15,7 +15,7 @@ repository records.
 - **plans/** - reviewed contracts for coordinated, cross-cutting, or architecture-sensitive Linear Projects
 - **future-features/** - legacy FutureFeature records awaiting migration; a new FutureFeature is a Linear ticket
 - **migrations/** - durable migration evidence and assimilation briefs
-- **inquisitions/** - multi-lens QA reports at meaningful product milestones
+- **inquisitions/** - inquisition records: each round's area map, findings and the Bugs it filed
 - **changelog/** - completed change and release history
 - **pitfalls/** - recurring knowledge and known gotchas
 

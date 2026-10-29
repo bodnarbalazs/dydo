@@ -57,7 +57,7 @@ sight, and hand back every judgement call with a recommendation.
 5. **Sweep the board.** Hunt stale states: a working status with no crew running, a `Question` without
    a priority, broken blocking relations, missing evidence links, and finished work still shown as
    active. Sweep orphans too: the worktrees and branches a merge should have retired, and an
-   `inquisition/<slug>` past its ticket's `Done`, or a `prototype/<name>` past its delivery ticket's
+   `inquisition/<slug>` past its ticket's `Done` (a group's `inquisition/<slug>-<group>` only once its parent Inquisition is `Done`), or a `prototype/<name>` past its delivery ticket's
    `Done`. Clear orphaned worktrees yourself with `dydo clean --dry-run --all`, then `dydo clean --all`, run from outside every tree and only after confirming no session is live in them (it deletes each worktree's own branch once merged); clear merged local branches with no worktree by `git branch -d`; list for the user any remote
    branch still standing after its merge or its ticket's `Done`, since the guard blocks remote deletion. Fix the mechanical
    drift and surface what needs judgement. Linear stays the live truth, so keep the repository free

@@ -96,7 +96,7 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   is a contract amendment.
 - **Gate** - any explicit pass/fail checkpoint.
 - **Hop** - one crew member's committed pass over a ticket branch: `implement`, `fix` or `merge`, and
-  `proof` for a proof-only test on an Inquisition's proof branch. Its SHA is evidence on the ticket,
+  `proof` for a proof test on a proof branch, a Break inquisitor's included. Its SHA is evidence on the ticket,
   and the reviewer reads the hops in order.
 - **Ticket review** - an independent reviewer's verdict on one candidate against one named rubric,
   before it merges. FAIL means at least one blocker; PASS means none, and may list should and nit
@@ -105,15 +105,42 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   wrong; only a blocker FAILs a review and sends a fix hop. A `should`: a real bug callers will hit,
   inside the intent; the captain files it as its own ticket, and a Project lands only once each is
   `Done` or closed with a reason. A `nit`: everything else, one line on the ticket's record, listed
-  at the final walkthrough for the user to promote. The fix-hop author checks each label against
+  at the final walkthrough for the user to promote; an inquisition's nits go on its round's nit
+  ticket instead (DR 059). The fix-hop author checks each label against
   the source and may change it with evidence; the captain records the change and its reason.
 - **Merge review** - the `merge` rubric run after every merge that has a Merge Ticket: a mechanical
   spot check of the integrated state that also proves the plan's acceptance criteria at a feature's
   final merge. An atomic ticket's merge into main has none; its ticket review PASS, green CI and the
   user's click stand in its place.
-- **Inquisition** - a user-confirmed Type held by a captain: read-only sweeps, hypotheses proved
-  (one in code by a proof-only test, one in prose by its quoted passages), deduplicated Bugs and an
-  inquisition record. It files outcomes, never PASS or FAIL.
+- **Inquisition** - a user-confirmed Type held by a captain: one round of audit of the integrated
+  feature. Its captain conducts and never hunts: it draws the area map, runs every applicable phase
+  on every area through `inquisitor` crew, triages each finding by severity, and delivers its own
+  record. It files outcomes, never PASS or FAIL. Rounds repeat from zero until one finds no blocker
+  and no should (DR 059).
+- **Round** - one Inquisition, started from zero with a fresh area map, never a recheck of an
+  earlier round's findings; each round has its own Bugs and nit ticket.
+- **Area** - a small piece of the landed work's code, architecture or files; one file can be an
+  area, and a seam between two areas is its own area. A big area gets superficial coverage.
+- **Area map** - the table of areas the inquisition captain draws from the landing diff and the
+  file layout, on the Inquisition ticket, each row saying which phases apply or why not.
+- **Phase** - in an inquisition, one of an area's three tracks, run in order: **Read** hunts what neither
+  a test nor a drive would catch and tags the rest `testable` or `drivable`; **Break** decides
+  hypotheses with its own proof tests on a proof branch; **Drive** runs the area's journeys
+  through the project's verification skill and API. A plain skill or doc area gets Read only.
+- **Findings register** - `inquisition-register.md` at the root of the audit branch: one row per
+  finding with its severity, proof, sightings and disposition, pushed after every return.
+- **Sighting** - a further place and proof of a finding already in the register; the same bug seen
+  twice is one finding with two sightings.
+- **Verification gap** - something a user can do that the project's verification skill cannot;
+  Drive files it as a should, owned by `maintain-verification-skill`.
+- **Patch lane** - a proven, well-defined blocker or should whose fix the inquisition prepares
+  mid-round on its Bug's own branch, reviewed once in the Bug's chain. The Bug stays assigned to
+  the inquisition's captain until the patch is attached, then becomes pickable.
+- **Nit ticket** - the one `Feature` per round that holds the round's nits, held by the map holder
+  and linked to its Inquisition; a nit needs no proof, and the user decides each at the Project's
+  final walkthrough.
+- **Group Sub-ticket** - one slice of an area map above about 10 areas, with its own captain and
+  audit branch; the parent captain runs the cross-group triage and delivers the one record.
 - **Merge** - a Type for one merge operation, with its own implement/review chain and
   integrated gates. The user clicks the Project landing and an atomic ticket's PR, which has no Merge
   Ticket; every operation preserves hop SHAs.
@@ -149,7 +176,8 @@ the captain's contract is the ticket's only contract text. The `Specifying` and 
 and the tightening or hardening pass retired the same day (DR 047, amended 2026-09-23): a spec review
 shows `In Review`. Wayfinding map, Waypoint, and the Frontier they defined are gone: a Project's map is its
 Linear description, and frontier now means the map tickets above. Workflow retired with the old inquisition harness. Inquisition is now a ticket Type with the
-filing outcome above. None of these words creates a file, command, lifecycle, or Linear type.
+filing outcome above; its parts and lenses, its proof-only code-writer and its separate record
+Feature gave way to the area map, its phases and its own record (DR 059). None of these words creates a file, command, lifecycle, or Linear type.
 
 ## Related
 

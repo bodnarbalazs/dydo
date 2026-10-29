@@ -22,7 +22,9 @@ The chief of staff, with the user present:
    answers now, unblockers now. Use `wizard` for terminal steps only.
 3. Post the night orders.
 4. Preflight: every admiral thread can be messaged, every session can write to Linear, every
-   admiral can merge into its feature branch. Report all green, or name each gap.
+   admiral's harness runs `dydo merge <pr> --match-head-commit <sha> --dry-run`: exit 0, or a
+   `refused:` line with exit 1, proves the path; a denial or a prompt is the gap. Report all green,
+   or name each gap.
 5. Create the 30-minute watch schedule, returning to this thread.
 6. Run `dydo mode set overnight on`: rerun it after the guard's nudge, and where the guard denies,
    the user runs it in his own terminal.
@@ -36,7 +38,8 @@ Done when every admiral has the announcement.
 2. **Decide by weight.** Easily reversible: decide and record `DECIDED`. Other calls:
    `what-would-balazs-do`, whose trigger map decides it or prepares the Question;
    irreversible calls are always a Question.
-3. **Merge into the feature branch**, never into master or main.
+3. **Merge into the feature branch** through your captain's Merge chain, which runs `dydo merge`;
+   never into master or main.
 4. **The board is the report.** Send the chief of staff no status. Contact it for cross-Project
    trouble: collisions, shared-resource problems, and heads-ups or permission before actions that
    affect other agents. It relays down admiral → captain → crew. Answer a nudge in one line.

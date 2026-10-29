@@ -144,7 +144,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    conflicts), every bot finding answered - then set
    `Ready to Merge`, and return `done <key>: PR ready`.
 7. **Merge.** When the final Merge Sub-ticket's blocker clears, resume from the record and direct
-   its chain as above into the contract's target. The parent stays `Ready to Merge` while the
+   its chain as above into the contract's target; its code-writer merges a conflict-free reviewed PR
+   into its feature branch with `dydo merge`. The parent stays `Ready to Merge` while the
    Sub-ticket runs; a Merge Sub-ticket never enters that status. A landing Merge instead offers its
    reviewed PR and waits for the user's merge-commit click. An atomic ticket has no Merge
    Sub-ticket: the user clicks its PR, then you resume from the record. **Done:** merge review

@@ -42,10 +42,10 @@ The runtime modes add, per selected host:
 | Host | Files | What they carry |
 |---|---|---|
 | `claude` | `.claude/settings.json` (committed) | a `PreToolUse` hook running `dydo guard --host claude` on the matched tools, `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"` and `"autoMemoryEnabled": false` |
-| `claude` | `.claude/settings.local.json` (gitignored) | the allow entries `Bash(dydo:*)`, `PowerShell(dydo:*)`, `Bash(dydo clean:*)` and `PowerShell(dydo clean:*)` |
+| `claude` | `.claude/settings.local.json` (gitignored) | the allow entries `Bash(dydo:*)`, `PowerShell(dydo:*)`, `Bash(dydo clean:*)`, `PowerShell(dydo clean:*)`, `Bash(dydo merge:*)` and `PowerShell(dydo merge:*)` |
 | `claude` | `.gitignore` | `.claude/settings.local.json`, `/.claude/skills/` and `/.agents/skills/` |
 | `codex` | `.codex/hooks.json` | a `PreToolUse` hook running `dydo guard` on the matched tools |
-| `codex` | `.codex/rules/dydo.rules` | an exec-policy `prefix_rule` allowing `dydo clean`, which Codex loads when the project's `.codex/` layer is trusted; dydo rewrites the file on every init and `--join` |
+| `codex` | `.codex/rules/dydo.rules` | exec-policy `prefix_rule`s allowing `dydo clean`, and `dydo merge` under `dydo` or `dydo.exe`, which Codex loads when the project's `.codex/` layer is trusted; dydo rewrites the file on every init and `--join` |
 | `codex` | `.codex/config.toml` | `[agents]` with `max_depth = 3` and `max_concurrent_threads_per_session = 16` |
 | `codex` | `.gitignore` | `/.claude/skills/` and `/.agents/skills/` |
 
@@ -412,7 +412,8 @@ runs the tree checks on `gh pr create`, `gh pr new`, `gh pr ready` and their `gh
 
 ### dydo merge
 
-Merge a reviewed PR into its `feature/*` branch with a merge commit.
+Merge a reviewed PR into its `feature/*` branch with a merge commit. A merge into `master`, `main` or
+the default branch is the user's click: the command refuses it, and no option overrides a refusal.
 
 ```bash
 dydo merge <pr> --match-head-commit <sha> --dry-run   # every read and check; merges nothing
@@ -420,10 +421,59 @@ dydo merge <pr> --match-head-commit <sha>             # merge exactly <sha> into
 ```
 
 `--match-head-commit` takes the full 40-character SHA the reviewer passed: the PR head must equal it,
-and it is what merges. The repository is the one the project's `origin` names; there is no repository,
-base or override option. Each refusal prints one `refused:` line on stderr and exits `1`; a tool error
-(gh missing or signed out, the network, an unexpected GitHub answer) exits `2`. A merge, a SHA already
-integrated, and a `--dry-run` whose checks pass exit `0`.
+and it is what merges. There is no repository or base option. In order, it checks:
+
+- **Repository:** the one the `origin` remote of the located project's checkout names, as
+  `HOST/OWNER/REPO`; the checkout's git top level must be the `dydo.json` folder. git runs without
+  inherited `GIT_*` variables, and gh runs as `gh api` with `--hostname` set to origin's host and
+  `GH_REPO` and `GH_HOST` removed. The PR must be in that repository.
+- **A closed PR first:** when its base is a feature branch (as below) that already holds the SHA, the
+  run prints `already integrated` and exits `0`, so a rerun after a lost answer is safe; any other
+  closed PR is refused.
+- **The PR:** not a draft, and from the same repository, not a fork.
+- **Base:** refused when it is GitHub's `default_branch`, read fresh on every run, or the local
+  `origin/HEAD` name, whatever the case; it must be `feature/` and one or more `/`-separated
+  segments, each starting with a letter or digit (`[A-Za-z0-9][A-Za-z0-9._-]*`), and pass
+  `git check-ref-format --branch`. An unreadable default branch is refused.
+- **Head:** the PR head must equal the SHA.
+- **Review:** the PR body's `## Independent review` section, up to the next level-one or level-two
+  heading, must hold a `PASS - rubric/type: <rubric>; ...` line whose `candidate` is the SHA: fenced
+  or not, a hyphen, en dash or em dash after `PASS`, the SHA possibly backticked. An abbreviated
+  candidate of at least 7 hex digits counts only when GitHub resolves it to exactly the SHA. The
+  rubric must be `code`, `docs` or `merge`, and a `FAIL` line for the same candidate refuses. When the
+  PASS names a `base`, the target's tip must contain it; when it names none, a `note:` line says the
+  base check was skipped.
+- **Checks:** every check suite, latest check run and legacy commit status on the SHA, read to the
+  last page, must have finished: suites and runs `success`, `neutral` or `skipped`, statuses
+  `success`. Every check the target's branch protection or rulesets require must be among them. A
+  suite that has not completed and holds no run is not CI (some apps leave one queued on every
+  commit); with no other suite the run refuses `no checks reported`, which also means the
+  repository's CI does not run on PRs into that branch.
+
+Then it merges: `POST repos/<owner>/<repo>/merges` names the validated base and the SHA, so a later
+retarget or push cannot change where or what lands. When the base tip is an ancestor of the SHA,
+where GitHub would fast-forward, it writes a two-parent commit (the SHA's tree, parents the tip and
+the SHA) and moves the base without force, so a base that moved meanwhile is refused. There is no
+squash or rebase. The commit message is `Merge pull request #<n> from <owner>/<head-ref>`, the PR
+title, and the trailers `Dydo-Merge: dydo <version>`, `Reviewed-Candidate: <sha>` and
+`Review: <the PASS line, first 200 characters>`. A conflict (`409`) is refused for a Merge
+code-writer to resolve locally.
+
+Output on stdout, the captain's merge evidence:
+`merged PR #<n> (<sha12>) into <base> as <merge12>; PR marked merged: yes|no|unverified`, or
+`already integrated (no new merge commit): PR #<n> (<sha12>) is in <base>`, or for a dry run
+`would merge <sha12> into <base> (PR #<n>)`. A `warning:` line follows when the default branch changed
+during the run. There is no local log; git and the PR timeline are the record.
+
+Exit `0` for a merge, a SHA already integrated, and a `--dry-run` whose checks pass. Each refusal
+prints one `refused:` line on stderr and exits `1`; a missing PASS adds a `found PASS for <sha12>`
+line for each other candidate the review section passed. A tool error prints one `error:` line and exits
+`2`: gh missing or signed out, the network, an origin on an SSH alias host, or an unexpected GitHub
+answer such as a `403`, `422` or ruleset rejection, with GitHub's message. A merge that succeeded
+exits `0` even when the PR could not be reread (`unverified`).
+
+`dydo init` and `--join` allow the command without a prompt on both hosts (see [dydo init](#dydo-init)),
+and the guard lets a sub-agent run it: a Merge Sub-ticket's code-writer runs it.
 
 ---
 

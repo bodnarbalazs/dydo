@@ -198,7 +198,9 @@ Charting starts from a Linear Project and a loose destination.
    **Not yet specified**.
 4. **Create the tickets you can specify now**, both Tasks and Wayfinding Tickets, then wire blocking
    edges in a **second pass** (tickets need keys before they can reference each other). Wiring sorts
-   them into the frontier and the blocked; everything you cannot yet specify stays in the fog.
+   them into the frontier and the blocked; everything you cannot yet specify stays in the fog. At
+   Project scale, group the Tasks into the Project's Milestones in Linear: few and meaningful, the
+   walking skeleton first, the landing last.
 5. **Fire the Research subagents.** For each Research Ticket just created that is unassigned, in
    `Todo` and unblocked, claim it, then spin up a subagent that uses `research` to resolve it in parallel, recording its cited findings as a comment on that ticket.
 6. Stop: charting is one session's work; it resolves nothing itself.
@@ -218,7 +220,7 @@ one, take the next ticket rather than asking the user to choose.
    comment**, mark the ticket `Done`, and
    append a context pointer to the map's Resolutions so far. For local fog, link the resolution from
    the parent delivery ticket instead; the record is the whole report.
-5. Add newly surfaced tickets (create then wire); graduate any fog the answer has made specifiable,
+5. Add newly surfaced tickets (create then wire, a Project's Task into its Milestone); graduate any fog the answer has made specifiable,
    clearing each graduated patch from **Not yet specified** so it lives only as its new ticket. If the
    answer reveals that a ticket sits beyond the destination, rule it out of scope. If the resolution
    invalidates other parts of the map, update or cancel those tickets.

@@ -17,12 +17,12 @@ Every ticket carries exactly one Type:
 - `Bug`: restore intended behaviour.
 - `Merge`: one merge operation.
 - `Enablement`: access, environment, credentials or material other work needs.
-- `Inquisition`: many read-only eyes on the integrated feature; Bugs filed.
+- `Inquisition`: one round of audit of the integrated feature, area by area through Read, Break and Drive; Bugs filed.
 - `Prototype`: a design question raised to fidelity the user can react to.
 - `Question`: one prepared, discrete question whose answer blocks named work.
 - `Research`: a factual answer whose investigation needs its own owner, status or evidence.
 - `Grilling`: a tree of intent or specification choices resolved with the user.
-- `Walkthrough`: the user inspects what landed.
+- `Walkthrough`: the user walks the product as it stands, at a Milestone or the landing.
 
 Every Type a captain holds also carries one Mode: `AFK`, the captain reaches reviewed completion without a live conversation; `HITL`, the user and the captain work the ticket together in its own top-level thread.
 
@@ -53,6 +53,8 @@ Break the work into **tracer bullet** tickets.
 
 </vertical-slice-rules>
 
+In a Project, group the slices into its Milestones: few and meaningful, the walking skeleton first, the landing last.
+
 Give each ticket its Type, its Mode where a captain holds the Type, and its **blocking edges**: the other tickets that must complete before it can start. A ticket with no blockers can start immediately.
 
 **Wide refactors are the exception to vertical slicing.** A **wide refactor** is one mechanical change (rename a column, retype a shared symbol) whose **blast radius** fans across the whole codebase, so a single edit breaks thousands of call sites at once and no vertical slice can land green. Don't force it into a tracer bullet; sequence it as **expand–contract**. First expand: add the new form beside the old so nothing breaks. Then migrate the call sites over in batches sized by blast radius (per package, per directory), each batch its own ticket blocked by the expand, keeping CI green batch to batch because the old form still exists. Finally contract: delete the old form once no caller remains, in a ticket blocked by every migrate batch. Regroup any batch that cannot pass alone until each batch does.
@@ -63,6 +65,7 @@ Present the proposed breakdown as a numbered list. For each ticket, show:
 
 - **Title**: short descriptive name
 - **Type and Mode**
+- **Milestone**: the one it belongs to, in a Project
 - **Blocked by**: which other tickets (if any) must complete first
 - **What it delivers**: the end-to-end behaviour this ticket makes work
 
@@ -76,7 +79,7 @@ Iterate until the user approves the breakdown.
 
 ### 5. Publish the tickets to Linear
 
-Publish one ticket per approved slice in dependency order (blockers first), so each ticket's blocking edges can reference real keys, and wire every edge as Linear's native blocked-by relation. Create each ticket in `Todo` unless its Type's status rule says otherwise (an unconfirmed Inquisition starts in `Backlog`), unassigned, with its Type label, its Mode label where a captain holds the Type, and settled owned paths: pickable by construction once in `Todo`.
+Publish one ticket per approved slice in dependency order (blockers first), so each ticket's blocking edges can reference real keys, and wire every edge as Linear's native blocked-by relation. Create each ticket in `Todo` unless its Type's status rule says otherwise (an unconfirmed Inquisition starts in `Backlog`), unassigned, with its Type label, its Mode label where a captain holds the Type, its Milestone in a Project, and settled owned paths: pickable by construction once in `Todo`.
 
 Set priority, per the standard's Priority section in `dydo/reference/linear-workspace-standard.md`, on a `Question` or HITL ticket it creates; leave AFK tickets without one.
 

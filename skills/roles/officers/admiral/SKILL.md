@@ -60,17 +60,23 @@ map and how the tickets move, integrate, and finish together.
 ## Method
 
 1. **Read the board.** Wake on a captain's return or the user's word. Read the Project, its map,
-   blockers, hop SHAs and reviews; resume at the stage the record proves. Process a record-delivery
-   release through step7 before generic pickable commissioning. **Done:** every pickable
+   blockers, hop SHAs and reviews; resume at the stage the record proves. Process an Inquisition's
+   release through step 7 before generic pickable commissioning. **Done:** every pickable
    ticket and every Merge whose turn came is known. With nothing in flight, wait for the user's word.
 2. **Chart and approve.** When the route is unknown, set the Project `Planning` and chart it with
    `wayfinder`: the map in the Project description, naming you its holder, the first pickable tickets, and each Project-level
-   Question in `Todo`, wired to every waiter. The Project and its tickets are the plan. Only a
-   cross-cutting architecture contract earns a repository plan: write it at
+   Question in `Todo`, wired to every waiter. The Project and its tickets are the plan. Place the
+   map's Milestones in Linear. Keep them few, each one a meaningful chunk of work where a drift
+   from the user's intent would show. The first is the walking skeleton: the rough foundation the
+   Project is built on, the first solid thing where he can make decisions and understand the
+   architecture. File its Walkthrough Ticket with the map, wired as a native blocker of the next
+   Milestone's delivery tickets except in overnight mode. The landing is the last Milestone. Every
+   delivery ticket belongs to one. Only a cross-cutting architecture contract earns a repository plan: write it at
    `dydo/project/plans/<kebab-case>.md` in the shape the `project-plan` rubric checks, commit it, and
    send it to a fresh `reviewer(project-plan)` with rubric, Contract at the plan SHA, Candidate SHA
-   and Base SHA. The block is a Project update. Correct a FAIL at a new commit and review afresh;
-   the second FAIL goes to the user as the choice. Put the charted route, with any PASS, to the
+   and Base SHA. The block is a Project update. Correct a FAIL's blockers at a new commit and review
+   afresh; the second FAIL goes to the user as the choice. File each `should` as its own `Backlog`
+   ticket in the Project and record each `nit` as one line on the Project update. Put the charted route, with any PASS, to the
    user in this session. **Done:** approval is recorded, any plan is `reviewed`, and the Project
    `Planned`.
 3. **Open and commission.** Commission the first Ticket Captain to open
@@ -94,6 +100,15 @@ map and how the tickets move, integrate, and finish together.
    commission a fresh one from the record. Rewire the order when a later ready PR is independent
    of an earlier unready one. **Done:** every merge has its own captain-directed chain and fresh
    merge review; the record shows the order that ran and `done <key>: merged` wakes the next work.
+   **Walk each Milestone.** When a Milestone's last ticket has merged into the feature branch,
+   prepare its Walkthrough Ticket and offer it to the user; the last Milestone's is the landing's,
+   in step 8. He walks it with you, by `walkthrough`, or skips it, and a skip is a verdict to go
+   on. Nothing is built on the skeleton until his verdict: its Walkthrough Ticket blocks the next
+   Milestone, so step 3 commissions none of it until his verdict or skip closes the ticket. Later
+   Milestones' Walkthrough Tickets block nothing: their findings become tickets in the Project as
+   they arrive. In overnight mode the skeleton doesn't wait either: its Walkthrough Ticket blocks
+   nothing; post `DECIDED` on it, carry on, and treat a wrong direction as a revert. **Done:**
+   each Walkthrough Ticket carries his verdict and findings, or his skip.
 5. **Wayfind.** Rechart as discovery clears fog: create, split, drop, or resequence tickets and
    record the discoveries on the Project. Maintain shared feature intent following
    `dydo/reference/feature-spec-convention.md`, read from the repository root; reconcile affected
@@ -115,21 +130,32 @@ map and how the tickets move, integrate, and finish together.
    is resolved or has the right owner, record, and blocker. Set and revisit priority on every human
    waiter by the standard's guide; AFK order remains in the map and blockers.
 7. **Offer the inquisition.** Once the feature is integrated, file an Inquisition in `Backlog` with
-   its feature SHA, parts, lenses and cost. **Done:** the user moves it to `Todo` and tells you, or
-   cancels it; commission the confirmed ticket and route the Bugs it files. On its
-   `released <key>: record delivery` wake, read the completed packet and first contract a separate
-   primary Feature/AFK record-delivery ticket on the retained feature with exact record and required
-   navigation paths. Wire only the Inquisition blocked by record delivery before generic pickup, then
-   commission the record captain. Do not recommission the audit from its temporary Todo gap; follow
-   the working-tree contract's retention route.
-   On delivery `Done`, resume the released Inquisition captain for durable-evidence verification.
+   its feature SHA and cost, and put the commission question to the user: a provider and model for
+   each phase (Read, Break, Drive), the swarm width, the Codex cap (start about 8 at once, toward 16
+   while runs stay clean, back off on a 429), and the crew context limit, 110k tokens by default.
+   A project with a runnable surface and no verification skill needs one first: raise it with the
+   user, who makes it with `create-verification-skill`; one with nothing to run records that Drive
+   does not apply.
+   **Done:** the user moves it to `Todo` and tells you, or cancels it; commission the confirmed
+   ticket with the answers on it. Above about 10 areas its captain releases with group
+   Sub-tickets: commission one captain per group with the share of the width and Codex its
+   Sub-ticket carries, give a finished group's share to a running group if you choose, and resume
+   the parent when its groups close for the cross-group triage. A patch-lane Bug stays assigned to
+   the inquisition's captain until its patch is attached; it is pickable once unassigned. A `released <key>: verification skill first` goes to the user as that same
+   need, and the Inquisition resumes once the skill exists. Rounds start from
+   zero: once every blocker and should fix of a round is `Done`, offer the next round as a fresh
+   Inquisition, never a recheck of the old findings.
 8. **Land and walk through.** File the landing Merge Ticket, blocked by its unresolved prerequisites:
-   delivery, a confirmed Inquisition and its record delivery, and required fixes. Exclude the landing
-   itself and later or deferred work. Its scope is main into feature, combined gates, merge review,
+   delivery, each confirmed Inquisition round, required fixes, and every
+   should-ticket a review or an inquisition filed, wired now where it is not yet. Exclude the landing itself and other
+   later or deferred work. Sequence the should-tickets; the Project lands only when each is `Done`
+   or closed with a reason, and only after an inquisition round that found no blocker and no
+   should. Only the user defers an inquisition's should, at the end of the Project. Its scope is main into feature, combined gates, merge review,
    then a PR into main. Its `Ready to Merge`
    is the user's click, one Project at a time, as a merge commit. When the user tells you it landed,
-   resume the landing captain to close and clean up the merged feature branch (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree); open a Walkthrough
-   Ticket, load `walkthrough` yourself, and facilitate it here.
+   resume the landing captain to close and clean up the merged feature branch (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree); open the
+   last Milestone's Walkthrough Ticket, load `walkthrough` yourself, and facilitate it here. It
+   also lists the unaddressed nits and every open inquisition nit ticket.
    Findings reopen the lap: commission the first fix Captain to re-cut the feature from main under
    the same name; another inquisition needs confirmation. **Done:** an empty walkthrough closes
    the Project `Completed`; commission spec retirement under `dydo/reference/feature-spec-convention.md`, and

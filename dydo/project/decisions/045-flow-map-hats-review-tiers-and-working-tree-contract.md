@@ -9,6 +9,10 @@ participants: [balazs, Claude (Fable)]
 
 # 045 - Flow Map, Hats and Workers, Review Tiers, and the Working-Tree Contract
 
+> **Partially superseded by [058 - Review Severities: Blocker, Should, Nit](./058-review-severities-blocker-should-nit.md)** for the *a finding is a FAIL* question only: a FAIL now means a blocker. The rest remains in force.
+
+> **Partially superseded by [059 - Inquisition Rebuilt: Area Map, Three Phases, Rounds Until Clean](./059-inquisition-rebuilt-area-map-three-phases-rounds-until-clean.md)** for the *inquisition* question only: the Audit row and §3's rare fan-out across lenses give way to an area map run through Read, Break and Drive, repeated from zero until a round finds no blocker and no should. The rest remains in force.
+
 Fixes the operating model the harmonized dydo 3 skill system compiles to: one flow map every agent can
 place itself on, a taxonomy of hats, workers, methods and commands, three review tiers with a
 regex-checkable review block, question Issues as the fog-clearing unit, planning at two resolutions, an

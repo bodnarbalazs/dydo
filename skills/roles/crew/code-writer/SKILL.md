@@ -109,4 +109,7 @@ captain's to file. Prefer the change that deletes or narrows code; review never 
 Fix at the root: a gap
 gets its test first; cut what the contract does not need; split or flatten what is complex; hide
 what leaks across a seam; a surviving mutant sharpens its test or deletes its code; a surviving
-example value gets its step wired.
+example value gets its step wired. Before expensive broad gates, check the exact successor against
+the previous reviewer's strongest concrete counterexample and the accepted invariant at the
+implicated boundary; return failed or inconclusive evidence to the captain. A passing witness does
+not replace ordinary RED/fix proof, required final gates or independent review.

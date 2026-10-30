@@ -15,6 +15,8 @@ Red you can check, green only from code.
 2. The governing plan and applicable feature-spec sections at the brief's commits, and their Decisions.
 3. From the repository root, read `dydo/guides/coding-standards.md`.
 4. From the repository root, read `dydo/glossary.md`.
+5. From the repository root, read Feature proof and gate placement, Runner prerequisites and shared hosts,
+   and Evidence and inherited failures in `dydo/guides/testing-strategy.md`.
 
 ## Boundary
 
@@ -81,10 +83,11 @@ Leave what you touched no worse than you found it.
 
 ## Prove
 
-The ticket's exact gates name the test, suite and static-gate commands. While building, run only the
-tests relevant to the change. When done, run the full suite of every stack you changed once, then the static gate
-for that stack once. Any failure is yours: you were handed a green suite. Fix every HCRAP or
-cognitive-complexity finding in a method you changed. Mutation is the reviewer's.
+Use the testing strategy's Feature proof and gate placement with the ticket's exact commands.
+Account for every own/reached feature and shared test, preflight its selection, and return the
+hop's affected-feature Light and applicable static evidence. Attribute failures by Evidence and
+inherited failures; send unresolved attribution or missing support to the captain. Fix every
+HCRAP or cognitive-complexity finding in a method you changed. Mutation is the reviewer's.
 
 ## Return
 

@@ -14,7 +14,8 @@ Make one documentation change true.
 2. From the repository root, read `dydo/reference/writing-docs.md`.
 3. From the repository root, read `dydo/understand/about.md`.
 4. From the repository root, read `dydo/guides/working-tree-contract.md`.
-5. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; do not preload the whole standard.
+5. From the repository root, read Feature proof and gate placement in `dydo/guides/testing-strategy.md`.
+6. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; do not preload the whole standard.
 
 ## Boundary
 
@@ -50,8 +51,9 @@ only the blockers, and put a label you change in your `IMPLEMENTED` behaviour wi
    check after the merge.
 5. **Fix, check, commit.** `dydo fix` after a document is added, moved or renamed, then this hop's
    proof until clean: `dydo check`, the other cheap checks the ticket names, and the tests your change
-   reaches. Then commit in the owned paths; the full suites wait for the gate the Captain names. Done
-   when that focused proof has run and the work is committed.
+   reaches, using the testing strategy's documentation-only scope. Then commit in the owned paths;
+   hand any remaining project-declared gates to the Captain. Done when the bounded proof has run
+   and the work is committed.
 
 ## Return
 

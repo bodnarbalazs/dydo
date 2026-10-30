@@ -20,7 +20,9 @@ the default officer: a ticket gets a captain whether or not the user has invoked
 3. From the repository root, read `dydo/guides/working-tree-contract.md`.
 4. From the repository root, read `dydo/understand/about.md`.
 5. From the repository root, read `dydo/understand/architecture.md`.
-6. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
+6. From the repository root, read Feature proof and gate placement, Runner prerequisites and shared hosts,
+   and Evidence and inherited failures in `dydo/guides/testing-strategy.md`.
+7. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
 
 ## Boundary
 
@@ -78,6 +80,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    contract, brief a fresh `reviewer(spec)` on the contract text and set `In Review`; either verdict
    sets `Implementing`. A target lowered for cost goes back up once new evidence makes it reachable.
    A re-contract of an artifact carries every earlier ruling the user gave on it as an acceptance line.
+   Pin project-owned selection, commands and stages by the testing strategy. Reconcile any older
+   active gate contract explicitly before changing its obligations.
    **Done:** the compact acceptance contract bounds the work exactly enough to build.
 3. **Shape.** Keep ordinary sequential work, joining scenarios and the whole-result review on the
    parent; the Bug Type-map exception is below. Where the writer's comment names disjoint parallel lanes, open them in `Todo`, with the parent's Type and Mode, bounded
@@ -102,11 +106,11 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    Brief the requested value so the crew member's signature is truthful, and claim an effective identity
    only where telemetry shows it. dydo compiles no model, no effort and no standing capability
    table. Candidates include other vendors' models wherever the host can dispatch them; weigh
-   them on the same terms as your own. Validate uncertain native interface shapes early. Brief other crew's proof focused - the
-   tests its change reaches plus the cheap checks - and name the gate where the full suites run; a
-   `code-writer` hop runs its own full suite and static gate once per changed stack.
-   Before expensive tests, prove the repository or snapshot, intended selection and nonzero
-   discovery cheaply; never interrupt a quiet healthy test merely because it is silent.
+   them on the same terms as your own. Validate uncertain native interface shapes early. Brief
+   each hop's proof by Feature proof and gate placement, including the prerequisites and shared
+   host constraints. For a reported inherited or infrastructure failure, verify attribution and
+   record its owner, repair/escalation route and effect on owed gates; raise cross-ticket scope to
+   the map holder. A follow-up ticket is not a passing gate.
    **Done:** each candidate accounts for its paths, passes
    its gates, ends on a posted commit, and carries no unresolved choice.
 5. **Review.** Brief each fresh `reviewer` with rubric,
@@ -139,9 +143,10 @@ the default officer: a ticket gets a captain whether or not the user has invoked
 6. **Offer.** Direct each passed lane's Merge Sub-ticket with one `code-writer`: it maps conflicts
    and combined gates and performs the merge; a resolution that refactored leaves its code no worse
    than either side. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-ticket
-   PASS once all lanes are in. The full suites and the ticket's whole gate set
-   run here, again at each Merge Sub-ticket's combined gates and at the landing; within one such run
-   each suite executes once. Before offering, rerun each writer's proof recipe yourself; that rerun, posted on the record, is the proof of record. **Done:** push the branch, write the PR body with `pr` to a file outside the tree, listing the should-tickets filed and the nits recorded, run `dydo pr-ready --body <file>`, then open the
+   PASS once all lanes are in. Apply the testing strategy's final-candidate gates here and the
+   contract's mandatory combined and landing gates at their boundaries, with exact-candidate
+   reuse only where permitted. Before offering, rerun each writer's proof recipe yourself; that
+   rerun, posted on the record, is the proof of record. **Done:** push the branch, write the PR body with `pr` to a file outside the tree, listing the should-tickets filed and the nits recorded, run `dydo pr-ready --body <file>`, then open the
    PR with its PASS block on the record and in the body. Handle its existing checks and comments,
    then **watch** it: one watcher per PR, `watch_pull_request` in T3, elsewhere one long-running
    watcher (Monitor in Claude Code), never a sleep or polling loop. The PR's owning thread watches;

@@ -1,0 +1,14 @@
+{
+  "command": [
+    "C:\\Users\\User\\AppData\\Local\\fnm_multishells\\10620_1793288379755\\node.exe",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix4-a6wj_23v\\source\\skills\\engineering\\statechart\\scripts\\statechart.ts",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix4-a6wj_23v\\tmp\\statechart-acceptance-Pajp6B\\Safety.tla",
+    "--view",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix4-a6wj_23v\\tmp\\statechart-acceptance-Pajp6B\\view.mjs",
+    "--out",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix4-a6wj_23v\\tmp\\statechart-acceptance-Pajp6B\\out"
+  ],
+  "exit": 0,
+  "platform": "win32",
+  "node": "v22.23.2"
+}

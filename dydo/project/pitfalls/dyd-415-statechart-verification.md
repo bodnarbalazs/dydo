@@ -13,6 +13,11 @@ This initial record describes `53df22e002a0e5c5e4429cc6908e0b01d4fb6ab3`.
 The [correction-hop record](dyd-415-statechart-evidence/fix1/verification.md) retains
 both review FAILs and the successor's platform, coverage and static measurements.
 
+The [fix4 proof record](dyd-415-statechart-evidence/fix4/verification.md) completes
+the remaining scenario-value mutation pairs and supplies the superseding portable
+Coverlet recipe; earlier executed recipes remain historical records. DYD-434's
+PowerShell metrics and full changed-code mutation dispositions remain unresolved.
+
 ## Inputs and provenance
 
 The implementation starts at `8553172dfaa7601d34f6b884c10350183f9faaa5`, fetched and

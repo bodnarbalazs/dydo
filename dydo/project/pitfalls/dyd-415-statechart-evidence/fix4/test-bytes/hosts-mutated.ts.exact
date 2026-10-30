@@ -1,0 +1,129 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { test } from "node:test";
+import { pathToFileURL } from "node:url";
+
+const skill = path.resolve(import.meta.dirname, "../..");
+const root = path.resolve(skill, "../../..");
+const read = (file: string) => fs.readFileSync(file, "utf8");
+const evidence = process.env.STATECHART_EVIDENCE_DIR;
+const missing = !process.env.TLA2TOOLS ? "TLA2TOOLS is required for real TLC acceptance" : false;
+const input = (limit: number, fixed = false, safe = 2) => ({
+  "Safety.tla": `---- MODULE Safety ----
+EXTENDS Naturals
+VARIABLE x
+Init == x = 0
+Step == x < ${fixed ? 2 : limit} /\\ x' = x + 1
+Jump == ${fixed || limit > 500 ? "FALSE" : "x = 0"} /\\ x' = 3
+Done == x = ${fixed ? 2 : limit} /\\ UNCHANGED x
+Next == Step \\/ Jump \\/ Done
+Safe == x <= ${safe}
+====
+`,
+  "Safety.cfg": "INIT Init\nNEXT Next\nINVARIANT Safe\n",
+  "view.mjs": 'export const title = "Counter safety";\nexport const state = v => `Count ${v.x}`;\nexport const step = a => ({ Step: "increment", Jump: "jump", Done: "finished" })[a];\n',
+});
+
+function drive(name: string, files: Record<string, string>, launcher = "node") {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-acceptance-"));
+  for (const [file, content] of Object.entries(files)) fs.writeFileSync(path.join(dir, file), content);
+  const args = [path.join(dir, "Safety.tla"), "--view", path.join(dir, "view.mjs"), "--out", path.join(dir, "out")];
+  const commands: Record<string, string[]> = {
+    node: [process.execPath, path.join(skill, "scripts/statechart.ts")],
+    powershell: ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.join(skill, "scripts/statechart.ps1")],
+    bash: [process.env.STATECHART_BASH ?? "bash", path.join(skill, "scripts/statechart")],
+  };
+  const [file, ...prefix] = commands[launcher];
+  const run = spawnSync(file, [...prefix, ...args], { encoding: "utf8", windowsHide: true });
+  const out = path.join(dir, "out");
+  assert.equal(run.error, undefined);
+  assert.equal(run.stderr, "", run.stderr);
+  assert.ok(fs.existsSync(out), run.stdout);
+  const report = read(path.join(out, "report.md"));
+  const chart = fs.existsSync(path.join(out, "chart.mmd")) ? read(path.join(out, "chart.mmd")) : "";
+  let saved: string | undefined;
+  if (evidence) {
+    saved = path.join(evidence, name);
+    fs.mkdirSync(saved, { recursive: true });
+    for (const [f, content] of Object.entries(files)) fs.writeFileSync(path.join(saved, f), content);
+    for (const f of fs.readdirSync(out)) fs.copyFileSync(path.join(out, f), path.join(saved, f === "report.md" ? "report.txt" : f));
+    fs.writeFileSync(path.join(saved, "invocation.json"), JSON.stringify({ command: [file, ...prefix, ...args], exit: run.status, platform: process.platform, node: process.version }, null, 2) + "\n");
+    fs.writeFileSync(path.join(saved, "stdout.txt"), run.stdout);
+  }
+  fs.rmSync(dir, { recursive: true, force: true });
+  return { status: run.status, report, chart, saved };
+}
+
+const scenarios: Record<string, { steps: string[]; skip?: string | boolean; run: () => void | Promise<void> }> = {
+  "A broken model shows its shortest bug path": {
+    steps: ["Given a bounded counter model with an unchanged safety invariant", "When the user runs statechart through PowerShell and bash", "Then TLC fails the invariant and the report shows its shortest path", "And Pele renders the chart with its bug marks"],
+    skip: missing || (process.platform !== "win32" && "native PowerShell acceptance runs on Windows") || (!process.env.STATECHART_BASH && "STATECHART_BASH must name Git Bash") || (!process.env.STATECHART_PELE && "STATECHART_PELE must name Pele 1.9.0"),
+    async run() {
+      const runs = [drive("broken-powershell", input(4), "powershell"), drive("broken-bash", input(4), "bash")];
+      const { render } = await import(pathToFileURL(process.env.STATECHART_PELE!).href);
+      const css = read(path.join(skill, "references/render.md")).match(/```css\n([\s\S]*?)```/)![1];
+      for (const r of runs) {
+        assert.equal(r.status, 1);
+        assert.match(r.report, /## Safe breaks\nThe shortest path has 1 step:\n0\. Count 0\n1\. jump: Count 3/);
+        assert.match(r.chart, /class s\d+ breaks/);
+        assert.match(r.chart, /class s\d+ bugPath/);
+        let { svg } = render(r.chart, { limit: 1_000_000, outputLimit: 8_000_000, maxEdges: 10_000 });
+        assert.match(svg, /class="pele-node[^\"]* breaks/);
+        svg = svg.replace(/(<svg[^>]*>)/, `$1<style>${css}</style>`);
+        if (r.saved) fs.writeFileSync(path.join(r.saved, "chart.svg"), svg);
+      }
+      assert.equal(runs[0].chart, runs[1].chart);
+      assert.equal(runs[0].report, runs[1].report);
+    },
+  },
+  "Correcting the model preserves the invariant": {
+    steps: ["Given the same invariant and a corrected transition", "When the user runs statechart", "Then TLC passes and the chart has no bug mark"],
+    skip: missing,
+    run() {
+      assert.equal(input(4)["Safety.cfg"], input(4, true)["Safety.cfg"]);
+      assert.equal(input(4)["Safety.tla"].match(/^Safe == .*$/m)![0], input(4, true)["Safety.tla"].match(/^Safe == .*$/m)![0]);
+      const r = drive("corrected", input(4, true));
+      assert.equal(r.status, 0);
+      assert.match(r.report, /3 states/);
+      assert.match(r.report, /## Rules that hold\nSafe, NoDeadlock/);
+      assert.doesNotMatch(r.chart, /class s\d+ (breaks|mayBreak)/);
+    },
+  },
+  "The chart budget preserves counterexamples": {
+    steps: ["Given a bounded model with more than 500 states", "When the user runs statechart", "Then only shortest bug paths are drawn when a rule breaks", "And no chart is written when every rule holds"],
+    skip: missing,
+    run() {
+      const broken = drive("budget-broken", input(501));
+      assert.equal(broken.status, 1);
+      assert.match(broken.report, /chart budget of 500.*only the bug paths: 4 states and 3 arrows/);
+      assert.match(broken.report, /shortest path has 3 steps/);
+      const passed = drive("budget-passing", input(501, false, 501));
+      assert.equal(passed.status, 0);
+      assert.match(passed.report, /502 states.*wrote no chart\.mmd/);
+      assert.equal(passed.chart, "");
+    },
+  },
+  "Both hosts require user invocation": {
+    steps: ["Given the canonical statechart skill", "When setup projects the skill into both discovery roots", "Then both projections resolve to the canonical skill", "And Claude and Codex disable implicit invocation"],
+    run() {
+      for (const host of [".claude", ".agents"])
+        assert.equal(fs.realpathSync(path.join(root, host, "skills/statechart")), fs.realpathSync(skill));
+      assert.match(read(path.join(skill, "SKILL.md")), /^disable-model-invocation: true$/m);
+      assert.match(read(path.join(skill, "agents/openai.yaml")), /^  allow_implicit_invocation: true$/m);
+    },
+  },
+};
+
+const feature = read(path.join(import.meta.dirname, "acceptance.feature"));
+const blocks = feature.split(/\n  Scenario: /).slice(1);
+assert.equal(blocks.length, Object.keys(scenarios).length);
+for (const block of blocks) {
+  const [name, ...steps] = block.trim().split("\n");
+  const scenario = scenarios[name];
+  assert.ok(scenario, `Unwired scenario: ${name}`);
+  assert.deepEqual(steps.map(s => s.trim()), scenario.steps, `Unwired steps: ${name}`);
+  test(name, { skip: scenario.skip }, scenario.run);
+}

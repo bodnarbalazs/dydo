@@ -1,0 +1,10 @@
+test_clean_source_external_fresh_output (__main__.RecipeChecks.test_clean_source_external_fresh_output) ... ok
+test_refuses_committed_runtime_mismatch (__main__.RecipeChecks.test_refuses_committed_runtime_mismatch) ... ok
+test_refuses_output_reuse (__main__.RecipeChecks.test_refuses_output_reuse) ... ok
+test_refuses_source_output_overlap (__main__.RecipeChecks.test_refuses_source_output_overlap) ... ok
+test_refuses_unrelated_dirty_source (__main__.RecipeChecks.test_refuses_unrelated_dirty_source) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.384s
+
+OK

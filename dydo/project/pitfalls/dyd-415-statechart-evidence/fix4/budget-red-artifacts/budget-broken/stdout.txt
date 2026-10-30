@@ -1,0 +1,15 @@
+# Safety
+
+TLC reached 502 states, more than the chart budget of 500, so the chart draws only the bug paths: 4 states and 3 arrows.
+
+## Safe breaks
+The shortest path has 3 steps:
+0. Count 0
+1. increment: Count 1
+2. increment: Count 2
+3. increment: Count 3
+
+## Rules that hold
+NoDeadlock
+
+Wrote C:\Users\User\AppData\Local\Temp\dyd415-fix4-a6wj_23v\tmp\statechart-acceptance-Ymacpg\out

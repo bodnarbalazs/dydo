@@ -1,0 +1,112 @@
+{
+  "scenariosAccounted": 4,
+  "newRedRestoredPairs": 3,
+  "existingPair": {
+    "scenario": "A broken model shows its shortest bug path",
+    "reference": "../fix1/acceptance-mutation-{red,restored}.{json,txt}",
+    "hashes": {
+      "acceptance-mutation-red.json": "ce35a5ea340ee22e0d9132fe82d343282d91be6167b76ba15895586a626eae9c",
+      "acceptance-mutation-red.txt": "c2995f9d8dcfd00a47d4030e26b624c887f63d51e07b2f1fe041be821eea53f6",
+      "acceptance-mutation-restored.json": "6d84976bbdde98c6be3e9c6fbab63cc25f54c3ec418040d89dbdff3e7610ba32",
+      "acceptance-mutation-restored.txt": "6c492ff953eb6b162ea89025c241ef8193de01d1ed05d5bbe7835e812c7bc62b",
+      "windows-source.json": "4f49fddd72ca4cb3ce79c7fdbb45c9d8b2bcbf05d99dc05820067d18e89c6f17"
+    },
+    "observed": "Retained pair inspected and source identity rechecked; not rerun"
+  },
+  "newPairs": [
+    {
+      "scenario": "Correcting the model preserves the invariant",
+      "changedExpectedValue": {
+        "before": "/3 states/",
+        "after": "/4 states/"
+      },
+      "beforeSha256": "8a66538da78e1606edd1d37f88c8d9173c7f4c1621479b7643a0a74c39b87b19",
+      "mutatedSha256": "a593aa1e3aaf510c5d721c4015e6574e9d12a408c1eaa1101ed14df0d3084493",
+      "restoredSha256": "8a66538da78e1606edd1d37f88c8d9173c7f4c1621479b7643a0a74c39b87b19",
+      "originalGherkinAndRuntimeUnchanged": true,
+      "results": [
+        {
+          "phase": "red",
+          "exit": 1,
+          "tests": 1,
+          "skipped": 0,
+          "testSha256": "a593aa1e3aaf510c5d721c4015e6574e9d12a408c1eaa1101ed14df0d3084493",
+          "output": "corrected-red.stdout",
+          "hiddenLaunches": 7
+        },
+        {
+          "phase": "restored",
+          "exit": 0,
+          "tests": 1,
+          "skipped": 0,
+          "testSha256": "8a66538da78e1606edd1d37f88c8d9173c7f4c1621479b7643a0a74c39b87b19",
+          "output": "corrected-restored.stdout",
+          "hiddenLaunches": 7
+        }
+      ]
+    },
+    {
+      "scenario": "The chart budget preserves counterexamples",
+      "changedExpectedValue": {
+        "before": "/shortest path has 3 steps/",
+        "after": "/shortest path has 4 steps/"
+      },
+      "beforeSha256": "8a66538da78e1606edd1d37f88c8d9173c7f4c1621479b7643a0a74c39b87b19",
+      "mutatedSha256": "34669d073f62e82ec0bef97440dfb5b877f5b72724cb6310f09178cd7f94b80f",
+      "restoredSha256": "8a66538da78e1606edd1d37f88c8d9173c7f4c1621479b7643a0a74c39b87b19",
+      "originalGherkinAndRuntimeUnchanged": true,
+      "results": [
+        {
+          "phase": "red",
+          "exit": 1,
+          "tests": 1,
+          "skipped": 0,
+          "testSha256": "34669d073f62e82ec0bef97440dfb5b877f5b72724cb6310f09178cd7f94b80f",
+          "output": "budget-red.stdout",
+          "hiddenLaunches": 7
+        },
+        {
+          "phase": "restored",
+          "exit": 0,
+          "tests": 1,
+          "skipped": 0,
+          "testSha256": "8a66538da78e1606edd1d37f88c8d9173c7f4c1621479b7643a0a74c39b87b19",
+          "output": "budget-restored.stdout",
+          "hiddenLaunches": 13
+        }
+      ]
+    },
+    {
+      "scenario": "Both hosts require user invocation",
+      "changedExpectedValue": {
+        "before": "allow_implicit_invocation: false$",
+        "after": "allow_implicit_invocation: true$"
+      },
+      "beforeSha256": "8a66538da78e1606edd1d37f88c8d9173c7f4c1621479b7643a0a74c39b87b19",
+      "mutatedSha256": "f2d60eee1a9cf454e2929a9c78f867a635b0e8c2fe0e79cfe1c68b65598ef671",
+      "restoredSha256": "8a66538da78e1606edd1d37f88c8d9173c7f4c1621479b7643a0a74c39b87b19",
+      "originalGherkinAndRuntimeUnchanged": true,
+      "results": [
+        {
+          "phase": "red",
+          "exit": 1,
+          "tests": 1,
+          "skipped": 0,
+          "testSha256": "f2d60eee1a9cf454e2929a9c78f867a635b0e8c2fe0e79cfe1c68b65598ef671",
+          "output": "hosts-red.stdout",
+          "hiddenLaunches": 0
+        },
+        {
+          "phase": "restored",
+          "exit": 0,
+          "tests": 1,
+          "skipped": 0,
+          "testSha256": "8a66538da78e1606edd1d37f88c8d9173c7f4c1621479b7643a0a74c39b87b19",
+          "output": "hosts-restored.stdout",
+          "hiddenLaunches": 0
+        }
+      ]
+    }
+  ],
+  "fullChangedCodeMutation": "UNAVAILABLE"
+}

@@ -1,0 +1,9 @@
+# Every receipt and script is byte-hashed; preserve its observed line endings.
+* -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+*.stdout -diff
+*.stderr -diff
+# Raw observations and historical snapshots keep their original whitespace.
+*.txt -diff
+reviews/** -diff
+test-bytes/** -diff
+*-artifacts/** -diff

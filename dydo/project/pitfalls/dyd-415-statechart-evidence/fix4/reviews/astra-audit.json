@@ -1,0 +1,266 @@
+{
+  "source": {
+    "vendored": 407,
+    "unchanged": 391,
+    "added": 14,
+    "vendoredMismatches": [],
+    "upstreamMismatches": [],
+    "addedMismatches": []
+  },
+  "evidence": {
+    "fix1": {
+      "files": 186,
+      "mismatches": []
+    },
+    "fix2": {
+      "files": 205,
+      "mismatches": []
+    },
+    "fix3": {
+      "files": 110,
+      "mismatches": []
+    }
+  },
+  "platformSource": {
+    "snapshotFiles": 421,
+    "snapshotMismatches": [],
+    "windowsFiles": 46,
+    "windowsMismatches": []
+  },
+  "staticScope": {
+    "measured": 19,
+    "changed": 19,
+    "missing": [],
+    "extra": [],
+    "vendorClaims": 281,
+    "badVendorClaims": [],
+    "modules": [
+      {
+        "path": "scripts/frontends/dot.ts",
+        "maintained": 1,
+        "moduleVendorIdentical": false,
+        "moduleCognitive": 0
+      },
+      {
+        "path": "scripts/run.ts",
+        "maintained": 6,
+        "moduleVendorIdentical": true,
+        "moduleCognitive": 0
+      },
+      {
+        "path": "scripts/statechart.ts",
+        "maintained": 4,
+        "moduleVendorIdentical": false,
+        "moduleCognitive": 18
+      },
+      {
+        "path": "scripts/test/cli.test.ts",
+        "maintained": 3,
+        "moduleVendorIdentical": false,
+        "moduleCognitive": 12
+      },
+      {
+        "path": "scripts/test/config-fuzz.test.ts",
+        "maintained": 1,
+        "moduleVendorIdentical": true,
+        "moduleCognitive": 1
+      },
+      {
+        "path": "scripts/test/corpus.test.ts",
+        "maintained": 0,
+        "moduleVendorIdentical": false,
+        "moduleCognitive": 5
+      },
+      {
+        "path": "scripts/test/differential.test.ts",
+        "maintained": 3,
+        "moduleVendorIdentical": true,
+        "moduleCognitive": 2
+      },
+      {
+        "path": "scripts/test/java.ts",
+        "maintained": 1,
+        "moduleVendorIdentical": true,
+        "moduleCognitive": 23
+      },
+      {
+        "path": "scripts/test/messages.test.ts",
+        "maintained": 1,
+        "moduleVendorIdentical": false,
+        "moduleCognitive": 0
+      },
+      {
+        "path": "scripts/test/pipeline.test.ts",
+        "maintained": 1,
+        "moduleVendorIdentical": true,
+        "moduleCognitive": 0
+      },
+      {
+        "path": "scripts/test/render.test.ts",
+        "maintained": 1,
+        "moduleVendorIdentical": true,
+        "moduleCognitive": 5
+      },
+      {
+        "path": "scripts/test/tlc-out.test.ts",
+        "maintained": 0,
+        "moduleVendorIdentical": false,
+        "moduleCognitive": 2
+      },
+      {
+        "path": "scripts/test/tlc.ts",
+        "maintained": 2,
+        "moduleVendorIdentical": true,
+        "moduleCognitive": 1
+      },
+      {
+        "path": "scripts/worker.ts",
+        "maintained": 0,
+        "moduleVendorIdentical": false,
+        "moduleCognitive": 13
+      },
+      {
+        "path": "scripts/test/acceptance.test.ts",
+        "maintained": 8,
+        "moduleVendorIdentical": false,
+        "moduleCognitive": 5
+      },
+      {
+        "path": "scripts/test/windows.test.ts",
+        "maintained": 12,
+        "moduleVendorIdentical": false,
+        "moduleCognitive": 3
+      },
+      {
+        "path": "scripts/windows-cleanup.ts",
+        "maintained": 0,
+        "moduleVendorIdentical": false,
+        "moduleCognitive": 10
+      },
+      {
+        "path": "scripts/windows.ts",
+        "maintained": 9,
+        "moduleVendorIdentical": false,
+        "moduleCognitive": 0
+      },
+      {
+        "path": "scripts/test/adaptation.test.ts",
+        "maintained": 15,
+        "moduleVendorIdentical": false,
+        "moduleCognitive": 4
+      }
+    ]
+  },
+  "tsCoverage": [
+    {
+      "path": "skills/engineering/statechart/scripts/frontends/dot.ts",
+      "linesCovered": 72,
+      "lines": 77,
+      "branchesCovered": 32,
+      "branches": 36,
+      "maxHcrap": 4.0,
+      "maxCognitive": 4
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/run.ts",
+      "linesCovered": 475,
+      "lines": 484,
+      "branchesCovered": 201,
+      "branches": 212,
+      "maxHcrap": 6.0,
+      "maxCognitive": 6
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/statechart.ts",
+      "linesCovered": 171,
+      "lines": 171,
+      "branchesCovered": 55,
+      "branches": 62,
+      "maxHcrap": 18.0,
+      "maxCognitive": 18
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/worker.ts",
+      "linesCovered": 41,
+      "lines": 41,
+      "branchesCovered": 10,
+      "branches": 12,
+      "maxHcrap": 13.0,
+      "maxCognitive": 13
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/windows-cleanup.ts",
+      "linesCovered": 17,
+      "lines": 17,
+      "branchesCovered": 9,
+      "branches": 10,
+      "maxHcrap": 10.0,
+      "maxCognitive": 10
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/windows.ts",
+      "linesCovered": 47,
+      "lines": 47,
+      "branchesCovered": 19,
+      "branches": 19,
+      "maxHcrap": 2.0,
+      "maxCognitive": 2
+    }
+  ],
+  "hiddenLaunches": {
+    "count": 521,
+    "notHidden": []
+  },
+  "native": {
+    "sourceBytes": 2679,
+    "excerptBytes": 2315,
+    "excerptOffset": 82,
+    "startLine": 4,
+    "sha256": "d73528c22df450659cbb6ce42ced18bb3fe15d081b850278e6425187bce476ee",
+    "nativeIdentityAndRestoration": true,
+    "lines": [
+      15,
+      15
+    ],
+    "branches": [
+      6,
+      8
+    ],
+    "tests": {
+      "baseline": {
+        "count": 6,
+        "outcomes": {
+          "AdapterTests.InvalidPidExceptionPreservesNativeErrorCode": "Passed",
+          "AdapterTests.AssignmentExceptionPreservesNativeErrorCode": "Passed",
+          "AdapterTests.InvalidPidThrowsAndClosesEveryAllocatedJob": "Passed",
+          "AdapterTests.ClosingLastJobHandleKillsOwnedProcess": "Passed",
+          "AdapterTests.TerminationUsesRequestedExitCodeAndClosedHandleIsInvalid": "Passed",
+          "AdapterTests.ExitedOwnedProcessRejectsAssignmentAndClosesJobAndProcessHandles": "Passed"
+        }
+      },
+      "instrumented": {
+        "count": 6,
+        "outcomes": {
+          "AdapterTests.InvalidPidExceptionPreservesNativeErrorCode": "Passed",
+          "AdapterTests.TerminationUsesRequestedExitCodeAndClosedHandleIsInvalid": "Passed",
+          "AdapterTests.ClosingLastJobHandleKillsOwnedProcess": "Passed",
+          "AdapterTests.ExitedOwnedProcessRejectsAssignmentAndClosesJobAndProcessHandles": "Passed",
+          "AdapterTests.InvalidPidThrowsAndClosesEveryAllocatedJob": "Passed",
+          "AdapterTests.AssignmentExceptionPreservesNativeErrorCode": "Passed"
+        }
+      }
+    }
+  },
+  "executionReceipts": {
+    "driver-identity.json": true,
+    "resume-driver-identity.json": true
+  },
+  "producerHashes": {
+    "js_metrics.cjs": true,
+    "typescript_join.py": true,
+    "gate_inventory.py": true,
+    "knip_reporter.mjs": true,
+    "package.json": true,
+    "package-lock.json": true
+  }
+}

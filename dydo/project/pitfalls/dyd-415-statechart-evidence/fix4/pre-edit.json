@@ -1,0 +1,13 @@
+{
+  "head": "fb047aa7c41b97277aa75620677d221d882e4f5e",
+  "branch": "DYD-415-statechart",
+  "root": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f",
+  "base": "8553172dfaa7601d34f6b884c10350183f9faaa5",
+  "baseAncestorExit": 0,
+  "cleanBeforeFirstEdit": true,
+  "cleanObservedCommand": "git status --porcelain=v1: empty in this session before fix4 creation",
+  "ownedPaths": ["dydo/project/pitfalls/dyd-415-statechart-evidence/fix4/**", "dydo/project/pitfalls/dyd-415-statechart-verification.md (pointer only)"],
+  "fiveChecksSatisfied": true,
+  "runtimePin": "0ddbbf3f251a4cf5d578f4d6b84f60216efdb3b6",
+  "writer": "code-writer/model: gpt-6.1-sol/high"
+}

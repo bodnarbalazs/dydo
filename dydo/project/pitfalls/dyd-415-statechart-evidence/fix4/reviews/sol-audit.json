@@ -1,0 +1,145 @@
+{
+  "fix1Manifest": {
+    "files": 186,
+    "mismatches": []
+  },
+  "fix2Manifest": {
+    "files": 205,
+    "mismatches": []
+  },
+  "fix3Manifest": {
+    "files": 110,
+    "mismatches": []
+  },
+  "snapshot": {
+    "files": 421,
+    "mismatches": []
+  },
+  "windowsSource": {
+    "files": 46,
+    "mismatches": []
+  },
+  "runtime": {
+    "files": 46,
+    "mismatches": []
+  },
+  "upstream": {
+    "files": 407,
+    "mismatches": [],
+    "identical": 391
+  },
+  "extraction": {
+    "source": "skills/engineering/statechart/scripts/windows-job.ps1",
+    "sourceSha256": "ea60a592b12c05ec61b6bd1ef77b2cc9ced422bfa8021df596af3b804da62a6c",
+    "sourceBytes": 2679,
+    "excerptByteOffset": 82,
+    "excerptBytes": 2315,
+    "sourceStartLine": 4,
+    "sourceLineForGeneratedLine": "generatedLine + sourceStartLine - 1",
+    "excerptSha256": "d73528c22df450659cbb6ce42ced18bb3fe15d081b850278e6425187bce476ee",
+    "generatedSha256": "d73528c22df450659cbb6ce42ced18bb3fe15d081b850278e6425187bce476ee",
+    "newline": "LF",
+    "terminalNewline": false,
+    "semantics": "PowerShell here-string excludes opening and closing delimiter newlines"
+  },
+  "nativeCoverageRecount": {
+    "linesCovered": 15,
+    "linesTotal": 15,
+    "branchesCovered": 6,
+    "branchesTotal": 8,
+    "token": 100663303
+  },
+  "executionSnapshots": {
+    "executed-setup-driver.py": true,
+    "executed-campaign-driver.py": true
+  },
+  "retainedRestoredBinaries": {
+    "Adapter.dll": true,
+    "Adapter.pdb": true,
+    "Adapter.Tests.dll": true,
+    "Adapter.Tests.pdb": true
+  },
+  "baselineTests": [
+    "AdapterTests.InvalidPidExceptionPreservesNativeErrorCode",
+    "AdapterTests.AssignmentExceptionPreservesNativeErrorCode",
+    "AdapterTests.InvalidPidThrowsAndClosesEveryAllocatedJob",
+    "AdapterTests.ClosingLastJobHandleKillsOwnedProcess",
+    "AdapterTests.TerminationUsesRequestedExitCodeAndClosedHandleIsInvalid",
+    "AdapterTests.ExitedOwnedProcessRejectsAssignmentAndClosesJobAndProcessHandles"
+  ],
+  "instrumentedTests": [
+    "AdapterTests.InvalidPidExceptionPreservesNativeErrorCode",
+    "AdapterTests.TerminationUsesRequestedExitCodeAndClosedHandleIsInvalid",
+    "AdapterTests.ClosingLastJobHandleKillsOwnedProcess",
+    "AdapterTests.ExitedOwnedProcessRejectsAssignmentAndClosesJobAndProcessHandles",
+    "AdapterTests.InvalidPidThrowsAndClosesEveryAllocatedJob",
+    "AdapterTests.AssignmentExceptionPreservesNativeErrorCode"
+  ],
+  "staticVendorBodies": {
+    "mismatches": [],
+    "files": 19
+  },
+  "coverageSourceMapContents": {},
+  "typescriptRecount": [
+    {
+      "path": "skills/engineering/statechart/scripts/frontends/dot.ts",
+      "linesCovered": 72,
+      "linesTotal": 77,
+      "branchesCovered": 32,
+      "branchesTotal": 36,
+      "maxMaintainedHcrap": 4.0
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/run.ts",
+      "linesCovered": 475,
+      "linesTotal": 484,
+      "branchesCovered": 201,
+      "branchesTotal": 212,
+      "maxMaintainedHcrap": 6.0
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/statechart.ts",
+      "linesCovered": 171,
+      "linesTotal": 171,
+      "branchesCovered": 55,
+      "branchesTotal": 62,
+      "maxMaintainedHcrap": 18.0
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/worker.ts",
+      "linesCovered": 41,
+      "linesTotal": 41,
+      "branchesCovered": 10,
+      "branchesTotal": 12,
+      "maxMaintainedHcrap": 13.0
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/windows-cleanup.ts",
+      "linesCovered": 17,
+      "linesTotal": 17,
+      "branchesCovered": 9,
+      "branchesTotal": 10,
+      "maxMaintainedHcrap": 10.0
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/windows.ts",
+      "linesCovered": 47,
+      "linesTotal": 47,
+      "branchesCovered": 19,
+      "branchesTotal": 19,
+      "maxMaintainedHcrap": 2.0
+    }
+  ],
+  "diffCheck": {
+    "argv": [
+      "git",
+      "diff",
+      "--check",
+      "8553172dfaa7601d34f6b884c10350183f9faaa5",
+      "fb047aa7c41b97277aa75620677d221d882e4f5e"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  }
+}

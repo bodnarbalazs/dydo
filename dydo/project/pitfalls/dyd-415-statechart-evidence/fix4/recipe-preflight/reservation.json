@@ -1,0 +1,9 @@
+{
+  "owner": "DYD-415 portable recipe",
+  "pid": 134020,
+  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix4-a6wj_23v\\recipe\\driver.py preflight",
+  "ticket": "0000000001-049f8ac001ffdf41",
+  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
+  "inherited": true,
+  "owned": false
+}

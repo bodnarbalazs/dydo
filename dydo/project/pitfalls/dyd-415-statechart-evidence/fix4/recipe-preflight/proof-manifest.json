@@ -1,0 +1,32 @@
+[
+  {
+    "path": "driver-identity.json",
+    "bytes": 179,
+    "sha256": "a2e7bf1d0007f2fc32b11e5ced727d86a055c3688a52a5fe556a4c48c258ddb6"
+  },
+  {
+    "path": "preflight.json",
+    "bytes": 1221,
+    "sha256": "93f1d99c44e4bfdf710c944e632c1c247da1d6426744d57aff92b817e642b041"
+  },
+  {
+    "path": "released.json",
+    "bytes": 509,
+    "sha256": "4240d67c2865025d61b04fd88c3c03b28c305f6bd98f16468f3b00f4be164868"
+  },
+  {
+    "path": "reservation.json",
+    "bytes": 398,
+    "sha256": "b90949eef1d61293cb55cc56012e0979296d1514c2eff21c2533b627e6550e80"
+  },
+  {
+    "path": "runtime-after.json",
+    "bytes": 8521,
+    "sha256": "824d055d06973af263aa248a806cedb8f7b56f4a4747fb382a48f9e576c1e567"
+  },
+  {
+    "path": "runtime-before.json",
+    "bytes": 8521,
+    "sha256": "824d055d06973af263aa248a806cedb8f7b56f4a4747fb382a48f9e576c1e567"
+  }
+]

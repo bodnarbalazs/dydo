@@ -1,0 +1,15 @@
+{
+  "packageSha256": "48ad640bc67eb52e0f95c2f80f6368b24088033c5792e834d7ec4ae2ae543217",
+  "files": [
+    {
+      "member": "tools/net6.0/any/coverlet.console.dll",
+      "installed": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix3\\tools\\.store\\coverlet.console\\6.0.4\\coverlet.console\\6.0.4\\tools\\net6.0\\any\\coverlet.console.dll",
+      "sha256": "34b26de943c0a33f064c29432527767eadc64e876454638c56e843fd540e6768"
+    },
+    {
+      "member": "tools/net6.0/any/coverlet.core.dll",
+      "installed": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix3\\tools\\.store\\coverlet.console\\6.0.4\\coverlet.console\\6.0.4\\tools\\net6.0\\any\\coverlet.core.dll",
+      "sha256": "1966c1724f2da9612285e0372d7340bc1386a330649e228b8f47108fcb7c05e9"
+    }
+  ]
+}

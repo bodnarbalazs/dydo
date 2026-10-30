@@ -1,0 +1,11 @@
+  Determining projects to restore...
+  Restored C:\Users\User\AppData\Local\Temp\dyd415-fix3\adapter\Adapter.csproj (in 750 ms).
+  Restored C:\Users\User\AppData\Local\Temp\dyd415-fix3\tests\Adapter.Tests.csproj (in 3.14 sec).
+  Adapter -> C:\Users\User\AppData\Local\Temp\dyd415-fix3\adapter\bin\Debug\net10.0\Adapter.dll
+  Adapter.Tests -> C:\Users\User\AppData\Local\Temp\dyd415-fix3\tests\bin\Debug\net10.0\Adapter.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:07.25

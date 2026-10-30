@@ -1,0 +1,38 @@
+{
+  "module": "Adapter",
+  "method": "System.IntPtr StatechartJob::Attach(System.Int32)",
+  "token": 100663303,
+  "sourceSha256": "d73528c22df450659cbb6ce42ced18bb3fe15d081b850278e6425187bce476ee",
+  "linesCovered": 15,
+  "linesTotal": 15,
+  "lineCoverage": 1.0,
+  "branchesCovered": 6,
+  "branchesTotal": 8,
+  "branchCoverage": 0.75,
+  "cyclomatic": 5,
+  "cognitive": 5,
+  "hcrap": 5.0,
+  "thresholds": {
+    "line": 0.8,
+    "branch": 0.6,
+    "cognitive": 20,
+    "hcrap": 20
+  },
+  "numericThresholdsSatisfied": true,
+  "tests": {
+    "baseline": {
+      "Passed": 6,
+      "Failed": 0,
+      "NotExecuted": 0
+    },
+    "instrumented": {
+      "Passed": 6,
+      "Failed": 0,
+      "NotExecuted": 0
+    }
+  },
+  "nativeInstrumentationParity": true,
+  "independentReview": "NOT PERFORMED BY THIS CREW",
+  "powershellLineBranchCcCognitiveHcrap": "UNAVAILABLE",
+  "changedCodeMutation": "UNAVAILABLE"
+}

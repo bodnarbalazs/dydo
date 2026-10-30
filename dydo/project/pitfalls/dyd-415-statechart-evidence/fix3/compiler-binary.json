@@ -1,0 +1,14 @@
+{
+  "path": "C:\\Program Files\\dotnet\\sdk\\10.0.300\\Roslyn\\bincore\\csc.dll",
+  "sha256": "5d03664b92a3c91bafb63466d1796d1aa863a5cbab3d6b79a30ba1b13d192cd2",
+  "settings": {
+    "NETCoreSdkVersion": "10.0.300",
+    "TargetFramework": "net10.0",
+    "LangVersion": "14.0",
+    "Optimize": "false",
+    "DebugType": "portable",
+    "Nullable": "disable",
+    "TreatWarningsAsErrors": "true",
+    "EnforceCodeStyleInBuild": "true"
+  }
+}

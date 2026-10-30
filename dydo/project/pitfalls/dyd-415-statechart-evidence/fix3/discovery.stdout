@@ -1,0 +1,8 @@
+Test run for C:\Users\User\AppData\Local\Temp\dyd415-fix3\tests\bin\Debug\net10.0\Adapter.Tests.dll (.NETCoreApp,Version=v10.0)
+The following Tests are available:
+    AdapterTests.ClosingLastJobHandleKillsOwnedProcess
+    AdapterTests.TerminationUsesRequestedExitCodeAndClosedHandleIsInvalid
+    AdapterTests.InvalidPidThrowsAndClosesEveryAllocatedJob
+    AdapterTests.ExitedOwnedProcessRejectsAssignmentAndClosesJobAndProcessHandles
+    AdapterTests.InvalidPidExceptionPreservesNativeErrorCode
+    AdapterTests.AssignmentExceptionPreservesNativeErrorCode

@@ -1,0 +1,12 @@
+{
+  "removedOwnedEntry": [
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix3\\dotnet-home\\.dotnet\\tools"
+  ],
+  "removedCount": 1,
+  "otherEntriesPreserved": true,
+  "registryValueTypePreserved": true,
+  "taskEntryAbsent": true,
+  "certificateStoreModified": false,
+  "beforeSha256": "32ccdd09a15de112721cc445cafd975c1b99d242339545da1b360775efc87c7b",
+  "afterSha256": "a04a5cd3166547cd9c3df37a1413f70371996835454f01525a96829b3b9ac076"
+}

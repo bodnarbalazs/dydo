@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "dotnet",
+    "msbuild",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix3\\adapter\\Adapter.csproj",
+    "-getProperty:NETCoreSdkVersion,TargetFramework,LangVersion,Optimize,DebugType,Nullable,TreatWarningsAsErrors,EnforceCodeStyleInBuild"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix3",
+  "exit": 0,
+  "seconds": 0.34233522415161133,
+  "hidden": true,
+  "ticket": "0000000050-cd45eca16085b16c"
+}

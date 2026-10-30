@@ -1,0 +1,29 @@
+# DYD-415 native parity alternative — fresh assurance crew
+
+Role code-writer (assurance correction), requested gpt-6.1-sol/high. No subagents. Read code-writer and must-reads plus this bounded commission. Actual narrow measurement, not broad rediscovery. Captain owns status/review.
+Shared host-isolated worktree C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f, branch DYD-415-statechart clean HEAD f0cfa5064eeb544cf2a7438ebcfeb51ec90c6c35. Runtime source pinned0ddbbf3f251a4cf5d578f4d6b84f60216efdb3b6. Base8553172dfaa7601d34f6b884c10350183f9faaa5. Do not integrate master, change runtime, rewrite commits, push/PR/watch.
+
+## Authorization and exact scope
+DYD-415 map-holder assurance amendment2026-10-30T00:07:27.421Z authorizes task-local pinned native Roslyn/Coverlet measurement of byte-identical C# extracted from windows-job.ps1. Night orders preserve all true capability/integration/parity gaps, no waiver/redesign/policy edit. This is the already-authorized Coverlet alternative named in fix2/capability-decision.md.
+Only add dydo/project/pitfalls/dyd-415-statechart-evidence/fix3/** with focused project/tool recipes and raw evidence. Existing fix1/fix2 evidence untouched; statechart runtime and all tests byte-identical. Prove five pre-edit checks. End new DYD-415 fix: ... proof commit, even if honest tool gap remains. Do not modify testing strategy/DRs/inventory.
+
+## Read and reuse
+fix2/verification.md, capability-decision.md, native-test-parity.json, native-summary.json.
+fix2/measure.py and driver.py, generated project/templates, exact extracted StatechartJob.cs.exact, extraction.json, test-source template, native Roslyn reports and identities.
+Task tools/builds retained under TEMP/dyd415-fix2; find by reading driver, don't broad search all home.
+Native baseline6/6, original Add-Type2/2. AltCover9.0.102 instrumented4/6: InvalidPidExceptionPreservesNativeErrorCode expects87 gets0; AssignmentExceptionPreservesNativeErrorCode expects5 gets0. Cleanup/lifecycle assertions still pass. Metrics100%lines/75%branches,CC/cognitive/HCRAP5/5/5 are valid numeric evidence but NOT passing instrumented gate. Source/PDB identity and original Add-Type integration are preserved.
+PSScriptAnalyzer1.24.0 already zero diagnostics; no rerun needed. Windows/Linux/TS suites valid and preserved, no platform suite repeat.
+
+## One bounded alternative
+Use TASK-LOCAL PINNED Coverlet (collector/MSBuild/console mode as tool supports with current net10) against the SAME byte-exact source and six focused test assertions. No source/test logic rewrite, no removing strict native error-code assertions or exclusions to get a pass. Fresh output path keeps original AltCover artifacts intact. Pin version/package hash, exact command/framework/compiler/instrumentation settings. Compare uninstrumented and instrumented PER TEST, preserve real exit and outputs. Hidden console launches.
+If baseline reuse justified exact same binary/test identity may reuse; otherwise only focused6-case baseline and focused instrumented run. Validate actual data nonzero and original source maps. Reuse native Roslyn facts for identical source only with identity proof. If Coverlet output schema lacks existing csharp_join identity fields, document actual native token/signature/PDB/source joins rather than fabricating AltCover fields or blindly passing another format to joiner. Measure counters with native identities; enforce80/60 and HCRAP/cognitive20.
+Success closes only native-instrumentation parity, not PowerShell/mutation missing-mechanism policy. If Coverlet also perturbs last error, retain result and return smallest practical next alternative, DO NOT keep exploring many tools or broad redesign. One substantive alternate mechanism, focused retries only for concrete setup failure.
+Compiled exact-source proof is distinct from actual original Add-Type integration; don't claim instrumentation of dynamic Add-Type assembly.
+
+## Resource/console requirements
+Every material provisioning/build/measurement/probe runs under live WINDOWS LC FIFO and required locks. API C:/Users/User/.t3/worktrees/LC/t3-6a75af47/tools/testing/runner/suite_slot.py; docs dydo/reference/tools/test-runner.md303-341. Normal TEMP Python driver: add LC root to sys.path, with suite_slot.book(subprocess.list2cmdline(command),worktree=ROOT), then nonwaiting Heavy and exclusively create TEMP/dydo-fullsuite.lock. Preserve LC_SUITE_SLOT_TICKET/default real namespace, keep parent alive until children exit, propagate exit. No outside-queue vacancy wait, foreign lock/process cleanup. Only owned idle child processes; CREATE_NO_WINDOW/windowsHide true.
+No global installs/home changes; task-local dependencies/caches. No full .NET/Linux/Windows suites. Owned reservations/resources released on all paths.
+
+## Return
+New commit/clean tree, runtime hashes unchanged, exact Coverlet version and6-case baseline/instrumented counts/semantic parity, numeric measurements and identity receipts if available, honest unavailable fields, compact reproducible walkthrough evidence recipe. Keep existing PowerShell line/branch/CC/cognitive/HCRAP and full changed-code mutation UNAVAILABLE for admiral's pending applicability decision; don't attempt universal adoption. No independent PASS, PR or release claim.
+

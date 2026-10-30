@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "git",
+    "status",
+    "--porcelain=v1",
+    "--untracked-files=all"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "exit": 0,
+  "seconds": 0.03737235069274902,
+  "hidden": true,
+  "ticket": "0000000050-cd45eca16085b16c"
+}

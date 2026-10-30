@@ -1,0 +1,12 @@
+{
+  "owner": "DYD-415 fix3",
+  "pid": 51460,
+  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-assurance3-driver.py measure",
+  "ticket": "0000000040-33d699f724cd2025",
+  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
+  "inherited": false,
+  "owned": true,
+  "fifoReleased": true,
+  "heavyReleased": true,
+  "dydoLockReleased": true
+}

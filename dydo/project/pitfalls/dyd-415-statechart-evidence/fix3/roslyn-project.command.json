@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "dotnet",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix2\\metrics\\bin\\Release\\net10.0\\GateMetrics.dll",
+    "--project",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix3\\adapter\\Adapter.csproj",
+    "--root",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix3"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix3",
+  "exit": 0,
+  "seconds": 2.2276508808135986,
+  "hidden": true,
+  "ticket": "0000000050-cd45eca16085b16c"
+}

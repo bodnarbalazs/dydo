@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "dotnet",
+    "test",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix3\\tests\\Adapter.Tests.csproj",
+    "-c",
+    "Debug",
+    "--no-build",
+    "--no-restore",
+    "--list-tests"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix3",
+  "exit": 0,
+  "seconds": 1.2811987400054932,
+  "hidden": true,
+  "ticket": "0000000050-cd45eca16085b16c"
+}

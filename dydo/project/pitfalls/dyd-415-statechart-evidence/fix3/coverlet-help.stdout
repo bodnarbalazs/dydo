@@ -1,0 +1,36 @@
+Description:
+  Cross platform .NET Core code coverage tool
+
+Usage:
+  coverlet.console <path> [options]
+
+Arguments:
+  <path>  Path to the test assembly or application directory.
+
+Options:
+  -t, --target <target> (REQUIRED)                                           Path to the test runner application.
+  -a, --targetargs <targetargs>                                              Arguments to be passed to the test runner.
+  -o, --output <output>                                                      Output of the generated coverage report
+  -v, --verbosity <Detailed|Minimal|Normal|Quiet>                            Sets the verbosity level of the command. Allowed values are quiet, minimal, normal, detailed. [default: Normal]
+  -f, --format <format>                                                      Format of the generated coverage report. [default: json]
+  --threshold <threshold>                                                    Exits with error if the coverage % is below value.
+  --threshold-type <branch|line|method>                                      Coverage type to apply the threshold to. [default: line|branch|method]
+  --threshold-stat <Average|Minimum|Total>                                   Coverage statistic used to enforce the threshold value. [default: Minimum]
+  --exclude <exclude>                                                        Filter expressions to exclude specific modules and types.
+  --include <include>                                                        Filter expressions to include only specific modules and types.
+  --exclude-by-file <exclude-by-file>                                        Glob patterns specifying source files to exclude.
+  --include-directory <include-directory>                                    Include directories containing additional assemblies to be instrumented.
+  --exclude-by-attribute <exclude-by-attribute>                              Attributes to exclude from code coverage.
+  --include-test-assembly                                                    Specifies whether to report code coverage of the test assembly.
+  --single-hit                                                               Specifies whether to limit code coverage hit reporting to a single hit for each location
+  --skipautoprops                                                            Neither track nor record auto-implemented properties.
+  --merge-with <merge-with>                                                  Path to existing coverage result to merge.
+  --use-source-link                                                          Specifies whether to use SourceLink URIs in place of file system paths.
+  --does-not-return-attribute <does-not-return-attribute>                    Attributes that mark methods that do not return
+  --exclude-assemblies-without-sources <exclude-assemblies-without-sources>  Specifies behaviour of heuristic to ignore assemblies with missing source documents.
+  --source-mapping-file <source-mapping-file>                                Specifies the path to a SourceRootsMappings file.
+  --version                                                                  Show version information
+  -?, -h, --help                                                             Show help and usage information
+
+
+

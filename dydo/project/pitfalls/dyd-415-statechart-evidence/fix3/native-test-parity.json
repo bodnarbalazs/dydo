@@ -1,0 +1,67 @@
+{
+  "baseline": [
+    {
+      "name": "AdapterTests.AssignmentExceptionPreservesNativeErrorCode",
+      "outcome": "Passed",
+      "output": ""
+    },
+    {
+      "name": "AdapterTests.ClosingLastJobHandleKillsOwnedProcess",
+      "outcome": "Passed",
+      "output": "Owned child 59644 exited after last job handle closed"
+    },
+    {
+      "name": "AdapterTests.ExitedOwnedProcessRejectsAssignmentAndClosesJobAndProcessHandles",
+      "outcome": "Passed",
+      "output": "AssignProcessToJobObject exited owned process: 32 failures; handles before=374, after=374"
+    },
+    {
+      "name": "AdapterTests.InvalidPidExceptionPreservesNativeErrorCode",
+      "outcome": "Passed",
+      "output": ""
+    },
+    {
+      "name": "AdapterTests.InvalidPidThrowsAndClosesEveryAllocatedJob",
+      "outcome": "Passed",
+      "output": "OpenProcess invalid PID: 32 failures; handles before=370, after=370"
+    },
+    {
+      "name": "AdapterTests.TerminationUsesRequestedExitCodeAndClosedHandleIsInvalid",
+      "outcome": "Passed",
+      "output": "Owned child 166796 exit=2; closed job ERROR_INVALID_HANDLE=6"
+    }
+  ],
+  "instrumented": [
+    {
+      "name": "AdapterTests.AssignmentExceptionPreservesNativeErrorCode",
+      "outcome": "Passed",
+      "output": ""
+    },
+    {
+      "name": "AdapterTests.ClosingLastJobHandleKillsOwnedProcess",
+      "outcome": "Passed",
+      "output": "Owned child 86588 exited after last job handle closed"
+    },
+    {
+      "name": "AdapterTests.ExitedOwnedProcessRejectsAssignmentAndClosesJobAndProcessHandles",
+      "outcome": "Passed",
+      "output": "AssignProcessToJobObject exited owned process: 32 failures; handles before=372, after=372"
+    },
+    {
+      "name": "AdapterTests.InvalidPidExceptionPreservesNativeErrorCode",
+      "outcome": "Passed",
+      "output": ""
+    },
+    {
+      "name": "AdapterTests.InvalidPidThrowsAndClosesEveryAllocatedJob",
+      "outcome": "Passed",
+      "output": "OpenProcess invalid PID: 32 failures; handles before=368, after=368"
+    },
+    {
+      "name": "AdapterTests.TerminationUsesRequestedExitCodeAndClosedHandleIsInvalid",
+      "outcome": "Passed",
+      "output": "Owned child 168600 exit=2; closed job ERROR_INVALID_HANDLE=6"
+    }
+  ],
+  "sameOutcomes": true
+}

@@ -1,0 +1,14 @@
+{
+  "source": "skills/engineering/statechart/scripts/windows-job.ps1",
+  "sourceSha256": "ea60a592b12c05ec61b6bd1ef77b2cc9ced422bfa8021df596af3b804da62a6c",
+  "sourceBytes": 2679,
+  "excerptByteOffset": 82,
+  "excerptBytes": 2315,
+  "sourceStartLine": 4,
+  "sourceLineForGeneratedLine": "generatedLine + sourceStartLine - 1",
+  "excerptSha256": "d73528c22df450659cbb6ce42ced18bb3fe15d081b850278e6425187bce476ee",
+  "generatedSha256": "d73528c22df450659cbb6ce42ced18bb3fe15d081b850278e6425187bce476ee",
+  "newline": "LF",
+  "terminalNewline": false,
+  "semantics": "PowerShell here-string excludes opening and closing delimiter newlines"
+}

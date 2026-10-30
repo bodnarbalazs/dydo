@@ -1,0 +1,161 @@
+{
+  "reportModule": "Adapter.dll",
+  "document": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix3\\adapter\\StatechartJob.cs",
+  "signature": "System.IntPtr StatechartJob::Attach(System.Int32)",
+  "nativeToken": 100663303,
+  "originalAssemblySha256": "c83e015a597711c05452828d3e07648db1e994ece2177e2e733a26cdde55654e",
+  "instrumentedAssemblySha256": "1d420fd66cd2e96c4bdc48e893814387073e705e2679b424dc49f95dcacd8034",
+  "originalPdbSha256": "69e27f95543081c9d49f97746cd1f42170a3052236a2bf7976460af81b6b19fc",
+  "instrumentedPdbSha256": "59124a2d862d719849913a4a4b987f0a2a413cf7581eff72e01ec349ab06c2b4",
+  "moduleId": "c97a57ee-39fa-43d4-a6a0-7ac150d3b3c1",
+  "sourceChecksum": "d73528c22df450659cbb6ce42ced18bb3fe15d081b850278e6425187bce476ee",
+  "sourcePointsEqualIgnoringRewrittenIlOffsets": true,
+  "coverletJsonHasNativeToken": false,
+  "openCoverMetadataToken": "",
+  "openCoverModuleHash": "8B9155F7-4E6D-43DF-8CBA-B43D3F358D58",
+  "join": "Exact report module path + PDB document/checksum + physical method signature; native token verified before/during instrumentation",
+  "altcoverJoinerUsed": false,
+  "nativeBranchRows": [
+    {
+      "Line": 29,
+      "Offset": 23,
+      "EndOffset": 25,
+      "Path": 0,
+      "Ordinal": 0,
+      "Hits": 0
+    },
+    {
+      "Line": 29,
+      "Offset": 23,
+      "EndOffset": 31,
+      "Path": 1,
+      "Ordinal": 1,
+      "Hits": 70
+    },
+    {
+      "Line": 33,
+      "Offset": 81,
+      "EndOffset": 83,
+      "Path": 0,
+      "Ordinal": 2,
+      "Hits": 0
+    },
+    {
+      "Line": 33,
+      "Offset": 81,
+      "EndOffset": 89,
+      "Path": 1,
+      "Ordinal": 3,
+      "Hits": 70
+    },
+    {
+      "Line": 35,
+      "Offset": 114,
+      "EndOffset": 116,
+      "Path": 0,
+      "Ordinal": 4,
+      "Hits": 34
+    },
+    {
+      "Line": 35,
+      "Offset": 114,
+      "EndOffset": 122,
+      "Path": 1,
+      "Ordinal": 5,
+      "Hits": 36
+    },
+    {
+      "Line": 37,
+      "Offset": 138,
+      "EndOffset": 140,
+      "Path": 0,
+      "Ordinal": 6,
+      "Hits": 34
+    },
+    {
+      "Line": 37,
+      "Offset": 138,
+      "EndOffset": 146,
+      "Path": 1,
+      "Ordinal": 7,
+      "Hits": 2
+    }
+  ],
+  "sourceLines": [
+    {
+      "generatedLine": 27,
+      "powershellLine": 30,
+      "hits": 70
+    },
+    {
+      "generatedLine": 28,
+      "powershellLine": 31,
+      "hits": 70
+    },
+    {
+      "generatedLine": 29,
+      "powershellLine": 32,
+      "hits": 70
+    },
+    {
+      "generatedLine": 30,
+      "powershellLine": 33,
+      "hits": 70
+    },
+    {
+      "generatedLine": 31,
+      "powershellLine": 34,
+      "hits": 70
+    },
+    {
+      "generatedLine": 32,
+      "powershellLine": 35,
+      "hits": 70
+    },
+    {
+      "generatedLine": 33,
+      "powershellLine": 36,
+      "hits": 70
+    },
+    {
+      "generatedLine": 34,
+      "powershellLine": 37,
+      "hits": 70
+    },
+    {
+      "generatedLine": 35,
+      "powershellLine": 38,
+      "hits": 104
+    },
+    {
+      "generatedLine": 36,
+      "powershellLine": 39,
+      "hits": 36
+    },
+    {
+      "generatedLine": 37,
+      "powershellLine": 40,
+      "hits": 70
+    },
+    {
+      "generatedLine": 38,
+      "powershellLine": 41,
+      "hits": 110
+    },
+    {
+      "generatedLine": 39,
+      "powershellLine": 42,
+      "hits": 2
+    },
+    {
+      "generatedLine": 40,
+      "powershellLine": 43,
+      "hits": 272
+    },
+    {
+      "generatedLine": 41,
+      "powershellLine": 44,
+      "hits": 2
+    }
+  ]
+}

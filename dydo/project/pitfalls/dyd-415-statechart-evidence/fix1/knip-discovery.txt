@@ -1,0 +1,321 @@
+[*] Unresolved configuration
+{
+  cacheLocation: 'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/node_modules/.cache/knip',
+  catalog: {
+    filePath: 'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/package.json',
+    catalog: {},
+    catalogs: {}
+  },
+  config: 'C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\fix1\\knip.json',
+  configFilePath: 'C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\fix1\\knip.json',
+  cwd: 'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts',
+  cycles: false,
+  dependencies: false,
+  exports: false,
+  files: false,
+  fixTypes: [],
+  gitignore: false,
+  includedIssueTypes: {
+    files: true,
+    dependencies: false,
+    devDependencies: false,
+    optionalPeerDependencies: false,
+    unlisted: false,
+    binaries: false,
+    unresolved: true,
+    exports: true,
+    nsExports: true,
+    types: false,
+    nsTypes: false,
+    enumMembers: false,
+    namespaceMembers: false,
+    duplicates: true,
+    catalog: false,
+    catalogReferences: false,
+    cycles: false
+  },
+  isCache: false,
+  isDebug: true,
+  isDisableConfigHints: false,
+  isDisableTagHints: false,
+  isFix: false,
+  isFixCatalog: true,
+  isFixDependencies: true,
+  isFixFiles: undefined,
+  isFixUnusedExports: true,
+  isFixUnusedTypes: true,
+  isFormat: false,
+  isIncludeEntryExports: true,
+  isProduction: false,
+  isReportDependencies: true,
+  isReportExports: true,
+  isReportCycles: false,
+  isReportFiles: true,
+  isReportTypes: false,
+  isReportValues: true,
+  isSession: false,
+  isShowProgress: false,
+  isStrict: false,
+  isTrace: false,
+  isTreatConfigHintsAsErrors: false,
+  isTreatTagHintsAsErrors: false,
+  isUseTscFiles: undefined,
+  isWatch: false,
+  maxIssues: 0,
+  maxShowIssues: undefined,
+  parsedConfig: {
+    entry: [
+      'statechart.ts',
+      'worker.ts',
+      'windows-cleanup.ts',
+      'test/*.test.ts',
+      'test/java.ts'
+    ],
+    project: [ '**/*.ts' ],
+    syncCompilers: {},
+    asyncCompilers: {}
+  },
+  rules: {
+    files: 'error',
+    dependencies: 'off',
+    devDependencies: 'off',
+    optionalPeerDependencies: 'off',
+    unlisted: 'off',
+    binaries: 'off',
+    unresolved: 'error',
+    exports: 'error',
+    nsExports: 'error',
+    types: 'off',
+    nsTypes: 'off',
+    enumMembers: 'off',
+    namespaceMembers: 'off',
+    duplicates: 'error',
+    catalog: 'off',
+    catalogReferences: 'off',
+    cycles: 'off'
+  },
+  tags: [ [], [] ],
+  traceDependency: undefined,
+  traceExport: undefined,
+  traceFile: undefined,
+  tsConfigFile: undefined,
+  workspace: undefined,
+  workspaces: []
+}
+[*] Included issue types
+{
+  files: true,
+  dependencies: false,
+  devDependencies: false,
+  optionalPeerDependencies: false,
+  unlisted: false,
+  binaries: false,
+  unresolved: true,
+  exports: true,
+  nsExports: true,
+  types: false,
+  nsTypes: false,
+  enumMembers: false,
+  namespaceMembers: false,
+  duplicates: true,
+  catalog: false,
+  catalogReferences: false,
+  cycles: false
+}
+[*] Included workspaces
+[ '@cursor-skill/statechart' ]
+[*] Included workspace configs
+[
+  {
+    pkgName: '@cursor-skill/statechart',
+    name: '.',
+    config: {
+      entry: [
+        'statechart.ts',
+        'worker.ts',
+        'windows-cleanup.ts',
+        'test/*.test.ts',
+        'test/java.ts'
+      ],
+      project: [ '**/*.ts' ],
+      paths: {},
+      ignore: [],
+      ignoreFiles: [],
+      ignoreExportsUsedInFile: false,
+      isIncludeEntryExports: true
+    },
+    ancestors: []
+  }
+]
+[.] Finding paths
+{
+  patterns: [ '.travis.yml' ],
+  cwd: 'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts',
+  gitignore: true,
+  absolute: true,
+  dot: true,
+  fs: undefined,
+  ignore: [ '**/node_modules', '.git/!(hooks)' ],
+  expandDirectories: false,
+  followSymbolicLinks: false,
+  paths: []
+}
+[.] Source mapping (package.json) (0)
+[]
+[.] Enabled plugins
+[ 'Node.js' ]
+[.] Plugin dependencies (8)
+[
+  'binary:node (package.json)',
+  'entry:**/*{.,-,_}test.{cjs,mjs,js,cts,mts,ts} (package.json)',
+  'entry:**/test-*.{cjs,mjs,js,cts,mts,ts} (package.json)',
+  'entry:**/test.{cjs,mjs,js,cts,mts,ts} (package.json)',
+  'entry:**/test/**/*.{cjs,mjs,js,cts,mts,ts} (package.json)',
+  'entry:server.js',
+  'entry:server.js (package.json)',
+  'entry:test/*.test.ts (package.json)'
+]
+[.] Finding entry paths
+{
+  patterns: [
+    'test/java.ts',
+    'test/*.test.ts',
+    'windows-cleanup.ts',
+    'worker.ts',
+    'statechart.ts'
+  ],
+  cwd: 'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts',
+  gitignore: false,
+  absolute: true,
+  dot: true,
+  fs: undefined,
+  ignore: [ '**/node_modules', '.git/!(hooks)' ],
+  expandDirectories: false,
+  followSymbolicLinks: false,
+  paths: [
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/statechart.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/windows-cleanup.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/worker.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/acceptance.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/adaptation.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/chart.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/cli.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/config-fuzz.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/corpus.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/differential.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/java.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/messages.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/pipeline.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/plain-tlc.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/render.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/tlc-out.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/windows.test.ts'
+  ]
+}
+[.] Finding entry paths from plugins (ignore exports)
+{
+  patterns: [
+    '**/test/**/*.{cjs,mjs,js,cts,mts,ts}',
+    '**/test.{cjs,mjs,js,cts,mts,ts}',
+    '**/test-*.{cjs,mjs,js,cts,mts,ts}',
+    '**/*{.,-,_}test.{cjs,mjs,js,cts,mts,ts}',
+    'server.js',
+    'test/*.test.ts'
+  ],
+  cwd: 'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts',
+  gitignore: false,
+  absolute: true,
+  dot: true,
+  fs: undefined,
+  ignore: [ '**/node_modules', '.git/!(hooks)' ],
+  expandDirectories: false,
+  followSymbolicLinks: false,
+  paths: [
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/acceptance.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/adaptation.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/chart.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/cli.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/config-fuzz.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/corpus.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/differential.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/java.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/labels.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/messages.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/pipeline.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/plain-tlc.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/render.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/tlc-out.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/tlc.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/windows.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/corpus/CounterView/view.mjs',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/corpus/Login/view.mjs',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/corpus/LoginGuarded/view.mjs',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/corpus/LoginParallel/view.mjs',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/corpus/MediaPlayer/view.mjs',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/corpus/MediaPlayerFixed/view.mjs',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/corpus/MediaPlayerProps/view.mjs',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/corpus/TwoPhase/view.mjs',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/corpus/TwoPhaseFixed/view.mjs'
+  ]
+}
+[.] Finding project paths
+{
+  patterns: [ 'server.js', '**/*.ts' ],
+  cwd: 'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts',
+  gitignore: false,
+  absolute: true,
+  dot: true,
+  fs: undefined,
+  ignore: [ '**/node_modules', '.git/!(hooks)' ],
+  expandDirectories: false,
+  followSymbolicLinks: false,
+  paths: [
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/ir.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/pipeline.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/run.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/statechart.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/windows-cleanup.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/windows.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/worker.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/backends/cfg.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/backends/mermaid.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/backends/plain-text.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/backends/report.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/frontends/config.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/frontends/dot.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/frontends/marks.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/frontends/messages.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/frontends/spec.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/frontends/trace.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/frontends/value.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/frontends/verdict.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/frontends/view.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/acceptance.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/adaptation.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/chart.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/cli.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/config-fuzz.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/corpus.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/differential.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/java.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/labels.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/messages.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/pipeline.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/plain-tlc.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/render.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/tlc-out.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/tlc.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/windows.test.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/passes/annotate.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/passes/label.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/passes/lift.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/passes/loop-check.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/passes/paths.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/passes/reach.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/passes/region-check.ts',
+    'C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/passes/regions.ts'
+  ]
+}
+[*] Created 1 principal for 1 workspaces
+{"issues":[{"file":"ir.ts","duplicates":[],"exports":[{"name":"isStrings","line":245,"col":14,"pos":5696}],"files":[],"nsExports":[],"unresolved":[]},{"file":"passes/lift.ts","duplicates":[],"exports":[{"name":"liftToParents","line":12,"col":17,"pos":150}],"files":[],"nsExports":[],"unresolved":[]}]}
+{"kind":"measurement","counters":{"files":0,"dependencies":0,"devDependencies":0,"optionalPeerDependencies":0,"unlisted":0,"binaries":0,"unresolved":0,"exports":2,"nsExports":0,"types":0,"nsTypes":0,"enumMembers":0,"namespaceMembers":0,"duplicates":0,"catalog":0,"catalogReferences":0,"cycles":0,"processed":53,"total":53},"includedWorkspaceDirs":["C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts"]}

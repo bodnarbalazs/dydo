@@ -1,0 +1,33 @@
+{
+  "argv": [
+    "node",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix1\\assurance\\node_modules\\dependency-cruiser\\bin\\dependency-cruise.mjs",
+    "--no-config",
+    "--output-type",
+    "json",
+    "--do-not-follow",
+    "node_modules",
+    "--ts-pre-compilation-deps",
+    "skills/engineering/statechart/scripts/frontends/dot.ts",
+    "skills/engineering/statechart/scripts/run.ts",
+    "skills/engineering/statechart/scripts/statechart.ts",
+    "skills/engineering/statechart/scripts/test/cli.test.ts",
+    "skills/engineering/statechart/scripts/test/config-fuzz.test.ts",
+    "skills/engineering/statechart/scripts/test/corpus.test.ts",
+    "skills/engineering/statechart/scripts/test/differential.test.ts",
+    "skills/engineering/statechart/scripts/test/java.ts",
+    "skills/engineering/statechart/scripts/test/messages.test.ts",
+    "skills/engineering/statechart/scripts/test/pipeline.test.ts",
+    "skills/engineering/statechart/scripts/test/render.test.ts",
+    "skills/engineering/statechart/scripts/test/tlc-out.test.ts",
+    "skills/engineering/statechart/scripts/test/tlc.ts",
+    "skills/engineering/statechart/scripts/worker.ts",
+    "skills/engineering/statechart/scripts/test/acceptance.test.ts",
+    "skills/engineering/statechart/scripts/test/windows.test.ts",
+    "skills/engineering/statechart/scripts/windows-cleanup.ts",
+    "skills/engineering/statechart/scripts/windows.ts",
+    "skills/engineering/statechart/scripts/test/adaptation.test.ts"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "exit": 0
+}

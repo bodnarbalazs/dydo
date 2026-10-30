@@ -1,0 +1,6 @@
+skills/engineering/statechart/scripts/frontends/dot.ts lines 93.51, branches 88.89, HCRAP 4.0000
+skills/engineering/statechart/scripts/run.ts lines 98.14, branches 94.81, HCRAP 6.0000
+skills/engineering/statechart/scripts/statechart.ts lines 100.00, branches 88.71, HCRAP 18.0000
+skills/engineering/statechart/scripts/worker.ts lines 100.00, branches 83.33, HCRAP 13.0000
+skills/engineering/statechart/scripts/windows-cleanup.ts lines 100.00, branches 90.00, HCRAP 10.0000
+skills/engineering/statechart/scripts/windows.ts lines 100.00, branches 100.00, HCRAP 2.0000

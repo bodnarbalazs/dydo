@@ -1,0 +1,89 @@
+# DYD-415 independent review round 1
+
+Role: reviewer. Rubric: code (whole ticket, including integrated skill prose, docs, license/provenance and proof). Load skills/roles/crew/reviewer/SKILL.md and resources/code.md plus its required reads. No production edits, no subagents, no push/PR/watch. Use your HOST-PREPARED isolated checkout, do not shell-create worktrees. Verify HEAD candidate. Own temp files only for probes. Return binding PASS/FAIL with severity (blocker/should/nit), exact locations, evidence and all rubric axes. Do not post Linear; captain relays.
+
+Candidate: 53df22e002a0e5c5e4429cc6908e0b01d4fb6ab3
+Base: 8553172dfaa7601d34f6b884c10350183f9faaa5
+Contract: DYD-415 description as of 2026-10-29T21:15:11.600Z (verbatim snapshot below; subsequent In Review status does not amend acceptance).
+Writer: code-writer/model gpt-6-astra/high.
+IMPLEMENTED — 53df22e002a0e5c5e4429cc6908e0b01d4fb6ab3. Real Windows TLC red/green, shortest paths, 502-state budget and SVG rendering passed. PowerShell/Git Bash acceptance 4/4; Windows lifecycle/path 3/3. Package 168 passed, 174 explicit POSIX-harness skips, zero failures. Setup24/24. Both projections, TypeScript, dydo check, whitespace pass. FIFO98 completed, owned locks released. Remaining proof gap:174 POSIX cases unverified.
+
+Read actual source and committed evidence independently; don't trust narrative alone. Most ~23k added lines are complete vendored upstream corpus/compiler. PROVENANCE.md and source-manifest.json identify local deltas to canonical upstream1ba91fc25c0977741dd0e267849e6234b037ed0a. Source hashes/diff let you focus deep review on local adaptations while accounting for whole adopted behavior.
+
+Evidence: dydo/project/pitfalls/dyd-415-statechart-verification.md and dyd-415-statechart-evidence/**. Writer's task-local tools remain in TEMP; inspect environment.json/run-gates.py for exact prerequisites, do not global-install. Statechart test dependencies in captain checkout may be untracked; never modify captain checkout. Review Windows Job ownership/janitor cleanup, CRLF parser normalization, caller-relative JAVA/TLA2TOOLS, output replacement, shell/runtime selection, shortest-path/500-budget evidence semantics, explicit-only host metadata, formal-verification same-model/sync references and MIT/source manifest.
+
+Explicitly decide whether POSIX skip gap blocks current delivery under contract and how to close it concretely if so. Existing CI does not automatically exercise new vendored script tests. Assess any test weakening, reproducibility or claimed static-gate gap; don't count skipped as passed. User asked Codex-only migration reviews, overriding repo's Claude+Codex pair; there are two fresh independent Codex seats.
+
+Resource rule: reuse exact-candidate full proof unless concrete doubt. Cheap bounded low-worker probes okay. Any expensive suite MUST use SAME LC shared FIFO via documented context manager in C:/Users/User/.t3/worktrees/LC/t3-6a75af47/tools/testing/runner/suite_slot.py; docs dydo/reference/tools/test-runner.md:303-341. Normal temp Python script, add LC root to sys.path; from tools.testing.runner import suite_slot; with suite_slot.book(subprocess.list2cmdline(command),worktree=YOUR_ROOT): subprocess.run(command,cwd=YOUR_ROOT). Keep driver alive, propagate exit, inherit LC_SUITE_SLOT_TICKET, default real namespace. Retain TEMP/dydo-fullsuite.lock; no foreign lock/process changes. No outside-queue vacancy waiting. No .NET/viewer/Playwright suite requested. No prod corrections; captain commissions fresh writer for findings.
+
+Save detailed review to TEMP/dyd415-review-<your-model>.md and give compact binding block with file link, all findings and gate results. Preserve plain factual distinctions between observed runtime and inferred behavior.
+
+## Contract snapshot (verbatim)
+## Delivery contract — captain 2026-10-29
+
+Atomic intent; no feature spec or parallel lanes. Type Feature / AFK, Project 4e6aa9da-f325-4b53-a318-deba4b1b4d26. Captain: gpt-6-astra/high, commissioned by successor admiral. Assigned user is the Linear claim; captain retains execution custody.
+
+Base: origin/master 8553172dfaa7601d34f6b884c10350183f9faaa5 (remote verified). Host-isolated worktree: C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f, currently clean at dcac6436 on t3/add-statechart-skill. Writer first fast-forwards this checkout to the pinned base and renames its branch <issue id="c9174050-94ea-49a4-b7dc-534200deada9" href="https://linear.app/bodnar-balazs/issue/DYD-415/adopt-pstack-statechart-and-connect-formal-verification-for-dydo-360">DYD-415</issue>-statechart; no other checkout changes. Reconfirm remote before edits; report any newer base for contract amendment.
+
+Owned production paths:
+
+* skills/engineering/statechart/\*\* (complete runtime, references, tests, license/provenance, explicit-only metadata for both hosts).
+* skills/engineering/create-formal-verification-skill/SKILL.md and skills/engineering/maintain-formal-verification-skill/SKILL.md (minimal matching references, same checked model and sync commit).
+* THIRD-PARTY-NOTICES.md; dydo/understand/control-flow.md; dydo/reference/dydo-glossary.md (required attribution/catalog).
+* dydo/project/changelog/2026/2026-10-29/<issue id="c9174050-94ea-49a4-b7dc-534200deada9" href="https://linear.app/bodnar-balazs/issue/DYD-415/adopt-pstack-statechart-and-connect-formal-verification-for-dydo-360">DYD-415</issue>-statechart.md.
+* dydo/project/pitfalls/<issue id="c9174050-94ea-49a4-b7dc-534200deada9" href="https://linear.app/bodnar-balazs/issue/DYD-415/adopt-pstack-statechart-and-connect-formal-verification-for-dydo-360">DYD-415</issue>-statechart-verification.md and dydo/project/pitfalls/<issue id="c9174050-94ea-49a4-b7dc-534200deada9" href="https://linear.app/bodnar-balazs/issue/DYD-415/adopt-pstack-statechart-and-connect-formal-verification-for-dydo-360">DYD-415</issue>-statechart-evidence/\*\* (durable bounded demonstration and raw gate evidence if appropriate; report if an existing evidence convention requires a different exact path).
+  No setup algorithm change expected: run setup-skills.mjs and verify both local projections. No guard, overnight, release policy, PR207 or unrelated architecture edits.
+
+Acceptance: adopt canonical cursor/plugins 1ba91fc25c0977741dd0e267849e6234b037ed0a pstack/skills/statechart, preserving breaks/mayBreak, shortest paths, 500-state budget and actual TLC evidence semantics; verify relevant issue/PR deltas only. Record any narrowly necessary Windows adaptation and its tests. Verify actual pinned runtime/renderer versions. Preserve MIT Copyright (c) 2026 Lauren Tan. User-invoked on Claude and Codex. No stale removed flags or duplicated launcher recipes in the formal-verification pair.
+
+Gates: pinned upstream test suite via its actual package test command (record exact resolved command before execution); node --test DynaDocs.Tests/coverage/tests/setup-skills.test.cjs; node setup-skills.mjs with both statechart projections resolving to canonical source; dydo check; git diff --check. Real small TLC invariant failure with shortest bug path/report and rendered chart, followed by corrected model checked with unchanged invariant; PowerShell and bash launcher probes with task-local Java/TLC/runtime as needed. Prove >500-state behavior through upstream applicable tests or bounded fixture. Gherkin: executable acceptance cases in the skill test suite cover this agent-invoked tool flow; no new application UI journey or unrelated .NET step definitions.
+
+Before expensive proof verify selection/nonzero discovery; coordinate full suites with admiral, acquire TEMP/dydo-fullsuite.lock exclusively, never remove another owner's lock or process, no LC suite/Playwright overlap. Only changed stack full suite required, no unrelated viewer suite. Record candidate, command, Windows environment, exit and evidence location.
+
+Fresh independent Codex reviews (gpt-6.1-sol/high and Astra/high) under user's provider-migration authorization; captain authors no production. Review complete candidate, upstream semantics, proof and licensing. Reviewed atomic PR to master, CI green, user merge click only; no tag/publish/install globally. Return 3.6.0 changelog text to admiral without touching PR207.
+
+## Current contract — Balazs, 2026-10-29
+
+Balazs explicitly requested this skill in **3.6.0** in the predecessor admiral thread, position 4742: “we should definitely add it in 3.6.0.” This supersedes the earlier two-week wait recommendation below. The old research is retained as dated evidence, not a current blocker.
+
+Outcome: ship the user-invoked `statechart` skill under `skills/engineering/`, adapted to dydo conventions, with complete required scripts/resources, pinned provenance and MIT copyright/license. Integrate the matching upstream paragraph in `create-formal-verification-skill`; preserve <issue id="fcbb2198-602c-46e4-acb5-2c2c5bcf53cb" href="https://linear.app/bodnar-balazs/issue/DYD-356/watch-for-pstacks-statechart-visualisation-skill-and-adopt-it-when-it">DYD-356</issue>'s requirement that both formal-verification skills name statechart where relevant, using the same checked model and sync commit. No duplicated command/path instructions or weakened rules to make models pass.
+
+Starting upstream pin: cursor/plugins `1ba91fc25c0977741dd0e267849e6234b037ed0a`, canonical `pstack/skills/statechart/`; latest SKILL change `34b1b7c96f09f81a21a6c78f65b7833f7dcb5b24`. `pstack/LICENSE` verified MIT, Copyright (c) 2026 Lauren Tan. README lists statechart without a beta/stable tier; the reported X announcement is user evidence, not independently verified here.
+
+Captain verifies current upstream fixes/dependencies and Windows execution, including launch from PowerShell and bash as supported. Demonstrate a real bounded flow with an invariant violation and shortest bug path, then a corrected model; chart/report must match actual TLC output. Verify both host skill discovery, documentation checks, applicable script tests and independent review. Document missing prerequisites honestly. Keep installations local to the task where possible; no agent settings/home changes. Render/report artifacts are evidence, not a product policy change.
+
+Owned scope: new statechart skill assets, the two formal-verification skills' integration wording, third-party notices/required catalog entries, and a 3.6.0 changelog entry. No overnight-mode or guard changes. Atomic PR from current master, reviewed and green, stopping for Balazs's merge click; no tag/publish. Captain contracts exact paths and proof before production. <issue id="fcbb2198-602c-46e4-acb5-2c2c5bcf53cb" href="https://linear.app/bodnar-balazs/issue/DYD-356/watch-for-pstacks-statechart-visualisation-skill-and-adopt-it-when-it">DYD-356</issue> is consolidated here without losing its real-flow, model-sync, host-discovery or attribution criteria.
+
+## Why
+
+Balazs asked on 2026-10-28 whether pstack's rumoured visualization companion to the formal-verification skills (adopted in <issue id="1ca440c0-6ea5-4e1d-8098-f519e8eb2b80" href="https://linear.app/bodnar-balazs/issue/DYD-344/adopt-pstack-create-formal-verification-skill-and-maintain-formal">DYD-344</issue> from cursor/plugins at 5dba0b8d, MIT) has matured enough to ship in 3.6.0. An admiral research pass that night said: **not yet, wait.**
+
+## What it is
+
+`/statechart`, at `pstack/skills/statechart/` in cursor/plugins: [https://github.com/cursor/plugins/tree/main/pstack/skills/statechart](<https://github.com/cursor/plugins/tree/main/pstack/skills/statechart>)
+
+* It runs TLC on a TLA+ spec and draws the state graph as a Mermaid statechart, with invariant-breaking states marked and the shortest path to each bug coloured.
+* It writes a `report.md` with each counterexample path, and renders SVG through `pele@1.9.0`.
+* It is user-invoked only, and covers TLA+/TLC only.
+* Upstream `create-formal-verification-skill` now tells generated verify skills to read every TLA+ result with `/statechart`: commits 00d5decc6f (#794) and 34b1b7c96f (#977), one paragraph. `maintain-formal-verification-skill` has not changed since our base.
+
+## Why wait (as of 2026-10-28)
+
+* **Young:** first commit 2026-10-22 (PR #741), seven commits in six days.
+* **Rewritten 2026-10-27** (PR #977), dropping features (from-chart, `--against`, `--fixed`).
+* **Open issues:** #923 (symlinked temp folder / LD_PRELOAD) and #973 (relative TLA2TOOLS/JAVA paths). Open PRs: #1017, #997, #924, #890, #844, #819, #817.
+* **New dependencies:** a TypeScript runtime (Node 22.18+ / Bun / Deno), launched by a POSIX `sh` script, `mise` with network on first run, and `pele`.
+* **Windows support unconfirmed.** A fork reports it doesn't run natively, but that's unverified upstream.
+
+## When to pick up
+
+Once the open fixes have merged and the skill has gone about two weeks without a rewrite. Then:
+
+* verify it on Windows;
+* adopt the skill with its MIT notice;
+* re-sync the one-paragraph change to `create-formal-verification-skill`.
+
+### Binding resource amendment — Chief of Staff
+
+Expensive statechart/runtime tests must queue through the same host-wide LC suite-slot FIFO as LC suites, via documented `suite_slot.book(command, worktree=root)` external driver using the default live namespace. A dydo-only mutex is insufficient; retain `TEMP/dydo-fullsuite.lock` too. Read `C:/Users/User/.t3/worktrees/LC/t3-6a75af47/dydo/reference/tools/test-runner.md` suite-slot/external-driver contract and implementation `tools/testing/runner/suite_slot.py`. Preserve inherited `LC_SUITE_SLOT_TICKET`; no outside-queue wait for vacancy, manual reservation, other-owner lock/process changes, or overlap of expensive work. Cheap bounded smoke/setup can proceed. Missing wrapper access/docs is a concrete blocker, not clearance. This supersedes awaiting a manual central reservation response.
+

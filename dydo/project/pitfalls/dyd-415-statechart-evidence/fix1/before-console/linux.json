@@ -1,0 +1,24 @@
+{
+  "argv": [
+    "docker",
+    "run",
+    "--rm",
+    "--init",
+    "--name",
+    "dyd415-fix1-proof",
+    "--cpus",
+    "2",
+    "--memory",
+    "4g",
+    "--mount",
+    "type=bind,source=C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix1,target=/input,readonly",
+    "--mount",
+    "type=bind,source=C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\fix1,target=/evidence",
+    "dyd415-fix1:proof",
+    "bash",
+    "/input/linux.sh"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "started": "2026-10-29T23:03:57.675628+00:00",
+  "exit": 0
+}

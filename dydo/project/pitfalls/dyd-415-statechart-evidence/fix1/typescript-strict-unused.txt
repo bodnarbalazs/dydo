@@ -1,0 +1,5 @@
+skills/engineering/statechart/scripts/pipeline.ts(7,8): error TS6133: 'Chart' is declared but its value is never read.
+skills/engineering/statechart/scripts/test/chart.test.ts(20,8): error TS6133: 'Lasso' is declared but its value is never read.
+skills/engineering/statechart/scripts/test/chart.test.ts(24,3): error TS6133: 'ruleKey' is declared but its value is never read.
+skills/engineering/statechart/scripts/test/chart.test.ts(27,8): error TS6133: 'State' is declared but its value is never read.
+skills/engineering/statechart/scripts/test/chart.test.ts(73,7): error TS6133: 'lookup' is declared but its value is never read.

@@ -1,0 +1,5 @@
+metrics 0
+typescript-strict-unused 2
+cycles 0
+clones 0
+knip 1

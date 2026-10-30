@@ -1,0 +1,12 @@
+{
+  "entry": [
+    "statechart.ts",
+    "worker.ts",
+    "windows-cleanup.ts",
+    "test/*.test.ts",
+    "test/java.ts"
+  ],
+  "project": [
+    "**/*.ts"
+  ]
+}

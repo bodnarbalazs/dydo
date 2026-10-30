@@ -21,6 +21,14 @@ Local changes:
   on Windows use non-recursive rmdir before rename; existing content is never removed.
 - `exitClass` has an explicit literal return type. Two upstream async test callbacks
   discard their return values for the pinned local TypeScript check. Neither changes assertions.
+- The correction hop measures maintained adaptations separately from unchanged vendor
+  functions. CLI output validation, worker launch and publication are local functions
+  to meet the cognitive-complexity limit; verdict classification avoids a nested ternary.
+  Native lifecycle tests retain real tool execution with absolute, relative, bare and
+  unset `JAVA`, and controlled failure tests cover ownership and cleanup errors.
+- Windows tool launches and recurring test subprocesses request hidden consoles,
+  including Java discovery, real TLC, renderer installation and idle lifecycle fixtures.
+  Job ownership, handshakes, termination and cleanup remain intact.
 - Tests serialize files, use Node to launch npm's CLI on Windows, normalize plain
   TLC line endings, and explicitly skip the upstream POSIX CLI/recording harness on
   Windows. All original cases remain for POSIX. Native Gherkin acceptance and Windows

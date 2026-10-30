@@ -261,7 +261,7 @@ type Run = { status: number | null; stdout: string; stderr: string };
 const run = (command: string, args: string[], cwd: string) =>
   new Promise<Run>((resolve, reject) => {
     const child = spawn(command, args, {
-      cwd,
+      cwd, windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
       env: { ...process.env, LC_ALL: "C.UTF-8" },
     });

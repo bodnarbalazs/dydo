@@ -1,0 +1,60 @@
+[
+    {
+        "Id": "sha256:4124a8f9b035171fd5de813646124b83c8157f16174710973d121edc652b19e6",
+        "RepoTags": [
+            "dyd415-fix1:proof"
+        ],
+        "RepoDigests": [
+            "dyd415-fix1@sha256:4124a8f9b035171fd5de813646124b83c8157f16174710973d121edc652b19e6"
+        ],
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2026-10-29T22:21:05.843358553Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "NODE_VERSION=22.23.0",
+                "YARN_VERSION=1.22.22",
+                "NODE_OPTIONS=--disable-warning=ExperimentalWarning"
+            ],
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "Cmd": [
+                "node"
+            ]
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 2052903261,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:c1cea7d579ca16766d00847a63294943a3075a67b9b812fdd6da1ce7aed8f18f",
+                "sha256:b006d3725283964ea0c5d04f4b36b7865aa36c9d3eb272c67689ac8a274f9775",
+                "sha256:4521935bbf4a03a9b5a080603cfc81483f23029ed74de6c291ec3d17b4752266",
+                "sha256:a6f92ff4584f10e2326589db1928eb796575538946d9ca2b19a3bc7126f543df",
+                "sha256:4c8762c1d2d9bd9a76afbbf8ce9ed775112ef8315025ad21ad0e2ac4985c1ae8",
+                "sha256:40e19473f176a052927ba7005a63f97c8b715b7863066048e6c7276df4b88457",
+                "sha256:afaa88504185c1f91927f4ac1d01aa7331b2968b0aa3a9b70fb28f9e483a583d",
+                "sha256:5c85f636d8b712fd4096b0d260aecf38c83e15a8744daf020b91547647ddcf6f",
+                "sha256:88a027d812c9e97d14e57daedaf558d99a0aac09aa32802f3f6df266946fc870"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-29T23:27:35.907252741Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:4124a8f9b035171fd5de813646124b83c8157f16174710973d121edc652b19e6",
+            "size": 856
+        },
+        "Identity": {
+            "Build": [
+                {
+                    "Ref": "aq59hu36thx2wcnuduvtpiczb",
+                    "CreatedAt": "2026-10-29T23:27:41.613622775Z"
+                }
+            ]
+        }
+    }
+]

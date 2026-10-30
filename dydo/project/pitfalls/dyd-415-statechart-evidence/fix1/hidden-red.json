@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "--test-concurrency=1",
+    "--test-name-pattern=Windows resolves relative",
+    "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\test\\windows.test.ts"
+  ],
+  "started": "2026-10-29T23:20:46.543184+00:00",
+  "exit": 1,
+  "launches": 6,
+  "refused": 1
+}

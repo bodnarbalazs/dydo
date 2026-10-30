@@ -1,0 +1,117 @@
+# DYD-415 — independent whole-ticket code review, round 1
+
+FAIL — rubric/type: code; contract DYD-415 description as of 2026-10-29T21:15:11.600Z; candidate 53df22e002a0e5c5e4429cc6908e0b01d4fb6ab3; base 8553172dfaa7601d34f6b884c10350183f9faaa5; reviewer/model: reviewer / gpt-6-astra, high; gates 8/10 under the grouping below. Findings: two blockers (required POSIX proof and maintained-code assurance), one should (Windows test assumes an optional JAVA override). No production correction made.
+
+Review root: `C:/Users/User/.t3/worktrees/DynaDocs/t3-ad42e532`. HEAD matched the candidate, and tracked working state was clean before and after review. This was the host-prepared checkout, not the captain's checkout. No subagents, full-suite rerun, global install, Linear post, PR action, or foreign process/lock change occurred. Local ignored host projections were created by the required setup command; all review scripts and evidence are in TEMP.
+
+## Binding findings
+
+### 1. blocker — required upstream runtime proof is incomplete
+
+Where: `skills/engineering/statechart/scripts/test/cli.test.ts:8`, `test/corpus.test.ts:12`, `test/tlc-out.test.ts:14`; `dydo/project/pitfalls/dyd-415-statechart-verification.md:89` and its package gate at line 100.
+
+Wrong: **gates**: the only recorded package run passes 168 registrations and explicitly skips 174. The skipped CLI, real corpus, and raw-TLC-output harnesses have no POSIX execution record on this candidate. The contract requires the pinned upstream suite through its actual package command. The limitation is disclosed honestly, but disclosure does not satisfy that gate.
+
+Why: these are meaningful assertions about launcher/runtime selection, output ownership and races, process groups/signals, replay fidelity, constrained/property cases, and agreement between recorded/raw TLC and emitted artifacts. Some corpus tests use direct Node/Java rather than the recording shim and are also skipped by the file-wide Windows condition. The small new native suite does not replace this surface. The `tlc-out` parent skip also prevents its nested corpus subtests from being exercised. Git Bash with Windows Node takes `process.platform === "win32"`; it does not establish POSIX process-group behavior. Existing CI runs viewer/.NET work, not this package, and its Node pin is 22.13.0, below this launcher's Node minimum. A green existing PR check will not close the gap.
+
+Required correction: obtain a fresh, exact-candidate POSIX run of `npm test` from `skills/engineering/statechart/scripts`, with supported Node, fast-check, Java/TLC, renderer prerequisites, and `node setup-skills.mjs` completed. Record the resolved command, selection/nonzero discovery, source identity, environment, exit, and full log. All applicable upstream cases must execute; Windows-only skips on POSIX may remain explicit alongside the existing Windows evidence. Preserve assertions and fix real failures. If the selected POSIX execution shares this Windows machine (for example a hosted Linux environment on it), the Windows parent driver must hold the same live LC FIFO and exclusive dydo lock for the child's whole run, preserve the inherited ticket, and propagate exit. Calling `book` only inside Linux is insufficient for that shared host: the implementation is a no-op outside Windows. Alternatively commission equivalent native Windows harness coverage plus POSIX lifecycle evidence under a reviewed contract amendment; do not turn blanket skips into passes.
+
+Owner: ticket-captain commissions proof/fixes; code-writer owns any corrections. **Explicit judgment: the POSIX skipped-proof gap blocks delivery under the pinned contract.**
+
+### 2. blocker — locally maintained adaptations have no complete assurance gate
+
+Where: `dydo/project/pitfalls/dyd-415-statechart-verification.md:106`; `skills/engineering/statechart/scripts/tsconfig.json:3`; new `scripts/windows.ts`, `windows-cleanup.ts`, `windows-job.ps1`, `statechart.ps1`, and maintained portions of `statechart.ts`, `worker.ts`, `run.ts`, `frontends/dot.ts` and tests.
+
+Wrong: **gates**: the sole reported local static result is strict `tsc --noEmit`. There is no per-method HCRAP/cognitive result, maintained-module coverage evidence, dead-code/clone/cycle assurance, or explicit capability disposition for this added runtime. The tsconfig does not even enable `noUnusedLocals` or `noUnusedParameters`. TypeScript success is useful evidence but is not the project's complete static gate. There is no changed-code or acceptance example-value mutation result either.
+
+Why: coding-standards section 6 and the code rubric distinguish unmaintained vendored code from locally maintained adaptations. The 394 identical upstream files may use that exclusion; original Windows orchestration and edited logic cannot all be declared unmaintained merely because they live under a vendor folder. `DynaDocs.Tests/coverage/gate_inventory.py:136-142` excludes TypeScript outside `viewer/src/`; the repository's viewer gate therefore does not cover these files. This is a known tooling limitation exposed by a new maintained stack, not evidence that any measured method actually exceeds a threshold. No such metric was supplied. The existing mutation mechanism is unavailable, as testing-strategy documents; unavailable must not be presented as passed.
+
+Required correction: identify the maintained adaptation scope separately from immutable upstream bytes, supply the required applicable static and coverage evidence with a reviewed mechanism, and explicitly record unsupported capabilities (including PowerShell and mutation where applicable) as unavailable with their disposition. Obtain captain resolution of any necessary scope/contract amendment before a binding passing gate; do not infer a waiver, weaken thresholds, or run unrelated viewer/.NET suites as a substitute. Preserve exact commands, environment, exit and metric locations. Acceptance mutation must test a behavioral example value, not merely reject a changed Gherkin sentence.
+
+Owner: ticket-captain and commissioned code-writer. This finding concerns missing assurance, not a claim of an observed runtime defect or a demand to refactor preserved upstream code.
+
+### 3. should — Windows regression test crashes with Java supplied by PATH
+
+Where: `skills/engineering/statechart/scripts/test/windows.test.ts:59-70`, specifically `const java = process.env.JAVA!` at line 68 and `path.relative(dir, java)` at line 70.
+
+Wrong: **standards**: the test enables itself when `TLA2TOOLS` exists but then requires an absolute `JAVA` value without checking or resolving it. `JAVA` is optional in production (`run.ts:196` falls back to `java`), and a bare executable override is supported as well. With the pinned jar set, Java on PATH, and JAVA unset, the focused test fails before invoking statechart: `ERR_INVALID_ARG_TYPE: The "to" argument must be of type string. Received undefined`.
+
+Why: an otherwise supported developer environment cannot run the package's test command successfully. This is a test-harness defect, not proof that production PATH lookup fails. The recorded writer environment's absolute JAVA masks it.
+
+Required correction: resolve the actual Java executable before constructing the caller-relative override, handling unset and bare-command JAVA; or make this particular test's explicit-path prerequisite truthful and cover PATH lookup separately. Keep the real relative-path/empty-output assertion. Rerun with both absolute JAVA and Java-on-PATH.
+
+Owner: code-writer. Reproduction: `python C:/Users/User/AppData/Local/Temp/dyd415-astra-probes.py windows-java-path` (driver sets TLA2TOOLS, removes JAVA, prepends the existing JDK bin to PATH, runs only the named test, and propagates exit 1). Log: [windows-java-path.txt](C:/Users/User/AppData/Local/Temp/dyd415-astra-review-evidence/windows-java-path.txt).
+
+## Contract axis
+
+- One implement hop exists, `53df22e0`; there is no later fix/merge hop that drops a required scenario. Changed paths stay within the owned skill, integration, notices/catalog, changelog and evidence paths. No guard, overnight, release-policy or unrelated architecture edits.
+- The source inventory is complete: 407 upstream files, 394 byte-identical and 13 locally changed. I compared each committed candidate blob and each file of the available pinned upstream extraction against the manifest, checked all 13 added-file hashes and five integration hashes, and verified all 41 proof-manifest entries. No mismatch or omitted upstream file. All local deltas were inspected, including Windows additions, test skip wrappers, renderer invocation and line-ending normalization. [Audit](C:/Users/User/AppData/Local/Temp/dyd415-astra-review-evidence/audit.txt), [local diff](C:/Users/User/AppData/Local/Temp/dyd415-astra-local.diff).
+- The MIT file is byte-identical to the pinned extraction's `pstack/LICENSE`, including Copyright (c) 2026 Lauren Tan. THIRD-PARTY-NOTICES names the runtime/corpus and companion paragraph; provenance identifies adaptations and upstream pin. No license loss found. Upstream issue/PR statuses are a dated provenance record; I did not independently re-fetch their live status or authenticate the archive's network origin in this review. No unrecorded source delta was found.
+- Both explicit-only metadata controls are present. Fresh setup created 80 projections for 40 skills; the focused acceptance case confirms both statechart projections resolve to canonical source. This proves configuration/discovery, not a simulated live Claude/Codex invocation session.
+- The formal-verification pair names statechart, preserves user invocation, requires the same checked model/config/bounds/sync commit, and delegates launcher details to the skill. No removed `--against`, `--fixed` or from-chart recipe was reintroduced. The skill additionally requires the checked source commit, actual inputs/output, scope limitations, and replay against real code before treating a modeled bug as a product bug.
+- Feature-absent evidence records four failed acceptance cases with implementation removed and green restoration. This is presence proof, not mutation adequacy. The CRLF behavioral red log shows frames misparsed with trailing carriage returns; the native output-directory red log and real invariant red/green add stronger specific proof.
+- Real demonstration evidence is consistent: the broken model's TLC trace takes `Jump` from 0 to 3 and fails unchanged `Safe == x <= 2`; both launchers report a one-step bug path and identical Mermaid/report. Corrected transitions retain byte-identical config/invariant, produce three states, and pass. The 502-state examples intentionally vary the safety bound to exercise failing and passing budget outcomes; they are separate from the unchanged-invariant correction proof. Their report shows four path states/three arrows on failure and no chart on pass.
+- These are small TLA+ demonstrations, not a formal verification of DynaDocs production behavior. The documentation says so. Scope and limitations remain intact. Findings 1 and 2 prevent declaring all acceptance/gates fulfilled.
+
+## Adopted model-evidence semantics
+
+The unchanged IR/compiler/passes/backends were reviewed at their important seams alongside their corpus and executable assertions, rather than treating the size of the vendored corpus as automatic proof.
+
+- `run.ts` derives verdicts from actual SANY/TLC results. It uses one worker, fingerprint 0 and final liveness checking; invariant/property/deadlock identities remain distinct. Later reruns remove already-decided rules without converting an unchecked rule into a pass. Errors and the 100,000-state follow-up cutoff populate `not checked`/stop reporting. The original rule configuration is not changed to fabricate a successful result.
+- Chart generation is separate from verdict checking. Randomly tagged marks are filtered to actually broken invariants; input parsing and trace handling retain TLC state identities. The drawing run can continue beyond a violation while the first raw verdict remains failing. A partial drawing is disclosed. `tlc.out` is normalized plain TLC output from the first verdict run, not every subsequent drawing run; additional counterexample outputs are written where needed. The five-state drawing versus the first run's three visited states is consequently not a contradiction.
+- `passes/reach.ts` uses breadth-first traversal for shortest invariant/deadlock paths, while `passes/paths.ts` preserves TLC counterexamples for the over-budget graph. Temporal/property paths retain their TLC provenance and are described as counterexamples rather than all being advertised as shortest. Corpus path tests assert specific actions/lengths independently of recomputing the traversal under test.
+- `passes/regions.ts` aggregates whether all or only some represented model states break each rule; `breaks` and `mayBreak` remain distinct. Region feasibility checks can fall back to parent states. Labels are evaluated once per relevant state/step, and required bug-path steps cannot be hidden. The skill explains coarsening and hidden-step limitations.
+- The 500-state chart budget is separate from model checking. A passing over-budget model has no chart; a failing one retains counterexamples. Bounds, VIEW/SYMMETRY representatives, initial-only properties and unchecked rules have explicit reporting. Local CRLF normalization changes line framing only, not these decisions.
+- The compiler is not claimed to make an unbounded model terminate. Skill guidance requires bounded inputs. No additional semantic defect was established; the remaining full-runtime confidence limit is finding 1.
+
+## Standards axis and twelve smells
+
+Deep-module assessment: one command hides checking, parsing, projection and publication; the pure pipeline remains separated from OS execution. `guardWorker` keeps Windows ownership/cleanup out of model semantics. The native launcher is a necessary host adapter. No extra product abstraction, dead production module, or unrelated cleanup was identified. Local assurance remains finding 2; the Java prerequisite is finding 3.
+
+| Smell | Judgment against the delivered change |
+|---|---|
+| Mysterious Name | `stage`, `done`, guard and worker correspond to concrete lifecycle states; native Win32 constants are commented. No consequence-bearing ambiguity found. |
+| Duplicated Code | Windows/POSIX launch branches implement different process models; tiny version selection duplication is host-specific. Formal companion skills do not duplicate command recipes. |
+| Feature Envy | Pure passes own graph transformations; Windows process code owns OS handles/lifetime. No new cross-module manipulation requiring relocation found. |
+| Data Clumps | Worker/stage/tmp travel together for an actual cleanup operation. No evidence that an extra abstraction would improve correctness. |
+| Primitive Obsession | PIDs, paths and exit codes are operating-system values; upstream rule/trace types preserve semantic distinctions. |
+| Repeated Switches | Platform branches are at spawn, ownership and publication seams, with no divergent alternate model semantics. |
+| Shotgun Surgery | Host adaptation is localized; no setup algorithm or product-wide edits were required. |
+| Divergent Change | Windows lifecycle remains separate from the pure compiler. run.ts changes are tool resolution and typing only. |
+| Speculative Generality | No new framework or unused future platform interface found. The complete upstream compiler is explicitly required scope. |
+| Message Chains | No new chain that leaks internal graph/lifecycle structure to skill consumers found. |
+| Middle Man | PowerShell entry, worker and job helper each carry necessary runtime/ownership responsibilities. |
+| Refused Bequest | No new inheritance hierarchy; Win32 interop layouts are data representations. |
+
+Test quality: the preserved corpus, plain-TLC and differential tests contain meaningful external comparisons; renderer tests exercise Pele classes and Mermaid parsing. The new real-TLC cases check exit/report/chart behavior and genuine shortest-path branching. The idle lifecycle fixtures observe actual descendant termination and directory removal without CPU-burning loops. Metadata assertions concern host configuration keys, not arbitrary prose. Gherkin wiring is explicit and catches unwired steps, but wording validation alone is not behavioral mutation. File-wide POSIX skips reduce executed coverage, even though assertions remain intact. Added synchronous acceptance probes have bounded model inputs; no broad unbounded probe was run by this review.
+
+## Security and likely bugs axis
+
+- Argument boundaries: `parseArgs` restricts options; config parsing rejects unsupported/malformed values, view export validation checks shape, and Java/Node/PowerShell use argument arrays instead of interpolated user shell commands. View modules intentionally execute caller-chosen JavaScript; this is a local code tool, not a sandbox for untrusted uploads.
+- Filesystem: output is staged beside its destination, nonempty destinations are refused, and publication occurs only for completed exits 0/1. Windows removes an existing destination only with nonrecursive rmdir, so content arriving during checking is retained rather than recursively deleted. Symlink destinations are resolved before staging. Empty, broken-link and concurrent-content cases are represented in upstream tests, although many have not run on POSIX here (finding 1).
+- Resource ownership: Windows workers wait for the job handshake before Java starts. The job uses kill-on-close; detached cleanup waits for worker death before removing the two owned directories. Normal and killed-parent probes independently passed. Cleanup has a bounded wait and reports retained scratch if termination fails. POSIX process groups retain upstream implementation but lack executed proof in this packet.
+- Errors/edges: initial-state bugs, zero-step paths, no reachable state, deadlock-name collisions, constrained states and loops have source handling/tests. Failed launch/check paths do not publish successful results. Relative Java/jar overrides are resolved before TLC changes cwd. The optional Java test-harness edge is finding 3.
+- Injection/XSS: labels and titles pass through the preserved Mermaid encoding, color names are restricted, and renderer tests include directive/control/prototype-key cases. No new HTML/network/auth/session surface was added; SQL injection and CSRF/session rules have no applicable boundary in this local tool. No secrets found in source or committed environment/log evidence. Pins/hash and task-local dependency instructions are explicit; no global installation is required by the demonstrated path.
+
+## Gates and independent observations
+
+The gate denominator below groups related requirements explicitly; it is not a percentage of test cases.
+
+| # | Gate group | Result |
+|---|---|---|
+| 1 | Actual package test command / complete applicable upstream suite | **Incomplete**: recorded `npm test` -> `node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test/*.test.ts`; exit 0, 342 registrations, 168 pass, 174 skips, 0 failures. Finding 1. |
+| 2 | `node --test DynaDocs.Tests/coverage/tests/setup-skills.test.cjs` | PASS: independently 24/24, exit 0. |
+| 3 | `node setup-skills.mjs` and both canonical projections | PASS: independently setup exit 0, 40 skills/80 created projections; focused metadata acceptance 1/1. |
+| 4 | `dydo check` | PASS: independently exit 0, 846 files, 0 errors/warnings. |
+| 5 | `git diff --check 8553172 HEAD` | PASS: independently exit 0. |
+| 6 | Real invariant red/green, shortest path and rendered artifact | PASS for the bounded demonstration: reused and inspected hashed real TLC/Pele evidence; unchanged invariant/config confirmed. |
+| 7 | PowerShell/Git Bash and native lifecycle/path handling | PASS in recorded explicit-tool environment; independent native tests 3/3. Optional JAVA test configuration separately fails (finding 3). |
+| 8 | More-than-500-state behavior | PASS: inspected 502-state failure/pass inputs, reports and artifact inventory, plus unchanged upstream budget logic. |
+| 9 | Feature presence and specific behavioral red proof | PASS: inspected four absent-implementation failures, restored 4/4 acceptance, CRLF red/green and output-directory regression evidence. Independent parser cases 8/8. |
+| 10 | Maintained-code static/coverage/mutation assurance | **Incomplete**: recorded strict TypeScript compile exit 0 is accepted only as typechecking. Required additional metrics/capability disposition absent; mutation unavailable. Finding 2. |
+
+Independent passing test selections total 36/36 (24 setup + 8 parser + 3 native + 1 metadata). The additional supported-environment regression probe is 0/1 with expected observed failure for finding 3. Neither count includes skipped tests as passed. The initial sandbox setup run failed on Windows junction permissions; the same command outside the sandbox passed. That environment failure is not attributed to the candidate.
+
+Review logs: [directory](C:/Users/User/AppData/Local/Temp/dyd415-astra-review-evidence). Driver: [dyd415-astra-probes.py](C:/Users/User/AppData/Local/Temp/dyd415-astra-probes.py). Hash audit: [dyd415-astra-audit.py](C:/Users/User/AppData/Local/Temp/dyd415-astra-audit.py). The driver uses this review checkout, existing task-local jar/JDK and no dependency installation. Each saved log has its exact command in driver output; each command's exit is preserved. Broad/full tests were reused, not rerun. The original FIFO booking/driver source and LC external-driver documentation/implementation were inspected: booking 98, live namespace, inherited ticket, FIFO before Heavy before exclusive dydo lock. No queue or lock was taken for the bounded reviewer probes.
+
+Combined merge gates and final G/M release obligations are not this pre-merge candidate review. No CI-green or merge claim is made. The captain must commission correction/proof and a fresh independent review of the resulting candidate; this FAIL is binding only on the pinned candidate and contract.

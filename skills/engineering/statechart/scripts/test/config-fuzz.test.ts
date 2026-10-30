@@ -159,7 +159,7 @@ function readInTlc(files: string[], jar: string) {
   const r = spawnSync(
     process.env.JAVA || "java",
     ["-cp", jar, path.join(here, "ConfigOracle.java")],
-    { input: `${files.join("\n")}\n`, encoding: "utf8", maxBuffer: 1 << 30 },
+    { input: `${files.join("\n")}\n`, encoding: "utf8", maxBuffer: 1 << 30, windowsHide: true },
   );
   assert.equal(r.status, 0, r.error?.message ?? r.stderr);
   const lines = r.stdout.split("\n");

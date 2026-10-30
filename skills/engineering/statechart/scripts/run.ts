@@ -81,7 +81,7 @@ const runChild = (file: string, args: string[], options: { cwd: string; env: Nod
     execFile(
       file,
       args,
-      { encoding: "utf8", maxBuffer: 1 << 30, ...options },
+      { encoding: "utf8", maxBuffer: 1 << 30, ...options, windowsHide: true },
       (error, stdout, stderr) =>
         resolve({
           status: error ? (typeof error.code === "number" ? error.code : null) : 0,
@@ -169,7 +169,7 @@ const runToFiles = (
     for (const f of files) fds.push(fs.openSync(f, "w"));
     let child: ChildProcess;
     try {
-      child = spawn(file, args, { ...options, stdio: ["ignore", ...fds] });
+      child = spawn(file, args, { ...options, stdio: ["ignore", ...fds], windowsHide: true });
     } finally {
       for (const fd of fds) fs.closeSync(fd);
     }
@@ -213,8 +213,10 @@ async function findTlc(cwd: string) {
   };
 }
 
-const exitClass = (status: number | null): 0 | 1 | 2 =>
-  status === 0 ? 0 : status === 11 || status === 12 || status === 13 ? 1 : 2;
+const exitClass = (status: number | null): 0 | 1 | 2 => {
+  if (status === 0) return 0;
+  return status === 11 || status === 12 || status === 13 ? 1 : 2;
+};
 
 const tail = (r: FileResult) => {
   if (r.error) return r.error.message;

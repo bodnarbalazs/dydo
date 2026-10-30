@@ -20,7 +20,7 @@ for (const finish of ["normal", "killed"] as const) {
     fs.writeFileSync(worker, `import { spawn } from 'node:child_process';
 let go = ''; for await (const chunk of process.stdin) go += chunk;
 if (go !== 'go') process.exit(2);
-const child = spawn(process.execPath, ['-e', 'process.stdin.resume()'], {stdio: ['pipe', 'inherit', 'inherit']});
+const child = spawn(process.execPath, ['-e', 'process.stdin.resume()'], {stdio: ['pipe', 'inherit', 'inherit'], windowsHide: true});
 console.log(JSON.stringify({worker: process.pid, child: child.pid}));
 `);
     const runner = path.join(dir, "runner.mjs");
@@ -56,7 +56,8 @@ process.stdin.once('data', async () => { await close(); process.exit(0); });
   });
 }
 
-test("Windows resolves relative TLC overrides from the caller and accepts empty output", {
+for (const mode of ["relative", "absolute", "bare", "unset"] as const) {
+test(`Windows resolves ${mode} TLC overrides from the caller and accepts empty output`, {
   skip: !windows || (!process.env.TLA2TOOLS && "requires real TLC"),
 }, (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-relative-"));
@@ -65,10 +66,25 @@ test("Windows resolves relative TLC overrides from the caller and accepts empty 
   fs.copyFileSync(process.env.TLA2TOOLS!, path.join(dir, "tools.jar"));
   const out = path.join(dir, "out");
   fs.mkdirSync(out);
-  const java = process.env.JAVA!;
+  const resolved = spawnSync(process.env.JAVA ?? "java", ["-XshowSettings:properties", "-version"], { encoding: "utf8", windowsHide: true });
+  assert.equal(resolved.status, 0, resolved.stderr);
+  const home = resolved.stderr.match(/^\s*java.home = (.+)$/m)?.[1].trim();
+  assert.ok(home, "Java must report its actual installation for the relative-tool test");
+  const java = path.join(home, "bin", "java.exe");
+  assert.ok(fs.existsSync(java), java);
+  const env: NodeJS.ProcessEnv = { ...process.env, TLA2TOOLS: "./tools.jar" };
+  // The caller's supported PATH configuration also supplies the real relative executable.
+  const javaKey = Object.keys(env).find(key => key.toUpperCase() === "JAVA");
+  if (javaKey) delete env[javaKey];
+  if (mode === "relative") env.JAVA = path.relative(dir, java);
+  if (mode === "absolute") env.JAVA = java;
+  if (mode === "bare") env.JAVA = "java";
+  const pathKey = Object.keys(env).find(key => key.toUpperCase() === "PATH") ?? "PATH";
+  env[pathKey] = path.dirname(java) + path.delimiter + (env[pathKey] ?? "");
   const r = spawnSync(process.execPath, [path.join(scripts, "statechart.ts"), spec, "--out", out], {
-    cwd: dir, encoding: "utf8", env: { ...process.env, TLA2TOOLS: "./tools.jar", JAVA: path.relative(dir, java) },
+    cwd: dir, encoding: "utf8", env, windowsHide: true,
   });
   assert.equal(r.status, 1, r.stderr);
   assert.match(fs.readFileSync(path.join(out, "report.md"), "utf8"), /The shortest path has 1 step/);
 });
+}

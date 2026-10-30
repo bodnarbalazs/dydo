@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "node",
+    "--test",
+    "DynaDocs.Tests/coverage/tests/setup-skills.test.cjs"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "exit": 0
+}

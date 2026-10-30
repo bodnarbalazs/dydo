@@ -9,6 +9,10 @@ The pinned pstack compiler needed Windows process ownership, CRLF parsing and
 output-directory adaptations before its charts could be trusted on this host.
 This evidence uses actual TLC 1.7.4, not the upstream replay fixtures.
 
+This initial record describes `53df22e002a0e5c5e4429cc6908e0b01d4fb6ab3`.
+The [correction-hop record](dyd-415-statechart-evidence/fix1/verification.md) retains
+both review FAILs and the successor's platform, coverage and static measurements.
+
 ## Inputs and provenance
 
 The implementation starts at `8553172dfaa7601d34f6b884c10350183f9faaa5`, fetched and
@@ -115,8 +119,9 @@ No .NET or Playwright suite was run for this change.
 
 `source-manifest.json` maps every upstream file to its source and candidate SHA-256
 and hashes additions and integration files. `proof-manifest.json` hashes the saved
-demonstration inputs and outputs. These describe the candidate in the commit that
-contains this record; integration-document hashes use canonical LF text.
+demonstration inputs and outputs. These describe the initial candidate `53df22e`;
+the correction record supplies its successor's source identities.
+Integration-document hashes use canonical LF text.
 Evidence attributes preserve its bytes in fresh checkouts;
 skill attributes preserve LF for the shell launcher and byte-compared corpus.
 Raw `.out` and `.txt` machine logs are marked binary for Git diffs: their CRLF

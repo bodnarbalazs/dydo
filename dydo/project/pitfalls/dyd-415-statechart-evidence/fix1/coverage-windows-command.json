@@ -1,0 +1,32 @@
+{
+  "argv": [
+    "node",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix1\\assurance\\node_modules\\c8\\bin\\c8.js",
+    "report",
+    "--temp-directory",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix1\\windows-final-normalized-v8",
+    "--reports-dir",
+    "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\fix1\\coverage-windows",
+    "--reporter=json",
+    "--reporter=lcovonly",
+    "--reporter=text",
+    "--all",
+    "--src",
+    "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts",
+    "--extension=.ts",
+    "--include",
+    "skills/engineering/statechart/scripts/frontends/dot.ts",
+    "--include",
+    "skills/engineering/statechart/scripts/run.ts",
+    "--include",
+    "skills/engineering/statechart/scripts/statechart.ts",
+    "--include",
+    "skills/engineering/statechart/scripts/worker.ts",
+    "--include",
+    "skills/engineering/statechart/scripts/windows-cleanup.ts",
+    "--include",
+    "skills/engineering/statechart/scripts/windows.ts"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "exit": 0
+}

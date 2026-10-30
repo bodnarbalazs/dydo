@@ -1,0 +1,12 @@
+skills/engineering/statechart/scripts/frontends/dot.ts 93.50649350649351 88.88888888888889
+method findings []
+skills/engineering/statechart/scripts/run.ts 88.63636363636364 88.75739644970415
+method findings [('<anonymous>:85:6', 29.0, 4, True), ('findTlc:193:0', 26.354162426216163, 6, False), ('check:273:7', 40.0, 40, True), ('judge:322:18', 64.3135410542818, 64, True)]
+skills/engineering/statechart/scripts/statechart.ts 77.77777777777777 44.73684210526316
+method findings [('<module>', 21.517738648354072, 18, False)]
+skills/engineering/statechart/scripts/worker.ts 100.0 75.0
+method findings []
+skills/engineering/statechart/scripts/windows-cleanup.ts 100.0 88.88888888888889
+method findings []
+skills/engineering/statechart/scripts/windows.ts 100.0 100.0
+method findings []

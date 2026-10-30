@@ -1,0 +1,12 @@
+{
+  "findings": [],
+  "targets": [
+    "skills/engineering/statechart/scripts/frontends/dot.ts",
+    "skills/engineering/statechart/scripts/run.ts",
+    "skills/engineering/statechart/scripts/statechart.ts",
+    "skills/engineering/statechart/scripts/worker.ts",
+    "skills/engineering/statechart/scripts/windows-cleanup.ts",
+    "skills/engineering/statechart/scripts/windows.ts"
+  ],
+  "exit": 0
+}

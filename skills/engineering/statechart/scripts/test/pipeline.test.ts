@@ -44,7 +44,7 @@ console.log(JSON.stringify(edges));
 const loads = (...targets: string[]) => {
   const urls = targets.flatMap(sources).map((file) => pathToFileURL(path.join(scripts, file)).href);
   const out = execFileSync(process.execPath, ["--input-type=module", "-e", RECORD, ...urls], {
-    encoding: "utf8",
+    encoding: "utf8", windowsHide: true,
   });
   const name = (url: string) =>
     url.startsWith("file:") ? path.relative(scripts, fileURLToPath(url)) : url;

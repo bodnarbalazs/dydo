@@ -50,11 +50,7 @@ try {
 const codeOf = (error: unknown) =>
   error instanceof Error && "code" in error ? error.code : undefined;
 
-try {
-  const configFile = flags.config ?? specFile.replace(/\.tla$/, ".cfg");
-  if (!fs.existsSync(configFile))
-    throw new Error(`Cannot find the TLC config ${configFile}. Pass --config FILE.`);
-  const out = flags.out ?? specFile.replace(/\.tla$/, "-chart");
+function destination(out: string) {
   let entries: string[] = [];
   let dest: string;
   try {
@@ -77,6 +73,47 @@ try {
     throw new Error(
       `${out} is not empty. It has ${entries.sort()[0]}. The command writes only to a new or empty folder. Pass --out with a new folder.`,
     );
+  return dest;
+}
+
+function startWorker(stage: string, spec: string, config: string, tmp: string, view?: string) {
+  const runtime = process.versions.deno
+    ? ["run", "--quiet", "--no-prompt", "--allow-read", "--allow-write", "--allow-run", "--allow-env"]
+    : process.execArgv;
+  return spawn(process.execPath, [
+    ...runtime, path.join(import.meta.dirname, "worker.ts"), stage, spec, config, ...(view ? [view] : []),
+  ], {
+    detached: true,
+    windowsHide: true,
+    stdio: [process.platform === "win32" ? "pipe" : "ignore", "inherit", "inherit"],
+    env: { ...process.env, TMPDIR: tmp, ...(process.platform === "win32" ? { TEMP: tmp, TMP: tmp } : {}) },
+  });
+}
+
+function publish(done: string, dest: string, out: string) {
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  try {
+    // Windows cannot replace even an empty directory with rename. rmdir is
+    // deliberately non-recursive: a file arriving during the run is kept.
+    if (process.platform === "win32" && fs.existsSync(dest)) fs.rmdirSync(dest);
+    fs.renameSync(done, dest);
+  } catch (error) {
+    if (codeOf(error) !== "ENOTEMPTY" && codeOf(error) !== "EEXIST") throw error;
+    throw new Error(
+      `${path.join(out, fs.readdirSync(dest).sort()[0])} appeared while the check ran, so the command wrote nothing. Pass --out with a new folder.`,
+      { cause: error },
+    );
+  }
+  process.stdout.write(fs.readFileSync(path.join(dest, "report.md")));
+  console.log(`\nWrote ${out}`);
+}
+
+try {
+  const configFile = flags.config ?? specFile.replace(/\.tla$/, ".cfg");
+  if (!fs.existsSync(configFile))
+    throw new Error(`Cannot find the TLC config ${configFile}. Pass --config FILE.`);
+  const out = flags.out ?? specFile.replace(/\.tla$/, "-chart");
+  const dest = destination(out);
 
   let base = path.dirname(dest);
   while (!fs.existsSync(base)) base = path.dirname(base);
@@ -88,34 +125,7 @@ try {
   let exitCode: number;
   try {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-"));
-    const runtime = process.versions.deno
-      ? [
-          "run",
-          "--quiet",
-          "--no-prompt",
-          "--allow-read",
-          "--allow-write",
-          "--allow-run",
-          "--allow-env",
-        ]
-      : process.execArgv;
-    const worker = spawn(
-      process.execPath,
-      [
-        ...runtime,
-        path.join(import.meta.dirname, "worker.ts"),
-        stage,
-        specFile,
-        configFile,
-        ...(flags.view ? [flags.view] : []),
-      ],
-      {
-        detached: true,
-        windowsHide: true,
-        stdio: [process.platform === "win32" ? "pipe" : "ignore", "inherit", "inherit"],
-        env: { ...process.env, TMPDIR: tmp, ...(process.platform === "win32" ? { TEMP: tmp, TMP: tmp } : {}) },
-      },
-    );
+    const worker = startWorker(stage, specFile, configFile, tmp, flags.view);
     const exited = new Promise<number>((resolve, reject) => {
       worker.on("error", reject);
       worker.on("exit", (code) => resolve(code ?? 2));
@@ -145,21 +155,7 @@ try {
       console.error(`${worker.signalCode} killed the check, so the command wrote nothing.`);
       exitCode = 2;
     } else if ((verdict === 0 || verdict === 1) && fs.existsSync(done)) {
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      try {
-        // Windows cannot replace even an empty directory with rename. rmdir is
-        // deliberately non-recursive: a file arriving during the run is kept.
-        if (process.platform === "win32" && fs.existsSync(dest)) fs.rmdirSync(dest);
-        fs.renameSync(done, dest);
-      } catch (error) {
-        if (codeOf(error) !== "ENOTEMPTY" && codeOf(error) !== "EEXIST") throw error;
-        throw new Error(
-          `${path.join(out, fs.readdirSync(dest).sort()[0])} appeared while the check ran, so the command wrote nothing. Pass --out with a new folder.`,
-          { cause: error },
-        );
-      }
-      process.stdout.write(fs.readFileSync(path.join(dest, "report.md")));
-      console.log(`\nWrote ${out}`);
+      publish(done, dest, out);
       exitCode = verdict;
     } else exitCode = 2;
   } finally {

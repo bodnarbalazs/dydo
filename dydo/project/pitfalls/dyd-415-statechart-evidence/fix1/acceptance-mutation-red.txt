@@ -1,0 +1,56 @@
+TAP version 13
+# Subtest: A broken model shows its shortest bug path
+not ok 1 - A broken model shows its shortest bug path
+  ---
+  duration_ms: 9152.7591
+  type: 'test'
+  location: 'C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\test\\acceptance.test.ts:128:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /## Safe breaks\nThe shortest path has 2 steps:\n0\. Count 0\n1\. jump: Count 3/. Input:
+    
+    '# Safety\n' +
+      '\n' +
+      'TLC reached 5 states and 6 steps. The chart draws 5 states and 5 arrows.\n' +
+      'The chart does not draw 1 steps that stay in one chart state.\n' +
+      '\n' +
+      '## Safe breaks\n' +
+      'The shortest path has 1 step:\n' +
+      '0. Count 0\n' +
+      '1. jump: Count 3\n' +
+      '\n' +
+      '## Rules that hold\n' +
+      'NoDeadlock\n'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    # Safety
+    
+    TLC reached 5 states and 6 steps. The chart draws 5 states and 5 arrows.
+    The chart does not draw 1 steps that stay in one chart state.
+    
+    ## Safe breaks
+    The shortest path has 1 step:
+    0. Count 0
+    1. jump: Count 3
+    
+    ## Rules that hold
+    NoDeadlock
+    
+  operator: 'match'
+  stack: |-
+    TestContext.run (file:///C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/acceptance.test.ts:70:16)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9249.5467

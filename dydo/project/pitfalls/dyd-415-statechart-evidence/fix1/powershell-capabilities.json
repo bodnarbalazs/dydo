@@ -1,0 +1,23 @@
+{
+    "powershell":  "5.1.26100.9711",
+    "pester":  "3.4.0",
+    "sources":  [
+                    {
+                        "parseErrors":  [
+
+                                        ],
+                        "parameters":  0,
+                        "file":  "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\statechart.ps1"
+                    },
+                    {
+                        "parseErrors":  [
+
+                                        ],
+                        "parameters":  1,
+                        "file":  "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\windows-job.ps1"
+                    }
+                ],
+    "scriptAnalyzer":  [
+
+                       ]
+}

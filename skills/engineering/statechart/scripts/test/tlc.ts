@@ -50,7 +50,7 @@ function tlc(dir: string, module: string, cfg: string) {
       path.join(dir, `${run}-meta`),
       module,
     ],
-    { cwd: dir, encoding: "utf8" },
+    { cwd: dir, encoding: "utf8", windowsHide: true },
   );
   const out = (r.stdout + r.stderr).replaceAll("\r\n", "\n");
   const temporal = properties(cfg);
@@ -97,7 +97,7 @@ export function agrees(module: string, files: { [name: string]: string[] }, cfg:
     const cli = spawnSync(
       process.execPath,
       [path.join(here, "../statechart.ts"), path.join(dir, `${module}.tla`), "--out", out],
-      { encoding: "utf8" },
+      { encoding: "utf8", windowsHide: true },
     );
     const plain = tlc(dir, module, cfg);
     const report = fs.existsSync(out) ? fs.readFileSync(path.join(out, "report.md"), "utf8") : "";

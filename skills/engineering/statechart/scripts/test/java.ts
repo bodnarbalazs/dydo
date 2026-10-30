@@ -21,7 +21,7 @@ const TAG = /"chart-[0-9a-f]{32}"/g;
 
 const java = (folder: string, args: string[]) => {
   const r = spawnSync(process.env.STATECHART_JAVA ?? "java", args, {
-    encoding: "utf8",
+    encoding: "utf8", windowsHide: true,
     maxBuffer: 1 << 30,
   });
   fs.writeFileSync(path.join(folder, `${name}.out`), (r.stdout + r.stderr).replace(TAG, '"chart"'));

@@ -1,0 +1,26 @@
+﻿{
+    "clr":  "4.0.30319.42000",
+    "cases":  [
+                  {
+                      "passed":  true,
+                      "message":  "The parameter is incorrect",
+                      "pid":  0,
+                      "type":  "System.ComponentModel.Win32Exception",
+                      "actual":  87,
+                      "expected":  87
+                  },
+                  {
+                      "passed":  true,
+                      "message":  "Access is denied",
+                      "pid":  122192,
+                      "type":  "System.ComponentModel.Win32Exception",
+                      "actual":  5,
+                      "expected":  5
+                  }
+              ],
+    "source":  "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\windows-job.ps1",
+    "powershell":  "5.1.26100.9711",
+    "ownedChildExited":  true,
+    "hiddenChild":  true,
+    "sourceSha256":  "ea60a592b12c05ec61b6bd1ef77b2cc9ced422bfa8021df596af3b804da62a6c"
+}

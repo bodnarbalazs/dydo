@@ -1,0 +1,12 @@
+{
+  "Properties": {
+    "NETCoreSdkVersion": "10.0.300",
+    "TargetFramework": "net10.0",
+    "LangVersion": "14.0",
+    "Optimize": "false",
+    "DebugType": "portable",
+    "Nullable": "disable",
+    "TreatWarningsAsErrors": "true",
+    "EnforceCodeStyleInBuild": "true"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "argv": [
+    "powershell.exe",
+    "-NoProfile",
+    "-NonInteractive",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\fix2\\original-addtype-failures.ps1",
+    "-SourcePath",
+    "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\windows-job.ps1",
+    "-OutputPath",
+    "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\fix2\\original-addtype-failures.json"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix2",
+  "exit": 1,
+  "seconds": 0.4289531707763672,
+  "hidden": true,
+  "ticket": "0000000025-452c4e7e3dedbea9"
+}

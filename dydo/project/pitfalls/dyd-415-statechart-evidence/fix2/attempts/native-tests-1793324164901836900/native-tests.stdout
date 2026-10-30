@@ -1,0 +1,30 @@
+Beginning run...
+Command line : '"dotnet" test C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\Adapter.Tests.csproj -c Debug --no-build --no-restore --logger trx;LogFileName=adapter.trx --results-directory C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo\project\pitfalls\dyd-415-statechart-evidence\fix2\test-results -- RunConfiguration.TreatNoTestsAsError=true RunConfiguration.MaxCpuCount=1'
+Test run for C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\bin\Debug\net10.0\Adapter.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed AdapterTests.InvalidPidThrowsAndClosesEveryAllocatedJob [2 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: 87
+Actual:   0
+  Stack Trace:
+     at AdapterTests.<InvalidPidThrowsAndClosesEveryAllocatedJob>g__Reject|8_0() in C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\AdapterTests.cs:line 63
+   at AdapterTests.InvalidPidThrowsAndClosesEveryAllocatedJob() in C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\AdapterTests.cs:line 64
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed AdapterTests.NonNestableOwnedJobRejectsAssignmentAndClosesJobAndProcessHandles [4 ms]
+  Error Message:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.ComponentModel.Win32Exception)
+  Stack Trace:
+     at AdapterTests.<>c__DisplayClass9_0.<NonNestableOwnedJobRejectsAssignmentAndClosesJobAndProcessHandles>g__Reject|0() in C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\AdapterTests.cs:line 80
+   at AdapterTests.NonNestableOwnedJobRejectsAssignmentAndClosesJobAndProcessHandles() in C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\AdapterTests.cs:line 81
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+Results File: C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo\project\pitfalls\dyd-415-statechart-evidence\fix2\test-results\adapter.trx
+Failed!  - Failed:     2, Passed:     2, Skipped:     0, Total:     4, Duration: 149 ms - Adapter.Tests.dll (net10.0)
+Getting results...
+... C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo\project\pitfalls\dyd-415-statechart-evidence\fix2\template.opencover.xml.0.acv (373b)
+27 visits recorded in 00:00:00.0134147 (2,013 visits/sec)
+A total of 27 visits recorded
+Coverage statistics flushing took 0.03 seconds

@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "dotnet",
+    "tool",
+    "install",
+    "altcover.global",
+    "--version",
+    "9.0.102",
+    "--tool-path",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix2\\tools"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix2",
+  "exit": 0,
+  "seconds": 1.9263627529144287,
+  "hidden": true,
+  "ticket": "0000000002-9b474f14ac527ff2"
+}

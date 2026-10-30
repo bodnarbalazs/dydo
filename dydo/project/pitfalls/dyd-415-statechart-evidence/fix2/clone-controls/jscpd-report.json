@@ -1,0 +1,119 @@
+{
+  "duplicates": [
+    {
+      "firstFile": {
+        "end": 27,
+        "endLoc": {
+          "column": 3,
+          "line": 27,
+          "position": 1076
+        },
+        "name": "a.cs",
+        "start": 1,
+        "startLoc": {
+          "column": 0,
+          "line": 1,
+          "position": 0
+        }
+      },
+      "format": "csharp",
+      "fragment": "class Control { void Execute() {\nSystem.Console.WriteLine(100 + 200 + 0);\nSystem.Console.WriteLine(100 + 200 + 1);\nSystem.Console.WriteLine(100 + 200 + 2);\nSystem.Console.WriteLine(100 + 200 + 3);\nSystem.Console.WriteLine(100 + 200 + 4);\nSystem.Console.WriteLine(100 + 200 + 5);\nSystem.Console.WriteLine(100 + 200 + 6);\nSystem.Console.WriteLine(100 + 200 + 7);\nSystem.Console.WriteLine(100 + 200 + 8);\nSystem.Console.WriteLine(100 + 200 + 9);\nSystem.Console.WriteLine(100 + 200 + 10);\nSystem.Console.WriteLine(100 + 200 + 11);\nSystem.Console.WriteLine(100 + 200 + 12);\nSystem.Console.WriteLine(100 + 200 + 13);\nSystem.Console.WriteLine(100 + 200 + 14);\nSystem.Console.WriteLine(100 + 200 + 15);\nSystem.Console.WriteLine(100 + 200 + 16);\nSystem.Console.WriteLine(100 + 200 + 17);\nSystem.Console.WriteLine(100 + 200 + 18);\nSystem.Console.WriteLine(100 + 200 + 19);\nSystem.Console.WriteLine(100 + 200 + 20);\nSystem.Console.WriteLine(100 + 200 + 21);\nSystem.Console.WriteLine(100 + 200 + 22);\nSystem.Console.WriteLine(100 + 200 + 23);\nSystem.Console.WriteLine(100 + 200 + 24);\n} }",
+      "isNew": false,
+      "lines": 27,
+      "secondFile": {
+        "end": 27,
+        "endLoc": {
+          "column": 3,
+          "line": 27,
+          "position": 1076
+        },
+        "name": "b.cs",
+        "start": 1,
+        "startLoc": {
+          "column": 0,
+          "line": 1,
+          "position": 0
+        }
+      },
+      "tokens": 441
+    },
+    {
+      "firstFile": {
+        "end": 25,
+        "endLoc": {
+          "column": 38,
+          "line": 25,
+          "position": 964
+        },
+        "name": "a.ps1",
+        "start": 1,
+        "startLoc": {
+          "column": 0,
+          "line": 1,
+          "position": 0
+        }
+      },
+      "format": "powershell",
+      "fragment": "Write-Output ($value + 0 + 100 + 200)\nWrite-Output ($value + 1 + 100 + 200)\nWrite-Output ($value + 2 + 100 + 200)\nWrite-Output ($value + 3 + 100 + 200)\nWrite-Output ($value + 4 + 100 + 200)\nWrite-Output ($value + 5 + 100 + 200)\nWrite-Output ($value + 6 + 100 + 200)\nWrite-Output ($value + 7 + 100 + 200)\nWrite-Output ($value + 8 + 100 + 200)\nWrite-Output ($value + 9 + 100 + 200)\nWrite-Output ($value + 10 + 100 + 200)\nWrite-Output ($value + 11 + 100 + 200)\nWrite-Output ($value + 12 + 100 + 200)\nWrite-Output ($value + 13 + 100 + 200)\nWrite-Output ($value + 14 + 100 + 200)\nWrite-Output ($value + 15 + 100 + 200)\nWrite-Output ($value + 16 + 100 + 200)\nWrite-Output ($value + 17 + 100 + 200)\nWrite-Output ($value + 18 + 100 + 200)\nWrite-Output ($value + 19 + 100 + 200)\nWrite-Output ($value + 20 + 100 + 200)\nWrite-Output ($value + 21 + 100 + 200)\nWrite-Output ($value + 22 + 100 + 200)\nWrite-Output ($value + 23 + 100 + 200)\nWrite-Output ($value + 24 + 100 + 200)",
+      "isNew": false,
+      "lines": 25,
+      "secondFile": {
+        "end": 25,
+        "endLoc": {
+          "column": 38,
+          "line": 25,
+          "position": 964
+        },
+        "name": "b.ps1",
+        "start": 1,
+        "startLoc": {
+          "column": 0,
+          "line": 1,
+          "position": 0
+        }
+      },
+      "tokens": 500
+    }
+  ],
+  "statistics": {
+    "detectionDate": "2026-10-30T02:20:51.212Z",
+    "formats": {
+      "csharp": {
+        "clones": 1,
+        "duplicatedLines": 26,
+        "duplicatedTokens": 441,
+        "lines": 54,
+        "newClones": 0,
+        "newDuplicatedLines": 0,
+        "percentage": 48.148148148148145,
+        "percentageTokens": 50.0,
+        "sources": 2,
+        "tokens": 882
+      },
+      "powershell": {
+        "clones": 1,
+        "duplicatedLines": 24,
+        "duplicatedTokens": 500,
+        "lines": 50,
+        "newClones": 0,
+        "newDuplicatedLines": 0,
+        "percentage": 48.0,
+        "percentageTokens": 50.0,
+        "sources": 2,
+        "tokens": 1000
+      }
+    },
+    "total": {
+      "clones": 2,
+      "duplicatedLines": 50,
+      "duplicatedTokens": 941,
+      "lines": 104,
+      "newClones": 0,
+      "newDuplicatedLines": 0,
+      "percentage": 48.07692307692308,
+      "percentageTokens": 50.0,
+      "sources": 4,
+      "tokens": 1882
+    }
+  }
+}

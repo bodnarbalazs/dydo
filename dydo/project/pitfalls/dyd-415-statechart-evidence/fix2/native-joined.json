@@ -1,0 +1,108 @@
+{
+  "System.IntPtr StatechartJob::Attach(System.Int32)": {
+    "token": 100663303,
+    "files": {
+      "adapter/StatechartJob.cs": {
+        "Lines": {
+          "27": 1,
+          "28": 1,
+          "29": 1,
+          "30": 1,
+          "31": 1,
+          "32": 1,
+          "33": 1,
+          "34": 1,
+          "35": 1,
+          "36": 1,
+          "37": 1,
+          "38": 1,
+          "39": 1,
+          "40": 1,
+          "41": 1
+        },
+        "Branches": [
+          {
+            "Line": 29,
+            "Offset": 23,
+            "EndOffset": 25,
+            "Path": 0,
+            "Ordinal": 0,
+            "Uspid": 0,
+            "FileId": "1",
+            "Hits": 0
+          },
+          {
+            "Line": 29,
+            "Offset": 23,
+            "EndOffset": 31,
+            "Path": 1,
+            "Ordinal": 1,
+            "Uspid": 1,
+            "FileId": "1",
+            "Hits": 1
+          },
+          {
+            "Line": 33,
+            "Offset": 81,
+            "EndOffset": 83,
+            "Path": 0,
+            "Ordinal": 2,
+            "Uspid": 2,
+            "FileId": "1",
+            "Hits": 0
+          },
+          {
+            "Line": 33,
+            "Offset": 81,
+            "EndOffset": 89,
+            "Path": 1,
+            "Ordinal": 3,
+            "Uspid": 3,
+            "FileId": "1",
+            "Hits": 1
+          },
+          {
+            "Line": 35,
+            "Offset": 114,
+            "EndOffset": 116,
+            "Path": 0,
+            "Ordinal": 4,
+            "Uspid": 4,
+            "FileId": "1",
+            "Hits": 1
+          },
+          {
+            "Line": 35,
+            "Offset": 114,
+            "EndOffset": 122,
+            "Path": 1,
+            "Ordinal": 5,
+            "Uspid": 5,
+            "FileId": "1",
+            "Hits": 1
+          },
+          {
+            "Line": 37,
+            "Offset": 138,
+            "EndOffset": 140,
+            "Path": 0,
+            "Ordinal": 6,
+            "Uspid": 6,
+            "FileId": "1",
+            "Hits": 1
+          },
+          {
+            "Line": 37,
+            "Offset": 138,
+            "EndOffset": 146,
+            "Path": 1,
+            "Ordinal": 7,
+            "Uspid": 7,
+            "FileId": "1",
+            "Hits": 1
+          }
+        ]
+      }
+    }
+  }
+}

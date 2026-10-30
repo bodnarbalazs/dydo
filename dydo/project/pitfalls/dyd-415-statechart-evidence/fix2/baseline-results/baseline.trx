@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="932e3c87-8f50-491d-920c-0c0eac7df87a" name="Balázs@NIGHTFURY 2026-10-30 01:51:41" runUser="NIGHTFURY\Balázs" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-30T01:51:41.6190623+01:00" queuing="2026-10-30T01:51:41.6190628+01:00" start="2026-10-30T01:51:38.1947958+01:00" finish="2026-10-30T01:51:41.6364695+01:00" />
+  <TestSettings name="default" id="32c09525-18c8-4704-8fbb-e8c4240d8029">
+    <Deployment runDeploymentRoot="Balázs_NIGHTFURY_2026-10-30_01_51_41" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="249ad918-d061-4743-b898-ed9b23f4910d" testId="7186b3af-268b-14df-1c27-aa1c39c48f02" testName="AdapterTests.TerminationUsesRequestedExitCodeAndClosedHandleIsInvalid" computerName="NIGHTFURY" duration="00:00:01.0230980" startTime="2026-10-30T01:51:39.8054330+01:00" endTime="2026-10-30T01:51:40.8389058+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="249ad918-d061-4743-b898-ed9b23f4910d">
+      <Output>
+        <StdOut>Owned child 148980 exit=2; closed job ERROR_INVALID_HANDLE=6</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="70210482-6be3-4b9c-a882-8013f87fc488" testId="32e24c28-fd6f-b308-8ea6-95b42ca66fc1" testName="AdapterTests.InvalidPidThrowsAndClosesEveryAllocatedJob" computerName="NIGHTFURY" duration="00:00:00.0015046" startTime="2026-10-30T01:51:40.8517142+01:00" endTime="2026-10-30T01:51:40.8518175+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="70210482-6be3-4b9c-a882-8013f87fc488">
+      <Output>
+        <StdOut>OpenProcess invalid PID: 32 failures; handles before=372, after=372</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="4548400c-9322-42f5-bc04-420bad6959de" testId="b0178c3a-67c3-c26d-043d-9d167a62d1a3" testName="AdapterTests.ExitedOwnedProcessRejectsAssignmentAndClosesJobAndProcessHandles" computerName="NIGHTFURY" duration="00:00:00.0292301" startTime="2026-10-30T01:51:41.3059517+01:00" endTime="2026-10-30T01:51:41.3349966+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4548400c-9322-42f5-bc04-420bad6959de">
+      <Output>
+        <StdOut>AssignProcessToJobObject exited owned process: 32 failures; handles before=376, after=376</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="0dba61dc-6a2f-4ea3-a580-9d07cb4d39b6" testId="17b2d96c-0461-f68b-ad3f-722cec78ff11" testName="AdapterTests.AssignmentExceptionPreservesNativeErrorCode" computerName="NIGHTFURY" duration="00:00:00.1724734" startTime="2026-10-30T01:51:41.1332823+01:00" endTime="2026-10-30T01:51:41.3056514+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0dba61dc-6a2f-4ea3-a580-9d07cb4d39b6" />
+    <UnitTestResult executionId="6d26f2ea-d397-4efd-a4f2-8c483d0bc34a" testId="25752e63-7b9a-4ad9-3005-09ac60d41d0e" testName="AdapterTests.ClosingLastJobHandleKillsOwnedProcess" computerName="NIGHTFURY" duration="00:00:00.2901313" startTime="2026-10-30T01:51:40.8519503+01:00" endTime="2026-10-30T01:51:41.1329683+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6d26f2ea-d397-4efd-a4f2-8c483d0bc34a">
+      <Output>
+        <StdOut>Owned child 141052 exited after last job handle closed</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="3b9e07d1-1c07-47ea-b142-2cf6a8df6ff7" testId="24ad96fa-a81b-78a5-0291-b2d981dc57c1" testName="AdapterTests.InvalidPidExceptionPreservesNativeErrorCode" computerName="NIGHTFURY" duration="00:00:00.0018607" startTime="2026-10-30T01:51:40.8508114+01:00" endTime="2026-10-30T01:51:40.8509259+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3b9e07d1-1c07-47ea-b142-2cf6a8df6ff7" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="AdapterTests.ClosingLastJobHandleKillsOwnedProcess" storage="c:\users\user\appdata\local\temp\dyd415-fix2\tests\bin\debug\net10.0\adapter.tests.dll" id="25752e63-7b9a-4ad9-3005-09ac60d41d0e">
+      <Execution id="6d26f2ea-d397-4efd-a4f2-8c483d0bc34a" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\bin\Debug\net10.0\Adapter.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="AdapterTests" name="ClosingLastJobHandleKillsOwnedProcess" />
+    </UnitTest>
+    <UnitTest name="AdapterTests.InvalidPidExceptionPreservesNativeErrorCode" storage="c:\users\user\appdata\local\temp\dyd415-fix2\tests\bin\debug\net10.0\adapter.tests.dll" id="24ad96fa-a81b-78a5-0291-b2d981dc57c1">
+      <Execution id="3b9e07d1-1c07-47ea-b142-2cf6a8df6ff7" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\bin\Debug\net10.0\Adapter.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="AdapterTests" name="InvalidPidExceptionPreservesNativeErrorCode" />
+    </UnitTest>
+    <UnitTest name="AdapterTests.InvalidPidThrowsAndClosesEveryAllocatedJob" storage="c:\users\user\appdata\local\temp\dyd415-fix2\tests\bin\debug\net10.0\adapter.tests.dll" id="32e24c28-fd6f-b308-8ea6-95b42ca66fc1">
+      <Execution id="70210482-6be3-4b9c-a882-8013f87fc488" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\bin\Debug\net10.0\Adapter.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="AdapterTests" name="InvalidPidThrowsAndClosesEveryAllocatedJob" />
+    </UnitTest>
+    <UnitTest name="AdapterTests.AssignmentExceptionPreservesNativeErrorCode" storage="c:\users\user\appdata\local\temp\dyd415-fix2\tests\bin\debug\net10.0\adapter.tests.dll" id="17b2d96c-0461-f68b-ad3f-722cec78ff11">
+      <Execution id="0dba61dc-6a2f-4ea3-a580-9d07cb4d39b6" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\bin\Debug\net10.0\Adapter.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="AdapterTests" name="AssignmentExceptionPreservesNativeErrorCode" />
+    </UnitTest>
+    <UnitTest name="AdapterTests.TerminationUsesRequestedExitCodeAndClosedHandleIsInvalid" storage="c:\users\user\appdata\local\temp\dyd415-fix2\tests\bin\debug\net10.0\adapter.tests.dll" id="7186b3af-268b-14df-1c27-aa1c39c48f02">
+      <Execution id="249ad918-d061-4743-b898-ed9b23f4910d" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\bin\Debug\net10.0\Adapter.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="AdapterTests" name="TerminationUsesRequestedExitCodeAndClosedHandleIsInvalid" />
+    </UnitTest>
+    <UnitTest name="AdapterTests.ExitedOwnedProcessRejectsAssignmentAndClosesJobAndProcessHandles" storage="c:\users\user\appdata\local\temp\dyd415-fix2\tests\bin\debug\net10.0\adapter.tests.dll" id="b0178c3a-67c3-c26d-043d-9d167a62d1a3">
+      <Execution id="4548400c-9322-42f5-bc04-420bad6959de" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\bin\Debug\net10.0\Adapter.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="AdapterTests" name="ExitedOwnedProcessRejectsAssignmentAndClosesJobAndProcessHandles" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="7186b3af-268b-14df-1c27-aa1c39c48f02" executionId="249ad918-d061-4743-b898-ed9b23f4910d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="32e24c28-fd6f-b308-8ea6-95b42ca66fc1" executionId="70210482-6be3-4b9c-a882-8013f87fc488" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b0178c3a-67c3-c26d-043d-9d167a62d1a3" executionId="4548400c-9322-42f5-bc04-420bad6959de" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="17b2d96c-0461-f68b-ad3f-722cec78ff11" executionId="0dba61dc-6a2f-4ea3-a580-9d07cb4d39b6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="25752e63-7b9a-4ad9-3005-09ac60d41d0e" executionId="6d26f2ea-d397-4efd-a4f2-8c483d0bc34a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="24ad96fa-a81b-78a5-0291-b2d981dc57c1" executionId="3b9e07d1-1c07-47ea-b142-2cf6a8df6ff7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="6" executed="6" passed="6" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.5+1b188a7b0a (64-bit .NET 10.0.8)&#xD;
+[xUnit.net 00:00:00.19]   Discovering: Adapter.Tests&#xD;
+[xUnit.net 00:00:00.35]   Discovered:  Adapter.Tests&#xD;
+[xUnit.net 00:00:00.39]   Starting:    Adapter.Tests&#xD;
+[xUnit.net 00:00:01.97]   Finished:    Adapter.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

@@ -1,0 +1,12 @@
+{
+  "count": 6,
+  "expected": [
+    "ClosingLastJobHandleKillsOwnedProcess",
+    "TerminationUsesRequestedExitCodeAndClosedHandleIsInvalid",
+    "InvalidPidThrowsAndClosesEveryAllocatedJob",
+    "ExitedOwnedProcessRejectsAssignmentAndClosesJobAndProcessHandles",
+    "InvalidPidExceptionPreservesNativeErrorCode",
+    "AssignmentExceptionPreservesNativeErrorCode"
+  ],
+  "fullPlatformSuite": false
+}

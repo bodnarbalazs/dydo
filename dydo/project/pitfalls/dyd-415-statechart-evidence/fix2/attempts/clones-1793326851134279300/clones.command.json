@@ -1,0 +1,31 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix1\\assurance\\node_modules\\jscpd-windows-x64-msvc\\bin\\jscpd.exe",
+    "--absolute",
+    "--format",
+    "powershell,csharp",
+    "--no-gitignore",
+    "--min-lines",
+    "15",
+    "--min-tokens",
+    "100",
+    "--max-lines",
+    "2147483647",
+    "--max-size",
+    "1000000",
+    "--mode",
+    "strict",
+    "--reporters",
+    "json",
+    "--output",
+    "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\fix2\\clones",
+    "--silent",
+    "--no-tips",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix2\\clone-sources"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix2",
+  "exit": 0,
+  "seconds": 0.03964376449584961,
+  "hidden": true,
+  "ticket": "0000000025-452c4e7e3dedbea9"
+}

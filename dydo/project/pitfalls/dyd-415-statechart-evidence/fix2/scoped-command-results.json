@@ -1,0 +1,15 @@
+{
+  "commands": {
+    "native-tests": 1,
+    "powershell-static": 0,
+    "original-addtype-failures": 0,
+    "clones": 0,
+    "clone-positive-controls": 0
+  },
+  "nativeJoinFailure": null,
+  "positiveCloneControlIsExpectedFinding": true,
+  "actualCloneFindings": 0,
+  "wholeTicketAcceptance": false,
+  "powershellLineBranchComplexityHcrap": "UNAVAILABLE",
+  "changedCodeMutation": "UNAVAILABLE"
+}

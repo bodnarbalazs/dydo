@@ -1,0 +1,113 @@
+{
+  "module": "Adapter",
+  "method": "System.IntPtr StatechartJob::Attach(System.Int32)",
+  "token": 100663303,
+  "sourceSha256": "d73528c22df450659cbb6ce42ced18bb3fe15d081b850278e6425187bce476ee",
+  "nativeModuleHash": "69b97b992782fbbce799ed80101e52aaabd8f4fe",
+  "joiner": "DynaDocs.Tests/coverage/csharp_join.py::coverage_methods",
+  "linesCovered": 15,
+  "linesTotal": 15,
+  "lineCoverage": 1.0,
+  "branchesCovered": 6,
+  "branchesTotal": 8,
+  "branchCoverage": 0.75,
+  "cognitive": 5,
+  "cyclomatic": 5,
+  "parameters": 1,
+  "hcrap": 5.0,
+  "tests": {
+    "baseline": {
+      "passed": 6,
+      "failed": 0
+    },
+    "instrumented": {
+      "passed": 4,
+      "failed": 2
+    }
+  },
+  "wholeGatePass": false,
+  "lines": [
+    {
+      "generatedLine": 27,
+      "powershellLine": 30,
+      "covered": true
+    },
+    {
+      "generatedLine": 28,
+      "powershellLine": 31,
+      "covered": true
+    },
+    {
+      "generatedLine": 29,
+      "powershellLine": 32,
+      "covered": true
+    },
+    {
+      "generatedLine": 30,
+      "powershellLine": 33,
+      "covered": true
+    },
+    {
+      "generatedLine": 31,
+      "powershellLine": 34,
+      "covered": true
+    },
+    {
+      "generatedLine": 32,
+      "powershellLine": 35,
+      "covered": true
+    },
+    {
+      "generatedLine": 33,
+      "powershellLine": 36,
+      "covered": true
+    },
+    {
+      "generatedLine": 34,
+      "powershellLine": 37,
+      "covered": true
+    },
+    {
+      "generatedLine": 35,
+      "powershellLine": 38,
+      "covered": true
+    },
+    {
+      "generatedLine": 36,
+      "powershellLine": 39,
+      "covered": true
+    },
+    {
+      "generatedLine": 37,
+      "powershellLine": 40,
+      "covered": true
+    },
+    {
+      "generatedLine": 38,
+      "powershellLine": 41,
+      "covered": true
+    },
+    {
+      "generatedLine": 39,
+      "powershellLine": 42,
+      "covered": true
+    },
+    {
+      "generatedLine": 40,
+      "powershellLine": 43,
+      "covered": true
+    },
+    {
+      "generatedLine": 41,
+      "powershellLine": 44,
+      "covered": true
+    }
+  ],
+  "thresholds": {
+    "line": 0.8,
+    "branch": 0.6,
+    "cognitive": 20,
+    "hcrap": 20
+  },
+  "passThresholds": true
+}

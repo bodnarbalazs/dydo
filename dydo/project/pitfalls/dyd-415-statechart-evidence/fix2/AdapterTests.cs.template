@@ -1,0 +1,133 @@
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Xunit;
+using Xunit.Abstractions;
+
+[assembly: CollectionBehavior(DisableTestParallelization = true, MaxParallelThreads = 1)]
+
+public sealed class AdapterTests(ITestOutputHelper output)
+{
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool GetProcessHandleCount(IntPtr process, out uint count);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
+
+    [Fact]
+    public void ClosingLastJobHandleKillsOwnedProcess()
+    {
+        using var child = IdleChild();
+        IntPtr job = IntPtr.Zero;
+        try
+        {
+            job = StatechartJob.Attach(child.Id);
+            Assert.NotEqual(IntPtr.Zero, job);
+            Assert.False(child.HasExited);
+            Assert.True(StatechartJob.CloseHandle(job));
+            job = IntPtr.Zero;
+            Assert.True(child.WaitForExit(5000), "KILL_ON_JOB_CLOSE did not terminate owned child");
+            output.WriteLine($"Owned child {child.Id} exited after last job handle closed");
+        }
+        finally { Cleanup(child, job); }
+    }
+
+    [Fact]
+    public void TerminationUsesRequestedExitCodeAndClosedHandleIsInvalid()
+    {
+        using var child = IdleChild();
+        IntPtr job = IntPtr.Zero;
+        try
+        {
+            job = StatechartJob.Attach(child.Id);
+            Assert.True(StatechartJob.TerminateJobObject(job, 2));
+            Assert.True(child.WaitForExit(5000), "TerminateJobObject did not terminate owned child");
+            Assert.Equal(2, child.ExitCode);
+            Assert.True(StatechartJob.CloseHandle(job));
+            IntPtr closed = job;
+            job = IntPtr.Zero;
+            Assert.False(StatechartJob.TerminateJobObject(closed, 2));
+            Assert.Equal(6, Marshal.GetLastWin32Error());
+            output.WriteLine($"Owned child {child.Id} exit=2; closed job ERROR_INVALID_HANDLE=6");
+        }
+        finally { Cleanup(child, job); }
+    }
+
+    [Fact]
+    public void InvalidPidThrowsAndClosesEveryAllocatedJob()
+    {
+        // PID zero is the Windows idle process and OpenProcess rejects it; no foreign handle opens.
+        void Reject() => Assert.Throws<Win32Exception>(() => StatechartJob.Attach(0));
+        Reject();
+        AssertNoHandleLeak(Reject, "OpenProcess invalid PID");
+    }
+
+    [Fact]
+    public void ExitedOwnedProcessRejectsAssignmentAndClosesJobAndProcessHandles()
+    {
+        using var child = ExitedOwnedChild();
+        void Reject() => Assert.Throws<Win32Exception>(() => StatechartJob.Attach(child.Id));
+        Reject();
+        AssertNoHandleLeak(Reject, "AssignProcessToJobObject exited owned process");
+        Assert.True(child.HasExited);
+    }
+
+    [Fact]
+    public void InvalidPidExceptionPreservesNativeErrorCode()
+    {
+        Assert.Equal(87, Assert.Throws<Win32Exception>(() => StatechartJob.Attach(0)).NativeErrorCode);
+    }
+
+    [Fact]
+    public void AssignmentExceptionPreservesNativeErrorCode()
+    {
+        using var child = ExitedOwnedChild();
+        Assert.Equal(5, Assert.Throws<Win32Exception>(() => StatechartJob.Attach(child.Id)).NativeErrorCode);
+    }
+
+    private static Process ExitedOwnedChild()
+    {
+        var child = IdleChild();
+        try
+        {
+            // Keeping the process handle open pins its PID after exit; OpenProcess still succeeds.
+            _ = child.Handle;
+            child.Kill();
+            Assert.True(child.WaitForExit(5000));
+            IntPtr reopened = OpenProcess(0x101, false, child.Id);
+            Assert.NotEqual(IntPtr.Zero, reopened);
+            Assert.True(StatechartJob.CloseHandle(reopened));
+            return child;
+        }
+        catch { Cleanup(child, IntPtr.Zero); child.Dispose(); throw; }
+    }
+
+    private void AssertNoHandleLeak(Action failure, string scenario)
+    {
+        using var current = Process.GetCurrentProcess();
+        Assert.True(GetProcessHandleCount(current.Handle, out uint before));
+        for (int attempt = 0; attempt < 32; attempt++) failure();
+        Assert.True(GetProcessHandleCount(current.Handle, out uint after));
+        output.WriteLine($"{scenario}: 32 failures; handles before={before}, after={after}");
+        // Allow at most three host-owned lazy handles; either leaked adapter handle adds 32.
+        Assert.True(after <= before + 3, $"Native handle growth {before} -> {after}");
+    }
+
+    private static Process IdleChild()
+    {
+        var start = new ProcessStartInfo("powershell.exe")
+        {
+            UseShellExecute = false, CreateNoWindow = true,
+            RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true
+        };
+        foreach (string argument in new[] { "-NoProfile", "-NonInteractive", "-Command", "[Console]::In.ReadToEnd() | Out-Null" })
+            start.ArgumentList.Add(argument);
+        return Process.Start(start) ?? throw new InvalidOperationException("Owned idle process did not start");
+    }
+
+    private static void Cleanup(Process child, IntPtr job)
+    {
+        if (job != IntPtr.Zero) Assert.True(StatechartJob.CloseHandle(job));
+        if (!child.HasExited) child.Kill();
+        Assert.True(child.WaitForExit(5000), "Owned process cleanup did not finish");
+    }
+}

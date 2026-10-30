@@ -1,0 +1,8 @@
+{
+  "instrumented": true,
+  "moduleIdUnchanged": true,
+  "pdbUnchanged": true,
+  "sourcePointsUnchanged": true,
+  "documentsUnchanged": true,
+  "checker": "DynaDocs.Tests/coverage/csharp_coverage.py::_same_instrumented_map"
+}

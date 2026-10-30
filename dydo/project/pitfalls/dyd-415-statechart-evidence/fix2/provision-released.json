@@ -1,0 +1,9 @@
+{
+  "owner": "DYD-415 fix2 provision",
+  "pid": 83760,
+  "ticket": "0000000002-9b474f14ac527ff2",
+  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-assurance2-driver.py provision",
+  "fifoReleased": true,
+  "heavyReleased": true,
+  "dydoLockReleased": true
+}

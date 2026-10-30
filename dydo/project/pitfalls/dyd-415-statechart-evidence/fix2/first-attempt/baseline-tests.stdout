@@ -1,0 +1,14 @@
+Test run for C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\bin\Debug\net10.0\Adapter.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed AdapterTests.NonNestableOwnedJobRejectsAssignmentAndClosesJobAndProcessHandles [4 ms]
+  Error Message:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.ComponentModel.Win32Exception)
+  Stack Trace:
+     at AdapterTests.<>c__DisplayClass9_0.<NonNestableOwnedJobRejectsAssignmentAndClosesJobAndProcessHandles>g__Reject|0() in C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\AdapterTests.cs:line 80
+   at AdapterTests.NonNestableOwnedJobRejectsAssignmentAndClosesJobAndProcessHandles() in C:\Users\User\AppData\Local\Temp\dyd415-fix2\tests\AdapterTests.cs:line 81
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+Results File: C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo\project\pitfalls\dyd-415-statechart-evidence\fix2\baseline-results\baseline.trx
+
+Failed!  - Failed:     1, Passed:     3, Skipped:     0, Total:     4, Duration: 150 ms - Adapter.Tests.dll (net10.0)

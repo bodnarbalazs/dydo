@@ -1,0 +1,5 @@
+{
+  "rejected": true,
+  "error": "Pinned PowerShell source differs",
+  "change": "append one space to in-memory copy"
+}

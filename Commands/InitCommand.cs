@@ -699,12 +699,14 @@ public static class InitCommand
 
         var rulesPath = Path.Combine(codexDir, "rules", "dydo.rules");
         Directory.CreateDirectory(Path.GetDirectoryName(rulesPath)!);
-        File.WriteAllText(rulesPath, CodexRules);
+        var existing = File.Exists(rulesPath) ? File.ReadAllText(rulesPath) : "";
+        if (existing.ReplaceLineEndings("\n") != CodexRules)
+            File.WriteAllText(rulesPath, existing.Contains("\r\n", StringComparison.Ordinal) ? CodexRules.ReplaceLineEndings("\r\n") : CodexRules);
     }
 
     // Codex's exec-policy allow rule for dydo clean, committed beside .codex/hooks.json. Codex loads
     // project rules only when the project's .codex/ layer is trusted, as it does the hooks. dydo owns
-    // the whole file and rewrites it on every init and --join.
+    // the whole file and restores it on every init and --join, in the line endings the checkout gave it.
     internal const string CodexRules =
         "# Written by dydo init codex; dydo rewrites this file on every init and --join.\n"
         + "# dydo clean archives uncommitted work and keeps unmerged branches before it removes a\n"
@@ -813,7 +815,8 @@ public static class InitCommand
             "AGENTS.md (entry point)");
 
     // Claude Code reads AGENTS.md only when no CLAUDE.md, CLAUDE.local.md or .claude/CLAUDE.md
-    // is present. A CLAUDE.md that is dydo's own copy goes; anything the user wrote stays and warns.
+    // is present. A CLAUDE.md that is dydo's own copy goes; anything the user wrote stays and warns,
+    // unless it already imports AGENTS.md first.
     private static void ReconcileClaudeEntryFiles(string projectRoot)
     {
         var claudeMd = Path.Combine(projectRoot, "CLAUDE.md");
@@ -829,17 +832,23 @@ public static class InitCommand
                 File.Delete(claudeMd);
                 Console.WriteLine("  ✓ Removed CLAUDE.md, a copy of the entry point: Claude Code reads AGENTS.md");
             }
-            else
+            else if (!ImportsFirst(claudeMd, "@AGENTS.md"))
             {
                 ConsoleOutput.WriteWarning("  ! CLAUDE.md hides AGENTS.md from Claude Code. Move its content into AGENTS.md, or put @AGENTS.md at its top.");
             }
         }
 
-        if (File.Exists(Path.Combine(projectRoot, "CLAUDE.local.md")))
+        var claudeLocalMd = Path.Combine(projectRoot, "CLAUDE.local.md");
+        if (File.Exists(claudeLocalMd) && !ImportsFirst(claudeLocalMd, "@AGENTS.md"))
             ConsoleOutput.WriteWarning("  ! CLAUDE.local.md stops Claude Code reading AGENTS.md. Put @AGENTS.md at its top, or set Project instructions to claude-md-and-agents-md.");
-        if (File.Exists(Path.Combine(projectRoot, ".claude", "CLAUDE.md")))
+        var dotClaudeMd = Path.Combine(projectRoot, ".claude", "CLAUDE.md");
+        if (File.Exists(dotClaudeMd) && !ImportsFirst(dotClaudeMd, "@../AGENTS.md"))
             ConsoleOutput.WriteWarning("  ! .claude/CLAUDE.md stops Claude Code reading AGENTS.md. Put @../AGENTS.md at its top.");
     }
+
+    // File.ReadLines drops a BOM; the first non-blank line, trimmed, must be the import.
+    private static bool ImportsFirst(string path, string import) =>
+        File.ReadLines(path).FirstOrDefault(line => !string.IsNullOrWhiteSpace(line))?.Trim() == import;
 
     private static string NormalizeEntry(string content) =>
         content.Replace("\r\n", "\n", StringComparison.Ordinal).TrimEnd('\n');

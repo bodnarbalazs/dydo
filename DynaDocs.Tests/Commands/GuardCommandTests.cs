@@ -906,6 +906,7 @@ public class GuardCommandTests : IDisposable
     [InlineData("rg -n 'tail -f'concat docs")]
     [InlineData("bash -c \"rg -n '\"tail -f\"' docs\"")]
     [InlineData("cat <<'EOF'\ntail -f app.log")]
+    [InlineData("Write-Output @'\ntext\n'@tail -f app.log")]
     [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.Other -match 'tail -f' }")]
     [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'tail -f' -unknown }")]
     public void Gs03_BoundedRelief_KeepsUnquotedAndUnknownQuotedMatches(string command)

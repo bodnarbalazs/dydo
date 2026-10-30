@@ -875,7 +875,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         var range = command.WordRanges[index];
         var raw = text[range];
         if (raw.StartsWith("@'", StringComparison.Ordinal) || raw.StartsWith("@\"", StringComparison.Ordinal))
-            return DataCommands.Contains(command.Words[0]);
+        {
+            var end = raw.IndexOf("\n" + raw[1] + "@", StringComparison.Ordinal);
+            return end >= 0 && end + 3 == raw.Length && DataCommands.Contains(command.Words[0]);
+        }
         if (!LiteralNudgeQuoteRegex().IsMatch(raw))
             return false;
         var literalPrefix = Enumerable.Range(0, index).All(i => text[command.WordRanges[i]] == command.Words[i]);

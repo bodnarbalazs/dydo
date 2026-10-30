@@ -1,6 +1,6 @@
 ---
 name: in-your-own-words
-description: "Restate in your own words what you think the user's goals are and what problem they're trying to solve. Load only when the user asks."
+description: "Restate in your own words what you think the user's goals are and what problem they're trying to solve. Load when the user asks, including the user's muster request relayed by the chief of staff."
 ---
 
 <!-- Adapted from cursor/plugins pstack/in-your-own-words at dbf49813a39c1a5389c5e28cb8e4c1c2379e2454 (MIT). -->

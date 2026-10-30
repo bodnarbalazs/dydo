@@ -101,7 +101,8 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Ticket review** - an independent reviewer's verdict on one candidate against one named rubric,
   before it merges. FAIL means at least one blocker; PASS means none, and may list should and nit
   findings. There is no unlabelled note: every finding carries a severity and is answered.
-- **Severity** - the label on every review finding (DR 058). A `blocker`: the intended case is
+- **Severity** - the label on every review finding (DR 058); a ticket born from a finding carries
+  it as a Linear label in the `Severity` group. A `blocker`: the intended case is
   wrong; only a blocker FAILs a review and sends a fix hop. A `should`: a real bug callers will hit,
   inside the intent; the captain files it as its own ticket, and a Project lands only once each is
   `Done` or closed with a reason. A `nit`: everything else, one line on the ticket's record, listed

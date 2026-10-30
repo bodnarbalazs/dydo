@@ -820,7 +820,7 @@ describe('App refresh in place', () => {
     graphAnswer = () => json(withoutX);
     fireEvent.click(refreshButton());
     expect((await notice()).textContent).toBe('1 removed · 1 link removed');
-    expect(wrapper('T-X')?.classList.contains('refresh-removed')).toBe(true);
+    await waitFor(() => expect(wrapper('T-X')?.classList.contains('refresh-removed')).toBe(true));
     expect(exits.timers).toHaveBeenCalledWith(expect.any(Function), 300);
     exits.release();
     await waitFor(() => expect(card('T-X')).toBeNull());
@@ -876,7 +876,7 @@ describe('App refresh in place', () => {
     fireEvent.click(refreshButton());
     expect((await notice()).textContent).toBe('1 changed · 1 removed · 1 link removed');
     // The answer is in, but the old map still shows its removal fading while the new one lays out.
-    expect(wrapper('T-X')?.classList.contains('refresh-removed')).toBe(true);
+    await waitFor(() => expect(wrapper('T-X')?.classList.contains('refresh-removed')).toBe(true));
     expect(refreshButton().disabled).toBe(true);
     const fetches = vi.mocked(fetch).mock.calls.length;
     fireEvent.keyDown(document.body, { key: 'r' });

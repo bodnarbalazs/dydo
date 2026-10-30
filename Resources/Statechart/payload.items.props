@@ -2,7 +2,7 @@
 <Project>
   <ItemGroup>
     <StatechartPayload Include="setup-skills.mjs">
-      <ExpectedHash>c9a744c63907b88e415956cd739fa8656bd640b546f69417352438a51e9a1e5b</ExpectedHash>
+      <ExpectedHash>6e7f66f3df14f7c8f60619e426d3a617fcaa6c810cebac13d89f57984252a36d</ExpectedHash>
       <ResourceName>Statechart/payload/setup-skills.mjs</ResourceName>
     </StatechartPayload>
     <EmbeddedResource Include="setup-skills.mjs" LogicalName="Statechart/payload/setup-skills.mjs" />
@@ -17,7 +17,7 @@
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/PROVENANCE.md" LogicalName="Statechart/payload/skills/engineering/statechart/PROVENANCE.md" />
     <StatechartPayload Include="skills/engineering/statechart/SKILL.md">
-      <ExpectedHash>0cffe670b6003d8a59fa5f2cbc02941c4e2196aab8a44358338e0ede110c53ea</ExpectedHash>
+      <ExpectedHash>a8f78407e0310585f29c5d46cf9d697f4c343b75a37d49e1ee1c9fd1b6d3c847</ExpectedHash>
       <ResourceName>Statechart/payload/skills/engineering/statechart/SKILL.md</ResourceName>
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/SKILL.md" LogicalName="Statechart/payload/skills/engineering/statechart/SKILL.md" />

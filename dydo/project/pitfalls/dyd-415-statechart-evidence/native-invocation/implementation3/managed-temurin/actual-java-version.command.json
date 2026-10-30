@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe",
+    "-version"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 0.062000000005355105,
+  "ticket": "0000000001-ae23393ede1376e8",
+  "hidden": true
+}

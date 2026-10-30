@@ -5,12 +5,16 @@ type: pitfall
 
 # DYD-415: statechart verification on Windows
 
-The [finite native replay archive](dyd-415-statechart-evidence/native-invocation/history/README.md)
+The [finite native replay archive](dyd-415-statechart-evidence/native-invocation/history/readme.md)
 provides exact source/context maps for eleven old primitive replay paths. Captain
 verified fidelity and authorized their exact removal. Historical commands
 and verdicts below are unchanged; their replay requires exact restored stage inputs
 and recorded context. Current product proof uses the maintained implementation2
 driver, with aggregate static still incomplete.
+
+The [installed invocation checkpoint](dyd-415-statechart-evidence/native-invocation/implementation3/verification.md)
+records the later Windows managed Temurin/public command/package/skill results
+and safe retention on abrupt npm loss; final platform/static gates remain owed.
 
 The [native ownership engineering milestone](dyd-415-statechart-evidence/native-invocation/verification.md)
 records the new compile-time Windows/POSIX modules and their early AOT gates.

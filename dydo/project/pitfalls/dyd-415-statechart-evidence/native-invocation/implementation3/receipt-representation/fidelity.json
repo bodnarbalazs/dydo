@@ -1,0 +1,27 @@
+{
+  "archiveSha256": "7783410749dd4e56ad2e634186aa265a67f0133bd75ca7d2c0478ef58693a191",
+  "checkedMembers": [
+    {
+      "member": "npm-eof-red.stdout",
+      "restoredPath": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-two-log-fidelity-yctaxsl0\\npm-eof-red.stdout",
+      "bytes": 1210,
+      "sha256": "e7a5f22362f1b32e0f24ac958ccdc5dfe35cab3d3e6265218d3ac34b3cf66187"
+    },
+    {
+      "member": "staged-whitespace.stdout",
+      "restoredPath": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-two-log-fidelity-yctaxsl0\\staged-whitespace.stdout",
+      "bytes": 296,
+      "sha256": "0e11d3545be13f15f6ccd42f6a00c9d57e98c70d450efee6cb2d3462d2ab11bd"
+    }
+  ],
+  "exactMembers": true,
+  "regularFilesOnly": true,
+  "exclusiveExtraction": true,
+  "nonExecuting": true,
+  "sourceHashesPinnedBeforeRead": {
+    "npm-eof-red.stdout": "e7a5f22362f1b32e0f24ac958ccdc5dfe35cab3d3e6265218d3ac34b3cf66187",
+    "staged-whitespace.stdout": "0e11d3545be13f15f6ccd42f6a00c9d57e98c70d450efee6cb2d3462d2ab11bd"
+  },
+  "originalStandaloneStillPresent": true,
+  "signature": "code-writer/model: gpt-6.1-sol/high"
+}

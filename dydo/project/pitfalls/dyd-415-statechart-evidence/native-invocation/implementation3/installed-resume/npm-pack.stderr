@@ -1,0 +1,22 @@
+npm notice
+npm notice 📦  dydo@3.5.1
+npm notice Tarball Contents
+npm notice 1.1kB LICENSE
+npm notice 3.7kB README.md
+npm notice 14.0kB THIRD-PARTY-NOTICES.md
+npm notice 1.5kB bin/dydo.cjs
+npm notice 1.6kB install.js
+npm notice 2.7kB lib/download.js
+npm notice 1.0kB lib/paths.js
+npm notice 1.4kB lib/platform.js
+npm notice 945B package.json
+npm notice Tarball Details
+npm notice name: dydo
+npm notice version: 3.5.1
+npm notice filename: dydo-3.5.1.tgz
+npm notice package size: 8.0 kB
+npm notice unpacked size: 27.9 kB
+npm notice shasum: 784f410516445089d67ee0caf69d56e03c9287d9
+npm notice integrity: sha512-Xjy6oD9CR/vK4[...]q3+CJOSM45QQA==
+npm notice total files: 9
+npm notice

@@ -1,0 +1,12 @@
+{
+  "npm": "Old launcher fails the private EOF/hidden launch assertion",
+  "installedSkill": "Old public native command rejects install-skill with exit2; no project files created",
+  "oldNative": {
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\publish\\dydo.exe",
+    "sha256": "896b5dac5867b79e389a9d71f3509b6b66fccf9f88353be92fe158fadfe86d4a",
+    "rid": "win-x64",
+    "nativeAot": true,
+    "sourceInputsSha256": "2aec8795730a3c8347fc91f4ba78e0aff95303d205f34e29666bcbbae091c06b"
+  },
+  "compileRejection": false
+}

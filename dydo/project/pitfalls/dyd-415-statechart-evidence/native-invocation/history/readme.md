@@ -5,6 +5,12 @@ type: reference
 
 # Native primitive replay source archive
 
+The captain authorized the case-only navigation move from `history/README.md` to
+`history/readme.md` after the public-flow docs check rejected the uppercase name.
+Old manifest and executed receipts keep their original navigation path and hash.
+Resolve that old navigation path to this page; archive entries, archive/manifest
+identities and all recorded source/restoration paths remain unchanged.
+
 The DYD-415 captain's [finite eleven-path pin](https://linear.app/bodnar-balazs/document/dyd-415-finite-archival-pin-eleven-native-primitive-replay-inputs-44a93d431114)
 authorizes the source representation described here. Captain verified all 27
 members, eleven checkout/Git pairs and 22 reference/dependency hashes, then

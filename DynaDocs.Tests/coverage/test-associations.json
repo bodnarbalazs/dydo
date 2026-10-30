@@ -28,7 +28,20 @@
     {
       "module": "npm/bin/dydo.cjs",
       "tests": [
-        "npm/test/launcher.test.cjs"
+        "npm/test/launcher.test.cjs",
+        "npm/test/statechart.test.cjs"
+      ]
+    },
+    {
+      "module": "Services/Statechart/StatechartOuterLifetime.cs",
+      "tests": [
+        "DynaDocs.Tests/Statechart/StatechartOuterLifetimeTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Statechart/StatechartSkill.cs",
+      "tests": [
+        "DynaDocs.Tests/Statechart/StatechartSkillTests.cs"
       ]
     },
     {

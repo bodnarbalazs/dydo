@@ -1,0 +1,8 @@
+{
+  "npmArchiveSha256": "5cd1a53931b17a1cd644cf6cd80b903a34aca2d81394bd4baef1fdfe500561be",
+  "nativeArchiveSha256": "64a164c2d18140b62bd6c328d120f2eb1203ac61957566c1fed60d0fe129173c",
+  "deliveredNativeSha256": "18a2643042d07538cc85d93452c52380f1bf69871814a115f9af3bbe0254dc1a",
+  "publicGitHubDownloadOrNpmPostinstallClaim": false,
+  "dotnetPackageSha256": "d033019475c8103e496e3ca906d202a2beb38eb77eea229bd4272748e8877d4c",
+  "installedTool": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-gjrlby0l\\dotnet-tool\\dydo.exe"
+}

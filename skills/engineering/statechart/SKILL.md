@@ -15,14 +15,14 @@ The chart shows how a system moves between states, in the words of the person wh
 Work in a scratch folder outside the repo. For an existing formal check, use that exact checked model, config, bounds and sync commit; copy its dependent modules too. Otherwise write a bounded TLA+ spec and its config. Then run:
 
 ```sh
-<skill dir>/scripts/statechart SPEC.tla [--config FILE] [--view FILE] [--out DIR]
+dydo statechart SPEC.tla --skill "<skill dir>" [--config FILE] [--view FILE] [--out DIR]
 ```
 
-`scripts/statechart.ts` is TypeScript, so run it with a runtime that can execute TypeScript.
+Use the installed dydo capability. It checks this skill's release, protocol and payload receipt before checking the model. Install matching project projections explicitly with `dydo statechart install-skill --root ABSOLUTE_PROJECT`; preserve local edits when reconciling an incompatible installation. The command uses its embedded runtime, independent of the source checkout.
 
-On native Windows PowerShell use `scripts/statechart.ps1` with the same arguments; it needs Node 22.18 to 22.x or Node 23.6 or later. Git Bash uses the POSIX launcher above with Windows Node. The Windows runtime uses a Job Object to stop the worker and its Java children if the command dies.
+Ready dependencies run without installation or repeated consent. Missing dependencies return exit 3 and an `approval-required` JSON event containing the saved original request, locked download plan and `installAndContinue` argv. Submit those exact argv through the host's normal command/installation authorization, describing the plan. The resume operation verifies and installs missing prerequisites, then continues the captured chart. Do not reconstruct the request, install prerequisites manually, or treat a local flag or receipt as authorization. If the host denies or cannot authorize it, preserve the request and report that host result; no continuation CLI exit was observed.
 
-Set `TLA2TOOLS` to a local `tla2tools.jar` and `JAVA` to a Java 11+ executable to use existing tools. Paths resolve from the caller's directory. Without `TLA2TOOLS`, the first run uses mise to install the pinned TLC and Java and needs the network. For task-local Windows setup and exact versions, read [runtime](references/runtime.md).
+`JAVA` and `TLA2TOOLS` can select existing compatible tools; paths resolve from the caller. The capability verifies their actual identities. For supported runtime versions and retained legacy adapters during platform validation, read [runtime](references/runtime.md).
 
 ## Write the spec
 

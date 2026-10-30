@@ -10,7 +10,7 @@ TEMP = Path('C:/Users/User/AppData/Local/Temp')
 
 
 def main(arguments, here=HERE, temp=TEMP):
-    assert len(arguments) == 2 and arguments[0] in ['product', 'static', 'attribution', 'catalogue', 'request', 'fidelity', 'remove', 'focused', 'archives', 'archives-red', 'public-red', 'public-flow', 'public-corrected', 'public-probe-corrected', 'public-resume', 'public-light', 'readiness-diagnostic']
+    assert len(arguments) == 2 and arguments[0] in ['product', 'static', 'attribution', 'catalogue', 'request', 'fidelity', 'remove', 'focused', 'archives', 'archives-red', 'public-red', 'public-flow', 'public-corrected', 'public-probe-corrected', 'public-resume', 'public-light', 'readiness-diagnostic', 'installed-red', 'installed-build', 'managed-temurin', 'installed-resume', 'installed-light', 'npm-counterexample']
     directory = Path(tempfile.mkdtemp(prefix='dyd415-implementation2-driver-', dir=temp))
     shutil.copy2(here / 'driver.py', directory / 'driver.py')
     with (directory / 'stdout').open('xb') as stdout, (directory / 'stderr').open('xb') as stderr:

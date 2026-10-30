@@ -525,7 +525,7 @@ runner's exit code; configuration, startup, and cancellation failures exit `2`.
 ### dydo statechart
 
 ```bash
-dydo statechart SPEC.tla [--config FILE] [--view FILE] [--out DIR]
+dydo statechart SPEC.tla [--config FILE] [--view FILE] [--out DIR] [--skill DIR]
 ```
 
 The Windows engineering candidate captures the caller and original model inputs.
@@ -547,6 +547,18 @@ missing locked prerequisites into the planned managed roots, proves readiness an
 continues the captured chart. A local flag or receipt is never host approval.
 Failures preserve the pending request; changed inputs require a fresh plan.
 Completed requests return the recorded verdict only while their output still matches.
+
+### dydo statechart install-skill
+
+```bash
+dydo statechart install-skill --root ABSOLUTE_PROJECT
+```
+
+Installs this executable's embedded statechart skill into the explicitly named
+project and projects it into both agent discovery roots. Preserves foreign skills,
+local edits and any project setup script. `--skill DIR` on chart invocation verifies
+the installed skill's exact release, protocol, payload and file identities before
+checking; a mismatch requires explicit reconciliation, never an automatic overwrite.
 
 ### dydo statechart doctor
 

@@ -41,7 +41,7 @@ internal static class StatechartProbe
         lifetime.Attach(process.Id);
         protocol.ConfirmOwnership();
         protocol.ConfirmScratchRegistration();
-        await protocol.ReleaseAsync(process.StandardInput);
+        await protocol.ReleaseAsync(process.StandardInput, token);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
         timeout.CancelAfter(TimeSpan.FromSeconds(30));
         var stdout = Bounded(process.StandardOutput, timeout.Token);

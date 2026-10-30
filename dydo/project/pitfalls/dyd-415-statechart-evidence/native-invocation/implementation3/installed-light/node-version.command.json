@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Roaming\\fnm\\node-versions\\v22.13.0\\installation\\node.exe",
+    "--version"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-errl8m9e\\source",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 0.031000000002677552,
+  "ticket": "0000000001-985d2ca4cd5add80",
+  "hidden": true
+}

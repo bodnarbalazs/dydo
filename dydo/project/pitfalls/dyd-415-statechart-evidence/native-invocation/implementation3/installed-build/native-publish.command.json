@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "dotnet",
+    "publish",
+    "DynaDocs.csproj",
+    "-c",
+    "Release",
+    "-r",
+    "win-x64",
+    "--self-contained",
+    "--warnaserror",
+    "-o",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-3ufmayx8\\publish"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-3ufmayx8\\source",
+  "exit": 1,
+  "expected": 0,
+  "seconds": 22.952999999994063,
+  "ticket": "0000000001-6325a50f3047625e",
+  "hidden": true
+}

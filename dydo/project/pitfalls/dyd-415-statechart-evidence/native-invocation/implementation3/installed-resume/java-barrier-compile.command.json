@@ -1,0 +1,14 @@
+{
+  "argv": [
+    "C:\\Program Files\\JetBrains\\JetBrains Rider 2024.3\\jbr\\bin\\javac.exe",
+    "--release",
+    "11",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-gjrlby0l\\java-barrier\\AwaitOwner.java"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-gjrlby0l\\java-barrier",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 0.3899999999994179,
+  "ticket": "0000000001-c83946817c0bedc7",
+  "hidden": true
+}

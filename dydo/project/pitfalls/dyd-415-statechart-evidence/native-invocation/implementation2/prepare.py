@@ -7,7 +7,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[6]
-BASE = '86931b9c47a93fa06287391495574865d9ce1d56'
+BASE = '7ba426604d7870f6596b2946c3255d1604618bfe'
 HERE = Path(__file__).resolve().parent
 
 
@@ -67,6 +67,24 @@ def declare(root, arguments):
 def main(arguments):
     assert subprocess.check_output(['git', '-c', 'core.longpaths=true', 'rev-parse', 'HEAD'], cwd=ROOT,
         creationflags=subprocess.CREATE_NO_WINDOW).decode().strip() == BASE
+    if arguments == ['--author-installed-flow']:
+        target = ROOT / 'Resources/Statechart'
+        assert sha((target / 'payload.json').read_bytes()) == '1c4d8e56178134b2be3ed62dd7caa8a52210d99ff599046cfb04b02d7dd93c5c'
+        receipt = HERE.parent / 'implementation3/payload-installed-flow'
+        receipt.mkdir(parents=True, exist_ok=False)
+        for name in ['payload.json', 'payload.items.props', 'dependency-lock.json']:
+            with (receipt / ('before-' + name)).open('xb') as output:
+                output.write((target / name).read_bytes())
+        manifest = json.loads((target / 'payload.json').read_bytes())
+        manifest['sourceBase'] = BASE
+        manifest['files'] = payload_inputs(ROOT)
+        (target / 'payload.json').write_bytes((json.dumps(manifest, indent=2) + '\n').encode())
+        write_items(target, manifest['files'])
+        with (receipt / 'declaration.json').open('x', encoding='utf-8') as output:
+            json.dump(dict(sourceBase=BASE, reason='Authored native invocation, explicit installed-skill binding and single-skill projection before material proof',
+                manifestSha256=sha((target / 'payload.json').read_bytes()), files=manifest['files']), output, indent=2)
+        print('Authored installed-flow payload:', len(manifest['files']), 'resources')
+        return
     if arguments in [['--author-public-flow'], ['--author-worker-flow']]:
         target = ROOT / 'Resources/Statechart'
         worker = arguments == ['--author-worker-flow']

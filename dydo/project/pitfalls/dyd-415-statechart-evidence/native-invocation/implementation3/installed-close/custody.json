@@ -1,0 +1,12 @@
+{
+  "originalsRepresented": 11,
+  "otherHistoricalNativeFilesUnchanged": 212,
+  "immutableCheckpoints": {
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/history/native-primitives-replay-86931b9c.zip": "87c712127c54adb248978fa3570460be796069b09c2c944f182c00a604376114",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/history/native-primitives-replay-86931b9c.manifest.json": "e00ff73f95f58002797f3f1d9fd43bfbb1419eef16e7dbb153fb17d3f799e12f",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/archival-fidelity/fidelity.json": "c6ce1bc46e795eb6b5875aab0ec74604d261542b71a2e728612011b36b033b14",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/archival-fidelity/source-inputs.json": "0709f7d034d2a701495c6755cd4c6ded7f8ffaa75045162104a0526582f605da",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/request-store-longpaths/source-inputs.json": "0538facb61fe2fb2ece7f26979905b463564fe0a3d99a787e2e3f5b68b19ed63"
+  },
+  "archiveMembers": 27
+}

@@ -17,6 +17,7 @@ internal sealed record StatechartRequest
     public required string Output { get; init; }
     public string? Java { get; init; }
     public string? Tlc { get; init; }
+    public string? Skill { get; init; }
     public required string Rid { get; init; }
     public string Release { get; init; } = "3.5.1";
     public required string PayloadDigest { get; init; }
@@ -58,9 +59,10 @@ internal sealed record StatechartRequest
         var config = new Option<string?>("--config");
         var view = new Option<string?>("--view");
         var output = new Option<string?>("--out");
+        var skill = new Option<string?>("--skill");
         var command = new Command("statechart");
         command.Arguments.Add(spec);
-        foreach (var option in new[] { config, view, output }) command.Options.Add(option);
+        foreach (var option in new[] { config, view, output, skill }) command.Options.Add(option);
         var parsed = command.Parse(arguments.ToArray());
         if (parsed.Errors.Count != 0) throw new IOException(string.Join(" ", parsed.Errors.Select(error => error.Message)));
         var model = parsed.GetValue(spec)!;
@@ -71,7 +73,8 @@ internal sealed record StatechartRequest
             Spec = Input(model, caller), Config = Input(parsed.GetValue(config) ?? defaultBase + ".cfg", caller),
             View = parsed.GetValue(view) is { } file ? Input(file, caller) : null,
             Output = Destination(parsed.GetValue(output) ?? defaultBase + "-chart", caller),
-            Java = java, Tlc = tlc, PayloadDigest = assets.Digest, LockDigest = assets.LockDigest
+            Java = java, Tlc = tlc, PayloadDigest = assets.Digest, LockDigest = assets.LockDigest,
+            Skill = parsed.GetValue(skill) is { } installed ? StatechartSkill.Validate(Path.GetFullPath(installed, caller), assets) : null
         };
     }
 

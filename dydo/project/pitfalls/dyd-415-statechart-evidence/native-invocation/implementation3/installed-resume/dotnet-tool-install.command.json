@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "dotnet",
+    "tool",
+    "install",
+    "dydo",
+    "--tool-path",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-gjrlby0l\\dotnet-tool",
+    "--add-source",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-gjrlby0l\\packages",
+    "--version",
+    "3.5.1",
+    "--configfile",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-gjrlby0l\\local-feed.config"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-gjrlby0l",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 0.23500000000058208,
+  "ticket": "0000000001-c83946817c0bedc7",
+  "hidden": true
+}

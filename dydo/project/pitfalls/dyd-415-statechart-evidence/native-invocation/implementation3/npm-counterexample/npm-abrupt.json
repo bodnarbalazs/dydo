@@ -1,0 +1,80 @@
+{
+  "shimPid": 163760,
+  "shimAbruptExit": 1,
+  "liveBeforeKill": {
+    "foreign": 141096,
+    "native": 92452,
+    "worker": 115648,
+    "bootstrap": 95652,
+    "java": 164712
+  },
+  "stableProcessHandlesSignaled": {
+    "native": true,
+    "worker": true,
+    "bootstrap": true,
+    "java": true
+  },
+  "actualJava": "Temurin21.0.8+9",
+  "actualViewJavaReadyBarrier": true,
+  "finallyOnlyOwnership": false,
+  "unrelatedProcessSurvived": true,
+  "foreignFileUnchanged": true,
+  "cleanup": "ERROR_RETAINED_UNCERTAIN",
+  "scratchDeletionPass": false,
+  "journals": [
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\state\\scratch-2ceeb5f297904e8ebe0ed3799b285258.journal",
+      "sha256": "c906ca0b97b03bbb0885b28fad1fbaea0218b03a8322e90ed5da0906cf6dc28f",
+      "directory": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\temp\\.statechart-2ceeb5f297904e8ebe0ed3799b285258",
+      "exists": false,
+      "deletedAfterDrain": true,
+      "retainedUncertain": false,
+      "text": "reserving\nC:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\temp\\.statechart-2ceeb5f297904e8ebe0ed3799b285258\ncreated-unregistered\ne2334543:00020000017ffa1c\nregistered\ndeleted-after-authoritative-drain\n"
+    },
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\state\\scratch-3bc41ba2d49f4f7aa6e299e4ae598bce.journal",
+      "sha256": "fbc94f221d187f65551ef05454174ba4284e7aff402f5b2ce4db04aab95346f8",
+      "directory": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-u3eun791\\actual owner loss\\.statechart-3bc41ba2d49f4f7aa6e299e4ae598bce",
+      "exists": true,
+      "deletedAfterDrain": false,
+      "retainedUncertain": true,
+      "text": "reserving\nC:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-u3eun791\\actual owner loss\\.statechart-3bc41ba2d49f4f7aa6e299e4ae598bce\ncreated-unregistered\ne2334543:00030000017ffa1c\nregistered\nretained: owner loss or invalid drain provenance; drain uncertain\n"
+    },
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\state\\scratch-9e30b841814a4143b6606f2d900d951f.journal",
+      "sha256": "8f4ddc6c8b4699b7a3befe3826b369b25550c6fe00a2790c930829b5db4fe33c",
+      "directory": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\state\\.statechart-9e30b841814a4143b6606f2d900d951f",
+      "exists": false,
+      "deletedAfterDrain": true,
+      "retainedUncertain": false,
+      "text": "reserving\nC:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\state\\.statechart-9e30b841814a4143b6606f2d900d951f\ncreated-unregistered\ne2334543:00020000017ffa18\nregistered\ndeleted-after-authoritative-drain\n"
+    },
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\state\\scratch-a4c6ce5bbc4e43738db9bcf3dbd7e63e.journal",
+      "sha256": "7c10e2b71bba5b65c9d8b82cea95a4ab0930ff67cb9db6284efdb15d58660c04",
+      "directory": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\temp\\.statechart-a4c6ce5bbc4e43738db9bcf3dbd7e63e",
+      "exists": false,
+      "deletedAfterDrain": true,
+      "retainedUncertain": false,
+      "text": "reserving\nC:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\temp\\.statechart-a4c6ce5bbc4e43738db9bcf3dbd7e63e\ncreated-unregistered\ne2334543:00020000017ffa1a\nregistered\ndeleted-after-authoritative-drain\n"
+    },
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\state\\scratch-b228cefb99e04777b88f9fd61acc7696.journal",
+      "sha256": "4758acfac6a9681ff16edb83bb36c907b90d6d3ac467194ca29e83d4ca94e826",
+      "directory": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\temp\\.statechart-b228cefb99e04777b88f9fd61acc7696",
+      "exists": true,
+      "deletedAfterDrain": false,
+      "retainedUncertain": true,
+      "text": "reserving\nC:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\temp\\.statechart-b228cefb99e04777b88f9fd61acc7696\ncreated-unregistered\ne2334543:00020000017ffa1e\nregistered\nretained: owner loss or invalid drain provenance; drain uncertain\n"
+    },
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\state\\scratch-b32fa45273bd4792a1ea13707db7bad0.journal",
+      "sha256": "1958b186a9d271703640020c4fe4882be53ecd4fa8508e525d4eb68262f50075",
+      "directory": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\state\\.statechart-b32fa45273bd4792a1ea13707db7bad0",
+      "exists": false,
+      "deletedAfterDrain": true,
+      "retainedUncertain": false,
+      "text": "reserving\nC:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\state\\.statechart-b32fa45273bd4792a1ea13707db7bad0\ncreated-unregistered\ne2334543:00030000017ffa1a\nregistered\ndeleted-after-authoritative-drain\n"
+    }
+  ]
+}

@@ -32,6 +32,7 @@ internal static class StatechartNode
         lifetime.Attach(child.Id);
         protocol.ConfirmOwnership();
         protocol.ConfirmScratchRegistration();
+        token.ThrowIfCancellationRequested();
         var stdout = StatechartProbe.Bounded(child.StandardOutput, token);
         var stderr = StatechartProbe.Bounded(child.StandardError, token);
         await protocol.ReleaseAsync(child.StandardInput, token);

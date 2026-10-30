@@ -1,0 +1,214 @@
+TAP version 13
+# Subtest: selected statechart projects only that skill and preserves unrelated dangling links and empty categories
+ok 1 - selected statechart projects only that skill and preserves unrelated dangling links and empty categories
+  ---
+  duration_ms: 47.8486
+  type: 'test'
+  ...
+# Subtest: link creation for both host roots from a canonical skills tree, walking categories to any depth by the SKILL.md rule
+ok 2 - link creation for both host roots from a canonical skills tree, walking categories to any depth by the SKILL.md rule
+  ---
+  duration_ms: 71.1636
+  type: 'test'
+  ...
+# Subtest: a rerun is idempotent: it creates nothing more and still exits zero
+ok 3 - a rerun is idempotent: it creates nothing more and still exits zero
+  ---
+  duration_ms: 83.4528
+  type: 'test'
+  ...
+# Subtest: refuses a non-zero exit when a target already exists as a human-owned real directory, leaving it untouched and creating nothing
+ok 4 - refuses a non-zero exit when a target already exists as a human-owned real directory, leaving it untouched and creating nothing
+  ---
+  duration_ms: 50.8015
+  type: 'test'
+  ...
+# Subtest: refuses a link that already points somewhere other than its canonical skill
+ok 5 - refuses a link that already points somewhere other than its canonical skill
+  ---
+  duration_ms: 43.8319
+  type: 'test'
+  ...
+# Subtest: migrates a dangling link left by the old flat layout to the current canonical category path
+ok 6 - migrates a dangling link left by the old flat layout to the current canonical category path
+  ---
+  duration_ms: 45.1944
+  type: 'test'
+  ...
+# Subtest: refuses a foreign link whose target lies entirely outside the canonical skills tree
+ok 7 - refuses a foreign link whose target lies entirely outside the canonical skills tree
+  ---
+  duration_ms: 45.9437
+  type: 'test'
+  ...
+# Subtest: a rerun after migrating a dangling flat-layout link creates nothing further and stays idempotent
+ok 8 - a rerun after migrating a dangling flat-layout link creates nothing further and stays idempotent
+  ---
+  duration_ms: 82.6369
+  type: 'test'
+  ...
+# Subtest: re-points a link left by the previous category layout to the skill's nested category, then stays idempotent
+ok 9 - re-points a link left by the previous category layout to the skill's nested category, then stays idempotent
+  ---
+  duration_ms: 109.2212
+  type: 'test'
+  ...
+# Subtest: removes our links whose target skill no longer exists, unlinking only, and a rerun removes nothing
+ok 10 - removes our links whose target skill no longer exists, unlinking only, and a rerun removes nothing
+  ---
+  duration_ms: 93.0468
+  type: 'test'
+  ...
+# Subtest: leaves a foreign link, a real directory, and a link to a current skill under another name untouched
+ok 11 - leaves a foreign link, a real directory, and a link to a current skill under another name untouched
+  ---
+  duration_ms: 50.473
+  type: 'test'
+  ...
+# Subtest: a collision in one host root refuses before any link to a deleted skill is removed from the other
+ok 12 - a collision in one host root refuses before any link to a deleted skill is removed from the other
+  ---
+  duration_ms: 40.1832
+  type: 'test'
+  ...
+# Subtest: refuses a folder that holds neither SKILL.md nor a subfolder, as an empty category
+ok 13 - refuses a folder that holds neither SKILL.md nor a subfolder, as an empty category
+  ---
+  duration_ms: 89.0388
+  type: 'test'
+  ...
+# Subtest: refuses an empty nested category, even when its sibling category is populated
+ok 14 - refuses an empty nested category, even when its sibling category is populated
+  ---
+  duration_ms: 48.3336
+  type: 'test'
+  ...
+# Subtest: refuses the same skill name in a nested category and a flat one, naming both category paths
+ok 15 - refuses the same skill name in a nested category and a flat one, naming both category paths
+  ---
+  duration_ms: 50.2456
+  type: 'test'
+  ...
+# Subtest: refuses a root that has no canonical skills directory
+ok 16 - refuses a root that has no canonical skills directory
+  ---
+  duration_ms: 35.6726
+  type: 'test'
+  ...
+# Subtest: refuses a canonical skills directory that holds no skills
+ok 17 - refuses a canonical skills directory that holds no skills
+  ---
+  duration_ms: 38.1249
+  type: 'test'
+  ...
+# Subtest: refuses a category directory that holds no skills, even when another category is populated
+ok 18 - refuses a category directory that holds no skills, even when another category is populated
+  ---
+  duration_ms: 48.0719
+  type: 'test'
+  ...
+# Subtest: refuses two categories that both claim the same skill name
+ok 19 - refuses two categories that both claim the same skill name
+  ---
+  duration_ms: 46.6709
+  type: 'test'
+  ...
+# Subtest: refuses a host skill root that is not a directory
+ok 20 - refuses a host skill root that is not a directory
+  ---
+  duration_ms: 40.3591
+  type: 'test'
+  ...
+# Subtest: an explicit --root confines every projection to that root
+ok 21 - an explicit --root confines every projection to that root
+  ---
+  duration_ms: 42.3268
+  type: 'test'
+  ...
+# Subtest: accepts a relative --root, resolving it against the working directory
+ok 22 - accepts a relative --root, resolving it against the working directory
+  ---
+  duration_ms: 91.3782
+  type: 'test'
+  ...
+# Subtest: rejects an unknown flag, an incomplete --root, and any extra argument
+ok 23 - rejects an unknown flag, an incomplete --root, and any extra argument
+  ---
+  duration_ms: 215.523
+  type: 'test'
+  ...
+# Subtest: rejects a root that does not exist or is not a directory
+ok 24 - rejects a root that does not exist or is not a directory
+  ---
+  duration_ms: 84.4161
+  type: 'test'
+  ...
+# Subtest: with no arguments the root is the script's own directory, never the working directory
+ok 25 - with no arguments the root is the script's own directory, never the working directory
+  ---
+  duration_ms: 61.7722
+  type: 'test'
+  ...
+# Subtest: canonical launcher reports unsupported and missing-binary failures
+ok 26 - canonical launcher reports unsupported and missing-binary failures
+  ---
+  duration_ms: 3.5046
+  type: 'test'
+  ...
+# Subtest: canonical launcher preserves child error, code, and signal exits
+ok 27 - canonical launcher preserves child error, code, and signal exits
+  ---
+  duration_ms: 1.6145
+  type: 'test'
+  ...
+# Subtest: canonical platform and path helpers retain supported, unsupported, and marker behavior
+ok 28 - canonical platform and path helpers retain supported, unsupported, and marker behavior
+  ---
+  duration_ms: 0.5276
+  type: 'test'
+  ...
+# Subtest: reports a missing native binary with the documented exit status
+ok 29 - reports a missing native binary with the documented exit status
+  ---
+  duration_ms: 67.6396
+  type: 'test'
+  ...
+# Subtest: preserves Node 22 synchronous spawn failure for an invalid Windows executable
+ok 30 - preserves Node 22 synchronous spawn failure for an invalid Windows executable
+  ---
+  duration_ms: 52.6702
+  type: 'test'
+  ...
+# Subtest: forwards representative arguments and streams from a native exit 0
+ok 31 - forwards representative arguments and streams from a native exit 0
+  ---
+  duration_ms: 754.3194
+  type: 'test'
+  ...
+# Subtest: forwards representative arguments and streams from a native exit 23
+ok 32 - forwards representative arguments and streams from a native exit 23
+  ---
+  duration_ms: 819.5199
+  type: 'test'
+  ...
+# Subtest: forwards representative arguments and streams from a native exit 77
+ok 33 - forwards representative arguments and streams from a native exit 77
+  ---
+  duration_ms: 760.8086
+  type: 'test'
+  ...
+# Subtest: only statechart gets a hidden native child and shim-owned EOF channel
+ok 34 - only statechart gets a hidden native child and shim-owned EOF channel
+  ---
+  duration_ms: 4.0961
+  type: 'test'
+  ...
+1..34
+# tests 34
+# suites 0
+# pass 34
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2529.9194

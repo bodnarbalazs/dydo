@@ -11,13 +11,16 @@ import tempfile
 import time
 import stat
 import zipfile
+import socket
 
 sys.dont_write_bytecode = True
 ROOT = Path('C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f')
-BASE = '86931b9c47a93fa06287391495574865d9ce1d56'
+BASE = '7ba426604d7870f6596b2946c3255d1604618bfe'
+HISTORY_BASE = '86931b9c47a93fa06287391495574865d9ce1d56'
 LC = Path('C:/Users/User/.t3/worktrees/LC/t3-f7ffe8ea')
 TEMP = Path('C:/Users/User/AppData/Local/Temp')
 HERE = ROOT / 'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2'
+NEXT = HERE.parent / 'implementation3'
 LC_HASHES = {
     'tools/testing/runner/suite_slot.py': 'aa36020ee48e08319451e6c126701251aa3be9ef40ca4e4cb9cbaed1e375d21a',
     'tools/testing/runner/machine_lock.py': '7b53157084084ebb6806f7b4f391a82467f9fed0fc9d701d3fd3e0954c0d9736',
@@ -26,7 +29,7 @@ SELECTION = ('FullyQualifiedName~Statechart|FullyQualifiedName~CanonicalSkillAss
     'FullyQualifiedName~ScaffoldTreeTests|FullyQualifiedName~CommandSmokeTests|'
     'FullyQualifiedName~CommandDocConsistencyTests|FullyQualifiedName~HelpCommandTests')
 NATIVE = 'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/'
-NATIVE_POINTER = '''The [finite replay archive](history/README.md) represents the eleven pinned old
+NATIVE_POINTER = '''The [finite replay archive](history/readme.md) represents the eleven pinned old
 primitive replay sources and their exact restoration context. Captain verified
 the fidelity receipt and authorized removal of precisely those eleven paths. The
 primitive recipe below is historical: restore its exact stage inputs and map its
@@ -35,18 +38,27 @@ wrappers do not run unchanged in arbitrary scratch. Current product work uses
 `implementation2/launch.py` and `implementation2/driver.py`; archive fidelity is
 neither runtime replay nor static acceptance.
 
+The [installed invocation checkpoint](implementation3/verification.md) records
+the later Windows managed Temurin/public command/package/skill results and safe
+retention on abrupt npm loss. Its remaining platform/static gates are explicit.
+
 '''
-HISTORY_POINTER = '''The [finite native replay archive](dyd-415-statechart-evidence/native-invocation/history/README.md)
+HISTORY_POINTER = '''The [finite native replay archive](dyd-415-statechart-evidence/native-invocation/history/readme.md)
 provides exact source/context maps for eleven old primitive replay paths. Captain
 verified fidelity and authorized their exact removal. Historical commands
 and verdicts below are unchanged; their replay requires exact restored stage inputs
 and recorded context. Current product proof uses the maintained implementation2
 driver, with aggregate static still incomplete.
 
+The [installed invocation checkpoint](dyd-415-statechart-evidence/native-invocation/implementation3/verification.md)
+records the later Windows managed Temurin/public command/package/skill results
+and safe retention on abrupt npm loss; final platform/static gates remain owed.
+
 '''
 ARCHIVE_PATHS = [NATIVE + 'history/' + name for name in [
     'native-primitives-replay-86931b9c.zip',
-    'native-primitives-replay-86931b9c.manifest.json', 'README.md']]
+    'native-primitives-replay-86931b9c.manifest.json', 'readme.md']]
+OLD_README = NATIVE + 'history/README.md'
 ORIGINALS = [NATIVE + name for name in ['gate-driver.py', 'launch.py', 'milestone_checks.py',
     'g1_cases.py', 'g2_cases.py', 'g1/admission-failed-driver.py', 'g1/fixture/Fixture.csproj',
     'g1/fixture/Program.cs', 'g1/tests/Tests.csproj', 'g2/Dockerfile', 'g2/linux.sh']]
@@ -79,8 +91,11 @@ def git_bytes(*arguments, cwd=ROOT):
 
 def owned(path):
     prefixes = ['Services/Statechart/', 'DynaDocs.Tests/Statechart/', 'Resources/Statechart/',
-        'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/']
+        'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/',
+        'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/']
     exact = ['Program.cs', 'Commands/StatechartCommand.cs', 'Commands/HelpCommand.cs',
+        'npm/bin/dydo.cjs', 'npm/test/launcher.test.cjs', 'npm/test/statechart.test.cjs',
+        'setup-skills.mjs', 'DynaDocs.Tests/coverage/tests/setup-skills.test.cjs',
         'DynaDocs.Tests/coverage/tests/test_statechart_invocation_driver.py',
         'DynaDocs.Tests/coverage/tests/test_statechart_invocation_launch.py',
         'DynaDocs.Tests/coverage/tests/test_statechart_invocation_prepare.py',
@@ -92,7 +107,7 @@ def owned(path):
         'dydo/project/decisions/062-statechart-invocation-manages-prerequisites.md',
         'dydo/project/decisions/_decisions.md', 'dydo/project/pitfalls/dyd-415-statechart-verification.md']
     prefixes.append('skills/engineering/statechart/')
-    return path in exact + ARCHIVE_PATHS + ORIGINALS + [NATIVE + 'verification.md'] or path.startswith(tuple(prefixes))
+    return path in exact + ARCHIVE_PATHS + ORIGINALS + [OLD_README, NATIVE + 'verification.md'] or path.startswith(tuple(prefixes))
 
 
 def representation(root, historical, originals_present=False):
@@ -144,18 +159,34 @@ def validate(originals_present=False):
     assert git('rev-parse', 'HEAD') == BASE
     assert git('branch', '--show-current') == 'DYD-415-statechart'
     assert Path(git('rev-parse', '--show-toplevel')).resolve() == ROOT.resolve()
-    changed = [line[3:].replace('\\', '/') for line in git('status', '--porcelain=v1', '--untracked-files=all').splitlines()]
+    changed = git('diff', '--name-only', '--no-renames', BASE).splitlines()
+    changed += git('ls-files', '--others', '--exclude-standard').splitlines()
     assert all(owned(path) for path in changed), changed
     assert all(sha(LC / path) == digest for path, digest in LC_HASHES.items())
     immutable = 'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation'
-    historical = git('ls-tree', '-r', '--name-only', BASE, '--', immutable).splitlines()
+    historical = git('ls-tree', '-r', '--name-only', HISTORY_BASE, '--', immutable).splitlines()
     representation(ROOT, historical, originals_present)
+    navigation_case(ROOT)
+    protected = git('diff', '--name-only', '--no-renames', BASE, '--', NATIVE).splitlines()
+    editable = [NATIVE + 'verification.md', OLD_README, ARCHIVE_PATHS[2]]
+    editable += [NATIVE + 'implementation2/' + name + '.py' for name in ['driver', 'launch', 'prepare']]
+    assert all(path in editable or path.startswith(NATIVE + 'implementation3/') for path in protected), 'Committed receipt/history drift: ' + str(protected)
     for path, pointer in [(NATIVE + 'verification.md', NATIVE_POINTER),
             ('dydo/project/pitfalls/dyd-415-statechart-verification.md', HISTORY_POINTER)]:
         current = (ROOT / path).read_bytes()
         block = pointer.encode()
         assert current.count(block) == 1, 'Exactly one authorized archive pointer required: ' + path
-        assert current.replace(block, b'', 1) == git_bytes('show', BASE + ':' + path), 'Historical navigation bytes changed beyond the exact additive pointer'
+        assert current.replace(block, b'', 1) == git_bytes('show', HISTORY_BASE + ':' + path), 'Historical navigation bytes changed beyond the exact additive pointer'
+
+
+def navigation_case(root):
+    directory = root / NATIVE / 'history'
+    names = {path.name for path in directory.iterdir()}
+    assert 'readme.md' in names and 'README.md' not in names, 'Exactly the pinned lowercase navigation path required'
+    current = (root / ARCHIVE_PATHS[2]).read_text(encoding='utf-8')
+    assert '`history/README.md` to\n`history/readme.md`' in current, 'Explicit historical path mapping required'
+    assert sha(root / ARCHIVE_PATHS[0]) == IMMUTABLE[ARCHIVE_PATHS[0]]
+    assert sha(root / ARCHIVE_PATHS[1]) == IMMUTABLE[ARCHIVE_PATHS[1]]
 
 
 def remove_originals(output):
@@ -350,7 +381,7 @@ def focused(output, scratch, source, env):
     discovery = _ordinary_discovery(source, test_paths + [corpus])
     assert {row['file'] for row in discovery} == set(test_paths + [corpus]), 'Missing adopted native test recognition'
     suite = unittest.TestLoader().discover(str(source / relative), pattern='test_statechart_invocation_*.py')
-    assert suite.countTestCases() == 13, 'Unexpected or zero unittest selection'
+    assert suite.countTestCases() == 14, 'Unexpected or zero unittest selection'
     save(output / 'native-discovery.json', dict(recognized=discovery, unittestCases=suite.countTestCases(),
         purpose='Actual existing unittest/node:test recognition, not aggregate static or coverage'))
     run(output, 'driver-tests', [sys.executable, '-B', '-m', 'unittest', 'discover', '-s',
@@ -360,7 +391,7 @@ def focused(output, scratch, source, env):
     assert (output / 'node-version.stdout').read_text().strip() == 'v22.13.0'
     run(output, 'corpus-views', [node, '--test', source / corpus], source, env)
     save(output / 'custody.json', representation(ROOT,
-        git('ls-tree', '-r', '--name-only', BASE, '--', NATIVE).splitlines()))
+        git('ls-tree', '-r', '--name-only', HISTORY_BASE, '--', NATIVE).splitlines()))
 
 
 def archive_tests(output, scratch, source, env, red=False):
@@ -633,6 +664,395 @@ def readiness_diagnostic(output, scratch, source, env):
             dict(timeout=30, expected=0, input=b'go:1\n'))
 
 
+def retained_runtime():
+    continuation = json.loads((HERE / 'public-flow-build3/continuation.json').read_bytes())
+    root = Path(continuation['environment']['DYDO_STATECHART_DEPENDENCY_ROOT']) / continuation['plan']['lockDigest'] / 'win-x64'
+    node, = (root / 'node/content').glob('*/node.exe')
+    return node, root
+
+
+def installed_red(output, scratch, source, env):
+    node, _ = retained_runtime()
+    (source / 'npm/bin/dydo.cjs').write_bytes(git_bytes('show', BASE + ':npm/bin/dydo.cjs'))
+    run(output, 'npm-eof-red', [node, '--test', source / 'npm/test/statechart.test.cjs'], source, env, expected=1)
+    assert 'not ok 1 - only statechart gets a hidden native child' in (output / 'npm-eof-red.stdout').read_text()
+    old = json.loads((HERE / 'public-flow-build3/binary.json').read_bytes())
+    binary = Path(old['path'])
+    assert sha(binary) == old['sha256']
+    project = scratch / 'owned-project'
+    project.mkdir()
+    run(output, 'installed-skill-red', [binary, 'statechart', 'install-skill', '--root', project], project, env, expected=2)
+    assert not (project / 'skills').exists()
+    save(output / 'behavioral-red.json', dict(npm='Old launcher fails the private EOF/hidden launch assertion',
+        installedSkill='Old public native command rejects install-skill with exit2; no project files created',
+        oldNative=old, compileRejection=False))
+
+
+def installed_build(output, scratch, source, env):
+    binary = scratch / 'publish/dydo.exe'
+    run(output, 'native-publish', ['dotnet', 'publish', 'DynaDocs.csproj', '-c', 'Release', '-r', 'win-x64',
+        '--self-contained', '--warnaserror', '-o', binary.parent], source, env)
+    identity = dict(path=str(binary), sha256=sha(binary), rid='win-x64', nativeAot=True,
+        sourceInputsSha256=sha(output / 'source-inputs.json'))
+    save(output / 'binary.json', identity)
+    save(Path(str(binary) + '.proof.json'), identity)
+    env['STATECHART_TEST_BINARY'] = str(binary)
+    selection = ('FullyQualifiedName~StatechartOuterLifetimeTests|FullyQualifiedName~StatechartSkillTests|'
+        'FullyQualifiedName~StatechartRequestTests|FullyQualifiedName~StatechartPublicFlowTests|'
+        'FullyQualifiedName~CommandDocConsistencyTests')
+    base = ['dotnet', 'test', 'DynaDocs.sln', '-c', 'Release', '--filter', selection]
+    run(output, 'discovery', [*base, '--list-tests'], source, env)
+    text = (output / 'discovery.stdout').read_text(errors='replace')
+    assert all(name in text for name in ['StatechartOuterLifetimeTests', 'StatechartSkillTests',
+        'StatechartRequestTests', 'StatechartPublicFlowTests', 'CommandDocConsistencyTests'])
+    run(output, 'changed-tests', [*base, '--no-restore', '--logger', 'trx;LogFileName=changed.trx',
+        '--results-directory', output / 'test-results', '--', 'RunConfiguration.TreatNoTestsAsError=true'], source, env)
+    node, _ = retained_runtime()
+    run(output, 'npm-project-tests', [node, '--test', source / 'npm/test/launcher.test.cjs',
+        source / 'npm/test/statechart.test.cjs', source / 'DynaDocs.Tests/coverage/tests/setup-skills.test.cjs'], source, env)
+    focused(output, scratch, source, env)
+    save(output / 'build-context.json', dict(scratch=str(scratch), source=str(source), binary=identity,
+        environment={key: env[key] for key in ['DOTNET_CLI_HOME', 'NUGET_PACKAGES', 'NUGET_HTTP_CACHE_PATH',
+            'NUGET_PLUGINS_CACHE_PATH', 'TEMP', 'TMP', 'TMPDIR']}, node=str(node), nodeSha256=sha(node)))
+
+
+def installed_context():
+    path = NEXT / 'installed-build2/build-context.json'
+    context = json.loads(path.read_bytes())
+    binary = Path(context['binary']['path'])
+    assert sha(binary) == context['binary']['sha256']
+    inputs = json.loads((path.parent / 'source-inputs.json').read_bytes())
+    compiled = [row for row in inputs['files'] if row['path'].startswith(('Services/Statechart/',
+        'Resources/Statechart/', 'skills/engineering/statechart/')) or row['path'] in
+        ['Program.cs', 'Commands/StatechartCommand.cs', 'DynaDocs.csproj', 'setup-skills.mjs']]
+    assert all(sha(ROOT / row['path']) == row['sha256'] for row in compiled), 'Compiled product inputs changed'
+    return context, binary, compiled
+
+
+def managed_temurin(output, scratch, source, env):
+    context, binary, compiled = installed_context()
+    # A real installer fixture pre-provisions Java only, so IDE discovery cannot substitute JBR.
+    # It uses the current production installer/readiness modules and a current .NET assembly.
+    node, retained = retained_runtime()
+    fixture = scratch / 'managed-installer'
+    fixture.mkdir()
+    project = ('<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType>'
+        '<TargetFramework>net10.0</TargetFramework><AssemblyName>DynaDocs.Tests</AssemblyName>'
+        '<ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>'
+        '<ItemGroup><ProjectReference Include="' + str(source / 'DynaDocs.csproj') + '" /></ItemGroup></Project>')
+    (fixture / 'Fixture.csproj').write_text(project, encoding='utf-8')
+    entry = '''using DynaDocs.Services.Statechart;
+using System.Text.Json.Nodes;
+if (args[0] == "__statechart-cleanup") return await StatechartCleanup.RunAsync(args[1..], Console.In, Console.Out);
+if (args[0] == "__statechart-probe") return await StatechartProbe.ChildAsync(args[1..]);
+var assets = new StatechartAssets();
+var home = new StatechartHome(args[3], args[4], args[5]);
+var payload = assets.Extract(home.Assets);
+var managed = new StatechartManaged(home, assets, "win-x64");
+var result = await managed.InstallAsync(new(args[0], null, args[1], args[2]), payload, CancellationToken.None);
+Console.WriteLine(new JsonObject { ["java"] = result.Java, ["payload"] = assets.Digest,
+    ["lock"] = assets.LockDigest, ["root"] = managed.Root });
+return 0;
+'''
+    (fixture / 'Program.cs').write_text(entry, encoding='utf-8')
+    run(output, 'installer-fixture-build', ['dotnet', 'build', fixture / 'Fixture.csproj', '-c', 'Release',
+        '--warnaserror', '-o', fixture / 'build'], source, env)
+    roots = {name: str(scratch / name) for name in ['assets', 'deps', 'state']}
+    save(output / 'install-binding.json', dict(binarySha256=sha(binary), compiledInputs=compiled,
+        node=dict(path=str(node), sha256=sha(node)), fixtureSourceSha256=sha(fixture / 'Program.cs'),
+        fixtureProjectSha256=sha(fixture / 'Fixture.csproj'), roots=roots,
+        scope='Host-authorized task-local actual production Java installer fixture; no forged readiness receipt. Public chart continuation follows separately.'))
+    arguments = [fixture / 'build/DynaDocs.Tests.exe', node, retained / 'tlc/tla2tools.jar',
+        retained / 'pele/content/package/dist/pele.js', roots['assets'], roots['deps'], roots['state']]
+    run(output, 'managed-java-install', arguments, scratch, env, timeout=660)
+    result = json.loads((output / 'managed-java-install.stdout').read_bytes())
+    java = Path(result['java'])
+    run(output, 'actual-java-version', [java, '-version'], scratch, env)
+    version = (output / 'actual-java-version.stderr').read_text()
+    assert 'Temurin-21.0.8+9' in version and '"21.0.8"' in version
+    java_receipt = Path(result['root']) / 'java/.ready.json'
+    ready = json.loads(java_receipt.read_bytes())
+    assert ready['readiness']['sanyAndTlc'] and 'Temurin-21.0.8+9' in ready['readiness']['java']
+    caller = scratch / 'captured model inputs'
+    caller.mkdir()
+    (caller / 'Model.tla').write_text('---- MODULE Model ----\nEXTENDS Naturals\nVARIABLE x\nInit == x = 0\nNext == (x < 2 /\\ x\' = x + 1) \\/ (x = 2 /\\ x\' = x)\nBound == x < 2\n====\n')
+    (caller / 'Model.cfg').write_text('INIT Init\nNEXT Next\nINVARIANT Bound\nCHECK_DEADLOCK FALSE\n')
+    (caller / 'view.mjs').write_text('export const state = ({x}) => String(x);\n')
+    env.update(DYDO_STATECHART_ASSET_ROOT=roots['assets'], DYDO_STATECHART_DEPENDENCY_ROOT=roots['deps'],
+        DYDO_STATECHART_STATE_ROOT=roots['state'], PATH='')
+    env.pop('JAVA', None)
+    env.pop('TLA2TOOLS', None)
+    run(output, 'initial-plan', [binary, 'statechart', 'Model.tla', '--view', 'view.mjs', '--out', 'chart output'], caller, env, expected=3)
+    plan = json.loads((output / 'initial-plan.stdout').read_bytes())
+    assert sorted(item['name'] for item in plan['missing']) == ['node', 'pele', 'tlc']
+    assert not (caller / 'chart output').exists()
+    save(output / 'continuation.json', dict(plan=plan, caller=str(caller), scratch=str(scratch),
+        binarySha256=sha(binary), compiledInputs=compiled, managedJava=str(java), managedJavaSha256=sha(java),
+        javaReceiptSha256=sha(java_receipt), javaReceipt=str(java_receipt),
+        environment={key: env[key] for key in ['DYDO_STATECHART_ASSET_ROOT', 'DYDO_STATECHART_DEPENDENCY_ROOT',
+            'DYDO_STATECHART_STATE_ROOT', 'TEMP', 'TMP', 'TMPDIR']},
+        authorization='Submit exact captured resume argv through the normal host command/installation authorization.'))
+
+
+def installed_resume(output, scratch, source, env):
+    context, binary, compiled = installed_context()
+    previous = NEXT / 'managed-temurin/continuation.json'
+    continuation = json.loads(previous.read_bytes())
+    plan = continuation['plan']
+    assert sha(binary) == continuation['binarySha256']
+    assert sha(Path(plan['request'])) == plan['requestDigest']
+    assert sha(Path(continuation['managedJava'])) == continuation['managedJavaSha256']
+    assert sha(Path(continuation['javaReceipt'])) == continuation['javaReceiptSha256']
+    arguments = [str(binary), 'statechart', 'resume', '--request', plan['request']]
+    assert arguments == plan['installAndContinue']
+    env.update(continuation['environment'], PATH='')
+    env.pop('JAVA', None)
+    env.pop('TLA2TOOLS', None)
+    caller = Path(continuation['caller'])
+    save(output / 'resume-binding.json', dict(continuationSha256=sha(previous), compiledInputs=compiled,
+        argv=arguments, authorization='Exact captured install-and-continue executed through normal host authorization; no local consent token'))
+    run(output, 'authorized-resume', arguments, caller, env, timeout=660, expected=1)
+    chart = Path(plan['output'])
+    assert 'Bound breaks' in (chart / 'report.md').read_text() and 'bugPath' in (chart / 'chart.svg').read_text()
+    assert 'shortest path has 2 steps' in (chart / 'report.md').read_text()
+    dependencies = Path(env['DYDO_STATECHART_DEPENDENCY_ROOT'])
+    managed = dependencies / plan['lockDigest'] / 'win-x64'
+    ready = [json.loads(path.read_bytes()) for path in managed.glob('*/.ready.json')]
+    assert len(ready) == 4 and all('Temurin-21.0.8+9' in row['readiness']['java'] for row in ready)
+    before = {path.relative_to(dependencies).as_posix(): sha(path) for path in dependencies.rglob('*') if path.is_file()}
+    offline = dict(env, HTTP_PROXY='http://127.0.0.1:9', HTTPS_PROXY='http://127.0.0.1:9', ALL_PROXY='http://127.0.0.1:9', NO_PROXY='')
+    run(output, 'completed-replay', arguments, caller, offline, expected=1)
+    node, = (managed / 'node/content').glob('*/node.exe')
+    package, tool = installed_packages(output, scratch, source, env, node, binary)
+    installed_skill(output, scratch, caller, offline, node, package, binary)
+    run(output, 'dotnet-tool-ready', [tool, 'statechart', 'Model.tla', '--view', 'view.mjs', '--out', 'tool chart'], caller, offline, expected=1)
+    run(output, 'dotnet-tool-payload', [tool, 'statechart', 'doctor'], caller, offline, expected=2)
+    identity = json.loads((output / 'dotnet-tool-payload.stdout').read_bytes())
+    assert identity['payloadDigest'] == plan['payloadDigest'] and identity['lockDigest'] == plan['lockDigest']
+    assert before == {path.relative_to(dependencies).as_posix(): sha(path) for path in dependencies.rglob('*') if path.is_file()}
+    npm_outer_loss(output, scratch, source, offline, node, package, caller)
+    save(output / 'public-flow-result.json', dict(nativeVerdict=1, npmVerdict=1, dotnetToolVerdict=1,
+        actualJava='Managed Temurin21.0.8+9', managedJava=continuation['managedJava'], receipts=4,
+        payloadDigest=plan['payloadDigest'], lockDigest=plan['lockDigest'], replayExit=1,
+        installationUnchangedOnReplayAndReady=True, npmDelivery='Task-local candidate archive fixture; no public release download claim',
+        limits='Windows x64 only; POSIX public integration and other RIDs remain unproved. Not final acceptance/static/coverage.'))
+
+
+def installed_packages(output, scratch, source, env, node, binary):
+    npm = node.parent / 'node_modules/npm/bin/npm-cli.js'
+    packages = scratch / 'packages'
+    packages.mkdir()
+    run(output, 'npm-pack', [node, npm, 'pack', source / 'npm', '--ignore-scripts', '--pack-destination', packages], source, env)
+    archive, = packages.glob('dydo-*.tgz')
+    prefix = scratch / 'npm-prefix'
+    run(output, 'npm-install', [node, npm, 'install', archive, '--prefix', prefix, '--ignore-scripts',
+        '--no-audit', '--no-fund', '--cache', scratch / 'npm-cache'], scratch, env)
+    package = prefix / 'node_modules/dydo'
+    native = package / 'native'
+    native.mkdir()
+    delivery = packages / 'dydo-win-x64.zip'
+    with zipfile.ZipFile(delivery, 'x', compression=zipfile.ZIP_DEFLATED) as bundle:
+        bundle.write(binary, 'dydo.exe')
+    with zipfile.ZipFile(delivery) as bundle:
+        assert bundle.namelist() == ['dydo.exe']
+        with (native / 'dydo.exe').open('xb') as stream: stream.write(bundle.read('dydo.exe'))
+    assert sha(native / 'dydo.exe') == sha(binary)
+    (native / '.version').write_text('3.5.1')
+    run(output, 'dotnet-pack', ['dotnet', 'pack', 'DynaDocs.csproj', '-c', 'Release', '-o', packages], source, env)
+    config = scratch / 'local-feed.config'
+    config.write_text('<configuration><packageSources><clear /></packageSources></configuration>')
+    tool = scratch / 'dotnet-tool'
+    run(output, 'dotnet-tool-install', ['dotnet', 'tool', 'install', 'dydo', '--tool-path', tool,
+        '--add-source', packages, '--version', '3.5.1', '--configfile', config], scratch, env)
+    save(output / 'distribution.json', dict(npmArchiveSha256=sha(archive), nativeArchiveSha256=sha(delivery),
+        deliveredNativeSha256=sha(native / 'dydo.exe'), publicGitHubDownloadOrNpmPostinstallClaim=False,
+        dotnetPackageSha256=sha(packages / 'dydo.3.5.1.nupkg'), installedTool=str(tool / 'dydo.exe')))
+    return package, tool / 'dydo.exe'
+
+
+def installed_skill(output, scratch, caller, env, node, package, binary):
+    project = scratch / 'explicit project'
+    project.mkdir()
+    setup = project / 'setup-skills.mjs'
+    setup.write_text('human setup script: keep byte-for-byte')
+    foreign = project / 'skills/local/foreign/SKILL.md'
+    foreign.parent.mkdir(parents=True)
+    foreign.write_text('human skill: keep byte-for-byte')
+    expected = {str(path): sha(path) for path in [setup, foreign]}
+    run(output, 'install-skill', [binary, 'statechart', 'install-skill', '--root', project], caller, env)
+    canonical = project / 'skills/engineering/statechart'
+    projections = [project / name / 'skills/statechart' for name in ['.agents', '.claude']]
+    assert all(path.resolve() == canonical.resolve() for path in projections)
+    receipt = canonical / '.statechart-skill.json'
+    before = sha(receipt)
+    run(output, 'install-skill-idempotent', [binary, 'statechart', 'install-skill', '--root', project], caller, env)
+    assert sha(receipt) == before
+    run(output, 'npm-installed-skill-ready', [node, package / 'bin/dydo.cjs', 'statechart', 'Model.tla',
+        '--skill', projections[0], '--view', 'view.mjs', '--out', 'npm chart'], caller, env, expected=1)
+    chart = caller / 'npm chart'
+    assert 'Bound breaks' in (chart / 'report.md').read_text() and 'bugPath' in (chart / 'chart.svg').read_text()
+    local = canonical / 'SKILL.md'
+    with local.open('a', encoding='utf-8') as stream: stream.write('\nlocal edit retained\n')
+    run(output, 'changed-skill-rejects', [node, package / 'bin/dydo.cjs', 'statechart', 'Model.tla',
+        '--skill', projections[1], '--out', 'mismatch chart'], caller, env, expected=2)
+    run(output, 'changed-skill-install-preserves', [binary, 'statechart', 'install-skill', '--root', project], caller, env, expected=2)
+    assert 'local edit retained' in local.read_text() and not (caller / 'mismatch chart').exists()
+    assert expected == {str(path): sha(path) for path in [setup, foreign]}
+    save(output / 'installed-skill.json', dict(project=str(project), receiptSha256=before,
+        bothProjectionsResolved=True, localEditsAndForeignFilesPreserved=True, changedSkillExit=2, automaticOverwrite=False))
+
+
+def process_handles(pids):
+    import ctypes
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.OpenProcess.argtypes = [ctypes.c_uint, ctypes.c_bool, ctypes.c_uint]
+    kernel.OpenProcess.restype = ctypes.c_void_p
+    kernel.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+    kernel.WaitForSingleObject.restype = ctypes.c_uint
+    kernel.CloseHandle.argtypes = [ctypes.c_void_p]
+    kernel.GetExitCodeProcess.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint)]
+    kernel.GetExitCodeProcess.restype = ctypes.c_bool
+    handles = {}
+    for role, pid in pids.items():
+        handle = kernel.OpenProcess(0x100000 | 0x1000, False, pid)
+        assert handle and kernel.WaitForSingleObject(handle, 0) == 258, 'Expected actual live owned process: ' + role
+        handles[role] = handle
+    return kernel, handles
+
+
+def npm_outer_loss(output, scratch, source, env, node, package, caller):
+    import ctypes
+    prior_journals = set(Path(env['DYDO_STATECHART_STATE_ROOT']).glob('scratch-*.journal'))
+    classes = scratch / 'java-barrier'
+    classes.mkdir()
+    (classes / 'AwaitOwner.java').write_text('public class AwaitOwner { public static void main(String[] a) throws Exception { System.out.println("java-ready"); System.out.flush(); System.in.read(); } }')
+    compiler = Path('C:/Program Files/JetBrains/JetBrains Rider 2024.3/jbr/bin/javac.exe')
+    run(output, 'java-barrier-compile', [compiler, '--release', '11', classes / 'AwaitOwner.java'], classes, env)
+    sentinel = caller / 'foreign-sentinel'
+    sentinel.write_text('foreign caller file must survive owner loss')
+    sentinel_hash = sha(sentinel)
+    with socket.socket() as server:
+        server.bind(('127.0.0.1', 0))
+        server.listen(3)
+        server.settimeout(30)
+        port = server.getsockname()[1]
+        foreign = subprocess.Popen([node, '-e', 'const net=require("node:net");const s=net.createConnection({host:"127.0.0.1",port:' + str(port) +
+            '},()=>s.end(JSON.stringify({foreign:process.pid})));process.stdin.resume();'],
+            cwd=scratch, env=env, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NO_WINDOW)
+        view = caller / 'blocked-view.mjs'
+        view.write_text('import {spawn} from "node:child_process"; import net from "node:net"; import {createInterface} from "node:readline";\n'
+            'const java=spawn(process.env.JAVA,["-cp",' + json.dumps(str(classes)) + ',"AwaitOwner"],{stdio:["pipe","pipe","pipe"],windowsHide:true});\n'
+            'createInterface({input:java.stdout}).once("line",line=>{ if(line!=="java-ready")process.exit(2);'
+            'const s=net.createConnection({host:"127.0.0.1",port:' + str(port) + '},()=>s.end(JSON.stringify({worker:process.pid,bootstrap:process.ppid,java:java.pid}))); });\n'
+            'await new Promise(()=>{}); export const state=({x})=>String(x);\n')
+        wrapper = scratch / 'observe-shim.cjs'
+        wrapper.write_text('const cp=require("node:child_process"),net=require("node:net"); const real=cp.spawn;'
+            'cp.spawn=(...a)=>{ const c=real(...a); const s=net.createConnection({host:"127.0.0.1",port:' + str(port) + '},()=>s.end(JSON.stringify({native:c.pid}))); return c; };'
+            'process.argv=[process.execPath,' + json.dumps(str(package / 'bin/dydo.cjs')) + ',...process.argv.slice(2)]; require(process.argv[1]);')
+        with (output / 'npm-abrupt.stdout').open('xb') as stdout, (output / 'npm-abrupt.stderr').open('xb') as stderr:
+            arguments = [node, wrapper, 'statechart', 'Model.tla', '--view', view, '--out', 'aborted chart']
+            shim = subprocess.Popen(arguments,
+                cwd=caller, env=env, stdout=stdout, stderr=stderr, creationflags=subprocess.CREATE_NO_WINDOW)
+            observed = {}
+            for _ in range(3):
+                connection, _ = server.accept()
+                with connection:
+                    connection.settimeout(5)
+                    with connection.makefile('rb') as frames: observed.update(json.loads(frames.read(4096)))
+            assert set(observed) == {'native', 'worker', 'bootstrap', 'java', 'foreign'}
+            kernel, handles = process_handles(observed)
+            try:
+                shim.kill()
+                shim.wait(timeout=10)
+                signaled = {role: kernel.WaitForSingleObject(handle, 10000) == 0 for role, handle in handles.items() if role != 'foreign'}
+                assert all(signaled.values()), 'Owned native/JS/Java lifetime did not drain after actual shim death'
+                assert kernel.WaitForSingleObject(handles['foreign'], 0) == 258, 'Unrelated process was stopped'
+                exits = {}
+                for role, handle in handles.items():
+                    value = ctypes.c_uint()
+                    assert kernel.GetExitCodeProcess(handle, ctypes.byref(value))
+                    exits[role] = value.value
+            finally:
+                for handle in handles.values(): kernel.CloseHandle(handle)
+                foreign.stdin.close()
+                foreign.wait(timeout=10)
+            save(output / 'npm-abrupt.command.json', dict(argv=list(map(str, arguments)), cwd=str(caller),
+                exit=shim.returncode, expectation='Forcibly killed shim; chart never publishes', hidden=True,
+                ticket=env['LC_SUITE_SLOT_TICKET']))
+    journals = sorted(set(Path(env['DYDO_STATECHART_STATE_ROOT']).glob('scratch-*.journal')) - prior_journals)
+    states = []
+    for path in journals:
+        text = path.read_text()
+        directory = Path(text.splitlines()[1])
+        deleted = 'deleted-after-authoritative-drain' in text
+        retained = 'retained:' in text and 'drain uncertain' in text
+        states.append(dict(path=str(path), sha256=sha(path), directory=str(directory), exists=directory.exists(),
+            deletedAfterDrain=deleted, retainedUncertain=retained, text=text))
+    save(output / 'npm-abrupt-observed.json', dict(liveBeforeKill=observed, stableHandlesSignaled=signaled,
+        actualExitCodes=exits, shimExit=shim.returncode, journals=states))
+    assert states and all(row['deletedAfterDrain'] and not row['exists'] or row['retainedUncertain'] and row['exists'] for row in states)
+    assert not (caller / 'aborted chart').exists()
+    assert sha(sentinel) == sentinel_hash
+    save(output / 'npm-abrupt.json', dict(shimPid=shim.pid, shimAbruptExit=shim.returncode,
+        liveBeforeKill=observed, stableProcessHandlesSignaled=signaled, actualJava='Temurin21.0.8+9',
+        actualViewJavaReadyBarrier=True, finallyOnlyOwnership=False,
+        unrelatedProcessSurvived=True, foreignFileUnchanged=True,
+        cleanup='ERROR_RETAINED_UNCERTAIN' if any(row['retainedUncertain'] for row in states) else 'AUTHORITATIVE_DRAIN_DELETED',
+        scratchDeletionPass=all(row['deletedAfterDrain'] for row in states), journals=states))
+
+
+def installed_light(output, scratch, source, env):
+    context, binary, compiled = installed_context()
+    continuation = json.loads((NEXT / 'managed-temurin/continuation.json').read_bytes())
+    env.update(continuation['environment'])
+    env['STATECHART_TEST_BINARY'] = str(binary)
+    env['STATECHART_TEST_DEPENDENCY_ROOT'] = env['DYDO_STATECHART_DEPENDENCY_ROOT']
+    base = ['dotnet', 'test', 'DynaDocs.sln', '-c', 'Release', '--filter', SELECTION]
+    run(output, 'discovery', [*base, '--list-tests'], source, env)
+    text = (output / 'discovery.stdout').read_text(errors='replace')
+    names = [path.stem for path in (source / 'DynaDocs.Tests/Statechart').glob('*Tests.cs')]
+    assert names and all(name in text for name in names)
+    run(output, 'light', [*base, '--no-restore', '--logger', 'trx;LogFileName=light.trx',
+        '--results-directory', output / 'test-results', '--', 'RunConfiguration.TreatNoTestsAsError=true'], source, env)
+    focused(output, scratch, source, env)
+    node, _ = retained_runtime()
+    run(output, 'npm-project-tests', [node, '--test', source / 'npm/test/launcher.test.cjs',
+        source / 'npm/test/statechart.test.cjs', source / 'DynaDocs.Tests/coverage/tests/setup-skills.test.cjs'], source, env)
+    run(output, 'docs', [binary, 'check'], ROOT, env)
+    run(output, 'whitespace-original', ['git', '-c', 'core.longpaths=true', 'diff', '--check', '3527ef642d9c0e1a4298cd13f22a53cf8a6a1a15'], ROOT, env)
+    run(output, 'whitespace-master', ['git', '-c', 'core.longpaths=true', 'diff', '--check', '1318e93eabd500bbd45f243e4c99c3a10c2b004a'], ROOT, env)
+    import xml.etree.ElementTree as ET
+    results = ET.parse(output / 'test-results/light.trx').findall('.//{*}UnitTestResult')
+    assert results and all(row.get('outcome') == 'Passed' for row in results)
+    save(output / 'light-result.json', dict(passed=len(results), skipped=0, nativeClasses=names,
+        compiledInputs=compiled, docsExit=0, whitespaceExits=[0, 0],
+        aggregateStatic='BLOCKED, remaining71 disposition pending; not retried', coverage='Not executed; final dotnet,node,python + reviewed changed-TS still owed'))
+
+
+def npm_counterexample(output, scratch, source, env):
+    context, binary, compiled = installed_context()
+    continuation = json.loads((NEXT / 'managed-temurin/continuation.json').read_bytes())
+    distribution = json.loads((NEXT / 'installed-resume/distribution.json').read_bytes())
+    package = Path(distribution['installedTool']).parent.parent / 'npm-prefix/node_modules/dydo'
+    assert sha(package / 'native/dydo.exe') == sha(binary) == distribution['deliveredNativeSha256']
+    env.update(continuation['environment'], PATH='', HTTP_PROXY='http://127.0.0.1:9',
+        HTTPS_PROXY='http://127.0.0.1:9', ALL_PROXY='http://127.0.0.1:9', NO_PROXY='')
+    env.pop('JAVA', None)
+    env.pop('TLA2TOOLS', None)
+    caller = scratch / 'actual owner loss'
+    caller.mkdir()
+    for name in ['Model.tla', 'Model.cfg']:
+        shutil.copy2(Path(continuation['caller']) / name, caller / name)
+    node, = (Path(env['DYDO_STATECHART_DEPENDENCY_ROOT']) / continuation['plan']['lockDigest'] / 'win-x64/node/content').glob('*/node.exe')
+    save(output / 'failure-attribution.json', dict(previous='implementation3/installed-resume/stop.json',
+        previousSha256=sha(NEXT / 'installed-resume/stop.json'),
+        cause='Harness required all scratch deleted after abrupt npm/native loss; pinned contract explicitly requires retention/error on uncertain drain. Runtime unchanged, no notification retry or topology fallback.',
+        nativeBinarySha256=sha(binary), compiledInputs=compiled,
+        actualCompletedBeforeFailure=['captured native resume1', 'npm installed skill1', 'dotnet tool1', 'mismatch rejection2', 'local edit retention2']))
+    npm_outer_loss(output, scratch, source, env, node, package, caller)
+
+
 def fidelity_inputs():
     proposal_path = TEMP / 'dyd415-archival-finite-proposal-v2-20261030.json'
     assert sha(proposal_path) == 'e1c80a97f1ef7b82b37f650bbf0fe6786282c57fcbe2160571bb5eabc9fd4358'
@@ -792,6 +1212,9 @@ def execute(mode, output, owner):
                 'public-probe-corrected': lambda *args: public_flow(*args, probe=True),
                 'public-resume': public_resume,
                 'public-light': public_light,
+                'installed-red': installed_red, 'installed-build': installed_build, 'managed-temurin': managed_temurin,
+                'installed-resume': installed_resume,
+                'installed-light': installed_light, 'npm-counterexample': npm_counterexample,
                 'readiness-diagnostic': readiness_diagnostic,
                 'archives-red': lambda *args: archive_tests(*args, red=True)}[mode](output, scratch, source, env)
     finally:
@@ -804,14 +1227,14 @@ def execute(mode, output, owner):
 
 def main():
     mode, attempt = sys.argv[1:]
-    assert mode in ['product', 'static', 'attribution', 'catalogue', 'request', 'fidelity', 'remove', 'focused', 'archives', 'archives-red', 'public-red', 'public-flow', 'public-corrected', 'public-probe-corrected', 'public-resume', 'public-light', 'readiness-diagnostic']
+    assert mode in ['product', 'static', 'attribution', 'catalogue', 'request', 'fidelity', 'remove', 'focused', 'archives', 'archives-red', 'public-red', 'public-flow', 'public-corrected', 'public-probe-corrected', 'public-resume', 'public-light', 'readiness-diagnostic', 'installed-red', 'installed-build', 'managed-temurin', 'installed-resume', 'installed-light', 'npm-counterexample']
     assert attempt.replace('-', '').isalnum() and len(attempt) < 40
     validate(originals_present=mode == 'remove')
     sys.path.insert(0, str(LC))
     from tools.testing.runner import suite_slot
     from tools.testing.runner.machine_lock import HEAVY, machine_lock
     assert suite_slot.live().directory.resolve() == (TEMP.parent / 'lc-test/suite-slot').resolve()
-    output = HERE / attempt
+    output = (NEXT if mode in ['installed-red', 'installed-build', 'managed-temurin', 'installed-resume', 'installed-light', 'npm-counterexample'] else HERE) / attempt
     output.mkdir(exist_ok=False)
     command = subprocess.list2cmdline([sys.executable, '-B', str(Path(__file__)), mode, attempt])
     failure = None

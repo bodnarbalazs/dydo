@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "dotnet",
+    "pack",
+    "DynaDocs.csproj",
+    "-c",
+    "Release",
+    "-o",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-gjrlby0l\\packages"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-gjrlby0l\\source",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 7.889999999999418,
+  "ticket": "0000000001-c83946817c0bedc7",
+  "hidden": true
+}

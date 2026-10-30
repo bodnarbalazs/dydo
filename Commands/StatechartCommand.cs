@@ -11,10 +11,13 @@ public static class StatechartCommand
     {
         var command = new Command("statechart", "Check a TLA+ model with managed prerequisites and native process ownership");
         command.Arguments.Add(new Argument<string?>("spec") { Arity = ArgumentArity.ZeroOrOne });
-        foreach (var option in new[] { "--config", "--view", "--out" }) command.Options.Add(new Option<string?>(option));
+        foreach (var option in new[] { "--config", "--view", "--out", "--skill" }) command.Options.Add(new Option<string?>(option));
         var resume = new Command("resume", "Install missing locked prerequisites and continue a saved request through normal host authorization");
         resume.Options.Add(new Option<string>("--request") { Required = true });
         command.Subcommands.Add(resume);
+        var install = new Command("install-skill", "Install this release's statechart skill and both project projections");
+        install.Options.Add(new Option<string>("--root") { Required = true });
+        command.Subcommands.Add(install);
         var doctor = new Command("doctor", "Inspect installed statechart assets and local prerequisite candidates offline");
         doctor.SetAction(async _ => await DoctorAsync(Console.Out));
         command.Subcommands.Add(doctor);
@@ -26,6 +29,17 @@ public static class StatechartCommand
         try
         {
             if (arguments is ["doctor"]) return await DoctorAsync(Console.Out);
+            if (arguments.Length > 0 && arguments[0] == "install-skill")
+            {
+                var root = new Option<string>("--root") { Required = true };
+                var install = new Command("install-skill");
+                install.Options.Add(root);
+                var parsed = install.Parse(arguments[1..]);
+                if (parsed.Errors.Count != 0) throw new IOException(string.Join(" ", parsed.Errors.Select(error => error.Message)));
+                await StatechartSkill.InstallAsync(parsed.GetValue(root)!, StatechartHome.Current(), new StatechartAssets(),
+                    RuntimeInformation.RuntimeIdentifier, Console.Out, token);
+                return 0;
+            }
             var flow = new StatechartFlow(StatechartHome.Current(), new StatechartAssets(), RuntimeInformation.RuntimeIdentifier);
             if (arguments.Length > 0 && arguments[0] == "resume")
             {

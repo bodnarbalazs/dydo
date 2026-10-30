@@ -20,6 +20,8 @@ if (args.Length > 0 && args[0] is "__statechart-cleanup" or "__statechart-probe"
 if (args.Length > 0 && (args[0] == "gap-check" || args[0] == "statechart" && !args.Skip(1).Any(argument => argument is "--help" or "-h" or "-?")))
 {
     using var cancellation = new CancellationTokenSource();
+    if (args[0] == "statechart" && Environment.GetEnvironmentVariable("DYDO_STATECHART_NPM_LIFETIME") == "1")
+        _ = DynaDocs.Services.Statechart.StatechartOuterLifetime.ObserveAsync(Console.OpenStandardInput(), cancellation);
     ConsoleCancelEventHandler handler = (_, eventArgs) =>
     {
         eventArgs.Cancel = true;

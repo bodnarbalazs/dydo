@@ -1,0 +1,18 @@
+{
+  "argv": [
+    "dotnet",
+    "build",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\managed-installer\\Fixture.csproj",
+    "-c",
+    "Release",
+    "--warnaserror",
+    "-o",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\managed-installer\\build"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\source",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 21.843999999997322,
+  "ticket": "0000000001-ae23393ede1376e8",
+  "hidden": true
+}

@@ -73,17 +73,30 @@ internal sealed class StatechartAssets
 
     public byte[] DependencyLock() => ReadResource("Statechart/lock.json");
 
-    private static void VerifyDirectory(string root, string directory, Dictionary<string, string> expected)
+    public void VerifySkill(string directory)
+    {
+        StatechartPaths.RequirePlainDirectory(directory);
+        const string prefix = "skills/engineering/statechart/";
+        using var json = JsonDocument.Parse(_manifest);
+        var expected = json.RootElement.GetProperty("files").EnumerateArray()
+            .Where(row => row.GetProperty("path").GetString()!.StartsWith(prefix, StringComparison.Ordinal))
+            .ToDictionary(row => row.GetProperty("path").GetString()![prefix.Length..], row => row.GetProperty("sha256").GetString()!);
+        VerifyDirectory(directory, directory, expected, ".statechart-skill.json");
+        if (expected.Count != 0) throw new IOException("Missing installed statechart skill files: " + string.Join(", ", expected.Keys));
+    }
+
+    private static void VerifyDirectory(string root, string directory, Dictionary<string, string> expected, string? excluded = null)
     {
         foreach (var path in Directory.EnumerateFileSystemEntries(directory))
         {
             var attributes = File.GetAttributes(path);
             if ((attributes & FileAttributes.ReparsePoint) != 0)
                 throw new IOException("Linked statechart asset: " + path);
-            if ((attributes & FileAttributes.Directory) != 0) VerifyDirectory(root, path, expected);
+            if ((attributes & FileAttributes.Directory) != 0) VerifyDirectory(root, path, expected, excluded);
             else
             {
                 var name = Path.GetRelativePath(root, path).Replace('\\', '/');
+                if (name == excluded) continue;
                 if (!expected.Remove(name, out var digest) || Hash(File.ReadAllBytes(path)) != digest)
                     throw new IOException("Foreign or changed statechart asset: " + name);
             }

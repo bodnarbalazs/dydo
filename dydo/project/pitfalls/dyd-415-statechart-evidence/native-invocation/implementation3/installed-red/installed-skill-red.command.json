@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\publish\\dydo.exe",
+    "statechart",
+    "install-skill",
+    "--root",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-2fts_auw\\owned-project"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-2fts_auw\\owned-project",
+  "exit": 2,
+  "expected": 2,
+  "seconds": 0.031000000002677552,
+  "ticket": "0000000001-3be594819f55a59b",
+  "hidden": true
+}

@@ -5,7 +5,7 @@ type: reference
 
 # DYD-415 native ownership engineering milestone
 
-The [finite replay archive](history/README.md) represents the eleven pinned old
+The [finite replay archive](history/readme.md) represents the eleven pinned old
 primitive replay sources and their exact restoration context. Captain verified
 the fidelity receipt and authorized removal of precisely those eleven paths. The
 primitive recipe below is historical: restore its exact stage inputs and map its
@@ -13,6 +13,10 @@ recorded context before any separately authorized replay; the old hardcoded
 wrappers do not run unchanged in arbitrary scratch. Current product work uses
 `implementation2/launch.py` and `implementation2/driver.py`; archive fidelity is
 neither runtime replay nor static acceptance.
+
+The [installed invocation checkpoint](implementation3/verification.md) records
+the later Windows managed Temurin/public command/package/skill results and safe
+retention on abrupt npm loss. Its remaining platform/static gates are explicit.
 
 Author: code-writer/model: gpt-6.1-sol/high, existing sole writer under the
 DYD-415 captain. This implements the early G1/G2 modules at pinned merge

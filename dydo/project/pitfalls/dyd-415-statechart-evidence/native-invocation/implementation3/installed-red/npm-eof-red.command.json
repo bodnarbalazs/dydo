@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\node\\content\\node-v22.23.2-win-x64\\node.exe",
+    "--test",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-2fts_auw\\source\\npm\\test\\statechart.test.cjs"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-2fts_auw\\source",
+  "exit": 1,
+  "expected": 1,
+  "seconds": 0.125,
+  "ticket": "0000000001-3be594819f55a59b",
+  "hidden": true
+}

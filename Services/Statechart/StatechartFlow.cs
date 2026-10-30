@@ -8,6 +8,7 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
     public async Task<int> StartAsync(string[] arguments, string caller, TextWriter output, CancellationToken token)
     {
         RequireWindows();
+        token.ThrowIfCancellationRequested();
         var request = StatechartRequest.Capture(arguments, caller, assets, rid);
         var payload = assets.Extract(home.Assets);
         var managed = new StatechartManaged(home, assets, rid);
@@ -26,6 +27,7 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
     public async Task<int> ResumeAsync(string path, TextWriter output, CancellationToken token)
     {
         RequireWindows();
+        token.ThrowIfCancellationRequested();
         var store = new StatechartRequests(home, assets, rid);
         using var executionLock = store.Lock(path);
         try

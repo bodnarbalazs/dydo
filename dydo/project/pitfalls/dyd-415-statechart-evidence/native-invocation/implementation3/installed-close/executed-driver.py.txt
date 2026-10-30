@@ -1,0 +1,116 @@
+"""Bounded retained-draft closure; no runtime/install/static/coverage repeat."""
+import datetime
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+sys.dont_write_bytecode = True
+ROOT = Path('C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f')
+HERE = ROOT / 'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2'
+NEXT = HERE.parent / 'implementation3'
+TEMP = Path('C:/Users/User/AppData/Local/Temp')
+spec = importlib.util.spec_from_file_location('_dyd415_close', HERE / 'driver.py')
+driver = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(driver)
+
+
+def inspect():
+    inputs = json.loads((NEXT / 'installed-light/source-inputs.json').read_bytes())
+    drift = [row['path'] for row in inputs['files'] if not row['path'].startswith(
+        'dydo/project/pitfalls/dyd-415-statechart-evidence/') and
+        (not (ROOT / row['path']).is_file() or driver.sha(ROOT / row['path']) != row['sha256'])]
+    assert not drift, 'Changed Light inputs: ' + str(drift)
+    classification = json.loads((NEXT / 'remaining-history-classification.json').read_bytes())
+    print(json.dumps(dict(lightNonEvidenceDrift=drift, finitePaths=classification['finitePaths'],
+        maintainedRetained=classification['maintainedRetained'], proposedOnly=classification['proposedOnly'],
+        unresolvedVariantPaths=len(classification['unresolvedVariantPaths']))), flush=True)
+    print('CRLF non-stream receipts:', json.dumps([path.relative_to(NEXT).as_posix()
+        for path in NEXT.rglob('*') if path.is_file() and path.suffix not in ['.stdout', '.stderr', '.trx']
+        and b'\r\n' in path.read_bytes()]), flush=True)
+    return inputs
+
+
+def close(output):
+    light = inspect()
+    _, binary, compiled = driver.installed_context()
+    scratch, source, env = driver.snapshot(output)
+    driver.focused(output, scratch, source, env)
+    driver.run(output, 'docs', [binary, 'check'], ROOT, env)
+    for name, base in [('original', '3527ef642d9c0e1a4298cd13f22a53cf8a6a1a15'),
+            ('master', '1318e93eabd500bbd45f243e4c99c3a10c2b004a'), ('parent', driver.BASE)]:
+        driver.run(output, 'whitespace-' + name,
+            ['git', '-c', 'core.longpaths=true', 'diff', '--check', base], ROOT, env)
+    import xml.etree.ElementTree as ET
+    results = ET.parse(NEXT / 'installed-light/test-results/light.trx').findall('.//{*}UnitTestResult')
+    assert len(results) == 151 and all(row.get('outcome') == 'Passed' for row in results)
+    prior = json.loads((NEXT / 'installed-light/whitespace-original.command.json').read_bytes())
+    assert prior['exit'] == 128 and 'core.longpaths=true' not in prior['argv']
+    historical = driver.git('ls-tree', '-r', '--name-only',
+        '3527ef642d9c0e1a4298cd13f22a53cf8a6a1a15', '--', driver.NATIVE).splitlines()
+    long = [path for path in historical if len(str(ROOT / path)) > 260]
+    driver.save(output / 'closure.json', dict(base=driver.BASE,
+        compiledInputs=compiled, reusedLight=dict(passed=151, skipped=0, sourceSha256=driver.sha(NEXT / 'installed-light/source-inputs.json'),
+            nonEvidenceSourceDrift=[], resultSha256=driver.sha(NEXT / 'installed-light/test-results/light.trx')),
+        oldWhitespaceFailure=dict(exit=128, reason='Git could not read diff inputs; per-command longpaths option was omitted',
+            rawStderrSha256=driver.sha(NEXT / 'installed-light/whitespace-original.stderr'), historicalPathsOver260=len(long),
+            longestHistoricalAbsolutePath=max(map(lambda path: len(str(ROOT / path)), historical))),
+        docsExit=0, whitespaceExits=[0, 0, 0], noGlobalGitSetting=True,
+        caseMapping={'history/README.md': 'history/readme.md'},
+        archiveManifestSha256=driver.sha(ROOT / driver.ARCHIVE_PATHS[1]),
+        aggregateStatic='BLOCKED/incomplete; not retried', coverage='Not executed; final dotnet,node,python + reviewed changed-TS owed',
+        signature='code-writer/model: gpt-6.1-sol/high'))
+
+
+def main():
+    if sys.argv[1:] == ['inspect']:
+        inspect()
+        return
+    assert not sys.argv[1:]
+    driver.validate()
+    output = NEXT / 'installed-close'
+    output.mkdir(exist_ok=False)
+    import shutil
+    shutil.copy2(Path(__file__), output / 'executed-driver.py.txt')
+    sys.path.insert(0, str(driver.LC))
+    from tools.testing.runner import suite_slot
+    from tools.testing.runner.machine_lock import HEAVY, machine_lock
+    assert suite_slot.live().directory.resolve() == (TEMP.parent / 'lc-test/suite-slot').resolve()
+    command = subprocess.list2cmdline([sys.executable, '-B', str(Path(__file__))])
+    failure = None
+    with suite_slot.book(command, worktree=ROOT) as booking:
+        owner = dict(pid=os.getpid(), command=command, ticket=os.environ['LC_SUITE_SLOT_TICKET'],
+            namespace=str(suite_slot.live().directory), inherited=booking.inherited,
+            lcHashes=driver.LC_HASHES, noPycache=True, startedUtc=datetime.datetime.now(datetime.timezone.utc).isoformat())
+        driver.save(output / 'admission.json', owner)
+        with machine_lock(HEAVY, on_wait=suite_slot.refuse_heavy_wait(HEAVY)):
+            lock = TEMP / 'dydo-fullsuite.lock'
+            identity = (json.dumps(owner, sort_keys=True) + '\n').encode()
+            with lock.open('xb') as stream:
+                stream.write(identity)
+            sys.path.insert(0, str(ROOT / 'DynaDocs.Tests/coverage'))
+            from run_tests import contain_descendants, end_descendants
+            from windows_job import bindings, members
+            job = contain_descendants()
+            try:
+                close(output)
+            except BaseException as error:
+                failure = error
+                driver.save(output / 'stop.json', dict(type=type(error).__name__, reason=str(error)))
+            finally:
+                end_descendants(job)
+                remaining = [pid for pid in members(bindings(), job) if pid != os.getpid()]
+                driver.save(output / 'teardown.json', dict(remainingOwnedProcesses=remaining, cleanupConfirmed=not remaining))
+                if not remaining and lock.read_bytes() == identity:
+                    lock.unlink()
+        driver.save(output / 'secondary-released.json', dict(heavyReleased=True, dydoReleased=not lock.exists()))
+    driver.save(output / 'released.json', dict(fifoReleased=booking.owned, inheritedReturned=booking.inherited))
+    if failure:
+        raise failure
+    print('Closure:', output, flush=True)
+
+
+if __name__ == '__main__':
+    main()

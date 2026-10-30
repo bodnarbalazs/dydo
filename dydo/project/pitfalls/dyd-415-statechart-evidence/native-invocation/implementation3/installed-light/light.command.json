@@ -1,0 +1,24 @@
+{
+  "argv": [
+    "dotnet",
+    "test",
+    "DynaDocs.sln",
+    "-c",
+    "Release",
+    "--filter",
+    "FullyQualifiedName~Statechart|FullyQualifiedName~CanonicalSkillAssertionTests|FullyQualifiedName~ScaffoldTreeTests|FullyQualifiedName~CommandSmokeTests|FullyQualifiedName~CommandDocConsistencyTests|FullyQualifiedName~HelpCommandTests",
+    "--no-restore",
+    "--logger",
+    "trx;LogFileName=light.trx",
+    "--results-directory",
+    "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation3\\installed-light\\test-results",
+    "--",
+    "RunConfiguration.TreatNoTestsAsError=true"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-errl8m9e\\source",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 46.42200000000594,
+  "ticket": "0000000001-985d2ca4cd5add80",
+  "hidden": true
+}

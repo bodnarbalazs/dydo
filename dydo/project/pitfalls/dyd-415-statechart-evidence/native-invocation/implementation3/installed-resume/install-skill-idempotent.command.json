@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-t2pshhfw\\publish\\dydo.exe",
+    "statechart",
+    "install-skill",
+    "--root",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-gjrlby0l\\explicit project"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-_xw3xskw\\captured model inputs",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 0.6570000000065193,
+  "ticket": "0000000001-c83946817c0bedc7",
+  "hidden": true
+}

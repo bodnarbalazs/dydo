@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "protocol": 1,
-  "sourceBase": "86931b9c47a93fa06287391495574865d9ce1d56",
+  "sourceBase": "7ba426604d7870f6596b2946c3255d1604618bfe",
   "release": "3.5.1",
   "upstream": "1ba91fc25c0977741dd0e267849e6234b037ed0a",
   "dependencyLockSha256": "7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad",
@@ -10,8 +10,8 @@
     {
       "path": "setup-skills.mjs",
       "resource": "Statechart/payload/setup-skills.mjs",
-      "bytes": 6387,
-      "sha256": "c9a744c63907b88e415956cd739fa8656bd640b546f69417352438a51e9a1e5b"
+      "bytes": 6877,
+      "sha256": "6e7f66f3df14f7c8f60619e426d3a617fcaa6c810cebac13d89f57984252a36d"
     },
     {
       "path": "skills/engineering/statechart/LICENSE",
@@ -28,8 +28,8 @@
     {
       "path": "skills/engineering/statechart/SKILL.md",
       "resource": "Statechart/payload/skills/engineering/statechart/SKILL.md",
-      "bytes": 9890,
-      "sha256": "0cffe670b6003d8a59fa5f2cbc02941c4e2196aab8a44358338e0ede110c53ea"
+      "bytes": 10504,
+      "sha256": "a8f78407e0310585f29c5d46cf9d697f4c343b75a37d49e1ee1c9fd1b6d3c847"
     },
     {
       "path": "skills/engineering/statechart/agents/openai.yaml",

@@ -51,6 +51,7 @@ public static class HelpCommand
         Console.WriteLine("  statechart             Check a TLA+ model or save its prerequisite installation plan");
         Console.WriteLine("  statechart resume      Install locked prerequisites and continue a saved request");
         Console.WriteLine("  statechart doctor      Inspect installed statechart assets and local prerequisites offline");
+        Console.WriteLine("  statechart install-skill Install matching statechart skill into an explicit project");
         Console.WriteLine();
         Console.WriteLine("Utility:");
         Console.WriteLine("  completions <shell>    Generate shell completions (bash, zsh, powershell)");

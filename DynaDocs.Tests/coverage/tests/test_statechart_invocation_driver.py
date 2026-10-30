@@ -130,6 +130,23 @@ class DriverTests(unittest.TestCase):
         with self.assertRaises(AssertionError):
             driver.verify_sources(self.root, rows)
 
+    def test_only_named_lowercase_navigation_move_with_explicit_old_path_mapping(self):
+        self.representation_fixture()
+        directory = self.root / driver.NATIVE / 'history'
+        readme = directory / 'readme.md'
+        shutil.copy2(SOURCE / driver.ARCHIVE_PATHS[2], readme)
+        driver.navigation_case(self.root)
+        original = readme.read_bytes()
+        readme.write_bytes(b'No historical path map')
+        with self.assertRaisesRegex(AssertionError, 'path mapping'):
+            driver.navigation_case(self.root)
+        readme.write_bytes(original)
+        temporary = directory / 'case-move.tmp'
+        readme.rename(temporary)
+        temporary.rename(directory / 'README.md')
+        with self.assertRaisesRegex(AssertionError, 'lowercase'):
+            driver.navigation_case(self.root)
+
     def test_real_hidden_child_argv_raw_streams_and_nonzero_exit_are_retained(self):
         child = self.root / 'child.py'
         child.write_text('import sys\nprint(repr(sys.argv[1:]))\nprint("raw stderr", file=sys.stderr)\nsys.exit(7)\n')

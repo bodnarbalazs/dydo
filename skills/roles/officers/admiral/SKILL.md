@@ -70,8 +70,11 @@ map and how the tickets move, integrate, and finish together.
 
 1. **Read the board.** Wake on a captain's return or the user's word. Read the Project, its map,
    blockers, hop SHAs and reviews; resume at the stage the record proves. Process an Inquisition's
-   release through step 7 before generic pickable commissioning. **Done:** every pickable
-   ticket and every Merge whose turn came is known. With nothing in flight, wait for the user's word.
+   release through step 7 before generic pickable commissioning. On a completed return, carry out
+   the authorized continuation or fallback through its captain, or record a hold with owner and
+   reason; explicit human holds remain. Reconcile affected current map claims with the latest
+   outcome before yielding. **Done:** every pickable ticket and every Merge whose turn came is
+   known. Wait for the user's word only when nothing is in flight and no authorized work is pickable.
 2. **Chart and approve.** When the route is unknown, set the Project `Planning` and chart it with
    `wayfinder`: the map in the Project description, naming you its holder, the first pickable tickets, and each Project-level
    Question in `Todo`, wired to every waiter. Record the shared anchor choice from `wayfinder`, when

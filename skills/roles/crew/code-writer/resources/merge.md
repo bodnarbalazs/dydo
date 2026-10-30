@@ -7,6 +7,8 @@ naming a resolution.
 1. Map the conflicts, the shared seams and what changed since the source review. State each
    resolution's intended behaviour; a new product choice goes back to the captain. Done when you can
    merge without choosing policy.
-2. Merge with a merge commit that keeps both parents and every hop SHA, apply the resolutions, and
-   run the combined gates. A resolution that refactored leaves its code no worse than either side.
+2. Merge with a merge commit that keeps both parents and every hop SHA: a conflict-free merge of the
+   reviewed PR into its feature branch is `dydo merge <pr> --match-head-commit <reviewed SHA>`; any
+   other merge, a conflicted one included, stays local, with the resolutions applied. Run the combined gates on the merge SHA,
+   the merge review's candidate. A resolution that refactored leaves its code no worse than either side.
    Return both parents and the merge SHA.

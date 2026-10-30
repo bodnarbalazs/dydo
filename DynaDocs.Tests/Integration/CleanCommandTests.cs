@@ -871,8 +871,10 @@ public sealed class CleanCommandTests : IDisposable
         }
         finally
         {
-            process.Kill();
+            // Let the Git wrapper wait for its child before fixture deletion.
+            process.StandardInput.Close();
             process.WaitForExit();
+            Assert.Equal(0, process.ExitCode);
         }
     }
 

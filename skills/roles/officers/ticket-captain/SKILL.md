@@ -115,8 +115,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    go back to a fresh author of the change's kind - `code-writer`, or `docs-writer` for a
    documentation change - at `Implementing`, and a wrong scenario is amended by that fix hop when
    the FAIL block names it. Answer every `should` and `nit`, from either verdict. File each should
-   as its own ticket: Type matching the finding (Bug by default), Mode AFK, `Backlog`, in the
-   source's Project, linked to the source ticket and the review block, natively blocking the
+   as its own ticket: Type matching the finding (Bug by default), Mode AFK, Severity `should`,
+   `Backlog`, in the source's Project, linked to the source ticket and the review block, natively blocking the
    Project's landing Merge Ticket when it exists; outside a Project, a team ticket in `Backlog` the
    user sees. Record each nit as one line on the ticket; the final walkthrough lists those left
    unaddressed for the user to promote. Record every label the fix-hop author changed, with its
@@ -162,7 +162,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
 
    Then set `Ready to Merge`, and return `done <key>: PR ready`.
 7. **Merge.** When the final Merge Sub-ticket's blocker clears, resume from the record and direct
-   its chain as above into the contract's target. The parent stays `Ready to Merge` while the
+   its chain as above into the contract's target; its code-writer merges a conflict-free reviewed PR
+   into its feature branch with `dydo merge`. The parent stays `Ready to Merge` while the
    Sub-ticket runs; a Merge Sub-ticket never enters that status. A landing Merge instead offers its
    reviewed PR and waits for the user's merge-commit click. An atomic ticket has no Merge
    Sub-ticket: the user clicks its PR, then you resume from the record. **Done:** merge review

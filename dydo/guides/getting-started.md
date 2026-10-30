@@ -103,8 +103,9 @@ names and order for statuses and names and colours for labels, and walk the user
 1. **Ticket statuses.** The ten, in the standard's categories and order. Linear draws the order as
    progress, so `Ready to Merge` is the last of the started ones.
 2. **Project statuses.** `Backlog`, `Planning`, `Planned`, `In Progress`, `Completed`, `Canceled`.
-3. **Labels.** The `Type` group with its ten labels and the `Mode` group with `AFK` and `HITL`,
-   colours as listed. Retire what the standard does not name.
+3. **Labels.** The `Type` group with its ten labels, the `Mode` group with `AFK` and `HITL`,
+   and the `Severity` group with `blocker` `#E5484D`, `should` `#FFB224` and `nit` `#8B8D98`;
+   colours as listed in the standard. Retire what the standard does not name.
 4. **Ticket templates.** One per Type, its body from the standard.
 5. **Priority.** Nothing to create; the standard's guide says how the map holder uses it.
 

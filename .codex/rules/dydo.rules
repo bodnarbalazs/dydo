@@ -8,3 +8,12 @@ prefix_rule(
     match = ["dydo clean --dry-run", "dydo clean --all"],
     not_match = ["dydo init codex"],
 )
+# dydo merge refuses in code everything but a reviewed, green PR into a feature/* branch, so it
+# runs without an approval prompt.
+prefix_rule(
+    pattern = [["dydo", "dydo.exe"], "merge"],
+    decision = "allow",
+    justification = "dydo merge merges a reviewed PR into a feature/* branch only; master, main and the default branch are refused in code",
+    match = ["dydo merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567", "dydo.exe merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567"],
+    not_match = ["dydo init codex"],
+)

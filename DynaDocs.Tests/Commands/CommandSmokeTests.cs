@@ -26,6 +26,7 @@ public class CommandSmokeTests
             IndexCommand.Create,
             InitCommand.Create,
             MapCommand.Create,
+            MergeCommand.Create,
             ModeCommand.Create,
             PrReadyCommand.Create,
             ValidateCommand.Create
@@ -59,6 +60,7 @@ public class CommandSmokeTests
                 IndexCommand.Create(),
                 InitCommand.Create(),
                 MapCommand.Create(),
+                MergeCommand.Create(),
                 ModeCommand.Create(),
                 PrReadyCommand.Create(),
                 ValidateCommand.Create(),
@@ -67,8 +69,8 @@ public class CommandSmokeTests
             // version is the only command created inline in Program.cs
             rootCommand.Subcommands.Add(new System.CommandLine.Command("version", "Test"));
 
-            // Must match Program.cs: 16 Create() commands + 1 inline (version) = 17
-            Assert.Equal(17, rootCommand.Subcommands.Count);
+            // Must match Program.cs: 17 Create() commands + 1 inline (version) = 18
+            Assert.Equal(18, rootCommand.Subcommands.Count);
         });
 
         Assert.Null(exception);

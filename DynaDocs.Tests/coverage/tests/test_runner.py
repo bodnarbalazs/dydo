@@ -1,5 +1,6 @@
 """The isolated runner must not install shell completion in the caller's profile."""
 import hashlib
+import io
 import json
 import os
 import shutil
@@ -9,6 +10,7 @@ import unittest
 import tempfile
 import subprocess
 from datetime import datetime, timedelta, timezone
+from contextlib import redirect_stderr
 from pathlib import Path
 from unittest.mock import patch
 
@@ -119,6 +121,45 @@ def _make_link(link, target):
         _winapi.CreateJunction(str(target), str(link))
     else:
         os.symlink(target, link, target_is_directory=True)
+
+
+class RunnerArgumentTests(unittest.TestCase):
+    def test_command_rejects_filters_after_runsettings_separator(self):
+        for misplaced in (["--filter", "FullyQualifiedName~Selected"],
+                          ["--filter=FullyQualifiedName~Selected"]):
+            with self.subTest(misplaced=misplaced):
+                with self.assertRaisesRegex(ValueError, "--filter.*before.*--.*runsettings"):
+                    run_tests.test_command(["-c", "Release", "--", *misplaced])
+
+    def test_command_preserves_filter_and_runsettings_arguments(self):
+        setting = "RunConfiguration.TreatNoTestsAsError=true"
+        for selection in (["--filter", "FullyQualifiedName~Selected"],
+                          ["--filter=FullyQualifiedName~Selected"]):
+            for settings in ([], ["TestRunParameters.Parameter(name=\"label\",value=\"two words\")",
+                                  "Example.Value=--filter=literal", "--filtering=literal"], [setting]):
+                arguments = ["-c", "Release", *selection, "--", *settings]
+                with self.subTest(arguments=arguments):
+                    expected = ["dotnet", "test", "DynaDocs.sln", *arguments]
+                    if setting not in settings:
+                        expected.append(setting)
+                    self.assertEqual(expected, run_tests.test_command(arguments))
+                    self.assertEqual(["-c", "Release", *selection, "--", *settings], arguments)
+
+    def test_main_rejects_misplaced_filters_before_native_execution(self):
+        for prefix in ([], ["--"]):
+            for misplaced in (["--filter", "FullyQualifiedName~Selected"],
+                              ["--filter=FullyQualifiedName~Selected"]):
+                arguments = ["run_tests.py", *prefix, "-c", "Release", "--", *misplaced]
+                with self.subTest(arguments=arguments), \
+                     patch.object(sys, "argv", arguments), redirect_stderr(io.StringIO()) as stderr, \
+                     patch.object(run_tests, "contain_descendants", return_value=None) as contain, \
+                     patch.object(subprocess, "run", side_effect=AssertionError("native execution reached")) as native:
+                    with self.assertRaises(SystemExit) as exited:
+                        run_tests.main()
+                    self.assertEqual(2, exited.exception.code)
+                    self.assertRegex(stderr.getvalue(), "--filter.*before.*--.*runsettings")
+                    contain.assert_not_called()
+                    native.assert_not_called()
 
 
 class SkillLinkMaterializationTests(unittest.TestCase):
@@ -442,6 +483,27 @@ class WorktreeCleanupTests(unittest.TestCase):
             self.assertEqual(1, rc)
             remove.assert_called_once()
             self.assertEqual(Path(folder) / "dydo-test-cafefeed", remove.call_args.args[0])
+
+    def test_main_preserves_direct_and_leading_separator_filter_forms(self):
+        for prefix in ([], ["--"]):
+            for selection in (["--filter", "FullyQualifiedName~Selected"],
+                              ["--filter=FullyQualifiedName~Selected"]):
+                arguments = ["-c", "Release", *selection, "--", "RunConfiguration.MaxCpuCount=1"]
+                with self.subTest(prefix=prefix, selection=selection), tempfile.TemporaryDirectory() as folder:
+                    patches = self._isolate_run_tests(folder)
+                    with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], \
+                         patch.object(sys, "argv", ["run_tests.py", *prefix, *arguments]), \
+                         patch.object(run_tests, "contain_descendants", return_value=None), \
+                         patch.object(run_tests, "remove_worktree") as remove, \
+                         patch.object(subprocess, "run", return_value=subprocess.CompletedProcess([], 0)) as native:
+                        with self.assertRaises(SystemExit) as exited:
+                            run_tests.main()
+                    self.assertEqual(0, exited.exception.code)
+                    self.assertEqual(["dotnet", "test", "DynaDocs.sln", *arguments,
+                                      "RunConfiguration.TreatNoTestsAsError=true"], native.call_args.args[0])
+                    self.assertEqual(Path(folder) / "dydo-test-cafefeed", native.call_args.kwargs["cwd"])
+                    self.assertEqual(subprocess.DEVNULL, native.call_args.kwargs["stdin"])
+                    remove.assert_called_once()
 
     def test_cleanup_runs_on_a_simulated_interrupt_from_the_test_subprocess(self):
         with tempfile.TemporaryDirectory() as folder:

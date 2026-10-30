@@ -1,166 +1,187 @@
 # Historical returning-user example
 
-Reconstructed LC Test optimisation catch-up from 2026-10-30, after a roughly ten-hour absence. This illustrates the ketchup contract in the source admiral's voice. It uses the retained merge snapshot and read-only owner records, including the subsequently verified mode-off correction. It is not a current status report, an execution commission or authority to change any project's policy. The original failed reply and HTML remain unchanged on [DYD-439](https://linear.app/bodnar-balazs/issue/DYD-439).
-
-The example below stands alone; provenance is optional. This revised structure awaits Balazs's judgment through DYD432. Earlier reviews apply only to their earlier text.
-
 ## Example
 
-*Historical catch-up · 30 October 2026. This reconstructs the retained snapshot, not current operations or new execution authority.*
+> **Historical example for reviewing ketchup — no answers or actions are requested now.** This reconstructs the LC Test optimisation snapshot of 30 October 2026. The policy and installation asks below belong to that old scenario; they are not current instructions or new permissions.
 
-The goal is **cheaper testing without losing protection against breakage elsewhere**. Three improvements are merged: clearer rules for running relevant tests, a safer recipe for retaining test evidence, and a realistic deadline for one flaky test. They improve the testing workflow; we have not measured a speed-up.
+**The goal is cheaper testing without losing protection against breakage elsewhere.** Three everyday-workflow improvements are merged: relevant-test guidance, a safer evidence-retention recipe and a realistic deadline for one test. No measured speed-up is claimed.
 
-The focus now is finishing the extra-test system and proving the Linux setup works. The extra-test fix is held after failed verification, a separate cleanup fix still lacks Linux proof, and the Linux updater still needs live acceptance. **One policy decision is ready for you:** how a command should report missing expensive-test evidence. Installation will need you later, after readiness checks. Optional policy changes can stay parked; the agents own the remaining preparation.
+**The focus is now the unfinished extra-test system and Linux verification.** One exit-code policy choice is ready for you; installing the updater will need you later. The browser-test fix and Linux cleanup proof remain held, while optional policy changes can stay parked. The record identifies work owners by role, but does not establish active commissions for the remaining planned steps.
 
-### Missing test evidence — your decision is ready
+### Missing test evidence — one policy question is ready
 
-**🎯 Purpose & now**
+**🎯 Purpose**
 
-A test result should distinguish broken code from code that has not yet been fully checked. Routine checks can pass while designated expensive checks remain outstanding. Today both missing proof and failed tests return the same failure exit code. The choice of a clearer signal is reserved for you.
+**Tell missing proof apart from broken code.** Agents and scripts need to distinguish a failed test from code that has not yet received all its required checks.
 
-**⏮️ Before**
+**⏮️ Recently completed**
 
-An agent can finish the routine checks successfully yet receive a failure code because 45 source-code entries on the project's explicit list still await their designated expensive checks. Here, coverage means evidence that tests exercised the code being assessed. Missing coverage evidence does not establish that the code is broken.
+**No completed change to this exit-code policy is recorded.**
 
-**🛠️ Work & decisions**
+**🛠️ In flight**
 
-The printed result remains **PENDING**, not PASS. The unresolved policy is the exit code that scripts read. No change to that policy, or permission to merge without required proof, has been approved by this catch-up.
+**The policy remains open; missing evidence still returns the failure code.** Routine checks can pass while 45 source-code entries on the project's explicit list await designated expensive checks. Coverage means evidence that tests exercised the code being assessed. The printed result is PENDING, not PASS; this does not establish that those entries contain defects. An implementation owner and active commission are not identified in the record.
 
 **➡️ Next**
 
-Once you choose, the responsible agents can carry the decision into the command and its callers under the normal delivery process. Until then, today's failure code stays. Other work can continue within its existing limits.
+- **Settle the reporting policy — with you, before changing the command.** Your ruling determines how missing expensive-test evidence should be signaled.
+- **Commission the command-and-caller change — planned agent work after that ruling.** The delivery owner must be identified before implementation, proof and review. Scripts that consume the result need to handle the selected signal too.
 
-**🙋 Attention & blockers**
+**🙋 Your attention**
 
-I recommend a **distinct “evidence pending” exit code**: scripts could tell “not proved yet” from “tests failed,” while the printed result stays PENDING and required proof is still owed.
+❓ **Should missing expensive-test evidence have its own exit code, distinct from failed tests?** ([LC-1240](https://linear.app/bodnar-balazs/issue/LC-1240#comment-84f98472-28da-40d3-998c-a4f5f7184122))
 
-The alternatives are to keep the failure code and have callers interpret the text; return success, which blurs missing proof with complete proof and requires changing the governing policy; or routinely run the expensive checks, which adds cost. Reusing evidence from other commits or machines would be a separate design, not an approved shortcut.
+I recommend a distinct **“evidence pending”** code while keeping the printed result PENDING. Callers could distinguish “not proved yet” from “tests failed,” and required proof would still be owed.
 
-Your answer would settle how agents and scripts interpret this gate. The recorded ruling reserves that policy choice for you, so I cannot settle it myself. Without an answer, this policy change waits; it does not freeze the other authorized work.
+Other ways forward:
+
+- **Keep the failure code.** Callers must interpret the text to distinguish missing proof from failed tests.
+- **Return success.** This blurs incomplete and complete proof and requires changing the governing policy.
+- **Run the expensive checks routinely.** This addresses the missing proof itself, at added cost. Reusing evidence from other commits or machines would need a separate design.
+
+The recorded ruling reserves this policy choice for you. Your answer settles the direction for the command and its callers, not a complete numeric-code migration or permission to merge without proof. Without an answer, this policy change waits; other authorized work can continue.
 
 ---
 
-### Everyday testing — three improvements merged; no decision needed
+### Everyday testing — three improvements merged
 
-**🎯 Purpose & now**
+**🎯 Purpose**
 
-Routine development should run the relevant checks and leave trustworthy evidence. The testing policy, evidence-retention recipe and one test deadline are now improved. These are merged changes, not a measured speed-up or proof that the entire testing project is finished.
+**Spend testing effort where it matters and keep the proof inspectable.** Routine development needs relevant checks, evidence that survives long enough to review, and test deadlines that match what is being tested.
 
-**⏮️ Before**
+**⏮️ Recently completed**
 
-Running whole suites after each edit spent effort beyond the feature being changed. Some runs lost proof files when concurrent runs rotated shared temporary folders. A test checking that a child process reports an error had only half a second to finish, making a slow response look like a timeout.
+- **The feature-testing policy is merged.** Agents now normally run the affected feature's fast tests while building. Expensive tests for that feature belong at final gates; whole suites belong in periodic CI or an explicit request from you. This implements the policy you approved.
+- **Evidence retention has a safer recipe.** Each evidence-producing run gets its own temporary location and collects proof before cleanup, addressing losses when concurrent runs rotated shared folders. This changes instructions, not pytest's global retention or a guarantee that evidence cannot be lost.
+- **The error-reporting test now gets ten seconds.** It previously had half a second to prove that a child process reports an error. Its assertions remain intact, and the separate deliberate-timeout test keeps its half-second limit.
 
-**🛠️ Work & decisions**
+**🛠️ In flight**
 
-- **Relevant checks while building.** The policy you approved now tells agents to normally run the affected feature's fast tests. Expensive tests for that feature belong at final gates; whole suites belong in periodic CI or an explicit request from you.
-- **Proof survives cleanup.** The new recipe gives each evidence-producing run its own temporary location and collects the proof before cleanup. It changes the instructions, not pytest's global retention.
-- **A realistic error-test deadline.** The child-process error test now gets ten seconds. Its assertions remain intact, and the separate test that deliberately times out keeps its half-second limit.
+**Post-merge records remain unfinished; the project coordinator owns them.** The separate proposal to split test groups remains deferred.
 
 **➡️ Next**
 
-I own finishing the post-merge records so the recorded delivery state matches these changes. The separate proposal to split test groups stays deferred until its owner updates it against the policy you already approved.
+- **Finish the delivery records — project coordinator; planned, without needing you.** Use the merged outcomes to bring the records up to date.
+- **Update the test-group proposal before reconsidering a split — deferred.** Its owner must reconcile it with the already-approved policy. The record does not identify that owner or a commission to resume.
 
-**🙋 Attention & blockers**
+**🙋 Your attention**
 
-Nothing is needed from you for these delivered changes. Updating records and preparing a deferred proposal are agent work, not another decision for you.
+**Nothing is needed from you for these merged changes or their records.**
 
 ---
 
-### Extra tests for collateral breakage — held with agents; optional policy parked
+### Extra tests for collateral breakage — recovery held
 
-**🎯 Purpose & now**
+**🎯 Purpose**
 
-**Ripple** chooses a small extra set of tests from past failures to catch damage outside the feature being changed. A fix to its incident counts is held after two failed verification runs. The agents must establish a permitted way to investigate before recovery can proceed; no ready approval request is being put to you.
+**Catch damage outside the feature being changed.** Ripple selects a small extra set of tests from past failures. Its incident counts should distinguish one browser failure with later skipped tests from a broken shared test foundation.
 
-**⏮️ Before**
+**⏮️ Recently completed**
 
-If one browser test fails and twenty later tests cannot run because of it, those twenty skipped tests can make one failure look like a broad incident. You already approved correcting that behavior. A different case is one shared fixture breaking and preventing more than twenty tests from running: the foundation itself is broken, and current policy still treats that as a broad incident.
+- **Two verification attempts failed.** The browser-skip counting fix has not passed verification; a third run was not started.
+- **The proposed environment inspection was rejected in review.** The investigation could not establish how to inspect Git Bash's temporary-directory mapping without touching another task's files. That does not prove another task caused the failures.
 
-**🛠️ Work & decisions**
+**🛠️ In flight**
 
-The browser-skip fix has not passed verification, and its remote pull request conflicts with newer code. The environment investigation could not establish that Git Bash's temporary-directory mapping could be inspected without touching another task's files. Review rejected the proposed check, and a third run was not started. This does not prove that another task caused the failures.
+**Recovery is held on a permitted inspection method, and the change conflicts with newer code.** The project coordinator and browser-skip correction captain own preparing the method.
+
+**The browser-skip correction is approved; shared-fixture regrouping is still optional.** If one browser test fails and twenty later tests cannot run because of it, those skipped tests should not inflate one failure into a broad incident. A shared fixture breaking and preventing more than twenty tests from running is different: current policy treats that broken foundation as a broad incident.
 
 **➡️ Next**
 
-The responsible captain and I own preparing a concrete, compliant inspection method, or keeping the hold if none exists. Once that prerequisite is cleared, the captain owns reconciling the fix with current code, passing verification and obtaining fresh review before offering it for merge.
+- **Prepare a compliant inspection method — coordinator and browser-skip captain; planned agent work.** Respect the existing access boundary. If no permitted method can be established, retain the hold.
+- **Resume correction and proof only after that prerequisite clears — browser-skip captain; conditional work.** Reconcile the code conflict, pass verification and obtain fresh review before offering the change for merge.
 
-**🙋 Attention & blockers**
+**🙋 Your attention**
 
-**The blocker belongs to the agents:** a permitted inspection method is still missing. Asking you vaguely to “change the evidence boundary” would not provide a concrete proposal to approve.
+❗ **Agent blocker: the coordinator and browser-skip captain must establish a permitted inspection before recovery.** ([LC-1385](https://linear.app/bodnar-balazs/document/lc-1385-prepared-morning-decision-strict-boundary-or-explicit-new-eeba2113926d))
 
-**The shared-fixture policy is optional and can stay parked.** I recommend keeping the current broad-incident behavior because the shared foundation is broken. Counting that failure once for Node and Vitest would add a new grouping rule; extending it to Python would also require additional failure evidence. Changing that definition is your policy choice, distinct from the already-approved browser-skip fix. It blocks nothing, and no answer is needed to retain today's behavior.
+There is no concrete proposal ready for you to approve. A vague request to change the access boundary would not resolve the missing method.
+
+❓ **Optional: should a shared-fixture failure still count as a broad incident?** ([LC-1375](https://linear.app/bodnar-balazs/issue/LC-1375))
+
+I recommend keeping today's behavior because the shared foundation is broken. Counting the failure once for Node and Vitest would add a grouping rule; extending it to Python would also need additional failure evidence. This definition is your policy choice. An answer changes that separate grouping direction, not the browser-skip recovery hold. No answer retains current behavior and blocks nothing.
 
 ---
 
-### Cleaning up hung setup tests — Linux proof blocked; preparation belongs to agents
+### Cleaning up hung setup tests — Linux proof still blocked
 
-**🎯 Purpose & now**
+**🎯 Purpose**
 
-A hung setup-wizard test should not leave child processes running. The cleanup fix passed its Windows proof, but Linux proof never began. It remains held while the agents prepare a bounded investigation; there is no ready decision for you here.
+**A stopped wizard test should leave no child processes behind.** Cleanup must work when a setup-wizard test hangs, including on Linux.
 
-**⏮️ Before**
+**⏮️ Recently completed**
 
-A wizard test that hung could leave its scripts' child processes behind after the test stopped.
+- **The cleanup fix passed its Windows proof.**
+- **The Linux attempt stopped before the test began.** Container setup halted at a check of process resource isolation. The retained evidence does not establish why that check stopped.
 
-**🛠️ Work & decisions**
+**🛠️ In flight**
 
-The fix has Windows evidence. On Linux, container setup stopped at a check of process resource isolation before the actual test could run. The retained evidence does not establish why that check stopped, so this is missing Linux proof, not a Linux test pass or an established cause.
+**Linux verification is held pending a separately authorized diagnostic.** The cleanup-fix captain and project coordinator own preparing the limited investigation. A further attempt needs a separate allocation: permission to run with a bounded scope. The record does not identify its grantor or show it granted.
 
 **➡️ Next**
 
-Its captain and I own preparing a limited diagnosis of which Linux process-isolation controls are available and whether they enforce the required resource limits. That diagnosis needs its own allocation. Linux proof and fresh whole-change review are still required afterward.
+- **Define the diagnostic and establish who can authorize it — cleanup-fix captain and coordinator; planned preparation without you.** Determine which Linux isolation controls are available and whether they enforce the required resource limits.
+- **Run the diagnostic, then obtain Linux proof and fresh review — conditional on permission and a usable environment.** The cleanup-fix captain owns the route; execution remains held until its prerequisites are resolved.
 
-**🙋 Attention & blockers**
+**🙋 Your attention**
 
-No action is requested from you now. The captain and I must prepare the diagnosis and establish its allocation before another run. This catch-up authorizes no further test run and does not lift the hold.
+❗ **Agent blocker: the cleanup-fix captain and coordinator must establish permission and scope before another diagnostic attempt.** ([LC-1378](https://linear.app/bodnar-balazs/issue/LC-1378#comment-86fefc6d-8f8a-475e-935c-a76fc8b8e3d4))
+
+Preparation can proceed within existing limits, but the record supplies no prepared approval request for you. Missing Linux proof and fresh review remain owed.
 
 ---
 
-### Linux test-machine update — human installation later, after readiness checks
+### Linux test-machine update — installation needs you later
 
-**🎯 Purpose & now**
+**🎯 Purpose**
 
-The Linux test machine needs the reviewed updater and the code that lets agents retrieve the published list of extra tests. Live acceptance is still open. You will have a human-only installation step later; the agents must first establish that the machine is ready.
+**Let agents use the reviewed updater and retrieve the published extra-test list.** The Linux machine must have the right release installed and its live behavior checked.
 
-**⏮️ Before**
+**⏮️ Recently completed**
 
-The last inspection found a real job still running, an old separately installed updater, and the new Ripple-list retrieval code absent from the deployed release. These are historical observations, not a claim about the machine's health now.
+- **The updater code is merged.** This does not establish deployment or successful list retrieval.
+- **The last host inspection found readiness obstacles.** A real job was running, an older updater was installed separately, and the deployed release lacked the new Ripple-list retrieval code. No later health observation is established.
 
-**🛠️ Work & decisions**
+**🛠️ In flight**
 
-The updater code is merged, but that does not show that the deployed machine has it or that list retrieval works there. The existing contract reserves running the installation wizard for you. We will not stop a healthy job merely to create an installation window.
+**Live acceptance remains open; a ready installation window is not established.** The project coordinator owns readiness preparation with the Linux host owner. A healthy running job must not be stopped merely to create a window.
 
 **➡️ Next**
 
-I own checking current readiness and coordinating with the host owner. Once ready, I will bring the tested command and a concrete idle window. After your installation, we still need to verify the installed version and health, then check that agents can retrieve the published extra-test list from the Linux host.
+- **Check readiness and prepare a tested command and idle window — coordinator with the host owner; planned agent work.** This comes before asking you to schedule or install anything.
+- **Run the updater wizard — with you, after that preparation.** The existing contract reserves installation to you; it is not yet scheduled.
+- **Verify version, health and extra-test-list retrieval — planned agent work after installation.** The record says these checks are owed but does not identify their commissioned owner.
 
-**🙋 Attention & blockers**
+**🙋 Your attention**
 
-**Later human step; no scheduling answer needed now.** I recommend proceeding when the machine is genuinely idle. Proceeding then installs the reviewed updater and enables those live checks; deferring preserves running work but leaves live acceptance open. I cannot replace an explicitly human-run installation with an agent action. Readiness preparation remains mine with the host owner.
+❗ **Later, run the updater wizard when ready so the Linux installation can be checked and agents can retrieve the extra-test list.** ([LC-1372](https://linear.app/bodnar-balazs/document/lc-1372-exact-candidate-proof-6f8908182-31b5345a6907))
+
+I recommend proceeding when the coordinator brings the tested command and a genuinely idle window. Running the wizard installs the reviewed updater and enables the follow-up checks; deferring preserves running work but leaves live acceptance open. The contract requires your execution, not general permission for an agent to substitute. No command or scheduling answer is ready yet.
 
 ---
 
-### Reliable project status — no confirmation needed from you
+### Reliable project status — no confirmation needed
 
-**🎯 Purpose & now**
+**🎯 Purpose**
 
-The project summary should tell you what is actually ready and who acts next. The mode flag has been checked, and reconciling stale summaries remains my work. You do not need to repeat a confirmation.
+**Make the project summary match the work.** You should be able to distinguish delivered, ready and held work without reconstructing the board yourself.
 
-**⏮️ Before**
+**⏮️ Recently completed**
 
-The failed catch-up asked you to confirm that overnight mode was off and left you to interpret stale board summaries alongside completed work and held work.
+**The read-only mode check returned overnight off.** The earlier request for you to confirm the flag is resolved.
 
-**🛠️ Work & decisions**
+**🛠️ In flight**
 
-The subsequent read-only check returned **overnight off**. That resolves the mode question for this historical snapshot; it is not a fresh readback of today's state.
+**Stale summaries still need reconciliation; the project coordinator owns it.**
 
 **➡️ Next**
 
-I own reconciling stale board summaries with the recorded outcomes and holds, so current descriptions do not present parked work as ready.
+**Reconcile current descriptions against recorded outcomes and holds — coordinator; planned, without needing you.** Parked work must remain described as parked.
 
-**🙋 Attention & blockers**
+**🙋 Your attention**
 
-Nothing is needed from you for the mode flag or these record updates. Neither a stale summary nor this catch-up releases a hold.
+**Nothing is needed from you for the mode flag or these record updates.**
 
 ## Optional provenance
 
@@ -171,3 +192,6 @@ Nothing is needed from you for the mode flag or these record updates. Neither a 
 - [Pending-evidence exit-code choice and user reservation](https://linear.app/bodnar-balazs/issue/LC-1240#comment-84f98472-28da-40d3-998c-a4f5f7184122).
 - [Optional shared-fixture incident grouping](https://linear.app/bodnar-balazs/issue/LC-1375).
 - Deferred test-group split: LC1381. Mode-off readback: the retained DYD439 description.
+- Original failed reply and HTML, preserved unchanged: [DYD-439](https://linear.app/bodnar-balazs/issue/DYD-439).
+
+This reconstruction uses the retained merge snapshot and owner records, including the mode-off correction. The wording awaits Balazs's verdict through DYD432. Earlier reviews bind only their earlier text.

@@ -55,15 +55,18 @@ its pinned architecture plan and applicable feature-spec sections, on four axes 
 
 ## Gates
 
-- At a hop, the writer's run: the full suite and the static gate of every stack the change touched,
-  once each, green beside the cheap checks the ticket names
+- At a hop, the writer's affected-feature Light and applicable static run under the testing
+  strategy, with every own/reached feature and parent-shared test accounted for; cheap checks
+  and attributed failures carry exact-candidate evidence and owner disposition
 - The HCRAP row of that static gate, read for every method the change touched; one over the bar is
   a finding
 - The project's changed-code mutation gate, in its `--since <base>` form, run by you when the
   project has one; a surviving or uncovered mutant is a finding
 - At a gate - the ticket's final gates, a merge, the landing - the whole set below on that exact
   candidate, read from its gate record or run by you:
-  - The ticket's gate-scale commands and the full suites, all green
+  - The ticket's final-stage commands: declared own-feature Heavy, changed-product-stack coverage
+    producer/consumer and any mandatory integration/release suites; unresolved required failures
+    remain failures, including inherited ones
   - Coverage, HCRAP and the one-level static policy in the project's testing guide
   - Mutation on the changed files, no survivor; one example value changed per scenario, none left green
   - `dydo check` when the change touches documentation or validation surfaces

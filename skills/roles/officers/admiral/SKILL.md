@@ -18,7 +18,9 @@ map and how the tickets move, integrate, and finish together.
 3. From the repository root, read `dydo/guides/working-tree-contract.md`.
 4. From the repository root, read `dydo/understand/about.md`.
 5. From the repository root, read `dydo/understand/architecture.md`.
-6. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
+6. When a captain reports inherited or infrastructure failures, read Evidence and inherited failures
+   in `dydo/guides/testing-strategy.md` from the repository root.
+7. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
 
 ## Boundary
 
@@ -137,7 +139,9 @@ map and how the tickets move, integrate, and finish together.
    `what-would-balazs-do` when it is DR-grade or irreversible, or when the user is away; it sets the
    Question's wiring. Wire every blocker and settle what is visible before commissioning the
    affected delivery ticket. Accept a Captain's local course correction when later facts expose it;
-   move cross-ticket and Project-wide discoveries back onto your map. **Done:** every visible unknown
+   move cross-ticket and Project-wide discoveries back onto your map. For evidenced inherited or
+   infrastructure failures, assign the separate repair owner or escalate the unresolved decision;
+   record blocked gates without converting the failure into a pass. **Done:** every visible unknown
    is resolved or has the right owner, record, and blocker. Set and revisit priority on every human
    waiter by the standard's guide; AFK order remains in the map and blockers.
 7. **Offer the inquisition.** Once the feature is integrated, file an Inquisition in `Backlog` with

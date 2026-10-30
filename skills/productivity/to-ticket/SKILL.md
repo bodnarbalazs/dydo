@@ -26,6 +26,11 @@ Every ticket carries exactly one Type:
 
 Every Type a captain holds also carries one Mode: `AFK`, the captain reaches reviewed completion without a live conversation; `HITL`, the user and the captain work the ticket together in its own top-level thread.
 
+## Must-Reads
+
+When drafting Exact gates, read Feature proof and gate placement and Evidence and inherited failures
+in `dydo/guides/testing-strategy.md` from the repository root.
+
 ## Process
 
 ### 1. Gather context
@@ -116,7 +121,9 @@ The paths this ticket may change, once settled.
 
 ## Exact gates
 
-The command for each test, suite and static gate that proves it.
+Project-owned commands, reached features and levels, prerequisites, and evidence reuse under the
+testing strategy. Separate hop proof from final Heavy/coverage and required integration/release
+gates; name missing support and any active gates needing explicit reconciliation.
 
 ## Base branch
 

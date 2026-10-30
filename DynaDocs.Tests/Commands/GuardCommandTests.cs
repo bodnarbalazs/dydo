@@ -925,11 +925,27 @@ public class GuardCommandTests : IDisposable
     [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'text; npm install example' }; npm install real")]
     public void Gs03_BoundedRelief_CapturesTheLaterLaunch(string command)
     {
-        var (result, stderr) = RunLcNudges(command);
+        var shell = command.StartsWith("Get-CimInstance", StringComparison.Ordinal) ? ShellDialect.PowerShell : ShellDialect.Unknown;
+        var (result, stderr) = RunLcNudges(command, shell);
 
         Assert.Equal(ExitCodes.ToolError, result);
         Assert.Contains("Try: pnpm install real", stderr);
         Assert.DoesNotContain("example", stderr);
+    }
+
+    [Theory]
+    [InlineData(ShellDialect.PowerShell, false)]
+    [InlineData(ShellDialect.Posix, true)]
+    [InlineData(ShellDialect.Unknown, true)]
+    public void Gs03_BoundedRelief_ProcessPredicateNeedsPowerShell(ShellDialect shell, bool warns)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        const string command = "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'tail -f' }";
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env, shell: shell));
+
+        Assert.Equal(warns ? (int?)ExitCodes.ToolError : null, result);
+        Assert.Equal(warns, stderr.Contains("Open-ended Bash poll-loop detected", StringComparison.Ordinal));
     }
 
     // The LC dydo.json nudges the retro's refusals came from (LC master fe021e2e), messages shortened.
@@ -981,7 +997,12 @@ public class GuardCommandTests : IDisposable
     [InlineData("Write-Output @'\nthen; npm install\n'@")]
     public void CommandNudges_LaunchWordsInTextACommandReads_StaySilent(string command)
     {
-        var shell = command == GuardRetroCommands.Gs03QuotedProcessListing ? ShellDialect.Posix : ShellDialect.Unknown;
+        var shell = command switch
+        {
+            GuardRetroCommands.Gs03QuotedProcessListing => ShellDialect.Posix,
+            GuardRetroCommands.Gs03PowerShellProcessListing => ShellDialect.PowerShell,
+            _ => ShellDialect.Unknown,
+        };
         var (result, stderr) = RunLcNudges(command, shell);
 
         Assert.Null(result);

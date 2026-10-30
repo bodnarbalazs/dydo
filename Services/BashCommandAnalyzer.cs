@@ -841,7 +841,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
         for (var i = 0; i < command.Words.Count; i++)
         {
-            if (HasLaunchMark(command.Words[i]) && !QuotedNudgeData(text, command, i))
+            if (HasLaunchMark(command.Words[i]) && !QuotedNudgeData(text, command, i, posix))
                 return true;
         }
         return command.Stdin.Where(HasLaunchMark).Any(body => BodyCountsNudge(command.Words, body, depth));
@@ -870,7 +870,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     }
 
     // Q1-Q4 of the captain's finite GS-03 inventory. Prefixes identify operands, never whole argv.
-    private static bool QuotedNudgeData(string text, ShellReader.Command command, int index)
+    private static bool QuotedNudgeData(string text, ShellReader.Command command, int index, bool posix)
     {
         var range = command.WordRanges[index];
         var raw = text[range];
@@ -881,7 +881,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         var literalPrefix = Enumerable.Range(0, index).All(i => text[command.WordRanges[i]] == command.Words[i]);
         if (literalPrefix && QuotedSearchPattern(command, index, raw[0]))
             return true;
-        return ProcessFilterPrefixRegex().IsMatch(text[..range.Start.Value])
+        return !posix && ProcessFilterPrefixRegex().IsMatch(text[..range.Start.Value])
             && ProcessFilterSuffixRegex().IsMatch(text[range.End.Value..]);
     }
 

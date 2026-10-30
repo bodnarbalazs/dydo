@@ -1,6 +1,8 @@
 # Morning brief
 
-Complete `overnight-mode` shutdown first. Fill this template in the conversation.
+Complete `overnight-mode` shutdown, including fresh off readback, first. If blocked, report
+shutdown incomplete with the observed mode and exact human-terminal action; a stopped watch
+does not establish mode off. Fill this template in the conversation after verified shutdown.
 
 ## The night
 

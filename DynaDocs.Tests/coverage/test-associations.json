@@ -2,6 +2,18 @@
   "schema": 1,
   "modules": [
     {
+      "module": "skills/engineering/verify-dydo/scripts/owned_process.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_control_dydo_lifetime.py"
+      ]
+    },
+    {
+      "module": "skills/engineering/verify-dydo/scripts/control_dydo.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_control_dydo.py"
+      ]
+    },
+    {
       "module": "Commands/GapCheckCommand.cs",
       "tests": [
         "DynaDocs.Tests/Commands/GapCheckCommandTests.cs"

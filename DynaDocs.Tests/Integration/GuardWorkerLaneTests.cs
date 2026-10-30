@@ -449,13 +449,42 @@ public class GuardWorkerLaneTests : IntegrationTestBase
     {
         await InitProjectAsync();
 
-        var main = await GuardWithStdinAsync(MainJson("Bash", $"{{\"command\":\"{command}\"}}"));
+        if (command == "rm -r ~/.codex/memories")
+        {
+            var codexHome = Environment.GetEnvironmentVariable("CODEX_HOME");
+            if (string.IsNullOrWhiteSpace(codexHome))
+                codexHome = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".codex");
+            var memoryPath = Path.GetFullPath(Path.Combine(codexHome, "memories")).Replace('\\', '/');
+            command = $"rm -r '{memoryPath.Replace("'", "'\\''")}'";
+        }
+        var input = System.Text.Json.JsonSerializer.Serialize(new { command });
+
+        var main = await GuardWithStdinAsync(MainJson("Bash", input));
         main.AssertPreToolUseDenied();
         main.AssertStderrContains("DR 055");
 
-        var worker = await GuardWithStdinAsync(WorkerJson("Bash", $"{{\"command\":\"{command}\"}}"));
+        var worker = await GuardWithStdinAsync(WorkerJson("Bash", input));
         worker.AssertPreToolUseDenied();
         worker.AssertStderrContains("DR 055");
+    }
+
+    [Theory]
+    [InlineData("codex home")]
+    [InlineData(null)]
+    [InlineData(" \t ")]
+    public async Task Memory_CodexShellWrite_EffectiveHome_Blocked(string? codexHome)
+    {
+        var original = Environment.GetEnvironmentVariable("CODEX_HOME");
+        try
+        {
+            Environment.SetEnvironmentVariable("CODEX_HOME", string.IsNullOrWhiteSpace(codexHome)
+                ? codexHome : Path.Combine(TestDir, codexHome));
+            await Memory_ShellWrite_Blocked("rm -r ~/.codex/memories");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("CODEX_HOME", original);
+        }
     }
 
     [Theory]

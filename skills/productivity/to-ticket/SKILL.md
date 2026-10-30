@@ -38,7 +38,7 @@ in `dydo/guides/testing-strategy.md` from the repository root.
 Read the supplied intent and relevant references; fetch comments only for a named missing fact.
 For shared behavior or decisions needing one current anchor, read
 `dydo/reference/feature-spec-convention.md` from the repository root
-and use the map holder's chosen working spec or applicable reviewed architecture plan. Read its relevant
+and use the map holder's chosen feature spec or applicable reviewed architecture plan. Read its relevant
 sections and derive the affected outcomes and acceptance criteria from them. If a needed anchor is
 missing, return that gap to the map holder before publishing affected delivery tickets. Atomic intent
 stays in its ticket.
@@ -113,7 +113,7 @@ The end-to-end behaviour this ticket makes work, from the user's perspective, no
 
 ## Spec
 
-Current working spec or reviewed architecture plan and the sections this ticket implements, when
+Current feature spec or reviewed architecture plan and the sections this ticket implements, when
 applicable; otherwise omit. Keep the ticket's bounded outcome and exact gates alongside the link.
 
 ## Owned paths

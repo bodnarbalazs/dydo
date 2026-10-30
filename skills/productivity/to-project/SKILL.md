@@ -18,9 +18,10 @@ records it without another interview.
    its provenance, with unresolved points still identified as unresolved.
 3. Create the Project in `Backlog`, with no tickets. When shared behavior or decisions need one
    current anchor, read `dydo/reference/feature-spec-convention.md` from the repository root. Link an
-   applicable reviewed architecture plan or working spec; if neither supplies the anchor, prepare a
-   working spec from settled intent for the map holder's custody and link it from the Project. An atomic
-   outcome stays in its eventual ticket. Done when any shared anchor is linked and unresolved intent
-   remains explicit.
+   applicable reviewed architecture plan or feature spec; if neither supplies the anchor, prepare a
+   feature spec from settled intent for the map holder's custody. The map holder commits a new spec
+   at its convention path and makes that commit reachable to recipients before relying on its Project
+   link; otherwise record the anchor as unresolved. An atomic outcome stays in its eventual ticket.
+   Done when any shared anchor is reachable and linked, with unresolved intent explicit.
 4. Return the Project link and the next step: the user breaks it into tickets with `to-ticket`, or
    invokes an admiral on it at any stage. Done when the recorded Project can be read without this conversation.

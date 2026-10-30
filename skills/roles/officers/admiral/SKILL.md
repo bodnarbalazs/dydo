@@ -74,14 +74,12 @@ map and how the tickets move, integrate, and finish together.
    ticket and every Merge whose turn came is known. With nothing in flight, wait for the user's word.
 2. **Chart and approve.** When the route is unknown, set the Project `Planning` and chart it with
    `wayfinder`: the map in the Project description, naming you its holder, the first pickable tickets, and each Project-level
-   Question in `Todo`, wired to every waiter. For shared behavior or decisions needing one current
-   anchor, choose an applicable reviewed architecture plan or working spec, creating a spec where needed
-   under `dydo/reference/feature-spec-convention.md`. Link it from the map and use its relevant sections to
-   contract affected tickets before commissioning them; atomic intent stays in its ticket.
+   Question in `Todo`, wired to every waiter. Record the shared anchor choice from `wayfinder`, when
+   one is needed, and contract affected tickets from its relevant sections before commissioning them.
    The Project and its tickets are the plan. Place the map's Milestones in Linear. Keep them few,
-   each one a meaningful chunk of work where a drift
-   from the user's intent would show. The first is the walking skeleton: the rough foundation the
-   Project is built on, the first solid thing where he can make decisions and understand the
+   each one a meaningful chunk of work where a drift from the user's intent would show. The first
+   is the walking skeleton: the rough foundation the Project is built on, the first solid thing
+   where he can make decisions and understand the
    architecture. File its Walkthrough Ticket with the map, wired as a native blocker of the next
    Milestone's delivery tickets except in overnight mode. The landing is the last Milestone. Every
    delivery ticket belongs to one. Only a cross-cutting architecture contract earns a repository plan: write it at

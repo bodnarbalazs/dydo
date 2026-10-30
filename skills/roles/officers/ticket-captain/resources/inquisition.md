@@ -112,9 +112,10 @@ Done when every finding of the return is a row or a sighting and every tag has a
 Check each severity against the source, not the crew's label, and record any change with its
 reason in the row. Then:
 
-- **Proven blocker or should:** file a Bug: Mode `AFK`, in the Project, base the feature branch,
-  `## Reproduction` holding its proof (the red-test SHA and test, the quoted passages, the
-  definition and reference search, or the rerunnable drive steps), linked to this Inquisition.
+- **Proven blocker or should:** file a Bug: Mode `AFK`, Severity `blocker` or `should` matching the
+  finding, in the Project, base the feature branch, `## Reproduction` holding its proof (the red-test
+  SHA and test, the quoted passages, the definition and reference search, or the rerunnable drive
+  steps), linked to this Inquisition.
   A blocker goes to `Todo`, a should to `Backlog`, natively blocking the Project's landing Merge
   Ticket when it exists. An audit with no Project files a team ticket, base `main`, with no landing
   relation. A Bug whose fix step 9 will prepare is filed assigned to you, the claim that keeps it
@@ -122,8 +123,8 @@ reason in the row. Then:
   may merge into the feature mid-round: the audit is pinned to its SHA. A later sighting of a Bug, even a fixed one, adds a reproduction to
   it. A verification gap is a should whose Bug names `maintain-verification-skill` as its method.
 - **Nit:** one line on this round's nit ticket, with its `file:line` and the wrong outcome; it
-  needs no proof. Open the nit ticket with the first nit: Type `Feature`, Mode `AFK`, `Backlog`,
-  held by the map holder, linked to this Inquisition. The map holder lists every open nit ticket at
+  needs no proof. Open the nit ticket with the first nit: Type `Feature`, Mode `AFK`, Severity `nit`,
+  `Backlog`, held by the map holder, linked to this Inquisition. The map holder lists every open nit ticket at
   the Project's final walkthrough, where the user decides each nit; it closes `Done` once every nit
   is fixed or accepted as is.
 - **Unproven:** stays open in the register until its routed phase returns; a refuted one closes

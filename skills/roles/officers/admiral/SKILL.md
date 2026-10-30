@@ -83,9 +83,9 @@ map and how the tickets move, integrate, and finish together.
    send it to a fresh `reviewer(project-plan)` with rubric, Contract at the plan SHA, Candidate SHA
    and Base SHA. The block is a Project update. Correct a FAIL's blockers at a new commit and review
    afresh; the second FAIL goes to the user as the choice. File each `should` as its own `Backlog`
-   ticket in the Project and record each `nit` as one line on the Project update. Put the charted route, with any PASS, to the
-   user in this session. **Done:** approval is recorded, any plan is `reviewed`, and the Project
-   `Planned`.
+   ticket with Severity `should` in the Project and record each `nit` as one line on the Project
+   update. Put the charted route, with any PASS, to the user in this session. **Done:** approval is
+   recorded, any plan is `reviewed`, and the Project `Planned`.
 3. **Open and commission.** Commission the first Ticket Captain to open
    `feature/<project-slug>` from the approved main SHA before claiming its ticket; put the map in the
    Project description and each contract's base branch and blockers on its ticket. Give
@@ -158,7 +158,9 @@ map and how the tickets move, integrate, and finish together.
 8. **Land and walk through.** File the landing Merge Ticket, blocked by its unresolved prerequisites:
    delivery, each confirmed Inquisition round, required fixes, and every
    should-ticket a review or an inquisition filed, wired now where it is not yet. Exclude the landing itself and other
-   later or deferred work. Sequence the should-tickets; the Project lands only when each is `Done`
+   later or deferred work. Query the Project for open tickets labelled Severity `blocker` or `should`;
+   only those the user explicitly deferred may remain open at landing.
+   Sequence the should-tickets; the Project lands only when each is `Done`
    or closed with a reason, and only after an inquisition round that found no blocker and no
    should. Only the user defers an inquisition's should, at the end of the Project. Its scope is main into feature, combined gates, merge review,
    then a PR into main. Its `Ready to Merge`

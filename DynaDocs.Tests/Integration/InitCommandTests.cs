@@ -1444,6 +1444,31 @@ public class InitCommandTests : IntegrationTestBase
     }
 
     [Fact]
+    public async Task Join_Codex_LeavesACrlfRuleWithTheSameContentByteForByte()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        (await JoinProjectAsync("codex")).AssertSuccess();
+        WriteFile(".codex/rules/dydo.rules", InitCommand.CodexRules.ReplaceLineEndings("\r\n"));
+        var preserved = Snapshot(".codex/rules/dydo.rules");
+
+        (await JoinProjectAsync("codex")).AssertSuccess();
+
+        AssertUnchanged(preserved);
+    }
+
+    [Fact]
+    public async Task Join_Codex_RewritesAStaleCrlfRuleWithCrlf()
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        (await JoinProjectAsync("codex")).AssertSuccess();
+        WriteFile(".codex/rules/dydo.rules", "stale\r\nrule\r\n");
+
+        (await JoinProjectAsync("codex")).AssertSuccess();
+
+        Assert.Equal(InitCommand.CodexRules.ReplaceLineEndings("\r\n"), ReadFile(".codex/rules/dydo.rules"));
+    }
+
+    [Fact]
     public void ThisRepository_CommitsTheCodexRuleInitWrites()
     {
         var dir = AppContext.BaseDirectory;
@@ -1924,6 +1949,42 @@ public class InitCommandTests : IntegrationTestBase
     {
         (await InitProjectAsync("none")).AssertSuccess();
         WriteFile(path, ReadFile("AGENTS.md"));
+        var preserved = Snapshot(path);
+
+        var result = await JoinProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertUnchanged(preserved);
+        result.AssertStdoutContains(warning);
+    }
+
+    [Theory]
+    [InlineData("CLAUDE.md", "\n  @AGENTS.md  \n\n# Notes for Claude\n")]
+    [InlineData("CLAUDE.md", "\uFEFF@AGENTS.md\r\n\r\nAlways run the tests.\r\n")]
+    [InlineData("CLAUDE.local.md", "@AGENTS.md\n\nMy local notes.\n")]
+    [InlineData(".claude/CLAUDE.md", "@../AGENTS.md\n")]
+    public async Task Join_Claude_DoesNotWarnAboutAnEntryFileThatImportsAgentsMdFirst(string path, string content)
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile(path, content);
+        var preserved = Snapshot(path);
+
+        var result = await JoinProjectAsync("claude");
+
+        result.AssertSuccess();
+        AssertUnchanged(preserved);
+        Assert.DoesNotContain("hides AGENTS.md", result.Stdout);
+        Assert.DoesNotContain("stops Claude Code reading AGENTS.md", result.Stdout);
+    }
+
+    [Theory]
+    [InlineData("CLAUDE.md", "# Notes for Claude\n\n@AGENTS.md\n", "CLAUDE.md hides AGENTS.md from Claude Code")]
+    [InlineData("CLAUDE.local.md", "@../AGENTS.md\n", "CLAUDE.local.md stops Claude Code reading AGENTS.md")]
+    [InlineData(".claude/CLAUDE.md", "@AGENTS.md\n", ".claude/CLAUDE.md stops Claude Code reading AGENTS.md")]
+    public async Task Join_Claude_WarnsAboutAnEntryFileWithoutTheLeadingImport(string path, string content, string warning)
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        WriteFile(path, content);
         var preserved = Snapshot(path);
 
         var result = await JoinProjectAsync("claude");

@@ -47,8 +47,8 @@ It replaces a classifier hint that Claude Code applied by judgment, for Claude a
 - Doctrine names the command. A conflict-free merge of a reviewed PR into its feature branch is
   `dydo merge`, and its merge SHA is the candidate for the combined gates and merge review: the
   working-tree contract, the code-writer's `merge` resource, `ticket-captain` step 7 and `admiral`
-  step 4. In `overnight-mode`, standing order 3 merges through the captain's Merge chain, and muster
-  preflight proves the path with `dydo merge … --dry-run`.
+  step 4. In `overnight-mode`, standing order 3 routes feature merges through the captain's Merge
+  chain and `dydo merge`; genuine Claude/Codex merge and approval parity remains pending in DYD-426.
 
 Guard hard blocks for raw `gh pr merge`, `gh api` merge paths, GraphQL merge mutations, pushes to the
 default branch and default-branch changes are planned, delivery pending in DYD-425. The genuine

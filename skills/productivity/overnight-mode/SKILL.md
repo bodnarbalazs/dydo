@@ -15,22 +15,20 @@ Project, set at muster. Night orders expire at the morning brief and win where t
 
 ## Muster
 
-The chief of staff, with the user present:
+The already-invoked chief of staff uses its own resources below. Resolve each resource inside the
+installed `chief-of-staff` skill folder; read it directly without invoking another officer role.
 
-1. Have every admiral report its likely Questions, human-only unblockers and needed permissions.
-2. Interview the user per Project with `grilling`: what gets done, the stop line, what stays his,
-   answers now, unblockers now. Use `wizard` for terminal steps only.
-3. Post the night orders.
-4. Preflight: every admiral thread can be messaged, every session can write to Linear, every
-   admiral's harness runs `dydo merge <pr> --match-head-commit <sha> --dry-run`: exit 0, or a
-   `refused:` line with exit 1, proves the path; a denial or a prompt is the gap. Report all green,
-   or name each gap.
-5. Create the 30-minute watch schedule, returning to this thread.
-6. Run `dydo mode set overnight on`: rerun it after the guard's nudge, and where the guard denies,
+1. With the user present, complete `chief-of-staff`'s `resources/muster.md`. Use `grilling` for
+   decisions and `wizard` for terminal steps only. Proceed once every included admiral confirms
+   its agreed work is runnable and every gap has the user's explicit disposition.
+2. Create the 30-minute watch schedule, returning to this thread. Preserve the complete schedule
+   ID exactly as returned by the host, including any prefix, for deletion at shutdown.
+3. Run `dydo mode set overnight on`: rerun it after the guard's nudge, and where the guard denies,
    the user runs it in his own terminal.
-7. Announce the start to every admiral.
+4. Announce the start to every included admiral.
 
-Done when every admiral has the announcement.
+Done when readiness is confirmed, the schedule ID is preserved, mode is on and every included
+admiral has the announcement.
 
 ## Standing orders
 
@@ -53,12 +51,11 @@ Done when every admiral has the announcement.
 
 ## Night watch
 
-The chief of staff, every 30 minutes:
+The chief of staff runs its Overnight duties watch step every 30 minutes, using its
+`resources/night-survey.md`. The surveyor inspects; the chief of staff acts on its findings:
 
-1. Diff each Project's board. Changed: the Project is alive; move on.
-2. Unchanged: read the admiral's thread. Idle, or waiting with nothing in flight: send one specific
-   nudge naming what the watch saw.
-3. Nudge unanswered: go to its captain threads.
+1. Idle, or waiting with nothing in flight and runnable work: send one specific nudge naming the evidence.
+2. Nudge unanswered: inspect the relevant captain threads and intervene with the owner.
 
 The board and threads carry state; never ask for routine STATE. Mediate cross-Project trouble by
 chief-of-staff Method step 4, Mediate a collision, relaying heads-ups down the chain. After any gap
@@ -66,14 +63,14 @@ in the watch, rebuild from Linear and sweep everyone by Method step 5, Sweep the
 
 ## Morning brief
 
-When the user says he's back, in the chief of staff's conversation: delete the watch schedule first,
-then run `dydo mode set overnight off` as at muster, then announce the end to every admiral. Then
-brief him, writing nothing to the repo:
+When the user says he's back, in the chief of staff's conversation:
 
-1. A recap in ketchup's recap shape: one real visual of everything the night touched, at most three
-   result lines.
-2. PRs into master, linked.
-3. Questions, decided ones first, each with context for an outsider, and the decision with its
-   justification where decided.
-4. Optionally, `wizard` for terminal unblockers only.
-5. What needs him next.
+1. Delete the watch schedule using the complete preserved ID. List schedules and confirm that exact
+   ID is absent before claiming the watch stopped; report a deletion or verification gap.
+2. Settle any pending survey through its host lifecycle so no tick remains in flight.
+3. Run `dydo mode set overnight off` as at muster, then announce the end to every included admiral.
+4. Fill `chief-of-staff`'s `resources/morning-brief.md` in the conversation, writing nothing to the
+   repo. Use `wizard` for terminal unblockers only.
+
+Done when the schedule is confirmed absent, pending surveys are settled, mode is off, admirals
+have the announcement and the user has the brief.

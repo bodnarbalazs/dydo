@@ -928,14 +928,22 @@ public class GuardSecurityTests : IntegrationTestBase
     [Theory]
     [InlineData("echo stdbuf -oL tail -f app.log")]
     [InlineData("grep 'ssh host tail -f' notes.md")]
-    public async Task Gs03_RunnerWordsAsArguments_StaySilent(string command)
+    [InlineData("docker exec web tail -f app.log")]
+    [InlineData("kubectl exec pod -- tail -f app.log")]
+    [InlineData("flock /tmp/lock tail -f app.log")]
+    [InlineData("script -q -c 'tail -f app.log' /dev/null")]
+    [InlineData("su -c 'tail -f app.log'")]
+    [InlineData("tmux new -d 'tail -f app.log'")]
+    [InlineData("unknown-wrapper 'tail -f app.log'")]
+    [InlineData("rg tail --follow docs")]
+    public async Task Gs03_UninventoriedArguments_KeepTheWarning(string command)
     {
         await SetupClaimedAgent();
 
         var result = await GuardWithStdinAsync(ShellJson("Bash", command));
 
-        result.AssertPreToolUseAllowed();
-        Assert.DoesNotContain("poll-loop", result.Stderr);
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("Open-ended Bash poll-loop detected");
     }
 
     // GS-01: a PowerShell variable assigned from a literal Get-Content is a read.

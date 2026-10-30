@@ -798,18 +798,113 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private const string LaunchMark = "\u0001";
 
     /// <summary>
-    /// Whether a program named at <paramref name="index"/> of <paramref name="command"/> would run
-    /// (DYD-406): with a mark written there, the line read as its shell reads it has the mark in a
-    /// program word, past assignments and runners, rather than in an argument, a comment or a body a
-    /// command reads. A shell's command string is read as commands. A line that cannot be read for
-    /// certain counts, failing closed.
+    /// Whether a raw nudge match counts. Every unquoted or unknown quoted operand counts;
+    /// only the recorded quoted search/filter roles, comments and data bodies are exempt.
+    /// Known executable strings are read recursively, preserving code inside quoted arguments.
     /// </summary>
     internal static bool RunsAt(string command, int index, ShellDialect dialect)
     {
-        var (lines, uncertain) = CommandLines(command.Insert(index, LaunchMark), dialect);
-        return uncertain || lines.SelectMany(line => line.Commands).Select(command => command.Words)
-            .Any(words => CommandPosition.Skip(words) is var at && at < words.Count && words[at].Contains(LaunchMark, StringComparison.Ordinal));
+        return CountsNudge(command.Insert(index, LaunchMark), dialect, 0);
     }
+
+    private static bool CountsNudge(string text, ShellDialect dialect, int depth)
+    {
+        if (depth > MaxCommandLineDepth)
+            return true;
+        bool[] readings = dialect switch
+        {
+            ShellDialect.Posix => [true],
+            ShellDialect.PowerShell => [false],
+            _ => [true, false],
+        };
+        foreach (var posix in readings)
+        {
+            var reading = ShellReader.Read(text, posix);
+            if (reading.Failed || reading.Substitutions.Any(s => HasLaunchMark(s) && CountsNudge(s, ShellDialect.Posix, depth + 1))
+                || reading.Commands.Any(c => CommandCountsNudge(text, c, depth)))
+                return true;
+        }
+        return false;
+    }
+
+    private static bool HasLaunchMark(string text) => text.Contains(LaunchMark, StringComparison.Ordinal);
+
+    private static bool CommandCountsNudge(string text, ShellReader.Command command, int depth)
+    {
+        if (command.Redirections.Any(HasLaunchMark))
+            return true;
+        var call = ProgramCall(command.Words);
+        if (call is { } executable && CommandPosition.ScriptOf(executable.Program, executable.Arguments) is { } script
+            && HasLaunchMark(script.Text))
+            return script.Encoded || CountsNudge(script.Text, script.Dialect, depth + 1);
+
+        for (var i = 0; i < command.Words.Count; i++)
+        {
+            if (HasLaunchMark(command.Words[i]) && !QuotedNudgeData(text, command, i))
+                return true;
+        }
+        return command.Stdin.Where(HasLaunchMark).Any(body => BodyCountsNudge(command.Words, body, depth));
+    }
+
+    private static bool BodyCountsNudge(IReadOnlyList<string> words, string body, int depth)
+    {
+        if (ProgramCall(words) is { } shell && StdinShellDialect(shell.Program, shell.Arguments) is { } dialect)
+            return CountsNudge(body, dialect, depth + 1);
+        return words.Count == 0 || !DataCommands.Contains(words[0]);
+    }
+
+    // Q1-Q4 of the captain's finite GS-03 inventory. Prefixes identify operands, never whole argv.
+    private static bool QuotedNudgeData(string text, ShellReader.Command command, int index)
+    {
+        var range = command.WordRanges[index];
+        var raw = text[range];
+        if (raw.StartsWith("@'", StringComparison.Ordinal) || raw.StartsWith("@\"", StringComparison.Ordinal))
+            return DataCommands.Contains(command.Words[0]);
+        if (!LiteralNudgeQuoteRegex().IsMatch(raw))
+            return false;
+        var literalPrefix = Enumerable.Range(0, index).All(i => text[command.WordRanges[i]] == command.Words[i]);
+        if (literalPrefix && QuotedSearchPattern(command, index, raw[0]))
+            return true;
+        return ProcessFilterPrefixRegex().IsMatch(text[..range.Start.Value])
+            && ProcessFilterSuffixRegex().IsMatch(text[range.End.Value..]);
+    }
+
+    private static bool QuotedSearchPattern(ShellReader.Command command, int index, char quote)
+    {
+        var prefix = command.Words.Take(index).ToArray();
+        var tail = command.Words.Skip(index + 1).ToArray();
+        return prefix switch
+        {
+            ["rg", "-n"] => quote == '\'' && RgPatternTail(tail),
+            ["git", "grep", "-n", "-E"] or ["git", "grep", "-n", "-i", "-E"] => quote == '\'' && GitGrepPatternTail(tail),
+            ["grep", "-iE"] => quote == '"' && tail.All(w => !w.StartsWith('-')),
+            _ => false,
+        };
+    }
+
+    private static bool RgPatternTail(string[] words)
+    {
+        var at = 0;
+        while (at + 1 < words.Length && words[at] == "--glob")
+            at += 2;
+        return words.Skip(at).All(w => !w.StartsWith('-'));
+    }
+
+    private static bool GitGrepPatternTail(string[] words)
+    {
+        var at = words.Length > 0 && !words[0].StartsWith('-') ? 1 : 0;
+        return at == words.Length || (words[at] == "--" && words.Skip(at + 1).All(w => !w.StartsWith('-')));
+    }
+
+    // Interpolation or concatenation is not a literal data operand. Its raw match stays counted.
+    [GeneratedRegex("\\A(?:'[^']*'|\"[^\"$`]*\")\\z")]
+    private static partial Regex LiteralNudgeQuoteRegex();
+
+    [GeneratedRegex(@"(?:\A|[;\r\n])\s*Get-CimInstance\s+Win32_Process\s*\|\s*Where-Object\s*\{\s*(?:\$_\.CreationDate\s+-gt\s+\$cut\s+-or\s+)?(?:\$_\.CommandLine|\(\[string\]\$_\.CommandLine\))\s+-match\s+\z", RegexOptions.IgnoreCase)]
+    private static partial Regex ProcessFilterPrefixRegex();
+
+    [GeneratedRegex(@"\A\s*(?:-and\s+\$_\.Name\s+-notmatch\s+'bash'\s*)?\}", RegexOptions.IgnoreCase)]
+    private static partial Regex ProcessFilterSuffixRegex();
 
     [GeneratedRegex(CommandStart + @"op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)" + CommandEnd, RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejOpRegex();

@@ -1811,9 +1811,9 @@ public class BashCommandAnalyzerTests
     [InlineData("ssh -p 22 host tail -f app.log", true)]
     [InlineData("ssh host -t tail -f app.log", true)]
     [InlineData("watch -n 1 'tail -f app.log'", true)]
-    [InlineData("echo stdbuf -oL tail -f app.log", false)]
-    [InlineData("grep 'ssh host tail -f' notes.md", false)]
-    [InlineData("ssh tail -f app.log", false)]
+    [InlineData("echo stdbuf -oL tail -f app.log", true)]
+    [InlineData("grep 'ssh host tail -f' notes.md", true)]
+    [InlineData("ssh tail -f app.log", true)]
     public void RunsAt_RunnersAndRemoteCommands(string command, bool runs)
     {
         Assert.Equal(runs, BashCommandAnalyzer.RunsAt(command, command.IndexOf("tail", StringComparison.Ordinal), ShellDialect.Posix));

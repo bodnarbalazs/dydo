@@ -18,6 +18,8 @@ internal sealed class ShellReader
     internal sealed class Command
     {
         public List<string> Words { get; } = [];
+        public List<Range> WordRanges { get; } = [];
+        public List<string> Redirections { get; } = [];
         public List<string> Stdin { get; } = [];
     }
 
@@ -31,6 +33,7 @@ internal sealed class ShellReader
     private readonly List<(Command Command, string Delimiter, bool StripTabs, bool Expands)> _heredocs = [];
     private Command _command = new();
     private StringBuilder? _word;
+    private int _wordStart;
     private int _i;
     private int _depth;
     private bool _redirectNext;
@@ -189,9 +192,10 @@ internal sealed class ShellReader
     // become one word of the enclosing command.
     private void GroupWord(int start)
     {
+        var word = StartWord();
         var first = _commands.Count;
         _i = Substitution(start);
-        StartWord().AppendJoin(' ', _commands.Skip(first).SelectMany(command => command.Words));
+        word.AppendJoin(' ', _commands.Skip(first).SelectMany(command => command.Words));
     }
 
     private int BacktickSubstitution(int open)
@@ -339,6 +343,7 @@ internal sealed class ShellReader
         while (_i < _text.Length && !char.IsWhiteSpace(_text[_i]) && _text[_i] is not (';' or '&' or '|' or '(' or ')' or '<' or '>'))
             _i++;
         var raw = _text[start.._i];
+        _command.Redirections.Add(raw);
         var delimiter = string.Concat(raw.Where(c => c is not ('\'' or '"' or '\\')));
         if (delimiter.Length == 0)
         {
@@ -354,17 +359,22 @@ internal sealed class ShellReader
         foreach (var heredoc in _heredocs)
         {
             var body = new StringBuilder();
+            var terminated = false;
             while (_i < _text.Length)
             {
                 var lineEnd = _text.IndexOf('\n', _i);
                 var line = (lineEnd < 0 ? _text[_i..] : _text[_i..lineEnd]).TrimEnd('\r');
                 _i = lineEnd < 0 ? _text.Length : lineEnd + 1;
                 if ((heredoc.StripTabs ? line.TrimStart('\t') : line) == heredoc.Delimiter)
+                {
+                    terminated = true;
                     break;
+                }
                 body.Append(line).Append('\n');
             }
 
             heredoc.Command.Stdin.Add(body.ToString());
+            _failed |= !terminated;
             if (heredoc.Expands)
                 ReadExpansions(body.ToString());
         }
@@ -372,7 +382,15 @@ internal sealed class ShellReader
         _heredocs.Clear();
     }
 
-    private StringBuilder StartWord() => _word ??= new StringBuilder();
+    private StringBuilder StartWord()
+    {
+        if (_word == null)
+        {
+            _wordStart = _i;
+            _word = new StringBuilder();
+        }
+        return _word;
+    }
 
     private void Append(char c) => StartWord().Append(c);
 
@@ -384,14 +402,20 @@ internal sealed class ShellReader
         var word = _word.ToString();
         _word = null;
         if (_redirectNext)
+        {
             _redirectNext = false;
+            _command.Redirections.Add(word);
+        }
         else if (_hereStringNext)
         {
             _hereStringNext = false;
             _command.Stdin.Add(word);
         }
         else
+        {
             _command.Words.Add(word);
+            _command.WordRanges.Add(_wordStart..Math.Min(_i, _text.Length));
+        }
     }
 
     private void EndCommand()
@@ -399,7 +423,7 @@ internal sealed class ShellReader
         EndWord();
         _redirectNext = false;
         _hereStringNext = false;
-        if (_command.Words.Count > 0 || _command.Stdin.Count > 0)
+        if (_command.Words.Count > 0 || _command.Stdin.Count > 0 || _command.Redirections.Count > 0)
             _commands.Add(_command);
         _command = new Command();
     }

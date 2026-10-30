@@ -837,8 +837,8 @@ public class GuardCommandTests : IDisposable
     }
 
     [Theory]
-    [InlineData("git commit -m \"docs: checks pass; gh pr create follows\"")]
-    [InlineData("echo 'build && gh pr create --draft'")]
+    [InlineData("rg -n 'docs: checks pass; gh pr create follows' docs")]
+    [InlineData("git grep -n -E 'build && gh pr create --draft'")]
     [InlineData("cat > notes.md <<'EOF'\nthen; gh pr create --fill\nEOF")]
     public void ReviewBlockNudge_PrCreateInTextACommandReads_StaysSilent(string command)
     {
@@ -855,6 +855,8 @@ public class GuardCommandTests : IDisposable
     [Theory]
     [InlineData("echo ok && gh pr create --title x --body 'ships the fix'")]
     [InlineData("git push; gh pr create --fill")]
+    [InlineData("git commit -m \"docs: checks pass; gh pr create follows\"")]
+    [InlineData("echo 'build && gh pr create --draft'")]
     public void ReviewBlockNudge_PrCreateAfterASeparator_StillWarns(string command)
     {
         var nudge = ReviewBlockNudge();
@@ -871,6 +873,64 @@ public class GuardCommandTests : IDisposable
 
     #region Command Nudges Read Only What Runs (DYD-406 GS-03)
 
+    [Theory]
+    [InlineData("docker exec web tail -f app.log")]
+    [InlineData("docker compose exec api tail -f app.log")]
+    [InlineData("kubectl exec pod -- tail -f app.log")]
+    [InlineData("winpty tail -f app.log")]
+    [InlineData("flock /tmp/lock tail -f app.log")]
+    [InlineData("taskset -c 0 tail -f app.log")]
+    [InlineData("chrt -i 0 tail -f app.log")]
+    [InlineData("find . -name app.log -exec tail -f {} +")]
+    [InlineData("script -q -c 'tail -f app.log' /dev/null")]
+    [InlineData("su -c 'tail -f app.log'")]
+    [InlineData("tmux new -d 'tail -f app.log'")]
+    [InlineData("unknown-wrapper 'tail -f app.log'")]
+    [InlineData("rg tail --follow docs")]
+    [InlineData("echo stdbuf -oL tail -f app.log")]
+    [InlineData("rg --unknown 'tail -f' docs")]
+    [InlineData("rg -n 'pattern' --glob 'tail -f' docs")]
+    [InlineData("git log --grep 'tail -f'")]
+    [InlineData("git grep --unknown 'tail -f'")]
+    [InlineData("grep -e 'tail -f' notes.md")]
+    [InlineData("grep -iE \"$(tail -f app.log)\" notes.md")]
+    [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match \"$(tail -f app.log)\" }")]
+    [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'safe'; tail -f app.log }")]
+    [InlineData("unknown-wrapper <<'EOF'\ntail -f app.log\nEOF")]
+    [InlineData("git commit -m \"stop the while true; do sleep loop\"")]
+    [InlineData("rg 'tail' --follow docs")]
+    [InlineData("echo > tail -f app.log")]
+    [InlineData("rg -n 'tail -f' --unknown docs")]
+    [InlineData("git grep -n -E 'tail -f' --unknown")]
+    [InlineData("grep -iE \"tail -f\" --unknown")]
+    [InlineData("rg -n 'tail -f'concat docs")]
+    [InlineData("cat <<'EOF'\ntail -f app.log")]
+    [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.Other -match 'tail -f' }")]
+    [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'tail -f' -unknown }")]
+    public void Gs03_BoundedRelief_KeepsUnquotedAndUnknownQuotedMatches(string command)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("Open-ended Bash poll-loop detected", stderr);
+    }
+
+    [Theory]
+    [InlineData("rg -n 'text; npm install example' docs; npm install real")]
+    [InlineData("git grep -n -E 'text; npm install example' HEAD -- docs; npm install real")]
+    [InlineData("grep -iE \"text; npm install example\" notes.md; npm install real")]
+    [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'text; npm install example' }; npm install real")]
+    public void Gs03_BoundedRelief_CapturesTheLaterLaunch(string command)
+    {
+        var (result, stderr) = RunLcNudges(command);
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("Try: pnpm install real", stderr);
+        Assert.DoesNotContain("example", stderr);
+    }
+
     // The LC dydo.json nudges the retro's refusals came from (LC master fe021e2e), messages shortened.
     private static readonly (string Pattern, string Message, string Severity)[] LcNudges =
     [
@@ -881,11 +941,31 @@ public class GuardCommandTests : IDisposable
             "Don't launch LC.AppHost or LC.Api executables directly.", "block"),
     ];
 
-    private (int? Result, string Stderr) RunLcNudges(string command)
+    [Theory]
+    [InlineData("notice")]
+    [InlineData("warn")]
+    [InlineData("block")]
+    public void Gs03_BoundedRelief_PreservesSeverityCaptureAndRetry(string severity)
+    {
+        WriteConfigWithNudges((@"(?:^|[;&|]\s*)npm\s+(\w+)", "selected:$1", severity));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        const string command = "rg -n 'text; npm example' docs; npm real";
+        int? Check() => GuardCommand.CheckBlockNudges(command, env) ?? GuardCommand.CheckWarnNudges(command, env);
+
+        var first = RunNudge(Check);
+        var retry = RunNudge(Check);
+
+        Assert.Equal(severity == "notice" ? null : (int?)ExitCodes.ToolError, first.Result);
+        Assert.Contains("selected:real", first.Stderr);
+        Assert.DoesNotContain("example", first.Stderr);
+        Assert.Equal(severity == "block" ? (int?)ExitCodes.ToolError : null, retry.Result);
+    }
+
+    private (int? Result, string Stderr) RunLcNudges(string command, ShellDialect shell = ShellDialect.Unknown)
     {
         WriteConfigWithNudges(LcNudges);
         var env = GuardCommand.GuardEnv.Load(_testDir);
-        return RunNudge(() => GuardCommand.CheckBlockNudges(command, env) ?? GuardCommand.CheckWarnNudges(command, env));
+        return RunNudge(() => GuardCommand.CheckBlockNudges(command, env, shell) ?? GuardCommand.CheckWarnNudges(command, env, shell: shell));
     }
 
     [Theory]
@@ -895,14 +975,13 @@ public class GuardCommandTests : IDisposable
     [InlineData(GuardRetroCommands.Gs03PowerShellProcessListing)]
     [InlineData(GuardRetroCommands.Gs03GitGrepPattern)]
     [InlineData(GuardRetroCommands.Gs03LogGrep)]
-    [InlineData("rg -n \"build|dotnet test\" docs")]
-    [InlineData("git log --grep 'npm ci; cs2ts'")]
     [InlineData("echo ready # then; dotnet test")]
     [InlineData("cat > notes.md <<'EOF'\nrun it | dotnet test\nEOF")]
     [InlineData("Write-Output @'\nthen; npm install\n'@")]
     public void CommandNudges_LaunchWordsInTextACommandReads_StaySilent(string command)
     {
-        var (result, stderr) = RunLcNudges(command);
+        var shell = command == GuardRetroCommands.Gs03QuotedProcessListing ? ShellDialect.Posix : ShellDialect.Unknown;
+        var (result, stderr) = RunLcNudges(command, shell);
 
         Assert.Null(result);
         Assert.Empty(stderr);
@@ -929,9 +1008,9 @@ public class GuardCommandTests : IDisposable
 
     // The captures come from the match that runs, not from an earlier one in quoted text.
     [Theory]
-    [InlineData("echo 'text; npm install example'; npm install real", "Try: pnpm install real")]
-    [InlineData("echo \"a; npm run example\" && npm install real", "Try: pnpm install real")]
-    [InlineData("git log --grep 'npm ci' && npm run lint", "Try: pnpm run lint")]
+    [InlineData("rg -n 'text; npm install example' docs; npm install real", "Try: pnpm install real")]
+    [InlineData("grep -iE \"a; npm run example\" notes.md && npm install real", "Try: pnpm install real")]
+    [InlineData("git grep -n -E 'npm ci' HEAD && npm run lint", "Try: pnpm run lint")]
     public void CommandNudges_QuotedExampleThenRealLaunch_CapturesTheRealLaunch(string command, string expected)
     {
         var (result, stderr) = RunLcNudges(command);
@@ -984,12 +1063,11 @@ public class GuardCommandTests : IDisposable
         Assert.Contains("Open-ended Bash poll-loop detected", stderr);
     }
 
-    // A launch word an argument holds, quoted or not, runs nothing.
+    // Only the inventoried quoted operand roles receive relief.
     [Theory]
     [InlineData("rg -n 'tail -f' docs")]
-    [InlineData("git commit -m \"stop the while true; do sleep loop\"")]
-    [InlineData("rg 'tail' --follow docs")]
-    [InlineData("rg tail --follow docs")]
+    [InlineData("git grep -n -E 'tail -f' HEAD -- docs")]
+    [InlineData("grep -iE \"tail -f\" notes.md")]
     public void PollLoopNudge_InQuotedText_StaysSilent(string command)
     {
         WriteConfigWithOpenEndedPollNudges();

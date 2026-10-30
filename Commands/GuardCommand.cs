@@ -707,7 +707,7 @@ public static partial class GuardCommand
     }
 
     // A nudge's pattern is matched on the raw text, and a match counts only where its launch word
-    // runs (DYD-406); its captures come from that match.
+    // counts under the bounded data-operand rules (DYD-406); captures come from that raw match.
     private static IEnumerable<(NudgeConfig Nudge, Match Match)> MatchingCommandNudges(string command, GuardEnv env, ShellDialect shell)
     {
         foreach (var nudge in MergeSystemNudges(env.Config?.Nudges))
@@ -721,8 +721,8 @@ public static partial class GuardCommand
     /// <summary>
     /// The first match of <paramref name="pattern"/> whose launch word, the text past any space or
     /// separator the match opens with, sits where a command runs (<see cref="BashCommandAnalyzer.RunsAt"/>),
-    /// so a launch word in an argument, quoted or not, a comment or a body a command reads does not
-    /// count. Each later try starts past the last launch word.
+    /// excluding only recognized quoted data operands, comments and data bodies. Unquoted and
+    /// ambiguous quoted operands count. Each later try starts past the last launch word.
     /// </summary>
     private static Match? FirstRunningMatch(Regex pattern, string command, ShellDialect shell)
     {

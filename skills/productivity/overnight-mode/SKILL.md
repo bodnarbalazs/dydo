@@ -36,7 +36,8 @@ admiral has the announcement.
 2. **Decide by weight.** Easily reversible: decide and record `DECIDED`. Other calls:
    `what-would-balazs-do`, whose trigger map decides it or prepares the Question;
    irreversible calls are always a Question.
-3. **Merge into the feature branch**, never into master or main.
+3. **Merge into the feature branch** through your captain's Merge chain, which runs `dydo merge`;
+   never into master or main.
 4. **The board is the report.** Send the chief of staff no status. Contact it for cross-Project
    trouble: collisions, shared-resource problems, and heads-ups or permission before actions that
    affect other agents. It relays down admiral → captain → crew. Answer a nudge in one line.

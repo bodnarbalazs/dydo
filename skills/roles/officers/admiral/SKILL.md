@@ -106,7 +106,8 @@ map and how the tickets move, integrate, and finish together.
    reviewed PR; its captain rechecked the gate before setting it. On `PR open <key>, checks pending: <url>, head <SHA>`,
    watch that PR (`watch_pull_request` in T3) and wake its captain on news; unwatch when it returns
    `done <key>: PR ready` or is released. When its Merge Sub-ticket's blocker clears, resume that captain with `merge`, or
-   commission a fresh one from the record. Rewire the order when a later ready PR is independent
+   commission a fresh one from the record; its Merge code-writer runs `dydo merge`, which refuses
+   master, main and the default branch. Rewire the order when a later ready PR is independent
    of an earlier unready one. **Done:** every merge has its own captain-directed chain and fresh
    merge review; the record shows the order that ran and `done <key>: merged` wakes the next work.
    A captain's own rerun of its crew's proof recipe is the proof of record; you neither observe nor rerun it.

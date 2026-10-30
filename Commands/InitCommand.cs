@@ -550,14 +550,16 @@ public static class InitCommand
         _ => value.ToJsonString()
     };
 
-    // The dydo clean entries are narrow on purpose: Claude Code's auto mode drops blanket shell
-    // rules but keeps narrow ones, so dydo clean (safe by design) runs without a prompt there too.
+    // The dydo clean and dydo merge entries are narrow on purpose: Claude Code's auto mode drops blanket
+    // shell rules but keeps narrow ones, so these commands (safe by design) run without a prompt there too.
     private static readonly string[] DydoAllowEntries =
     {
         "Bash(dydo:*)",
         "PowerShell(dydo:*)",
         "Bash(dydo clean:*)",
-        "PowerShell(dydo clean:*)"
+        "PowerShell(dydo clean:*)",
+        "Bash(dydo merge:*)",
+        "PowerShell(dydo merge:*)"
     };
 
     // The Claude guard rides the committed .claude/settings.json (PrepareClaudeSettings). This
@@ -704,9 +706,11 @@ public static class InitCommand
             File.WriteAllText(rulesPath, existing.Contains("\r\n", StringComparison.Ordinal) ? CodexRules.ReplaceLineEndings("\r\n") : CodexRules);
     }
 
-    // Codex's exec-policy allow rule for dydo clean, committed beside .codex/hooks.json. Codex loads
-    // project rules only when the project's .codex/ layer is trusted, as it does the hooks. dydo owns
-    // the whole file and restores it on every init and --join, in the line endings the checkout gave it.
+    // Codex's exec-policy allow rules for dydo clean and dydo merge, committed beside .codex/hooks.json.
+    // Codex loads project rules only when the project's .codex/ layer is trusted, as it does the hooks.
+    // dydo owns the file, preserves matching bytes and restores stale content in the checkout's line endings.
+    // The merge rule also names dydo.exe: Codex matches the argv's first word as written,
+    // and Windows sessions write either.
     internal const string CodexRules =
         "# Written by dydo init codex; dydo rewrites this file on every init and --join.\n"
         + "# dydo clean archives uncommitted work and keeps unmerged branches before it removes a\n"
@@ -716,6 +720,15 @@ public static class InitCommand
         + "    decision = \"allow\",\n"
         + "    justification = \"dydo clean archives uncommitted work and keeps unmerged branches before it removes a worktree\",\n"
         + "    match = [\"dydo clean --dry-run\", \"dydo clean --all\"],\n"
+        + "    not_match = [\"dydo init codex\"],\n"
+        + ")\n"
+        + "# dydo merge refuses in code everything but a reviewed, green PR into a feature/* branch, so it\n"
+        + "# runs without an approval prompt.\n"
+        + "prefix_rule(\n"
+        + "    pattern = [[\"dydo\", \"dydo.exe\"], \"merge\"],\n"
+        + "    decision = \"allow\",\n"
+        + "    justification = \"dydo merge merges a reviewed PR into a feature/* branch only; master, main and the default branch are refused in code\",\n"
+        + "    match = [\"dydo merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567\", \"dydo.exe merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567\"],\n"
         + "    not_match = [\"dydo init codex\"],\n"
         + ")\n";
 

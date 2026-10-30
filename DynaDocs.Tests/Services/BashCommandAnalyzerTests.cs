@@ -1592,6 +1592,23 @@ public class BashCommandAnalyzerTests
     }
 
     [Theory]
+    [InlineData("'@tail -f app.log", true)]
+    [InlineData("'@suffix", true)]
+    [InlineData("'@-suffix", true)]
+    [InlineData("'@", false)]
+    [InlineData("'@ tail -f app.log", false)]
+    [InlineData("'@\targument", false)]
+    [InlineData("'@; Write-Output ready", false)]
+    [InlineData("'@| Out-File notes.md", false)]
+    public void Gs02_HereStringBoundary_PreservesMalformedNewlineWarning(string terminator, bool warns)
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.PowerShell)
+            .Analyze("Write-Output @'\ntext\n" + terminator);
+
+        Assert.Equal(warns, result.Warnings.Contains("Command contains embedded newlines"));
+    }
+
+    [Theory]
     [InlineData("cat > $OUT <<'EOF'\nplain words\nEOF")]
     [InlineData("cat > notes.md <<EOF\n$(rm -rf build)\nEOF")]
     [InlineData("cat > notes.md <<EOF\nprice: $PRICE\nEOF")]

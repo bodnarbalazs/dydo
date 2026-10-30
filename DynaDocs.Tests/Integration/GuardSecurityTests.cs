@@ -946,6 +946,26 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertStderrContains("Open-ended Bash poll-loop detected");
     }
 
+    [Fact]
+    public async Task Gs02_HereStringBoundary_RawWarningDenialAndRetryMatchMaster()
+    {
+        await SetupClaimedAgent();
+        const string command = "Write-Output @'\ntext\n'@tail -f app.log";
+        var warning = "WARNING: Command contains embedded newlines" + Environment.NewLine;
+        const string nudge = "BLOCKED: Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`. Open-ended polls have caused agent crashes (issue 0177).";
+        var expected = warning + nudge + Environment.NewLine + "  (Run the same command again to proceed anyway.)";
+
+        var first = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+
+        Assert.Equal(expected + Environment.NewLine, first.Stderr);
+        Assert.Equal(expected, first.AssertPreToolUseDenied());
+
+        var retry = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+
+        retry.AssertPreToolUseAllowed();
+        Assert.Equal(warning, retry.Stderr);
+    }
+
     // GS-01: a PowerShell variable assigned from a literal Get-Content is a read.
     [Theory]
     [InlineData(GuardRetroCommands.Gs01SlicedRead)]

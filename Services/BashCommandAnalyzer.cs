@@ -337,6 +337,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     {
         var lineStart = LineStart(text, hereString.Index);
         var end = hereString.Index + hereString.Length;
+        // A closing marker attached to more word text is not a literal-data boundary.
+        if (end < text.Length && !char.IsWhiteSpace(text[end]) && text[end] is not (';' or '|' or '&' or '<' or '>'))
+            return null;
         var lineEnd = text.IndexOf('\n', end) is var at and >= 0 ? at : text.Length;
         var resume = Math.Min(lineEnd + 1, text.Length);
         var line = text[lineStart..hereString.Index] + $" {BodyMark} " + text[end..lineEnd];

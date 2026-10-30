@@ -79,10 +79,10 @@ map and how the tickets move, integrate, and finish together.
    The Project and its tickets are the plan. Place the map's Milestones in Linear. Keep them few,
    each one a meaningful chunk of work where a drift from the user's intent would show. The first
    is the walking skeleton: the rough foundation the Project is built on, the first solid thing
-   where he can make decisions and understand the
-   architecture. File its Walkthrough Ticket with the map, wired as a native blocker of the next
-   Milestone's delivery tickets except in overnight mode. The landing is the last Milestone. Every
-   delivery ticket belongs to one. Only a cross-cutting architecture contract earns a repository plan: write it at
+   where he can make decisions and understand the architecture. File its Walkthrough Ticket with the
+   map, wired as a native blocker of the next Milestone's delivery tickets except in overnight mode.
+   The landing is the last Milestone. Every delivery ticket belongs to one. Only a cross-cutting
+   architecture contract earns a repository plan: write it at
    `dydo/project/plans/<kebab-case>.md` in the shape the `project-plan` rubric checks, commit it, and
    send it to a fresh `reviewer(project-plan)` with rubric, Contract at the plan SHA, Candidate SHA
    and Base SHA. The block is a Project update. Correct a FAIL's blockers at a new commit and review

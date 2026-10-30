@@ -29,8 +29,9 @@ their owning tickets supply the required evidence. Linear holds their live state
 Its Decision 1–6 owns the command/refusals, review and CI checks, merge form and crew boundary;
 Decision 7–8 owns the planned guard blocks and host parity. Its
 [Consequences](../../../project/decisions/061-agents-merge-only-into-feature-branches.md#consequences)
-retain the accepted residuals: guards stop accidents, not rogue agents. The user removes the
-temporary LC allow rules only after the parity gate passes in LC.
+retain the accepted residuals: guards stop accidents, not rogue agents. The user removes the stopgap
+`autoMode.allow` entry and the user-level `Bash(gh pr merge:*)` allow rule only after the parity gate
+passes in LC.
 
 [Safe feature merging (DYD-417)](https://linear.app/bodnar-balazs/issue/DYD-417), sections
 “Contract amendment” and “Captain's acceptance contract,” owns the delivery split and amendments to
@@ -43,10 +44,9 @@ Default-branch merging by agents, squash/rebase integration, new override paths 
 guarantees than DR 061's accepted residuals are outside this feature. This spec grants no settings,
 permission, runtime-mode or release changes.
 
-Existing holds remain: DYD-425 starts only after DYD-406 merges; the DYD-406/437 terminal hold is
-unchanged. DYD-426 still needs the integrated command/guard, installed allow rules and genuine hosts.
-DYD-433's separate host-support prerequisite is unaffected. Recording this intent authorizes no
-writer, probe, test or review of held delivery.
+This spec changes no hold, dependency or prerequisite on the safe-merge tickets or their linked
+holds; Linear owns their current state. Recording this intent authorizes no writer, probe, test or
+review of held delivery.
 
 ## Acceptance checks
 

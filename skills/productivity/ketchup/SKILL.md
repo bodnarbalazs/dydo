@@ -7,32 +7,42 @@ description: "Catch the user up on what changed in this chat with a self-contain
 
 # Ketchup
 
-Catch the user up on what changed in this chat since the last message they wrote before `/ketchup`. Notifications and subagent results are not their messages. That message bounds the update, not the context they need: reconstruct the goal and relevant background for someone who was absent and may not have followed closely beforehand. Write in the plain voice of `bro`, and skip its restating step. Use familiar names and concrete examples; ticket IDs and links are optional provenance.
+Give a returning user the project story: its state, progress, blockers and when they are needed. Use an **inverted pyramid** at both report and area level: essential meaning first, then progressively more detail, so stopping early leaves a coherent understanding.
 
-## Gather what changed
+The update covers this chat since the user's last message before `/ketchup`; notifications and subagent results are not their messages. Reconstruct enough earlier context for someone who was not following closely. Write in the plain voice of `bro`, skipping its restating step. A catch-up reports the work; a walkthrough lets the user inspect what was built against their understanding and taste. Neither implicitly invokes the other.
 
-Keep this turn read-only, except for visuals you make for the reply from what you already have. Do not change code, start an app or a job, or post anything to make them. Collect your own work since that message, reports from subagents, and messages from anyone else in this chat. Verify accessible live facts yourself, including the current state of relevant PRs, CI runs and agents. Label historical observations and anything not checked; check each number against its source and acknowledge corrections. A report that a run finished does not establish that a deployed system works.
+## Establish the state
 
-An action item is a decision or step only the user can take, such as a reserved product choice, an approval or access you lack. Include genuine outstanding items even if raised before their last message. Keep fact checks, diagnosis and preparation with their agent owner. Where approval will be needed later, explain the remaining preparation and bring a concrete proposal when ready; this catch-up grants no new execution authority.
+Keep this turn read-only, apart from reply visuals made from available evidence. Do not change code, start an app or job, or post elsewhere. Collect the work and relevant reports, then verify accessible live facts yourself, including PR, CI and agent state. Check numbers against their sources and acknowledge corrections. Mark historical observations, unchecked state and uncertain causes. Merged code, completed runs and proven live operation are different claims.
 
-## Write the reply
+Identify what only the user can decide or do, including genuine outstanding items from before their last message. Keep readbacks, diagnosis and preparation with the agents. Existing holds and authority still govern; a catch-up grants no new permission.
 
-Write the shortest reply that stands alone. Let useful detail determine length and layout. The user must understand it without opening links, reading a separate visual or remembering ticket IDs.
+## Lead with the project story
 
-Start with the goal, useful outcomes and overall state. Explain what got better, what remains unfinished and why it matters. Distinguish merged implementation from proven live operation, and ready work from parked work. Give established causes where known and uncertainty where evidence stops. Group by user outcome rather than inventorying every agent or run. If nothing changed and nothing waits on the user, say so and stop.
+Open with the goal, what the project stands for, its current focus and the essential state: what got better, what remains unfinished, and where attention is needed. Distinguish a decision ready now from a later human step or optional parked choice. If nothing changed and nothing waits on the user, say so and stop.
 
-Name the agent-owned next work and what it can resolve. Separate decisions ready now from later human steps and optional parked choices; routine checks and internal holds are not user blockers.
+Then group the detail into user-recognizable problems or outcomes. One area may span several captains or tickets. Order areas by consequence and attention, so the user reaches important decisions and blockers early. Use a plain headline that names the outcome and its attention state, such as “Test evidence — your decision is ready” or “Installation — human step later.”
 
-For each real user decision, explain the concrete problem, the alternatives and their practical consequences, your recommendation with its reason, and what answering would authorize. Say why the agent cannot settle it and what happens without an answer, including which work can continue. If nothing needs the user, make that clear.
+## Give every area the same shape
 
-## Visuals
+Use these five labels and emoji cues in this order, separated by blank lines. Each area is its own inverted pyramid: the first section carries its purpose, result and attention state; later sections explain them. Write connected prose, using lists only where alternatives or several changes are easier to scan.
 
-Use a visual when it makes a change, comparison or causal relationship easier to understand. It may reinforce essential text; avoid repeating detail that adds no clarity. Rendering a visual is not proof of comprehension.
+**🎯 Purpose & now** — What this area is, why it matters, and its short current summary. A reader who stops here should understand the outcome and whether it needs them.
 
-Use existing screenshots or video for visible changes, or draw diagrams and charts from verified facts. Never invent a number or present a generated screen as a capture. Link only artifacts that exist.
+**⏮️ Before** — The concrete previous behavior or problem, with an example where useful.
 
-## Check comprehension
+**🛠️ Work & decisions** — What changed and why, which decisions were made, and the resulting state. Explain established causes and where the evidence stops; distinguish merged changes from proof still owed.
 
-Read the reply without its links or visual. Can a returning reader explain the goal, what got better, what still does not work and why, what the agents will do next, and what each answer authorizes? Repair missing context or unexplained jargon before delivering. Length, formatting and a completed checklist alone do not establish usefulness.
+**➡️ Next** — The agent-owned next steps and what they will resolve, including preparation for any later human action. If the area is complete, say what, if anything, remains.
 
-For a worked example of a long absence with mixed blockers and decisions, consult the [historical returning-user example](resources/returning-user-example.md). Its project facts and permissions belong only to that scenario.
+**🙋 Attention & blockers** — Say explicitly when nothing is needed from the user. For a real decision or human-only step, explain the concrete choice, alternatives, practical consequences, recommendation and reason, why the agent cannot decide or act, what an answer authorizes, and what happens without one. Label later steps and optional parked choices accordingly. For an external or agent-owned blocker, name its owner and the missing prerequisite; routine preparation is not a user ask.
+
+## Make it readable on its own
+
+Keep essential context inside each area, even when a short reminder repeats the opening. Ticket IDs, PRs and links are subordinate provenance; the user should not need them to understand the story or choose. Let useful detail set the length, without a word quota. The repeated labels provide navigation, not a roster to fill with bookkeeping.
+
+Use additional visuals when they clarify a change or relationship. Existing captures show visible changes; diagrams and charts use verified facts. Never invent numbers or present a generated screen as a capture. Essential meaning stays in the reply and links point only to existing artifacts.
+
+Read just the opening and area summaries, then each area without its links or extra visuals. Can the reader explain the goal, improvements, unfinished work and causes, agent next steps, and what each answer authorizes? Repair missing meaning or weak hierarchy before delivering. Formatting and agent approval do not substitute for the user's understanding and taste.
+
+For a complete illustration, consult the [historical returning-user example](resources/returning-user-example.md). Its project facts, decisions and permissions belong only to that scenario.

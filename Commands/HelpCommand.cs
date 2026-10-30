@@ -42,6 +42,8 @@ public static class HelpCommand
         Console.WriteLine("  clean [<worktree>...]  Remove linked worktrees; archives uncommitted work, keeps unmerged branches");
         Console.WriteLine("  clean --all            Every linked worktree (--dry-run first; --archive lists the archive)");
         Console.WriteLine("  pr-ready [path]        Check a PR can be opened: clean tree, HEAD pushed (--body checks the body)");
+        Console.WriteLine("  merge <pr> --match-head-commit <sha>");
+        Console.WriteLine("                         Merge a reviewed PR into its feature/* branch (--dry-run checks only)");
         Console.WriteLine();
         Console.WriteLine("Validation Commands:");
         Console.WriteLine("  validate               Validate local configuration and nudges");

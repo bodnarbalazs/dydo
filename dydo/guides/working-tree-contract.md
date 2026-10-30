@@ -52,7 +52,7 @@ provide the ticket worktree; otherwise place it beside the repository at
 | Open a parallel lane | `ticket-captain` | The Sub-ticket carries the parent's Type and Mode, its own chain, status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
 | Build and prove | crew | Changes stay inside owned paths; exact gates pass; each hop ends on a commit `<KEY> <hop>: <what>`, the hop being `implement`, `fix` after a FAIL, `merge`, or `proof`, which commits as `<KEY> proof: <hypothesis>`; review evidence stays on the work item reviewed; every return comes back to the Ticket Captain. |
 | Review and offer | `ticket-captain` | Passed lane branches are integrated into the parent ticket branch; combined gates pass; a fresh parent ticket-review PASS block is on the ticket and in the PR; the branch is pushed and the PR targets the branch in the table above. |
-| Integrate a Project ticket | `ticket-captain` | Its final Merge Sub-ticket runs a code-writer - conflicts and combined gates mapped, the merge performed, a resolution that refactored leaving its code no worse than either side - then a fresh merge reviewer, preserving the merge commit and hop SHAs; the map holder wires the order and may advance an independent ready PR. Parent stays `Ready to Merge` until merge PASS, then both close `Done`. |
+| Integrate a Project ticket | `ticket-captain` | Its final Merge Sub-ticket runs a code-writer - conflicts and combined gates mapped, the merge performed (a conflict-free merge of the reviewed PR into its feature branch is `dydo merge`, whose merge SHA is the candidate for the combined gates and merge review; a conflicted merge stays the local merge), a resolution that refactored leaving its code no worse than either side - then a fresh merge reviewer, preserving the merge commit and hop SHAs; the map holder wires the order and may advance an independent ready PR. Parent stays `Ready to Merge` until merge PASS, then both close `Done`. |
 | Integrate an atomic ticket | `ticket-captain` | No Merge Sub-ticket: the PR into main carries its reviewer PASS, the captain confirms CI green and sets `Ready to Merge`, and the user clicks the merge. The captain then closes the ticket `Done` and cleans up. |
 | Land the Project | user | The landing Merge Ticket prepares main into feature and obtains acceptance PASS; the user clicks feature into main as a merge commit, never squash. |
 
@@ -85,17 +85,12 @@ permissions and uncertain native interfaces are examples of such a risk. Keep on
 it. This scale rule does not weaken required G/M, integration or release gates, and skipped native
 proof is never runtime proof.
 
-Before an expensive test, cheaply prove the repository or snapshot, intended selection and nonzero
-discovery. A `code-writer` hop runs the tests relevant to the change while building, then the full
-suite and static gate of each changed stack once before it returns, and its review judges that run.
-Other crew hops and their reviews prove with the tests relevant to the change and the cheap static
-checks. The full suites and the whole gate set run at the ticket's final gates, its Merge
-Sub-ticket's combined gates and the landing. Within one such gate run, each suite executes once.
-Record every gate result with candidate, command, environment or session, exit and result
-location; do not interrupt a quiet healthy test merely because it is silent. Reuse exact-candidate
-evidence only where the gate and environment permit it, rerunning after relevant changes or new
-concerns and at distinct mandatory integration or release boundaries. Validate uncertain native
-interface shapes early.
+The [testing strategy](./testing-strategy.md#feature-proof-and-gate-placement) owns selection,
+stage placement, runner prerequisites, shared-host constraints and exact-candidate evidence reuse.
+The captain pins those project-owned commands in Exact gates; the writer proves that hop's actual
+reach and the reviewer judges its record. Required combined-merge and release gates stay at their
+boundaries. Reconcile existing active gate contracts explicitly before changing obligations.
+Validate uncertain native interface shapes early.
 
 ## Delegation
 

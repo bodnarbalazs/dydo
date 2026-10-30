@@ -195,9 +195,14 @@ Charting starts from a Linear Project and a loose destination.
    **If this surfaces no fog** (the way to the destination is already clear, the whole journey small
    enough for one session), no map is needed.
 3. **Write the map:** Destination and Notes filled in, Resolutions so far empty, the fog sketched into
-   **Not yet specified**.
+   **Not yet specified**. For shared behavior or decisions needing one current anchor, choose an
+   applicable reviewed architecture plan or feature spec, creating a spec where needed under
+   `dydo/reference/feature-spec-convention.md`. Commit a new spec under the map holder's custody and
+   make that commit reachable to recipients before relying on its Project-map link; otherwise record
+   the anchor as unresolved. Atomic intent stays in its ticket.
 4. **Create the tickets you can specify now**, both Tasks and Wayfinding Tickets, then wire blocking
-   edges in a **second pass** (tickets need keys before they can reference each other). Wiring sorts
+   edges in a **second pass** (tickets need keys before they can reference each other). Derive affected
+   Tasks from the anchor's relevant sections and link those sections in their bounded contracts. Wiring sorts
    them into the frontier and the blocked; everything you cannot yet specify stays in the fog. At
    Project scale, group the Tasks into the Project's Milestones in Linear: few and meaningful, the
    walking skeleton first, the landing last.

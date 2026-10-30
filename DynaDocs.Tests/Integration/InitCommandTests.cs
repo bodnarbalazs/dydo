@@ -1352,6 +1352,72 @@ public class InitCommandTests : IntegrationTestBase
         Assert.Contains("Bash(dydo:*)", entries);
     }
 
+    [Fact]
+    public async Task Join_Claude_AddsTheDydoMergeAllowEntriesOnce()
+    {
+        (await InitProjectAsync("claude")).AssertSuccess();
+        (await JoinProjectAsync("claude")).AssertSuccess();
+        (await JoinProjectAsync("claude")).AssertSuccess();
+
+        var allow = Assert.IsType<JsonArray>(JsonNode.Parse(ReadFile(".claude/settings.local.json"))!["permissions"]!["allow"]);
+        var entries = allow.Select(entry => entry!.GetValue<string>()).ToList();
+        Assert.Equal(1, entries.Count(entry => entry == "Bash(dydo merge:*)"));
+        Assert.Equal(1, entries.Count(entry => entry == "PowerShell(dydo merge:*)"));
+    }
+
+    [Theory]
+    [InlineData("codex")]
+    [InlineData("all")]
+    public async Task Init_Codex_WritesTheDydoMergeRuleForDydoAndDydoExe(string integration)
+    {
+        (await InitProjectAsync(integration)).AssertSuccess();
+
+        var rules = ReadFile(".codex/rules/dydo.rules");
+        Assert.Contains("pattern = [[\"dydo\", \"dydo.exe\"], \"merge\"]", rules);
+        Assert.Contains("dydo.exe merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567", rules);
+    }
+
+    // Codex itself judges the rule init writes; it skips where Codex is not installed (CI).
+    [SkippableFact]
+    public async Task CodexExecPolicy_AllowsTheDydoMergeRuleInitWrites()
+    {
+        (await InitProjectAsync("codex")).AssertSuccess();
+        var rules = Path.Combine(TestDir, ".codex", "rules", "dydo.rules");
+        const string sha = "0123456789abcdef0123456789abcdef01234567";
+
+        var merge = CodexExecPolicy(rules, "dydo", "merge", "12", "--match-head-commit", sha, "--dry-run");
+        Skip.If(merge == null, "codex is not on PATH");
+
+        Assert.Contains("\"decision\":\"allow\"", merge);
+        Assert.Contains("\"decision\":\"allow\"", CodexExecPolicy(rules, "dydo.exe", "merge", "12", "--match-head-commit", sha));
+        Assert.DoesNotContain("\"decision\":\"allow\"", CodexExecPolicy(rules, "dydo", "init", "codex"));
+    }
+
+    private static string? CodexExecPolicy(string rules, params string[] command)
+    {
+        var start = new System.Diagnostics.ProcessStartInfo("codex")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false
+        };
+        foreach (var argument in (string[])["execpolicy", "check", "--rules", rules, .. command])
+            start.ArgumentList.Add(argument);
+        try
+        {
+            using var process = System.Diagnostics.Process.Start(start)!;
+            var error = process.StandardError.ReadToEndAsync();
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+            Assert.True(process.ExitCode == 0, error.Result);
+            return output;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return null;
+        }
+    }
+
     [Theory]
     [InlineData("codex")]
     [InlineData("all")]

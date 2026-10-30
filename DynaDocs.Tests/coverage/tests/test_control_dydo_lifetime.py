@@ -86,7 +86,12 @@ class ControlDydoLifetimeTests(unittest.TestCase):
         def interrupt_after_output(kernel, reader):
             nonlocal interrupted
             original(kernel, reader)
-            if reader["bytes"] and not interrupted:
+            stream = Path(reader["target"].name)
+            if interrupted or stream.name != "stdout.log":
+                return
+            # Interpreter startup diagnostics on stderr do not establish readiness.
+            reader["target"].flush()
+            if b"descendant-ready" in stream.read_bytes().splitlines():
                 interrupted = True
                 raise KeyboardInterrupt()
 

@@ -85,17 +85,12 @@ permissions and uncertain native interfaces are examples of such a risk. Keep on
 it. This scale rule does not weaken required G/M, integration or release gates, and skipped native
 proof is never runtime proof.
 
-Before an expensive test, cheaply prove the repository or snapshot, intended selection and nonzero
-discovery. A `code-writer` hop runs the tests relevant to the change while building, then the full
-suite and static gate of each changed stack once before it returns, and its review judges that run.
-Other crew hops and their reviews prove with the tests relevant to the change and the cheap static
-checks. The full suites and the whole gate set run at the ticket's final gates, its Merge
-Sub-ticket's combined gates and the landing. Within one such gate run, each suite executes once.
-Record every gate result with candidate, command, environment or session, exit and result
-location; do not interrupt a quiet healthy test merely because it is silent. Reuse exact-candidate
-evidence only where the gate and environment permit it, rerunning after relevant changes or new
-concerns and at distinct mandatory integration or release boundaries. Validate uncertain native
-interface shapes early.
+The [testing strategy](./testing-strategy.md#feature-proof-and-gate-placement) owns selection,
+stage placement, runner prerequisites, shared-host constraints and exact-candidate evidence reuse.
+The captain pins those project-owned commands in Exact gates; the writer proves that hop's actual
+reach and the reviewer judges its record. Required combined-merge and release gates stay at their
+boundaries. Reconcile existing active gate contracts explicitly before changing obligations.
+Validate uncertain native interface shapes early.
 
 ## Delegation
 

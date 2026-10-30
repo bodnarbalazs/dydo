@@ -18,7 +18,9 @@ map and how the tickets move, integrate, and finish together.
 3. From the repository root, read `dydo/guides/working-tree-contract.md`.
 4. From the repository root, read `dydo/understand/about.md`.
 5. From the repository root, read `dydo/understand/architecture.md`.
-6. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
+6. When a captain reports inherited or infrastructure failures, read Evidence and inherited failures
+   in `dydo/guides/testing-strategy.md` from the repository root.
+7. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
 
 ## Boundary
 
@@ -68,17 +70,22 @@ map and how the tickets move, integrate, and finish together.
 
 1. **Read the board.** Wake on a captain's return or the user's word. Read the Project, its map,
    blockers, hop SHAs and reviews; resume at the stage the record proves. Process an Inquisition's
-   release through step 7 before generic pickable commissioning. **Done:** every pickable
-   ticket and every Merge whose turn came is known. With nothing in flight, wait for the user's word.
+   release through step 7 before generic pickable commissioning. On a completed return, carry out
+   the authorized continuation or fallback through its captain, or record a hold with owner and
+   reason; explicit human holds remain. Reconcile affected current map claims with the latest
+   outcome before yielding. **Done:** every pickable ticket and every Merge whose turn came is
+   known. Wait for the user's word only when nothing is in flight and no authorized work is pickable.
 2. **Chart and approve.** When the route is unknown, set the Project `Planning` and chart it with
    `wayfinder`: the map in the Project description, naming you its holder, the first pickable tickets, and each Project-level
-   Question in `Todo`, wired to every waiter. The Project and its tickets are the plan. Place the
-   map's Milestones in Linear. Keep them few, each one a meaningful chunk of work where a drift
-   from the user's intent would show. The first is the walking skeleton: the rough foundation the
-   Project is built on, the first solid thing where he can make decisions and understand the
-   architecture. File its Walkthrough Ticket with the map, wired as a native blocker of the next
-   Milestone's delivery tickets except in overnight mode. The landing is the last Milestone. Every
-   delivery ticket belongs to one. Only a cross-cutting architecture contract earns a repository plan: write it at
+   Question in `Todo`, wired to every waiter. Record the shared anchor choice from `wayfinder`, when
+   one is needed, and contract affected tickets from its relevant sections before commissioning them.
+   The Project and its tickets are the plan. Place the map's Milestones in Linear. Keep them few,
+   each one a meaningful chunk of work where a drift from the user's intent would show. The first
+   is the walking skeleton: the rough foundation the Project is built on, the first solid thing
+   where he can make decisions and understand the architecture. File its Walkthrough Ticket with the
+   map, wired as a native blocker of the next Milestone's delivery tickets except in overnight mode.
+   The landing is the last Milestone. Every delivery ticket belongs to one. Only a cross-cutting
+   architecture contract earns a repository plan: write it at
    `dydo/project/plans/<kebab-case>.md` in the shape the `project-plan` rubric checks, commit it, and
    send it to a fresh `reviewer(project-plan)` with rubric, Contract at the plan SHA, Candidate SHA
    and Base SHA. The block is a Project update. Correct a FAIL's blockers at a new commit and review
@@ -137,7 +144,9 @@ map and how the tickets move, integrate, and finish together.
    `what-would-balazs-do` when it is DR-grade or irreversible, or when the user is away; it sets the
    Question's wiring. Wire every blocker and settle what is visible before commissioning the
    affected delivery ticket. Accept a Captain's local course correction when later facts expose it;
-   move cross-ticket and Project-wide discoveries back onto your map. **Done:** every visible unknown
+   move cross-ticket and Project-wide discoveries back onto your map. For evidenced inherited or
+   infrastructure failures, assign the separate repair owner or escalate the unresolved decision;
+   record blocked gates without converting the failure into a pass. **Done:** every visible unknown
    is resolved or has the right owner, record, and blocker. Set and revisit priority on every human
    waiter by the standard's guide; AFK order remains in the map and blockers.
 7. **Offer the inquisition.** Once the feature is integrated, file an Inquisition in `Backlog` with

@@ -15,7 +15,7 @@ A feature map rots the moment the app changes. This skill is the upkeep loop for
 The bar for every proof an agent claims, an upkeep run's or any other.
 
 - **Proof** is evidence you observed yourself in this session: command output, a reproduction, a screenshot. Green mocked tests do not prove that the user experience works.
-- **The ladder.** Use the most direct proof the change allows: reproduce the failure, fix it, then watch the same reproduction pass; run the checks CI runs; add one focused test that fails without the fix when the behaviour has none; for UI or runtime behaviour, drive the app and look.
+- **The ladder.** Use the most direct proof the change allows: reproduce the failure, fix it, then watch the same reproduction pass; run the project-declared checks for this stage (read Feature proof and gate placement in `dydo/guides/testing-strategy.md` from the repository root); add one focused test that fails without the fix when the behaviour has none; for UI or runtime behaviour, drive the app and look.
 - **Proof recipe.** The crew member who did the work hands it up in its return's `proof:`: the exact commands or steps it ran and the evidence each showed, exact enough to rerun unchanged.
 - **Cannot prove it** means not confident: say so on the record instead of claiming proof.
 

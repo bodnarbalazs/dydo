@@ -207,11 +207,12 @@ required connector capability.
 | `Grilling` | `## Subject` (the plan, decision or idea), `## Tree` of choices with their answers and reasoning, `## Records` linked. |
 | `Walkthrough` | `## Checkpoint` (the Milestone or the landing, its branch and SHA), the four-part tour, `## Verdict` (his words, or the skip), `## Findings` as linked tickets. |
 
-`## Exact gates` lists its two scales separately: the cheap checks and change-relevant tests that
-prove one hop, and the full suites and whole gate set that run at the ticket's final gates, its Merge
-Sub-ticket's combined gates and the landing. A `code-writer` hop runs the relevant tests while
-building, then the full suite and static gate of each changed stack once before it returns; other
-crew briefed for one hop take the first list alone.
+`## Exact gates` binds the [testing strategy](../guides/testing-strategy.md#feature-proof-and-gate-placement)
+to real project commands: selected own/reached features and parent-shared tests, Light/Heavy levels,
+prerequisites and stage, applicable static/mutation assurance, final coverage producer/consumer,
+and permitted evidence reuse. List hop proof separately from final, combined-merge and release
+gates. Name unavailable support and explicitly reconcile older active obligations; no gate is
+cancelled retrospectively by a new default.
 
 ## Communication and evidence
 

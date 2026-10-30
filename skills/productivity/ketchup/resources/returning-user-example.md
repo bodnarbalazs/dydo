@@ -2,11 +2,11 @@
 
 ## Example
 
-> **Frozen Dydo project example — 30 October 2026, 16:43 UTC.** This scenario is for refining ketchup. Its questions and actions are not requests to answer or act now, and grant no new permissions. It includes the statechart and guard explanations prepared at 16:38:14 and 16:39:45 UTC.
+> **Frozen Dydo project example — operational state at 30 October 2026, 16:43 UTC.** This scenario is for refining ketchup, not requesting answers or actions now. The statechart and guard explanations were prepared at 16:38:14 and 16:39:45 UTC; the mutation recommendation below incorporates the statechart brief's later revision at 17:22:08.457 UTC. That explanation update changes no recorded answer, permission or work status.
 
 **Dydo 3.6.0 is improving the tools and shared methods agents use to work safely and keep delivery moving.** The concrete work includes fixing a shell-command guard that rejects harmless searches and writes, adding a tool that makes formal-model failures visible, and making completed delivery lead to the next authorized action.
 
-**Two guidance changes have landed; guard and statechart acceptance remain unresolved, and genuine Codex/T3 overnight approval support is still missing.** The admiral has now prepared the guard and statechart explanations below. Those choices are unanswered. Catch-up wording is being rewritten from your feedback; neither the rewrite nor a partial walkthrough means the release is accepted.
+**Guidance for acting on completed work and carrying shared feature intent has landed; guard and statechart acceptance remain unresolved, and genuine Codex/T3 overnight approval support is still missing.** The admiral has now prepared the guard and statechart explanations below. Those choices are unanswered. Catch-up wording is being rewritten from your feedback; neither the rewrite nor a partial walkthrough means the release is accepted.
 
 ### Agent shell-command guard — the narrow correction is held
 
@@ -73,7 +73,7 @@ The work also evolved beyond platform adaptation: review required maintained-cod
 
 ✅ **The adaptation has retained Windows/Linux functional proof and reviewed TypeScript measurements.**
 
-The six maintained runtime modules under `skills/engineering/statechart/scripts/` are `frontends/dot.ts`, `run.ts`, `statechart.ts`, `worker.ts`, `windows.ts` and `windows-cleanup.ts`. Their retained measurements meet line coverage ≥80%, branch coverage ≥60%, cognitive complexity ≤20 and HCRAP ≤20. Platform campaigns cover Windows and Linux behavior; four scenario sensitivity/restoration pairs are complete.
+The six maintained runtime modules under `skills/engineering/statechart/scripts/` are `frontends/dot.ts`, `run.ts`, `statechart.ts`, `worker.ts`, `windows.ts` and `windows-cleanup.ts`. Their retained measurements meet line coverage ≥80%, branch coverage ≥60%, cognitive complexity ≤20 and HCRAP ≤20. HCRAP is a risk score combining control-flow complexity with untested code. Platform campaigns cover Windows and Linux behavior; four scenario sensitivity/restoration pairs are complete.
 
 ✅ **The embedded Windows native adapter has exact-source C# proof; it is no longer waiting for instrumentation.**
 
@@ -111,10 +111,12 @@ I recommend the narrowly named skip-and-record route with the admiral owning fol
 
 ❓ **HITL — separately record missing changed-code mutation as a delivery gap, or require a defined mutation campaign before delivery?** ([DYD-434](https://linear.app/bodnar-balazs/issue/DYD-434))
 
-- **Record a separate delivery gap.** Retain the functional/static/review evidence and an explicit admiral-owned follow-up, accepting that some implementation regressions may escape the tests. This avoids coupling delivery to unadopted tooling, without claiming mutation passed.
-- **Require mutation proof first.** The admiral must define operators, changed-code inclusion, native/lifecycle containment, equivalent-mutant handling and an acceptance criterion, then obtain a bounded tooling commission. No reviewed campaign or cost estimate is prepared. This is new tooling work, not a routine rerun.
+- **Record a separate delivery gap.** Retain the functional/static/review evidence and an explicit admiral-owned follow-up. Tests may still miss deliberate defects in maintained launch, error-handling or cleanup behavior: no mutation score or surviving-mutant inventory exists, and four expected-value examples do not substitute for one. This avoids coupling delivery to unadopted tooling, without claiming mutation passed.
+- **Require mutation proof first.** The admiral must define operators, changed-code inclusion, native/lifecycle containment, equivalent-mutant handling, an acceptance criterion and an estimate before requesting a bounded tooling commission. No reviewed campaign or cost estimate is prepared. This is new tooling work, not a routine rerun.
 
-My recommendation is to decide this explicitly and separately: accepting the PowerShell measurement gaps must not silently accept mutation absence. Without the required dispositions, statechart cannot be offered as ready to merge.
+**The admiral recommends accepting the absent mutation campaign as a named gap for this statechart delivery, with the admiral accountable for follow-up.** The retained Windows/Linux functional and native lifecycle proof, TypeScript coverage/static checks, exact-source C# parity/measurements, independent reviews and corrected scenario checks provide concrete delivery assurance. Mutation effectiveness remains unproved. Requiring it first would add an unprepared tooling campaign with unknown feasibility and cost; this recommendation accepts a bounded assurance gap, not defect-free code or a quantified delay.
+
+If you accept it, the admiral must explicitly amend the contract and record the exact maintained runtime scope, missing proof and follow-up owner. Later scoped adoption is not yet commissioned or scheduled. If you require mutation assurance first, the campaign preparation above is owed before execution. DR048's static skip is not an automatic mutation waiver, and the prior tribunal did not decide this. The separate PowerShell choice remains unanswered and the readiness hold stays in force; without the required dispositions, statechart cannot be offered as ready to merge.
 
 **AFK, conditional — the admiral records the exact disposition and contracts any selected follow-up before delivery resumes.**
 

@@ -21,11 +21,19 @@ The map holder directs delivery; a commissioned reporter reports it. A catch-up 
 
 For a frozen example, state its date and historical purpose once at the start. Its questions and actions illustrate that scenario; they are not current requests or permissions. Keep later facts outside the frozen account.
 
+## Urgent human attention
+
+Reserve **⚠️ STOP AND READ** for a rare section where missing or delaying the message has concrete serious consequences: active security exposure, imminent significant loss, a consequential deadline, or safe continuation requiring a specific human check. Routine importance, blockers, approvals, warnings and speculative risk do not qualify. State the evidence and uncertainty honestly.
+
+Place this compact section before routine content, fully visible and never in an accordion. Open and close it with **⚠️**. Inside, retain normal **❗** actions and **❓** decisions, with the actual owner and dependency. Give only applicable facts: what happened or is imminent, the consequence if missed, the exact human action or decision and its deadline or trigger, which affected work is paused, and what safely continues. Omit template filler and do not repeat secrets.
+
+The icon and delivery do not prove receipt. If safe continuation requires a response, state the hold and pause only the affected step until the required explicit acknowledgement or answer arrives. Silence, a reply on another topic and elapsed time do not count. Acknowledgement does not authorize a separate action. Continue already-authorized safe containment and independent work where appropriate.
+
 ## Build the account
 
-Open with the project purpose, current focus and essential state. Group by recognizable systems, problems or outcomes. Keep ticket IDs and agent rosters out of the organizing structure. Put consequential changes and decisions first. If nothing changed and nothing waits on the user, say so and stop.
+After any qualifying warning, open the routine account with the project purpose, current focus and essential state. Group by recognizable systems, problems or outcomes. Keep ticket IDs and agent rosters out of the organizing structure. Put consequential changes and decisions first. If nothing changed and nothing waits on the user, say so and stop.
 
-Mark every first-order substantive item with its matching cue from this closed vocabulary. Give it a short lead that carries its meaning. Supporting paragraphs or option bullets belong beneath that lead; a simple item needs no invented branches.
+Use this closed vocabulary of item cues and one section boundary. Mark every first-order substantive item with its matching item cue and a short lead that carries its meaning. Supporting paragraphs or option bullets belong beneath that lead; a simple item needs no invented branches.
 
 | Cue | Meaning |
 |---|---|
@@ -40,6 +48,7 @@ Mark every first-order substantive item with its matching cue from this closed v
 | 💬 | Live HITL discussion, with its actual state |
 | 📖 | Contextual glossary |
 | 🔎 | Optional evidence or detail |
+| ⚠️ | STOP AND READ section boundary, wrapping normal item cues |
 
 Each area uses four plain headings, without emojis, in this order:
 

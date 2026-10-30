@@ -16,17 +16,15 @@ import control_dydo as control
 
 
 class ControlDydoContractTests(unittest.TestCase):
-    real_process = staticmethod(subprocess.run)
-
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix="dydo-control-test-")
         self.addCleanup(temporary.cleanup)
         self.parent = Path(temporary.name)
         self.addCleanup(patch.stopall)
         patch.object(control, "RUNS", self.parent / "runs").start()
-        self.child = patch.object(control.subprocess, "run", side_effect=self.process).start()
-        self.head = b"pinned\n"
-        self.untracked = b""
+        self.child = patch.object(control, "run_owned", side_effect=self.process).start()
+        self.head = "pinned\n"
+        self.untracked = ""
         self.sessions = set()
         self.run = control.allocate()
 
@@ -41,7 +39,7 @@ class ControlDydoContractTests(unittest.TestCase):
         return self.cli_process(argv, options)
 
     def git(self, argv, cwd):
-        output = b""
+        output = ""
         if argv[1] == "rev-parse":
             output = self.head
         elif argv[1] == "ls-files":
@@ -106,15 +104,16 @@ class ControlDydoContractTests(unittest.TestCase):
         self.assertEqual("pinned", state["candidate"]["head"])
         self.assertIn("dydo.dll", state["build"])
 
-    def test_argv_is_fixed_shell_free_hidden_and_inherits_fifo(self):
+    def test_argv_is_fixed_shell_free_bounded_and_inherits_fifo(self):
         self.ready()
         self.invoke("drive", "activation")
         for call in self.child.call_args_list:
             options = call.kwargs
             self.assertNotIn("shell", options)
-            self.assertEqual(control.HIDDEN, options["creationflags"])
-            if "env" in options:
-                self.assertEqual(os.environ.get("LC_SUITE_SLOT_TICKET"), options["env"].get("LC_SUITE_SLOT_TICKET"))
+            self.assertGreater(options["timeout"], 0)
+            self.assertLessEqual(options["timeout"], 600)
+            self.assertEqual(os.environ.get("LC_SUITE_SLOT_TICKET"), options["env"].get("LC_SUITE_SLOT_TICKET"))
+            if call.args[0][1] not in ("rev-parse", "diff", "ls-files"):
                 self.assertEqual(str(self.run / "scratch/codex-home"), options["env"]["CODEX_HOME"])
             self.assertNotIn("mode", call.args[0])
 
@@ -141,14 +140,13 @@ class ControlDydoContractTests(unittest.TestCase):
         foreign.mkdir()
         (foreign / "keep").write_text("foreign")
         link = self.run / "scratch/escape"
-        with patch.object(control.subprocess, "run", new=self.real_process):
-            if os.name == "nt":
-                subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(foreign)],
-                               check=True, capture_output=True, creationflags=control.HIDDEN)
-                self.addCleanup(os.rmdir, link)
-            else:
-                link.symlink_to(foreign, target_is_directory=True)
-                self.addCleanup(link.unlink)
+        if os.name == "nt":
+            subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(foreign)],
+                           check=True, capture_output=True, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            self.addCleanup(os.rmdir, link)
+        else:
+            link.symlink_to(foreign, target_is_directory=True)
+            self.addCleanup(link.unlink)
         with self.assertRaises(ValueError):
             self.invoke("cleanup")
         self.assertEqual("foreign", (foreign / "keep").read_text())
@@ -160,7 +158,7 @@ class ControlDydoContractTests(unittest.TestCase):
 
     def test_doctor_refuses_changed_source_and_retains_failure(self):
         self.ready()
-        self.head = b"different\n"
+        self.head = "different\n"
         with self.assertRaisesRegex(ValueError, "Candidate changed"):
             self.invoke("doctor")
         self.assertFalse((self.run / "scratch").exists())
@@ -180,7 +178,7 @@ class ControlDydoContractTests(unittest.TestCase):
 
     def test_doctor_detects_new_untracked_candidate_input(self):
         self.ready()
-        self.untracked = b"DynaDocs.Tests/coverage/tests/test_control_dydo.py\0"
+        self.untracked = "DynaDocs.Tests/coverage/tests/test_control_dydo.py\0"
         with self.assertRaisesRegex(ValueError, "Candidate changed"):
             self.invoke("doctor")
 
@@ -193,6 +191,18 @@ class ControlDydoContractTests(unittest.TestCase):
         self.assertIsNone(log["exit"])
         self.assertEqual("--version", log["argv"][-1])
         self.assertEqual("cannot launch", log["error"])
+
+    def test_candidate_timeout_retains_git_attempt_and_cleans_failed_launch(self):
+        self.child.side_effect = subprocess.TimeoutExpired(["git", "rev-parse", "HEAD"], 30)
+        with patch.object(control, "allocate", return_value=self.run):
+            with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(subprocess.TimeoutExpired):
+                control.main(["launch"])
+        self.assertEqual(["git", "rev-parse", "HEAD"], self.child.call_args.args[0])
+        self.assertEqual(30, self.child.call_args.kwargs["timeout"])
+        receipt = json.loads(next((self.run / "evidence").glob("source-*.json")).read_text())
+        self.assertEqual("TimeoutExpired", receipt["error_type"])
+        self.assertFalse((self.run / "scratch").exists())
+        self.assertFalse((self.run / "busy").exists())
 
     def test_doctor_requires_launch_and_installed_hook(self):
         with self.assertRaisesRegex(ValueError, "not ready"):
@@ -243,6 +253,23 @@ class ControlDydoContractTests(unittest.TestCase):
         self.assertFalse((project / "dydo/verification-broken.md").exists())
         receipts = [json.loads(path.read_text()) for path in (self.run / "evidence").glob("check-*.json")]
         self.assertEqual([0, 0, 1], sorted(row["exit"] for row in receipts))
+
+    def test_unconfirmed_child_cleanup_retains_the_broken_fixture(self):
+        project = self.ready()
+        broken = project / "dydo/verification-broken.md"
+
+        def unconfirmed(argv, **options):
+            if argv[-1] == "check" and broken.exists():
+                options["output"].mkdir()
+                control.write_json(options["output"] / "result.json", {"cleanup_confirmed": False})
+                raise RuntimeError("Unconfirmed child cleanup")
+            return self.process(argv, **options)
+
+        self.child.side_effect = unconfirmed
+        with self.assertRaisesRegex(ValueError, "cleanup unconfirmed"):
+            self.invoke("drive", "init-docs")
+        self.assertTrue(broken.exists())
+        self.assertFalse((self.run / "busy").exists())
 
     def test_guard_payload_is_never_executed(self):
         project = self.ready()

@@ -9,13 +9,13 @@ from pathlib import Path
 import re
 import shutil
 import stat
-import subprocess
 import tempfile
 import uuid
 
+from owned_process import run_owned
+
 ROOT = Path(__file__).resolve().parents[4]
 RUNS = Path(tempfile.gettempdir()) / "dydo-verification"
-HIDDEN = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 FIXTURE_FILES = ("dydo.json", "dydo/index.md", ".claude/settings.json", "AGENTS.md", "dydo/files-off-limits.md")
 
 
@@ -51,16 +51,16 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def candidate():
+def candidate(run):
     values = []
     for arguments in (("rev-parse", "HEAD"), ("diff", "--binary", "HEAD"),
                       ("ls-files", "--others", "--exclude-standard", "-z")):
-        result = subprocess.run(["git", *arguments], cwd=ROOT, capture_output=True,
-                                check=True, creationflags=HIDDEN)
+        result = execute(run, "source", ["git", *arguments], ROOT, timeout=30, env=dict(os.environ))
+        success(result)
         values.append(result.stdout)
-    untracked = {name: digest(ROOT / name) for name in values[2].decode().split("\0") if name}
-    return {"head": values[0].decode().strip(),
-            "diff_sha256": hashlib.sha256(values[1]).hexdigest(), "untracked": untracked}
+    untracked = {name: digest(ROOT / name) for name in values[2].split("\0") if name}
+    return {"head": values[0].strip(),
+            "diff_sha256": hashlib.sha256(values[1].encode("utf-8", errors="surrogateescape")).hexdigest(), "untracked": untracked}
 
 
 def allocate():
@@ -97,18 +97,21 @@ def exclusive(run):
         lock.unlink()
 
 
-def execute(run, label, argv, cwd, payload=None):
-    env = {**os.environ, "UseSharedCompilation": "false", "MSBUILDDISABLENODEREUSE": "1",
+def execute(run, label, argv, cwd, payload=None, timeout=120, env=None):
+    env = env if env is not None else {**os.environ, "UseSharedCompilation": "false", "MSBUILDDISABLENODEREUSE": "1",
            "DOTNET_CLI_USE_MSBUILD_SERVER": "0",
            "CODEX_HOME": str(run / "scratch/codex-home")}
     receipt = run / "evidence" / f"{label}-{uuid.uuid4().hex}.json"
-    row = {"argv": argv, "cwd": str(cwd), "stdin": payload, "exit": None}
+    output = receipt.with_suffix("")
+    row = {"argv": argv, "cwd": str(cwd), "stdin": payload, "exit": None,
+           "timeout_seconds": timeout, "lifecycle": str(output / "result.json")}
     write_json(receipt, row)
     try:
-        result = subprocess.run(argv, cwd=cwd, env=env, input=payload or "", capture_output=True,
-                                text=True, encoding="utf-8", errors="replace", creationflags=HIDDEN)
-    except OSError as error:
-        write_json(receipt, {**row, "error": str(error)})
+        result = run_owned(argv, cwd=cwd, env=env, input=payload or "", output=output, timeout=timeout)
+    except (Exception, KeyboardInterrupt) as error:
+        write_json(receipt, {**row, "error": str(error), "error_type": type(error).__name__,
+                            "stdout_path": str(output / "stdout.log"),
+                            "stderr_path": str(output / "stderr.log")})
         raise
     write_json(receipt, {**row, "exit": result.returncode,
                         "stdout": result.stdout, "stderr": result.stderr})
@@ -142,17 +145,17 @@ def fixture_hashes(run):
 
 
 def launch(run):
-    source = candidate()
+    source = candidate(run)
     write_json(run / "evidence/candidate.json", source)
     project = run / "scratch/project"
     project.mkdir()
     success(execute(run, "build", ["dotnet", "build", str(ROOT / "DynaDocs.csproj"),
                                   "--configuration", "Release", "--output", str(run / "scratch/bin"),
-                                  "-p:PublishAot=false", "-p:UseSharedCompilation=false", "-nodeReuse:false"], ROOT))
+                                  "-p:PublishAot=false", "-p:UseSharedCompilation=false", "-nodeReuse:false"], ROOT, timeout=600))
     success(execute(run, "git-init", ["git", "init", "--quiet"], project))
     success(cli(run, "init", ["init", "claude"]))
     installed_hook(run)
-    require(candidate() == source, "Candidate changed during build")
+    require(candidate(run) == source, "Candidate changed during build")
     write_json(run / "state.json", {"phase": "ready", "candidate": source,
                                     "build": build_hashes(run), "fixture": fixture_hashes(run)})
     doctor(run)
@@ -161,7 +164,7 @@ def launch(run):
 def doctor(run):
     state = json.loads((run / "state.json").read_text(encoding="utf-8"))
     require(state["phase"] == "ready", "Run is not ready")
-    require(state["candidate"] == candidate(), "Candidate changed; launch a fresh run")
+    require(state["candidate"] == candidate(run), "Candidate changed; launch a fresh run")
     require(state["build"] == build_hashes(run), "Built candidate changed")
     require((run / "scratch/project/.git").is_dir(), "Owned mock repository missing")
     installed_hook(run)
@@ -175,12 +178,10 @@ def init_docs(run):
     require(not broken.exists(), "Fixture path already exists")
     broken.write_text("---\narea: general\ntype: reference\n---\n# Broken\n\n[Missing](missing-target.md)\n",
                       encoding="utf-8")
-    try:
-        result = cli(run, "check-broken", ["check"])
-        require(result.returncode == 1 and "missing-target.md" in result.stdout,
-                "Check did not report the introduced broken link")
-    finally:
-        broken.unlink()
+    result = cli(run, "check-broken", ["check"])
+    require(result.returncode == 1 and "missing-target.md" in result.stdout,
+            "Check did not report the introduced broken link")
+    broken.unlink()
     success(cli(run, "check-restored", ["check"]))
     write_json(run / "evidence/init-side-effects.json", fixture_hashes(run))
 
@@ -223,6 +224,9 @@ def activation(run):
 def cleanup(run):
     # Recheck the entire tree immediately before removal; evidence stays outside scratch.
     owned(run)
+    for receipt in (run / "evidence").glob("*/result.json"):
+        result = json.loads(receipt.read_text(encoding="utf-8"))
+        require(result["cleanup_confirmed"], "Process cleanup unconfirmed; retain scratch and evidence")
     scratch = run / "scratch"
     if scratch.exists():
         shutil.rmtree(scratch)

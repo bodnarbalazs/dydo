@@ -25,6 +25,14 @@ asserts the explicit owned root before mutation, checks denial leaves its file u
 recreates the command parser to read back both on and off after an explicit transition. This is
 internal command-parser evidence, separate from real CLI and synthetic hook-protocol evidence.
 
+The officer's instruction-following is a separate observation. At an authorized muster or
+morning brief, retain the actual host/configuration discovery and the early fallback shown while
+the user is present; then retain any refusal, the fresh readback and the subsequent announcement
+in their observed order. If readback disagrees, the observation must end with the transition
+incomplete. Review both on and off. Reading instruction order or matching prompt words does not
+exercise this workflow. The automated protocol and parser recipes above leave this human/agent
+interaction unverified; they do not establish that an announcement waited for readback.
+
 ## Gotchas
 
 A worktree, cwd or `CODEX_HOME` does not isolate machine mode. Never run a real mode setter for

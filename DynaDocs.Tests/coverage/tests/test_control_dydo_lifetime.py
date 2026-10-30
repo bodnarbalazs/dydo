@@ -1,0 +1,124 @@
+"""Real Windows job ownership: blocked descendants, interruption and retained evidence."""
+import contextlib
+import io
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "skills/engineering/verify-dydo/scripts"))
+import control_dydo as control
+import owned_process
+
+
+@unittest.skipUnless(os.name == "nt" and sys.version_info[:2] == (3, 12), "Windows CPython 3.12 owner")
+class ControlDydoLifetimeTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="dydo-lifetime-")
+        self.addCleanup(self.temporary.cleanup)
+        root = patch.object(control, "RUNS", Path(self.temporary.name) / "runs")
+        root.start()
+        self.addCleanup(root.stop)
+        self.run = control.allocate()
+        self.addCleanup(self.retain)
+
+    def retain(self):
+        destination = os.environ.get("DYDO_LIFETIME_EVIDENCE")
+        if destination:
+            shutil.copytree(self.run, Path(destination) / self._testMethodName)
+
+    def fixture(self, exit_root=False):
+        descendant = "import threading; print('descendant-ready', flush=True); threading.Event().wait()"
+        ending = "" if exit_root else "import threading; threading.Event().wait()"
+        script = ("import subprocess, sys; "
+                  f"subprocess.Popen([sys.executable, '-c', {descendant!r}], stdin=subprocess.DEVNULL, "
+                  "stdout=sys.stdout, stderr=sys.stderr, creationflags=subprocess.CREATE_NO_WINDOW); "
+                  + ending)
+        return [sys._base_executable, "-c", script]
+
+    def evidence(self, label):
+        receipt = json.loads(next((self.run / "evidence").glob(label + '-*.json')).read_text())
+        result = json.loads(Path(receipt["lifecycle"]).read_text())
+        self.assertTrue(result["cleanup_confirmed"])
+        self.assertTrue(result["root_signaled"])
+        self.assertTrue(result["job_empty"])
+        self.assertTrue(result["streams_complete"])
+        self.assertGreaterEqual(result["job_total"], 2)
+        self.assertTrue(all(row["signaled"] for row in result["held_handles"]))
+        self.assertIn("descendant-ready", Path(receipt["stdout_path"]).read_text())
+        return receipt, result
+
+    def test_timeout_reaps_root_and_descendant_and_preserves_foreign_process(self):
+        with subprocess.Popen([sys._base_executable, '-c', 'import threading; threading.Event().wait()'],
+                              creationflags=subprocess.CREATE_NO_WINDOW) as foreign:
+            try:
+                with self.assertRaises(subprocess.TimeoutExpired):
+                    control.execute(self.run, "hung", self.fixture(), self.run, timeout=3)
+                receipt, result = self.evidence("hung")
+                self.assertEqual("TimeoutExpired", receipt["error_type"])
+                self.assertEqual("timeout", result["failure_category"])
+                self.assertIsNone(foreign.poll())
+                control.cleanup(self.run)
+                self.assertFalse((self.run / "scratch").exists())
+                self.assertTrue(Path(receipt["lifecycle"]).exists())
+            finally:
+                foreign.terminate()
+                foreign.wait(timeout=10)
+
+    def test_exited_root_does_not_leave_blocked_descendant(self):
+        with self.assertRaises(subprocess.TimeoutExpired):
+            control.execute(self.run, "orphan", self.fixture(exit_root=True), self.run, timeout=3)
+        _, result = self.evidence("orphan")
+        self.assertEqual(0, result["subject_status"])
+        control.cleanup(self.run)
+
+    def test_interrupt_after_descendant_output_cleans_before_releasing_busy(self):
+        original = owned_process.jobs.poll_pipe
+        interrupted = False
+
+        def interrupt_after_output(kernel, reader):
+            nonlocal interrupted
+            original(kernel, reader)
+            if reader["bytes"] and not interrupted:
+                interrupted = True
+                raise KeyboardInterrupt()
+
+        def launch(run):
+            control.execute(run, "interrupt", self.fixture(), run, timeout=10)
+
+        with patch.object(control, "allocate", return_value=self.run), patch.object(control, "launch", launch):
+            with patch.object(owned_process.jobs, "poll_pipe", side_effect=interrupt_after_output):
+                with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(KeyboardInterrupt):
+                    control.main(["launch"])
+        self.evidence("interrupt")
+        self.assertFalse((self.run / "busy").exists())
+        self.assertFalse((self.run / "scratch").exists())
+        failure = json.loads(next((self.run / "evidence").glob("failure-*.json")).read_text())
+        self.assertEqual("KeyboardInterrupt", failure["type"])
+
+    def test_stdin_stdout_stderr_and_nonzero_exit_are_preserved(self):
+        script = "import sys; print(sys.stdin.read(), end=''); print('error', file=sys.stderr); sys.exit(7)"
+        result = control.execute(self.run, "streams", [sys.executable, "-c", script], self.run, "payload\n")
+        self.assertEqual((7, "payload\r\n", "error\r\n"), (result.returncode, result.stdout, result.stderr))
+        control.cleanup(self.run)
+
+    def test_unconfirmed_cleanup_retains_scratch(self):
+        output = self.run / "evidence/unconfirmed"
+        output.mkdir()
+        control.write_json(output / "result.json", {"cleanup_confirmed": False})
+        with self.assertRaisesRegex(ValueError, "cleanup unconfirmed"):
+            control.cleanup(self.run)
+        self.assertTrue((self.run / "scratch").exists())
+
+    def test_missing_executable_retains_command_receipt(self):
+        with self.assertRaises(FileNotFoundError):
+            control.execute(self.run, "absent", [str(self.run / 'absent.exe')], self.run)
+        receipt = json.loads(next((self.run / "evidence").glob("absent-*.json")).read_text())
+        self.assertEqual("FileNotFoundError", receipt["error_type"])
+        control.cleanup(self.run)

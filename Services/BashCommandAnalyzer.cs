@@ -821,7 +821,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         {
             var reading = ShellReader.Read(text, posix);
             if (reading.Failed || reading.Substitutions.Any(s => HasLaunchMark(s) && CountsNudge(s, ShellDialect.Posix, depth + 1))
-                || reading.Commands.Any(c => CommandCountsNudge(text, c, depth)))
+                || reading.Commands.Any(c => CommandCountsNudge(text, c, posix, depth)))
                 return true;
         }
         return false;
@@ -829,14 +829,15 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private static bool HasLaunchMark(string text) => text.Contains(LaunchMark, StringComparison.Ordinal);
 
-    private static bool CommandCountsNudge(string text, ShellReader.Command command, int depth)
+    private static bool CommandCountsNudge(string text, ShellReader.Command command, bool posix, int depth)
     {
         if (command.Redirections.Any(HasLaunchMark))
             return true;
         var call = ProgramCall(command.Words);
         if (call is { } executable && CommandPosition.ScriptOf(executable.Program, executable.Arguments) is { } script
             && HasLaunchMark(script.Text))
-            return script.Encoded || CountsNudge(script.Text, script.Dialect, depth + 1);
+            return script.Encoded || !MarkedScriptWordIsQuoted(text, command, posix)
+                || CountsNudge(script.Text, script.Dialect, depth + 1);
 
         for (var i = 0; i < command.Words.Count; i++)
         {
@@ -845,6 +846,21 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         }
         return command.Stdin.Where(HasLaunchMark).Any(body => BodyCountsNudge(command.Words, body, depth));
     }
+
+    // Re-reading an executable string must not turn an originally unquoted match into data.
+    // Unsupported concatenated strings stay counted even if the shell could eventually quote them.
+    private static bool MarkedScriptWordIsQuoted(string text, ShellReader.Command command, bool posix)
+    {
+        var pattern = posix ? PosixScriptWordRegex() : PowerShellScriptWordRegex();
+        return Enumerable.Range(0, command.Words.Count).Where(i => HasLaunchMark(command.Words[i]))
+            .All(i => pattern.IsMatch(text[command.WordRanges[i]]));
+    }
+
+    [GeneratedRegex("\\A(?:'[^']*'|\"(?:\\\\[\\s\\S]|[^\"\\\\])*\")\\z")]
+    private static partial Regex PosixScriptWordRegex();
+
+    [GeneratedRegex("\\A(?:'(?:''|[^'])*'|\"(?:`[\\s\\S]|\"\"|[^\"`])*\")\\z")]
+    private static partial Regex PowerShellScriptWordRegex();
 
     private static bool BodyCountsNudge(IReadOnlyList<string> words, string body, int depth)
     {

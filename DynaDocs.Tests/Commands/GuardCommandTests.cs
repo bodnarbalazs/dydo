@@ -904,6 +904,7 @@ public class GuardCommandTests : IDisposable
     [InlineData("git grep -n -E 'tail -f' --unknown")]
     [InlineData("grep -iE \"tail -f\" --unknown")]
     [InlineData("rg -n 'tail -f'concat docs")]
+    [InlineData("bash -c \"rg -n '\"tail -f\"' docs\"")]
     [InlineData("cat <<'EOF'\ntail -f app.log")]
     [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.Other -match 'tail -f' }")]
     [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'tail -f' -unknown }")]

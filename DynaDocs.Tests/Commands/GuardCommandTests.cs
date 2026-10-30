@@ -934,15 +934,15 @@ public class GuardCommandTests : IDisposable
     }
 
     [Theory]
-    [InlineData(ShellDialect.PowerShell, false)]
-    [InlineData(ShellDialect.Posix, true)]
-    [InlineData(ShellDialect.Unknown, true)]
-    public void Gs03_BoundedRelief_ProcessPredicateNeedsPowerShell(ShellDialect shell, bool warns)
+    [InlineData("PowerShell", false)]
+    [InlineData("Posix", true)]
+    [InlineData("Unknown", true)]
+    public void Gs03_BoundedRelief_ProcessPredicateNeedsPowerShell(string shell, bool warns)
     {
         WriteConfigWithOpenEndedPollNudges();
         var env = GuardCommand.GuardEnv.Load(_testDir);
         const string command = "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'tail -f' }";
-        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env, shell: shell));
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env, shell: Enum.Parse<ShellDialect>(shell)));
 
         Assert.Equal(warns ? (int?)ExitCodes.ToolError : null, result);
         Assert.Equal(warns, stderr.Contains("Open-ended Bash poll-loop detected", StringComparison.Ordinal));

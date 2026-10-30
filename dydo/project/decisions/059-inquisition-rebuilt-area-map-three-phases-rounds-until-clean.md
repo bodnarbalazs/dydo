@@ -114,8 +114,9 @@ The tracks are called **phases** below.
    and reviews it rather than starting from zero. Nits are never auto-patched. The inquisition
    merges nothing but its own record. A patch-lane Bug stays assigned to the inquisition's captain
    until its patch is attached, or its reason for none recorded, and is then unassigned; any other
-   Bug is pickable once filed. Its fix may merge into the feature mid-round, since the audit is pinned to its SHA (the captain's provisional call,
-   pending Balazs).
+   Bug is pickable once filed. Its fix may merge into the feature mid-round, since the inquisition
+   is pinned to its SHA. Balazs ratified this on 2026-10-30 in
+   [DYD-414](https://linear.app/bodnar-balazs/issue/DYD-414).
 8. **The record.** The inquisition delivers its own record as its last step: a docs-writer writes
    it, a docs reviewer checks it, and it merges into the feature branch. Audit and proof branches
    never merge, and each open Bug's reproduction ref is retained as before.

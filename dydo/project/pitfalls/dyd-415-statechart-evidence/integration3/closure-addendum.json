@@ -1,0 +1,22 @@
+{
+  "reference": "b08ab4417aeb7fba61dd2e559379960a79b6b53d",
+  "addedRow": {
+    "group": "retained-input",
+    "location": "source",
+    "path": "DynaDocs.Tests/coverage/inventory.py",
+    "sha256": "f90d162a5e6efefc3aa7a4f8a4851f9deb5250bdb1179bf1d02db1dfa10a6bcb",
+    "provenance": "DynaDocs.Tests/coverage/inventory.py@b08ab4417aeb7fba61dd2e559379960a79b6b53d",
+    "reviewedGitBlob": "5ba6ccbd24457314728ccf16d8732bb555e065ce",
+    "canonicalBlobSha256": "92c212a0874f166b1b10805f27474dd0cc97a6f6057402c89dee989996eec755",
+    "identityLayer": "Reviewed canonical LF Git bytes rendered CRLF for Windows working input",
+    "consumers": [
+      "DynaDocs.Tests/coverage/gate_inventory.py:6 import"
+    ],
+    "terminalImports": "stdlib only: hashlib,json,subprocess,pathlib"
+  },
+  "reason": "Direct repository import required when retained static-summary.py loads dependency_cycles",
+  "initialAttempt": "initial-attempt; all bytes preserved, 519-row result remains true at that scope",
+  "expectationFromCandidate": false,
+  "declaredBeforeRecipeEdits": true,
+  "bounds": "No other gate_inventory inventory functions are called; do not add their unused input graphs"
+}

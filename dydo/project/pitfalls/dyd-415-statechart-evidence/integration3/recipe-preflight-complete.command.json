@@ -1,0 +1,26 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+    "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\integration3\\recipe\\driver.py",
+    "--source",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-integration3-probes-complete-rcbg6pmk\\source",
+    "--work",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-integration3-probes-complete-rcbg6pmk\\fresh-work",
+    "--out",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-integration3-probes-complete-rcbg6pmk\\fresh-out",
+    "--normal-temp",
+    "C:\\Users\\User\\AppData\\Local\\Temp",
+    "--metric",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-integration3-probes-complete-rcbg6pmk\\metric",
+    "--lc",
+    "C:\\Users\\User\\Desktop\\LC",
+    "--tools-map",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-integration3-probes-complete-rcbg6pmk\\tools-map.json"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "sourceHead": "bc5f120b6da58670def58e6403e55feb7fcc0267",
+  "exit": 0,
+  "seconds": 0.2590169906616211,
+  "hidden": true,
+  "ticket": "0000000001-8d4a604719edea25"
+}

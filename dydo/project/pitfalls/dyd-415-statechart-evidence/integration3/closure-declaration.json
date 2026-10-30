@@ -1,0 +1,144 @@
+{
+  "reference": "b08ab4417aeb7fba61dd2e559379960a79b6b53d",
+  "sourceHead": "bc5f120b6da58670def58e6403e55feb7fcc0267",
+  "unchangedPreviousRows": 476,
+  "previousManifestSha256": "d478d501095517d5924caa568c7f216b2c02229fe57087358947791c1f516f22",
+  "producerManifest": "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/producer-hashes.json",
+  "producerEdges": {
+    "js_metrics.cjs": [
+      "fix1/driver.py:install",
+      "fix1/metrics.cjs:loadTool"
+    ],
+    "typescript_join.py": [
+      "fix1/coverage.py:join",
+      "fix1/coverage-summary.py:join"
+    ],
+    "gate_inventory.py": [
+      "fix1/static-summary.py:dependency_cycles"
+    ],
+    "knip_reporter.mjs": [
+      "fix1/assurance.py:reporter copy"
+    ],
+    "package.json": [
+      "fix1/driver.py:install"
+    ],
+    "package-lock.json": [
+      "fix1/driver.py:install"
+    ]
+  },
+  "retainedReadEdges": {
+    "fix1/driver.py": [
+      "fix1/assurance.py",
+      "fix1/knip-audit.py",
+      "fix1/static-summary.py",
+      "fix1/coverage.py",
+      "fix1/merge-coverage.cjs",
+      "fix1/coverage-summary.py"
+    ],
+    "fix1/assurance.py": [
+      "fix1/metrics.cjs",
+      "fix1/knip.json",
+      "fix1/walked.json"
+    ],
+    "fix1/metrics.cjs": [
+      "source-manifest.json"
+    ],
+    "fix1/coverage.py": [
+      "fix1/walked.json",
+      "fix1/linux-v8.tar.gz",
+      "fix1/coverage-windows/lcov.info",
+      "fix1/coverage-linux/lcov.info"
+    ],
+    "fix1/merge-coverage.cjs": [
+      "fix1/coverage-windows/coverage-final.json",
+      "fix1/coverage-linux/coverage-final.json"
+    ],
+    "fix1/coverage-summary.py": [
+      "fix1/walked.json",
+      "fix1/coverage-final/lcov.info"
+    ],
+    "fix1/static-summary.py": [
+      "fix1/walked.json",
+      "source-manifest.json",
+      "fix1/cycles.txt",
+      "fix1/typescript-strict-unused.txt",
+      "fix1/knip.txt",
+      "fix1/knip-discovery.txt",
+      "fix1/clones/jscpd-report.json"
+    ],
+    "fix1/knip-audit.py": [
+      "fix1/knip-command.json"
+    ],
+    "fix3/driver.py": [
+      "fix3/baseline-results/baseline.trx",
+      "fix3/instrumented-results/instrumented.trx",
+      "fix3/selection.json",
+      "fix3/binary-before.json"
+    ],
+    "fix3/finalize.py": [
+      "fix3/runtime-before.json"
+    ],
+    "fix3/report.py": [
+      "fix3/native-before.stdout",
+      "fix3/native-instrumented.stdout",
+      "fix3/extraction.json",
+      "fix3/coverage.json",
+      "fix3/coverage.opencover.xml",
+      "fix3/roslyn-project.stdout",
+      "fix2/roslyn-project.stdout",
+      "fix3/native-test-parity.json"
+    ],
+    "fix4/recipe/report.py": [
+      "fix3/native-before.stdout",
+      "fix3/native-instrumented.stdout",
+      "fix3/extraction.json",
+      "fix3/coverage.json",
+      "fix3/coverage.opencover.xml",
+      "fix3/roslyn-project.stdout",
+      "fix2/roslyn-project.stdout",
+      "fix3/native-test-parity.json"
+    ]
+  },
+  "addedRetainedInputs": [
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/assurance.py",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/clones/jscpd-report.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/coverage-final/lcov.info",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/coverage-linux/coverage-final.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/coverage-linux/lcov.info",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/coverage-summary.py",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/coverage-windows/coverage-final.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/coverage-windows/lcov.info",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/coverage.py",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/cycles.txt",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/driver.py",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/knip-audit.py",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/knip-command.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/knip-discovery.txt",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/knip.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/knip.txt",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/linux-v8.tar.gz",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/merge-coverage.cjs",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/metrics.cjs",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/producer-hashes.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/static-summary.py",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/typescript-strict-unused.txt",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix1/walked.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix2/roslyn-project.stdout",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix3/baseline-results/baseline.trx",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix3/binary-before.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix3/coverage.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix3/coverage.opencover.xml",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix3/extraction.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix3/instrumented-results/instrumented.trx",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix3/native-before.stdout",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix3/native-instrumented.stdout",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix3/native-test-parity.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix3/roslyn-project.stdout",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix3/runtime-before.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/fix3/selection.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/source-manifest.json"
+  ],
+  "declaredBeforeSuccessorRecipe": true,
+  "scope": "Retained TS assurance report pipeline and exact-source native identity join; preflight only",
+  "exclusions": "No platform/capture rerun, installed SDK/npm dependency graph, all-skills identity, or toolchain equivalence"
+}

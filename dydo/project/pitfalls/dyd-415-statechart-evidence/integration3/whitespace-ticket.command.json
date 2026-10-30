@@ -1,0 +1,14 @@
+{
+  "argv": [
+    "git",
+    "diff",
+    "--check",
+    "f3e0a161886621395f2dba47b689fba19f3bf3de"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "sourceHead": "bc5f120b6da58670def58e6403e55feb7fcc0267",
+  "exit": 0,
+  "seconds": 0.158097505569458,
+  "hidden": true,
+  "ticket": "0000000001-0fc7eeb6ea19158d"
+}

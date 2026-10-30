@@ -1,0 +1,2 @@
+# Preserve raw receipts; distinguish terminal CR from trailing spaces/tabs.
+* -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

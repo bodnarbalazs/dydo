@@ -27,6 +27,11 @@ preserves the stopped gate's raw bytes, corrects local CR-at-EOL attributes and
 catalog totals, and supplies a reference-bound preflight recipe. Its final gate
 receipts and independent review remain distinct from DYD-434's acceptance hold.
 
+The [integration3 closure correction](dyd-415-statechart-evidence/integration3/verification.md)
+supersedes integration2's incomplete dependency declaration, binding reviewed TS
+producers and directly consumed inputs. Historical proof and DYD-434 holds remain
+unchanged; this preflight-only correction awaits independent assessment.
+
 ## Inputs and provenance
 
 The implementation starts at `8553172dfaa7601d34f6b884c10350183f9faaa5`, fetched and

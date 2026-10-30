@@ -1,52 +1,62 @@
 ---
 name: ketchup
-description: "Catch the user up on what changed in this chat with a self-contained explanation of progress, unfinished work and decisions only they can make. Load only when the user asks."
+description: "Catch the user up on a project's purpose, progress, current work and next steps, including human decisions and actions. Load only when the user asks."
 ---
 
 <!-- Adapted from cursor/plugins pstack/ketchup at dbf49813a39c1a5389c5e28cb8e4c1c2379e2454 (MIT). -->
 
 # Ketchup
 
-Give a returning user the project story: progress, current work, what starts next and where they are needed. Use an **inverted pyramid** throughout the report, each outcome area and each substantive item: essential meaning first, then useful supporting detail. Reading only the opening and item headlines should leave a coherent, less detailed account.
+Give Balazs a **project catch-up**: what the project is for, what changed, what is actually running and what happens next. The admiral or its commissioned reporter reconstructs the story across relevant project records and captain returns, including context from before the user's absence. A chat boundary is not the boundary of the project. For a narrower requested scope, make that scope explicit.
 
-The update covers this chat since the user's last message before `/ketchup`; notifications and subagent results are not their messages. Reconstruct enough earlier context for someone who was not following closely. Write in the plain voice of `bro`, skipping its restating step. A catch-up reports state and involvement; a walkthrough lets the user inspect what was built against their understanding and taste. Neither implicitly invokes the other.
+Use an **inverted pyramid** at three levels: the report, each recognizable problem/outcome area and each substantive item. Lead with concrete meaning; follow with useful support. Reading only the opening and item summaries should leave a coherent, shorter account. Write in the plain voice of `bro`, skipping its restating step.
 
-## Establish the facts and route
+## Establish the project state
 
-Keep this turn read-only, apart from reply visuals made from available evidence. Do not change code, start an app or job, or post elsewhere. Collect the work and relevant reports, then verify accessible live facts yourself, including PR, CI and agent state. Check numbers against their sources and acknowledge corrections. Distinguish merged changes, completed checks and proven live operation; name uncertain causes and unchecked state.
+Keep this turn read-only, apart from reply visuals made from available evidence. Collect the governing project intent, current delivery records, relevant returns and decisions. Verify accessible live facts, including PR, CI and agent state; reconcile newer dispositions with historical entries. Separate landed code, completed proof, observed operation and human acceptance. Name missing facts and uncertain causes instead of filling them in.
 
-Find the descriptive owners, dependencies and actual commissions. Separate work already running from planned, parked or blocked work; missing assignment or dispatch evidence stays unknown. Establish where agents can proceed without the user and where they need participation. Existing holds and authority govern the route; reporting it grants no new permission.
+Preserve ownership: the map holder directs delivery; a commissioned reporter reports it. Asking for a catch-up does not commission implementation, restart a held lane or convene a tribunal. A walkthrough is a separate conversation for inspecting what was built against the user's understanding and taste; neither skill implicitly invokes the other.
 
-## Lead with the project story
+For a frozen worked example, state its date and historical purpose once at presentation start: its questions and actions are illustrative, not current requests or permissions. Use only facts available by that freeze.
 
-Open with the goal, what the project stands for, its current focus and essential state: what got better, what remains unfinished and what needs attention. Group supporting detail by recognizable problem or outcome; one area may span several tickets or captains. Order areas by consequence and attention, with headlines that reveal their state. If nothing changed and nothing waits on the user, say so and stop.
+## Build the account
 
-For a historical worked example, state once at the presentation start that it is an old scenario used for review, not a current catch-up or request to answer its questions. Keep the rest of the example inside that clear frame rather than repeating disclaimers in each area.
+Open with the concrete project purpose, current focus and essential state. Group by recognizable systems, problems or outcomes rather than tickets or agents. Put consequential changes and decisions first. If nothing changed and nothing waits on the user, say so and stop.
 
-## Use the selected chronology
+Each area uses four plain headings, without emojis, in this order:
 
-Every area uses the same five selected cues and labels below, separated by blank lines. Within each section, lead each substantive item with a concise meaningful headline, one-line summary or bullet carrying its outcome, state or ask. Put useful explanation immediately underneath. Separate genuine multiple items with bullets or shallow branches; a simple item needs only one line unless context adds meaning. A label alone is not an item summary.
+### Purpose
 
-**🎯 Purpose** — What this area is and why it exists. Keep current status in the area headline and In flight, rather than adding a second “now” duty to Purpose.
+Start the actual purpose item with **🎯**. Name the concrete system or feature, the original trigger and what the work is meant to change. “Improve safety” is too vague when the issue is a guard refusing harmless agent shell commands. Explain the system before its internal vocabulary.
 
-**⏮️ Recently completed** — What got done recently, including the outcome of completed attempts. Put old behavior or defect history beneath a completed change only when it explains why that change matters. A failed attempt remains failed. If no recent completion is established, say so briefly.
+### Recently completed
 
-**🛠️ In flight** — What is being worked on now: current state or outcome, descriptive owner, relevant decisions and blockers. Identify held or parked work accurately instead of making it sound active. When activity or commissioning is unestablished, report the known state and that limit.
+Start each completed item with **✅** and its outcome. Report completed attempts accurately: a failed review or stopped investigation can be a completed event without being a delivered fix. Include older behavior only where it explains the recent result.
 
-**➡️ Next** — What will start next and what it depends on. Name the descriptive owner, action and supported commissioning state; make clear which branches agents can handle alone and which need the user. Use plain language instead of relying on AFK/HITL abbreviations. Completed actions belong in Recently completed; ongoing work belongs in In flight. Show genuine branches without manufacturing assignments or readiness.
+### In flight
 
-**🙋 Your attention** — Concrete questions, actions and blockers for that route. Each distinct question starts with red **❓**; each distinct required action or blocker starts with **❗**. Two questions get two marked items. Put the human-readable ask first, including its purpose or what it unblocks; quietly append the corresponding existing Question or Enablement reference in parentheses after the headline. Use only verified records, never an illustrative identifier or an inferred new ticket.
+Start each truly running item with **✈️**, naming the work, owner and actual state. Held, planned and idle work gets a plain status such as “This lane is held” or “Nothing is running now”; explain its restart route in Next. An assigned ticket or old dispatch alone does not prove activity. When activity is unknown, say what the record establishes.
 
-Under each attention headline, give the context that makes the response usable: alternatives and consequences for a choice, the recommendation and reason, or necessary readiness and execution details for an action. Explain why the user is needed, what their response changes and what continues or waits without one. A wizard run or login is an action, not a disguised question. Mark a later step as later; do not invent its command or window. Name the owner of an agent or external blocker so it does not become an accidental user ask. When nothing needs the user, one clear line is enough.
+### Next
 
-Distinguish open decisions from decisions already made under authority but awaiting ratification, including existing recorded `what-would-balazs-do` decisions. Say what ratification or objection changes; work already authorized to proceed does not automatically stop while ratification waits. A conversation with the user need not be an approval request. Report only witnessed decisions; this catch-up commissions no new tribunal. Routine checks and preparation stay with agents.
+Combine upcoming work and human dependencies here, once. Use explicit **AFK** for work agents can do without the user and **HITL** for work involving the user. Name the descriptive owner, action, actual dependency and whether it is commissioned, planned, conditional or still missing preparation. Do not invent a dependency to make the sequence neat.
+
+Each distinct question starts with red **❓**. Each required human action, enablement or merge starts with **❗**. Lead with a meaningful human-readable question/action and what it changes; quietly append the verified existing Question, Enablement or PR reference in parentheses. Two questions need two items. Agent-owned preparation is AFK work, not a human action. A conversation need not be an approval request. Mark later human steps as later, without inventing readiness, commands or an execution window.
+
+## Make decisions answerable
+
+Before presenting a choice, establish its actual object or files, original commission and relevant evolution. Explain what evidence exists, precisely what remains unproved or disputed, and the governing policy or acceptance tension. A generic definition of a metric cannot replace the story of the maintained code whose delivery depends on it.
+
+Under the question, give meaningful alternatives, their practical effects, costs and unknowns, a recommendation with its reason, and why the user must decide. State what each answer authorizes and what happens without one. Include any existing preparation or tribunal outcome. If preparation is missing, name the owed work and owner rather than offering a ready-looking decision. A prepared explanation can support a policy choice while its tooling or implementation contract remains unprepared; distinguish those states.
+
+Keep open choices separate from existing authorized decisions awaiting ratification. Report what was decided, its limits and what ratification or objection changes. Unratified does not automatically stop authorized work; an exhausted conditional authorization does not renew itself. Report existing `what-would-balazs-do` records without starting new deliberation.
 
 ## Check the reading experience
 
-Each area must stand alone without provenance clicks. Keep essential context in the reply, with IDs, PRs and source links subordinate. Let useful detail determine length; remove filler, dense undifferentiated paragraphs and repeated no-action or authority caveats. Repeating an essential fact in a headline and its explanation is useful when it supports the inverted pyramid.
+Every substantive item begins with a concise outcome, state or ask, followed by genuinely useful context underneath. Separate distinct items with bullets or shallow branches; a simple item needs no invented subparts. Keep the four headings plain and put icons on the items they describe.
 
-Additional visuals should clarify the work: existing captures for visible changes, diagrams and charts from verified facts. Never invent numbers or present a generated screen as a capture. Links point to existing artifacts and do not carry essential meaning alone.
+Each area must make sense without provenance clicks. Keep IDs and evidence links subordinate. Remove filler, dense undifferentiated blocks, repeated asks and repeated authority caveats. Let useful detail determine length. Additional visuals should clarify the work using verified facts or existing captures; never invent measurements or present a generated screen as a capture.
 
-Read just the opening and item headlines, then the full areas without their links or extra visuals. Can the reader distinguish purpose, recent outcomes, current work and next starts, and explain what each ask changes? Repair missing meaning or weak hierarchy. Formatting, selected icons and agent approval do not substitute for the user's understanding and taste.
+Read the opening and item summaries alone, then the full account without links. Can the reader explain the original problem, what got better, what is running or held, and what each next step changes? Formatting and agent approval do not establish human understanding or acceptance.
 
-For a complete illustration, consult the [historical returning-user example](resources/returning-user-example.md). Its facts, decisions and permissions belong only to that scenario.
+For a complete project illustration, consult the [frozen Dydo returning-user example](resources/returning-user-example.md). Its facts and authority belong to that dated scenario.

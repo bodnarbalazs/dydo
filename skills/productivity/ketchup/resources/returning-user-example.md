@@ -1,197 +1,256 @@
-# Historical returning-user example
+# Frozen Dydo project catch-up example
 
 ## Example
 
-> **Historical example for reviewing ketchup — no answers or actions are requested now.** This reconstructs the LC Test optimisation snapshot of 30 October 2026. The policy and installation asks below belong to that old scenario; they are not current instructions or new permissions.
+> **Frozen Dydo project example — 30 October 2026, 16:43 UTC.** This scenario is for refining ketchup. Its questions and actions are not requests to answer or act now, and grant no new permissions. It includes the statechart and guard explanations prepared at 16:38:14 and 16:39:45 UTC.
 
-**The goal is cheaper testing without losing protection against breakage elsewhere.** Three everyday-workflow improvements are merged: relevant-test guidance, a safer evidence-retention recipe and a realistic deadline for one test. No measured speed-up is claimed.
+**Dydo 3.6.0 is improving the tools and shared methods agents use to work safely and keep delivery moving.** The concrete work includes fixing a shell-command guard that rejects harmless searches and writes, adding a tool that makes formal-model failures visible, and making completed delivery lead to the next authorized action.
 
-**The focus is now the unfinished extra-test system and Linux verification.** One exit-code policy choice is ready for you; installing the updater will need you later. The browser-test fix and Linux cleanup proof remain held, while optional policy changes can stay parked. The record identifies work owners by role, but does not establish active commissions for the remaining planned steps.
+**Two guidance changes have landed; guard and statechart acceptance remain unresolved, and genuine Codex/T3 overnight approval support is still missing.** The admiral has now prepared the guard and statechart explanations below. Those choices are unanswered. Catch-up wording is being rewritten from your feedback; neither the rewrite nor a partial walkthrough means the release is accepted.
 
-### Missing test evidence — one policy question is ready
+### Agent shell-command guard — the narrow correction is held
 
-**🎯 Purpose**
+#### Purpose
 
-**Tell missing proof apart from broken code.** Agents and scripts need to distinguish a failed test from code that has not yet received all its required checks.
+🎯 **Let agents run harmless shell searches and file writes while retaining real-command protections.**
 
-**⏮️ Recently completed**
+This is Dydo's guard on agent shell commands, separate from LC TeasePlayer's checking of user JavaScript. The October 28 retro found 18 occurrences across six problems, and you asked one agent to fix those cases rather than redesign the parser:
 
-**No completed change to this exit-code policy is recorded.**
+- Quoted search/process text and literal file-write bodies were mistaken for executable commands.
+- Python `pass` and quoted `grep PASS` triggered the password-store rule; plain PowerShell read assignments looked like writes; PR-command help looked like a mutation.
+- Conversely, Python programs supplied on stdin could write protected files and needed to be refused.
 
-**🛠️ In flight**
+The correction touches `Services/BashCommandAnalyzer.cs`, its shell reader and guard/nudge callers, PR-readiness parsing, paired fixtures and the protected-file documentation. Existing correct refusals must remain correct.
 
-**The policy remains open; missing evidence still returns the failure code.** Routine checks can pass while 45 source-code entries on the project's explicit list await designated expensive checks. Coverage means evidence that tests exercised the code being assessed. The printed result is PENDING, not PASS; this does not establish that those entries contain defects. An implementation owner and active commission are not identified in the record.
+#### Recently completed
 
-**➡️ Next**
+✅ **Round-eight review found two ways the candidate loses real launch warnings.**
 
-- **Settle the reporting policy — with you, before changing the command.** Your ruling determines how missing expensive-test evidence should be signaled.
-- **Commission the command-and-caller change — planned agent work after that ruling.** The delivery owner must be identified before implementation, proof and review. Scripts that consume the result need to handle the selected signal too.
+- **Printed data can become downstream code.** A command that prints a literal body can feed it into a shell, which executes it. Treating the first command as a harmless data consumer hides the later execution.
+- **Shell dialect changes whether text is inert.** Text shaped like a PowerShell here-string can close a quote under Bash and expose a real command; the candidate incorrectly grants it data relief.
 
-**🙋 Your attention**
+These findings came from inert strings supplied to the hook harness, not executed payloads. Earlier green general tests missed them.
 
-❓ **Should missing expensive-test evidence have its own exit code, distinct from failed tests?** ([LC-1240](https://linear.app/bodnar-balazs/issue/LC-1240#comment-84f98472-28da-40d3-998c-a4f5f7184122))
+✅ **The final conditional correction attempt returned NOT IMPLEMENTED before its queued proof ran.**
 
-I recommend a distinct **“evidence pending”** code while keeping the printed result PENDING. Callers could distinguish “not proved yet” from “tests failed,” and required proof would still be owed.
+Nested analysis extracts a shell's stdin or script text but loses where the enclosing command sends its output. A local “this is data” check therefore cannot establish that the text stays data downstream. No production correction or new runtime proof resulted. Eight review FAIL rounds remain; this feasibility return was not a ninth review round.
 
-Other ways forward:
+✅ **The admiral has prepared the alternatives and their lost-relief consequences.**
 
-- **Keep the failure code.** Callers must interpret the text to distinguish missing proof from failed tests.
-- **Return success.** This blurs incomplete and complete proof and requires changing the governing policy.
-- **Run the expensive checks routinely.** This addresses the missing proof itself, at added cost. Reusing evidence from other commits or machines would need a separate design.
+Earlier review had already removed single-quoted-data relaxation. You then approved finite quoted-data/comment/body relief while preserving conservative treatment of unquoted launch words and unknown wrappers. The existing tribunal allowed one conditional final attempt under that boundary. That authorization is exhausted; it is not an invitation to repeat the attempt.
 
-The recorded ruling reserves this policy choice for you. Your answer settles the direction for the command and its callers, not a complete numeric-code migration or permission to merge without proof. Without an answer, this policy change waits; other authorized work can continue.
+#### In flight
 
----
+**Nothing is running in this lane; the candidate remains held.**
 
-### Everyday testing — three improvements merged
+The frozen correction still has both safety blockers. No new design or implementation crew is commissioned.
 
-**🎯 Purpose**
+#### Next
 
-**Spend testing effort where it matters and keep the proof inspectable.** Routine development needs relevant checks, evidence that survives long enough to review, and test deadlines that match what is being tested.
+❓ **HITL — should we commission a bounded design that preserves the approved body-text relief, explicitly reduce that relief, or keep the correction held?** ([DYD-437](https://linear.app/bodnar-balazs/issue/DYD-437))
 
-**⏮️ Recently completed**
+I recommend **design only** first, to obtain a defensible approach and cost before committing to implementation. The old narrow commission is exhausted; a new design boundary or withdrawal of relief you approved needs your decision.
 
-- **The feature-testing policy is merged.** Agents now normally run the affected feature's fast tests while building. Expensive tests for that feature belong at final gates; whole suites belong in periodic CI or an explicit request from you. This implements the policy you approved.
-- **Evidence retention has a safer recipe.** Each evidence-producing run gets its own temporary location and collects proof before cleanup, addressing losses when concurrent runs rotated shared folders. This changes instructions, not pytest's global retention or a guarantee that evidence cannot be lost.
-- **The error-reporting test now gets ten seconds.** It previously had half a second to prove that a child process reports an error. Its assertions remain intact, and the separate deliberate-timeout test keeps its half-second limit.
+- **Preserve the intended relief through a bounded design.** Its deliverable would show how nested analysis retains the enclosing output consumer, actual shell dialect, exact source span and executable expansions, with unknown cases still counted conservatively. It must cover the harmless cases and both failure families, including nested shells. No completed design, feasibility proof or size estimate exists; a broad parser rewrite has not been shown necessary. This choice authorizes design preparation, not production changes or another full gate campaign.
+- **Narrow the promised body-nudge relief.** The proposed boundary is removing the GS-03 body exemption while retaining finite quoted-search fixes and the other fixes. Harmless documentation text mentioning a long-running command, or a literal PowerShell here-string written as data, could again trigger a launch warning. The separate GS-02 file analysis might still recognize the write as literal. This gives up part of the approved experience; no implementation has proved it safe, trivial or cheaper. It needs a precise acceptance amendment and scoped correction/review.
+- **Keep the candidate held.** The six-fix delivery stays unfinished. Safe-merge guard completion still waits for its actual merge, and host-parity work retains its prerequisites. Removing that work from 3.6.0 would be a separate release-scope choice.
 
-**🛠️ In flight**
+**AFK, conditional — the admiral contracts the selected next step after your ruling.**
 
-**Post-merge records remain unfinished; the project coordinator owns them.** The separate proposal to split test groups remains deferred.
+For design, the admiral must pin the exact deliverable and select the captain/author through normal custody; for narrowing, it must first record the changed acceptance. Without a ruling, the hold remains. The unapplied protected-root documentation patch stays user-owned; no immediate source inspection or patch application is requested here.
 
-**➡️ Next**
+### Statechart — the maintained runner works, but two assurance choices remain
 
-- **Finish the delivery records — project coordinator; planned, without needing you.** Use the merged outcomes to bring the records up to date.
-- **Update the test-group proposal before reconsidering a split — deferred.** Its owner must reconcile it with the already-approved policy. The record does not identify that owner or a commission to resume.
+#### Purpose
 
-**🙋 Your attention**
+🎯 **Make formal-model failures visible by running TLC and showing the actual state graph and shortest counterexample paths.**
 
-**Nothing is needed from you for these merged changes or their records.**
+You requested the upstream statechart skill for 3.6.0, including its report and rendered chart. Its POSIX launcher and process cleanup needed Windows adaptation. Dydo added a supported-Node PowerShell launcher and ownership of Windows worker/Java descendants. The acceptance questions concern this locally maintained executable runner, not a TLA+ model you might later ask it to check.
 
----
+The work also evolved beyond platform adaptation: review required maintained-code measurements, and the captain commissioned complexity-driven refactoring. The entry's measured complexity fell from 37 to 18 after extracting output validation, worker launch and publication; another change simplified a verdict classifier. The record explains that gate-driven commission, but does not establish that these extractions were the only possible design or separately approved harmonization.
 
-### Extra tests for collateral breakage — recovery held
+#### Recently completed
 
-**🎯 Purpose**
+✅ **The adaptation has retained Windows/Linux functional proof and reviewed TypeScript measurements.**
 
-**Catch damage outside the feature being changed.** Ripple selects a small extra set of tests from past failures. Its incident counts should distinguish one browser failure with later skipped tests from a broken shared test foundation.
+The six maintained runtime modules under `skills/engineering/statechart/scripts/` are `frontends/dot.ts`, `run.ts`, `statechart.ts`, `worker.ts`, `windows.ts` and `windows-cleanup.ts`. Their retained measurements meet line coverage ≥80%, branch coverage ≥60%, cognitive complexity ≤20 and HCRAP ≤20. Platform campaigns cover Windows and Linux behavior; four scenario sensitivity/restoration pairs are complete.
 
-**⏮️ Recently completed**
+✅ **The embedded Windows native adapter has exact-source C# proof; it is no longer waiting for instrumentation.**
 
-- **Two verification attempts failed.** The browser-skip counting fix has not passed verification; a third run was not started.
-- **The proposed environment inspection was rejected in review.** The investigation could not establish how to inspect Git Bash's temporary-directory mapping without touching another task's files. That does not prove another task caused the failures.
+The byte-identical compiled `StatechartJob.Attach` implementation achieved 15/15 lines, 6/8 branches, cognitive complexity 5 and HCRAP 5. Baseline and Coverlet-instrumented tests both passed 6/6 while preserving native error codes 87 and 5. Original PowerShell Add-Type lifecycle proof supplies the separate integration layer. Earlier AltCover failures remain failures.
 
-**🛠️ In flight**
+✅ **The reviewed integration and source-binding correction is complete, and the admiral's acceptance explanation is prepared.**
 
-**Recovery is held on a permitted inspection method, and the change conflicts with newer code.** The project coordinator and browser-skip correction captain own preparing the method.
+Candidate `ce3ecdb0` integrates master `f3e0a161`; its retained proof is tied to the relevant source identities. Master has since advanced, so this is not a claim of integration with the latest landings. These receipts complete supported preparation, not overall acceptance.
 
-**The browser-skip correction is approved; shared-fixture regrouping is still optional.** If one browser test fails and twenty later tests cannot run because of it, those skipped tests should not inflate one failure into a broad incident. A shared fixture breaking and preventing more than twenty tests from running is different: current policy treats that broken foundation as a broad incident.
+#### In flight
 
-**➡️ Next**
+**No statechart proof crew is running; final readiness is held on two separate assurance gaps.**
 
-- **Prepare a compliant inspection method — coordinator and browser-skip captain; planned agent work.** Respect the existing access boundary. If no permitted method can be established, retain the hold.
-- **Resume correction and proof only after that prerequisite clears — browser-skip captain; conditional work.** Reconcile the code conflict, pass verification and obtain fresh review before offering the change for merge.
+**The first gap is measurement of the two PowerShell scripts' control flow.**
 
-**🙋 Your attention**
+`statechart.ps1` selects and starts supported Node. `windows-job.ps1` binds worker descendants to a Windows Job Object so they terminate with their owning parent. Their PowerShell control flow lacks executable-line ≥80%, branch ≥60%, cognitive ≤20 and HCRAP ≤20 measurements. Command coverage and PSScriptAnalyzer results do not supply these; the embedded C# results do not measure the surrounding PowerShell. Cyclomatic complexity is an HCRAP input, not a separate ≤20 gate.
 
-❗ **Agent blocker: the coordinator and browser-skip captain must establish a permitted inspection before recovery.** ([LC-1385](https://linear.app/bodnar-balazs/document/lc-1385-prepared-morning-decision-strict-boundary-or-explicit-new-eeba2113926d))
+**The second gap is test sensitivity across the maintained runtime.**
 
-There is no concrete proposal ready for you to approve. A vague request to change the access boundary would not resolve the missing method.
+Changed-code mutation asks whether tests detect deliberately introduced defects in the six maintained TypeScript modules, two PowerShell scripts and local native adapter. No reviewed TypeScript/PowerShell mutation mechanism was adopted, and no embedded-C# mutation campaign ran. The four scenario-value pairs show those assertions respond to changed expected values; they do not establish sensitivity across the maintained runtime. There is no mutation score or surviving-mutant inventory. Unchanged vendored source is not automatically new mutation scope.
 
-❓ **Optional: should a shared-fixture failure still count as a broad incident?** ([LC-1375](https://linear.app/bodnar-balazs/issue/LC-1375))
+**A later acceptance amendment holds readiness despite DR048's missing-mechanism provision.**
 
-I recommend keeping today's behavior because the shared foundation is broken. Counting the failure once for Node and Vitest would add a grouping rule; extending it to Python would also need additional failure evidence. This definition is your policy choice. An answer changes that separate grouping direction, not the browser-skip recovery hold. No answer retains current behavior and blocks nothing.
+DR048 permits recording a missing mechanism rather than building a new measurement engine. This delivery's later amendment requires explicit capability disposition. The existing three-member tribunal authorized runnable proof/review and preparation of the choice while keeping final readiness blocked; it made no acceptance decision. The admiral has prepared the explanation, but neither gap is waived. Only you can settle that acceptance boundary.
 
----
+#### Next
 
-### Cleaning up hung setup tests — Linux proof still blocked
+❓ **HITL — accept recorded measurement gaps for the two PowerShell scripts, require measurement tooling before delivery, or keep statechart held?** ([DYD-434](https://linear.app/bodnar-balazs/issue/DYD-434))
 
-**🎯 Purpose**
+- **Record the two scripts' bounded gaps and continue delivery.** Existing functional proof remains, but unmeasured branches or complexity could conceal weaknesses. The admiral owns the follow-up record and a separately contracted measurement adoption; nothing is relabeled PASS.
+- **Require measurements first.** The admiral still owes a concrete contract for native line/branch attribution, the PowerShell complexity model and trustworthy source/method joins. Feasibility, duration and resulting findings are unknown; no reliable estimate exists. Rerunning functional tests or merely upgrading Pester would not supply this proof.
+- **Keep statechart held.** This preserves the acceptance boundary and postpones the feature without starting tooling. Removing it from 3.6.0 would require a separate scope decision.
 
-**A stopped wizard test should leave no child processes behind.** Cleanup must work when a setup-wizard test hangs, including on Linux.
+I recommend the narrowly named skip-and-record route with the admiral owning follow-up, rather than making adoption depend on new measurement machinery. No answer has been recorded.
 
-**⏮️ Recently completed**
+❓ **HITL — separately record missing changed-code mutation as a delivery gap, or require a defined mutation campaign before delivery?** ([DYD-434](https://linear.app/bodnar-balazs/issue/DYD-434))
 
-- **The cleanup fix passed its Windows proof.**
-- **The Linux attempt stopped before the test began.** Container setup halted at a check of process resource isolation. The retained evidence does not establish why that check stopped.
+- **Record a separate delivery gap.** Retain the functional/static/review evidence and an explicit admiral-owned follow-up, accepting that some implementation regressions may escape the tests. This avoids coupling delivery to unadopted tooling, without claiming mutation passed.
+- **Require mutation proof first.** The admiral must define operators, changed-code inclusion, native/lifecycle containment, equivalent-mutant handling and an acceptance criterion, then obtain a bounded tooling commission. No reviewed campaign or cost estimate is prepared. This is new tooling work, not a routine rerun.
 
-**🛠️ In flight**
+My recommendation is to decide this explicitly and separately: accepting the PowerShell measurement gaps must not silently accept mutation absence. Without the required dispositions, statechart cannot be offered as ready to merge.
 
-**Linux verification is held pending a separately authorized diagnostic.** The cleanup-fix captain and project coordinator own preparing the limited investigation. A further attempt needs a separate allocation: permission to run with a bounded scope. The record does not identify its grantor or show it granted.
+**AFK, conditional — the admiral records the exact disposition and contracts any selected follow-up before delivery resumes.**
 
-**➡️ Next**
+If gaps are accepted, each needs its named owner and an explicit contract amendment. If tooling is required, the missing mechanism/campaign contract comes first. Latest-master applicability, final acceptance checks, PR/CI and human merge remain subsequent work, not completed consequences of an answer.
 
-- **Define the diagnostic and establish who can authorize it — cleanup-fix captain and coordinator; planned preparation without you.** Determine which Linux isolation controls are available and whether they enforce the required resource limits.
-- **Run the diagnostic, then obtain Linux proof and fresh review — conditional on permission and a usable environment.** The cleanup-fix captain owns the route; execution remains held until its prerequisites are resolved.
+**HITL, later — the upstream/local comparison stays in the next walkthrough, after the other work.**
 
-**🙋 Your attention**
+That conversation will distinguish unchanged modeling guidance, packaging, Windows adaptation and complexity refactoring. It is not an immediate inspection prerequisite. A possible later grilling conversation has not been commissioned.
 
-❗ **Agent blocker: the cleanup-fix captain and coordinator must establish permission and scope before another diagnostic attempt.** ([LC-1378](https://linear.app/bodnar-balazs/issue/LC-1378#comment-86fefc6d-8f8a-475e-935c-a76fc8b8e3d4))
+### Completed captain returns — guidance now requires the next authorized action
 
-Preparation can proceed within existing limits, but the record supplies no prepared approval request for you. Missing Linux proof and fresh review remain owed.
+#### Purpose
 
----
+🎯 **Stop completed work sitting idle until a watch nudges the admiral.**
 
-### Linux test-machine update — installation needs you later
+The overnight retro found completed captain results followed by delayed continuation or fallback selection. It also found repeated expensive correction cycles whose strongest reviewer counterexamples still failed. Notification loss was a hypothesis, not an established cause.
 
-**🎯 Purpose**
+#### Recently completed
 
-**Let agents use the reviewed updater and retrieve the published extra-test list.** The Linux machine must have the right release installed and its live behavior checked.
+✅ **The completion and correction guidance has been human-merged.** ([PR217](https://github.com/bodnarbalazs/dydo/pull/217))
 
-**⏮️ Recently completed**
+The Admiral paragraph now calls for the authorized continuation/fallback, or an owned hold with its reason, and reconciliation of current project state. The Code Writer paragraph brings the strongest prior counterexample and accepted invariant to the exact successor before expensive broad gates. Independent review and final gates remain. The reviewed two-paragraph change landed at 16:32:22 UTC with three hosted checks successful.
 
-- **The updater code is merged.** This does not establish deployment or successful list retrieval.
-- **The last host inspection found readiness obstacles.** A real job was running, an older updater was installed separately, and the deployed release lacked the new Ripple-list retrieval code. No later health observation is established.
+#### In flight
 
-**🛠️ In flight**
+**The documentation is delivered; subsequent real handoff behavior is not established by these receipts.**
 
-**Live acceptance remains open; a ready installation window is not established.** The project coordinator owns readiness preparation with the Linux host owner. A healthy running job must not be stopped merely to create a window.
+No host notification, waiting-state or approval implementation is claimed by this change.
 
-**➡️ Next**
+#### Next
 
-- **Check readiness and prepare a tested command and idle window — coordinator with the host owner; planned agent work.** This comes before asking you to schedule or install anything.
-- **Run the updater wizard — with you, after that preparation.** The existing contract reserves installation to you; it is not yet scheduled.
-- **Verify version, health and extra-test-list retrieval — planned agent work after installation.** The record says these checks are owed but does not identify their commissioned owner.
+**AFK — the admiral applies the completion step to the next actual return, within that work's existing authority.**
 
-**🙋 Your attention**
+Pickable authorized work advances; human-held work keeps its hold and owner. A correction author uses the strongest counterexample at the implicated boundary before expensive proof. These are the landed workflow duties, not a new delivery or observation campaign commissioned by this catch-up.
 
-❗ **Later, run the updater wizard when ready so the Linux installation can be checked and agents can retrieve the extra-test list.** ([LC-1372](https://linear.app/bodnar-balazs/document/lc-1372-exact-candidate-proof-6f8908182-31b5345a6907))
+### Overnight on/off — fallback is delivered, actual host approval is missing
 
-I recommend proceeding when the coordinator brings the tested command and a genuinely idle window. Running the wizard installs the reviewed updater and enables the follow-up checks; deferring preserves running work but leaves live acceptance open. The contract requires your execution, not general permission for an agent to substitute. No command or scheduling answer is ready yet.
+#### Purpose
 
----
+🎯 **Let an authorized agent complete overnight activation and morning shutdown through genuine Codex/T3 human approval.**
 
-### Reliable project status — no confirmation needed
+At departure, you had to return after being told goodnight and run the command yourself. The problem recurred for `dydo mode set overnight off`. Dydo's supported approval path identified Claude Code, while Codex/T3 could not obtain the execution-bound approval. Your authorization alone did not make that host path exist.
 
-**🎯 Purpose**
+#### Recently completed
 
-**Make the project summary match the work.** You should be able to distinguish delivered, ready and held work without reconstructing the board yourself.
+✅ **Early detection, a precise terminal fallback and independent state readback are merged.**
 
-**⏮️ Recently completed**
+PR214 reduces surprise and prevents an unverified success announcement. The morning read-only check at 11:01:11 UTC returned overnight off after your reported command. That proves the observed state, not that the agent performed the transition or that Codex approval works.
 
-**The read-only mode check returned overnight off.** The earlier request for you to confirm the flag is resolved.
+✅ **The host-side request is prepared, but has no identified recipient or writable host checkout.**
 
-**🛠️ In flight**
+It asks for supported real-human approval and transient per-thread attachment/close behavior with explicit lifetime and provider binding. The bounded lookup and established contacts did not identify a T3 maintainer/support endpoint or authorized host checkout. The packet has not been delivered to an identified owner.
 
-**Stale summaries still need reconciliation; the project coordinator owns it.**
+#### In flight
 
-**➡️ Next**
+**Actual host support is blocked on the maintainer/access route; a runnable real-UI check is not established.**
 
-**Reconcile current descriptions against recorded outcomes and holds — coordinator; planned, without needing you.** Parked work must remain described as parked.
+The existing host-support captain retains delivery ownership; the admiral owns routing. PR217's workflow guidance neither implements this interface nor gates host-owner discovery.
 
-**🙋 Your attention**
+#### Next
 
-**Nothing is needed from you for the mode flag or these record updates.**
+**AFK — the admiral and existing captain need a supported host-owner/access route for the prepared request.** ([DYD-433](https://linear.app/bodnar-balazs/issue/DYD-433))
+
+That is the concrete prerequisite for progressing supported registration and an owned scratch-state approval check. The source investigation is already available; no repeat search or canary is required merely to report the gap. There is no request for you to approve a bypass or choose an unexplained architecture.
+
+**HITL, conditional — a genuine approval-UI exercise follows a prepared, supported scratch canary.**
+
+The captain would first owe the exact registration, isolated state, human interactions and cleanup procedure. None is ready to run here. Real host approval, denial/state preservation and readback must eventually be observed; synthetic hooks cannot establish them. Balazs's requirement remains actual support for 3.6.0, not fallback alone.
+
+### Shared feature intent — the planning route and its first anchor have landed
+
+#### Purpose
+
+🎯 **Make shared feature intent reach implementation and review, rather than leaving working-spec references unused.**
+
+You asked whether the spec convention is actually used. The source inspection found that readers expected an anchor, but project capture and charting could assume someone else had created one. Atomic ticket intent and an adequate reviewed plan remain valid alternatives; this is not a spec requirement for every task.
+
+#### Recently completed
+
+✅ **The planning skills now explicitly choose or create the appropriate shared intent anchor.** ([PR218](https://github.com/bodnarbalazs/dydo/pull/218))
+
+The change covers project capture, wayfinding, ticket creation and the admiral's charting step. It carries the reviewed-plan alternative into the handoff, while existing author/reviewer pinning rules remain.
+
+✅ **The safe-feature-merging spec and its map/ticket navigation are delivered.**
+
+`dydo/reference/working-specs/dydo-3-6-0/safe-feature-merging.md` records the existing command/guard/host-parity intent. The map and affected guard/parity tickets now link its sections. PR218 was human-merged at 16:29:55 UTC. Historical safe-merge work is not retrospectively described as spec-driven.
+
+#### In flight
+
+**Documentation and navigation are delivered; future guard/parity consumption remains unproved.**
+
+The adoption receipt kept those tickets' existing statuses and blockers unchanged.
+
+#### Next
+
+**AFK, conditional — future authorized guard/parity captains pin the relevant sections into author and reviewer briefs.**
+
+That use follows each lane's existing prerequisites. A source-correction review and a linked spec do not themselves prove that later delivery consumed it, and this documentation landing does not restart held guard work.
+
+### Project explanations — the catch-up rewrite is in progress
+
+#### Purpose
+
+🎯 **Make a returning reader understand the project and its choices without reconstructing ticket history.**
+
+You rejected the earlier catch-up experience and clarified that it should describe the project, use four plain sections, put icons on actual items and explain concrete decisions. The separate walkthrough lets you inspect what was built and discuss its fit with your intent.
+
+#### Recently completed
+
+✅ **The earlier catch-up candidates and reviews were preserved, and the new contract was clarified.**
+
+The prior five-section candidate is historical, not accepted wording. The admiral supplied the guard and statechart explanations used above and authorized synchronizing only ketchup's description and matching catalog row with its project scope.
+
+#### In flight
+
+✈️ **The existing captain and docs author are rewriting the canonical prompt and complete example.**
+
+This is the current commissioned documentation work. Fresh final reviews and the exact-example reading follow the new candidate; earlier PASSs do not cover it. The walkthrough facilitator retains the human conversation, while the admiral retains delivery and dispatch.
+
+#### Next
+
+**AFK, commissioned — finish the source candidate and bounded proof, then obtain fresh review through the captain.** ([DYD-442](https://linear.app/bodnar-balazs/issue/DYD-442))
+
+The return must include the complete readable example and exact source binding. It remains a review candidate until the required review and human verdict; no source acceptance follows from the selected icons.
+
+❗ **HITL, later — read the complete returned example and give the wording/experience verdict in the walkthrough.** ([DYD-432](https://linear.app/bodnar-balazs/issue/DYD-432))
+
+The facilitator will bring the new example when the captain returns it. This concerns whether the catch-up is clear and useful; it does not accept the guard, waive statechart proof or approve release. Additional landed changes belong in staged walkthroughs, with a final walkthrough before your release approval.
 
 ## Optional provenance
 
-- Delivered feature-testing policy, evidence-retention recipe and error-test deadline: LC1374, LC1359 and LC1358, with the retained DYD439 merge snapshot.
-- Extra-test incident-count fix: LC1342; [inspection constraint and recovery hold](https://linear.app/bodnar-balazs/document/lc-1385-prepared-morning-decision-strict-boundary-or-explicit-new-eeba2113926d).
-- [Hung-wizard cleanup and Linux proof hold](https://linear.app/bodnar-balazs/issue/LC-1378#comment-86fefc6d-8f8a-475e-935c-a76fc8b8e3d4).
-- [Updater's historical host observations and human installation contract](https://linear.app/bodnar-balazs/document/lc-1372-exact-candidate-proof-6f8908182-31b5345a6907).
-- [Pending-evidence exit-code choice and user reservation](https://linear.app/bodnar-balazs/issue/LC-1240#comment-84f98472-28da-40d3-998c-a4f5f7184122).
-- [Optional shared-fixture incident grouping](https://linear.app/bodnar-balazs/issue/LC-1375).
-- Deferred test-group split: LC1381. Mode-off readback: the retained DYD439 description.
-- Original failed reply and HTML, preserved unchanged: [DYD-439](https://linear.app/bodnar-balazs/issue/DYD-439).
+- [Guard's six-fix contract](https://linear.app/bodnar-balazs/issue/DYD-406), [terminal disposition](https://linear.app/bodnar-balazs/issue/DYD-437) and [prepared guard explanation](https://linear.app/bodnar-balazs/document/guard-decision-brief-original-six-fixes-lost-relief-and-bounded-design-0fee2c0f8f92), frozen at 2026-10-30T16:39:45.276Z.
+- [Statechart adoption](https://linear.app/bodnar-balazs/issue/DYD-415), [acceptance record](https://linear.app/bodnar-balazs/issue/DYD-434) and [prepared statechart explanation](https://linear.app/bodnar-balazs/document/statechart-acceptance-local-runner-proven-behavior-remaining-assurance-a2263a58d7ad), frozen at 2026-10-30T16:38:14.227Z.
+- [Completion/counterexample guidance and human landing receipt](https://linear.app/bodnar-balazs/issue/DYD-438); [actual-host support prerequisite](https://linear.app/bodnar-balazs/issue/DYD-433).
+- [Shared-intent anchor and human landing/adoption receipt](https://linear.app/bodnar-balazs/issue/DYD-443).
+- [Catch-up correction](https://linear.app/bodnar-balazs/issue/DYD-442) and [staged human walkthrough](https://linear.app/bodnar-balazs/issue/DYD-432).
+- Prior LC examples remain in the earlier committed revisions. The original failed reply and HTML remain on [DYD-439](https://linear.app/bodnar-balazs/issue/DYD-439).
 
-This reconstruction uses the retained merge snapshot and owner records, including the mode-off correction. The wording awaits Balazs's verdict through DYD432. Earlier reviews bind only their earlier text.
+This reconstruction uses the pinned project records and prepared explanations. Earlier candidate reviews bind their earlier text; this example still requires Balazs's verdict through the walkthrough.

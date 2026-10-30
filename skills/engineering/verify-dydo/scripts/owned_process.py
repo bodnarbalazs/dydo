@@ -39,8 +39,7 @@ def native(request, environment, payload, output, result):
         job = jobs.checked(kernel.CreateJobObjectW(None, None))
         # KILL_ON_JOB_CLOSE also contains unexpected failures and abrupt owner exit.
         stack.callback(jobs.close_handle, kernel, job)
-        limits = jobs.Limits()
-        limits.basic.flags = 0x2000
+        limits = jobs.Limits(basic=jobs.BasicLimits(flags=0x2000))
         jobs.checked(kernel.SetInformationJobObject(job, 9, ctypes.byref(limits), ctypes.sizeof(limits)))
         files, handles, readers = jobs.pipes(stack, output, time.monotonic() + request["teardown_seconds"])
         stdin = stack.enter_context((output / "stdin.txt").open("w+b"))
@@ -49,8 +48,7 @@ def native(request, environment, payload, output, result):
         handles[0] = msvcrt.get_osfhandle(stdin.fileno())
         os.set_handle_inheritable(handles[0], True)
         storage = jobs.attributes(kernel, job, handles, stack)
-        startup = jobs.StartupEx()
-        startup.startup.cb, startup.startup.flags = ctypes.sizeof(startup), 0x100
+        startup = jobs.StartupEx(startup=jobs.Startup(cb=ctypes.sizeof(jobs.StartupEx), flags=0x100))
         startup.startup.stdin, startup.startup.stdout, startup.startup.stderr = handles
         startup.attributes = ctypes.addressof(storage[0])
         process = jobs.ProcessInfo()

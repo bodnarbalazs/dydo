@@ -1,5 +1,6 @@
 """Real Windows job ownership: blocked descendants, interruption and retained evidence."""
 import contextlib
+import ctypes
 import io
 import json
 import os
@@ -103,8 +104,33 @@ class ControlDydoLifetimeTests(unittest.TestCase):
         self.assertEqual("KeyboardInterrupt", failure["type"])
 
     def test_stdin_stdout_stderr_and_nonzero_exit_are_preserved(self):
+        kernel = owned_process.jobs.bindings()
+        set_limits = kernel.SetInformationJobObject
+        launch = owned_process.jobs.launch
+
+        def checked_limits(job, kind, pointer, size):
+            self.assertEqual((9, 144), (kind, size))
+            self.assertEqual(bytes(16) + b"\x00\x20\x00\x00" + bytes(124),
+                             ctypes.string_at(pointer, size))
+            return set_limits(job, kind, pointer, size)
+
+        def checked_startup(api, request, environment, startup, process):
+            # Win64 STARTUPINFOEXW: cb at 0, dwFlags at 60, attribute list at 104.
+            raw = bytes(startup)
+            self.assertEqual(112, len(raw))
+            self.assertEqual(112, int.from_bytes(raw[:4], "little"))
+            self.assertEqual(0x100, int.from_bytes(raw[60:64], "little"))
+            self.assertNotEqual(bytes(8), raw[104:112])
+            return launch(api, request, environment, startup, process)
+
         script = "import sys; print(sys.stdin.read(), end=''); print('error', file=sys.stderr); sys.exit(7)"
-        result = control.execute(self.run, "streams", [sys.executable, "-c", script], self.run, "payload\n")
+        with patch.object(owned_process.jobs, "bindings", return_value=kernel):
+            with patch.object(kernel, "SetInformationJobObject", side_effect=checked_limits) as limits:
+                with patch.object(owned_process.jobs, "launch", side_effect=checked_startup) as startup:
+                    result = control.execute(self.run, "streams", [sys.executable, "-c", script],
+                                             self.run, "payload\n")
+        limits.assert_called_once()
+        startup.assert_called_once()
         self.assertEqual((7, "payload\r\n", "error\r\n"), (result.returncode, result.stdout, result.stderr))
         control.cleanup(self.run)
 

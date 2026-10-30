@@ -1,0 +1,61 @@
+{
+  "outcomes": {
+    "authorized-resume": {
+      "exit": 1,
+      "commandSha256": "944032cbcd40561f2ec44ff309d728ebb873aacdec366b2b3486dd5bfd8fe695",
+      "stdoutSha256": "be50d2a08a1d1bc1853f8e146a40c5c2aa7fa4ee08239aba3d6ca189f91a3ea4",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "completed-replay": {
+      "exit": 1,
+      "commandSha256": "6284c6bef878dd37d1d03f91dfbf92ebe2d2506cde7172473756aa8729ed867c",
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ready-offline": {
+      "exit": 1,
+      "commandSha256": "61c94503ef3d6c814c8b0cad94072d213d537079513a4feb12a8265dd4450f7a",
+      "stdoutSha256": "e6f8c6593467c50bb2f77832c85b54069b45b27b048a53d237897ad68d63428b",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "corrected-offline": {
+      "exit": 0,
+      "commandSha256": "f03732d0de983e2591f5f8bae7d67eff74450392e08bc5d7f6cfe4532be1a50b",
+      "stdoutSha256": "5dd4ee372132cc6a6ddd421a821f409928f72fe130e2295c1b58e010b177937e",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "native-js-seams": {
+      "exit": 0,
+      "commandSha256": "94963c878b576582eb286d577fdd3705124261a40a963906789c46aa612bafdd",
+      "stdoutSha256": "0c973623fbaa98bbd84940ffe218fea5e4baa0fb6fc370c73f5c22df7a9f8f2d",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ready-tests": {
+      "exit": 0,
+      "commandSha256": "780a3e3e2253803b9492b77810915d5ddeef83617cedf3f9714d508c43852486",
+      "stdoutSha256": "2fcb9e34db53233b6964365e0a7dbe6fc08f79520ae49ae30fde23cc8b7cfae8",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "docs": {
+      "exit": 1,
+      "commandSha256": "6713cbf26fbc01fbdc8aaef5942e5dbbd6cd6bd40e418cac69b1491196b920a3",
+      "stdoutSha256": "4c2333ecf9d6f026073650cf118030f914dc6106a1e38d3ec4767d9d934c3ab9",
+      "stderrSha256": "d457b81ea3637102694d37152eb44be184f549f43115c82010372968b1e8c823"
+    }
+  },
+  "originalStageExit": 1,
+  "originalStageFailure": "Docs: pinned uppercase README filename and JSON Markdown link",
+  "runtimeRepeated": false,
+  "platform": "win-x64",
+  "binarySha256": "896b5dac5867b79e389a9d71f3509b6b66fccf9f88353be92fe158fadfe86d4a",
+  "originalRequestDigest": "1f633fa910844b8db571e9c3479370d1daf09f16fca0b720af82a14153288dbb",
+  "noGlobalOrFacilitatorInstall": true,
+  "taskLocalRoots": {
+    "DYDO_STATECHART_ASSET_ROOT": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\assets",
+    "DYDO_STATECHART_STATE_ROOT": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\state",
+    "DYDO_STATECHART_DEPENDENCY_ROOT": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\deps",
+    "TEMP": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\temp",
+    "TMP": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\temp",
+    "TMPDIR": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\temp"
+  }
+}

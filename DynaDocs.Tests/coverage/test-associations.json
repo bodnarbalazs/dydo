@@ -1514,6 +1514,142 @@
     {
       "module": "Services/Statechart/PosixStatechartProcess.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartPosixTests.cs"]
+    },
+    {
+      "module": "Commands/StatechartCommand.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartCommandTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartAssets.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartAssetsTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartPrerequisites.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPrerequisitesTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartPaths.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPathsTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/WindowsStatechartFiles.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartScratchTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartScratch.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartScratchTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartCleanup.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartLifecycleTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/WindowsStatechartLifetime.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartLifecycleTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartExecutable.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartCommandTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartProbe.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartCommandTests.cs", "DynaDocs.Tests/Statechart/StatechartProbeTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartRequest.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartRequestTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartHome.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartHomeTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartRequests.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartRequestsTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartInventory.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartRequestsTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartDownloads.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartDownloadsTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartArchive.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartArchiveTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartFlow.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPublicFlowTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartResolver.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPublicFlowTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartManaged.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartManagedTests.cs", "DynaDocs.Tests/Statechart/StatechartPublicFlowTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartRunner.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPublicFlowTests.cs", "DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartNode.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartReady.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/driver.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_invocation_driver.py"]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/launch.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_invocation_launch.py"]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/prepare.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_invocation_prepare.py"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/CounterView/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/Login/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/LoginGuarded/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/LoginParallel/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/MediaPlayer/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/MediaPlayerFixed/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/MediaPlayerProps/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/TwoPhase/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/TwoPhaseFixed/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
     }
   ]
 }

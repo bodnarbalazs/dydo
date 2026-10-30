@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-7qsxnolm\\publish\\dydo.exe",
+    "statechart",
+    "Model.tla"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-du5ikt65\\caller",
+  "exit": 1,
+  "expected": 2,
+  "seconds": 0.029548399994382635,
+  "ticket": "0000000002-971b613f3be27657",
+  "hidden": true
+}

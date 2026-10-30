@@ -1,0 +1,15 @@
+  DynaDocs -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-2zkp350y\source\bin\Release\net10.0\dydo.dll
+  DynaDocs.Tests -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-2zkp350y\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll
+Test run for C:\Users\User\AppData\Local\Temp\dyd415-implementation2-2zkp350y\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed DynaDocs.Tests.Commands.CommandDocConsistencyTests.AllCommands_AppearInHelpText [2 ms]
+  Error Message:
+   Commands missing from help text in HelpCommand.cs:
+  statechart resume
+  Stack Trace:
+     at DynaDocs.Tests.Commands.CommandDocConsistencyTests.AllCommands_AppearInHelpText() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-2zkp350y\source\DynaDocs.Tests\Commands\CommandDocConsistencyTests.cs:line 141
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+Results File: C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\implementation2\public-flow-build1\test-results\public.trx
+
+Failed!  - Failed:     1, Passed:    31, Skipped:     0, Total:    32, Duration: 1 s - DynaDocs.Tests.dll (net10.0)

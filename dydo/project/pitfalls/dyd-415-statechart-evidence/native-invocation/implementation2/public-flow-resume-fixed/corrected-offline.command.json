@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\publish\\dydo.exe",
+    "statechart",
+    "Corrected.tla",
+    "--view",
+    "view.mjs",
+    "--out",
+    "corrected chart"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\model inputs \u00e1rv\u00edz",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 2.618148800000199,
+  "ticket": "0000000001-8ac625da9526eecc",
+  "hidden": true
+}

@@ -1,0 +1,24 @@
+{
+  "argv": [
+    "dotnet",
+    "test",
+    "DynaDocs.sln",
+    "-c",
+    "Release",
+    "--filter",
+    "FullyQualifiedName~StatechartPublicFlowTests|FullyQualifiedName~StatechartProtocolTests|FullyQualifiedName~StatechartLifecycleTests|FullyQualifiedName~CommandDocConsistencyTests",
+    "--no-restore",
+    "--logger",
+    "trx;LogFileName=public.trx",
+    "--results-directory",
+    "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation2\\public-flow-build1\\test-results",
+    "--",
+    "RunConfiguration.TreatNoTestsAsError=true"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-2zkp350y\\source",
+  "exit": 1,
+  "expected": 0,
+  "seconds": 3.617994699990959,
+  "ticket": "0000000003-058370c22c9f3e1c",
+  "hidden": true
+}

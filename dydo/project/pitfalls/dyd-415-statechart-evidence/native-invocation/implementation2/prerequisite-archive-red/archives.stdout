@@ -1,0 +1,15 @@
+  DynaDocs -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-dhqu5ffk\source\bin\Release\net10.0\dydo.dll
+  DynaDocs.Tests -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-dhqu5ffk\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll
+Test run for C:\Users\User\AppData\Local\Temp\dyd415-implementation2-dhqu5ffk\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed DynaDocs.Tests.Statechart.StatechartArchiveTests.LockedZipExtractsExactBytesToFreshOwnedStagingWithoutTouchingArchive [95 ms]
+  Error Message:
+   System.NotSupportedException : Statechart locked archive extraction is not implemented.
+  Stack Trace:
+     at DynaDocs.Services.Statechart.StatechartArchive.Extract(String archive, String destination, CancellationToken token, Int64 expandedLimit, Int32 entryLimit) in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-dhqu5ffk\source\Services\Statechart\StatechartArchive.cs:line 7
+   at DynaDocs.Tests.Statechart.StatechartArchiveTests.LockedZipExtractsExactBytesToFreshOwnedStagingWithoutTouchingArchive() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-dhqu5ffk\source\DynaDocs.Tests\Statechart\StatechartArchiveTests.cs:line 17
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+Results File: C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\implementation2\prerequisite-archive-red\test-results\archives.trx
+
+Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 107 ms - DynaDocs.Tests.dll (net10.0)

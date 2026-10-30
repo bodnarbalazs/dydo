@@ -1,0 +1,70 @@
+{
+  "disposition": "MATERIAL SCOPE BLOCKER; return to existing captain",
+  "base": "86931b9c47a93fa06287391495574865d9ce1d56",
+  "candidateCommit": null,
+  "worktree": "uncommitted draft retained",
+  "custody": {
+    "path": "draft-custody.json",
+    "sha256": "f308c08277499ece4b18a49377a3d0d4c41682f40c096ce4aeff2507b51d17e2"
+  },
+  "observed": {
+    "nativePublishExit": 0,
+    "discoveryExit": 0,
+    "lightExit": 1,
+    "lightPassed": 91,
+    "lightFailed": 2,
+    "lightSkipped": 0,
+    "baselineSharedExit": 1,
+    "baselinePassed": 0,
+    "baselineFailed": 2,
+    "allSelectedInScopeCasesPassed": true,
+    "overallLight": "FAIL",
+    "wrapperExitZeroMeans": "expected failure attributed, never suite PASS"
+  },
+  "failures": [
+    {
+      "test": "CanonicalSkillTree_SortsEverySkillExactlyOnceByKind",
+      "path": "DynaDocs.Tests/Steps/CanonicalSkillAssertionTests.cs",
+      "line": 77,
+      "problem": "Expected dictionary omits statechart=engineering; expected count40, actual canonical catalogue41."
+    },
+    {
+      "test": "SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo40",
+      "path": "DynaDocs.Tests/Steps/CanonicalSkillAssertionTests.cs",
+      "line": 399,
+      "problem": "Expected40, actual41."
+    }
+  ],
+  "authority": {
+    "reason": "Pinned exact ownership table omits DynaDocs.Tests/Steps/CanonicalSkillAssertionTests.cs; no permission to edit it or waive reached Light.",
+    "contract": "C:/Users/User/AppData/Local/Temp/dyd415-native-implementation-contract-20261030.md",
+    "contractSha256": "700effa99c32e235f69e814fc80875426b9ad902e5b3f681912a9c4165e66391",
+    "skill": ".agents/skills/code-writer/SKILL.md: Boundary / Prove",
+    "smallestProposedAmendment": "Authorize only statechart=engineering expected entry, count40 to41 assertions, optional matching method rename in the Steps file; preserve all other expectations and catalogue41/engineering13."
+  },
+  "proof": [
+    "product-resource-fixed/light.command.json",
+    "product-resource-fixed/light.stdout",
+    "product-resource-fixed/test-results/implementation2.trx",
+    "product-resource-fixed/light-attributed.json",
+    "resource-shared-attribution/baseline-identity.json",
+    "resource-shared-attribution/baseline-shared.command.json",
+    "resource-shared-attribution/baseline-results/base.trx"
+  ],
+  "implementedDraft": [
+    "Windows registered scratch identity and deletion only after authoritative sealed job drain; independent cleanup retains on EOF/uncertainty.",
+    "Exact embedded payload and offline statechart doctor command, native/self or installed dotnet-host relaunch and owned local prerequisite probes.",
+    "Focused native lifecycle/payload/resolver/doctor tests and DR062 with exact human ruling; help/reference/associations updated."
+  ],
+  "remaining": [
+    "Complete installed chart request, plan3, normal host-authorized saved-request resume, managed installation/readiness and continuation.",
+    "Actual npm outer lifetime, TS native/render glue and installed skill projections.",
+    "All registration-phase interruption barriers and final source/payload closure including extra-input detection.",
+    "Applicable static not run; final docs/whitespace not run; final Heavy and one adopted dotnet/node coverage producer not run.",
+    "Actual linux-arm64/osx-x64/osx-arm64 proof owed; old native Windows/Linux primitives remain historical and bounded."
+  ],
+  "staticConcern": "Unexecuted source concern only: retained G1 fixture projects are in existing static inventory. No observed static FAIL and no historical fixture or gate-policy change.",
+  "next": "Captain disposes minimal Steps ownership amendment; same writer retains draft and exact receipts, then resumes implementation and fresh required gates. No new user architecture approval requested.",
+  "holds": "No readiness/acceptance/merge/publication claim; DYD434 Done; both settled conversations remain no-contact.",
+  "signature": "code-writer/model: gpt-6.1-sol/high"
+}

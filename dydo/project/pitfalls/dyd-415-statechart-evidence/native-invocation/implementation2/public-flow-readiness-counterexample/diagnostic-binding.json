@@ -1,0 +1,15 @@
+{
+  "binarySha256": "cae22e53ca23ebf47101a288bdf3f7a7d07332c0872f3d347b266fea0d67a177",
+  "retainedArchives": [
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-noj0hobr\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\.install-win-x64-409cebcb77c445d0b3152a24917bd0b7\\node\\node-v22.23.2-win-x64.zip",
+      "sha256": "1177b4137ba5adaa56354ae40f1080c7450e8ae09cecb47da459d1c52ac99f97"
+    },
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-noj0hobr\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\.install-win-x64-409cebcb77c445d0b3152a24917bd0b7\\java\\OpenJDK21U-jre_x64_windows_hotspot_21.0.8_9.zip",
+      "sha256": "238d74ec4ec9422d416fa98805ba375eecd8bc8f971bd0c61a21051a4fe42db8"
+    }
+  ],
+  "prerequisiteInstallationRetried": false,
+  "purpose": "Bounded direct versus native-gated version output counterexample"
+}

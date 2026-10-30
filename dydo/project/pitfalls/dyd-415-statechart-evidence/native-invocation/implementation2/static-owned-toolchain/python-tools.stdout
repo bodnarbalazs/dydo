@@ -1,0 +1,28 @@
+Collecting colorama==0.4.6 (from -r C:\Users\User\AppData\Local\Temp\dyd415-implementation2-thac303a\source\DynaDocs.Tests\coverage\requirements.lock (line 1))
+  Downloading colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+Collecting complexipy==8.0.0 (from -r C:\Users\User\AppData\Local\Temp\dyd415-implementation2-thac303a\source\DynaDocs.Tests\coverage\requirements.lock (line 2))
+  Downloading complexipy-8.0.0-cp312-cp312-win_amd64.whl.metadata (7.3 kB)
+Collecting coverage==7.16.0 (from -r C:\Users\User\AppData\Local\Temp\dyd415-implementation2-thac303a\source\DynaDocs.Tests\coverage\requirements.lock (line 3))
+  Downloading coverage-7.16.0-cp312-cp312-win_amd64.whl.metadata (8.8 kB)
+Collecting mando==0.7.1 (from -r C:\Users\User\AppData\Local\Temp\dyd415-implementation2-thac303a\source\DynaDocs.Tests\coverage\requirements.lock (line 4))
+  Downloading mando-0.7.1-py2.py3-none-any.whl.metadata (7.4 kB)
+Collecting radon==6.0.1 (from -r C:\Users\User\AppData\Local\Temp\dyd415-implementation2-thac303a\source\DynaDocs.Tests\coverage\requirements.lock (line 5))
+  Downloading radon-6.0.1-py2.py3-none-any.whl.metadata (8.2 kB)
+Collecting ruff==0.16.6 (from -r C:\Users\User\AppData\Local\Temp\dyd415-implementation2-thac303a\source\DynaDocs.Tests\coverage\requirements.lock (line 6))
+  Downloading ruff-0.16.6-py3-none-win_amd64.whl.metadata (26 kB)
+Collecting six==1.17.0 (from -r C:\Users\User\AppData\Local\Temp\dyd415-implementation2-thac303a\source\DynaDocs.Tests\coverage\requirements.lock (line 7))
+  Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+Collecting vulture==2.16 (from -r C:\Users\User\AppData\Local\Temp\dyd415-implementation2-thac303a\source\DynaDocs.Tests\coverage\requirements.lock (line 8))
+  Downloading vulture-2.16-py3-none-any.whl.metadata (15 kB)
+Downloading colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+Downloading complexipy-8.0.0-cp312-cp312-win_amd64.whl (3.4 MB)
+   ---------------------------------------- 3.4/3.4 MB 7.3 MB/s eta 0:00:00
+Downloading coverage-7.16.0-cp312-cp312-win_amd64.whl (225 kB)
+Downloading mando-0.7.1-py2.py3-none-any.whl (28 kB)
+Downloading radon-6.0.1-py2.py3-none-any.whl (52 kB)
+Downloading ruff-0.16.6-py3-none-win_amd64.whl (10.6 MB)
+   ---------------------------------------- 10.6/10.6 MB 11.6 MB/s eta 0:00:00
+Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+Downloading vulture-2.16-py3-none-any.whl (26 kB)
+Installing collected packages: vulture, six, ruff, coverage, complexipy, colorama, mando, radon
+Successfully installed colorama-0.4.6 complexipy-8.0.0 coverage-7.16.0 mando-0.7.1 radon-6.0.1 ruff-0.16.6 six-1.17.0 vulture-2.16

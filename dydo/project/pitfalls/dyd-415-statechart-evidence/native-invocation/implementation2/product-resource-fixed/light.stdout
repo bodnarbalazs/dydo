@@ -1,0 +1,27 @@
+  DynaDocs -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-7qsxnolm\source\bin\Release\net10.0\dydo.dll
+  DynaDocs.Tests -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-7qsxnolm\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll
+Test run for C:\Users\User\AppData\Local\Temp\dyd415-implementation2-7qsxnolm\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.CanonicalSkillTree_SortsEverySkillExactlyOnceByKind [11 ms]
+  Error Message:
+   Assert.Equal() Failure: Collections differ
+                                                                        ↓ (pos 28)
+Expected: [···, ["scout"] = "roles/crew", ["show-me"] = "productivity", ["teach"] = "productivity", ["ticket-captain"] = "roles/officers", ["to-project"] = "productivity", ···]
+Actual:   [···, ["scout"] = "roles/crew", ["show-me"] = "productivity", ["statechart"] = "engineering", ["teach"] = "productivity", ["ticket-captain"] = "roles/officers", ···]
+                                                                        ↑ (pos 28)
+  Stack Trace:
+     at DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.CanonicalSkillTree_SortsEverySkillExactlyOnceByKind() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-7qsxnolm\source\DynaDocs.Tests\Steps\CanonicalSkillAssertionTests.cs:line 83
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo40 [2 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: 40
+Actual:   41
+  Stack Trace:
+     at DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo40() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-7qsxnolm\source\DynaDocs.Tests\Steps\CanonicalSkillAssertionTests.cs:line 399
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+Results File: C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\implementation2\product-resource-fixed\test-results\implementation2.trx
+
+Failed!  - Failed:     2, Passed:    91, Skipped:     0, Total:    93, Duration: 1 s - DynaDocs.Tests.dll (net10.0)

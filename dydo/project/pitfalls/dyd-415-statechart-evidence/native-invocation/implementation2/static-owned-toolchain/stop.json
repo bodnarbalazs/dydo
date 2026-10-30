@@ -1,0 +1,4 @@
+{
+  "type": "RuntimeError",
+  "reason": "static failed; inspect retained streams before any retry"
+}

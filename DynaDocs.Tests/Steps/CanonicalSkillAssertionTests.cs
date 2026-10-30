@@ -64,6 +64,7 @@ public sealed class CanonicalSkillAssertionTests
             ["pr"] = "engineering", ["prototype"] = "engineering", ["wizard"] = "engineering", ["improve-codebase-architecture"] = "engineering",
             ["create-verification-skill"] = "engineering", ["maintain-verification-skill"] = "engineering",
             ["verify-dydo"] = "engineering",
+            ["statechart"] = "engineering",
             ["create-formal-verification-skill"] = "engineering", ["maintain-formal-verification-skill"] = "engineering",
             ["co-thinker"] = "productivity", ["grilling"] = "productivity", ["grill-me"] = "productivity",
             ["bro"] = "productivity", ["handoff"] = "productivity", ["teach"] = "productivity",
@@ -74,7 +75,7 @@ public sealed class CanonicalSkillAssertionTests
             ["what-would-balazs-do"] = "productivity",
             ["update-dydo"] = "productivity"
         };
-        Assert.Equal(40, expected.Count);
+        Assert.Equal(41, expected.Count);
         var root = Path.Combine(RepositoryRoot(), "skills");
         Assert.Equal(["engineering", "productivity", "roles"], ChildDirectoryNames(root));
         Assert.Equal(["crew", "officers"], ChildDirectoryNames(Path.Combine(root, "roles")));
@@ -387,7 +388,7 @@ public sealed class CanonicalSkillAssertionTests
     }
 
     [Fact]
-    public void SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo40()
+    public void SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo41()
     {
         var root = RepositoryRoot();
         var skillsRoot = Path.Combine(root, "skills");
@@ -396,7 +397,7 @@ public sealed class CanonicalSkillAssertionTests
             .GroupBy(skill => skill.Category.Split('/')[0])
             .ToDictionary(group => group.Key, group => group.Count());
         Assert.Equal(categories.Order(StringComparer.Ordinal), actualCounts.Keys.Order(StringComparer.Ordinal));
-        Assert.Equal(40, actualCounts.Values.Sum());
+        Assert.Equal(41, actualCounts.Values.Sum());
 
         var readme = File.ReadAllText(Path.Combine(skillsRoot, "README.md"));
         foreach (var category in categories)
@@ -407,7 +408,7 @@ public sealed class CanonicalSkillAssertionTests
         }
 
         Assert.Contains(
-            $"{actualCounts["roles"]} + {actualCounts["engineering"]} + {actualCounts["productivity"]} = 40",
+            $"{actualCounts["roles"]} + {actualCounts["engineering"]} + {actualCounts["productivity"]} = 41",
             readme);
     }
 

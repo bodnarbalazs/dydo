@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "dotnet",
+    "--version"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-j9j2osd0\\source",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 0.08966579999832902,
+  "ticket": "0000000001-16596b3048f9eb3e",
+  "hidden": true
+}

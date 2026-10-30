@@ -1,0 +1,18 @@
+{
+  "argv": [
+    "dotnet",
+    "test",
+    "DynaDocs.sln",
+    "-c",
+    "Release",
+    "--filter",
+    "FullyQualifiedName~CanonicalSkillTree_SortsEverySkillExactlyOnceByKind|FullyQualifiedName~SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo41",
+    "--list-tests"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-df76_7el\\source",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 33.44277080000029,
+  "ticket": "0000000001-87cd966d267315f2",
+  "hidden": true
+}

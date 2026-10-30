@@ -3,11 +3,14 @@ namespace DynaDocs.Services.Statechart;
 internal sealed class StatechartProtocol
 {
     private int _phase;
+    private readonly string _suffix;
+
+    public StatechartProtocol(string? nonce = null) => _suffix = nonce is null ? "" : ":" + nonce;
 
     public void AcceptReady(string? message)
     {
         Expect(0);
-        if (message != "ready:1")
+        if (message != "ready:1" + _suffix)
             throw new InvalidDataException("Statechart requires one ready:1 acknowledgment.");
         _phase = 1;
     }
@@ -28,7 +31,7 @@ internal sealed class StatechartProtocol
     {
         Expect(3);
         _phase = 4;
-        await control.WriteLineAsync("go:1".AsMemory(), cancellationToken);
+        await control.WriteLineAsync(("go:1" + _suffix).AsMemory(), cancellationToken);
         await control.FlushAsync(cancellationToken);
     }
 

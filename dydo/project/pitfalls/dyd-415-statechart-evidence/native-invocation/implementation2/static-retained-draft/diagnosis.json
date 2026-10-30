@@ -1,0 +1,8 @@
+{
+  "cause": "Configured pinned local Python executable absent; CreateProcess failed before facade/static launch.",
+  "configuredPath": "dydo/_system/.local/static-gates/python/Scripts/python.exe",
+  "actualStaticExit": null,
+  "measurement": "NOT STARTED",
+  "correction": "Fresh owned snapshot provisions documented CPython3.12.10 venv plus exact requirements.lock/npm package-lock; uses existing read-only Node22.13.0 installation; no global/facilitator changes.",
+  "inventoryConcern": "Still unobserved; no policy or historical fixture edits."
+}

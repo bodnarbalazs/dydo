@@ -1,0 +1,18 @@
+{
+  "argv": [
+    "dotnet",
+    "test",
+    "DynaDocs.sln",
+    "-c",
+    "Release",
+    "--filter",
+    "FullyQualifiedName~StatechartArchiveTests",
+    "--list-tests"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-u2bs00n9\\source",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 32.535354499996174,
+  "ticket": "0000000003-2cc09fbc38f7cfbe",
+  "hidden": true
+}

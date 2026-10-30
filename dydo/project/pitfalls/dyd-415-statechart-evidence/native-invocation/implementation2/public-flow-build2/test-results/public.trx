@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="4df2f17a-9929-4802-a774-8c23d7774b43" name="Balázs@NIGHTFURY 2026-10-30 22:28:18" runUser="NIGHTFURY\Balázs" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-30T22:28:18.4135466+01:00" queuing="2026-10-30T22:28:18.4135468+01:00" start="2026-10-30T22:28:16.1528734+01:00" finish="2026-10-30T22:28:18.4782622+01:00" />
+  <TestSettings name="default" id="a1e6e789-54fa-4770-b466-f112415452e5">
+    <Deployment runDeploymentRoot="Balázs_NIGHTFURY_2026-10-30_22_28_18" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="a0454b09-8c10-4adc-92cc-248b8c75e16b" testId="74bfc4ef-67d7-e72c-da00-004ea9b50337" testName="DynaDocs.Tests.Statechart.StatechartManagedTests.ComponentWithoutAReadinessReceiptIsNotAdoptedOrRepairedImplicitly" computerName="NIGHTFURY" duration="00:00:00.0043248" startTime="2026-10-30T22:28:18.3940830+01:00" endTime="2026-10-30T22:28:18.3983359+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a0454b09-8c10-4adc-92cc-248b8c75e16b" />
+    <UnitTestResult executionId="cdb470fb-21bf-44b6-b2bc-9ae9231e6330" testId="38141714-9846-6fd8-074e-086b0484eecf" testName="DynaDocs.Tests.Statechart.StatechartPublicFlowTests.ChangedSavedInputsRejectResumeBeforeProvisioningAndPreserveRequest" computerName="NIGHTFURY" duration="00:00:00.5006859" startTime="2026-10-30T22:28:17.5157484+01:00" endTime="2026-10-30T22:28:18.0222983+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cdb470fb-21bf-44b6-b2bc-9ae9231e6330" />
+    <UnitTestResult executionId="f7bfdb89-a980-4d4e-a625-a7d070647a71" testId="815bae5a-6152-5432-8436-9051c8c61d1a" testName="DynaDocs.Tests.Statechart.StatechartPublicFlowTests.PublicationRetainsAConcurrentForeignArrival" computerName="NIGHTFURY" duration="00:00:00.0039165" startTime="2026-10-30T22:28:18.3609354+01:00" endTime="2026-10-30T22:28:18.3649460+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f7bfdb89-a980-4d4e-a625-a7d070647a71" />
+    <UnitTestResult executionId="db913298-57c6-48f7-8df5-7e4fa1cbd20a" testId="b866c146-4c7e-3ded-9238-75013e2c2914" testName="DynaDocs.Tests.Statechart.StatechartManagedTests.ConcurrentInstallerLockRejectsBeforeCreatingStoreOrDownloading" computerName="NIGHTFURY" duration="00:00:00.0070297" startTime="2026-10-30T22:28:18.3672940+01:00" endTime="2026-10-30T22:28:18.3743263+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="db913298-57c6-48f7-8df5-7e4fa1cbd20a" />
+    <UnitTestResult executionId="a99d6a81-b6e3-40a8-9d4d-b53d83f7af38" testId="c3df9077-0a4e-4928-1990-81eebed36c67" testName="DynaDocs.Tests.Statechart.StatechartManagedTests.ExplicitSelectionWinsWhenManagedValuesFillMissingDependencies" computerName="NIGHTFURY" duration="00:00:00.0012800" startTime="2026-10-30T22:28:18.3984603+01:00" endTime="2026-10-30T22:28:18.3996994+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a99d6a81-b6e3-40a8-9d4d-b53d83f7af38" />
+    <UnitTestResult executionId="56b13ce1-dd69-4151-ba33-a3ee9a0e8893" testId="50b731cf-4a8e-e129-d9b2-5e1372a253b5" testName="DynaDocs.Tests.Statechart.StatechartManagedTests.MissingManagedRootReportsMissingWithoutCreatingAnInstallation" computerName="NIGHTFURY" duration="00:00:00.0016168" startTime="2026-10-30T22:28:18.4169512+01:00" endTime="2026-10-30T22:28:18.4185273+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="56b13ce1-dd69-4151-ba33-a3ee9a0e8893" />
+    <UnitTestResult executionId="362b5315-c936-4855-a915-96e0b9b0d4c3" testId="487da57b-9483-5359-92ad-ed55b5e749f7" testName="DynaDocs.Tests.Statechart.StatechartPublicFlowTests.MissingPublicInvocationSavesOriginalInputsAndReturnsCompleteLockedPlanWithoutInstalling" computerName="NIGHTFURY" duration="00:00:00.2277754" startTime="2026-10-30T22:28:18.1332389+01:00" endTime="2026-10-30T22:28:18.3607587+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="362b5315-c936-4855-a915-96e0b9b0d4c3" />
+    <UnitTestResult executionId="962370bf-59c9-4d67-bf6c-c30819bf3beb" testId="1aa35ebf-e06b-994d-bdad-04f2f8a11b90" testName="DynaDocs.Tests.Statechart.StatechartManagedTests.ForeignMarkerOrUnexpectedChildIsRetainedAndRejected(validMarker: True)" computerName="NIGHTFURY" duration="00:00:00.0114618" startTime="2026-10-30T22:28:18.3825062+01:00" endTime="2026-10-30T22:28:18.3939525+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="962370bf-59c9-4d67-bf6c-c30819bf3beb" />
+    <UnitTestResult executionId="952e51aa-b297-4538-b281-e6b552a0d226" testId="e03c7494-62ff-585c-4774-92e30db5a152" testName="DynaDocs.Tests.Commands.CommandDocConsistencyTests.AllCommands_AppearInHelpText" computerName="NIGHTFURY" duration="00:00:00.0114045" startTime="2026-10-30T22:28:18.4187304+01:00" endTime="2026-10-30T22:28:18.4300763+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="952e51aa-b297-4538-b281-e6b552a0d226" />
+    <UnitTestResult executionId="5958c382-7191-4bb7-af9a-ea94d5a6f89c" testId="b9151612-20e5-2d50-2a19-fd781f2ebe11" testName="DynaDocs.Tests.Statechart.StatechartPublicFlowTests.InvalidExplicitOverrideIsAnErrorBeforeAnyDownloadPlan" computerName="NIGHTFURY" duration="00:00:00.1092284" startTime="2026-10-30T22:28:18.0284888+01:00" endTime="2026-10-30T22:28:18.1326911+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5958c382-7191-4bb7-af9a-ea94d5a6f89c" />
+    <UnitTestResult executionId="4c0403cd-ad4f-48fd-9f2d-de7709cf9039" testId="a3c2f31a-488c-c629-09d0-e5a850480b7b" testName="DynaDocs.Tests.Statechart.StatechartManagedTests.ReceiptFromAnotherReleaseRejectsBeforeUsingComponentBytes" computerName="NIGHTFURY" duration="00:00:00.0170591" startTime="2026-10-30T22:28:18.4039956+01:00" endTime="2026-10-30T22:28:18.4168048+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4c0403cd-ad4f-48fd-9f2d-de7709cf9039" />
+    <UnitTestResult executionId="b80da820-901d-42c6-9b50-22ca069f40c3" testId="140ae0b5-34f0-9285-4ae4-95d6699db31d" testName="DynaDocs.Tests.Statechart.StatechartManagedTests.ForeignMarkerOrUnexpectedChildIsRetainedAndRejected(validMarker: False)" computerName="NIGHTFURY" duration="00:00:00.0080273" startTime="2026-10-30T22:28:18.3744401+01:00" endTime="2026-10-30T22:28:18.3824100+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b80da820-901d-42c6-9b50-22ca069f40c3" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="DynaDocs.Tests.Commands.CommandDocConsistencyTests.AllCommands_AppearInHelpText" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-noj0hobr\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="e03c7494-62ff-585c-4774-92e30db5a152">
+      <Execution id="952e51aa-b297-4538-b281-e6b552a0d226" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Commands.CommandDocConsistencyTests" name="AllCommands_AppearInHelpText" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartPublicFlowTests.PublicationRetainsAConcurrentForeignArrival" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-noj0hobr\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="815bae5a-6152-5432-8436-9051c8c61d1a">
+      <Execution id="f7bfdb89-a980-4d4e-a625-a7d070647a71" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartPublicFlowTests" name="PublicationRetainsAConcurrentForeignArrival" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartManagedTests.MissingManagedRootReportsMissingWithoutCreatingAnInstallation" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-noj0hobr\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="50b731cf-4a8e-e129-d9b2-5e1372a253b5">
+      <Execution id="56b13ce1-dd69-4151-ba33-a3ee9a0e8893" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartManagedTests" name="MissingManagedRootReportsMissingWithoutCreatingAnInstallation" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartManagedTests.ForeignMarkerOrUnexpectedChildIsRetainedAndRejected(validMarker: True)" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-noj0hobr\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="1aa35ebf-e06b-994d-bdad-04f2f8a11b90">
+      <Execution id="962370bf-59c9-4d67-bf6c-c30819bf3beb" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartManagedTests" name="ForeignMarkerOrUnexpectedChildIsRetainedAndRejected" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartPublicFlowTests.ChangedSavedInputsRejectResumeBeforeProvisioningAndPreserveRequest" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-noj0hobr\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="38141714-9846-6fd8-074e-086b0484eecf">
+      <Execution id="cdb470fb-21bf-44b6-b2bc-9ae9231e6330" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartPublicFlowTests" name="ChangedSavedInputsRejectResumeBeforeProvisioningAndPreserveRequest" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartManagedTests.ComponentWithoutAReadinessReceiptIsNotAdoptedOrRepairedImplicitly" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-noj0hobr\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="74bfc4ef-67d7-e72c-da00-004ea9b50337">
+      <Execution id="a0454b09-8c10-4adc-92cc-248b8c75e16b" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartManagedTests" name="ComponentWithoutAReadinessReceiptIsNotAdoptedOrRepairedImplicitly" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartManagedTests.ExplicitSelectionWinsWhenManagedValuesFillMissingDependencies" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-noj0hobr\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="c3df9077-0a4e-4928-1990-81eebed36c67">
+      <Execution id="a99d6a81-b6e3-40a8-9d4d-b53d83f7af38" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartManagedTests" name="ExplicitSelectionWinsWhenManagedValuesFillMissingDependencies" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartManagedTests.ConcurrentInstallerLockRejectsBeforeCreatingStoreOrDownloading" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-noj0hobr\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="b866c146-4c7e-3ded-9238-75013e2c2914">
+      <Execution id="db913298-57c6-48f7-8df5-7e4fa1cbd20a" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartManagedTests" name="ConcurrentInstallerLockRejectsBeforeCreatingStoreOrDownloading" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartPublicFlowTests.InvalidExplicitOverrideIsAnErrorBeforeAnyDownloadPlan" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-noj0hobr\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="b9151612-20e5-2d50-2a19-fd781f2ebe11">
+      <Execution id="5958c382-7191-4bb7-af9a-ea94d5a6f89c" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartPublicFlowTests" name="InvalidExplicitOverrideIsAnErrorBeforeAnyDownloadPlan" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartPublicFlowTests.MissingPublicInvocationSavesOriginalInputsAndReturnsCompleteLockedPlanWithoutInstalling" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-noj0hobr\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="487da57b-9483-5359-92ad-ed55b5e749f7">
+      <Execution id="362b5315-c936-4855-a915-96e0b9b0d4c3" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartPublicFlowTests" name="MissingPublicInvocationSavesOriginalInputsAndReturnsCompleteLockedPlanWithoutInstalling" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartManagedTests.ReceiptFromAnotherReleaseRejectsBeforeUsingComponentBytes" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-noj0hobr\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="a3c2f31a-488c-c629-09d0-e5a850480b7b">
+      <Execution id="4c0403cd-ad4f-48fd-9f2d-de7709cf9039" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartManagedTests" name="ReceiptFromAnotherReleaseRejectsBeforeUsingComponentBytes" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartManagedTests.ForeignMarkerOrUnexpectedChildIsRetainedAndRejected(validMarker: False)" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-noj0hobr\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="140ae0b5-34f0-9285-4ae4-95d6699db31d">
+      <Execution id="b80da820-901d-42c6-9b50-22ca069f40c3" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartManagedTests" name="ForeignMarkerOrUnexpectedChildIsRetainedAndRejected" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="74bfc4ef-67d7-e72c-da00-004ea9b50337" executionId="a0454b09-8c10-4adc-92cc-248b8c75e16b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="38141714-9846-6fd8-074e-086b0484eecf" executionId="cdb470fb-21bf-44b6-b2bc-9ae9231e6330" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="815bae5a-6152-5432-8436-9051c8c61d1a" executionId="f7bfdb89-a980-4d4e-a625-a7d070647a71" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b866c146-4c7e-3ded-9238-75013e2c2914" executionId="db913298-57c6-48f7-8df5-7e4fa1cbd20a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c3df9077-0a4e-4928-1990-81eebed36c67" executionId="a99d6a81-b6e3-40a8-9d4d-b53d83f7af38" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="50b731cf-4a8e-e129-d9b2-5e1372a253b5" executionId="56b13ce1-dd69-4151-ba33-a3ee9a0e8893" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="487da57b-9483-5359-92ad-ed55b5e749f7" executionId="362b5315-c936-4855-a915-96e0b9b0d4c3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1aa35ebf-e06b-994d-bdad-04f2f8a11b90" executionId="962370bf-59c9-4d67-bf6c-c30819bf3beb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e03c7494-62ff-585c-4774-92e30db5a152" executionId="952e51aa-b297-4538-b281-e6b552a0d226" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b9151612-20e5-2d50-2a19-fd781f2ebe11" executionId="5958c382-7191-4bb7-af9a-ea94d5a6f89c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a3c2f31a-488c-c629-09d0-e5a850480b7b" executionId="4c0403cd-ad4f-48fd-9f2d-de7709cf9039" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="140ae0b5-34f0-9285-4ae4-95d6699db31d" executionId="b80da820-901d-42c6-9b50-22ca069f40c3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="12" executed="12" passed="12" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.5+1b188a7b0a (64-bit .NET 10.0.8)&#xD;
+[xUnit.net 00:00:00.07]   Discovering: DynaDocs.Tests&#xD;
+[xUnit.net 00:00:00.38]   Discovered:  DynaDocs.Tests&#xD;
+[xUnit.net 00:00:00.40]   Starting:    DynaDocs.Tests&#xD;
+-&gt; Loading plugin C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll&#xD;
+-&gt; Loading plugin C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\Reqnroll.xUnit.ReqnrollPlugin.dll&#xD;
+-&gt; Using reqnroll.json&#xD;
+[xUnit.net 00:00:02.00]   Finished:    DynaDocs.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

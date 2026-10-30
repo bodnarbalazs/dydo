@@ -1,0 +1,2 @@
+[xUnit.net 00:00:02.01]     DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.CanonicalSkillTree_SortsEverySkillExactlyOnceByKind [FAIL]
+[xUnit.net 00:00:02.02]     DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo40 [FAIL]

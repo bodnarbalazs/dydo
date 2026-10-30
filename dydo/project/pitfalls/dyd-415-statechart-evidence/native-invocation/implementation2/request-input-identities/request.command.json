@@ -1,0 +1,24 @@
+{
+  "argv": [
+    "dotnet",
+    "test",
+    "DynaDocs.sln",
+    "-c",
+    "Release",
+    "--filter",
+    "FullyQualifiedName~StatechartRequestTests",
+    "--no-restore",
+    "--logger",
+    "trx;LogFileName=request.trx",
+    "--results-directory",
+    "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation2\\request-input-identities\\test-results",
+    "--",
+    "RunConfiguration.TreatNoTestsAsError=true"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-1xuk0ulc\\source",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 2.6828674000134924,
+  "ticket": "0000000002-055e1743a6377b54",
+  "hidden": true
+}

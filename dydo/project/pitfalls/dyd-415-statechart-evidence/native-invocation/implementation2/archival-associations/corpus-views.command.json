@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Roaming\\fnm\\node-versions\\v22.13.0\\installation\\node.exe",
+    "--test",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-dq5ouns_\\source\\skills\\engineering\\statechart\\scripts\\test\\corpus-views.test.cjs"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-dq5ouns_\\source",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 0.10964039999817032,
+  "ticket": "0000000001-634779379218961a",
+  "hidden": true
+}

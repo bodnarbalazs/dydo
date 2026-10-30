@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\node\\content\\node-v22.23.2-win-x64\\node.exe",
+    "--disable-warning=ExperimentalWarning",
+    "--test",
+    "--test-concurrency=1",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-f4jiko94\\source\\skills\\engineering\\statechart\\scripts\\test\\native-gate.test.ts",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-f4jiko94\\source\\skills\\engineering\\statechart\\scripts\\test\\native-render.test.ts"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-f4jiko94\\source",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 0.5179233999951975,
+  "ticket": "0000000001-8ac625da9526eecc",
+  "hidden": true
+}

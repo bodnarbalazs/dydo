@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "--version"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-thac303a\\source",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 0.019314600009238347,
+  "ticket": "0000000001-47f9ca0424352ae9",
+  "hidden": true
+}

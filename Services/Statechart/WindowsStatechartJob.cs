@@ -9,6 +9,7 @@ internal sealed class WindowsStatechartJob : IDisposable
 {
     private readonly SafeFileHandle _job;
     private readonly SafeFileHandle _port;
+    private bool _sealed;
     internal const nuint CompletionKey = 0x4151;
 
     public WindowsStatechartJob()
@@ -35,6 +36,7 @@ internal sealed class WindowsStatechartJob : IDisposable
 
     public void Attach(int pid)
     {
+        if (_sealed) throw new InvalidOperationException("Statechart checking is sealed; no further assignment.");
         using var process = WindowsStatechartNative.OpenProcess(0x101, false, pid);
         if (process.IsInvalid) throw new Win32Exception();
         Check(WindowsStatechartNative.AssignProcessToJobObject(_job, process));
@@ -64,6 +66,19 @@ internal sealed class WindowsStatechartJob : IDisposable
     }
 
     public void Terminate() => Check(WindowsStatechartNative.TerminateJobObject(_job, 2));
+
+    public async Task<bool> SealAndDrainAsync(TimeSpan timeout)
+    {
+        _sealed = true;
+        Terminate();
+        var watch = Stopwatch.StartNew();
+        while (ActiveProcesses() != 0)
+        {
+            if (watch.Elapsed >= timeout) return false;
+            await Task.Delay(10);
+        }
+        return true;
+    }
 
     public void Dispose()
     {

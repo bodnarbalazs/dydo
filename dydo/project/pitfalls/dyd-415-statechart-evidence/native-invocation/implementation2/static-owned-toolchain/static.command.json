@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-thac303a\\source\\dydo\\_system\\.local\\static-gates\\python\\Scripts\\python.exe",
+    "DynaDocs.Tests/coverage/gap_check.py",
+    "gate",
+    "static",
+    "--stack",
+    "dotnet"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-thac303a\\source",
+  "exit": 2,
+  "expected": 0,
+  "seconds": 154.5102315999975,
+  "ticket": "0000000001-47f9ca0424352ae9",
+  "hidden": true
+}

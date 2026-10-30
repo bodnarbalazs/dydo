@@ -1,0 +1,10 @@
+{
+  "stage": "native-publish",
+  "observedExit": 1,
+  "cause": "Owned snapshot was initialized without a remote; pinned SourceLink treats the missing repository remote and empty SourceLink as errors under warnaserror",
+  "nativeCodeGenerationObserved": true,
+  "failedBinaryAccepted": false,
+  "testsStarted": false,
+  "correction": "Copy the original checkout's existing origin URL into the owned snapshot metadata; no fetch, suppression, source or product-policy change",
+  "retrySelection": "same native publish and already declared surgical Light, fresh attempt"
+}

@@ -1,0 +1,16 @@
+{
+  "nativePublishExit": 0,
+  "discoveryExit": 0,
+  "lightExit": 1,
+  "counts": { "passed": 87, "failed": 6, "skipped": 0, "total": 93 },
+  "ownFailures": "Three StatechartAssetsTests and the installed doctor test: intended resource LogicalName was replaced with the default DynaDocs.* name",
+  "resourceCauseEvidence": "resource-shared-attribution/embedded-resource-metadata.stdout: setup-skills.mjs ResourceName=Statechart/payload/setup-skills.mjs but LogicalName=DynaDocs.setup-skills.mjs",
+  "ownCorrection": "Emit literal EmbeddedResource Include+LogicalName entries in the generated props; preserve exact original manifest and input hashes. Catch InvalidDataException as a tool error instead of unhandled native failure.",
+  "sharedFailures": [
+    "CanonicalSkillTree_SortsEverySkillExactlyOnceByKind",
+    "SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo40"
+  ],
+  "sharedAttribution": "The same two tests fail on the exact86931b9c Git archive in resource-shared-attribution/baseline-shared.stdout",
+  "sharedRepairPathOutsideOwnedScope": "DynaDocs.Tests/Steps/CanonicalSkillAssertionTests.cs",
+  "nextSelection": "Verify in-scope correction with the same93-case selection, retaining the inherited exit1 rather than relabeling it PASS"
+}

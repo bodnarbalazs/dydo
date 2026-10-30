@@ -1,0 +1,66 @@
+  DynaDocs -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\bin\Release\net10.0\dydo.dll
+  DynaDocs.Tests -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll
+Test run for C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.CanonicalSkillTree_SortsEverySkillExactlyOnceByKind [13 ms]
+  Error Message:
+   Assert.Equal() Failure: Collections differ
+                                                                        ↓ (pos 28)
+Expected: [···, ["scout"] = "roles/crew", ["show-me"] = "productivity", ["teach"] = "productivity", ["ticket-captain"] = "roles/officers", ["to-project"] = "productivity", ···]
+Actual:   [···, ["scout"] = "roles/crew", ["show-me"] = "productivity", ["statechart"] = "engineering", ["teach"] = "productivity", ["ticket-captain"] = "roles/officers", ···]
+                                                                        ↑ (pos 28)
+  Stack Trace:
+     at DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.CanonicalSkillTree_SortsEverySkillExactlyOnceByKind() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\DynaDocs.Tests\Steps\CanonicalSkillAssertionTests.cs:line 83
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo40 [2 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: 40
+Actual:   41
+  Stack Trace:
+     at DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo40() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\DynaDocs.Tests\Steps\CanonicalSkillAssertionTests.cs:line 399
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed DynaDocs.Tests.Statechart.StatechartCommandTests.InstalledDoctorExtractsPayloadAndNeverClaimsChartReadinessOrInstallsPrerequisites [74 ms]
+  Error Message:
+   Assert.Equal() Failure: Strings differ
+Expected: ""
+Actual:   "Unhandled exception: System.IO.InvalidDat"···
+           ↑ (pos 0)
+  Stack Trace:
+     at DynaDocs.Tests.Statechart.StatechartCommandTests.InstalledDoctorExtractsPayloadAndNeverClaimsChartReadinessOrInstallsPrerequisites() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\DynaDocs.Tests\Statechart\StatechartCommandTests.cs:line 42
+--- End of stack trace from previous location ---
+  Failed DynaDocs.Tests.Statechart.StatechartAssetsTests.ForeignOrChangedAssetsAreRetainedAndRejected(change: False) [1 ms]
+  Error Message:
+   System.IO.InvalidDataException : Missing installed statechart resource: Statechart/payload/setup-skills.mjs
+  Stack Trace:
+     at DynaDocs.Services.Statechart.StatechartAssets.ReadResource(String name) in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\Services\Statechart\StatechartAssets.cs:line 110
+   at DynaDocs.Services.Statechart.StatechartAssets.ValidateEmbedded() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\Services\Statechart\StatechartAssets.cs:line 102
+   at DynaDocs.Services.Statechart.StatechartAssets..ctor() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\Services\Statechart\StatechartAssets.cs:line 25
+   at DynaDocs.Tests.Statechart.StatechartAssetsTests.ForeignOrChangedAssetsAreRetainedAndRejected(Boolean change) in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\DynaDocs.Tests\Statechart\StatechartAssetsTests.cs:line 25
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+  Failed DynaDocs.Tests.Statechart.StatechartAssetsTests.ForeignOrChangedAssetsAreRetainedAndRejected(change: True) [< 1 ms]
+  Error Message:
+   System.IO.InvalidDataException : Missing installed statechart resource: Statechart/payload/setup-skills.mjs
+  Stack Trace:
+     at DynaDocs.Services.Statechart.StatechartAssets.ReadResource(String name) in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\Services\Statechart\StatechartAssets.cs:line 110
+   at DynaDocs.Services.Statechart.StatechartAssets.ValidateEmbedded() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\Services\Statechart\StatechartAssets.cs:line 102
+   at DynaDocs.Services.Statechart.StatechartAssets..ctor() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\Services\Statechart\StatechartAssets.cs:line 25
+   at DynaDocs.Tests.Statechart.StatechartAssetsTests.ForeignOrChangedAssetsAreRetainedAndRejected(Boolean change) in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\DynaDocs.Tests\Statechart\StatechartAssetsTests.cs:line 25
+   at InvokeStub_StatechartAssetsTests.ForeignOrChangedAssetsAreRetainedAndRejected(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  Failed DynaDocs.Tests.Statechart.StatechartAssetsTests.InstalledPayloadExtractsOfflineAndReusesExactBytes [< 1 ms]
+  Error Message:
+   System.IO.InvalidDataException : Missing installed statechart resource: Statechart/payload/setup-skills.mjs
+  Stack Trace:
+     at DynaDocs.Services.Statechart.StatechartAssets.ReadResource(String name) in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\Services\Statechart\StatechartAssets.cs:line 110
+   at DynaDocs.Services.Statechart.StatechartAssets.ValidateEmbedded() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\Services\Statechart\StatechartAssets.cs:line 102
+   at DynaDocs.Services.Statechart.StatechartAssets..ctor() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\Services\Statechart\StatechartAssets.cs:line 25
+   at DynaDocs.Tests.Statechart.StatechartAssetsTests.InstalledPayloadExtractsOfflineAndReusesExactBytes() in C:\Users\User\AppData\Local\Temp\dyd415-implementation2-j9j2osd0\source\DynaDocs.Tests\Statechart\StatechartAssetsTests.cs:line 11
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+Results File: C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\implementation2\product-sourcelink\test-results\implementation2.trx
+
+Failed!  - Failed:     6, Passed:    87, Skipped:     0, Total:    93, Duration: 744 ms - DynaDocs.Tests.dll (net10.0)

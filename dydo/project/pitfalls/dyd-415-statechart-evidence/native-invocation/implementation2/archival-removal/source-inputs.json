@@ -1,0 +1,1397 @@
+{
+  "base": "86931b9c47a93fa06287391495574865d9ce1d56",
+  "driverSha256": "b20be27bfef7696556929148a6ffee6a518e5fbdb0680c640deb75f76e39e27d",
+  "originals": [
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+      "provenanceCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "lastContentCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "gitMode": "100644",
+      "gitBlobId": "e199604f0cec0366b807c255b2773f7fa256cdb3",
+      "gitBytes": 14803,
+      "gitBytesSha256": "0edbdfae6ab826103ed48e6259f7cde5b2dbd5174ae436da3d695f4e3d46925b",
+      "checkoutBytes": 14803,
+      "checkoutSha256": "0edbdfae6ab826103ed48e6259f7cde5b2dbd5174ae436da3d695f4e3d46925b",
+      "checkoutEqualsGit": true,
+      "newlineOnlyDifference": true,
+      "role": "Frozen primitive G1/G2 and milestone orchestrator, hard-pinned3527ef64",
+      "knownConsumers": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py"
+      ],
+      "sourceAndRecipeReferences": [
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-first/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-first/inputs.json",
+          "line": 28,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-handle-string/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-handle-string/inputs.json",
+          "line": 28,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"A  DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartJobTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\nM  DynaDocs.Tests/coverage/test-associations.json\\nA  Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 44,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 44,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 44,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 44,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixState"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 44,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/preflight-live/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/preflight-live/inputs.json",
+          "line": 28,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 40,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 40,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py",
+          "line": 13,
+          "kind": "same-frozen-bundle",
+          "excerpt": "for name in ['gate-driver.py', 'milestone_checks.py']:"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py",
+          "line": 16,
+          "kind": "same-frozen-bundle",
+          "excerpt": "    result = subprocess.run([sys.executable, '-B', str(driver / 'gate-driver.py'), *sys.argv[1:]],"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/verification.md",
+          "line": 66,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "| Prerequisites | `gate-driver.py preflight preflight-live`, exit0; .NET10.0.300, Windows native toolchain and existing Docker server | `g1/preflight-live/preflight.json` |"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/verification.md",
+          "line": 67,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "| Windows G1 | `gate-driver.py g1 g1-handle-string`, AOT publish0, native cases0, 7/7 | `g1/g1-handle-string/native-outcomes.json`, `aot-binary.json` beside it |"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/verification.md",
+          "line": 68,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "| Actual Linux G2 | `gate-driver.py g2 g2-input-monitor`, owned Docker Linux x64 AOT publish0, cases0, 7/7 | `g2/g2-input-monitor/native/native-outcomes.json`, parent `docker-custody.json` |"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/verification.md",
+          "line": 69,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "| Focused Light | `gate-driver.py light module-light-final`, discovery0, tests0, 18 passed/0 failed/0 skipped | `g1/module-light-final/test-results/statechart.trx`, parent `focused-tests.command.json` |"
+        }
+      ],
+      "currentReferenceBarriers": [],
+      "proposedCheckoutEntry": "checkout/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+      "proposedGitEntry": "git-blobs/e199604f0cec0366b807c255b2773f7fa256cdb3",
+      "reasonNoCurrentExecution": "Implementation2 selects its own driver/main solution/product AOT, not this standalone primitive fixture. Old wrapper refuses current HEAD. Original stage receipts and exact source snapshots govern prior verdicts.",
+      "condition": "PROPOSED ONLY. Any current executable consumer or still-required old-script path blocks relocation until captain specifically disposes it.",
+      "followedLineageEarliestCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "pathIntroducedCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "provenanceNote": "Exact-path addition is authoritative; followed similarity/rename lineage is recorded separately, never asserted as creation of this native proof path."
+    },
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py",
+      "provenanceCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "lastContentCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "gitMode": "100644",
+      "gitBlobId": "209e672da9c2028e9340b1d2ce3a2e3cd4286aef",
+      "gitBytes": 1054,
+      "gitBytesSha256": "767840ba21f194655b9646c0735385b9862a6d3ea9de8639cd62e913950afe81",
+      "checkoutBytes": 1054,
+      "checkoutSha256": "767840ba21f194655b9646c0735385b9862a6d3ea9de8639cd62e913950afe81",
+      "checkoutEqualsGit": true,
+      "newlineOnlyDifference": true,
+      "role": "Frozen primitive hidden TEMP launcher; not implementation2 launcher",
+      "knownConsumers": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/verification.md"
+      ],
+      "sourceAndRecipeReferences": [
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"A  DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartJobTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\nM  DynaDocs.Tests/coverage/test-associations.json\\nA  Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 48,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 48,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 48,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/verification.md",
+          "line": 124,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "attempt names, run `python -B dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py MODE ATTEMPT`."
+        }
+      ],
+      "currentReferenceBarriers": [],
+      "proposedCheckoutEntry": "checkout/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py",
+      "proposedGitEntry": "git-blobs/209e672da9c2028e9340b1d2ce3a2e3cd4286aef",
+      "reasonNoCurrentExecution": "Implementation2 selects its own driver/main solution/product AOT, not this standalone primitive fixture. Old wrapper refuses current HEAD. Original stage receipts and exact source snapshots govern prior verdicts.",
+      "condition": "PROPOSED ONLY. Any current executable consumer or still-required old-script path blocks relocation until captain specifically disposes it.",
+      "followedLineageEarliestCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "pathIntroducedCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "provenanceNote": "Exact-path addition is authoritative; followed similarity/rename lineage is recorded separately, never asserted as creation of this native proof path."
+    },
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/milestone_checks.py",
+      "provenanceCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "lastContentCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "gitMode": "100644",
+      "gitBlobId": "37ab6a12c032dade545126e0115535b3b75f5874",
+      "gitBytes": 10428,
+      "gitBytesSha256": "95a3224e0d78e53eabe79753646bca5f9c9ccd5913bee823829eb12d4fc771b3",
+      "checkoutBytes": 10428,
+      "checkoutSha256": "95a3224e0d78e53eabe79753646bca5f9c9ccd5913bee823829eb12d4fc771b3",
+      "checkoutEqualsGit": true,
+      "newlineOnlyDifference": true,
+      "role": "Frozen early milestone source binding/compile rejection/docs/commit helper",
+      "knownConsumers": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py"
+      ],
+      "sourceAndRecipeReferences": [
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"A  DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartJobTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\nM  DynaDocs.Tests/coverage/test-associations.json\\nA  Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 52,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/milestone_checks.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 52,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/milestone_checks.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 52,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/milestone_checks.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+          "line": 52,
+          "kind": "same-frozen-bundle",
+          "excerpt": "    paths += [EVIDENCE / name for name in ['milestone_checks.py', 'launch.py', 'verification.md']"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py",
+          "line": 13,
+          "kind": "same-frozen-bundle",
+          "excerpt": "for name in ['gate-driver.py', 'milestone_checks.py']:"
+        }
+      ],
+      "currentReferenceBarriers": [],
+      "proposedCheckoutEntry": "checkout/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/milestone_checks.py",
+      "proposedGitEntry": "git-blobs/37ab6a12c032dade545126e0115535b3b75f5874",
+      "reasonNoCurrentExecution": "Implementation2 selects its own driver/main solution/product AOT, not this standalone primitive fixture. Old wrapper refuses current HEAD. Original stage receipts and exact source snapshots govern prior verdicts.",
+      "condition": "PROPOSED ONLY. Any current executable consumer or still-required old-script path blocks relocation until captain specifically disposes it.",
+      "followedLineageEarliestCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "pathIntroducedCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "provenanceNote": "Exact-path addition is authoritative; followed similarity/rename lineage is recorded separately, never asserted as creation of this native proof path."
+    },
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py",
+      "provenanceCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "lastContentCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "gitMode": "100644",
+      "gitBlobId": "3d94d8af67ae2d647a6c805c6377daab7024f5fe",
+      "gitBytes": 4732,
+      "gitBytesSha256": "598455a1fabcfca73996c81dd0c4a1c1e06dfc6aeb6f9903f6c752ae66fe5cc6",
+      "checkoutBytes": 4732,
+      "checkoutSha256": "598455a1fabcfca73996c81dd0c4a1c1e06dfc6aeb6f9903f6c752ae66fe5cc6",
+      "checkoutEqualsGit": true,
+      "newlineOnlyDifference": true,
+      "role": "Frozen Windows native idle/ownership primitive cases; no installed chart or Java",
+      "knownConsumers": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/admission-failed-driver.py"
+      ],
+      "sourceAndRecipeReferences": [
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/admission-failed-driver.py",
+          "line": 45,
+          "kind": "same-frozen-bundle",
+          "excerpt": "    paths += [Path(__file__), EVIDENCE / 'g1_cases.py', ROOT / 'Directory.Build.props',"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/admission-failed-driver.py",
+          "line": 119,
+          "kind": "same-frozen-bundle",
+          "excerpt": "        'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py'),"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-first/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-first/inputs.json",
+          "line": 24,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-handle-string/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-handle-string/inputs.json",
+          "line": 24,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-handle-string/native-cases.command.json",
+          "line": 5,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "    \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\dyd415-native-g1-handle-string-2a7yivum\\\\source\\\\dydo\\\\project\\\\pitfalls\\\\dyd-415-statechart-evidence\\\\native-invocation\\\\g1_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"A  DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartJobTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\nM  DynaDocs.Tests/coverage/test-associations.json\\nA  Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 28,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 28,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 28,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 28,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixState"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 28,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/preflight-live/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/preflight-live/inputs.json",
+          "line": 24,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 24,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 24,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+          "line": 47,
+          "kind": "same-frozen-bundle",
+          "excerpt": "    paths += [EVIDENCE / 'gate-driver.py', EVIDENCE / 'g1_cases.py', ROOT / 'Directory.Build.props',"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+          "line": 128,
+          "kind": "same-frozen-bundle",
+          "excerpt": "        'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py'),"
+        }
+      ],
+      "currentReferenceBarriers": [],
+      "proposedCheckoutEntry": "checkout/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py",
+      "proposedGitEntry": "git-blobs/3d94d8af67ae2d647a6c805c6377daab7024f5fe",
+      "reasonNoCurrentExecution": "Implementation2 selects its own driver/main solution/product AOT, not this standalone primitive fixture. Old wrapper refuses current HEAD. Original stage receipts and exact source snapshots govern prior verdicts.",
+      "condition": "PROPOSED ONLY. Any current executable consumer or still-required old-script path blocks relocation until captain specifically disposes it.",
+      "followedLineageEarliestCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "pathIntroducedCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "provenanceNote": "Exact-path addition is authoritative; followed similarity/rename lineage is recorded separately, never asserted as creation of this native proof path."
+    },
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2_cases.py",
+      "provenanceCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "lastContentCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "gitMode": "100644",
+      "gitBlobId": "df1afd75989ca2392dec000b5c83d33dcf50b4f0",
+      "gitBytes": 4362,
+      "gitBytesSha256": "d9e74b9960bed4eaa3b17d8e93cec7ae068e3408d64641d5aec3b2c92d63da41",
+      "checkoutBytes": 4362,
+      "checkoutSha256": "d9e74b9960bed4eaa3b17d8e93cec7ae068e3408d64641d5aec3b2c92d63da41",
+      "checkoutEqualsGit": true,
+      "newlineOnlyDifference": true,
+      "role": "Frozen Linux native ownership primitive cases against standalone Fixture",
+      "knownConsumers": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh"
+      ],
+      "sourceAndRecipeReferences": [
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"A  DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartJobTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\nM  DynaDocs.Tests/coverage/test-associations.json\\nA  Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 40,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 40,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 40,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 40,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixState"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 40,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 36,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 36,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2_cases.py\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh",
+          "line": 15,
+          "kind": "same-frozen-bundle",
+          "excerpt": "python3 -B /input/g2_cases.py /work/publish/Fixture /work/cases /evidence/native-outcomes.json \\"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+          "line": 51,
+          "kind": "same-frozen-bundle",
+          "excerpt": "    paths += [EVIDENCE / 'g2_cases.py', EVIDENCE / 'g2/Dockerfile', EVIDENCE / 'g2/linux.sh']"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+          "line": 159,
+          "kind": "same-frozen-bundle",
+          "excerpt": "                             ('g2_cases.py', 'g2_cases.py')]:"
+        }
+      ],
+      "currentReferenceBarriers": [],
+      "proposedCheckoutEntry": "checkout/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2_cases.py",
+      "proposedGitEntry": "git-blobs/df1afd75989ca2392dec000b5c83d33dcf50b4f0",
+      "reasonNoCurrentExecution": "Implementation2 selects its own driver/main solution/product AOT, not this standalone primitive fixture. Old wrapper refuses current HEAD. Original stage receipts and exact source snapshots govern prior verdicts.",
+      "condition": "PROPOSED ONLY. Any current executable consumer or still-required old-script path blocks relocation until captain specifically disposes it.",
+      "followedLineageEarliestCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "pathIntroducedCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "provenanceNote": "Exact-path addition is authoritative; followed similarity/rename lineage is recorded separately, never asserted as creation of this native proof path."
+    },
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/admission-failed-driver.py",
+      "provenanceCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "lastContentCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "gitMode": "100644",
+      "gitBlobId": "d2b567d665318b24be8fc8ee2818df22ed6f3f0f",
+      "gitBytes": 9552,
+      "gitBytesSha256": "3d80cb8466557949d3418acc5598897b52a5c3f340ca11b932e67ac8bca3e2fa",
+      "checkoutBytes": 9552,
+      "checkoutSha256": "3d80cb8466557949d3418acc5598897b52a5c3f340ca11b932e67ac8bca3e2fa",
+      "checkoutEqualsGit": true,
+      "newlineOnlyDifference": true,
+      "role": "Exact initial failed-admission driver; standalone failure context only",
+      "knownConsumers": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/admission-failure.json"
+      ],
+      "sourceAndRecipeReferences": [
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-first/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-handle-string/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"A  DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartJobTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\nM  DynaDocs.Tests/coverage/test-associations.json\\nA  Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixState"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/preflight-live/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        }
+      ],
+      "currentReferenceBarriers": [],
+      "proposedCheckoutEntry": "checkout/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/admission-failed-driver.py",
+      "proposedGitEntry": "git-blobs/d2b567d665318b24be8fc8ee2818df22ed6f3f0f",
+      "reasonNoCurrentExecution": "Implementation2 selects its own driver/main solution/product AOT, not this standalone primitive fixture. Old wrapper refuses current HEAD. Original stage receipts and exact source snapshots govern prior verdicts.",
+      "condition": "PROPOSED ONLY. Any current executable consumer or still-required old-script path blocks relocation until captain specifically disposes it.",
+      "followedLineageEarliestCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "pathIntroducedCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "provenanceNote": "Exact-path addition is authoritative; followed similarity/rename lineage is recorded separately, never asserted as creation of this native proof path."
+    },
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj",
+      "provenanceCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "lastContentCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "gitMode": "100644",
+      "gitBlobId": "8bb345ddb611096d49805f9bb66847a97f380c2f",
+      "gitBytes": 1589,
+      "gitBytesSha256": "bf28edc79e17c0a54bd72776528dd2439af064b9949b3cc7e8c9556795d816bd",
+      "checkoutBytes": 1589,
+      "checkoutSha256": "bf28edc79e17c0a54bd72776528dd2439af064b9949b3cc7e8c9556795d816bd",
+      "checkoutEqualsGit": true,
+      "newlineOnlyDifference": true,
+      "role": "Standalone primitive AOT build links source at caller RepositoryRoot",
+      "knownConsumers": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/admission-failed-driver.py",
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh"
+      ],
+      "sourceAndRecipeReferences": [
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/admission-failed-driver.py",
+          "line": 109,
+          "kind": "same-frozen-bundle",
+          "excerpt": "    fixture = source / 'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj'"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-first/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-first/inputs.json",
+          "line": 16,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-handle-string/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-handle-string/inputs.json",
+          "line": 16,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"A  DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartJobTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\nM  DynaDocs.Tests/coverage/test-associations.json\\nA  Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 16,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 16,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 16,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 16,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixState"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 16,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/preflight-live/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/preflight-live/inputs.json",
+          "line": 16,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 16,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 16,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh",
+          "line": 11,
+          "kind": "same-frozen-bundle",
+          "excerpt": "dotnet publish /work/source/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj \\"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+          "line": 118,
+          "kind": "same-frozen-bundle",
+          "excerpt": "    fixture = source / 'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj'"
+        }
+      ],
+      "currentReferenceBarriers": [],
+      "proposedCheckoutEntry": "checkout/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj",
+      "proposedGitEntry": "git-blobs/8bb345ddb611096d49805f9bb66847a97f380c2f",
+      "reasonNoCurrentExecution": "Implementation2 selects its own driver/main solution/product AOT, not this standalone primitive fixture. Old wrapper refuses current HEAD. Original stage receipts and exact source snapshots govern prior verdicts.",
+      "condition": "PROPOSED ONLY. Any current executable consumer or still-required old-script path blocks relocation until captain specifically disposes it.",
+      "followedLineageEarliestCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "pathIntroducedCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "provenanceNote": "Exact-path addition is authoritative; followed similarity/rename lineage is recorded separately, never asserted as creation of this native proof path."
+    },
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Program.cs",
+      "provenanceCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "lastContentCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "gitMode": "100644",
+      "gitBlobId": "dbdbb304af38dcf535fc6d714be761833d4960cc",
+      "gitBytes": 9447,
+      "gitBytesSha256": "25114b87ccff5fdca48e84188af8a15076f0e9a9b14aa4e29eeef368f4eea223",
+      "checkoutBytes": 9447,
+      "checkoutSha256": "25114b87ccff5fdca48e84188af8a15076f0e9a9b14aa4e29eeef368f4eea223",
+      "checkoutEqualsGit": true,
+      "newlineOnlyDifference": true,
+      "role": "Standalone primitive executable; not product DynaDocs.csproj input",
+      "knownConsumers": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj"
+      ],
+      "sourceAndRecipeReferences": [
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-first/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-first/inputs.json",
+          "line": 20,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Program.cs\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-handle-string/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-handle-string/inputs.json",
+          "line": 20,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Program.cs\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"A  DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartJobTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\nM  DynaDocs.Tests/coverage/test-associations.json\\nA  Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 20,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Program.cs\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 20,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Program.cs\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 20,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Program.cs\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 20,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Program.cs\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixState"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 20,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Program.cs\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/preflight-live/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/StatechartProtocol.cs\\n?? Services/Statechart/WindowsJobAccounting.cs\\n?? Services/Statechart/WindowsJobBasicLimits.cs\\n?? Services/Statechart/WindowsJobIoCounters.cs\\n?? Services/Statechart/WindowsJobLimits.cs\\n?? S"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/preflight-live/inputs.json",
+          "line": 20,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Program.cs\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 20,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Program.cs\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 20,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Program.cs\","
+        }
+      ],
+      "currentReferenceBarriers": [],
+      "proposedCheckoutEntry": "checkout/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Program.cs",
+      "proposedGitEntry": "git-blobs/dbdbb304af38dcf535fc6d714be761833d4960cc",
+      "reasonNoCurrentExecution": "Implementation2 selects its own driver/main solution/product AOT, not this standalone primitive fixture. Old wrapper refuses current HEAD. Original stage receipts and exact source snapshots govern prior verdicts.",
+      "condition": "PROPOSED ONLY. Any current executable consumer or still-required old-script path blocks relocation until captain specifically disposes it.",
+      "followedLineageEarliestCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "pathIntroducedCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "provenanceNote": "Exact-path addition is authoritative; followed similarity/rename lineage is recorded separately, never asserted as creation of this native proof path."
+    },
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/tests/Tests.csproj",
+      "provenanceCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "lastContentCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "gitMode": "100644",
+      "gitBlobId": "e0be617055b628f8a4cfb98da18e7a3b32874f81",
+      "gitBytes": 1065,
+      "gitBytesSha256": "3511b8346bff8288779bd71f65370bd609095ea3711db5d9e0d728b2623d2be0",
+      "checkoutBytes": 1065,
+      "checkoutSha256": "3511b8346bff8288779bd71f65370bd609095ea3711db5d9e0d728b2623d2be0",
+      "checkoutEqualsGit": true,
+      "newlineOnlyDifference": true,
+      "role": "Frozen focused test project; requires RepositoryRoot and generates absent lockfile",
+      "knownConsumers": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/milestone_checks.py"
+      ],
+      "sourceAndRecipeReferences": [
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"A  DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartJobTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\nM  DynaDocs.Tests/coverage/test-associations.json\\nA  Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 24,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/tests/Tests.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 24,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/tests/Tests.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 24,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/tests/Tests.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 24,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/tests/Tests.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixState"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 24,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/tests/Tests.csproj\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+          "line": 193,
+          "kind": "same-frozen-bundle",
+          "excerpt": "    project = source / 'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/tests/Tests.csproj'"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/milestone_checks.py",
+          "line": 58,
+          "kind": "same-frozen-bundle",
+          "excerpt": "    project = source / 'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/tests/Tests.csproj'"
+        }
+      ],
+      "currentReferenceBarriers": [],
+      "proposedCheckoutEntry": "checkout/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/tests/Tests.csproj",
+      "proposedGitEntry": "git-blobs/e0be617055b628f8a4cfb98da18e7a3b32874f81",
+      "reasonNoCurrentExecution": "Implementation2 selects its own driver/main solution/product AOT, not this standalone primitive fixture. Old wrapper refuses current HEAD. Original stage receipts and exact source snapshots govern prior verdicts.",
+      "condition": "PROPOSED ONLY. Any current executable consumer or still-required old-script path blocks relocation until captain specifically disposes it.",
+      "followedLineageEarliestCommit": "f0cfa5064eeb544cf2a7438ebcfeb51ec90c6c35",
+      "pathIntroducedCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "provenanceNote": "Exact-path addition is authoritative; followed similarity/rename lineage is recorded separately, never asserted as creation of this native proof path."
+    },
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/Dockerfile",
+      "provenanceCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "lastContentCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "gitMode": "100644",
+      "gitBlobId": "edd602d026d365eb809df318b38a85b374a1799c",
+      "gitBytes": 257,
+      "gitBytesSha256": "f03a285c93dca290a644d31110b3cc375f355e1b1aef8b481fbe04584fb66850",
+      "checkoutBytes": 257,
+      "checkoutSha256": "f03a285c93dca290a644d31110b3cc375f355e1b1aef8b481fbe04584fb66850",
+      "checkoutEqualsGit": true,
+      "newlineOnlyDifference": true,
+      "role": "Frozen Linux primitive image, SDK10.0.300; apt versions not locked",
+      "knownConsumers": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py"
+      ],
+      "sourceAndRecipeReferences": [
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"A  DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartJobTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\nM  DynaDocs.Tests/coverage/test-associations.json\\nA  Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 32,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/Dockerfile\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 32,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/Dockerfile\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 32,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/Dockerfile\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 32,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/Dockerfile\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixState"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 32,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/Dockerfile\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 28,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/Dockerfile\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 28,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/Dockerfile\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+          "line": 51,
+          "kind": "same-frozen-bundle",
+          "excerpt": "    paths += [EVIDENCE / 'g2_cases.py', EVIDENCE / 'g2/Dockerfile', EVIDENCE / 'g2/linux.sh']"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+          "line": 158,
+          "kind": "same-frozen-bundle",
+          "excerpt": "    for original, target in [('g2/Dockerfile', 'Dockerfile'), ('g2/linux.sh', 'linux.sh'),"
+        }
+      ],
+      "currentReferenceBarriers": [],
+      "proposedCheckoutEntry": "checkout/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/Dockerfile",
+      "proposedGitEntry": "git-blobs/edd602d026d365eb809df318b38a85b374a1799c",
+      "reasonNoCurrentExecution": "Implementation2 selects its own driver/main solution/product AOT, not this standalone primitive fixture. Old wrapper refuses current HEAD. Original stage receipts and exact source snapshots govern prior verdicts.",
+      "condition": "PROPOSED ONLY. Any current executable consumer or still-required old-script path blocks relocation until captain specifically disposes it.",
+      "followedLineageEarliestCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "pathIntroducedCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "provenanceNote": "Exact-path addition is authoritative; followed similarity/rename lineage is recorded separately, never asserted as creation of this native proof path."
+    },
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh",
+      "provenanceCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "lastContentCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "gitMode": "100644",
+      "gitBlobId": "0aac8c23eb187357d874f16da287f03f6380436d",
+      "gitBytes": 798,
+      "gitBytesSha256": "07ce53d2ca900a0c73c5c8796878257ee3dac912ed086e1bfe21ca4aab188c35",
+      "checkoutBytes": 798,
+      "checkoutSha256": "07ce53d2ca900a0c73c5c8796878257ee3dac912ed086e1bfe21ca4aab188c35",
+      "checkoutEqualsGit": true,
+      "newlineOnlyDifference": true,
+      "role": "Frozen Linux Fixture publish/run with RepositoryRoot=/work/source",
+      "knownConsumers": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py"
+      ],
+      "sourceAndRecipeReferences": [
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"A  DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartJobTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\nA  DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\nM  DynaDocs.Tests/coverage/test-associations.json\\nA  Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+          "line": 36,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+          "line": 36,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n M dydo/project/pitfalls/dyd-415-statechart-verification.md\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.T"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+          "line": 36,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartCompletionTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/State"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+          "line": 36,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \" M DynaDocs.Tests/coverage/test-associations.json\\n?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixState"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+          "line": 36,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+          "line": 32,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 4,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "  \"dirty\": \"?? DynaDocs.Tests/Statechart/StatechartJobTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartPosixTests.cs\\n?? DynaDocs.Tests/Statechart/StatechartProtocolTests.cs\\n?? Services/Statechart/PosixStatechartArguments.cs\\n?? Services/Statechart/PosixStatechartNative.cs\\n?? Services/Statechart/PosixStatechartProcess.cs\\n?? Services/Statechart/StatechartP"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+          "line": 32,
+          "kind": "frozen-history-or-receipt",
+          "excerpt": "      \"path\": \"dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh\","
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+          "line": 51,
+          "kind": "same-frozen-bundle",
+          "excerpt": "    paths += [EVIDENCE / 'g2_cases.py', EVIDENCE / 'g2/Dockerfile', EVIDENCE / 'g2/linux.sh']"
+        },
+        {
+          "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+          "line": 158,
+          "kind": "same-frozen-bundle",
+          "excerpt": "    for original, target in [('g2/Dockerfile', 'Dockerfile'), ('g2/linux.sh', 'linux.sh'),"
+        }
+      ],
+      "currentReferenceBarriers": [],
+      "proposedCheckoutEntry": "checkout/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh",
+      "proposedGitEntry": "git-blobs/0aac8c23eb187357d874f16da287f03f6380436d",
+      "reasonNoCurrentExecution": "Implementation2 selects its own driver/main solution/product AOT, not this standalone primitive fixture. Old wrapper refuses current HEAD. Original stage receipts and exact source snapshots govern prior verdicts.",
+      "condition": "PROPOSED ONLY. Any current executable consumer or still-required old-script path blocks relocation until captain specifically disposes it.",
+      "followedLineageEarliestCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "pathIntroducedCommit": "86931b9c47a93fa06287391495574865d9ce1d56",
+      "provenanceNote": "Exact-path addition is authoritative; followed similarity/rename lineage is recorded separately, never asserted as creation of this native proof path."
+    }
+  ],
+  "immutable": {
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/history/native-primitives-replay-86931b9c.zip": "87c712127c54adb248978fa3570460be796069b09c2c944f182c00a604376114",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/history/native-primitives-replay-86931b9c.manifest.json": "e00ff73f95f58002797f3f1d9fd43bfbb1419eef16e7dbb153fb17d3f799e12f",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/archival-fidelity/fidelity.json": "c6ce1bc46e795eb6b5875aab0ec74604d261542b71a2e728612011b36b033b14",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/archival-fidelity/source-inputs.json": "0709f7d034d2a701495c6755cd4c6ded7f8ffaa75045162104a0526582f605da",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/request-store-longpaths/source-inputs.json": "0538facb61fe2fb2ece7f26979905b463564fe0a3d99a787e2e3f5b68b19ed63"
+  },
+  "removalPinSha256": "c93f1ea505ec669710f30bc96b12dcc9081e1882078a7a2843e5d68d052f6071"
+}

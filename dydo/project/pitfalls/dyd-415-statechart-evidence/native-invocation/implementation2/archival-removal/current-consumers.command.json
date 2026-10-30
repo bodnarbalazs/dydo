@@ -1,0 +1,24 @@
+{
+  "argv": [
+    "rg",
+    "-n",
+    "--glob",
+    "!**/coverage/results/**",
+    "gate-driver\\.py|milestone_checks\\.py|g1_cases\\.py|g2_cases\\.py|admission-failed-driver\\.py|native-invocation/launch\\.py|native-invocation/g1/fixture|native-invocation/g1/tests|native-invocation/g2/(linux\\.sh|Dockerfile)",
+    "Commands",
+    "Services",
+    "Resources",
+    "skills",
+    "npm",
+    "Program.cs",
+    "DynaDocs.csproj",
+    ".github",
+    "DynaDocs.Tests"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "exit": 1,
+  "expected": 1,
+  "seconds": 0.04781930000171997,
+  "ticket": "0000000002-67935f1f38cd597e",
+  "hidden": true
+}

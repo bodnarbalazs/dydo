@@ -521,6 +521,45 @@ runner's exit code; configuration, startup, and cancellation failures exit `2`.
 
 ## Utility Commands
 
+### dydo statechart
+
+```bash
+dydo statechart SPEC.tla [--config FILE] [--view FILE] [--out DIR]
+```
+
+The Windows engineering candidate captures the caller and original model inputs.
+Missing prerequisites produce a locked JSON plan and saved request with exit `3`;
+the initial invocation starts no installer. A verified ready invocation checks the
+model without installing. Only complete checker verdicts `0` and `1` publish output.
+Other platforms still require native public-flow integration and actual proof;
+supported skill launchers remain available.
+
+### dydo statechart resume
+
+```bash
+dydo statechart resume --request ABSOLUTE_REQUEST_JSON
+```
+
+Submit the exact saved continuation through the host\'s normal installation
+authorization mechanism. Resume verifies saved inputs and identities, installs
+missing locked prerequisites into the planned managed roots, proves readiness and
+continues the captured chart. A local flag or receipt is never host approval.
+Failures preserve the pending request; changed inputs require a fresh plan.
+Completed requests return the recorded verdict only while their output still matches.
+
+### dydo statechart doctor
+
+```bash
+dydo statechart doctor
+```
+
+On Windows, verifies and extracts the installed binary's exact statechart payload,
+then inspects local Node/Java candidates and an explicit TLC jar without downloads.
+Probes run hidden under registered native ownership. Diagnostic JSON distinguishes
+candidate compatibility from verified checking readiness. Exit `2` means checking
+readiness is not established; it is never a chart verdict or installation approval.
+This operation changes no PATH, home settings or managed prerequisites.
+
 ### dydo completions
 
 Generate a completion script for the requested shell.

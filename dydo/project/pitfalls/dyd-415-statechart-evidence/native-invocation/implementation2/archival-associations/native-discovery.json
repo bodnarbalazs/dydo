@@ -1,0 +1,22 @@
+{
+  "recognized": [
+    {
+      "id": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/test_driver.py#unittest",
+      "file": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/test_driver.py"
+    },
+    {
+      "id": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/test_launch.py#unittest",
+      "file": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/test_launch.py"
+    },
+    {
+      "id": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/test_prepare.py#unittest",
+      "file": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/test_prepare.py"
+    },
+    {
+      "id": "skills/engineering/statechart/scripts/test/corpus-views.test.cjs#node-test",
+      "file": "skills/engineering/statechart/scripts/test/corpus-views.test.cjs"
+    }
+  ],
+  "unittestCases": 13,
+  "purpose": "Actual existing unittest/node:test recognition, not aggregate static or coverage"
+}

@@ -1,0 +1,5 @@
+{
+  "filter": "FullyQualifiedName~StatechartArchiveTests.LockedZipExtractsExactBytesToFreshOwnedStagingWithoutTouchingArchive",
+  "behavioralRed": true,
+  "purpose": "Bounded managed prerequisite archive extraction only; no native publish/platform/coverage run"
+}

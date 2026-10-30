@@ -1,0 +1,10 @@
+{
+  "actualSuiteExit": 1,
+  "overallLight": "FAIL; inherited catalogue blocker",
+  "onlyFailures": [
+    "DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo40",
+    "DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.CanonicalSkillTree_SortsEverySkillExactlyOnceByKind"
+  ],
+  "inScopeCasesAllPassed": true,
+  "baseline": "resource-shared-attribution/baseline-identity.json"
+}

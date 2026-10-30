@@ -1,0 +1,20 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+    "-B",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-dz8rvx2k\\source\\DynaDocs.Tests\\coverage\\tests",
+    "-p",
+    "test_statechart_invocation_*.py",
+    "-v"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-dz8rvx2k\\source",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 2.2333827999973437,
+  "ticket": "0000000001-fccd3dc354c07845",
+  "hidden": true
+}

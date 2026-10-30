@@ -1,0 +1,55 @@
+TAP version 13
+# Subtest: CounterView folds odd states but preserves distinct even counter states
+ok 1 - CounterView folds odd states but preserves distinct even counter states
+  ---
+  duration_ms: 6.2054
+  ...
+# Subtest: Login keeps hierarchy and labels for sign-in retries and locked-out state
+ok 2 - Login keeps hierarchy and labels for sign-in retries and locked-out state
+  ---
+  duration_ms: 1.044
+  ...
+# Subtest: LoginGuarded preserves independent session and retry regions
+ok 3 - LoginGuarded preserves independent session and retry regions
+  ---
+  duration_ms: 1.5847
+  ...
+# Subtest: LoginParallel preserves independent session and retry regions
+ok 4 - LoginParallel preserves independent session and retry regions
+  ---
+  duration_ms: 0.8771
+  ...
+# Subtest: MediaPlayer preserves parallel regions and readable action labels
+ok 5 - MediaPlayer preserves parallel regions and readable action labels
+  ---
+  duration_ms: 1.0944
+  ...
+# Subtest: MediaPlayerFixed preserves parallel regions and readable action labels
+ok 6 - MediaPlayerFixed preserves parallel regions and readable action labels
+  ---
+  duration_ms: 0.851
+  ...
+# Subtest: MediaPlayerProps preserves parallel regions and readable action labels
+ok 7 - MediaPlayerProps preserves parallel regions and readable action labels
+  ---
+  duration_ms: 0.7411
+  ...
+# Subtest: TwoPhase keeps manager and participant states without exposing protocol messages
+ok 8 - TwoPhase keeps manager and participant states without exposing protocol messages
+  ---
+  duration_ms: 1.0724
+  ...
+# Subtest: TwoPhaseFixed keeps manager and participant states without exposing protocol messages
+ok 9 - TwoPhaseFixed keeps manager and participant states without exposing protocol messages
+  ---
+  duration_ms: 1.1044
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 59.6808

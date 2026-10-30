@@ -5,6 +5,13 @@ type: pitfall
 
 # DYD-415: statechart verification on Windows
 
+The [finite native replay archive](dyd-415-statechart-evidence/native-invocation/history/README.md)
+provides exact source/context maps for eleven old primitive replay paths. Captain
+verified fidelity and authorized their exact removal. Historical commands
+and verdicts below are unchanged; their replay requires exact restored stage inputs
+and recorded context. Current product proof uses the maintained implementation2
+driver, with aggregate static still incomplete.
+
 The [native ownership engineering milestone](dyd-415-statechart-evidence/native-invocation/verification.md)
 records the new compile-time Windows/POSIX modules and their early AOT gates.
 The 2026-10-30 captain pin governs this continuation; DYD-434 is Done.

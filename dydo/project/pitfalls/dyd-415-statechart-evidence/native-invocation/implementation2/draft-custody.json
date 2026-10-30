@@ -1,0 +1,713 @@
+{
+  "recordedUtc": "2026-10-30T19:33:33.987631+00:00",
+  "role": "same sole DYD-415 code-writer",
+  "model": "gpt-6.1-sol/high",
+  "base": "86931b9c47a93fa06287391495574865d9ce1d56",
+  "branch": "DYD-415-statechart",
+  "worktree": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "candidateCommit": null,
+  "state": "uncommitted implementation2 draft; no green or acceptance claim",
+  "sourceInputs": {
+    "path": "product-resource-fixed/source-inputs.json",
+    "sha256": "84b722f715fb2fcee135105224e196bc585928d83b25105c796bdd9ee1ab2262",
+    "fileCount": 3215,
+    "workingByteDrift": []
+  },
+  "binary": {
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-7qsxnolm\\publish\\dydo.exe",
+    "nativeAot": true,
+    "rid": "win-x64",
+    "sha256": "0324a5f5c1e2b725a4856b02b60d4391c8fa4f157f9649176b9f6a5f0624db15",
+    "sourceInputs": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation2\\product-resource-fixed\\source-inputs.json",
+    "sourceInputsSha256": "84b722f715fb2fcee135105224e196bc585928d83b25105c796bdd9ee1ab2262"
+  },
+  "unownedStepsUnchanged": true,
+  "historicalNativeEvidenceUnchanged": true,
+  "admittedAttempts": {
+    "product-first": {
+      "teardown": "cleanupConfirmed; zero owned descendants",
+      "fifoReleased": true,
+      "heavyReleased": true,
+      "dydoReleased": true,
+      "receiptHashes": {
+        "admission.json": "9c4147de2586f42116dce7083d14a45eb9d74ca7fe6107743bbafddf71503236",
+        "teardown.json": "99c438f77093f6ca57546de1cc700c2ec5526542932854ac2fd0fb4f7f179d2c",
+        "released.json": "7f24ac15b05bcec6a3addabd49e38838ed2efcd3865b979e39358f9e09d16b07",
+        "secondary-released.json": "ad19f277dc25ea486220d48a7143a60ad7e9fe692e08cd0be30cc69e80166236"
+      }
+    },
+    "product-sourcelink": {
+      "teardown": "cleanupConfirmed; zero owned descendants",
+      "fifoReleased": true,
+      "heavyReleased": true,
+      "dydoReleased": true,
+      "receiptHashes": {
+        "admission.json": "a33f41b02210cba169d7bc86870c3d07027d287a1979acf954008b95e5aa79de",
+        "teardown.json": "b8bca9f540dd29de9c0a76f0ffa052de361092ea38bd685c4a1134a52feffc89",
+        "released.json": "ac196c467c211df0fe9dd6afaa389a988fb9ebaea71fefeb2cfba054a58e5e21",
+        "secondary-released.json": "cd0b238984d937564b5187013de0686be9128a7100622dff494f1cf48067f893"
+      }
+    },
+    "resource-shared-attribution": {
+      "teardown": "cleanupConfirmed; zero owned descendants",
+      "fifoReleased": true,
+      "heavyReleased": true,
+      "dydoReleased": true,
+      "receiptHashes": {
+        "admission.json": "e52ff4edb85477a55c0bac9205ef633d89e45ea5b69f734fcc0c942cc30c7bbb",
+        "teardown.json": "d988f934b2f44512b03ceecdaeb4fdbdb1a59c174bdcda9a057280f267251e24",
+        "released.json": "20a3ef31a0a212a9740bf96a85793bc001367392e9e2840c9a46654c878536ab",
+        "secondary-released.json": "bfb1b62b0c94095f82aaba6f69abbfd25f4344283cbd90e1bb3ff41e21a5374f"
+      }
+    },
+    "product-resource-fixed": {
+      "teardown": "cleanupConfirmed; zero owned descendants",
+      "fifoReleased": true,
+      "heavyReleased": true,
+      "dydoReleased": true,
+      "receiptHashes": {
+        "admission.json": "2697dea303933c75e9658f065ada6a7c859a205dcb0dafbb388b7c5bc68b33ee",
+        "teardown.json": "4244447f52ddf219fee6e717ebc8f67e7243053438ddc2d4ff9200b2147f6ee2",
+        "released.json": "d5e36343184fe0cf886b142f4e8c7ffd7e208fc61dbcadad2a2f416ae2908d7d",
+        "secondary-released.json": "0e116c538e5a77b4aa08e35c23ee3c762ee58c37d3b9892892b42a1d9b5d9753"
+      }
+    }
+  },
+  "files": [
+    {
+      "path": "Commands/HelpCommand.cs",
+      "sha256": "31bba42e4df381564a4b14711daa28163cc469fd7af29e46f1698fcd04537114",
+      "bytes": 3829,
+      "kind": "tracked-modified"
+    },
+    {
+      "path": "Commands/StatechartCommand.cs",
+      "sha256": "3ab0da9fa12c67ce0ca456e2e23df0b88bce5a8ebfc62850c61a7d7e84bca46f",
+      "bytes": 4035,
+      "kind": "untracked"
+    },
+    {
+      "path": "DynaDocs.Tests/Commands/CommandSmokeTests.cs",
+      "sha256": "8c77ea4fc5c3fbdc5d78bf029f062c7d1c75b58f2ce4dc4014005ee4a55b66ac",
+      "bytes": 2707,
+      "kind": "tracked-modified"
+    },
+    {
+      "path": "DynaDocs.Tests/Statechart/StatechartAssetsTests.cs",
+      "sha256": "69ec91e1e18b699179799a770105b1adaecc7a652e94ea3aca908ff75f250d40",
+      "bytes": 1282,
+      "kind": "untracked"
+    },
+    {
+      "path": "DynaDocs.Tests/Statechart/StatechartCommandTests.cs",
+      "sha256": "b261c50f3275b69a8362b2e777761f31288429a23d5890b97aeb7976bb858321",
+      "bytes": 2680,
+      "kind": "untracked"
+    },
+    {
+      "path": "DynaDocs.Tests/Statechart/StatechartLifecycleTests.cs",
+      "sha256": "460c45c23a7b3b01cb57da7a034319fe5c49a893ef0f4e7b505c48669a0b7305",
+      "bytes": 3668,
+      "kind": "untracked"
+    },
+    {
+      "path": "DynaDocs.Tests/Statechart/StatechartPathsTests.cs",
+      "sha256": "e058cd8c2ff7fa7a0464e2d55cb0d5fdce4721e3f9b97dbbc3e4a2928e35bb7b",
+      "bytes": 655,
+      "kind": "untracked"
+    },
+    {
+      "path": "DynaDocs.Tests/Statechart/StatechartPrerequisitesTests.cs",
+      "sha256": "63433e5549427c707266d64ff13ca5b88f8f82ee777d54b1d00fe4f486f2e1bf",
+      "bytes": 2005,
+      "kind": "untracked"
+    },
+    {
+      "path": "DynaDocs.Tests/Statechart/StatechartScratchTests.cs",
+      "sha256": "4bc8ff640cac6fb1674d7b9a69ac92c85e467774ec02bd25626b4e75333b9a70",
+      "bytes": 2418,
+      "kind": "untracked"
+    },
+    {
+      "path": "DynaDocs.Tests/Statechart/StatechartTestDirectory.cs",
+      "sha256": "cd4cc02ea8f36656ce215739ef3735ad7adda95ebdde882a7bd6507f76f9db92",
+      "bytes": 269,
+      "kind": "untracked"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/test-associations.json",
+      "sha256": "a0415fc1525c757d8d73c0f8fa76611bf50f3f9b1b5e795dcbf04cc22e11326b",
+      "bytes": 41337,
+      "kind": "tracked-modified"
+    },
+    {
+      "path": "DynaDocs.csproj",
+      "sha256": "bd1caeb4aecdb208b98a8f07a8aad6b0d8167d816ed090017c623d3bfe92358f",
+      "bytes": 5247,
+      "kind": "tracked-modified"
+    },
+    {
+      "path": "Program.cs",
+      "sha256": "f1cbec700d4c26e389dc821f952a14ae21328f3fe7c8777d4c743af4f83167ec",
+      "bytes": 2577,
+      "kind": "tracked-modified"
+    },
+    {
+      "path": "Resources/Statechart/.gitattributes",
+      "sha256": "a7facd02ac4aeff4546393b160b554a0919501e18583fea955ed536d0e0482f2",
+      "bytes": 124,
+      "kind": "untracked"
+    },
+    {
+      "path": "Resources/Statechart/dependency-lock.json",
+      "sha256": "7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad",
+      "bytes": 8461,
+      "kind": "untracked"
+    },
+    {
+      "path": "Resources/Statechart/payload.items.props",
+      "sha256": "af23298504d41e4ed898e2cb9ebf12b85a7463f74dd8b0a6fd62434504a750d8",
+      "bytes": 19386,
+      "kind": "untracked"
+    },
+    {
+      "path": "Resources/Statechart/payload.json",
+      "sha256": "a82419dbb9a352eeb4cee56de6bee905838df9e9b94be5d8036e2a498b621377",
+      "bytes": 11181,
+      "kind": "untracked"
+    },
+    {
+      "path": "Scaffold/dydo/reference/dydo-commands.md",
+      "sha256": "e17cf9ae5b3ae99720196f7c43c843a908b76ee43971cd0a87395aa56a9e1ba9",
+      "bytes": 32865,
+      "kind": "tracked-modified"
+    },
+    {
+      "path": "Services/Statechart/StatechartAssets.cs",
+      "sha256": "8968638037589a2efb59600fefb4b574309dc836617189059faadabc62ab6406",
+      "bytes": 5847,
+      "kind": "untracked"
+    },
+    {
+      "path": "Services/Statechart/StatechartCleanup.cs",
+      "sha256": "71b92534c6083bf98602a30d64180afdbf74b721d32fdb1827a30bdb94db7a53",
+      "bytes": 2521,
+      "kind": "untracked"
+    },
+    {
+      "path": "Services/Statechart/StatechartExecutable.cs",
+      "sha256": "b93afb1766add723863c208e71eca237b4e2cf7c840bd694503d0bddd3a4f0de",
+      "bytes": 802,
+      "kind": "untracked"
+    },
+    {
+      "path": "Services/Statechart/StatechartPaths.cs",
+      "sha256": "e026f4f6adb459faaa07f5cf6718736e4f91944ac9aa133fcfa6fcaeab0615fa",
+      "bytes": 1328,
+      "kind": "untracked"
+    },
+    {
+      "path": "Services/Statechart/StatechartPrerequisites.cs",
+      "sha256": "4aabbb5306118c98705375a1baeee0dd59aa78f14ae3adbd63f19e92eaf48bf6",
+      "bytes": 2394,
+      "kind": "untracked"
+    },
+    {
+      "path": "Services/Statechart/StatechartProbe.cs",
+      "sha256": "f38d4bc13ec508af2ee1c89b81067e4a180ac7007734df9aa9d02f6e45e13a59",
+      "bytes": 2709,
+      "kind": "untracked"
+    },
+    {
+      "path": "Services/Statechart/StatechartScratch.cs",
+      "sha256": "7f3f075fd45fb6a4c7c5ba40a015c980cc269ec0c7de5e9f05c46743ad810054",
+      "bytes": 3020,
+      "kind": "untracked"
+    },
+    {
+      "path": "Services/Statechart/WindowsStatechartFileInfo.cs",
+      "sha256": "76f161960eb70b21775dbb3f8f8220b348baff12ed4818f74f5f3e2439bf2755",
+      "bytes": 571,
+      "kind": "untracked"
+    },
+    {
+      "path": "Services/Statechart/WindowsStatechartFiles.cs",
+      "sha256": "63e7936024634a9867103f460b77090b83e302a54caff5ea62c00e2745ac0c9e",
+      "bytes": 2176,
+      "kind": "untracked"
+    },
+    {
+      "path": "Services/Statechart/WindowsStatechartJob.cs",
+      "sha256": "aafe5bcbb33f8b4f4becb2e5a40b5260a5bea2d99f13fea6362b4215401361cb",
+      "bytes": 3398,
+      "kind": "tracked-modified"
+    },
+    {
+      "path": "Services/Statechart/WindowsStatechartLifetime.cs",
+      "sha256": "de1c8679d4c57416b2c29e72524b35d9303df185b40acdde99839954bbb66d14",
+      "bytes": 4061,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/decisions/062-statechart-invocation-manages-prerequisites.md",
+      "sha256": "cf29f59d70f98a46c07a56f49d10404b37aa02abcedefd50b1007d4ea31f4f87",
+      "bytes": 3074,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/decisions/_decisions.md",
+      "sha256": "e48d35bd8ff686a1872144c20a8938edd50ba09094d9f535145ec4f7acc635f5",
+      "bytes": 1659,
+      "kind": "tracked-modified"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/.gitattributes",
+      "sha256": "6bc596aa41eb26417ae54088465ba206e8f052a00c63351ae814a2756f6f60e4",
+      "bytes": 124,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/driver.py",
+      "sha256": "8a344e82d527b77516587c0599d75a5ccb558488587a4e15809394e8526dc3a2",
+      "bytes": 12946,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/launch.py",
+      "sha256": "e58908bf2ae6c0cb0dccc2d33efebd2b48499c1cd4912a79246752684760dbf0",
+      "bytes": 993,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/payload-source-before-build.json",
+      "sha256": "86c994ded6f3120eb46d974efaf2894a70e216f546fd0b2c6daad9b12948b530",
+      "bytes": 11284,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/prepare.py",
+      "sha256": "b9eb98e5c1e4c18dcdf34c0b581b3444cd2d70bce0f095a713a5d0d8ac051c07",
+      "bytes": 3035,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-first/admission.json",
+      "sha256": "9c4147de2586f42116dce7083d14a45eb9d74ca7fe6107743bbafddf71503236",
+      "bytes": 785,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-first/diagnosis.json",
+      "sha256": "24c2270944dbdf44d8dccc9806936a715cc1661627c6b83db06ab008c66e5726",
+      "bytes": 569,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-first/native-publish.command.json",
+      "sha256": "b282571e8309801de161f26d8578bd57073224e627d2310ee65f985c5a5f5e9c",
+      "bytes": 478,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-first/native-publish.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-first/native-publish.stdout",
+      "sha256": "9fa5d2874307bb226a4fdf3340114c383fa201588e751810033b921fffafbaa9",
+      "bytes": 1083,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-first/released.json",
+      "sha256": "7f24ac15b05bcec6a3addabd49e38838ed2efcd3865b979e39358f9e09d16b07",
+      "bytes": 839,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-first/sdk.command.json",
+      "sha256": "c6ea35819b4b3f2233ee8a9bfdb4ec4ca23ff1ab69c9edce6ee073597b06cfc0",
+      "bytes": 266,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-first/sdk.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-first/sdk.stdout",
+      "sha256": "3f39ed349c39eb60a2fc42d7b7c04efc5c1749270745a5c55ce482b906639e50",
+      "bytes": 10,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-first/secondary-released.json",
+      "sha256": "ad19f277dc25ea486220d48a7143a60ad7e9fe692e08cd0be30cc69e80166236",
+      "bytes": 834,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-first/source-inputs.json",
+      "sha256": "b1c1c40000e0a9f5d777badd034fffe8cd46ac550d737a8da5091559ad1cb2cb",
+      "bytes": 575417,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-first/stop.json",
+      "sha256": "c1d7ea0cb0e3ba54e99f8a2781ea3b338e42add1217b144d904c6e8deaca0cb5",
+      "bytes": 109,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-first/teardown.json",
+      "sha256": "99c438f77093f6ca57546de1cc700c2ec5526542932854ac2fd0fb4f7f179d2c",
+      "bytes": 875,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/admission.json",
+      "sha256": "2697dea303933c75e9658f065ada6a7c859a205dcb0dafbb388b7c5bc68b33ee",
+      "bytes": 794,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/binary.json",
+      "sha256": "37967bec563524ccd52b6dd0877432c68e3ba63519c8e4604a1f62197fb47f41",
+      "bytes": 529,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/discovery.command.json",
+      "sha256": "abe0c3735af5444087b6d97f94c46f3329149d761ea47ed73304614af0a5e705",
+      "bytes": 582,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/discovery.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/discovery.stdout",
+      "sha256": "bdc441b94c205fd0361cb6f3e86750e6110a18c26f1e22575c8fe0954b8a5160",
+      "bytes": 12438,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/light-attributed.json",
+      "sha256": "f576adf5d3d802eb22f6515fea837fe679fe18863b68cc9ceaf0814d10cd2cab",
+      "bytes": 434,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/light.command.json",
+      "sha256": "e9de7f4ef0626b73ccbcf3d4a937c49914b7a2e8f1b38a6944bcb2686d98f01b",
+      "bytes": 917,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/light.stderr",
+      "sha256": "77133bad57b8f783e97ca8ffdb2a7c4cfc19c64884cb12f577dbe38e7680e976",
+      "bytes": 285,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/light.stdout",
+      "sha256": "f34b334f316706340a912547290a694b3278115e3d0729b9f5af6b849cefbab3",
+      "bytes": 2672,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/native-publish.command.json",
+      "sha256": "05ce46ca3a9057a6a1d42d9cf8e31c4158a8cad676f5568ffd5a550220973a6e",
+      "bytes": 478,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/native-publish.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/native-publish.stdout",
+      "sha256": "589d5d94bf4cddb1734994a10b231ec5cddaa2a2ff5cc97ae0ff44dc3cb9679d",
+      "bytes": 393,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/released.json",
+      "sha256": "d5e36343184fe0cf886b142f4e8c7ffd7e208fc61dbcadad2a2f416ae2908d7d",
+      "bytes": 848,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/sdk.command.json",
+      "sha256": "d181c1f4c0c9a610caa46b67ea844712299b345994fba6d35ab2f2aa734b6ffb",
+      "bytes": 266,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/sdk.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/sdk.stdout",
+      "sha256": "3f39ed349c39eb60a2fc42d7b7c04efc5c1749270745a5c55ce482b906639e50",
+      "bytes": 10,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/secondary-released.json",
+      "sha256": "0e116c538e5a77b4aa08e35c23ee3c762ee58c37d3b9892892b42a1d9b5d9753",
+      "bytes": 843,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/source-inputs.json",
+      "sha256": "84b722f715fb2fcee135105224e196bc585928d83b25105c796bdd9ee1ab2262",
+      "bytes": 586688,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/teardown.json",
+      "sha256": "4244447f52ddf219fee6e717ebc8f67e7243053438ddc2d4ff9200b2147f6ee2",
+      "bytes": 884,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-resource-fixed/test-results/implementation2.trx",
+      "sha256": "6a640ca926d5e2000793a3bcba13f0c1c43f73df6a1fa9d65d1fd8daa0278600",
+      "bytes": 145060,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/admission.json",
+      "sha256": "a33f41b02210cba169d7bc86870c3d07027d287a1979acf954008b95e5aa79de",
+      "bytes": 789,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/binary.json",
+      "sha256": "a23a0600da03eaa402c9fc14662ec591fe7d1e29bd89f91d1f64c87bf6c01604",
+      "bytes": 525,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/diagnosis.json",
+      "sha256": "6a687cb85aecbaf776c530db346517deea2c3ad144a1efb7aef73ac826ba9862",
+      "bytes": 1257,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/discovery.command.json",
+      "sha256": "2782e344390a2666f259a81eea4811161cc9f9f47141c13626233c053e7d17cc",
+      "bytes": 581,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/discovery.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/discovery.stdout",
+      "sha256": "244fe56429f7170e99b249abead2e340cfd666a424e61266b4b1cc1addcd26a9",
+      "bytes": 12439,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/light.command.json",
+      "sha256": "075422b194e54809ea0943d799a88f1c54acbe2d8fa27baf46783d55f22695e5",
+      "bytes": 912,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/light.stderr",
+      "sha256": "160b7dbb9b42d0fc2818ee8d2024887f7c8d8f5c60baf0805b1c454fb1e68b2a",
+      "bytes": 874,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/light.stdout",
+      "sha256": "5770fd77f662d8e3d48ad60b3a9096c95cd770beadc12c375af9a3b33b0205f9",
+      "bytes": 7296,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/native-publish.command.json",
+      "sha256": "929150ff9ee53a68baff3bbc4ab3f33a6e4f819cb89a91ebde3cc0d512abeff4",
+      "bytes": 476,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/native-publish.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/native-publish.stdout",
+      "sha256": "9c1bea669e0a33eb0974734b5d60c4b6d5a4db03788a1ad188b54d19a265ae37",
+      "bytes": 393,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/released.json",
+      "sha256": "ac196c467c211df0fe9dd6afaa389a988fb9ebaea71fefeb2cfba054a58e5e21",
+      "bytes": 843,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/sdk.command.json",
+      "sha256": "05c1b1785448d4e4b701bde7b8356d43cfbf915c64cd5ba3ba3a0fd3e672e1e5",
+      "bytes": 266,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/sdk.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/sdk.stdout",
+      "sha256": "3f39ed349c39eb60a2fc42d7b7c04efc5c1749270745a5c55ce482b906639e50",
+      "bytes": 10,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/secondary-released.json",
+      "sha256": "cd0b238984d937564b5187013de0686be9128a7100622dff494f1cf48067f893",
+      "bytes": 838,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/source-inputs.json",
+      "sha256": "6c868ecbcd43d03009cd066f8adf629b71d2a0009f9e3f3e5e3746751a3f981f",
+      "bytes": 578387,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/stop.json",
+      "sha256": "5e637d128843838a9d9366ee266f62a0e6119b524863afd1eee7e19b270ee863",
+      "bytes": 100,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/teardown.json",
+      "sha256": "b8bca9f540dd29de9c0a76f0ffa052de361092ea38bd685c4a1134a52feffc89",
+      "bytes": 879,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/product-sourcelink/test-results/implementation2.trx",
+      "sha256": "499680536189396218b82fafe865016e12666991386ff54f09cfad3db92db644",
+      "bytes": 155902,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/admission.json",
+      "sha256": "e52ff4edb85477a55c0bac9205ef633d89e45ea5b69f734fcc0c942cc30c7bbb",
+      "bytes": 803,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/baseline-identity.json",
+      "sha256": "bc9874d51bfca2338d5c38423de00b6c13a643ee8147a9bee677e906704326c5",
+      "bytes": 486,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/baseline-results/base.trx",
+      "sha256": "40c38329f83efe9fa60c9b4504dd415fca3a333102aaab70a3fdedd20f6b0a8c",
+      "bytes": 10415,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/baseline-shared.command.json",
+      "sha256": "8ab93e709c52c802073c149399d1ddb07e99a1ba1796665424c106ada1e2d5ab",
+      "bytes": 872,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/baseline-shared.stderr",
+      "sha256": "c1708c09d1108af76507abe405aafd4fd0feee9d4fef2d8c6d961796dfcd07da",
+      "bytes": 285,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/baseline-shared.stdout",
+      "sha256": "05e6d7f6b08fdc6ed24881648b6aad4547751406e863f8b6a767ae11ba8a4c0a",
+      "bytes": 3403,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/embedded-resource-metadata.command.json",
+      "sha256": "61f5f155fd2bdbc6d54693b2956a169efe212ab396a4c6d0a88bbc884d37c7d2",
+      "bytes": 355,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/embedded-resource-metadata.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/embedded-resource-metadata.stdout",
+      "sha256": "c426c47d3a3eb2897d24e1039118fdf9f4e32ee4bff0ac03f721d360561c3ec7",
+      "bytes": 104255,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/released.json",
+      "sha256": "20a3ef31a0a212a9740bf96a85793bc001367392e9e2840c9a46654c878536ab",
+      "bytes": 857,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/secondary-released.json",
+      "sha256": "bfb1b62b0c94095f82aaba6f69abbfd25f4344283cbd90e1bb3ff41e21a5374f",
+      "bytes": 852,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/source-inputs.json",
+      "sha256": "66a2d04b9b77fe61b9ed387e7519b9d133cd23c9d632bc2ad70fee322795909a",
+      "bytes": 583070,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/teardown.json",
+      "sha256": "d988f934b2f44512b03ceecdaeb4fdbdb1a59c174bdcda9a057280f267251e24",
+      "bytes": 893,
+      "kind": "untracked"
+    },
+    {
+      "path": "dydo/reference/dydo-commands.md",
+      "sha256": "6db9d54bd4238fd9e2d7893ea8cbee67f125a2b1a93649cc3a922cb36e8d6add",
+      "bytes": 32894,
+      "kind": "tracked-modified"
+    }
+  ],
+  "excludedSelf": [
+    "draft-custody.json",
+    "scope-blocker.json"
+  ],
+  "verificationRecipe": [
+    "From worktree root: git rev-parse HEAD; git branch --show-current; git status --short",
+    "For every files row, compare SHA256 of the path bytes. The manifest excludes itself and scope-blocker.json.",
+    "For every product-resource-fixed/source-inputs.json files row, compare working path SHA256. All 3215 matched at handback.",
+    "Read product-resource-fixed/test-results/implementation2.trx and resource-shared-attribution/baseline-results/base.trx; compare failed names and error messages.",
+    "Do not rerun material proof until captain scope disposition; fresh attempt names required, live LC FIFO/locks unchanged."
+  ]
+}

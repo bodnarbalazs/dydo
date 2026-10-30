@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-thac303a\\source\\dydo\\_system\\.local\\static-gates\\python\\Scripts\\python.exe",
+    "-m",
+    "pip",
+    "install",
+    "--disable-pip-version-check",
+    "--cache-dir",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-thac303a\\pip-cache",
+    "-r",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-thac303a\\source\\DynaDocs.Tests\\coverage\\requirements.lock"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-thac303a\\source",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 8.065572000006796,
+  "ticket": "0000000001-47f9ca0424352ae9",
+  "hidden": true
+}

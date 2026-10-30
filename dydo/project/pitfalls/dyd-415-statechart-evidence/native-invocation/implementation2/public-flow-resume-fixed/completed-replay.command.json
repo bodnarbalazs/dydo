@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\publish\\dydo.exe",
+    "statechart",
+    "resume",
+    "--request",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\state\\requests\\c5abeaf08cbe43849e7d6c21073325d8\\request.json"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\model inputs \u00e1rv\u00edz",
+  "exit": 1,
+  "expected": 1,
+  "seconds": 0.026615299997502007,
+  "ticket": "0000000001-8ac625da9526eecc",
+  "hidden": true
+}

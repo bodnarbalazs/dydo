@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="a36b214d-8d57-4d28-ab54-4ba05d03a28b" name="Balázs@NIGHTFURY 2026-10-30 20:44:03" runUser="NIGHTFURY\Balázs" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-30T20:44:03.1131170+01:00" queuing="2026-10-30T20:44:03.1131176+01:00" start="2026-10-30T20:44:01.5859714+01:00" finish="2026-10-30T20:44:03.1176977+01:00" />
+  <TestSettings name="default" id="8a5ace23-e823-46c3-b7a1-2cf566979370">
+    <Deployment runDeploymentRoot="Balázs_NIGHTFURY_2026-10-30_20_44_03" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="dc623dcf-9ca8-4333-9e5a-d2c04c913080" testId="e583005a-dc7d-c3dc-7df4-a96077df69eb" testName="DynaDocs.Tests.Statechart.StatechartRequestTests.ApprovalDelayRejectsChangedTopLevelInputs(changed: &quot;model.tla&quot;)" computerName="NIGHTFURY" duration="00:00:00.0047732" startTime="2026-10-30T20:44:02.9755950+01:00" endTime="2026-10-30T20:44:02.9803560+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="dc623dcf-9ca8-4333-9e5a-d2c04c913080" />
+    <UnitTestResult executionId="44ab7ee6-64a3-42d0-9bcb-e9c04163cc6e" testId="2b410b06-37b0-133a-b86d-02c5a85b8f65" testName="DynaDocs.Tests.Statechart.StatechartRequestTests.ApprovalDelayRejectsChangedTopLevelInputs(changed: &quot;model.cfg&quot;)" computerName="NIGHTFURY" duration="00:00:00.0047082" startTime="2026-10-30T20:44:02.9804495+01:00" endTime="2026-10-30T20:44:02.9850892+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="44ab7ee6-64a3-42d0-9bcb-e9c04163cc6e" />
+    <UnitTestResult executionId="6cd7089c-eca1-46bc-ba04-71a578ce2e7d" testId="31c29668-fc6b-ce64-76a9-258772df4e57" testName="DynaDocs.Tests.Statechart.StatechartRequestTests.CapturePreservesCallerArgumentsAndPinsTopLevelInputsWithoutCopyingModels" computerName="NIGHTFURY" duration="00:00:00.0228754" startTime="2026-10-30T20:44:03.0090883+01:00" endTime="2026-10-30T20:44:03.0319023+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6cd7089c-eca1-46bc-ba04-71a578ce2e7d" />
+    <UnitTestResult executionId="1f81fc26-f77c-4f1f-b8fa-9248cf061b00" testId="38a40c8b-0cb9-550d-7d66-599b6f672f8c" testName="DynaDocs.Tests.Statechart.StatechartRequestTests.ResumeRejectsTamperedArgumentsIdentitiesAndForeignNonemptyOutput" computerName="NIGHTFURY" duration="00:00:00.0237761" startTime="2026-10-30T20:44:02.9852296+01:00" endTime="2026-10-30T20:44:03.0089371+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1f81fc26-f77c-4f1f-b8fa-9248cf061b00" />
+    <UnitTestResult executionId="ac39be2c-5eb0-45a3-ae24-863be69856ff" testId="4970965f-119e-5ec5-d1b1-3a9993f56e2c" testName="DynaDocs.Tests.Statechart.StatechartRequestTests.CaptureRejectsInventedConsentOrUnknownFlags(flag: &quot;--approved&quot;)" computerName="NIGHTFURY" duration="00:00:00.0012374" startTime="2026-10-30T20:44:02.9602833+01:00" endTime="2026-10-30T20:44:02.9603310+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ac39be2c-5eb0-45a3-ae24-863be69856ff" />
+    <UnitTestResult executionId="198aabde-0ff1-4442-86be-3868e9d818d7" testId="2b5c26dd-fdcd-1a2c-9650-c66df1a7fe4e" testName="DynaDocs.Tests.Statechart.StatechartRequestTests.CaptureRejectsInventedConsentOrUnknownFlags(flag: &quot;--unknown&quot;)" computerName="NIGHTFURY" duration="00:00:00.1066630" startTime="2026-10-30T20:44:02.8434506+01:00" endTime="2026-10-30T20:44:02.9544702+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="198aabde-0ff1-4442-86be-3868e9d818d7" />
+    <UnitTestResult executionId="3ccf218a-09b3-4dbf-b1c5-0507fd2b80ed" testId="16e94982-9037-00e7-5dd1-9a499a83d4f8" testName="DynaDocs.Tests.Statechart.StatechartRequestTests.ApprovalDelayRejectsChangedTopLevelInputs(changed: &quot;view.ts&quot;)" computerName="NIGHTFURY" duration="00:00:00.0194852" startTime="2026-10-30T20:44:02.9611238+01:00" endTime="2026-10-30T20:44:02.9754845+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3ccf218a-09b3-4dbf-b1c5-0507fd2b80ed" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartRequestTests.ResumeRejectsTamperedArgumentsIdentitiesAndForeignNonemptyOutput" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-1xuk0ulc\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="38a40c8b-0cb9-550d-7d66-599b6f672f8c">
+      <Execution id="1f81fc26-f77c-4f1f-b8fa-9248cf061b00" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-1xuk0ulc\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartRequestTests" name="ResumeRejectsTamperedArgumentsIdentitiesAndForeignNonemptyOutput" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartRequestTests.CaptureRejectsInventedConsentOrUnknownFlags(flag: &quot;--unknown&quot;)" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-1xuk0ulc\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="2b5c26dd-fdcd-1a2c-9650-c66df1a7fe4e">
+      <Execution id="198aabde-0ff1-4442-86be-3868e9d818d7" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-1xuk0ulc\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartRequestTests" name="CaptureRejectsInventedConsentOrUnknownFlags" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartRequestTests.CaptureRejectsInventedConsentOrUnknownFlags(flag: &quot;--approved&quot;)" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-1xuk0ulc\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="4970965f-119e-5ec5-d1b1-3a9993f56e2c">
+      <Execution id="ac39be2c-5eb0-45a3-ae24-863be69856ff" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-1xuk0ulc\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartRequestTests" name="CaptureRejectsInventedConsentOrUnknownFlags" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartRequestTests.CapturePreservesCallerArgumentsAndPinsTopLevelInputsWithoutCopyingModels" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-1xuk0ulc\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="31c29668-fc6b-ce64-76a9-258772df4e57">
+      <Execution id="6cd7089c-eca1-46bc-ba04-71a578ce2e7d" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-1xuk0ulc\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartRequestTests" name="CapturePreservesCallerArgumentsAndPinsTopLevelInputsWithoutCopyingModels" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartRequestTests.ApprovalDelayRejectsChangedTopLevelInputs(changed: &quot;view.ts&quot;)" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-1xuk0ulc\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="16e94982-9037-00e7-5dd1-9a499a83d4f8">
+      <Execution id="3ccf218a-09b3-4dbf-b1c5-0507fd2b80ed" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-1xuk0ulc\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartRequestTests" name="ApprovalDelayRejectsChangedTopLevelInputs" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartRequestTests.ApprovalDelayRejectsChangedTopLevelInputs(changed: &quot;model.cfg&quot;)" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-1xuk0ulc\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="2b410b06-37b0-133a-b86d-02c5a85b8f65">
+      <Execution id="44ab7ee6-64a3-42d0-9bcb-e9c04163cc6e" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-1xuk0ulc\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartRequestTests" name="ApprovalDelayRejectsChangedTopLevelInputs" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartRequestTests.ApprovalDelayRejectsChangedTopLevelInputs(changed: &quot;model.tla&quot;)" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-1xuk0ulc\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="e583005a-dc7d-c3dc-7df4-a96077df69eb">
+      <Execution id="dc623dcf-9ca8-4333-9e5a-d2c04c913080" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-1xuk0ulc\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartRequestTests" name="ApprovalDelayRejectsChangedTopLevelInputs" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="e583005a-dc7d-c3dc-7df4-a96077df69eb" executionId="dc623dcf-9ca8-4333-9e5a-d2c04c913080" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2b410b06-37b0-133a-b86d-02c5a85b8f65" executionId="44ab7ee6-64a3-42d0-9bcb-e9c04163cc6e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="31c29668-fc6b-ce64-76a9-258772df4e57" executionId="6cd7089c-eca1-46bc-ba04-71a578ce2e7d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="38a40c8b-0cb9-550d-7d66-599b6f672f8c" executionId="1f81fc26-f77c-4f1f-b8fa-9248cf061b00" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4970965f-119e-5ec5-d1b1-3a9993f56e2c" executionId="ac39be2c-5eb0-45a3-ae24-863be69856ff" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2b5c26dd-fdcd-1a2c-9650-c66df1a7fe4e" executionId="198aabde-0ff1-4442-86be-3868e9d818d7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="16e94982-9037-00e7-5dd1-9a499a83d4f8" executionId="3ccf218a-09b3-4dbf-b1c5-0507fd2b80ed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="7" executed="7" passed="7" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.5+1b188a7b0a (64-bit .NET 10.0.8)&#xD;
+[xUnit.net 00:00:00.07]   Discovering: DynaDocs.Tests&#xD;
+[xUnit.net 00:00:00.36]   Discovered:  DynaDocs.Tests&#xD;
+[xUnit.net 00:00:00.38]   Starting:    DynaDocs.Tests&#xD;
+-&gt; Loading plugin C:\Users\User\AppData\Local\Temp\dyd415-implementation2-1xuk0ulc\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll&#xD;
+-&gt; Loading plugin C:\Users\User\AppData\Local\Temp\dyd415-implementation2-1xuk0ulc\source\DynaDocs.Tests\bin\Release\net10.0\Reqnroll.xUnit.ReqnrollPlugin.dll&#xD;
+-&gt; Using reqnroll.json&#xD;
+[xUnit.net 00:00:01.18]   Finished:    DynaDocs.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

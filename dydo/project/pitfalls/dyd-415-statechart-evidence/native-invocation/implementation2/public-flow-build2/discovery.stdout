@@ -1,0 +1,19 @@
+  Determining projects to restore...
+  Restored C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.csproj (in 2.55 sec).
+  Restored C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\DynaDocs.Tests.csproj (in 4.5 sec).
+  DynaDocs -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\bin\Release\net10.0\dydo.dll
+  DynaDocs.Tests -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll
+Test run for C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll (.NETCoreApp,Version=v10.0)
+The following Tests are available:
+    DynaDocs.Tests.Statechart.StatechartManagedTests.MissingManagedRootReportsMissingWithoutCreatingAnInstallation
+    DynaDocs.Tests.Statechart.StatechartManagedTests.ForeignMarkerOrUnexpectedChildIsRetainedAndRejected(validMarker: False)
+    DynaDocs.Tests.Statechart.StatechartManagedTests.ForeignMarkerOrUnexpectedChildIsRetainedAndRejected(validMarker: True)
+    DynaDocs.Tests.Statechart.StatechartManagedTests.ComponentWithoutAReadinessReceiptIsNotAdoptedOrRepairedImplicitly
+    DynaDocs.Tests.Statechart.StatechartManagedTests.ExplicitSelectionWinsWhenManagedValuesFillMissingDependencies
+    DynaDocs.Tests.Statechart.StatechartManagedTests.ConcurrentInstallerLockRejectsBeforeCreatingStoreOrDownloading
+    DynaDocs.Tests.Statechart.StatechartManagedTests.ReceiptFromAnotherReleaseRejectsBeforeUsingComponentBytes
+    DynaDocs.Tests.Statechart.StatechartPublicFlowTests.MissingPublicInvocationSavesOriginalInputsAndReturnsCompleteLockedPlanWithoutInstalling
+    DynaDocs.Tests.Statechart.StatechartPublicFlowTests.ChangedSavedInputsRejectResumeBeforeProvisioningAndPreserveRequest
+    DynaDocs.Tests.Statechart.StatechartPublicFlowTests.InvalidExplicitOverrideIsAnErrorBeforeAnyDownloadPlan
+    DynaDocs.Tests.Statechart.StatechartPublicFlowTests.PublicationRetainsAConcurrentForeignArrival
+    DynaDocs.Tests.Commands.CommandDocConsistencyTests.AllCommands_AppearInHelpText

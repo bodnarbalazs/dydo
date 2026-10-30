@@ -1,0 +1,4 @@
+{
+  "filter": "FullyQualifiedName~StatechartPublicFlowTests|FullyQualifiedName~StatechartManagedTests|FullyQualifiedName~CommandDocConsistencyTests.AllCommands_AppearInHelpText",
+  "noFullOrCoverageCampaign": true
+}

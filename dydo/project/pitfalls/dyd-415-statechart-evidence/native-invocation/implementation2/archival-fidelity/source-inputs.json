@@ -1,0 +1,212 @@
+{
+  "base": "86931b9c47a93fa06287391495574865d9ce1d56",
+  "kind": "Archive fidelity only, not a product test snapshot",
+  "driverSha256": "8529587d108e8d03392230660ebfdb678807bbceaab20c2f17aa70bfa6c33407",
+  "proposal": {
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-archival-finite-proposal-v2-20261030.json",
+    "sha256": "e1c80a97f1ef7b82b37f650bbf0fe6786282c57fcbe2160571bb5eabc9fd4358"
+  },
+  "captainPin": {
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-archival-eleven-captain-pin-20261030.md",
+    "sha256": "127dc160863e6d5b82558a8b805f2c2c0b6830450aac516d22036373b2d1e2a9"
+  },
+  "originalSources": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+      "sha256": "0edbdfae6ab826103ed48e6259f7cde5b2dbd5174ae436da3d695f4e3d46925b"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py",
+      "sha256": "767840ba21f194655b9646c0735385b9862a6d3ea9de8639cd62e913950afe81"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/milestone_checks.py",
+      "sha256": "95a3224e0d78e53eabe79753646bca5f9c9ccd5913bee823829eb12d4fc771b3"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1_cases.py",
+      "sha256": "598455a1fabcfca73996c81dd0c4a1c1e06dfc6aeb6f9903f6c752ae66fe5cc6"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2_cases.py",
+      "sha256": "d9e74b9960bed4eaa3b17d8e93cec7ae068e3408d64641d5aec3b2c92d63da41"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/admission-failed-driver.py",
+      "sha256": "3d80cb8466557949d3418acc5598897b52a5c3f340ca11b932e67ac8bca3e2fa"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj",
+      "sha256": "bf28edc79e17c0a54bd72776528dd2439af064b9949b3cc7e8c9556795d816bd"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Program.cs",
+      "sha256": "25114b87ccff5fdca48e84188af8a15076f0e9a9b14aa4e29eeef368f4eea223"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/tests/Tests.csproj",
+      "sha256": "3511b8346bff8288779bd71f65370bd609095ea3711db5d9e0d728b2623d2be0"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/Dockerfile",
+      "sha256": "f03a285c93dca290a644d31110b3cc375f355e1b1aef8b481fbe04584fb66850"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/linux.sh",
+      "sha256": "07ce53d2ca900a0c73c5c8796878257ee3dac912ed086e1bfe21ca4aab188c35"
+    }
+  ],
+  "references": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/verification.md",
+      "sha256": "163b6e69d2c9ff1dcb8395d2b58f6c8e9d8628a22dad5fb0d633b03d3284509f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-verification.md",
+      "sha256": "faeac071b7c07604ab79e8199701dd382231c623d25d804e67f2a6b539703194"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/history/README.md",
+      "sha256": "b4b25fbf376e079549f3a17ecce5b024591560252a0f36bb8865d9ad4ba12a51"
+    }
+  ],
+  "dependencies": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-first/inputs.json",
+      "sha256": "eee53cd52f5b52f638ba9fa4c54ad862308f6d1e18e08ffbb7b2789372bc0c52"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-first/tested-inputs.zip",
+      "sha256": "641c55ed9b596338dfe8278615cd513eeb6cc93beefaea07095a8794a0a2a5e2"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-handle-string/inputs.json",
+      "sha256": "4b2063b42fe136b618aef551067f8f7a6d3a4a15b6238c462907e9f5e7b0c38b"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/g1-handle-string/tested-inputs.zip",
+      "sha256": "f82f810ed07999ab2c0efc30f722b74cbba0e291a4bff855f18be311e5f1bd63"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+      "sha256": "0d01b13344db5975000abdbc4d632fde2104242e06a0acdbeb1e185301be0c4c"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json",
+      "sha256": "74282dd3286ced26946f0f8760f7bbc7a6e70d61e2fb1d480e18a2665ddc0a43"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/inputs.json",
+      "sha256": "b17ce4436bd21c0b8993f0045829b91e68efea991fb7481a292bedd3904582a2"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-final/tested-inputs.zip",
+      "sha256": "ff577491752a7fbf5aa60f45d111c6bc3190b50faa6f4f2bef2c3bb1740ec0c3"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/inputs.json",
+      "sha256": "24c0d6254d9609fa83242696be030faa9456b69c8b220d91e9d27b44c75afb9c"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-final/tested-inputs.zip",
+      "sha256": "d31cd2b191248e9e1682794675b65c7f448e4992aedae841d9dcf6517011965b"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/inputs.json",
+      "sha256": "e04f8405a6c9af2aa9feed8786f1e6bbf09305d7094abcebfc6788dd5cac89c2"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/module-light-porcelain/tested-inputs.zip",
+      "sha256": "78e051960e214561aefc3cb9a64fc818e787e016c5bc7f54cc4fd3730eb499f8"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/preflight-live/inputs.json",
+      "sha256": "25e2d5e02fea5ac5aa877bf69a35de8a640ac727a2c1466a2ce98050a3745c56"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/preflight-live/tested-inputs.zip",
+      "sha256": "641c55ed9b596338dfe8278615cd513eeb6cc93beefaea07095a8794a0a2a5e2"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/inputs.json",
+      "sha256": "be88bad987c60098da555253acba434693b499266dd4fc4e8174731e751920a4"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-first/tested-inputs.zip",
+      "sha256": "07d16a009ff4a10ac287301ce97d17cd46cac4b00f12aa9638c8d26e361eeddf"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/inputs.json",
+      "sha256": "17f86ad58c9f39a1b1a1baa86aa9979aa95a5930e1bf617c0b4ac6a13c02f7f0"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g2/g2-input-monitor/tested-inputs.zip",
+      "sha256": "9c27fcfc30c88d879ee6efd7f87593701b41002aff089f2cd8f25e17e3063100"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/commission/integration-baseline.json",
+      "sha256": "5250cb9a4877e858f06d425b4db1214c15780c761163f33d855fe5d60c472a74"
+    }
+  ],
+  "contextCopies": [
+    {
+      "entry": "stage-context/846a6c586c16e8f01ecbec532043fb7d6e3255641fef5970f9c7ecf314422a02/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/gate-driver.py",
+      "sha256": "846a6c586c16e8f01ecbec532043fb7d6e3255641fef5970f9c7ecf314422a02",
+      "bytes": 14693,
+      "mode": "100644",
+      "source": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-milestone-byte-attributes-npwcj38y\\source\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\gate-driver.py",
+      "receipts": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json"
+      ]
+    },
+    {
+      "entry": "stage-context/160eb1b65127860a354aa6bd10e70032c77c940c6db5bf734bfc7e0e87390b32/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py",
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/launch.py",
+      "sha256": "160eb1b65127860a354aa6bd10e70032c77c940c6db5bf734bfc7e0e87390b32",
+      "bytes": 1046,
+      "mode": "100644",
+      "source": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-milestone-byte-attributes-npwcj38y\\source\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\launch.py",
+      "receipts": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json"
+      ]
+    },
+    {
+      "entry": "stage-context/b0037d7608497ed76012fa8d7a8de75385db0d71e25761af1e9ce2640f4e5d6a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/milestone_checks.py",
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/milestone_checks.py",
+      "sha256": "b0037d7608497ed76012fa8d7a8de75385db0d71e25761af1e9ce2640f4e5d6a",
+      "bytes": 7021,
+      "mode": "100644",
+      "source": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-milestone-byte-attributes-npwcj38y\\source\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\milestone_checks.py",
+      "receipts": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json",
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json"
+      ]
+    },
+    {
+      "entry": "stage-context/7263989f2defe9576468c0b15fb73b5f2d6c6571cb19b4c326f1e5b2c89d8d63/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/verification.md",
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/verification.md",
+      "sha256": "7263989f2defe9576468c0b15fb73b5f2d6c6571cb19b4c326f1e5b2c89d8d63",
+      "bytes": 10427,
+      "mode": "100644",
+      "source": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-milestone-byte-attributes-npwcj38y\\source\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\verification.md",
+      "receipts": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-byte-attributes/inputs.json"
+      ]
+    },
+    {
+      "entry": "stage-context/44ded19d92f9a7bb8564ce7d845f90f15efd5d9a6ff9630735085d3bc84e5ed2/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/verification.md",
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/verification.md",
+      "sha256": "44ded19d92f9a7bb8564ce7d845f90f15efd5d9a6ff9630735085d3bc84e5ed2",
+      "bytes": 9979,
+      "mode": "100644",
+      "source": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-milestone-docs-corrected-8a7atrx1\\source\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\verification.md",
+      "receipts": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/milestone-docs-corrected/inputs.json"
+      ]
+    }
+  ],
+  "scratch": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-archival-fidelity-0ctefl4h"
+}

@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="77227c90-7282-452f-8c51-f5549f4cfe5a" name="Balázs@NIGHTFURY 2026-10-30 22:51:48" runUser="NIGHTFURY\Balázs" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-30T22:51:48.1090976+01:00" queuing="2026-10-30T22:51:48.1090978+01:00" start="2026-10-30T22:51:46.1037330+01:00" finish="2026-10-30T22:51:48.1129752+01:00" />
+  <TestSettings name="default" id="e3d011c0-35ac-47e9-b971-4d9d75ff12a5">
+    <Deployment runDeploymentRoot="Balázs_NIGHTFURY_2026-10-30_22_51_48" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="dccd213e-8aab-43a6-8449-5b89641b4016" testId="71ade9e8-d4b8-31a5-c239-a70569ecc84a" testName="DynaDocs.Tests.Statechart.StatechartProbeTests.InstalledNativeProbePreservesBothOutputChannelsAndChildExitAfterGo(status: 0)" computerName="NIGHTFURY" duration="00:00:00.2409131" startTime="2026-10-30T22:51:47.7409664+01:00" endTime="2026-10-30T22:51:47.9877086+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="dccd213e-8aab-43a6-8449-5b89641b4016" />
+    <UnitTestResult executionId="fd0a2589-e0ca-41b9-a07c-0e0403a89263" testId="ab7a8d03-bbfc-4e33-f213-bdbc7ae187be" testName="DynaDocs.Tests.Statechart.StatechartProbeTests.InstalledNativeProbePreservesBothOutputChannelsAndChildExitAfterGo(status: 7)" computerName="NIGHTFURY" duration="00:00:00.0553269" startTime="2026-10-30T22:51:47.9940136+01:00" endTime="2026-10-30T22:51:48.0441598+01:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="fd0a2589-e0ca-41b9-a07c-0e0403a89263" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartProbeTests.InstalledNativeProbePreservesBothOutputChannelsAndChildExitAfterGo(status: 0)" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-rjdqq05t\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="71ade9e8-d4b8-31a5-c239-a70569ecc84a">
+      <Execution id="dccd213e-8aab-43a6-8449-5b89641b4016" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-rjdqq05t\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartProbeTests" name="InstalledNativeProbePreservesBothOutputChannelsAndChildExitAfterGo" />
+    </UnitTest>
+    <UnitTest name="DynaDocs.Tests.Statechart.StatechartProbeTests.InstalledNativeProbePreservesBothOutputChannelsAndChildExitAfterGo(status: 7)" storage="c:\users\user\appdata\local\temp\dyd415-implementation2-rjdqq05t\source\dynadocs.tests\bin\release\net10.0\dynadocs.tests.dll" id="ab7a8d03-bbfc-4e33-f213-bdbc7ae187be">
+      <Execution id="fd0a2589-e0ca-41b9-a07c-0e0403a89263" />
+      <TestMethod codeBase="C:\Users\User\AppData\Local\Temp\dyd415-implementation2-rjdqq05t\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="DynaDocs.Tests.Statechart.StatechartProbeTests" name="InstalledNativeProbePreservesBothOutputChannelsAndChildExitAfterGo" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="71ade9e8-d4b8-31a5-c239-a70569ecc84a" executionId="dccd213e-8aab-43a6-8449-5b89641b4016" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ab7a8d03-bbfc-4e33-f213-bdbc7ae187be" executionId="fd0a2589-e0ca-41b9-a07c-0e0403a89263" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="2" executed="2" passed="2" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.5+1b188a7b0a (64-bit .NET 10.0.8)&#xD;
+[xUnit.net 00:00:00.10]   Discovering: DynaDocs.Tests&#xD;
+[xUnit.net 00:00:00.54]   Discovered:  DynaDocs.Tests&#xD;
+[xUnit.net 00:00:00.57]   Starting:    DynaDocs.Tests&#xD;
+-&gt; Loading plugin C:\Users\User\AppData\Local\Temp\dyd415-implementation2-rjdqq05t\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll&#xD;
+-&gt; Loading plugin C:\Users\User\AppData\Local\Temp\dyd415-implementation2-rjdqq05t\source\DynaDocs.Tests\bin\Release\net10.0\Reqnroll.xUnit.ReqnrollPlugin.dll&#xD;
+-&gt; Using reqnroll.json&#xD;
+[xUnit.net 00:00:01.65]   Finished:    DynaDocs.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

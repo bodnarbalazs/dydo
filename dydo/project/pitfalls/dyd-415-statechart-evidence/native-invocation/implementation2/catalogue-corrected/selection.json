@@ -1,0 +1,5 @@
+{
+  "filter": "FullyQualifiedName~CanonicalSkillTree_SortsEverySkillExactlyOnceByKind|FullyQualifiedName~SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo41",
+  "expectedTests": 2,
+  "purpose": "Captain-authorized catalogue expectations only; no native publish or lifecycle suite"
+}

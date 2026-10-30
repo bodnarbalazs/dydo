@@ -1,0 +1,534 @@
+{
+  "kind": "Exact observed CRLF/raw EOF attributes only; no raw source or receipt rewrite",
+  "failedCommand": "git diff --cached --check",
+  "actualExit": 2,
+  "failedRawReceipt": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-public-flow-finalize-100q44cy\\staged-whitespace.stdout",
+  "failedRawSha256": "712d7e32211cb61de2873164611b81a41a30299d9f6738dbc5748e3a92065802",
+  "correctedPaths": [
+    {
+      "path": "Resources/Statechart/payload.items.props",
+      "sha256": "d208a3db8a5dd288cfa54e2a001f162447fc0da9d62ec11fb2e9820a474b273b",
+      "bytes": 20852,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/payload-public-flow/before-dependency-lock.json",
+      "sha256": "7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad",
+      "bytes": 8461,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/payload-public-flow/before-payload.items.props",
+      "sha256": "af23298504d41e4ed898e2cb9ebf12b85a7463f74dd8b0a6fd62434504a750d8",
+      "bytes": 19386,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/payload-public-flow/declaration.json",
+      "sha256": "865c4842d6de1618d0718f2e709b700a00b7502d6b924c4f1a7f7bac25d1080b",
+      "bytes": 12215,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/payload-source-before-build.json",
+      "sha256": "86c994ded6f3120eb46d974efaf2894a70e216f546fd0b2c6daad9b12948b530",
+      "bytes": 11284,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/payload-worker-flow/before-dependency-lock.json",
+      "sha256": "7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad",
+      "bytes": 8461,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/payload-worker-flow/before-payload.items.props",
+      "sha256": "71a9e2af86ad3acabc85600a9e7a5562ba77ddca3cefecdd6a7dd8737db690b2",
+      "bytes": 20852,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/payload-worker-flow/declaration.json",
+      "sha256": "0db5616388122feea4a65572c5a14c6eff55fb2137ad8824d4f635984ea84585",
+      "bytes": 12215,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/public-flow-behavioral-red/public-red.stderr",
+      "sha256": "e2108be34dec9f2e040ccfc1c8a13fc37c32da81070aa0b1e9b8d008ac49f9f6",
+      "bytes": 85,
+      "findings": [
+        "new blank line at EOF."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/public-flow-behavioral-red/public-red.stdout",
+      "sha256": "2c34bb665b0bcc4856c1f113f2613bf67d61deb38b4c71bfbf0253dfd231a2fe",
+      "bytes": 269,
+      "findings": [
+        "new blank line at EOF."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/request-store-safe-boundary/diagnosis.json",
+      "sha256": "7c5808eb550c94b02b5de4a9a4599f5859824b9fadd70bc9d9fc333eb0f3b7c1",
+      "bytes": 441,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/resource-shared-attribution/baseline-results/base.trx",
+      "sha256": "40c38329f83efe9fa60c9b4504dd415fca3a333102aaab70a3fdedd20f6b0a8c",
+      "bytes": 10415,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/adapters/dotnet-static.json",
+      "sha256": "48c7a975e5bea17f14f482e771447dba3044408b86d828f4227923adb3fc603f",
+      "bytes": 6342764,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/inventory-commands/commands/0001-compile-0.stdout",
+      "sha256": "321f7bdac06d94fb72bf4c79b8c2cdc8b642a862ad8530fe05ce75d8c8fe69b9",
+      "bytes": 151937,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/inventory-commands/commands/0003-compile-1.stdout",
+      "sha256": "a52c0a0d96aa40bd925c9736c7d2ba84b0b03b22841b780acb1ff48e94bb6567",
+      "bytes": 24293,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/inventory-commands/commands/0005-compile-2.stdout",
+      "sha256": "3e21b81dceec275f7f8c26c7266102c2f7b19ee7a607c30c30fe9470ad6bb217",
+      "bytes": 191197,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/inventory-commands/commands/0007-compile-3.stdout",
+      "sha256": "d8af22b1d57ae2ec2f7055cf8fc06b90a03098a22b25a3366a9ccfa45c0df63e",
+      "bytes": 1475,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/inventory-commands/commands/0009-compile-4.stdout",
+      "sha256": "0328b756fc8ff6c84fce414b18b74eb213356c55b34c02870e3440725598a884",
+      "bytes": 1497,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/inventory-commands/commands/0011-compile-5.stdout",
+      "sha256": "b27b1545d8f49fc0dc090ea2800ed17070e1117d83baf51f7d53c636cc7cecb8",
+      "bytes": 1505,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/inventory-commands/commands/0013-compile-6.stdout",
+      "sha256": "0d4a63bb72a16d4953f98798fde4f2a976b16824ce8d4217970edf1dc99d6fed",
+      "bytes": 22649,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/inventory-commands/commands/0015-compile-7.stdout",
+      "sha256": "60c8ca79638d46600d1be700bf2a6b5c3897c3143b722fe5a2fb397497702fc1",
+      "bytes": 6322,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/inventory.json",
+      "sha256": "e838fdc8a3acb63779f464171a853e0b92dfb2809ecf8d1a0786bf060daf2b8c",
+      "bytes": 852704,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/analyzers-0.sarif",
+      "sha256": "887bc11709acc08ff323c47dc9f2bbe66378785d3febc0782756f3e65f077ded",
+      "bytes": 133670,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/analyzers-1.sarif",
+      "sha256": "bcc37209a049ace720a0b48ca585ff8e133eebcdf2f68da36dbc0ab944ea5955",
+      "bytes": 410,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/analyzers-2.sarif",
+      "sha256": "b207c423392c7e4cd5432ce191d25f18a9332248dc2332d0cbcfd4033e46102e",
+      "bytes": 87193,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/analyzers-3.sarif",
+      "sha256": "bcc37209a049ace720a0b48ca585ff8e133eebcdf2f68da36dbc0ab944ea5955",
+      "bytes": 410,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/analyzers-4.sarif",
+      "sha256": "bcc37209a049ace720a0b48ca585ff8e133eebcdf2f68da36dbc0ab944ea5955",
+      "bytes": 410,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/analyzers-5.sarif",
+      "sha256": "bcc37209a049ace720a0b48ca585ff8e133eebcdf2f68da36dbc0ab944ea5955",
+      "bytes": 410,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/analyzers-6.sarif",
+      "sha256": "c67b508230d9e5d6077a4c7dce22ce33103b84fcb0ec7a1a763925bb49169787",
+      "bytes": 22382,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0001-compile-0.stdout",
+      "sha256": "321f7bdac06d94fb72bf4c79b8c2cdc8b642a862ad8530fe05ce75d8c8fe69b9",
+      "bytes": 151937,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0003-compile-1.stdout",
+      "sha256": "274768ea5af38cff98d3799e824dd348c22e991d498c74ae46f0ae461c17c367",
+      "bytes": 24293,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0005-compile-2.stdout",
+      "sha256": "5bfe0e3c02368df45ad29aa99e8020afd9fdfb2c0e0d438f30fc8131aa258592",
+      "bytes": 191197,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0007-compile-3.stdout",
+      "sha256": "285357c60244fbb3c5fa4f853ea79f03904eb9cf1d226fa1b8201d9b79112249",
+      "bytes": 1475,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0009-compile-4.stdout",
+      "sha256": "bc50a55d3c1f605affb2a0d7f8766f92e95edb7175bf4eb6f2385df5ad22a2d1",
+      "bytes": 1497,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0011-compile-5.stdout",
+      "sha256": "2989c994c526eb61a950c1a760df683a150c8f108ad9c70d572f5a10318d8aea",
+      "bytes": 1505,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0013-compile-6.stdout",
+      "sha256": "ace002a7be95e61128ad9186177cc52f845e63e256ef678ee8b7af23cd761819",
+      "bytes": 22649,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0015-compile-7.stdout",
+      "sha256": "60c8ca79638d46600d1be700bf2a6b5c3897c3143b722fe5a2fb397497702fc1",
+      "bytes": 6322,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0016-metrics-measurement-build.stdout",
+      "sha256": "a31c4f3c6dbb3f178c0c28dd64009561d1f8bf26e7bdc52dbc853ffc717b6e31",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0017-csharp-source-0.stdout",
+      "sha256": "4111b4980da5e7ec7c162885b080002d541f2aba355f48652a839a2aad914841",
+      "bytes": 1663235,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0018-csharp-source-1.stdout",
+      "sha256": "28fcb50fae307d73703cdf66f48ea15acd8def443d4b61c70458bf7a98a2c4c4",
+      "bytes": 84683,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0019-csharp-source-2.stdout",
+      "sha256": "50a2bda5b83b01dae3f31828dc21e02b6f2aa8565ef3a724e82fc03cd4a0b47d",
+      "bytes": 752841,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0020-csharp-source-3.stdout",
+      "sha256": "b9354697c6afc45f209ff65de48e6f70fe413730e3015d48c32fe7a5e8757155",
+      "bytes": 4075,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0021-csharp-source-4.stdout",
+      "sha256": "1de1f2de8637d2cee0c152fb41bde7e2909e6852b6f99a203ce24c32d8df69ec",
+      "bytes": 1814,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0022-csharp-source-5.stdout",
+      "sha256": "d98be2fc425128c84021b7d2ee4be635023ed8e8ab7c8790b12cf9cbf5c47dd8",
+      "bytes": 2487,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0023-csharp-source-6.stdout",
+      "sha256": "82d353c2a16aefde223aec31f79ecaf1bf3554aaa3a5cc632a8106ee4b1adf19",
+      "bytes": 28543,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0024-analyzers-0-prepare.stdout",
+      "sha256": "10a7cac931dca2c51e745c49ac2ac615c89a2663d7d880a031b6a0ada88e6d79",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0025-analyzers-0.stdout",
+      "sha256": "85ef26fa82bc0a99ee3a70db2a63974953280968d30e35789e633740249afde1",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0026-analyzers-1-prepare.stdout",
+      "sha256": "d6c2558eb81317f68076134f598ee9bae6172a1cc0877e945c6ec572cfc7547a",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0027-analyzers-1.stdout",
+      "sha256": "26a6d0293a0333112140a3c5988d87beb0c5234dfc518880921704fc4a95a2fd",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0028-analyzers-2-prepare.stdout",
+      "sha256": "80474302186b22df6e075ec7b5ef0879e8892a666d518a20423d8b1973f73acf",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0029-analyzers-2.stdout",
+      "sha256": "2fec0552a311add3c46fe41d866708f03b3582e3a05c8829a9ff92d00497e5b2",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0030-analyzers-3-prepare.stdout",
+      "sha256": "d6c2558eb81317f68076134f598ee9bae6172a1cc0877e945c6ec572cfc7547a",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0031-analyzers-3.stdout",
+      "sha256": "91355c1118890f8133ca8dd54d60133e0b6d0ec300129bec0148f3477d352983",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0032-analyzers-4-prepare.stdout",
+      "sha256": "f8b14e5d9192d2e0df9080b43d8550cc46259ccfa07a9e9ef4472af585bf881b",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0033-analyzers-4.stdout",
+      "sha256": "e666f328c70733a99f1adb835358dad459e83ceaba9bb8085431143eef77f514",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0034-analyzers-5-prepare.stdout",
+      "sha256": "5219783736975c9c2296439499837c76792b3283bfbfa771502df06809d7da6a",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0035-analyzers-5.stdout",
+      "sha256": "24df7763ced946b4ba56dc55c4b46877f4dec0e334f88f522032117dedaebede",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0036-analyzers-6-prepare.stdout",
+      "sha256": "7bfbd1cc5bf2fab1341ba602daff5dfe28290793bb701e189c7bbabc948c88dd",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0037-analyzers-6.stdout",
+      "sha256": "3bd1f04700470ee1df2c5d95298190a784738c41fef91e65c0aacba3a3edb98e",
+      "bytes": 82,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0038-node-version.stdout",
+      "sha256": "9ef5638a5311a41f3c1d6be27a9f848367d0b7745b10cb7b6da42db8fd9eae53",
+      "bytes": 10,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/raw/commands/0039-sdk-version.stdout",
+      "sha256": "3f39ed349c39eb60a2fc42d7b7c04efc5c1749270745a5c55ce482b906639e50",
+      "bytes": 10,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/assurance/run-570830528280494f9c69e1f1a46e24e9/report.json",
+      "sha256": "48c7a975e5bea17f14f482e771447dba3044408b86d828f4227923adb3fc603f",
+      "bytes": 6342764,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/gate-results/run-1793389229224-5b6a98cc/result.json",
+      "sha256": "1a089af95e4029ee63ba04bc0bc7a70f401abaa42cf68d5f14d0baa9c7e4f8d7",
+      "bytes": 1232,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-owned-toolchain/generated-g1-packages.lock.json",
+      "sha256": "a32b2e317d814a105b112f66206ba2d741326966248f2d380ed307e9ab5c65f2",
+      "bytes": 4023,
+      "findings": [
+        "trailing whitespace."
+      ]
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/static-retained-draft/diagnosis.json",
+      "sha256": "f5dfd9b2fb7f3902e503ee131264d843195affdfbc1964a12f792713a97bfcae",
+      "bytes": 559,
+      "findings": [
+        "trailing whitespace."
+      ]
+    }
+  ],
+  "globalWhitespaceSuppression": false,
+  "productOrPayloadBytesChanged": false,
+  "exactBlankEofExceptions": "Only two original public-red raw streams; blank lines are recorded native output",
+  "existingPoliciesUnchanged": true,
+  "signature": "code-writer/model: gpt-6.1-sol/high"
+}

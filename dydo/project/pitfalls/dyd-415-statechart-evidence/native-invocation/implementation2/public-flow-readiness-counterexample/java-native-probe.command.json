@@ -1,0 +1,14 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-noj0hobr\\publish\\dydo.exe",
+    "__statechart-probe",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-noj0hobr\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\.install-win-x64-409cebcb77c445d0b3152a24917bd0b7\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe",
+    "-version"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-qnxi9kys",
+  "exit": 0,
+  "expected": 0,
+  "seconds": 0.07991929999843705,
+  "ticket": "0000000009-bfb8de6773b5fe78",
+  "hidden": true
+}

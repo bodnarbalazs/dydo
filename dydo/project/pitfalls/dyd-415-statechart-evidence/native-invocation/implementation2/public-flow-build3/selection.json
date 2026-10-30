@@ -1,0 +1,4 @@
+{
+  "filter": "FullyQualifiedName~StatechartProbeTests",
+  "noFullOrCoverageCampaign": true
+}

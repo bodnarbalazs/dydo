@@ -1,0 +1,3 @@
+  Determining projects to restore...
+  Restored C:\Users\User\AppData\Local\Temp\dyd415-native-g1-first-psd_bwo9\source\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\g1\fixture\Fixture.csproj (in 13.01 sec).
+C:\Users\User\AppData\Local\Temp\dyd415-native-g1-first-psd_bwo9\source\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\g1\fixture\Program.cs(64,49): error CS1503: Argument 1: cannot convert from 'nint' to 'char' [C:\Users\User\AppData\Local\Temp\dyd415-native-g1-first-psd_bwo9\source\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\g1\fixture\Fixture.csproj]

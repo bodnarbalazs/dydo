@@ -1,0 +1,7 @@
+{
+  "nonce": "ff2d9d9181934a8baf1a11516fb9c546",
+  "image": "dyd415-native-g2-ff2d9d9181934a8baf1a11516fb9c546:proof",
+  "container": "14dc15e6b39b5b94be711dbe7ea75235d3b9a76fd549e3c2424c423b31d58782",
+  "onlyOwnedContainerAndTagRemoved": true,
+  "sharedBaseLayersNotRemoved": true
+}

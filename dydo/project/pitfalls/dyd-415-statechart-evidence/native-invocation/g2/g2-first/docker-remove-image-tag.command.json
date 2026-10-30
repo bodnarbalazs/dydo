@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "docker",
+    "image",
+    "rm",
+    "dyd415-native-g2-ff2d9d9181934a8baf1a11516fb9c546:proof"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-g2-first-a8hy_pm2\\source",
+  "exit": 0,
+  "seconds": 0.3915201999916462,
+  "hidden": true,
+  "ticket": "0000000001-80272b22ed10f8b3"
+}

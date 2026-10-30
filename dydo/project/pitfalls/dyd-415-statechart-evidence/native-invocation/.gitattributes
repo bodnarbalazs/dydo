@@ -1,0 +1,13 @@
+g1/*/*.stdout -text whitespace=cr-at-eol
+g1/*/*.stderr -text whitespace=cr-at-eol
+g2/*/*.stdout -text whitespace=cr-at-eol
+g2/*/*.stderr -text whitespace=cr-at-eol
+g2/*/native/*.stdout -text whitespace=cr-at-eol
+g2/*/native/*.stderr -text whitespace=cr-at-eol
+g1/*/test-results/*.trx -text whitespace=cr-at-eol
+# Preserve these retained CRLF authority/native/NuGet artifacts byte for byte.
+commission/dependency-lock.json -text whitespace=cr-at-eol
+commission/integration-baseline.json -text whitespace=cr-at-eol
+g1/g1-handle-string/native-outcomes.json -text whitespace=cr-at-eol
+g1/module-light-final/tests-packages.lock.json -text whitespace=cr-at-eol
+g1/module-light-porcelain/tests-packages.lock.json -text whitespace=cr-at-eol

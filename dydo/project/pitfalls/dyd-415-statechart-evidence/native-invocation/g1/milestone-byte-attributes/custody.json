@@ -1,0 +1,15 @@
+{
+  "head": "3527ef642d9c0e1a4298cd13f22a53cf8a6a1a15",
+  "orderedParents": [
+    "ce3ecdb016d190b4327c39892508b4dab356fdc9",
+    "1318e93eabd500bbd45f243e4c99c3a10c2b004a"
+  ],
+  "priorWorkingFilesPreserved": 1324,
+  "allPriorWorkingHashesMatch": true,
+  "oldStatechartTree": "10e4fcb5e60d0fbb99f559b50df120bf90a7ef3d",
+  "importedEntriesPreserved": 22,
+  "oldStatechartWorkingDelta": "",
+  "noNewRuntimeIntegration": true,
+  "noCoverageOrMutationExecuted": true,
+  "broadStaticAndFinalGatesStillOwed": true
+}

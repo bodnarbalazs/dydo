@@ -1,0 +1,74 @@
+[
+    {
+        "Id": "sha256:784659cf1af7a5403c3b85d2d8332518ee250e5d240402f1dcf0636e7730bd17",
+        "RepoTags": [
+            "dyd415-native-g2-dd9705827d764941a615f30413163cb3:proof"
+        ],
+        "RepoDigests": [
+            "dyd415-native-g2-dd9705827d764941a615f30413163cb3@sha256:784659cf1af7a5403c3b85d2d8332518ee250e5d240402f1dcf0636e7730bd17"
+        ],
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2026-10-30T18:42:15.532989028Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "APP_UID=1654",
+                "ASPNETCORE_HTTP_PORTS=8080",
+                "DOTNET_RUNNING_IN_CONTAINER=true",
+                "DOTNET_VERSION=10.0.8",
+                "ASPNET_VERSION=10.0.8",
+                "DOTNET_GENERATE_ASPNET_CERTIFICATE=false",
+                "DOTNET_NOLOGO=1",
+                "DOTNET_SDK_VERSION=10.0.300",
+                "DOTNET_USE_POLLING_FILE_WATCHER=true",
+                "NUGET_XMLDOC_MODE=skip",
+                "POWERSHELL_DISTRIBUTION_CHANNEL=PSDocker-DotnetSDK-Ubuntu-24.04",
+                "DOTNET_ROLL_FORWARD=Major",
+                "DOTNET_CLI_TELEMETRY_OPTOUT=1",
+                "DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1"
+            ],
+            "Cmd": [
+                "/bin/bash"
+            ],
+            "Labels": {
+                "com.dydo.proof-owner": "dd9705827d764941a615f30413163cb3",
+                "org.opencontainers.image.version": "24.04"
+            }
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 1783555361,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:98effb2dfe85d4c431f97d90482075f19e5fc3a57c2dd423d8bdfd4813620043",
+                "sha256:62b6e2b89d7d8b8366bae9ab66c2c571a73894aeb242b300c2b2d534ce78d6df",
+                "sha256:1774fd6b06e6cc12f96590f32301356c2c48cd8aee5d81de657f45b285fdcd82",
+                "sha256:4e93e207d02900bb4bccbda7d461af56e6be6734b13bcb0aece14eabf3859549",
+                "sha256:7834de0e297b1634d76ea532e51ff7c7bc9d583d264b73af6ee954b1375ed64e",
+                "sha256:56b291414b0df636e6d9f368173194250e2677170d7c5f54dfe8aeec7aa3130f",
+                "sha256:48540441de8c9904acf8d34a6eb640aebf82bbcd811bbeac97f43411d77bdefd",
+                "sha256:0daee7e801c51c7700a50bbdb0396ea94f99c798098951b51ba1da350555b47d",
+                "sha256:113e6e1c3a960a020c33649f6d724a52671d7388fc3d9fed9e14066471c90dee",
+                "sha256:d0f1e026d60dc4190244ccdbc20479178437e3074bf3b92bd08f4858793e79fb",
+                "sha256:f78264cfb3b84049c85093c71ce4bba57ef311ce268bce38d0f202c331b59b47"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-30T18:46:12.059136944Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:784659cf1af7a5403c3b85d2d8332518ee250e5d240402f1dcf0636e7730bd17",
+            "size": 856
+        },
+        "Identity": {
+            "Build": [
+                {
+                    "Ref": "6cqp7kgqrcpz3d22go705y1ml",
+                    "CreatedAt": "2026-10-30T18:46:16.887379642Z"
+                }
+            ]
+        }
+    }
+]

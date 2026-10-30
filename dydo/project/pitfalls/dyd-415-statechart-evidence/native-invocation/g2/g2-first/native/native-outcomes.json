@@ -1,0 +1,31 @@
+{
+  "outcomes": [
+    {
+      "case": "exec-preserves-pid-argv-environment-exit",
+      "pidPreserved": true,
+      "unicodeAndSpacesPreserved": true,
+      "exit": 17
+    },
+    {
+      "case": "exec-preserves-sigterm",
+      "signal": 15,
+      "nativePidReplaced": true
+    },
+    {
+      "case": "cli-eof",
+      "workerExitedWithLiveDescendant": false,
+      "anchorLoss": false,
+      "cleanupOwnerLoss": false,
+      "allObservedDescendantsTerminated": true,
+      "result": "drained status=9 replayRefused=True",
+      "actualPlatform": "linux-x64",
+      "productionScratchDeletionProved": false
+    }
+  ],
+  "expected": 7,
+  "completed": 3,
+  "nativeAot": true,
+  "actualPlatform": "linux-x64",
+  "noMacOsOrArm64Claim": true,
+  "noNpmOrJavaBoundaryClaim": true
+}

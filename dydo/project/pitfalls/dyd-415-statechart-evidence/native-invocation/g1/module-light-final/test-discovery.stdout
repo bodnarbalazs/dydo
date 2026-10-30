@@ -1,0 +1,23 @@
+  Determining projects to restore...
+  Restored C:\Users\User\AppData\Local\Temp\dyd415-native-module-light-final-ecyesqzp\source\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\g1\tests\Tests.csproj (in 4.46 sec).
+  Tests -> C:\Users\User\AppData\Local\Temp\dyd415-native-module-light-final-ecyesqzp\source\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\g1\tests\bin\Release\net10.0\Tests.dll
+Test run for C:\Users\User\AppData\Local\Temp\dyd415-native-module-light-final-ecyesqzp\source\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\g1\tests\bin\Release\net10.0\Tests.dll (.NETCoreApp,Version=v10.0)
+The following Tests are available:
+    DynaDocs.Tests.Statechart.StatechartArgumentsTests.NativeArgumentVectorsRejectTruncatingNulBeforeAllocation
+    DynaDocs.Tests.Statechart.StatechartArgumentsTests.NativeArgumentVectorsPreserveUtf8AndTerminateWithNull
+    DynaDocs.Tests.Statechart.StatechartCompletionTests.ACompletionPortWithoutDrainEvidenceFailsClosed
+    DynaDocs.Tests.Statechart.StatechartJobTests.NativeAttachmentFailuresPreserveTheirWin32Error(pid: 0, expected: 87)
+    DynaDocs.Tests.Statechart.StatechartJobTests.NativeAttachmentFailuresPreserveTheirWin32Error(pid: 4, expected: 5)
+    DynaDocs.Tests.Statechart.StatechartJobTests.ANewJobOwnsNoUnrelatedProcess
+    DynaDocs.Tests.Statechart.StatechartPosixTests.PosixOwnershipDoesNotInvokeWindowsFallbacks
+    DynaDocs.Tests.Statechart.StatechartProtocolTests.WorkerCannotRunBeforeOwnershipAndScratchRegistration(acknowledgments: 0)
+    DynaDocs.Tests.Statechart.StatechartProtocolTests.WorkerCannotRunBeforeOwnershipAndScratchRegistration(acknowledgments: 1)
+    DynaDocs.Tests.Statechart.StatechartProtocolTests.WorkerCannotRunBeforeOwnershipAndScratchRegistration(acknowledgments: 2)
+    DynaDocs.Tests.Statechart.StatechartProtocolTests.UnsupportedOrMalformedReadyCannotEstablishOwnership(message: "")
+    DynaDocs.Tests.Statechart.StatechartProtocolTests.UnsupportedOrMalformedReadyCannotEstablishOwnership(message: "ready:2")
+    DynaDocs.Tests.Statechart.StatechartProtocolTests.UnsupportedOrMalformedReadyCannotEstablishOwnership(message: "ready:1\nready:1")
+    DynaDocs.Tests.Statechart.StatechartProtocolTests.AcknowledgmentsCannotBeReorderedOrReplayed
+    DynaDocs.Tests.Statechart.StatechartProtocolTests.ParentLossAndInvalidGoFailBeforeWork(input: "")
+    DynaDocs.Tests.Statechart.StatechartProtocolTests.ParentLossAndInvalidGoFailBeforeWork(input: "go:2\n")
+    DynaDocs.Tests.Statechart.StatechartProtocolTests.ParentLossAndInvalidGoFailBeforeWork(input: "anything\n")
+    DynaDocs.Tests.Statechart.StatechartProtocolTests.ARegisteredOwnedWorkerAcceptsTheVersionedGo

@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "dotnet",
+    "--info"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-preflight-live-tir5lh7h\\source",
+  "exit": 0,
+  "seconds": 0.3271429000014905,
+  "hidden": true,
+  "ticket": "0000000001-33bfe47c6227807b"
+}

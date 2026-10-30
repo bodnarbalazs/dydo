@@ -1486,6 +1486,34 @@
       "tests": [
         "DynaDocs.Tests/Merge/IndependentReviewTests.cs"
       ]
+    },
+    {
+      "module": "Services/Statechart/StatechartProtocol.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartProtocolTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/WindowsStatechartJob.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartJobTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/WindowsStatechartNative.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartJobTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/WindowsStatechartCompletion.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartCompletionTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartArguments.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartNative.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartProcess.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixTests.cs"]
     }
   ]
 }

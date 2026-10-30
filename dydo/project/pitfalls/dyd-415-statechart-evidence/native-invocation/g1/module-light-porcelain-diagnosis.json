@@ -1,0 +1,10 @@
+{
+  "attempt": "light module-light",
+  "stage": "validate_source, before admission and output directory creation",
+  "observation": "AssertionError: first porcelain path became ynaDocs.Tests/coverage/test-associations.json",
+  "cause": "git helper used strip(), removing the leading space of the first porcelain record; line[3:] then removed the first path character",
+  "correction": "rstrip('\\r\\n') preserves porcelain status columns",
+  "childrenStarted": false,
+  "replacementAttempt": "module-light-porcelain",
+  "status": "failed attempt retained; no test verdict"
+}

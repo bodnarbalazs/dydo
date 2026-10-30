@@ -5,6 +5,12 @@ type: pitfall
 
 # DYD-415: statechart verification on Windows
 
+The [native ownership engineering milestone](dyd-415-statechart-evidence/native-invocation/verification.md)
+records the new compile-time Windows/POSIX modules and their early AOT gates.
+The 2026-10-30 captain pin governs this continuation; DYD-434 is Done.
+Older holds below describe their historical checkpoints. The installed native
+command, first-use setup and full replacement acceptance are still unproved.
+
 The pinned pstack compiler needed Windows process ownership, CRLF parsing and
 output-directory adaptations before its charts could be trusted on this host.
 This evidence uses actual TLC 1.7.4, not the upstream replay fixtures.

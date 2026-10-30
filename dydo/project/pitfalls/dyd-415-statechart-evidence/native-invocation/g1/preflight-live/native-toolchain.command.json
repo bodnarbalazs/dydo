@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe",
+    "-latest",
+    "-products",
+    "*",
+    "-requires",
+    "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+    "-property",
+    "installationPath"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-preflight-live-tir5lh7h\\source",
+  "exit": 0,
+  "seconds": 0.060051500011468306,
+  "hidden": true,
+  "ticket": "0000000001-33bfe47c6227807b"
+}

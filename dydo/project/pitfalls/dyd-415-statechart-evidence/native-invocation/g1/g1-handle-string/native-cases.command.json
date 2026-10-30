@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+    "-B",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-g1-handle-string-2a7yivum\\source\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\g1_cases.py",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-g1-handle-string-2a7yivum\\publish\\Fixture.exe",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-g1-handle-string-2a7yivum\\cases",
+    "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\g1\\g1-handle-string\\native-outcomes.json"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-g1-handle-string-2a7yivum\\source",
+  "exit": 0,
+  "seconds": 12.557590399999754,
+  "hidden": true,
+  "ticket": "0000000001-a258e435d0222bba"
+}

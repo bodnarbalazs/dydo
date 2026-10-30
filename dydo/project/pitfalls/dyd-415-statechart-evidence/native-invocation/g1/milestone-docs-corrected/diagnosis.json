@@ -1,0 +1,13 @@
+{
+  "observation": "docs exit0; whitespace-base exit2",
+  "cause": "Five byte-retained CRLF JSON artifacts inherit -text but lacked local whitespace=cr-at-eol attributes",
+  "affectedPaths": [
+    "commission/dependency-lock.json",
+    "commission/integration-baseline.json",
+    "g1/g1-handle-string/native-outcomes.json",
+    "g1/module-light-final/tests-packages.lock.json",
+    "g1/module-light-porcelain/tests-packages.lock.json"
+  ],
+  "correction": "Add attributes for those exact raw artifacts only; preserve every artifact byte and all other whitespace checks",
+  "replacementSelection": "close: docs/whitespace/custody, no test or native repeat"
+}

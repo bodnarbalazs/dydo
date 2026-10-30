@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.EXE",
+    "version",
+    "--format",
+    "{{json .Server}}"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-preflight-live-tir5lh7h\\source",
+  "exit": 0,
+  "seconds": 0.08907620000536554,
+  "hidden": true,
+  "ticket": "0000000001-33bfe47c6227807b"
+}

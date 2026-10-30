@@ -1,0 +1,24 @@
+{
+  "argv": [
+    "dotnet",
+    "test",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-module-light-porcelain-iinmzstd\\source\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\g1\\tests\\Tests.csproj",
+    "-c",
+    "Release",
+    "-p:RepositoryRoot=C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-module-light-porcelain-iinmzstd\\source",
+    "--filter",
+    "FullyQualifiedName~Statechart",
+    "--no-restore",
+    "--logger",
+    "trx;LogFileName=statechart.trx",
+    "--results-directory",
+    "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\g1\\module-light-porcelain\\test-results",
+    "--",
+    "RunConfiguration.TreatNoTestsAsError=true"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-module-light-porcelain-iinmzstd\\source",
+  "exit": 0,
+  "seconds": 1.215668699995149,
+  "hidden": true,
+  "ticket": "0000000001-1649cc4ddcc02b88"
+}

@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "dotnet",
+    "publish",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-g1-first-psd_bwo9\\source\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\g1\\fixture\\Fixture.csproj",
+    "-c",
+    "Release",
+    "-r",
+    "win-x64",
+    "--self-contained",
+    "-p:RepositoryRoot=C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-g1-first-psd_bwo9\\source",
+    "-o",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-g1-first-psd_bwo9\\publish",
+    "--warnaserror"
+  ],
+  "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-g1-first-psd_bwo9\\source",
+  "exit": 1,
+  "seconds": 15.664701099987724,
+  "hidden": true,
+  "ticket": "0000000001-96662fad6776f4fa"
+}

@@ -1,0 +1,4 @@
+{
+  "type": "RuntimeError",
+  "reason": "Linux native feasibility case failed; inspect raw proof and stop dependent work"
+}

@@ -58,8 +58,9 @@ its pinned architecture plan and applicable feature-spec sections, on four axes 
 - At a hop, the writer's affected-feature Light and applicable static run under the testing
   strategy, with every own/reached feature and parent-shared test accounted for; cheap checks
   and attributed failures carry exact-candidate evidence and owner disposition
-- The HCRAP row of that static gate, read for every method the change touched; one over the bar is
-  a finding
+- At the declared coverage stage, read applicable coverage evidence for HCRAP on every method
+  the change touched; one over the unchanged bar is a finding. This adds no per-hop coverage run;
+  ordinary hop static checks remain required
 - The project's changed-code mutation gate, in its `--since <base>` form, run by you when the
   project has one; a surviving or uncovered mutant is a finding
 - At a gate - the ticket's final gates, a merge, the landing - the whole set below on that exact

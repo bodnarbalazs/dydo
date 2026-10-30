@@ -74,6 +74,8 @@ evidence to the captain; repair change-caused defects in scope. For inherited or
 failures, the accountable owner records disposition, separately routes repair or escalation, and
 states which required gates remain blocked. Neither attribution nor filing a follow-up makes the
 candidate green, waives a threshold/mutation obligation, or authorizes unrelated repair work.
+Flaky or unexplained failures require an accountable diagnosis and repair owner; they are not
+an accepted final state.
 
 ## Ripple
 
@@ -84,10 +86,13 @@ agents select features rather than hand-curating members. Empty or disabled Ripp
 collateral protection and leaves feature proof mandatory.
 
 Reward distinct, verified collateral product defects missed by feature proof and the other
-members. An own-feature catch, two detectors of the same defect, a flake or an infrastructure
-failure earns no additional defect credit. Full CI supplies broad observations, including tests
-outside current membership. Count opportunities only from executed, interpretable observations
-with known change reach and comparable source/test versions. Missing, skipped or ambiguous
+members. Duplicate detectors of the same defect, flakes and infrastructure failures earn no
+additional defect credit. Full CI supplies broad observations, including tests outside current
+membership. Count opportunities only from eligible outside-feature observations: executed,
+interpretable results with known change reach and comparable source/test versions. Required
+own-feature executions earn neither detection credit nor a place in the opportunity denominator
+or window. Repeated own-feature passes therefore cannot dilute or age out a prior collateral
+catch; eligible outside-feature observations can affect the window. Missing, skipped or ambiguous
 results are unknown, not passes; unresolved failures cannot establish that feature proof missed
 the defect. No opportunity means no evidence of decay merely because time passed.
 

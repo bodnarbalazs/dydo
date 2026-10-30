@@ -73,13 +73,14 @@ marginal runtime; duplicate detectors, flakes and mere failure frequency earn no
 Full CI supplies broad observations. Version/source receipts, visible cache fallback and truthful
 zero protection are portable requirements, not a claim that a host service ships here.
 
-**3.7.0 machinery:** reusable runner selection, Ripple and CI-worker tooling follow LC proof and
-separate delivery. Dydo's present facade has no `--feature`, `--plan`, `--heavy` or Ripple support.
+**Later machinery, when ready:** reusable runner selection, Ripple and CI-worker tooling follow
+LC proof and separate delivery, with no fixed release promise. Dydo's present facade has no
+`--feature`, `--plan`, `--heavy` or Ripple support.
 LC feature catalogs, fixtures, scoring constants, deployment and queue exemptions remain local.
 LC-1240 Q1 is unanswered; no numeric pending exit is invented. DYD-406/437 terminal holds and
 DYD-434 acceptance decisions remain untouched.
 
-## Validation contract and evidence
+## Original candidate validation and evidence
 
 Custody before authoring: clean T3-bound checkout
 `C:/Users/User/.t3/worktrees/DynaDocs/t3-e1e2e01a`, branch `t3/canonical-testing-workflow`, HEAD
@@ -154,9 +155,72 @@ local command mapping, retained adaptations and validation receipts; an unknown 
 manual reconciliation. LC and every other project remain pending until their own receipts exist.
 This ticket overwrites no downstream file and changes no host settings.
 
-The captain hands the reviewed PR and evidence, the 3.6 guidance/3.7 machinery split, and pending
+The captain hands the reviewed PR and evidence, the 3.6 guidance/later machinery split, and pending
 adoption receipts to [DYD-432 preparation](https://linear.app/bodnar-balazs/issue/DYD-432).
 That handoff starts no walkthrough before the other agreed work is complete.
+
+## Daytime successor correction
+
+The current authority is DYD-413's description as of `2026-10-30T12:48:50.829Z`, including the
+four-path successor pin. The original writer continues from clean
+`6f68171d60a273182b6030e621936d6cd4d0f75e`; that commit, its evidence and both round-1 reviews
+remain historical. The [combined round-1 FAIL](https://linear.app/bodnar-balazs/document/dyd-413-independent-round-1-6f68171-combined-fail-5fcbb4554ea6)
+binds the original candidate: Astra's B1 blocker and S1 should are not overridden by Sol's PASS.
+
+B1 is corrected in both testing guides: required own-feature executions count toward neither
+Ripple detection credit nor the eligible-opportunity denominator/window. Repeating own-feature
+passes cannot dilute or age out a collateral catch; eligible outside-feature observations can
+affect the window. Comparable versions, interpretable results, unknown observations, attribution
+and marginal runtime remain required. Flaky/unexplained failures require a diagnosis and repair
+owner, not acceptance as a final state.
+
+S1, tracked in [DYD-441](https://linear.app/bodnar-balazs/issue/DYD-441), is serially corrected in
+the code-review rubric: HCRAP comes from applicable coverage evidence at its declared stage.
+Ordinary static hop checks, thresholds and final assurance remain; no per-hop coverage campaign
+is added. The should stays open until independent verification of the successor. Neither review
+severity is relabelled. Fixed future-release wording is superseded by later delivery when ready;
+the original comparison and proof artifacts retain their historical wording.
+
+Successor proof uses the original bounded recipe with helpers copied to
+`C:/Users/User/AppData/Local/Temp/dyd-413-writer-fix-evidence` so old snapshots and receipts are
+not overwritten. Recheck documentation, standalone Scaffold, setup tests, the sole projection
+producer and exact host resolution/bytes, runner consistency, whitespace, scope and semantic
+closure on the committed successor. Compare root entry files byte-for-byte with the original
+candidate and reuse skill-validator receipts only after proving unchanged `SKILL.md` bytes.
+The inherited Admiral rejection remains a checker limitation, never a PASS. The successor return
+retains exact commands, environment, exits, raw artifacts and the captain's replay recipe. Fresh
+independent review applies to the successor and corrected contract, not another old-candidate run.
+
+## Corrected source-only ownership and adoption
+
+The captain's [corrected adoption and permission-wizard assessment](https://linear.app/bodnar-balazs/document/dyd-413-corrected-adoption-and-permission-wizard-ownership-assessment-28c18839576f)
+supplies these conclusions; this fix performs no new LC diagnosis or tooling execution.
+
+- [LC-1389](https://linear.app/bodnar-balazs/issue/LC-1389) exclusively owns removal of LC's
+  testing-specific root section, test-TEMP paragraph and coverage-producer sentence. Dydo's
+  `AGENTS.md` and `Scaffold/entry-point.md` remain byte-unchanged generic funnels with no testing
+  policy, command or replacement pointer. Distribution must preserve that boundary; reusable
+  testing prerequisites remain in scoped roles/docs, not always-loaded root instructions.
+- [LC-1390](https://linear.app/bodnar-balazs/issue/LC-1390) is Backlog and uncommissioned. At the
+  pinned LC source, Light feature runs bypass suite/Heavy admission and share checkout build
+  outputs without checkout-specific exclusion. This establishes a missing exclusion guarantee,
+  not a reproduced collision or attribution of historical failures. A per-worktree queue is a
+  later design candidate, distinct from host-resource admission. Preserve coverage's dirty-source
+  snapshot and checkout-local dependency provisioning; no isolation removal or overhead timing
+  is justified by this source-only finding.
+- The permission wizard mixes reusable backup, diff, verification, per-file rollback and
+  hook-trust mechanics with LC identity, commands, paths, rules and hook hashes. Recommended
+  future ownership is a reusable Dydo mechanism with project declarations supplying commands,
+  paths and policy. This is an adoption recommendation, not proven portable support, a tooling
+  port, a permission grant, a trust change or authority to execute on a host.
+  [LC-1378](https://linear.app/bodnar-balazs/issue/LC-1378)'s POSIX proof/final-review holds remain;
+  the wizard does not resolve [DYD-433](https://linear.app/bodnar-balazs/issue/DYD-433)'s actual-host
+  approval prerequisite.
+
+The 3.6 usage/prerequisite scope, supported adoption route above and pending downstream receipts
+stand. All other human holds and LC-1240's unanswered exit-code choice remain. No queue or runner
+implementation, permissions, hook trust, host state, root guidance or global configuration changes
+are authorized by this documentation correction.
 
 ## Related
 

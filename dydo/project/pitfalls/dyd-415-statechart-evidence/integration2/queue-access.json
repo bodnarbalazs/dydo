@@ -1,0 +1,9 @@
+{
+  "command": ["python", "C:/Users/User/AppData/Local/Temp/dyd415-integration2-checks.py", "probes"],
+  "exit": 1,
+  "stage": "suite_slot.book registration before admission",
+  "exception": "PermissionError: [Errno 13] Permission denied",
+  "path": "C:/Users/User/AppData/Local/lc-test/suite-slot/0000000001-d968fa023404430c.ticket",
+  "materialChecksExecuted": false,
+  "resolution": "Narrow sandbox escalation for the unchanged authorized TEMP driver; not a failed-gate retry"
+}

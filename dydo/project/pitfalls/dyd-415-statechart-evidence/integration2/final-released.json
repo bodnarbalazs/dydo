@@ -1,0 +1,15 @@
+{
+  "phase": "final",
+  "pid": 163504,
+  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-integration2-checks.py final",
+  "owned": true,
+  "inherited": false,
+  "ticket": "0000000001-b736785299ab1554",
+  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
+  "driverSha256": "da4ec52a658b7d5d93be0e2e7219e12ddfdf524f6a51601ece514aa5dfee28ee",
+  "sourceHead": "a18c2fcdbb9054880f5fa1179fdcf5e6f3309ffe",
+  "fifoReleased": true,
+  "inheritedReturned": false,
+  "heavyReleased": true,
+  "dydoReleased": true
+}

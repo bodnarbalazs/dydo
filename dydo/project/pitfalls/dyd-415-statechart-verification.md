@@ -22,6 +22,11 @@ The [current-master integration record](dyd-415-statechart-evidence/integration1
 binds the preserved runtime/evidence to the pinned master merge and its bounded
 combined discovery/docs checks. DYD-434's acceptance hold remains unchanged.
 
+The [integration correction](dyd-415-statechart-evidence/integration2/verification.md)
+preserves the stopped gate's raw bytes, corrects local CR-at-EOL attributes and
+catalog totals, and supplies a reference-bound preflight recipe. Its final gate
+receipts and independent review remain distinct from DYD-434's acceptance hold.
+
 ## Inputs and provenance
 
 The implementation starts at `8553172dfaa7601d34f6b884c10350183f9faaa5`, fetched and

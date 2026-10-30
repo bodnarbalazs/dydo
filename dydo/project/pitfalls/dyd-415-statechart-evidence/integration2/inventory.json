@@ -1,0 +1,89 @@
+{
+  "skills": {
+    "roles": [
+      "admiral",
+      "chief-of-staff",
+      "code-writer",
+      "docs-writer",
+      "inquisitor",
+      "research",
+      "reviewer",
+      "scout",
+      "ticket-captain"
+    ],
+    "engineering": [
+      "codebase-design",
+      "create-formal-verification-skill",
+      "create-verification-skill",
+      "diagnosing-bugs",
+      "domain-modeling",
+      "improve-codebase-architecture",
+      "maintain-formal-verification-skill",
+      "maintain-verification-skill",
+      "pr",
+      "prototype",
+      "statechart",
+      "verify-dydo",
+      "wizard"
+    ],
+    "productivity": [
+      "bro",
+      "co-thinker",
+      "grill-me",
+      "grilling",
+      "handoff",
+      "in-your-own-words",
+      "ketchup",
+      "overnight-mode",
+      "retro",
+      "show-me",
+      "teach",
+      "to-project",
+      "to-ticket",
+      "update-dydo",
+      "walkthrough",
+      "wayfinder",
+      "what-would-balazs-do",
+      "writing-for-agents",
+      "writing-for-humans"
+    ]
+  },
+  "total": 41,
+  "engineeringEntries": [
+    "codebase-design",
+    "create-formal-verification-skill",
+    "create-verification-skill",
+    "diagnosing-bugs",
+    "domain-modeling",
+    "improve-codebase-architecture",
+    "maintain-formal-verification-skill",
+    "maintain-verification-skill",
+    "pr",
+    "prototype",
+    "statechart",
+    "verify-dydo",
+    "wizard"
+  ],
+  "projectionsRetainedAndReadOnlyChecked": {
+    "candidate": "590f2204e541ddc1de66d58fadc91001ed3d2009",
+    "projections": [
+      {
+        "host": ".claude",
+        "resolved": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart",
+        "skillSha256": "0cffe670b6003d8a59fa5f2cbc02941c4e2196aab8a44358338e0ede110c53ea",
+        "codexMetadataSha256": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94",
+        "explicitOnly": true
+      },
+      {
+        "host": ".agents",
+        "resolved": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart",
+        "skillSha256": "0cffe670b6003d8a59fa5f2cbc02941c4e2196aab8a44358338e0ede110c53ea",
+        "codexMetadataSha256": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94",
+        "explicitOnly": true
+      }
+    ],
+    "canonicalSkillCount": 41,
+    "auditedHiddenSetupChildren": 33
+  },
+  "setupRerun": false
+}

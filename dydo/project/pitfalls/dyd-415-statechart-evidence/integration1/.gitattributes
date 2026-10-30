@@ -1,0 +1,2 @@
+# Preserve observed receipt bytes; CRLF is not trailing whitespace.
+* -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

@@ -11,7 +11,7 @@ Give Balazs a **project catch-up**: its purpose, progress, current work and next
 
 Use an **inverted pyramid** for the report, each problem/outcome area and each substantive item. Put the outcome, state or ask first. Put useful support underneath. The opening and item summaries alone should tell a coherent story.
 
-Use **ASD-STE100** as practical guidance for plain technical English: familiar, consistent terms, active voice, short direct sentences and one main idea at a time. Apply these principles without claiming formal compliance. Explain an unfamiliar term briefly where it matters. Write in the plain voice of `bro`, skipping its restating step.
+Use **ASD-STE100** as practical guidance for plain technical English: familiar, consistent terms, active voice, short direct sentences and one main idea at a time. Apply these principles without claiming formal compliance. Write in the plain voice of `bro`, skipping its restating step.
 
 ## Establish the project state
 
@@ -25,7 +25,21 @@ For a frozen example, state its date and historical purpose once at the start. I
 
 Open with the project purpose, current focus and essential state. Group by recognizable systems, problems or outcomes. Keep ticket IDs and agent rosters out of the organizing structure. Put consequential changes and decisions first. If nothing changed and nothing waits on the user, say so and stop.
 
-Mark every first-order substantive item with a meaningful emoji, including held and future work. Give it a short lead that carries its meaning. Supporting paragraphs or option bullets belong beneath that lead; a simple item needs no invented branches. Use the same cue for the same state throughout the account.
+Mark every first-order substantive item with its matching cue from this closed vocabulary. Give it a short lead that carries its meaning. Supporting paragraphs or option bullets belong beneath that lead; a simple item needs no invented branches.
+
+| Cue | Meaning |
+|---|---|
+| 🎯 | Purpose or goal summary |
+| ✅ | Completed outcome |
+| ✈️ | Work actually running |
+| ⏸️ | Held, paused or no work running |
+| ❓ | Discrete question |
+| ➡️ | Recommendation |
+| ❗ | Blocking prerequisite or required action, with its owner |
+| 🤖 | AFK work |
+| 💬 | Live HITL discussion, with its actual state |
+| 📖 | Contextual glossary |
+| 🔎 | Optional evidence or detail |
 
 Each area uses four plain headings, without emojis, in this order:
 
@@ -39,7 +53,7 @@ Use **✅** for completed outcomes. A failed review or stopped investigation is 
 
 ### In flight
 
-Use **✈️** only for work that is running. Name its owner and state. Mark held work with **⏸️**, finished or idle work with **⏹️**, and planned work with **🗓️**. Explain the next route in Next. An assignment or old dispatch does not prove activity. If activity is unknown, say what the record establishes.
+Name the work's owner and actual state. Distinguish running work from a hold or no work running. Explain the next route in Next. An assignment or old dispatch does not prove activity. If activity is unknown, say what the record establishes.
 
 ### Next
 
@@ -47,8 +61,8 @@ Combine future work and human needs here, once. Name the descriptive owner, acti
 
 - **🤖 AFK** marks work agents can do without the user. Include agent-owned preparation here.
 - **❓** marks each direct question. A simple answer does not require a HITL session, new agent or thread. Two questions get two items.
-- **❗** marks each required human action, such as login, setup or merge. Say what the action enables.
-- **🗓️ HITL** marks a planned human-facing discussion or session, such as a walkthrough or grilling conversation. Use HITL only where that conversation is actually part of the route; say whether it is commissioned or conditional. An action to take in that session can use **❗ HITL**.
+- **❗** marks each blocking prerequisite or required action. State its owner, whether it needs human action or agent work, and what it enables. A blocker is not automatically Balazs's task.
+- **💬 HITL** marks an actual human-facing discussion or session, such as a walkthrough or grilling conversation. Say whether it is running, planned, commissioned or conditional. Use this cue only where that conversation is part of the route.
 
 Put the concrete ask first, followed by its verified Question, Enablement or PR reference quietly in parentheses. Mark later steps as later. Do not invent readiness, commands, dependencies or an execution window.
 
@@ -65,6 +79,10 @@ Separate open choices from authorized decisions awaiting ratification. Say what 
 ## Check the reading experience
 
 Each area must make sense without opening links. Keep IDs and evidence subordinate. Cut filler, repeated asks and repeated authority caveats. Split dense sentences. Let useful detail determine length.
+
+Use optional accordions for supporting evidence and contextual terms where the format supports them. Label them **🔎** for detail or **📖** for a glossary. Markdown can use `<details>` with a `<summary>`. Keep the essential story, state, asks, options, consequences and recommendation visible when these are closed.
+
+Define terms in their area, including familiar words with a specific local meaning. Keep definitions brief and accurate to their source. Explain the useful meaning before a formula or implementation detail. This is contextual help, not a record of which words the user knows.
 
 Use existing factual media or relationship visuals when they clarify the work. A screenshot or video needs real evidence behind it; a catch-up does not need a duplicate project board or a new evidence campaign.
 

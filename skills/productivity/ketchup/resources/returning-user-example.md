@@ -2,264 +2,375 @@
 
 ## Example
 
-> **Historical Dydo example, with operational state frozen at 30 October 2026, 16:43 UTC.** These questions and actions illustrate the scenario. They need no answers or actions now. The guard and statechart explanations were prepared at 16:39:45 and 16:38:14 UTC. The mutation recommendation includes the statechart explanation's revision at 17:22:08.457 UTC. That later explanation changes no recorded answer, permission or work status.
+> **Historical example. Operational snapshot: 30 October 2026, 16:43 UTC.** The questions and actions below belong to that scenario. They need no answers or actions now. The guard and statechart explanations were prepared at 16:39:45 and 16:38:14 UTC. The mutation recommendation includes the later explanation revision at 17:22:08.457 UTC. That revision changes no recorded answer, permission or work status.
 
-🎯 **Dydo 3.6.0 improves the tools and shared methods agents use to work safely and keep delivery moving.** The work includes a shell-command guard that rejects harmless searches and writes, a tool that shows formal-model failures, and guidance for acting on completed delivery.
+🎯 **Dydo 3.6.0 improves the tools and shared methods agents use to work safely and keep delivery moving.** The work includes fixing false shell-command warnings, showing formal-model failures, and acting on completed delivery.
 
-🧭 **The delivery guidance has landed. Guard and statechart acceptance are unresolved, and Codex/T3 still lacks genuine overnight approval support.** The admiral has prepared both technical explanations below. The catch-up rewrite is running. Its wording and the release still need your verdict.
+⏸️ **Guard and statechart delivery are on hold. Codex/T3 still lacks genuine overnight approval support.** Delivery guidance and shared-intent planning have landed. The catch-up rewrite is running. Its wording and the release still need your verdict.
 
-### Agent shell-command guard
+### Shell-command guard: the correction is held
 
 #### Purpose
 
-🎯 **Let agents run harmless searches and file writes without losing real-command protections.**
+🎯 **Let agents run harmless searches and file writes while keeping real-command protections.**
 
-This is Dydo's guard on agent shell commands, separate from LC TeasePlayer's checks on user JavaScript. The October 28 retro found 18 occurrences across six problems. You asked one agent to fix those cases:
+The October 28 retro found 18 occurrences across six problems. You asked one agent to fix those cases, not redesign the parser. This is Dydo's guard on agent shell commands. It is separate from LC TeasePlayer's checks on user JavaScript.
 
-- Quoted search/process text and literal file-write bodies looked executable.
+<details>
+<summary>🔎 The six fixes and their scope</summary>
+
+- Quoted search/process text looked like command launches.
+- Literal file-write bodies looked executable.
 - Python `pass` and quoted `grep PASS` triggered the password-store rule.
-- Plain PowerShell read assignments looked like writes, and PR-command help looked like a mutation.
-- Python programs received on stdin could write protected files. That real hole needed refusal.
+- Plain PowerShell read assignments looked like writes.
+- PR-command help looked like a mutation.
+- Python programs received on stdin could write protected files. This real hole needed refusal.
 
-The work covers `Services/BashCommandAnalyzer.cs`, its shell reader and guard/nudge callers, PR-readiness parsing, paired fixtures and protected-file documentation. Existing correct refusals must stay correct. The commission excluded a parser redesign.
+The work covers `Services/BashCommandAnalyzer.cs`, its shell reader and guard/nudge callers, PR-readiness parsing, paired fixtures and protected-file documentation. Correct refusals must stay correct.
+
+</details>
+
+<details>
+<summary>📖 Terms in this area</summary>
+
+- **Guard:** the check that allows or refuses an agent's command.
+- **Body text:** text a command receives as input or writes to a file.
+- **Relief:** allowing a harmless case that previously caused a warning or refusal.
+- **Stdin:** a program's input stream. Another command can feed text into it.
+
+</details>
 
 #### Recently completed
 
 ✅ **Round-eight review found two ways the candidate misses real launch warnings.**
 
-- **Printed text can become code downstream.** A command prints a literal body, then a shell receives and executes it. Treating the first command as harmless hides that execution.
-- **The shell dialect changes what text means.** Text that looks like a PowerShell here-string can close a Bash quote and expose a command. The candidate wrongly treats it as data.
+A command can print text that a later shell executes. Text that looks like a PowerShell here-string can also expose a real command when Bash reads it. The candidate wrongly treats these cases as harmless data.
 
-Reviewers supplied inert strings to the hook harness. They did not execute those payloads. Earlier green general tests missed both failures.
+✅ **The final correction attempt stopped before its queued proof ran.**
 
-✅ **The final conditional attempt stopped before its queued proof ran.**
+Nested analysis loses where the enclosing command sends its output. A local check cannot then prove that the text stays data. The author returned NOT IMPLEMENTED. No production correction or new runtime proof resulted.
 
-Nested analysis extracts a shell's stdin or script text but loses where the enclosing command sends its output. A local check cannot then prove that the text stays data downstream. The author returned NOT IMPLEMENTED. No production correction or new runtime proof resulted. The eight review FAIL rounds remain; this was a feasibility return, not a ninth review.
+✅ **The admiral prepared the alternatives and what each would preserve or lose.**
 
-✅ **The admiral prepared the alternatives and the relief each would preserve or lose.**
+You had approved finite relief for quoted text, comments and bodies. Unquoted launch words and unknown wrappers still needed conservative treatment. The existing tribunal allowed one final attempt within that boundary. That attempt exhausted its authority.
 
-Earlier review removed single-quoted-data relaxation. You then approved finite relief for quoted text, comments and bodies, with unquoted launch words and unknown wrappers still treated conservatively. The existing tribunal allowed one final attempt within that boundary. That attempt exhausted its authority.
+<details>
+<summary>🔎 What the reviews establish</summary>
+
+Reviewers supplied inert strings to the hook harness. They did not execute the payloads. Earlier green general tests missed both failures.
+
+The analyzer extracts a shell's stdin or script text without retaining the enclosing output consumer. A harmless-looking inner data command can therefore hide later execution, including through a nested shell.
+
+Earlier review removed single-quoted-data relaxation. The eight review FAIL rounds remain. The final feasibility return was not a ninth review.
+
+</details>
 
 #### In flight
 
-⏸️ **The candidate is held with both safety blockers. No crew is running.**
+⏸️ **No crew is running. Both safety blockers keep the candidate held.**
 
 No new design or implementation has been commissioned.
 
 #### Next
 
-❓ **Should we design a way to preserve body-text relief, reduce that relief, or keep the correction held?** ([DYD-437](https://linear.app/bodnar-balazs/issue/DYD-437))
+❓ **Should we preserve body-text relief through a new design, reduce that relief, or keep the correction held?** ([DYD-437](https://linear.app/bodnar-balazs/issue/DYD-437))
 
-The old commission is exhausted. A new design boundary or a reduction in the relief you approved needs your choice.
+- **Prepare a bounded design.** Aim to keep the approved harmless cases while fixing both failures. No completed design, feasibility proof or estimate exists. This permits design only.
+- **Reduce the relief.** Harmless documentation mentioning a long-running command, or a literal PowerShell here-string written as data, could trigger warnings again. This gives up part of the approved behavior. It needs a precise acceptance change and scoped correction/review. It is not proved safe or cheaper.
+- **Keep the correction held.** The six-fix delivery stays unfinished. Safe-merge guard completion still waits for its merge, and host-parity work keeps its prerequisites. Removing that work from 3.6.0 needs a separate release-scope decision.
 
-- **Prepare a bounded design.** It must show how nested analysis keeps track of the output consumer, shell dialect, exact text span and executable expansions. Unknown cases must remain conservative. It must cover the harmless cases and both failures, including nested shells. No completed design, feasibility proof or estimate exists. A broad parser rewrite has not been shown necessary. This choice permits design preparation only.
-- **Reduce body-text relief.** The proposed boundary removes the GS-03 body exemption but keeps the finite quoted-search fixes and other fixes. Harmless documentation that mentions a long-running command could trigger a launch warning again. So could a literal PowerShell here-string written as data. GS-02 file analysis might still recognize the write as literal. No implementation proves this narrower route safe or cheaper. It needs a precise acceptance change and scoped correction/review.
-- **Keep the candidate held.** The six-fix delivery remains unfinished. Safe-merge guard completion still waits for its merge, and host-parity work keeps its prerequisites. Removing that work from 3.6.0 needs a separate release-scope decision.
+The old commission is exhausted. A new design boundary or a change to the relief you approved needs your choice.
 
-➡️ **The admiral recommends design only, to establish a feasible approach and cost before committing to implementation.**
+➡️ **The admiral recommends design only, to establish a feasible approach and cost before implementation.**
 
-This would aim to preserve the approved relief. It would not authorize production changes or another full gate campaign. No answer is recorded.
+It aims to preserve the approved relief. It does not authorize production changes or another full gate campaign. No answer is recorded.
 
-🤖 **AFK, conditional: the admiral contracts the route you select.**
+🤖 **AFK, after your choice: the admiral defines and commissions the selected next step.**
 
-For design, the admiral must define the deliverable and select the captain and author. For reduced relief, it must first record the changed acceptance. Without a ruling, the hold remains. The unapplied protected-root documentation patch stays user-owned.
+For design, the admiral must name the deliverable, captain and author. For reduced relief, it must first record the acceptance change. Without a ruling, the hold remains. The protected-root documentation patch stays user-owned.
 
-### Statechart runner
+<details>
+<summary>🔎 The proposed design and narrowing boundaries</summary>
+
+The design must retain the enclosing output consumer, actual shell dialect, exact text span and executable expansions during nested analysis. Unknown cases must stay conservative. It must cover the harmless cases and both known failures, including nested shells. A broad parser rewrite has not been shown necessary.
+
+The narrower alternative would remove the GS-03 body exemption while keeping finite quoted-search fixes and the other fixes. GS-02 file analysis might still recognize a write as literal even when the separate launch check warns about its body. That distinction must survive the acceptance change.
+
+</details>
+
+### Statechart works on Windows and Linux. Delivery is on hold.
 
 #### Purpose
 
-🎯 **Show formal-model failures as an actual state graph and shortest counterexample paths.**
+🎯 **Run formal checks and show where a model fails.**
 
-You requested the upstream statechart skill for 3.6.0, including its report and rendered chart. It runs TLC to check a TLA+ model. Its launcher assumed POSIX, the Unix-style shell and process behavior used on Linux. Windows needed a different launcher and process cleanup.
+You asked for the upstream statechart skill, including its report and chart. It uses TLC to check a TLA+ model and show the actual state graph and shortest paths to a failure.
 
-Dydo added a PowerShell launcher for supported Node and cleanup for Windows worker/Java descendants. The acceptance choices concern this maintained runner, not a model you might later give it.
+The original launcher used POSIX shell tools. Dydo added Windows support and cleanup for the processes it starts. The acceptance questions concern this maintained runner, not a model you might later give it.
 
-The work also grew beyond platform adaptation. Review required code measurements, and the captain commissioned refactoring to reduce complexity. Extracting output validation, worker launch and publication reduced the entry's score from 37 to 18. Another change simplified a verdict classifier. The record explains why those changes were commissioned. It does not prove they were the only design or separately approved harmonization.
+<details>
+<summary>📖 Terms in this area</summary>
+
+- **Model:** a precise description of a system's states and rules. The checker explores what those rules allow.
+- **TLC:** the program that checks a TLA+ model for broken rules. It does not check the application's source code.
+- **POSIX:** a family of operating-system standards. Here it means the launcher expects Unix-style shell tools, such as those used on Linux.
+- **Coverage:** how much code the tests execute. Executing code does not prove the tests would catch a fault in it.
+- **Mutation testing:** deliberately change code, then check whether the tests detect the fault.
+- **HCRAP:** our hybrid version of CRAP. It uses cognitive complexity as the base score, then adds a penalty for untested code based on cyclomatic complexity. With full test coverage, the score equals cognitive complexity.
+
+HCRAP is `CC² × (1 − line coverage)³ + cognitive complexity`. CC is cyclomatic complexity. It remains in the coverage penalty; only the base term changes to cognitive complexity. The HCRAP limit is 20. Cyclomatic complexity is not a separate ≤20 gate.
+
+</details>
 
 #### Recently completed
 
-✅ **Windows/Linux functional proof and TypeScript measurements are complete.**
+✅ **The adaptation passed its Windows and Linux checks.**
 
-The six maintained modules under `skills/engineering/statechart/scripts/` are `frontends/dot.ts`, `run.ts`, `statechart.ts`, `worker.ts`, `windows.ts` and `windows-cleanup.ts`. They meet line coverage ≥80%, branch coverage ≥60%, cognitive complexity ≤20 and HCRAP ≤20. HCRAP combines complexity and untested code into a risk score. Four scenario sensitivity/restoration pairs are also complete.
+The maintained TypeScript code meets its coverage and complexity limits. Four scenario checks also detected changes to their expected results.
 
-✅ **The embedded C# adapter has exact-source proof. It is no longer waiting for instrumentation.**
+✅ **The native Windows adapter passed its tests and measurements.**
 
-The separately compiled `StatechartJob.Attach` source is byte-identical to the embedded code. It achieved 15/15 lines, 6/8 branches, cognitive complexity 5 and HCRAP 5. Baseline and Coverlet-instrumented tests each passed 6/6 and preserved native error codes 87 and 5. The original PowerShell Add-Type lifecycle proof covers the separate integration layer. Earlier AltCover failures remain failures.
+This covers the embedded C# code that manages Windows processes. It does not measure the PowerShell code around it.
 
-✅ **The integration/source-binding correction is complete, and the admiral prepared the acceptance explanation.**
+✅ **The integration correction and decision brief are ready.**
 
-Candidate `ce3ecdb0` integrates master `f3e0a161`. Its retained proof names the source it covers. Master has since advanced, so this does not prove compatibility with the latest landings or overall acceptance.
+The evidence is tied to the reviewed source. The candidate still needs to be checked against newer changes on master. These results do not establish overall acceptance.
+
+<details>
+<summary>🔎 Evidence and code scope</summary>
+
+The six maintained TypeScript modules under `skills/engineering/statechart/scripts/` are `frontends/dot.ts`, `run.ts`, `statechart.ts`, `worker.ts`, `windows.ts` and `windows-cleanup.ts`. They meet line coverage ≥80%, branch coverage ≥60%, cognitive complexity ≤20 and HCRAP ≤20. All four scenario sensitivity/restoration pairs are complete.
+
+The separately compiled `StatechartJob.Attach` source is byte-identical to the embedded C#. It reached 15/15 lines and 6/8 branches. Cognitive complexity and HCRAP were both 5. Baseline and Coverlet-instrumented tests each passed 6/6 and preserved native error codes 87 and 5. Original PowerShell Add-Type lifecycle proof supplies the separate integration layer. Earlier AltCover failures remain failures.
+
+Candidate `ce3ecdb0` includes master `f3e0a161`. Later master changes are outside that integration result.
+
+Review also led to refactoring beyond the Windows adaptation. The captain commissioned complexity reduction. The entry's score fell from 37 to 18 after extracting output validation, worker launch and publication. Another change simplified a verdict classifier. The record explains that commission. It does not show that extraction was the only design or that you separately approved harmonization.
+
+</details>
 
 #### In flight
 
-⏸️ **No proof crew is running. Two assurance gaps hold final readiness.**
+⏸️ **No proof work is running. Two gaps keep delivery on hold.**
 
-DR048 allows a missing measurement mechanism to be recorded. A later acceptance amendment still requires an explicit decision for this delivery. The existing three-member tribunal permitted runnable proof/review and preparation of the choice. It kept readiness blocked and waived neither gap.
+- **PowerShell measurements are missing.** The launcher and process-cleanup scripts lack the required coverage and complexity measurements. The C# results do not cover them.
+- **Mutation testing is missing.** We do not know how well the tests detect faults across the maintained runner. The four scenario checks do not answer that wider question.
 
-⏸️ **The two PowerShell scripts still lack control-flow measurements.**
+DR048 allows a missing measurement method to be recorded. This delivery's later acceptance amendment still requires your decision. The existing three-member tribunal allowed proof work and preparation of these choices. It kept readiness held and waived neither gap.
 
-`statechart.ps1` selects and starts supported Node. `windows-job.ps1` binds worker descendants to a Windows Job Object so they stop when their owning parent exits. Each lacks executable-line ≥80%, branch ≥60%, cognitive complexity ≤20 and HCRAP ≤20 measurements.
+<details>
+<summary>🔎 What remains unmeasured</summary>
 
-Command coverage, PSScriptAnalyzer results and the embedded C# metrics do not measure that PowerShell control flow. Cyclomatic complexity feeds HCRAP; it is not a separate ≤20 gate.
+`statechart.ps1` selects and starts supported Node. `windows-job.ps1` binds worker descendants to a Windows Job Object so they stop when their owning parent exits. Each script lacks executable-line ≥80%, branch ≥60%, cognitive complexity ≤20 and HCRAP ≤20 measurements. Command coverage and PSScriptAnalyzer results do not supply these.
 
-⏸️ **Tests have not been checked for sensitivity to defects across the maintained runtime.**
+Mutation scope concerns the six maintained TypeScript modules, two PowerShell scripts and local native adapter. No reviewed TypeScript/PowerShell mechanism was adopted, and no C# campaign ran. Unchanged vendored source is not automatically included.
 
-Changed-code mutation deliberately alters code to see whether tests detect the defects. Here it concerns the six maintained TypeScript modules, two PowerShell scripts and local native adapter. No reviewed TypeScript/PowerShell mechanism was adopted, and no C# mutation campaign ran. Unchanged vendored source is not automatically in scope.
+There is no mutation score or inventory of mutations that survived the tests. The four scenario pairs changed expected values. They did not test sensitivity to defects throughout the runtime.
 
-The four scenario pairs changed expected values and showed those assertions respond. They do not establish sensitivity across the runtime. There is no mutation score or inventory of defects that survived the tests.
+</details>
 
 #### Next
 
-❓ **Accept the two PowerShell measurement gaps, require tooling first, or keep statechart held?** ([DYD-434](https://linear.app/bodnar-balazs/issue/DYD-434))
+❓ **Can this delivery proceed without the PowerShell measurements?** ([DYD-434](https://linear.app/bodnar-balazs/issue/DYD-434))
 
-Only you can settle the acceptance boundary set by the later amendment.
+- **Proceed with the gaps recorded.** Keep the existing test evidence. Some branches and complexity remain unmeasured and could hide weaknesses.
+- **Require measurements first.** The admiral must prepare a workable method and estimate. Neither is ready. A functional rerun or Pester upgrade alone would not supply the proof.
+- **Keep the feature held.** This postpones delivery without starting tooling. Removing it from 3.6.0 needs a separate scope decision.
 
-- **Record the gaps and continue delivery.** The functional proof remains useful, but unmeasured branches or complexity could hide weaknesses. The admiral owns the follow-up record and a separately contracted measurement adoption. No result becomes PASS.
-- **Require measurements first.** The admiral owes a contract for executable-line/branch attribution, a PowerShell complexity model and reliable links between measurements, methods and source. Feasibility, duration and findings are unknown. There is no reliable estimate. A functional rerun or Pester upgrade alone would not supply the proof.
-- **Keep statechart held.** This preserves the boundary without starting tooling. It postpones the feature. Removing it from 3.6.0 needs a separate scope decision.
+➡️ **The admiral recommends proceeding with the two scripts' gaps recorded and a named follow-up owner.**
 
-➡️ **The admiral recommends recording the two scripts' gaps with an owned follow-up.**
+The existing checks provide useful evidence. New measurement tooling has unknown feasibility and cost. This applies DR048's skip-and-record route without calling missing measurements PASS.
 
-This uses DR048's skip-and-record route without making adoption depend on new measurement machinery. It leaves the stated risks visible. No answer is recorded.
+❓ **Can this delivery proceed without mutation testing?** ([DYD-434](https://linear.app/bodnar-balazs/issue/DYD-434))
 
-❓ **Separately, record missing mutation proof as a delivery gap or require a defined campaign first?** ([DYD-434](https://linear.app/bodnar-balazs/issue/DYD-434))
+- **Proceed with this separate gap recorded.** Some faults in launch, error handling or cleanup may still escape the tests.
+- **Require mutation testing first.** The admiral must define the method, code scope, safety measures and acceptance criterion, then estimate the work. No reviewed campaign or cost estimate exists.
 
-- **Record the gap.** Keep the functional, static and review evidence, with follow-up owned by the admiral. Tests could still miss defects in launch, error handling or cleanup. This avoids making delivery depend on unadopted tooling; it does not claim mutation passed.
-- **Require mutation proof first.** The admiral must define the supported mutations, changed-code scope, native/lifecycle containment and treatment of mutations that do not change behavior. It also owes an acceptance criterion and estimate. No reviewed campaign or cost estimate is prepared. This is new tooling work, not a routine rerun.
+➡️ **The admiral recommends proceeding with the mutation gap recorded and the admiral owning follow-up.**
 
-➡️ **The admiral recommends accepting the absent mutation campaign as a named gap for this delivery, with the admiral owning follow-up.**
+Platform tests, native-process checks, TypeScript measurements, exact-source C# proof, independent reviews and corrected scenario checks provide evidence. They do not establish how well the tests detect deliberate faults. Requiring mutation first adds an unprepared tooling campaign with unknown feasibility and cost.
 
-Windows/Linux functional and native lifecycle proof, TypeScript measurements, exact-source C# proof, independent reviews and corrected scenario checks support proceeding to the remaining delivery gates. They do not prove mutation effectiveness. Requiring mutation first adds an unprepared campaign with unknown feasibility and cost. This recommendation accepts a specific assurance gap; it does not claim defect-free code or a measured delay.
+These are separate decisions about delivery requirements. Neither is answered in this snapshot. The static missing-mechanism rule does not waive mutation. The earlier tribunal did not decide this choice. A reply can settle either question; no new discussion session is required.
 
-🤖 **AFK, conditional: the admiral records each decision and contracts the selected follow-up before delivery resumes.**
+🤖 **AFK, after your answers: the admiral records the limits and arranges the next work.**
 
-Accepting a gap needs an explicit contract amendment, the affected runtime scope, missing proof and named owner. Later scoped adoption is not yet commissioned or scheduled. Requiring tooling means preparing the measurement or mutation contract first. DR048's static skip does not waive mutation, and the earlier tribunal did not decide it. Without the required decisions, the hold remains.
+Accepting a gap needs an explicit contract amendment, missing proof, code scope and follow-up owner. Requiring more proof means preparing that work first. Later scoped adoption is not commissioned or scheduled. Without the required decisions, delivery stays held.
 
-Latest-master applicability, final acceptance checks, PR/CI and human merge still follow. An answer completes none of those steps.
+Latest-master checks, final acceptance checks, PR/CI and human merge still follow. An answer completes none of them.
 
-🗓️ **HITL, later: compare upstream and local changes in the next walkthrough, after the other work.**
+💬 **HITL, later: compare the upstream skill with Dydo's version in the next walkthrough, after the other work.**
 
-That conversation covers unchanged modeling guidance, packaging, Windows adaptation and complexity refactoring. It is not an immediate inspection prerequisite. No later grilling session is commissioned.
+That live discussion covers unchanged modeling guidance, packaging, Windows support and refactoring. It is not a condition for answering the questions above. No later grilling session is commissioned.
 
-### Acting on completed captain returns
+<details>
+<summary>🔎 Preparation the admiral still owes if tooling comes first</summary>
+
+For PowerShell measurements, the contract must define how to attribute executed lines and branches, measure complexity, and link each result to the correct method and source. Feasibility, duration and findings are unknown.
+
+For mutation, it must define supported code changes, which changed code to include, and how to contain native processes and lifecycle tests. It must also handle mutations that do not change behavior, set an acceptance criterion and provide an estimate. This is new preparation and tooling, not a routine rerun.
+
+</details>
+
+### Completed returns: guidance now requires the next action
 
 #### Purpose
 
 🎯 **Stop completed work waiting for a watch to nudge the admiral.**
 
-The overnight retro found delays between captain returns and the next action or fallback. It also found expensive correction cycles that still failed the strongest reviewer counterexamples. Notification loss was a hypothesis, not an established cause.
+The overnight retro found delays after captain returns. It also found costly correction cycles that still failed the strongest reviewer counterexamples. Notification loss was a hypothesis, not an established cause.
 
 #### Recently completed
 
 ✅ **The completion and correction guidance is human-merged.** ([PR217](https://github.com/bodnarbalazs/dydo/pull/217))
 
-The Admiral paragraph requires the next authorized action or fallback, or an owned hold with a reason. It also requires updating the project state. The Code Writer paragraph brings the strongest prior counterexample and accepted invariant to the exact successor before expensive broad gates. Independent review and final gates remain. The two-paragraph change landed at 16:32:22 UTC with three hosted checks successful.
+The admiral must take the next authorized action or fallback, or record an owned hold and reason. Correction authors must check the strongest prior counterexample on the exact successor before expensive broad gates. Independent review and final gates remain.
+
+<details>
+<summary>🔎 What landed</summary>
+
+The Admiral paragraph also requires updating the current project state. The Code Writer paragraph carries both the strongest counterexample and the accepted invariant to the affected boundary.
+
+The two-paragraph change landed at 16:32:22 UTC with three hosted checks successful. It implements no host notification, waiting-state or approval behavior.
+
+</details>
 
 #### In flight
 
-⏹️ **The documentation is delivered. These receipts do not yet show how the next real handoff behaves.**
+⏸️ **No work is running on these paragraphs. The documentation is delivered.**
 
-The change implements no host notification, waiting-state or approval behavior.
+The receipts do not yet show how the next real handoff behaves.
 
 #### Next
 
 🤖 **AFK: the admiral applies the completion step to the next actual return under its existing authority.**
 
-Authorized work advances. Human-held work keeps its hold and owner. A correction author checks the strongest counterexample at the affected boundary before expensive proof. These are landed workflow duties, not a new observation campaign.
+Authorized work advances. Human-held work keeps its hold and owner. A correction author checks the strongest counterexample before expensive proof. These are landed workflow duties, not a new observation campaign.
 
-### Overnight on/off
+### Overnight on/off: fallback works, host approval is missing
 
 #### Purpose
 
 🎯 **Let an authorized agent turn overnight mode on and off through genuine Codex/T3 human approval.**
 
-At departure, you had to return after being told goodnight and run the command yourself. The problem recurred for `dydo mode set overnight off`. Dydo's supported approval path named Claude Code. Codex/T3 could not obtain approval bound to that execution. Your authorization alone could not create the missing host support.
+You had to return after being told goodnight and run the command yourself. The problem recurred at morning shutdown. Your authorization could not create the host approval path that Codex/T3 lacked.
+
+<details>
+<summary>📖 Approval in this area</summary>
+
+Approval must be bound to the actual execution in the host. A general instruction from you is not the same as that supported execution path. Dydo's existing path named Claude Code; Codex/T3 could not use it for the mode change.
+
+</details>
 
 #### Recently completed
 
 ✅ **Early detection, an exact terminal fallback and independent state readback are merged.**
 
-PR214 reduces surprise and prevents an unverified success announcement. At 11:01:11 UTC, the morning read-only check returned overnight off after your reported command. It proves that observed state, not an agent-run transition or working Codex approval.
+PR214 reduces surprise and prevents an unverified success announcement. The morning check observed overnight off after your reported command. It did not prove an agent-run transition or working Codex approval.
 
-✅ **The host request is prepared, but has no identified recipient or writable host checkout.**
+✅ **The host request is prepared. It has not reached an identified owner.**
 
-It asks for supported human approval and temporary per-thread attachment/close behavior, with explicit lifetime and provider binding. The bounded lookup and established contacts found neither a T3 maintainer/support endpoint nor an authorized host checkout. The packet has not reached an identified owner.
+The bounded lookup and established contacts found neither a T3 maintainer/support endpoint nor an authorized host checkout.
+
+<details>
+<summary>🔎 The observed state and prepared request</summary>
+
+At 11:01:11 UTC, the read-only check returned overnight off after you reported running `dydo mode set overnight off`.
+
+The host request asks for supported human approval and temporary per-thread attachment/close behavior. It specifies lifetime and provider binding. No recipient or writable host checkout has been identified.
+
+</details>
 
 #### In flight
 
-⏸️ **Host support is blocked on a maintainer/access route. A real-UI check is not ready.**
+⏸️ **Host support is blocked. A real-UI check is not ready.**
 
-The existing host-support captain owns delivery; the admiral owns routing. PR217 neither implements the interface nor makes host-owner discovery wait for it.
+The existing host-support captain owns delivery. The admiral owns routing. PR217's workflow guidance neither implements the host interface nor makes owner discovery wait for it.
 
 #### Next
 
-🤖 **AFK: the admiral and existing captain need a supported host-owner/access route for the request.** ([DYD-433](https://linear.app/bodnar-balazs/issue/DYD-433))
+❗ **Agent-owned prerequisite: the admiral and existing captain need a supported host-owner/access route to deliver the request.** ([DYD-433](https://linear.app/bodnar-balazs/issue/DYD-433))
 
-That route is required before supported registration and an isolated approval check can proceed. The source investigation is already available. Reporting the gap requires no repeat search or new probe.
+This enables supported registration and an isolated approval check. It is not an action assigned to you. The source investigation is available; reporting the gap requires no repeat search or new probe.
 
-🗓️ **HITL, conditional: exercise the genuine approval UI after the captain prepares a supported, isolated check.**
+💬 **HITL, conditional: exercise the genuine approval UI after the captain prepares a supported, isolated check.**
 
-The captain first owes the registration, isolated state, human interactions and cleanup procedure. These are not ready. The check must eventually observe real approval, denial without state change, and state readback. Synthetic hooks cannot prove those behaviors. Your 3.6.0 requirement remains actual host support, not fallback alone.
+The captain first owes the registration, isolated state, human steps and cleanup procedure. None is ready. The check must eventually observe approval, denial without state change, and readback. Synthetic hooks cannot prove those behaviors. Your 3.6.0 requirement remains actual host support, not fallback alone.
 
-### Shared feature intent
+### Shared feature intent: the planning route has landed
 
 #### Purpose
 
 🎯 **Carry shared feature intent into implementation and review.**
 
-You asked whether agents actually use working-spec references. Inspection found that readers expected an anchor, but project capture and charting could assume someone else had created it. Atomic ticket intent and an adequate reviewed plan remain valid alternatives. Not every task needs a spec.
+You asked whether agents actually use working-spec references. Readers expected a shared source, but project capture and charting could assume someone else had created it.
+
+<details>
+<summary>📖 Shared intent in this area</summary>
+
+An **intent anchor** is the agreed source of what a feature must do. It can be a working spec or an adequate reviewed plan. Atomic ticket intent remains enough for work that fits one ticket. Not every task needs a spec.
+
+</details>
 
 #### Recently completed
 
-✅ **Planning skills now explicitly choose or create the shared intent anchor.** ([PR218](https://github.com/bodnarbalazs/dydo/pull/218))
+✅ **Planning skills now choose or create the shared intent anchor.** ([PR218](https://github.com/bodnarbalazs/dydo/pull/218))
 
-The change covers project capture, wayfinding, ticket creation and the admiral's charting step. The handoff carries the reviewed-plan alternative. Existing author/reviewer pinning rules remain.
+The handoff carries the reviewed-plan alternative. Existing author/reviewer rules for pinning intent remain.
 
 ✅ **The safe-feature-merging spec and its map/ticket links are delivered.**
 
-`dydo/reference/working-specs/dydo-3-6-0/safe-feature-merging.md` records the existing command, guard and host-parity intent. The map and affected tickets link its sections. PR218 was human-merged at 16:29:55 UTC. Earlier safe-merge work is not retrospectively called spec-driven.
+The spec records the existing command, guard and host-parity intent. The adoption receipt left the tickets' statuses and blockers unchanged.
+
+<details>
+<summary>🔎 Source and landing</summary>
+
+The planning change covers project capture, wayfinding, ticket creation and the admiral's charting step.
+
+The spec is `dydo/reference/working-specs/dydo-3-6-0/safe-feature-merging.md`. The map and affected tickets link its sections. PR218 was human-merged at 16:29:55 UTC. Earlier safe-merge work is not retrospectively called spec-driven.
+
+</details>
 
 #### In flight
 
-⏹️ **The documentation and links are delivered. Later guard/parity use remains unproved.**
+⏸️ **No work is running on this documentation. Later guard/parity use remains unproved.**
 
-The adoption receipt left the tickets' statuses and blockers unchanged.
+The documentation and links are delivered.
 
 #### Next
 
 🤖 **AFK, conditional: future authorized guard/parity captains pin the relevant sections in author and reviewer briefs.**
 
-Each lane keeps its existing prerequisites. A source review and a linked spec do not prove that later work used it. This landing does not restart held guard work.
+Each lane keeps its prerequisites. A source review and a link do not prove that later work used the spec. This landing does not restart held guard work.
 
-### Project explanations
+### Project explanations: the rewrite is running
 
 #### Purpose
 
 🎯 **Help a returning reader understand the project and its choices without rebuilding ticket history.**
 
-You rejected the earlier catch-up experience. You asked for a project account, four plain sections, icons on actual items and concrete decision explanations. The separate walkthrough lets you inspect the work and discuss whether it fits your intent.
+You rejected the earlier catch-up. You asked for a project account, four plain sections, icons on items and concrete choices. The separate walkthrough lets you inspect the work and discuss whether it fits your intent.
 
 #### Recently completed
 
 ✅ **Earlier candidates and reviews are preserved, and the new contract is clear.**
 
-The five-section candidate is historical, not accepted wording. The admiral supplied both technical explanations above. It also authorized changing ketchup's description and matching catalog row to reflect the project scope.
+The five-section candidate is historical, not accepted wording. The admiral supplied both technical explanations above and authorized syncing ketchup's description and catalog row with the project scope.
 
 #### In flight
 
 ✈️ **The existing captain and docs author are rewriting the prompt and complete example.**
 
-Fresh reviews and a full-example reading follow the candidate. Earlier PASSs do not cover it. The walkthrough facilitator owns the human conversation; the admiral owns delivery and dispatch.
+Fresh reviews and a full-example reading follow. Earlier PASSs do not cover this candidate. The facilitator owns the human conversation; the admiral owns delivery and dispatch.
 
 #### Next
 
 🤖 **AFK, commissioned: finish the source and bounded proof, then return it to the captain for fresh review.** ([DYD-442](https://linear.app/bodnar-balazs/issue/DYD-442))
 
-The return includes the complete readable example and exact source binding. The selected icons do not establish source acceptance or your wording verdict.
+The return includes the complete readable example and exact source binding. Selected icons do not establish source acceptance or your wording verdict.
 
-❗ **HITL, later: read the complete returned example in the walkthrough and give your wording verdict.** ([DYD-432](https://linear.app/bodnar-balazs/issue/DYD-432))
+💬 **HITL, later: read the complete returned example in the walkthrough and give your wording verdict.** ([DYD-432](https://linear.app/bodnar-balazs/issue/DYD-432))
 
-The facilitator will bring it after the captain's return. The verdict concerns clarity and usefulness. It does not accept the guard, waive statechart proof or approve release. Other landed changes belong in staged walkthroughs, with a final walkthrough before release approval.
+The facilitator will bring it after the captain's return. The verdict concerns clarity and usefulness. It does not accept the guard, waive statechart proof or approve release. Other landings belong in staged walkthroughs, with a final walkthrough before release approval.
 
 ## Optional provenance
 
@@ -270,4 +381,4 @@ The facilitator will bring it after the captain's return. The verdict concerns c
 - [Catch-up correction](https://linear.app/bodnar-balazs/issue/DYD-442) and [staged human walkthrough](https://linear.app/bodnar-balazs/issue/DYD-432).
 - Prior LC examples remain in earlier committed revisions. The original failed reply and HTML remain on [DYD-439](https://linear.app/bodnar-balazs/issue/DYD-439).
 
-The pinned records support this reconstruction. Earlier reviews bind their earlier text. Balazs's verdict on this example remains outstanding.
+The pinned records support this reconstruction. Earlier reviews bind their earlier text. Balazs's verdict on this complete example remains outstanding.

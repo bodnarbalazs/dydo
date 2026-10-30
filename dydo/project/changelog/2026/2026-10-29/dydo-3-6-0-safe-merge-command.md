@@ -4,7 +4,7 @@ type: changelog
 date: 2026-10-29
 ---
 
-# dydo 3.6.1 - Safe merge command
+# dydo 3.6.0 - Safe merge command (unreleased)
 
 ## Summary
 
@@ -57,7 +57,9 @@ satisfy it.
 
 ## Upgrade steps
 
-1. Install the 3.6.1 CLI: `npm install -g dydo` or `dotnet tool update -g dydo`.
+dydo 3.6.0 is unreleased. Follow these steps only after its release.
+
+1. Install the 3.6.0 CLI: `npm install -g dydo` or `dotnet tool update -g dydo`.
 2. Merge the release's `skills/` and `Scaffold/dydo/reference/dydo-commands.md` changes into the
    project, keeping its edits, then run `node setup-skills.mjs` from its root.
 3. In every checkout `git worktree list` shows, run `dydo init <host> --join` for each wired host.
@@ -70,7 +72,7 @@ satisfy it.
    a user-level `Bash(gh pr merge:*)` allow rule, keeps it until the Claude/Codex parity gate
    (planned, pending in DYD-426) passes in that project. Then the user removes it; agents cannot edit
    their own permissions.
-6. Run `dydo adopt 3.6.1` last, once `dydo check` exits 0 and the update is proven.
+6. Run `dydo adopt 3.6.0` last, once `dydo check` exits 0 and the update is proven.
 
 No change in this entry renames a term mechanically, so it has no merge normalisations.
 

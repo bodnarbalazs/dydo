@@ -1,0 +1,20 @@
+{
+  "candidate": "590f2204e541ddc1de66d58fadc91001ed3d2009",
+  "argv": [
+    "C:\\Users\\User\\AppData\\Local\\fnm_multishells\\10620_1793288379755\\node.EXE",
+    "--version"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "exit": 0,
+  "seconds": 0.024462223052978516,
+  "hidden": true,
+  "ticket": "0000000001-b75084e695baad24",
+  "environment": {
+    "LOCALAPPDATA": "C:/Users/User/AppData/Local",
+    "TEMP": "C:\\Users\\User\\AppData\\Local\\Temp",
+    "TMP": "C:\\Users\\User\\AppData\\Local\\Temp",
+    "TMPDIR": "C:\\Users\\User\\AppData\\Local\\Temp",
+    "NODE_OPTIONS": null,
+    "DYD415_SETUP_AUDIT": null
+  }
+}

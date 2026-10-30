@@ -1,0 +1,10 @@
+{
+  "python": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+  "pythonVersion": "3.13.1 (tags/v3.13.1:0671451, Dec  3 2024, 19:06:28) [MSC v.1942 64 bit (AMD64)]",
+  "node": "C:\\Users\\User\\AppData\\Local\\fnm_multishells\\10620_1793288379755\\node.EXE",
+  "nodeSha256": "0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4",
+  "dydo": "C:\\Users\\User\\.dotnet\\tools\\dydo.exe",
+  "dydoSha256": "a03823fd118f4e8c30cf72a8f0674e6321bc1fa3375352c54273404b56ca5654",
+  "nodeVersion": "v22.23.2",
+  "dydoVersion": "3.5.1"
+}

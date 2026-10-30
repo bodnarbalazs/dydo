@@ -1,0 +1,10 @@
+{
+  "path": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\DynaDocs.Tests\\coverage\\tests\\setup-skills.test.cjs",
+  "namedTests": 24,
+  "sha256": "5f13f5d81f347909c96a11db189e234d9c3a9b0fbe57bfaf6ebc45e472dcfd50",
+  "intendedCommand": [
+    "C:\\Users\\User\\AppData\\Local\\fnm_multishells\\10620_1793288379755\\node.EXE",
+    "--test",
+    "DynaDocs.Tests\\coverage\\tests\\setup-skills.test.cjs"
+  ]
+}

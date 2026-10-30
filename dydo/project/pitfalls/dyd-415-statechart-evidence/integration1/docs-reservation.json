@@ -1,0 +1,11 @@
+{
+  "phase": "docs",
+  "pid": 50324,
+  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-integration1-checks.py docs",
+  "owned": true,
+  "inherited": false,
+  "ticket": "0000000001-82db8119ca8c46c2",
+  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
+  "candidate": "590f2204e541ddc1de66d58fadc91001ed3d2009",
+  "driverSha256": "33a484febd2ada2215d7f89ea3f5da8d63de4932f2a76166a824a7111419a269"
+}

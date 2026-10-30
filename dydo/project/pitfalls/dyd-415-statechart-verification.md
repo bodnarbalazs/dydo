@@ -18,6 +18,10 @@ the remaining scenario-value mutation pairs and supplies the superseding portabl
 Coverlet recipe; earlier executed recipes remain historical records. DYD-434's
 PowerShell metrics and full changed-code mutation dispositions remain unresolved.
 
+The [current-master integration record](dyd-415-statechart-evidence/integration1/verification.md)
+binds the preserved runtime/evidence to the pinned master merge and its bounded
+combined discovery/docs checks. DYD-434's acceptance hold remains unchanged.
+
 ## Inputs and provenance
 
 The implementation starts at `8553172dfaa7601d34f6b884c10350183f9faaa5`, fetched and

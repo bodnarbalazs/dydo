@@ -1,0 +1,22 @@
+{
+  "candidate": "590f2204e541ddc1de66d58fadc91001ed3d2009",
+  "argv": [
+    "git",
+    "diff",
+    "--check",
+    "590f2204e541ddc1de66d58fadc91001ed3d2009"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "exit": 2,
+  "seconds": 0.04166412353515625,
+  "hidden": true,
+  "ticket": "0000000001-82db8119ca8c46c2",
+  "environment": {
+    "LOCALAPPDATA": "C:/Users/User/AppData/Local",
+    "TEMP": "C:\\Users\\User\\AppData\\Local\\Temp",
+    "TMP": "C:\\Users\\User\\AppData\\Local\\Temp",
+    "TMPDIR": "C:\\Users\\User\\AppData\\Local\\Temp",
+    "NODE_OPTIONS": null,
+    "DYD415_SETUP_AUDIT": null
+  }
+}

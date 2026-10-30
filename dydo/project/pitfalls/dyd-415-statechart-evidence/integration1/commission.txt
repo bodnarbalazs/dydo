@@ -1,0 +1,177 @@
+# DYD-415 authorized daytime current-master integration
+
+Commissioning officer: existing ticket-captain, gpt-6-astra/high. You are code-writer, requested gpt-6.1-sol/high. One writer, no subagents; total Codex concurrency cap8. Work returns to captain, never ask user directly. Read code-writer SKILL and merge resource, working-tree contract, applicable docs/standards. This is an explicitly authorized local integration preparation, not PR merge or acceptance. Latest user instruction overrides generic full-suite repetition.
+
+## Pins and custody
+Root: C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f.
+Branch DYD-415-statechart, clean at b08ab4417aeb7fba61dd2e559379960a79b6b53d.
+Original base 8553172dfaa7601d34f6b884c10350183f9faaa5.
+Merge incoming origin/master f3e0a161886621395f2dba47b689fba19f3bf3de.
+Captain fetched actual remote this turn; includes merged211/212/213/214. It differs in73 paths, zero overlap with candidate's1147 paths. setup-skills.mjs and its test unchanged. Captain checked no MERGE_HEAD/index.lock; all earlier captain crews returned completed, no active native agents. Reconfirm custody and pins before mutations. Do not change any other checkout or master branch. No shell-created worktrees.
+
+## Work and owned authored paths
+Integrate exactly pinned master into DYD-415-statechart with a merge commit preserving both parents/every reviewed hop (no rebase, squash, amendment). Read both sides and map shared seams before merge. Imported upstream files must remain exactly master's contents. This authorized master integration naturally imports its existing paths; it is not authorization to author changes in them.
+Authored changes only dydo/project/pitfalls/dyd-415-statechart-evidence/integration1/**, plus a minimal discovery pointer in dydo/project/pitfalls/dyd-415-statechart-verification.md if useful.
+Do not touch runtime/original tests, historical fix1-fix4, guard/overnight/mode files, release policy, gate inventory, PR207, unrelated architecture. No arbitrary unreviewed branch copies.
+Material conflict, changed runtime requirement, unexpected gate failure or scope change: stop, preserve evidence, return concrete obstacle. No automatic retries, hidden fixes, or wider test campaign.
+If integration is conflict-free, commit the merge with both parents. Record checks on exact merge SHA and resulting candidate; a small separate proof/evidence commit is permitted to retain post-merge receipts without amending history. Final tree clean. Name all SHAs.
+
+## Reviewed evidence to preserve, with honest limits
+Runtime/original tests pin 0ddbbf3f251a4cf5d578f4d6b84f60216efdb3b6.
+Candidate b08ab441 includes bounded fix4 PASS: all4 scenario-value mutation pairs, portable bookkeeping5/5 and clean preflight. DYD436Done. Measurement mode of new portable recipe NOT rerun.
+Review: https://linear.app/bodnar-balazs/document/dyd-415-fix4-independent-correction-review-b08ab441-b36aa2082e81
+Local report C:/Users/User/AppData/Local/Temp/dyd415-review-fix4-gpt-6-astra.md.
+Two prior substantive review reports retained in fix4/reviews; overall FAIL persists only for known capability choices, with janitor nit deferred.
+Source-bound historical Windows/Linux suites, TS/static/coverage, original Add-Type integration and successful separately compiled exact-source C# Coverlet6.0.4 proof remain valid where identity permits: baseline6/6 instrumented6/6, errors87/5 preserved, lines15/15 branches6/8 cognitive/HCRAP5. This is NOT instrumentation of original Add-Type assembly.
+AltCover historical semantic parity FAILED; preserve it.
+UNAVAILABLE: PowerShell executable-line/branch/cognitive/HCRAP and CC input, separately full changed-code mutation. CC20 is not standalone gate. DYD434 final readiness hold unchanged.
+Do not repeat scenario/native suites to report or tour. No new PS/mutation adapter, waiver, acceptance decision. Existing global skill manifests will differ because master changed unrelated skills: distinguish scoped runtime identity from historical entire-tree receipts rather than claiming every old global receipt passes.
+
+## Justified combined checks
+1. Exact merge parents, root/branch/clean custody, no overlapping ownership; compare canonical statechart runtime, tests, formal references, notices and retained evidence against b08ab441 and runtime pin. Explicitly account for upstream master changes and any interaction (new verify-dydo skill/catalog changes, runner changes, safe-merge command).
+2. Source-bind retained proof in a concise applicability ledger: observed command/candidate/runtime identities, unchanged relevant dependency versus changed unrelated host catalog. Do not label old proof as newly run.
+3. Run node --test DynaDocs.Tests/coverage/tests/setup-skills.test.cjs once for combined host-discovery seam. Run node setup-skills.mjs and verify BOTH statechart projections resolve canonical source and explicit-invocation metadata remains intact. Do not global install.
+4. dydo check (identify binary/tool version and applicability), git diff --check. Run docs against final evidence document once ready; no gratuitous repeated checks. If current-source build is necessary justify it; no full .NET/viewer/platform suite requested.
+5. Only additional focused check justified by concrete dependency change, and within scope. No duplicate full campaign. Stop on unexplained new failure, return exact candidate/command/exit/evidence rather than automatically retry.
+
+All material probes/tooling use SAME Windows LC FIFO. Read C:/Users/User/.t3/worktrees/LC/t3-6a75af47/dydo/reference/tools/test-runner.md:303-341 and tools/testing/runner/suite_slot.py. Normal TEMP Python driver adds LC root to sys.path; with suite_slot.book(subprocess.list2cmdline(command),worktree=ROOT): subprocess.run(...). Default real namespace, inherit LC_SUITE_SLOT_TICKET, driver alive to child exit and propagate exit. FIFO first, nonwaiting Heavy if required, exclusive normal TEMP/dydo-fullsuite.lock. No outside-queue vacancy waits or manual reservation. Hidden subprocesses CREATE_NO_WINDOW/windowsHide:true, owned lifecycle only. Never delete another lock/process. Use normal Windows TEMP explicitly if harness redirects. No user-home/settings installs. Read-only Git/file inspection needs no test reservation.
+Reuse existing task-local dependencies; narrow sandbox escalation may be needed for linked Git metadata/LC queue; do not bypass guards.
+
+## Return
+IMPLEMENTED with exact merge SHA/parents and final clean candidate, changed paths, retained proof applicability, actual combined checks/exits and evidence locations, plus precise remaining gates. No readiness/whole-ticket PASS, push/PR/watch, master merge, mode activation or publish. No walkthrough presentation now: user puts it after all runnable agreed work. Captain will commission fresh bounded merge review after return.
+
+## Verbatim contract
+Contract: DYD-415 description as of 2026-10-30T11:30:16.521Z
+
+## Pinned daytime integration hop — 2026-10-30
+
+Resume source b08ab4417aeb7fba61dd2e559379960a79b6b53d on clean <issue id="c9174050-94ea-49a4-b7dc-534200deada9" href="https://linear.app/bodnar-balazs/issue/DYD-415/adopt-pstack-statechart-and-connect-formal-verification-for-dydo-360">DYD-415</issue>-statechart in C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f. Fresh fetch pins origin/master f3e0a161886621395f2dba47b689fba19f3bf3de (#211–214 included). No outstanding captain crew; no index lock or MERGE_HEAD. Master changes 73 paths since original base; zero overlap with candidate paths. One scoped writer merges this exact master locally, preserving both parents and all reviewed hops. Preserve imported master verbatim; authored changes only new dydo/project/pitfalls/<issue id="c9174050-94ea-49a4-b7dc-534200deada9" href="https://linear.app/bodnar-balazs/issue/DYD-415/adopt-pstack-statechart-and-connect-formal-verification-for-dydo-360">DYD-415</issue>-statechart-evidence/integration1/\*\* and minimal top-level verification pointer if needed. Unexpected material conflict/scope change returns before resolution.
+
+Combined checks: source/history identity and proof-applicability ledger; unchanged setup-skills test command and both host projections (new master skills make discovery a combined seam); dydo check and whitespace. Material executions use live LC FIFO/required locks/hidden consoles. No repeated scenario/native/platform campaign absent a concrete affected dependency; no automatic retry on new failure. Historical four-scenario proof, fix4 PASS/436Done and exact-source Coverlet evidence remain preserved. <issue id="992e417d-7275-4a43-b5f9-669e944d4b33" href="https://linear.app/bodnar-balazs/issue/DYD-434/statechart-settle-readiness-with-recorded-powershell-assurance-gaps">DYD-434</issue> PS/mutation choices still block acceptance; no readiness/whole-ticket PASS, master merge, push/PR, mode change or publish. Fresh bounded integration review follows writer evidence.
+
+## Daytime continuation — integration preparation, acceptance hold preserved
+
+Balazs directs authorized work to continue while genuine human choices are surfaced, and explicitly places walkthrough after all otherwise agreed work. Existing captain resumes remaining current-master integration/final-candidate preparation from reviewed b08ab441. The already-merged211/212/213/214 changes must be reconciled through the normal scoped writer chain; preserve exact runtime/evidence identity and record any changed proof applicability. No new PowerShell/mutation tooling or acceptance waiver.434 blocks final readiness, not useful integration preparation. Run only justified affected/combined checks after coherent integration; retain existing valid proof, source-bind reuse and stop on unexplained new failure. No automatic proof retries or new review campaign solely to revisit known missing metrics. Human master merge remains separate.
+
+## Current reporting reconciliation — reviewed fix4 complete
+
+Candidate b08ab4417aeb7fba61dd2e559379960a79b6b53d has a binding Astra/high **bounded fix4 correction PASS**: all four scenario-value mutation pairs are evidenced (three new semantic RED/restored pairs plus the retained fourth), and <issue id="d71450e9-d2d5-488d-a0cb-b178289bec29" href="https://linear.app/bodnar-balazs/issue/DYD-436/statechart-coverlet-recipe-rejects-a-clean-reproduction-checkout">DYD-436</issue> is resolved/Done. Review records11/11 expected outcomes and5/5 bounded evidence groups. Portable recipe bookkeeping5/5 and clean external preflight are verified; its measurement mode was not rerun. Historical Coverlet exact-source parity remains accepted, and failed AltCover evidence remains failed. [Binding receipt](<https://linear.app/bodnar-balazs/issue/DYD-415#comment-f4a6e6d5-3def-4b8e-b309-c267afd6bbb4>) · [Full correction review](<https://linear.app/bodnar-balazs/document/dyd-415-fix4-independent-correction-review-b08ab441-b36aa2082e81>).
+
+**Overall** <issue id="c9174050-94ea-49a4-b7dc-534200deada9" href="https://linear.app/bodnar-balazs/issue/DYD-415/adopt-pstack-statechart-and-connect-formal-verification-for-dydo-360">DYD-415</issue> **acceptance remains FAIL/BLOCKED**, with no whole-ticket PASS or readiness claim. <issue id="992e417d-7275-4a43-b5f9-669e944d4b33" href="https://linear.app/bodnar-balazs/issue/DYD-434/statechart-settle-readiness-with-recorded-powershell-assurance-gaps">DYD-434</issue> retains the morning-only choices for PowerShell executable-line/branch/cognitive/HCRAP metrics (CC as input, not a standalone gate) and separately full changed-code mutation. Four acceptance-value pairs do not satisfy changed-code mutation. Current-master integration/final gates remain pending. Runtime0ddbbf3 is unchanged; the source-based janitor early-rejection nit remains deferred and unproven at runtime. No execution, review restart, tooling expansion or waiver is authorized by this reporting correction.
+
+Earlier route/checkpoint entries below retain their as-of history; statements that scenario corrections, <issue id="d71450e9-d2d5-488d-a0cb-b178289bec29" href="https://linear.app/bodnar-balazs/issue/DYD-436/statechart-coverlet-recipe-rejects-a-clean-reproduction-checkout">DYD-436</issue> or fresh fix4 review are pending are superseded by the binding05:59 receipt above. Acceptance contract and remaining blockers are unchanged.
+
+## Current disposition — b08ab441, fix4 reviewed
+
+Fresh independent Astra/high correction PASS resolves F3 (4/4 scenario sensitivity) and <issue id="d71450e9-d2d5-488d-a0cb-b178289bec29" href="https://linear.app/bodnar-balazs/issue/DYD-436/statechart-coverlet-recipe-rejects-a-clean-reproduction-checkout">DYD-436</issue> (5/5 portable-bookkeeping checks, clean external preflight). [Binding review and audit](<https://linear.app/bodnar-balazs/document/dyd-415-fix4-independent-correction-review-b08ab441-b36aa2082e81>). No new correction findings; runtime0ddbbf3, original tests and historical evidence unchanged. Overall acceptance remains FAIL / <issue id="992e417d-7275-4a43-b5f9-669e944d4b33" href="https://linear.app/bodnar-balazs/issue/DYD-434/statechart-settle-readiness-with-recorded-powershell-assurance-gaps">DYD-434</issue>-blocked for PowerShell metrics and separate full changed-code mutation. Historical AltCover FAILED; Coverlet supported. Deferred janitor nit retained. No PR/readiness claim, no new tooling loop. Current-master integration and final gates remain pending. Older ledger states below are historical.
+
+## Delivery contract — captain 2026-10-29
+
+Atomic intent; no feature spec or parallel lanes. Type Feature / AFK, Project 4e6aa9da-f325-4b53-a318-deba4b1b4d26. Captain: gpt-6-astra/high, commissioned by successor admiral. Assigned user is the Linear claim; captain retains execution custody.
+
+Base: origin/master 8553172dfaa7601d34f6b884c10350183f9faaa5 (remote verified). Host-isolated worktree: C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f, currently clean at dcac6436 on t3/add-statechart-skill. Writer first fast-forwards this checkout to the pinned base and renames its branch <issue id="c9174050-94ea-49a4-b7dc-534200deada9" href="https://linear.app/bodnar-balazs/issue/DYD-415/adopt-pstack-statechart-and-connect-formal-verification-for-dydo-360">DYD-415</issue>-statechart; no other checkout changes. Reconfirm remote before edits; report any newer base for contract amendment.
+
+Owned production paths:
+
+* skills/engineering/statechart/\*\* (complete runtime, references, tests, license/provenance, explicit-only metadata for both hosts).
+* skills/engineering/create-formal-verification-skill/SKILL.md and skills/engineering/maintain-formal-verification-skill/SKILL.md (minimal matching references, same checked model and sync commit).
+* THIRD-PARTY-NOTICES.md; dydo/understand/control-flow.md; dydo/reference/dydo-glossary.md (required attribution/catalog).
+* dydo/project/changelog/2026/2026-10-29/<issue id="c9174050-94ea-49a4-b7dc-534200deada9" href="https://linear.app/bodnar-balazs/issue/DYD-415/adopt-pstack-statechart-and-connect-formal-verification-for-dydo-360">DYD-415</issue>-statechart.md.
+* dydo/project/pitfalls/<issue id="c9174050-94ea-49a4-b7dc-534200deada9" href="https://linear.app/bodnar-balazs/issue/DYD-415/adopt-pstack-statechart-and-connect-formal-verification-for-dydo-360">DYD-415</issue>-statechart-verification.md and dydo/project/pitfalls/<issue id="c9174050-94ea-49a4-b7dc-534200deada9" href="https://linear.app/bodnar-balazs/issue/DYD-415/adopt-pstack-statechart-and-connect-formal-verification-for-dydo-360">DYD-415</issue>-statechart-evidence/\*\* (durable bounded demonstration and raw gate evidence if appropriate; report if an existing evidence convention requires a different exact path).
+  No setup algorithm change expected: run setup-skills.mjs and verify both local projections. No guard, overnight, release policy, PR207 or unrelated architecture edits.
+
+Acceptance: adopt canonical cursor/plugins 1ba91fc25c0977741dd0e267849e6234b037ed0a pstack/skills/statechart, preserving breaks/mayBreak, shortest paths, 500-state budget and actual TLC evidence semantics; verify relevant issue/PR deltas only. Record any narrowly necessary Windows adaptation and its tests. Verify actual pinned runtime/renderer versions. Preserve MIT Copyright (c) 2026 Lauren Tan. User-invoked on Claude and Codex. No stale removed flags or duplicated launcher recipes in the formal-verification pair.
+
+Gates: pinned upstream test suite via its actual package test command (record exact resolved command before execution); node --test DynaDocs.Tests/coverage/tests/setup-skills.test.cjs; node setup-skills.mjs with both statechart projections resolving to canonical source; dydo check; git diff --check. Real small TLC invariant failure with shortest bug path/report and rendered chart, followed by corrected model checked with unchanged invariant; PowerShell and bash launcher probes with task-local Java/TLC/runtime as needed. Prove >500-state behavior through upstream applicable tests or bounded fixture. Gherkin: executable acceptance cases in the skill test suite cover this agent-invoked tool flow; no new application UI journey or unrelated .NET step definitions.
+
+Before expensive proof verify selection/nonzero discovery; coordinate full suites with admiral, acquire TEMP/dydo-fullsuite.lock exclusively, never remove another owner's lock or process, no LC suite/Playwright overlap. Only changed stack full suite required, no unrelated viewer suite. Record candidate, command, Windows environment, exit and evidence location.
+
+Fresh independent Codex reviews (gpt-6.1-sol/high and Astra/high) under user's provider-migration authorization; captain authors no production. Review complete candidate, upstream semantics, proof and licensing. Reviewed atomic PR to master, CI green, user merge click only; no tag/publish/install globally. Return 3.6.0 changelog text to admiral without touching PR207.
+
+## Current contract — Balazs, 2026-10-29
+
+Balazs explicitly requested this skill in **3.6.0** in the predecessor admiral thread, position 4742: “we should definitely add it in 3.6.0.” This supersedes the earlier two-week wait recommendation below. The old research is retained as dated evidence, not a current blocker.
+
+Outcome: ship the user-invoked `statechart` skill under `skills/engineering/`, adapted to dydo conventions, with complete required scripts/resources, pinned provenance and MIT copyright/license. Integrate the matching upstream paragraph in `create-formal-verification-skill`; preserve <issue id="fcbb2198-602c-46e4-acb5-2c2c5bcf53cb" href="https://linear.app/bodnar-balazs/issue/DYD-356/watch-for-pstacks-statechart-visualisation-skill-and-adopt-it-when-it">DYD-356</issue>'s requirement that both formal-verification skills name statechart where relevant, using the same checked model and sync commit. No duplicated command/path instructions or weakened rules to make models pass.
+
+Starting upstream pin: cursor/plugins `1ba91fc25c0977741dd0e267849e6234b037ed0a`, canonical `pstack/skills/statechart/`; latest SKILL change `34b1b7c96f09f81a21a6c78f65b7833f7dcb5b24`. `pstack/LICENSE` verified MIT, Copyright (c) 2026 Lauren Tan. README lists statechart without a beta/stable tier; the reported X announcement is user evidence, not independently verified here.
+
+Captain verifies current upstream fixes/dependencies and Windows execution, including launch from PowerShell and bash as supported. Demonstrate a real bounded flow with an invariant violation and shortest bug path, then a corrected model; chart/report must match actual TLC output. Verify both host skill discovery, documentation checks, applicable script tests and independent review. Document missing prerequisites honestly. Keep installations local to the task where possible; no agent settings/home changes. Render/report artifacts are evidence, not a product policy change.
+
+Owned scope: new statechart skill assets, the two formal-verification skills' integration wording, third-party notices/required catalog entries, and a 3.6.0 changelog entry. No overnight-mode or guard changes. Atomic PR from current master, reviewed and green, stopping for Balazs's merge click; no tag/publish. Captain contracts exact paths and proof before production. <issue id="fcbb2198-602c-46e4-acb5-2c2c5bcf53cb" href="https://linear.app/bodnar-balazs/issue/DYD-356/watch-for-pstacks-statechart-visualisation-skill-and-adopt-it-when-it">DYD-356</issue> is consolidated here without losing its real-flow, model-sync, host-discovery or attribution criteria.
+
+## Why
+
+Balazs asked on 2026-10-28 whether pstack's rumoured visualization companion to the formal-verification skills (adopted in <issue id="1ca440c0-6ea5-4e1d-8098-f519e8eb2b80" href="https://linear.app/bodnar-balazs/issue/DYD-344/adopt-pstack-create-formal-verification-skill-and-maintain-formal">DYD-344</issue> from cursor/plugins at 5dba0b8d, MIT) has matured enough to ship in 3.6.0. An admiral research pass that night said: **not yet, wait.**
+
+## What it is
+
+`/statechart`, at `pstack/skills/statechart/` in cursor/plugins: [https://github.com/cursor/plugins/tree/main/pstack/skills/statechart](<https://github.com/cursor/plugins/tree/main/pstack/skills/statechart>)
+
+* It runs TLC on a TLA+ spec and draws the state graph as a Mermaid statechart, with invariant-breaking states marked and the shortest path to each bug coloured.
+* It writes a `report.md` with each counterexample path, and renders SVG through `pele@1.9.0`.
+* It is user-invoked only, and covers TLA+/TLC only.
+* Upstream `create-formal-verification-skill` now tells generated verify skills to read every TLA+ result with `/statechart`: commits 00d5decc6f (#794) and 34b1b7c96f (#977), one paragraph. `maintain-formal-verification-skill` has not changed since our base.
+
+## Why wait (as of 2026-10-28)
+
+* **Young:** first commit 2026-10-22 (PR #741), seven commits in six days.
+* **Rewritten 2026-10-27** (PR #977), dropping features (from-chart, `--against`, `--fixed`).
+* **Open issues:** #923 (symlinked temp folder / LD_PRELOAD) and #973 (relative TLA2TOOLS/JAVA paths). Open PRs: #1017, #997, #924, #890, #844, #819, #817.
+* **New dependencies:** a TypeScript runtime (Node 22.18+ / Bun / Deno), launched by a POSIX `sh` script, `mise` with network on first run, and `pele`.
+* **Windows support unconfirmed.** A fork reports it doesn't run natively, but that's unverified upstream.
+
+## When to pick up
+
+Once the open fixes have merged and the skill has gone about two weeks without a rewrite. Then:
+
+* verify it on Windows;
+* adopt the skill with its MIT notice;
+* re-sync the one-paragraph change to `create-formal-verification-skill`.
+
+### Binding resource amendment — Chief of Staff
+
+Expensive statechart/runtime tests must queue through the same host-wide LC suite-slot FIFO as LC suites, via documented `suite_slot.book(command, worktree=root)` external driver using the default live namespace. A dydo-only mutex is insufficient; retain `TEMP/dydo-fullsuite.lock` too. Read `C:/Users/User/.t3/worktrees/LC/t3-6a75af47/dydo/reference/tools/test-runner.md` suite-slot/external-driver contract and implementation `tools/testing/runner/suite_slot.py`. Preserve inherited `LC_SUITE_SLOT_TICKET`; no outside-queue wait for vacancy, manual reservation, other-owner lock/process changes, or overlap of expensive work. Cheap bounded smoke/setup can proceed. Missing wrapper access/docs is a concrete blocker, not clearance. This supersedes awaiting a manual central reservation response.
+
+### Console-visibility acceptance — user via Chief of Staff, 2026-10-29
+
+Recurring Windows statechart tests and tool subprocesses must run without repeated visible consoles. The user permits a one-off test burst but not routine suite flashing. Preserve assertions, process ownership and cleanup; do not disable tests. Source: CoS messages in fix writer thread positions 469 and 504, 23:18:02 and 23:21:20 UTC. The Java proof is a likely contributor to the reported burst, not conclusively its sole cause. Fix1 records a fail-before-launch interceptor audit and retained lifecycle proof; no desktop-window observation is claimed.
+
+### Map-holder assurance amendment — 2026-10-30
+
+Authorized narrow proof-only capability adoption under existing <issue id="c9174050-94ea-49a4-b7dc-534200deada9" href="https://linear.app/bodnar-balazs/issue/DYD-415/adopt-pstack-statechart-and-connect-formal-verification-for-dydo-360">DYD-415</issue> skill/evidence paths, preserving runtime candidate `0ddbbf3f251a4cf5d578f4d6b84f60216efdb3b6` and valid Linux/Windows/TypeScript/native evidence. No runtime redesign, policy/gate-inventory edit, or full platform-suite repeat just for adapter measurements.
+
+Task-local pinned PSScriptAnalyzer and generated test project compiling byte-identical C# extracted from `windows-job.ps1` permitted. Preserve reproducible extraction, bytes/hash, compiler/framework/options and source mapping; fail on mismatch. Use existing native Roslyn/Coverlet machinery with focused actual adapter failure/cleanup tests. No hand-translated code or success-only stubs. This tests compiled identical C# separately; it does not instrument the original Add-Type assembly. Existing native Add-Type lifecycle evidence supplies the integration layer.
+
+PowerShell command coverage stays distinct from line/branch/method metrics. Measure supported static/dead-code/clone/cycle properties with justified tools; never invent HCRAP or convert command coverage to line/branch. Return precise remaining mandatory metrics, alternatives and smallest policy decision. Unadopted changed-code mutation remains UNAVAILABLE, never PASS; bounded behavioral example mutation is separate.
+
+All material tooling/probes use Windows LC FIFO and required locks, hidden consoles, task-local installation; no global module/home changes. Fresh whole-ticket review follows evidence, but readiness requires resolution of mandatory capability disposition. Current remote master reported by map holder: `42a386329b55a894de33a7275dcf6a9bc8f68db3`; preserve current candidate during proof, assess base integration later.
+
+Capability ledger at amendment: Linux and Windows functional suites COMPLETE; six maintained TS module coverage/static/HCRAP COMPLETE pending fresh review; native Add-Type integration COMPLETE pending fresh review; PowerShell command coverage COMPLETE (23/23) but line/branch/HCRAP/static assurance INCOMPLETE; embedded C# method coverage/analyzers INCOMPLETE; changed-code mutation UNAVAILABLE under existing policy; acceptance example mutation COMPLETE. <issue id="5c415c06-e395-4faf-99bb-e759f7d6fd4f" href="https://linear.app/bodnar-balazs/issue/DYD-428/statechart-windows-test-fails-when-java-uses-path-fallback">DYD-428</issue> implementation recorded, final review pending. No PR/release claim.
+
+### Capability disposition checkpoint — 2026-10-30
+
+Evidence-only f0cfa506 preserves runtime0ddbbf3. AltCover semantic parity failure remains invalid as passing gate evidence; already-authorized Coverlet alternative continues unchanged. PowerShell readiness applicability is tracked in [DYD-434](<https://linear.app/bodnar-balazs/issue/DYD-434/statechart-settle-readiness-with-recorded-powershell-assurance-gaps>), currently blocking final acceptance only. Two independent what-would-balazs-do seats are checking accepted DR048§2 against current fail-closed reporting and Q5; no decision or waiver yet. No new PS measurement-adapter scope, guide/inventory edit or full-suite repeat authorized by this checkpoint. Existing work and substantive review preparation continue.
+
+Policy correction: DR048§3 explicitly does not gate cyclomatic complexity alone. CC is needed for HCRAP; cognitive≤20 and HCRAP≤20 remain the thresholds. Do not invent a standalone CC≤20 blocker. Missing executable-line/branch/cognitive/HCRAP evidence and unadopted mutation remain explicit.
+
+### <issue id="992e417d-7275-4a43-b5f9-669e944d4b33" href="https://linear.app/bodnar-balazs/issue/DYD-434/statechart-settle-readiness-with-recorded-powershell-assurance-gaps">DYD-434</issue> tribunal result — 2026-10-30
+
+Three members unanimously prepared the narrow morning acceptance choice; no readiness permission or policy amendment. [Log](<https://linear.app/bodnar-balazs/document/tribunal-log-dyd-434-4ac8d7c92a2b>). Continue existing Coverlet and substantive independent review after its evidence settles, with all missing/failed capabilities disclosed. Final readiness remains blocked by434. No new PS/mutation tooling scope or platform-suite repeat; no automatic fix/review loop to erase known unavailable metrics. Reuse supported exact-candidate evidence, preserve historical FAILs, and report real new defects under the existing workflow. DR048 skip-and-record remains valid; it does not itself settle this ticket's later mandatory-proof acceptance.
+
+### Updated evidence ledger — round2,2026-10-30
+
+## Historical round2 evidence checkpoint — fb047aa7, superseded by reviewed fix4 above
+
+Both fresh independent substantive reviews (gpt-6-astra/high and gpt-6.1-sol/high) accept the separately compiled exact-source C# proof: Coverlet baseline6/6 and instrumented6/6 preserve native errors87/5; byte/source/PDB/method identity and original Add-Type integration remain distinct verified layers. This closes the prior C# instrumentation capability obstacle for the reviewed candidate, not whole-ticket acceptance or newer-master integration. Failed AltCover evidence remains failed historical evidence.
+
+The two unresolved434 choices are now specifically PowerShell executable-line/branch/cognitive/HCRAP mechanisms and full changed-code mutation. Do not present C# instrumentation as still awaiting a tool. No new tooling loop or waiver authorized.
+
+Separate executable evidence work is underway under415: three missing scenario-value mutation RED/restored pairs (existing proof covers1/4), plus DYD436 clean-checkout recipe correction. These are fixable evidence defects, not additional unavailable-capability policy choices. Both reviewers' overall verdict remains FAIL until applicable blockers are resolved. Named review sources: C:/Users/User/AppData/Local/Temp/dyd415-review-round2-gpt-6-astra.md and dyd415-review-round2-gpt-6.1-sol.md. Runtime0ddbbf3 unchanged. Earlier provisional statements below are retained history.
+
+Captain's narrow evidence-only correction is within existing scope: three scratch semantic mutation/restoration pairs and436 recipe precondition/bookkeeping checks. No runtime changes or native/platform-suite repetition solely for these fixes. Preserve executed historical drivers/raw artifacts, exact runtime/source binding and two-seat independent review. Earlier 'acceptance example mutation COMPLETE' denotes only the one existing example and is superseded by INCOMPLETE1/4 until remaining records pass. Sol's rare janitor early-rejection nit is source-based, deferred for walkthrough, not runtime-reproduced; canceled optional probe supplies no result. Current-master integration and final gates remain separate before readiness.
+
+### Historical fix4 pre-review checkpoint — b08ab441; review subsequently PASS
+
+Candidate b08ab4417aeb7fba61dd2e559379960a79b6b53d adds three semantic assertion RED/restored pairs, completing writer-recorded scenario coverage 4/4 with the retained fix1 pair. <issue id="d71450e9-d2d5-488d-a0cb-b178289bec29" href="https://linear.app/bodnar-balazs/issue/DYD-436/statechart-coverlet-recipe-rejects-a-clean-reproduction-checkout">DYD-436</issue> superseding portable recipe records 5/5 bookkeeping checks and clean external preflight; its measurement mode was not run. Historical Coverlet measurements remain fix3 evidence. Runtime, original tests and fix1–fix3 unchanged. Evidence: dydo/project/pitfalls/<issue id="c9174050-94ea-49a4-b7dc-534200deada9" href="https://linear.app/bodnar-balazs/issue/DYD-415/adopt-pstack-statechart-and-connect-formal-verification-for-dydo-360">DYD-415</issue>-statechart-evidence/fix4/verification.md. Fresh correction review follows; historical two-seat substantive FAILs remain binding. <issue id="992e417d-7275-4a43-b5f9-669e944d4b33" href="https://linear.app/bodnar-balazs/issue/DYD-434/statechart-settle-readiness-with-recorded-powershell-assurance-gaps">DYD-434</issue> PS metrics and separate full changed-code mutation remain UNAVAILABLE and blocking; no readiness or PR authorization. Janitor nit remains recorded/deferred. Base integration remains a later gate.
+

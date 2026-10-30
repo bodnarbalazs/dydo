@@ -1,0 +1,13 @@
+{
+  "phase": "discovery",
+  "pid": 90372,
+  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-integration1-checks.py discovery",
+  "owned": true,
+  "inherited": false,
+  "ticket": "0000000001-b75084e695baad24",
+  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
+  "candidate": "590f2204e541ddc1de66d58fadc91001ed3d2009",
+  "driverSha256": "6ac6274066e93cd1098d19c1ed43290668520842e8785e4b8fe989d3d5cf3826",
+  "heavyReleased": true,
+  "dydoReleased": true
+}

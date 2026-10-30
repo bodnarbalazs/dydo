@@ -67,6 +67,11 @@ def isolated_environment():
 
 def test_command(extra_args=None):
     arguments = list(extra_args or [])
+    if "--" in arguments:
+        runsettings = arguments[arguments.index("--") + 1:]
+        if any(item == "--filter" or item.startswith("--filter=") for item in runsettings):
+            raise ValueError("Move --filter before the '--' runsettings separator; "
+                             "use: -c Release --filter <selection> -- <runsettings>")
     setting = "RunConfiguration.TreatNoTestsAsError=true"
     if any("treatnotestsaserror" in item.lower() and item != setting for item in arguments):
         raise ValueError("The isolated runner requires TreatNoTestsAsError=true")
@@ -725,6 +730,11 @@ def main():
 
     if extra and extra[0] == "--":
         extra = extra[1:]
+
+    try:
+        test_command(extra)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     print("\n--- Running tests (worktree-isolated) ---")
     # The assurance campaign owns its processes in its own job and confirms their cleanup.

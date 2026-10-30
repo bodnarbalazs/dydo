@@ -5,10 +5,11 @@ description: Overnight mode, the user away while admirals run on standing and ni
 
 # Overnight Mode
 
-**Overnight mode** is any long absence of the user. The chief of staff's announcement at the
-**muster** opens it and its announcement at the **morning brief** closes it. In between, **each
-admiral keeps the conn** of its Project and the chief of staff keeps only the **night watch**; any
-agent can confirm it with `dydo mode show` (`overnight` is `on`).
+**Overnight mode** is any long absence of the user. At **muster**, the chief of staff verifies
+`overnight: on` with `dydo mode show` before announcing the start; at the **morning brief**, it
+verifies `overnight: off` before announcing the end. In between, **each admiral keeps the conn**
+of its Project and the chief of staff keeps only the **night watch**. Intent, a watch schedule and
+message delivery do not establish a mode transition.
 
 Admirals obey the **standing orders** below plus the **night orders**: one Project update per
 Project, set at muster. Night orders expire at the morning brief and win where the two conflict.
@@ -18,14 +19,20 @@ Project, set at muster. Night orders expire at the morning brief and win where t
 The already-invoked chief of staff uses its own resources below. Resolve each resource inside the
 installed `chief-of-staff` skill folder; read it directly without invoking another officer role.
 
-1. With the user present, complete `chief-of-staff`'s `resources/muster.md`. Use `grilling` for
+1. While the user is present, complete the [approval preflight](resources/approval-preflight.md)
+   for both startup and shutdown. Resolve the supported approval route or exact terminal fallback
+   before proceeding; capability discovery is not a mode change or an approval-UI test.
+2. Complete `chief-of-staff`'s `resources/muster.md`. Use `grilling` for
    decisions and `wizard` for terminal steps only. Proceed once every included admiral confirms
    its agreed work is runnable and every gap has the user's explicit disposition.
-2. Create the 30-minute watch schedule, returning to this thread. Preserve the complete schedule
+3. Use the preflight's route for `dydo mode set overnight on`. After actual execution, independently
+   run `dydo mode show` and require `overnight: on`. On denial, failure or missing readback, report
+   activation incomplete with the current observed state and exact human action; keep the user
+   present and do not announce activation or say goodnight.
+4. Create the 30-minute watch schedule, returning to this thread. Preserve the complete schedule
    ID exactly as returned by the host, including any prefix, for deletion at shutdown.
-3. Run `dydo mode set overnight on`: rerun it after the guard's nudge, and where the guard denies,
-   the user runs it in his own terminal.
-4. Announce the start to every included admiral.
+   If scheduling fails, report mode on with watch unavailable and resolve it while the user is present.
+5. Announce the verified start to every included admiral.
 
 Done when readiness is confirmed, the schedule ID is preserved, mode is on and every included
 admiral has the announcement.
@@ -64,11 +71,16 @@ in the watch, rebuild from Linear and sweep everyone by Method step 5, Sweep the
 
 When the user says he's back, in the chief of staff's conversation:
 
-1. Delete the watch schedule using the complete preserved ID. List schedules and confirm that exact
+1. Complete the [approval preflight](resources/approval-preflight.md) for shutdown while the user
+   is present; recheck if host or permission mode changed overnight.
+2. Delete the watch schedule using the complete preserved ID. List schedules and confirm that exact
    ID is absent before claiming the watch stopped; report a deletion or verification gap.
-2. Settle any pending survey through its host lifecycle so no tick remains in flight.
-3. Run `dydo mode set overnight off` as at muster, then announce the end to every included admiral.
-4. Fill `chief-of-staff`'s `resources/morning-brief.md` in the conversation, writing nothing to the
+3. Settle any pending survey through its host lifecycle so no tick remains in flight.
+4. Use the preflight's route for `dydo mode set overnight off`. After actual execution, independently
+   run `dydo mode show` and require `overnight: off`, then announce the end to every included admiral.
+   On denial, failure or missing readback, report shutdown incomplete with the current observed
+   state and exact human action. A deleted schedule does not prove mode is off.
+5. Fill `chief-of-staff`'s `resources/morning-brief.md` in the conversation, writing nothing to the
    repo. Use `wizard` for terminal unblockers only.
 
 Done when the schedule is confirmed absent, pending surveys are settled, mode is off, admirals

@@ -75,7 +75,9 @@ sight, and hand back every judgement call with a recommendation.
 
 ## Overnight duties
 
-- **Muster:** before activation, complete [the muster checklist](resources/muster.md) with the user.
+- **Muster:** start with `overnight-mode`'s approval preflight while the user is present, then
+  complete [the muster checklist](resources/muster.md). That skill owns transition and readback;
+  announce activation only after its completion criteria pass.
 - **Watch:** use one fresh surveyor per scheduled tick with [the fixed survey brief](resources/night-survey.md).
   Give the child that resource alone, not this officer role. If a survey is pending, consume that
   child instead of dispatching another. Follow the dispatch lifecycle above: T3 background

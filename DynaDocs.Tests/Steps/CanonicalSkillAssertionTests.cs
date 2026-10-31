@@ -69,7 +69,7 @@ public sealed class CanonicalSkillAssertionTests
             ["bro"] = "productivity", ["handoff"] = "productivity", ["teach"] = "productivity",
             ["show-me"] = "productivity", ["walkthrough"] = "productivity", ["writing-for-agents"] = "productivity",
             ["writing-for-humans"] = "productivity", ["retro"] = "productivity", ["wayfinder"] = "productivity",
-            ["to-project"] = "productivity", ["to-ticket"] = "productivity", ["ketchup"] = "productivity", ["in-your-own-words"] = "productivity",
+            ["to-project"] = "productivity", ["to-ticket"] = "productivity", ["catch-up"] = "productivity", ["in-your-own-words"] = "productivity",
             ["overnight-mode"] = "productivity",
             ["what-would-balazs-do"] = "productivity",
             ["update-dydo"] = "productivity"

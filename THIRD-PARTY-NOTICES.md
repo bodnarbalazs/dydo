@@ -110,7 +110,7 @@ names. Each adapted file repeats the attribution in its own header.
 | Upstream skill | Commit | Adapted in |
 |---|---|---|
 | `in-your-own-words` | `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454` | `skills/productivity/in-your-own-words/SKILL.md` |
-| `ketchup` | `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454` | `skills/productivity/ketchup/SKILL.md` |
+| `ketchup` | `dbf49813a39c1a5389c5e28cb8e4c1c2379e2454` | `skills/productivity/catch-up/SKILL.md` |
 | `unslop` | `7314f723a487ec406b6369fe5865ba034cfed166` | `skills/productivity/writing-for-humans/SKILL.md` |
 | `create-verification-skill` and its `references/feature-map-example` | `ecc249f1e306fc64ddf83c7bed16cacf7c2239db` | `skills/engineering/create-verification-skill/SKILL.md`, `skills/engineering/create-verification-skill/resources/feature-map-example/README.md`, `skills/engineering/create-verification-skill/resources/feature-map-example/create-note.md`, `skills/engineering/create-verification-skill/resources/feature-map-example/search.md` |
 | `create-verification-skill`: Launch readiness, missing journey prerequisites and stand-in proof | `1e5c90a4b6f249917bd21fe361b3a2a7deb741b8` | `skills/engineering/create-verification-skill/SKILL.md` |

@@ -3,7 +3,10 @@ namespace DynaDocs.Services;
 using System.Text.RegularExpressions;
 
 /// <summary>A command string a shell or eval is given, and the dialect that shell reads it in.</summary>
-internal sealed record ShellScript(string Text, ShellDialect Dialect, bool Encoded = false);
+internal sealed record ShellScript(string Text, ShellDialect Dialect, bool Encoded = false)
+{
+    public (ShellReader.Command Command, int Word, int Offset, ShellReader.Position Source)? Origin { get; init; }
+}
 
 /// <summary>
 /// Where the program sits in one command's words, shared by the scanners that read shell command
@@ -194,6 +197,29 @@ internal static partial class CommandPosition
             _ => (null, ShellDialect.Unknown),
         };
         return string.IsNullOrEmpty(text) ? null : new ShellScript(text, dialect);
+    }
+
+    // Transport one selected occurrence through the same extraction used by the shared scanners.
+    // The marker is an occurrence identity, not a search for an equal source string.
+    public static ShellScript? ScriptOf(ShellReader.Command command, string marker)
+    {
+        var at = Skip(command.Words);
+        if (at >= command.Words.Count)
+            return null;
+        var script = ScriptOf(ProgramName(command.Words[at]), command.Words.Skip(at + 1).ToList());
+        if (script == null)
+            return null;
+        var words = Enumerable.Range(at + 1, command.Words.Count - at - 1)
+            .Where(i => command.Words[i].Contains(marker, StringComparison.Ordinal)).ToArray();
+        var offset = script.Text.IndexOf(marker, StringComparison.Ordinal);
+        return words.Length == 1 && offset >= 0
+            && script.Text.IndexOf(marker, offset + marker.Length, StringComparison.Ordinal) < 0
+            && command.WordOrigins[words[0]].At(command.Words[words[0]].IndexOf(marker, StringComparison.Ordinal)) is { } source
+            && ReferenceEquals(source.Source, command.Source)
+            && source.Offset == command.WordRanges[words[0]].Start.Value
+                + command.RawWord(words[0]).IndexOf(marker, StringComparison.Ordinal)
+            ? script with { Origin = (command, words[0], offset, source) }
+            : script;
     }
 
     private static ShellScript? PwshScript(IReadOnlyList<string> rest)

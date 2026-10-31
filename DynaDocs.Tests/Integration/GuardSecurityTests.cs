@@ -902,7 +902,8 @@ public class GuardSecurityTests : IntegrationTestBase
     }
 
     // GS-03 (review round 6): a launch a runner makes, or the command string ssh or watch runs, keeps
-    // master's poll-loop nudge; the same words as an argument stay silent.
+    // master's poll-loop nudge. Unquoted and uninventoried quoted arguments still count;
+    // only the finite data operands and proven inert bodies receive relief.
     [Theory]
     [InlineData("Bash", "stdbuf -oL tail -f app.log")]
     [InlineData("Bash", "stdbuf -o L tail -f app.log")]
@@ -946,6 +947,48 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertStderrContains("Open-ended Bash poll-loop detected");
     }
 
+    [Theory]
+    [InlineData("Bash", "cat <<'EOF' | bash\ntail -f app.log\nEOF")]
+    [InlineData("Bash", "cat <<'EOF' | unknown-wrapper\ntail -f app.log\nEOF")]
+    [InlineData("PowerShell", "Write-Output @'\ntail -f app.log\n'@ | Invoke-Expression")]
+    [InlineData("PowerShell", "Write-Output @'\ntail -f app.log\n'@ | pwsh -Command -")]
+    [InlineData("Bash", "echo @'\nx'; tail -f app.log; echo '\n'@")]
+    [InlineData("Bash", "bash <<'OUT' | bash\ncat <<'IN'\ntail -f app.log\nIN\nOUT")]
+    [InlineData("Bash", "bash <<'OUT' | unknown-wrapper\ncat <<'IN'\ntail -f app.log\nIN\nOUT")]
+    [InlineData("Bash", "bash -c \"cat <<'IN'\ntail -f app.log\nIN\" | bash")]
+    [InlineData("Bash", "bash -c \"cat <<'IN'\ntail -f app.log\nIN\" | unknown-wrapper")]
+    public async Task Gs03_ContextBody_HookDenialAndRetry(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+        // The baseline has no newline advisory for the quoted -c unknown-consumer row;
+        // its otherwise identical downstream bash row retains the advisory.
+        var warning = command.StartsWith("bash -c", StringComparison.Ordinal)
+            && command.EndsWith("| unknown-wrapper", StringComparison.Ordinal)
+            ? "" : "WARNING: Command contains embedded newlines" + Environment.NewLine;
+        const string nudge = "BLOCKED: Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`. Open-ended polls have caused agent crashes (issue 0177).";
+        var expected = warning + nudge + Environment.NewLine + "  (Run the same command again to proceed anyway.)";
+        var first = await GuardWithStdinAsync(ShellJson(toolName, command));
+        Assert.Equal(expected + Environment.NewLine, first.Stderr);
+        Assert.Equal(expected, first.AssertPreToolUseDenied());
+        var retry = await GuardWithStdinAsync(ShellJson(toolName, command));
+        retry.AssertPreToolUseAllowed();
+        Assert.Equal(warning, retry.Stderr);
+    }
+
+    [Theory]
+    [InlineData("Bash", "cat <<'EOF'\ntail -f app.log\nEOF")]
+    [InlineData("PowerShell", "Write-Output @'\ntail -f app.log\n'@")]
+    [InlineData("Bash", "echo @'\n$(tail -f app.log)\n'@")]
+    [InlineData("Bash", "bash <<'OUT'\ncat <<'IN'\ntail -f app.log\nIN\nOUT")]
+    [InlineData("Bash", "bash -c \"cat <<'IN'\ntail -f app.log\nIN\"")]
+    public async Task Gs03_ContextBody_HookLiteralControl(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+        result.AssertPreToolUseAllowed();
+        Assert.DoesNotContain("Open-ended Bash poll-loop", result.Stderr);
+    }
+
     [Fact]
     public async Task Gs02_HereStringBoundary_RawWarningDenialAndRetryMatchMaster()
     {
@@ -964,6 +1007,68 @@ public class GuardSecurityTests : IntegrationTestBase
 
         retry.AssertPreToolUseAllowed();
         Assert.Equal(warning, retry.Stderr);
+    }
+
+    [Theory]
+    [InlineData("H01-posix", "Bash", "echo @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@", true)]
+    [InlineData("H03-data", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@", false)]
+    [InlineData("H04-child-quotes", "Bash", "echo @\"\n$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\n\"@", false)]
+    [InlineData("H05-code", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@ | bash", true)]
+    [InlineData("H06-unknown-consumer", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@ | unknown-wrapper", true)]
+    [InlineData("H07-malformed", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@suffix", true)]
+    [InlineData("H08-data", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@", false)]
+    [InlineData("H09-child-quotes", "PowerShell", "Write-Output @\"\n$(Write-Output @'\nIt's \"ready\"; tail -f app.log\n'@\n)\n\"@", false)]
+    [InlineData("H10-code", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@ | Invoke-Expression", true)]
+    [InlineData("H11-unknown-consumer", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@ | unknown-wrapper", true)]
+    [InlineData("H12-dash-suffix", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@-suffix", true)]
+    [InlineData("H13-space", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@ ", false)]
+    [InlineData("H13-tab", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@\t", false)]
+    [InlineData("H14-later-launch", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@; tail -f real.log", true)]
+    [InlineData("H15-backtick-data", "Bash", "echo @\"\n`cat <<'IN'\ntail -f app.log\nIN\n`\n\"@", false)]
+    [InlineData("H15-backtick-code", "Bash", "echo @\"\n`cat <<'IN'\ntail -f app.log\nIN\n`\n\"@ | bash", true)]
+    [InlineData("H16-identical-children", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@", false)]
+    [InlineData("H17-sibling-quotes-unknown", "Bash", "echo @\"\n$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@ | unknown-wrapper", true)]
+    [InlineData("H18-stdin-data", "Bash", "bash <<'OUT'\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\nOUT", false)]
+    [InlineData("H18-stdin-code", "Bash", "bash <<'OUT' | bash\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\nOUT", true)]
+    [InlineData("H18-stdin-unknown", "Bash", "bash <<'OUT' | unknown-wrapper\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\nOUT", true)]
+    [InlineData("H19-script-data", "Bash", "bash -c \"echo @\\\"\n\\$(cat <<'IN'\ntail -f app.log\nIN\n)\n\\\"@\"", false)]
+    [InlineData("H19-script-code", "Bash", "bash -c \"echo @\\\"\n\\$(cat <<'IN'\ntail -f app.log\nIN\n)\n\\\"@\" | bash", true)]
+    [InlineData("H20-script-ps-data", "Bash", "pwsh -Command \"Write-Output @\\\"\n\\$(Write-Output @'\ntail -f app.log\n'@\n)\n\\\"@\"", false)]
+    [InlineData("H20-script-ps-unknown", "Bash", "pwsh -Command \"Write-Output @\\\"\n\\$(Write-Output @'\ntail -f app.log\n'@\n)\n\\\"@\" | unknown-wrapper", true)]
+    [InlineData("H21-data-then-unsafe", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\necho @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@", true)]
+    [InlineData("H21-unsafe-then-data", "Bash", "echo @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@", true)]
+    [InlineData("H22-child-launch", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\ntail -f real.log\n)\n\"@", true)]
+    [InlineData("H23-child-launch-code", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\ntail -f real.log\n)\n\"@ | bash", true)]
+    [InlineData("H24-crlf-posix", "Bash", "echo @\"\r\n$(cat <<'IN'\r\ntail -f app.log\r\nIN\r\n)\r\n\"@", false)]
+    [InlineData("H24-crlf-powershell", "PowerShell", "Write-Output @\"\r\n$(Write-Output @'\r\ntail -f app.log\r\n'@\r\n)\r\n\"@", false)]
+    [InlineData("H25-capture-stdin-data", "Bash", "echo @\"\n$(bash <<'MID'\ncat <<'IN'\ntail -f app.log\nIN\nMID\n)\n\"@", false)]
+    [InlineData("H25-capture-stdin-code", "Bash", "echo @\"\n$(bash <<'MID'\ncat <<'IN'\ntail -f app.log\nIN\nMID\n)\n\"@ | bash", true)]
+    [InlineData("H26-hereword-data", "Bash", "cat <<< \"$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\"", false)]
+    [InlineData("H26-hereword-code", "Bash", "cat <<< \"$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\" | bash", true)]
+    [InlineData("H27-two-captures-data", "Bash", "cat <<OUTER\n$(cat <<MIDDLE\n$(cat <<'INNER'\ntail -f app.log\nINNER\n)\nMIDDLE\n)\nOUTER", false)]
+    [InlineData("H27-two-captures-code", "Bash", "cat <<OUTER | bash\n$(cat <<MIDDLE\n$(cat <<'INNER'\ntail -f app.log\nINNER\n)\nMIDDLE\n)\nOUTER", true)]
+    public async Task Gs03_HostEdge_HookFirstAndRetry(string id, string toolName, string command, bool deny)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+        var payload = ShellJson(toolName, command);
+        var first = await GuardWithStdinAsync(payload, "--host", "claude");
+        var retry = await GuardWithStdinAsync(payload, "--host", "claude");
+        Assert.Equal(before, File.ReadAllBytes(canary));
+        retry.AssertPreToolUseAllowed();
+        if (!deny)
+        {
+            first.AssertPreToolUseAllowed();
+            Assert.Equal(first.Stderr, retry.Stderr);
+            Assert.DoesNotContain("Open-ended Bash poll-loop", first.Stderr);
+            return;
+        }
+        const string nudge = "BLOCKED: Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`. Open-ended polls have caused agent crashes (issue 0177).";
+        var expected = retry.Stderr + nudge + Environment.NewLine
+            + "  (Run the same command again to proceed anyway.)";
+        Assert.Equal(id + ":" + expected, id + ":" + first.AssertPreToolUseDenied());
+        Assert.Equal(expected + Environment.NewLine, first.Stderr);
     }
 
     // GS-01: a PowerShell variable assigned from a literal Get-Content is a read.

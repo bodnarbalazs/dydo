@@ -1,11 +1,11 @@
 ---
-name: ketchup
+name: catch-up
 description: "Catch the user up on a project's purpose, progress, current work and next steps, including human decisions and actions. Load only when the user asks."
 ---
 
 <!-- Adapted from cursor/plugins pstack/ketchup at dbf49813a39c1a5389c5e28cb8e4c1c2379e2454 (MIT). -->
 
-# Ketchup
+# Catch-up
 
 Give Balazs a **project catch-up**: its purpose, progress, current work and next steps. The admiral or commissioned reporter builds the account from project records and captain returns. Include earlier context where it explains the work. A chat boundary does not define the project; state a narrower scope when requested.
 

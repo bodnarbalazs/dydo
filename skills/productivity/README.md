@@ -11,7 +11,7 @@
 - **overnight-mode** (model-invoked): Overnight mode, the user away while admirals run on standing and night orders. Load only on the chief of staff's muster or morning-brief announcement, or when the user calls overnight mode.
 - **retro** (model-invoked): Kaizen for the harness. Use when the same friction, correction, or workaround returns a second time; when a mistake could have been caught by a check that does not exist; when a run burns its budget finding what it should have been handed.
 - **show-me** (model-invoked): Help the user understand the current topic visually with concise diagrams, code-shape sketches, and focused HTML artifacts.
-- **ketchup** (model-invoked): Catch the user up on a project's purpose, progress, current work and next steps, including human decisions and actions. Load only when the user asks.
+- **catch-up** (model-invoked): Catch the user up on a project's purpose, progress, current work and next steps, including human decisions and actions. Load only when the user asks.
 - **teach** (model-invoked): Teach the user a new skill or concept, within this workspace. Load only when the user asks.
 - **to-ticket** (model-invoked): Break a plan, spec, or this conversation into pickable Linear tickets, tracer-bullet slices wired with native blocking relations. Load only when the user asks.
 - **to-project** (model-invoked): Turn this co-think into a Linear Project, with its settled intent and links. Load only when the user asks.

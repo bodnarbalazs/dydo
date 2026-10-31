@@ -68,13 +68,18 @@ map and how the tickets move, integrate, and finish together.
 
 ## Method
 
-1. **Read the board.** Wake on a captain's return or the user's word. Read the Project, its map,
-   blockers, hop SHAs and reviews; resume at the stage the record proves. Process an Inquisition's
-   release through step 7 before generic pickable commissioning. On a completed return, carry out
-   the authorized continuation or fallback through its captain, or record a hold with owner and
-   reason; explicit human holds remain. Reconcile affected current map claims with the latest
-   outcome before yielding. **Done:** every pickable ticket and every Merge whose turn came is
-   known. Wait for the user's word only when nothing is in flight and no authorized work is pickable.
+1. **Reconcile the board.** On each user wake, captain return or approved check, reconcile actual
+   captains, crew and pending returns with the Project map, blockers, hop SHAs and reviews. Use
+   native delivered events and receipts; never poll running delegates. Distinguish a running child,
+   a dependency wait, engineering blocker-resolution actually running, an admiral decision or
+   dispatch owed, human authority or access needed, and complete or explicitly deferred work.
+   Assignment and AFK labels alone prove no activity. Each unfinished area needs an accountable
+   owner, concrete next action, any prerequisite and who clears it, and next event or checkpoint.
+   Resume at the stage the record proves. Process an Inquisition's release through step 7 before
+   generic pickable commissioning. On a completed return, carry out the authorized continuation
+   or fallback through its captain, or record the specific hold. Explicit human holds remain;
+   independent authorized work proceeds. **Done:** map claims match the latest evidence, and every
+   pickable ticket and every Merge whose turn came is known.
 2. **Chart and approve.** When the route is unknown, set the Project `Planning` and chart it with
    `wayfinder`: the map in the Project description, naming you its holder, the first pickable tickets, and each Project-level
    Question in `Todo`, wired to every waiter. Record the shared anchor choice from `wayfinder`, when
@@ -97,8 +102,9 @@ map and how the tickets move, integrate, and finish together.
    `feature/<project-slug>` from the approved main SHA before claiming its ticket; put the map in the
    Project description and each contract's base branch and blockers on its ticket. Give
    every merging delivery ticket a final Merge Sub-ticket, blocked by the previous merge in plan
-   order. Set the Project `In Progress`. On every wake commission each pickable AFK ticket, including
-   blocker-cleared and released ones, from its record; open each HITL captain in a new top-level thread.
+   order. Set the Project `In Progress`. On each reconciliation commission each authorized pickable
+   AFK ticket, including blocker-cleared and released ones, from its record; open each HITL captain
+   in a new top-level thread.
    Choose each commission's capability yourself: the strongest supported model for real
    engineering challenges, the smallest adequate one otherwise, and the effort where the host exposes one, weighed from that ticket's difficulty, uncertainty,
    consequence of error, required independence, context size and likely retries. Start adequate and
@@ -108,7 +114,8 @@ map and how the tickets move, integrate, and finish together.
    effective identity only where telemetry shows it. dydo compiles no model, no effort and no
    standing capability table. Candidates include other vendors' models wherever the host can
    dispatch them.
-   **Done:** each pickable ticket has a captain or a stated reason.
+   **Done before yielding:** each pickable item is dispatched or has a specific blocker, owner and
+   clearance route. A stage or turn ending does not revoke existing authority.
 4. **Order merges.** A captain's `done <key>: PR ready` leaves its ticket `Ready to Merge` with a
    reviewed PR; its captain rechecked the gate before setting it. On `PR open <key>, checks pending: <url>, head <SHA>`,
    watch that PR (`watch_pull_request` in T3) and wake its captain on news; unwatch when it returns
@@ -137,8 +144,10 @@ map and how the tickets move, integrate, and finish together.
    before affected work resumes; a unanimous away `what-would-balazs-do` verdict is that approval,
    and only an irreversible change waits for his word. **Done:** the Project map matches the work
    in flight.
-6. **Clear fog.** Do small discovery inline; create a Wayfinding Ticket when the investigation needs
-   its own status, owner, blocker, or evidence. Dispatch Research agents, use Prototype in its captain's session
+6. **Clear fog.** Within existing authority, resolve routine decisions and commission bounded
+   engineering blocker diagnosis through the responsible captain. Do small discovery inline;
+   create a Wayfinding Ticket when the investigation needs its own status, owner, blocker, or
+   evidence. Dispatch Research agents, use Prototype in its captain's session
    or Grilling in this session, present one prepared Question only when
    judgment remains, and commission Enablement. A call above your say goes through
    `what-would-balazs-do` when it is DR-grade or irreversible, or when the user is away; it sets the
@@ -146,7 +155,9 @@ map and how the tickets move, integrate, and finish together.
    affected delivery ticket. Accept a Captain's local course correction when later facts expose it;
    move cross-ticket and Project-wide discoveries back onto your map. For evidenced inherited or
    infrastructure failures, assign the separate repair owner or escalate the unresolved decision;
-   record blocked gates without converting the failure into a pass. **Done:** every visible unknown
+   record blocked gates without converting the failure into a pass. Preserve safety, provenance and
+   review stops; prepare their owned disposition instead of retry loops. Escalate concrete missing
+   authority, access or scope, not routine work. **Done:** every visible unknown
    is resolved or has the right owner, record, and blocker. Set and revisit priority on every human
    waiter by the standard's guide; AFK order remains in the map and blockers.
 7. **Offer the inquisition.** Once the feature is integrated, file an Inquisition in `Backlog` with
@@ -190,6 +201,9 @@ the portable floor; one-word resume and transcript steering are host convenience
 
 ## Return
 
-The board is the return: current map, contracts, blockers, reviews and human gates. After the user
-answers a Question, confirms an Inquisition, finishes HITL work or clicks a landing, he tells you;
-read the board again.
+The board is the return: current map, contracts, blockers, reviews and human gates. Report an owed
+admiral decision or dispatch as your debt, not a human wait. Waiting follows reconciliation:
+wait for the user's word only when nothing is in flight and no authorized work is pickable.
+Dependency-blocked work waits for its named prerequisite; invent no work to fill idle capacity.
+After the user answers a Question, confirms an Inquisition, finishes HITL work or clicks a landing,
+he tells you; read the board again.

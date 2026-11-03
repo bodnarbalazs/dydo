@@ -1,0 +1,76 @@
+{
+  "janitors": [
+    {
+      "firstSeenMonotonicNs": 121583864024735,
+      "alive": {
+        "pid": 15,
+        "starttime": 12158386,
+        "parentPid": 7,
+        "processGroup": 15,
+        "session": 15,
+        "state": "S",
+        "stat": "15 (sh) S 7 15 15 0 -1 1077936128 104 0 4 0 0 0 0 0 20 0 1 0 12158386 2736128 272 18446744073709551615 94847018332160 94847018413153 140734819272784 0 0 0 0 0 65538 1 0 0 17 14 0 0 0 0 0 94847018442288 94847018447424 94847034941440 140734819274117 140734819274269 140734819274269 140734819274736 0\n",
+        "cmdlineHex": "2f62696e2f7368002d63007768696c652072656164202d72206c696e653b20646f203a3b20646f6e653b206b696c6c202d73204b494c4c202d2d20222d2431223b20726d202d7266202d2d20222432222022243322007368003134002f776f726b2f2e726573756c742e737461746563686172742d77614f6e4f6a002f776f726b2f746d702f737461746563686172742d73757535376100",
+        "argv": [
+          "/bin/sh",
+          "-c",
+          "while read -r line; do :; done; kill -s KILL -- \"-$1\"; rm -rf -- \"$2\" \"$3\"",
+          "sh",
+          "14",
+          "/work/.result.statechart-waOnOj",
+          "/work/tmp/statechart-suu57a"
+        ]
+      },
+      "workerPid": 14,
+      "lastSeen": {
+        "pid": 15,
+        "starttime": 12158386,
+        "parentPid": 1,
+        "processGroup": 15,
+        "session": 15,
+        "state": "Z",
+        "stat": "15 (sh) Z 1 15 15 0 -1 4228100 104 0 4 0 0 0 0 0 20 0 1 0 12158386 0 0 18446744073709551615 0 0 0 0 0 0 0 0 65538 1 0 0 17 14 0 0 0 0 0 0 0 0 0 0 0 0 9\n",
+        "cmdlineHex": "",
+        "argv": []
+      },
+      "lastSeenMonotonicNs": 121585462557246,
+      "firstZombieObservedMonotonicNs": 121584457457876,
+      "firstAdoptionObservedMonotonicNs": 121584460137255,
+      "terminalSnapshot": {
+        "pid": 15,
+        "starttime": 12158386,
+        "parentPid": 1,
+        "processGroup": 15,
+        "session": 15,
+        "state": "Z",
+        "stat": "15 (sh) Z 1 15 15 0 -1 4228100 104 0 4 0 0 0 0 0 20 0 1 0 12158386 0 0 18446744073709551615 0 0 0 0 0 0 0 0 65538 1 0 0 17 14 0 0 0 0 0 0 0 0 0 0 0 0 9\n",
+        "cmdlineHex": "",
+        "argv": []
+      },
+      "workerWitnesses": []
+    }
+  ],
+  "matchedZombieCount": 1,
+  "observedProcessIdentities": 7,
+  "remaining": [
+    {
+      "pid": 15,
+      "starttime": 12158386,
+      "parentPid": 1,
+      "processGroup": 15,
+      "session": 15,
+      "state": "Z",
+      "stat": "15 (sh) Z 1 15 15 0 -1 4228100 104 0 4 0 0 0 0 0 20 0 1 0 12158386 0 0 18446744073709551615 0 0 0 0 0 0 0 0 65538 1 0 0 17 14 0 0 0 0 0 0 0 0 0 0 0 0 9\n",
+      "cmdlineHex": "",
+      "argv": []
+    }
+  ],
+  "interpretation": "JANITOR_PID_STARTTIME_MATCHED_ZOMBIE",
+  "limits": [
+    "Polling can miss short-lived spawns/transitions",
+    "Cross-file proc reads are not atomic",
+    "CLI poll records observation/reap time, not exact process.exit or libuv close event",
+    "PID1 adoption does not alone distinguish an original-parent reap race from init policy",
+    "No source fix or root-cause proof from absence, and no automatic retry"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "records": [
+    {
+      "status": "ok",
+      "name": "POSIX janitor closes before controlled SIGINT exit with no output",
+      "directive": ""
+    }
+  ],
+  "expectedName": "POSIX janitor closes before controlled SIGINT exit with no output",
+  "expectedCount": 1
+}

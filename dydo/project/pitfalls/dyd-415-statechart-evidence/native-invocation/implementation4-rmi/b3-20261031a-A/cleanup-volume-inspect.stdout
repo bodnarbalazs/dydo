@@ -1,0 +1,13 @@
+[
+    {
+        "CreatedAt": "2026-10-31T01:17:46Z",
+        "Driver": "local",
+        "Labels": {
+            "com.dydo.proof-owner": "2bde5afcdbfb45ab"
+        },
+        "Mountpoint": "/var/lib/docker/volumes/dyd415-rmi-b3-2bde5afcdbfb45ab-jdk/_data",
+        "Name": "dyd415-rmi-b3-2bde5afcdbfb45ab-jdk",
+        "Options": null,
+        "Scope": "local"
+    }
+]

@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "docker",
+    "rm",
+    "e23a29077c342d1a379db846c9ca4f2a791df49ddd1e4e49b8a129806b9732b6"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "hidden": true,
+  "ticket": "0000000007-61397a71b5d516ba",
+  "startedUtc": "2026-10-31T02:59:10.960992+00:00"
+}

@@ -19,11 +19,11 @@ internal static class StatechartProbe
         return process.ExitCode;
     }
 
-    public static async Task<string> CaptureAsync(string file, string argument, WindowsStatechartLifetime lifetime)
+    public static async Task<string> CaptureAsync(string file, string argument, StatechartLifetime lifetime)
         => await CaptureAsync(file, [argument], lifetime, Environment.CurrentDirectory, CancellationToken.None);
 
     public static async Task<string> CaptureAsync(string file, IReadOnlyList<string> arguments,
-        WindowsStatechartLifetime lifetime, string cwd, CancellationToken token)
+        StatechartLifetime lifetime, string cwd, CancellationToken token)
     {
         var start = StatechartExecutable.Current();
         start.ArgumentList.Add("__statechart-probe");
@@ -35,7 +35,7 @@ internal static class StatechartProbe
         start.RedirectStandardInput = true;
         start.RedirectStandardOutput = true;
         start.RedirectStandardError = true;
-        using var process = Process.Start(start) ?? throw new IOException("Cannot start gated statechart probe.");
+        using var process = Process.Start(lifetime.Gate(start)) ?? throw new IOException("Cannot start gated statechart probe.");
         var protocol = new StatechartProtocol();
         protocol.AcceptReady(await StatechartCleanup.Read(process.StandardOutput).WaitAsync(TimeSpan.FromSeconds(30), token));
         lifetime.Attach(process.Id);

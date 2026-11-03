@@ -1,0 +1,9 @@
+{
+  "osName": "nt",
+  "platform": "win32",
+  "localAppData": "C:\\Users\\User\\AppData\\Local",
+  "temp": "C:\\Users\\User\\AppData\\Local\\Temp",
+  "inheritedTicket": null,
+  "launcherSha256": "97b44c023d3aa6a5dec2b16a895b96e1f675ec16c5408d14ee775fe466176fb8",
+  "driverSha256": "aae895f42a030e04a38f3f977403d245b45ae72c25e7fca643146ffb3f99e074"
+}

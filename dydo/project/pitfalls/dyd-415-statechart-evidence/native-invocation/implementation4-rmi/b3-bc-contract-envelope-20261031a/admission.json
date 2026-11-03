@@ -1,0 +1,10 @@
+{
+  "pid": 90116,
+  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -B C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-bc-contract-envelope-driver-20261031.py",
+  "ticket": "0000000001-9d8ccff753aba126",
+  "nonce": "5704c5b2223c4b38",
+  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
+  "bookingOwned": true,
+  "inherited": false,
+  "startedUtc": "2026-10-31T04:42:14.733809+00:00"
+}

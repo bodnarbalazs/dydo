@@ -1,0 +1,13 @@
+{
+  "exit": 0,
+  "outputBytes": {
+    "stdout": 0,
+    "stderr": 2216
+  },
+  "postCompletionLimitBytes": 16777216,
+  "directChildReaped": true,
+  "error": null,
+  "message": null,
+  "timeoutRemainsFailure": false,
+  "descendantAbsenceNotClaimed": true
+}

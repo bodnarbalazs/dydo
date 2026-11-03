@@ -1,0 +1,116 @@
+{
+  "state": "SOURCE_ONLY_NO_SETUP_EXECUTED",
+  "adoptedBy": [
+    {
+      "path": "dydo/reference/coverage-tools.md",
+      "bytes": 36057,
+      "sha256": "8fbaf5e73d2e4767c9330b1199e17ae5a6d70ecd7c950a347d56df5860effd05"
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "bytes": 9840,
+      "sha256": "1e1c18389c5b80c3115e24b71f2ebe7bed2a573e6ea767020d21ef539fa22f3a"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/.python-version",
+      "bytes": 9,
+      "sha256": "16c863195943df357aff24d69eb6f1f022b5e5a0ca2bcd74df2d8494d54b6e23"
+    }
+  ],
+  "python": {
+    "declaration": "CPython3.12.10 exactly",
+    "venv": "dydo/_system/.local/static-gates/python",
+    "argv": [
+      "<identity-approved CPython3.12.10>",
+      "-m",
+      "venv",
+      "dydo/_system/.local/static-gates/python"
+    ],
+    "pipArgv": [
+      "dydo/_system/.local/static-gates/python/Scripts/python.exe",
+      "-m",
+      "pip",
+      "install",
+      "-r",
+      "DynaDocs.Tests/coverage/requirements.lock"
+    ],
+    "requires": "Separate installer/runtime approval, patch-version/implementation identity, package artifact provenance and controlled environment. No host3.13 metrics.",
+    "lock": {
+      "path": "DynaDocs.Tests/coverage/requirements.lock",
+      "bytes": 124,
+      "sha256": "3b62e0c7100cf8c8fecad179946d4ef5137506adc78040e7f1051b3a9bd9a152"
+    }
+  },
+  "coverage": {
+    "adoptedCwd": "DynaDocs.Tests/coverage",
+    "adoptedArgv": [
+      "npm",
+      "ci"
+    ],
+    "explicitIdentityBindingProposal": [
+      "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/node.exe",
+      "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/node_modules/npm/bin/npm-cli.js",
+      "ci"
+    ],
+    "runtimeSha256": "364dbc8442f8d5c04fd4226bcfcf8e60d3268627eb1d7be214a91bb7d74cdbb9",
+    "npmVersion": "10.9.2",
+    "status": "PRESENT raw runtime/launcher identity; not executed; complete npm bundled closure/install provenance not certified",
+    "lock": {
+      "path": "DynaDocs.Tests/coverage/package-lock.json",
+      "bytes": 134688,
+      "sha256": "8c21637d43ef457181e2cbc8b12a174709c9b6a249a47473929d4e1fbf251db8"
+    },
+    "manifest": {
+      "path": "DynaDocs.Tests/coverage/package.json",
+      "bytes": 400,
+      "sha256": "70084ed19a7ca0a8fa4bf49a037e6c5cc39407c9bc875374a992cc4449b551f2"
+    },
+    "lockPackageRows": 280,
+    "lockHasInstallScriptFlags": 0,
+    "limits": "Zero hasInstallScript flags is source metadata, not installation/runtime assurance. Future setup must preserve exact original approved lock and named current npm CLI, current env/registry sources and actual ownership; no lifecycle/global/security changes inferred.",
+    "childOnlyProposedCacheEnv": {
+      "NODE_DISABLE_COMPILE_CACHE": "1"
+    }
+  },
+  "npmLauncherRouting": "npm.cmd/npm.ps1/npm shell wrapper call npm-prefix.js and may redirect to global-prefix npm. Explicit pinned Node + installation npm-cli.js avoids silently blessing that alternate identity; no launcher was executed.",
+  "viewer": {
+    "adoptedArgv": [
+      "pnpm",
+      "-C",
+      "viewer",
+      "install",
+      "--frozen-lockfile"
+    ],
+    "lock": {
+      "path": "viewer/pnpm-lock.yaml",
+      "bytes": 97742,
+      "sha256": "38c8271e7d44ed7a7b96c726aeef8c9ae9c827b5ce5d882f6a26f631fd6d8a07"
+    },
+    "scope": "Viewer only; not statechart typecheck.",
+    "pnpmIdentity": "Exact installed pnpm11 executable/package identity not established in allowed named Node installation; do not search/provision unrelated trees now.",
+    "knownCompatibilityGaps": [
+      {
+        "package": "jsdom30.0.1",
+        "engine": "^22.22.2 || ^24.15.0 || >=26.0.0",
+        "sourceLines": [
+          972,
+          974
+        ],
+        "adoptedMetricNode22_13_0Compatible": false
+      },
+      {
+        "package": "undici8.10.2",
+        "engine": ">=22.19.0",
+        "sourceLines": [
+          1331,
+          1333
+        ],
+        "adoptedMetricNode22_13_0Compatible": false
+      }
+    ],
+    "disposition": "Record relevant existing viewer lock/runtime mismatch. No viewer setup/metric acceptance or version substitution under this proposal; captain reconciles independently before any future viewer command."
+  },
+  "compiler": "Existing admitted diagnostic Node22.23.2/TS5.9.3 closure is distinct and not changed by metric22.13.0 availability. Helper source portability currently holds conditional compiler execution.",
+  "noCurrentInstallation": true,
+  "noDependencyPolicyChange": true
+}

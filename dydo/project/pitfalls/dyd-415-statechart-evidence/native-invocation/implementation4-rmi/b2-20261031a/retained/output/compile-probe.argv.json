@@ -1,0 +1,25 @@
+{
+  "argv": [
+    "/toolchain/jdk-21.0.8+9/bin/javac",
+    "--release",
+    "11",
+    "-encoding",
+    "UTF-8",
+    "-g",
+    "-Xlint:all",
+    "-Werror",
+    "-proc:none",
+    "-implicit:none",
+    "-sourcepath",
+    "/work/empty",
+    "-classpath",
+    "/input/helper.jar",
+    "-d",
+    "/work/probe-classes",
+    "/input/fixtures/java/dydo/statechart/proof/Echo.java",
+    "/input/fixtures/java/dydo/statechart/proof/EchoServer.java",
+    "/input/fixtures/java/dydo/statechart/proof/SocketProbe.java"
+  ],
+  "cwd": "/work",
+  "control": null
+}

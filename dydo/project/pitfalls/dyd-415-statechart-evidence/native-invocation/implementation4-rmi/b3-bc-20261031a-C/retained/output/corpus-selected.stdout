@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: CounterInstance gives the committed chart and report when TLC runs
+ok 1 - CounterInstance gives the committed chart and report when TLC runs
+  ---
+  duration_ms: 2650.151576
+  type: 'test'
+  ...
+# Subtest: CounterRules gives the committed chart and report when TLC runs
+ok 2 - CounterRules gives the committed chart and report when TLC runs
+  ---
+  duration_ms: 5786.075372
+  type: 'test'
+  ...
+# Subtest: MediaPlayerProps gives the committed chart and report when TLC runs
+ok 3 - MediaPlayerProps gives the committed chart and report when TLC runs
+  ---
+  duration_ms: 7067.401574
+  type: 'test'
+  ...
+# Subtest: Shadow gives the committed chart and report when TLC runs
+ok 4 - Shadow gives the committed chart and report when TLC runs
+  ---
+  duration_ms: 2696.781944
+  type: 'test'
+  ...
+# Subtest: a property that breaks on a loop draws the loop and reports it
+ok 5 - a property that breaks on a loop draws the loop and reports it
+  ---
+  duration_ms: 2549.56404
+  type: 'test'
+  ...
+# Subtest: check() leaves no statechart- folder in the temp dir when it returns and when it throws
+ok 6 - check() leaves no statechart- folder in the temp dir when it returns and when it throws
+  ---
+  duration_ms: 2445.402626
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 23287.055707

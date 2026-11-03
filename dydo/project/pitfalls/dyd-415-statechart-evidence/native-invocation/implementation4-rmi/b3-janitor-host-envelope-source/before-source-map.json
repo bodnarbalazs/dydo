@@ -1,0 +1,35 @@
+{
+  "state": "NO_EXECUTABLE_SUCCESSOR_AUTHORED",
+  "beforeWrapper": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/driver.py",
+      "bytes": 26669,
+      "sha256": "953bd2b280de3dc4c2a385e6aa5fd34a6a40c68d33d811893408959683f700b7"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/launcher.py",
+      "bytes": 5957,
+      "sha256": "dc97c5b0f8d0299e3eadf29c18c564d585f7c171989d97b1c06203de3a5581ee"
+    }
+  ],
+  "plannedSuccessor": [
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/driver.py",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/launcher.py"
+  ],
+  "actualStatus": "ABSENT; stopped on frozen helper portability obligation. No old executed wrapper/test/source/pin edited.",
+  "frozenHelper": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_worker_contracts.py",
+    "bytes": 6680,
+    "sha256": "b728bdfc188e921c79ce81e77fb5ab9fa33a10545e6d2aa2e9a9529af08af061"
+  },
+  "requestedFutureScope": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_worker_contracts.py",
+    "methods": [
+      "test_runner_identity_uncertainty_never_kills_an_unproved_group",
+      "test_runner_exact_owned_group_cancellation_uses_sigkill",
+      "test_timeout_stays_failure_after_late_runner_exit_and_bounded_reap"
+    ],
+    "change": "Only platform-neutral explicit mocked os/signal boundaries; preserve assertions/names/no material calls; requires separate captain/admiral source disposition, not edited now"
+  },
+  "beforeSnapshotSource": "Immutable old path remains its own exact before evidence; no copying/modifying/regenerating old pins"
+}

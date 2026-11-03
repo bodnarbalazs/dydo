@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "jarSha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+  "member": "tlc2/output/EC$ExitStatus.class",
+  "memberSha256": "a305179e18e0fdebd187b3d189698a52e6c187689685eb8915021b9d722e3984",
+  "bytes": 2333,
+  "constants": {
+    "ERROR": 255,
+    "SUCCESS": 0,
+    "VIOLATION_ASSUMPTION": 10,
+    "VIOLATION_DEADLOCK": 11,
+    "VIOLATION_SAFETY": 12,
+    "VIOLATION_LIVENESS": 13,
+    "VIOLATION_ASSERT": 14,
+    "FAILURE_SPEC_EVAL": 75,
+    "FAILURE_SAFETY_EVAL": 76,
+    "FAILURE_LIVENESS_EVAL": 77,
+    "ERROR_SPEC_PARSE": 150,
+    "ERROR_CONFIG_PARSE": 151,
+    "ERROR_STATESPACE_TOO_LARGE": 152,
+    "ERROR_SYSTEM": 153
+  },
+  "method": "Offline class ConstantValue reading only; no Java or compiler executed",
+  "retainedExitReceipts": [
+    {
+      "path": "skills/engineering/statechart/scripts/test/corpus/CounterRules/verdict-1.exit",
+      "bytes": 3,
+      "sha256": "a1fb50e6c86fae1679ef3351296fd6713411a08cf8dd1790a4fd05fae8688164"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/corpus/CounterInstance/verdict-1.exit",
+      "bytes": 3,
+      "sha256": "1a252402972f6057fa53cc172b52b9ffca698e18311facd0f3b06ecaaef79e17"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/corpus/MediaPlayerProps/verdict-5.exit",
+      "bytes": 3,
+      "sha256": "a1fb50e6c86fae1679ef3351296fd6713411a08cf8dd1790a4fd05fae8688164"
+    }
+  ]
+}

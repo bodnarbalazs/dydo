@@ -1,0 +1,9 @@
+{
+  "contracts": 21,
+  "skipped": 0,
+  "complete": true,
+  "actualCallsToSuccessor": true,
+  "realRuntime": false,
+  "java": false,
+  "docker": false
+}

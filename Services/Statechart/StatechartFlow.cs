@@ -7,7 +7,7 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
 {
     public async Task<int> StartAsync(string[] arguments, string caller, TextWriter output, CancellationToken token)
     {
-        RequireWindows();
+        RequirePlatform();
         token.ThrowIfCancellationRequested();
         var request = StatechartRequest.Capture(arguments, caller, assets, rid);
         var payload = assets.Extract(home.Assets);
@@ -26,7 +26,7 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
 
     public async Task<int> ResumeAsync(string path, TextWriter output, CancellationToken token)
     {
-        RequireWindows();
+        RequirePlatform();
         token.ThrowIfCancellationRequested();
         var store = new StatechartRequests(home, assets, rid);
         using var executionLock = store.Lock(path);
@@ -42,7 +42,8 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
                 dependencies = await managed.InstallAsync(dependencies, payload, token);
             else await StatechartReady.VerifyAsync(dependencies, payload, home, full: false, token);
             StatechartRequest.Validate(request, assets, rid);
-            var status = await StatechartRunner.RunAsync(request, dependencies, payload, home, output, token);
+            var status = await StatechartRunner.RunAsync(request, dependencies, payload, home, output, token,
+                new StatechartContinuation(path, executionLock));
             if (status is 0 or 1) store.Complete(path, request, status);
             return status;
         }
@@ -74,8 +75,8 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
             ["message"] = "Statechart prerequisites are missing. Submit this exact continuation through the host's normal installation authorization; no installation has started." };
     }
 
-    private static void RequireWindows()
+    private static void RequirePlatform()
     {
-        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("This native public-flow slice still needs POSIX ownership integration; supported legacy entry points remain available.");
+        if (!OperatingSystem.IsWindows()) PosixStatechartFiles.RequireLinux();
     }
 }

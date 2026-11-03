@@ -1,0 +1,38 @@
+image-inspect: starting
+image-inspect: exit 0
+volume-create: starting
+volume-create: exit 0
+volume-inspect: starting
+volume-inspect: exit 0
+dyd415-rmi-b3-2bde5afcdbfb45ab-extract-create: starting
+dyd415-rmi-b3-2bde5afcdbfb45ab-extract-create: exit 0
+dyd415-rmi-b3-2bde5afcdbfb45ab-extract-inspect: starting
+dyd415-rmi-b3-2bde5afcdbfb45ab-extract-inspect: exit 0
+dyd415-rmi-b3-2bde5afcdbfb45ab-extract-start: starting
+dyd415-rmi-b3-2bde5afcdbfb45ab-extract-start: exit 0
+dyd415-rmi-b3-2bde5afcdbfb45ab-extract-state: starting
+dyd415-rmi-b3-2bde5afcdbfb45ab-extract-state: exit 0
+dyd415-rmi-b3-2bde5afcdbfb45ab-finite-create: starting
+dyd415-rmi-b3-2bde5afcdbfb45ab-finite-create: exit 0
+dyd415-rmi-b3-2bde5afcdbfb45ab-finite-inspect: starting
+dyd415-rmi-b3-2bde5afcdbfb45ab-finite-inspect: exit 0
+dyd415-rmi-b3-2bde5afcdbfb45ab-finite-start: starting
+dyd415-rmi-b3-2bde5afcdbfb45ab-finite-start: exit 1
+cleanup-0-inspect: starting
+cleanup-0-inspect: exit 0
+cleanup-0-remove: starting
+cleanup-0-remove: exit 0
+cleanup-0-absence: starting
+cleanup-0-absence: exit 0
+cleanup-1-inspect: starting
+cleanup-1-inspect: exit 0
+cleanup-1-remove: starting
+cleanup-1-remove: exit 0
+cleanup-1-absence: starting
+cleanup-1-absence: exit 0
+cleanup-volume-inspect: starting
+cleanup-volume-inspect: exit 0
+cleanup-volume-remove: starting
+cleanup-volume-remove: exit 0
+cleanup-volume-absence: starting
+cleanup-volume-absence: exit 0

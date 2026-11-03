@@ -1,0 +1,291 @@
+{
+  "schema": 1,
+  "state": "DECLARED_BEFORE_REGENERATION",
+  "rows": [
+    {
+      "path": "skills/engineering/statechart/PROVENANCE.md",
+      "before": {
+        "path": "skills/engineering/statechart/PROVENANCE.md",
+        "resource": "Statechart/payload/skills/engineering/statechart/PROVENANCE.md",
+        "bytes": 3958,
+        "sha256": "f57a2444d3229222bc3d02c4a02bfbdfc93951964510b076303d7465e556d5ae"
+      },
+      "after": {
+        "path": "skills/engineering/statechart/PROVENANCE.md",
+        "resource": "Statechart/payload/skills/engineering/statechart/PROVENANCE.md",
+        "bytes": 6297,
+        "sha256": "ddc633d92ec96cd770a46b5eadbddd147f5405740781d8a62fea61c9b8ba2891"
+      },
+      "authority": {
+        "kind": "explicit-sealing-delta",
+        "before": {
+          "path": "skills/engineering/statechart/PROVENANCE.md",
+          "sha256": "cb046f151f8bd2524cd62cf48000aa94160e9eaf0c6bc6fcf7b994fb4e03b8d4",
+          "bytes": 5460,
+          "preserved": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/skills/engineering/statechart/PROVENANCE.md"
+        },
+        "after": {
+          "path": "skills/engineering/statechart/PROVENANCE.md",
+          "bytes": 6297,
+          "sha256": "ddc633d92ec96cd770a46b5eadbddd147f5405740781d8a62fea61c9b8ba2891"
+        }
+      }
+    },
+    {
+      "path": "skills/engineering/statechart/references/runtime.md",
+      "before": {
+        "path": "skills/engineering/statechart/references/runtime.md",
+        "resource": "Statechart/payload/skills/engineering/statechart/references/runtime.md",
+        "bytes": 2339,
+        "sha256": "92b650c20a8aad65d8d4f5ab35f069c68d5d2f0178d45405513217ab33767a16"
+      },
+      "after": {
+        "path": "skills/engineering/statechart/references/runtime.md",
+        "resource": "Statechart/payload/skills/engineering/statechart/references/runtime.md",
+        "bytes": 6742,
+        "sha256": "2c439c2b1f411682c324539a805b0a11d70dd8843febf0f4a1bd3248dabdff8d"
+      },
+      "authority": {
+        "kind": "explicit-sealing-delta",
+        "before": {
+          "path": "skills/engineering/statechart/references/runtime.md",
+          "sha256": "026f7c81c92269f6fedf022876529ecabb325c5635c399d95083bd0ee1313857",
+          "bytes": 5756,
+          "preserved": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/skills/engineering/statechart/references/runtime.md"
+        },
+        "after": {
+          "path": "skills/engineering/statechart/references/runtime.md",
+          "bytes": 6742,
+          "sha256": "2c439c2b1f411682c324539a805b0a11d70dd8843febf0f4a1bd3248dabdff8d"
+        }
+      }
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/lifetime.ts",
+      "before": {
+        "path": "skills/engineering/statechart/scripts/lifetime.ts",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/lifetime.ts",
+        "bytes": 2594,
+        "sha256": "a263f327ed660496795654f619564c27a3c54182b361f84b94e1c08669777b2b"
+      },
+      "after": {
+        "path": "skills/engineering/statechart/scripts/lifetime.ts",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/lifetime.ts",
+        "bytes": 3152,
+        "sha256": "29c98a05d7e70b7ef0ad7e34fdab2acf75f0f5522da2df121c2f5536ebde91b1"
+      },
+      "authority": {
+        "kind": "captain-inspected-source",
+        "pin": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/runtime-isolation/source-pin.json",
+        "sha256": "29c98a05d7e70b7ef0ad7e34fdab2acf75f0f5522da2df121c2f5536ebde91b1"
+      }
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/native-entry.ts",
+      "before": {
+        "path": "skills/engineering/statechart/scripts/native-entry.ts",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/native-entry.ts",
+        "bytes": 2423,
+        "sha256": "8a6abce4062b9921df7decb38cfa6fd85a7e260d7dc0c0f3645d1c464a53850a"
+      },
+      "after": {
+        "path": "skills/engineering/statechart/scripts/native-entry.ts",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/native-entry.ts",
+        "bytes": 2609,
+        "sha256": "7e485c792e362c8a45c43d6cb75deee00301bc5631ff65080560857c19456395"
+      },
+      "authority": {
+        "kind": "captain-inspected-source",
+        "pin": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/runtime-isolation/source-pin.json",
+        "sha256": "7e485c792e362c8a45c43d6cb75deee00301bc5631ff65080560857c19456395"
+      }
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/run.ts",
+      "before": {
+        "path": "skills/engineering/statechart/scripts/run.ts",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/run.ts",
+        "bytes": 17476,
+        "sha256": "fa7e46fb1937a16333ba3ebb7c7c56f9fdd7389b24f717bf3ef2b8eed76e0ad5"
+      },
+      "after": {
+        "path": "skills/engineering/statechart/scripts/run.ts",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/run.ts",
+        "bytes": 17821,
+        "sha256": "10355c0fe04d1b378a04adad97756a41286e048976749ce557969935ee01a5fe"
+      },
+      "authority": {
+        "kind": "captain-inspected-source",
+        "pin": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/runtime-isolation/source-pin.json",
+        "sha256": "10355c0fe04d1b378a04adad97756a41286e048976749ce557969935ee01a5fe"
+      }
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/checker.ts",
+      "before": null,
+      "after": {
+        "path": "skills/engineering/statechart/scripts/checker.ts",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/checker.ts",
+        "bytes": 3817,
+        "sha256": "71da093878ba7b0c1f76f8e82c8f48fe04b4db41a99a7a01b75e24b86a2dd330"
+      },
+      "authority": {
+        "kind": "captain-inspected-source",
+        "pin": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/runtime-isolation/source-pin.json",
+        "sha256": "71da093878ba7b0c1f76f8e82c8f48fe04b4db41a99a7a01b75e24b86a2dd330"
+      }
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/posix-lifetime.ts",
+      "before": null,
+      "after": {
+        "path": "skills/engineering/statechart/scripts/posix-lifetime.ts",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/posix-lifetime.ts",
+        "bytes": 7323,
+        "sha256": "2d7e11485f6bdef35219151c5cf7795048e9b27f20f7488c98f6f6e030290774"
+      },
+      "authority": {
+        "kind": "captain-inspected-source",
+        "pin": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/runtime-isolation/source-pin.json",
+        "sha256": "2d7e11485f6bdef35219151c5cf7795048e9b27f20f7488c98f6f6e030290774"
+      }
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/LICENSE",
+      "before": null,
+      "after": {
+        "path": "skills/engineering/statechart/scripts/java/LICENSE",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/LICENSE",
+        "bytes": 1091,
+        "sha256": "504a9148e0ceadeb788d9aa52d178f46be91452946332980abb7c74f9221fbb1"
+      },
+      "authority": {
+        "kind": "captain-inspected-source",
+        "pin": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/runtime-isolation/source-pin.json",
+        "sha256": "504a9148e0ceadeb788d9aa52d178f46be91452946332980abb7c74f9221fbb1"
+      }
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/build-lock.json",
+      "before": null,
+      "after": {
+        "path": "skills/engineering/statechart/scripts/java/build-lock.json",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/build-lock.json",
+        "bytes": 4596,
+        "sha256": "3f90ad27cd010d6becb6c82c37564242692088962ba76187bf07524b8e58282c"
+      },
+      "authority": {
+        "kind": "explicit-sealing-delta",
+        "before": {
+          "path": "skills/engineering/statechart/scripts/java/build-lock.json",
+          "sha256": "ab5d4052b97eb06e43d050ded02bac16b47f87421c44e154228d974c3e86a028",
+          "bytes": 3086,
+          "preserved": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/skills/engineering/statechart/scripts/java/build-lock.json"
+        },
+        "after": {
+          "path": "skills/engineering/statechart/scripts/java/build-lock.json",
+          "bytes": 4596,
+          "sha256": "3f90ad27cd010d6becb6c82c37564242692088962ba76187bf07524b8e58282c"
+        }
+      }
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/build.py",
+      "before": null,
+      "after": {
+        "path": "skills/engineering/statechart/scripts/java/build.py",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/build.py",
+        "bytes": 16119,
+        "sha256": "82939903e3774c3f29d4651541d170b301c100d60da4f1fde1faec471b1f38ea"
+      },
+      "authority": {
+        "kind": "captain-inspected-source",
+        "pin": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/runtime-isolation/source-pin.json",
+        "sha256": "82939903e3774c3f29d4651541d170b301c100d60da4f1fde1faec471b1f38ea"
+      }
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/readme.md",
+      "before": null,
+      "after": {
+        "path": "skills/engineering/statechart/scripts/java/readme.md",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/readme.md",
+        "bytes": 5992,
+        "sha256": "c6d6678f8e04afcf79679c4a5dfd112ded741681be71f752d75a341daa634b75"
+      },
+      "authority": {
+        "kind": "explicit-sealing-delta",
+        "before": {
+          "path": "skills/engineering/statechart/scripts/java/readme.md",
+          "sha256": "5c19ff4b432219f66fa3b84a39995f528ead7a5d7978d5cc637510114b3d0ba7",
+          "bytes": 4648,
+          "preserved": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/skills/engineering/statechart/scripts/java/readme.md"
+        },
+        "after": {
+          "path": "skills/engineering/statechart/scripts/java/readme.md",
+          "bytes": 5992,
+          "sha256": "c6d6678f8e04afcf79679c4a5dfd112ded741681be71f752d75a341daa634b75"
+        }
+      }
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackSockets.java",
+      "before": null,
+      "after": {
+        "path": "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackSockets.java",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackSockets.java",
+        "bytes": 1043,
+        "sha256": "56711ce74c3f7db93cc8ac1a928dfbe82de470dc566b730c06dc7bae43ee79a3"
+      },
+      "authority": {
+        "kind": "captain-inspected-source",
+        "pin": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/runtime-isolation/source-pin.json",
+        "sha256": "56711ce74c3f7db93cc8ac1a928dfbe82de470dc566b730c06dc7bae43ee79a3"
+      }
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackTlc.java",
+      "before": null,
+      "after": {
+        "path": "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackTlc.java",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackTlc.java",
+        "bytes": 720,
+        "sha256": "0edeb8431ba300737f2710d5c5dd495d424362f5f64698651737299337f95dc2"
+      },
+      "authority": {
+        "kind": "captain-inspected-source",
+        "pin": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/runtime-isolation/source-pin.json",
+        "sha256": "0edeb8431ba300737f2710d5c5dd495d424362f5f64698651737299337f95dc2"
+      }
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar",
+      "before": null,
+      "after": {
+        "path": "skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar",
+        "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar",
+        "bytes": 1825,
+        "sha256": "1772e71e2d82f470f115fa7e6d63205c388f84a0fa55537f120b9d53f3d3fbfa"
+      },
+      "authority": {
+        "kind": "captain-inspected-B1c-artifact",
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b1-20261031c/statechart-tlc-bootstrap.jar",
+        "sha256": "1772e71e2d82f470f115fa7e6d63205c388f84a0fa55537f120b9d53f3d3fbfa"
+      }
+    }
+  ],
+  "changed": 5,
+  "added": 9,
+  "unchanged": 37,
+  "oldPayload": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/Resources/Statechart/payload.json",
+    "bytes": 12007,
+    "sha256": "9c7a4f0fc23358d332c9e352767518f3d3f575e7d0b52d95d22c57c5e6011ca5"
+  },
+  "oldProps": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/Resources/Statechart/payload.items.props",
+    "bytes": 20852,
+    "sha256": "4fe6727eb154be4989e871ebf2f4009c090dbe3b127a521562e8edb9786a0673"
+  },
+  "dependencyLockUnchanged": "7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad"
+}

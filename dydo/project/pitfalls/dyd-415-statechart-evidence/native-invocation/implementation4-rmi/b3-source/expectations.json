@@ -1,0 +1,113 @@
+{
+  "schema": 1,
+  "java": {
+    "good": {
+      "exit": 0,
+      "distinct": 4,
+      "completion": true,
+      "configRule": "TypeOK",
+      "traceValues": []
+    },
+    "invariant-bad": {
+      "exit": 12,
+      "rule": "BelowTwo",
+      "traceValues": [
+        0,
+        1,
+        2
+      ],
+      "transitions": 2,
+      "transitionAction": "Next",
+      "shortest": true
+    },
+    "liveness-bad": {
+      "exit": 13,
+      "rule": "NeverFour",
+      "temporal": true,
+      "traceValues": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "backToState": 1,
+      "stuttering": false,
+      "fairness": "WF_x(Next)"
+    },
+    "action-bound": {
+      "exit": 0,
+      "rule": "BelowTwo",
+      "distinct": 2,
+      "completion": true,
+      "effect": "unconstrained good has4 distinct; constrained x0/x1 never reaches violating x2"
+    }
+  },
+  "exitSource": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/checker-exit-source.json",
+    "bytes": 1425,
+    "sha256": "9f8102d59591eadfb9ded95d1956d7ad5f30e26f804d9b1cb1271cac5eb556d3"
+  },
+  "modelInputs": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/action-bound.cfg",
+      "bytes": 89,
+      "sha256": "ac130f5142c48269cd76781fa2d1cc76af597a82c1a29789defcd1213be0b173"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/good.cfg",
+      "bytes": 57,
+      "sha256": "dfbf9c024600d5f7fae7336708f3e839379b7f7a26a6324a826c414a70f9f4e9"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/invariant-bad.cfg",
+      "bytes": 59,
+      "sha256": "9d8db22e1ebb53d2ee001b8aad9811d9dc39ae446c545b27008da798cd45e845"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/liveness-bad.cfg",
+      "bytes": 59,
+      "sha256": "d11ac13875bd3d20ef6e4213cff19feeb277b99180df6f32e805215280688223"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/Transport.tla",
+      "bytes": 225,
+      "sha256": "fa8b1920ec5e6032fa2442481bdee9fbac7f99685f68773044820be3a8e037a8"
+    }
+  ],
+  "parityFields": [
+    "exit",
+    "generated",
+    "distinct",
+    "complete",
+    "invariant",
+    "temporal",
+    "values",
+    "actions",
+    "back",
+    "stuttering"
+  ],
+  "rawNormalization": "None; retain raw stdout/stderr. Explicit semantic extraction ignores nondeterministic timing/seed/PID presentation without altering compared state/action/rule facts.",
+  "observation": "At least1 actual same-invocation bootstrap PID/fd/inode loopback listener; bounded passive tcp/tcp6 sampling. None observed is missing proof, no rerun.",
+  "tsFilesystem": {
+    "checkerCases": 16,
+    "bootstrapCases": 12,
+    "realJavaProcesses": 0,
+    "skippedSelected": 0
+  },
+  "corpus": {
+    "selected": [
+      "CounterInstance",
+      "CounterRules",
+      "Shadow",
+      "MediaPlayerProps"
+    ],
+    "assertions": "Existing exact committed report.md and chart.mmd equality; no rebaseline/update/replay",
+    "loop": "original short Cycle report0->1->2->0 and three repeated classes",
+    "cleanup": "check Login returns, Broken SANY fails, owned TMP has no statechart- residue"
+  },
+  "python": {
+    "existingB2": 12,
+    "newB3": 12,
+    "actualDiscovery": "NOT_RUN"
+  }
+}

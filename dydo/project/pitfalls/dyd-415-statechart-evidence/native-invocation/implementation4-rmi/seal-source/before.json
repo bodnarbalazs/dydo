@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "files": [
+    {
+      "path": "skills/engineering/statechart/scripts/java/build-lock.json",
+      "sha256": "ab5d4052b97eb06e43d050ded02bac16b47f87421c44e154228d974c3e86a028",
+      "bytes": 3086,
+      "preserved": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/skills/engineering/statechart/scripts/java/build-lock.json"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/readme.md",
+      "sha256": "5c19ff4b432219f66fa3b84a39995f528ead7a5d7978d5cc637510114b3d0ba7",
+      "bytes": 4648,
+      "preserved": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/skills/engineering/statechart/scripts/java/readme.md"
+    },
+    {
+      "path": "skills/engineering/statechart/PROVENANCE.md",
+      "sha256": "cb046f151f8bd2524cd62cf48000aa94160e9eaf0c6bc6fcf7b994fb4e03b8d4",
+      "bytes": 5460,
+      "preserved": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/skills/engineering/statechart/PROVENANCE.md"
+    },
+    {
+      "path": "skills/engineering/statechart/references/runtime.md",
+      "sha256": "026f7c81c92269f6fedf022876529ecabb325c5635c399d95083bd0ee1313857",
+      "bytes": 5756,
+      "preserved": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/skills/engineering/statechart/references/runtime.md"
+    },
+    {
+      "path": "dydo/project/decisions/062-statechart-invocation-manages-prerequisites.md",
+      "sha256": "9f2b9034603fd31d835b2775c47974c91a37516e5badb71f9fab6c4ab9188824",
+      "bytes": 7297,
+      "preserved": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/dydo/project/decisions/062-statechart-invocation-manages-prerequisites.md"
+    },
+    {
+      "path": "Resources/Statechart/payload.json",
+      "sha256": "9c7a4f0fc23358d332c9e352767518f3d3f575e7d0b52d95d22c57c5e6011ca5",
+      "bytes": 12007,
+      "preserved": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/Resources/Statechart/payload.json"
+    },
+    {
+      "path": "Resources/Statechart/payload.items.props",
+      "sha256": "4fe6727eb154be4989e871ebf2f4009c090dbe3b127a521562e8edb9786a0673",
+      "bytes": 20852,
+      "preserved": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/Resources/Statechart/payload.items.props"
+    },
+    {
+      "path": "Resources/Statechart/dependency-lock.json",
+      "sha256": "7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad",
+      "bytes": 8461,
+      "preserved": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/Resources/Statechart/dependency-lock.json"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/test-associations.json",
+      "sha256": "9f07f91353acee8d7c384ae9a101339112585f8fef26b49ef89ab02c6120eaf7",
+      "bytes": 47632,
+      "preserved": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/before/DynaDocs.Tests/coverage/test-associations.json"
+    }
+  ],
+  "inspectedSourcePinSha256": "86eb5aa93d437a8d73eba12f0fa4ccd525f8129f1b1bdb65f4b3aa38ae77c5b3",
+  "b1cReceiptSha256": "60498308cfb5290f093a453e0ab20f4378ed9d35e1624304aa8d75ddad12c8ac",
+  "b1cCustodySha256": "f366d357c873948287965a8b4c24edc44fc53a0640e300d5f748f6cbf019a9a8"
+}

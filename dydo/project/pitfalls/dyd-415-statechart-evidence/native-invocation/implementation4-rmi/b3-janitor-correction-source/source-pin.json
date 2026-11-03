@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY_NOT_RELEASED",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "sourceScope": [
+    "skills/engineering/statechart/scripts/statechart.ts",
+    "skills/engineering/statechart/scripts/test/cli.test.ts"
+  ],
+  "driverSha256": "c85a4b445537022fe8e93c6a0308fbc13cf4df51df42843857eefa50843b51ca",
+  "launcherSha256": "29c878060f94d1a49d99668efc6f5fda0382b8c62bb50af7e6a1422dd8740de1",
+  "sources": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/assurance-proposal.json",
+      "bytes": 2781,
+      "sha256": "e09664fc958662e6fb9eb2389294af979b717e6dbfc0ab4babedaf54653166f5"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/cli.test.ts",
+      "bytes": 50781,
+      "sha256": "171964e98064b2269fdeb62ded950cbf5abd76d186a0096fc2e03d155c336d00"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/statechart.ts",
+      "bytes": 6852,
+      "sha256": "2305d329359666fd22e738a37aa6d204dc7ef135dcf87592a49cec7cc5a846ec"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before-custody.json",
+      "bytes": 1761152,
+      "sha256": "1c7315be9444c9a0021775771c95079b4d4ba19f3e1ecf374fec74a7de3d8e28"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/checkpoint.md",
+      "bytes": 12323,
+      "sha256": "9a05ba8d85a6c5884933e8269faec4e38977b74a20202bcf93074dec2bf2e1bd"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/commands.json",
+      "bytes": 3291,
+      "sha256": "241f92d37861325d65c32d12c4a6de140fa5fcaafe6f5cafc58b714572b7967c"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/driver.py",
+      "bytes": 10442,
+      "sha256": "c85a4b445537022fe8e93c6a0308fbc13cf4df51df42843857eefa50843b51ca"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/expectations.json",
+      "bytes": 5268,
+      "sha256": "55511be4c53392a347112f085aad14cf3da15570dcada32fd3a162d0946daab2"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/historical-applicability.json",
+      "bytes": 1044,
+      "sha256": "93e74898c7e4be99e1aa192dca6bae86013e1f0de7d6ce8b37d0d643df2a44fc"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/input-manifest.json",
+      "bytes": 28509,
+      "sha256": "afe16b2d69411396be08629ff7da8f1fc153a227b7919868a4a2382a210ca5a5"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/launcher.py",
+      "bytes": 4550,
+      "sha256": "29c878060f94d1a49d99668efc6f5fda0382b8c62bb50af7e6a1422dd8740de1"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/payload-proposal.json",
+      "bytes": 1392,
+      "sha256": "adcab7e1f07bb3145ec20f9cde3b810c0496d4c30764bab7f830aba71cd13e67"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/payload-proposed.diff",
+      "bytes": 634,
+      "sha256": "8398570f8d114588c237d699252b293734ad9e8c05c15370284e231d6fc6ba6e"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/prepare-checkpoint.py",
+      "bytes": 16041,
+      "sha256": "7faade4e546c10c7c0ed96b58fe94e7b457efa54da251cd3016712ddda1b5942"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/preserved-inputs.json",
+      "bytes": 1295218,
+      "sha256": "3303d7708c69abd034ba3c274434c732573be8ce13a34a0430e4a5aaf835e23f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/production-test.diff",
+      "bytes": 17291,
+      "sha256": "c7c57ade2d605b5ecc7e78739a6ad10e6205dbe5ede93340ca4285f1fac976ce"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/source-assembly-disposition.json",
+      "bytes": 1029,
+      "sha256": "0beb9b17dc13ef414c39f070c2012d7c0f9c4c9b208333d0345e6aa54af075b4"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/source-assembly-obstacle.json",
+      "bytes": 312456,
+      "sha256": "2a7592e81559983b2c63096a1820a5727223e10c62c2225fe67d5a775d0881de"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/source-check.json",
+      "bytes": 5018,
+      "sha256": "6f0628ba6f18bc1f9a9a64d636c19fbec6e19c07b529a2f72d7bdd61ca18c4b9"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/worker.py",
+      "bytes": 13680,
+      "sha256": "907d41101cf1ce465a746a762e2b1233db1845ba186b5c0ced94fd0eec17ef6e"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/statechart.ts",
+      "bytes": 9883,
+      "sha256": "3524650b2b38a90388e9344d4761ab025793cfdd94b68e6bdd6c99a3f172a345"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+      "bytes": 62712,
+      "sha256": "80dd910974c3f97563a92747d03444fa95d0bd5e2fee2b9ad9b316c3dcce40f8"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/driver.py",
+      "bytes": 18149,
+      "sha256": "24f0afe8f437cef9dc0fc8a3d5cf98540f39af0bf6f45e129f12c2e53549c100"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-source/node-members.json",
+      "bytes": 1586488,
+      "sha256": "58b650202dc4702b66840e076ca7690456976e8438bd69447a011c7045675137"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-source/inputs.json",
+      "bytes": 97088,
+      "sha256": "96fdd4b8d4585c927019ae127a34bafa1064aa1c20b9fbbd8acbaecc318920d1"
+    }
+  ],
+  "tempCounterparts": [
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-janitor-correction-driver-20261031.py",
+      "bytes": 10442,
+      "sha256": "c85a4b445537022fe8e93c6a0308fbc13cf4df51df42843857eefa50843b51ca"
+    },
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-janitor-correction-launch-20261031.py",
+      "bytes": 4550,
+      "sha256": "29c878060f94d1a49d99668efc6f5fda0382b8c62bb50af7e6a1422dd8740de1"
+    }
+  ],
+  "inputManifestSha256": "afe16b2d69411396be08629ff7da8f1fc153a227b7919868a4a2382a210ca5a5",
+  "externalInputs": [
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\tlc\\tla2tools.jar",
+      "bytes": 2274532,
+      "sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+      "role": "retained-data"
+    },
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-node-sxdcyaa0\\node-v22.23.2-linux-x64.tar.gz",
+      "bytes": 56851233,
+      "sha256": "b294a556e639d64338823920e5866c21c02741742d2e1529ee1a225c1ec9252a",
+      "role": "retained-data"
+    },
+    {
+      "path": "C:\\Users\\User\\.t3\\worktrees\\LC\\t3-f7ffe8ea\\tools\\testing\\runner\\suite_slot.py",
+      "bytes": 9498,
+      "sha256": "aa36020ee48e08319451e6c126701251aa3be9ef40ca4e4cb9cbaed1e375d21a",
+      "role": "commissioned-lc-api-read-only"
+    },
+    {
+      "path": "C:\\Users\\User\\.t3\\worktrees\\LC\\t3-f7ffe8ea\\tools\\testing\\runner\\machine_lock.py",
+      "bytes": 3541,
+      "sha256": "7b53157084084ebb6806f7b4f391a82467f9fed0fc9d701d3fd3e0954c0d9736",
+      "role": "commissioned-lc-api-read-only"
+    },
+    {
+      "path": "C:\\Users\\User\\.t3\\worktrees\\LC\\t3-f7ffe8ea\\dydo\\reference\\tools\\test-runner.md",
+      "bytes": 75557,
+      "sha256": "c0eb699240e4f0bd1526f1bbf495604fbf67bbb3ed3002f19fc09222a9ea92a4",
+      "role": "commissioned-lc-api-read-only"
+    }
+  ],
+  "preservation": "Original before-custody and preserved-inputs bytes retained; only explicit beforeSnapshot mapping",
+  "output": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\b3-janitor-correction-20261031a",
+  "prospectiveSelectedTests": 12,
+  "uninstrumentedCounterInvocations": 1,
+  "executionReleased": false
+}

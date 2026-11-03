@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY_PORTABLE_HELPER_SUCCESSOR",
+  "predecessor": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-delegated-release-predicates.json",
+  "predecessorSha256": "507e662c8046e9803226bdd664f551d07c2f55077d19fbd043b52cf79f446df4",
+  "contract": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-helper-portability-contract.md",
+  "writerRunBeforeDispatch": 39,
+  "sourceObstacle": "Windows helper fixtures patch missing POSIX host attributes; no native execution/failure",
+  "captainDisposition": "new evidence-only fixture successor scoped to3 mocks and loader relocation; original modules/tests immutable",
+  "sourceInspection": "PENDING_COMPLETED_HOST2_PACKET",
+  "helper12": "NOT_RELEASED",
+  "typecheck": "NOT_RELEASED",
+  "serialTwelve": "NOT_RELEASED",
+  "existingAdmiralDelegation": "UNCHANGED_PREDICATE_CONDITIONAL",
+  "metricAcquisition": "PROPOSED_NOT_AUTHORIZED",
+  "review": "FAIL_OPEN_NOT_RELEASED",
+  "desktopJava": "ABSOLUTE_HOLD"
+}

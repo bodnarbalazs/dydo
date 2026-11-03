@@ -1,0 +1,17 @@
+# Source reach and remaining assurance
+
+code-writer/model: gpt-6.1-sol/high. No imports/discovery/execution here.
+
+The12 successor native IDs are lexical and unchanged. test-inventory.json maps every actual original target call, isolated material boundary and exact assertion. Driver fixture has4 methods; worker fixture has8. Their actual target source pin remains original d5a8066e4f8a51378868bff94b34cdfd29f37e2ae3edcefc8b2f5fd741dbae26. The3 portable mock amendments exercise original drain_runner/run_case with original stimuli and assertions. They are not kill-called-only substitutes for product lifecycle proof: actual product close/exit still requires separately released serial native canonical cases and strict census. Here the cancellation unit boundary intentionally is a mocked POSIX namespace.
+
+Five other worker methods and all driver assertions unchanged. Both original fixture files, original runtime modules, canonical cli.test.ts and production are frozen. Exact old→new diff preserves before source applicability. The platform source finding remains historical; no old failure is fabricated or changed to PASS.
+
+The existing direct21 actual result stays credited for its original e368 source. New host2 modules are maintained runtime source (controller/launcher), not historical-only exclusions. They are NOT tested directly by the12 helper copies: their admission, exact dispatch, new raw-output inventory, native kill/reap, non-emission and finalization require captain inspection and honest assurance disposition. Source similarity and old21 are not fresh direct tests. No extra recursive harness project/test file is authorized or authored.
+
+The shared-containment file is an active hash-guarded imported dependency only for sha/save/retain_work/LC_PINS on host2. Its dormant Docker/Java/extraction/container/main functions are not invoked. Original twelve driver imports its own separately instantiated common; its test methods mock retention/material boundaries. Original worker load_foundation/resource/private-Linux PID1 paths are NOT reached by helpers. LC suite_slot/machine_lock are active only in controller admission, not inside helper unittest. Exact namespace package absences and actual __file__ origins are guarded.
+
+Genuine association proposal: successor test_driver_contracts.py -> original twelve driver.py and launcher.py; successor test_worker_contracts.py -> original twelve worker.py. This is mapped source actual-call reach, not an applied association/coverage result. Existing test-associations.json remains SHA31722a4483bc05e55b9894aff251dedc5a0704aa8681305b02923bea463b0376. No association to host2 dispatch is claimed.
+
+Typecheck uses the retained native Node0d0f runtime and full actual54-file current-overlay project. Complete retained compiler/library/config sources are pinned. It is diagnostic only; raw input hashes do not establish registry/archive provenance, reproducible install, aggregate-static/coverage or Java metrics. Child-only cache disable does not mutate global settings. New host modules and helper tests remain applicable later static targets; no collector/threshold/policy/exclusion change.
+
+Accepted12 serial grouping remains prospective. Prior source audit found each product case owns fresh probe/view/output/logs and no assertion consumes another case's state; no required intercase obligation was evaded. No same-native-process interaction certification, arithmetic ten+two gate or healthy case replay now. Broader reviewFAIL and platform/Java/abrupt-parent obligations remain.

@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "stage": "B1c",
+  "state": "PINNED_BEFORE_EXECUTION",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "authority": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b1c-build-release-20261031.md",
+  "authoritySha256": "579050f90ea1323abb2b7acd2307e3f850a3c01b49b1a41cec8460c6769d1e04",
+  "sourcePin": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\runtime-isolation\\source-pin.json",
+  "sourcePinSha256": "86eb5aa93d437a8d73eba12f0fa4ccd525f8129f1b1bdb65f4b3aa38ae77c5b3",
+  "closureRowsVerified": 21,
+  "driver": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b1c-driver-20261031.py",
+  "driverSha256": "6351e86594807d9f974e8c4f52538f345660723660d2b31958893775a31b1d6a",
+  "launcher": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b1c-launch-20261031.py",
+  "launcherSha256": "adacf956b3b94bd347fa0f216e93967a31398e7dd76a03cac52996c1aa068a99",
+  "baseDriverSha256": "aae895f42a030e04a38f3f977403d245b45ae72c25e7fca643146ffb3f99e074",
+  "baseLauncherSha256": "97b44c023d3aa6a5dec2b16a895b96e1f675ec16c5408d14ee775fe466176fb8",
+  "launcherArgv": [
+    "python",
+    "-B",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b1c-launch-20261031.py"
+  ],
+  "driverArgv": [
+    "<same Python executable>",
+    "-B",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b1c-driver-20261031.py"
+  ],
+  "testArgv": [
+    "python",
+    "-B",
+    "-m",
+    "unittest",
+    "discover",
+    "-v",
+    "-s",
+    "/input/DynaDocs.Tests/coverage/tests",
+    "-p",
+    "test_statechart_java_build.py"
+  ],
+  "compilerStageArgv": [
+    "python",
+    "-B",
+    "/input/skills/engineering/statechart/scripts/java/build.py",
+    "--jdk",
+    "/toolchain/jdk-21.0.8+9",
+    "--jdk-archive",
+    "/input/jdk.tar.gz",
+    "--tlc",
+    "/input/tla2tools.jar",
+    "--work",
+    "/work/build",
+    "--output",
+    "/output/statechart-tlc-bootstrap.jar",
+    "--receipt",
+    "/output/build-receipt.json"
+  ],
+  "inheritedTicketPreserved": true,
+  "environmentSpoofed": false,
+  "network": false,
+  "hostJava": false,
+  "runtimeProof": false,
+  "preservedInputsSha256": "1497fc2651c7da742d7258e2190b48dbfcd216b7fd49e33a071e041b40300f1f",
+  "serializerSha256": "5ca051061204fe98e1d6185b377dd85ee8198dc9d399deb690f42ccda33cce07"
+}

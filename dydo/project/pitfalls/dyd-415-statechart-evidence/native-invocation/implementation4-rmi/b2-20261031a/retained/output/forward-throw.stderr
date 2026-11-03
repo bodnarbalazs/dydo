@@ -1,0 +1,4 @@
+CONTROL_STDERR
+Exception in thread "main" java.lang.IllegalStateException: CONTROL_THROW
+	at tlc2.TLC.main(TLC.java:18)
+	at dydo.statechart.LoopbackTlc.main(LoopbackTlc.java:17)

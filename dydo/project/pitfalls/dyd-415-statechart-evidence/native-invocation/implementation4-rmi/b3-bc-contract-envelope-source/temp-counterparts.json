@@ -1,0 +1,22 @@
+[
+  {
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-bc-contract-envelope-driver-20261031.py",
+    "bytes": 9589,
+    "sha256": "f5d6eddc866ee22ebd173623571cc40964691f5bd4e1c3a7653efb50ba57a078",
+    "source": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-contract-envelope-source/driver.py",
+      "bytes": 9589,
+      "sha256": "f5d6eddc866ee22ebd173623571cc40964691f5bd4e1c3a7653efb50ba57a078"
+    }
+  },
+  {
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-bc-contract-envelope-launch-20261031.py",
+    "bytes": 4562,
+    "sha256": "3bf2503e33ccba83d832177c8a949741aa34bbdc5d4469e463765a5a8bf9ce33",
+    "source": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-contract-envelope-source/launcher.py",
+      "bytes": 4562,
+      "sha256": "3bf2503e33ccba83d832177c8a949741aa34bbdc5d4469e463765a5a8bf9ce33"
+    }
+  }
+]

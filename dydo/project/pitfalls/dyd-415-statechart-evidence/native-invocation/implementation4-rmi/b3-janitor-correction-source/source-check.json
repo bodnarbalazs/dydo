@@ -1,0 +1,74 @@
+{
+  "state": "SOURCE_ONLY_NOT_RELEASED",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "branch": "DYD-415-statechart",
+  "isolatedRoot": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "dirtyDraftExplicitlyAuthorized": true,
+  "beforeCustodyRows": 5266,
+  "preservedRows": 5266,
+  "onlyChangedExistingPaths": [
+    "skills/engineering/statechart/scripts/statechart.ts",
+    "skills/engineering/statechart/scripts/test/cli.test.ts"
+  ],
+  "unchangedExistingTestPrefix": true,
+  "additionalGitStatusRows": [
+    " M skills/engineering/statechart/scripts/statechart.ts",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/assurance-proposal.json",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before-custody.json",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/checkpoint.md",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/commands.json",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/driver.py",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/expectations.json",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/historical-applicability.json",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/input-manifest.json",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/launcher.py",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/payload-proposal.json",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/payload-proposed.diff",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/prepare-checkpoint.py",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/preserved-inputs.json",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/production-test.diff",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/source-assembly-disposition.json",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/source-assembly-obstacle.json",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/source-check.json",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/source-pin.json",
+    "?? dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/worker.py"
+  ],
+  "startWorkerByteIdentical": true,
+  "eofScriptByteIdentical": true,
+  "windowsFiniteTextualChecks": true,
+  "noWindowsRuntimeProof": true,
+  "parsedPython": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/driver.py",
+      "bytes": 10442,
+      "sha256": "c85a4b445537022fe8e93c6a0308fbc13cf4df51df42843857eefa50843b51ca"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/launcher.py",
+      "bytes": 4550,
+      "sha256": "29c878060f94d1a49d99668efc6f5fda0382b8c62bb50af7e6a1422dd8740de1"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/prepare-checkpoint.py",
+      "bytes": 16041,
+      "sha256": "7faade4e546c10c7c0ed96b58fe94e7b457efa54da251cd3016712ddda1b5942"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/worker.py",
+      "bytes": 13680,
+      "sha256": "907d41101cf1ce465a746a762e2b1233db1845ba186b5c0ced94fd0eec17ef6e"
+    }
+  ],
+  "importEdges": 62,
+  "snapshotFiles": 51,
+  "liveGitDiffCheckExit": 0,
+  "liveGitDiffCheckStdout": "",
+  "liveGitDiffCheckStderr": "",
+  "newPacketTextTrailingWhitespace": false,
+  "testDiscovery": "NOT_RUN",
+  "tests": "NOT_RUN",
+  "runtime": "NOT_RUN",
+  "payload": "UNCHANGED",
+  "abruptParent": "NOT_SELECTED_CURRENT_PID1_CANNOT_CERTIFY_STRICT_REAP",
+  "review": "CAPTAIN_OWNED_AFTER_FOCUSED_GREEN"
+}

@@ -1,0 +1,16 @@
+image-inspect: starting
+image-inspect: exit 0
+dyd415-rmi-b3-bc-contract-envelope-5704c5b2223c4b38-finite-create: starting
+dyd415-rmi-b3-bc-contract-envelope-5704c5b2223c4b38-finite-create: exit 0
+dyd415-rmi-b3-bc-contract-envelope-5704c5b2223c4b38-finite-inspect: starting
+dyd415-rmi-b3-bc-contract-envelope-5704c5b2223c4b38-finite-inspect: exit 0
+dyd415-rmi-b3-bc-contract-envelope-5704c5b2223c4b38-finite-start: starting
+dyd415-rmi-b3-bc-contract-envelope-5704c5b2223c4b38-finite-start: exit 0
+dyd415-rmi-b3-bc-contract-envelope-5704c5b2223c4b38-finite-state: starting
+dyd415-rmi-b3-bc-contract-envelope-5704c5b2223c4b38-finite-state: exit 0
+cleanup-0-inspect: starting
+cleanup-0-inspect: exit 0
+cleanup-0-remove: starting
+cleanup-0-remove: exit 0
+cleanup-0-absence: starting
+cleanup-0-absence: exit 0

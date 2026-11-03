@@ -1,0 +1,11 @@
+{
+  "stage": "B3",
+  "group": "D",
+  "completed": true,
+  "productRecompiled": false,
+  "managedJre": false,
+  "installedReadiness": false,
+  "windows": false,
+  "javaMetrics": "UNAVAILABLE",
+  "noCrossGroupExpansion": true
+}

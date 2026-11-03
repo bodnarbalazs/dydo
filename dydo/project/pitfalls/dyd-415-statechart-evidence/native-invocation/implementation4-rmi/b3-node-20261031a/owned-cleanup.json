@@ -1,0 +1,9 @@
+{
+  "transferAbsentOrDrained": true,
+  "parentFileContextsClosed": true,
+  "scratchRetained": true,
+  "childrenStarted": 1,
+  "containersStarted": 0,
+  "extracted": false,
+  "executed": false
+}

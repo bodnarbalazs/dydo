@@ -1,0 +1,368 @@
+{
+  "schema": 1,
+  "state": "HELPERS12_NATIVE_PASS_WITHIN_RECORDED_SCOPE",
+  "author": "code-writer/model: gpt-6.1-sol/high",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "branch": "DYD-415-statechart",
+  "output": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/",
+  "command": [
+    "C:/Users/User/AppData/Local/Programs/Python/Python313/python.exe",
+    "-I",
+    "-B",
+    "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/launcher.py",
+    "--helpers"
+  ],
+  "invocationCount": 1,
+  "actualLauncherExit": 0,
+  "sourcePinSha256": "7dee9b890f65efaca42ad12e97dfadf5274f1b3f2536e8d3cf4ca5a650bb7f0d",
+  "sourceReceiptSha256": "0d6e299b78e1ba45802e4f53523dd8a4733cd1a7e65d2a663cfc6f603ab809ce",
+  "releaseAtRun": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/execution-release-at-run.json",
+    "bytes": 847,
+    "sha256": "7803266c6efbc7836b4f91d0215e5facaddb613da98a2c36cd6cd5d1e97e5391"
+  },
+  "inspection": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-captain-inspection-r41.md",
+    "sha256": "442a8df29b5701ac1fc5236fef0fb56a14bc996c38cf4b9a52e3019157755df4"
+  },
+  "ledger": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-delegated-release-predicates-r41.json",
+    "sha256": "d3d59d6f4e9a02cee9e3e86de12417a4aad700ee5eee9c32459f40060da4d52e"
+  },
+  "nativeProof": {
+    "uniqueIds": [
+      {
+        "id": "test_healthy_retention_releases_only_matching_isolated_lock (test_driver_contracts.TwelveDriverContracts.test_healthy_retention_releases_only_matching_isolated_lock)",
+        "result": "ok"
+      },
+      {
+        "id": "test_launcher_requires_exact_twelve_release_and_source_identity (test_driver_contracts.TwelveDriverContracts.test_launcher_requires_exact_twelve_release_and_source_identity)",
+        "result": "ok"
+      },
+      {
+        "id": "test_missing_or_alternative_selector_refuses_before_admission (test_driver_contracts.TwelveDriverContracts.test_missing_or_alternative_selector_refuses_before_admission)",
+        "result": "ok"
+      },
+      {
+        "id": "test_retention_failure_with_successful_logging_keeps_exact_isolated_lock (test_driver_contracts.TwelveDriverContracts.test_retention_failure_with_successful_logging_keeps_exact_isolated_lock)",
+        "result": "ok"
+      },
+      {
+        "id": "test_complete_exact_native_one_case_summary_is_required (test_worker_contracts.TwelveWorkerContracts.test_complete_exact_native_one_case_summary_is_required)",
+        "result": "ok"
+      },
+      {
+        "id": "test_exact_source_selection_is_twelve_unique_original_names (test_worker_contracts.TwelveWorkerContracts.test_exact_source_selection_is_twelve_unique_original_names)",
+        "result": "ok"
+      },
+      {
+        "id": "test_real_child_close_before_controlled_exit_is_required (test_worker_contracts.TwelveWorkerContracts.test_real_child_close_before_controlled_exit_is_required)",
+        "result": "ok"
+      },
+      {
+        "id": "test_runner_exact_owned_group_cancellation_uses_sigkill (test_worker_contracts.TwelveWorkerContracts.test_runner_exact_owned_group_cancellation_uses_sigkill)",
+        "result": "ok"
+      },
+      {
+        "id": "test_runner_identity_uncertainty_never_kills_an_unproved_group (test_worker_contracts.TwelveWorkerContracts.test_runner_identity_uncertainty_never_kills_an_unproved_group)",
+        "result": "ok"
+      },
+      {
+        "id": "test_spawn_failure_close_is_distinct_from_reaping_a_created_janitor (test_worker_contracts.TwelveWorkerContracts.test_spawn_failure_close_is_distinct_from_reaping_a_created_janitor)",
+        "result": "ok"
+      },
+      {
+        "id": "test_timeout_stays_failure_after_late_runner_exit_and_bounded_reap (test_worker_contracts.TwelveWorkerContracts.test_timeout_stays_failure_after_late_runner_exit_and_bounded_reap)",
+        "result": "ok"
+      },
+      {
+        "id": "test_worker_spawn_failure_requires_no_janitor (test_worker_contracts.TwelveWorkerContracts.test_worker_spawn_failure_requires_no_janitor)",
+        "result": "ok"
+      }
+    ],
+    "ran": 12,
+    "seconds": 0.068,
+    "exit": 0,
+    "stdoutBytes": 0,
+    "skips": 0,
+    "nonOk": 0,
+    "unselected": 0,
+    "duplicates": 0,
+    "completeSummary": true,
+    "nativePid": 130664,
+    "directChildReaped": true,
+    "controllerPid": 89348,
+    "controllerReaped": true
+  },
+  "nativeRaw": {
+    "stdout": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/native.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stderr": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/native.stderr",
+      "bytes": 2216,
+      "sha256": "ce93de9d728a3e41b0c2d22b384adc131f740ef9df5346793bfc464c6a665903"
+    },
+    "result": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/native.result.json",
+      "bytes": 254,
+      "sha256": "b55d236eecc11739ab172007a26f091e9600642474a07a1a7282ec63bad93533"
+    },
+    "selection": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/native.selection.json",
+      "bytes": 2173,
+      "sha256": "28065852a3d723c8bbc97cc8c0018e102bef93a1220bf792e6729b61b3c71f1f"
+    },
+    "argv": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/native.argv.json",
+      "bytes": 675,
+      "sha256": "dc3c8419ba58f4d41617e21ffe83fa39cc0b03f29bba9eea17e1b14db82e7e85"
+    }
+  },
+  "retention": {
+    "manifest": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/retention.json",
+      "bytes": 2749,
+      "sha256": "e0e0fb941ba60b7bd344726c6a481340a687bf1874b11194691d1b873338ad61"
+    },
+    "originalRows": 17,
+    "independentlyMatched": 17,
+    "evidenceErrors": [],
+    "ownerLockSha256": "191260a1e70384f05d92c2c06ad6d6f8648e2877f84c22a8e072809a598ed5cb"
+  },
+  "ownership": {
+    "exactFifoTicket": "0000000001-a1b8252d7f5ebcea",
+    "nonce": "82aecf8ceea944fc",
+    "fifoOwned": true,
+    "fifoInherited": false,
+    "heavyContextReleaseRecorded": true,
+    "fifoContextReleaseRecorded": true,
+    "actualHostAbsence": {
+      "LocalAppData": "C:\\Users\\User\\AppData\\Local",
+      "Temp": "C:\\Users\\User\\AppData\\Local\\Temp\\",
+      "FullsuiteLockExists": false,
+      "ExactFifoTicketExists": false,
+      "HolderExists": false
+    },
+    "directChildReaped": true,
+    "controllerReaped": true,
+    "retainedHold": false,
+    "foreignCleanup": false
+  },
+  "custody": {
+    "before": {
+      "frozen": 9540,
+      "historical": 5266,
+      "afterPacket": 9559,
+      "sourcePacket": 22,
+      "newAdministrative": 3,
+      "totalUnique": 9565,
+      "mismatches": 0
+    },
+    "after": {
+      "unique": 9565,
+      "frozen": 9540,
+      "historical": 5266,
+      "sourceAfterRows": 9559,
+      "mismatches": 0,
+      "historicalMismatches": 0,
+      "newExpectedHashesBlessed": false
+    },
+    "beforeInventory": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/return-before-custody.json",
+      "bytes": 2254800,
+      "sha256": "e2059c285126265cfc974e4368215dd312c122c4b81ef693cd60c23c2911e493"
+    },
+    "afterInventory": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/return-after-custody.json",
+      "bytes": 2254800,
+      "sha256": "e2059c285126265cfc974e4368215dd312c122c4b81ef693cd60c23c2911e493"
+    },
+    "rawExecutionFiles": 19,
+    "rawExecutionFilesRecheckedUnchanged": 19,
+    "postRunReturnRecordsBeforeReceipt": 7,
+    "noOldExpectedHashesRegenerated": true,
+    "noSourceOrHistoricalChanges": true
+  },
+  "boundOutputRows": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/admission.json",
+      "bytes": 561,
+      "sha256": "77344fce6ded166573247d2095c4fd906ebb83d5f4e225026767f82279d36977"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/captain-handback.md",
+      "bytes": 4348,
+      "sha256": "c1f3965e631302887a4528c8c0c4952dca170ad1f0c7d933382590811cad857e"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/driver-verdict.json",
+      "bytes": 107,
+      "sha256": "66b879e362949953cc9e9fa7918a7cf4326157ff0caedc9e9e1edfae4cf3f56e"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/driver.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/driver.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/execution-release-at-run.json",
+      "bytes": 847,
+      "sha256": "7803266c6efbc7836b4f91d0215e5facaddb613da98a2c36cd6cd5d1e97e5391"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/launcher.preflight.json",
+      "bytes": 362,
+      "sha256": "9a85705e1d0b7af9446d1b4645d7980bdd5c11f6126cf087c0ea25e57078aab0"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/launcher.result.json",
+      "bytes": 145,
+      "sha256": "eb74e9eb81fed37b7fb759a291b7007d83de872774bf2ec0b7faa4b3bff68311"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/native.argv.json",
+      "bytes": 675,
+      "sha256": "dc3c8419ba58f4d41617e21ffe83fa39cc0b03f29bba9eea17e1b14db82e7e85"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/native.owned.json",
+      "bytes": 383,
+      "sha256": "aa34d4779b9dfe816d53db111071c07e50ca4887b3a1cebfef7e1d2a35fe0d84"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/native.result.json",
+      "bytes": 254,
+      "sha256": "b55d236eecc11739ab172007a26f091e9600642474a07a1a7282ec63bad93533"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/native.selection.json",
+      "bytes": 2173,
+      "sha256": "28065852a3d723c8bbc97cc8c0018e102bef93a1220bf792e6729b61b3c71f1f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/native.stderr",
+      "bytes": 2216,
+      "sha256": "ce93de9d728a3e41b0c2d22b384adc131f740ef9df5346793bfc464c6a665903"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/native.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/post-custody.json",
+      "bytes": 68,
+      "sha256": "4a0c99a4783d57ce05f7a7fbb62253732bdc824c7214e3a446a75c5eb3ec6ad0"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/preflight.json",
+      "bytes": 618,
+      "sha256": "ff7ac66c27921256927b7017fda3aa39bc53d94d3f3bcf8ae2efd173d4979a05"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/released.json",
+      "bytes": 120,
+      "sha256": "49f8aa2e31bd08d917ce13e39b77ce8d84b27fb46d079e08ca218d4eb1aafa90"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/retention.json",
+      "bytes": 2749,
+      "sha256": "e0e0fb941ba60b7bd344726c6a481340a687bf1874b11194691d1b873338ad61"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/return-admission-audit.json",
+      "bytes": 1915,
+      "sha256": "ae66683dea62e2bb1699e6e72da1dba8ae265200756f263fd4aba7702bda477b"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/return-after-custody.json",
+      "bytes": 2254800,
+      "sha256": "e2059c285126265cfc974e4368215dd312c122c4b81ef693cd60c23c2911e493"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/return-before-custody.json",
+      "bytes": 2254800,
+      "sha256": "e2059c285126265cfc974e4368215dd312c122c4b81ef693cd60c23c2911e493"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/return-launcher-call.json",
+      "bytes": 1047,
+      "sha256": "0960f576b565f46de74ebac6f5a300b30c7357d3385a2bb853278d39bd8e1480"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/return-ownership.json",
+      "bytes": 2979,
+      "sha256": "5a2d5c1b70e81d74b9b8169c4142f24e5cf642efa1a928fdc33a7b21e3eff211"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/return-raw-evidence-manifest.json",
+      "bytes": 5412,
+      "sha256": "fada52fe5d7ed6cfebfa277aa4ccee6f446429e2238fd74dff77616a969e80e1"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/secondary-released.json",
+      "bytes": 62,
+      "sha256": "b5c309f4935f32796c1366c84d34d7c2d0a62d4013b9ed6ab11baa0e901a66ef"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-20261031a-HELPERS/summary.json",
+      "bytes": 229,
+      "sha256": "a52f940c2115704b35fd6e6ddec08fca8882f4f5581ab1b5c48dfefaaf28da78"
+    }
+  ],
+  "counts": {
+    "allOutputFilesWithThisReceipt": 27,
+    "boundRows": 26
+  },
+  "classification": {
+    "originalTwelveModules": "HELPERS12_PASS",
+    "host2WrapperDirectAssurance": "OWED",
+    "typecheck": "NOT_RELEASED_NOT_EXECUTED",
+    "serialTwelve": "NOT_RELEASED_NOT_EXECUTED",
+    "productionCorrectionAcceptance": "NOT_ESTABLISHED",
+    "review": "FAIL_OPEN_NOT_REVIEWED",
+    "oldFailureHistory": "IMMUTABLE",
+    "oldIndividualPasses": "RECORDED_SCOPE_ONLY"
+  },
+  "bounds": {
+    "nativeSeconds": 180,
+    "directKillReapSeconds": 5,
+    "timeoutOccurred": false,
+    "killRequired": false,
+    "postCompletionOutputLimitBytes": 16777216,
+    "hardCap": false,
+    "job": false,
+    "networkNone": false,
+    "descendantContainment": false
+  },
+  "scope": {
+    "nodeExecuted": false,
+    "dockerExecuted": false,
+    "javaExecuted": false,
+    "productRuntimeExecuted": false,
+    "additionalTestsExecuted": false,
+    "metricAcquisition": false,
+    "review": false,
+    "sourceEdits": false,
+    "payloadEdits": false,
+    "associationEdits": false,
+    "commitOrPush": false,
+    "settledChannelsContacted": false
+  },
+  "limits": [
+    "Helper12 loads actual original d5a8066e modules; mocks do not prove real product lifecycle or Windows POSIX signals",
+    "The new host2 dispatch/finalization assurance remains owed despite actual successful finite invocation",
+    "Heavy release is actual context-return evidence with completed controller, not independent mutex-acquisition probing",
+    "Actual parent final receipt exists; future post-driver I/O failure remains a source timing limit",
+    "Desktop Windows Java/access/Java assurance/abrupt-parent/installed/platform/current-master/aggregate static/coverage/CI/final review holds unchanged"
+  ],
+  "receiptSelfExcluded": true
+}

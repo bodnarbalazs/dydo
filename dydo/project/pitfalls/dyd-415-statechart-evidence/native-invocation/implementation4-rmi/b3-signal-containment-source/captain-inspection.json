@@ -1,0 +1,74 @@
+{
+  "state": "CAPTAIN_INSPECTED_SINGLE_SIGINT_DIAGNOSTIC",
+  "date": "2026-10-31",
+  "sourcePinSha256": "b22f7212427b5aa4c2c28dad132839e1912434708e358913449a80f1d74cb4cb",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "authority": "https://linear.app/bodnar-balazs/document/dyd-415-daytime-bounded-signal-diagnosis-and-failure-containment-480155d05caf",
+  "dockerIdentity": {
+    "executableSha256": "f71e5a9fe6a8db10c7296ad6fdf0c1d7d79634e644d7ec1e8a2c18d7dcb52d21",
+    "contextName": "desktop-linux",
+    "dockerEndpoint": {
+      "Host": "npipe:////./pipe/dockerDesktopLinuxEngine",
+      "SkipTLSVerify": false
+    },
+    "daemonFields": {
+      "ID": "5d389860-2507-4d55-bc6b-59bfdb83a13b",
+      "Name": "docker-desktop",
+      "OSType": "linux",
+      "Architecture": "x86_64",
+      "ServerVersion": "29.8.2",
+      "OperatingSystem": "Docker Desktop",
+      "DockerRootDir": "/var/lib/docker"
+    }
+  },
+  "observations": {
+    "contextToolChunk": "a77b2a",
+    "contextInspectToolChunk": "66ea73",
+    "sandboxDeniedDaemonToolChunk": "1a16b2",
+    "approvedReadOnlyDaemonToolChunk": "7259f8",
+    "daemonSystemTime": "2026-10-31T11:44:26.59889832Z",
+    "imageAndExecutableToolChunk": "971cc1",
+    "auditToolChunk": "6c1142",
+    "image": "sha256:6a9220edda062e9223ea0784740a535987299420b96fbfd520b89bbd3e772485",
+    "imagePlatform": "linux/amd64",
+    "runtimeExecuted": false,
+    "settingsChanged": false
+  },
+  "audit": {
+    "sources": 20,
+    "temp": 2,
+    "external": 5,
+    "before": 6831,
+    "historical": 5266,
+    "snapshot": 53,
+    "retainedData": 2,
+    "mismatches": [],
+    "method": "Read-only standalone captain hash audit; no product/module imports or recipe execution"
+  },
+  "inspection": {
+    "files": [
+      "checkpoint.md",
+      "driver.py",
+      "launcher.py",
+      "worker.py",
+      "diagnostic.mjs",
+      "preload.mjs",
+      "shared-containment.py",
+      "containment.json",
+      "commands.json",
+      "expectations.json",
+      "closure.json",
+      "input-manifest.json",
+      "foundation worker and corrected CLI"
+    ],
+    "productOutcome": "Only actual assertions/close/strict census may PASS; cancellation or teardown never supplies success.",
+    "containment": "Existing private namespace/network-none/no privileged capabilities/control mounts; exact ID+nonce+context+daemon stop/remove and host absence checked before source acceptance. Actual per-container checks still mandatory before start.",
+    "failure": "One result only; retain expected original-notification RED or INCONCLUSIVE. No retry, second signal, product/test fix or review in this release.",
+    "limits": [
+      "Instrumentation alters timing; cannot retroactively attribute prior failures.",
+      "Host/daemon loss can leave cleanup uncertainty; retain ownership lock/report.",
+      "Abrupt-parent proof remains unestablished; no init/subreaper.",
+      "Java, installed/native/platform/final static/coverage/review holds remain."
+    ]
+  }
+}

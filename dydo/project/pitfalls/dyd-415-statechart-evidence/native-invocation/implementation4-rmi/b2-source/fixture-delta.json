@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "before": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b2-source/before/SocketProbe.java",
+    "bytes": 6934,
+    "sha256": "57c046280dccbdbc5d2b1788ece864d5033572de6ab9b63f1eeec361d85b44e8"
+  },
+  "after": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/java/dydo/statechart/proof/SocketProbe.java",
+    "bytes": 7833,
+    "sha256": "f6bf84c93a9772fa6c885d0bd1cd04d89e22bc997ae7168a006349f9c8b0096a"
+  },
+  "change": "Only actual numeric/localhost request-reply assertions, success marker and bounded socket I/O timeouts; product Java unchanged",
+  "priorSourcePin": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/closure-source-pin.json",
+  "executed": false
+}

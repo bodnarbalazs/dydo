@@ -1,0 +1,13 @@
+[
+    {
+        "CreatedAt": "2026-10-31T04:43:00Z",
+        "Driver": "local",
+        "Labels": {
+            "com.dydo.proof-owner": "d146b83ad1e04f88"
+        },
+        "Mountpoint": "/var/lib/docker/volumes/dyd415-rmi-b3-lifecycle-d146b83ad1e04f88-node/_data",
+        "Name": "dyd415-rmi-b3-lifecycle-d146b83ad1e04f88-node",
+        "Options": null,
+        "Scope": "local"
+    }
+]

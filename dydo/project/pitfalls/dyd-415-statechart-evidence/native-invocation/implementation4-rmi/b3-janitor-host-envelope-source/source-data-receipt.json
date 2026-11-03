@@ -1,0 +1,200 @@
+{
+  "schema": 1,
+  "author": "code-writer/model: gpt-6.1-sol/high",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "branch": "DYD-415-statechart",
+  "commission": "SOURCE_ONLY",
+  "authoritySha256": "2a698ded3094857081fe744d889801d89c70ae3fd6568b224569e7393b36f3af",
+  "captainLedgerSha256": "507e662c8046e9803226bdd664f551d07c2f55077d19fbd043b52cf79f446df4",
+  "checkpointPins": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/source-pin.json",
+      "bytes": 748000,
+      "sha256": "bb478920a73704df9b169f7d4f45a6ce0e6245d3bf80ba2b7ab5610f662f7738"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/source-pin.json",
+      "bytes": 17379,
+      "sha256": "df5517a78162c7616c3bf32cc2d4dadca552537ae39bc7460964d97e26b7eb71"
+    }
+  ],
+  "afterCustody": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/after-custody.json",
+      "bytes": 2246052,
+      "sha256": "9e2f21fdb6a37d99611903d0370b02f3c9483fd609302327b04e7ccbb1c0250e"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/after-custody.json",
+      "bytes": 2246052,
+      "sha256": "9e2f21fdb6a37d99611903d0370b02f3c9483fd609302327b04e7ccbb1c0250e"
+    }
+  ],
+  "audits": {
+    "before": {
+      "rows": 9509,
+      "previousExpectedRows": 9493,
+      "newCaptainRows": 3,
+      "newNamedReadOnlyInputs": 13,
+      "mismatches": 0
+    },
+    "afterFrozen": {
+      "rows": 9509,
+      "mismatches": 0,
+      "expectedHashesRegenerated": false
+    },
+    "historical": {
+      "rows": 5266,
+      "mismatches": 0,
+      "aliases": [
+        {
+          "original": "skills/engineering/statechart/scripts/statechart.ts",
+          "retainedBefore": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/statechart.ts"
+        },
+        {
+          "original": "skills/engineering/statechart/scripts/test/cli.test.ts",
+          "retainedBefore": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/cli.test.ts"
+        }
+      ],
+      "meaning": "Only exact preauthorized aliases; no historical source/pin/receipt rewritten."
+    },
+    "newSourceDocuments": {
+      "rows": 23,
+      "mismatches": 0,
+      "rehashedAfterSealing": true
+    },
+    "afterInventory": {
+      "rows": 9532,
+      "frozen": 9509,
+      "newNonDerived": 23,
+      "derivedFilesExcluded": 6,
+      "derivedBoundSeparately": true
+    }
+  },
+  "ownFiles": {
+    "host": 16,
+    "metric": 13,
+    "total": 29,
+    "hostRuntimeModules": 0,
+    "tempCopies": 0
+  },
+  "absentPaths": [
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/driver.py",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/launcher.py",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/successor.diff",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/execution-release.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/execution-release.json",
+    "C:/Users/User/AppData/Local/Temp/dyd415-rmi-b3-janitor-host-driver-20261031.py",
+    "C:/Users/User/AppData/Local/Temp/dyd415-rmi-b3-janitor-host-launch-20261031.py"
+  ],
+  "outcome": {
+    "host": "BLOCKED_SOURCE_PORTABILITY_SCOPE; no executable adaptation created",
+    "metric": "SOURCE_CHECKPOINT; bounded future acquisition proposal only",
+    "helper12": "NOT_RELEASED",
+    "typecheck": "NOT_RELEASED",
+    "serial12": "NOT_RELEASED",
+    "neededDisposition": "Captain must explicitly authorize a test-fixture-only source successor or narrow change to the three methods in frozen test_worker_contracts.py, restoring platform-neutral mocked os/signal boundaries with unchanged actual-function assertions/names. No production, worker or runtime behavior change needed. Then repin/inspect before any helper12 release."
+  },
+  "execution": {
+    "tests": 0,
+    "importsOrDiscovery": 0,
+    "runtime": 0,
+    "compiler": 0,
+    "docker": 0,
+    "network": 0,
+    "downloadOrInstall": 0,
+    "review": 0,
+    "executionReleaseCreated": false,
+    "resultDirectoriesCreated": false
+  },
+  "claims": {
+    "nativeTestPass": false,
+    "compilerPass": false,
+    "metricSetup": false,
+    "archiveOrigin": false,
+    "aggregateAcceptance": false
+  },
+  "limitations": "Host helper mock portability is source-established, not an observed native failure. No hard output cap/Job/network-none/descendant isolation claim for future host envelope. Both settled HITL threads untouched. All product/platform/Java/abrupt-parent/final gates persist.",
+  "receiptSelfExcluded": true,
+  "packet": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/",
+  "actualSourceDocuments": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/assurance-applicability.md",
+      "bytes": 3134,
+      "sha256": "086aa2f307e8605fd68ea769fc0fd8f6e3e7fdaea5168680a3769bde5908b5c5"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/before-custody.json",
+      "bytes": 2239902,
+      "sha256": "a2d26e4c77b932f480144ef0e3ce011464e6764f371938e46cbc2876df1eac13"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/before-source-map.json",
+      "bytes": 2050,
+      "sha256": "ceaa1edcef6dfbccf00cb5a3b0cdad196c590d795a2cdd0b7eb3ae854f93b050"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/checkpoint.md",
+      "bytes": 4792,
+      "sha256": "28f3cd633129d91ac15c5b6c9636b1474d29ea7aa5044be1f7558d6d3a139e17"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/closure.json",
+      "bytes": 21738,
+      "sha256": "136975c141540d5584bce1f4ca9bc31c623801212f8d39ba3729509ee98e8a50"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/commands.json",
+      "bytes": 2669,
+      "sha256": "f3440643ac1c0129242a9f25a4848166b283a8c61af20f65a2f6fde304bc4ad4"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/environment-contract.json",
+      "bytes": 3530,
+      "sha256": "a7bb7417712d9ada0e8ffb70678292d8c0b2dcb9209541678b831c03d49d482d"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/failure-and-retention.md",
+      "bytes": 3376,
+      "sha256": "350d64556a1c098efb845bd6d0da64ab1bb0a0c4cba9d339a0c51542bf6d8a6f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/input-manifest.json",
+      "bytes": 528987,
+      "sha256": "1526f4b91995a052ce167c47a0fe653bfa8c8872e95fc0858fa6eb3d8e802d2c"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/owned-paths.json",
+      "bytes": 6449,
+      "sha256": "8c7089f4442f4c2a996bbfc0d6a170a282410f1977c6453df399cee3e2597c60"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/predicate-contract.json",
+      "bytes": 5684,
+      "sha256": "d4156ffdf1b155e6d9444c44d486e8103ddd6d12a0a83896ffd54cd11d062d3c"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/preservation-map.json",
+      "bytes": 1280,
+      "sha256": "430bf21fab8f8fa7eafeabe3b509b52cbf96f0504796f34bdf3bfce122b8d4b8"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/test-inventory.json",
+      "bytes": 10507,
+      "sha256": "7b045bfaf21b4bf4cf20400c68309add5fa2e5c1766e55198cf47405902fd7d8"
+    }
+  ],
+  "derivedSiblingIdentities": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/after-custody.json",
+      "bytes": 2246052,
+      "sha256": "9e2f21fdb6a37d99611903d0370b02f3c9483fd609302327b04e7ccbb1c0250e"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/source-pin.json",
+      "bytes": 748000,
+      "sha256": "bb478920a73704df9b169f7d4f45a6ce0e6245d3bf80ba2b7ab5610f662f7738"
+    }
+  ],
+  "self": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-source/source-data-receipt.json"
+}

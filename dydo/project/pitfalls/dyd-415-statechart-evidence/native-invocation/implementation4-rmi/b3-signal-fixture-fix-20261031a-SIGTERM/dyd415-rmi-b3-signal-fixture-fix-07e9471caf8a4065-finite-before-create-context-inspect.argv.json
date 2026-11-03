@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe",
+    "context",
+    "inspect",
+    "desktop-linux"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "hidden": true,
+  "ticket": "0000000003-31613a4d3d93644d",
+  "startedUtc": "2026-10-31T13:08:48.003689+00:00"
+}

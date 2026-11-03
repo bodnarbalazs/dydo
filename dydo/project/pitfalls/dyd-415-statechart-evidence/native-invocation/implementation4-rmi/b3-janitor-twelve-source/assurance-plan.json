@@ -1,0 +1,52 @@
+{
+  "state": "SOURCE_ONLY_ASSURANCE_OWED",
+  "direct21": "Actual21 pass proves the prior successor at sourcee368bc27 only; it does not certify these new12 modules",
+  "sourceDirectTests": {
+    "files": [
+      "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_driver_contracts.py",
+      "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_worker_contracts.py"
+    ],
+    "lexicalNames": [
+      "TwelveDriverContracts.test_retention_failure_with_successful_logging_keeps_exact_isolated_lock",
+      "TwelveDriverContracts.test_healthy_retention_releases_only_matching_isolated_lock",
+      "TwelveDriverContracts.test_launcher_requires_exact_twelve_release_and_source_identity",
+      "TwelveDriverContracts.test_missing_or_alternative_selector_refuses_before_admission",
+      "TwelveWorkerContracts.test_exact_source_selection_is_twelve_unique_original_names",
+      "TwelveWorkerContracts.test_complete_exact_native_one_case_summary_is_required",
+      "TwelveWorkerContracts.test_real_child_close_before_controlled_exit_is_required",
+      "TwelveWorkerContracts.test_spawn_failure_close_is_distinct_from_reaping_a_created_janitor",
+      "TwelveWorkerContracts.test_worker_spawn_failure_requires_no_janitor",
+      "TwelveWorkerContracts.test_runner_identity_uncertainty_never_kills_an_unproved_group",
+      "TwelveWorkerContracts.test_runner_exact_owned_group_cancellation_uses_sigkill",
+      "TwelveWorkerContracts.test_timeout_stays_failure_after_late_runner_exit_and_bounded_reap"
+    ],
+    "count": 12,
+    "executed": 0,
+    "scope": "Actual successor retain_and_release/admission/parser, selected_tap/lifecycle_events/drain_runner/run_case timeout; only isolated locks and mocked material calls; not product or container proof"
+  },
+  "associationProposal": [
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/driver.py",
+      "tests": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_driver_contracts.py"
+      ]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/launcher.py",
+      "tests": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_driver_contracts.py"
+      ]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/worker.py",
+      "tests": [
+        "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_worker_contracts.py"
+      ]
+    }
+  ],
+  "actualReach": "Direct tests load actual new modules, call finalization/admission and worker selection/identity/timeout paths; mocked boundaries are not native lifecycle/platform proof",
+  "producerApplicability": "gate_adapter._unittest_discovery can attribute TestCase source files regardless directory; normal DynaDocs tests folder discovery does not automatically run source-packet tests; exact future scoped command is required",
+  "manifestUnchanged": true,
+  "staticAndDependencies": "Independent assurance setup packet; no new collector/framework/threshold/exclusion; all maintained imports remain in reach",
+  "coverage": "No result or coverage/HCRAP claimed; active imported foundation/shared containment are not excluded as historical"
+}

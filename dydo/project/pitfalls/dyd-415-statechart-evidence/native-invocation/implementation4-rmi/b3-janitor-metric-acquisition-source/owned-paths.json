@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY_NOT_RELEASED",
+  "authority": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-contract.md",
+  "finiteAllowedPaths": [
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/checkpoint.md",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/source-pin.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/source-data-receipt.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/acquisition-plan.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/setup-commands.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/prerequisite-identities.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/provenance-gaps.md",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/compiler-lock-delta.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/maintained-reach.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/owned-paths.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/before-custody.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/after-custody.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/preservation-map.json"
+  ],
+  "actualAuthoredSubset": [
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/checkpoint.md",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/source-pin.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/source-data-receipt.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/acquisition-plan.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/setup-commands.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/prerequisite-identities.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/provenance-gaps.md",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/compiler-lock-delta.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/maintained-reach.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/owned-paths.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/before-custody.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/after-custody.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/preservation-map.json"
+  ],
+  "allBefore": "ABSENT",
+  "beforeCustodyRows": 9509,
+  "noTemp": true,
+  "noAcquisitionInstallOrDependencyEdit": true
+}

@@ -1,0 +1,26 @@
+{
+  "archive": {
+    "url": "https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.gz",
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-node-sxdcyaa0\\node-v22.23.2-linux-x64.tar.gz",
+    "bytes": 56851233,
+    "sha256": "b294a556e639d64338823920e5866c21c02741742d2e1529ee1a225c1ec9252a",
+    "seconds": 4.866927399998531
+  },
+  "checksum": {
+    "url": "https://nodejs.org/dist/v22.23.2/SHASUMS256.txt",
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-node-sxdcyaa0\\SHASUMS256.txt",
+    "bytes": 3777,
+    "sha256": "778ac5b2fcdbd68d9c0ae9f4310674faa3af0910bd0d18e7f6597787c40a3e39",
+    "seconds": 0.09041819999401923
+  },
+  "checksumLine": "b294a556e639d64338823920e5866c21c02741742d2e1529ee1a225c1ec9252a  node-v22.23.2-linux-x64.tar.gz",
+  "archiveVerified": true,
+  "requests": 2,
+  "redirects": 0,
+  "retries": 0,
+  "extracted": false,
+  "installed": false,
+  "executed": false,
+  "globalChanges": false,
+  "runtimeVersionClaim": false
+}

@@ -1,0 +1,10 @@
+{
+  "exit": 0,
+  "samples": 188,
+  "exitObservation": {
+    "exit": 0,
+    "observedReapedMonotonicNs": 125697907128730
+  },
+  "directChildReaped": true,
+  "adoptedChildrenReaped": false
+}

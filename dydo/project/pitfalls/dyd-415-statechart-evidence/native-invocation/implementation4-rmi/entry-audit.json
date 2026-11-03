@@ -1,0 +1,1379 @@
+{
+  "jarSha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+  "readerSha256": "1f7ebaaebc0bc1cc0d63e332eaa6cd66a75f6a32077a09ae5939b151edc47342",
+  "classes": [
+    {
+      "entry": "tlc2/TLC.class",
+      "classSha256": "7eb841df786485de84506552afca1eb462abd951308c187f13e1adebd17a7e5b",
+      "strings": [
+        "Ltlc2/tool/fp/FPSetConfiguration;",
+        "(ILtlc2/tool/fp/FPSetConfiguration;)Ljava/util/Map;",
+        "(ILtlc2/tool/fp/FPSetConfiguration;)Ljava/util/Map<Ljava/lang/String;Ljava/lang/String;>;",
+        "getFPSetConfiguration",
+        "()Ltlc2/tool/fp/FPSetConfiguration;",
+        "tlc2/tool/fp/FPSetConfiguration",
+        "-simulate",
+        "-debug",
+        "-fp",
+        "Error: The number for -fp must be between 0 and ",
+        "Error: A number for -fp is required. But encountered ",
+        "Error: expect an integer for -fp option.",
+        "-fpmem",
+        "Using -fpmem with an abolute memory value has been deprecated. Please allocate memory for the TLC process via the JVM mechanisms and use -fpmem to set the fraction to be used for fingerprint storage.",
+        "-fpbits",
+        "the number of MSB used by MultiFPSet to create nested\nFPSets; defaults to 1",
+        "tlc2/tool/fp/FPSet",
+        "tlc2/tool/fp/FPSetFactory",
+        "getFPSetInitialized",
+        "(Ltlc2/tool/fp/FPSetConfiguration;Ljava/lang/String;Ljava/lang/String;)Ljava/util/concurrent/Future;",
+        "java/lang/invoke/LambdaMetafactory",
+        "metafactory"
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "descriptor": "()V",
+          "sites": [
+            {
+              "offset": 102,
+              "opcode": "bb",
+              "bytes": "bb0018",
+              "constantPoolIndex": 24,
+              "reference": "tlc2/tool/fp/FPSetConfiguration"
+            },
+            {
+              "offset": 106,
+              "opcode": "b7",
+              "bytes": "b70019",
+              "constantPoolIndex": 25,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.<init>.()V"
+            },
+            {
+              "offset": 109,
+              "opcode": "b5",
+              "bytes": "b5001a",
+              "constantPoolIndex": 26,
+              "reference": "tlc2/TLC.fpSetConfiguration.Ltlc2/tool/fp/FPSetConfiguration;"
+            }
+          ]
+        },
+        {
+          "name": "handleParameters",
+          "descriptor": "([Ljava/lang/String;)Z",
+          "sites": [
+            {
+              "offset": 1843,
+              "opcode": "b3",
+              "bytes": "b300d7",
+              "constantPoolIndex": 215,
+              "reference": "tlc2/TLCGlobals.DFIDMax.I"
+            },
+            {
+              "offset": 1846,
+              "opcode": "b2",
+              "bytes": "b200d7",
+              "constantPoolIndex": 215,
+              "reference": "tlc2/TLCGlobals.DFIDMax.I"
+            },
+            {
+              "offset": 2116,
+              "opcode": "b4",
+              "bytes": "b4001a",
+              "constantPoolIndex": 26,
+              "reference": "tlc2/TLC.fpSetConfiguration.Ltlc2/tool/fp/FPSetConfiguration;"
+            },
+            {
+              "offset": 2122,
+              "opcode": "b6",
+              "bytes": "b600e4",
+              "constantPoolIndex": 228,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.setMemory.(J)V"
+            },
+            {
+              "offset": 2126,
+              "opcode": "b4",
+              "bytes": "b4001a",
+              "constantPoolIndex": 26,
+              "reference": "tlc2/TLC.fpSetConfiguration.Ltlc2/tool/fp/FPSetConfiguration;"
+            },
+            {
+              "offset": 2130,
+              "opcode": "b6",
+              "bytes": "b600e5",
+              "constantPoolIndex": 229,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.setRatio.(D)V"
+            },
+            {
+              "offset": 2137,
+              "opcode": "b4",
+              "bytes": "b4001a",
+              "constantPoolIndex": 26,
+              "reference": "tlc2/TLC.fpSetConfiguration.Ltlc2/tool/fp/FPSetConfiguration;"
+            },
+            {
+              "offset": 2142,
+              "opcode": "b6",
+              "bytes": "b600e5",
+              "constantPoolIndex": 229,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.setRatio.(D)V"
+            },
+            {
+              "offset": 2222,
+              "opcode": "b8",
+              "bytes": "b800e8",
+              "constantPoolIndex": 232,
+              "reference": "tlc2/tool/fp/FPSet.isValid.(I)Z"
+            },
+            {
+              "offset": 2257,
+              "opcode": "b4",
+              "bytes": "b4001a",
+              "constantPoolIndex": 26,
+              "reference": "tlc2/TLC.fpSetConfiguration.Ltlc2/tool/fp/FPSetConfiguration;"
+            },
+            {
+              "offset": 2262,
+              "opcode": "b6",
+              "bytes": "b600ea",
+              "constantPoolIndex": 234,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.setFpBits.(I)V"
+            }
+          ]
+        },
+        {
+          "name": "process",
+          "descriptor": "()I",
+          "sites": [
+            {
+              "offset": 101,
+              "opcode": "bb",
+              "bytes": "bb011d",
+              "constantPoolIndex": 285,
+              "reference": "tlc2/tool/Simulator"
+            },
+            {
+              "offset": 140,
+              "opcode": "b7",
+              "bytes": "b7011f",
+              "constantPoolIndex": 287,
+              "reference": "tlc2/tool/Simulator.<init>.(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZIJLtlc2/util/RandomGenerator;JLutil/FilenameToStream;I)V"
+            },
+            {
+              "offset": 147,
+              "opcode": "b3",
+              "bytes": "b30120",
+              "constantPoolIndex": 288,
+              "reference": "tlc2/TLCGlobals.simulator.Ltlc2/tool/Simulator;"
+            },
+            {
+              "offset": 152,
+              "opcode": "b6",
+              "bytes": "b60121",
+              "constantPoolIndex": 289,
+              "reference": "tlc2/tool/Simulator.simulate.()I"
+            },
+            {
+              "offset": 202,
+              "opcode": "b4",
+              "bytes": "b4001a",
+              "constantPoolIndex": 26,
+              "reference": "tlc2/TLC.fpSetConfiguration.Ltlc2/tool/fp/FPSetConfiguration;"
+            },
+            {
+              "offset": 205,
+              "opcode": "b8",
+              "bytes": "b80124",
+              "constantPoolIndex": 292,
+              "reference": "tlc2/TLC.getModelCheckingRuntime.(ILtlc2/tool/fp/FPSetConfiguration;)Ljava/util/Map;"
+            },
+            {
+              "offset": 265,
+              "opcode": "bb",
+              "bytes": "bb0129",
+              "constantPoolIndex": 297,
+              "reference": "tlc2/tool/ModelChecker"
+            },
+            {
+              "offset": 288,
+              "opcode": "b4",
+              "bytes": "b4001a",
+              "constantPoolIndex": 26,
+              "reference": "tlc2/TLC.fpSetConfiguration.Ltlc2/tool/fp/FPSetConfiguration;"
+            },
+            {
+              "offset": 309,
+              "opcode": "b8",
+              "bytes": "b8012a",
+              "constantPoolIndex": 298,
+              "reference": "tlc2/tool/fp/FPSetFactory.getFPSetInitialized.(Ltlc2/tool/fp/FPSetConfiguration;Ljava/lang/String;Ljava/lang/String;)Ljava/util/concurrent/Future;"
+            },
+            {
+              "offset": 316,
+              "opcode": "b7",
+              "bytes": "b7012b",
+              "constantPoolIndex": 299,
+              "reference": "tlc2/tool/ModelChecker.<init>.(Ltlc2/tool/ITool;Ljava/lang/String;Ltlc2/util/IStateWriter;ZLjava/lang/String;Ljava/util/concurrent/Future;J)V"
+            },
+            {
+              "offset": 322,
+              "opcode": "bb",
+              "bytes": "bb012d",
+              "constantPoolIndex": 301,
+              "reference": "tlc2/tool/management/ModelCheckerMXWrapper"
+            },
+            {
+              "offset": 329,
+              "opcode": "c0",
+              "bytes": "c00129",
+              "constantPoolIndex": 297,
+              "reference": "tlc2/tool/ModelChecker"
+            },
+            {
+              "offset": 333,
+              "opcode": "b7",
+              "bytes": "b7012e",
+              "constantPoolIndex": 302,
+              "reference": "tlc2/tool/management/ModelCheckerMXWrapper.<init>.(Ltlc2/tool/ModelChecker;Ltlc2/TLC;)V"
+            },
+            {
+              "offset": 347,
+              "opcode": "bb",
+              "bytes": "bb0130",
+              "constantPoolIndex": 304,
+              "reference": "tlc2/tool/DFIDModelChecker"
+            },
+            {
+              "offset": 373,
+              "opcode": "b7",
+              "bytes": "b70131",
+              "constantPoolIndex": 305,
+              "reference": "tlc2/tool/DFIDModelChecker.<init>.(Ltlc2/tool/ITool;Ljava/lang/String;Ltlc2/util/IStateWriter;ZLjava/lang/String;J)V"
+            }
+          ]
+        },
+        {
+          "name": "isBFS",
+          "descriptor": "()Z",
+          "sites": [
+            {
+              "offset": 0,
+              "opcode": "b2",
+              "bytes": "b200d7",
+              "constantPoolIndex": 215,
+              "reference": "tlc2/TLCGlobals.DFIDMax.I"
+            }
+          ]
+        },
+        {
+          "name": "getSimulationRuntime",
+          "descriptor": "(J)Ljava/util/Map;",
+          "sites": [
+            {
+              "offset": 137,
+              "opcode": "b8",
+              "bytes": "b8015d",
+              "constantPoolIndex": 349,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;)Ljava/lang/String;"
+            },
+            {
+              "offset": 154,
+              "opcode": "b8",
+              "bytes": "b8015d",
+              "constantPoolIndex": 349,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;)Ljava/lang/String;"
+            },
+            {
+              "offset": 171,
+              "opcode": "b8",
+              "bytes": "b8015d",
+              "constantPoolIndex": 349,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;)Ljava/lang/String;"
+            },
+            {
+              "offset": 188,
+              "opcode": "b8",
+              "bytes": "b8015d",
+              "constantPoolIndex": 349,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;)Ljava/lang/String;"
+            },
+            {
+              "offset": 205,
+              "opcode": "b8",
+              "bytes": "b8015d",
+              "constantPoolIndex": 349,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;)Ljava/lang/String;"
+            }
+          ]
+        },
+        {
+          "name": "getModelCheckingRuntime",
+          "descriptor": "(ILtlc2/tool/fp/FPSetConfiguration;)Ljava/util/Map;",
+          "sites": [
+            {
+              "offset": 45,
+              "opcode": "b6",
+              "bytes": "b6016e",
+              "constantPoolIndex": 366,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.getImplementation.()Ljava/lang/String;"
+            },
+            {
+              "offset": 49,
+              "opcode": "b6",
+              "bytes": "b6016e",
+              "constantPoolIndex": 366,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.getImplementation.()Ljava/lang/String;"
+            },
+            {
+              "offset": 65,
+              "opcode": "b8",
+              "bytes": "b80172",
+              "constantPoolIndex": 370,
+              "reference": "tlc2/tool/ModelChecker.getStateQueueName.()Ljava/lang/String;"
+            },
+            {
+              "offset": 148,
+              "opcode": "b8",
+              "bytes": "b8015d",
+              "constantPoolIndex": 349,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;)Ljava/lang/String;"
+            },
+            {
+              "offset": 165,
+              "opcode": "b8",
+              "bytes": "b8015d",
+              "constantPoolIndex": 349,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;)Ljava/lang/String;"
+            },
+            {
+              "offset": 182,
+              "opcode": "b8",
+              "bytes": "b8015d",
+              "constantPoolIndex": 349,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;)Ljava/lang/String;"
+            },
+            {
+              "offset": 199,
+              "opcode": "b8",
+              "bytes": "b8015d",
+              "constantPoolIndex": 349,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;)Ljava/lang/String;"
+            },
+            {
+              "offset": 216,
+              "opcode": "b8",
+              "bytes": "b8015d",
+              "constantPoolIndex": 349,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;)Ljava/lang/String;"
+            }
+          ]
+        },
+        {
+          "name": "getModuleFiles",
+          "descriptor": "()Ljava/util/List;",
+          "sites": [
+            {
+              "offset": 11,
+              "opcode": "c1",
+              "bytes": "c10129",
+              "constantPoolIndex": 297,
+              "reference": "tlc2/tool/ModelChecker"
+            },
+            {
+              "offset": 20,
+              "opcode": "c0",
+              "bytes": "c00129",
+              "constantPoolIndex": 297,
+              "reference": "tlc2/tool/ModelChecker"
+            },
+            {
+              "offset": 30,
+              "opcode": "b6",
+              "bytes": "b6018a",
+              "constantPoolIndex": 394,
+              "reference": "tlc2/tool/ModelChecker.getModuleFiles.(Lutil/FilenameToStream;)Ljava/util/List;"
+            }
+          ]
+        },
+        {
+          "name": "printStartupBanner",
+          "descriptor": "(ILjava/util/Map;)V",
+          "sites": [
+            {
+              "offset": 168,
+              "opcode": "b8",
+              "bytes": "b801a7",
+              "constantPoolIndex": 423,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
+            }
+          ]
+        },
+        {
+          "name": "printUsage",
+          "descriptor": "()V",
+          "sites": [
+            {
+              "offset": 244,
+              "opcode": "13",
+              "bytes": "1301c7",
+              "constantPoolIndex": 455,
+              "reference": "the number of MSB used by MultiFPSet to create nested\nFPSets; defaults to 1"
+            }
+          ]
+        },
+        {
+          "name": "getFPSetConfiguration",
+          "descriptor": "()Ltlc2/tool/fp/FPSetConfiguration;",
+          "sites": [
+            {
+              "offset": 1,
+              "opcode": "b4",
+              "bytes": "b4001a",
+              "constantPoolIndex": 26,
+              "reference": "tlc2/TLC.fpSetConfiguration.Ltlc2/tool/fp/FPSetConfiguration;"
+            }
+          ]
+        },
+        {
+          "name": "getModelName",
+          "descriptor": "()Ljava/lang/String;",
+          "sites": [
+            {
+              "offset": 7,
+              "opcode": "b8",
+              "bytes": "b801a7",
+              "constantPoolIndex": 423,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
+            }
+          ]
+        },
+        {
+          "name": "getSpecName",
+          "descriptor": "()Ljava/lang/String;",
+          "sites": [
+            {
+              "offset": 7,
+              "opcode": "b8",
+              "bytes": "b801a7",
+              "constantPoolIndex": 423,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "entry": "tlc2/tool/fp/FPSetFactory.class",
+      "classSha256": "8d20bac661a3cff650a000c3d3be05b496b2d365d209db8e0daa462085051a97",
+      "strings": [
+        "Ltlc2/tool/fp/FPSetFactory;",
+        "Ljava/lang/Class<+Ltlc2/tool/fp/FPSet;>;",
+        "(Ljava/lang/Class<+Ltlc2/tool/fp/FPSet;>;)Z",
+        "isDiskFPSet",
+        "getFPSet",
+        "()Ltlc2/tool/fp/FPSet;",
+        "(Ltlc2/tool/fp/FPSetConfiguration;)Ltlc2/tool/fp/FPSet;",
+        "Ltlc2/tool/fp/FPSetConfiguration;",
+        "getFPSetInitialized",
+        "(Ltlc2/tool/fp/FPSetConfiguration;Ljava/lang/String;Ljava/lang/String;)Ljava/util/concurrent/Future;",
+        "(Ltlc2/tool/fp/FPSetConfiguration;Ljava/lang/String;Ljava/lang/String;)Ljava/util/concurrent/Future<Ltlc2/tool/fp/FPSet;>;",
+        "(Ljava/lang/String;Ltlc2/tool/fp/FPSetConfiguration;)Ltlc2/tool/fp/FPSet;",
+        "factoryClass",
+        "FPSetFactory.java",
+        "tlc2/tool/fp/OffHeapDiskFPSet",
+        "tlc2/tool/fp/FPSet",
+        "tlc2/tool/fp/DiskFPSet",
+        "tlc2/tool/fp/FPSetConfiguration",
+        "tlc2/tool/fp/MultiFPSet",
+        "tlc2/tool/fp/MSBDiskFPSet",
+        "tlc2/tool/fp/FPSetFactory$1",
+        "tlc2/tool/fp/LSBDiskFPSet",
+        "unsuccessfully trying to load custom FPSet class: ",
+        "tlc2/tool/fp/FPSetFactory",
+        "(Ltlc2/tool/fp/FPSetConfiguration;)V",
+        "(Ltlc2/tool/fp/FPSetConfiguration;Ljava/lang/String;Ljava/lang/String;Ljava/util/concurrent/ExecutorService;)V"
+      ],
+      "methods": [
+        {
+          "name": "allocatesOnHeap",
+          "descriptor": "(Ljava/lang/Class;)Z",
+          "sites": [
+            {
+              "offset": 0,
+              "opcode": "12",
+              "bytes": "1202",
+              "constantPoolIndex": 2,
+              "reference": "tlc2/tool/fp/OffHeapDiskFPSet"
+            }
+          ]
+        },
+        {
+          "name": "allocatesOnHeap",
+          "descriptor": "(Ljava/lang/String;)Z",
+          "sites": [
+            {
+              "offset": 0,
+              "opcode": "12",
+              "bytes": "1204",
+              "constantPoolIndex": 4,
+              "reference": "tlc2/tool/fp/FPSet"
+            },
+            {
+              "offset": 13,
+              "opcode": "b8",
+              "bytes": "b80007",
+              "constantPoolIndex": 7,
+              "reference": "tlc2/tool/fp/FPSetFactory.allocatesOnHeap.(Ljava/lang/Class;)Z"
+            }
+          ]
+        },
+        {
+          "name": "supportsArchitecture",
+          "descriptor": "(Ljava/lang/String;)Z",
+          "sites": [
+            {
+              "offset": 0,
+              "opcode": "12",
+              "bytes": "1204",
+              "constantPoolIndex": 4,
+              "reference": "tlc2/tool/fp/FPSet"
+            },
+            {
+              "offset": 13,
+              "opcode": "b8",
+              "bytes": "b80009",
+              "constantPoolIndex": 9,
+              "reference": "tlc2/tool/fp/FPSetFactory.supports32Bits.(Ljava/lang/Class;)Z"
+            }
+          ]
+        },
+        {
+          "name": "supports32Bits",
+          "descriptor": "(Ljava/lang/Class;)Z",
+          "sites": [
+            {
+              "offset": 12,
+              "opcode": "12",
+              "bytes": "1202",
+              "constantPoolIndex": 2,
+              "reference": "tlc2/tool/fp/OffHeapDiskFPSet"
+            }
+          ]
+        },
+        {
+          "name": "isDiskFPSet",
+          "descriptor": "(Ljava/lang/Class;)Z",
+          "sites": [
+            {
+              "offset": 0,
+              "opcode": "12",
+              "bytes": "120d",
+              "constantPoolIndex": 13,
+              "reference": "tlc2/tool/fp/DiskFPSet"
+            }
+          ]
+        },
+        {
+          "name": "isDiskFPSet",
+          "descriptor": "(Ljava/lang/String;)Z",
+          "sites": [
+            {
+              "offset": 0,
+              "opcode": "12",
+              "bytes": "1204",
+              "constantPoolIndex": 4,
+              "reference": "tlc2/tool/fp/FPSet"
+            },
+            {
+              "offset": 13,
+              "opcode": "b8",
+              "bytes": "b8000e",
+              "constantPoolIndex": 14,
+              "reference": "tlc2/tool/fp/FPSetFactory.isDiskFPSet.(Ljava/lang/Class;)Z"
+            }
+          ]
+        },
+        {
+          "name": "getFPSet",
+          "descriptor": "()Ltlc2/tool/fp/FPSet;",
+          "sites": [
+            {
+              "offset": 0,
+              "opcode": "bb",
+              "bytes": "bb000f",
+              "constantPoolIndex": 15,
+              "reference": "tlc2/tool/fp/FPSetConfiguration"
+            },
+            {
+              "offset": 4,
+              "opcode": "b7",
+              "bytes": "b70010",
+              "constantPoolIndex": 16,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.<init>.()V"
+            },
+            {
+              "offset": 7,
+              "opcode": "b8",
+              "bytes": "b80011",
+              "constantPoolIndex": 17,
+              "reference": "tlc2/tool/fp/FPSetFactory.getFPSet.(Ltlc2/tool/fp/FPSetConfiguration;)Ltlc2/tool/fp/FPSet;"
+            }
+          ]
+        },
+        {
+          "name": "getFPSet",
+          "descriptor": "(Ltlc2/tool/fp/FPSetConfiguration;)Ltlc2/tool/fp/FPSet;",
+          "sites": [
+            {
+              "offset": 1,
+              "opcode": "b6",
+              "bytes": "b60012",
+              "constantPoolIndex": 18,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.getImplementation.()Ljava/lang/String;"
+            },
+            {
+              "offset": 6,
+              "opcode": "b6",
+              "bytes": "b60013",
+              "constantPoolIndex": 19,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.allowsNesting.()Z"
+            },
+            {
+              "offset": 12,
+              "opcode": "bb",
+              "bytes": "bb0014",
+              "constantPoolIndex": 20,
+              "reference": "tlc2/tool/fp/MultiFPSet"
+            },
+            {
+              "offset": 17,
+              "opcode": "b7",
+              "bytes": "b70015",
+              "constantPoolIndex": 21,
+              "reference": "tlc2/tool/fp/MultiFPSet.<init>.(Ltlc2/tool/fp/FPSetConfiguration;)V"
+            },
+            {
+              "offset": 26,
+              "opcode": "b8",
+              "bytes": "b80016",
+              "constantPoolIndex": 22,
+              "reference": "tlc2/tool/fp/FPSetFactory.supportsArchitecture.(Ljava/lang/String;)Z"
+            },
+            {
+              "offset": 34,
+              "opcode": "b8",
+              "bytes": "b80017",
+              "constantPoolIndex": 23,
+              "reference": "tlc2/tool/fp/FPSetFactory.loadImplementation.(Ljava/lang/String;Ltlc2/tool/fp/FPSetConfiguration;)Ltlc2/tool/fp/FPSet;"
+            },
+            {
+              "offset": 70,
+              "opcode": "bb",
+              "bytes": "bb001d",
+              "constantPoolIndex": 29,
+              "reference": "tlc2/tool/fp/MSBDiskFPSet"
+            },
+            {
+              "offset": 75,
+              "opcode": "b7",
+              "bytes": "b7001e",
+              "constantPoolIndex": 30,
+              "reference": "tlc2/tool/fp/MSBDiskFPSet.<init>.(Ltlc2/tool/fp/FPSetConfiguration;)V"
+            }
+          ]
+        },
+        {
+          "name": "getFPSetInitialized",
+          "descriptor": "(Ltlc2/tool/fp/FPSetConfiguration;Ljava/lang/String;Ljava/lang/String;)Ljava/util/concurrent/Future;",
+          "sites": [
+            {
+              "offset": 5,
+              "opcode": "bb",
+              "bytes": "bb0020",
+              "constantPoolIndex": 32,
+              "reference": "tlc2/tool/fp/FPSetFactory$1"
+            },
+            {
+              "offset": 13,
+              "opcode": "b7",
+              "bytes": "b70021",
+              "constantPoolIndex": 33,
+              "reference": "tlc2/tool/fp/FPSetFactory$1.<init>.(Ltlc2/tool/fp/FPSetConfiguration;Ljava/lang/String;Ljava/lang/String;Ljava/util/concurrent/ExecutorService;)V"
+            }
+          ]
+        },
+        {
+          "name": "getImplementations",
+          "descriptor": "()[Ljava/lang/String;",
+          "sites": [
+            {
+              "offset": 9,
+              "opcode": "12",
+              "bytes": "121d",
+              "constantPoolIndex": 29,
+              "reference": "tlc2/tool/fp/MSBDiskFPSet"
+            },
+            {
+              "offset": 21,
+              "opcode": "12",
+              "bytes": "1227",
+              "constantPoolIndex": 39,
+              "reference": "tlc2/tool/fp/LSBDiskFPSet"
+            },
+            {
+              "offset": 33,
+              "opcode": "12",
+              "bytes": "1202",
+              "constantPoolIndex": 2,
+              "reference": "tlc2/tool/fp/OffHeapDiskFPSet"
+            }
+          ]
+        },
+        {
+          "name": "getImplementationDefault",
+          "descriptor": "()Ljava/lang/String;",
+          "sites": [
+            {
+              "offset": 0,
+              "opcode": "12",
+              "bytes": "121d",
+              "constantPoolIndex": 29,
+              "reference": "tlc2/tool/fp/MSBDiskFPSet"
+            }
+          ]
+        },
+        {
+          "name": "getVMArguments",
+          "descriptor": "(Ljava/lang/String;J)Ljava/lang/String;",
+          "sites": [
+            {
+              "offset": 1,
+              "opcode": "b8",
+              "bytes": "b8002c",
+              "constantPoolIndex": 44,
+              "reference": "tlc2/tool/fp/FPSetFactory.allocatesOnHeap.(Ljava/lang/String;)Z"
+            }
+          ]
+        },
+        {
+          "name": "loadImplementation",
+          "descriptor": "(Ljava/lang/String;Ltlc2/tool/fp/FPSetConfiguration;)Ltlc2/tool/fp/FPSet;",
+          "sites": [
+            {
+              "offset": 2,
+              "opcode": "12",
+              "bytes": "1204",
+              "constantPoolIndex": 4,
+              "reference": "tlc2/tool/fp/FPSet"
+            },
+            {
+              "offset": 23,
+              "opcode": "12",
+              "bytes": "120f",
+              "constantPoolIndex": 15,
+              "reference": "tlc2/tool/fp/FPSetConfiguration"
+            },
+            {
+              "offset": 48,
+              "opcode": "c1",
+              "bytes": "c10004",
+              "constantPoolIndex": 4,
+              "reference": "tlc2/tool/fp/FPSet"
+            },
+            {
+              "offset": 56,
+              "opcode": "c0",
+              "bytes": "c00004",
+              "constantPoolIndex": 4,
+              "reference": "tlc2/tool/fp/FPSet"
+            },
+            {
+              "offset": 112,
+              "opcode": "12",
+              "bytes": "123e",
+              "constantPoolIndex": 62,
+              "reference": "unsuccessfully trying to load custom FPSet class: "
+            }
+          ]
+        },
+        {
+          "name": "<clinit>",
+          "descriptor": "()V",
+          "sites": [
+            {
+              "offset": 7,
+              "opcode": "12",
+              "bytes": "1204",
+              "constantPoolIndex": 4,
+              "reference": "tlc2/tool/fp/FPSet"
+            },
+            {
+              "offset": 23,
+              "opcode": "b3",
+              "bytes": "b30041",
+              "constantPoolIndex": 65,
+              "reference": "tlc2/tool/fp/FPSetFactory.IMPL_PROPERTY.Ljava/lang/String;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "entry": "tlc2/tool/fp/FPSetConfiguration.class",
+      "classSha256": "aeec8b239c6a255d92184cdbd7adf829cc51dc683b23e7e5f152c47da3c9136b",
+      "strings": [
+        "Ltlc2/tool/fp/FPSetConfiguration;",
+        "getMultiFPSetCnt",
+        "FPSetConfiguration.java",
+        "tlc2/tool/fp/FPSet",
+        "tlc2/tool/fp/FPSetConfiguration",
+        "tlc2/tool/fp/FPSetFactory",
+        "isDiskFPSet"
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "descriptor": "()V",
+          "sites": [
+            {
+              "offset": 7,
+              "opcode": "b7",
+              "bytes": "b70004",
+              "constantPoolIndex": 4,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.<init>.(Ljava/lang/Double;)V"
+            }
+          ]
+        },
+        {
+          "name": "<init>",
+          "descriptor": "(Ljava/lang/Double;)V",
+          "sites": [
+            {
+              "offset": 2,
+              "opcode": "b2",
+              "bytes": "b20005",
+              "constantPoolIndex": 5,
+              "reference": "tlc2/tool/fp/FPSetFactory.IMPL_PROPERTY.Ljava/lang/String;"
+            },
+            {
+              "offset": 5,
+              "opcode": "b8",
+              "bytes": "b80006",
+              "constantPoolIndex": 6,
+              "reference": "tlc2/tool/fp/FPSetFactory.getImplementationDefault.()Ljava/lang/String;"
+            },
+            {
+              "offset": 8,
+              "opcode": "b8",
+              "bytes": "b80007",
+              "constantPoolIndex": 7,
+              "reference": "java/lang/System.getProperty.(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
+            },
+            {
+              "offset": 11,
+              "opcode": "b7",
+              "bytes": "b70008",
+              "constantPoolIndex": 8,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.<init>.(Ljava/lang/Double;Ljava/lang/String;)V"
+            }
+          ]
+        },
+        {
+          "name": "<init>",
+          "descriptor": "(Ljava/lang/Double;Ljava/lang/String;)V",
+          "sites": [
+            {
+              "offset": 6,
+              "opcode": "b5",
+              "bytes": "b5000a",
+              "constantPoolIndex": 10,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.fpBits.I"
+            },
+            {
+              "offset": 13,
+              "opcode": "b5",
+              "bytes": "b5000d",
+              "constantPoolIndex": 13,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.memoryInBytes.J"
+            },
+            {
+              "offset": 21,
+              "opcode": "b5",
+              "bytes": "b5000f",
+              "constantPoolIndex": 15,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.ratio.D"
+            },
+            {
+              "offset": 26,
+              "opcode": "b5",
+              "bytes": "b50010",
+              "constantPoolIndex": 16,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.implementation.Ljava/lang/String;"
+            }
+          ]
+        },
+        {
+          "name": "allowsNesting",
+          "descriptor": "()Z",
+          "sites": [
+            {
+              "offset": 1,
+              "opcode": "b6",
+              "bytes": "b60011",
+              "constantPoolIndex": 17,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.getFpBits.()I"
+            }
+          ]
+        },
+        {
+          "name": "getFpBits",
+          "descriptor": "()I",
+          "sites": [
+            {
+              "offset": 1,
+              "opcode": "b4",
+              "bytes": "b4000a",
+              "constantPoolIndex": 10,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.fpBits.I"
+            },
+            {
+              "offset": 8,
+              "opcode": "b4",
+              "bytes": "b40010",
+              "constantPoolIndex": 16,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.implementation.Ljava/lang/String;"
+            },
+            {
+              "offset": 11,
+              "opcode": "b8",
+              "bytes": "b80012",
+              "constantPoolIndex": 18,
+              "reference": "tlc2/tool/fp/FPSetFactory.isDiskFPSet.(Ljava/lang/String;)Z"
+            },
+            {
+              "offset": 19,
+              "opcode": "b5",
+              "bytes": "b5000a",
+              "constantPoolIndex": 10,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.fpBits.I"
+            },
+            {
+              "offset": 23,
+              "opcode": "b4",
+              "bytes": "b4000a",
+              "constantPoolIndex": 10,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.fpBits.I"
+            }
+          ]
+        },
+        {
+          "name": "setFpBits",
+          "descriptor": "(I)V",
+          "sites": [
+            {
+              "offset": 1,
+              "opcode": "b8",
+              "bytes": "b80013",
+              "constantPoolIndex": 19,
+              "reference": "tlc2/tool/fp/FPSet.isValid.(I)Z"
+            },
+            {
+              "offset": 12,
+              "opcode": "b5",
+              "bytes": "b5000a",
+              "constantPoolIndex": 10,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.fpBits.I"
+            }
+          ]
+        },
+        {
+          "name": "getMemoryInBytes",
+          "descriptor": "()J",
+          "sites": [
+            {
+              "offset": 5,
+              "opcode": "b4",
+              "bytes": "b40010",
+              "constantPoolIndex": 16,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.implementation.Ljava/lang/String;"
+            },
+            {
+              "offset": 8,
+              "opcode": "b8",
+              "bytes": "b80017",
+              "constantPoolIndex": 23,
+              "reference": "tlc2/tool/fp/FPSetFactory.allocatesOnHeap.(Ljava/lang/String;)Z"
+            },
+            {
+              "offset": 15,
+              "opcode": "b4",
+              "bytes": "b4000d",
+              "constantPoolIndex": 13,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.memoryInBytes.J"
+            },
+            {
+              "offset": 25,
+              "opcode": "b4",
+              "bytes": "b4000d",
+              "constantPoolIndex": 13,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.memoryInBytes.J"
+            },
+            {
+              "offset": 30,
+              "opcode": "b4",
+              "bytes": "b4000f",
+              "constantPoolIndex": 15,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.ratio.D"
+            },
+            {
+              "offset": 40,
+              "opcode": "b4",
+              "bytes": "b4000f",
+              "constantPoolIndex": 15,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.ratio.D"
+            }
+          ]
+        },
+        {
+          "name": "getMemoryInFingerprintCnt",
+          "descriptor": "()J",
+          "sites": [
+            {
+              "offset": 1,
+              "opcode": "b6",
+              "bytes": "b6001a",
+              "constantPoolIndex": 26,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.getMemoryInBytes.()J"
+            }
+          ]
+        },
+        {
+          "name": "getMultiFPSetCnt",
+          "descriptor": "()I",
+          "sites": [
+            {
+              "offset": 2,
+              "opcode": "b6",
+              "bytes": "b60011",
+              "constantPoolIndex": 17,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.getFpBits.()I"
+            }
+          ]
+        },
+        {
+          "name": "setRatio",
+          "descriptor": "(D)V",
+          "sites": [
+            {
+              "offset": 25,
+              "opcode": "b5",
+              "bytes": "b5000f",
+              "constantPoolIndex": 15,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.ratio.D"
+            }
+          ]
+        },
+        {
+          "name": "getRatio",
+          "descriptor": "()D",
+          "sites": [
+            {
+              "offset": 1,
+              "opcode": "b4",
+              "bytes": "b4000f",
+              "constantPoolIndex": 15,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.ratio.D"
+            }
+          ]
+        },
+        {
+          "name": "setMemory",
+          "descriptor": "(J)V",
+          "sites": [
+            {
+              "offset": 19,
+              "opcode": "b5",
+              "bytes": "b5000d",
+              "constantPoolIndex": 13,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.memoryInBytes.J"
+            }
+          ]
+        },
+        {
+          "name": "getImplementation",
+          "descriptor": "()Ljava/lang/String;",
+          "sites": [
+            {
+              "offset": 1,
+              "opcode": "b4",
+              "bytes": "b40010",
+              "constantPoolIndex": 16,
+              "reference": "tlc2/tool/fp/FPSetConfiguration.implementation.Ljava/lang/String;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "entry": "tlc2/tool/fp/FPSet.class",
+      "classSha256": "9771c6f9b0e1c725c3b47eb1edaf347593b6b371eeba4b25b090c1fce272c49a",
+      "strings": [
+        "Ltlc2/tool/fp/FPSetConfiguration;",
+        "(Ltlc2/tool/fp/FPSetConfiguration;)V",
+        "Ltlc2/tool/fp/FPSet;",
+        "(ILjava/lang/String;Ljava/lang/String;)Ltlc2/tool/fp/FPSet;",
+        "()Ltlc2/tool/fp/FPSetConfiguration;",
+        "FPSet.java",
+        "tlc2/tool/fp/MultiFPSet",
+        "tlc2/tool/fp/FPSet",
+        "tlc2/tool/distributed/fp/FPSetRMI",
+        "tlc2/tool/distributed/fp/DistributedFPSet"
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "descriptor": "(Ltlc2/tool/fp/FPSetConfiguration;)V",
+          "sites": [
+            {
+              "offset": 1,
+              "opcode": "b7",
+              "bytes": "b70001",
+              "constantPoolIndex": 1,
+              "reference": "java/rmi/server/UnicastRemoteObject.<init>.()V"
+            },
+            {
+              "offset": 6,
+              "opcode": "b5",
+              "bytes": "b50002",
+              "constantPoolIndex": 2,
+              "reference": "tlc2/tool/fp/FPSet.statesSeen.J"
+            },
+            {
+              "offset": 11,
+              "opcode": "b5",
+              "bytes": "b50003",
+              "constantPoolIndex": 3,
+              "reference": "tlc2/tool/fp/FPSet.fpSetConfig.Ltlc2/tool/fp/FPSetConfiguration;"
+            }
+          ]
+        },
+        {
+          "name": "exit",
+          "descriptor": "(Z)V",
+          "sites": [
+            {
+              "offset": 0,
+              "opcode": "b8",
+              "bytes": "b80004",
+              "constantPoolIndex": 4,
+              "reference": "tlc2/tool/distributed/fp/DistributedFPSet.shutdown.()V"
+            }
+          ]
+        },
+        {
+          "name": "putBlock",
+          "descriptor": "(Ltlc2/util/LongVec;)Ltlc2/util/BitVector;",
+          "sites": [
+            {
+              "offset": 33,
+              "opcode": "b6",
+              "bytes": "b6000a",
+              "constantPoolIndex": 10,
+              "reference": "tlc2/tool/fp/FPSet.put.(J)Z"
+            }
+          ]
+        },
+        {
+          "name": "containsBlock",
+          "descriptor": "(Ltlc2/util/LongVec;)Ltlc2/util/BitVector;",
+          "sites": [
+            {
+              "offset": 2,
+              "opcode": "b4",
+              "bytes": "b40002",
+              "constantPoolIndex": 2,
+              "reference": "tlc2/tool/fp/FPSet.statesSeen.J"
+            },
+            {
+              "offset": 11,
+              "opcode": "b5",
+              "bytes": "b50002",
+              "constantPoolIndex": 2,
+              "reference": "tlc2/tool/fp/FPSet.statesSeen.J"
+            },
+            {
+              "offset": 42,
+              "opcode": "b6",
+              "bytes": "b6000c",
+              "constantPoolIndex": 12,
+              "reference": "tlc2/tool/fp/FPSet.contains.(J)Z"
+            }
+          ]
+        },
+        {
+          "name": "getStatesSeen",
+          "descriptor": "()J",
+          "sites": [
+            {
+              "offset": 1,
+              "opcode": "b4",
+              "bytes": "b40002",
+              "constantPoolIndex": 2,
+              "reference": "tlc2/tool/fp/FPSet.statesSeen.J"
+            }
+          ]
+        },
+        {
+          "name": "getConfiguration",
+          "descriptor": "()Ltlc2/tool/fp/FPSetConfiguration;",
+          "sites": [
+            {
+              "offset": 1,
+              "opcode": "b4",
+              "bytes": "b40003",
+              "constantPoolIndex": 3,
+              "reference": "tlc2/tool/fp/FPSet.fpSetConfig.Ltlc2/tool/fp/FPSetConfiguration;"
+            }
+          ]
+        },
+        {
+          "name": "unexportObject",
+          "descriptor": "(Z)V",
+          "sites": [
+            {
+              "offset": 2,
+              "opcode": "b8",
+              "bytes": "b8000e",
+              "constantPoolIndex": 14,
+              "reference": "java/rmi/server/UnicastRemoteObject.unexportObject.(Ljava/rmi/Remote;Z)Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "entry": "tlc2/tool/management/StateMonitor.class",
+      "classSha256": "707024f652c90e0ad56fbc7efb2d8589212daeabff85d4cd426275d58124e5ed",
+      "strings": [
+        "Ltlc2/tool/management/StateMonitor;",
+        "Ljavax/management/remote/JMXServiceURL;",
+        "Ljavax/management/remote/JMXConnector;",
+        "Ltlc2/tool/distributed/management/TLCStatisticsMXBean;",
+        "StateMonitor.java",
+        "tlc2/tool/management/StateMonitor$1",
+        "javax/management/remote/JMXServiceURL",
+        "tlc2/tool/distributed/management/TLCStatisticsMXBean",
+        "tlc2/tool/management/StateMonitor",
+        "javax/management/remote/JMXConnector",
+        "javax/management/remote/JMXConnectorFactory",
+        "(Ljavax/management/remote/JMXServiceURL;)Ljavax/management/remote/JMXConnector;"
+      ],
+      "methods": [
+        {
+          "name": "main",
+          "descriptor": "([Ljava/lang/String;)V",
+          "sites": [
+            {
+              "offset": 26,
+              "opcode": "bb",
+              "bytes": "bb0005",
+              "constantPoolIndex": 5,
+              "reference": "tlc2/tool/management/StateMonitor$1"
+            },
+            {
+              "offset": 30,
+              "opcode": "b7",
+              "bytes": "b70006",
+              "constantPoolIndex": 6,
+              "reference": "tlc2/tool/management/StateMonitor$1.<init>.()V"
+            },
+            {
+              "offset": 278,
+              "opcode": "bb",
+              "bytes": "bb0024",
+              "constantPoolIndex": 36,
+              "reference": "javax/management/remote/JMXServiceURL"
+            },
+            {
+              "offset": 284,
+              "opcode": "b7",
+              "bytes": "b70025",
+              "constantPoolIndex": 37,
+              "reference": "javax/management/remote/JMXServiceURL.<init>.(Ljava/lang/String;)V"
+            },
+            {
+              "offset": 309,
+              "opcode": "bb",
+              "bytes": "bb0024",
+              "constantPoolIndex": 36,
+              "reference": "javax/management/remote/JMXServiceURL"
+            },
+            {
+              "offset": 339,
+              "opcode": "b7",
+              "bytes": "b70025",
+              "constantPoolIndex": 37,
+              "reference": "javax/management/remote/JMXServiceURL.<init>.(Ljava/lang/String;)V"
+            },
+            {
+              "offset": 361,
+              "opcode": "b8",
+              "bytes": "b8002e",
+              "constantPoolIndex": 46,
+              "reference": "javax/management/remote/JMXConnectorFactory.connect.(Ljavax/management/remote/JMXServiceURL;)Ljavax/management/remote/JMXConnector;"
+            },
+            {
+              "offset": 366,
+              "opcode": "b9",
+              "bytes": "b9002f0100",
+              "constantPoolIndex": 47,
+              "reference": "javax/management/remote/JMXConnector.getMBeanServerConnection.()Ljavax/management/MBeanServerConnection;"
+            },
+            {
+              "offset": 377,
+              "opcode": "12",
+              "bytes": "1232",
+              "constantPoolIndex": 50,
+              "reference": "tlc2.tool:type=ModelChecker"
+            },
+            {
+              "offset": 410,
+              "opcode": "b2",
+              "bytes": "b20037",
+              "constantPoolIndex": 55,
+              "reference": "tlc2/tool/management/StateMonitor.SDF.Ljava/text/SimpleDateFormat;"
+            }
+          ]
+        },
+        {
+          "name": "<clinit>",
+          "descriptor": "()V",
+          "sites": [
+            {
+              "offset": 9,
+              "opcode": "b3",
+              "bytes": "b30037",
+              "constantPoolIndex": 55,
+              "reference": "tlc2/tool/management/StateMonitor.SDF.Ljava/text/SimpleDateFormat;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "entry": "tla2sany/xml/XMLExporter.class",
+      "classSha256": "9ee830119d2c9afc4be4deb614c7526c38ea788f36faae90643f86a88f9d95c5",
+      "strings": [
+        "factory"
+      ],
+      "methods": []
+    },
+    {
+      "entry": "tla2sany/SANY.class",
+      "classSha256": "dbe76ecafa43d1f0842c0d6ecd0ab70315b0629f0b8fe0f3f747dbd5eb932a7a",
+      "strings": [],
+      "methods": []
+    }
+  ],
+  "javaExecuted": false,
+  "kind": "offline-class-reference-inspection-not-runtime-proof"
+}

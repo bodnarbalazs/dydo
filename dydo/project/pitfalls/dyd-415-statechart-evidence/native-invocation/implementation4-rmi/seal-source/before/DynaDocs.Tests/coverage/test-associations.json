@@ -1,0 +1,1704 @@
+{
+  "schema": 1,
+  "modules": [
+    {
+      "module": "Services/Statechart/StatechartChecker.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartCheckerTests.cs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/checker.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/checker.test.ts", "skills/engineering/statechart/scripts/test/tlc-bootstrap.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/java/build.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_java_build.py"]
+    },
+    {
+      "module": "skills/engineering/verify-dydo/scripts/owned_process.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_control_dydo_lifetime.py"
+      ]
+    },
+    {
+      "module": "skills/engineering/verify-dydo/scripts/control_dydo.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_control_dydo.py"
+      ]
+    },
+    {
+      "module": "Commands/GapCheckCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/GapCheckCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Models/TestingConfig.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/ConfigServiceTests.cs"
+      ]
+    },
+    {
+      "module": "npm/bin/dydo.cjs",
+      "tests": [
+        "npm/test/launcher.test.cjs",
+        "npm/test/statechart.test.cjs"
+      ]
+    },
+    {
+      "module": "Services/Statechart/StatechartOuterLifetime.cs",
+      "tests": [
+        "DynaDocs.Tests/Statechart/StatechartOuterLifetimeTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Statechart/StatechartSkill.cs",
+      "tests": [
+        "DynaDocs.Tests/Statechart/StatechartSkillTests.cs"
+      ]
+    },
+    {
+      "module": "npm/install.js",
+      "tests": [
+        "npm/test/install.test.cjs"
+      ]
+    },
+    {
+      "module": "npm/lib/download.js",
+      "tests": [
+        "npm/test/download.test.cjs"
+      ]
+    },
+    {
+      "module": "npm/lib/paths.js",
+      "tests": [
+        "npm/test/launcher.test.cjs"
+      ]
+    },
+    {
+      "module": "npm/lib/platform.js",
+      "tests": [
+        "npm/test/launcher.test.cjs"
+      ]
+    },
+    {
+      "module": "Commands/AdoptCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/AdoptCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/CheckCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/CheckConfigValidator.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/CheckDocValidator.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/CheckDocValidatorTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/CompleteCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/CompleteCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/CompletionsCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/CompletionsCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/FixCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/FixFileHandler.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/FixFileHandlerTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/GraphCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/GraphDisplayHandler.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/GraphDisplayHandlerTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/GuardCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/GuardCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/GuardCommand.NewFileNudges.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/GuardNewFileNudgeTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/GuardCommand.Refusal.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/GuardRefusalContractTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/GuardCommand.ModeSet.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/GuardModeSetTests.cs",
+        "DynaDocs.Tests/Steps/MachineModeSteps.cs"
+      ]
+    },
+    {
+      "module": "Commands/GuardCommand.PrReady.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/GuardPrReadyTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/PrReadyCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/PrReadyCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/PrReadyCheck.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/PrReadyCommandTests.cs",
+        "DynaDocs.Tests/Integration/GuardPrReadyTests.cs"
+      ]
+    },
+    {
+      "module": "Services/PrCallScanner.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/PrCallScannerTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/ModeCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/ModeCommandTests.cs",
+        "DynaDocs.Tests/Steps/MachineModeSteps.cs"
+      ]
+    },
+    {
+      "module": "Services/CommandPosition.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/CommandPositionTests.cs",
+        "DynaDocs.Tests/Services/PrCallScannerTests.cs",
+        "DynaDocs.Tests/Services/DydoInvocationScannerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/DydoInvocationScanner.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/DydoInvocationScannerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ShellReader.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/DydoInvocationScannerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ModeState.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/ModeStateTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/HelpCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/HelpCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/IndexCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/InitCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/ValidateCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Commands/ValidateCommandTests.cs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/associations.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_associations.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/csharp_coverage.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_coverage.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/csharp_join.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/gap_check.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_testing_facade.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/gate_adapter.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_gate_adapter.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/gate_clones.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_clones.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/gate_collect.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_orchestration.py",
+        "DynaDocs.Tests/coverage/tests/test_typescript_collectors.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/gate_diagnostics.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_diagnostics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/gate_inventory.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_gate_inventory.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/gate_knip.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_knip.py",
+        "DynaDocs.Tests/coverage/tests/test_typescript_collectors.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/gate_policy.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_policy.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/gate_run.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_orchestration.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/gate_versions.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_gate_versions.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/inventory.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_inventory.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/javascript_coverage.cjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/javascript_coverage.test.cjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/js_metrics.cjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/js_metrics.test.cjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/knip_reporter.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/knip_reporter.test.cjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/AssemblyFacts.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/AssemblyMetrics.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/BehaviorFacts.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/BehaviorFragment.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/CompiledMethod.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/ConstructorFacts.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/FileFacts.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/MethodIdentity.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/NamespaceDependencies.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/Program.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/ProjectFacts.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/ProjectMetrics.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/SemanticMethod.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/SourceBehavior.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/SourceMember.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/SourceMetrics.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/SourcePoint.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/SourceToken.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/metrics/StructuralMethod.cs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
+        "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/node_tests.cjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/node_tests.test.cjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/HostCanaries/path-containment.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/path-containment.test.mjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/HostCanaries/run-host-canaries-args.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/run-host-canaries-args.test.mjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/HostCanaries/run-host-canaries.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/run-host-canaries-args.test.mjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/HostCanaries/openai-sse-provider-args.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/openai-sse-provider-args.test.mjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/HostCanaries/openai-sse-provider.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/openai-sse-provider-args.test.mjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/positions.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_positions.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/python_coverage.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_python_coverage.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/python_join.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_python_join.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/python_metrics.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_python_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/python_runtime.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_python_runtime.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/report.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_report.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/run_tests.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_runner.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/source_tokens.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_source_tokens.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/sync_testing_example.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_sync_testing_example.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/typescript_join.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_typescript_join.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/windows_job.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_windows_job.py"
+      ]
+    },
+    {
+      "module": "Models/DocFile.cs",
+      "tests": [
+        "DynaDocs.Tests/Models/DocFileTests.cs"
+      ]
+    },
+    {
+      "module": "Models/DydoConfig.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Models/Frontmatter.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Models/HookInput.cs",
+      "tests": [
+        "DynaDocs.Tests/Models/HookInputTests.cs"
+      ]
+    },
+    {
+      "module": "Models/HookInputExtensions.cs",
+      "tests": [
+        "DynaDocs.Tests/Models/HookInputExtensionsTests.cs"
+      ]
+    },
+    {
+      "module": "Models/LinkInfo.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Models/LinkType.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Models/NudgeConfig.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Models/StructureConfig.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Models/ToolInputData.cs",
+      "tests": [
+        "DynaDocs.Tests/Models/ToolInputDataTests.cs"
+      ]
+    },
+    {
+      "module": "Models/ValidationIssue.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Models/ValidationResult.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Models/Violation.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Models/ViolationSeverity.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Program.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "setup-skills.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/setup-skills.test.cjs"
+      ]
+    },
+    {
+      "module": "Rules/BrokenLinksRule.cs",
+      "tests": [
+        "DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs"
+      ]
+    },
+    {
+      "module": "Rules/FrontmatterRule.cs",
+      "tests": [
+        "DynaDocs.Tests/Rules/FrontmatterRuleTests.cs"
+      ]
+    },
+    {
+      "module": "Rules/FutureFeatureRule.cs",
+      "tests": [
+        "DynaDocs.Tests/Rules/FutureFeatureRuleTests.cs"
+      ]
+    },
+    {
+      "module": "Rules/IRule.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Rules/NamingRule.cs",
+      "tests": [
+        "DynaDocs.Tests/Rules/NamingRuleTests.cs"
+      ]
+    },
+    {
+      "module": "Rules/OffLimitsRule.cs",
+      "tests": [
+        "DynaDocs.Tests/Rules/OffLimitsRuleTests.cs"
+      ]
+    },
+    {
+      "module": "Rules/RelativeLinksRule.cs",
+      "tests": [
+        "DynaDocs.Tests/Rules/RelativeLinksRuleTests.cs"
+      ]
+    },
+    {
+      "module": "Rules/RuleBase.cs",
+      "tests": [
+        "DynaDocs.Tests/Rules/RuleBaseTests.cs",
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Rules/TitleRule.cs",
+      "tests": [
+        "DynaDocs.Tests/Rules/TitleRuleTests.cs"
+      ]
+    },
+    {
+      "module": "Rules/UncustomizedDocsRule.cs",
+      "tests": [
+        "DynaDocs.Tests/Rules/UncustomizedDocsRuleTests.cs"
+      ]
+    },
+    {
+      "module": "Serialization/DydoJsonContext.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Serialization/JsonText.cs",
+      "tests": [
+        "DynaDocs.Tests/Serialization/JsonTextTests.cs",
+        "DynaDocs.Tests/Integration/DownstreamConfigTests.cs"
+      ]
+    },
+    {
+      "module": "Serialization/StoredText.cs",
+      "tests": [
+        "DynaDocs.Tests/Serialization/JsonTextTests.cs",
+        "DynaDocs.Tests/Integration/DownstreamConfigTests.cs"
+      ]
+    },
+    {
+      "module": "Services/AnchorExtractor.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/AssemblyAttributes.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/BashCommandAnalyzer.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/CompletionProvider.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/CompletionProviderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ConfigFactory.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/ConfigFactoryTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ConfigSaveOperations.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/ConfigServiceTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ConfigService.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/ConfigServiceTests.cs"
+      ]
+    },
+    {
+      "module": "Services/DocGraph.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/DocGraphTests.cs"
+      ]
+    },
+    {
+      "module": "Services/DocScanner.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/DocScannerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/FolderScaffolder.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/InitCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/FrontmatterExtractor.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/FrontmatterTypesService.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/FrontmatterTypesServiceTests.cs"
+      ]
+    },
+    {
+      "module": "Services/IBashCommandAnalyzer.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/IConfigService.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/IDocGraph.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/IDocScanner.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/IFolderScaffolder.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/IFrontmatterTypesService.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/IIndexGenerator.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ILinkResolver.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/IMarkdownParser.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/IndexGenerator.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/IndexGeneratorTests.cs"
+      ]
+    },
+    {
+      "module": "Services/IOffLimitsService.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/IValidationService.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/LinkExtractor.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Services/LinkResolver.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/LinkResolverTests.cs"
+      ]
+    },
+    {
+      "module": "Services/MarkdownParser.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/MarkdownParserTests.cs"
+      ]
+    },
+    {
+      "module": "Services/OffLimitsService.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/OffLimitsServiceTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ScaffoldTree.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/ScaffoldTreeTests.cs",
+        "DynaDocs.Tests/Integration/InitCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ShellCompletionInstaller.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/ShellCompletionInstallerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ValidationService.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/ValidationServiceTests.cs"
+      ]
+    },
+    {
+      "module": "Utils/ConfigFileLocator.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/ConfigServiceTests.cs",
+        "DynaDocs.Tests/Services/PathUtilsDiscoveryTests.cs"
+      ]
+    },
+    {
+      "module": "Utils/ConsoleOutput.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Utils/DydoVersion.cs",
+      "tests": [
+        "DynaDocs.Tests/Utils/DydoVersionTests.cs",
+        "DynaDocs.Tests/Integration/InitCommandTests.cs",
+        "DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs"
+      ]
+    },
+    {
+      "module": "Utils/ExitCodes.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Utils/FrontmatterParser.cs",
+      "tests": [
+        "DynaDocs.Tests/Utils/FrontmatterParserTests.cs"
+      ]
+    },
+    {
+      "module": "Utils/GlobMatcher.cs",
+      "tests": [
+        "DynaDocs.Tests/Utils/GlobMatcherTests.cs"
+      ]
+    },
+    {
+      "module": "Utils/PathUtils.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Utils/PathUtils.Discovery.cs",
+      "tests": [
+        "DynaDocs.Tests/Steps/CliScenarioProcessTests.cs"
+      ]
+    },
+    {
+      "module": "Utils/RuleSkipPaths.cs",
+      "tests": [
+        "DynaDocs.Tests/Rules/BrokenLinksRuleTests.cs"
+      ]
+    },
+    {
+      "module": "Utils/TitlePrettifier.cs",
+      "tests": [
+        "DynaDocs.Tests/Utils/TitlePrettifierTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/MapCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Serialization/MapJsonContext.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapServerTests.cs",
+        "DynaDocs.Tests/Map/LinearGraphQLTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/BrowserLauncher.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/BrowserLauncherTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/GraphQLRequest.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearGraphQLTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/LinearGraphQL.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearGraphQLTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/LinearReader.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/MapApi.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapServerTests.cs",
+        "DynaDocs.Tests/Map/MapApiTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/MapApiException.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearGraphQLTests.cs",
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapError.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapGraph.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs",
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapGraphProject.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapIssue.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapIssueProject.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapIssueState.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapIssueTeam.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapLabel.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs",
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapProject.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapProjectStatus.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapRelation.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/MapServer.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/Contract/MapTeam.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/ViewerBundle.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/ViewerBundleTests.cs",
+        "DynaDocs.Tests/Map/MapServerTests.cs"
+      ]
+    },
+    {
+      "module": "viewer/src/api/client.ts",
+      "tests": [
+        "viewer/src/api/client.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/api/types.ts",
+      "tests": [
+        "viewer/src/api/client.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/app/App.tsx",
+      "tests": [
+        "viewer/src/app/App.test.tsx",
+        "viewer/src/app/savedVisit.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/app/RefreshButton.tsx",
+      "tests": [
+        "viewer/src/app/RefreshButton.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/app/Toolbar.tsx",
+      "tests": [
+        "viewer/src/app/Toolbar.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/app/urlState.ts",
+      "tests": [
+        "viewer/src/app/urlState.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/graph/graphDiff.ts",
+      "tests": [
+        "viewer/src/graph/graphDiff.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/graph/mapModel.ts",
+      "tests": [
+        "viewer/src/graph/mapModel.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/graph/rules.ts",
+      "tests": [
+        "viewer/src/graph/rules.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/graph/testIssues.ts",
+      "tests": [
+        "viewer/src/graph/mapModel.test.ts",
+        "viewer/src/graph/rules.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/layout/layout.ts",
+      "tests": [
+        "viewer/src/layout/layout.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/layout/toFlow.ts",
+      "tests": [
+        "viewer/src/layout/toFlow.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/main.tsx",
+      "tests": [
+        "viewer/src/main.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/IssueSummary.tsx",
+      "tests": [
+        "viewer/src/map/nodes.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/LabelChips.tsx",
+      "tests": [
+        "viewer/src/map/nodes.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/Legend.tsx",
+      "tests": [
+        "viewer/src/map/Legend.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/MapActions.ts",
+      "tests": [
+        "viewer/src/map/nodes.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/MapCanvas.tsx",
+      "tests": [
+        "viewer/src/map/MapCanvas.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/RefreshLayers.tsx",
+      "tests": [
+        "viewer/src/map/RefreshLayers.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/RoutedEdge.tsx",
+      "tests": [
+        "viewer/src/map/RoutedEdge.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/StatusIcon.tsx",
+      "tests": [
+        "viewer/src/map/StatusIcon.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/map/cascade.ts",
+      "tests": [
+        "viewer/src/map/cascade.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/map/colors.ts",
+      "tests": [
+        "viewer/src/map/colors.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/map/nodes.tsx",
+      "tests": [
+        "viewer/src/map/nodes.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/picker/ProjectPicker.tsx",
+      "tests": [
+        "viewer/src/picker/ProjectPicker.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/picker/projectList.ts",
+      "tests": [
+        "viewer/src/picker/projectList.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/theme/ThemeControl.tsx",
+      "tests": [
+        "viewer/src/theme/useTheme.test.tsx"
+      ]
+    },
+    {
+      "module": "viewer/src/theme/theme.ts",
+      "tests": [
+        "viewer/src/theme/theme.test.ts"
+      ]
+    },
+    {
+      "module": "viewer/src/theme/useTheme.ts",
+      "tests": [
+        "viewer/src/theme/useTheme.test.tsx"
+      ]
+    },
+    {
+      "module": "Services/Map/MapSnapshotCache.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/MapSnapshotCacheTests.cs"
+      ]
+    },
+    {
+      "module": "viewer/src/app/ProjectVisit.ts",
+      "tests": [
+        "viewer/src/app/ProjectVisit.test.ts"
+      ]
+    },
+    {
+      "module": "Commands/CleanCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Models/CleanConfig.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ArchivePlan.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/CleanArchive.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/GitResult.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/GitRunner.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/LinkSafeDelete.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/LinkSafeDeleteTests.cs",
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/MergedBranchJudge.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ProbeStrandedException.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/WorktreeProcessProbeTests.cs",
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/SubmoduleWork.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/WorktreeCleaner.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/WorktreeEntry.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/WorktreeProcessProbe.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/WorktreeProcessProbeTests.cs",
+        "DynaDocs.Tests/Integration/CleanCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/ReleasedEntryPoints.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/InitCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/MergeCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/MergeCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/PullRequestMerge.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/PullRequestMergeTests.cs",
+        "DynaDocs.Tests/Merge/IndependentReviewTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/CommitChecks.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/CommitChecksTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/CommitSha.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/PullRequestMergeTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/FeatureBranch.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/FeatureBranchTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/GhApi.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/GhApiTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/GitHubJson.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/CommitChecksTests.cs",
+        "DynaDocs.Tests/Merge/PullRequestMergeTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/GitHubReply.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/GhApiTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/IGitHubApi.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/PullRequestMergeTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/IndependentReview.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/IndependentReviewTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/MergeCheckout.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/MergeCheckoutTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/MergeStop.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/PullRequestMergeTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/OriginRepository.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/MergeCheckoutTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Merge/ReviewVerdict.cs",
+      "tests": [
+        "DynaDocs.Tests/Merge/IndependentReviewTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Statechart/StatechartProtocol.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartProtocolTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/WindowsStatechartJob.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartJobTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/WindowsStatechartNative.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartJobTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/WindowsStatechartCompletion.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartCompletionTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartArguments.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartNative.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartProcess.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartAnchor.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartChannel.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartFiles.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartLifetime.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartOwner.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartLifetime.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartLifecycleTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+    },
+    {
+      "module": "Commands/StatechartCommand.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartCommandTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartAssets.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartAssetsTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartPrerequisites.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPrerequisitesTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartPaths.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPathsTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/WindowsStatechartFiles.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartScratchTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartScratch.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartScratchTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartCleanup.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartLifecycleTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/WindowsStatechartLifetime.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartLifecycleTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartExecutable.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartCommandTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartProbe.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartCommandTests.cs", "DynaDocs.Tests/Statechart/StatechartProbeTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartRequest.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartRequestTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartHome.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartHomeTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartRequests.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartRequestsTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartInventory.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartRequestsTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartDownloads.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartDownloadsTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartArchive.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartArchiveTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartFlow.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPublicFlowTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartResolver.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPublicFlowTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartManaged.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartManagedTests.cs", "DynaDocs.Tests/Statechart/StatechartPublicFlowTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartRunner.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPublicFlowTests.cs", "DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartNode.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/StatechartReady.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/driver.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_invocation_driver.py"]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/launch.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_invocation_launch.py"]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/prepare.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_invocation_prepare.py"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/CounterView/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/Login/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/LoginGuarded/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/LoginParallel/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/MediaPlayer/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/MediaPlayerFixed/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/MediaPlayerProps/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/TwoPhase/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/corpus/TwoPhaseFixed/view.mjs",
+      "tests": ["DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs"]
+    }
+  ]
+}

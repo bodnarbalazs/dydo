@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "state": "SOURCE_DATA_ONLY_NOT_EXECUTED",
+  "sourcePinSha256": "c4050cc3b1419387c9bc1c3a91569e33eba4f75138da92cce964d322015a1a01",
+  "sourceRowsMatched": 18,
+  "preservedRowsMatched": 1419,
+  "snapshotRowsMatched": 415,
+  "retainedInputRowsMatched": 7,
+  "localReferencesMatched": 8,
+  "sourceBeforeAssociationMappedExactly": true,
+  "b1b2EvidenceUnchanged": true,
+  "productionSourceLocksPayloadModelsUnchanged": true,
+  "temporaryCounterpartsMatch": true,
+  "noExecutionRelease": true,
+  "noB3RuntimeOutputs": true,
+  "actualDiscovery": "NOT_RUN",
+  "testsRun": false,
+  "compilerRun": false,
+  "javaRun": false,
+  "nodeRun": false,
+  "dockerQueriedOrRun": false,
+  "proofModulesImported": false,
+  "preparedIndependentGroups": [
+    "A",
+    "D"
+  ],
+  "blockedGroups": [
+    "B",
+    "C"
+  ],
+  "blocker": "Retained compatible pinned Linux Node22.23.2 archive not established by bounded input search",
+  "serialization": {
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-b3-prepare-packet.py",
+    "sha256": "b69eddfc45f81bb9323dab3e536e3c3c24ee3ad5370ffaf9c8fdc58d4715630a"
+  },
+  "reader": {
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-b3-source-custody-read.py",
+    "sha256": "53692299800455f3c9b240ccdb9ee2965ade20ce8370b7e97ff6fde38cb190b9"
+  }
+}

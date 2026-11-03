@@ -1,0 +1,8 @@
+{
+  "exit": 0,
+  "directRunnerReaped": true,
+  "strictCensusClean": true,
+  "failure": null,
+  "productCloseNotInferredFromRunnerReap": true,
+  "infrastructureContainment": "NOT_YET_ATTEMPTED"
+}

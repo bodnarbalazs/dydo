@@ -1,0 +1,81 @@
+TAP version 13
+# Subtest: POSIX janitor close precedes the Counter report and controlled exit 0
+ok 1 - POSIX janitor close precedes the Counter report and controlled exit 0
+  ---
+  duration_ms: 664.372809
+  type: 'test'
+  ...
+# Subtest: POSIX janitor close precedes the CounterInstance report and controlled exit 1
+ok 2 - POSIX janitor close precedes the CounterInstance report and controlled exit 1
+  ---
+  duration_ms: 675.296035
+  type: 'test'
+  ...
+# Subtest: POSIX janitor closes after an early worker error without publishing output
+ok 3 - POSIX janitor closes after an early worker error without publishing output
+  ---
+  duration_ms: 195.832371
+  type: 'test'
+  ...
+# Subtest: POSIX janitor closes before controlled SIGINT exit with no output
+not ok 4 - POSIX janitor closes before controlled SIGINT exit with no output
+  ---
+  duration_ms: 30022.608379
+  type: 'test'
+  location: '/toolchain/repo/skills/engineering/statechart/scripts/test/cli.test.ts:1446:3'
+  failureType: 'testTimeoutFailure'
+  error: 'test timed out after 30000ms'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: POSIX janitor closes before controlled SIGTERM exit with no output
+not ok 5 - POSIX janitor closes before controlled SIGTERM exit with no output
+  ---
+  duration_ms: 30026.640582
+  type: 'test'
+  location: '/toolchain/repo/skills/engineering/statechart/scripts/test/cli.test.ts:1446:3'
+  failureType: 'testTimeoutFailure'
+  error: 'test timed out after 30000ms'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: POSIX janitor spawn failure stops and reaps the worker without publishing
+ok 6 - POSIX janitor spawn failure stops and reaps the worker without publishing
+  ---
+  duration_ms: 128.244182
+  type: 'test'
+  ...
+# Subtest: POSIX janitor early close is retained and stops the owned worker
+ok 7 - POSIX janitor early close is retained and stops the owned worker
+  ---
+  duration_ms: 112.91975
+  type: 'test'
+  ...
+# Subtest: POSIX worker spawn failure is observed before any janitor starts
+ok 8 - POSIX worker spawn failure is observed before any janitor starts
+  ---
+  duration_ms: 95.44325
+  type: 'test'
+  ...
+# Subtest: POSIX cleanup exception remains visible and cannot skip actual janitor close
+ok 9 - POSIX cleanup exception remains visible and cannot skip actual janitor close
+  ---
+  duration_ms: 627.951444
+  type: 'test'
+  ...
+# Subtest: POSIX spawn and cleanup faults are both visible after actual ownership drain
+ok 10 - POSIX spawn and cleanup faults are both visible after actual ownership drain
+  ---
+  duration_ms: 99.819138
+  type: 'test'
+  ...
+# Subtest: POSIX janitor kill exception is reported only after the real child closes
+ok 11 - POSIX janitor kill exception is reported only after the real child closes
+  ---
+  duration_ms: 609.497822
+  type: 'test'
+  ...
+# Subtest: POSIX final drain preserves a caller file arriving at output publication
+ok 12 - POSIX final drain preserves a caller file arriving at output publication
+  ---
+  duration_ms: 578.403542
+  type: 'test'
+  ...

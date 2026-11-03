@@ -40,6 +40,20 @@ internal sealed class PosixStatechartProcess
         if (PosixStatechartNative.SetGroup(0, 0) != 0) throw new Win32Exception();
     }
 
+    public static void JoinGroup(int group)
+    {
+        RequirePosix();
+        if (group <= 0 || PosixStatechartNative.SetGroup(0, group) != 0)
+            throw new Win32Exception(Marshal.GetLastPInvokeError(), "Cannot join owned statechart group.");
+    }
+
+    public static void RequireGroup(int pid, int group)
+    {
+        RequirePosix();
+        if (group <= 0 || PosixStatechartNative.GetGroup(pid) != group)
+            throw new IOException("Checking child did not enter the acknowledged statechart group.");
+    }
+
     public static void StopCurrentGroup()
     {
         RequirePosix();

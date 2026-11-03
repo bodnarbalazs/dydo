@@ -1,0 +1,8 @@
+{
+  "url": "https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.gz",
+  "method": "GET",
+  "maximumBytes": 134217728,
+  "startedUtc": "2026-10-31T02:00:50.608403+00:00",
+  "redirectsAllowed": false,
+  "retries": 0
+}

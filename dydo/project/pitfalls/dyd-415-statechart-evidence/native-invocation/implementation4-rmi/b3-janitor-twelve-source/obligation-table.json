@@ -1,0 +1,235 @@
+{
+  "schema": 1,
+  "state": "NEW_PROSPECTIVE_GATE_NOT_RETROACTIVE_ACCEPTANCE",
+  "oldTable": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/obligation-table.json",
+    "bytes": 51979,
+    "sha256": "71f916ffd49e7e008327a9bea21c66d996633033789fb81b2b08c6b5362206c1"
+  },
+  "oldCommandOutcome": "FAIL/incomplete -9/no terminal summary/no final regression census, immutable",
+  "individualSignals": "Prior two individual PASS receipts remain valid only at recorded scope",
+  "newSelection": [
+    {
+      "ordinal": 1,
+      "name": "POSIX janitor close precedes the Counter report and controlled exit 0",
+      "currentSource": {
+        "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+        "bytes": 64504,
+        "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+      },
+      "retainedOldStatus": "partial original native ok/actual-close record",
+      "newObligation": "Execute this exact selector once under new future pin, with complete native selected1 summary, original assertions, actual child close, per-case strict census",
+      "failureStimulus": "observe",
+      "expectedCliExit": 0,
+      "assertions": [
+        "exact retained Counter chart/report/stdout",
+        "real janitor close SIGKILL before stdout and controlled exit",
+        "successful stage/tmp removal before close",
+        "worker exit and supplemental post-close ESRCH"
+      ]
+    },
+    {
+      "ordinal": 2,
+      "name": "POSIX janitor close precedes the CounterInstance report and controlled exit 1",
+      "currentSource": {
+        "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+        "bytes": 64504,
+        "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+      },
+      "retainedOldStatus": "partial original native ok/actual-close record",
+      "newObligation": "Execute this exact selector once under new future pin, with complete native selected1 summary, original assertions, actual child close, per-case strict census",
+      "failureStimulus": "observe",
+      "expectedCliExit": 1,
+      "assertions": [
+        "exact retained CounterInstance chart/report/stdout",
+        "real janitor close SIGKILL before stdout and controlled exit",
+        "worker exit and supplemental post-close ESRCH"
+      ]
+    },
+    {
+      "ordinal": 3,
+      "name": "POSIX janitor closes after an early worker error without publishing output",
+      "currentSource": {
+        "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+        "bytes": 64504,
+        "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+      },
+      "retainedOldStatus": "partial original native ok/actual-close record",
+      "newObligation": "Execute this exact selector once under new future pin, with complete native selected1 summary, original assertions, actual child close, per-case strict census",
+      "failureStimulus": "observe + throwing view import",
+      "expectedCliExit": 2,
+      "assertions": [
+        "exact injected view error stderr",
+        "empty stdout/output",
+        "real worker exit and janitor close before CLI exit"
+      ]
+    },
+    {
+      "ordinal": 4,
+      "name": "POSIX janitor closes before controlled SIGINT exit with no output",
+      "currentSource": {
+        "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+        "bytes": 64504,
+        "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+      },
+      "retainedOldStatus": "replaced individual signal PASS; old timeout remains",
+      "newObligation": "Execute this exact selector once under new future pin, with complete native selected1 summary, original assertions, actual child close, per-case strict census",
+      "failureStimulus": "observe + file-ready waiting view + actual SIGINT",
+      "expectedCliExit": 130,
+      "assertions": [
+        "exact SIGINT stderr",
+        "empty stdout/output/staging/tmp",
+        "real worker exit and janitor close before CLI exit"
+      ]
+    },
+    {
+      "ordinal": 5,
+      "name": "POSIX janitor closes before controlled SIGTERM exit with no output",
+      "currentSource": {
+        "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+        "bytes": 64504,
+        "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+      },
+      "retainedOldStatus": "replaced individual signal PASS; old timeout remains",
+      "newObligation": "Execute this exact selector once under new future pin, with complete native selected1 summary, original assertions, actual child close, per-case strict census",
+      "failureStimulus": "observe + file-ready waiting view + actual SIGTERM",
+      "expectedCliExit": 143,
+      "assertions": [
+        "exact SIGTERM stderr",
+        "empty stdout/output/staging/tmp",
+        "real worker exit and janitor close before CLI exit"
+      ]
+    },
+    {
+      "ordinal": 6,
+      "name": "POSIX janitor spawn failure stops and reaps the worker without publishing",
+      "currentSource": {
+        "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+        "bytes": 64504,
+        "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+      },
+      "retainedOldStatus": "partial original native ok/actual-close record",
+      "newObligation": "Execute this exact selector once under new future pin, with complete native selected1 summary, original assertions, actual child close, per-case strict census",
+      "failureStimulus": "janitor-spawn-error",
+      "expectedCliExit": 2,
+      "assertions": [
+        "actual ENOENT and close for missing janitor executable",
+        "real worker exit before CLI exit",
+        "empty stdout/output",
+        "no real runtime fallback"
+      ]
+    },
+    {
+      "ordinal": 7,
+      "name": "POSIX janitor early close is retained and stops the owned worker",
+      "currentSource": {
+        "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+        "bytes": 64504,
+        "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+      },
+      "retainedOldStatus": "partial original native ok/actual-close record",
+      "newObligation": "Execute this exact selector once under new future pin, with complete native selected1 summary, original assertions, actual child close, per-case strict census",
+      "failureStimulus": "early-close: actual immediate janitor SIGKILL; waiting view prevents normal worker success",
+      "expectedCliExit": 2,
+      "assertions": [
+        "retained unexpected-close error",
+        "real worker exit",
+        "already-closed janitor does not hang in drain",
+        "empty stdout/output"
+      ]
+    },
+    {
+      "ordinal": 8,
+      "name": "POSIX worker spawn failure is observed before any janitor starts",
+      "currentSource": {
+        "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+        "bytes": 64504,
+        "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+      },
+      "retainedOldStatus": "partial original native ok/actual-close record",
+      "newObligation": "Execute this exact selector once under new future pin, with complete native selected1 summary, original assertions, actual child close, per-case strict census",
+      "failureStimulus": "worker-spawn-error",
+      "expectedCliExit": 2,
+      "assertions": [
+        "actual ENOENT/error/close",
+        "no janitor spawn",
+        "empty stdout/output"
+      ]
+    },
+    {
+      "ordinal": 9,
+      "name": "POSIX cleanup exception remains visible and cannot skip actual janitor close",
+      "currentSource": {
+        "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+        "bytes": 64504,
+        "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+      },
+      "retainedOldStatus": "partial original native ok/actual-close record",
+      "newObligation": "Execute this exact selector once under new future pin, with complete native selected1 summary, original assertions, actual child close, per-case strict census",
+      "failureStimulus": "cleanup-error",
+      "expectedCliExit": 2,
+      "assertions": [
+        "exact stage-rm error stderr",
+        "empty stdout success report",
+        "retained already-published chart/report match corpus",
+        "actual janitor close despite rm exception"
+      ]
+    },
+    {
+      "ordinal": 10,
+      "name": "POSIX spawn and cleanup faults are both visible after actual ownership drain",
+      "currentSource": {
+        "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+        "bytes": 64504,
+        "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+      },
+      "retainedOldStatus": "partial original native ok/actual-close record",
+      "newObligation": "Execute this exact selector once under new future pin, with complete native selected1 summary, original assertions, actual child close, per-case strict census",
+      "failureStimulus": "janitor-spawn-error-cleanup-error",
+      "expectedCliExit": 2,
+      "assertions": [
+        "both spawn and cleanup messages retained",
+        "actual worker exit and janitor close",
+        "empty stdout/output"
+      ]
+    },
+    {
+      "ordinal": 11,
+      "name": "POSIX janitor kill exception is reported only after the real child closes",
+      "currentSource": {
+        "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+        "bytes": 64504,
+        "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+      },
+      "retainedOldStatus": "partial original native ok/actual-close record",
+      "newObligation": "Execute this exact selector once under new future pin, with complete native selected1 summary, original assertions, actual child close, per-case strict census",
+      "failureStimulus": "kill-error: real owned child SIGKILL first, then injected exception",
+      "expectedCliExit": 2,
+      "assertions": [
+        "exact kill error stderr",
+        "actual SIGKILL close before CLI exit",
+        "empty stdout success report"
+      ]
+    },
+    {
+      "ordinal": 12,
+      "name": "POSIX final drain preserves a caller file arriving at output publication",
+      "currentSource": {
+        "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+        "bytes": 64504,
+        "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+      },
+      "retainedOldStatus": "partial original native ok/actual-close record",
+      "newObligation": "Execute this exact selector once under new future pin, with complete native selected1 summary, original assertions, actual child close, per-case strict census",
+      "failureStimulus": "output-collision",
+      "expectedCliExit": 2,
+      "assertions": [
+        "caller report.md bytes preserved exactly",
+        "no other output file",
+        "collision error and empty stdout",
+        "actual worker exit and janitor close"
+      ]
+    }
+  ],
+  "completion": "One new gate requires12 actually completed current-source native summaries + final census; no old10+new2 arithmetic. New proof cannot rewrite historical FAIL."
+}

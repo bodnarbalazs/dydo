@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "state": "BLOCKED_ADDITIONAL_WORKSPACE_LINK_SCOPE",
+  "current": {
+    "manifest": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology-source/before-custody.json",
+    "rows": 11687,
+    "priorExpectedRows": 9592,
+    "newCaptainRows": 4,
+    "canonicalAliases": 2089,
+    "rootPackageFiles": 2,
+    "allowedChangedRows": 0
+  },
+  "historical": {
+    "manifest": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/preserved-inputs.json",
+    "rows": 5266,
+    "beforeSnapshots": {
+      "skills/engineering/statechart/scripts/statechart.ts": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/statechart.ts",
+      "skills/engineering/statechart/scripts/test/cli.test.ts": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/cli.test.ts"
+    },
+    "mismatches": 0
+  },
+  "onlyNewRoot": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology-source/",
+  "oldExpectationsRegenerated": false,
+  "existingEdits": [],
+  "releaseEdits": [],
+  "dependencyPayloadAssociationEdits": []
+}

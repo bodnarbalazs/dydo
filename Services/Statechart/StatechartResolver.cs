@@ -12,7 +12,7 @@ internal static class StatechartResolver
             retained.Java ?? StatechartPrerequisites.Java(request.Caller, null, path) ?? IdeJava();
         var tlc = request.Tlc is not null ? StatechartPrerequisites.Tlc(request.Caller, request.Tlc) : retained.Tlc;
         StatechartPaths.EnsureDirectory(home.State);
-        await using var owner = await WindowsStatechartLifetime.StartAsync(StatechartExecutable.Current(),
+        await using var owner = await StatechartLifetime.CreateAsync(StatechartExecutable.Current(),
             home.State, home.State, Path.TrimEndingDirectorySeparator(Path.GetTempPath()));
         await owner.RegisterAsync();
         try

@@ -18,7 +18,6 @@ internal sealed class StatechartScratch : IDisposable
 
     public static StatechartScratch Reserve(string parent, string state)
     {
-        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
         StatechartPaths.RequirePlainDirectory(parent);
         StatechartPaths.RequirePlainDirectory(state);
         var nonce = Guid.NewGuid().ToString("N");
@@ -26,9 +25,10 @@ internal sealed class StatechartScratch : IDisposable
         var journal = System.IO.Path.Combine(state, "scratch-" + nonce + ".journal");
         using (var stream = new FileStream(journal, FileMode.CreateNew, FileAccess.Write))
         using (var writer = new StreamWriter(stream)) writer.WriteLine("reserving\n" + path);
-        WindowsStatechartFiles.CreateExclusive(path);
-        using var handle = WindowsStatechartFiles.Open(path);
-        var identity = WindowsStatechartFiles.Identity(handle);
+        if (OperatingSystem.IsWindows()) WindowsStatechartFiles.CreateExclusive(path);
+        else PosixStatechartFiles.CreateExclusive(path);
+        using var handle = Open(path);
+        var identity = Identity(handle);
         File.AppendAllText(journal, "created-unregistered\n" + identity + "\n");
         return new StatechartScratch(path, journal, identity);
     }
@@ -36,10 +36,10 @@ internal sealed class StatechartScratch : IDisposable
     public void Register()
     {
         if (_registered is not null) throw new InvalidOperationException("Scratch is already registered.");
-        var handle = WindowsStatechartFiles.Open(Path);
+        var handle = Open(Path);
         try
         {
-            if (WindowsStatechartFiles.Identity(handle) != _identity)
+            if (Identity(handle) != _identity)
                 throw new IOException("Statechart scratch was replaced before registration; retaining it.");
             File.AppendAllText(Journal, "registered\n");
             _registered = handle;
@@ -58,23 +58,42 @@ internal sealed class StatechartScratch : IDisposable
             Retain("unregistered: no deletion authority");
             return false;
         }
-        if (WindowsStatechartFiles.Identity(_registered) != _identity)
+        if (Identity(_registered) != _identity)
         {
             Retain("identity mismatch");
             return false;
         }
+        if (!OperatingSystem.IsWindows())
+        {
+            if (!PosixStatechartFiles.DeleteRegistered(Path, _registered))
+            {
+                Retain("directory path identity changed; foreign replacement retained");
+                return false;
+            }
+        }
+        else DeleteWindows();
+        _registered.Dispose();
+        _registered = null;
+        File.AppendAllText(Journal, "deleted-after-authoritative-drain\n");
+        return true;
+    }
+
+    private void DeleteWindows()
+    {
         foreach (var entry in Directory.EnumerateFileSystemEntries(Path))
         {
             if ((File.GetAttributes(entry) & FileAttributes.Directory) != 0)
                 Directory.Delete(entry, recursive: true);
             else File.Delete(entry);
         }
-        WindowsStatechartFiles.DeleteOnClose(_registered);
-        _registered.Dispose();
-        _registered = null;
-        File.AppendAllText(Journal, "deleted-after-authoritative-drain\n");
-        return true;
+        WindowsStatechartFiles.DeleteOnClose(_registered!);
     }
+
+    private static SafeFileHandle Open(string path) => OperatingSystem.IsWindows()
+        ? WindowsStatechartFiles.Open(path) : PosixStatechartFiles.Open(path);
+
+    private static string Identity(SafeFileHandle handle) => OperatingSystem.IsWindows()
+        ? WindowsStatechartFiles.Identity(handle) : PosixStatechartFiles.Identity(handle);
 
     public void Retain(string reason) => File.AppendAllText(Journal, "retained: " + reason + "\n");
     public void Dispose() => _registered?.Dispose();

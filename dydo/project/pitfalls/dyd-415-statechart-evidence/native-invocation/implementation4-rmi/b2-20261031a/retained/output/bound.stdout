@@ -1,0 +1,18 @@
+BOUND 127.0.0.1:35767
+PROCESS 33
+PROC_STAT 33 (java) S 1 1 1 0 -1 1077936128 5186 0 0 0 6 0 0 0 20 0 13 0 10778580 2670137344 11170 18446744073709551615 94185522130944 94185522134696 140731620786160 0 0 0 0 0 16800975 0 0 0 17 19 0 0 0 0 0 94185522142464 94185522143248 94185539305472 140731620789795 140731620789910 140731620789910 140731620790231 0
+
+FD /proc/self/fd/0 /dev/null
+FD /proc/self/fd/1 /output/bound.stdout
+FD /proc/self/fd/2 /output/bound.stderr
+FD /proc/self/fd/3 /toolchain/jdk-21.0.8+9/lib/modules
+FD /proc/self/fd/4 /input/helper.jar
+FD /proc/self/fd/5 socket:[259811]
+FD /proc/self/fd/6 socket:[259818]
+FD /proc/self/fd/7 /proc/33/fd
+FD /proc/self/fd/8 /proc/33/fd
+TCP   sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode                                                     
+TCP6   sl  local_address                         remote_address                        st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode
+TCP6    0: 0000000000000000FFFF00000100007F:8BB7 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 259818 1 00000000870c457f 100 0 0 10 0
+LISTEN tcp6 0000000000000000FFFF00000100007F:8BB7 inode=259818 owned=true
+BOUND_EXCHANGE_OK numeric=41/42 localhost=43/44

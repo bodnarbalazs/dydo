@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "/toolchain/jdk-21.0.8+9/bin/java",
+    "-cp",
+    "/input/helper.jar:/work/control-classes",
+    "dydo.statechart.LoopbackTlc",
+    "",
+    "space argument",
+    "\u00e1rv\u00edzt\u0171r\u0151-\u65e5\u672c\u8a9e",
+    "--option-like",
+    "-workers",
+    "1"
+  ],
+  "cwd": "/work",
+  "control": "0"
+}

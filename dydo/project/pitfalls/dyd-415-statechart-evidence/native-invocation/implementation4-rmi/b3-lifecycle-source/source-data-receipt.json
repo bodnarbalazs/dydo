@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "author": "code-writer/model: gpt-6.1-sol/high",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "preservedRows": 5079,
+  "mismatches": 0,
+  "existingGitStatusUnchanged": true,
+  "existingTrackedDiffBytesUnchanged": true,
+  "productionAndPayloadUnchanged": true,
+  "associationManifest": {
+    "path": "DynaDocs.Tests/coverage/test-associations.json",
+    "bytes": 49261,
+    "sha256": "31722a4483bc05e55b9894aff251dedc5a0704aa8681305b02923bea463b0376"
+  },
+  "rawCFailure": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-20261031a-C/return-receipt.json",
+    "bytes": 104289,
+    "sha256": "33d4dc71d0f957f20b9418012868930696dbd00b8a650e1997b0244bfd8540bc"
+  },
+  "historicalDirectSourcePin": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-contract-source/source-pin.json",
+    "bytes": 3348,
+    "sha256": "25427379b88cd7041d6fbd9526821a5cef3edb47b88837c7b3f6657ac27ed359"
+  },
+  "sourceAstOnly": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-lifecycle-source/driver.py",
+      "bytes": 9977,
+      "sha256": "c4630f3af66cb054af8e77b0deb10cda6708c255a0283a53a0d5dacc1e0a5e15"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-lifecycle-source/launcher.py",
+      "bytes": 4508,
+      "sha256": "93402339692e8b9a729633124a6f92b09b8f1f8d009c787cadc1da41a44025fe"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-lifecycle-source/prepare-data.py",
+      "bytes": 10204,
+      "sha256": "465616d54bdcf7ffff8316fcc5d503b2b1240c4b6707d670f44e1165fa3ad548"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-lifecycle-source/worker.py",
+      "bytes": 12898,
+      "sha256": "f10a888d4f87db80a0d49f0c52fd7ea493be7c28977cc70ecab2bfbfc20ab45a"
+    }
+  ],
+  "proofModulesImported": false,
+  "testDiscovery": false,
+  "testExecution": false,
+  "containers": false,
+  "node": false,
+  "java": false,
+  "javac": false,
+  "installer": false,
+  "network": false,
+  "archiveOpenedOrExtracted": false,
+  "normalTempSourceCounterpartsVerified": true,
+  "lcPins": {
+    "tools/testing/runner/suite_slot.py": "aa36020ee48e08319451e6c126701251aa3be9ef40ca4e4cb9cbaed1e375d21a",
+    "tools/testing/runner/machine_lock.py": "7b53157084084ebb6806f7b4f391a82467f9fed0fc9d701d3fd3e0954c0d9736",
+    "dydo/reference/tools/test-runner.md": "c0eb699240e4f0bd1526f1bbf495604fbf67bbb3ed3002f19fc09222a9ea92a4"
+  },
+  "lcImported": false,
+  "liveQueueBooked": false,
+  "locksAcquired": false,
+  "retainedData": [
+    {
+      "source": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\tlc\\tla2tools.jar",
+      "destination": "tla2tools.jar",
+      "sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+      "bytes": 2274532
+    },
+    {
+      "source": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-node-sxdcyaa0\\node-v22.23.2-linux-x64.tar.gz",
+      "destination": "node.tar.gz",
+      "sha256": "b294a556e639d64338823920e5866c21c02741742d2e1529ee1a225c1ec9252a",
+      "bytes": 56851233
+    }
+  ],
+  "sourcePreparationDiagnostics": [
+    {
+      "kind": "source-data assertion",
+      "observation": "Nonexistent statechart/package.json was rejected before manifest creation; exact inspected scripts/package.json is bound",
+      "proofFailure": false
+    },
+    {
+      "kind": "source-data assertion",
+      "observation": "Initial status comparison included the two newly created preservation files in before snapshot; explicit symmetric new-packet filtering found no unexpected added or removed existing status rows",
+      "proofFailure": false
+    },
+    {
+      "kind": "PreToolUse hook rejection",
+      "count": 2,
+      "reason": "Embedded newlines/bypass-pattern analysis could not verify writes",
+      "resolution": "Read-only destination absence inspection followed by four single literal Copy-Item operations; exact source bytes verified; no execution attempted"
+    }
+  ],
+  "executionRelease": false,
+  "finalAcceptance": false
+}

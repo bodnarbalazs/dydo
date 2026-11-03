@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY",
+  "hostMechanismBefore": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/driver.py",
+      "bytes": 26669,
+      "sha256": "953bd2b280de3dc4c2a385e6aa5fd34a6a40c68d33d811893408959683f700b7"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/launcher.py",
+      "bytes": 5957,
+      "sha256": "dc97c5b0f8d0299e3eadf29c18c564d585f7c171989d97b1c06203de3a5581ee"
+    }
+  ],
+  "hostSuccessor": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/driver.py",
+      "bytes": 18430,
+      "sha256": "166f679a44a9c448ef314f706a15ad4bf2ab692ea0bb2c63db80815dd56a0151"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/launcher.py",
+      "bytes": 5507,
+      "sha256": "3f57a5bced61d8ec2180aa49675685f17f1c1b507d7ba9e05c2e8764a01fd72a"
+    }
+  ],
+  "fixtureBefore": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_driver_contracts.py",
+      "bytes": 3648,
+      "sha256": "a253dc7ed416ea1216a0fc881e47ae0219f2d7c8da9399e2c8870176cefa492d"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_worker_contracts.py",
+      "bytes": 6680,
+      "sha256": "b728bdfc188e921c79ce81e77fb5ab9fa33a10545e6d2aa2e9a9529af08af061"
+    }
+  ],
+  "fixtureAfter": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/test_driver_contracts.py",
+      "bytes": 3684,
+      "sha256": "c8a76778a7362e6f7c1e0db8540f4c59ba1a02ef7dcb976debb9a7513d787757"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/test_worker_contracts.py",
+      "bytes": 6811,
+      "sha256": "d11c33110417adb2b21c83878f53431f878ec3bb0f527aa87f8b2c1c09baa973"
+    }
+  ],
+  "beforeSnapshotMeaning": "Original source files retained unchanged in place; before-custody raw identities. Only new paths authored; no old expected hash rewrite.",
+  "diffs": [
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/successor.diff",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/helper-portability.diff"
+  ],
+  "changedReach": [
+    "Two exact selector/release/native commands",
+    "Containers removed; helper unittest or admitted tsc only",
+    "180s native Popen wait and bounded direct kill/reap5s",
+    "Exact helper native IDs/complete-summary validation",
+    "Compiler ambient injection refusal and non-emission/input inventory",
+    "TEMP owner released last, after Heavy/FIFO exit evidence and successful retention"
+  ],
+  "historyApplicability": "Original12 FAIL/incomplete; individual signals original scope; no arithmetic gate acceptance. Original B/C/attribution RED immutable."
+}

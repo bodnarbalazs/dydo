@@ -1,0 +1,10 @@
+{
+  "exit": 0,
+  "samples": 623,
+  "cliExitObservation": {
+    "exit": 0,
+    "observedReapedMonotonicNs": 121584460683624
+  },
+  "directChildReaped": true,
+  "noWaitpidOnAdoptedChildren": true
+}

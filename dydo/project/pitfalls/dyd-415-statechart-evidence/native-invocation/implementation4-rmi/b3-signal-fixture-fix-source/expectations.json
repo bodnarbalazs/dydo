@@ -1,0 +1,40 @@
+{
+  "state": "SOURCE_ONLY",
+  "names": [
+    "POSIX janitor closes before controlled SIGINT exit with no output",
+    "POSIX janitor closes before controlled SIGTERM exit with no output"
+  ],
+  "selectedPerInvocation": 1,
+  "case": {
+    "ready": "Absent before spawn; view writes basename(probe.base) exclusively wx into unique mkdtemp owned ready path; parent observes plain file and exact content, not fixed delay or notification",
+    "keepAlive": "Original waiting view retains fs.watch handle plus unsettled await; parent has no notification watcher",
+    "signal": "Actual owned ChildProcess.kill(selectedSignal) exactly once in normal assertion path, boolean success asserted; genuine SIGINT/SIGTERM delivery, no synthetic handler",
+    "completion": "Non-rejecting error/exit/close state retained from immediately after spawn, before waiting. Actual close tuple required; polling intervals only await existing sleep and are fully settled.",
+    "expectedExit": {
+      "SIGINT": 130,
+      "SIGTERM": 143
+    },
+    "signalCode": null,
+    "stdout": "",
+    "stderr": {
+      "SIGINT": "SIGINT stopped the check, so the command wrote nothing.\n",
+      "SIGTERM": "SIGTERM stopped the check, so the command wrote nothing.\n"
+    },
+    "ownership": "Exact no-output parent list, no TMPDIR entries; original drainedJanitor requires unique owned PID, real close SIGKILL before cli-exit, worker exit and cleanup absence",
+    "failure": "All original assertions stay before any fallback. Original failure retained; optional fallback SIGTERM only direct owned ChildProcess; wait actual close <=5s even after kill exception/false. Missing close FAIL/INCONCLUSIVE, not product PASS.",
+    "noCaseRetries": true
+  },
+  "infrastructure": {
+    "strictCensus": "Before infrastructure cleanup, /proc only owned PythonPID1 permitted; ANY live/zombie residue fails unchanged guard",
+    "containedDrain": "Emergency direct Node runner group kill/reap only after65s and identity(starttime,PPID,PGID) check; runner reap is not CLI/worker/janitor close proof",
+    "teardown": "Existing exact ID+nonce inspect/stop/remove/absence; independent product outcome. No success inferred from removal; incomplete absence/evidence retains TEMP ownership lock.",
+    "loggingFailure": "Host safe_save errors retained; cleanup reach does not depend on successful primary evidence writes; locks retained on evidence/absence uncertainty"
+  },
+  "coverageLimits": [
+    "No real Java/TLC/checker semantics",
+    "Canonical preload changes scheduling; close order proves instrumented actual-child route only",
+    "Full canonical file imports/registers unselected tests but selectors must not execute them; native output checked",
+    "No abrupt-parent/PID1 certification; no original C acceptance; no retrospective SIGINT diagnostic PASS",
+    "New wrappers have direct assurance/static/coverage obligations owed"
+  ]
+}

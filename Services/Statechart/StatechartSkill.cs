@@ -27,7 +27,6 @@ internal static class StatechartSkill
     public static async Task InstallAsync(string project, StatechartHome home, StatechartAssets assets,
         string rid, TextWriter output, CancellationToken token)
     {
-        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("Installed skill projection still needs POSIX lifetime integration; no project files changed.");
         if (!Path.IsPathFullyQualified(project)) throw new IOException("Skill installation requires an explicit absolute project root.");
         StatechartPaths.RequirePlainDirectory(project);
         var payload = assets.Extract(home.Assets);
@@ -50,7 +49,7 @@ internal static class StatechartSkill
             StatechartPrerequisites.Find("node", Environment.GetEnvironmentVariable("PATH")) ??
             throw new IOException("No usable Node for the embedded project projection installer; statechart invocation can prepare its locked prerequisite plan.");
         StatechartPaths.EnsureDirectory(home.State);
-        await using var owner = await WindowsStatechartLifetime.StartAsync(StatechartExecutable.Current(),
+        await using var owner = await StatechartLifetime.CreateAsync(StatechartExecutable.Current(),
             home.State, home.State, Path.TrimEndingDirectorySeparator(Path.GetTempPath()));
         await owner.RegisterAsync();
         try

@@ -1,0 +1,61 @@
+{
+  "url": "https://nodejs.org/dist/v22.23.2/SHASUMS256.txt",
+  "status": 200,
+  "headers": [
+    [
+      "Date",
+      "Sat, 31 Oct 2026 02:00:50 GMT"
+    ],
+    [
+      "Content-Type",
+      "text/plain; charset=utf-8"
+    ],
+    [
+      "Content-Length",
+      "3777"
+    ],
+    [
+      "Connection",
+      "close"
+    ],
+    [
+      "CF-Cache-Status",
+      "HIT"
+    ],
+    [
+      "Accept-Ranges",
+      "bytes"
+    ],
+    [
+      "Cache-Control",
+      "public, max-age=3600, s-maxage=14400"
+    ],
+    [
+      "ETag",
+      "\"4054a2f7fd485b18452820bc7ea6b8e2\""
+    ],
+    [
+      "Last-Modified",
+      "Wed, 29 Jul 2026 13:54:58 GMT"
+    ],
+    [
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains; preload"
+    ],
+    [
+      "X-Content-Type-Options",
+      "nosniff"
+    ],
+    [
+      "Server",
+      "cloudflare"
+    ],
+    [
+      "CF-RAY",
+      "a52f11843bbdfa35-BUD"
+    ]
+  ],
+  "maximumBytes": 1048576,
+  "requestTimeoutSeconds": 15,
+  "totalDeadlineSeconds": 180
+}

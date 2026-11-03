@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY_NOT_RELEASED",
+  "launcherArgv": [
+    "python",
+    "-B",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-bc-contract-envelope-launch-20261031.py"
+  ],
+  "driverArgv": [
+    "same-approved-host-python",
+    "-B",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-bc-contract-envelope-driver-20261031.py"
+  ],
+  "sourceCounterparts": [
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-bc-contract-envelope-driver-20261031.py",
+      "bytes": 9589,
+      "sha256": "f5d6eddc866ee22ebd173623571cc40964691f5bd4e1c3a7653efb50ba57a078",
+      "source": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-contract-envelope-source/driver.py",
+        "bytes": 9589,
+        "sha256": "f5d6eddc866ee22ebd173623571cc40964691f5bd4e1c3a7653efb50ba57a078"
+      }
+    },
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-bc-contract-envelope-launch-20261031.py",
+      "bytes": 4562,
+      "sha256": "3bf2503e33ccba83d832177c8a949741aa34bbdc5d4469e463765a5a8bf9ce33",
+      "source": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-contract-envelope-source/launcher.py",
+        "bytes": 4562,
+        "sha256": "3bf2503e33ccba83d832177c8a949741aa34bbdc5d4469e463765a5a8bf9ce33"
+      }
+    }
+  ],
+  "image": "python@sha256:6a9220edda062e9223ea0784740a535987299420b96fbfd520b89bbd3e772485",
+  "commonContainment": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/driver.py",
+    "bytes": 18149,
+    "sha256": "24f0afe8f437cef9dc0fc8a3d5cf98540f39af0bf6f45e129f12c2e53549c100"
+  },
+  "resources": {
+    "lc": "C:/Users/User/.t3/worktrees/LC/t3-f7ffe8ea",
+    "namespace": "C:/Users/User/AppData/Local/lc-test/suite-slot",
+    "prefix": "LC-Suite-Slot",
+    "ticket": "LC_SUITE_SLOT_TICKET",
+    "order": [
+      "default live suite_slot.book FIFO",
+      "nonwaiting Heavy via refuse_heavy_wait",
+      "exclusive C:/Users/User/AppData/Local/Temp/dydo-fullsuite.lock"
+    ],
+    "namespaceSpoof": false,
+    "actualHostNormalApprovalRequiredForFutureExecution": true
+  },
+  "containment": {
+    "network": "none",
+    "pull": "never",
+    "rootReadOnly": true,
+    "inputReadOnly": true,
+    "droppedCapabilities": [
+      "ALL"
+    ],
+    "noNewPrivileges": true,
+    "pids": 128,
+    "memoryBytes": 1073741824,
+    "cpus": 2,
+    "publicPorts": [],
+    "hostNamespaces": false,
+    "privileged": false,
+    "dockerSocket": false,
+    "hiddenHostChildren": true
+  },
+  "imageInspection": "Actual cached ID/Linux/amd64 and complete container ID/owner/settings inspection before every start; NOT_RUN here",
+  "output": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-contract-envelope-20261031a",
+  "outerDockerAttachSeconds": 1200,
+  "ownedDrainSeconds": 5,
+  "cleanup": "Inspect exact ID/owner before owned stop/remove; raw absence required, uncertain drain retains TEMP lock; scratch retained as DATA",
+  "workerArgv": [
+    "python",
+    "-B",
+    "/input/worker.py"
+  ],
+  "actualExecution": "NOT_RUN",
+  "testDiscovery": "NOT_RUN",
+  "executionReleaseAuthored": false,
+  "downloads": false,
+  "hostRuntimeCopies": false,
+  "productionChanges": false,
+  "childArgv": [
+    "/usr/local/bin/python",
+    "-B",
+    "-m",
+    "unittest",
+    "discover",
+    "-v",
+    "-f",
+    "-s",
+    "/input/repo/DynaDocs.Tests/coverage/tests",
+    "-p",
+    "test_statechart_rmi_bc.py"
+  ],
+  "cwd": "/input",
+  "inputFiles": 4,
+  "containerNames": [
+    "dyd415-rmi-b3-bc-contract-envelope-NONCE-finite"
+  ],
+  "mounts": [
+    "owned input at /input readonly",
+    "owned work at /work",
+    "owned output at /output"
+  ],
+  "childSeconds": 180,
+  "hardStdoutBytes": 16777216,
+  "hardStderrBytes": 16777216,
+  "toolchainVolumes": 0,
+  "archiveInputs": [],
+  "runtimeInputs": [],
+  "expected": {
+    "rawExit": 0,
+    "nativeCount": 22,
+    "passed": 22,
+    "skipped": 0,
+    "names": [
+      "test_B_stops_before_second_command_on_wrong_native_counts_skip_exit_or_stderr",
+      "test_C_requires_bootstrap_and_separate_SANY_records_and_rejects_raw_TLC",
+      "test_all_three_entrypoints_refuse_missing_or_other_groups_before_material_work",
+      "test_child_environment_clears_ambient_injection_and_replay_without_mutating_parent",
+      "test_cleanup_refuses_foreign_container_and_never_removes_it",
+      "test_cleanup_stops_only_exact_owned_id_and_requires_container_and_volume_absence",
+      "test_cleanup_unknown_identity_is_uncertain_and_not_removed",
+      "test_container_rejects_foreign_owner_host_network_and_writable_test_toolchain_before_start",
+      "test_driver_refuses_redirected_namespace_before_git_or_material_work",
+      "test_driver_rejects_changed_source_preservation_and_retained_inputs",
+      "test_driver_rejects_head_drift_before_source_or_runtime_admission",
+      "test_extraction_rejects_member_metadata_drift_and_unsafe_matching_members",
+      "test_extraction_requires_pinned_archive_before_any_extract_call",
+      "test_extraction_uses_data_filter_for_all_three_admitted_archives",
+      "test_launcher_accepts_only_exact_released_group_and_source_pin",
+      "test_launcher_refuses_wrong_platform_and_redirected_namespaces",
+      "test_main_rejects_remaining_namespace_process_after_success_without_completion_receipt",
+      "test_missing_release_or_source_pin_never_admits_a_group",
+      "test_node_commands_preserve_two_B_files_and_exact_six_case_C_selector",
+      "test_selected_tap_accepts_only_named_passes_and_filtered_unselected_cases",
+      "test_selected_tap_rejects_missing_skipped_duplicate_failed_and_unselected_results",
+      "test_snapshot_rejects_changed_bytes_execute_mode_extra_and_missing_before_verifier_import"
+    ],
+    "nativeClass": "test_statechart_rmi_bc.RmiBcContracts",
+    "stdoutBytes": 0,
+    "summary": [
+      "Ran 22 tests",
+      "OK"
+    ],
+    "missingOrDuplicateOrUnselectedOrNonOk": "FAIL",
+    "namespaceResidue": "FAIL"
+  },
+  "producerApplicability": "Existing Python producer for actual three B/C modules after captain admits source delta; coverage not launched. Mocks do not measure Java/real OS/runtime.",
+  "noNode": true,
+  "noJava": true,
+  "noNetwork": true,
+  "noExtraction": true
+}

@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "docker",
+    "volume",
+    "rm",
+    "dyd415-rmi-b3-janitor-correction-6113cbdc5f1f4566-node"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "hidden": true,
+  "ticket": "0000000001-f1bd0c7f2f8645b2",
+  "startedUtc": "2026-10-31T05:53:41.353796+00:00"
+}

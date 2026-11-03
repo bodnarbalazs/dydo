@@ -1,0 +1,25 @@
+{
+  "state": "SOURCE_ONLY",
+  "finiteAllowedPaths": [
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/checkpoint.md",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/source-pin.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/source-data-receipt.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/commands.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/environment-prerequisites.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/dependency-closure.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/maintained-modules.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/test-reach.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/association-proposals.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/source-role-applicability.md",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/unsupported-requirements.md",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/owned-paths.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/before-custody.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/after-custody.json",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/preservation-map.json"
+  ],
+  "beforePaths": "ALL_ABSENT",
+  "beforeCustodyCount": 9432,
+  "activeDirect21OutputExclusion": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/",
+  "noTempCounterparts": true,
+  "noInstallOrDependencyEdit": true
+}

@@ -1,0 +1,17 @@
+test_archive_inventory_rejects_changed_missing_and_extra_bytes (test_statechart_java_build.JavaBuildTests.test_archive_inventory_rejects_changed_missing_and_extra_bytes) ... ok
+test_changed_and_missing_source_are_rejected (test_statechart_java_build.JavaBuildTests.test_changed_and_missing_source_are_rejected) ... ok
+test_child_environment_removes_only_owned_java_injection_variables (test_statechart_java_build.JavaBuildTests.test_child_environment_removes_only_owned_java_injection_variables) ... ok
+test_current_sources_match_the_finite_lock (test_statechart_java_build.JavaBuildTests.test_current_sources_match_the_finite_lock) ... ok
+test_existing_or_relative_outputs_are_rejected (test_statechart_java_build.JavaBuildTests.test_existing_or_relative_outputs_are_rejected) ... ok
+test_extra_source_declaration_and_wrong_class_contract_are_rejected (test_statechart_java_build.JavaBuildTests.test_extra_source_declaration_and_wrong_class_contract_are_rejected) ... ok
+test_failed_compiler_retains_argv_exit_and_streams_without_retry (test_statechart_java_build.JavaBuildTests.test_failed_compiler_retains_argv_exit_and_streams_without_retry) ... ok
+test_nonlinux_build_refuses_before_any_subprocess (test_statechart_java_build.JavaBuildTests.test_nonlinux_build_refuses_before_any_subprocess) ... ok
+test_owned_outputs_cannot_overlap_inputs_or_each_other (test_statechart_java_build.JavaBuildTests.test_owned_outputs_cannot_overlap_inputs_or_each_other) ... ok
+test_rebuild_compares_to_the_sealed_artifact_not_current_drift (test_statechart_java_build.JavaBuildTests.test_rebuild_compares_to_the_sealed_artifact_not_current_drift) ... ok
+test_traversal_and_absolute_archive_members_are_rejected (test_statechart_java_build.JavaBuildTests.test_traversal_and_absolute_archive_members_are_rejected) ... ok
+test_wrong_archive_hash_prevents_toolchain_use (test_statechart_java_build.JavaBuildTests.test_wrong_archive_hash_prevents_toolchain_use) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.606s
+
+OK

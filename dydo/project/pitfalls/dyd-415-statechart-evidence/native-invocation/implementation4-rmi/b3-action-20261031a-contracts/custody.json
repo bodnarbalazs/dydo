@@ -1,0 +1,529 @@
+{
+  "schema": 1,
+  "state": "POST_ACTION_CONTRACT_RETURN",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "sourcePinSha256": "4fafdf85474be97f52bcb92ac1d388652a35177e0b65a5873731b9a65741c04d",
+  "inventoryExcludes": "this custody.json and any later explicitly named administrative handback",
+  "files": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/admission.json",
+      "bytes": 451,
+      "sha256": "11ed5065de007a3ee76f8cbd4fbf63d7d8576948758797eccf5910242042625b"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-0-absence.argv.json",
+      "bytes": 373,
+      "sha256": "5681b34af8d85b74b0c0912f65a358a657047ec77b9a0c6787a5357c2d720b30"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-0-absence.result.json",
+      "bytes": 66,
+      "sha256": "59e0569db069b2a12544a02cd0a31f7799e29cd2c04bc1d16b1202736ac7aa33"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-0-absence.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-0-absence.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-0-inspect.argv.json",
+      "bytes": 300,
+      "sha256": "ed6135a55e2493b7ca1b6dcb3a73d482ebbfeb83b26c8063ec26f066f3cf9efa"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-0-inspect.result.json",
+      "bytes": 67,
+      "sha256": "8fe291433aba06ce46a384c70b0c70c9f67a2182ca28e5b28a6302258de5319d"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-0-inspect.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-0-inspect.stdout",
+      "bytes": 10187,
+      "sha256": "3b199dc5266977739945009528b4126b5a71d938ef0828eb1fdf537b63014eac"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-0-remove.argv.json",
+      "bytes": 295,
+      "sha256": "c30a7dddeb9595bdda683fd2e8def113efdd9b747efffafda6868ffed4d59124"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-0-remove.result.json",
+      "bytes": 67,
+      "sha256": "9369a271123af55d9ba93c3acdb62794de87d1845083b5f6a435ab01d10cc43d"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-0-remove.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-0-remove.stdout",
+      "bytes": 65,
+      "sha256": "cb555bf769e79ac7e0b99a321356921f763452ed7fd916933860ac2980c307d9"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-1-absence.argv.json",
+      "bytes": 373,
+      "sha256": "96204262b8a88522324393a86e121eea2874061fcbed73cf6673f4c23c5387d1"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-1-absence.result.json",
+      "bytes": 67,
+      "sha256": "148e78cb13b9d2e512b5f091e5a346d4019606af03b243c5ee3ae9a57b3d0f95"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-1-absence.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-1-absence.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-1-inspect.argv.json",
+      "bytes": 300,
+      "sha256": "369709f523005820731e021df48a00a69b4d719525852c92eeb41dc2abee5f27"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-1-inspect.result.json",
+      "bytes": 67,
+      "sha256": "6fa0bebd51a998c97d681a57f43aa57e31a38abb516095106977451d32a91170"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-1-inspect.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-1-inspect.stdout",
+      "bytes": 10201,
+      "sha256": "17dcb9f05e90893eca5e066498f5ac3779be94fe9b7cfe1f30cab81a3a69837a"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-1-remove.argv.json",
+      "bytes": 295,
+      "sha256": "07adb3d90e1d47f406933b54088e4939361b299e90ee72217daedaa481709afa"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-1-remove.result.json",
+      "bytes": 67,
+      "sha256": "8ed9627d1640aad771acc80df131332376b5ac8eeb6da467fc725f16d8654a35"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-1-remove.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-1-remove.stdout",
+      "bytes": 65,
+      "sha256": "35176a409d41207f7064cb760461bb4a50aa54036ff7c186bfe39320b8eb9dc6"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-volume-absence.argv.json",
+      "bytes": 340,
+      "sha256": "ea24ae63e606e372647b3bc2aa330d21cdaa76753f535123e0069384fb8f8d50"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-volume-absence.result.json",
+      "bytes": 67,
+      "sha256": "28f97d44f4722b193cff8341b5fb5ce338ece2f581270988d31dab786727c23d"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-volume-absence.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-volume-absence.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-volume-inspect.argv.json",
+      "bytes": 291,
+      "sha256": "54f9749ccf9cac001eb12e76c6f246a87f6b5a169445ac407c9930e3ecaf07e4"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-volume-inspect.result.json",
+      "bytes": 71,
+      "sha256": "f77cc47d7ca84158d056ad959dfb4f03147adabf4de32c05eda2733582f4e0ba"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-volume-inspect.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-volume-inspect.stdout",
+      "bytes": 382,
+      "sha256": "ee884038ea1a72024ab84a54ead198a509e89ddedf5ef734a9dcd3ecb8d3fe30"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-volume-remove.argv.json",
+      "bytes": 286,
+      "sha256": "e69e351f62b9f496a59c259e6d6f665fcfb0f00aa69dcd74783c057692a89d97"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-volume-remove.result.json",
+      "bytes": 67,
+      "sha256": "dd9d1e06e749fbd0b5f91d766df2e1f64f2680506d7fb1e446978c3653ed95d9"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-volume-remove.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/cleanup-volume-remove.stdout",
+      "bytes": 42,
+      "sha256": "6736525ea1743cddb4c0c0324896c2e8834f406666ede3b05424e223b9d9c33f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/contracts-admission-gate.json",
+      "bytes": 2779,
+      "sha256": "a249c3c1a42e09435756b1d5ed2e60f70c9343cbab9780e916939057c9d7c88e"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-create.argv.json",
+      "bytes": 1423,
+      "sha256": "2f8522a2016558beb1494fe14b736713e92229046c41eef2cce7d11c5129a194"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-create.result.json",
+      "bytes": 67,
+      "sha256": "8cd2a33785ccc1aa663f0c11c88247d919f12d8a05eb81d8571ac58c90fe4052"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-create.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-create.stdout",
+      "bytes": 65,
+      "sha256": "35176a409d41207f7064cb760461bb4a50aa54036ff7c186bfe39320b8eb9dc6"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-inspect.argv.json",
+      "bytes": 300,
+      "sha256": "dc2974a54f3532b8db8671c4bca0bbf2f469980ac7f34d42fc7365aa9634fc28"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-inspect.result.json",
+      "bytes": 67,
+      "sha256": "3f277248e557fc2fb716e5003ab56782e475c51ce6c5ae9d0e43e780f7555442"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-inspect.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-inspect.stdout",
+      "bytes": 9820,
+      "sha256": "01975e59c873fda5dac387125c5dad0f4f337a629a82f9532f917fbf2ff94389"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-start.argv.json",
+      "bytes": 314,
+      "sha256": "3a1597705accd0b557e206c073f8a1e2191839a440826f5146e60c1d1b004b5d"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-start.result.json",
+      "bytes": 65,
+      "sha256": "b64e69bcbe284975faec3e13cf36be15c9cd5e8cf45cc3c0c776894c816342b0"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-start.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-start.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-state.argv.json",
+      "bytes": 300,
+      "sha256": "8775e6f7b839248a669172931f28e53945b2355908a474fb8eecc01cc2197225"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-state.result.json",
+      "bytes": 64,
+      "sha256": "3dfdb567187c18ba58e5adccc0b4389263ce6e1daed7158041596d80cd7d9d61"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-state.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-extract-state.stdout",
+      "bytes": 10201,
+      "sha256": "17dcb9f05e90893eca5e066498f5ac3779be94fe9b7cfe1f30cab81a3a69837a"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-create.argv.json",
+      "bytes": 1414,
+      "sha256": "1d6d9fe33236dc8143988074c9849e8759b84650f6fd7a4c6f2fb8ad39f5924e"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-create.result.json",
+      "bytes": 67,
+      "sha256": "115951ef3c2c0266ba5a29181f3e3e4b5f723b3b4338e9ed456044df87caa855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-create.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-create.stdout",
+      "bytes": 65,
+      "sha256": "cb555bf769e79ac7e0b99a321356921f763452ed7fd916933860ac2980c307d9"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-inspect.argv.json",
+      "bytes": 300,
+      "sha256": "9ccc714e223b773499a832b12b6f48598140d2e47caed0aa99e721575d643074"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-inspect.result.json",
+      "bytes": 67,
+      "sha256": "5846ce4393abe3c2e1b22203a4d157b9512cb80402e78cd450f92421b47ccfe5"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-inspect.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-inspect.stdout",
+      "bytes": 9804,
+      "sha256": "ba55c16a9cc161b6e329b34328d22c97b6e44444adaa7be33a17e45eb0ea5dc7"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-start.argv.json",
+      "bytes": 314,
+      "sha256": "065dd1b3543143f12c5e8703c6a22ff769f088d1e63ca6fd320d07f5e1d95a09"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-start.result.json",
+      "bytes": 65,
+      "sha256": "9d5315a9a6f1c823c7d3ddb31d06308bd96e3c1eba279ebc43d09adc7237459e"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-start.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-start.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-state.argv.json",
+      "bytes": 300,
+      "sha256": "bbe1dcaa91aa6e7d47b93a5e49d0629cca0caa9e7fc0658e1e4c2172619478aa"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-state.result.json",
+      "bytes": 67,
+      "sha256": "5211701fac765235873231bf4bacfbcdf922e35353135c00bcb5e53ae788ded1"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-state.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/dyd415-rmi-b3-action-84c1b312fb1b4797-finite-state.stdout",
+      "bytes": 10187,
+      "sha256": "3b199dc5266977739945009528b4126b5a71d938ef0828eb1fdf537b63014eac"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/image-inspect.argv.json",
+      "bytes": 327,
+      "sha256": "4fb1f04882e02e7b82a6a633adc55087a93ff5715ac7f41b686fd030117416f2"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/image-inspect.result.json",
+      "bytes": 67,
+      "sha256": "536a79a27eaaa37d3680437d744f1f87eeb5c94480b193ff5d0bb7f210f275df"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/image-inspect.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/image-inspect.stdout",
+      "bytes": 2161,
+      "sha256": "f3d50aa22ff882a6f9934dddae25807f1d929e4c712dc63f6086f9e1a9f817c9"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/jdk-archive-inventory.json",
+      "bytes": 104,
+      "sha256": "b0144d08bbcd1a61e8b6ce3fe8a82e4740f003e8077188146778b7c14c1eb7ff"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/jdk-reuse.json",
+      "bytes": 359,
+      "sha256": "9986e37b65ccb7c2a950b2741fb75763bef78341a0b17403fc2120bd74d0e16c"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/launcher.preflight.json",
+      "bytes": 595,
+      "sha256": "5383a8e4b333b4b73e7b6cc95686ecd02512b975078f807acc2a03daeff73be1"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/launcher.result.json",
+      "bytes": 115,
+      "sha256": "722d189e3549d88c32f7f405c54829886959d9ce18a39de6d6cd61b1e17e8adc"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/launcher.stderr",
+      "bytes": 590,
+      "sha256": "9d78ae594762e024903c41abdde92d5fb26f9e9ed6d3c33213bfd8ef154afc09"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/launcher.stdout",
+      "bytes": 1670,
+      "sha256": "7222a9ad1b1003c082f89fa7abcd6d97b89f2e441a59ade2b584372d0d248938"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/node-contract-proposed-invocation.json",
+      "bytes": 3204,
+      "sha256": "1d9c424cc744db935c4250b571d9de9073e9e4c680feb6d51dd09430b18d2257"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/post-custody.json",
+      "bytes": 106,
+      "sha256": "23e2930810ec26c8920b096bed1aab933513949729b5d47f17ebbd3ebafa594d"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/preflight.json",
+      "bytes": 642,
+      "sha256": "c03ca86715f0b1a86ef3b0fc50d6017c76aae1ad602381711252680db5f9dff4"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/released.json",
+      "bytes": 85,
+      "sha256": "390a42afa342d299de94185447f7db1978f6b332df032b9722c86d375e5cfad3"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/retained/output/contracts.json",
+      "bytes": 68,
+      "sha256": "ff64a1e33dceea2eae15c395bd66955cb0ea8018611589860c372dfdd6e59969"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/retained/output/group-completed.json",
+      "bytes": 48,
+      "sha256": "23e34089f65b9d50fc7ea48807d37af8ca3a4c6c830aeb8b45a0eff24b2081e5"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/retained/output/test_statechart_rmi_action.py.argv.json",
+      "bytes": 794,
+      "sha256": "e8ed3d88cd5fe4edd5bb8d966fe11b32589611bec06d92fbce2c1d7178f674f7"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/retained/output/test_statechart_rmi_action.py.result.json",
+      "bytes": 73,
+      "sha256": "c7266418ab41bffcdf4781cc071bdba177cf23dcf54ca5b7316126dd3646a193"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/retained/output/test_statechart_rmi_action.py.stderr",
+      "bytes": 2171,
+      "sha256": "86ccf77b07b5bc33790e7c9ad1f088274e26d178a0bfc92781bb4c38248e69fa"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/retained/output/test_statechart_rmi_action.py.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/retained/output/toolchain.json",
+      "bytes": 479,
+      "sha256": "808bb97446936aa7dae75f2d4521eb92a36af4775cc3115e6a555b22f29a7c12"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/scratch.json",
+      "bytes": 85,
+      "sha256": "de387876aaac1bd0cfe5182ead3d521fff262a7f0a1eb4073a50b6625e55472f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/secondary-released.json",
+      "bytes": 56,
+      "sha256": "319ca4adba2945375b9f1a3c0dc1cb6bf9abe4ceb9d5a1d92bf58cceaec77223"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/snapshot.json",
+      "bytes": 9370,
+      "sha256": "c1119f92d408e9f8bba8ea965500bb27525bf9263db019bb9cebcfd0deed4971"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/summary.json",
+      "bytes": 198,
+      "sha256": "90b655502b6b5fdb7701e1b3c2bedd40ca9fd79d587f32ab319e0191a628bff2"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/teardown.json",
+      "bytes": 324,
+      "sha256": "4a450ce1e1e753e353b356d6ee1983a8d5eda57e5fa6bb34eb977d9175a8eef5"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/volume-create.argv.json",
+      "bytes": 350,
+      "sha256": "69221286b62e2f16653f885d6de46d3387af8e00152ac05aae9b9abee0447cba"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/volume-create.result.json",
+      "bytes": 67,
+      "sha256": "9c324325310cbdd0e26d97dfe93c677e160499cf0040a22a2595632d39909d45"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/volume-create.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/volume-create.stdout",
+      "bytes": 42,
+      "sha256": "6736525ea1743cddb4c0c0324896c2e8834f406666ede3b05424e223b9d9c33f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/volume-inspect.argv.json",
+      "bytes": 291,
+      "sha256": "4003236956a8e4aab5d40fffb783f6a280f663452144657011a745d44fa26bda"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/volume-inspect.result.json",
+      "bytes": 67,
+      "sha256": "887f71e59dce1b0968c4cc028daa35f54dcf7272b6e419ea4eb95f324bdecb66"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/volume-inspect.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-20261031a-contracts/volume-inspect.stdout",
+      "bytes": 382,
+      "sha256": "ee884038ea1a72024ab84a54ead198a509e89ddedf5ef734a9dcd3ecb8d3fe30"
+    }
+  ]
+}

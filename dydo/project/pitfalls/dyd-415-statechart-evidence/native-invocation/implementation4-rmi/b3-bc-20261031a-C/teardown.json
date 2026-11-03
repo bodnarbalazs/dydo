@@ -1,0 +1,10 @@
+{
+  "cleanupConfirmed": true,
+  "ownedContainerIds": [
+    "323a0ee4ddec8c92da8e9fe9206ca7c5432824ee1a8b61450b4dab065572a084",
+    "843461a2a2e14c4948f5f8ec3f59486fbc14287c4195071fe2e4349628be552c"
+  ],
+  "volume": "dyd415-rmi-b3-bc-391d704858344a19-jdk",
+  "tempScratchRetained": true,
+  "desktopJavaLaunched": false
+}

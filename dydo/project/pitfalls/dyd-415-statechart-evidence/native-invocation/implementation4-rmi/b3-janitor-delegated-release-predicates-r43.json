@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "authority": "Admiral explicit SOURCE-ONLY topology-successor disposition after721ebe3bb8e4",
+  "previousLedger": "b3-janitor-delegated-release-predicates-r42.json",
+  "sourceContract": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-topology-successor-source-contract.md",
+  "sourceOwnershipRoot": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology-source",
+  "author": "SAME retained gpt-6.1-sol/high writer",
+  "helper12": "PASS_RECORDED_SCOPE_NO_REPLAY",
+  "topologySource": "AUTHORIZED_PREPARATION_OWNERSHIP_FIRST",
+  "topologyProof": "NOT_RELEASED",
+  "typecheck": "NOT_RELEASED",
+  "serial12": "NOT_RELEASED",
+  "review": "FAIL_OPEN"
+}

@@ -1,0 +1,10 @@
+{
+  "pid": 151852,
+  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -B C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-janitor-correction-driver-20261031.py",
+  "ticket": "0000000001-f1bd0c7f2f8645b2",
+  "nonce": "6113cbdc5f1f4566",
+  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
+  "bookingOwned": true,
+  "inherited": false,
+  "startedUtc": "2026-10-31T05:51:33.284819+00:00"
+}

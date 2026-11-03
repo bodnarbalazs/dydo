@@ -1,0 +1,16 @@
+{
+  "name": "good-reference",
+  "facts": {
+    "exit": 0,
+    "generated": 5,
+    "distinct": 4,
+    "complete": true,
+    "invariant": [],
+    "temporal": false,
+    "values": [],
+    "actions": [],
+    "back": [],
+    "stuttering": false
+  },
+  "sockets": []
+}

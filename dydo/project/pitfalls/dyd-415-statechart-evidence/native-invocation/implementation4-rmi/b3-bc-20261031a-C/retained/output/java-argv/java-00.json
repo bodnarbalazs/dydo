@@ -1,0 +1,20 @@
+{
+  "pid": 42,
+  "executable": "/toolchain/jdk-21.0.8+9/bin/java",
+  "argv": [
+    "/toolchain/jdk-21.0.8+9/bin/java",
+    "-Djava.io.tmpdir=/work/tmp/statechart-uteBDt/statechart-LdtQUC/tmp-sany",
+    "-DTLA-Library=/toolchain/repo/skills/engineering/statechart/scripts/test/corpus/CounterInstance",
+    "-XX:TieredStopAtLevel=1",
+    "-cp",
+    "/work/tmp/statechart-uteBDt/statechart-LdtQUC/checker/tla2tools.jar",
+    "tla2sany.xml.XMLExporter",
+    "-o",
+    "-I",
+    "/toolchain/repo/skills/engineering/statechart/scripts/test/corpus/CounterInstance",
+    "/toolchain/repo/skills/engineering/statechart/scripts/test/corpus/CounterInstance/CounterInstance.tla"
+  ],
+  "cwd": "/work/tmp/statechart-uteBDt/statechart-LdtQUC",
+  "tmpdir": "/work/tmp/statechart-uteBDt",
+  "tlc": "/input/tla2tools.jar"
+}

@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "state": "RELEASED_B3_ACTION",
+  "groups": [
+    "bootstrap"
+  ],
+  "sourcePinSha256": "4fafdf85474be97f52bcb92ac1d388652a35177e0b65a5873731b9a65741c04d",
+  "captain": "gpt-6-astra/high",
+  "contract": "https://linear.app/bodnar-balazs/document/dyd-415-single-missing-action-bootstrap-release-and-node-contract-6a8b7ee427e2",
+  "bootstrapReleased": true,
+  "desktopJavaHeld": true,
+  "maximumRuns": 1,
+  "priorReleasePath": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\b3-action-20261031a-contracts\\execution-release-at-run.json",
+  "priorReleaseSha256": "2585e8f01e9ee02f20988a0da46821dcd83a46fb965cd0f83da9daf4e8e6c908",
+  "contractsCompleted": true,
+  "contractsRepeatAuthorized": false,
+  "contractsGateSha256": "a249c3c1a42e09435756b1d5ed2e60f70c9343cbab9780e916939057c9d7c88e"
+}

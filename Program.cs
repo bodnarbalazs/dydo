@@ -2,13 +2,19 @@ using System.CommandLine;
 using DynaDocs.Commands;
 using DynaDocs.Utils;
 
-if (args.Length > 0 && args[0] is "__statechart-cleanup" or "__statechart-probe")
+if (args.Length > 0 && args[0] is "__statechart-cleanup" or "__statechart-probe" or
+    "__statechart-posix-owner" or "__statechart-posix-anchor" or "__statechart-posix-child")
 {
     try
     {
-        return args[0] == "__statechart-cleanup"
-            ? await DynaDocs.Services.Statechart.StatechartCleanup.RunAsync(args[1..], Console.In, Console.Out)
-            : await DynaDocs.Services.Statechart.StatechartProbe.ChildAsync(args[1..]);
+        return args[0] switch
+        {
+            "__statechart-cleanup" => await DynaDocs.Services.Statechart.StatechartCleanup.RunAsync(args[1..], Console.In, Console.Out),
+            "__statechart-probe" => await DynaDocs.Services.Statechart.StatechartProbe.ChildAsync(args[1..]),
+            "__statechart-posix-owner" => await DynaDocs.Services.Statechart.PosixStatechartOwner.RunAsync(args[1..]),
+            "__statechart-posix-anchor" => await DynaDocs.Services.Statechart.PosixStatechartAnchor.RunAsync(args[1..]),
+            _ => DynaDocs.Services.Statechart.PosixStatechartChild.Run(args[1..])
+        };
     }
     catch (Exception error) when (error is IOException or InvalidDataException or InvalidOperationException or System.ComponentModel.Win32Exception)
     {

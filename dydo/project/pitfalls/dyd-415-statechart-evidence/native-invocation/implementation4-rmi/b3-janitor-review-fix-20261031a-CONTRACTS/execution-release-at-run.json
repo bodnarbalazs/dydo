@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "state": "RELEASED_B3_JANITOR_REVIEW_FIX",
+  "contracts": true,
+  "signals": [],
+  "maxContractInvocations": 1,
+  "sourcePinSha256": "e368bc2746d4f10810ce6ae28cc812deced37aaf9691721d8644fd28203c8b47",
+  "sourceReceiptSha256": "3d42770da6b5b09a07ca6e0cb5970d68cf1c8449cd56e41d6fae1208f747fd4e",
+  "captainInspectionRecord": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-captain-inspection.md",
+  "captainInspectionSha256": "ac744a15d04a1e6e00e1f18bdd55e3d18feb7869abd6c92200351419e757ef34",
+  "linearRelease": "https://linear.app/bodnar-balazs/document/dyd-415-direct21-execution-release-and-twelve-case-assurance-source-0916a1060959",
+  "ownershipContract": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-direct21-and-source-contract.md",
+  "freshAdmission": {
+    "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+    "sourceRows": 93,
+    "externalRows": 5,
+    "tempRows": 2,
+    "beforeRows": 9406,
+    "afterRows": 9428,
+    "historicalRows": 5266,
+    "obligationReferences": 65,
+    "mismatches": 0,
+    "sourceAuditToolChunk": "f25a49",
+    "writerRun": 37,
+    "writerStatus": "completed",
+    "writerActiveRun": null,
+    "writerPendingRequests": 0,
+    "activeProjectInventory": "only captain; no overlapping writer",
+    "outputPreviouslyAbsent": true
+  },
+  "dockerIdentity": {
+    "evidenceStatus": "RETAINED_NOT_FRESHLY_PROBED; contracts-only run performs no Docker command",
+    "source": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-fixture-fix-source/execution-release.json",
+    "executableSha256": "f71e5a9fe6a8db10c7296ad6fdf0c1d7d79634e644d7ec1e8a2c18d7dcb52d21",
+    "contextName": "desktop-linux",
+    "dockerEndpoint": {
+      "Host": "npipe:////./pipe/dockerDesktopLinuxEngine",
+      "SkipTLSVerify": false
+    },
+    "daemonFields": {
+      "ID": "5d389860-2507-4d55-bc6b-59bfdb83a13b",
+      "Name": "docker-desktop",
+      "OSType": "linux",
+      "Architecture": "x86_64",
+      "ServerVersion": "29.8.2",
+      "OperatingSystem": "Docker Desktop",
+      "DockerRootDir": "/var/lib/docker"
+    }
+  },
+  "argv": [
+    "C:/Users/User/AppData/Local/Programs/Python/Python313/python.exe",
+    "-B",
+    "C:/Users/User/AppData/Local/Temp/dyd415-rmi-b3-janitor-review-fix-launch-20261031.py",
+    "--contracts"
+  ],
+  "cwd": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f",
+  "scope": "Exactly21 existing unittest contracts once; no product, signal, Node, Docker, Java, compiler, static or coverage run.",
+  "envelope": {
+    "hostOnly": true,
+    "privatePidClaim": false,
+    "networkNoneClaim": false,
+    "jobDescendantContainmentClaim": false,
+    "childTimeoutSeconds": 180,
+    "timeoutAction": "kill and reap direct child",
+    "outputPerStreamBytes": 16777216,
+    "outputLimit": "post-completion rejecting check, not hard cap",
+    "tests": "material/subprocess boundaries mocked; no unpatched descendants or streaming workload",
+    "resources": "canonical live LC FIFO -> nonwaiting Heavy -> exclusive owned normal TEMP lock"
+  },
+  "expected": "exact21 native IDs,21 ok,no skip,Ran21/OK,exit0,empty stdout; raw receipts retained",
+  "failureDisposition": "First failure stops; no fix/retry. Preserve original error/evidence and exact-owned lock on retention/cleanup uncertainty. Only original-owner case-specific captain/admiral recovery; no generic stale-lock removal.",
+  "sourceOnly": "Separate twelve-case and assurance-setup source preparation per ownership contract. No execution of either. No optional standalone SIGINT.",
+  "holds": "Frozen production/fixture/payload/dependencies/associations/history. Original failures remain. All desktop Java/Windows access/Java assurance/abrupt-parent/final-gate holds persist. No new review, commit/push/PR, merge/watch, release/version/tag/publish/rollout or settled-HITL contact."
+}

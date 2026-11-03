@@ -12,10 +12,12 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { plainText } from "../backends/plain-text.ts";
 import { readMessages } from "../frontends/messages.ts";
+import { pinnedTlc } from "../run.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const corpus = path.join(here, "corpus");
 const read = (file: string) => fs.readFileSync(file, "utf8");
+const replayJar = pinnedTlc(path.resolve(process.env.TLA2TOOLS ?? "missing-pinned-TLC-fixture.jar"));
 
 function run(
   dir: string,
@@ -53,7 +55,7 @@ function run(
       env: {
         ...process.env,
         JAVA: java,
-        TLA2TOOLS: "tla2tools.jar",
+        TLA2TOOLS: replayJar,
         STATECHART_REPLAY: dir,
         STATECHART_LOG: log,
         ...env,
@@ -243,7 +245,7 @@ function startCommand(
       env: {
         ...process.env,
         JAVA: java,
-        TLA2TOOLS: "tla2tools.jar",
+        TLA2TOOLS: replayJar,
         STATECHART_REPLAY: dir,
         TMPDIR: tmpdir,
       },
@@ -1314,4 +1316,295 @@ test("TYPE and TYPE_CONSTRAINT are config keywords, as in TLC", () => {
   assert.equal(r.report, read(path.join(corpus, "Login", "report.md")));
   assert.match(r.configs.ChartRun, /^TYPE TypeOK$/m);
   assert.match(r.configs.ChartRun, /^TYPE_CONSTRAINT TypeOK$/m);
+});
+
+type JanitorEvent = {
+  event: string;
+  role?: string;
+  pid?: number;
+  parent?: number;
+  code?: number | string | null;
+  signal?: string | null;
+  file?: string;
+};
+
+function janitorProbe(mode: string) {
+  const base = fs.mkdtempSync(path.join(process.env.STATECHART_JANITOR_PROOF ?? os.tmpdir(), "janitor-proof-"));
+  const log = path.join(base, "events.jsonl");
+  const preload = path.join(base, "observe.mjs");
+  fs.writeFileSync(preload, `import cp from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { syncBuiltinESMExports } from "node:module";
+if (process.argv[1] === ${JSON.stringify(path.join(here, "../statechart.ts"))}) {
+  const mode = ${JSON.stringify(mode)};
+  const record = (value) => fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ parent: process.pid, ...value }) + "\\n");
+  const spawn = cp.spawn;
+  cp.spawn = (file, args, options) => {
+    const role = args?.includes(${JSON.stringify(path.join(here, "../worker.ts"))}) ? "worker"
+      : file === "/bin/sh" && args?.length === 6 && args[2] === "sh" ? "janitor" : undefined;
+    const missing = role === "worker" && mode === "worker-spawn-error"
+      || role === "janitor" && mode.startsWith("janitor-spawn-error");
+    const child = spawn(missing ? "/statechart-proof-missing-executable" : file, args, options);
+    if (role) {
+      record({ event: "spawn", role, pid: child.pid, file: missing ? "/statechart-proof-missing-executable" : file });
+      child.on("error", (error) => record({ event: "error", role, pid: child.pid, code: error.code }));
+      child.once("exit", (code, signal) => record({ event: "exit", role, pid: child.pid, code, signal }));
+      child.once("close", (code, signal) => record({ event: "close", role, pid: child.pid, code, signal }));
+      if (role === "janitor" && mode === "early-close") child.kill("SIGKILL");
+      if (role === "janitor" && mode === "kill-error") {
+        const kill = child.kill.bind(child);
+        child.kill = (signal) => { kill(signal); throw new Error("injected janitor kill error"); };
+      }
+    }
+    return child;
+  };
+  const remove = fs.rmSync;
+  fs.rmSync = (file, options) => {
+    if (mode.includes("cleanup-error") && path.basename(String(file)).startsWith(".out.statechart-")) {
+      record({ event: "cleanup-error", file: String(file) });
+      throw new Error("injected stage cleanup error");
+    }
+    const result = remove(file, options);
+    record({ event: "cleanup-return", file: String(file) });
+    return result;
+  };
+  const rename = fs.renameSync;
+  fs.renameSync = (from, to) => {
+    if (path.basename(String(from)) === "done") {
+      if (mode === "output-collision") {
+        fs.mkdirSync(to);
+        fs.writeFileSync(path.join(to, "report.md"), "caller owned\\n");
+      }
+      record({ event: "publish", file: String(to) });
+    }
+    return rename(from, to);
+  };
+  const write = process.stdout.write.bind(process.stdout);
+  process.stdout.write = (...args) => { record({ event: "stdout" }); return write(...args); };
+  process.once("exit", (code) => record({ event: "cli-exit", code }));
+  syncBuiltinESMExports();
+}
+`);
+  return {
+    base,
+    command: [process.execPath, "--import", pathToFileURL(preload).href, path.join(here, "../statechart.ts")],
+    events: () => read(log).trim().split("\n").map((line) => JSON.parse(line) as JanitorEvent),
+  };
+}
+
+function drainedJanitor(events: JanitorEvent[], early = false) {
+  const spawned = events.filter((event) => event.role === "janitor" && event.event === "spawn");
+  const closed = events.filter((event) => event.role === "janitor" && event.event === "close");
+  assert.equal(spawned.length, 1);
+  assert.equal(closed.length, 1);
+  assert.equal(closed[0].pid, spawned[0].pid);
+  if (!early) assert.equal(closed[0].signal, "SIGKILL");
+  if (spawned[0].pid)
+    assert.throws(() => process.kill(spawned[0].pid!, 0), { code: "ESRCH" });
+  const exit = events.findIndex((event) => event.event === "cli-exit");
+  assert.ok(events.indexOf(closed[0]) < exit);
+  const worker = events.find((event) => event.role === "worker" && event.event === "spawn");
+  assert.ok(worker?.pid);
+  assert.ok(events.some((event) => event.role === "worker" && event.event === "exit" && event.pid === worker.pid));
+  for (const event of events)
+    if (event.event === "cleanup-return" && event.file) assert.equal(fs.existsSync(event.file), false);
+  return events.indexOf(closed[0]);
+}
+
+for (const [name, status] of [["Counter", 0], ["CounterInstance", 1]] as const) {
+  test(`POSIX janitor close precedes the ${name} report and controlled exit ${status}`, () => {
+    const probe = janitorProbe("observe");
+    const dir = path.join(corpus, name);
+    const r = run(dir, { command: probe.command });
+    assert.equal(r.status, status);
+    assert.equal(r.stderr, "");
+    assert.equal(r.report, read(path.join(dir, "report.md")));
+    assert.equal(read(path.join(r.out, "chart.mmd")), read(path.join(dir, "chart.mmd")));
+    assert.equal(r.stdout, `${r.report}\nWrote ${r.out}\n`);
+    const events = probe.events();
+    const closed = drainedJanitor(events);
+    assert.ok(events.findIndex((event) => event.event === "publish") < closed);
+    assert.ok(events.findIndex((event) => event.event === "stdout") > closed);
+    assert.ok(events.some((event, index) => event.event === "cleanup-return" && index < closed));
+  });
+}
+
+test("POSIX janitor closes after an early worker error without publishing output", () => {
+  const probe = janitorProbe("observe");
+  const view = path.join(probe.base, "view.mjs");
+  fs.writeFileSync(view, 'throw new Error("injected view load error");\n');
+  const r = run(path.join(corpus, "Counter"), { command: probe.command, view });
+  assert.equal(r.status, 2);
+  assert.equal(r.stderr, "injected view load error\n");
+  assert.equal(r.stdout, "");
+  assert.deepEqual(r.files, []);
+  drainedJanitor(probe.events());
+});
+
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  test(`POSIX janitor closes before controlled ${signal} exit with no output`, { timeout: 30_000 }, async () => {
+    const probe = janitorProbe("observe");
+    const parent = path.join(probe.base, "parent");
+    const tmpdir = path.join(probe.base, "tmp");
+    fs.mkdirSync(parent);
+    fs.mkdirSync(tmpdir);
+    const ready = path.join(probe.base, "ready");
+    const readyValue = path.basename(probe.base);
+    assert.equal(fs.existsSync(ready), false);
+    const view = path.join(probe.base, "view.mjs");
+    fs.writeFileSync(view, `import fs from "node:fs";
+fs.watch(${JSON.stringify(probe.base)}, () => {});
+fs.writeFileSync(${JSON.stringify(ready + ".pending")}, ${JSON.stringify(readyValue)}, { flag: "wx" });
+fs.renameSync(${JSON.stringify(ready + ".pending")}, ${JSON.stringify(ready)});
+await new Promise(() => {});
+`);
+    const child = spawn(probe.command[0], [...probe.command.slice(1), path.join(corpus, "Counter/Counter.tla"),
+      "--view", view, "--out", path.join(parent, "out")], {
+      env: { ...process.env, JAVA: path.join(here, "java.ts"), TLA2TOOLS: replayJar,
+        STATECHART_REPLAY: path.join(corpus, "Counter"), TMPDIR: tmpdir },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let childError: Error | undefined;
+    let exited = false;
+    let closed: [number | null, NodeJS.Signals | null] | undefined;
+    child.once("error", (error) => { childError = error; });
+    child.once("exit", () => { exited = true; });
+    child.once("close", (status, killed) => { closed = [status, killed]; });
+    let stdout = "";
+    let stderr = "";
+    child.stdout!.on("data", (chunk: Buffer) => { stdout += chunk; });
+    child.stderr!.on("data", (chunk: Buffer) => { stderr += chunk; });
+    let failure: unknown;
+    try {
+      const readyDeadline = performance.now() + 10_000;
+      while (!fs.existsSync(ready)) {
+        assert.ifError(childError);
+        assert.equal(exited || !!closed, false, "CLI completed before readiness");
+        assert.ok(performance.now() < readyDeadline, "Owned ready marker was not observed within 10s");
+        await sleep(10);
+      }
+      assert.ifError(childError);
+      assert.equal(exited || !!closed, false, "CLI completed before signal send");
+      assert.equal(fs.lstatSync(ready).isFile(), true);
+      assert.equal(read(ready), readyValue);
+      assert.ok(child.kill(signal), "Selected signal was not sent");
+      const closeDeadline = performance.now() + 10_000;
+      while (!closed && performance.now() < closeDeadline) await sleep(10);
+      assert.ifError(childError);
+      assert.ok(closed, "CLI close was not observed within 10s of the selected signal");
+      assert.equal(exited, true);
+      const [status, killed] = closed;
+      assert.equal(killed, null);
+      assert.equal(status, 128 + os.constants.signals[signal]);
+      assert.equal(stdout, "");
+      assert.equal(stderr, `${signal} stopped the check, so the command wrote nothing.\n`);
+      assert.deepEqual(fs.readdirSync(parent), []);
+      assert.deepEqual(fs.readdirSync(tmpdir), []);
+      drainedJanitor(probe.events());
+    } catch (error) {
+      failure = error;
+    }
+    if (!closed) {
+      let cleanupError: unknown;
+      try {
+        // Failed-case cancellation cannot satisfy the selected signal's assertions.
+        if (!exited && child.pid)
+          assert.ok(child.kill("SIGTERM"), "Failed-case cancellation was not sent");
+      } catch (error) {
+        cleanupError = error;
+      }
+      const cleanupDeadline = performance.now() + 5_000;
+      while (!closed && performance.now() < cleanupDeadline) await sleep(10);
+      if (!closed)
+        cleanupError = new AggregateError([cleanupError], "Failed-case close unconfirmed; owned container containment required");
+      if (cleanupError)
+        failure = new AggregateError([failure, cleanupError], "Signal proof and failed-case cleanup failed");
+    }
+    if (failure) throw failure;
+  });
+}
+
+test("POSIX janitor spawn failure stops and reaps the worker without publishing", () => {
+  const probe = janitorProbe("janitor-spawn-error");
+  const r = run(path.join(corpus, "Counter"), { command: probe.command });
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /statechart-proof-missing-executable.*ENOENT/);
+  assert.equal(r.stdout, "");
+  assert.deepEqual(r.files, []);
+  const events = probe.events();
+  assert.ok(events.some((event) => event.role === "janitor" && event.event === "error" && event.code === "ENOENT"));
+  drainedJanitor(events, true);
+});
+
+test("POSIX janitor early close is retained and stops the owned worker", () => {
+  const probe = janitorProbe("early-close");
+  const view = path.join(probe.base, "view.mjs");
+  fs.writeFileSync(view, `import fs from "node:fs";
+fs.watch(${JSON.stringify(probe.base)}, () => {});
+await new Promise(() => {});
+`);
+  const r = run(path.join(corpus, "Counter"), { command: probe.command, view });
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /Statechart cleanup process closed early/);
+  assert.equal(r.stdout, "");
+  assert.deepEqual(r.files, []);
+  drainedJanitor(probe.events(), true);
+});
+
+test("POSIX worker spawn failure is observed before any janitor starts", () => {
+  const probe = janitorProbe("worker-spawn-error");
+  const r = run(path.join(corpus, "Counter"), { command: probe.command });
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /statechart-proof-missing-executable.*ENOENT/);
+  assert.equal(r.stdout, "");
+  assert.deepEqual(r.files, []);
+  const events = probe.events();
+  assert.ok(events.some((event) => event.role === "worker" && event.event === "error"));
+  assert.ok(events.some((event) => event.role === "worker" && event.event === "close"));
+  assert.equal(events.some((event) => event.role === "janitor"), false);
+});
+
+test("POSIX cleanup exception remains visible and cannot skip actual janitor close", () => {
+  const probe = janitorProbe("cleanup-error");
+  const r = run(path.join(corpus, "Counter"), { command: probe.command });
+  assert.equal(r.status, 2);
+  assert.equal(r.stderr, "injected stage cleanup error\n");
+  assert.equal(r.stdout, "");
+  assert.equal(r.report, read(path.join(corpus, "Counter/report.md")));
+  assert.equal(read(path.join(r.out, "chart.mmd")), read(path.join(corpus, "Counter/chart.mmd")));
+  const events = probe.events();
+  const closed = drainedJanitor(events);
+  assert.ok(events.findIndex((event) => event.event === "cleanup-error") < closed);
+});
+
+test("POSIX spawn and cleanup faults are both visible after actual ownership drain", () => {
+  const probe = janitorProbe("janitor-spawn-error-cleanup-error");
+  const r = run(path.join(corpus, "Counter"), { command: probe.command });
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /statechart-proof-missing-executable.*ENOENT/);
+  assert.match(r.stderr, /injected stage cleanup error/);
+  assert.equal(r.stdout, "");
+  assert.deepEqual(r.files, []);
+  drainedJanitor(probe.events(), true);
+});
+
+test("POSIX janitor kill exception is reported only after the real child closes", () => {
+  const probe = janitorProbe("kill-error");
+  const r = run(path.join(corpus, "Counter"), { command: probe.command });
+  assert.equal(r.status, 2);
+  assert.equal(r.stderr, "injected janitor kill error\n");
+  assert.equal(r.stdout, "");
+  drainedJanitor(probe.events());
+});
+
+test("POSIX final drain preserves a caller file arriving at output publication", () => {
+  const probe = janitorProbe("output-collision");
+  const r = run(path.join(corpus, "Counter"), { command: probe.command });
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /report.md appeared while the check ran/);
+  assert.equal(r.stdout, "");
+  assert.deepEqual(r.files, ["report.md"]);
+  assert.equal(r.report, "caller owned\n");
+  drainedJanitor(probe.events());
 });

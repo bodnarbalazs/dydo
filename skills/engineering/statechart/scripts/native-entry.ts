@@ -5,6 +5,10 @@ import { inspect } from "node:util";
 import { gate, worker } from "./lifetime.ts";
 
 try {
+  if (process.argv[2] === "posix-cli") {
+    const { runPosix } = await import("./posix-lifetime.ts");
+    process.exit(await runPosix(import.meta.filename, process.argv.slice(3)));
+  }
   const [nonce, configuration, role] = process.argv.slice(2);
   await gate(nonce);
   const input = JSON.parse(fs.readFileSync(configuration, "utf8"));

@@ -1,0 +1,229 @@
+{
+  "semanticParity": true,
+  "javaInvocations": 1,
+  "referenceReexecuted": false,
+  "constraintAdmissionDistinct": 2,
+  "unconstrainedDistinct": 3,
+  "observedListeners": [
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 38741,
+      "inode": "290943"
+    }
+  ],
+  "passiveObservationGap": false,
+  "productionTsNativeIsolationUsed": false,
+  "windowsAcceptance": false,
+  "javaAssurance": "UNAVAILABLE"
+}

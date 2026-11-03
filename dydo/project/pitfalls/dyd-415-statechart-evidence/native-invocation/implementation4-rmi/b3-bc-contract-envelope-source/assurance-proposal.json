@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "state": "PROPOSAL_ONLY_NO_MANIFEST_EDIT",
+  "baseManifest": {
+    "path": "DynaDocs.Tests/coverage/test-associations.json",
+    "bytes": 49261,
+    "sha256": "31722a4483bc05e55b9894aff251dedc5a0704aa8681305b02923bea463b0376"
+  },
+  "targets": [
+    {
+      "module": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-contract-envelope-source/driver.py",
+        "bytes": 9589,
+        "sha256": "f5d6eddc866ee22ebd173623571cc40964691f5bd4e1c3a7653efb50ba57a078"
+      },
+      "proposedTestFile": "DynaDocs.Tests/coverage/tests/test_statechart_rmi_bc.py",
+      "proposedFutureDirectCalls": [
+        "validate_host",
+        "verify_inputs",
+        "execute",
+        "cleanup"
+      ],
+      "proposedAssertions": [
+        "namespace/release/HEAD/source refusal before booking",
+        "exact copies and resource inspection",
+        "unknown/foreign owner never removed"
+      ],
+      "state": "FUTURE_DIRECT_TEST_EXTENSION_NOT_AUTHORED_OR_ASSOCIATED",
+      "existing22TargetThisWrapper": false,
+      "nativeDiscovery": "NOT_RUN"
+    },
+    {
+      "module": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-contract-envelope-source/launcher.py",
+        "bytes": 4562,
+        "sha256": "3bf2503e33ccba83d832177c8a949741aa34bbdc5d4469e463765a5a8bf9ce33"
+      },
+      "proposedTestFile": "DynaDocs.Tests/coverage/tests/test_statechart_rmi_bc.py",
+      "proposedFutureDirectCalls": [
+        "validate_host",
+        "validate_release"
+      ],
+      "proposedAssertions": [
+        "exact source pin required",
+        "wrong namespace refused before child/output"
+      ],
+      "state": "FUTURE_DIRECT_TEST_EXTENSION_NOT_AUTHORED_OR_ASSOCIATED",
+      "existing22TargetThisWrapper": false,
+      "nativeDiscovery": "NOT_RUN"
+    },
+    {
+      "module": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-contract-envelope-source/worker.py",
+        "bytes": 4927,
+        "sha256": "7a383684f54483689e0ee1e78a1cf6bf7f436e8d548ecf3fdfd1ddc75cf2ee96"
+      },
+      "proposedTestFile": "DynaDocs.Tests/coverage/tests/test_statechart_rmi_bc.py",
+      "proposedFutureDirectCalls": [
+        "verify_inputs",
+        "interpret"
+      ],
+      "proposedAssertions": [
+        "input/mode refusal before child",
+        "exact selected output verdict",
+        "owned cleanup and strict namespace guard"
+      ],
+      "state": "FUTURE_DIRECT_TEST_EXTENSION_NOT_AUTHORED_OR_ASSOCIATED",
+      "existing22TargetThisWrapper": false,
+      "nativeDiscovery": "NOT_RUN"
+    }
+  ],
+  "existingAssociations": "Three unchanged B/C successor modules have direct real source-grounded tests; those rows never apply to these wrappers",
+  "implementationScope": "Only source packets/TEMP now; actual future extension of existing coverage/tests requires captain source ownership/release",
+  "noFabricatedAssociation": true,
+  "noRecursiveHarness": true,
+  "coverage": "Existing Python stack later; native discovery, 80/60/HCRAP/static obligations owed; no producer launch",
+  "javaMetrics": "UNAVAILABLE_NOT_WAIVED"
+}

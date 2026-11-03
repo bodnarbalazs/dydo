@@ -1,0 +1,28 @@
+{
+  "pid": 415,
+  "executable": "/toolchain/jdk-21.0.8+9/bin/java",
+  "argv": [
+    "/toolchain/jdk-21.0.8+9/bin/java",
+    "-Djava.io.tmpdir=/work/tmp/statechart-ftGHWN/statechart-prDDYA/tmp-verdict-3",
+    "-DTLA-Library=/toolchain/repo/skills/engineering/statechart/scripts/test/corpus/MediaPlayerProps",
+    "-cp",
+    "/toolchain/repo/skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar:/work/tmp/statechart-ftGHWN/statechart-prDDYA/checker/tla2tools.jar",
+    "dydo.statechart.LoopbackTlc",
+    "-tool",
+    "-workers",
+    "1",
+    "-fp",
+    "0",
+    "-lncheck",
+    "final",
+    "-deadlock",
+    "-metadir",
+    "/work/tmp/statechart-ftGHWN/statechart-prDDYA/meta-verdict-3",
+    "-config",
+    "/work/tmp/statechart-ftGHWN/statechart-prDDYA/verdict-3.cfg",
+    "MediaPlayerProps"
+  ],
+  "cwd": "/work/tmp/statechart-ftGHWN/statechart-prDDYA",
+  "tmpdir": "/work/tmp/statechart-ftGHWN",
+  "tlc": "/input/tla2tools.jar"
+}

@@ -1,0 +1,13 @@
+{
+  "osName": "nt",
+  "platform": "win32",
+  "localAppData": "C:\\Users\\User\\AppData\\Local",
+  "temp": "C:\\Users\\User\\AppData\\Local\\Temp",
+  "inheritedTicket": null,
+  "launcherSha256": "dc97c5b0f8d0299e3eadf29c18c564d585f7c171989d97b1c06203de3a5581ee",
+  "driverSha256": "953bd2b280de3dc4c2a385e6aa5fd34a6a40c68d33d811893408959683f700b7",
+  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
+  "prefix": "LC-Suite-Slot",
+  "variable": "LC_SUITE_SLOT_TICKET",
+  "logDirectory": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-janitor-review-fix-launch-56iqu8_r"
+}

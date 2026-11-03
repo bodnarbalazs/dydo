@@ -1,0 +1,8 @@
+{
+  "url": "https://nodejs.org/dist/v22.23.2/SHASUMS256.txt",
+  "method": "GET",
+  "maximumBytes": 1048576,
+  "startedUtc": "2026-10-31T02:00:50.512474+00:00",
+  "redirectsAllowed": false,
+  "retries": 0
+}

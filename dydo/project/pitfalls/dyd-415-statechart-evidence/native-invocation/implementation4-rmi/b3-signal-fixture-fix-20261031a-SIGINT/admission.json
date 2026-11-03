@@ -1,0 +1,10 @@
+{
+  "pid": 46556,
+  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -B C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-signal-fixture-fix-driver-20261031.py --signal SIGINT",
+  "ticket": "0000000002-12dd6906e4b48303",
+  "nonce": "a2e08d89a6ca43c6",
+  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
+  "bookingOwned": true,
+  "inherited": false,
+  "startedUtc": "2026-10-31T12:29:11.873367+00:00"
+}

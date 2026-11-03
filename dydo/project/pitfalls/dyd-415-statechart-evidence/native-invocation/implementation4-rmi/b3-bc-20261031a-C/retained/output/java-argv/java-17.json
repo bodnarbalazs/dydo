@@ -1,0 +1,20 @@
+{
+  "pid": 589,
+  "executable": "/toolchain/jdk-21.0.8+9/bin/java",
+  "argv": [
+    "/toolchain/jdk-21.0.8+9/bin/java",
+    "-Djava.io.tmpdir=/work/tmp/statechart-GYjTUJ/statechart-BJzTbf/tmp-sany",
+    "-DTLA-Library=/toolchain/repo/skills/engineering/statechart/scripts/test/corpus/Shadow",
+    "-XX:TieredStopAtLevel=1",
+    "-cp",
+    "/work/tmp/statechart-GYjTUJ/statechart-BJzTbf/checker/tla2tools.jar",
+    "tla2sany.xml.XMLExporter",
+    "-o",
+    "-I",
+    "/toolchain/repo/skills/engineering/statechart/scripts/test/corpus/Shadow",
+    "/toolchain/repo/skills/engineering/statechart/scripts/test/corpus/Shadow/Shadow.tla"
+  ],
+  "cwd": "/work/tmp/statechart-GYjTUJ/statechart-BJzTbf",
+  "tmpdir": "/work/tmp/statechart-GYjTUJ",
+  "tlc": "/input/tla2tools.jar"
+}

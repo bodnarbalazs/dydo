@@ -1,0 +1,2 @@
+suite slot: waiting for this PC's test slot, queue position 1 (1 run ahead); holder C:\Users\User\.t3\worktrees\LC\t3-663d6ee8 running python tools/coverage/run_tests.py --stack=frontend started 2026-10-31T03:28:06+01:00 (pid 161040)
+suite slot: holding this PC's test slot after waiting 1626 s

@@ -1,0 +1,17 @@
+test_action_constraint_must_reduce_distinct_states_and_hold_below_two (test_statechart_rmi_b3.RmiB3Contracts.test_action_constraint_must_reduce_distinct_states_and_hold_below_two) ... ok
+test_cleanup_will_not_remove_a_foreign_owner (test_statechart_rmi_b3.RmiB3Contracts.test_cleanup_will_not_remove_a_foreign_owner) ... ok
+test_driver_refuses_host_network_before_container_start (test_statechart_rmi_b3.RmiB3Contracts.test_driver_refuses_host_network_before_container_start) ... ok
+test_fair_temporal_cycle_cannot_be_replaced_by_stuttering (test_statechart_rmi_b3.RmiB3Contracts.test_fair_temporal_cycle_cannot_be_replaced_by_stuttering) ... ok
+test_invariant_requires_shortest_ordered_path_and_next_actions (test_statechart_rmi_b3.RmiB3Contracts.test_invariant_requires_shortest_ordered_path_and_next_actions) ... ok
+test_java_recording_claim_enforces_finite_ceiling_without_replacement (test_statechart_rmi_b3.RmiB3Contracts.test_java_recording_claim_enforces_finite_ceiling_without_replacement) ... ok
+test_launcher_requires_exact_group_and_source_release (test_statechart_rmi_b3.RmiB3Contracts.test_launcher_requires_exact_group_and_source_release) ... ok
+test_listener_evidence_requires_matching_process_fd_inode (test_statechart_rmi_b3.RmiB3Contracts.test_listener_evidence_requires_matching_process_fd_inode) ... ok
+test_node_commands_bound_exact_files_and_six_case_selector (test_statechart_rmi_b3.RmiB3Contracts.test_node_commands_bound_exact_files_and_six_case_selector) ... ok
+test_selected_discovery_rejects_skip_missing_or_unselected_execution (test_statechart_rmi_b3.RmiB3Contracts.test_selected_discovery_rejects_skip_missing_or_unselected_execution) ... ok
+test_semantic_reader_retains_state_action_loop_and_requires_counts (test_statechart_rmi_b3.RmiB3Contracts.test_semantic_reader_retains_state_action_loop_and_requires_counts) ... ok
+test_socket_word_decoding_distinguishes_loopback_wildcard_and_nonlocal (test_statechart_rmi_b3.RmiB3Contracts.test_socket_word_decoding_distinguishes_loopback_wildcard_and_nonlocal) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 1.665s
+
+OK

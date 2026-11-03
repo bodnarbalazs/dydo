@@ -1,0 +1,357 @@
+{
+  "schema": 1,
+  "author": "code-writer/model: gpt-6.1-sol/high",
+  "authority": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope-contract.md",
+    "sha256": "2a698ded3094857081fe744d889801d89c70ae3fd6568b224569e7393b36f3af"
+  },
+  "captainLedger": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-delegated-release-predicates.json",
+    "sha256": "507e662c8046e9803226bdd664f551d07c2f55077d19fbd043b52cf79f446df4"
+  },
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "branch": "DYD-415-statechart",
+  "execution": {
+    "released": false,
+    "performed": false,
+    "importsOrDiscovery": false,
+    "runtimeOrCompiler": false,
+    "networkOrSetup": false
+  },
+  "custody": {
+    "beforeRows": 9509,
+    "afterRows": 9532,
+    "historicalRows": 5266,
+    "expectedHashesRegenerated": false,
+    "derivedExclusions": [
+      "source-pin.json",
+      "after-custody.json",
+      "source-data-receipt.json"
+    ],
+    "derivedBinding": "Receipt binds pin and after-custody; no circular self-hash. After inventory binds 9509 frozen and 23 authored non-derived documents across both new packets."
+  },
+  "state": "SOURCE_ONLY_ACQUISITION_PROPOSAL_NOT_RELEASED",
+  "actualAuthoredSubset": [
+    "acquisition-plan.json",
+    "after-custody.json",
+    "before-custody.json",
+    "checkpoint.md",
+    "compiler-lock-delta.json",
+    "maintained-reach.json",
+    "owned-paths.json",
+    "prerequisite-identities.json",
+    "preservation-map.json",
+    "provenance-gaps.md",
+    "setup-commands.json",
+    "source-data-receipt.json",
+    "source-pin.json"
+  ],
+  "absentPermittedFiles": [],
+  "sourceDocuments": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/acquisition-plan.json",
+      "bytes": 10999,
+      "sha256": "fd17bd9d9bad1eb0b11f8ca027fe20739fdc948e00a9168eeb3a5259dd9668e3"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/before-custody.json",
+      "bytes": 2239902,
+      "sha256": "a2d26e4c77b932f480144ef0e3ce011464e6764f371938e46cbc2876df1eac13"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/checkpoint.md",
+      "bytes": 5013,
+      "sha256": "0f1b43681d0b89cbf6c9440bf9419911fb1b4f6af6692aeb9c83c493fb55e5f7"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/compiler-lock-delta.json",
+      "bytes": 4169,
+      "sha256": "13f04afb2eb5e17de085f3971905322a9b676d4a18c660f1787eb0b18af8bf03"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/maintained-reach.json",
+      "bytes": 6312,
+      "sha256": "4eef8d09af5b4378172a3a42595911fe30b35af2ab6ea37b237b1cc33aa559d0"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/owned-paths.json",
+      "bytes": 4354,
+      "sha256": "9fdc9aca4680ccfa6db787ec306538e259d5a9e2a4d4f32bfa2299cd33ba510e"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/prerequisite-identities.json",
+      "bytes": 144682,
+      "sha256": "560d8fdccfe79aec2ad8a14cb747d06764d2f1ef210b0d4b40ea81a558b56b30"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/preservation-map.json",
+      "bytes": 1285,
+      "sha256": "af904695c07fca68c10dbb924b9a8032a79245c3e0b0485abb0a914bbe81e30f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/provenance-gaps.md",
+      "bytes": 3644,
+      "sha256": "2fcc453d39136e608d526f66224932c19df7a655eb7642cc2b593275e6fc3765"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/setup-commands.json",
+      "bytes": 4524,
+      "sha256": "4129b40d688758eff81632ab1df86443e0081aed595c975467905c1fcd0c2372"
+    }
+  ],
+  "frozenInputClosure": [
+    {
+      "path": ".github/workflows/release.yml",
+      "bytes": 9840,
+      "sha256": "1e1c18389c5b80c3115e24b71f2ebe7bed2a573e6ea767020d21ef539fa22f3a",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "C:/Users/User/AppData/Local/fnm_multishells/10620_1793288379755/node.exe",
+      "bytes": 86997320,
+      "sha256": "0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4",
+      "role": "read-only external identity; never launched"
+    },
+    {
+      "path": "C:/Users/User/AppData/Local/Programs/Python/Python313/python.exe",
+      "bytes": 105840,
+      "sha256": "03573716a7fcbd8b7fed8fe0163bbfbd3a852546920d6a666123f307c8dac7d9",
+      "role": "read-only external identity; never launched"
+    },
+    {
+      "path": "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/node_modules/npm/bin/npm-cli.js",
+      "bytes": 56,
+      "sha256": "3ce7cba6f5128dd5f54c98b6a5036b0f850496878cc2e21044b675fe3c594e3e",
+      "role": "read-only identity/source; no executable launch"
+    },
+    {
+      "path": "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/node_modules/npm/bin/npm-prefix.js",
+      "bytes": 864,
+      "sha256": "673f620e40137c295f2cf057364468bf3a71653dfc0973be895ebf7a8c368c2e",
+      "role": "read-only identity/source; no executable launch"
+    },
+    {
+      "path": "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/node_modules/npm/lib/cli.js",
+      "bytes": 419,
+      "sha256": "d97a2b1a2170d6094625956d6ad5ba5d5edfce26bc3787c51447c9737b6afc2d",
+      "role": "read-only identity/source; no executable launch"
+    },
+    {
+      "path": "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/node_modules/npm/lib/cli/entry.js",
+      "bytes": 3278,
+      "sha256": "2c5f2aaf9e1152337b226ec80f04ad728fb7b776be91f10713d0b7fcb461d226",
+      "role": "read-only identity/source; no executable launch"
+    },
+    {
+      "path": "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/node_modules/npm/lib/cli/validate-engines.js",
+      "bytes": 2061,
+      "sha256": "686dbd7c04056036a8e5e99a44e6062068575aefea8e40faf5b352a1d999d45a",
+      "role": "read-only identity/source; no executable launch"
+    },
+    {
+      "path": "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/node_modules/npm/package.json",
+      "bytes": 6911,
+      "sha256": "92c3cf71cdf51638a35d41346ae06327925c79dc7cdbe6863e1d358f87599437",
+      "role": "read-only identity/source; no executable launch"
+    },
+    {
+      "path": "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/node.exe",
+      "bytes": 83208848,
+      "sha256": "364dbc8442f8d5c04fd4226bcfcf8e60d3268627eb1d7be214a91bb7d74cdbb9",
+      "role": "read-only identity/source; no executable launch"
+    },
+    {
+      "path": "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/npm",
+      "bytes": 2073,
+      "sha256": "13372aa943f8eb32c9a8b6f946ed6a49118edd60051321953288b1f35611aefb",
+      "role": "read-only identity/source; no executable launch"
+    },
+    {
+      "path": "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/npm.cmd",
+      "bytes": 538,
+      "sha256": "21b46c69ad6e2f231f02a9e120f4ba6c8e75fef5a45637103002eab99f888ab8",
+      "role": "read-only identity/source; no executable launch"
+    },
+    {
+      "path": "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/npm.ps1",
+      "bytes": 795,
+      "sha256": "e2f6b65e0f21781d3fb567898f1e38b922db809de490340499b4403cdb14fe75",
+      "role": "read-only identity/source; no executable launch"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/association-proposals.json",
+      "bytes": 3462,
+      "sha256": "3512253b9bbe977dc4b094557deef74873022c3dfca63f8ae26b46167f97a00a",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/maintained-modules.json",
+      "bytes": 17327,
+      "sha256": "8f1752e800af676a4f10a50e82ec345f9bbdebf5836e60e3a0e8e82b3fbc7060",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/test-reach.json",
+      "bytes": 3458,
+      "sha256": "d6b7751bb47cb652202948b7bd23f5d1100d34ae5dd4ca2b778c87256911d2a7",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/assurance-plan.json",
+      "bytes": 3654,
+      "sha256": "5e5048b36814ca1e6b3516b2b479af77f90711a1c3563e0b834eb1df6d0bfd3a",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test-inventory.json",
+      "bytes": 7741,
+      "sha256": "99ea1fc7a147de67cf38050361f70cfa71d41abd28951e0e495b7d1eaa4c9a1b",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/driver.py",
+      "bytes": 13271,
+      "sha256": "0ded3eadf56c49e705b437cc37840dd1e8b054f12fe2801fa1523b7419ac9589",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/transfer.py",
+      "bytes": 2614,
+      "sha256": "ef4d6ca29758d0a72600cd86eb4b96154e49dd9268a3f2188fe315c400510497",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "dydo/reference/coverage-tools.md",
+      "bytes": 36057,
+      "sha256": "8fbaf5e73d2e4767c9330b1199e17ae5a6d70ecd7c950a347d56df5860effd05",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/.python-version",
+      "bytes": 9,
+      "sha256": "16c863195943df357aff24d69eb6f1f022b5e5a0ca2bcd74df2d8494d54b6e23",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gap_check.json",
+      "bytes": 5044,
+      "sha256": "4be5da94e47d872a162b061dac5918cad872886b7ff2497313b394d3a290849a",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_adapter.py",
+      "bytes": 33732,
+      "sha256": "d3b9f4131c2a56de98ac21f820e98ddc9213b9f1577384131da88c2eb8553ea2",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_collect.py",
+      "bytes": 22175,
+      "sha256": "7f92587a354713cc950abbfe379de01d4a635fa3e849a22f393fd2efae028654",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/gate_inventory.py",
+      "bytes": 13151,
+      "sha256": "542c84765bf7e3b82fdb83e82610dc22c096ae3c2d1d26991eba9d3899c42ff8",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/js_metrics.cjs",
+      "bytes": 11147,
+      "sha256": "982fb4b1e5e869a0a4e81120126577669ef3f619fb0dfdf5881423e3e72a390a",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/package-lock.json",
+      "bytes": 134688,
+      "sha256": "8c21637d43ef457181e2cbc8b12a174709c9b6a249a47473929d4e1fbf251db8",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/package.json",
+      "bytes": 400,
+      "sha256": "70084ed19a7ca0a8fa4bf49a037e6c5cc39407c9bc875374a992cc4449b551f2",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/positions.py",
+      "bytes": 1700,
+      "sha256": "30cce99838b5c1c58e6d03936e089e4650c1308c61a20391649e99d5aba53079",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_coverage.py",
+      "bytes": 7698,
+      "sha256": "41b7fe86ab8c8cb902aff736b7bb17ea3efe9a80204b5d4f977fca4f3a33cdce",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/python_metrics.py",
+      "bytes": 8198,
+      "sha256": "e29b526643a02b534beb5ad9a59ff51203eaa7e395aa37250472964d98b85e21",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/requirements.lock",
+      "bytes": 124,
+      "sha256": "3b62e0c7100cf8c8fecad179946d4ef5137506adc78040e7f1051b3a9bd9a152",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/test-associations.json",
+      "bytes": 49261,
+      "sha256": "31722a4483bc05e55b9894aff251dedc5a0704aa8681305b02923bea463b0376",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/node_modules/.package-lock.json",
+      "bytes": 2693,
+      "sha256": "4d2ab54c2dc9775533559ccb627c7eae38fca1679f07515ee90b2cb9ac7b8e8d",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/package.json",
+      "bytes": 254,
+      "sha256": "42369abae6761079df8c2ea75068992b0449a7db0bc63160c079c623175bb448",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/tsconfig.json",
+      "bytes": 225,
+      "sha256": "6bb2af53f7b251328e6117cd4fb761468dc4d4b96085d31a19304ccb73c32cc1",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "viewer/package.json",
+      "bytes": 1236,
+      "sha256": "04c4f96ecddec401b6f8ce45c3a7e55dbcff6710404396afb449c6822bba083d",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "viewer/pnpm-lock.yaml",
+      "bytes": 97742,
+      "sha256": "38c8271e7d44ed7a7b96c726aeef8c9ae9c827b5ce5d882f6a26f631fd6d8a07",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    },
+    {
+      "path": "viewer/tsconfig.json",
+      "bytes": 627,
+      "sha256": "e079cc2bc5c2b95aaff0a1bf010a79b40fa9b03ac63ccaf0478baa3aa89f37cb",
+      "role": "retained source/config/data input; not authored; applicability in closure/reach manifests"
+    }
+  ],
+  "counts": {
+    "ownNonDerived": 10,
+    "ownTotal": 13,
+    "frozenInputClosure": 40
+  },
+  "tempCopiesCreated": [],
+  "executionReleaseCreated": false,
+  "sourceOutcome": {
+    "acquisitionPlan": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/acquisition-plan.json",
+    "boundedFutureDataOnly": true,
+    "missingPrerequisites": "CPython installer independently expected SHA/publisher linkage; eight exact wheel identities; npm installed-member/archive closure; reproducible compiler lock and appropriate viewer runtime; no network or install performed."
+  },
+  "applicability": "Maintained reach/association is source-grounded in maintained-reach.json; no new maintained runtime or collector; no fabricated PASS or archive origin."
+}

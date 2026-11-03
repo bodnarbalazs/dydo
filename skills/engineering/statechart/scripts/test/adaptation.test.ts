@@ -8,6 +8,9 @@ import path from "node:path";
 import { PassThrough } from "node:stream";
 import { test } from "node:test";
 import { guardWorker } from "../windows.ts";
+import { pinnedTlc } from "../run.ts";
+
+const replayJar = pinnedTlc(path.resolve(process.env.TLA2TOOLS ?? "missing-pinned-TLC-fixture.jar"));
 
 function child() {
   const events = new EventEmitter();
@@ -99,10 +102,13 @@ process.kill = () => {
 
 for (const tools of ["present", "installed", "failed"] as const) {
   test(`Caller tool discovery when mise tools are ${tools}`, {
-    skip: process.platform === "win32" || !process.env.TLA2TOOLS,
+    skip: process.platform === "win32",
   }, t => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-mise-test-"));
     t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+    const toolsJar = path.join(dir, "tlc");
+    fs.mkdirSync(toolsJar);
+    fs.copyFileSync(replayJar, path.join(toolsJar, "tla2tools.jar"));
     fs.writeFileSync(path.join(dir, "mise"), `#!/bin/sh
 if [ "$1" = install ]; then
   [ "$STATECHART_TEST_TOOLS" = failed ] && echo 'fixture install refused' >&2 && exit 1
@@ -114,7 +120,9 @@ if [ "$1" = where ]; then printf '%s\\n' "$STATECHART_TEST_JAR"; else printf '%s
 `, { mode: 0o755 });
     const env: NodeJS.ProcessEnv = { ...process.env, PATH: dir,
       STATECHART_TEST_TOOLS: tools, STATECHART_TEST_READY: path.join(dir, "ready"),
-      STATECHART_TEST_JAR: path.dirname(process.env.TLA2TOOLS!), STATECHART_TEST_JAVA: process.env.JAVA ?? "/usr/bin/java" };
+      STATECHART_TEST_JAR: toolsJar,
+      STATECHART_TEST_JAVA: path.resolve(import.meta.dirname, "java.ts"),
+      STATECHART_REPLAY: path.join(import.meta.dirname, "corpus/CounterJump") };
     delete env.JAVA;
     delete env.TLA2TOOLS;
     const out = path.join(dir, "out");

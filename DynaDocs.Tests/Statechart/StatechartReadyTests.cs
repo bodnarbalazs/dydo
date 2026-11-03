@@ -19,8 +19,10 @@ public class StatechartReadyTests
             "STATECHART_TEST_DEPENDENCY_ROOT must name the real task-local verified installation; no fake ready fixture.");
         var assets = new StatechartAssets();
         var relative = Path.Combine(assets.LockDigest, "win-x64");
-        var dependencies = Path.Combine(scope.Path, "dependencies");
-        Copy(Path.Combine(fixture!, relative), Path.Combine(dependencies, relative));
+        // The successful ready case reads the verified fixture at its stable runtime path.
+        // Only the corruption case needs a private copy, and it rejects before Java launch.
+        var dependencies = changed ? Path.Combine(scope.Path, "dependencies") : fixture!;
+        if (changed) Copy(Path.Combine(fixture!, relative), Path.Combine(dependencies, relative));
         var renderer = Path.Combine(dependencies, relative, "pele", "content", "package", "dist", "pele.js");
         if (changed) File.AppendAllText(renderer, "\nchanged managed content");
         var before = Files(dependencies);

@@ -1,0 +1,26 @@
+{
+  "state": "SOURCE_ONLY_PREREQUISITES",
+  "requiredMetricPython": "CPython3.12.10",
+  "venv": "dydo/_system/.local/static-gates/python/Scripts/python.exe",
+  "absent": [
+    "dydo/_system/.local/static-gates/python/Scripts/python.exe",
+    "DynaDocs.Tests/coverage/node_modules",
+    "viewer/node_modules"
+  ],
+  "hostPython": {
+    "path": "C:/Users/User/AppData/Local/Programs/Python/Python313/python.exe",
+    "metadataVersion": "3.13.1",
+    "sha256": "03573716a7fcbd8b7fed8fe0163bbfbd3a852546920d6a666123f307c8dac7d9",
+    "role": "Actual direct21 unittest only, never metric substitute"
+  },
+  "hostNode": {
+    "path": "C:/Users/User/AppData/Local/fnm_multishells/10620_1793288379755/node.exe",
+    "metadataVersion": "22.23.2",
+    "sha256": "0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4",
+    "role": "Read-only file metadata/hash only; not probed/executed; possible local compiler runtime requires separate admission, not adopted22.13.0 metric runtime"
+  },
+  "statechartInstalledCompiler": "PRESENT exact local5.9.3/types22.18.0/undici6.21.0/fast-check4.5.3/pure-rand7.0.1; dependency-closure pins all retained package members. No global tsc on PATH is not evidence of absent local compiler.",
+  "metricNode": "Existing package/CI adopts22.13.0, pnpm11; exact host22.13.0 runtime/npm/pnpm executable identities not established here.22.23.2 replay DATA is not automatically metric substitution.",
+  "environment": "No environment changed. Future metric invocation must use exact adopted interpreter/tool dependencies under normal actual LC/Heavy/TEMP admission; separate finite release required.",
+  "cacheLimit": "CPython3.12 patches share pyc magic but have position-join differences; setup must use exact3.12.10 and preserve current caches now. No cache purge/installer/probe authorized."
+}

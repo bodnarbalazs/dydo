@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "argv": [
+    "C:/Users/User/AppData/Local/Programs/Python/Python313/python.exe",
+    "-I",
+    "-B",
+    "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/launcher.py",
+    "--helpers"
+  ],
+  "cwd": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f",
+  "actualHostAuthorization": true,
+  "executionCount": 1,
+  "initialToolResult": {
+    "chunk_id": "946125",
+    "wall_time_seconds": 10.0097835,
+    "session_id": 95100,
+    "original_token_count": 0,
+    "output": ""
+  },
+  "completion": {
+    "chunk_id": "f7e6d1",
+    "wall_time_seconds": 0.0000122,
+    "exit_code": 0,
+    "original_token_count": 50,
+    "output": "Driver exit: 0\r\nEvidence: C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\b3-janitor-host2-20261031a-HELPERS\r\n"
+  },
+  "outerKillUsed": false,
+  "subsequentRuntimeCommands": 0
+}

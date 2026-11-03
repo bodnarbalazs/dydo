@@ -1,0 +1,14 @@
+{
+  "argv": [
+    "docker",
+    "volume",
+    "create",
+    "--label",
+    "com.dydo.proof-owner=5d62e66b3f3844ed",
+    "dyd415-rmi-b3-bc-5d62e66b3f3844ed-jdk"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "hidden": true,
+  "ticket": "0000000009-30243677f3561670",
+  "startedUtc": "2026-10-31T03:09:42.559265+00:00"
+}

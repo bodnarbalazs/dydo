@@ -1,0 +1,12 @@
+--- Resources/Statechart/payload.json
++++ PROPOSED/Resources/Statechart/payload.json
+@@ -289,2 +289,2 @@
+-      "bytes": 6852,
+-      "sha256": "2305d329359666fd22e738a37aa6d204dc7ef135dcf87592a49cec7cc5a846ec"
++      "bytes": 9883,
++      "sha256": "3524650b2b38a90388e9344d4761ab025793cfdd94b68e6bdd6c99a3f172a345"
+--- Resources/Statechart/payload.items.props
++++ PROPOSED/Resources/Statechart/payload.items.props
+@@ -235 +235 @@
+-      <ExpectedHash>2305d329359666fd22e738a37aa6d204dc7ef135dcf87592a49cec7cc5a846ec</ExpectedHash>
++      <ExpectedHash>3524650b2b38a90388e9344d4761ab025793cfdd94b68e6bdd6c99a3f172a345</ExpectedHash>

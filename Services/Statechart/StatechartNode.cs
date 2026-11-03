@@ -6,7 +6,7 @@ using System.Text.Json.Nodes;
 internal static class StatechartNode
 {
     public static async Task<int> RunAsync(StatechartDependencies dependencies, string payload,
-        JsonObject configuration, WindowsStatechartLifetime lifetime, string caller, CancellationToken token)
+        JsonObject configuration, StatechartLifetime lifetime, string caller, CancellationToken token)
     {
         var nonce = Guid.NewGuid().ToString("N");
         var file = Path.Combine(lifetime.Stage, "node-" + nonce + ".json");
@@ -25,7 +25,7 @@ internal static class StatechartNode
         start.Environment["JAVA"] = dependencies.Java;
         start.Environment["TLA2TOOLS"] = dependencies.Tlc;
         foreach (var variable in new[] { "TEMP", "TMP", "TMPDIR" }) start.Environment[variable] = lifetime.Temp;
-        using var child = Process.Start(start) ?? throw new IOException("Cannot start native statechart bootstrap.");
+        using var child = Process.Start(lifetime.Gate(start)) ?? throw new IOException("Cannot start native statechart bootstrap.");
         child.StandardInput.NewLine = "\n";
         var protocol = new StatechartProtocol(nonce);
         protocol.AcceptReady(await StatechartCleanup.Read(child.StandardOutput).WaitAsync(TimeSpan.FromSeconds(30), token));

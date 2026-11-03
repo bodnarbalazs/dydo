@@ -1,0 +1,11 @@
+{
+  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
+  "localAppData": "C:\\Users\\User\\AppData\\Local",
+  "temp": "C:\\Users\\User\\AppData\\Local\\Temp",
+  "sourcePinSha256": "7dee9b890f65efaca42ad12e97dfadf5274f1b3f2536e8d3cf4ca5a650bb7f0d",
+  "lcPins": {
+    "tools/testing/runner/suite_slot.py": "aa36020ee48e08319451e6c126701251aa3be9ef40ca4e4cb9cbaed1e375d21a",
+    "tools/testing/runner/machine_lock.py": "7b53157084084ebb6806f7b4f391a82467f9fed0fc9d701d3fd3e0954c0d9736",
+    "dydo/reference/tools/test-runner.md": "c0eb699240e4f0bd1526f1bbf495604fbf67bbb3ed3002f19fc09222a9ea92a4"
+  }
+}

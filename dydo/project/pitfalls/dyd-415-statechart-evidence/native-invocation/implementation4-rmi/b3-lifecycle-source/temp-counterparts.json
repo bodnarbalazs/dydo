@@ -1,0 +1,22 @@
+[
+  {
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-lifecycle-driver-20261031.py",
+    "bytes": 9977,
+    "sha256": "c4630f3af66cb054af8e77b0deb10cda6708c255a0283a53a0d5dacc1e0a5e15",
+    "source": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-lifecycle-source/driver.py",
+      "bytes": 9977,
+      "sha256": "c4630f3af66cb054af8e77b0deb10cda6708c255a0283a53a0d5dacc1e0a5e15"
+    }
+  },
+  {
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-lifecycle-launch-20261031.py",
+    "bytes": 4508,
+    "sha256": "93402339692e8b9a729633124a6f92b09b8f1f8d009c787cadc1da41a44025fe",
+    "source": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-lifecycle-source/launcher.py",
+      "bytes": 4508,
+      "sha256": "93402339692e8b9a729633124a6f92b09b8f1f8d009c787cadc1da41a44025fe"
+    }
+  }
+]

@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/input/worker.py", line 262, in <module>
+    main()
+    ~~~~^^
+  File "/input/worker.py", line 251, in main
+    regressions(manifest)
+    ~~~~~~~~~~~^^^^^^^^^^
+  File "/input/worker.py", line 202, in regressions
+    child.wait(timeout=120)
+    ~~~~~~~~~~^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/subprocess.py", line 1281, in wait
+    return self._wait(timeout=timeout)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/subprocess.py", line 2078, in _wait
+    raise TimeoutExpired(self.args, timeout)
+subprocess.TimeoutExpired: Command '['/toolchain/node-v22.23.2-linux-x64/bin/node', '--disable-warning=ExperimentalWarning', '--test', '--test-reporter=tap', '--test-concurrency=1', '--test-name-pattern=^(?:POSIX\\ janitor\\ close\\ precedes\\ the\\ Counter\\ report\\ and\\ controlled\\ exit\\ 0|POSIX\\ janitor\\ close\\ precedes\\ the\\ CounterInstance\\ report\\ and\\ controlled\\ exit\\ 1|POSIX\\ janitor\\ closes\\ after\\ an\\ early\\ worker\\ error\\ without\\ publishing\\ output|POSIX\\ janitor\\ closes\\ before\\ controlled\\ SIGINT\\ exit\\ with\\ no\\ output|POSIX\\ janitor\\ closes\\ before\\ controlled\\ SIGTERM\\ exit\\ with\\ no\\ output|POSIX\\ janitor\\ spawn\\ failure\\ stops\\ and\\ reaps\\ the\\ worker\\ without\\ publishing|POSIX\\ janitor\\ early\\ close\\ is\\ retained\\ and\\ stops\\ the\\ owned\\ worker|POSIX\\ worker\\ spawn\\ failure\\ is\\ observed\\ before\\ any\\ janitor\\ starts|POSIX\\ cleanup\\ exception\\ remains\\ visible\\ and\\ cannot\\ skip\\ actual\\ janitor\\ close|POSIX\\ spawn\\ and\\ cleanup\\ faults\\ are\\ both\\ visible\\ after\\ actual\\ ownership\\ drain|POSIX\\ janitor\\ kill\\ exception\\ is\\ reported\\ only\\ after\\ the\\ real\\ child\\ closes|POSIX\\ final\\ drain\\ preserves\\ a\\ caller\\ file\\ arriving\\ at\\ output\\ publication)$', 'test/cli.test.ts']' timed out after 120 seconds

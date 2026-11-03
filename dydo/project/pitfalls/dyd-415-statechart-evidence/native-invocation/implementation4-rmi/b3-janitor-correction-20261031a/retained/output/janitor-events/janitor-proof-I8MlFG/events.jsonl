@@ -1,0 +1,9 @@
+{"parent":177,"event":"spawn","role":"worker","pid":184,"file":"/toolchain/node-v22.23.2-linux-x64/bin/node"}
+{"parent":177,"event":"spawn","role":"janitor","file":"/statechart-proof-missing-executable"}
+{"parent":177,"event":"error","role":"janitor","code":"ENOENT"}
+{"parent":177,"event":"close","role":"janitor","code":-2,"signal":null}
+{"parent":177,"event":"exit","role":"worker","pid":184,"code":null,"signal":"SIGKILL"}
+{"parent":177,"event":"close","role":"worker","pid":184,"code":null,"signal":"SIGKILL"}
+{"parent":177,"event":"cleanup-return","file":"/work/tmp/statechart-cli-EAopQK/.out.statechart-20bmfx"}
+{"parent":177,"event":"cleanup-return","file":"/work/tmp/statechart-onLp63"}
+{"parent":177,"event":"cli-exit","code":2}

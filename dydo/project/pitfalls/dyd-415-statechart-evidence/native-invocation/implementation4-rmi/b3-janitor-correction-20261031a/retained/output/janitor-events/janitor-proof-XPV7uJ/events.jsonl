@@ -1,0 +1,10 @@
+{"parent":216,"event":"spawn","role":"worker","pid":223,"file":"/toolchain/node-v22.23.2-linux-x64/bin/node"}
+{"parent":216,"event":"spawn","role":"janitor","pid":224,"file":"/bin/sh"}
+{"parent":216,"event":"exit","role":"worker","pid":223,"code":0,"signal":null}
+{"parent":216,"event":"close","role":"worker","pid":223,"code":0,"signal":null}
+{"parent":216,"event":"publish","file":"/work/tmp/statechart-cli-pjriEK/out"}
+{"parent":216,"event":"cleanup-error","file":"/work/tmp/statechart-cli-pjriEK/.out.statechart-i0MyKl"}
+{"parent":216,"event":"cleanup-return","file":"/work/tmp/statechart-mugnzG"}
+{"parent":216,"event":"exit","role":"janitor","pid":224,"code":null,"signal":"SIGKILL"}
+{"parent":216,"event":"close","role":"janitor","pid":224,"code":null,"signal":"SIGKILL"}
+{"parent":216,"event":"cli-exit","code":2}

@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "containerInputs": [
+    {
+      "source": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\java\\statechart-tlc-bootstrap.jar",
+      "destination": "helper.jar",
+      "sha256": "1772e71e2d82f470f115fa7e6d63205c388f84a0fa55537f120b9d53f3d3fbfa",
+      "bytes": 1825
+    },
+    {
+      "source": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\java\\build.py",
+      "destination": "build.py",
+      "sha256": "82939903e3774c3f29d4651541d170b301c100d60da4f1fde1faec471b1f38ea",
+      "bytes": 16119
+    },
+    {
+      "source": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts\\java\\build-lock.json",
+      "destination": "build-lock.json",
+      "sha256": "3f90ad27cd010d6becb6c82c37564242692088962ba76187bf07524b8e58282c",
+      "bytes": 4596
+    },
+    {
+      "source": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\b2-source\\worker.py",
+      "destination": "worker.py",
+      "sha256": "bdb9505ed0ab186d0670076641a174a542a74a5a0cb2eb33fce2943bace4e141",
+      "bytes": 9362
+    },
+    {
+      "source": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\fixtures\\java\\dydo\\statechart\\proof\\Echo.java",
+      "destination": "fixtures/java/dydo/statechart/proof/Echo.java",
+      "sha256": "e0486f7a308cd9ebd2d54cde2aa118da97374f1e7084c68ff4a45b18cf7ffa05",
+      "bytes": 254
+    },
+    {
+      "source": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\fixtures\\java\\dydo\\statechart\\proof\\EchoServer.java",
+      "destination": "fixtures/java/dydo/statechart/proof/EchoServer.java",
+      "sha256": "4800bd834da26c6ee2a1eb0b0e0bf9c03dc94544728269d5bc6f822ef394a299",
+      "bytes": 465
+    },
+    {
+      "source": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\fixtures\\java\\dydo\\statechart\\proof\\SocketProbe.java",
+      "destination": "fixtures/java/dydo/statechart/proof/SocketProbe.java",
+      "sha256": "f6bf84c93a9772fa6c885d0bd1cd04d89e22bc997ae7168a006349f9c8b0096a",
+      "bytes": 7833
+    },
+    {
+      "source": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\fixtures\\control\\tlc2\\TLC.java",
+      "destination": "fixtures/control/tlc2/TLC.java",
+      "sha256": "f4a5fc7cf10a5a1ecfee68723e0fc42125fccbf1d14644b84119ff24f91d2956",
+      "bytes": 891
+    },
+    {
+      "source": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b1-825xlni3\\input\\jdk.tar.gz",
+      "destination": "jdk.tar.gz",
+      "sha256": "f2dc5418092c43003db8f9005c4a286e1c0104fea96ccdd49e8ebd037cac9219",
+      "bytes": 207098019
+    }
+  ],
+  "officialTlcRuntimeInput": false,
+  "officialTlcCustody": {
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\tlc\\tla2tools.jar",
+    "bytes": 2274532,
+    "sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88"
+  },
+  "compilerOnlyTlcViewRuntimeInput": false,
+  "managedRuntime": false
+}

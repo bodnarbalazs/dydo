@@ -1,0 +1,14 @@
+diff --git a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/before/cli.test.ts b/skills/engineering/statechart/scripts/test/cli.test.ts
+index 25431660..aec4ac45 100644
+--- a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/before/cli.test.ts
++++ b/skills/engineering/statechart/scripts/test/cli.test.ts
+@@ -1455,7 +1455,8 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
+     const view = path.join(probe.base, "view.mjs");
+     fs.writeFileSync(view, `import fs from "node:fs";
+ fs.watch(${JSON.stringify(probe.base)}, () => {});
+-fs.writeFileSync(${JSON.stringify(ready)}, ${JSON.stringify(readyValue)}, { flag: "wx" });
++fs.writeFileSync(${JSON.stringify(ready + ".pending")}, ${JSON.stringify(readyValue)}, { flag: "wx" });
++fs.renameSync(${JSON.stringify(ready + ".pending")}, ${JSON.stringify(ready)});
+ await new Promise(() => {});
+ `);
+     const child = spawn(probe.command[0], [...probe.command.slice(1), path.join(corpus, "Counter/Counter.tla"),

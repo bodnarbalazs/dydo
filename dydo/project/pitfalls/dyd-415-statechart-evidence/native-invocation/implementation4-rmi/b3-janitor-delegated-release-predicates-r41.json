@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "previousLedger": "b3-janitor-delegated-release-predicates-r40.json",
+  "inspection": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host2-captain-inspection-r41.md",
+  "sourcePinSha256": "7dee9b890f65efaca42ad12e97dfadf5274f1b3f2536e8d3cf4ca5a650bb7f0d",
+  "helper12": "RELEASED_ONCE_AWAITING_ACTUAL_RESULT",
+  "typecheck": "NOT_RELEASED_PENDING_HELPER_GREEN_AND_CAPTAIN_INSPECTION",
+  "serial12": "NOT_RELEASED_PENDING_HELPER_COMPILER_ENVIRONMENT_PREDICATES",
+  "host2WrapperDirectAssurance": "OWED",
+  "overallReview": "FAIL_OPEN"
+}

@@ -1,0 +1,47 @@
+{
+  "state": "SOURCE_ONLY",
+  "sourcePinBefore": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/source-pin.json",
+    "bytes": 27638,
+    "sha256": "e368bc2746d4f10810ce6ae28cc812deced37aaf9691721d8644fd28203c8b47"
+  },
+  "mapping": [
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/driver.py",
+      "before": {
+        "bytes": 26669,
+        "sha256": "953bd2b280de3dc4c2a385e6aa5fd34a6a40c68d33d811893408959683f700b7"
+      },
+      "successor": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/driver.py",
+      "change": "new routing only and removal of unused direct21 mode; same retention/owned daemon+container cleanup"
+    },
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/launcher.py",
+      "before": {
+        "bytes": 5957,
+        "sha256": "dc97c5b0f8d0299e3eadf29c18c564d585f7c171989d97b1c06203de3a5581ee"
+      },
+      "successor": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/launcher.py",
+      "change": "new twelve-only admission/routing"
+    },
+    {
+      "oldPath": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/worker.py",
+      "before": {
+        "bytes": 8538,
+        "sha256": "d90ae5536266ad74423a85b61db809ec380c0235e8ea088b664c56f767486c54"
+      },
+      "successor": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/worker.py",
+      "change": "Replace one-signal worker routing with12 serial original canonical cases, complete per-native summary, exact lifecycle validation and bounded identity-proven runner cancellation; old worker unchanged."
+    }
+  ],
+  "frozenFixture": {
+    "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+    "bytes": 64504,
+    "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+  },
+  "frozenProduction": {
+    "bytes": 9883,
+    "sha256": "3524650b2b38a90388e9344d4761ab025793cfdd94b68e6bdd6c99a3f172a345"
+  },
+  "oldHistoricalProof": "No source/pin/receipt regenerated; old paths remain immutable"
+}

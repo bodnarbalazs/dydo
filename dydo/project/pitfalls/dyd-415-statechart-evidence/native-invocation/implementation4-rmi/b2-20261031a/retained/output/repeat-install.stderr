@@ -1,0 +1,3 @@
+Exception in thread "main" java.net.SocketException: factory already defined
+	at java.rmi/java.rmi.server.RMISocketFactory.setSocketFactory(RMISocketFactory.java:138)
+	at dydo.statechart.proof.SocketProbe.main(SocketProbe.java:148)

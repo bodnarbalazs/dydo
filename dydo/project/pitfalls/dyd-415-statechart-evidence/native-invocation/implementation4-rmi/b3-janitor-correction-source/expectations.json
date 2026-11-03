@@ -1,0 +1,94 @@
+{
+  "state": "PROSPECTIVE_NOT_EXECUTED",
+  "selectedCount": 12,
+  "uninstrumentedCounter": {
+    "exit": 0,
+    "stderr": "",
+    "report": "skills/engineering/statechart/scripts/test/corpus/Counter/report.md",
+    "chart": "skills/engineering/statechart/scripts/test/corpus/Counter/chart.mmd",
+    "stdout": "exact retained report bytes + newline + Wrote /work/result + newline",
+    "guard": "Every PID other than the contained Python PID1 fails, including Z/PPID1",
+    "instrumentation": false
+  },
+  "cases": [
+    {
+      "name": "POSIX janitor close precedes the Counter report and controlled exit 0",
+      "cliExit": 0,
+      "mode": "observe",
+      "assertions": ["exact retained Counter chart/report/stdout", "real janitor close SIGKILL before stdout and controlled exit", "successful stage/tmp removal before close", "worker exit and supplemental post-close ESRCH"]
+    },
+    {
+      "name": "POSIX janitor close precedes the CounterInstance report and controlled exit 1",
+      "cliExit": 1,
+      "mode": "observe",
+      "assertions": ["exact retained CounterInstance chart/report/stdout", "real janitor close SIGKILL before stdout and controlled exit", "worker exit and supplemental post-close ESRCH"]
+    },
+    {
+      "name": "POSIX janitor closes after an early worker error without publishing output",
+      "cliExit": 2,
+      "mode": "observe + throwing view import",
+      "assertions": ["exact injected view error stderr", "empty stdout/output", "real worker exit and janitor close before CLI exit"]
+    },
+    {
+      "name": "POSIX janitor closes before controlled SIGINT exit with no output",
+      "cliExit": 130,
+      "mode": "observe + file-ready waiting view + actual SIGINT",
+      "assertions": ["exact SIGINT stderr", "empty stdout/output/staging/tmp", "real worker exit and janitor close before CLI exit"]
+    },
+    {
+      "name": "POSIX janitor closes before controlled SIGTERM exit with no output",
+      "cliExit": 143,
+      "mode": "observe + file-ready waiting view + actual SIGTERM",
+      "assertions": ["exact SIGTERM stderr", "empty stdout/output/staging/tmp", "real worker exit and janitor close before CLI exit"]
+    },
+    {
+      "name": "POSIX janitor spawn failure stops and reaps the worker without publishing",
+      "cliExit": 2,
+      "mode": "janitor-spawn-error",
+      "assertions": ["actual ENOENT and close for missing janitor executable", "real worker exit before CLI exit", "empty stdout/output", "no real runtime fallback"]
+    },
+    {
+      "name": "POSIX janitor early close is retained and stops the owned worker",
+      "cliExit": 2,
+      "mode": "early-close: actual immediate janitor SIGKILL; waiting view prevents normal worker success",
+      "assertions": ["retained unexpected-close error", "real worker exit", "already-closed janitor does not hang in drain", "empty stdout/output"]
+    },
+    {
+      "name": "POSIX worker spawn failure is observed before any janitor starts",
+      "cliExit": 2,
+      "mode": "worker-spawn-error",
+      "assertions": ["actual ENOENT/error/close", "no janitor spawn", "empty stdout/output"]
+    },
+    {
+      "name": "POSIX cleanup exception remains visible and cannot skip actual janitor close",
+      "cliExit": 2,
+      "mode": "cleanup-error",
+      "assertions": ["exact stage-rm error stderr", "empty stdout success report", "retained already-published chart/report match corpus", "actual janitor close despite rm exception"]
+    },
+    {
+      "name": "POSIX spawn and cleanup faults are both visible after actual ownership drain",
+      "cliExit": 2,
+      "mode": "janitor-spawn-error-cleanup-error",
+      "assertions": ["both spawn and cleanup messages retained", "actual worker exit and janitor close", "empty stdout/output"]
+    },
+    {
+      "name": "POSIX janitor kill exception is reported only after the real child closes",
+      "cliExit": 2,
+      "mode": "kill-error: real owned child SIGKILL first, then injected exception",
+      "assertions": ["exact kill error stderr", "actual SIGKILL close before CLI exit", "empty stdout success report"]
+    },
+    {
+      "name": "POSIX final drain preserves a caller file arriving at output publication",
+      "cliExit": 2,
+      "mode": "output-collision",
+      "assertions": ["caller report.md bytes preserved exactly", "no other output file", "collision error and empty stdout", "actual worker exit and janitor close"]
+    }
+  ],
+  "nativeCommandExit": 0,
+  "nativeStderr": "",
+  "selection": "Exactly twelve unique native ok names; no selected skip/duplicate/non-ok/unselected execution. Unselected names may only be native name-pattern skips or absent.",
+  "finalGuard": "Unchanged strict no-other-process census, no exemption for zombie or adopted process",
+  "failureDisposition": "Stop following commands on first failed command/guard/bound/identity, preserve raw output and independently drain exact owned resources; no correction or retry",
+  "abruptParent": "Not selected: current Python PID1 non-reaping cannot honestly certify strict final drain after CLI SIGKILL",
+  "limits": ["Replay is not real TLC semantics", "Preload observations change timing", "Passive sampling absence is not exact close/reaping proof", "No Windows or Java assurance", "No final acceptance"]
+}

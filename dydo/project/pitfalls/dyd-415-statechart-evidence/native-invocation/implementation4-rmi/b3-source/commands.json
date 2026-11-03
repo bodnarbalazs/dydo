@@ -1,0 +1,497 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY_NO_EXECUTION_RELEASE",
+  "launcherTemplate": [
+    "python",
+    "-B",
+    "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-launch-20261031.py",
+    "--group",
+    "A|B|C|D"
+  ],
+  "groups": {
+    "A": [
+      {
+        "name": "good-reference",
+        "argv": [
+          "/toolchain/jdk-21.0.8+9/bin/java",
+          "-Djava.io.tmpdir=/work/good-reference/tmp",
+          "-DTLA-Library=/input/models",
+          "-cp",
+          "/work/good-reference/checker/tla2tools.jar",
+          "tlc2.TLC",
+          "-workers",
+          "1",
+          "-fp",
+          "0",
+          "-lncheck",
+          "final",
+          "-deadlock",
+          "-metadir",
+          "/work/good-reference/meta",
+          "-config",
+          "/input/models/good.cfg",
+          "/input/models/Transport.tla"
+        ],
+        "cwd": "/input/models",
+        "expected": {
+          "exit": 0,
+          "distinct": 4,
+          "completion": true,
+          "configRule": "TypeOK",
+          "traceValues": []
+        },
+        "passiveObserver": false
+      },
+      {
+        "name": "good-bootstrap",
+        "argv": [
+          "/toolchain/jdk-21.0.8+9/bin/java",
+          "-Djava.io.tmpdir=/work/good-bootstrap/tmp",
+          "-DTLA-Library=/input/models",
+          "-cp",
+          "/toolchain/repo/skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar:/work/good-bootstrap/checker/tla2tools.jar",
+          "dydo.statechart.LoopbackTlc",
+          "-workers",
+          "1",
+          "-fp",
+          "0",
+          "-lncheck",
+          "final",
+          "-deadlock",
+          "-metadir",
+          "/work/good-bootstrap/meta",
+          "-config",
+          "/input/models/good.cfg",
+          "/input/models/Transport.tla"
+        ],
+        "cwd": "/input/models",
+        "expected": {
+          "exit": 0,
+          "distinct": 4,
+          "completion": true,
+          "configRule": "TypeOK",
+          "traceValues": []
+        },
+        "passiveObserver": true
+      },
+      {
+        "name": "invariant-bad-reference",
+        "argv": [
+          "/toolchain/jdk-21.0.8+9/bin/java",
+          "-Djava.io.tmpdir=/work/invariant-bad-reference/tmp",
+          "-DTLA-Library=/input/models",
+          "-cp",
+          "/work/invariant-bad-reference/checker/tla2tools.jar",
+          "tlc2.TLC",
+          "-workers",
+          "1",
+          "-fp",
+          "0",
+          "-lncheck",
+          "final",
+          "-deadlock",
+          "-metadir",
+          "/work/invariant-bad-reference/meta",
+          "-config",
+          "/input/models/invariant-bad.cfg",
+          "/input/models/Transport.tla"
+        ],
+        "cwd": "/input/models",
+        "expected": {
+          "exit": 12,
+          "rule": "BelowTwo",
+          "traceValues": [
+            0,
+            1,
+            2
+          ],
+          "transitions": 2,
+          "transitionAction": "Next",
+          "shortest": true
+        },
+        "passiveObserver": false
+      },
+      {
+        "name": "invariant-bad-bootstrap",
+        "argv": [
+          "/toolchain/jdk-21.0.8+9/bin/java",
+          "-Djava.io.tmpdir=/work/invariant-bad-bootstrap/tmp",
+          "-DTLA-Library=/input/models",
+          "-cp",
+          "/toolchain/repo/skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar:/work/invariant-bad-bootstrap/checker/tla2tools.jar",
+          "dydo.statechart.LoopbackTlc",
+          "-workers",
+          "1",
+          "-fp",
+          "0",
+          "-lncheck",
+          "final",
+          "-deadlock",
+          "-metadir",
+          "/work/invariant-bad-bootstrap/meta",
+          "-config",
+          "/input/models/invariant-bad.cfg",
+          "/input/models/Transport.tla"
+        ],
+        "cwd": "/input/models",
+        "expected": {
+          "exit": 12,
+          "rule": "BelowTwo",
+          "traceValues": [
+            0,
+            1,
+            2
+          ],
+          "transitions": 2,
+          "transitionAction": "Next",
+          "shortest": true
+        },
+        "passiveObserver": true
+      },
+      {
+        "name": "liveness-bad-reference",
+        "argv": [
+          "/toolchain/jdk-21.0.8+9/bin/java",
+          "-Djava.io.tmpdir=/work/liveness-bad-reference/tmp",
+          "-DTLA-Library=/input/models",
+          "-cp",
+          "/work/liveness-bad-reference/checker/tla2tools.jar",
+          "tlc2.TLC",
+          "-workers",
+          "1",
+          "-fp",
+          "0",
+          "-lncheck",
+          "final",
+          "-deadlock",
+          "-metadir",
+          "/work/liveness-bad-reference/meta",
+          "-config",
+          "/input/models/liveness-bad.cfg",
+          "/input/models/Transport.tla"
+        ],
+        "cwd": "/input/models",
+        "expected": {
+          "exit": 13,
+          "rule": "NeverFour",
+          "temporal": true,
+          "traceValues": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "backToState": 1,
+          "stuttering": false,
+          "fairness": "WF_x(Next)"
+        },
+        "passiveObserver": false
+      },
+      {
+        "name": "liveness-bad-bootstrap",
+        "argv": [
+          "/toolchain/jdk-21.0.8+9/bin/java",
+          "-Djava.io.tmpdir=/work/liveness-bad-bootstrap/tmp",
+          "-DTLA-Library=/input/models",
+          "-cp",
+          "/toolchain/repo/skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar:/work/liveness-bad-bootstrap/checker/tla2tools.jar",
+          "dydo.statechart.LoopbackTlc",
+          "-workers",
+          "1",
+          "-fp",
+          "0",
+          "-lncheck",
+          "final",
+          "-deadlock",
+          "-metadir",
+          "/work/liveness-bad-bootstrap/meta",
+          "-config",
+          "/input/models/liveness-bad.cfg",
+          "/input/models/Transport.tla"
+        ],
+        "cwd": "/input/models",
+        "expected": {
+          "exit": 13,
+          "rule": "NeverFour",
+          "temporal": true,
+          "traceValues": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "backToState": 1,
+          "stuttering": false,
+          "fairness": "WF_x(Next)"
+        },
+        "passiveObserver": true
+      },
+      {
+        "name": "action-bound-reference",
+        "argv": [
+          "/toolchain/jdk-21.0.8+9/bin/java",
+          "-Djava.io.tmpdir=/work/action-bound-reference/tmp",
+          "-DTLA-Library=/input/models",
+          "-cp",
+          "/work/action-bound-reference/checker/tla2tools.jar",
+          "tlc2.TLC",
+          "-workers",
+          "1",
+          "-fp",
+          "0",
+          "-lncheck",
+          "final",
+          "-deadlock",
+          "-metadir",
+          "/work/action-bound-reference/meta",
+          "-config",
+          "/input/models/action-bound.cfg",
+          "/input/models/Transport.tla"
+        ],
+        "cwd": "/input/models",
+        "expected": {
+          "exit": 0,
+          "rule": "BelowTwo",
+          "distinct": 2,
+          "completion": true,
+          "effect": "unconstrained good has4 distinct; constrained x0/x1 never reaches violating x2"
+        },
+        "passiveObserver": false
+      },
+      {
+        "name": "action-bound-bootstrap",
+        "argv": [
+          "/toolchain/jdk-21.0.8+9/bin/java",
+          "-Djava.io.tmpdir=/work/action-bound-bootstrap/tmp",
+          "-DTLA-Library=/input/models",
+          "-cp",
+          "/toolchain/repo/skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar:/work/action-bound-bootstrap/checker/tla2tools.jar",
+          "dydo.statechart.LoopbackTlc",
+          "-workers",
+          "1",
+          "-fp",
+          "0",
+          "-lncheck",
+          "final",
+          "-deadlock",
+          "-metadir",
+          "/work/action-bound-bootstrap/meta",
+          "-config",
+          "/input/models/action-bound.cfg",
+          "/input/models/Transport.tla"
+        ],
+        "cwd": "/input/models",
+        "expected": {
+          "exit": 0,
+          "rule": "BelowTwo",
+          "distinct": 2,
+          "completion": true,
+          "effect": "unconstrained good has4 distinct; constrained x0/x1 never reaches violating x2"
+        },
+        "passiveObserver": true
+      }
+    ],
+    "B": [
+      {
+        "argv": [
+          "/toolchain/node-v22.23.2-linux-x64/bin/node",
+          "--disable-warning=ExperimentalWarning",
+          "--test",
+          "--test-reporter=tap",
+          "--test-concurrency=1",
+          "test/checker.test.ts"
+        ],
+        "cwd": "/toolchain/repo/skills/engineering/statechart/scripts",
+        "selected": 16
+      },
+      {
+        "argv": [
+          "/toolchain/node-v22.23.2-linux-x64/bin/node",
+          "--disable-warning=ExperimentalWarning",
+          "--test",
+          "--test-reporter=tap",
+          "--test-concurrency=1",
+          "test/tlc-bootstrap.test.ts"
+        ],
+        "cwd": "/toolchain/repo/skills/engineering/statechart/scripts",
+        "selected": 12
+      }
+    ],
+    "C": {
+      "argv": [
+        "/toolchain/node-v22.23.2-linux-x64/bin/node",
+        "--disable-warning=ExperimentalWarning",
+        "--test",
+        "--test-reporter=tap",
+        "--test-concurrency=1",
+        "--test-name-pattern=^(?:CounterInstance\\ gives\\ the\\ committed\\ chart\\ and\\ report\\ when\\ TLC\\ runs|CounterRules\\ gives\\ the\\ committed\\ chart\\ and\\ report\\ when\\ TLC\\ runs|Shadow\\ gives\\ the\\ committed\\ chart\\ and\\ report\\ when\\ TLC\\ runs|MediaPlayerProps\\ gives\\ the\\ committed\\ chart\\ and\\ report\\ when\\ TLC\\ runs|a\\ property\\ that\\ breaks\\ on\\ a\\ loop\\ draws\\ the\\ loop\\ and\\ reports\\ it|check\\(\\)\\ leaves\\ no\\ statechart\\-\\ folder\\ in\\ the\\ temp\\ dir\\ when\\ it\\ returns\\ and\\ when\\ it\\ throws)$",
+        "test/corpus.test.ts"
+      ],
+      "cwd": "/toolchain/repo/skills/engineering/statechart/scripts",
+      "selectedNames": [
+        "CounterInstance gives the committed chart and report when TLC runs",
+        "CounterRules gives the committed chart and report when TLC runs",
+        "Shadow gives the committed chart and report when TLC runs",
+        "MediaPlayerProps gives the committed chart and report when TLC runs",
+        "a property that breaks on a loop draws the loop and reports it",
+        "check() leaves no statechart- folder in the temp dir when it returns and when it throws"
+      ],
+      "selected": 6,
+      "selectedSkipped": 0,
+      "unselected": "filtered, never executed; any emitted unselected result must be test-name mismatch skip"
+    },
+    "D": [
+      {
+        "argv": [
+          "python",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-v",
+          "-f",
+          "-s",
+          "/toolchain/repo/DynaDocs.Tests/coverage/tests",
+          "-p",
+          "test_statechart_rmi_b2.py"
+        ],
+        "cwd": "/toolchain/repo",
+        "expectedDiscovery": 12
+      },
+      {
+        "argv": [
+          "python",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-v",
+          "-f",
+          "-s",
+          "/toolchain/repo/DynaDocs.Tests/coverage/tests",
+          "-p",
+          "test_statechart_rmi_b3.py"
+        ],
+        "cwd": "/toolchain/repo",
+        "expectedDiscovery": 12
+      }
+    ]
+  },
+  "groupState": {
+    "A": "PREPARED_NOT_RELEASED",
+    "B": "BLOCKED_NODE_INPUT",
+    "C": "BLOCKED_NODE_INPUT",
+    "D": "PREPARED_NOT_RELEASED"
+  },
+  "extractionArgv": [
+    "python",
+    "-B",
+    "/input/worker.py",
+    "--group",
+    "<exact-group>",
+    "--extract"
+  ],
+  "workerArgv": [
+    "python",
+    "-B",
+    "/input/worker.py",
+    "--group",
+    "<exact-group>"
+  ],
+  "groupCeilings": {
+    "A": {
+      "java": 8,
+      "node": 0
+    },
+    "B": {
+      "topLevelNode": 2,
+      "java": 0
+    },
+    "C": {
+      "topLevelNode": 1,
+      "selectedTests": 6,
+      "java": 64,
+      "indirectNode": "source-bounded selected CLI/worker/recording paths only; no sibling tests"
+    },
+    "D": {
+      "topLevelPython": 2,
+      "cases": 24,
+      "java": 0,
+      "node": 0
+    }
+  },
+  "childBounds": {
+    "seconds": 120,
+    "stdoutAndStderrBytes": 33554432,
+    "containerStageSeconds": 1200
+  },
+  "mounts": [
+    {
+      "target": "/input",
+      "readOnly": true,
+      "source": "<new owned TEMP>/input"
+    },
+    {
+      "target": "/work",
+      "readOnly": false,
+      "source": "<new owned TEMP>/work"
+    },
+    {
+      "target": "/output",
+      "readOnly": false,
+      "source": "<new owned TEMP>/output"
+    },
+    {
+      "target": "/toolchain",
+      "source": "owned labelled volume",
+      "readOnly": "extractor false; worker true"
+    }
+  ],
+  "paths": {
+    "existingRecordingShim": "/toolchain/repo/skills/engineering/statechart/scripts/test/java.ts",
+    "actualJavaExecShim": "/toolchain/repo/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/java_record.py",
+    "actualJava": "/toolchain/jdk-21.0.8+9/bin/java",
+    "helper": "/toolchain/repo/skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar",
+    "node": "/toolchain/node-v22.23.2-linux-x64/bin/node"
+  },
+  "childEnvironment": {
+    "cleared": [
+      "CLASSPATH",
+      "JAVA_TOOL_OPTIONS",
+      "JDK_JAVA_OPTIONS",
+      "_JAVA_OPTIONS",
+      "NODE_OPTIONS",
+      "STATECHART_UPDATE",
+      "STATECHART_REPLAY",
+      "STATECHART_PLAIN",
+      "STATECHART_RECORD",
+      "STATECHART_LOG",
+      "JAVA",
+      "TLA2TOOLS",
+      "STATECHART_JAVA"
+    ],
+    "allGroups": {
+      "TMPDIR": "/work/tmp",
+      "LC_ALL": "C.UTF-8",
+      "LANG": "C.UTF-8",
+      "PYTHONDONTWRITEBYTECODE": "1"
+    },
+    "B_C": {
+      "PATH": "pinned Node bin prepended to owned child PATH",
+      "JAVA": "/toolchain/repo/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/java_record.py",
+      "STATECHART_JAVA": "/toolchain/repo/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/java_record.py",
+      "TLA2TOOLS": "/input/tla2tools.jar",
+      "STATECHART_B3_JAVA_LOG": "/output/java-argv",
+      "NODE_OPTIONS": "--disable-warning=ExperimentalWarning"
+    }
+  },
+  "passive": {
+    "samples": 400,
+    "seconds": 4,
+    "intervalSeconds": 0.01,
+    "processControl": false,
+    "retries": 0
+  },
+  "containment": "same pinned B2 image/default LC FIFO -> nonwaiting Heavy -> owned TEMP lock; hidden actual-host children; two fresh owned containers/one volume per selected group; no cross-group execution",
+  "firstUnexpectedFailure": "stop, retain raw evidence, cleanup only owned IDs; no correction/retry"
+}

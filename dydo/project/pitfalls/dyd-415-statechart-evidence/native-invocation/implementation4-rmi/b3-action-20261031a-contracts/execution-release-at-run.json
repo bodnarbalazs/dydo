@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "state": "RELEASED_B3_ACTION",
+  "groups": ["contracts"],
+  "sourcePinSha256": "4fafdf85474be97f52bcb92ac1d388652a35177e0b65a5873731b9a65741c04d",
+  "captain": "gpt-6-astra/high",
+  "contract": "https://linear.app/bodnar-balazs/document/dyd-415-inspected-action-contracts-and-independent-node-data-release-cdafa2013d63",
+  "bootstrapReleased": false,
+  "desktopJavaHeld": true,
+  "maximumRuns": 1
+}

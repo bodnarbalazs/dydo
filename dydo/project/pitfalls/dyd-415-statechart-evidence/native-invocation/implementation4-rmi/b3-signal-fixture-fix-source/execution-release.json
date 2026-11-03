@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "state": "RELEASED_B3_SIGNAL_FIXTURE_FIX",
+  "signals": ["SIGTERM"],
+  "maxInvocationsPerSignal": 1,
+  "sourcePinSha256": "e88f5eccc75941511b6ecc42548f355259a77d30c61433e0135fd9442352e9b0",
+  "captainInspectionRecord": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-fixture-fix-source/captain-inspection.json",
+  "captainInspectionSha256": "f278acdaaf9cbb4d6c5dc988a36f09e3df8a2b45ed23778afae2bac1b3aed8c3",
+  "linearRelease": "https://linear.app/bodnar-balazs/document/dyd-415-inspected-canonical-signal-fixture-proof-release-b9e0d0b10254",
+  "dockerIdentity": {
+    "executableSha256": "f71e5a9fe6a8db10c7296ad6fdf0c1d7d79634e644d7ec1e8a2c18d7dcb52d21",
+    "contextName": "desktop-linux",
+    "dockerEndpoint": {
+      "Host": "npipe:////./pipe/dockerDesktopLinuxEngine",
+      "SkipTLSVerify": false
+    },
+    "daemonFields": {
+      "ID": "5d389860-2507-4d55-bc6b-59bfdb83a13b",
+      "Name": "docker-desktop",
+      "OSType": "linux",
+      "Architecture": "x86_64",
+      "ServerVersion": "29.8.2",
+      "OperatingSystem": "Docker Desktop",
+      "DockerRootDir": "/var/lib/docker"
+    }
+  },
+  "command": "python -B C:/Users/User/AppData/Local/Temp/dyd415-rmi-b3-signal-fixture-fix-launch-20261031.py --signal SIGTERM",
+  "secondSignal": "RELEASED_ONCE_AFTER_SIGINT_CAPTAIN_INSPECTION",
+  "sigintInspectionRecord": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-fixture-fix-source/captain-sigint-inspection.json",
+  "sigintReceiptSha256": "b3e798a992807741701a235f8454610ddde1ad94920a7570488c1a54265db0ec",
+  "priorExecutionReleaseSha256": "9c0ad5ff60ba0e1b2d5cf6d50aca5f8c1408f1ca4d3e4d3f3468b02ff900ba5b",
+  "priorReleaseArchive": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-fixture-fix-20261031a-SIGINT/execution-release-at-run.json",
+  "failureDisposition": "Stop, preserve failure and separate exact-owned containment result; no fix/retry/other test. No success inferred from teardown.",
+  "scope": "Existing pinned hidden host driver, live LC FIFO/Heavy/TEMP locks, exact owned cached network-none POSIX containers; canonical Java-free selected SIGTERM only. No source/payload edit, SIGINT repeat, Java, full C, healthy-case repeat, independent review, commit or push.",
+  "holds": "Desktop Java absolute HOLD; isolated Windows/prompt access, Java assurance, abrupt-parent strict drain and all final acceptance gaps persist. No settled-HITL contact, merge/watch, release/tag/version/publish/rollout."
+}

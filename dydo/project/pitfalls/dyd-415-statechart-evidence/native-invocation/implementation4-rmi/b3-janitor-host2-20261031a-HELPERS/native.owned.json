@@ -1,0 +1,17 @@
+{
+  "pid": 130664,
+  "directPopenOwned": true,
+  "argv": [
+    "C:/Users/User/AppData/Local/Programs/Python/Python313/python.exe",
+    "-I",
+    "-B",
+    "-m",
+    "unittest",
+    "discover",
+    "-v",
+    "-s",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source",
+    "-p",
+    "test_*_contracts.py"
+  ]
+}

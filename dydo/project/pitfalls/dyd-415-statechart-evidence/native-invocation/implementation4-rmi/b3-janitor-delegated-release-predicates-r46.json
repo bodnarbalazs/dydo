@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "previousLedger": "b3-janitor-delegated-release-predicates-r45.json",
+  "inspection": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-topology2-lc-capability-disposition-r46.md",
+  "sourcePinSha256": "1ee1c971d83ce60050275f2b2f3a3f16dd2f1587d2aa63ca04081247548ff7f1",
+  "sourceReceiptSha256": "605ad8ce9483c9d0a16ede996f5ccd5e86c00af4d2235f64766d2a6c401c57f9",
+  "source": "INSPECTED_NOT_EXECUTION_READY",
+  "custody": "11708_MATCH_3_EXTERNAL_LC_MISSING_FULL_CUSTODY_BLOCKED",
+  "topology17": "UNEXECUTED_NOT_RELEASED",
+  "typecheck": "NOT_RELEASED",
+  "serial12": "NOT_RELEASED",
+  "review": "FAIL_OPEN",
+  "capabilityOwner": "Existing LC resource owner via root/admiral coordination",
+  "fallbackAdmitted": false
+}

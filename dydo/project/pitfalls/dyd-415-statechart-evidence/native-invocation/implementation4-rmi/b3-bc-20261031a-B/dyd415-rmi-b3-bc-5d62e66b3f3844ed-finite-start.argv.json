@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "docker",
+    "start",
+    "--attach",
+    "b751368b37df4854bdc22c2d40025c40c089531bb2403008d49ac85c4eff5e92"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "hidden": true,
+  "ticket": "0000000009-30243677f3561670",
+  "startedUtc": "2026-10-31T03:09:51.324097+00:00"
+}

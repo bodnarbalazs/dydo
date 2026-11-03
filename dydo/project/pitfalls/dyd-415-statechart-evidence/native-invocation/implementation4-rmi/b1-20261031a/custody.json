@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "state": "uncommitted-source-closure-B1-admission-failed-no-retry",
+  "files": [
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/run.ts",
+      "sha256": "bc99561726d16e8a867c2210e1aac15cb27510ad75aa48fc750edb508a1c5d9d"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/cli.test.ts",
+      "sha256": "171964e98064b2269fdeb62ded950cbf5abd76d186a0096fc2e03d155c336d00"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/adaptation.test.ts",
+      "sha256": "f2ad4fbb8c71b46da2c880705f2f2cc69f3d973b277b4188a247c064867ccff1"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/scripts/test/tlc-bootstrap.test.ts",
+      "sha256": "c89d8cabc085bbbc77bdb6ab954ef4103852641eb4a0142be7fb71e965c111e9"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/java/dydo/statechart/proof/SocketProbe.java",
+      "sha256": "57c046280dccbdbc5d2b1788ece864d5033572de6ab9b63f1eeec361d85b44e8"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/closure-source-pin.json",
+      "sha256": "b8b493e49e28b377fef95c871f417e431353bd0d7cf8616d12a04a06af0a2f19"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b1-20261031a/failure.json",
+      "sha256": "2b624a3968736af8c1deaa148467effdb1947a01fa40ab24a998fd77dd18bca3"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b1-20261031a/result.md",
+      "sha256": "14d198d166c96e5f669f82904c0d5461bcf08307723b078ed818ce0f42f2020b"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b1-20261031a/launcher.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b1-20261031a/launcher.stderr",
+      "sha256": "1373f2d112a13c500a07df8a0774539ee3466b589c45109180d674394e96ad86"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/PROVENANCE.md",
+      "sha256": "aefec587c5fc933922ddbd65b685f02dd9d90545b311ab794d87615e45d7eef3"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/skills/engineering/statechart/references/runtime.md",
+      "sha256": "9798e9ea04f06b0b60652f96e141c2106afaed360d90e5390ff612fa667c98a9"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/decisions/062-statechart-invocation-manages-prerequisites.md",
+      "sha256": "9f2b9034603fd31d835b2775c47974c91a37516e5badb71f9fab6c4ab9188824"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/source-inventory.json",
+      "sha256": "14c1205e28dd53dde30d5f48c873f8ab57f7a12eda27356cdbd5fe1caa4125a3"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/custody.json",
+      "sha256": "0680c311b719ba9ac429c1c1510c00faa0bf28def213be858f93f2035b4e7024"
+    },
+    {
+      "path": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/desktop-prompt-attribution/captain-attribution.json",
+      "sha256": "fc0f86f4a84258beea5cf1ec5ec381290e7a6e20178b416c94992d34b5e102c0"
+    }
+  ],
+  "buildInputs": "Unchanged exact four captain pins; canonical build lock remains unbuilt. No artifact/receipt.",
+  "checked": "Tracked git diff --check exit0; payload/items/dependency-lock HEAD diff exit0; no tests or aggregate gates.",
+  "previousReceipts": "Preserved original Stage A inventory/custody and attribution bytes; newer source hashes belong to successor pin.",
+  "self": "Excluded from its own hash list."
+}

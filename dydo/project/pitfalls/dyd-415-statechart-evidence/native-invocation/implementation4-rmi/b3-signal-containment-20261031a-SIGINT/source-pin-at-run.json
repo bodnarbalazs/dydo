@@ -1,0 +1,211 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY_PREPARED_NOT_RELEASED",
+  "author": "code-writer/model: gpt-6.1-sol/high",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "authority": "https://linear.app/bodnar-balazs/document/dyd-415-daytime-bounded-signal-diagnosis-and-failure-containment-480155d05caf",
+  "frozenCorrectionPin": "30bbe7be70c9482971410d1ddef6764481da0828237c5d1d3a6096f8ec73efce",
+  "immutableBlockedPacketPin": "e7b93e25a63831fbbb3030f909215f7325405c15984d369e5ad2e42c8bd02209",
+  "immutableFocusedFailureReceipt": "cdedf5f1729f6f15e405c26235be0d22329de25204f54ad786d9651fd966754a",
+  "sources": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/assurance-proposal.json",
+      "bytes": 2119,
+      "sha256": "2a8c3c4e7a2523fe9953f7fc618875fd4388c1184ab2a139b2b97cb8824d3a78"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/authority.md",
+      "bytes": 1119,
+      "sha256": "0e7eb6f90b71d5f2ded95506e6f5881a7d4d976b317380a1e32835595bec6407"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/before-custody.json",
+      "bytes": 1628923,
+      "sha256": "63e9a00e4f76d4bb66f432b3285821a1109a867fd646a314933201f2b659f98d"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/before-status.txt",
+      "bytes": 441450,
+      "sha256": "ab4ca65df823fb57b4cbcca845e0e8772fb188ac2c053d3b25919c184428a86f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/checkpoint.md",
+      "bytes": 10288,
+      "sha256": "7afc076480ba89fc37304c3e3a1a552447e30136b6fbe54bd1433e5d913b508f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/closure.json",
+      "bytes": 32092,
+      "sha256": "d7a686cc9118e479dc87a3b47afac33a93b7118499326b03321c45b6e047431a"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/commands.json",
+      "bytes": 4818,
+      "sha256": "02dbb716ce691ee9446a0ece33f28e94bd2343bb720cc47be7df89a8e365b2e4"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/containment.json",
+      "bytes": 5709,
+      "sha256": "b3272efbbea637f85726b98239641458f41979d2f3ff71369604712c8e69dd66"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/diagnostic.mjs",
+      "bytes": 13083,
+      "sha256": "9d1acde528642069028b7f42bc739a8dceec6223b43385ea6f3f018bac2f1810"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/driver.py",
+      "bytes": 24451,
+      "sha256": "da015bd1540ba79aad6c726d70f0f8a387a54169687fd8ceacf3e5deb434f440"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/expectations.json",
+      "bytes": 3901,
+      "sha256": "c6c0a15eee1316bd9b0d1e56d47771d1768a03589235689247d28fb2076c4219"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/historical-applicability.json",
+      "bytes": 1044,
+      "sha256": "93e74898c7e4be99e1aa192dca6bae86013e1f0de7d6ce8b37d0d643df2a44fc"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/input-manifest.json",
+      "bytes": 31254,
+      "sha256": "ffcff716617067ba9b1064749d74d1eb30b61a3a411135adb10a1b82146b33e0"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/instrumentation.diff",
+      "bytes": 17572,
+      "sha256": "ff9f33285fa664423f040ac6d20b1a2935e0db57a7477291718671db25b58537"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/inventory.json",
+      "bytes": 3599,
+      "sha256": "b88413808555de54ef0bc77beb79cc2b78158b0504f4ca53b6047c20302b93e5"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/launcher.py",
+      "bytes": 5600,
+      "sha256": "7f0b67ef732877094393649398497ff4b45fd8b8f6b113ca86b1ca304bc6ae6d"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/preload.mjs",
+      "bytes": 3181,
+      "sha256": "80e91a1fec69109606bc4f92996730e64557f81e665db80a0716cc955a876001"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/preserved-inputs.json",
+      "bytes": 1295218,
+      "sha256": "3303d7708c69abd034ba3c274434c732573be8ce13a34a0430e4a5aaf835e23f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/shared-containment.py",
+      "bytes": 18149,
+      "sha256": "24f0afe8f437cef9dc0fc8a3d5cf98540f39af0bf6f45e129f12c2e53549c100"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/worker.py",
+      "bytes": 7374,
+      "sha256": "98f6a1814541b069559a0cf3a54ceae13ee7d4d1ebc3efdd2d6086ca072ada6d"
+    }
+  ],
+  "tempCounterparts": [
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-signal-containment-launch-20261031.py",
+      "bytes": 5600,
+      "sha256": "7f0b67ef732877094393649398497ff4b45fd8b8f6b113ca86b1ca304bc6ae6d",
+      "source": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/launcher.py",
+      "executed": false
+    },
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-signal-containment-driver-20261031.py",
+      "bytes": 24451,
+      "sha256": "da015bd1540ba79aad6c726d70f0f8a387a54169687fd8ceacf3e5deb434f440",
+      "source": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/driver.py",
+      "executed": false
+    }
+  ],
+  "externalInputs": [
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "bytes": 105840,
+      "sha256": "03573716a7fcbd8b7fed8fe0163bbfbd3a852546920d6a666123f307c8dac7d9",
+      "role": "Pinned host executable/source; not launched for this check"
+    },
+    {
+      "path": "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe",
+      "bytes": 44829104,
+      "sha256": "f71e5a9fe6a8db10c7296ad6fdf0c1d7d79634e644d7ec1e8a2c18d7dcb52d21",
+      "role": "Pinned host executable/source; not launched for this check"
+    },
+    {
+      "path": "C:\\Users\\User\\.t3\\worktrees\\LC\\t3-f7ffe8ea\\tools\\testing\\runner\\suite_slot.py",
+      "bytes": 9498,
+      "sha256": "aa36020ee48e08319451e6c126701251aa3be9ef40ca4e4cb9cbaed1e375d21a",
+      "role": "Pinned host executable/source; not launched for this check"
+    },
+    {
+      "path": "C:\\Users\\User\\.t3\\worktrees\\LC\\t3-f7ffe8ea\\tools\\testing\\runner\\machine_lock.py",
+      "bytes": 3541,
+      "sha256": "7b53157084084ebb6806f7b4f391a82467f9fed0fc9d701d3fd3e0954c0d9736",
+      "role": "Pinned host executable/source; not launched for this check"
+    },
+    {
+      "path": "C:\\Users\\User\\.t3\\worktrees\\LC\\t3-f7ffe8ea\\dydo\\reference\\tools\\test-runner.md",
+      "bytes": 75557,
+      "sha256": "c0eb699240e4f0bd1526f1bbf495604fbf67bbb3ed3002f19fc09222a9ea92a4",
+      "role": "Pinned host executable/source; not launched for this check"
+    }
+  ],
+  "driverSha256": "da015bd1540ba79aad6c726d70f0f8a387a54169687fd8ceacf3e5deb434f440",
+  "launcherSha256": "7f0b67ef732877094393649398497ff4b45fd8b8f6b113ca86b1ca304bc6ae6d",
+  "counts": {
+    "sourceRows": 20,
+    "beforeCustodyRows": 6831,
+    "preservedHistoricalRows": 5266,
+    "retainedCurrentSnapshotRows": 51,
+    "prospectiveInputRows": 53,
+    "retainedDataRows": 2,
+    "tempCopies": 2,
+    "externalRows": 5,
+    "mismatches": 0
+  },
+  "preservation": "Historical manifest and original two-file mapping copied byte-exact. No expected hashes regenerated. Before/after scope uses existing fixed rows; only fresh successor source and named TEMP copies authored.",
+  "productionCanonicalTestsPayloadAssociationsHistoryUnchanged": true,
+  "execution": "NONE",
+  "projectImports": "NONE",
+  "testDiscovery": "NONE",
+  "containers": "NONE",
+  "runtimeProbes": "NONE",
+  "sourceChecks": "Read-only AST parsing and file hashes; no source import, test, generated assembler/driver or runtime execution.",
+  "selectors": [
+    "diagnose original fs.watch controlled SIGINT boundary",
+    "diagnose original fs.watch controlled SIGTERM boundary"
+  ],
+  "selection": "Exactly one separately released signal per invocation. No automatic chain or retry.",
+  "caseOutcome": "Original assertions and actual child close plus strict census only. Missing close/output/send/handler/observation remains FAIL/INCONCLUSIVE.",
+  "containmentOutcome": "Exact-owned stop/remove/host absence is independent infrastructure evidence. Never product close, product PASS or strict census proof.",
+  "notReleased": [
+    "Any execution/test/import/discovery/probe/signal/Docker/Node/Java",
+    "Production/canonical-test/payload changes",
+    "Review/commit/push/PR/merge/readiness/publication"
+  ],
+  "releasePrerequisites": [
+    "Captain source/import/identity/cleanup inspection",
+    "Separate ADMIRAL disposition for one necessary Java-free boundary",
+    "Actual read-only daemon ID/current-context/endpoint/executable tuple bound in administrative release; missing tuple fails before engine resource operations",
+    "Actual normal host approval/live LC FIFO/nonwaiting Heavy/exact normal TEMP ownership lock",
+    "Actual cached image and each container ID/config/mount inspection before start"
+  ],
+  "freshWrapperDirectAssurance": "OWED; association intent proposed only. No policy/manifest/tooling waiver.",
+  "retainedLimits": [
+    "Original C FAIL/attribution RED/focused FAIL unchanged",
+    "Counter normal drain narrow; ten ok records not GREEN",
+    "Abrupt-parent PID1 strict drain not certified",
+    "Desktop Windows Java HOLD; Windows/prompt/Java assurance/final gates owed",
+    "Both settled HITL conversations NO CONTACT"
+  ],
+  "assembler": "ABSENT",
+  "executionReleaseArtifact": "ABSENT"
+}
+

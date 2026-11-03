@@ -1,0 +1,26 @@
+{
+  "osName": "nt",
+  "platform": "win32",
+  "localAppData": "C:\\Users\\User\\AppData\\Local",
+  "temp": "C:\\Users\\User\\AppData\\Local\\Temp",
+  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
+  "prefix": "LC-Suite-Slot",
+  "variable": "LC_SUITE_SLOT_TICKET",
+  "inheritedTicket": null,
+  "driver": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b1b-driver-20261031.py",
+  "driverSha256": "aae895f42a030e04a38f3f977403d245b45ae72c25e7fca643146ffb3f99e074",
+  "launcherSha256": "97b44c023d3aa6a5dec2b16a895b96e1f675ec16c5408d14ee775fe466176fb8",
+  "sourcePins": {
+    "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackTlc.java": "0edeb8431ba300737f2710d5c5dd495d424362f5f64698651737299337f95dc2",
+    "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackSockets.java": "56711ce74c3f7db93cc8ac1a928dfbe82de470dc566b730c06dc7bae43ee79a3",
+    "skills/engineering/statechart/scripts/java/build.py": "ef42f678e29386e5a27a3a5688b3e030ee2a75680019f748c3465ec3c60d6541",
+    "skills/engineering/statechart/scripts/java/build-lock.json": "67ec8820768db2b847b02e4ce84367f5d216f63f72b92c361c1e03d9393a0e12",
+    "DynaDocs.Tests/coverage/tests/test_statechart_java_build.py": "423d8d3eed6a58a869e37f5ae4838657b202dd1ac845ad95443323dbafcb30cb"
+  },
+  "lcPins": {
+    "tools/testing/runner/suite_slot.py": "aa36020ee48e08319451e6c126701251aa3be9ef40ca4e4cb9cbaed1e375d21a",
+    "tools/testing/runner/machine_lock.py": "7b53157084084ebb6806f7b4f391a82467f9fed0fc9d701d3fd3e0954c0d9736",
+    "dydo/reference/tools/test-runner.md": "c0eb699240e4f0bd1526f1bbf495604fbf67bbb3ed3002f19fc09222a9ea92a4"
+  },
+  "observedUtc": "2026-10-30T23:58:46.591179+00:00"
+}

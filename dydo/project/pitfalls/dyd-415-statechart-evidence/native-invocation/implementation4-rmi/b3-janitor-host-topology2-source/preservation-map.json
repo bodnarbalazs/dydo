@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY_NOT_RELEASED",
+  "layers": [
+    {
+      "role": "All11711 before identities including topology1 and new captain records",
+      "manifest": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology2-source/before-custody.json",
+      "rowsKey": "rows",
+      "beforeSnapshots": {}
+    },
+    {
+      "role": "Original5266 historical raw rows; unchanged aliases only",
+      "manifest": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/preserved-inputs.json",
+      "beforeSnapshots": {
+        "skills/engineering/statechart/scripts/statechart.ts": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/statechart.ts",
+        "skills/engineering/statechart/scripts/test/cli.test.ts": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/cli.test.ts"
+      }
+    }
+  ],
+  "newStdlibRows": "Pinned as external inputs at first observation during preparation; not backdated into before11711.",
+  "noHistoricalExpectedHashesRegenerated": true,
+  "existingEdits": [],
+  "newRootOnly": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology2-source/"
+}

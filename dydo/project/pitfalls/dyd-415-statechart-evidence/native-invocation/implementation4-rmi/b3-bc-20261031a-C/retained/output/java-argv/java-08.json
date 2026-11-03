@@ -1,0 +1,31 @@
+{
+  "pid": 286,
+  "executable": "/toolchain/jdk-21.0.8+9/bin/java",
+  "argv": [
+    "/toolchain/jdk-21.0.8+9/bin/java",
+    "-Djava.io.tmpdir=/work/tmp/statechart-YzcP2D/statechart-0Hrjkf/tmp-ChartRun",
+    "-DTLA-Library=/toolchain/repo/skills/engineering/statechart/scripts/test/corpus/CounterRules",
+    "-cp",
+    "/toolchain/repo/skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar:/work/tmp/statechart-YzcP2D/statechart-0Hrjkf/checker/tla2tools.jar",
+    "dydo.statechart.LoopbackTlc",
+    "-tool",
+    "-workers",
+    "1",
+    "-fp",
+    "0",
+    "-lncheck",
+    "final",
+    "-deadlock",
+    "-metadir",
+    "/work/tmp/statechart-YzcP2D/statechart-0Hrjkf/meta-ChartRun",
+    "-config",
+    "/work/tmp/statechart-YzcP2D/statechart-0Hrjkf/ChartRun.cfg",
+    "-dump",
+    "dot,actionlabels",
+    "/work/tmp/statechart-YzcP2D/statechart-0Hrjkf/graph",
+    "ChartRun"
+  ],
+  "cwd": "/work/tmp/statechart-YzcP2D/statechart-0Hrjkf",
+  "tmpdir": "/work/tmp/statechart-YzcP2D",
+  "tlc": "/input/tla2tools.jar"
+}

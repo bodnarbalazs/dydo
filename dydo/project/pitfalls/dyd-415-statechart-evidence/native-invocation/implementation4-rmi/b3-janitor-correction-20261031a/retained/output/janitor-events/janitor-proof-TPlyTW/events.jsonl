@@ -1,0 +1,2 @@
+{"parent":147,"event":"spawn","role":"worker","pid":154,"file":"/toolchain/node-v22.23.2-linux-x64/bin/node"}
+{"parent":147,"event":"spawn","role":"janitor","pid":160,"file":"/bin/sh"}

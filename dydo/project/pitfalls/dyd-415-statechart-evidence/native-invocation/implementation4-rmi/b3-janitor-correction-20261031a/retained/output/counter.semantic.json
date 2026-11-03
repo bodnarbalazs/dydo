@@ -1,0 +1,11 @@
+{
+  "actualCli": true,
+  "replayOnly": true,
+  "exit": 0,
+  "chartSha256": "bcdc46dccfa6172fa9e36c3236fb1cb9221d0648534499d5fe0c51ebd13d22b0",
+  "reportSha256": "e52a2affff3ca2d85c6ee87a4543ca99024fa0db8a3d48070a6752520121a413",
+  "stageAndScratchAbsent": true,
+  "preload": false,
+  "java": false,
+  "sourceInstrumentation": false
+}

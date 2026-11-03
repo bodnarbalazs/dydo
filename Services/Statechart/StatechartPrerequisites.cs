@@ -1,6 +1,5 @@
 namespace DynaDocs.Services.Statechart;
 
-using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
 internal static class StatechartPrerequisites
@@ -45,10 +44,6 @@ internal static class StatechartPrerequisites
     public static string? Tlc(string cwd, string? value)
     {
         if (value is null) return null;
-        var file = Path.GetFullPath(value, cwd);
-        if (!File.Exists(file) || Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(file))) !=
-            "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88")
-            throw new IOException("Explicit TLA2TOOLS must be the locked TLC1.7.4 jar: " + file);
-        return file;
+        return StatechartChecker.Input(Path.GetFullPath(value, cwd));
     }
 }

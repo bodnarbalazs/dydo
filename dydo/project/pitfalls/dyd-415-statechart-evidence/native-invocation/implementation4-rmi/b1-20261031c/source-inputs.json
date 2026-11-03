@@ -1,0 +1,38 @@
+{
+  "scratch": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b1c-lf_g1q4a",
+  "files": [
+    {
+      "path": "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackTlc.java",
+      "sha256": "0edeb8431ba300737f2710d5c5dd495d424362f5f64698651737299337f95dc2",
+      "bytes": 720
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackSockets.java",
+      "sha256": "56711ce74c3f7db93cc8ac1a928dfbe82de470dc566b730c06dc7bae43ee79a3",
+      "bytes": 1043
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/build.py",
+      "sha256": "82939903e3774c3f29d4651541d170b301c100d60da4f1fde1faec471b1f38ea",
+      "bytes": 16119
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/build-lock.json",
+      "sha256": "ab5d4052b97eb06e43d050ded02bac16b47f87421c44e154228d974c3e86a028",
+      "bytes": 3086
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_statechart_java_build.py",
+      "sha256": "ac8f740244c802d6723ff902bbdd3749591606e5ab93242b7a1294f88d2ce7fe",
+      "bytes": 15222
+    }
+  ],
+  "tlc": {
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\tlc\\tla2tools.jar",
+    "sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88"
+  },
+  "driver": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b1c-driver-20261031.py",
+  "driverSha256": "6351e86594807d9f974e8c4f52538f345660723660d2b31958893775a31b1d6a",
+  "launcher": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b1c-launch-20261031.py",
+  "launcherSha256": "adacf956b3b94bd347fa0f216e93967a31398e7dd76a03cac52996c1aa068a99"
+}

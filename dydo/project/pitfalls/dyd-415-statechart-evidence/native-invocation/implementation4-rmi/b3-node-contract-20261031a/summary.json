@@ -1,0 +1,22 @@
+{
+  "cases": 9,
+  "passed": 9,
+  "skipped": 0,
+  "names": [
+    "test_checksum_requires_one_exact_official_filename_and_digest",
+    "test_excessive_or_wrong_response_is_rejected_without_retry",
+    "test_expired_deadline_refuses_request_and_output_creation",
+    "test_launcher_requires_exact_acquisition_pin",
+    "test_output_collision_does_not_issue_a_request",
+    "test_redirect_is_refused_and_response_closed",
+    "test_transfer_child_rejects_uninherited_ticket_before_network",
+    "test_transfer_preserves_exact_bytes_hash_and_closes_owned_response",
+    "test_unapproved_url_rejected_before_any_request"
+  ],
+  "inputFiles": 4,
+  "realNetwork": false,
+  "java": false,
+  "node": false,
+  "extracted": false,
+  "installed": false
+}

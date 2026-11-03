@@ -1,0 +1,100 @@
+﻿{
+  "state": "SOURCE_ONLY_BLOCKED_CANCELLATION_CONTRACT",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "frozenSourceRows": 25,
+  "historicalRows": 5266,
+  "beforeCustodyRows": 2836,
+  "mismatches": 0,
+  "productionCanonicalTestsPayloadAndHistoricalBytesUnchanged": true,
+  "sources": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/assurance-proposal.json",
+      "bytes": 1389,
+      "sha256": "e24fcdb1dc13cf012b74055f36b7333621281cad58c788dca9ed802179324475"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/before-custody.json",
+      "bytes": 1047515,
+      "sha256": "0d2dbaf40553b1f80ec6650145e4138b4045b8dad4d9248851e243cd937cc52c"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/before-status.txt",
+      "bytes": 442059,
+      "sha256": "fbbd73ed273b984673ab17a6562190e2d137a140138633e4579abd97630fcbc9"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/checkpoint.md",
+      "bytes": 7689,
+      "sha256": "e7e5ac7d723d6ee136c28c968d00b55807ff39afff40c1062af51458f73345d8"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/commands.json",
+      "bytes": 3647,
+      "sha256": "a5242f27dda4c9264f01494bff5871bfbae0f230c10b921dd5444862b7a16f77"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/custody-check.py",
+      "bytes": 3853,
+      "sha256": "f79f03af9cd251ddf77dc42632cfe695d947236253e36b4eca4bd1105c602bca"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/diagnostic.mjs",
+      "bytes": 11113,
+      "sha256": "3456df9f093acf0cbd36cba63825ff6a74f52fb05542aed79329dcc3272b5e98"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/driver.py",
+      "bytes": 11122,
+      "sha256": "93aa84749910ee30fd87f1099e0f4ece00d668d2a70fcf6a7f491370a51e4dd7"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/expectations.json",
+      "bytes": 3311,
+      "sha256": "b00a32f9eaad21a9ea7b9b6dd7f22b488c278afbcfdc2a038e3db5b66cbda01c"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/historical-applicability.json",
+      "bytes": 1044,
+      "sha256": "93e74898c7e4be99e1aa192dca6bae86013e1f0de7d6ce8b37d0d643df2a44fc"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/input-manifest.json",
+      "bytes": 29021,
+      "sha256": "4c2921a21953987b72e6ffc1e0a7ee3194fdaadfa2b09353fe816a3a3f485ca4"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/inventory.json",
+      "bytes": 3875,
+      "sha256": "2b6b645469218ca15d2d5fdf2e24931e06b1b35f33556b0bdd7c5f92d3b6321b"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/launcher.py",
+      "bytes": 4807,
+      "sha256": "1b52bf7b006f9d065f8bfdd1441c34a15297c5ec9d9c919c5f0d4d6b0d9b1b14"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/preload.mjs",
+      "bytes": 2377,
+      "sha256": "edb0077c8c7d8a70b49027d9b9a7bff48c1a9083eeb71b5bc64a495463b8ac52"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/preserved-inputs.json",
+      "bytes": 1295218,
+      "sha256": "3303d7708c69abd034ba3c274434c732573be8ce13a34a0430e4a5aaf835e23f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-diagnosis-source/worker.py",
+      "bytes": 5066,
+      "sha256": "d296362195aa5577bef85cade503dd53d3f2fc69966ce67de6d796cebb090adc"
+    }
+  ],
+  "execution": "NONE",
+  "importsOrDiscovery": "NONE",
+  "driverSha256": "93aa84749910ee30fd87f1099e0f4ece00d668d2a70fcf6a7f491370a51e4dd7",
+  "launcherSha256": "1b52bf7b006f9d065f8bfdd1441c34a15297c5ec9d9c919c5f0d4d6b0d9b1b14",
+  "sourceClosureComplete": false,
+  "safeExecutionEnvelopeProved": false,
+  "tempCounterparts": "ALL_THREE_ABSENT",
+  "inputs": 53,
+  "scope": "Two failed signal boundaries only"
+}

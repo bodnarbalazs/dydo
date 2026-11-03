@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "state": "BLOCKED_ADDITIONAL_WORKSPACE_LINK_SCOPE",
+  "executableChoices": [],
+  "authorizedRuntimeInvocations": 0,
+  "knownRefusingHost2TypecheckDoNotRun": {
+    "nativeExampleArgv": [
+      "C:/Users/User/AppData/Local/fnm_multishells/10620_1793288379755/node.exe",
+      "skills/engineering/statechart/scripts/node_modules/typescript/bin/tsc",
+      "--noEmit",
+      "--project",
+      "skills/engineering/statechart/scripts/tsconfig.json"
+    ],
+    "cwd": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f",
+    "reason": "A sole-node_modules exception still leaves82 workspace junction rejections.",
+    "nativeSeconds": 180,
+    "directReapSeconds": 5,
+    "childEnvDelta": {
+      "NODE_DISABLE_COMPILE_CACHE": "1"
+    },
+    "notAuthorized": true
+  },
+  "prospectiveSequence": [
+    "Captain disposition of exact82-link workspace observation conflict",
+    "Only then author/inspect immutable exact topology successor and actual unittest IDs",
+    "Separate finite topology execution release and complete applicable GREEN",
+    "Conditional diagnostic typecheck once under original delegated predicates, findings reconciled",
+    "Fresh exact POSIX containment predicates before serial12"
+  ],
+  "noAutomaticChain": true,
+  "noTestsCommand": "No new test/driver exists. Do not replay host2 helper12/typecheck or product cases."
+}

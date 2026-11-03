@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "state": "RELEASED_B3_JANITOR_CORRECTION",
+  "sourcePinSha256": "30bbe7be70c9482971410d1ddef6764481da0828237c5d1d3a6096f8ec73efce",
+  "authority": "https://linear.app/bodnar-balazs/document/dyd-415-inspected-janitor-correction-finite-execution-release-b11b7e4db7c2",
+  "maximumLauncherInvocations": 1,
+  "actualCounterReplays": 1,
+  "selectedNativeTests": 12,
+  "requiresActualHostApprovalLiveFifoHeavyOwnedTempLock": true,
+  "runtime": "Contained pinned Node only; Java/JDK absent",
+  "strictRemainingProcessGuard": "UNCHANGED",
+  "retryOrCorrection": false,
+  "payloadEdits": false,
+  "abruptParentCertified": false,
+  "abruptParentExecution": "NOT_RELEASED_CURRENT_PID1_TOPOLOGY",
+  "independentReview": "Captain commissions fresh delegate after focused GREEN",
+  "wholeCapabilityAcceptance": false,
+  "desktopJava": false
+}

@@ -2,13 +2,15 @@ namespace DynaDocs.Services.Statechart;
 
 using System.Diagnostics;
 
-internal sealed class WindowsStatechartLifetime : IAsyncDisposable
+internal sealed class WindowsStatechartLifetime : StatechartLifetime
 {
     private readonly WindowsStatechartJob _job = new();
     private readonly Process _cleanup;
     private readonly string _nonce = Guid.NewGuid().ToString("N");
-    public string Stage { get; private set; } = "";
-    public string Temp { get; private set; } = "";
+    private string _stage = "";
+    private string _temp = "";
+    public override string Stage => _stage;
+    public override string Temp => _temp;
     private bool _registered;
     private bool _completed;
     private bool _drained;
@@ -51,28 +53,28 @@ internal sealed class WindowsStatechartLifetime : IAsyncDisposable
         }
     }
 
-    public async Task RegisterAsync()
+    public override async Task RegisterAsync()
     {
         if (_registered || Stage.Length != 0) throw new InvalidOperationException("Already reserved.");
         await StatechartCleanup.Say(_cleanup.StandardInput, "reserve:" + _nonce);
         var created = (await StatechartCleanup.Read(_cleanup.StandardOutput))?.Split(':');
         if (created is not ["created", var stage, var temp])
             throw new InvalidDataException("Cleanup did not reserve statechart scratch.");
-        Stage = StatechartCleanup.Decode(stage);
-        Temp = StatechartCleanup.Decode(temp);
+        _stage = StatechartCleanup.Decode(stage);
+        _temp = StatechartCleanup.Decode(temp);
         await StatechartCleanup.Say(_cleanup.StandardInput, "register:" + _nonce);
         await Expect("registered:" + _nonce);
         _registered = true;
     }
 
-    public void Attach(int pid)
+    public override void Attach(int pid)
     {
         if (!_registered || _completed || _cleanup.HasExited)
             throw new InvalidOperationException("Statechart requires live registered cleanup before ownership release.");
         _job.Attach(pid);
     }
 
-    public async Task<bool> CompleteAsync()
+    public override async Task<bool> CompleteAsync()
     {
         if (!_registered || _completed) throw new InvalidOperationException("No active registered statechart lifetime.");
         _completed = true;
@@ -83,7 +85,7 @@ internal sealed class WindowsStatechartLifetime : IAsyncDisposable
         return _cleanup.ExitCode == 0;
     }
 
-    public async Task<bool> DrainAsync()
+    public override async Task<bool> DrainAsync()
     {
         if (!_registered) throw new InvalidOperationException("No registered statechart lifetime.");
         if (!_drainAttempted)
@@ -94,7 +96,7 @@ internal sealed class WindowsStatechartLifetime : IAsyncDisposable
         return _drained;
     }
 
-    public async Task WaitAsync(Process checking, CancellationToken token)
+    public override async Task WaitAsync(Process checking, CancellationToken token)
     {
         var exit = checking.WaitForExitAsync(token);
         var helper = _cleanup.WaitForExitAsync(token);
@@ -107,7 +109,7 @@ internal sealed class WindowsStatechartLifetime : IAsyncDisposable
         }
     }
 
-    public async ValueTask DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
         _job.Dispose();
         _cleanup.StandardInput.Close();

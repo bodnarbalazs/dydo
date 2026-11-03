@@ -1,0 +1,29 @@
+{
+  "state": "RELEASED_B3_SIGNAL_CONTAINMENT_BY_ADMIRAL",
+  "signals": [
+    "SIGINT"
+  ],
+  "sourcePinSha256": "b22f7212427b5aa4c2c28dad132839e1912434708e358913449a80f1d74cb4cb",
+  "captainInspectionRecord": "https://linear.app/bodnar-balazs/document/dyd-415-inspected-single-sigint-diagnostic-execution-release-00ecde0d6eb3",
+  "admiralExecutionDisposition": "Explicit daytime user/admiral delegation: captain may inspect/pin and release one Java-free diagnosis per necessary failed boundary. Recorded at https://linear.app/bodnar-balazs/document/dyd-415-daytime-bounded-signal-diagnosis-and-failure-containment-480155d05caf; no additional admiral turn required.",
+  "dockerIdentity": {
+    "executableSha256": "f71e5a9fe6a8db10c7296ad6fdf0c1d7d79634e644d7ec1e8a2c18d7dcb52d21",
+    "contextName": "desktop-linux",
+    "dockerEndpoint": {
+      "Host": "npipe:////./pipe/dockerDesktopLinuxEngine",
+      "SkipTLSVerify": false
+    },
+    "daemonFields": {
+      "ID": "5d389860-2507-4d55-bc6b-59bfdb83a13b",
+      "Name": "docker-desktop",
+      "OSType": "linux",
+      "Architecture": "x86_64",
+      "ServerVersion": "29.8.2",
+      "OperatingSystem": "Docker Desktop",
+      "DockerRootDir": "/var/lib/docker"
+    }
+  },
+  "authorityScope": "Captain release under existing explicit admiral delegation, not a new admiral approval or whole-capability PASS",
+  "noAutomaticSecondSignal": true,
+  "productAndContainmentOutcomesIndependent": true
+}

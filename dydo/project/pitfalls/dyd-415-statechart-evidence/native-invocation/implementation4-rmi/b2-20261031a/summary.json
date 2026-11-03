@@ -1,0 +1,12 @@
+{
+  "stage": "B2",
+  "finiteProcesses": 9,
+  "fixtureCompilers": 2,
+  "helperRecompiled": false,
+  "jdk": "Build-only JDK21.0.8+9 used for isolated proof; not managed JRE",
+  "helperSha256": "1772e71e2d82f470f115fa7e6d63205c388f84a0fa55537f120b9d53f3d3fbfa",
+  "realTlcSemantics": false,
+  "installedReadiness": false,
+  "windows": false,
+  "javaMetrics": "UNAVAILABLE"
+}

@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b3-janitor-correction-driver-20261031.py", line 183, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b3-janitor-correction-driver-20261031.py", line 179, in main
+    raise failure
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b3-janitor-correction-driver-20261031.py", line 156, in main
+    execute(nonce, children)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b3-janitor-correction-driver-20261031.py", line 118, in execute
+    common.container('dyd415-rmi-b3-janitor-correction-' + nonce + '-finite', nonce,
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        mounts + ['type=volume,source=' + VOLUME + ',target=/toolchain,readonly'],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ['-B', '/input/worker.py'], children)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\implementation4-rmi\b3-source\driver.py", line 95, in container
+    run(name + '-start', ['docker', 'start', '--attach', identity], timeout=1200)
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\implementation4-rmi\b3-source\driver.py", line 60, in run
+    raise RuntimeError(name + ' failed; first failure retained, no automatic retry')
+RuntimeError: dyd415-rmi-b3-janitor-correction-6113cbdc5f1f4566-finite-start failed; first failure retained, no automatic retry

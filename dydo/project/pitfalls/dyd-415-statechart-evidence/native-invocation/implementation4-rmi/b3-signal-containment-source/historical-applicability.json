@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "beforeSnapshots": {
+    "skills/engineering/statechart/scripts/statechart.ts": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/statechart.ts",
+    "skills/engineering/statechart/scripts/test/cli.test.ts": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/cli.test.ts"
+  },
+  "interpretation": "Historical byte custody only; only two live source identities are superseded for new lifecycle claims",
+  "unchangedHistoricalRows": 5264,
+  "old5079RowManifests": "IMMUTABLE_NOT_REGENERATED",
+  "c": "FAIL_UNCHANGED",
+  "redReceiptSha256": "d8edbe86f510fd5dad3525c9c50c588d4477978cadeaf26f11137f7bb84d6bf5",
+  "ancestry": "CLI7 direct children worker14 and janitor15; janitor15 targets worker14",
+  "limits": [
+    "Original exact libuv timing unproved",
+    "Original five C identities unproved",
+    "Old installed/payload/runtime results do not certify changed source"
+  ]
+}

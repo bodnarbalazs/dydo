@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "/toolchain/jdk-21.0.8+9/bin/jar",
+    "--create",
+    "--file",
+    "/work/build/first/statechart-tlc-bootstrap.jar",
+    "--no-manifest",
+    "--date=2026-01-01T00:00:00Z",
+    "-C",
+    "/work/build/first/classes",
+    "dydo/statechart/LoopbackTlc.class",
+    "-C",
+    "/work/build/first/classes",
+    "dydo/statechart/LoopbackSockets.class"
+  ]
+}

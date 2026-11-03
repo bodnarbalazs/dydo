@@ -33,6 +33,34 @@ Local changes:
   TLC line endings, and explicitly skip the upstream POSIX CLI/recording harness on
   Windows. All original cases remain for POSIX. Native Gherkin acceptance and Windows
   lifecycle tests are added, alongside the CRLF regression. Skips are not Windows proof.
+- The retained Stage A draft adds original Balazs Bodnar MIT Java transport
+  sources and a build-only JDK lock under `scripts/java/`. It routes verdict,
+  ChartRun and native readiness TLC entry through a loopback RMI bootstrap;
+  SANY stays direct. That original checkpoint had no built helper artifact. The
+  [source checkpoint](../../../dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/checkpoint.md)
+  and its [closure result](../../../dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b1-20261031a/result.md)
+  record the original standalone input gap, tightened jar checks, held execution,
+  exact source identities and unavailable Java measurements. This is unvalidated local work,
+  not a change to the upstream license or a prompt-free platform claim.
+
+- The later checker-data isolation draft adds native and TypeScript helpers that
+  reject an external unpinned `CommunityModules.jar` and copy only the verified
+  official checker jar into existing owned scratch. SANY and bootstrap TLC share
+  that isolated data; original model/library roots remain. The compiler-only
+  exploded jar view is separate. The
+  [source checkpoint](../../../dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/runtime-isolation/checkpoint.md)
+  binds accepted recipes, source hashes and outstanding proof. That source amendment
+  established no runtime result or prompt-free claim.
+- B1c later passed 21 build-helper tests and produced two byte-identical release11
+  helper jars with exactly two major55 classes and no manifest or nested jar.
+  The captain-inspected 1,825-byte artifact is SHA256
+  `1772e71e2d82f470f115fa7e6d63205c388f84a0fa55537f120b9d53f3d3fbfa`.
+  The canonical build lock now binds that artifact and the immutable
+  [B1c receipt](../../../dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b1-20261031c/build-receipt.json),
+  preserving its pre-sealing lock identity. The
+  [binding checkpoint](../../../dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/checkpoint.md)
+  records explicit payload rows. This is candidate distribution data, not runtime,
+  installed/readiness, prompt-free Windows or Java assurance acceptance.
 
 Dependencies and setup: [runtime](references/runtime.md). The original package test
 script is `node --disable-warning=ExperimentalWarning --test test/*.test.ts`;

@@ -1,0 +1,11 @@
+{
+  "outcome": "PASS",
+  "signal": "SIGINT",
+  "canonicalSelectedName": "POSIX janitor closes before controlled SIGINT exit with no output",
+  "actualOriginalAssertionsPassed": true,
+  "strictCensusClean": true,
+  "actualCliCloseObserved": true,
+  "infrastructureContainment": "NOT_YET_ATTEMPTED",
+  "observerChangesTiming": true,
+  "historicalFailureSuperseded": false
+}

@@ -1,0 +1,195 @@
+{
+  "schema": 1,
+  "state": "ONE_PROPOSED_DATA_ACQUISITION_NOT_RELEASED",
+  "purpose": "Resolve exact CPython3.12.10 installer/eight package wheel provenance, existing npm10.9.2/Node22.13.0 publisher metadata without install/execution; coverage npm dependencies already identity-locked separately",
+  "sourcesReadOnly": {
+    "metricNode": {
+      "path": "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/node.exe",
+      "bytes": 83208848,
+      "sha256": "364dbc8442f8d5c04fd4226bcfcf8e60d3268627eb1d7be214a91bb7d74cdbb9",
+      "metadataVersion": "22.13.0",
+      "executed": false
+    },
+    "npm": {
+      "path": "C:/Users/User/AppData/Roaming/fnm/node-versions/v22.13.0/installation/node_modules/npm/package.json",
+      "bytes": 6911,
+      "sha256": "92c3cf71cdf51638a35d41346ae06327925c79dc7cdbe6863e1d358f87599437",
+      "declaredVersion": "10.9.2",
+      "executed": false
+    },
+    "existingTransferPattern": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/driver.py",
+      "bytes": 13271,
+      "sha256": "0ded3eadf56c49e705b437cc37840dd1e8b054f12fe2801fa1523b7419ac9589"
+    },
+    "existingTransferChild": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/transfer.py",
+      "bytes": 2614,
+      "sha256": "ef4d6ca29758d0a72600cd86eb4b96154e49dd9268a3f2188fe315c400510497"
+    }
+  },
+  "futureOwnership": {
+    "requiredOutputAdmission": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-20261031a",
+    "created": false,
+    "sourceCommissionRequired": "Current finite inventory admits NO acquisition driver/result. Before writing or executing acquisition code captain must admit exact future source/output/TEMP paths and source pin; this proposal is not that admission.",
+    "temp": "Future exact-owned normal-TEMP nonce registered before transfer; no unrelated or guard cleanup",
+    "route": "Actual canonical FIFO -> nonwaiting Heavy -> exclusive normal-TEMP owned lock, hidden direct transfer child, exact source/owner admission; no settings/security changes"
+  },
+  "metadataRequests": [
+    {
+      "url": "https://www.python.org/downloads/release/python-31210/",
+      "maxBytes": 2097152,
+      "validation": "Exact3.12.10 release links and AMD64 installer identity/checksum/signature references; no assumed hash or signer thumbprint"
+    },
+    {
+      "url": "https://pypi.org/pypi/colorama/0.4.6/json",
+      "maxBytes": 8388608,
+      "validation": "Exact canonical package+version; Requires-Python compatible3.12.10; candidate filename+URL+size+SHA256, no yanked/ambiguous resolution"
+    },
+    {
+      "url": "https://pypi.org/pypi/complexipy/8.0.0/json",
+      "maxBytes": 8388608,
+      "validation": "Exact canonical package+version; Requires-Python compatible3.12.10; candidate filename+URL+size+SHA256, no yanked/ambiguous resolution"
+    },
+    {
+      "url": "https://pypi.org/pypi/coverage/7.16.0/json",
+      "maxBytes": 8388608,
+      "validation": "Exact canonical package+version; Requires-Python compatible3.12.10; candidate filename+URL+size+SHA256, no yanked/ambiguous resolution"
+    },
+    {
+      "url": "https://pypi.org/pypi/mando/0.7.1/json",
+      "maxBytes": 8388608,
+      "validation": "Exact canonical package+version; Requires-Python compatible3.12.10; candidate filename+URL+size+SHA256, no yanked/ambiguous resolution"
+    },
+    {
+      "url": "https://pypi.org/pypi/radon/6.0.1/json",
+      "maxBytes": 8388608,
+      "validation": "Exact canonical package+version; Requires-Python compatible3.12.10; candidate filename+URL+size+SHA256, no yanked/ambiguous resolution"
+    },
+    {
+      "url": "https://pypi.org/pypi/ruff/0.16.6/json",
+      "maxBytes": 8388608,
+      "validation": "Exact canonical package+version; Requires-Python compatible3.12.10; candidate filename+URL+size+SHA256, no yanked/ambiguous resolution"
+    },
+    {
+      "url": "https://pypi.org/pypi/six/1.17.0/json",
+      "maxBytes": 8388608,
+      "validation": "Exact canonical package+version; Requires-Python compatible3.12.10; candidate filename+URL+size+SHA256, no yanked/ambiguous resolution"
+    },
+    {
+      "url": "https://pypi.org/pypi/vulture/2.16/json",
+      "maxBytes": 8388608,
+      "validation": "Exact canonical package+version; Requires-Python compatible3.12.10; candidate filename+URL+size+SHA256, no yanked/ambiguous resolution"
+    },
+    {
+      "url": "https://registry.npmjs.org/npm/10.9.2",
+      "maxBytes": 8388608,
+      "validation": "Exact npm10.9.2 package metadata, dist.tarball/dist.integrity/dist.shasum; expected external integrity currently UNKNOWN"
+    },
+    {
+      "url": "https://nodejs.org/dist/v22.13.0/SHASUMS256.txt",
+      "maxBytes": 1048576,
+      "validation": "One exact win-x64/node.exe SHA line if present; compare to364dbc... retained native file. If absent/ambiguous, stop origin determination; no guessed archive mapping or alternate version."
+    }
+  ],
+  "artifactRequests": {
+    "maximum": 10,
+    "items": [
+      {
+        "kind": "CPython installer DATA",
+        "url": "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe",
+        "expectedSha256": null,
+        "validation": "Require exact official metadata SHA when available, Authenticode publisher validation/read-only certificate identity inspection; neither execute nor install. Missing authenticated checksum/signature linkage remains explicit unestablished provenance, not a verified installer."
+      },
+      {
+        "kind": "one pinned wheel DATA",
+        "package": "colorama",
+        "version": "0.4.6",
+        "url": "UNRESOLVED_FROM_EXACT_VERSION_METADATA",
+        "expectedSha256": null,
+        "validation": "Use exact HTTPS files.pythonhosted.org URL selected from retained metadata; streamed bytes/size/SHA256 must match; no archive extraction/install/import"
+      },
+      {
+        "kind": "one pinned wheel DATA",
+        "package": "complexipy",
+        "version": "8.0.0",
+        "url": "UNRESOLVED_FROM_EXACT_VERSION_METADATA",
+        "expectedSha256": null,
+        "validation": "Use exact HTTPS files.pythonhosted.org URL selected from retained metadata; streamed bytes/size/SHA256 must match; no archive extraction/install/import"
+      },
+      {
+        "kind": "one pinned wheel DATA",
+        "package": "coverage",
+        "version": "7.16.0",
+        "url": "UNRESOLVED_FROM_EXACT_VERSION_METADATA",
+        "expectedSha256": null,
+        "validation": "Use exact HTTPS files.pythonhosted.org URL selected from retained metadata; streamed bytes/size/SHA256 must match; no archive extraction/install/import"
+      },
+      {
+        "kind": "one pinned wheel DATA",
+        "package": "mando",
+        "version": "0.7.1",
+        "url": "UNRESOLVED_FROM_EXACT_VERSION_METADATA",
+        "expectedSha256": null,
+        "validation": "Use exact HTTPS files.pythonhosted.org URL selected from retained metadata; streamed bytes/size/SHA256 must match; no archive extraction/install/import"
+      },
+      {
+        "kind": "one pinned wheel DATA",
+        "package": "radon",
+        "version": "6.0.1",
+        "url": "UNRESOLVED_FROM_EXACT_VERSION_METADATA",
+        "expectedSha256": null,
+        "validation": "Use exact HTTPS files.pythonhosted.org URL selected from retained metadata; streamed bytes/size/SHA256 must match; no archive extraction/install/import"
+      },
+      {
+        "kind": "one pinned wheel DATA",
+        "package": "ruff",
+        "version": "0.16.6",
+        "url": "UNRESOLVED_FROM_EXACT_VERSION_METADATA",
+        "expectedSha256": null,
+        "validation": "Use exact HTTPS files.pythonhosted.org URL selected from retained metadata; streamed bytes/size/SHA256 must match; no archive extraction/install/import"
+      },
+      {
+        "kind": "one pinned wheel DATA",
+        "package": "six",
+        "version": "1.17.0",
+        "url": "UNRESOLVED_FROM_EXACT_VERSION_METADATA",
+        "expectedSha256": null,
+        "validation": "Use exact HTTPS files.pythonhosted.org URL selected from retained metadata; streamed bytes/size/SHA256 must match; no archive extraction/install/import"
+      },
+      {
+        "kind": "one pinned wheel DATA",
+        "package": "vulture",
+        "version": "2.16",
+        "url": "UNRESOLVED_FROM_EXACT_VERSION_METADATA",
+        "expectedSha256": null,
+        "validation": "Use exact HTTPS files.pythonhosted.org URL selected from retained metadata; streamed bytes/size/SHA256 must match; no archive extraction/install/import"
+      },
+      {
+        "kind": "npm10.9.2 package DATA",
+        "url": "UNRESOLVED_FROM_EXACT_REGISTRY_VERSION_METADATA",
+        "expectedIntegrity": null,
+        "validation": "Exact registry.npmjs.org tarball URL and dist.integrity from retained version metadata; no extraction or lifecycle scripts. Retained npm member-to-artifact correspondence remains owed after DATA acquisition."
+      }
+    ]
+  },
+  "limits": {
+    "maximumMetadataRequests": 11,
+    "maximumArtifactRequests": 10,
+    "maximumRequestsIncludingArtifacts": 21,
+    "retries": 0,
+    "redirects": 0,
+    "globalTransferSeconds": 900,
+    "perRequestSocketSeconds": 15,
+    "perArtifactBytes": 67108864,
+    "allArtifactBytes": 268435456,
+    "allMetadataBytes": 33554432,
+    "directParentWaitSeconds": 930,
+    "ownedKillAndReapSeconds": 15,
+    "hardStreamingLimit": "Requirement to preserve existing fetch read1(maximum-total+1) and total-deadline rejection in any admitted source adaptation; NOT implemented or exercised here"
+  },
+  "protocol": "Existing urllib HTTPS/default verification and NoRedirect finite acquisition pattern only, exact URLs allowlisted, identity Content-Encoding, xb destinations before request, retain request/response/raw metadata/partial DATA/hash/failure. No auth/private registry/config changes/credentials. If explicit endpoint redirects or metadata differs, stop without retry rather than expanding allowlist.",
+  "integrityInterpretation": "Metadata-derived PyPI SHA/npm SRI plus HTTPS bind exactly served artifacts; not an invented independent signature or archive-to-installed proof. Node raw local custody is already known; official checksum comparison is a distinct future origin witness.",
+  "separateInstall": "DATA only. Installing/running CPython, creating venv, pip/npm/pnpm installs, extracting/comparing packages, static/coverage/tool execution all need separate source/identity/lifecycle disposition. No install implied by metadata/artifact success.",
+  "failure": "Any unexpected HTTP/identity/size/deadline/hash/signer/source/retention/ownership uncertainty stops later requests and affected paths, preserves raw/partial DATA and legitimate owned lock, no fix/retry. Exact successful evidence retention plus direct child reap precede exact owner-byte lock deletion; original-owner case-specific recovery only."
+}

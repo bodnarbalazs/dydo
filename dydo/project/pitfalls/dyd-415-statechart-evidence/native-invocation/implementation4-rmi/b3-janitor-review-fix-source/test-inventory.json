@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "state": "LEXICAL_ONLY_NOT_DISCOVERED_OR_EXECUTED",
+  "testFile": {
+    "path": "DynaDocs.Tests/coverage/tests/test_statechart_janitor_successor.py",
+    "bytes": 16534,
+    "sha256": "4b290261dd9e73244e314580c0c2333e8968630bd04f2cc510491b8f23340704"
+  },
+  "class": "JanitorSuccessorContracts",
+  "declaredMethods": [
+    "test_retention_failure_with_successful_error_log_preserves_exact_lock_and_error",
+    "test_healthy_retention_releases_only_matching_isolated_lock",
+    "test_error_evidence_write_failure_retains_lock_and_original_failure",
+    "test_prior_evidence_failure_blocks_release_after_healthy_retention",
+    "test_unconfirmed_owned_cleanup_keeps_lock_after_healthy_retention",
+    "test_changed_owner_bytes_are_never_deleted",
+    "test_missing_lock_is_ownership_failure_not_successful_release",
+    "test_original_product_failure_survives_retention_failure",
+    "test_actual_main_propagates_nonzero_failure_and_keeps_its_isolated_lock",
+    "test_launcher_requires_exact_release_signal_pin_and_inspection",
+    "test_launcher_missing_release_or_pin_refuses",
+    "test_host_refusal_precedes_any_material_command",
+    "test_all_entrypoints_reject_missing_or_unreleased_signal_before_admission",
+    "test_driver_head_drift_refuses_before_packet_or_resource_admission",
+    "test_worker_accepts_only_exact_selected_native_ok_with_summary",
+    "test_worker_rejects_missing_duplicate_skipped_failed_unselected_and_bad_summary",
+    "test_worker_refuses_nonprivate_pid_topology_before_foundation_or_runtime",
+    "test_driver_ambient_docker_route_refuses_before_any_host_command",
+    "test_contract_command_validates_actual_native_names_and_completion",
+    "test_contract_command_rejects_nonempty_stdout_skip_and_wrong_selection",
+    "test_contract_native_failure_stops_before_success_receipt"
+  ],
+  "nativeIds": [
+    "test_retention_failure_with_successful_error_log_preserves_exact_lock_and_error (test_statechart_janitor_successor.JanitorSuccessorContracts.test_retention_failure_with_successful_error_log_preserves_exact_lock_and_error)",
+    "test_healthy_retention_releases_only_matching_isolated_lock (test_statechart_janitor_successor.JanitorSuccessorContracts.test_healthy_retention_releases_only_matching_isolated_lock)",
+    "test_error_evidence_write_failure_retains_lock_and_original_failure (test_statechart_janitor_successor.JanitorSuccessorContracts.test_error_evidence_write_failure_retains_lock_and_original_failure)",
+    "test_prior_evidence_failure_blocks_release_after_healthy_retention (test_statechart_janitor_successor.JanitorSuccessorContracts.test_prior_evidence_failure_blocks_release_after_healthy_retention)",
+    "test_unconfirmed_owned_cleanup_keeps_lock_after_healthy_retention (test_statechart_janitor_successor.JanitorSuccessorContracts.test_unconfirmed_owned_cleanup_keeps_lock_after_healthy_retention)",
+    "test_changed_owner_bytes_are_never_deleted (test_statechart_janitor_successor.JanitorSuccessorContracts.test_changed_owner_bytes_are_never_deleted)",
+    "test_missing_lock_is_ownership_failure_not_successful_release (test_statechart_janitor_successor.JanitorSuccessorContracts.test_missing_lock_is_ownership_failure_not_successful_release)",
+    "test_original_product_failure_survives_retention_failure (test_statechart_janitor_successor.JanitorSuccessorContracts.test_original_product_failure_survives_retention_failure)",
+    "test_actual_main_propagates_nonzero_failure_and_keeps_its_isolated_lock (test_statechart_janitor_successor.JanitorSuccessorContracts.test_actual_main_propagates_nonzero_failure_and_keeps_its_isolated_lock)",
+    "test_launcher_requires_exact_release_signal_pin_and_inspection (test_statechart_janitor_successor.JanitorSuccessorContracts.test_launcher_requires_exact_release_signal_pin_and_inspection)",
+    "test_launcher_missing_release_or_pin_refuses (test_statechart_janitor_successor.JanitorSuccessorContracts.test_launcher_missing_release_or_pin_refuses)",
+    "test_host_refusal_precedes_any_material_command (test_statechart_janitor_successor.JanitorSuccessorContracts.test_host_refusal_precedes_any_material_command)",
+    "test_all_entrypoints_reject_missing_or_unreleased_signal_before_admission (test_statechart_janitor_successor.JanitorSuccessorContracts.test_all_entrypoints_reject_missing_or_unreleased_signal_before_admission)",
+    "test_driver_head_drift_refuses_before_packet_or_resource_admission (test_statechart_janitor_successor.JanitorSuccessorContracts.test_driver_head_drift_refuses_before_packet_or_resource_admission)",
+    "test_worker_accepts_only_exact_selected_native_ok_with_summary (test_statechart_janitor_successor.JanitorSuccessorContracts.test_worker_accepts_only_exact_selected_native_ok_with_summary)",
+    "test_worker_rejects_missing_duplicate_skipped_failed_unselected_and_bad_summary (test_statechart_janitor_successor.JanitorSuccessorContracts.test_worker_rejects_missing_duplicate_skipped_failed_unselected_and_bad_summary)",
+    "test_worker_refuses_nonprivate_pid_topology_before_foundation_or_runtime (test_statechart_janitor_successor.JanitorSuccessorContracts.test_worker_refuses_nonprivate_pid_topology_before_foundation_or_runtime)",
+    "test_driver_ambient_docker_route_refuses_before_any_host_command (test_statechart_janitor_successor.JanitorSuccessorContracts.test_driver_ambient_docker_route_refuses_before_any_host_command)",
+    "test_contract_command_validates_actual_native_names_and_completion (test_statechart_janitor_successor.JanitorSuccessorContracts.test_contract_command_validates_actual_native_names_and_completion)",
+    "test_contract_command_rejects_nonempty_stdout_skip_and_wrong_selection (test_statechart_janitor_successor.JanitorSuccessorContracts.test_contract_command_rejects_nonempty_stdout_skip_and_wrong_selection)",
+    "test_contract_native_failure_stops_before_success_receipt (test_statechart_janitor_successor.JanitorSuccessorContracts.test_contract_native_failure_stops_before_success_receipt)"
+  ],
+  "count": 21,
+  "actualCallReach": [
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/driver.py",
+      "functions": [
+        "retain_and_release",
+        "safe_save",
+        "main",
+        "validate_host",
+        "verify_inputs",
+        "check_daemon",
+        "execute_contracts"
+      ],
+      "tests": [
+        "test_retention_failure_with_successful_error_log_preserves_exact_lock_and_error",
+        "test_healthy_retention_releases_only_matching_isolated_lock",
+        "test_error_evidence_write_failure_retains_lock_and_original_failure",
+        "test_prior_evidence_failure_blocks_release_after_healthy_retention",
+        "test_unconfirmed_owned_cleanup_keeps_lock_after_healthy_retention",
+        "test_changed_owner_bytes_are_never_deleted",
+        "test_missing_lock_is_ownership_failure_not_successful_release",
+        "test_original_product_failure_survives_retention_failure",
+        "test_actual_main_propagates_nonzero_failure_and_keeps_its_isolated_lock",
+        "test_host_refusal_precedes_any_material_command",
+        "test_all_entrypoints_reject_missing_or_unreleased_signal_before_admission",
+        "test_driver_head_drift_refuses_before_packet_or_resource_admission",
+        "test_driver_ambient_docker_route_refuses_before_any_host_command",
+        "test_contract_command_validates_actual_native_names_and_completion",
+        "test_contract_command_rejects_nonempty_stdout_skip_and_wrong_selection",
+        "test_contract_native_failure_stops_before_success_receipt"
+      ]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/launcher.py",
+      "functions": [
+        "validate_release",
+        "validate_host",
+        "main"
+      ],
+      "tests": [
+        "test_launcher_requires_exact_release_signal_pin_and_inspection",
+        "test_launcher_missing_release_or_pin_refuses",
+        "test_host_refusal_precedes_any_material_command",
+        "test_all_entrypoints_reject_missing_or_unreleased_signal_before_admission"
+      ]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/worker.py",
+      "functions": [
+        "selected_tap",
+        "main"
+      ],
+      "tests": [
+        "test_all_entrypoints_reject_missing_or_unreleased_signal_before_admission",
+        "test_worker_accepts_only_exact_selected_native_ok_with_summary",
+        "test_worker_rejects_missing_duplicate_skipped_failed_unselected_and_bad_summary",
+        "test_worker_refuses_nonprivate_pid_topology_before_foundation_or_runtime"
+      ]
+    }
+  ],
+  "discoveryMechanism": "Existing unittest discover with literal single-file pattern; gate_adapter._unittest_discovery supplies separate AST role attribution, not native proof",
+  "isolatedLocksOnly": true,
+  "limitations": [
+    "No import/discovery/test/coverage performed",
+    "Actual-main test patches LC modules and material calls and uses an isolated TEMP root; it never books live FIFO/Heavy or touches real fullsuite lock",
+    "No Docker/Node/Java/product process is started by direct tests",
+    "Mocked owned boundary outcomes do not establish real runtime or cleanup behavior",
+    "New maintained wrappers and imported dependencies still owe static/coverage/HCRAP and independent review"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "osName": "nt",
+  "platform": "win32",
+  "localAppData": "C:\\Users\\User\\AppData\\Local",
+  "temp": "C:\\Users\\User\\AppData\\Local\\Temp",
+  "inheritedTicket": null,
+  "launcherSha256": "9a3238fd57a619abdb3d404b95b055e08e63fc9fa986530f0d0dcada158e7fa8",
+  "driverSha256": "c486ab67cbb19458dd5d66494e1183f588615c414380ad50b3d0a663b3552ead",
+  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
+  "prefix": "LC-Suite-Slot",
+  "variable": "LC_SUITE_SLOT_TICKET",
+  "logDirectory": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-action-launch-h_si4sdu"
+}

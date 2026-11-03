@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "state": "SOURCE_CHECKPOINT_NOT_RELEASED",
+  "captainLedger": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-delegated-release-predicates-r40.json",
+    "bytes": 1081,
+    "sha256": "f8329b7a2677b33360a4d70b94c04552316cb60709e0bc7a76ac46154e12ffd4"
+  },
+  "oldLedger": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-delegated-release-predicates.json",
+    "bytes": 2661,
+    "sha256": "507e662c8046e9803226bdd664f551d07c2f55077d19fbd043b52cf79f446df4"
+  },
+  "portabilityDisposition": "Only new helper copies changed, pending captain inspection and actual native proof",
+  "helper12": {
+    "state": "NOT_RELEASED",
+    "requires": [
+      "Captain full source/identity/retention inspection",
+      "Exact captain source pin/nativeArgv/selection HELPERS release once",
+      "Actual complete12 unique native ok/Ran12/OK/exit0/empty stdout",
+      "Applicable source/custody+successful evidence retention/lock release"
+    ]
+  },
+  "typecheck": {
+    "state": "NOT_RELEASED",
+    "requires": [
+      "Applicable complete helper12 GREEN receipt",
+      "Captain exact TYPECHECK once release",
+      "Actual diagnostic exit0 +no emission/input drift; no compiler waiver"
+    ]
+  },
+  "serialTwelve": {
+    "state": "NOT_RELEASED",
+    "sourcePin": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/source-pin.json",
+      "bytes": 21971,
+      "sha256": "d5a8066e4f8a51378868bff94b34cdfd29f37e2ae3edcefc8b2f5fd741dbae26"
+    },
+    "requires": [
+      "Applicable helper12 GREEN",
+      "Relevant compiler findings reconciled",
+      "Exact source/runtime/input revalidation",
+      "Fresh actual daemon/cache/private namespace/owned resource evidence",
+      "Captain one exact serial12 release"
+    ],
+    "groupingAccepted": true,
+    "sameProcessNativeInteractionCertified": false
+  },
+  "metricAcquisition": "PROPOSED_NOT_RELEASED; immutable prior packet",
+  "review": "FAIL_OPEN_NOT_RELEASED",
+  "selfRelease": false
+}

@@ -1,0 +1,38 @@
+{
+  "argv": [
+    "/toolchain/node-v22.23.2-linux-x64/bin/node",
+    "--disable-warning=ExperimentalWarning",
+    "--test",
+    "--test-reporter=tap",
+    "--test-concurrency=1",
+    "--test-name-pattern=^POSIX\\ janitor\\ closes\\ before\\ controlled\\ SIGTERM\\ exit\\ with\\ no\\ output$",
+    "test/cli.test.ts"
+  ],
+  "cwd": "/toolchain/repo/skills/engineering/statechart/scripts",
+  "environment": {
+    "PATH": "/toolchain/node-v22.23.2-linux-x64/bin:/usr/local/bin:/usr/bin:/bin",
+    "HOME": "/work/home",
+    "TMPDIR": "/work/tmp",
+    "LC_ALL": "C.UTF-8",
+    "LANG": "C.UTF-8",
+    "JAVA": "/toolchain/repo/skills/engineering/statechart/scripts/test/java.ts",
+    "TLA2TOOLS": "/input/tla2tools.jar",
+    "STATECHART_REPLAY": "/toolchain/repo/skills/engineering/statechart/scripts/test/corpus/Counter",
+    "STATECHART_JAVA": "/no-runtime/java-forbidden",
+    "STATECHART_LOG": "/output/replayed-configs.log",
+    "NODE_OPTIONS": "--disable-warning=ExperimentalWarning",
+    "STATECHART_JANITOR_PROOF": "/output/janitor-events"
+  },
+  "selectedNames": [
+    "POSIX janitor closes before controlled SIGTERM exit with no output"
+  ],
+  "readinessSeconds": 10,
+  "selectedCloseSeconds": 10,
+  "failedCleanupSeconds": 5,
+  "nativeEmergencySeconds": 30,
+  "runnerEmergencySeconds": 65,
+  "runnerDirectReapSeconds": 5,
+  "fileLimitBytes": 16777216,
+  "realJava": false,
+  "canonicalTest": true
+}

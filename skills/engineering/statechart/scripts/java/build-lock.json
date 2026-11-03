@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "status": "built-not-runtime-validated",
+  "bytecodeMajor": 55,
+  "sources": [
+    {
+      "path": "src/dydo/statechart/LoopbackTlc.java",
+      "sha256": "0edeb8431ba300737f2710d5c5dd495d424362f5f64698651737299337f95dc2"
+    },
+    {
+      "path": "src/dydo/statechart/LoopbackSockets.java",
+      "sha256": "56711ce74c3f7db93cc8ac1a928dfbe82de470dc566b730c06dc7bae43ee79a3"
+    }
+  ],
+  "classes": [
+    "dydo/statechart/LoopbackTlc.class",
+    "dydo/statechart/LoopbackSockets.class"
+  ],
+  "artifact": {
+    "path": "statechart-tlc-bootstrap.jar",
+    "state": "sealed-build",
+    "sha256": "1772e71e2d82f470f115fa7e6d63205c388f84a0fa55537f120b9d53f3d3fbfa",
+    "bytes": 1825,
+    "receipt": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b1-20261031c/build-receipt.json",
+    "receiptSha256": "60498308cfb5290f093a453e0ab20f4378ed9d35e1624304aa8d75ddad12c8ac"
+  },
+  "jdk": {
+    "vendor": "Eclipse Temurin",
+    "runtime": "HotSpot",
+    "version": "21.0.8+9",
+    "platform": "linux-x64",
+    "archive": "OpenJDK21U-jdk_x64_linux_hotspot_21.0.8_9.tar.gz",
+    "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.8_9.tar.gz",
+    "archiveSha256": "f2dc5418092c43003db8f9005c4a286e1c0104fea96ccdd49e8ebd037cac9219",
+    "archiveVerified": true,
+    "executed": true,
+    "executionScope": "Build-only javac/jar in pinned Linux containment; no bootstrap/runtime validation",
+    "files": {
+      "release": "93b52921a5efb10ac0dcf9e3c955fa209fc83687df897d6ab034af967e2f5088",
+      "bin/javac": "b8c1509bfd245eaf891fcf453c02871ce7e794263e8f3af7655082ffc68281b2",
+      "bin/jar": "1a142a2b46a0b5f4087c859fb52992fcf26d84a001f7592cec986f3b288acef6",
+      "bin/java": "90d0a6d25da103678013f193db078b90ed8aeb27b66ebe78e0149616c9c1b811",
+      "lib/modules": "8e99660159c2bc2c7093b7fc61b5c2139698bd203365c6c3b13fad2f1032edbe"
+    }
+  },
+  "tlc": {
+    "version": "1.7.4",
+    "revision": "5a47802b5c391f59ecdd44117981f4ff8c0656ba",
+    "sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88"
+  },
+  "compilerInput": {
+    "representation": "byte-exact-exploded-tlc-v1",
+    "directory": "work/compiler-tlc",
+    "memberCount": 1066,
+    "classCount": 977,
+    "expandedBytes": 4616739,
+    "membersSha256": "523fb1af9dd8132f3b2f4495b547eb13397956015ede7f691c6172f2c4c73505",
+    "canonicalMembersEncoding": "UTF-8 JSON sorted by name; object keys sorted; separators comma/colon; no trailing newline",
+    "manifestPath": "META-INF/MANIFEST.MF",
+    "manifestSha256": "4b779480fedf8e1bf24411052bfbd00a914b1c80caee1c7b4719d8cb67c7b7ce",
+    "manifestRole": "Original bytes retained as data in a compiler-only directory; no jar manifest classpath expansion",
+    "inventory": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/compiler-view-source/tlc-members.json",
+    "receipt": "work/compiler-input.json; created before javac",
+    "runtimeRepresentationChanged": false
+  },
+  "compilerArguments": [
+    "--release",
+    "11",
+    "-encoding",
+    "UTF-8",
+    "-g",
+    "-Xlint:all",
+    "-Werror",
+    "-proc:none",
+    "-classpath",
+    "work/compiler-tlc",
+    "-d",
+    "work/classes",
+    "input/src/dydo/statechart/LoopbackTlc.java",
+    "input/src/dydo/statechart/LoopbackSockets.java"
+  ],
+  "packagingArguments": [
+    "--create",
+    "--file",
+    "OUTPUT",
+    "--no-manifest",
+    "--date=2026-01-01T00:00:00Z",
+    "-C",
+    "work/classes",
+    "dydo/statechart/LoopbackTlc.class",
+    "-C",
+    "work/classes",
+    "dydo/statechart/LoopbackSockets.class"
+  ],
+  "buildRecipe": "build.py",
+  "requiredFreshBuilds": 2,
+  "requiredIdenticalJarBytes": true,
+  "authority": "https://linear.app/bodnar-balazs/document/dyd-415-compiler-classpath-correction-and-runtime-manifest-dependency-ba29510412e1",
+  "buildProvenance": {
+    "preSealingBuildLockSha256": "ab5d4052b97eb06e43d050ded02bac16b47f87421c44e154228d974c3e86a028",
+    "buildRecipeSha256": "82939903e3774c3f29d4651541d170b301c100d60da4f1fde1faec471b1f38ea",
+    "twoFreshBuildsByteIdentical": true,
+    "classes": {
+      "dydo/statechart/LoopbackTlc.class": "fbd79015c3119fa948807af70e2ecd9d3a730dbf062c357309c28a4be8a36f4f",
+      "dydo/statechart/LoopbackSockets.class": "9e247b666ecea75caeeda73ba790d1a1cc95a7cf51404427accf18abca70306a"
+    },
+    "runtimeValidated": false,
+    "authority": "https://linear.app/bodnar-balazs/document/dyd-415-inspected-b1c-artifact-binding-and-finite-b2-source-checkpoint-52e50ff5ac1a"
+  }
+}

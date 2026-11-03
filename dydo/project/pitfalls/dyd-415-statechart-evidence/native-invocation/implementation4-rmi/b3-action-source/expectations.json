@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY_PENDING_INSPECTION",
+  "constrained": {
+    "exit": 12,
+    "generated": 3,
+    "distinct": 2,
+    "complete": false,
+    "invariant": [
+      "BelowTwo"
+    ],
+    "temporal": false,
+    "values": [
+      0,
+      1,
+      2
+    ],
+    "actions": [
+      "Initial predicate",
+      "Next line 5, col 9 to line 5, col 24 of module Transport",
+      "Next line 5, col 9 to line 5, col 24 of module Transport"
+    ],
+    "back": [],
+    "stuttering": false
+  },
+  "unconstrained": {
+    "exit": 12,
+    "generated": 3,
+    "distinct": 3,
+    "complete": false,
+    "invariant": [
+      "BelowTwo"
+    ],
+    "temporal": false,
+    "values": [
+      0,
+      1,
+      2
+    ],
+    "actions": [
+      "Initial predicate",
+      "Next line 5, col 9 to line 5, col 24 of module Transport",
+      "Next line 5, col 9 to line 5, col 24 of module Transport"
+    ],
+    "back": [],
+    "stuttering": false
+  },
+  "parityFields": [
+    "exit",
+    "generated",
+    "distinct",
+    "complete",
+    "invariant",
+    "temporal",
+    "values",
+    "actions",
+    "back",
+    "stuttering"
+  ],
+  "strictDiagnostics": [
+    "Error: Invariant BelowTwo is violated.",
+    "Error: The behavior up to this point is:"
+  ],
+  "retainedReference": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-20261031a-A/retained/output/action-bound-reference.stdout",
+    "bytes": 1387,
+    "sha256": "d14cd274fe994a182cefa3214f7605d8f79b3041223a0ebe6a52cd0e53189984"
+  },
+  "retainedUnconstrained": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-20261031a-A/retained/output/invariant-bad-reference.stdout",
+    "bytes": 1387,
+    "sha256": "b92ba4b2b0ef2c7d4369c092e13f6fb8b886e8a871bc1054b33f0644e00f6ce4"
+  },
+  "interpretation": "ACTION_CONSTRAINT restricts fingerprint admission/enqueue; excluded unseen successor still undergoes invariants. Same violation/trace,3 generated; constrained2 distinct versus unconstrained3.",
+  "observation": "Passive PID/starttime/FD/inode tcp/tcp6 capture; reject wildcard/nonlocal, record missing observation as gap, never retry/infer PASS.",
+  "noAcceptanceWaiver": true
+}

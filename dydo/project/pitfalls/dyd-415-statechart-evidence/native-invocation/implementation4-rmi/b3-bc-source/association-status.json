@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "manifestUnchanged": {
+    "path": "DynaDocs.Tests/coverage/test-associations.json",
+    "bytes": 49261,
+    "sha256": "31722a4483bc05e55b9894aff251dedc5a0704aa8681305b02923bea463b0376"
+  },
+  "retainedAssociations": "Existing production TS and original B3 modules retain their real associations without edits",
+  "newSuccessorModules": [
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-source/driver.py",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-source/launcher.py",
+    "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-source/worker.py"
+  ],
+  "directTestsForSuccessor": "NOT_PRESENT: existing test_statechart_rmi_b3.py imports original b3-source modules; no fabricated bridge/association added",
+  "scopedNeed": "Captain disposition for focused direct successor contract tests/associations before assurance closure; this commission freezes existing test inputs",
+  "assuranceNotWaived": true
+}

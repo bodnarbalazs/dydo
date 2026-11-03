@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "status": "source-only-planned-not-executed",
+  "newExecutableProofDriver": null,
+  "actualDiscovery": "NOT_RUN",
+  "actualTests": "NOT_RUN",
+  "sourceDeclaredCases": {"python": 12, "node": 5, "socketModes": 6, "realModelConfigurations": 4},
+  "productClasses": ["dydo/statechart/LoopbackTlc.class", "dydo/statechart/LoopbackSockets.class"],
+  "fixtureClasses": ["dydo/statechart/proof/Echo.class", "dydo/statechart/proof/EchoServer.class", "dydo/statechart/proof/SocketProbe.class"],
+  "controlClasses": ["tlc2/TLC.class"],
+  "container": {
+    "release": "Separate captain Stage B release required; this inventory grants no execution",
+    "image": "python@sha256:6a9220edda062e9223ea0784740a535987299420b96fbfd520b89bbd3e772485",
+    "name": "dyd415-rmi-bootstrap-<owned nonce>",
+    "label": "com.dydo.proof-owner=<same owned nonce>",
+    "pull": "never", "network": "none", "capDrop": "ALL", "noNewPrivileges": true,
+    "pids": 128, "memory": "1GiB", "cpus": 2,
+    "readOnlyMounts": ["/input", "/toolchain"], "ownedWritableMounts": ["/work", "/output"],
+    "forbidden": ["host network", "ports", "privileged", "host PID namespace", "Docker socket", "writable host home/project"],
+    "toolchain": "Official pinned JDK archive must be hash-verified before unpacking; extracted bytes verified before compiler",
+    "childEnvironment": "Clear CLASSPATH/JAVA_TOOL_OPTIONS/JDK_JAVA_OPTIONS/_JAVA_OPTIONS only in owned children"
+  },
+  "commands": {
+    "build": ["python", "-B", "/input/java/build.py", "--jdk", "/toolchain/jdk", "--jdk-archive", "/toolchain/jdk.tar.gz", "--tlc", "/input/tla2tools.jar", "--work", "/work/build", "--output", "/output/statechart-tlc-bootstrap.jar", "--receipt", "/output/build-receipt.json"],
+    "fixtureCompile": ["/toolchain/jdk/bin/javac", "--release", "11", "-encoding", "UTF-8", "-g", "-Xlint:all", "-Werror", "-proc:none", "-classpath", "/output/statechart-tlc-bootstrap.jar:/input/tla2tools.jar", "-d", "/work/fixture-classes", "/input/proof/fixtures/java/dydo/statechart/proof/Echo.java", "/input/proof/fixtures/java/dydo/statechart/proof/EchoServer.java", "/input/proof/fixtures/java/dydo/statechart/proof/SocketProbe.java"],
+    "controlCompile": ["/toolchain/jdk/bin/javac", "--release", "11", "-encoding", "UTF-8", "-g", "-Xlint:all", "-Werror", "-proc:none", "-d", "/work/control-classes", "/input/proof/fixtures/control/tlc2/TLC.java"],
+    "socketTemplate": ["/toolchain/jdk/bin/java", "-cp", "/work/fixture-classes:/output/statechart-tlc-bootstrap.jar:/input/tla2tools.jar", "dydo.statechart.proof.SocketProbe", "<mode>"],
+    "forwardingTemplate": ["/toolchain/jdk/bin/java", "-cp", "/output/statechart-tlc-bootstrap.jar:/work/control-classes", "dydo.statechart.LoopbackTlc", "first", "", "with space", "--literal=-x", "unicode-lambda"],
+    "initializationFailureControl": ["/toolchain/jdk/bin/java", "-cp", "/work/fixture-classes:/output/statechart-tlc-bootstrap.jar:/work/control-classes", "dydo.statechart.proof.SocketProbe", "existing-factory"],
+    "realTlcTemplate": ["/toolchain/jdk/bin/java", "-cp", "/output/statechart-tlc-bootstrap.jar:/input/tla2tools.jar", "dydo.statechart.LoopbackTlc", "-workers", "1", "-fp", "0", "-lncheck", "final", "-deadlock", "-metadir", "/work/meta-<case>", "-config", "/input/proof/fixtures/models/<case>.cfg", "/input/proof/fixtures/models/Transport.tla"],
+    "pythonTestsLater": ["python", "-B", "-m", "unittest", "discover", "-s", "DynaDocs.Tests/coverage/tests", "-p", "test_statechart_java_build.py"],
+    "nodeTestsLaterFromScripts": ["node", "--disable-warning=ExperimentalWarning", "--test", "--test-concurrency=1", "test/tlc-bootstrap.test.ts"]
+  },
+  "socketCases": [
+    {"mode": "bound", "expected": "exit0; explicit127.0.0.1 address and matching Linux LISTEN row; numeric and localhost roundtrip connections"},
+    {"mode": "rmi", "expected": "exit0; actual RemoteObject stub exchange and owned unexport; retain TCP/TCP6 tables and classify every LISTEN endpoint"},
+    {"mode": "nonlocal", "expected": "nonzero IOException rejecting192.0.2.1 before DNS/connect, not fixture AssertionError"},
+    {"mode": "bind-failure", "expected": "nonzero BindException on occupied loopback port, no fallback, not AssertionError"},
+    {"mode": "existing-factory", "expected": "nonzero IOException cannot replace existing factory; control variant must lack CONTROL_TLC_ENTERED"},
+    {"mode": "repeat-install", "expected": "nonzero IOException factory already defined, not AssertionError"}
+  ],
+  "forwardingControls": {
+    "notSemanticProof": true,
+    "environment": "STATECHART_CONTROL_EXIT",
+    "values": ["0", "11", "12", "13", "37", "throw"],
+    "assertions": ["base64 argv preserves original order/empty/space/literal values", "numeric exit unchanged", "stderr preserved", "throw remains nonzero with CONTROL_THROW", "no TLC control entry on bootstrap failure"],
+    "restriction": "Isolated POSIX only, never supported product path or payload"
+  },
+  "realModels": [
+    {"config": "good", "expected": "exit0;4 distinct states; TypeOK"},
+    {"config": "invariant-bad", "expected": "exit12; BelowTwo violation at x2; shortest2 transitions x0,x1,x2"},
+    {"config": "liveness-bad", "expected": "exit13; NeverFour temporal violation and lasso/cycle, fairness retained"},
+    {"config": "action-bound", "expected": "exit0; BelowTwo holds with only x0,x1 under ACTION_CONSTRAINT"}
+  ],
+  "integrationOwed": ["native readiness uses same verified payload helper", "real verdict and ChartRun chart/report coherence", "canonical/installed helper resolution", "missing/changed helper and payload rejection", "source-to-artifact and ExpectedHash payload binding", "stable compatible runtime reuse", "independent installed lifetime/abort/cleanup proof"],
+  "integrationLimits": {
+    "standalonePinnedJarRejection": "BLOCKED exact replay/discovery test-scope disposition",
+    "nodeAndNativePrerequisites": "Not asserted available in pinned Python image",
+    "artifact": "UNBUILT; no payload embedding",
+    "windows": "Access-blocked; desktop launch HOLD unchanged",
+    "javaMetrics": "Unavailable in adopted collector; no substitute metric or waiver"
+  }
+}

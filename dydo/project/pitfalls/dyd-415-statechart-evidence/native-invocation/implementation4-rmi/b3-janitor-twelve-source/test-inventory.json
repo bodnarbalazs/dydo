@@ -1,0 +1,176 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY_NO_DISCOVERY_OR_EXECUTION",
+  "canonicalFile": {
+    "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+    "bytes": 64504,
+    "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+  },
+  "names": [
+    "POSIX janitor close precedes the Counter report and controlled exit 0",
+    "POSIX janitor close precedes the CounterInstance report and controlled exit 1",
+    "POSIX janitor closes after an early worker error without publishing output",
+    "POSIX janitor closes before controlled SIGINT exit with no output",
+    "POSIX janitor closes before controlled SIGTERM exit with no output",
+    "POSIX janitor spawn failure stops and reaps the worker without publishing",
+    "POSIX janitor early close is retained and stops the owned worker",
+    "POSIX worker spawn failure is observed before any janitor starts",
+    "POSIX cleanup exception remains visible and cannot skip actual janitor close",
+    "POSIX spawn and cleanup faults are both visible after actual ownership drain",
+    "POSIX janitor kill exception is reported only after the real child closes",
+    "POSIX final drain preserves a caller file arriving at output publication"
+  ],
+  "assertions": [
+    {
+      "name": "POSIX janitor close precedes the Counter report and controlled exit 0",
+      "cliExit": 0,
+      "mode": "observe",
+      "assertions": [
+        "exact retained Counter chart/report/stdout",
+        "real janitor close SIGKILL before stdout and controlled exit",
+        "successful stage/tmp removal before close",
+        "worker exit and supplemental post-close ESRCH"
+      ]
+    },
+    {
+      "name": "POSIX janitor close precedes the CounterInstance report and controlled exit 1",
+      "cliExit": 1,
+      "mode": "observe",
+      "assertions": [
+        "exact retained CounterInstance chart/report/stdout",
+        "real janitor close SIGKILL before stdout and controlled exit",
+        "worker exit and supplemental post-close ESRCH"
+      ]
+    },
+    {
+      "name": "POSIX janitor closes after an early worker error without publishing output",
+      "cliExit": 2,
+      "mode": "observe + throwing view import",
+      "assertions": [
+        "exact injected view error stderr",
+        "empty stdout/output",
+        "real worker exit and janitor close before CLI exit"
+      ]
+    },
+    {
+      "name": "POSIX janitor closes before controlled SIGINT exit with no output",
+      "cliExit": 130,
+      "mode": "observe + file-ready waiting view + actual SIGINT",
+      "assertions": [
+        "exact SIGINT stderr",
+        "empty stdout/output/staging/tmp",
+        "real worker exit and janitor close before CLI exit"
+      ]
+    },
+    {
+      "name": "POSIX janitor closes before controlled SIGTERM exit with no output",
+      "cliExit": 143,
+      "mode": "observe + file-ready waiting view + actual SIGTERM",
+      "assertions": [
+        "exact SIGTERM stderr",
+        "empty stdout/output/staging/tmp",
+        "real worker exit and janitor close before CLI exit"
+      ]
+    },
+    {
+      "name": "POSIX janitor spawn failure stops and reaps the worker without publishing",
+      "cliExit": 2,
+      "mode": "janitor-spawn-error",
+      "assertions": [
+        "actual ENOENT and close for missing janitor executable",
+        "real worker exit before CLI exit",
+        "empty stdout/output",
+        "no real runtime fallback"
+      ]
+    },
+    {
+      "name": "POSIX janitor early close is retained and stops the owned worker",
+      "cliExit": 2,
+      "mode": "early-close: actual immediate janitor SIGKILL; waiting view prevents normal worker success",
+      "assertions": [
+        "retained unexpected-close error",
+        "real worker exit",
+        "already-closed janitor does not hang in drain",
+        "empty stdout/output"
+      ]
+    },
+    {
+      "name": "POSIX worker spawn failure is observed before any janitor starts",
+      "cliExit": 2,
+      "mode": "worker-spawn-error",
+      "assertions": [
+        "actual ENOENT/error/close",
+        "no janitor spawn",
+        "empty stdout/output"
+      ]
+    },
+    {
+      "name": "POSIX cleanup exception remains visible and cannot skip actual janitor close",
+      "cliExit": 2,
+      "mode": "cleanup-error",
+      "assertions": [
+        "exact stage-rm error stderr",
+        "empty stdout success report",
+        "retained already-published chart/report match corpus",
+        "actual janitor close despite rm exception"
+      ]
+    },
+    {
+      "name": "POSIX spawn and cleanup faults are both visible after actual ownership drain",
+      "cliExit": 2,
+      "mode": "janitor-spawn-error-cleanup-error",
+      "assertions": [
+        "both spawn and cleanup messages retained",
+        "actual worker exit and janitor close",
+        "empty stdout/output"
+      ]
+    },
+    {
+      "name": "POSIX janitor kill exception is reported only after the real child closes",
+      "cliExit": 2,
+      "mode": "kill-error: real owned child SIGKILL first, then injected exception",
+      "assertions": [
+        "exact kill error stderr",
+        "actual SIGKILL close before CLI exit",
+        "empty stdout success report"
+      ]
+    },
+    {
+      "name": "POSIX final drain preserves a caller file arriving at output publication",
+      "cliExit": 2,
+      "mode": "output-collision",
+      "assertions": [
+        "caller report.md bytes preserved exactly",
+        "no other output file",
+        "collision error and empty stdout",
+        "actual worker exit and janitor close"
+      ]
+    }
+  ],
+  "sourceScope": "Current frozen canonical cli.test.tsb9925b7b; original assertions/stimuli all unchanged; only previously approved atomic marker correction differs from old historical12 source",
+  "perNativeInvocation": "exact one escaped name; complete native TAP plan/pass1/fail0/cancelled0/todo0 and no selected skip",
+  "gateInvocation": "exact12 native commands serially within one launcher/one proof container; final strict namespace census",
+  "directContracts": {
+    "files": [
+      "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_driver_contracts.py",
+      "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_worker_contracts.py"
+    ],
+    "lexicalNames": [
+      "TwelveDriverContracts.test_retention_failure_with_successful_logging_keeps_exact_isolated_lock",
+      "TwelveDriverContracts.test_healthy_retention_releases_only_matching_isolated_lock",
+      "TwelveDriverContracts.test_launcher_requires_exact_twelve_release_and_source_identity",
+      "TwelveDriverContracts.test_missing_or_alternative_selector_refuses_before_admission",
+      "TwelveWorkerContracts.test_exact_source_selection_is_twelve_unique_original_names",
+      "TwelveWorkerContracts.test_complete_exact_native_one_case_summary_is_required",
+      "TwelveWorkerContracts.test_real_child_close_before_controlled_exit_is_required",
+      "TwelveWorkerContracts.test_spawn_failure_close_is_distinct_from_reaping_a_created_janitor",
+      "TwelveWorkerContracts.test_worker_spawn_failure_requires_no_janitor",
+      "TwelveWorkerContracts.test_runner_identity_uncertainty_never_kills_an_unproved_group",
+      "TwelveWorkerContracts.test_runner_exact_owned_group_cancellation_uses_sigkill",
+      "TwelveWorkerContracts.test_timeout_stays_failure_after_late_runner_exit_and_bounded_reap"
+    ],
+    "count": 12,
+    "executed": 0,
+    "scope": "Actual successor retain_and_release/admission/parser, selected_tap/lifecycle_events/drain_runner/run_case timeout; only isolated locks and mocked material calls; not product or container proof"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "files": [
+    {
+      "source": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\DynaDocs.Tests\\coverage\\tests\\test_statechart_node_acquisition.py",
+      "destination": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-node-contract-xnrk1p9w\\input\\repo\\DynaDocs.Tests\\coverage\\tests\\test_statechart_node_acquisition.py",
+      "sha256": "d8f588349ef8935f040196409deb0316e48827156fc587f66094b09dd75f9d75",
+      "bytes": 5952
+    },
+    {
+      "source": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\b3-node-source\\driver.py",
+      "destination": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-node-contract-xnrk1p9w\\input\\repo\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\b3-node-source\\driver.py",
+      "sha256": "0ded3eadf56c49e705b437cc37840dd1e8b054f12fe2801fa1523b7419ac9589",
+      "bytes": 13271
+    },
+    {
+      "source": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\b3-node-source\\launcher.py",
+      "destination": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-node-contract-xnrk1p9w\\input\\repo\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\b3-node-source\\launcher.py",
+      "sha256": "6638ff39b250af2e0c26730a2e01087e1e906aa405426f76a042aa4db79debb9",
+      "bytes": 4483
+    },
+    {
+      "source": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\b3-node-source\\transfer.py",
+      "destination": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-node-contract-xnrk1p9w\\input\\repo\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation4-rmi\\b3-node-source\\transfer.py",
+      "sha256": "ef4d6ca29758d0a72600cd86eb4b96154e49dd9268a3f2188fe315c400510497",
+      "bytes": 2614
+    }
+  ],
+  "workerSha256": "ed2770a19db77370ecfdfb795aa73fa012d9c68f57dadbd53f05988b5ec6e92b",
+  "manifestSha256": "b1a6690b39567d252afcb592b727ae372397f72d5a1a37518ee771542adeeacd"
+}

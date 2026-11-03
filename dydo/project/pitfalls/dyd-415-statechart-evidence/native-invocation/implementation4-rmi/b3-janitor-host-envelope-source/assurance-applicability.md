@@ -1,0 +1,15 @@
+# Assurance reach and stopped adaptation
+
+The completed21 contracts at sourcee368bc27/receipt161dad18 cover old driver/launcher/worker methods and exact isolated-lock retention failure/success/error/ownership paths. Old executed wrappers remain unchanged. Those21 are not rerun and are not a PASS for hypothetical helpers/typecheck dispatch.
+
+The12 proposed helper native identities are derived lexically in test-inventory.json, not discovered. Actual source loads the three b3-janitor-twelve-source modules and calls retain_and_release, launcher.validate_release/parser, selected_tap, lifecycle_events, drain_runner and run_case timeout. Material subprocess/group boundaries are intended to be mocked; no unpatched subprocess/network/descendant creation was found in the test call route. Local tempfile fixtures are genuine isolated locks, never live FIFO/fullsuite. Three Unix-only attribute patch targets fail the Windows source contract before the intended mocked calls; no host shim, alternate runner or skipped target may hide that.
+
+All original assertions remain owed: wrong group identity refuses kill; exact owned group requests SIGKILL; timeout remains original failure after late exit and bounded65s/5s wait sequence; actual close/TAP selection and retain-before-unlock observations. A future platform-neutral fixture mock must retain these actual-function calls and assertions, no copying implementation or simulated product proof.
+
+Host driver/launcher code is absent due to the obstacle. There is therefore no newly maintained runtime module or genuine test association for such modules yet. Do not associate old tests by filename substitution or claim wrapper direct coverage. New dispatch/release/input/env/non-emission/parser paths would remain separate assurance obligations when code is actually authored. No recursive helper project/test framework is commissioned.
+
+Shared-containment sha/save/run/retain_work and external LC book/Heavy mechanisms are exact source roles, with prior proof limited to old selectors. Imported active functions cannot be excluded as historical. Linux worker foundation is not loaded by these direct helper tests; helper mocks do not prove extraction, Docker, POSIX native lifecycle or Java. The actual original12 product cases remain an independent contained gate after predicates close.
+
+Source audit of canonical12 finds independent per-case data/preloads/CLI children and no intercase assertion/order dependency. Accepted grouping deliberately supplies12 complete native one-case summaries plus explicit aggregate and strict per-case/final census; it is not native pass12 or same-native-process interaction certification. Observer synchronous JSONL writes distort scheduling. All failures/previous signal scope and abrupt-parent limits retained.
+
+The retained compiler parses full54 sources/config and installed declaration libraries without launching tests or applications. It is diagnostic only, not adopted aggregate TS/static/coverage, installed package provenance, viewer typecheck, Windows runtime or Java assurance. No source parsing, runtime or metric result is invented.

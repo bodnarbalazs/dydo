@@ -1,0 +1,274 @@
+{
+  "schema": 1,
+  "state": "BLOCKED_ADDITIONAL_WORKSPACE_LINK_SCOPE",
+  "newPythonModules": [],
+  "newLiteralImports": [],
+  "newNativeTestIds": [],
+  "retainedClosure": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/closure.json",
+    "bytes": 535880,
+    "sha256": "6999805f42124fafe6ceb62baf06428c3cab55be14beb9896e32e2740a507376"
+  },
+  "retainedLiteralPythonImports": [
+    {
+      "identity": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/driver.py",
+        "bytes": 18430,
+        "sha256": "166f679a44a9c448ef314f706a15ad4bf2ab692ea0bb2c63db80815dd56a0151"
+      },
+      "imports": [
+        {
+          "line": 2,
+          "text": "import argparse"
+        },
+        {
+          "line": 3,
+          "text": "import datetime"
+        },
+        {
+          "line": 4,
+          "text": "import hashlib"
+        },
+        {
+          "line": 5,
+          "text": "import importlib.util"
+        },
+        {
+          "line": 6,
+          "text": "import json"
+        },
+        {
+          "line": 7,
+          "text": "import os"
+        },
+        {
+          "line": 8,
+          "text": "from pathlib import Path"
+        },
+        {
+          "line": 9,
+          "text": "import re"
+        },
+        {
+          "line": 10,
+          "text": "import subprocess"
+        },
+        {
+          "line": 11,
+          "text": "import sys"
+        },
+        {
+          "line": 12,
+          "text": "import tempfile"
+        },
+        {
+          "line": 13,
+          "text": "import uuid"
+        },
+        {
+          "line": 278,
+          "text": "from tools.testing.runner import suite_slot"
+        },
+        {
+          "line": 279,
+          "text": "from tools.testing.runner import machine_lock as lock_module"
+        },
+        {
+          "line": 280,
+          "text": "from tools.testing.runner.machine_lock import HEAVY, machine_lock"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/launcher.py",
+        "bytes": 5507,
+        "sha256": "3f57a5bced61d8ec2180aa49675685f17f1c1b507d7ba9e05c2e8764a01fd72a"
+      },
+      "imports": [
+        {
+          "line": 2,
+          "text": "import argparse"
+        },
+        {
+          "line": 3,
+          "text": "from pathlib import Path"
+        },
+        {
+          "line": 4,
+          "text": "import hashlib"
+        },
+        {
+          "line": 5,
+          "text": "import json"
+        },
+        {
+          "line": 6,
+          "text": "import os"
+        },
+        {
+          "line": 7,
+          "text": "import subprocess"
+        },
+        {
+          "line": 8,
+          "text": "import sys"
+        },
+        {
+          "line": 9,
+          "text": "import tempfile"
+        },
+        {
+          "line": 77,
+          "text": "from tools.testing.runner import suite_slot"
+        },
+        {
+          "line": 78,
+          "text": "from tools.testing.runner import machine_lock as lock_module"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/test_driver_contracts.py",
+        "bytes": 3684,
+        "sha256": "c8a76778a7362e6f7c1e0db8540f4c59ba1a02ef7dcb976debb9a7513d787757"
+      },
+      "imports": [
+        {
+          "line": 2,
+          "text": "from contextlib import redirect_stderr"
+        },
+        {
+          "line": 3,
+          "text": "import hashlib"
+        },
+        {
+          "line": 4,
+          "text": "import importlib.util"
+        },
+        {
+          "line": 5,
+          "text": "import io"
+        },
+        {
+          "line": 6,
+          "text": "import json"
+        },
+        {
+          "line": 7,
+          "text": "from pathlib import Path"
+        },
+        {
+          "line": 8,
+          "text": "import sys"
+        },
+        {
+          "line": 9,
+          "text": "import tempfile"
+        },
+        {
+          "line": 10,
+          "text": "import unittest"
+        },
+        {
+          "line": 11,
+          "text": "from unittest.mock import patch"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/test_worker_contracts.py",
+        "bytes": 6811,
+        "sha256": "d11c33110417adb2b21c83878f53431f878ec3bb0f527aa87f8b2c1c09baa973"
+      },
+      "imports": [
+        {
+          "line": 2,
+          "text": "import importlib.util"
+        },
+        {
+          "line": 3,
+          "text": "from pathlib import Path"
+        },
+        {
+          "line": 4,
+          "text": "import subprocess"
+        },
+        {
+          "line": 5,
+          "text": "import tempfile"
+        },
+        {
+          "line": 6,
+          "text": "from types import SimpleNamespace"
+        },
+        {
+          "line": 7,
+          "text": "import unittest"
+        },
+        {
+          "line": 8,
+          "text": "from unittest.mock import Mock, patch"
+        }
+      ]
+    }
+  ],
+  "retainedDynamicImport": {
+    "source": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/shared-containment.py",
+      "bytes": 18149,
+      "sha256": "24f0afe8f437cef9dc0fc8a3d5cf98540f39af0bf6f45e129f12c2e53549c100"
+    },
+    "guard": "literal raw SHA before import",
+    "reached": [
+      "sha",
+      "save",
+      "retain_work",
+      "LC_PINS"
+    ],
+    "notCalled": [
+      "run",
+      "container",
+      "execute",
+      "cleanup",
+      "main",
+      "reuse_jdk"
+    ]
+  },
+  "retainedLC": {
+    "path": "C:/Users/User/.t3/worktrees/LC/t3-f7ffe8ea",
+    "identities": [
+      {
+        "path": "C:\\Users\\User\\.t3\\worktrees\\LC\\t3-f7ffe8ea\\tools\\testing\\runner\\suite_slot.py",
+        "bytes": 9498,
+        "sha256": "aa36020ee48e08319451e6c126701251aa3be9ef40ca4e4cb9cbaed1e375d21a",
+        "role": "Pinned host executable/source; not launched for this check"
+      },
+      {
+        "path": "C:\\Users\\User\\.t3\\worktrees\\LC\\t3-f7ffe8ea\\tools\\testing\\runner\\machine_lock.py",
+        "bytes": 3541,
+        "sha256": "7b53157084084ebb6806f7b4f391a82467f9fed0fc9d701d3fd3e0954c0d9736",
+        "role": "Pinned host executable/source; not launched for this check"
+      },
+      {
+        "path": "C:\\Users\\User\\.t3\\worktrees\\LC\\t3-f7ffe8ea\\dydo\\reference\\tools\\test-runner.md",
+        "bytes": 75557,
+        "sha256": "c0eb699240e4f0bd1526f1bbf495604fbf67bbb3ed3002f19fc09222a9ea92a4",
+        "role": "Pinned host executable/source; not launched for this check"
+      }
+    ],
+    "originGuard": true
+  },
+  "retainedTypeScript": {
+    "maintainedCount": 54,
+    "installedMemberCount": 2089,
+    "wholeScriptsCount": 2520,
+    "chain": "typescript/bin/tsc -> lib/tsc.js -> lib/_tsc.js; TS5.9.3 standard libs; @types/node22.18.0 -> undici-types6.21.0; fast-check4.5.3 -> pure-rand7.0.1",
+    "binding": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology-source/input-manifest.json",
+    "nativeResolutionExecuted": false
+  },
+  "topology": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology-source/topology-observations.json",
+  "limitation": "No module imported/executed. Retained literal-import source mapping is not new runtime/assurance proof."
+}

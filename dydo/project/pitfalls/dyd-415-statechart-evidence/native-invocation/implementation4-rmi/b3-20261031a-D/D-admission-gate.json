@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "state": "D_24_PASS_NO_SKIP_CLEANUP_CUSTODY_CONFIRMED",
+  "observedUtc": "2026-10-31T01:17:36.373516+00:00",
+  "sourcePin": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/source-pin.json",
+    "bytes": 6326,
+    "sha256": "c4050cc3b1419387c9bc1c3a91569e33eba4f75138da92cce964d322015a1a01"
+  },
+  "tests": [
+    {
+      "raw": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-20261031a-D/retained/output/test_statechart_rmi_b2.py.stderr",
+        "bytes": 2113,
+        "sha256": "8222f1803d053322a784c1a3e63ef205282ff7b40b99406ef966aec660aa89f0"
+      },
+      "discovered": 12,
+      "passed": 12,
+      "skipped": 0,
+      "names": [
+        "test_bound_requires_exchange_and_rmi_requires_round_trip (test_statechart_rmi_b2.RmiB2Contracts.test_bound_requires_exchange_and_rmi_requires_round_trip) ... ok",
+        "test_cleanup_checks_owned_identity_and_does_not_remove_foreign_container (test_statechart_rmi_b2.RmiB2Contracts.test_cleanup_checks_owned_identity_and_does_not_remove_foreign_container) ... ok",
+        "test_container_refuses_wildcard_network_before_start (test_statechart_rmi_b2.RmiB2Contracts.test_container_refuses_wildcard_network_before_start) ... ok",
+        "test_dual_table_observation_requires_owned_socket (test_statechart_rmi_b2.RmiB2Contracts.test_dual_table_observation_requires_owned_socket) ... ok",
+        "test_exact_finite_classpaths_and_process_inventory (test_statechart_rmi_b2.RmiB2Contracts.test_exact_finite_classpaths_and_process_inventory) ... ok",
+        "test_failure_requires_exact_diagnostic_and_no_tlc_entry (test_statechart_rmi_b2.RmiB2Contracts.test_failure_requires_exact_diagnostic_and_no_tlc_entry) ... ok",
+        "test_fixture_compilers_cannot_recompile_product_or_consume_official_manifest (test_statechart_rmi_b2.RmiB2Contracts.test_fixture_compilers_cannot_recompile_product_or_consume_official_manifest) ... ok",
+        "test_forwarding_checks_empty_space_unicode_option_order_exit_and_stderr (test_statechart_rmi_b2.RmiB2Contracts.test_forwarding_checks_empty_space_unicode_option_order_exit_and_stderr) ... ok",
+        "test_launcher_refuses_redirected_host_before_startup (test_statechart_rmi_b2.RmiB2Contracts.test_launcher_refuses_redirected_host_before_startup) ... ok",
+        "test_launcher_requires_captain_release_for_exact_source_packet (test_statechart_rmi_b2.RmiB2Contracts.test_launcher_requires_captain_release_for_exact_source_packet) ... ok",
+        "test_native_endian_mapped_loopback_and_nonlocal_addresses (test_statechart_rmi_b2.RmiB2Contracts.test_native_endian_mapped_loopback_and_nonlocal_addresses) ... ok",
+        "test_thrown_error_requires_original_stderr_and_error_identity (test_statechart_rmi_b2.RmiB2Contracts.test_thrown_error_requires_original_stderr_and_error_identity) ... ok"
+      ]
+    },
+    {
+      "raw": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-20261031a-D/retained/output/test_statechart_rmi_b3.py.stderr",
+        "bytes": 2143,
+        "sha256": "19e1a42d888b840c99cd66a07b8569af468095bec62eae20afac67f9e89f6868"
+      },
+      "discovered": 12,
+      "passed": 12,
+      "skipped": 0,
+      "names": [
+        "test_action_constraint_must_reduce_distinct_states_and_hold_below_two (test_statechart_rmi_b3.RmiB3Contracts.test_action_constraint_must_reduce_distinct_states_and_hold_below_two) ... ok",
+        "test_cleanup_will_not_remove_a_foreign_owner (test_statechart_rmi_b3.RmiB3Contracts.test_cleanup_will_not_remove_a_foreign_owner) ... ok",
+        "test_driver_refuses_host_network_before_container_start (test_statechart_rmi_b3.RmiB3Contracts.test_driver_refuses_host_network_before_container_start) ... ok",
+        "test_fair_temporal_cycle_cannot_be_replaced_by_stuttering (test_statechart_rmi_b3.RmiB3Contracts.test_fair_temporal_cycle_cannot_be_replaced_by_stuttering) ... ok",
+        "test_invariant_requires_shortest_ordered_path_and_next_actions (test_statechart_rmi_b3.RmiB3Contracts.test_invariant_requires_shortest_ordered_path_and_next_actions) ... ok",
+        "test_java_recording_claim_enforces_finite_ceiling_without_replacement (test_statechart_rmi_b3.RmiB3Contracts.test_java_recording_claim_enforces_finite_ceiling_without_replacement) ... ok",
+        "test_launcher_requires_exact_group_and_source_release (test_statechart_rmi_b3.RmiB3Contracts.test_launcher_requires_exact_group_and_source_release) ... ok",
+        "test_listener_evidence_requires_matching_process_fd_inode (test_statechart_rmi_b3.RmiB3Contracts.test_listener_evidence_requires_matching_process_fd_inode) ... ok",
+        "test_node_commands_bound_exact_files_and_six_case_selector (test_statechart_rmi_b3.RmiB3Contracts.test_node_commands_bound_exact_files_and_six_case_selector) ... ok",
+        "test_selected_discovery_rejects_skip_missing_or_unselected_execution (test_statechart_rmi_b3.RmiB3Contracts.test_selected_discovery_rejects_skip_missing_or_unselected_execution) ... ok",
+        "test_semantic_reader_retains_state_action_loop_and_requires_counts (test_statechart_rmi_b3.RmiB3Contracts.test_semantic_reader_retains_state_action_loop_and_requires_counts) ... ok",
+        "test_socket_word_decoding_distinguishes_loopback_wildcard_and_nonlocal (test_statechart_rmi_b3.RmiB3Contracts.test_socket_word_decoding_distinguishes_loopback_wildcard_and_nonlocal) ... ok"
+      ]
+    }
+  ],
+  "sourceRowsMatched": 18,
+  "preservedRowsMatched": 1419,
+  "snapshotRowsMatched": 415,
+  "retainedInputsMatched": 7,
+  "ownedCleanupConfirmed": true,
+  "absenceRows": 3,
+  "fifoHeavyTempReleased": true,
+  "actualJava": false,
+  "actualNode": false,
+  "AEligibleUnderCaptainRelease": true,
+  "broaderAssurancePass": false
+}

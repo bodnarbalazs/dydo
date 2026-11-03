@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY_BLOCKED_EXTERNAL_CUSTODY",
+  "contract": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-topology2-source-contract.md",
+    "bytes": 8755,
+    "sha256": "9dbd6cf1a6793462c3decfc7c7417c011386cf95e41577d07afb65e38ef39fa4"
+  },
+  "ledger": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-delegated-release-predicates-r45.json",
+    "bytes": 864,
+    "sha256": "69246ebca6238cec3ee7c285bb30059ca0154b83ecbf22a009a21d74324415e5"
+  },
+  "sourceInspection": "PENDING_CAPTAIN",
+  "topologyProof": "NOT_RELEASED",
+  "typecheck": "NOT_RELEASED",
+  "serial12": "NOT_RELEASED",
+  "review": "FAIL_OPEN",
+  "sequence": [
+    "Captain source and exact raw identity inspection",
+    "Separate minimal TOPOLOGY17 execution release",
+    "Complete native17/OK/exit0/no skip, input/custody/retention/release proof",
+    "Conditional typecheck only with applicable topology GREEN + recorded helper12 receipt",
+    "Reconcile compiler findings; fresh exact POSIX containment/environment before any serial12"
+  ],
+  "nativeGreenDoesNotProve": [
+    "New host wrapper dispatch/finalization direct assurance",
+    "Registry/archive provenance/reproducible installation",
+    "Platform/projection acceptance",
+    "Aggregate static/coverage",
+    "Java assurance/Windows isolated access",
+    "Abrupt-parent/PID1 strict drain"
+  ],
+  "noAutomaticChain": true,
+  "noNewExecutionReleaseAuthored": true,
+  "returnObstacle": {
+    "description": "Normal approved actual-host read-only check confirmed all three exact pinned LC paths absent (Cannot find path, exit1): test-runner.md, machine_lock.py and suite_slot.py. They were available and hash-matched before authoring. No pin/namespace was changed, no alternative LC tree admitted and no repair, envelope or workload retry occurred.",
+    "expected": [
+      {
+        "path": "C:/Users/User/.t3/worktrees/LC/t3-f7ffe8ea/dydo/reference/tools/test-runner.md",
+        "bytes": 75557,
+        "sha256": "c0eb699240e4f0bd1526f1bbf495604fbf67bbb3ed3002f19fc09222a9ea92a4"
+      },
+      {
+        "path": "C:/Users/User/.t3/worktrees/LC/t3-f7ffe8ea/tools/testing/runner/machine_lock.py",
+        "bytes": 3541,
+        "sha256": "7b53157084084ebb6806f7b4f391a82467f9fed0fc9d701d3fd3e0954c0d9736"
+      },
+      {
+        "path": "C:/Users/User/.t3/worktrees/LC/t3-f7ffe8ea/tools/testing/runner/suite_slot.py",
+        "bytes": 9498,
+        "sha256": "aa36020ee48e08319451e6c126701251aa3be9ef40ca4e4cb9cbaed1e375d21a"
+      }
+    ],
+    "disposition": "Captain/original shared-resource owner assesses availability/provenance and fresh exact bindings before any release. No generic fallback, alternate namespace, repair or automatic retry in this packet.",
+    "actualHostReadOnlyConfirmedAbsent": true
+  }
+}

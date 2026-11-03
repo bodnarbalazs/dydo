@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "author": "code-writer/model: gpt-6.1-sol/high",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "preservedRows": 5079,
+  "mismatches": 0,
+  "existingGitStatusUnchanged": true,
+  "existingTrackedDiffBytesUnchanged": true,
+  "productionAndPayloadUnchanged": true,
+  "associationManifest": {
+    "path": "DynaDocs.Tests/coverage/test-associations.json",
+    "bytes": 49261,
+    "sha256": "31722a4483bc05e55b9894aff251dedc5a0704aa8681305b02923bea463b0376"
+  },
+  "rawCFailure": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-20261031a-C/return-receipt.json",
+    "bytes": 104289,
+    "sha256": "33d4dc71d0f957f20b9418012868930696dbd00b8a650e1997b0244bfd8540bc"
+  },
+  "historicalDirectSourcePin": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-contract-source/source-pin.json",
+    "bytes": 3348,
+    "sha256": "25427379b88cd7041d6fbd9526821a5cef3edb47b88837c7b3f6657ac27ed359"
+  },
+  "sourceAstOnly": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-contract-envelope-source/driver.py",
+      "bytes": 9589,
+      "sha256": "f5d6eddc866ee22ebd173623571cc40964691f5bd4e1c3a7653efb50ba57a078"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-contract-envelope-source/launcher.py",
+      "bytes": 4562,
+      "sha256": "3bf2503e33ccba83d832177c8a949741aa34bbdc5d4469e463765a5a8bf9ce33"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-bc-contract-envelope-source/worker.py",
+      "bytes": 4927,
+      "sha256": "7a383684f54483689e0ee1e78a1cf6bf7f436e8d548ecf3fdfd1ddc75cf2ee96"
+    }
+  ],
+  "proofModulesImported": false,
+  "testDiscovery": false,
+  "testExecution": false,
+  "containers": false,
+  "node": false,
+  "java": false,
+  "javac": false,
+  "installer": false,
+  "network": false,
+  "archiveOpenedOrExtracted": false,
+  "normalTempSourceCounterpartsVerified": true,
+  "lcPins": {
+    "tools/testing/runner/suite_slot.py": "aa36020ee48e08319451e6c126701251aa3be9ef40ca4e4cb9cbaed1e375d21a",
+    "tools/testing/runner/machine_lock.py": "7b53157084084ebb6806f7b4f391a82467f9fed0fc9d701d3fd3e0954c0d9736",
+    "dydo/reference/tools/test-runner.md": "c0eb699240e4f0bd1526f1bbf495604fbf67bbb3ed3002f19fc09222a9ea92a4"
+  },
+  "lcImported": false,
+  "liveQueueBooked": false,
+  "locksAcquired": false,
+  "retainedData": [],
+  "sourcePreparationDiagnostics": [
+    {
+      "kind": "source-data assertion",
+      "observation": "Nonexistent statechart/package.json was rejected before manifest creation; exact inspected scripts/package.json is bound",
+      "proofFailure": false
+    },
+    {
+      "kind": "source-data assertion",
+      "observation": "Initial status comparison included the two newly created preservation files in before snapshot; explicit symmetric new-packet filtering found no unexpected added or removed existing status rows",
+      "proofFailure": false
+    },
+    {
+      "kind": "PreToolUse hook rejection",
+      "count": 2,
+      "reason": "Embedded newlines/bypass-pattern analysis could not verify writes",
+      "resolution": "Read-only destination absence inspection followed by four single literal Copy-Item operations; exact source bytes verified; no execution attempted"
+    }
+  ],
+  "executionRelease": false,
+  "finalAcceptance": false
+}

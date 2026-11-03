@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "source": {
+    "path": "DynaDocs.Tests/coverage/tests/test_statechart_rmi_action.py",
+    "bytes": 6297,
+    "sha256": "6514dd733aa6144ecbf4ad15210c9c02cb0672fd212693ef37468b96de2a3ea2"
+  },
+  "count": 12,
+  "names": [
+    "test_real_retained_reference_requires_exit12_and_exact_boundary_trace",
+    "test_retained_unconstrained_same_violation_has_three_admitted_states",
+    "test_old_success_assumption_is_rejected",
+    "test_wrong_generated_or_admission_count_is_rejected",
+    "test_wrong_rule_temporal_loop_or_completion_is_rejected",
+    "test_missing_reordered_or_different_boundary_value_is_rejected",
+    "test_exact_three_headers_and_two_next_actions_are_required",
+    "test_missing_counts_and_unrelated_error_cannot_be_interpreted_as_expected",
+    "test_reference_binding_detects_changed_bytes",
+    "test_launcher_requires_exact_successor_group_and_pin",
+    "test_driver_rejects_noncommissioned_host_before_booking",
+    "test_worker_contract_selection_and_no_skip_interpretation_are_finite"
+  ],
+  "method": "Nonexecuting AST source inventory, not import/native discovery/pass",
+  "actualDiscovery": "NOT_RUN"
+}

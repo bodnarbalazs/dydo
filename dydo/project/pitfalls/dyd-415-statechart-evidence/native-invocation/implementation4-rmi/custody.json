@@ -1,0 +1,582 @@
+{
+  "schema": 1,
+  "state": "uncommitted-uncompiled-stage-a-material-scope-gap",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "branch": "DYD-415-statechart",
+  "files": [
+    {
+      "path": "DynaDocs.Tests/Statechart/StatechartAssetsTests.cs",
+      "bytes": 2342,
+      "sha256": "418c35133cdd1da3edc829f14c83367894284b8d17d6e876d7bb978ce5dc0509"
+    },
+    {
+      "path": "DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs",
+      "bytes": 3316,
+      "sha256": "58e7ec5e51b7b0bd5363ebe76bdbdcd1c725c78068a70a9f99bd295e51a6f248"
+    },
+    {
+      "path": "DynaDocs.Tests/Statechart/StatechartReadyTests.cs",
+      "bytes": 5285,
+      "sha256": "204981767db9c1a769fdfd1c4d54a4bec7afeeca59b3106afee7773499e2088e"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/test-associations.json",
+      "bytes": 47253,
+      "sha256": "047216bc52e08256fdf64cd1b8e0905140672f3793aa7972eebaf834665e4684"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_statechart_java_build.py",
+      "bytes": 7104,
+      "sha256": "423d8d3eed6a58a869e37f5ae4838657b202dd1ac845ad95443323dbafcb30cb"
+    },
+    {
+      "path": "Program.cs",
+      "bytes": 3535,
+      "sha256": "29106d34b194bc2bac5d02809302da57782bfb3900974ee5155faaac7002b5ab"
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartAnchor.cs",
+      "bytes": 2840,
+      "sha256": "6169c510566c8be28d8d3b2a440a7bdffbee5b37bff50d2b13dbe1a2f792acbf"
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartChannel.cs",
+      "bytes": 1901,
+      "sha256": "68001551d4ea6a2353eaaf7fc488ede4446413ab0857f2cc29fc1eb5c04b5e5d"
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartChild.cs",
+      "bytes": 554,
+      "sha256": "3c55592df1ff2b661783e19289daa7e3d5da9470ef2995f0ec64c16ecbdebc0a"
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartDescriptors.cs",
+      "bytes": 677,
+      "sha256": "20a79465750a36b2c8acecb07de204e5ffabd431cbb7736d4636fe40c93f1ab3"
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartFiles.cs",
+      "bytes": 3229,
+      "sha256": "f23884f21cc7d0884232e07db7ba938fb3812017c481b49a31878dd0488443ad"
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartLifetime.cs",
+      "bytes": 6588,
+      "sha256": "0a0c8a218bc23353944965f07dbbf7211920b4ebca6e4c77b1df5c7bc58a7011"
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartOwner.cs",
+      "bytes": 7315,
+      "sha256": "8e25f1b063e981163366dd2917a41e6ca50e3d086b971564b4ab1a14a4b5b06d"
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartProcess.cs",
+      "bytes": 6099,
+      "sha256": "3a50faf135ee0632882564ef8564edab66b42c7ed5323f25c2e90277b459f4cc"
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartRun.cs",
+      "bytes": 2262,
+      "sha256": "a3e6c8b9f71cb2c7b2d84b32d8d663898774e1bbaf9bd403d56f8f0f9430b8c2"
+    },
+    {
+      "path": "Services/Statechart/StatechartContinuation.cs",
+      "bytes": 127,
+      "sha256": "ed38b57ec9e9994c32e210deb61b7da5109ba5c910990e0091385710c1a40961"
+    },
+    {
+      "path": "Services/Statechart/StatechartFlow.cs",
+      "bytes": 4692,
+      "sha256": "d14f89976898c5c8c66dcf3c4a2b4d4113c34ac2fecc27c5c950975c6d9861e6"
+    },
+    {
+      "path": "Services/Statechart/StatechartLifetime.cs",
+      "bytes": 937,
+      "sha256": "e4c298ff70912818d602b61b53ed95dd72d700165e905eff693cd57c4a34dd09"
+    },
+    {
+      "path": "Services/Statechart/StatechartNode.cs",
+      "bytes": 2546,
+      "sha256": "1da4983157ecaa7b7e08da7d3162837783fdb426f38bddfa3cb505f02c76d090"
+    },
+    {
+      "path": "Services/Statechart/StatechartProbe.cs",
+      "bytes": 3496,
+      "sha256": "b6abbb81eaec22f5ace37912d8bfcd0739eeb4499e93f1e89715690bb67194b3"
+    },
+    {
+      "path": "Services/Statechart/StatechartReady.cs",
+      "bytes": 3874,
+      "sha256": "7a36647dc0ec50cb03d28639ace17b56a496a704a19c20e039e30b603168dedc"
+    },
+    {
+      "path": "Services/Statechart/StatechartResolver.cs",
+      "bytes": 2307,
+      "sha256": "dee2bbb04cc9f0e33c3f401710798c769f9d59b990ba4fcbf31ac5ccde7975f9"
+    },
+    {
+      "path": "Services/Statechart/StatechartRunner.cs",
+      "bytes": 2982,
+      "sha256": "8909ceca2fe1fd2446cdc99e27bb5969cd38e0d0b596f69c22ae7cdc3b8d0b9c"
+    },
+    {
+      "path": "Services/Statechart/StatechartScratch.cs",
+      "bytes": 3615,
+      "sha256": "892939d09f0c9167be9a04b04bee64d4cc1b40141ffaae082204a375a3596f94"
+    },
+    {
+      "path": "Services/Statechart/StatechartSkill.cs",
+      "bytes": 4432,
+      "sha256": "a48f32f542a65fdcd00fadaca5c3b16d761f1ad5b2cba9ee5f56cfb2ff2ce2e0"
+    },
+    {
+      "path": "Services/Statechart/WindowsStatechartLifetime.cs",
+      "bytes": 5007,
+      "sha256": "80f2ff4bf858780ac02ab89bfa821291b95dda4e10abef9be367141cc27b4486"
+    },
+    {
+      "path": "dydo/project/decisions/062-statechart-invocation-manages-prerequisites.md",
+      "bytes": 6692,
+      "sha256": "065c6ee4d2d8d7bb99acc24ddff9040eb362efa80dafabea1affdfb77619bc00"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/desktop-prompt-attribution/assessment.md",
+      "bytes": 6644,
+      "sha256": "dfd2d867ed8bce6cbc71fb4297edb58b2e6c2785f52f4d99227596f4d0a6d40e"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/desktop-prompt-attribution/captain-attribution.json",
+      "bytes": 8939,
+      "sha256": "fc0f86f4a84258beea5cf1ec5ec381290e7a6e20178b416c94992d34b5e102c0"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/desktop-prompt-attribution/custody.json",
+      "bytes": 6150,
+      "sha256": "a774731524284ccfc0def836b49898cbb59568baad106d554691cf6a239d8641"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/desktop-prompt-attribution/final-source-check.json",
+      "bytes": 1760,
+      "sha256": "53c9f41ec28c84bfbfff14b5818697de548554909656fe7eda5e84b93c1b04c1"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/desktop-prompt-attribution/tlc-route-selected.json",
+      "bytes": 185000,
+      "sha256": "b49e645c2d29d0c2d62c3541d67d376b75b943486fec0af5fd7f34aa8c18ba7f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/posix-source/source-addendum.md",
+      "bytes": 4523,
+      "sha256": "a5b63ab1201e6bacfcaaa7deeeeb36251cdded7a5dddb4b03a21208b34952421"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/bypass-audit.md",
+      "bytes": 6047,
+      "sha256": "156882946875c1992ff36959913d68805fe93cc0542ba612047f27e1314e14c6"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/checkpoint.md",
+      "bytes": 5446,
+      "sha256": "1a52cf5cd2d490dd40a55fd815dcc0f8ba09d3dcda427c4092495513b76d5f76"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/entry-audit.json",
+      "bytes": 44996,
+      "sha256": "712b34e0ecf1169b8f11efce8398582b06e7b72f910a87b6398cbce87916ae10"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/export-sites.json",
+      "bytes": 53316,
+      "sha256": "a82f66a6242358f3a693349dd0f1d7dd4191ac6c2b35427cdbbe5252939e553d"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixture-inventory.json",
+      "bytes": 6176,
+      "sha256": "0dbec8331dd0948603cff5d936b483f5e6eaa4995d090b11317610b0de18f8bb"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/control/tlc2/TLC.java",
+      "bytes": 891,
+      "sha256": "f4a5fc7cf10a5a1ecfee68723e0fc42125fccbf1d14644b84119ff24f91d2956"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/java/dydo/statechart/proof/Echo.java",
+      "bytes": 254,
+      "sha256": "e0486f7a308cd9ebd2d54cde2aa118da97374f1e7084c68ff4a45b18cf7ffa05"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/java/dydo/statechart/proof/EchoServer.java",
+      "bytes": 465,
+      "sha256": "4800bd834da26c6ee2a1eb0b0e0bf9c03dc94544728269d5bc6f822ef394a299"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/java/dydo/statechart/proof/SocketProbe.java",
+      "bytes": 4695,
+      "sha256": "e097e939e85216b46954d51a720492367658084c87f52c7924ec8d26301280d8"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/Transport.tla",
+      "bytes": 225,
+      "sha256": "fa8b1920ec5e6032fa2442481bdee9fbac7f99685f68773044820be3a8e037a8"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/action-bound.cfg",
+      "bytes": 89,
+      "sha256": "ac130f5142c48269cd76781fa2d1cc76af597a82c1a29789defcd1213be0b173"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/good.cfg",
+      "bytes": 57,
+      "sha256": "dfbf9c024600d5f7fae7336708f3e839379b7f7a26a6324a826c414a70f9f4e9"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/invariant-bad.cfg",
+      "bytes": 59,
+      "sha256": "9d8db22e1ebb53d2ee001b8aad9811d9dc39ae446c545b27008da798cd45e845"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/liveness-bad.cfg",
+      "bytes": 59,
+      "sha256": "d11ac13875bd3d20ef6e4213cff19feeb277b99180df6f32e805215280688223"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/source-inventory.json",
+      "bytes": 6310,
+      "sha256": "14c1205e28dd53dde30d5f48c873f8ab57f7a12eda27356cdbd5fe1caa4125a3"
+    },
+    {
+      "path": "skills/engineering/statechart/PROVENANCE.md",
+      "bytes": 4624,
+      "sha256": "aae1f624a4ea51995a69736bb0f6b37f72eba4fe7ecbd66122b7e386cdd1eed9"
+    },
+    {
+      "path": "skills/engineering/statechart/references/runtime.md",
+      "bytes": 3441,
+      "sha256": "c44e34f2b05249e45a06ee1cd323c9ec8b9d33e49bbf4847aba4dd1f5f2611b0"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/LICENSE",
+      "bytes": 1091,
+      "sha256": "504a9148e0ceadeb788d9aa52d178f46be91452946332980abb7c74f9221fbb1"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/build-lock.json",
+      "bytes": 2149,
+      "sha256": "67ec8820768db2b847b02e4ce84367f5d216f63f72b92c361c1e03d9393a0e12"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/build.py",
+      "bytes": 9832,
+      "sha256": "ef42f678e29386e5a27a3a5688b3e030ee2a75680019f748c3465ec3c60d6541"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/readme.md",
+      "bytes": 2102,
+      "sha256": "f80dd5658ebc6b20f565466f20c6efd9aa92df57200767fc0f7590d035a68016"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackSockets.java",
+      "bytes": 1043,
+      "sha256": "56711ce74c3f7db93cc8ac1a928dfbe82de470dc566b730c06dc7bae43ee79a3"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackTlc.java",
+      "bytes": 720,
+      "sha256": "0edeb8431ba300737f2710d5c5dd495d424362f5f64698651737299337f95dc2"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/lifetime.ts",
+      "bytes": 3152,
+      "sha256": "29c98a05d7e70b7ef0ad7e34fdab2acf75f0f5522da2df121c2f5536ebde91b1"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/native-entry.ts",
+      "bytes": 2609,
+      "sha256": "7e485c792e362c8a45c43d6cb75deee00301bc5631ff65080560857c19456395"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/posix-lifetime.ts",
+      "bytes": 7323,
+      "sha256": "2d7e11485f6bdef35219151c5cf7795048e9b27f20f7488c98f6f6e030290774"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/run.ts",
+      "bytes": 18387,
+      "sha256": "bd5eb31ae74d0595c0d061674b17380bfe7b63488fd8a3d5b422116a2768a010"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/corpus.test.ts",
+      "bytes": 12901,
+      "sha256": "614a2c509ed829255a31d740f851586b183e3ffb82017b6d46319416a59f4b00"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/differential.test.ts",
+      "bytes": 18743,
+      "sha256": "d1da891260b2c9c552bebc216c8f29ec5c010d56377480b5891d24a5e2a6a680"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/java.ts",
+      "bytes": 2696,
+      "sha256": "5684c62b7693a5b93f6d1960813003292f7edff7882c70544c0d68aa682cb02c"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/posix-lifetime.test.ts",
+      "bytes": 4077,
+      "sha256": "b7cfce026190d8d8c33337e1113284f7367f2b5f0412b84dd617b9c83636ef01"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/tlc-bootstrap.test.ts",
+      "bytes": 3006,
+      "sha256": "c76df4d4eab9ecd2fe04565d8235ec3f3937b829b87db279a43b6f614a901486"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/tlc.ts",
+      "bytes": 5810,
+      "sha256": "13cf8ba3113ff224bbafd25eab86dedccd49b07c63d364962f6c148b36b8158f"
+    }
+  ],
+  "whitespaceChecks": [
+    {
+      "path": "tracked HEAD diff",
+      "exit": 0
+    },
+    {
+      "path": "DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_statechart_java_build.py",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartAnchor.cs",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartChannel.cs",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartChild.cs",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartDescriptors.cs",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartFiles.cs",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartLifetime.cs",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartOwner.cs",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "Services/Statechart/PosixStatechartRun.cs",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "Services/Statechart/StatechartContinuation.cs",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "Services/Statechart/StatechartLifetime.cs",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/desktop-prompt-attribution/assessment.md",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/desktop-prompt-attribution/captain-attribution.json",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/desktop-prompt-attribution/custody.json",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/desktop-prompt-attribution/final-source-check.json",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/desktop-prompt-attribution/tlc-route-selected.json",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/posix-source/source-addendum.md",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/bypass-audit.md",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/checkpoint.md",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/custody.json",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/entry-audit.json",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/export-sites.json",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixture-inventory.json",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/control/tlc2/TLC.java",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/java/dydo/statechart/proof/Echo.java",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/java/dydo/statechart/proof/EchoServer.java",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/java/dydo/statechart/proof/SocketProbe.java",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/Transport.tla",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/action-bound.cfg",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/good.cfg",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/invariant-bad.cfg",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/fixtures/models/liveness-bad.cfg",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/source-inventory.json",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/LICENSE",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/build-lock.json",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/build.py",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/readme.md",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackSockets.java",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackTlc.java",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/posix-lifetime.ts",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/posix-lifetime.test.ts",
+      "exit": 1,
+      "diagnostic": ""
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/tlc-bootstrap.test.ts",
+      "exit": 1,
+      "diagnostic": ""
+    }
+  ],
+  "whitespaceInterpretation": "No-index exit1 means the added file differs from NUL; only diagnostic output or exit2 identifies whitespace findings. Tracked diff-check exit0 is clean.",
+  "receiptSelf": "This receipt is added after the snapshot. The final complete patch includes it; its patch hash is returned separately.",
+  "completePatch": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-stage-a-complete-draft-20261031.patch",
+  "readerSha256": "b7a6609f44831076a16fd19ae03a1aad37c64346b17a94f5376cc3af7279d6e0",
+  "launches": {
+    "java": false,
+    "compiler": false,
+    "tests": false,
+    "discovery": false,
+    "installer": false,
+    "container": false
+  },
+  "invariants": {
+    "dependencyLockSha256": "7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad",
+    "payloadAndUpstreamLicenseHeadDiffExit": 0
+  },
+  "limits": [
+    "Standalone unchecked TLC override: see bypass-audit.md",
+    "No artifact/source-to-artifact seal or payload embedding",
+    "No actual nonzero test discovery",
+    "Windows access-blocked and desktop HOLD unchanged",
+    "Java measurement capability absent; static/coverage/readiness held"
+  ]
+}

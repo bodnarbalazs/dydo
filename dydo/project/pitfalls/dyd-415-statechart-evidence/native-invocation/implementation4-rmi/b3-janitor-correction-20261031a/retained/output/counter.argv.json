@@ -1,0 +1,30 @@
+{
+  "argv": [
+    "/toolchain/node-v22.23.2-linux-x64/bin/node",
+    "--disable-warning=ExperimentalWarning",
+    "/toolchain/repo/skills/engineering/statechart/scripts/statechart.ts",
+    "/toolchain/repo/skills/engineering/statechart/scripts/test/corpus/Counter/Counter.tla",
+    "--out",
+    "/work/result"
+  ],
+  "cwd": "/toolchain/repo",
+  "environment": {
+    "PATH": "/toolchain/node-v22.23.2-linux-x64/bin:/usr/local/bin:/usr/bin:/bin",
+    "HOME": "/work/home",
+    "TMPDIR": "/work/tmp",
+    "LC_ALL": "C.UTF-8",
+    "LANG": "C.UTF-8",
+    "JAVA": "/toolchain/repo/skills/engineering/statechart/scripts/test/java.ts",
+    "TLA2TOOLS": "/input/tla2tools.jar",
+    "STATECHART_REPLAY": "/toolchain/repo/skills/engineering/statechart/scripts/test/corpus/Counter",
+    "STATECHART_JAVA": "/no-runtime/java-forbidden",
+    "STATECHART_LOG": "/output/replayed-configs.log",
+    "NODE_OPTIONS": "--disable-warning=ExperimentalWarning"
+  },
+  "timeoutSeconds": 120,
+  "sampleCap": 60502,
+  "sampleIntervalSeconds": 0.002,
+  "postExitObservationSeconds": 1,
+  "fileLimitBytes": 16777216,
+  "directChildDrainSeconds": 5
+}

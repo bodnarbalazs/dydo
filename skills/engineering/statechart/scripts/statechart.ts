@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { type ChildProcess, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -90,6 +90,67 @@ function startWorker(stage: string, spec: string, config: string, tmp: string, v
   });
 }
 
+function startJanitor(worker: number, stage: string, tmp: string) {
+  const child = spawn(
+    "/bin/sh",
+    [
+      "-c",
+      'while read -r line; do :; done; kill -s KILL -- "-$1"; rm -rf -- "$2" "$3"',
+      "sh",
+      String(worker),
+      stage,
+      tmp,
+    ],
+    { detached: true, stdio: ["pipe", "ignore", "ignore"] },
+  );
+  let failure: Error | undefined;
+  let closing = false;
+  let finished = false;
+  const closed = new Promise<Error | undefined>((resolve) => {
+    child.on("error", (error) => { failure ??= error; });
+    child.once("close", (code, signal) => {
+      finished = true;
+      if (!closing || signal !== "SIGKILL")
+        failure ??= new Error(`Statechart cleanup process closed early (${signal ?? code}).`);
+      resolve(failure);
+    });
+  });
+  return {
+    closed,
+    check() {
+      if (failure) throw failure;
+    },
+    async drain() {
+      let killError: unknown;
+      if (!finished) {
+        closing = true;
+        try { child.kill("SIGKILL"); }
+        catch (error) { killError = error; }
+      }
+      const error = await closed;
+      const errors = [killError, error].filter((value) => value !== undefined);
+      if (errors.length) throw new AggregateError(errors, errors.map(messageOf).join("\n"));
+    },
+  };
+}
+
+async function cleanupPosix(stage: string, tmp: string | undefined, janitor?: ReturnType<typeof startJanitor>) {
+  const errors: unknown[] = [];
+  for (const folder of [stage, tmp]) {
+    if (!folder) continue;
+    try { fs.rmSync(folder, { recursive: true, force: true }); }
+    catch (error) { errors.push(error); }
+  }
+  try { await janitor?.drain(); }
+  catch (error) { errors.push(error); }
+  return errors;
+}
+
+function showReport(dest: string, out: string) {
+  process.stdout.write(fs.readFileSync(path.join(dest, "report.md")));
+  console.log(`\nWrote ${out}`);
+}
+
 function publish(done: string, dest: string, out: string) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   try {
@@ -104,8 +165,7 @@ function publish(done: string, dest: string, out: string) {
       { cause: error },
     );
   }
-  process.stdout.write(fs.readFileSync(path.join(dest, "report.md")));
-  console.log(`\nWrote ${out}`);
+  if (process.platform === "win32") showReport(dest, out);
 }
 
 try {
@@ -120,8 +180,10 @@ try {
   const stage = fs.mkdtempSync(path.join(base, `.${path.basename(dest)}.statechart-`));
   const done = path.join(stage, "done");
   let tmp: string | undefined;
-  let janitor: ChildProcess | undefined;
+  let janitor: ReturnType<typeof startJanitor> | undefined;
   let closeGuard: (() => Promise<void>) | undefined;
+  let failure: unknown;
+  let published = false;
   let exitCode: number;
   try {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-"));
@@ -131,23 +193,33 @@ try {
       worker.on("exit", (code) => resolve(code ?? 2));
     });
     if (process.platform === "win32") closeGuard = await guardWorker(worker, stage, tmp);
-    else janitor = spawn(
-      "/bin/sh",
-      [
-        "-c",
-        'while read -r line; do :; done; kill -s KILL -- "-$1"; rm -rf -- "$2" "$3"',
-        "sh",
-        String(worker.pid),
-        stage,
-        tmp,
-      ],
-      { detached: true, stdio: ["pipe", "ignore", "ignore"] },
-    );
-    await Promise.race([stopped, exited]);
+    else {
+      // Retain a worker spawn error even when janitor setup fails before the first await.
+      const settled = exited.then(() => undefined, (error: unknown) => error);
+      try {
+        if (worker.pid === undefined) {
+          const error = await settled;
+          throw error ?? new Error("Statechart worker did not start.");
+        }
+        janitor = startJanitor(worker.pid, stage, tmp);
+        await Promise.race([stopped, exited, janitor.closed.then((error) => {
+          throw error ?? new Error("Statechart cleanup process closed before drain.");
+        })]);
+      } catch (error) {
+        const errors = [error];
+        try { if (worker.pid !== undefined) await killGroup(worker.pid); }
+        catch (cleanupError) { errors.push(cleanupError); }
+        const workerError = await settled;
+        if (workerError !== undefined && workerError !== error) errors.push(workerError);
+        throw new AggregateError(errors, errors.map(messageOf).join("\n"));
+      }
+    }
+    if (process.platform === "win32") await Promise.race([stopped, exited]);
     if (closeGuard) {
       if (stop) await closeGuard();
     } else await killGroup(worker.pid as number);
     const verdict = await exited;
+    janitor?.check();
     if (stop) {
       console.error(`${stop} stopped the check, so the command wrote nothing.`);
       exitCode = 128 + os.constants.signals[stop];
@@ -156,14 +228,26 @@ try {
       exitCode = 2;
     } else if ((verdict === 0 || verdict === 1) && fs.existsSync(done)) {
       publish(done, dest, out);
+      published = true;
       exitCode = verdict;
     } else exitCode = 2;
+  } catch (error) {
+    failure = error;
+    throw error;
   } finally {
-    if (closeGuard) await closeGuard();
-    fs.rmSync(stage, { recursive: true, force: true });
-    if (tmp) fs.rmSync(tmp, { recursive: true, force: true });
-    janitor?.kill("SIGKILL");
+    if (process.platform === "win32") {
+      if (closeGuard) await closeGuard();
+      fs.rmSync(stage, { recursive: true, force: true });
+      if (tmp) fs.rmSync(tmp, { recursive: true, force: true });
+    } else {
+      const errors = await cleanupPosix(stage, tmp, janitor);
+      if (errors.length) {
+        if (failure !== undefined) errors.unshift(failure);
+        throw new AggregateError(errors, errors.map(messageOf).join("\n"));
+      }
+    }
   }
+  if (process.platform !== "win32" && published) showReport(dest, out);
   process.exit(exitCode);
 } catch (error) {
   console.error(messageOf(error));

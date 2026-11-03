@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "previousLedger": "b3-janitor-delegated-release-predicates-r43.json",
+  "sourcePinSha256": "ada69eae0ae3f36f323f7192e0a6f6b6fffb47f3839af106bccd4027fb68a907",
+  "sourceReceiptSha256": "0d132c218c11da4354d4e2d11a6372c2ec36ca0470c0b7d4d15c286b640eebec",
+  "compilerLocationOwnership": "ESTABLISHED_FROM_CREATOR_HISTORY_NOT_ARCHIVE_PROVENANCE",
+  "projectionObservation": "82_EXACT_TERMINAL_ENTRIES_VERIFIED_SCOPE_AMENDMENT_PROPOSED",
+  "topologySource": "BLOCKED_SCOPE_NO_EXECUTABLE_SUCCESSOR",
+  "topologyProof": "NOT_RELEASED",
+  "typecheck": "NOT_RELEASED",
+  "serial12": "NOT_RELEASED",
+  "review": "FAIL_OPEN",
+  "decision": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-projection-observation-decision-r44.md"
+}

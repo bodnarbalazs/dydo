@@ -1,0 +1,4 @@
+warning: [path] bad path element "/input/CommunityModules.jar": no such file or directory
+error: warnings found and -Werror specified
+1 error
+1 warning

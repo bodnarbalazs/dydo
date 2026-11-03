@@ -1,0 +1,138 @@
+{
+  "state": "SOURCE_ONLY_CAPTAIN_INSPECTION_REQUIRED",
+  "sharedSnapshot": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/shared-containment.py",
+    "bytes": 18149,
+    "sha256": "24f0afe8f437cef9dc0fc8a3d5cf98540f39af0bf6f45e129f12c2e53549c100",
+    "role": "Executable source; text-only parsing, no project imports"
+  },
+  "cachedImage": "python@sha256:6a9220edda062e9223ea0784740a535987299420b96fbfd520b89bbd3e772485",
+  "platform": "linux/amd64",
+  "currentDaemonBinding": "MISSING. Retained records bind image/container configuration, not daemon ID/current context. No Docker executed in this hop. Captain must bind actual read-only local host tuple in future administrative release before any engine operation.",
+  "createAndInspect": {
+    "network": "none",
+    "pull": "never",
+    "rootReadOnly": true,
+    "capDrop": [
+      "ALL"
+    ],
+    "capAdd": [],
+    "securityOpt": [
+      "no-new-privileges"
+    ],
+    "pidMode": "",
+    "ipcMode": "private",
+    "init": false,
+    "pids": 128,
+    "memoryBytes": 1073741824,
+    "nanoCpus": 2000000000,
+    "devices": [],
+    "deviceRequests": [],
+    "ports": [],
+    "privileged": false,
+    "hostNamespaces": false,
+    "extraMounts": false,
+    "noDaemonControlRoute": true
+  },
+  "mounts": [
+    {
+      "target": "/input",
+      "type": "bind",
+      "source": "exact owned scratch/input",
+      "rw": false
+    },
+    {
+      "target": "/work",
+      "type": "bind",
+      "source": "exact owned scratch/work",
+      "rw": true
+    },
+    {
+      "target": "/output",
+      "type": "bind",
+      "source": "exact owned scratch/output",
+      "rw": true
+    },
+    {
+      "target": "/toolchain",
+      "type": "volume",
+      "source": "exact named+nonce-labeled volume",
+      "rw": "true ONLY preparation; false proof"
+    }
+  ],
+  "deadlines": {
+    "originalBoundarySeconds": 30,
+    "readinessObservationIntervalMs": 2,
+    "cancellationControlledSignalSeconds": 5,
+    "cancellationOwnedDescendantSeconds": 5,
+    "cancellationDirectKillCloseSeconds": 5,
+    "nativeEmergencySeconds": 50,
+    "pythonRunnerEmergencySeconds": 65,
+    "directRunnerReapSeconds": 5,
+    "perFileBytes": 16777216,
+    "outerAttachSeconds": 120,
+    "dockerAdministrativeCommandSeconds": 20,
+    "emergencyContainmentCeilingSeconds": 340,
+    "preparationAttachSeconds": 120
+  },
+  "failureReach": [
+    {
+      "failure": "Original signal missing/failed/30s deadline",
+      "reach": "Close fixture handles, bounded15s cancellation, native FAIL, strict census, host finally"
+    },
+    {
+      "failure": "Observation/output write failure",
+      "reach": "Cannot PASS. Nonthrowing record or native failure; raw output and census when possible; host finally"
+    },
+    {
+      "failure": "Native handles/runner timeout",
+      "reach": "50s native emergency;65s Python direct runner + identity-checked group kill +5s wait. No product-close inference. Census, then host finally."
+    },
+    {
+      "failure": "Attach failure/timeout",
+      "reach": "120s emergency attach then driver finally. No1200s ordinary cancellation."
+    },
+    {
+      "failure": "Admission/copy/image/config failure",
+      "reach": "No start without complete identity/settings. Every execute failure once TEMP lock acquired reaches finally."
+    },
+    {
+      "failure": "Logging failure",
+      "reach": "safe_save cannot prevent finally. Emergency cleanup subprocesses independent of output writes. Evidence uncertainty retains TEMP lock."
+    },
+    {
+      "failure": "Known-ID cleanup failure",
+      "reach": "Continue other exact-known-ID resources; never guessed-name or foreign recovery."
+    },
+    {
+      "failure": "Launcher failure",
+      "reach": "Before driver spawn no container. Once launched, driver owns its own finally. Launcher return/log-copy errors cannot certify product. Host death/daemon loss may leave uncertain ownership; return obstacle, no guarantee during loss."
+    }
+  ],
+  "emergencyCleanup": {
+    "flow": "Pinned already-current local daemon -> exact ID/name/nonce inspect -> stop5s if running -> remove exactID -> host ps exactID absence; exact-labeled volume inspect/remove/list absence",
+    "perCommandSeconds": 20,
+    "finiteCallMaximum": 16,
+    "ceilingSeconds": 340,
+    "independentOfLogWrites": true,
+    "missingID": "Uncertainty; no guessed-name targeting",
+    "ownershipLock": "Remove exact own normal TEMP lock bytes only after confirmed containment and evidence persistence; otherwise retain. FIFO/Heavy contexts release normally; never manually remove their artifacts.",
+    "scope": "Private PID/IPC, no privileges/capabilities/host-device mounts/network/control socket or foreign writable bind. No configured process orphan route beyond container. Kernel/daemon failure and privileged external interference remain environmental limits.",
+    "productAndContainmentIndependent": true
+  },
+  "historicalInspectSources": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-20261031a/dyd415-rmi-b3-janitor-correction-6113cbdc5f1f4566-finite-inspect.stdout",
+      "bytes": 9823,
+      "sha256": "5d31427388aa658bef6a02e1dc72d24f8ee3b466a67972931722200432c0165b",
+      "role": "Prior actual private namespace/mount config only"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-20261031a/teardown.json",
+      "bytes": 337,
+      "sha256": "7dbe3787e7a3d7d6ab698054f0845313b8fd1d5426b128727b2023b4e2866d48",
+      "role": "Prior exact-owned teardown only"
+    }
+  ]
+}
+

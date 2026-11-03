@@ -1,0 +1,15 @@
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: Repeats forever, so Prop breaks
+  }
+  class lg0 repeats
+  s0: 0
+  s1: 1
+  s2: 2
+  [*] --> s0
+  s0 --> s1: Next
+  s1 --> s2: Next
+  s2 --> s0: Next
+  class s0 repeats
+  class s1 repeats
+  class s2 repeats

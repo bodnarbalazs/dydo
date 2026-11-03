@@ -1,0 +1,9 @@
+{
+  "outcome": "FAIL_OR_INCONCLUSIVE",
+  "signal": "SIGINT",
+  "error": "RuntimeError",
+  "message": "Diagnostic native FAIL/inconclusive; no retry",
+  "strictCensusClean": true,
+  "infrastructureContainment": "NOT_YET_ATTEMPTED",
+  "historicalFailureSuperseded": false
+}

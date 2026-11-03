@@ -1,0 +1,164 @@
+{
+  "state": "LEXICAL_ONLY_NOT_DISCOVERED",
+  "lexicalNativeIds": [
+    "test_healthy_retention_releases_only_matching_isolated_lock (test_driver_contracts.TwelveDriverContracts.test_healthy_retention_releases_only_matching_isolated_lock)",
+    "test_launcher_requires_exact_twelve_release_and_source_identity (test_driver_contracts.TwelveDriverContracts.test_launcher_requires_exact_twelve_release_and_source_identity)",
+    "test_missing_or_alternative_selector_refuses_before_admission (test_driver_contracts.TwelveDriverContracts.test_missing_or_alternative_selector_refuses_before_admission)",
+    "test_retention_failure_with_successful_logging_keeps_exact_isolated_lock (test_driver_contracts.TwelveDriverContracts.test_retention_failure_with_successful_logging_keeps_exact_isolated_lock)",
+    "test_complete_exact_native_one_case_summary_is_required (test_worker_contracts.TwelveWorkerContracts.test_complete_exact_native_one_case_summary_is_required)",
+    "test_exact_source_selection_is_twelve_unique_original_names (test_worker_contracts.TwelveWorkerContracts.test_exact_source_selection_is_twelve_unique_original_names)",
+    "test_real_child_close_before_controlled_exit_is_required (test_worker_contracts.TwelveWorkerContracts.test_real_child_close_before_controlled_exit_is_required)",
+    "test_runner_exact_owned_group_cancellation_uses_sigkill (test_worker_contracts.TwelveWorkerContracts.test_runner_exact_owned_group_cancellation_uses_sigkill)",
+    "test_runner_identity_uncertainty_never_kills_an_unproved_group (test_worker_contracts.TwelveWorkerContracts.test_runner_identity_uncertainty_never_kills_an_unproved_group)",
+    "test_spawn_failure_close_is_distinct_from_reaping_a_created_janitor (test_worker_contracts.TwelveWorkerContracts.test_spawn_failure_close_is_distinct_from_reaping_a_created_janitor)",
+    "test_timeout_stays_failure_after_late_runner_exit_and_bounded_reap (test_worker_contracts.TwelveWorkerContracts.test_timeout_stays_failure_after_late_runner_exit_and_bounded_reap)",
+    "test_worker_spawn_failure_requires_no_janitor (test_worker_contracts.TwelveWorkerContracts.test_worker_spawn_failure_requires_no_janitor)"
+  ],
+  "count": 12,
+  "testFiles": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_driver_contracts.py",
+      "bytes": 3648,
+      "sha256": "a253dc7ed416ea1216a0fc881e47ae0219f2d7c8da9399e2c8870176cefa492d"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_worker_contracts.py",
+      "bytes": 6680,
+      "sha256": "b728bdfc188e921c79ce81e77fb5ab9fa33a10545e6d2aa2e9a9529af08af061"
+    }
+  ],
+  "actualCallReach": "Actual successor retain_and_release/admission/parser, selected_tap/lifecycle_events/drain_runner/run_case timeout; only isolated locks and mocked material calls; not product or container proof",
+  "platformObstacle": {
+    "state": "SOURCE_IDENTIFIED_OBSTACLE_NOT_RUNTIME_FAIL",
+    "file": {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_worker_contracts.py",
+      "bytes": 6680,
+      "sha256": "b728bdfc188e921c79ce81e77fb5ab9fa33a10545e6d2aa2e9a9529af08af061"
+    },
+    "affected": [
+      {
+        "method": "test_runner_identity_uncertainty_never_kills_an_unproved_group",
+        "lines": [
+          75,
+          83
+        ],
+        "seam": "patch.object(worker.os,'getpgid'/'killpg') at80 defaults create=False; Windows nt module has neither Unix-only attribute"
+      },
+      {
+        "method": "test_runner_exact_owned_group_cancellation_uses_sigkill",
+        "lines": [
+          85,
+          92
+        ],
+        "seam": "Same getpgid/killpg mocks at90; actual worker.signal.SIGKILL and assertion92 require Unix signal attribute absent on Windows"
+      },
+      {
+        "method": "test_timeout_stays_failure_after_late_runner_exit_and_bounded_reap",
+        "lines": [
+          94,
+          115
+        ],
+        "seam": "patch.object(worker.os,'getpgid') at110 defaults create=False on Windows"
+      }
+    ],
+    "evidence": [
+      {
+        "path": "C:/Users/User/AppData/Local/Programs/Python/Python313/Lib/unittest/mock.py",
+        "bytes": 114038,
+        "sha256": "ca86c604852b6fbb8a8bc9d08e4b5dbeb610d3206a65b4e4de255a23a43aa1f9",
+        "lines": [
+          1447,
+          1467,
+          1678,
+          1681
+        ],
+        "fact": "get_original raises AttributeError when target lacks attribute and create=False; _patch_object default create=False"
+      },
+      {
+        "path": "C:/Users/User/AppData/Local/Programs/Python/Python313/Lib/os.py",
+        "bytes": 42737,
+        "sha256": "b0eed01293aa1d04ccff9ae933b7fd0cae3c5a399607fe735ed5c5c99a59c073",
+        "lines": [
+          1,
+          26,
+          74,
+          90
+        ],
+        "fact": "OS API supplied by platform nt/posix; getpgid/killpg are Unix-only, not Windows nt API"
+      }
+    ],
+    "conclusion": "Frozen helper source cannot satisfy exact12/no-skip Windows CPython3.13 contract. No test execution/import/probe was used to establish this source/platform incompatibility. Do not invent actual exits or claim known number of runtime errors.",
+    "requestedScope": "Captain must explicitly authorize a test-fixture-only source successor or narrow change to the three methods in frozen test_worker_contracts.py, restoring platform-neutral mocked os/signal boundaries with unchanged actual-function assertions/names. No production, worker or runtime behavior change needed. Then repin/inspect before any helper12 release.",
+    "proposedSeam": "Patch worker.os/worker.signal with local SimpleNamespace/getpid/getpgid/killpg/SIGKILL sentinels (SimpleNamespace/Mock already imported), or explicitly create only absent mock attributes with equivalent scoped signal mock. Preserve exact group/identity refusal/late-exit timeout+wait assertions; no skip or dispatch shim. Detailed exact patch remains for separately authorized edit.",
+    "forbiddenWorkarounds": [
+      "host startup/sitecustomize shim",
+      "silently supplying global POSIX attributes",
+      "skip or alternate test selection",
+      "move helper execution to Docker/POSIX without new scope",
+      "alter driver/worker/product to pass unit fixture",
+      "run predictably incompatible unchanged12"
+    ],
+    "affectedPaths": "Host helper proof cannot release; typecheck conditional on helper GREEN therefore held; serial12 predicate held. Independent metric source preparation unaffected."
+  },
+  "skipsAllowed": 0,
+  "actualExecuted": 0,
+  "originalTwelveProductSelectors": [
+    "POSIX janitor close precedes the Counter report and controlled exit 0",
+    "POSIX janitor close precedes the CounterInstance report and controlled exit 1",
+    "POSIX janitor closes after an early worker error without publishing output",
+    "POSIX janitor closes before controlled SIGINT exit with no output",
+    "POSIX janitor closes before controlled SIGTERM exit with no output",
+    "POSIX janitor spawn failure stops and reaps the worker without publishing",
+    "POSIX janitor early close is retained and stops the owned worker",
+    "POSIX worker spawn failure is observed before any janitor starts",
+    "POSIX cleanup exception remains visible and cannot skip actual janitor close",
+    "POSIX spawn and cleanup faults are both visible after actual ownership drain",
+    "POSIX janitor kill exception is reported only after the real child closes",
+    "POSIX final drain preserves a caller file arriving at output publication"
+  ],
+  "groupingAudit": {
+    "state": "SOURCE_INSPECTED_NO_REQUIRED_INTERCASE_BEHAVIOR_FOUND",
+    "canonical": {
+      "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+      "bytes": 64504,
+      "sha256": "b9925b7bd9313f4b2963bd21c868fe4422cd30b193224df08f6ca20f7da9bb5f"
+    },
+    "selectedNames": [
+      "POSIX janitor close precedes the Counter report and controlled exit 0",
+      "POSIX janitor close precedes the CounterInstance report and controlled exit 1",
+      "POSIX janitor closes after an early worker error without publishing output",
+      "POSIX janitor closes before controlled SIGINT exit with no output",
+      "POSIX janitor closes before controlled SIGTERM exit with no output",
+      "POSIX janitor spawn failure stops and reaps the worker without publishing",
+      "POSIX janitor early close is retained and stops the owned worker",
+      "POSIX worker spawn failure is observed before any janitor starts",
+      "POSIX cleanup exception remains visible and cannot skip actual janitor close",
+      "POSIX spawn and cleanup faults are both visible after actual ownership drain",
+      "POSIX janitor kill exception is reported only after the real child closes",
+      "POSIX final drain preserves a caller file arriving at output publication"
+    ],
+    "sourceReach": [
+      {
+        "seam": "janitorProbe near1335; all12 bodies following",
+        "fact": "Every case creates its own mkdtemp probe, log and preload. Observer patches only the newly spawned CLI identified by argv; each CLI already separate even in original native batch."
+      },
+      {
+        "seam": "run near25",
+        "fact": "Fresh statechart-cli mkdtemp output/config log each invocation, corpus read only, fixed replay environment merged per child; no cross-case result counter or shared mutation asserted."
+      },
+      {
+        "seam": "two signals shared loop",
+        "fact": "Each iteration owns new probe/parent/tmp/waiting view/ready marker; real selected signal/status/streams/actual-close remain case-local."
+      },
+      {
+        "seam": "fault/output cases",
+        "fact": "Each chooses a fresh mode-bound child preload and new request-owned output; no assertion reads another case's output/handle/state."
+      },
+      {
+        "seam": "future serial worker",
+        "fact": "Same proof container, immutable toolchain/input corpus and strict namespace before/after every case plus final guard preserve residue reach across native commands."
+      }
+    ],
+    "limits": "No claim of native same-process interactions or event-loop/memory leakage between native case processes. No binding case requires that interaction in the inspected12 source/obligation table. If new requirement appears, stop rather than certify it from this grouping. This audit is source only."
+  }
+}

@@ -5,7 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { check, PINNED_FLAGS } from "../run.ts";
+import { check, PINNED_FLAGS, tlcInvocation } from "../run.ts";
+import { prepareChecker } from "../checker.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const corpus = path.join(here, "corpus");
@@ -118,12 +119,11 @@ const broken = () =>
 
 const plainTlc = (base: string) => {
   const name = path.basename(base);
+  const owned = fs.mkdtempSync(path.join(path.dirname(base), "checker-"));
   const r = spawnSync(
     process.env.JAVA ?? "java",
     [
-      "-cp",
-      String(process.env.TLA2TOOLS),
-      "tlc2.TLC",
+      ...tlcInvocation(prepareChecker(String(process.env.TLA2TOOLS), owned)),
       ...PINNED_FLAGS,
       "-config",
       `${name}.cfg`,

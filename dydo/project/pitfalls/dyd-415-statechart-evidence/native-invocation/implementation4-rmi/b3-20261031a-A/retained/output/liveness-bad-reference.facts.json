@@ -1,0 +1,28 @@
+{
+  "name": "liveness-bad-reference",
+  "facts": {
+    "exit": 13,
+    "generated": 5,
+    "distinct": 4,
+    "complete": false,
+    "invariant": [],
+    "temporal": true,
+    "values": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "actions": [
+      "Initial predicate",
+      "Next line 5, col 9 to line 5, col 24 of module Transport",
+      "Next line 5, col 9 to line 5, col 24 of module Transport",
+      "Next line 5, col 9 to line 5, col 24 of module Transport"
+    ],
+    "back": [
+      1
+    ],
+    "stuttering": false
+  },
+  "sockets": []
+}

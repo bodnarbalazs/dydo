@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/input/skills/engineering/statechart/scripts/java/build.py", line 209, in <module>
+    main()
+    ~~~~^^
+  File "/input/skills/engineering/statechart/scripts/java/build.py", line 205, in main
+    build(parser.parse_args())
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/input/skills/engineering/statechart/scripts/java/build.py", line 182, in build
+    first, first_classes = build_once(jdk, tlc, work / 'first')
+                           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/input/skills/engineering/statechart/scripts/java/build.py", line 144, in build_once
+    invoke(compiler_argv(jdk, tlc, classes), work, 'javac')
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/input/skills/engineering/statechart/scripts/java/build.py", line 137, in invoke
+    raise RuntimeError(name + ' failed; retain outputs, do not retry blindly')
+RuntimeError: javac failed; retain outputs, do not retry blindly

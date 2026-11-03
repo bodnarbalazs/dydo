@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "state": "source-enumeration-not-native-discovery",
+  "python": {
+    "path": "DynaDocs.Tests/coverage/tests/test_statechart_java_build.py",
+    "bytes": 15222,
+    "sha256": "ac8f740244c802d6723ff902bbdd3749591606e5ab93242b7a1294f88d2ce7fe",
+    "methods": [
+      "test_current_sources_match_the_finite_lock",
+      "test_changed_and_missing_source_are_rejected",
+      "test_extra_source_declaration_and_wrong_class_contract_are_rejected",
+      "test_owned_outputs_cannot_overlap_inputs_or_each_other",
+      "test_existing_or_relative_outputs_are_rejected",
+      "test_archive_inventory_rejects_changed_missing_and_extra_bytes",
+      "test_wrong_archive_hash_prevents_toolchain_use",
+      "test_traversal_and_absolute_archive_members_are_rejected",
+      "test_child_environment_removes_only_owned_java_injection_variables",
+      "test_nonlinux_build_refuses_before_any_subprocess",
+      "test_rebuild_compares_to_the_sealed_artifact_not_current_drift",
+      "test_failed_compiler_retains_argv_exit_and_streams_without_retry",
+      "test_compiler_view_preserves_all_member_bytes_and_original_manifest_as_data",
+      "test_compiler_view_rejects_changed_missing_extra_and_linked_members",
+      "test_compiler_view_refuses_existing_output_without_touching_foreign_bytes",
+      "test_compiler_input_digest_and_inventory_cannot_follow_current_drift",
+      "test_compiler_rejects_malformed_archive_before_creating_output",
+      "test_compiler_rejects_escape_absolute_drive_and_ambiguous_member_names",
+      "test_compiler_rejects_duplicate_case_collision_and_file_parent_conflict",
+      "test_compiler_rejects_links_special_files_and_bounded_size_violations",
+      "test_compiler_argv_selects_only_the_verified_view_directory"
+    ],
+    "declaredCases": 21
+  },
+  "native": {
+    "path": "DynaDocs.Tests/Statechart/StatechartCheckerTests.cs",
+    "bytes": 8130,
+    "sha256": "a935a0f8708080bdeb92055d99369d379c7be9d41bdfd16903d91ecb65730308",
+    "methods": [
+      "OwnedCopyRetainsOfficialBytesAndManifestWithoutChangingOriginal",
+      "CompanionIsRejectedByExplicitDiscoveryAndPreparationWithoutChangingForeignBytes",
+      "AliasedFileAndDirectoryInputsCheckTheActualJarCompanion",
+      "EveryLaunchRechecksSourceDestinationMembershipAndPlainAncestors",
+      "ExistingCheckerDirectoryIsRetainedWithoutOverwrite",
+      "BootstrapResolutionUsesSealedIdentityAndNeverFallsBackToRawTlc"
+    ],
+    "declaredCases": 20
+  },
+  "node": [
+    {
+      "path": "skills/engineering/statechart/scripts/test/checker.test.ts",
+      "bytes": 5379,
+      "sha256": "322c55fafb81a1ef0e07416b22f8465b0ff66768d074d731c70af07f21da5291",
+      "declaredCases": 16,
+      "kind": "filesystem only, real pinned checker data; no JVM"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/tlc-bootstrap.test.ts",
+      "bytes": 10456,
+      "sha256": "de2fe1da24483dd5907c1fb57026d1b9114a66acc3d9cfc431aa2018bf089ecf",
+      "declaredCases": 12,
+      "kind": "filesystem/hash and mocked launch argv only; synthetic helper bytes never executed"
+    }
+  ],
+  "retainedSemanticTests": [
+    {
+      "path": "skills/engineering/statechart/scripts/test/corpus.test.ts",
+      "selection": "CounterInstance, CounterRules, Shadow, MediaPlayerProps",
+      "state": "not executed"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/cli.test.ts",
+      "selection": "existing replay assertions with actual pinned jar",
+      "state": "not executed"
+    },
+    {
+      "path": "skills/engineering/statechart/scripts/test/adaptation.test.ts",
+      "selection": "mise present/installed/failed with pinned jar copy",
+      "state": "not executed"
+    },
+    {
+      "path": "DynaDocs.Tests/Statechart/StatechartReadyTests.cs",
+      "selection": "offline installed command, changed bytes, authoritative drain journal",
+      "state": "HELD"
+    },
+    {
+      "path": "DynaDocs.Tests/Statechart/StatechartAssetsTests.cs",
+      "selection": "installed sealed helper and missing/changed rejection",
+      "state": "await artifact/payload receipt"
+    }
+  ],
+  "limit": "Source counts only. Actual semantic/installed/confirmed-and-uncertain cleanup proof remains owed."
+}

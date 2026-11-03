@@ -1,0 +1,107 @@
+diff --git a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-fixture-fix-source/before/cli.test.ts b/skills/engineering/statechart/scripts/test/cli.test.ts
+index b6832ba7..25431660 100644
+--- a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-fixture-fix-source/before/cli.test.ts
++++ b/skills/engineering/statechart/scripts/test/cli.test.ts
+@@ -1450,33 +1450,50 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
+     fs.mkdirSync(parent);
+     fs.mkdirSync(tmpdir);
+     const ready = path.join(probe.base, "ready");
++    const readyValue = path.basename(probe.base);
++    assert.equal(fs.existsSync(ready), false);
+     const view = path.join(probe.base, "view.mjs");
+     fs.writeFileSync(view, `import fs from "node:fs";
+ fs.watch(${JSON.stringify(probe.base)}, () => {});
+-fs.writeFileSync(${JSON.stringify(ready)}, "ready");
++fs.writeFileSync(${JSON.stringify(ready)}, ${JSON.stringify(readyValue)}, { flag: "wx" });
+ await new Promise(() => {});
+ `);
+-    let child: ReturnType<typeof spawn> | undefined;
+-    let signalled = false;
+-    const watcher = fs.watch(probe.base, () => {
+-      if (!signalled && fs.existsSync(ready)) {
+-        signalled = true;
+-        watcher.close();
+-        assert.ok(child?.kill(signal));
+-      }
++    const child = spawn(probe.command[0], [...probe.command.slice(1), path.join(corpus, "Counter/Counter.tla"),
++      "--view", view, "--out", path.join(parent, "out")], {
++      env: { ...process.env, JAVA: path.join(here, "java.ts"), TLA2TOOLS: replayJar,
++        STATECHART_REPLAY: path.join(corpus, "Counter"), TMPDIR: tmpdir },
++      stdio: ["ignore", "pipe", "pipe"],
+     });
++    let childError: Error | undefined;
++    let exited = false;
++    let closed: [number | null, NodeJS.Signals | null] | undefined;
++    child.once("error", (error) => { childError = error; });
++    child.once("exit", () => { exited = true; });
++    child.once("close", (status, killed) => { closed = [status, killed]; });
++    let stdout = "";
++    let stderr = "";
++    child.stdout!.on("data", (chunk: Buffer) => { stdout += chunk; });
++    child.stderr!.on("data", (chunk: Buffer) => { stderr += chunk; });
++    let failure: unknown;
+     try {
+-      child = spawn(probe.command[0], [...probe.command.slice(1), path.join(corpus, "Counter/Counter.tla"),
+-        "--view", view, "--out", path.join(parent, "out")], {
+-        env: { ...process.env, JAVA: path.join(here, "java.ts"), TLA2TOOLS: replayJar,
+-          STATECHART_REPLAY: path.join(corpus, "Counter"), TMPDIR: tmpdir },
+-        stdio: ["ignore", "pipe", "pipe"],
+-      });
+-      let stdout = "";
+-      let stderr = "";
+-      child.stdout!.on("data", (chunk: Buffer) => { stdout += chunk; });
+-      child.stderr!.on("data", (chunk: Buffer) => { stderr += chunk; });
+-      const [status, killed] = await once(child, "close");
++      const readyDeadline = performance.now() + 10_000;
++      while (!fs.existsSync(ready)) {
++        assert.ifError(childError);
++        assert.equal(exited || !!closed, false, "CLI completed before readiness");
++        assert.ok(performance.now() < readyDeadline, "Owned ready marker was not observed within 10s");
++        await sleep(10);
++      }
++      assert.ifError(childError);
++      assert.equal(exited || !!closed, false, "CLI completed before signal send");
++      assert.equal(fs.lstatSync(ready).isFile(), true);
++      assert.equal(read(ready), readyValue);
++      assert.ok(child.kill(signal), "Selected signal was not sent");
++      const closeDeadline = performance.now() + 10_000;
++      while (!closed && performance.now() < closeDeadline) await sleep(10);
++      assert.ifError(childError);
++      assert.ok(closed, "CLI close was not observed within 10s of the selected signal");
++      assert.equal(exited, true);
++      const [status, killed] = closed;
+       assert.equal(killed, null);
+       assert.equal(status, 128 + os.constants.signals[signal]);
+       assert.equal(stdout, "");
+@@ -1484,14 +1501,26 @@ await new Promise(() => {});
+       assert.deepEqual(fs.readdirSync(parent), []);
+       assert.deepEqual(fs.readdirSync(tmpdir), []);
+       drainedJanitor(probe.events());
+-    } finally {
+-      watcher.close();
+-      if (child && child.exitCode === null && child.signalCode === null) {
+-        const closed = once(child, "close");
+-        child.kill("SIGTERM");
+-        await closed;
++    } catch (error) {
++      failure = error;
++    }
++    if (!closed) {
++      let cleanupError: unknown;
++      try {
++        // Failed-case cancellation cannot satisfy the selected signal's assertions.
++        if (!exited && child.pid)
++          assert.ok(child.kill("SIGTERM"), "Failed-case cancellation was not sent");
++      } catch (error) {
++        cleanupError = error;
+       }
++      const cleanupDeadline = performance.now() + 5_000;
++      while (!closed && performance.now() < cleanupDeadline) await sleep(10);
++      if (!closed)
++        cleanupError = new AggregateError([cleanupError], "Failed-case close unconfirmed; owned container containment required");
++      if (cleanupError)
++        failure = new AggregateError([failure, cleanupError], "Signal proof and failed-case cleanup failed");
+     }
++    if (failure) throw failure;
+   });
+ }

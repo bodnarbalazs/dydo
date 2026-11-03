@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "outcome": "HELPER_TESTS_PASSED_FIRST_JAVAC_FAILED_STOPPED",
+  "authoritySha256": "1b140b26cf5db532e55d36861ea4dc6821282a3e1f7bbbea66302a76dab3ca69",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "source": {
+    "baseDriverSha256": "6149293886c44c8cf369861c92df097980fbf005b1cbe72bf9051ed150a22ed1",
+    "baseLauncherSha256": "953834a2d0c75a435a8abd78c8db3e8731935ba07f379b11127f672beae32463",
+    "successorDriverSha256": "aae895f42a030e04a38f3f977403d245b45ae72c25e7fca643146ffb3f99e074",
+    "successorLauncherSha256": "97b44c023d3aa6a5dec2b16a895b96e1f675ec16c5408d14ee775fe466176fb8",
+    "change": "Only successor references/output identity and fail-closed admission preflight; complete diffs retained",
+    "environmentSpoofed": false,
+    "originalAttemptUnchanged": true
+  },
+  "admission": {"namespace": "C:/Users/User/AppData/Local/lc-test/suite-slot", "ticket": "0000000001-c47e8f210eba6417", "owned": true, "inherited": false, "heavyNonwaiting": true, "ownedNormalTempLock": true},
+  "helperTests": {"discovered": 12, "passed": 12, "skipped": 0, "javaInvoked": false},
+  "jdkArchive": {"bytes": 207098019, "sha256": "f2dc5418092c43003db8f9005c4a286e1c0104fea96ccdd49e8ebd037cac9219", "verified": true},
+  "compile": {
+    "firstJavacExit": 1,
+    "warning": "[path] bad path element /input/CommunityModules.jar: no such file or directory",
+    "error": "warnings found and -Werror specified",
+    "sourceAttribution": "Pinned TLC jar manifest has Class-Path: CommunityModules.jar; relative member is absent from pinned compile inputs",
+    "secondCompileRan": false,
+    "jarPackagingRan": false,
+    "artifact": null,
+    "buildReceipt": null,
+    "automaticFixOrRetry": false,
+    "suppressionOrUnpinnedDependency": false
+  },
+  "cleanup": {"ownedContainersRemoved": 3, "ownedJdkVolumeRemoved": true, "absenceConfirmed": true, "fifoReleased": true, "heavyReleased": true, "ownedTempLockReleased": true, "tempScratchRetained": true, "manualQueueCleanup": false},
+  "holdsUnchanged": true,
+  "desktopJavaLaunched": false,
+  "tlcOrRuntimeValidation": false,
+  "productBuildFixtureLcCodeChanged": false,
+  "payloadEmbedding": false,
+  "canonicalLockState": "unbuilt"
+}

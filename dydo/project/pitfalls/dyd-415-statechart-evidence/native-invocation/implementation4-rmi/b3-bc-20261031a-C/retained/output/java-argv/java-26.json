@@ -1,0 +1,20 @@
+{
+  "pid": 806,
+  "executable": "/toolchain/jdk-21.0.8+9/bin/java",
+  "argv": [
+    "/toolchain/jdk-21.0.8+9/bin/java",
+    "-Djava.io.tmpdir=/work/tmp/statechart-corpus-ja4Fj7/statechart-oMPHbx/tmp-sany",
+    "-DTLA-Library=/work/tmp/statechart-corpus-iDmHMq",
+    "-XX:TieredStopAtLevel=1",
+    "-cp",
+    "/work/tmp/statechart-corpus-ja4Fj7/statechart-oMPHbx/checker/tla2tools.jar",
+    "tla2sany.xml.XMLExporter",
+    "-o",
+    "-I",
+    "/work/tmp/statechart-corpus-iDmHMq",
+    "/work/tmp/statechart-corpus-iDmHMq/Broken.tla"
+  ],
+  "cwd": "/work/tmp/statechart-corpus-ja4Fj7/statechart-oMPHbx",
+  "tmpdir": "/work/tmp/statechart-corpus-ja4Fj7",
+  "tlc": "/input/tla2tools.jar"
+}

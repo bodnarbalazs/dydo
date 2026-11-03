@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b1b-driver-20261031.py", line 255, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b1b-driver-20261031.py", line 251, in main
+    if failure: raise failure
+                ^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b1b-driver-20261031.py", line 238, in main
+    execute(nonce, children, volume)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b1b-driver-20261031.py", line 168, in execute
+    container('dyd415-rmi-bootstrap-' + nonce, nonce, compiler_mounts,
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ['-B', '/input/' + JAVA_ROOT + 'build.py', '--jdk', '/toolchain/' + top,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        '--jdk-archive', '/input/jdk.tar.gz', '--tlc', '/input/tla2tools.jar', '--work', '/work/build',
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        '--output', '/output/statechart-tlc-bootstrap.jar', '--receipt', '/output/build-receipt.json'], children)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b1b-driver-20261031.py", line 104, in container
+    run(name + '-start', ['docker', 'start', '--attach', identity], timeout=480)
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b1b-driver-20261031.py", line 64, in run
+    raise RuntimeError(name + ' failed; first failure retained, no automatic retry')
+RuntimeError: dyd415-rmi-bootstrap-3c45eefdd1d54237-start failed; first failure retained, no automatic retry

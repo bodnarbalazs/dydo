@@ -1,0 +1,3 @@
+Exception in thread "main" java.io.IOException: Statechart cannot replace an existing RMI socket factory.
+	at dydo.statechart.LoopbackTlc.main(LoopbackTlc.java:13)
+	at dydo.statechart.proof.SocketProbe.main(SocketProbe.java:144)

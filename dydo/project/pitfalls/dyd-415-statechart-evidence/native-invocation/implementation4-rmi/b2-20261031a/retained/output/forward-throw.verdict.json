@@ -1,0 +1,9 @@
+{
+  "name": "forward-throw",
+  "exit": 1,
+  "observation": {
+    "forwardingControl": true,
+    "exactArgvBytes": true,
+    "stderrPreserved": true
+  }
+}

@@ -1,0 +1,31 @@
+diff --git a/C:/Users/User/AppData/Local/Temp/dyd415-rmi-b1-launch-20261031.py b/C:/Users/User/AppData/Local/Temp/dyd415-rmi-b1b-launch-20261031.py
+index 8249eac3..bdf64b88 100644
+--- a/C:/Users/User/AppData/Local/Temp/dyd415-rmi-b1-launch-20261031.py
++++ b/C:/Users/User/AppData/Local/Temp/dyd415-rmi-b1b-launch-20261031.py
+@@ -1,12 +1,24 @@
+ """Normal-TEMP hidden file launcher, matching the commissioned external-driver lifecycle."""
+ from pathlib import Path
++import hashlib
++import json
++import os
+ import subprocess
+ import sys
+ import tempfile
+ 
+ TEMP = Path('C:/Users/User/AppData/Local/Temp')
+-DRIVER = TEMP / 'dyd415-rmi-b1-driver-20261031.py'
+-directory = Path(tempfile.mkdtemp(prefix='dyd415-rmi-b1-launch-', dir=TEMP))
++DRIVER = TEMP / 'dyd415-rmi-b1b-driver-20261031.py'
++preflight = dict(osName=os.name, platform=sys.platform, localAppData=os.environ.get('LOCALAPPDATA'),
++    temp=os.environ.get('TEMP'), inheritedTicket=os.environ.get('LC_SUITE_SLOT_TICKET'),
++    launcherSha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
++    driverSha256=hashlib.sha256(DRIVER.read_bytes()).hexdigest())
++print('Launcher preflight:', json.dumps(preflight), flush=True)
++assert os.name == 'nt' and sys.platform == 'win32', 'B1b requires the commissioned Windows host'
++assert Path(os.environ.get('LOCALAPPDATA', '')).resolve() == Path('C:/Users/User/AppData/Local').resolve(), 'Redirected LOCALAPPDATA; refuse before driver startup'
++directory = Path(tempfile.mkdtemp(prefix='dyd415-rmi-b1b-launch-', dir=TEMP))
++with (directory / 'preflight.json').open('x', encoding='utf-8') as stream:
++    json.dump(preflight, stream, indent=2)
+ print('Launcher logs:', directory, flush=True)
+ with (directory / 'stdout').open('xb') as stdout, (directory / 'stderr').open('xb') as stderr:
+     result = subprocess.run([sys.executable, '-B', str(DRIVER)], stdout=stdout, stderr=stderr,

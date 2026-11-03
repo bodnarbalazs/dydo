@@ -1,0 +1,30 @@
+{
+  "argv": [
+    "/toolchain/node-v22.23.2-linux-x64/bin/node",
+    "--disable-warning=ExperimentalWarning",
+    "--test",
+    "--test-reporter=tap",
+    "--test-concurrency=1",
+    "test/tlc-bootstrap.test.ts"
+  ],
+  "cwd": "/toolchain/repo/skills/engineering/statechart/scripts",
+  "environment": {
+    "PATH": "/toolchain/node-v22.23.2-linux-x64/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "HOSTNAME": "b751368b37df",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "TMPDIR": "/work/tmp",
+    "LANG": "C.UTF-8",
+    "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+    "PYTHON_VERSION": "3.13.18",
+    "PYTHON_SHA256": "abb0102e6d4ae027509bcb82327d9dd85515b44a3ba8ad538cfc5e9847029f68",
+    "HOME": "/root",
+    "LC_ALL": "C.UTF-8",
+    "TLA2TOOLS": "/input/tla2tools.jar",
+    "JAVA": "/toolchain/repo/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/java_record.py",
+    "STATECHART_JAVA": "/toolchain/repo/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/java_record.py",
+    "STATECHART_B3_JAVA_LOG": "/output/java-argv",
+    "NODE_OPTIONS": "--disable-warning=ExperimentalWarning"
+  },
+  "timeoutSeconds": 120,
+  "outputLimitBytes": 33554432
+}

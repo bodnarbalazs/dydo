@@ -6,6 +6,8 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import fc from "fast-check";
+import { tlcInvocation } from "../run.ts";
+import { prepareChecker } from "../checker.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const skip = !process.env.TLA2TOOLS && "set TLA2TOOLS to the path of tla2tools.jar to run TLC";
@@ -286,9 +288,7 @@ const plainTlc = (dir: string, c: Case, name: string, lines: string[]) => {
     process.env.JAVA || "java",
     [
       `-Djava.io.tmpdir=${path.join(dir, `tmp-${name}`)}`,
-      "-cp",
-      String(process.env.TLA2TOOLS),
-      "tlc2.TLC",
+      ...tlcInvocation(prepareChecker(String(process.env.TLA2TOOLS), path.join(dir, `tmp-${name}`))),
       "-tool",
       "-workers",
       "1",

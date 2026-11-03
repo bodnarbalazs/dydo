@@ -1,0 +1,31 @@
+{
+  "pid": 782,
+  "executable": "/toolchain/jdk-21.0.8+9/bin/java",
+  "argv": [
+    "/toolchain/jdk-21.0.8+9/bin/java",
+    "-Djava.io.tmpdir=/work/tmp/statechart-corpus-ja4Fj7/statechart-Ig0HCn/tmp-ChartRun",
+    "-DTLA-Library=/toolchain/repo/skills/engineering/statechart/scripts/test/corpus/Login",
+    "-cp",
+    "/toolchain/repo/skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar:/work/tmp/statechart-corpus-ja4Fj7/statechart-Ig0HCn/checker/tla2tools.jar",
+    "dydo.statechart.LoopbackTlc",
+    "-tool",
+    "-workers",
+    "1",
+    "-fp",
+    "0",
+    "-lncheck",
+    "final",
+    "-deadlock",
+    "-metadir",
+    "/work/tmp/statechart-corpus-ja4Fj7/statechart-Ig0HCn/meta-ChartRun",
+    "-config",
+    "/work/tmp/statechart-corpus-ja4Fj7/statechart-Ig0HCn/ChartRun.cfg",
+    "-dump",
+    "dot,actionlabels",
+    "/work/tmp/statechart-corpus-ja4Fj7/statechart-Ig0HCn/graph",
+    "ChartRun"
+  ],
+  "cwd": "/work/tmp/statechart-corpus-ja4Fj7/statechart-Ig0HCn",
+  "tmpdir": "/work/tmp/statechart-corpus-ja4Fj7",
+  "tlc": "/input/tla2tools.jar"
+}

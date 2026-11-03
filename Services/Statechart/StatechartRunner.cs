@@ -6,8 +6,10 @@ using System.Text.Json.Nodes;
 internal static class StatechartRunner
 {
     public static async Task<int> RunAsync(StatechartRequest request, StatechartDependencies dependencies,
-        string payload, StatechartHome home, TextWriter output, CancellationToken token)
+        string payload, StatechartHome home, TextWriter output, CancellationToken token, StatechartContinuation? continuation = null)
     {
+        if (!OperatingSystem.IsWindows())
+            return await PosixStatechartRun.RunAsync(request, dependencies, payload, home, continuation, token);
         var parent = Path.GetDirectoryName(request.Output)!;
         while (!Directory.Exists(parent)) parent = Path.GetDirectoryName(parent)!;
         StatechartPaths.RequirePlainDirectory(parent);

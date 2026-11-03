@@ -1,0 +1,492 @@
+{
+  "schema": 1,
+  "author": "code-writer/model: gpt-6.1-sol/high",
+  "state": "DIRECT21_PASS_TWO_SOURCE_PACKETS_NOT_RELEASED",
+  "authority": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-direct21-and-source-contract.md",
+    "sha256": "5fc6bc1ea3bd038e6b10d5346f11762888a73c037da676f37f92ce95655385ad"
+  },
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "branch": "DYD-415-statechart",
+  "execution": {
+    "launcherCount": 1,
+    "argv": [
+      "C:/Users/User/AppData/Local/Programs/Python/Python313/python.exe",
+      "-B",
+      "C:/Users/User/AppData/Local/Temp/dyd415-rmi-b3-janitor-review-fix-launch-20261031.py",
+      "--contracts"
+    ],
+    "cwd": "C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f",
+    "sourcePinSha256": "e368bc2746d4f10810ce6ae28cc812deced37aaf9691721d8644fd28203c8b47",
+    "sourceDataReceiptSha256": "3d42770da6b5b09a07ca6e0cb5970d68cf1c8449cd56e41d6fae1208f747fd4e",
+    "executionReleaseSha256": "9cecd2a652a991fa2ab22ea9a1001253aa5e0b502b2d9ee3931d0af6ea01015d",
+    "nativeIds": [
+      "test_actual_main_propagates_nonzero_failure_and_keeps_its_isolated_lock (test_statechart_janitor_successor.JanitorSuccessorContracts.test_actual_main_propagates_nonzero_failure_and_keeps_its_isolated_lock)",
+      "test_all_entrypoints_reject_missing_or_unreleased_signal_before_admission (test_statechart_janitor_successor.JanitorSuccessorContracts.test_all_entrypoints_reject_missing_or_unreleased_signal_before_admission)",
+      "test_changed_owner_bytes_are_never_deleted (test_statechart_janitor_successor.JanitorSuccessorContracts.test_changed_owner_bytes_are_never_deleted)",
+      "test_contract_command_rejects_nonempty_stdout_skip_and_wrong_selection (test_statechart_janitor_successor.JanitorSuccessorContracts.test_contract_command_rejects_nonempty_stdout_skip_and_wrong_selection)",
+      "test_contract_command_validates_actual_native_names_and_completion (test_statechart_janitor_successor.JanitorSuccessorContracts.test_contract_command_validates_actual_native_names_and_completion)",
+      "test_contract_native_failure_stops_before_success_receipt (test_statechart_janitor_successor.JanitorSuccessorContracts.test_contract_native_failure_stops_before_success_receipt)",
+      "test_driver_ambient_docker_route_refuses_before_any_host_command (test_statechart_janitor_successor.JanitorSuccessorContracts.test_driver_ambient_docker_route_refuses_before_any_host_command)",
+      "test_driver_head_drift_refuses_before_packet_or_resource_admission (test_statechart_janitor_successor.JanitorSuccessorContracts.test_driver_head_drift_refuses_before_packet_or_resource_admission)",
+      "test_error_evidence_write_failure_retains_lock_and_original_failure (test_statechart_janitor_successor.JanitorSuccessorContracts.test_error_evidence_write_failure_retains_lock_and_original_failure)",
+      "test_healthy_retention_releases_only_matching_isolated_lock (test_statechart_janitor_successor.JanitorSuccessorContracts.test_healthy_retention_releases_only_matching_isolated_lock)",
+      "test_host_refusal_precedes_any_material_command (test_statechart_janitor_successor.JanitorSuccessorContracts.test_host_refusal_precedes_any_material_command)",
+      "test_launcher_missing_release_or_pin_refuses (test_statechart_janitor_successor.JanitorSuccessorContracts.test_launcher_missing_release_or_pin_refuses)",
+      "test_launcher_requires_exact_release_signal_pin_and_inspection (test_statechart_janitor_successor.JanitorSuccessorContracts.test_launcher_requires_exact_release_signal_pin_and_inspection)",
+      "test_missing_lock_is_ownership_failure_not_successful_release (test_statechart_janitor_successor.JanitorSuccessorContracts.test_missing_lock_is_ownership_failure_not_successful_release)",
+      "test_original_product_failure_survives_retention_failure (test_statechart_janitor_successor.JanitorSuccessorContracts.test_original_product_failure_survives_retention_failure)",
+      "test_prior_evidence_failure_blocks_release_after_healthy_retention (test_statechart_janitor_successor.JanitorSuccessorContracts.test_prior_evidence_failure_blocks_release_after_healthy_retention)",
+      "test_retention_failure_with_successful_error_log_preserves_exact_lock_and_error (test_statechart_janitor_successor.JanitorSuccessorContracts.test_retention_failure_with_successful_error_log_preserves_exact_lock_and_error)",
+      "test_unconfirmed_owned_cleanup_keeps_lock_after_healthy_retention (test_statechart_janitor_successor.JanitorSuccessorContracts.test_unconfirmed_owned_cleanup_keeps_lock_after_healthy_retention)",
+      "test_worker_accepts_only_exact_selected_native_ok_with_summary (test_statechart_janitor_successor.JanitorSuccessorContracts.test_worker_accepts_only_exact_selected_native_ok_with_summary)",
+      "test_worker_refuses_nonprivate_pid_topology_before_foundation_or_runtime (test_statechart_janitor_successor.JanitorSuccessorContracts.test_worker_refuses_nonprivate_pid_topology_before_foundation_or_runtime)",
+      "test_worker_rejects_missing_duplicate_skipped_failed_unselected_and_bad_summary (test_statechart_janitor_successor.JanitorSuccessorContracts.test_worker_rejects_missing_duplicate_skipped_failed_unselected_and_bad_summary)"
+    ],
+    "count": 21,
+    "unique": 21,
+    "skipped": 0,
+    "nonOk": 0,
+    "terminalSummary": "Ran 21 tests in 0.139s\n\nOK",
+    "nativeExit": 0,
+    "stdoutBytes": 0,
+    "driverExit": 0,
+    "launcherExit": 0,
+    "seconds": 0.3615034999966156,
+    "driverPid": 124760,
+    "nativeChildPid": "NOT_RECORDED_BY_UNCHANGED_SUBPROCESS_RUN",
+    "startedUtc": "2026-10-31T14:09:04.527906+00:00",
+    "ticket": "0000000002-44a6fca3f24354f8",
+    "nonce": "97c9f3f2eaa14500",
+    "namespace": "C:/Users/User/AppData/Local/lc-test/suite-slot",
+    "bookingOwned": true,
+    "inherited": false,
+    "timeoutSeconds": 180,
+    "timeoutExercised": false,
+    "directChildKillAndReap": "Existing subprocess.run timeout lifecycle, not exercised",
+    "outputLimit": {
+      "bytes": 16777216,
+      "kind": "POST_COMPLETION_REJECTING_CAP_NOT_HARD_BOUND"
+    },
+    "materialBoundaries": "Mocked inside isolated unittest; no unpatched descendants/streaming workload/containers/Node/Java/product calls",
+    "noJobOrNetworkNoneClaim": true,
+    "dockerMetadata": "Historical only, not freshly probed"
+  },
+  "cleanup": {
+    "cleanupConfirmed": true,
+    "noMaterialResourcesCreated": true,
+    "heavyReleased": true,
+    "tempLockReleased": true,
+    "fifoReleased": true,
+    "independentTempLockExistsAfterReturn": false,
+    "receiptRefs": [
+      "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/teardown.json",
+      "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/secondary-released.json",
+      "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/released.json"
+    ],
+    "unitTempAbsence": "Unit addCleanup source callbacks; no per-fixture independent directory absence receipt",
+    "recovery": "No retained lock in actual21. Any future legitimate hold requires original-owner plus case-specific captain/admiral identity/resource/evidence/absence disposition; no generic stale/PID-based removal"
+  },
+  "sourcePackets": {
+    "twelve": {
+      "sourcePin": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/source-pin.json",
+        "bytes": 21971,
+        "sha256": "d5a8066e4f8a51378868bff94b34cdfd29f37e2ae3edcefc8b2f5fd741dbae26"
+      },
+      "sourceDataReceipt": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/source-data-receipt.json",
+        "bytes": 3707,
+        "sha256": "270f6f21164b280bab1d946b88a35b3acdd1ecf6b6f4f7fbf3398fa850b46bd6"
+      },
+      "checkpoint": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/checkpoint.md",
+      "sourceRows": 77,
+      "authoredFiles": 21,
+      "externalRows": 5,
+      "tempRows": 2,
+      "runtimeInputs": 51,
+      "canonicalSelectors": 12,
+      "nativeCommands": 12,
+      "lexicalDirectContracts": 12,
+      "releaseFilePresent": false,
+      "executed": false
+    },
+    "assurance": {
+      "sourcePin": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/source-pin.json",
+        "bytes": 517248,
+        "sha256": "abc46d14bff0eb58f6f47231a757e8ce278c52497030fea9f3be878880c198bb"
+      },
+      "sourceDataReceipt": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/source-data-receipt.json",
+        "bytes": 3716,
+        "sha256": "9ff55d6b17aeb7d859ed9b72528cfa09f15e8c53af3a88f1674d4a002acc4885"
+      },
+      "checkpoint": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/checkpoint.md",
+      "sourceRows": 2193,
+      "authoredFiles": 15,
+      "installedMembers": 2089,
+      "wholeMaintainedTypeScript": 54,
+      "coverageNpmLockRows": 280,
+      "releaseFilePresent": false,
+      "executed": false
+    }
+  },
+  "custody": {
+    "beforeFrozenExpected": 9432,
+    "afterFrozenActual": 9432,
+    "unexpectedMismatches": 0,
+    "historicalExpected": 5266,
+    "historicalMismatches": 0,
+    "oldSnapshotMapping": {
+      "skills/engineering/statechart/scripts/statechart.ts": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/statechart.ts",
+      "skills/engineering/statechart/scripts/test/cli.test.ts": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/cli.test.ts"
+    },
+    "noExpectedHashRegeneration": true,
+    "afterManifestRows": 9464,
+    "derivedPinReceiptAuditRows": 6,
+    "newSourceDocuments": 30,
+    "newTempSourceRows": 2,
+    "afterManifest": [
+      {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/after-custody.json",
+        "bytes": 2228715,
+        "sha256": "43256b7cde2ad2f0d90a66ff9170f4f890494a5857f61c4566ecd71d4929f0c0"
+      },
+      {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/after-custody.json",
+        "bytes": 2228715,
+        "sha256": "43256b7cde2ad2f0d90a66ff9170f4f890494a5857f61c4566ecd71d4929f0c0"
+      }
+    ],
+    "payloadDependencyAssociationSourceChanges": 0,
+    "trackedDraftChangesThisTurn": 0,
+    "headUnchanged": true,
+    "rawAndNewSourceRehashMismatches": 0
+  },
+  "packetArtifacts": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/after-custody.json",
+      "bytes": 2228715,
+      "sha256": "43256b7cde2ad2f0d90a66ff9170f4f890494a5857f61c4566ecd71d4929f0c0"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/assurance-plan.json",
+      "bytes": 3654,
+      "sha256": "5e5048b36814ca1e6b3516b2b479af77f90711a1c3563e0b834eb1df6d0bfd3a"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/before-custody.json",
+      "bytes": 2220471,
+      "sha256": "1b83dc3de913d0182e7d8d320237701473f6981929157bf54b4e03b4d21bdd85"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/before-source-map.json",
+      "bytes": 2454,
+      "sha256": "35c74050711268cca3584d9869e81ccbea08e752b33a97103f300a25f5c6ccd8"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/cancellation-and-containment.md",
+      "bytes": 4185,
+      "sha256": "2aaa25c0dad0a8880cad8f220a89fbcd182ff0e02c9484b2b418975d85365fee"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/checkpoint.md",
+      "bytes": 4453,
+      "sha256": "5855944b05f2d125553432515bbfbd55c98eeaf9e72c1a56dc88b1c460e57731"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/closure.json",
+      "bytes": 42378,
+      "sha256": "9b5685f91c6d1402a9bdc2365f4673e61f9e3c885f4f56aaede2960d7694bd01"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/commands.json",
+      "bytes": 9337,
+      "sha256": "c1bd5635f4197b2e86fc04c021405e5b1c67e0f46cfb21f1d30d69c3e3e96ab7"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/driver.py",
+      "bytes": 24502,
+      "sha256": "712b9edae13594121dd71ccdb1cffa8edaba95576fb2bfd3afeebfeb05e89847"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/input-manifest.json",
+      "bytes": 30467,
+      "sha256": "4f0144006e96e30894d58d87d110a62615dc653f835ea96210db1868fc25d95b"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/launcher.py",
+      "bytes": 5419,
+      "sha256": "fcaa5ccdb78d281efeb7bc0681969f736294b4b67e4d686826d701b6f193dad0"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/obligation-table.json",
+      "bytes": 11310,
+      "sha256": "cc4d55d17350d1b661cba64f2bc49f9fafd6a68f51c0ff36404bf883ba479a08"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/owned-paths.json",
+      "bytes": 3688,
+      "sha256": "0dd03a359193a3b50b52658ef56b0af8221022ebcddbaede4494064910d3d910"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/preservation-map.json",
+      "bytes": 1203,
+      "sha256": "947dc69be28fa13bbfbc1ee1d4020c1d98902e978596275121eacce4b4169f2b"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/source-data-receipt.json",
+      "bytes": 3707,
+      "sha256": "270f6f21164b280bab1d946b88a35b3acdd1ecf6b6f4f7fbf3398fa850b46bd6"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/source-pin.json",
+      "bytes": 21971,
+      "sha256": "d5a8066e4f8a51378868bff94b34cdfd29f37e2ae3edcefc8b2f5fd741dbae26"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/successor.diff",
+      "bytes": 33512,
+      "sha256": "4dc6f7afd428da254f4288a44460a3b1158865d43615531c2bfdb4b98cbf82e3"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test-inventory.json",
+      "bytes": 7741,
+      "sha256": "99ea1fc7a147de67cf38050361f70cfa71d41abd28951e0e495b7d1eaa4c9a1b"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_driver_contracts.py",
+      "bytes": 3648,
+      "sha256": "a253dc7ed416ea1216a0fc881e47ae0219f2d7c8da9399e2c8870176cefa492d"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_worker_contracts.py",
+      "bytes": 6680,
+      "sha256": "b728bdfc188e921c79ce81e77fb5ab9fa33a10545e6d2aa2e9a9529af08af061"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/worker.py",
+      "bytes": 10345,
+      "sha256": "c77ba96574c5b5cefe782d9549cc59feea758b9d93256224afca9436e98d2925"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/after-custody.json",
+      "bytes": 2228715,
+      "sha256": "43256b7cde2ad2f0d90a66ff9170f4f890494a5857f61c4566ecd71d4929f0c0"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/association-proposals.json",
+      "bytes": 3462,
+      "sha256": "3512253b9bbe977dc4b094557deef74873022c3dfca63f8ae26b46167f97a00a"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/before-custody.json",
+      "bytes": 2220471,
+      "sha256": "1b83dc3de913d0182e7d8d320237701473f6981929157bf54b4e03b4d21bdd85"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/checkpoint.md",
+      "bytes": 4406,
+      "sha256": "8313992ca5face31b219be3ba6e5b29138c5f6ac53e0feab97de0a89fc921bdf"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/commands.json",
+      "bytes": 4691,
+      "sha256": "02566ad70ceccf2dcbd0fc0562e0a33e8bdd72608d08a70b1f0305fcb583ffdb"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/dependency-closure.json",
+      "bytes": 672788,
+      "sha256": "dc02ec8c73792018d20a10f8d351b2c104011a51f261590b8bc00ced56d0955e"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/environment-prerequisites.json",
+      "bytes": 1826,
+      "sha256": "6b1fe6aefb2c68ba757e579f6626fc6d0e651560bc8e3ac3c4c991be7a2f0682"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/maintained-modules.json",
+      "bytes": 17327,
+      "sha256": "8f1752e800af676a4f10a50e82ec345f9bbdebf5836e60e3a0e8e82b3fbc7060"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/owned-paths.json",
+      "bytes": 2617,
+      "sha256": "e0b4ea9e3c45e3c151b52490c14d343c214e8f93d5315b260afdbf7c1956712e"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/preservation-map.json",
+      "bytes": 1212,
+      "sha256": "4213693737e233d31d1f44dbbdfd2e39aec6baa8a95558aeabec918ac15fd2b5"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/source-data-receipt.json",
+      "bytes": 3716,
+      "sha256": "9ff55d6b17aeb7d859ed9b72528cfa09f15e8c53af3a88f1674d4a002acc4885"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/source-pin.json",
+      "bytes": 517248,
+      "sha256": "abc46d14bff0eb58f6f47231a757e8ce278c52497030fea9f3be878880c198bb"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/source-role-applicability.md",
+      "bytes": 3249,
+      "sha256": "41a63cd7e92c24e15c75c57aab6d42f373efb476763af70ffc141924738235fe"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/test-reach.json",
+      "bytes": 3458,
+      "sha256": "d6b7751bb47cb652202948b7bd23f5d1100d34ae5dd4ca2b778c87256911d2a7"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-assurance-setup-source/unsupported-requirements.md",
+      "bytes": 2878,
+      "sha256": "66cb1dbeaab6ba431e61f1fb447705d193e79b0ee110244c2b21f1647052a9d5"
+    }
+  ],
+  "sourceOnlyTempCounterparts": [
+    {
+      "path": "C:/Users/User/AppData/Local/Temp/dyd415-rmi-b3-janitor-twelve-driver-20261031.py",
+      "bytes": 24502,
+      "sha256": "712b9edae13594121dd71ccdb1cffa8edaba95576fb2bfd3afeebfeb05e89847"
+    },
+    {
+      "path": "C:/Users/User/AppData/Local/Temp/dyd415-rmi-b3-janitor-twelve-launch-20261031.py",
+      "bytes": 5419,
+      "sha256": "fcaa5ccdb78d281efeb7bc0681969f736294b4b67e4d686826d701b6f193dad0"
+    }
+  ],
+  "partARawOutputAndOwnedLogs": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/admission.json",
+      "bytes": 458,
+      "sha256": "f2813e5f44a6cb6d015dc4c3ba571ad264fb09c036c097f58ef153069228e2be"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/contracts.argv.json",
+      "bytes": 452,
+      "sha256": "fca750c1ce60300257bbff43bdc1f42e49942af9a388fc632e4e7fecfcedf0c3"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/contracts.result.json",
+      "bytes": 66,
+      "sha256": "ee0b981ddc477bfca8138816c9b45171c3a46984b42016bdb0ba888f12b3ec9a"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/contracts.stderr",
+      "bytes": 4272,
+      "sha256": "5773090cb2f7adf775505846d4a1d120d2d01d23e5b312f11fdffd4d395494b6"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/contracts.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/execution-release-at-run.json",
+      "bytes": 3977,
+      "sha256": "9cecd2a652a991fa2ab22ea9a1001253aa5e0b502b2d9ee3931d0af6ea01015d"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/launcher.preflight.json",
+      "bytes": 607,
+      "sha256": "f36c61f736e247ffbc842d2278adf3b1c9422f26397874e1b53c78d0141a88a8"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/launcher.result.json",
+      "bytes": 127,
+      "sha256": "a38363e1c0e36fadc5f66e9c7992e2c3a2d3968f7d1fce9e7a0ca4acebb0c52a"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/launcher.stderr",
+      "bytes": 268,
+      "sha256": "72b39ca9d827a696aa8de236bbd8c196c0c439e6a3fc02ae05fb241a03d6f6af"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/launcher.stdout",
+      "bytes": 40,
+      "sha256": "68f9cff83851e603a2c11a9c3235e7ca65342c8e9a536e28943819f43f371d78"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/post-custody.json",
+      "bytes": 140,
+      "sha256": "d8add759856e32580ebcf3844cbc312dc6493896e370dcd7ce22e3b476f8ab30"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/preflight.json",
+      "bytes": 618,
+      "sha256": "7ecfff3580cbcedf50b22b2919879cfa83def1c76c29c11f859d91727ffd6ea4"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/released.json",
+      "bytes": 85,
+      "sha256": "390a42afa342d299de94185447f7db1978f6b332df032b9722c86d375e5cfad3"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/secondary-released.json",
+      "bytes": 56,
+      "sha256": "319ca4adba2945375b9f1a3c0dc1cb6bf9abe4ceb9d5a1d92bf58cceaec77223"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/source-data-receipt-at-run.json",
+      "bytes": 2324326,
+      "sha256": "3d42770da6b5b09a07ca6e0cb5970d68cf1c8449cd56e41d6fae1208f747fd4e"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/source-pin-at-run.json",
+      "bytes": 27638,
+      "sha256": "e368bc2746d4f10810ce6ae28cc812deced37aaf9691721d8644fd28203c8b47"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/summary.json",
+      "bytes": 152,
+      "sha256": "da65e60870284f1d58c64d69326ca7206e569e7c4411757f5a76f452bac801ba"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/teardown.json",
+      "bytes": 69,
+      "sha256": "3eeac8c2be43c7a769ad5b29d9921a60866b49bd1c99f7351f1105cf54b3c9c8"
+    },
+    {
+      "path": "C:/Users/User/AppData/Local/Temp/dyd415-rmi-b3-janitor-review-fix-launch-56iqu8_r/preflight.json",
+      "bytes": 497,
+      "sha256": "5ce563b4bb33b3ccb958bfbf3ae0015c4ea0823c173070ae7795bad0fe66ee0b"
+    },
+    {
+      "path": "C:/Users/User/AppData/Local/Temp/dyd415-rmi-b3-janitor-review-fix-launch-56iqu8_r/stderr",
+      "bytes": 268,
+      "sha256": "72b39ca9d827a696aa8de236bbd8c196c0c439e6a3fc02ae05fb241a03d6f6af"
+    },
+    {
+      "path": "C:/Users/User/AppData/Local/Temp/dyd415-rmi-b3-janitor-review-fix-launch-56iqu8_r/stdout",
+      "bytes": 40,
+      "sha256": "68f9cff83851e603a2c11a9c3235e7ca65342c8e9a536e28943819f43f371d78"
+    }
+  ],
+  "resultDocument": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-20261031a-CONTRACTS/result.md",
+    "bytes": 6610,
+    "sha256": "5bcdc0138f194c6942f739f1a9647d935dae5fbdff8cd6861423dd1c64020f77"
+  },
+  "nextCaptainDecisions": [
+    "Inspect twelve-only grouping: one invocation/12 complete native one-case summaries, unchanged canonical assertions, strict case/final census,65s+5s cancellation and separate exact-owned infrastructure failure containment; no execution release here",
+    "Inspect/release new12 wrapper direct assurance and native discovery only after exact bounded admission; actual21 does not certify new modules",
+    "Admit retained source-local TS5.9.3/types22.18.0/undici6.21.0/fast-check4.5.3/pure-rand7.0.1/runtime closure for a finite compiler proof OR separately scope approved reproducible statechart dependency/lock deltas; no dependency edit now",
+    "Supported metrics setup requires exact CPython3.12.10/venv, existing locked coverage/viewer dependencies under adopted22.13.0/npm/pnpm11, missing installer/runtime/artifact identities and separate setup authority; no fetch/install/static executed",
+    "Fresh independent review remains captain-owned after actual correction-stage gates close"
+  ],
+  "standingLimits": [
+    "Original12 -9/no summary/no final census FAIL/incomplete immutable",
+    "C FAIL, attribution RED, focused/diagnostic/review failures immutable",
+    "Two signal PASS artifacts at recorded exact original scope only, no arithmetic acceptance",
+    "Desktop Windows Java/javac/install/probe HOLD",
+    "Missing isolated Windows/prompt access and Java assurance",
+    "Abrupt-parent PythonPID1 strict drain unproved",
+    "Installed/native/npm/platform/current-master/aggregate static/coverage/CI/whole-candidate gates remain",
+    "No readiness/PS retirement/review/commit/push/PR/merge/release/version/tag/publish/rollout",
+    "Both settled HITL channels NO CONTACT"
+  ],
+  "selfBinding": "This return-receipt excludes itself; its final raw SHA is returned separately. No source or historical receipt edited."
+}

@@ -1,0 +1,67 @@
+diff --git a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_driver_contracts.py b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/test_driver_contracts.py
+index d4c40916..dc2baf96 100644
+--- a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_driver_contracts.py
++++ b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/test_driver_contracts.py
+@@ -10,7 +10,7 @@ import tempfile
+ import unittest
+ from unittest.mock import patch
+ 
+-PACKET = Path(__file__).resolve().parent
++PACKET = Path(__file__).resolve().parent.parent / 'b3-janitor-twelve-source'
+ 
+ 
+ def load(name):
+diff --git a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_worker_contracts.py b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/test_worker_contracts.py
+index e8437542..f8457147 100644
+--- a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/test_worker_contracts.py
++++ b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/test_worker_contracts.py
+@@ -7,7 +7,7 @@ from types import SimpleNamespace
+ import unittest
+ from unittest.mock import Mock, patch
+ 
+-PACKET = Path(__file__).resolve().parent
++PACKET = Path(__file__).resolve().parent.parent / 'b3-janitor-twelve-source'
+ spec = importlib.util.spec_from_file_location('_twelve_worker_contract', PACKET / 'worker.py')
+ worker = importlib.util.module_from_spec(spec)
+ spec.loader.exec_module(worker)
+@@ -75,9 +75,11 @@ class TwelveWorkerContracts(unittest.TestCase):
+     def test_runner_identity_uncertainty_never_kills_an_unproved_group(self):
+         stat = '42 (node) ' + ' '.join(['S', '9', *(['0'] * 17), '123'])
+         child = SimpleNamespace(pid=42, poll=lambda: None)
++        kill = Mock()
++        owned_os = SimpleNamespace(getpid=lambda: 1, getpgid=lambda pid: 42, killpg=kill)
+         with patch.object(worker, 'Path', return_value=SimpleNamespace(read_text=lambda: stat)), \
+-                patch.object(worker.os, 'getpid', return_value=1), \
+-                patch.object(worker.os, 'getpgid', return_value=42), patch.object(worker.os, 'killpg') as kill:
++                patch.object(worker, 'os', owned_os), \
++                patch.object(worker, 'signal', SimpleNamespace(SIGKILL=9)):
+             with self.assertRaisesRegex(RuntimeError, 'ownership uncertain'):
+                 worker.drain_runner(child, '123')
+         kill.assert_not_called()
+@@ -85,11 +87,13 @@ class TwelveWorkerContracts(unittest.TestCase):
+     def test_runner_exact_owned_group_cancellation_uses_sigkill(self):
+         stat = '42 (node) ' + ' '.join(['S', '1', *(['0'] * 17), '123'])
+         child = SimpleNamespace(pid=42, poll=lambda: None)
++        kill = Mock()
++        owned_os = SimpleNamespace(getpid=lambda: 1, getpgid=lambda pid: 42, killpg=kill)
+         with patch.object(worker, 'Path', return_value=SimpleNamespace(read_text=lambda: stat)), \
+-                patch.object(worker.os, 'getpid', return_value=1), \
+-                patch.object(worker.os, 'getpgid', return_value=42), patch.object(worker.os, 'killpg') as kill:
++                patch.object(worker, 'os', owned_os), \
++                patch.object(worker, 'signal', SimpleNamespace(SIGKILL=9)):
+             worker.drain_runner(child, '123')
+-        kill.assert_called_once_with(42, worker.signal.SIGKILL)
++            kill.assert_called_once_with(42, worker.signal.SIGKILL)
+ 
+     def test_timeout_stays_failure_after_late_runner_exit_and_bounded_reap(self):
+         foundation = SimpleNamespace(OUTPUT=self.root, NODE=self.root / 'inert-node',
+@@ -107,8 +111,7 @@ class TwelveWorkerContracts(unittest.TestCase):
+             return stat if parts[0] == '/proc' else native_path(*parts)
+         with patch.object(worker.subprocess, 'Popen', return_value=child), \
+                 patch.object(worker, 'Path', side_effect=owned_path), \
+-                patch.object(worker.os, 'getpgid', return_value=42), \
+-                patch.object(worker.os, 'getpid', return_value=1):
++                patch.object(worker, 'os', SimpleNamespace(getpgid=lambda pid: 42, getpid=lambda: 1)):
+             with self.assertRaises(subprocess.TimeoutExpired) as result:
+                 worker.run_case(foundation, worker.NAMES[0], 0)
+         self.assertIs(original, result.exception)

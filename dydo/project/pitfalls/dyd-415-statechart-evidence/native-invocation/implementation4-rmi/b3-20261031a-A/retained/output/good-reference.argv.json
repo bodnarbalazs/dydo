@@ -1,0 +1,38 @@
+{
+  "argv": [
+    "/toolchain/jdk-21.0.8+9/bin/java",
+    "-Djava.io.tmpdir=/work/good-reference/tmp",
+    "-DTLA-Library=/input/models",
+    "-cp",
+    "/work/good-reference/checker/tla2tools.jar",
+    "tlc2.TLC",
+    "-workers",
+    "1",
+    "-fp",
+    "0",
+    "-lncheck",
+    "final",
+    "-deadlock",
+    "-metadir",
+    "/work/good-reference/meta",
+    "-config",
+    "/input/models/good.cfg",
+    "/input/models/Transport.tla"
+  ],
+  "cwd": "/input/models",
+  "environment": {
+    "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "HOSTNAME": "bf24d603b082",
+    "TMPDIR": "/work/tmp",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "LANG": "C.UTF-8",
+    "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+    "PYTHON_VERSION": "3.13.18",
+    "PYTHON_SHA256": "abb0102e6d4ae027509bcb82327d9dd85515b44a3ba8ad538cfc5e9847029f68",
+    "HOME": "/root",
+    "LC_ALL": "C.UTF-8"
+  },
+  "timeoutSeconds": 120,
+  "outputLimitBytes": 33554432,
+  "passive": false
+}

@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "docker",
+    "volume",
+    "ls",
+    "--filter",
+    "name=dyd415-rmi-b3-4acaaa3c581b4b8b-jdk",
+    "--format",
+    "{{.Name}}"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "hidden": true,
+  "ticket": "0000000001-0e523d5df945b730",
+  "startedUtc": "2026-10-31T01:16:46.841071+00:00"
+}

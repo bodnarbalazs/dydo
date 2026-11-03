@@ -4,7 +4,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PINNED_FLAGS } from "../run.ts";
+import { PINNED_FLAGS, tlcInvocation } from "../run.ts";
+import { prepareChecker } from "../checker.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const jar = process.env.TLA2TOOLS;
@@ -40,9 +41,7 @@ function tlc(dir: string, module: string, cfg: string) {
     process.env.JAVA ?? "java",
     [
       `-Djava.io.tmpdir=${tmp}`,
-      "-cp",
-      jar ?? "",
-      "tlc2.TLC",
+      ...tlcInvocation(prepareChecker(jar ?? "", tmp)),
       ...PINNED_FLAGS,
       "-config",
       file,

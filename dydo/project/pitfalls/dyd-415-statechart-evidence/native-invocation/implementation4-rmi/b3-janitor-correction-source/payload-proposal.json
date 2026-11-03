@@ -1,0 +1,33 @@
+{
+  "state": "DEFERRED_NOT_APPLIED",
+  "unchangedDeclarations": [
+    {
+      "path": "Resources/Statechart/payload.json",
+      "bytes": 14685,
+      "sha256": "32e20e198c87b31fe6ca5b560cadc33609ff99802e5bd0cfab4cbc7c1605860d"
+    },
+    {
+      "path": "Resources/Statechart/payload.items.props",
+      "bytes": 25605,
+      "sha256": "8397dd484855d41c008d1af3138718f5bd6bd726d8b6b2322b519c8b7a83bd6a"
+    }
+  ],
+  "payloadRowBefore": {
+    "path": "skills/engineering/statechart/scripts/statechart.ts",
+    "resource": "Statechart/payload/skills/engineering/statechart/scripts/statechart.ts",
+    "bytes": 6852,
+    "sha256": "2305d329359666fd22e738a37aa6d204dc7ef135dcf87592a49cec7cc5a846ec"
+  },
+  "payloadRowAfter": {
+    "path": "skills/engineering/statechart/scripts/statechart.ts",
+    "resource": "Statechart/payload/skills/engineering/statechart/scripts/statechart.ts",
+    "bytes": 9883,
+    "sha256": "3524650b2b38a90388e9344d4761ab025793cfdd94b68e6bdd6c99a3f172a345"
+  },
+  "propsExpectedHashBefore": "2305d329359666fd22e738a37aa6d204dc7ef135dcf87592a49cec7cc5a846ec",
+  "propsExpectedHashAfter": "3524650b2b38a90388e9344d4761ab025793cfdd94b68e6bdd6c99a3f172a345",
+  "entriesAdded": 0,
+  "otherCurrentIdentityConsumers": [],
+  "historicalMatches": "Immutable source/evidence snapshots, not live declaration amendment authority",
+  "installedProof": "OWED_FOR_CHANGED_PAYLOAD"
+}

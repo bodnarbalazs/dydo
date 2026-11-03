@@ -1,0 +1,168 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY_AWAITING_CAPTAIN_INSPECTION",
+  "author": "code-writer/model: gpt-6.1-sol/high",
+  "observedUtc": "2026-10-31T01:38:08.701014+00:00",
+  "head": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "retainedDraft": true,
+  "authority": {
+    "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-action-expectation-disposition-20261031.md",
+    "bytes": 7680,
+    "sha256": "640d6a27a71aef16373390fa0a11fb5690c15b7e5a0e108409301fbb927b8a04"
+  },
+  "sourceRows": [
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/association-delta.json",
+      "bytes": 1594,
+      "sha256": "61fd5e5a2cdb7230ad027f02471bb7a6c881fe25c36db063d7127c87a688cd74"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/association-source.diff",
+      "bytes": 1979,
+      "sha256": "dff36efc1735b673a513396414d32bec655a2590ee166de2532e510bd34c62be"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/before/node-driver-before-contained-transfer.py.txt",
+      "bytes": 10539,
+      "sha256": "de41ce2fbaae4105996bf683db42fd0c4568bf9af315dcbd6dfa5dd09379ad3f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/before/test-associations.json",
+      "bytes": 47658,
+      "sha256": "b9a483c2760292fa8cb8c464d56ea19a55b065b2738153f39f2f63f1c4397073"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/checkpoint.md",
+      "bytes": 3372,
+      "sha256": "3a9a182276f8d4c8e6590ec9c7b3c3d6278e8c6d3f664e0f9e051d010f8a352f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/commands.json",
+      "bytes": 2682,
+      "sha256": "75e6b3641aed59903fce6c0e6cffdea017275c2f30f6b7b50c4b3686046589ea"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/dependency-binding.json",
+      "bytes": 1010,
+      "sha256": "34f9422836b9856a992c9674dd5ca8b9a7f88d6b612a1c7e392ff59bdf2e48de"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/driver.py",
+      "bytes": 13271,
+      "sha256": "0ded3eadf56c49e705b437cc37840dd1e8b054f12fe2801fa1523b7419ac9589"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/launcher.py",
+      "bytes": 4483,
+      "sha256": "6638ff39b250af2e0c26730a2e01087e1e906aa405426f76a042aa4db79debb9"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/preserved-inputs.json",
+      "bytes": 540993,
+      "sha256": "e82c2cb82393f7b7ef989167b3413b7f838bc3a7b7a4f7271edf1b87b675a164"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/test-inventory.json",
+      "bytes": 920,
+      "sha256": "58c2a6375386bb8e952f904b60f41dd963ca753d17e904b95790522ba2edcd0f"
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/transfer.py",
+      "bytes": 2614,
+      "sha256": "ef4d6ca29758d0a72600cd86eb4b96154e49dd9268a3f2188fe315c400510497"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/test-associations.json",
+      "bytes": 49261,
+      "sha256": "31722a4483bc05e55b9894aff251dedc5a0704aa8681305b02923bea463b0376"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_statechart_node_acquisition.py",
+      "bytes": 5952,
+      "sha256": "d8f588349ef8935f040196409deb0316e48827156fc587f66094b09dd75f9d75"
+    },
+    {
+      "path": "Resources/Statechart/dependency-lock.json",
+      "bytes": 8461,
+      "sha256": "7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad"
+    }
+  ],
+  "preservedRowsMatched": 2093,
+  "oldB3SourceRowsMatched": 17,
+  "oldB3AssociationRowPreservedAt": {
+    "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/before/test-associations.json",
+    "bytes": 47658,
+    "sha256": "b9a483c2760292fa8cb8c464d56ea19a55b065b2738153f39f2f63f1c4397073"
+  },
+  "currentAssociationEdit": "Only seven genuine module/test associations; old source pin remains historical unchanged",
+  "snapshotRowsMatched": 0,
+  "retainedInputsMatched": 0,
+  "independentReferenceRowsMatched": 0,
+  "sourceTestCount": 9,
+  "actualDiscovery": "NOT_RUN",
+  "sourceSyntax": "AST parse only, no imports/bytecode",
+  "counterparts": [
+    {
+      "role": "driver",
+      "source": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/driver.py",
+        "bytes": 13271,
+        "sha256": "0ded3eadf56c49e705b437cc37840dd1e8b054f12fe2801fa1523b7419ac9589"
+      },
+      "counterpart": {
+        "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-node-driver-20261031.py",
+        "bytes": 13271,
+        "sha256": "0ded3eadf56c49e705b437cc37840dd1e8b054f12fe2801fa1523b7419ac9589"
+      },
+      "exact": true
+    },
+    {
+      "role": "launcher",
+      "source": {
+        "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/launcher.py",
+        "bytes": 4483,
+        "sha256": "6638ff39b250af2e0c26730a2e01087e1e906aa405426f76a042aa4db79debb9"
+      },
+      "counterpart": {
+        "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-node-launch-20261031.py",
+        "bytes": 4483,
+        "sha256": "6638ff39b250af2e0c26730a2e01087e1e906aa405426f76a042aa4db79debb9"
+      },
+      "exact": true
+    }
+  ],
+  "lcHashesMatched": {
+    "tools/testing/runner/suite_slot.py": "aa36020ee48e08319451e6c126701251aa3be9ef40ca4e4cb9cbaed1e375d21a",
+    "tools/testing/runner/machine_lock.py": "7b53157084084ebb6806f7b4f391a82467f9fed0fc9d701d3fd3e0954c0d9736",
+    "dydo/reference/tools/test-runner.md": "c0eb699240e4f0bd1526f1bbf495604fbf67bbb3ed3002f19fc09222a9ea92a4"
+  },
+  "dataWriters": [
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-prepare-action-node-packets-20261031.py",
+      "bytes": 11882,
+      "sha256": "7b754b2396a5380f9aac82bd2838b8a18914390aed55e6fcf2db3c913e32dc3f"
+    },
+    {
+      "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-finalize-action-node-pins-20261031.py",
+      "bytes": 10210,
+      "sha256": "71d28f28816a059656ab6655645e646698d2546d85eefddf98216d0f34a78cc1"
+    }
+  ],
+  "materialExecution": false,
+  "network": false,
+  "container": false,
+  "compiler": false,
+  "java": false,
+  "node": false,
+  "productionChanges": false,
+  "commit": false,
+  "holds": [
+    "desktop Java",
+    "Windows access",
+    "Java assurance unavailable",
+    "B/C",
+    "native/installed/platform/static/coverage/current-master/review",
+    "PS retirement/readiness/publication",
+    "both settled HITL no-contact"
+  ]
+}

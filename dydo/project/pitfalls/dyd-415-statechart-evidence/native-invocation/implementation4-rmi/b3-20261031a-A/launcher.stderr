@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b3-driver-20261031.py", line 306, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b3-driver-20261031.py", line 302, in main
+    if failure: raise failure
+                ^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b3-driver-20261031.py", line 282, in main
+    execute(nonce, children, volume)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b3-driver-20261031.py", line 218, in execute
+    container('dyd415-rmi-b3-' + nonce + '-finite', nonce,
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+              [*mounts, 'type=volume,source=' + volume + ',target=/toolchain,readonly'],
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+              ['-B', '/input/worker.py', '--group', GROUP], children)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b3-driver-20261031.py", line 95, in container
+    run(name + '-start', ['docker', 'start', '--attach', identity], timeout=1200)
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\AppData\Local\Temp\dyd415-rmi-b3-driver-20261031.py", line 60, in run
+    raise RuntimeError(name + ' failed; first failure retained, no automatic retry')
+RuntimeError: dyd415-rmi-b3-2bde5afcdbfb45ab-finite-start failed; first failure retained, no automatic retry

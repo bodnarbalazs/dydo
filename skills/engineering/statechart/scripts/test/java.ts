@@ -31,8 +31,8 @@ const java = (folder: string, args: string[]) => {
 
 if (record) {
   let tool = plain ? args.map((a, i) => (args[i - 1] === "-workers" ? "1" : a)) : args;
-  const wantsPlainText = tool.includes("tlc2.TLC") && !tool.includes("-tool");
-  if (wantsPlainText) tool = tool.flatMap((a) => (a === "tlc2.TLC" ? [a, "-tool"] : [a]));
+  const wantsPlainText = tool.includes("dydo.statechart.LoopbackTlc") && !tool.includes("-tool");
+  if (wantsPlainText) tool = tool.flatMap((a) => (a === "dydo.statechart.LoopbackTlc" ? [a, "-tool"] : [a]));
   const r = java(record, tool);
   if (dump && fs.existsSync(dump)) fs.copyFileSync(dump, path.join(record, "graph.dot"));
   if (plain && tool.includes("-tool"))

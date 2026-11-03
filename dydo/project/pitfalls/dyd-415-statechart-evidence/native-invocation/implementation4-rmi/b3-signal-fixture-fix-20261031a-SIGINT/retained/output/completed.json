@@ -1,0 +1,10 @@
+{
+  "signal": "SIGINT",
+  "selected": 1,
+  "selectedSkipped": 0,
+  "canonicalOriginalAssertionsPassed": true,
+  "strictRemainingProcesses": 0,
+  "realJava": false,
+  "historicalFailureSuperseded": false,
+  "freshWrapperDirectAssurance": "OWED"
+}

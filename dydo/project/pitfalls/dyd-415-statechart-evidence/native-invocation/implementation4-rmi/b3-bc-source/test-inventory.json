@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "existingB2": {
+    "file": {
+      "path": "DynaDocs.Tests/coverage/tests/test_statechart_rmi_b2.py",
+      "bytes": 9320,
+      "sha256": "ea296a3ec20ef5b08f0d941fbdae4f29140bd7bfb9837f74eeb52f86f7a2c78a"
+    },
+    "cases": [
+      "test_exact_finite_classpaths_and_process_inventory",
+      "test_fixture_compilers_cannot_recompile_product_or_consume_official_manifest",
+      "test_native_endian_mapped_loopback_and_nonlocal_addresses",
+      "test_dual_table_observation_requires_owned_socket",
+      "test_bound_requires_exchange_and_rmi_requires_round_trip",
+      "test_failure_requires_exact_diagnostic_and_no_tlc_entry",
+      "test_forwarding_checks_empty_space_unicode_option_order_exit_and_stderr",
+      "test_thrown_error_requires_original_stderr_and_error_identity",
+      "test_launcher_refuses_redirected_host_before_startup",
+      "test_launcher_requires_captain_release_for_exact_source_packet",
+      "test_container_refuses_wildcard_network_before_start",
+      "test_cleanup_checks_owned_identity_and_does_not_remove_foreign_container"
+    ],
+    "unchanged": true
+  },
+  "newB3": {
+    "file": {
+      "path": "DynaDocs.Tests/coverage/tests/test_statechart_rmi_b3.py",
+      "bytes": 7947,
+      "sha256": "a840cbbb736968b4c62214f26b25fe7705206b7c4a85df42f232ec9621faae5e"
+    },
+    "cases": [
+      "test_invariant_requires_shortest_ordered_path_and_next_actions",
+      "test_fair_temporal_cycle_cannot_be_replaced_by_stuttering",
+      "test_action_constraint_must_reduce_distinct_states_and_hold_below_two",
+      "test_semantic_reader_retains_state_action_loop_and_requires_counts",
+      "test_socket_word_decoding_distinguishes_loopback_wildcard_and_nonlocal",
+      "test_listener_evidence_requires_matching_process_fd_inode",
+      "test_selected_discovery_rejects_skip_missing_or_unselected_execution",
+      "test_node_commands_bound_exact_files_and_six_case_selector",
+      "test_launcher_requires_exact_group_and_source_release",
+      "test_driver_refuses_host_network_before_container_start",
+      "test_cleanup_will_not_remove_a_foreign_owner",
+      "test_java_recording_claim_enforces_finite_ceiling_without_replacement"
+    ]
+  },
+  "ts": {
+    "checker": 16,
+    "bootstrap": 12,
+    "selectedCorpus": [
+      "CounterInstance gives the committed chart and report when TLC runs",
+      "CounterRules gives the committed chart and report when TLC runs",
+      "Shadow gives the committed chart and report when TLC runs",
+      "MediaPlayerProps gives the committed chart and report when TLC runs",
+      "a property that breaks on a loop draws the loop and reports it",
+      "check() leaves no statechart- folder in the temp dir when it returns and when it throws"
+    ]
+  },
+  "actualDiscovery": "NOT_RUN",
+  "actualExecution": "NOT_RUN",
+  "associations": [
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/driver.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_statechart_rmi_b3.py"
+      ]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/launcher.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_statechart_rmi_b3.py"
+      ]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/worker.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_statechart_rmi_b3.py"
+      ]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/observe.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_statechart_rmi_b3.py"
+      ]
+    },
+    {
+      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/java_record.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_statechart_rmi_b3.py"
+      ]
+    }
+  ],
+  "assurance": "Existing Python/TS mechanisms apply; no measurement executed/waived. No Python assertion supplies Java metrics."
+}

@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY",
+  "layers": [
+    {
+      "role": "Frozen before-source/current draft; active direct21 output excluded while mutable",
+      "manifest": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/before-custody.json",
+      "beforeSnapshots": {}
+    },
+    {
+      "role": "Original5266 expected rows unchanged",
+      "manifest": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/preserved-inputs.json",
+      "beforeSnapshots": {
+        "skills/engineering/statechart/scripts/statechart.ts": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/statechart.ts",
+        "skills/engineering/statechart/scripts/test/cli.test.ts": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/cli.test.ts"
+      }
+    }
+  ],
+  "direct21": "Its completed outputs/result are independently bound by PartA return; not edited or part of in-flight before source baseline",
+  "noExistingSourceChanges": true
+}

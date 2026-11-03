@@ -1,0 +1,96 @@
+{
+  "observedAtUtc": "2026-10-30T23:04:03.206684+00:00",
+  "captain": "gpt-6-astra/high",
+  "sourceHead": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "sourceDirty": true,
+  "reportedPromptCount": 3,
+  "registryRules": [
+    {
+      "name": "TCP Query User{FAADE000-26D1-4006-91F0-95F7D7048739}C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\.install-win-x64-4c36fb637dc145f5ab9bdc8c0d2f2881\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe",
+      "value": "v2.10|Action=Allow|Active=TRUE|Dir=In|Protocol=6|Profile=Public|App=C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\.install-win-x64-4c36fb637dc145f5ab9bdc8c0d2f2881\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe|Name=java.exe|Desc=java.exe|Defer=User|"
+    },
+    {
+      "name": "UDP Query User{FCF37C0D-C85B-43A0-94DF-C5FC35AA6C6D}C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\.install-win-x64-4c36fb637dc145f5ab9bdc8c0d2f2881\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe",
+      "value": "v2.10|Action=Allow|Active=TRUE|Dir=In|Protocol=17|Profile=Public|App=C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\.install-win-x64-4c36fb637dc145f5ab9bdc8c0d2f2881\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe|Name=java.exe|Desc=java.exe|Defer=User|"
+    },
+    {
+      "name": "TCP Query User{56115F4C-BBFB-43FD-8E56-377F00F3102F}C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe",
+      "value": "v2.10|Action=Allow|Active=TRUE|Dir=In|Protocol=6|Profile=Public|App=C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe|Name=java.exe|Desc=java.exe|Defer=User|"
+    },
+    {
+      "name": "UDP Query User{BCB7F15B-2ABA-46B5-8A4C-3C8694B3EDB0}C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe",
+      "value": "v2.10|Action=Allow|Active=TRUE|Dir=In|Protocol=17|Profile=Public|App=C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe|Name=java.exe|Desc=java.exe|Defer=User|"
+    },
+    {
+      "name": "TCP Query User{41F18ADB-84BC-4E84-9683-B984D401EC5B}C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\temp\\statechart-test-qluxxzpc.zdg\\dependencies\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe",
+      "value": "v2.10|Action=Allow|Active=TRUE|Dir=In|Protocol=6|Profile=Public|App=C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\temp\\statechart-test-qluxxzpc.zdg\\dependencies\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe|Name=java.exe|Desc=java.exe|Defer=User|"
+    },
+    {
+      "name": "UDP Query User{64E0BD57-C3D4-43DD-884E-A40A9FAF4756}C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\temp\\statechart-test-qluxxzpc.zdg\\dependencies\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe",
+      "value": "v2.10|Action=Allow|Active=TRUE|Dir=In|Protocol=17|Profile=Public|App=C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\temp\\statechart-test-qluxxzpc.zdg\\dependencies\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe|Name=java.exe|Desc=java.exe|Defer=User|"
+    }
+  ],
+  "distinctJavaPaths": [
+    "C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\.install-win-x64-4c36fb637dc145f5ab9bdc8c0d2f2881\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe",
+    "C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe",
+    "C:\\users\\user\\appdata\\local\\temp\\dyd415-implementation2-_xw3xskw\\temp\\statechart-test-qluxxzpc.zdg\\dependencies\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\java\\content\\jdk-21.0.8+9-jre\\bin\\java.exe"
+  ],
+  "stages": [
+    {
+      "stage": "managed-temurin",
+      "startedUtc": "2026-10-30T22:28:17.217604+00:00",
+      "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -B C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-driver-m5nlyk5q\\driver.py managed-temurin managed-temurin",
+      "receipt": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation3\\managed-temurin\\admission.json",
+      "sha256": "201e8e7fe919d17f3b73a5662368e8ede05f6bc19ab2df6e9bcf59b0575a9d57"
+    },
+    {
+      "stage": "installed-resume",
+      "startedUtc": "2026-10-30T22:31:52.535836+00:00",
+      "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -B C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-driver-_4a3akfv\\driver.py installed-resume installed-resume",
+      "receipt": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation3\\installed-resume\\admission.json",
+      "sha256": "c19030279995d98017ac2c337c5f2903417ecb5baa8756389d93a21c5eae1e47"
+    },
+    {
+      "stage": "npm-counterexample",
+      "startedUtc": "2026-10-30T22:36:16.913934+00:00",
+      "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -B C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-driver-x6a8bj04\\driver.py npm-counterexample npm-counterexample",
+      "receipt": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation3\\npm-counterexample\\admission.json",
+      "sha256": "142f7f76c1ba0b69a12c433507c4f6c2d4b5dd53b8221aefc9efc58840bfd82e"
+    },
+    {
+      "stage": "installed-light",
+      "startedUtc": "2026-10-30T22:38:58.673886+00:00",
+      "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -B C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-driver-j95af61z\\driver.py installed-light installed-light",
+      "receipt": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation3\\installed-light\\admission.json",
+      "sha256": "15e491c49020e63cfa7f64b874df0eff814ea569ba896ee5d18cd29ada643799"
+    },
+    {
+      "stage": "installed-close",
+      "startedUtc": "2026-10-30T22:45:13.238449+00:00",
+      "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -B C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-installed-close-20261030.py",
+      "receipt": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation3\\installed-close\\admission.json",
+      "sha256": "9b46aafce4502a646aece571f5ca23e016a3d9c1b4bdab4d9435db3544f09cd2"
+    }
+  ],
+  "tlcJarSha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+  "bytecodeInspection": {
+    "class": "tlc2/tool/fp/FPSet",
+    "superclass": "java/rmi/server/UnicastRemoteObject",
+    "constructors": [
+      {
+        "descriptor": "(Ltlc2/tool/fp/FPSetConfiguration;)V",
+        "firstBytecodeHex": "2ab700012a09b500022a2bb5",
+        "firstCall": "java/rmi/server/UnicastRemoteObject.<init>()V"
+      }
+    ]
+  },
+  "limitations": [
+    "No Java or installer launched for attribution",
+    "Read-only Firewall event log and CIM access denied; no elevation attempted",
+    "Registry rule values have no per-rule prompt timestamps",
+    "Three matching executable paths strongly explain reported prompts; no direct dialog capture",
+    "RMI superclass call is static mechanism evidence, not a captured listening-socket event"
+  ],
+  "changesToOsSecurity": false,
+  "launchHold": "Affected Java/install/probe sequences remain paused; safe source work/owned cleanup only"
+}

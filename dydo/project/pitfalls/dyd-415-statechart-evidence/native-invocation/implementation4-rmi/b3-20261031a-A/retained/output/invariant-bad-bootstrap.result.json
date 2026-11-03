@@ -1,0 +1,168 @@
+{
+  "exit": 12,
+  "exitAfterOwnedCleanup": 12,
+  "observedListeners": [
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    },
+    {
+      "table": "tcp6",
+      "address": "127.0.0.1",
+      "port": 34119,
+      "inode": "271714"
+    }
+  ]
+}

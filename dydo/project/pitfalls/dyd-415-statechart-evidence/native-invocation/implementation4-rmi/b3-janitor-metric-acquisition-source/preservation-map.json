@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY",
+  "layers": [
+    {
+      "role": "Current9509-row before custody, including all9493 prior bound draft/history/output identities plus3 captain records and13 named read-only external inputs",
+      "manifest": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-metric-acquisition-source/before-custody.json",
+      "beforeSnapshots": {}
+    },
+    {
+      "role": "Original5266 expected rows unchanged",
+      "manifest": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-signal-containment-source/preserved-inputs.json",
+      "beforeSnapshots": {
+        "skills/engineering/statechart/scripts/statechart.ts": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/statechart.ts",
+        "skills/engineering/statechart/scripts/test/cli.test.ts": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-correction-source/before/cli.test.ts"
+      }
+    }
+  ],
+  "direct21": "Frozen completed actual21 and all original archives/return receipt remain unchanged, included in before custody; no replay",
+  "noExistingSourceChanges": true
+}

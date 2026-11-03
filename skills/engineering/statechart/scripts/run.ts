@@ -39,6 +39,8 @@ import {
 } from "./ir.ts";
 import { addPast, deadEnds, finder, lasso, mark } from "./passes/annotate.ts";
 import { pathGraph } from "./passes/paths.ts";
+import { checkerJar, pinnedTlc, prepareChecker, tlcInvocation } from "./checker.ts";
+export { pinnedTlc, tlcInvocation } from "./checker.ts";
 
 export function* fileLines(file: string) {
   const fd = fs.openSync(file, "r");
@@ -193,7 +195,7 @@ const runToFiles = (
 async function findTlc(cwd: string) {
   const { TLA2TOOLS, JAVA } = process.env;
   const java = JAVA && /[/\\]/.test(JAVA) ? path.resolve(JAVA) : JAVA;
-  if (TLA2TOOLS) return { jar: path.resolve(TLA2TOOLS), java: java || "java" };
+  if (TLA2TOOLS) return { jar: pinnedTlc(path.resolve(TLA2TOOLS)), java: java || "java" };
   const mise = (...args: string[]) =>
     runChild("mise", args, { cwd, env: { ...process.env, MISE_CEILING_PATHS: cwd } });
   const where = () =>
@@ -208,7 +210,7 @@ async function findTlc(cwd: string) {
     found = await where();
   }
   return {
-    jar: path.join(found[0].stdout.trim(), "tla2tools.jar"),
+    jar: pinnedTlc(path.join(found[0].stdout.trim(), "tla2tools.jar")),
     java: java || found[1].stdout.trim(),
   };
 }
@@ -277,6 +279,8 @@ export async function check(specFile: string, configFile: string): Promise<Check
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-"));
   try {
     const tlc = await findTlc(dir);
+    const checker = prepareChecker(tlc.jar, dir);
+    tlcInvocation(checker);
     const config = (name: string, sections: ConfigSection[], extra: string[]) => {
       fs.writeFileSync(path.join(dir, `${name}.cfg`), configText(sections, extra));
       return [`-metadir`, path.join(dir, `meta-${name}`), "-config", path.join(dir, `${name}.cfg`)];
@@ -290,9 +294,7 @@ export async function check(specFile: string, configFile: string): Promise<Check
           `-Djava.io.tmpdir=${tmp}`,
           `-DTLA-Library=${folder}`,
           ...jvm,
-          "-cp",
-          tlc.jar,
-          main,
+          ...(main === "dydo.statechart.LoopbackTlc" ? tlcInvocation(checker) : ["-cp", checkerJar(checker), main]),
           ...args,
         ],
         {
@@ -339,7 +341,7 @@ export async function check(specFile: string, configFile: string): Promise<Check
         if (properties.length) extra.push(`PROPERTY ${properties.join(" ")}`);
         const bounded = first !== undefined && !states.complete;
         if (bounded) extra.push("CONSTRAINT ChartBound");
-        const r = await runJava(name, "tlc2.TLC", [
+        const r = await runJava(name, "dydo.statechart.LoopbackTlc", [
           "-tool",
           ...PINNED_FLAGS,
           ...(names(group, "deadlock").length ? [] : ["-deadlock"]),
@@ -415,7 +417,7 @@ export async function check(specFile: string, configFile: string): Promise<Check
     if (judged.states.distinct <= CHART_STATES) {
       const tag = `chart-${randomBytes(16).toString("hex")}`;
       fs.writeFileSync(path.join(dir, "ChartRun.tla"), chartRun(spec, tag));
-      const drawn = await runJava("ChartRun", "tlc2.TLC", [
+      const drawn = await runJava("ChartRun", "dydo.statechart.LoopbackTlc", [
         "-tool",
         ...PINNED_FLAGS,
         "-deadlock",

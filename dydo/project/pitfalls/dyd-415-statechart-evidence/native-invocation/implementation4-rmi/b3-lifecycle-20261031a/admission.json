@@ -1,0 +1,10 @@
+{
+  "pid": 127916,
+  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -B C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-lifecycle-driver-20261031.py",
+  "ticket": "0000000001-0340ef54d3a87048",
+  "nonce": "d146b83ad1e04f88",
+  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
+  "bookingOwned": true,
+  "inherited": false,
+  "startedUtc": "2026-10-31T04:43:00.034615+00:00"
+}

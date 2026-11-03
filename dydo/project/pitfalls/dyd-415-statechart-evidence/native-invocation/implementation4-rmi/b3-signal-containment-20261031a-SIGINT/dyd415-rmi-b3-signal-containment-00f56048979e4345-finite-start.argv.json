@@ -1,0 +1,14 @@
+{
+  "argv": [
+    "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe",
+    "--context",
+    "desktop-linux",
+    "start",
+    "--attach",
+    "8927b556d26ee180b66d4bb9194a0a3adb1a2d36061dbeba2d001cadded29138"
+  ],
+  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
+  "hidden": true,
+  "ticket": "0000000009-ff018f0451f777b8",
+  "startedUtc": "2026-10-31T11:51:46.540652+00:00"
+}

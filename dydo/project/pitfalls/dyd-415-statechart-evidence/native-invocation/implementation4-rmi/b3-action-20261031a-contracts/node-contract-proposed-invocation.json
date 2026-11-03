@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "state": "SOURCE_ONLY_PROPOSAL_NOT_RELEASED_NOT_EXECUTED",
+  "author": "code-writer/model: gpt-6.1-sol/high",
+  "sourcePin": "bb193c726b2b665d3b05cad3aa6768b9dd4c12227fb60584cd53df4d78f493fa",
+  "sourceInventory": "../b3-node-source/test-inventory.json",
+  "testSourceSha256": "d8f588349ef8935f040196409deb0316e48827156fc587f66094b09dd75f9d75",
+  "proposedChildArgv": [
+    "python", "-B", "-m", "unittest", "discover", "-v", "-f",
+    "-s", "/input/repo/DynaDocs.Tests/coverage/tests",
+    "-p", "test_statechart_node_acquisition.py"
+  ],
+  "cwd": "/input",
+  "expected": {
+    "actualMethods": 9,
+    "passed": 9,
+    "skipped": 0,
+    "rawExit": 0,
+    "requiredSummary": "Ran 9 tests; OK; nine named methods ending ... ok",
+    "names": "Exact nine names in the bound source inventory; no sibling discovery"
+  },
+  "snapshotRecipe": {
+    "method": "Copy only the four bound regular source files into fresh registered input/repo, preserving repo-relative paths; hash before and after copying; mount input read-only; no archive/toolchain extraction",
+    "files": [
+      "DynaDocs.Tests/coverage/tests/test_statechart_node_acquisition.py",
+      "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/driver.py",
+      "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/launcher.py",
+      "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/transfer.py"
+    ]
+  },
+  "mechanism": {
+    "nativeRunner": "Existing unittest discovery mechanism used by the repository Python test adapter",
+    "sharedContainment": "../b3-source/driver.py container/run functions, SHA256 24f0afe8f437cef9dc0fc8a3d5cf98540f39af0bf6f45e129f12c2e53549c100",
+    "image": "python@sha256:6a9220edda062e9223ea0784740a535987299420b96fbfd520b89bbd3e772485",
+    "resources": "Actual-host normal approval/guards; default live LC FIFO -> nonwaiting Heavy -> exclusive owned TEMP lock; inherited ticket; no namespace/env spoof",
+    "container": "One fresh labelled owned container; no volume/toolchain needed; inspect actual ID/mounts/settings before start; pull never/network none/read-only root and input; owned work/output mounts; TMPDIR=/work/tmp; 128 PIDs/1GiB/2CPUs; cap-drop ALL/no-new-privileges; no ports, privilege, host namespaces or Docker socket",
+    "lifecycle": "Hidden host children, finite 180-second test deadline and retained raw argv/stdout/stderr/exit; inspect ownership before stop/removal; confirm actual container absence; close streams and release owned locks only with confirmed drain; first unexpected failure stops without correction/retry",
+    "futureAdmission": "A separately inspected finite normal-file envelope/source pin must instantiate this existing mechanism before execution; this JSON neither creates a framework nor grants a launch"
+  },
+  "notInputs": ["acquired Node archive", "JDK", "TLC", "bootstrap helper", "product/native/npm binaries"],
+  "realNetworkRequests": 0,
+  "javaOrNodeExecution": false,
+  "compiler": false,
+  "bootstrap": false,
+  "coverageOrAssurancePass": false,
+  "administrativeOnly": true
+}

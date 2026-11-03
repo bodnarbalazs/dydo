@@ -1,0 +1,55 @@
+{
+  "kind": "source-only final documentation check; no product/gate acceptance",
+  "sourceHead": "6e3fe7e8018130af6b8586ef0cf40c1474740864",
+  "sourceDirty": true,
+  "author": "code-writer/model: gpt-6.1-sol/high",
+  "documents": [
+    {
+      "path": "dydo/project/decisions/062-statechart-invocation-manages-prerequisites.md",
+      "sha256": "ed1de4ce36baa59c77de58bc683222a189518fa9cfb4d87a9e919eb9e17f8593",
+      "length": 4980
+    },
+    {
+      "path": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/desktop-prompt-attribution/assessment.md",
+      "sha256": "dfd2d867ed8bce6cbc71fb4297edb58b2e6c2785f52f4d99227596f4d0a6d40e",
+      "length": 6644
+    }
+  ],
+  "preservedEvidence": [
+    {
+      "path": "captain-attribution.json",
+      "sha256": "fc0f86f4a84258beea5cf1ec5ec381290e7a6e20178b416c94992d34b5e102c0",
+      "length": 8939
+    },
+    {
+      "path": "tlc-route-selected.json",
+      "sha256": "b49e645c2d29d0c2d62c3541d67d376b75b943486fec0af5fd7f34aa8c18ba7f",
+      "length": 185000
+    },
+    {
+      "path": "custody.json",
+      "sha256": "a774731524284ccfc0def836b49898cbb59568baad106d554691cf6a239d8641",
+      "length": 6150
+    }
+  ],
+  "correction": "Assessment now names directly decoded isBFS branch; no unsupported DFIDMax comparison claimed.",
+  "checks": {
+    "localMarkdownLinkTargetsExist": true,
+    "frontmatterAndHeadingsPresent": true,
+    "touchedDocumentTrailingWhitespace": false,
+    "gitDiffCheckExit": 0
+  },
+  "notRun": [
+    "dydo check",
+    "product build",
+    "product tests",
+    "Java",
+    "JVM",
+    "probe",
+    "install",
+    "container",
+    "static",
+    "coverage"
+  ],
+  "hold": "Unchanged; explicit captain disposition required before affected launches"
+}

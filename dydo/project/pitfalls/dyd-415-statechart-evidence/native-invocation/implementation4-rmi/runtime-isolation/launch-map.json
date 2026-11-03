@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "state": "source-only-unexecuted",
+  "supported": [
+    {"source": "Services/Statechart/StatechartReady.cs", "route": "TlcAsync direct SANY", "input": "checker.Verify()", "main": "tla2sany.SANY", "owner": "Registered StatechartLifetime Stage/checker; existing Temp, cwd and drain retained"},
+    {"source": "Services/Statechart/StatechartReady.cs", "route": "TlcAsync TLC", "input": "checker.TlcArguments(payload)", "main": "dydo.statechart.LoopbackTlc", "owner": "Same registered readiness lifetime"},
+    {"source": "skills/engineering/statechart/scripts/run.ts", "route": "check XMLExporter", "input": "checkerJar(prepareChecker result)", "main": "tla2sany.xml.XMLExporter", "owner": "Owned outer scratch TEMP -> existing per-check directory -> checker; original -I and TLA-Library retained"},
+    {"source": "skills/engineering/statechart/scripts/run.ts", "route": "All verdict, bounded verdict and ChartRun runJava calls", "input": "tlcInvocation(prepareChecker result) repeated before every launch", "main": "dydo.statechart.LoopbackTlc", "owner": "Same per-check directory; original config, metadir and cwd retained"},
+    {"source": "skills/engineering/statechart/scripts/test/tlc.ts", "route": "tlc", "input": "prepareChecker under fresh per-run tmp", "main": "dydo.statechart.LoopbackTlc", "owner": "Existing agrees disposable test directory; original module/config/cwd"},
+    {"source": "skills/engineering/statechart/scripts/test/corpus.test.ts", "route": "plainTlc", "input": "prepareChecker under fresh child of disposable model directory", "main": "dydo.statechart.LoopbackTlc", "owner": "Existing writeSpec disposable model scope; original config/cwd"},
+    {"source": "skills/engineering/statechart/scripts/test/differential.test.ts", "route": "plainTlc", "input": "prepareChecker under fresh tmp-name", "main": "dydo.statechart.LoopbackTlc", "owner": "Existing generated-model test scope; original module/config/cwd"},
+    {"source": "skills/engineering/statechart/scripts/test/java.ts", "route": "record/replay adapter", "input": "Original isolated argv from check; no checker selection", "main": "Bootstrap recognized for tool/plain conversion; SANY remains direct", "owner": "Caller test/check lifetime"}
+  ],
+  "controls": [
+    {"source": "skills/engineering/statechart/scripts/test/config-fuzz.test.ts", "route": "readInTlc", "argv": "java -cp <explicit raw jar> test/ConfigOracle.java", "classification": "Test-only source-mode parser oracle, outside supported checker path, HELD; no execution authorized"},
+    {"source": "skills/engineering/statechart/scripts/java/build.py", "route": "javac/jar", "classification": "Build-only exploded TLC directory; never runtime input; HELD pending source inspection"},
+    {"source": "implementation4-rmi/fixtures/control/tlc2/TLC.java", "route": "Control fixture", "classification": "Finite bootstrap control source; no supported checker or payload route; HELD"},
+    {"source": "implementation4-rmi/fixtures/java/dydo/statechart/proof", "route": "Echo/SocketProbe", "classification": "Finite contained transport fixtures; no execution at this checkpoint"}
+  ],
+  "copy": "Only official checker DATA jar; never Java/JRE, compiler view or companion",
+  "cleanup": "Existing outer owners only; helpers have no deletion or kill authority",
+  "unchangedSeams": ["StatechartNode.RunAsync", "native-entry.ts", "worker.ts"],
+  "limit": "No dynamic bypass, semantic, socket, prompt or lifecycle result established"
+}

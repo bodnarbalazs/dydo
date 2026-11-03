@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "previousLedger": "b3-janitor-delegated-release-predicates-r44.json",
+  "authority": "Admiral explicit source-only terminal projection observation amendment after8da532058dbf",
+  "contract": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-topology2-source-contract.md",
+  "ownedRoot": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology2-source",
+  "compilerTraversal": "ONLY_PINNED_TASK_OWNED_MAPPING",
+  "projectionObservation": "EXACT82_TERMINAL_NON_FOLLOWED_METADATA",
+  "projectionManifestSha256": "4e240c08ed90d675b575d3d314d98e5ba928918873956c9a977ca158f9af08f5",
+  "source": "AUTHORIZED_PREPARATION",
+  "topologyProof": "NOT_RELEASED",
+  "typecheck": "NOT_RELEASED",
+  "serial12": "NOT_RELEASED",
+  "review": "FAIL_OPEN"
+}

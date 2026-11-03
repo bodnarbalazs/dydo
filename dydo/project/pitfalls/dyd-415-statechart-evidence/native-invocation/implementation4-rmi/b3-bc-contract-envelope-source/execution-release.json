@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "state": "RELEASED_B3_BC_CONTRACTS",
+  "sourcePinSha256": "d4c0332a30aecfacc58baef7976d8490ac49d36c6e104cf64815989908e76fb4",
+  "authority": "https://linear.app/bodnar-balazs/document/dyd-415-inspected-contracts-and-single-java-free-attribution-release-b3d86b7637e9",
+  "maximumInvocations": 1,
+  "expectedCases": 22,
+  "retry": false,
+  "desktopJava": false,
+  "sourceAndContainmentInspected": true,
+  "requiresActualHostApprovalAndPinnedLiveFifoLocks": true,
+  "newWrapperAssurance": "OWED"
+}

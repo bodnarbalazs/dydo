@@ -1,0 +1,77 @@
+{
+  "state": "PROSPECTIVE_CONTRACT_NOT_IMPLEMENTED",
+  "windowsOnly": true,
+  "namespace": {
+    "LOCALAPPDATA": "C:/Users/User/AppData/Local",
+    "TEMP": "C:/Users/User/AppData/Local/Temp",
+    "fifo": "C:/Users/User/AppData/Local/lc-test/suite-slot",
+    "LC": "C:/Users/User/.t3/worktrees/LC/t3-f7ffe8ea",
+    "order": [
+      "live default FIFO",
+      "nonwaiting Heavy",
+      "exclusive normal TEMP dydo-fullsuite.lock exact owner bytes"
+    ],
+    "hidden": true,
+    "noPrivateQueueOrEnvOverrides": true
+  },
+  "helpers": {
+    "python": {
+      "path": "C:/Users/User/AppData/Local/Programs/Python/Python313/python.exe",
+      "bytes": 105840,
+      "sha256": "03573716a7fcbd8b7fed8fe0163bbfbd3a852546920d6a666123f307c8dac7d9"
+    },
+    "flags": [
+      "-I",
+      "-B"
+    ],
+    "metricSubstitution": false,
+    "material": "Existing12 call actual functions with isolated tempfile locks and material mocks; no real Popen/run/killpg intended. Three platform mocks block Windows execution before target assertions; no actual native certification yet."
+  },
+  "compiler": {
+    "runtime": {
+      "path": "C:/Users/User/AppData/Local/fnm_multishells/10620_1793288379755/node.exe",
+      "bytes": 86997320,
+      "sha256": "0d0f5e39f9f3d9587bc19f73eab3c2c9c4903fd02d6dbf9c853dd81b3d95fad4",
+      "metadataVersion": "22.23.2"
+    },
+    "config": {
+      "path": "skills/engineering/statechart/scripts/tsconfig.json",
+      "bytes": 225,
+      "sha256": "6bb2af53f7b251328e6117cd4fb761468dc4d4b96085d31a19304ccb73c32cc1"
+    },
+    "package": {
+      "path": "skills/engineering/statechart/scripts/package.json",
+      "bytes": 254,
+      "sha256": "42369abae6761079df8c2ea75068992b0449a7db0bc63160c079c623175bb448"
+    },
+    "wholeMaintainedTS": 54,
+    "installedMembers": 2089,
+    "rejectAmbientBeforeChild": [
+      "any ambient NODE_* (including NODE_OPTIONS/NODE_PATH/NODE_V8_COVERAGE/NODE_REDIRECT_WARNINGS/NODE_COMPILE_CACHE/NODE_ENV)",
+      "ELECTRON_*",
+      "TS_NODE_*",
+      "TSX_*",
+      "BABEL_*",
+      "OPENSSL_CONF",
+      "OPENSSL_MODULES",
+      "ICU_DATA"
+    ],
+    "childEnvDelta": {
+      "NODE_DISABLE_COMPILE_CACHE": "1"
+    },
+    "injectionValues": "Record variable names only in refusal evidence; no secret/environment value dump or global setting change.",
+    "nonEmission": "Before/after raw path/type/size/SHA inventory of complete scripts tree including installed libraries/corpora/configs plus repo-level expected emitter paths/current overlay. Only declared owned evidence output allowed. Reject any unexpected addition/removal/byte change; include native nonzero/timeout path. This is a proposed check, NOT executed proof or whole-host sandbox.",
+    "scope": "Actual bin/tsc -> lib/tsc.js -> lib/_tsc.js with admitted config; no scripts/plugins/application launch. Existing config has no extends/plugins/references/incremental/outDir; --noEmit mandatory.",
+    "classification": "NONZERO / TIMEOUT / INPUT_DRIFT / UNEXPECTED_EMISSION / EVIDENCE_OR_OWNERSHIP_UNCERTAINTY remain separate diagnostic FAILs; raw native exit retained, no compiler waiver"
+  },
+  "bounds": {
+    "nativeSeconds": 180,
+    "outputBytes": 16777216,
+    "outputCapKind": "POST_COMPLETION_REJECTION_NOT_HARD_CAP",
+    "directKillAndReap": true,
+    "job": false,
+    "networkNone": false,
+    "descendantContainmentClaim": false
+  },
+  "lockRelease": "Confirmed direct-child cleanup+successful retention+no evidence errors+matching exact lock bytes, original error priority. No unconditional unlock."
+}

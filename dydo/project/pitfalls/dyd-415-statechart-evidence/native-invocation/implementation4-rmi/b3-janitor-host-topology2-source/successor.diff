@@ -1,0 +1,665 @@
+diff --git a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/driver.py b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology2-source/driver.py
+index 507364d1..5164210f 100644
+--- a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/driver.py
++++ b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology2-source/driver.py
+@@ -17,19 +17,19 @@ ROOT = Path('C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f')
+ TEMP = Path('C:/Users/User/AppData/Local/Temp')
+ LC = Path('C:/Users/User/.t3/worktrees/LC/t3-f7ffe8ea')
+ BASE = ROOT / 'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi'
+-PACKET = BASE / 'b3-janitor-host-envelope2-source'
++PACKET = BASE / 'b3-janitor-host-topology2-source'
+ PYTHON = Path('C:/Users/User/AppData/Local/Programs/Python/Python313/python.exe')
+ NODE = Path('C:/Users/User/AppData/Local/fnm_multishells/10620_1793288379755/node.exe')
+-SCRIPTS = ROOT / 'skills/engineering/statechart/scripts'
+ OUTPUT = None
+ SELECTION = None
+ CHILD = None
+ CLEANED = True
+ EVIDENCE_ERRORS = []
++topology = None
+ _shared = BASE / 'b3-signal-containment-source/shared-containment.py'
+ if hashlib.sha256(_shared.read_bytes()).hexdigest() != '24f0afe8f437cef9dc0fc8a3d5cf98540f39af0bf6f45e129f12c2e53549c100':
+     raise RuntimeError('Inspected shared source differs before import')
+-_spec = importlib.util.spec_from_file_location('_host2_retained_common', _shared)
++_spec = importlib.util.spec_from_file_location('_topology2_retained_common', _shared)
+ common = importlib.util.module_from_spec(_spec)
+ _spec.loader.exec_module(common)
+ 
+@@ -44,12 +44,14 @@ def validate_host():
+ def validate_release():
+     pin = json.loads((PACKET / 'source-pin.json').read_bytes())
+     release = json.loads((PACKET / 'execution-release.json').read_bytes())
+-    if release.get('state') != 'RELEASED_B3_JANITOR_HOST2' or release.get('selection') != SELECTION or release.get('sourcePinSha256') != common.sha(PACKET / 'source-pin.json'):
++    if release.get('state') != 'RELEASED_B3_JANITOR_HOST_TOPOLOGY2' or release.get('selection') != SELECTION or release.get('sourcePinSha256') != common.sha(PACKET / 'source-pin.json'):
+         raise RuntimeError('One exact captain source/selector release required')
+     if release.get('once') is not True or not release.get('captainInspectionRecord'):
+         raise RuntimeError('Finite inspected once-only release required')
+-    if SELECTION == 'TYPECHECK' and not release.get('helper12GreenReceiptSha256'):
+-        raise RuntimeError('Complete applicable helper12 GREEN binding required')
++    if SELECTION == 'TYPECHECK' and (release.get('helper12GreenReceiptSha256') !=
++            'f5790b2123c890a458b3146bab1fe17591acc83912aa023ce87410ea6da40515'
++            or not re.fullmatch(r'[0-9a-f]{64}', release.get('topologyGreenReceiptSha256', ''))):
++        raise RuntimeError('Applicable helper12 and new topology GREEN bindings required')
+     if release.get('nativeArgv') != native_argv():
+         raise RuntimeError('Release must bind the exact native command')
+     if OUTPUT is not None and (OUTPUT / 'execution-release-at-run.json').exists() and (OUTPUT / 'execution-release-at-run.json').read_bytes() != (PACKET / 'execution-release.json').read_bytes():
+@@ -73,12 +75,26 @@ def verify_inputs():
+         raise RuntimeError('HEAD differs from retained draft')
+     if common.sha(Path(__file__)) != pin['driverSha256'] or common.sha(PACKET / 'launcher.py') != pin['launcherSha256']:
+         raise RuntimeError('Host counterpart identity differs')
++    global topology
++    required = [str((PACKET / name).relative_to(ROOT)).replace('\\', '/')
++        for name in ['topology.py', 'topology-manifest.json', 'ownership-evidence.json']]
++    if [row['path'] for row in pin['topologyInputs']] != required:
++        raise RuntimeError('Exact topology data/module identities required')
++    check_rows(pin['topologyInputs'])
++    if topology is None:
++        spec = importlib.util.spec_from_file_location('_dyd415_topology2', PACKET / 'topology.py')
++        topology = importlib.util.module_from_spec(spec)
++        spec.loader.exec_module(topology)
++    manifest, ownership = topology_inputs()
++    topology.compiler_inventory(ROOT, manifest, ownership)
++    topology.workspace_paths(ROOT, OUTPUT, manifest)
+     check_rows(pin['sources'])
+     check_rows(pin['externalInputs'])
+     check_rows([pin['afterCustody']])
+     preservation = json.loads((PACKET / 'preservation-map.json').read_bytes())
+     for layer in preservation['layers']:
+-        check_rows(json.loads((ROOT / layer['manifest']).read_bytes()), layer['beforeSnapshots'])
++        data = json.loads((ROOT / layer['manifest']).read_bytes())
++        check_rows(data[layer['rowsKey']] if layer.get('rowsKey') else data, layer['beforeSnapshots'])
+     for name, expected in common.LC_PINS.items():
+         if common.sha(LC / name) != expected:
+             raise RuntimeError('LC input differs: ' + name)
+@@ -95,9 +111,9 @@ def safe_save(name, value):
+ 
+ 
+ def native_argv():
+-    if SELECTION == 'HELPERS':
++    if SELECTION == 'TOPOLOGY':
+         return [PYTHON.as_posix(), '-I', '-B', '-m', 'unittest', 'discover', '-v',
+-            '-s', str(PACKET.relative_to(ROOT)).replace('\\', '/'), '-p', 'test_*_contracts.py']
++            '-s', str(PACKET.relative_to(ROOT)).replace('\\', '/'), '-p', 'test_topology_contracts.py']
+     if SELECTION == 'TYPECHECK':
+         return [NODE.as_posix(), 'skills/engineering/statechart/scripts/node_modules/typescript/bin/tsc',
+             '--noEmit', '--project', 'skills/engineering/statechart/scripts/tsconfig.json']
+@@ -116,34 +132,19 @@ def child_environment():
+     return env
+ 
+ 
++def topology_inputs():
++    return (json.loads((PACKET / 'topology-manifest.json').read_bytes()),
++        json.loads((PACKET / 'ownership-evidence.json').read_bytes()))
++
++
+ def scripts_inventory():
+-    rows = []
+-    for path in sorted(SCRIPTS.rglob('*')):
+-        if path.is_symlink() or path.is_junction():
+-            raise RuntimeError('Unexpected scripts link/reparse topology')
+-        relative = path.relative_to(ROOT).as_posix()
+-        if path.is_dir():
+-            rows.append(dict(path=relative, kind='directory'))
+-        elif path.is_file():
+-            rows.append(dict(path=relative, kind='file', bytes=path.stat().st_size, sha256=common.sha(path)))
+-        else:
+-            raise RuntimeError('Unexpected scripts file type')
+-    return rows
++    manifest, ownership = topology_inputs()
++    return topology.scripts_inventory(ROOT, manifest, ownership)
+ 
+ 
+ def workspace_paths():
+-    # Path/type/size addition guard beyond scripts; source hashes separately bound.
+-    rows = []
+-    for folder, dirs, files in os.walk(ROOT, followlinks=False):
+-        dirs[:] = sorted(name for name in dirs if name != '.git' and Path(folder, name) != OUTPUT)
+-        for name in sorted(dirs + files):
+-            path = Path(folder, name)
+-            if path.is_symlink() or path.is_junction():
+-                raise RuntimeError('Unexpected workspace link/reparse topology')
+-            rows.append(dict(path=path.relative_to(ROOT).as_posix(),
+-                kind='directory' if path.is_dir() else 'file',
+-                bytes=None if path.is_dir() else path.stat().st_size))
+-    return rows
++    manifest, _ = topology_inputs()
++    return topology.workspace_paths(ROOT, OUTPUT, manifest)
+ 
+ 
+ def run_native():
+@@ -210,9 +211,9 @@ def run_native():
+         raise failure
+     if not CLEANED or CHILD is None or CHILD.returncode != 0:
+         raise RuntimeError('Native nonzero or uncertain cleanup; first failure retained')
+-    if SELECTION == 'HELPERS':
++    if SELECTION == 'TOPOLOGY':
+         if (OUTPUT / 'native.stdout').stat().st_size:
+-            raise RuntimeError('Helper stdout must be empty')
++            raise RuntimeError('Topology stdout must be empty')
+         stderr = (OUTPUT / 'native.stderr').read_text(encoding='utf-8')
+         names = json.loads((PACKET / 'test-inventory.json').read_bytes())['nativeIds']
+         actual = []
+@@ -220,14 +221,14 @@ def run_native():
+             if ' ... ' in line:
+                 name, result = line.rsplit(' ... ', 1)
+                 if result != 'ok':
+-                    raise RuntimeError('Helper non-ok/skip retained')
++                    raise RuntimeError('Topology non-ok/skip retained')
+                 actual.append(name)
+-        if len(names) != 12 or sorted(actual) != sorted(names) or len(set(actual)) != 12:
+-            raise RuntimeError('Exact unique twelve helper native IDs required')
+-        if len(re.findall(r'^Ran 12 tests in [^\r\n]+s$', stderr, re.M)) != 1 or len(re.findall(r'^OK$', stderr, re.M)) != 1:
+-            raise RuntimeError('Complete native Ran12/OK summary required')
+-        common.save('native.selection.json', dict(actual=actual, unique=12, skipped=0, stdoutBytes=0))
+-    common.save('summary.json', dict(selection=SELECTION, nativeExit=0, helperCount=12 if SELECTION == 'HELPERS' else None,
++        if len(names) != 17 or sorted(actual) != sorted(names) or len(set(actual)) != 17:
++            raise RuntimeError('Exact unique seventeen topology native IDs required')
++        if len(re.findall(r'^Ran 17 tests in [^\r\n]+s$', stderr, re.M)) != 1 or len(re.findall(r'^OK$', stderr, re.M)) != 1:
++            raise RuntimeError('Complete native Ran17/OK summary required')
++        common.save('native.selection.json', dict(actual=actual, unique=17, skipped=0, stdoutBytes=0))
++    common.save('summary.json', dict(selection=SELECTION, nativeExit=0, topologyCount=17 if SELECTION == 'TOPOLOGY' else None,
+         diagnosticOnly=SELECTION == 'TYPECHECK', compilerNonEmissionChecked=SELECTION == 'TYPECHECK',
+         newHostDispatchDirectAssurance='OWED', realJava=False, productExecution=False))
+ 
+@@ -263,11 +264,11 @@ def main():
+     global SELECTION, OUTPUT
+     parser = argparse.ArgumentParser()
+     selected = parser.add_mutually_exclusive_group(required=True)
+-    selected.add_argument('--helpers', action='store_true')
++    selected.add_argument('--topology', action='store_true')
+     selected.add_argument('--typecheck', action='store_true')
+     args = parser.parse_args()
+-    SELECTION = 'HELPERS' if args.helpers else 'TYPECHECK'
+-    OUTPUT = BASE / ('b3-janitor-host2-20261031a-' + SELECTION)
++    SELECTION = 'TOPOLOGY' if args.topology else 'TYPECHECK'
++    OUTPUT = BASE / ('b3-janitor-host-topology2-20261031a-' + SELECTION)
+     common.OUTPUT = OUTPUT
+     verify_inputs()
+     if not OUTPUT.is_dir() or (OUTPUT / 'preflight.json').exists():
+diff --git a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/launcher.py b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology2-source/launcher.py
+index d7f9824f..8e016308 100644
+--- a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-envelope2-source/launcher.py
++++ b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology2-source/launcher.py
+@@ -11,7 +11,7 @@ import tempfile
+ sys.dont_write_bytecode = True
+ ROOT = Path('C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f')
+ BASE = ROOT / 'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi'
+-PACKET = BASE / 'b3-janitor-host-envelope2-source'
++PACKET = BASE / 'b3-janitor-host-topology2-source'
+ DRIVER = PACKET / 'driver.py'
+ LC = Path('C:/Users/User/.t3/worktrees/LC/t3-f7ffe8ea')
+ TEMP = Path('C:/Users/User/AppData/Local/Temp')
+@@ -43,12 +43,15 @@ def validate_host():
+ def validate_release(selection):
+     pin = json.loads((PACKET / 'source-pin.json').read_bytes())
+     release = json.loads((PACKET / 'execution-release.json').read_bytes())
+-    if release.get('state') != 'RELEASED_B3_JANITOR_HOST2' or release.get('selection') != selection or release.get('once') is not True or not release.get('captainInspectionRecord'):
++    if release.get('state') != 'RELEASED_B3_JANITOR_HOST_TOPOLOGY2' or release.get('selection') != selection or release.get('once') is not True or not release.get('captainInspectionRecord'):
+         raise RuntimeError('One exact inspected captain selector release required')
+     if release.get('sourcePinSha256') != sha(PACKET / 'source-pin.json'):
+         raise RuntimeError('Exact source pin required')
+-    if selection == 'TYPECHECK' and not release.get('helper12GreenReceiptSha256'):
+-        raise RuntimeError('Applicable complete helper12 GREEN receipt binding required')
++    if selection == 'TYPECHECK' and (release.get('helper12GreenReceiptSha256') !=
++            'f5790b2123c890a458b3146bab1fe17591acc83912aa023ce87410ea6da40515'
++            or not isinstance(release.get('topologyGreenReceiptSha256'), str)
++            or len(release['topologyGreenReceiptSha256']) != 64):
++        raise RuntimeError('Applicable helper12 and new topology GREEN receipt bindings required')
+     if sha(DRIVER) != pin['driverSha256'] or sha(Path(__file__)) != pin['launcherSha256']:
+         raise RuntimeError('Counterpart identity differs')
+     for row in pin['externalInputs']:
+@@ -61,10 +64,10 @@ def validate_release(selection):
+ def main():
+     parser = argparse.ArgumentParser()
+     selected = parser.add_mutually_exclusive_group(required=True)
+-    selected.add_argument('--helpers', action='store_true')
++    selected.add_argument('--topology', action='store_true')
+     selected.add_argument('--typecheck', action='store_true')
+     args = parser.parse_args()
+-    selection = 'HELPERS' if args.helpers else 'TYPECHECK'
++    selection = 'TOPOLOGY' if args.topology else 'TYPECHECK'
+     validate_host()
+     validate_release(selection)
+     for path in json.loads((PACKET / 'closure.json').read_bytes())['namespacePackageAbsences']:
+@@ -81,7 +84,7 @@ def main():
+     live = suite_slot.live()
+     if live.directory.resolve() != Path('C:/Users/User/AppData/Local/lc-test/suite-slot').resolve() or live.prefix != 'LC-Suite-Slot' or live.variable != 'LC_SUITE_SLOT_TICKET':
+         raise RuntimeError('Actual default live FIFO namespace required')
+-    output = BASE / ('b3-janitor-host2-20261031a-' + selection)
++    output = BASE / ('b3-janitor-host-topology2-20261031a-' + selection)
+     if output.exists():
+         raise RuntimeError('Once-only output already exists')
+     output.mkdir()
+diff --git a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology2-source/topology.py b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology2-source/topology.py
+new file mode 100644
+--- /dev/null
++++ b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology2-source/topology.py
+@@ -0,0 +1,187 @@
++"""Exact compiler traversal and terminal projection observation; no target mutation."""
++import hashlib
++import os
++from pathlib import Path
++import stat
++
++MOUNT_POINT = 0xA0000003
++REPARSE_POINT = 0x400
++OWNERSHIP_SHA256 = '79a3020fd66210ef79157e8e7325054f8fdccdcc4a56ef0e6542f34898b1be43'
++
++
++def inspect_entry(path):
++    try:
++        info = os.lstat(path)
++        attributes = getattr(info, 'st_file_attributes', 0)
++        tag = getattr(info, 'st_reparse_tag', 0)
++        if attributes & REPARSE_POINT or tag or stat.S_ISLNK(info.st_mode):
++            return dict(kind='reparse', attributes=attributes, tag=tag)
++        if stat.S_ISDIR(info.st_mode):
++            return dict(kind='directory', attributes=attributes, tag=tag)
++        if stat.S_ISREG(info.st_mode):
++            return dict(kind='file', attributes=attributes, tag=tag, bytes=info.st_size)
++        raise RuntimeError('Unclassifiable entry: ' + str(path))
++    except OSError as error:
++        raise RuntimeError('Topology inspection failed: ' + str(path)) from error
++
++
++def observe_link(path, expected):
++    actual = inspect_entry(path)
++    if actual != dict(kind='reparse', attributes=expected['attributes'], tag=MOUNT_POINT):
++        raise RuntimeError('Exact junction type/attributes differ: ' + str(path))
++    try:
++        raw = os.readlink(path)
++    except OSError as error:
++        raise RuntimeError('Literal junction inspection failed: ' + str(path)) from error
++    # Windows readlink exposes the substitute-name DOS prefix; never resolve it.
++    literal = raw[4:] if raw.startswith('\\\\?\\') else raw
++    if expected['linkType'] != 'Junction' or [literal] != expected['targets']:
++        raise RuntimeError('Literal junction target differs: ' + str(path))
++    return dict(path=str(path), kind='junction', attributes=actual['attributes'],
++        reparseTag=actual['tag'], targets=[literal], rawReadlink=raw)
++
++
++def children(folder):
++    try:
++        with os.scandir(folder) as stream:
++            entries = sorted(stream, key=lambda entry: entry.name)
++    except OSError as error:
++        raise RuntimeError('Directory inspection failed: ' + str(folder)) from error
++    for entry in entries:
++        path = Path(entry.path)
++        if path.parent != folder or path.name != entry.name or entry.name in {'.', '..'}:
++            raise RuntimeError('Escaping/foreign member: ' + str(path))
++        yield path, inspect_entry(path)
++
++
++def file_row(path, logical):
++    with path.open('rb') as stream:
++        digest = hashlib.file_digest(stream, 'sha256').hexdigest()
++    return dict(path=logical, kind='file', bytes=path.stat().st_size, sha256=digest)
++
++
++def compiler_identity(root, mapping, ancestor_rows, ownership):
++    source, target = Path(mapping['source']), Path(mapping['target'])
++    if (not isinstance(ownership, dict) or ownership.get('state') != 'TASK_LOCATION_OWNERSHIP_ESTABLISHED'
++            or ownership.get('mapping') != dict(source=mapping['source'], target=mapping['target'])
++            or ownership.get('originalEvidence', {}).get('sha256') != OWNERSHIP_SHA256
++            or ownership.get('creatorPositions') != [66, 70, 73]):
++        raise RuntimeError('Compiler task-location ownership evidence refused')
++    source.relative_to(root)
++    if Path(mapping['entry']['path']) != source or mapping['entry']['targets'] != [str(target)]:
++        raise RuntimeError('Compiler mapping declaration differs')
++    observed = observe_link(source, mapping['entry'])
++    ancestors = []
++    for expected in ancestor_rows:
++        path = Path(expected['path'])
++        actual = inspect_entry(path)
++        if actual != dict(kind='directory', attributes=expected['attributes'], tag=0):
++            raise RuntimeError('Compiler/source ancestor changed: ' + str(path))
++        ancestors.append(dict(path=str(path), **actual))
++    return dict(link=observed, ancestors=ancestors)
++
++
++def compiler_inventory(root, manifest, ownership):
++    mapping = manifest['compiler']
++    source, target = Path(mapping['source']), Path(mapping['target'])
++    identity = compiler_identity(root, mapping, manifest['ordinaryAncestors'], ownership)
++    rows, stack = [], [target]
++    while stack:
++        folder = stack.pop()
++        for path, info in children(folder):
++            relative = path.relative_to(target)
++            logical = (source / relative).relative_to(root).as_posix()
++            if info['kind'] == 'reparse':
++                raise RuntimeError('Nested compiler reparse refused: ' + str(path))
++            if info['kind'] == 'directory':
++                rows.append(dict(path=logical, kind='directory'))
++                stack.append(path)
++            else:
++                rows.append(file_row(path, logical))
++    rows.sort(key=lambda row: row['path'])
++    files = [{key: row[key] for key in ['path', 'bytes', 'sha256']}
++        for row in rows if row['kind'] == 'file']
++    directories = [row['path'] for row in rows if row['kind'] == 'directory']
++    if files != mapping['files'] or directories != mapping['directories']:
++        raise RuntimeError('Compiler member/directory closure drift')
++    return dict(**identity, rows=rows)
++
++
++def scripts_inventory(root, manifest, ownership):
++    compiler = compiler_inventory(root, manifest, ownership)
++    source = Path(manifest['compiler']['source'])
++    scripts = root / 'skills/engineering/statechart/scripts'
++    rows, stack, seen = [], [scripts], False
++    while stack:
++        folder = stack.pop()
++        for path, info in children(folder):
++            relative = path.relative_to(root).as_posix()
++            if path == source:
++                observe_link(path, manifest['compiler']['entry'])
++                rows.append(dict(path=relative, kind='directory'))
++                rows.extend(compiler['rows'])
++                seen = True
++            elif info['kind'] == 'reparse':
++                raise RuntimeError('Unlisted scripts reparse refused: ' + str(path))
++            elif info['kind'] == 'directory':
++                rows.append(dict(path=relative, kind='directory'))
++                stack.append(path)
++            else:
++                rows.append(file_row(path, relative))
++    if not seen:
++        raise RuntimeError('Compiler mapping missing from scripts')
++    return sorted(rows, key=lambda row: row['path'])
++
++
++def terminal_entries(root, manifest):
++    entries = {}
++    for expected in manifest['projections']:
++        path = Path(expected['path'])
++        relative = path.relative_to(root)
++        if (len(relative.parts) != 3 or relative.parts[:2] not in
++                {('.agents', 'skills'), ('.claude', 'skills')} or path in entries):
++            raise RuntimeError('Invalid declared terminal projection set')
++        entries[path] = expected
++    if len(entries) != 82 or sum(path.relative_to(root).parts[0] == '.agents'
++            for path in entries) != 41:
++        raise RuntimeError('Exact82 terminal projection declaration required')
++    source = Path(manifest['compiler']['source'])
++    if source in entries:
++        raise RuntimeError('Compiler and projection roles overlap')
++    entries[source] = manifest['compiler']['entry']
++    return entries
++
++
++def excluded_workspace_entry(path, info, output):
++    if path == output:
++        if info['kind'] != 'directory':
++            raise RuntimeError('Excluded owned directory type changed')
++        return True
++    return path.name == '.git' and info['kind'] == 'directory'
++
++
++def workspace_paths(root, output, manifest):
++    terminals = terminal_entries(root, manifest)
++    rows, stack, seen = [], [root], set()
++    while stack:
++        folder = stack.pop()
++        for path, info in children(folder):
++            if excluded_workspace_entry(path, info, output):
++                continue
++            relative = path.relative_to(root).as_posix()
++            if path in terminals:
++                row = observe_link(path, terminals[path])
++                row['path'] = relative
++                rows.append(row)
++                seen.add(path)
++                # Prune before descent; compiler traversal is separately hash-bound.
++                continue
++            if info['kind'] == 'reparse':
++                raise RuntimeError('Unknown workspace reparse refused: ' + str(path))
++            rows.append(dict(path=relative, kind=info['kind'],
++                bytes=info.get('bytes') if info['kind'] == 'file' else None))
++            if info['kind'] == 'directory':
++                stack.append(path)
++    if seen != set(terminals):
++        raise RuntimeError('Declared projection/compiler entry missing')
++    return sorted(rows, key=lambda row: row['path'])
+diff --git a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology2-source/test_topology_contracts.py b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology2-source/test_topology_contracts.py
+new file mode 100644
+--- /dev/null
++++ b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-host-topology2-source/test_topology_contracts.py
+@@ -0,0 +1,236 @@
++"""Actual topology functions with isolated files and inert reparse observations."""
++from contextlib import nullcontext
++import copy
++import hashlib
++import importlib.util
++import json
++import os
++from pathlib import Path
++import stat
++import tempfile
++from types import SimpleNamespace
++import unittest
++from unittest.mock import patch
++
++PACKET = Path(__file__).parent
++SPEC = importlib.util.spec_from_file_location('_dyd415_topology2_test_target', PACKET / 'topology.py')
++topology = importlib.util.module_from_spec(SPEC)
++SPEC.loader.exec_module(topology)
++
++
++class TopologyContracts(unittest.TestCase):
++    def setUp(self):
++        temporary = tempfile.TemporaryDirectory(prefix='dyd415-topology-contract-')
++        self.addCleanup(temporary.cleanup)
++        self.base = Path(temporary.name)
++        self.root = self.base / 'workspace'
++        self.source = self.root / 'skills/engineering/statechart/scripts/node_modules'
++        self.source.mkdir(parents=True)
++        self.target = self.base / 'compiler/node_modules'
++        self.member = self.target / 'typescript/lib/tsc.js'
++        self.member.parent.mkdir(parents=True)
++        self.member.write_bytes(b'original compiler fixture\n')
++        self.links, self.denied, self.scanned, self.inspected = {}, set(), [], []
++        self.readlink_denied = set()
++        self.escape = False
++        retained = json.loads((PACKET / 'topology-manifest.json').read_bytes())
++        live_root = Path(retained['root'])
++        projections = []
++        for index, row in enumerate(retained['projections']):
++            path = self.root / Path(row['path']).relative_to(live_root)
++            path.mkdir(parents=True)
++            expected = dict(path=str(path), attributes=1040, linkType='Junction',
++                targets=['Z:\\inaccessible-sentinel\\projection-' + str(index)])
++            projections.append(expected)
++            self.links[path] = dict(target=expected['targets'][0], attributes=1040, tag=topology.MOUNT_POINT)
++        compiler_entry = dict(path=str(self.source), attributes=1040, linkType='Junction',
++            targets=[str(self.target)])
++        self.links[self.source] = dict(target=str(self.target), attributes=1040, tag=topology.MOUNT_POINT)
++        self.manifest = dict(projections=projections,
++            compiler=dict(source=self.source.as_posix(), target=self.target.as_posix(),
++                entry=compiler_entry, files=[dict(
++                    path=(self.source / 'typescript/lib/tsc.js').relative_to(self.root).as_posix(),
++                    bytes=self.member.stat().st_size,
++                    sha256=hashlib.sha256(self.member.read_bytes()).hexdigest())],
++                directories=sorted((self.source / relative).relative_to(self.root).as_posix()
++                    for relative in ['typescript', 'typescript/lib'])),
++            ordinaryAncestors=[dict(path=str(path), attributes=getattr(os.lstat(path), 'st_file_attributes', 0))
++                for path in [self.root, self.source.parent, self.target]])
++        self.ownership = dict(state='TASK_LOCATION_OWNERSHIP_ESTABLISHED',
++            mapping=dict(source=self.source.as_posix(), target=self.target.as_posix()),
++            originalEvidence=dict(sha256=topology.OWNERSHIP_SHA256), creatorPositions=[66, 70, 73])
++        self.real_lstat, self.real_scandir = os.lstat, os.scandir
++        inert = SimpleNamespace(lstat=self.lstat, readlink=self.readlink, scandir=self.scandir)
++        self.patch = patch.object(topology, 'os', inert)
++        self.patch.start()
++        self.addCleanup(self.patch.stop)
++
++    def lstat(self, path):
++        path = Path(path)
++        if not path.is_relative_to(self.base):
++            raise AssertionError('Foreign fixture target inspection refused')
++        self.inspected.append(path)
++        if path in self.denied:
++            raise PermissionError('inert inspection failure')
++        if path in self.links:
++            row = self.links[path]
++            return SimpleNamespace(st_mode=stat.S_IFDIR, st_size=0,
++                st_file_attributes=row['attributes'], st_reparse_tag=row['tag'])
++        return self.real_lstat(path)
++
++    def readlink(self, path):
++        if Path(path) in self.readlink_denied:
++            raise PermissionError('inert readlink failure')
++        return '\\\\?\\' + self.links[Path(path)]['target']
++
++    def scandir(self, path):
++        path = Path(path)
++        if not path.is_relative_to(self.base):
++            raise AssertionError('Foreign fixture target traversal refused')
++        self.scanned.append(path)
++        if path in self.links:
++            raise AssertionError('Terminal link was followed')
++        if self.escape and path == self.target:
++            escaped = self.base / 'outside-member'
++            return nullcontext([SimpleNamespace(path=str(escaped), name=escaped.name)])
++        return self.real_scandir(path)
++
++    def workspace(self):
++        return topology.workspace_paths(self.root, self.root / 'never-created-output', self.manifest)
++
++    def compiler(self, ownership=None):
++        return topology.compiler_inventory(self.root, self.manifest,
++            self.ownership if ownership is None else ownership)
++
++    def test_exact82_terminal_set_never_follows_inaccessible_targets(self):
++        forbidden = AssertionError('Terminal observation must not resolve/stat/open a target')
++        with patch.object(Path, 'resolve', side_effect=forbidden), \
++                patch.object(Path, 'stat', side_effect=forbidden), \
++                patch.object(Path, 'open', side_effect=forbidden):
++            rows = self.workspace()
++        links = [row for row in rows if row['kind'] == 'junction']
++        self.assertEqual(len(links), 83)
++        self.assertEqual(sum(row['path'].startswith('.agents/') for row in links), 41)
++        self.assertEqual(sum(row['path'].startswith('.claude/') for row in links), 41)
++        self.assertTrue(all(path not in self.scanned for path in self.links))
++        self.assertTrue(all(not str(path).startswith('Z:') for path in self.inspected))
++        self.assertTrue(all(row['rawReadlink'].startswith('\\\\?\\') for row in links))
++
++    def test_added_projection_is_refused(self):
++        path = self.root / '.agents/skills/unlisted'
++        path.mkdir()
++        self.links[path] = dict(target='Z:\\unlisted', attributes=1040, tag=topology.MOUNT_POINT)
++        with self.assertRaisesRegex(RuntimeError, 'Unknown workspace reparse'):
++            self.workspace()
++        self.assertNotIn(path, self.scanned)
++
++    def test_missing_projection_is_refused(self):
++        Path(self.manifest['projections'][0]['path']).rmdir()
++        with self.assertRaisesRegex(RuntimeError, 'entry missing'):
++            self.workspace()
++
++    def test_repointed_projection_is_refused(self):
++        path = Path(self.manifest['projections'][0]['path'])
++        self.links[path]['target'] = 'Z:\\different'
++        with self.assertRaisesRegex(RuntimeError, 'Literal junction target differs'):
++            self.workspace()
++
++    def test_projection_type_change_is_refused(self):
++        path = Path(self.manifest['projections'][0]['path'])
++        del self.links[path]
++        with self.assertRaisesRegex(RuntimeError, 'Exact junction type'):
++            self.workspace()
++        self.assertNotIn(path, self.scanned)
++
++    def test_unknown_reparse_tag_is_refused(self):
++        path = self.root / 'foreign-reparse'
++        path.mkdir()
++        self.links[path] = dict(target='Z:\\foreign', attributes=1040, tag=0xA000000C)
++        with self.assertRaisesRegex(RuntimeError, 'Unknown workspace reparse'):
++            self.workspace()
++        self.assertNotIn(path, self.scanned)
++
++    def test_projection_inspection_failure_is_refused(self):
++        path = Path(self.manifest['projections'][0]['path'])
++        for refused in [self.denied, self.readlink_denied]:
++            with self.subTest(refused=refused):
++                refused.add(path)
++                with self.assertRaisesRegex(RuntimeError, 'inspection failed'):
++                    self.workspace()
++                refused.clear()
++
++    def test_exact_compiler_ownership_and_scripts_closure(self):
++        result = self.compiler()
++        self.assertEqual(result['link']['targets'], [str(self.target)])
++        self.assertEqual(len(result['ancestors']), 3)
++        rows = topology.scripts_inventory(self.root, self.manifest, self.ownership)
++        self.assertEqual([{key: row[key] for key in ['path', 'bytes', 'sha256']}
++            for row in rows if row['kind'] == 'file'], self.manifest['compiler']['files'])
++        self.assertIn(self.target, self.scanned)
++        self.assertNotIn(self.source, self.scanned)
++
++    def test_changed_compiler_mapping_or_type_is_refused(self):
++        original = copy.deepcopy(self.links[self.source])
++        for mutation in [dict(target='Z:\\replacement'), dict(tag=0xA000000C), dict(attributes=16)]:
++            with self.subTest(mutation=mutation):
++                self.links[self.source] = dict(original, **mutation)
++                with self.assertRaisesRegex(RuntimeError, 'junction'):
++                    self.compiler()
++        self.links[self.source] = original
++
++    def test_missing_or_invalid_compiler_ownership_is_refused(self):
++        invalid = [None, {}, dict(self.ownership, state='UNOWNED'),
++            dict(self.ownership, originalEvidence=dict(sha256='0' * 64)),
++            dict(self.ownership, creatorPositions=[66, 73]),
++            dict(self.ownership, mapping=dict(source='foreign', target='foreign'))]
++        for evidence in invalid:
++            with self.subTest(evidence=evidence):
++                self.assertRaisesRegex(RuntimeError, 'ownership evidence refused',
++                    topology.compiler_inventory, self.root, self.manifest, evidence)
++        self.assertNotIn(self.target, self.scanned)
++
++    def test_nested_compiler_reparse_is_refused(self):
++        path = self.target / 'nested'
++        path.mkdir()
++        self.links[path] = dict(target='Z:\\nested', attributes=1040, tag=topology.MOUNT_POINT)
++        with self.assertRaisesRegex(RuntimeError, 'Nested compiler reparse'):
++            self.compiler()
++        self.assertNotIn(path, self.scanned)
++
++    def test_escaping_compiler_member_is_refused_before_open(self):
++        self.escape = True
++        with self.assertRaisesRegex(RuntimeError, 'Escaping/foreign member'):
++            self.compiler()
++        self.assertNotIn(self.base / 'outside-member', self.inspected)
++
++    def test_foreign_compiler_member_is_refused(self):
++        (self.target / 'foreign-file').write_bytes(b'foreign')
++        with self.assertRaisesRegex(RuntimeError, 'closure drift'):
++            self.compiler()
++
++    def test_missing_compiler_member_is_refused(self):
++        self.member.unlink()
++        with self.assertRaisesRegex(RuntimeError, 'closure drift'):
++            self.compiler()
++
++    def test_same_size_compiler_content_drift_is_refused(self):
++        original = self.member.read_bytes()
++        self.member.write_bytes(b'X' * len(original))
++        self.assertEqual(self.member.stat().st_size, len(original))
++        with self.assertRaisesRegex(RuntimeError, 'closure drift'):
++            self.compiler()
++
++    def test_compiler_ancestor_reparse_is_refused(self):
++        self.links[self.target] = dict(target='Z:\\ancestor', attributes=1040, tag=topology.MOUNT_POINT)
++        with self.assertRaisesRegex(RuntimeError, 'ancestor changed'):
++            self.compiler()
++        self.assertNotIn(self.target, self.scanned)
++
++    def test_compiler_empty_directory_drift_is_refused(self):
++        (self.target / 'unlisted-empty-directory').mkdir()
++        with self.assertRaisesRegex(RuntimeError, 'closure drift'):
++            self.compiler()
++
++
++if __name__ == '__main__':
++    unittest.main(verbosity=2)

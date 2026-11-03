@@ -1,0 +1,515 @@
+diff --git a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/driver.py b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/driver.py
+index f9836a52..96db8acb 100644
+--- a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/driver.py
++++ b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/driver.py
+@@ -1,11 +1,10 @@
+-"""One canonical affected signal test; source-only until captain inspection/release."""
++"""One finite original-twelve gate; source-only until captain inspection/release."""
+ import argparse
+ import datetime
+ import hashlib
+ import importlib.util
+ import json
+ import os
+-import re
+ from pathlib import Path
+ import shutil
+ import subprocess
+@@ -18,9 +17,8 @@ ROOT = Path('C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f')
+ TEMP = Path('C:/Users/User/AppData/Local/Temp')
+ LC = Path('C:/Users/User/.t3/worktrees/LC/t3-f7ffe8ea')
+ BASE = ROOT / 'dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi'
+-PACKET = BASE / 'b3-janitor-review-fix-source'
++PACKET = BASE / 'b3-janitor-twelve-source'
+ OUTPUT = None
+-SIGNAL = None
+ _shared = BASE / 'b3-signal-containment-source/shared-containment.py'
+ if hashlib.sha256(_shared.read_bytes()).hexdigest() != '24f0afe8f437cef9dc0fc8a3d5cf98540f39af0bf6f45e129f12c2e53549c100':
+     raise RuntimeError('Inspected containment bytes differ before import')
+@@ -43,11 +41,11 @@ def verify_inputs():
+         raise RuntimeError('HEAD differs from retained draft')
+     pin = json.loads((PACKET / 'source-pin.json').read_bytes())
+     release = json.loads((PACKET / 'execution-release.json').read_bytes())
+-    if release['state'] != 'RELEASED_B3_JANITOR_REVIEW_FIX' or (SIGNAL == 'CONTRACTS' and release.get('contracts') is not True or SIGNAL != 'CONTRACTS' and SIGNAL not in release['signals']) or len(set(release['signals'])) != len(release['signals']) or not set(release['signals']).issubset({'SIGINT', 'SIGTERM'}) or release['sourcePinSha256'] != common.sha(PACKET / 'source-pin.json'):
++    if release['state'] != 'RELEASED_B3_JANITOR_TWELVE' or release.get('twelve') is not True or release['sourcePinSha256'] != common.sha(PACKET / 'source-pin.json'):
+         raise RuntimeError('Exact captain source release required')
+     if not release.get('captainInspectionRecord') or not release.get('dockerIdentity'):
+         raise RuntimeError('Captain inspection and bound actual-host Docker identity required')
+-    if common.sha(Path(__file__)) != pin['driverSha256'] or common.sha(TEMP / 'dyd415-rmi-b3-janitor-review-fix-launch-20261031.py') != pin['launcherSha256']:
++    if common.sha(Path(__file__)) != pin['driverSha256'] or common.sha(TEMP / 'dyd415-rmi-b3-janitor-twelve-launch-20261031.py') != pin['launcherSha256']:
+         raise RuntimeError('TEMP counterpart identity differs')
+     for row in pin['sources']:
+         path = ROOT / row['path']
+@@ -180,8 +178,8 @@ def container(name, nonce, mounts, argv, children, entry='python'):
+     image = json.loads(run(name + '-image', ['docker', 'image', 'inspect', common.IMAGE]))[0]
+     if image['Id'] != common.IMAGE.split('@')[1] or image['Os'] != 'linux' or image['Architecture'] != 'amd64':
+         raise RuntimeError('Cached runtime identity differs before start')
+-    # Canonical case <25s of bounded waits; native30s; runner65+5s; attach120s emergency.
+-    run(name + '-start', ['docker', 'start', '--attach', identity], timeout=120)
++    # Twelve serial case bounds: each runner65s plus direct reap5s; attach960s emergency.
++    run(name + '-start', ['docker', 'start', '--attach', identity], timeout=120 if name.endswith('-extract') else 960)
+     final = json.loads(run(name + '-state', ['docker', 'inspect', identity]))[0]
+     if final['State']['Status'] != 'exited' or final['State']['ExitCode'] != 0 or final['State']['OOMKilled']:
+         raise RuntimeError('Contained worker failed; product acceptance not inferred from cleanup')
+@@ -270,8 +268,8 @@ VOLUME = None
+ def execute(nonce, children):
+     global VOLUME
+     check_daemon('pre-resource')
+-    VOLUME = 'dyd415-rmi-b3-janitor-review-fix-' + nonce + '-node'
+-    scratch = Path(tempfile.mkdtemp(prefix='dyd415-rmi-b3-janitor-review-fix-', dir=TEMP))
++    VOLUME = 'dyd415-rmi-b3-janitor-twelve-' + nonce + '-node'
++    scratch = Path(tempfile.mkdtemp(prefix='dyd415-rmi-b3-janitor-twelve-', dir=TEMP))
+     common.save('scratch.json', dict(path=str(scratch)))
+     source, work, output = [scratch / name for name in ['input', 'work', 'output']]
+     for path in [source / 'repo', work / 'tmp', output]:
+@@ -315,42 +313,17 @@ def execute(nonce, children):
+         raise RuntimeError('Owned volume identity differs')
+     mounts = ['type=bind,source=' + str(source) + ',target=/input,readonly',
+         'type=bind,source=' + str(work) + ',target=/work', 'type=bind,source=' + str(output) + ',target=/output']
+-    common.container('dyd415-rmi-b3-janitor-review-fix-' + nonce + '-extract', nonce,
++    common.container('dyd415-rmi-b3-janitor-twelve-' + nonce + '-extract', nonce,
+         mounts + ['type=volume,source=' + VOLUME + ',target=/toolchain'],
+-        ['-B', '/input/worker.py', '--signal', SIGNAL, '--extract'], children)
+-    common.container('dyd415-rmi-b3-janitor-review-fix-' + nonce + '-finite', nonce,
++        ['-B', '/input/worker.py', '--extract'], children)
++    common.container('dyd415-rmi-b3-janitor-twelve-' + nonce + '-finite', nonce,
+         mounts + ['type=volume,source=' + VOLUME + ',target=/toolchain,readonly'],
+-        ['-B', '/input/worker.py', '--signal', SIGNAL], children)
++        ['-B', '/input/worker.py'], children)
+     common.save('summary.json', dict(product=json.loads((output / 'product-outcome.json').read_bytes()),
+         worker=json.loads((output / 'completed.json').read_bytes()), infrastructureContainment='NOT_YET_ATTEMPTED'))
+ 
+ 
+ 
+-def execute_contracts():
+-    command = [sys.executable, '-I', '-B', '-m', 'unittest', 'discover', '-v',
+-        '-s', 'DynaDocs.Tests/coverage/tests', '-p', 'test_statechart_janitor_successor.py']
+-    common.run('contracts', command, timeout=180)
+-    if (OUTPUT / 'contracts.stdout').stat().st_size:
+-        raise RuntimeError('Contract stdout must be empty')
+-    stderr = (OUTPUT / 'contracts.stderr').read_text(encoding='utf-8')
+-    names = json.loads((PACKET / 'test-inventory.json').read_bytes())['nativeIds']
+-    actual = []
+-    for line in stderr.splitlines():
+-        if ' ... ' in line:
+-            name, result = line.rsplit(' ... ', 1)
+-            if result != 'ok':
+-                raise RuntimeError('Contract non-ok/skip retained')
+-            actual.append(name)
+-    if sorted(actual) != sorted(names) or len(set(actual)) != len(names):
+-        raise RuntimeError('Exact unique native contract selection required')
+-    if not re.search(r'^Ran ' + str(len(names)) + r' tests in [^\r\n]+s$', stderr, re.M) or not re.search(r'^OK$', stderr, re.M):
+-        raise RuntimeError('Complete native contract summary required')
+-    if any((OUTPUT / ('contracts.' + suffix)).stat().st_size > 16 * 1024 * 1024 for suffix in ['stdout', 'stderr']):
+-        raise RuntimeError('Contract output limit exceeded; no PASS')
+-    common.save('summary.json', dict(contracts=len(names), skipped=0, complete=True,
+-        actualCallsToSuccessor=True, realRuntime=False, java=False, docker=False))
+-
+-
+ def cleanup(children, nonce):
+     if VOLUME is None:
+         common.save('teardown.json', dict(cleanupConfirmed=not children, noMaterialResourcesCreated=not children))
+@@ -378,14 +351,11 @@ def retain_and_release(lock, lock_bytes, cleaned, failure):
+     return failure
+ 
+ def main():
+-    global SIGNAL, OUTPUT
++    global OUTPUT
+     parser = argparse.ArgumentParser()
+-    selected = parser.add_mutually_exclusive_group(required=True)
+-    selected.add_argument('--signal', choices=['SIGINT', 'SIGTERM'])
+-    selected.add_argument('--contracts', action='store_true')
+-    args = parser.parse_args()
+-    SIGNAL = 'CONTRACTS' if args.contracts else args.signal
+-    OUTPUT = BASE / ('b3-janitor-review-fix-20261031a-' + SIGNAL)
++    parser.add_argument('--twelve', action='store_true', required=True)
++    parser.parse_args()
++    OUTPUT = BASE / 'b3-janitor-twelve-20261031a'
+     common.OUTPUT = OUTPUT
+     verify_inputs()
+     if not OUTPUT.is_dir() or (OUTPUT / 'preflight.json').exists():
+@@ -402,8 +372,7 @@ def main():
+     common.save('preflight.json', dict(namespace=str(live.directory), localAppData=os.environ.get('LOCALAPPDATA'),
+         temp=str(tempfile.gettempdir()), sourcePinSha256=common.sha(PACKET / 'source-pin.json'), lcPins=common.LC_PINS))
+     nonce = uuid.uuid4().hex[:16]
+-    selection = ['--contracts'] if SIGNAL == 'CONTRACTS' else ['--signal', SIGNAL]
+-    command = subprocess.list2cmdline([sys.executable, '-B', str(Path(__file__)), *selection])
++    command = subprocess.list2cmdline([sys.executable, '-B', str(Path(__file__)), '--twelve'])
+     lock, children, failure, cleaned = TEMP / 'dydo-fullsuite.lock', [], None, False
+     with suite_slot.book(command, worktree=ROOT) as booking:
+         owner = dict(pid=os.getpid(), command=command, ticket=os.environ['LC_SUITE_SLOT_TICKET'], nonce=nonce,
+@@ -415,10 +384,7 @@ def main():
+             with lock.open('xb') as stream:
+                 stream.write(lock_bytes)
+             try:
+-                if SIGNAL == 'CONTRACTS':
+-                    execute_contracts()
+-                else:
+-                    execute(nonce, children)
++                execute(nonce, children)
+             except BaseException as error:
+                 failure = error
+                 safe_save('stop.json', dict(type=type(error).__name__, message=str(error),
+
+diff --git a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/launcher.py b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/launcher.py
+index 6c4131e1..ceb683b5 100644
+--- a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/launcher.py
++++ b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/launcher.py
+@@ -11,7 +11,7 @@ import tempfile
+ sys.dont_write_bytecode = True
+ LC = Path('C:/Users/User/.t3/worktrees/LC/t3-f7ffe8ea')
+ TEMP = Path('C:/Users/User/AppData/Local/Temp')
+-DRIVER = TEMP / 'dyd415-rmi-b3-janitor-review-fix-driver-20261031.py'
++DRIVER = TEMP / 'dyd415-rmi-b3-janitor-twelve-driver-20261031.py'
+ def validate_host():
+     if os.name != 'nt' or sys.platform != 'win32':
+         raise RuntimeError('B3 requires the commissioned Windows host')
+@@ -21,10 +21,10 @@ def validate_host():
+         raise RuntimeError('Redirected TEMP; refuse before driver startup')
+ 
+ 
+-def validate_release(packet, signal):
++def validate_release(packet):
+     declaration = json.loads((packet / 'source-pin.json').read_bytes())
+     release = json.loads((packet / 'execution-release.json').read_bytes())
+-    if release['state'] != 'RELEASED_B3_JANITOR_REVIEW_FIX' or (signal == 'CONTRACTS' and release.get('contracts') is not True or signal != 'CONTRACTS' and signal not in release['signals']) or len(set(release['signals'])) != len(release['signals']) or not set(release['signals']).issubset({'SIGINT', 'SIGTERM'}) or release['sourcePinSha256'] != hashlib.sha256((packet / 'source-pin.json').read_bytes()).hexdigest():
++    if release['state'] != 'RELEASED_B3_JANITOR_TWELVE' or release.get('twelve') is not True or release['sourcePinSha256'] != hashlib.sha256((packet / 'source-pin.json').read_bytes()).hexdigest():
+         raise RuntimeError('Exact captain release after source inspection required')
+     if not release.get('captainInspectionRecord') or not release.get('dockerIdentity'):
+         raise RuntimeError('Captain inspection and exact Docker identity required')
+@@ -33,20 +33,17 @@ def validate_release(packet, signal):
+ 
+ def main():
+     parser = argparse.ArgumentParser()
+-    selected = parser.add_mutually_exclusive_group(required=True)
+-    selected.add_argument('--signal', choices=['SIGINT', 'SIGTERM'])
+-    selected.add_argument('--contracts', action='store_true')
+-    args = parser.parse_args()
+-    signal = 'CONTRACTS' if args.contracts else args.signal
++    parser.add_argument('--twelve', action='store_true', required=True)
++    parser.parse_args()
+     preflight = dict(osName=os.name, platform=sys.platform, localAppData=os.environ.get('LOCALAPPDATA'),
+         temp=os.environ.get('TEMP'), inheritedTicket=os.environ.get('LC_SUITE_SLOT_TICKET'),
+         launcherSha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+         driverSha256=hashlib.sha256(DRIVER.read_bytes()).hexdigest())
+     print('Launcher preflight:', json.dumps(preflight), flush=True)
+     validate_host()
+-    output = Path('C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi') / ('b3-janitor-review-fix-20261031a-' + signal)
+-    packet = output.parent / 'b3-janitor-review-fix-source'
+-    declaration = validate_release(packet, signal)
++    output = Path('C:/Users/User/.t3/worktrees/DynaDocs/t3-ba795f5f/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi') / 'b3-janitor-twelve-20261031a'
++    packet = output.parent / 'b3-janitor-twelve-source'
++    declaration = validate_release(packet)
+     for path in json.loads((packet / 'closure.json').read_bytes())['namespacePackageAbsences']:
+         if Path(path).exists():
+             raise RuntimeError('LC namespace topology changed before import')
+@@ -68,15 +65,14 @@ def main():
+     assert not output.exists(), 'B3 evidence output already exists'
+     assert declaration['driverSha256'] == preflight['driverSha256'] and declaration['launcherSha256'] == preflight['launcherSha256']
+     output.mkdir()
+-    directory = Path(tempfile.mkdtemp(prefix='dyd415-rmi-b3-janitor-review-fix-launch-', dir=TEMP))
++    directory = Path(tempfile.mkdtemp(prefix='dyd415-rmi-b3-janitor-twelve-launch-', dir=TEMP))
+     with (directory / 'preflight.json').open('x', encoding='utf-8') as stream:
+         json.dump(preflight, stream, indent=2)
+     with (output / 'launcher.preflight.json').open('x', encoding='utf-8') as stream:
+         json.dump(dict(preflight, logDirectory=str(directory)), stream, indent=2)
+     print('Launcher logs:', directory, flush=True)
+-    selection = ['--contracts'] if signal == 'CONTRACTS' else ['--signal', signal]
+     with (directory / 'stdout').open('xb') as stdout, (directory / 'stderr').open('xb') as stderr:
+-        result = subprocess.run([sys.executable, '-B', str(DRIVER), *selection], stdout=stdout, stderr=stderr,
++        result = subprocess.run([sys.executable, '-B', str(DRIVER), '--twelve'], stdout=stdout, stderr=stderr,
+             creationflags=subprocess.CREATE_NO_WINDOW)
+     for name in ['stdout', 'stderr']:
+         with (output / ('launcher.' + name)).open('xb') as stream: stream.write((directory / name).read_bytes())
+
+diff --git a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/worker.py b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/worker.py
+index 5179528a..be8ba3e1 100644
+--- a/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-review-fix-source/worker.py
++++ b/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-janitor-twelve-source/worker.py
+@@ -1,4 +1,4 @@
+-"""One canonical signal test, with strict census before independent host containment."""
++"""Twelve exact canonical cases, serial native summaries and strict census; source only."""
+ import argparse
+ import hashlib
+ import importlib.util
+@@ -10,40 +10,152 @@ import signal
+ import subprocess
+ import sys
+ 
++NAMES = [
++    "POSIX janitor close precedes the Counter report and controlled exit 0",
++    "POSIX janitor close precedes the CounterInstance report and controlled exit 1",
++    "POSIX janitor closes after an early worker error without publishing output",
++    "POSIX janitor closes before controlled SIGINT exit with no output",
++    "POSIX janitor closes before controlled SIGTERM exit with no output",
++    "POSIX janitor spawn failure stops and reaps the worker without publishing",
++    "POSIX janitor early close is retained and stops the owned worker",
++    "POSIX worker spawn failure is observed before any janitor starts",
++    "POSIX cleanup exception remains visible and cannot skip actual janitor close",
++    "POSIX spawn and cleanup faults are both visible after actual ownership drain",
++    "POSIX janitor kill exception is reported only after the real child closes",
++    "POSIX final drain preserves a caller file arriving at output publication"
++]
++EXITS = [0, 1, 2, 130, 143, 2, 2, 2, 2, 2, 2, 2]
++
+ 
+ def load_foundation():
+-    foundation_path = Path('/input/foundation.py')
+-    if hashlib.sha256(foundation_path.read_bytes()).hexdigest() != '907d41101cf1ce465a746a762e2b1233db1845ba186b5c0ced94fd0eec17ef6e':
++    path = Path('/input/foundation.py')
++    if hashlib.sha256(path.read_bytes()).hexdigest() != '907d41101cf1ce465a746a762e2b1233db1845ba186b5c0ced94fd0eec17ef6e':
+         raise RuntimeError('Frozen preparation/guard differs before import')
+-    spec = importlib.util.spec_from_file_location('_frozen_signal_foundation', foundation_path)
+-    foundation = importlib.util.module_from_spec(spec)
+-    spec.loader.exec_module(foundation)
+-    return foundation
++    spec = importlib.util.spec_from_file_location('_frozen_twelve_foundation', path)
++    module = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(module)
++    return module
+ 
+ 
+ def selected_tap(text, name):
+-    selected = []
+     records = []
++    selected = []
+     for status, title, directive in re.findall(r'^(not ok|ok) \d+ - (.*?)(?: # (.*))?$', text, re.M):
+         records.append(dict(status=status, name=title, directive=directive))
+         if title == name:
+             if status != 'ok' or directive:
+-                raise RuntimeError('Selected canonical case failed/skipped')
++                raise RuntimeError('Selected case failed/skipped')
+             selected.append(title)
+         elif status != 'ok' or not directive.startswith('SKIP test name does not match pattern'):
+-            raise RuntimeError('Unselected test executed/non-ok')
++            raise RuntimeError('Unselected case executed/non-ok')
+     if selected != [name]:
+-        raise RuntimeError('Exactly one unique native selected ok required')
+-    if not all(re.search(r'^# ' + label + ' ' + str(value) + '$', text, re.M)
+-               for label, value in [('pass', 1), ('fail', 0), ('cancelled', 0), ('todo', 0)]):
+-        raise RuntimeError('Native summary differs')
++        raise RuntimeError('One unique exact native selected ok required')
++    for label, value in [('pass', 1), ('fail', 0), ('cancelled', 0), ('todo', 0)]:
++        if not re.search(r'^# ' + label + ' ' + str(value) + '$', text, re.M):
++            raise RuntimeError('Incomplete/failed native terminal summary')
++    if not re.search(r'^1\.\.' + str(len(records)) + '$', text, re.M):
++        raise RuntimeError('Complete native TAP plan required')
+     return records
+ 
+ 
++def lifecycle_events(events, index):
++    exits = [row for row in events if row['event'] == 'cli-exit']
++    spawns = [row for row in events if row.get('role') == 'janitor' and row['event'] == 'spawn']
++    closes = [row for row in events if row.get('role') == 'janitor' and row['event'] == 'close']
++    workers = [row for row in events if row.get('role') == 'worker' and row['event'] == 'close']
++    if len(exits) != 1 or exits[0]['code'] != EXITS[index] or len(workers) != 1:
++        raise RuntimeError('Actual CLI verdict/worker close differs')
++    if index == 7:
++        if spawns or closes or workers[0]['code'] != -2 or workers[0]['signal'] is not None:
++            raise RuntimeError('Worker spawn-failure ownership differs')
++        return dict(cli=exits[0], worker=workers[0], janitor='NOT_CREATED')
++    if len(spawns) != 1 or len(closes) != 1:
++        raise RuntimeError('Unique actual janitor spawn/close required')
++    spawned, closed = spawns[0], closes[0]
++    if closed.get('pid') != spawned.get('pid') or closed['parent'] != spawned['parent'] or exits[0]['parent'] != spawned['parent']:
++        raise RuntimeError('Exact janitor/CLI ownership differs')
++    if events.index(closed) >= events.index(exits[0]):
++        raise RuntimeError('Actual janitor close must precede controlled CLI exit')
++    if index in [5, 9]:
++        if closed['code'] != -2 or closed['signal'] is not None or spawned.get('pid') is not None:
++            raise RuntimeError('Janitor spawn-failure boundary differs')
++    elif not spawned.get('pid') or closed['signal'] != 'SIGKILL':
++        raise RuntimeError('Owned janitor actual SIGKILL close required')
++    return dict(cli=exits[0], worker=workers[0], janitor=closed)
++
++
++def drain_runner(child, start):
++    if child.poll() is None:
++        current = Path('/proc', str(child.pid), 'stat').read_text().rsplit(') ', 1)[1].split()
++        if start is None or current[19] != start or int(current[1]) != os.getpid() or os.getpgid(child.pid) != child.pid:
++            raise RuntimeError('Direct native runner ownership uncertain; container containment required')
++        os.killpg(child.pid, signal.SIGKILL)
++
++
++def run_case(foundation, name, index):
++    prefix = 'case-' + str(index + 1).zfill(2)
++    foundation.remaining_processes(prefix + '.processes-before.json')
++    argv = [str(foundation.NODE), '--disable-warning=ExperimentalWarning', '--test',
++        '--test-reporter=tap', '--test-concurrency=1', '--test-name-pattern=^' + re.escape(name) + '$',
++        'test/cli.test.ts']
++    env = foundation.environment()
++    env['STATECHART_JANITOR_PROOF'] = str(foundation.OUTPUT / 'janitor-events' / prefix)
++    Path(env['STATECHART_JANITOR_PROOF']).mkdir(parents=True)
++    foundation.save(prefix + '.argv.json', dict(argv=argv, cwd=str(foundation.SCRIPTS), environment=env,
++        selectedNames=[name], runnerSeconds=65, directReapSeconds=5, fileLimitBytes=foundation.LIMIT,
++        realJava=False, canonicalAssertionsUnchanged=True))
++    out, err = [foundation.OUTPUT / (prefix + suffix) for suffix in ['.stdout', '.stderr']]
++    child, start, failure, reaped = None, None, None, False
++    try:
++        with out.open('xb') as stdout, err.open('xb') as stderr:
++            child = subprocess.Popen(argv, cwd=foundation.SCRIPTS, env=env, stdout=stdout,
++                stderr=stderr, start_new_session=True)
++            raw = Path('/proc', str(child.pid), 'stat').read_text()
++            start = raw.rsplit(') ', 1)[1].split()[19]
++            foundation.save(prefix + '.owned.json', dict(pid=child.pid, stat=raw, starttime=start,
++                parent=os.getpid(), pgid=os.getpgid(child.pid)))
++            child.wait(timeout=65)
++            reaped = True
++    except BaseException as error:
++        failure = error
++    finally:
++        if child is not None:
++            try:
++                drain_runner(child, start)
++            except BaseException as error:
++                failure = failure or error
++            try:
++                child.wait(timeout=5)
++                reaped = True
++            except BaseException as error:
++                failure = failure or error
++    census = foundation.census()
++    strict_clean = not any(row['pid'] != os.getpid() for row in census)
++    foundation.save(prefix + '.processes-after.json', census)
++    foundation.save(prefix + '.result.json', dict(exit=child.returncode if child else None,
++        directRunnerReaped=reaped, strictCensusClean=strict_clean,
++        failure=str(failure) if failure else None, infrastructureContainment='NOT_YET_ATTEMPTED',
++        productCloseNotInferredFromRunnerReap=True))
++    if failure:
++        raise failure
++    if not reaped or not strict_clean or child.returncode != 0 or err.stat().st_size:
++        raise RuntimeError('Case FAIL/inconclusive; strict census rejects all residual PIDs including zombies')
++    records = selected_tap(out.read_text(encoding='utf-8'), name)
++    logs = list(Path(env['STATECHART_JANITOR_PROOF']).glob('*/events.jsonl'))
++    if len(logs) != 1:
++        raise RuntimeError('Exactly one real CLI lifecycle log per native case required')
++    events = [json.loads(line) for line in logs[0].read_text().splitlines()]
++    observed = lifecycle_events(events, index)
++    foundation.verify_files()
++    foundation.save(prefix + '.selection.json', dict(name=name, records=records,
++        actualLifecycle=observed, nativeExit=0, nativeSummaryComplete=True, strictCensusClean=True))
++    return dict(name=name, nativeExit=0, selected=1, selectedSkipped=0,
++        nativeSummaryComplete=True, actualLifecycle=observed, strictCensusClean=True)
++
++
+ def main():
+     parser = argparse.ArgumentParser()
+     parser.add_argument('--extract', action='store_true')
+-    parser.add_argument('--signal', choices=['SIGINT', 'SIGTERM'], required=True)
+     args = parser.parse_args()
+     if sys.platform != 'linux' or os.getpid() != 1:
+         raise RuntimeError('Original private Linux Python PID1 topology only')
+@@ -54,96 +166,29 @@ def main():
+         return
+     resource.setrlimit(resource.RLIMIT_FSIZE, (foundation.LIMIT, foundation.LIMIT))
+     manifest = foundation.verify_files()
++    if manifest['names'] != NAMES or len(set(NAMES)) != 12:
++        raise RuntimeError('Exact original twelve selectors required')
+     Path('/work/home').mkdir()
+     foundation.remaining_processes('processes-before.json')
+-    name = 'POSIX janitor closes before controlled ' + args.signal + ' exit with no output'
+-    if manifest['names'] != [name.replace(args.signal, value) for value in ['SIGINT', 'SIGTERM']]:
+-        raise RuntimeError('Exact finite canonical names differ')
+-    argv = [str(foundation.NODE), '--disable-warning=ExperimentalWarning', '--test',
+-        '--test-reporter=tap', '--test-concurrency=1', '--test-name-pattern=^' + re.escape(name) + '$',
+-        'test/cli.test.ts']
+-    env = foundation.environment()
+-    env['STATECHART_JANITOR_PROOF'] = '/output/janitor-events'
+-    Path(env['STATECHART_JANITOR_PROOF']).mkdir()
+-    foundation.save('canonical.argv.json', dict(argv=argv, cwd=str(foundation.SCRIPTS), environment=env,
+-        selectedNames=[name], readinessSeconds=10, selectedCloseSeconds=10, failedCleanupSeconds=5,
+-        nativeEmergencySeconds=30, runnerEmergencySeconds=65, runnerDirectReapSeconds=5,
+-        fileLimitBytes=foundation.LIMIT, realJava=False, canonicalTest=True))
+-    out, err = foundation.OUTPUT / 'canonical.stdout', foundation.OUTPUT / 'canonical.stderr'
+-    failure, reaped, child = None, False, None
+-    try:
+-        with out.open('xb') as stdout, err.open('xb') as stderr:
+-            child = subprocess.Popen(argv, cwd=foundation.SCRIPTS, env=env, stdout=stdout,
+-                stderr=stderr, start_new_session=True)
+-            initial = Path('/proc', str(child.pid), 'stat').read_text()
+-            start = initial.rsplit(') ', 1)[1].split()[19]
+-            foundation.save('canonical.owned.json', dict(pid=child.pid, pgid=os.getpgid(child.pid), stat=initial))
+-            try:
+-                child.wait(timeout=65)
+-                reaped = True
+-            except subprocess.TimeoutExpired as error:
+-                failure = error
+-            finally:
+-                if child.poll() is None:
+-                    current = Path('/proc', str(child.pid), 'stat').read_text().rsplit(') ', 1)[1].split()
+-                    if current[19] != start or int(current[1]) != os.getpid() or os.getpgid(child.pid) != child.pid:
+-                        raise RuntimeError('Direct runner identity uncertain; host containment required')
+-                    os.killpg(child.pid, signal.SIGKILL)
+-                try:
+-                    child.wait(timeout=5)
+-                    reaped = True
+-                except subprocess.TimeoutExpired as error:
+-                    failure = failure or error
+-    except BaseException as error:
+-        failure = failure or error
+-    remaining = foundation.census()
+-    foundation.save('processes-after.json', remaining)
+-    strict_clean = not any(row['pid'] != os.getpid() for row in remaining)
+-    foundation.save('canonical.result.json', dict(exit=child.returncode if child else None,
+-        directRunnerReaped=reaped, strictCensusClean=strict_clean, failure=str(failure) if failure else None,
+-        productCloseNotInferredFromRunnerReap=True, infrastructureContainment='NOT_YET_ATTEMPTED'))
++    results = []
+     try:
+-        if failure:
+-            raise failure
+-        if not reaped or not strict_clean:
+-            raise RuntimeError('Strict guard FAIL: every residual live/zombie PID remains rejecting')
+-        if child.returncode != 0 or err.stat().st_size:
+-            raise RuntimeError('Canonical native test FAIL/inconclusive; no retry')
+-        text = out.read_text(encoding='utf-8')
+-        records = selected_tap(text, name)
+-        foundation.save('observed-selection.json', dict(records=records, expectedName=name, expectedCount=1))
+-        logs = list(Path(env['STATECHART_JANITOR_PROOF']).glob('*/events.jsonl'))
+-        if len(logs) != 1:
+-            raise RuntimeError('Exactly one actual CLI lifecycle log required')
+-        events = [json.loads(line) for line in logs[0].read_text().splitlines()]
+-        janitors = [row for row in events if row.get('role') == 'janitor' and row['event'] == 'spawn']
+-        closes = [row for row in events if row.get('role') == 'janitor' and row['event'] == 'close']
+-        exits = [row for row in events if row['event'] == 'cli-exit']
+-        if len(janitors) != 1 or len(closes) != 1 or len(exits) != 1:
+-            raise RuntimeError('Unique janitor spawn/close/CLI exit evidence required')
+-        if not janitors[0].get('pid') or closes[0]['pid'] != janitors[0]['pid'] or closes[0]['signal'] != 'SIGKILL':
+-            raise RuntimeError('Exact owned janitor close differs')
+-        if closes[0]['parent'] != janitors[0]['parent'] or exits[0]['parent'] != janitors[0]['parent']:
+-            raise RuntimeError('CLI ownership differs')
+-        if events.index(closes[0]) >= events.index(exits[0]) or exits[0]['code'] != (130 if args.signal == 'SIGINT' else 143):
+-            raise RuntimeError('Actual close-before-controlled-exit evidence differs')
+-        # Canonical assertions prove actual selected kill success, null signalCode, exact outputs,
+-        # stage/tmp absence and drainedJanitor. Fallback cannot reach those assertions after failure.
++        for index, name in enumerate(NAMES):
++            results.append(run_case(foundation, name, index))
++            if any(path.stat().st_size > foundation.LIMIT for path in foundation.OUTPUT.rglob('*') if path.is_file()):
++                raise RuntimeError('Evidence file bound exceeded')
+         foundation.verify_files()
+-        if any(path.stat().st_size > foundation.LIMIT for path in foundation.OUTPUT.rglob('*') if path.is_file()):
+-            raise RuntimeError('Evidence file bound exceeded')
++        foundation.remaining_processes('processes-after.json')
+     except BaseException as error:
+-        foundation.save('product-outcome.json', dict(outcome='FAIL_OR_INCONCLUSIVE', signal=args.signal,
+-            error=type(error).__name__, message=str(error), strictCensusClean=strict_clean,
+-            infrastructureContainment='NOT_YET_ATTEMPTED', historicalFailureSuperseded=False))
++        foundation.save('product-outcome.json', dict(outcome='FAIL_OR_INCONCLUSIVE',
++            completedCases=results, error=type(error).__name__, message=str(error),
++            infrastructureContainment='NOT_YET_ATTEMPTED', oldFailureSuperseded=False))
+         raise
+-    foundation.save('product-outcome.json', dict(outcome='PASS', signal=args.signal,
+-        canonicalSelectedName=name, actualOriginalAssertionsPassed=True, strictCensusClean=True,
+-        actualCliCloseObserved=True, infrastructureContainment='NOT_YET_ATTEMPTED',
+-        observerChangesTiming=True, historicalFailureSuperseded=False))
+-    foundation.save('completed.json', dict(signal=args.signal, selected=1, selectedSkipped=0,
+-        canonicalOriginalAssertionsPassed=True, strictRemainingProcesses=0, realJava=False,
+-        historicalFailureSuperseded=False, freshWrapperDirectAssurance='OWED'))
++    foundation.save('product-outcome.json', dict(outcome='PASS', cases=results,
++        exactTwelve=True, completeNativeSummaries=12, strictPreTeardownCensus=True,
++        observerChangesTiming=True, oldFailureSuperseded=False))
++    foundation.save('completed.json', dict(actualSelectedCases=12, nativeCommands=12,
++        completeNativeSummaries=12, selectedSkipped=0, strictRemainingProcesses=0,
++        realJava=False, abruptParentCertified=False, freshSuccessorDirectAssurance='OWED'))
+ 
+ 
+ if __name__ == '__main__':

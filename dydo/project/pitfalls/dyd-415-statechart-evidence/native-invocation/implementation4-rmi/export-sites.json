@@ -1,0 +1,1283 @@
+{
+  "jar": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-rjdqq05t\\deps\\7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad\\win-x64\\tlc\\tla2tools.jar",
+  "jarSha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+  "readerPath": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-tlc-route-readonly-20261031.py",
+  "readerSha256": "1f7ebaaebc0bc1cc0d63e332eaa6cd66a75f6a32077a09ae5939b151edc47342",
+  "rmiSites": [
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.class",
+      "classSha256": "13e00a4c60d07063960e089ddc78363b3897afd2a08960d4d583c35e347c7d5a",
+      "superclass": "java/lang/Object",
+      "method": "<init>",
+      "descriptor": "(Lcom/sun/mail/util/MailSSLSocketFactory;)V",
+      "codeHex": "2a2bb500022ab700032a01b500041205b800064d2c01c00007b600082a2cb600090332c0000ab50004b1",
+      "sites": [
+        {
+          "offset": 2,
+          "opcode": "b5",
+          "bytes": "b50002",
+          "constantPoolIndex": 2,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.this$0.Lcom/sun/mail/util/MailSSLSocketFactory;"
+        },
+        {
+          "offset": 11,
+          "opcode": "b5",
+          "bytes": "b50004",
+          "constantPoolIndex": 4,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.adapteeTrustManager.Ljavax/net/ssl/X509TrustManager;"
+        },
+        {
+          "offset": 38,
+          "opcode": "b5",
+          "bytes": "b50004",
+          "constantPoolIndex": 4,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.adapteeTrustManager.Ljavax/net/ssl/X509TrustManager;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.class",
+      "classSha256": "13e00a4c60d07063960e089ddc78363b3897afd2a08960d4d583c35e347c7d5a",
+      "superclass": "java/lang/Object",
+      "method": "checkClientTrusted",
+      "descriptor": "([Ljava/security/cert/X509Certificate;Ljava/lang/String;)V",
+      "codeHex": "2ab40002b6000b9a00182ab40002b6000cc7000e2ab400042b2cb9000d0300b1",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40002",
+          "constantPoolIndex": 2,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.this$0.Lcom/sun/mail/util/MailSSLSocketFactory;"
+        },
+        {
+          "offset": 4,
+          "opcode": "b6",
+          "bytes": "b6000b",
+          "constantPoolIndex": 11,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.isTrustAllHosts.()Z"
+        },
+        {
+          "offset": 11,
+          "opcode": "b4",
+          "bytes": "b40002",
+          "constantPoolIndex": 2,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.this$0.Lcom/sun/mail/util/MailSSLSocketFactory;"
+        },
+        {
+          "offset": 14,
+          "opcode": "b6",
+          "bytes": "b6000c",
+          "constantPoolIndex": 12,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.getTrustedHosts.()[Ljava/lang/String;"
+        },
+        {
+          "offset": 21,
+          "opcode": "b4",
+          "bytes": "b40004",
+          "constantPoolIndex": 4,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.adapteeTrustManager.Ljavax/net/ssl/X509TrustManager;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.class",
+      "classSha256": "13e00a4c60d07063960e089ddc78363b3897afd2a08960d4d583c35e347c7d5a",
+      "superclass": "java/lang/Object",
+      "method": "checkServerTrusted",
+      "descriptor": "([Ljava/security/cert/X509Certificate;Ljava/lang/String;)V",
+      "codeHex": "2ab40002b6000b9a00182ab40002b6000cc7000e2ab400042b2cb9000e0300b1",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40002",
+          "constantPoolIndex": 2,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.this$0.Lcom/sun/mail/util/MailSSLSocketFactory;"
+        },
+        {
+          "offset": 4,
+          "opcode": "b6",
+          "bytes": "b6000b",
+          "constantPoolIndex": 11,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.isTrustAllHosts.()Z"
+        },
+        {
+          "offset": 11,
+          "opcode": "b4",
+          "bytes": "b40002",
+          "constantPoolIndex": 2,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.this$0.Lcom/sun/mail/util/MailSSLSocketFactory;"
+        },
+        {
+          "offset": 14,
+          "opcode": "b6",
+          "bytes": "b6000c",
+          "constantPoolIndex": 12,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.getTrustedHosts.()[Ljava/lang/String;"
+        },
+        {
+          "offset": 21,
+          "opcode": "b4",
+          "bytes": "b40004",
+          "constantPoolIndex": 4,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.adapteeTrustManager.Ljavax/net/ssl/X509TrustManager;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.class",
+      "classSha256": "13e00a4c60d07063960e089ddc78363b3897afd2a08960d4d583c35e347c7d5a",
+      "superclass": "java/lang/Object",
+      "method": "getAcceptedIssuers",
+      "descriptor": "()[Ljava/security/cert/X509Certificate;",
+      "codeHex": "2ab40004b9000f0100b0",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40004",
+          "constantPoolIndex": 4,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.adapteeTrustManager.Ljavax/net/ssl/X509TrustManager;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.class",
+      "classSha256": "13e00a4c60d07063960e089ddc78363b3897afd2a08960d4d583c35e347c7d5a",
+      "superclass": "java/lang/Object",
+      "method": "<init>",
+      "descriptor": "(Lcom/sun/mail/util/MailSSLSocketFactory;Lcom/sun/mail/util/MailSSLSocketFactory$1;)V",
+      "codeHex": "2a2bb70001b1",
+      "sites": [
+        {
+          "offset": 2,
+          "opcode": "b7",
+          "bytes": "b70001",
+          "constantPoolIndex": 1,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.<init>.(Lcom/sun/mail/util/MailSSLSocketFactory;)V"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "<init>",
+      "descriptor": "()V",
+      "codeHex": "2a1201b70002b1",
+      "sites": [
+        {
+          "offset": 3,
+          "opcode": "b7",
+          "bytes": "b70002",
+          "constantPoolIndex": 2,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.<init>.(Ljava/lang/String;)V"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "<init>",
+      "descriptor": "(Ljava/lang/String;)V",
+      "codeHex": "2ab700032a01b500042a01b500052a03b500062a2bb80007b500082a01b500092a04bd000a5903bb000b592a01b7000c53b5000d2a01b5000e2ab7000fb1",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b7",
+          "bytes": "b70003",
+          "constantPoolIndex": 3,
+          "reference": "javax/net/ssl/SSLSocketFactory.<init>.()V"
+        },
+        {
+          "offset": 6,
+          "opcode": "b5",
+          "bytes": "b50004",
+          "constantPoolIndex": 4,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustedHosts.[Ljava/lang/String;"
+        },
+        {
+          "offset": 11,
+          "opcode": "b5",
+          "bytes": "b50005",
+          "constantPoolIndex": 5,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.adapteeFactory.Ljavax/net/ssl/SSLSocketFactory;"
+        },
+        {
+          "offset": 16,
+          "opcode": "b5",
+          "bytes": "b50006",
+          "constantPoolIndex": 6,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustAllHosts.Z"
+        },
+        {
+          "offset": 24,
+          "opcode": "b5",
+          "bytes": "b50008",
+          "constantPoolIndex": 8,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.sslcontext.Ljavax/net/ssl/SSLContext;"
+        },
+        {
+          "offset": 29,
+          "opcode": "b5",
+          "bytes": "b50009",
+          "constantPoolIndex": 9,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.keyManagers.[Ljavax/net/ssl/KeyManager;"
+        },
+        {
+          "offset": 39,
+          "opcode": "bb",
+          "bytes": "bb000b",
+          "constantPoolIndex": 11,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager"
+        },
+        {
+          "offset": 45,
+          "opcode": "b7",
+          "bytes": "b7000c",
+          "constantPoolIndex": 12,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory$MailTrustManager.<init>.(Lcom/sun/mail/util/MailSSLSocketFactory;Lcom/sun/mail/util/MailSSLSocketFactory$1;)V"
+        },
+        {
+          "offset": 49,
+          "opcode": "b5",
+          "bytes": "b5000d",
+          "constantPoolIndex": 13,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustManagers.[Ljavax/net/ssl/TrustManager;"
+        },
+        {
+          "offset": 54,
+          "opcode": "b5",
+          "bytes": "b5000e",
+          "constantPoolIndex": 14,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.secureRandom.Ljava/security/SecureRandom;"
+        },
+        {
+          "offset": 58,
+          "opcode": "b7",
+          "bytes": "b7000f",
+          "constantPoolIndex": 15,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.newAdapteeFactory.()V"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "newAdapteeFactory",
+      "descriptor": "()V",
+      "codeHex": "2ab400082ab400092ab4000d2ab4000eb600102a2ab40008b60011b50005b1",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40008",
+          "constantPoolIndex": 8,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.sslcontext.Ljavax/net/ssl/SSLContext;"
+        },
+        {
+          "offset": 5,
+          "opcode": "b4",
+          "bytes": "b40009",
+          "constantPoolIndex": 9,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.keyManagers.[Ljavax/net/ssl/KeyManager;"
+        },
+        {
+          "offset": 9,
+          "opcode": "b4",
+          "bytes": "b4000d",
+          "constantPoolIndex": 13,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustManagers.[Ljavax/net/ssl/TrustManager;"
+        },
+        {
+          "offset": 13,
+          "opcode": "b4",
+          "bytes": "b4000e",
+          "constantPoolIndex": 14,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.secureRandom.Ljava/security/SecureRandom;"
+        },
+        {
+          "offset": 21,
+          "opcode": "b4",
+          "bytes": "b40008",
+          "constantPoolIndex": 8,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.sslcontext.Ljavax/net/ssl/SSLContext;"
+        },
+        {
+          "offset": 24,
+          "opcode": "b6",
+          "bytes": "b60011",
+          "constantPoolIndex": 17,
+          "reference": "javax/net/ssl/SSLContext.getSocketFactory.()Ljavax/net/ssl/SSLSocketFactory;"
+        },
+        {
+          "offset": 27,
+          "opcode": "b5",
+          "bytes": "b50005",
+          "constantPoolIndex": 5,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.adapteeFactory.Ljavax/net/ssl/SSLSocketFactory;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "getKeyManagers",
+      "descriptor": "()[Ljavax/net/ssl/KeyManager;",
+      "codeHex": "2ab40009b60012c00013b0",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40009",
+          "constantPoolIndex": 9,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.keyManagers.[Ljavax/net/ssl/KeyManager;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "setKeyManagers",
+      "descriptor": "([Ljavax/net/ssl/KeyManager;)V",
+      "codeHex": "2a2bb60014c00013b500092ab7000fb1",
+      "sites": [
+        {
+          "offset": 8,
+          "opcode": "b5",
+          "bytes": "b50009",
+          "constantPoolIndex": 9,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.keyManagers.[Ljavax/net/ssl/KeyManager;"
+        },
+        {
+          "offset": 12,
+          "opcode": "b7",
+          "bytes": "b7000f",
+          "constantPoolIndex": 15,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.newAdapteeFactory.()V"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "getSecureRandom",
+      "descriptor": "()Ljava/security/SecureRandom;",
+      "codeHex": "2ab4000eb0",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b4000e",
+          "constantPoolIndex": 14,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.secureRandom.Ljava/security/SecureRandom;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "setSecureRandom",
+      "descriptor": "(Ljava/security/SecureRandom;)V",
+      "codeHex": "2a2bb5000e2ab7000fb1",
+      "sites": [
+        {
+          "offset": 2,
+          "opcode": "b5",
+          "bytes": "b5000e",
+          "constantPoolIndex": 14,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.secureRandom.Ljava/security/SecureRandom;"
+        },
+        {
+          "offset": 6,
+          "opcode": "b7",
+          "bytes": "b7000f",
+          "constantPoolIndex": 15,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.newAdapteeFactory.()V"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "getTrustManagers",
+      "descriptor": "()[Ljavax/net/ssl/TrustManager;",
+      "codeHex": "2ab4000db0",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b4000d",
+          "constantPoolIndex": 13,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustManagers.[Ljavax/net/ssl/TrustManager;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "setTrustManagers",
+      "descriptor": "([Ljavax/net/ssl/TrustManager;)V",
+      "codeHex": "2a2bb5000d2ab7000fb1",
+      "sites": [
+        {
+          "offset": 2,
+          "opcode": "b5",
+          "bytes": "b5000d",
+          "constantPoolIndex": 13,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustManagers.[Ljavax/net/ssl/TrustManager;"
+        },
+        {
+          "offset": 6,
+          "opcode": "b7",
+          "bytes": "b7000f",
+          "constantPoolIndex": 15,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.newAdapteeFactory.()V"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "isTrustAllHosts",
+      "descriptor": "()Z",
+      "codeHex": "2ab40006ac",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40006",
+          "constantPoolIndex": 6,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustAllHosts.Z"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "setTrustAllHosts",
+      "descriptor": "(Z)V",
+      "codeHex": "2a1bb50006b1",
+      "sites": [
+        {
+          "offset": 2,
+          "opcode": "b5",
+          "bytes": "b50006",
+          "constantPoolIndex": 6,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustAllHosts.Z"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "getTrustedHosts",
+      "descriptor": "()[Ljava/lang/String;",
+      "codeHex": "2ab40004c7000501b02ab40004b60015c00016b0",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40004",
+          "constantPoolIndex": 4,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustedHosts.[Ljava/lang/String;"
+        },
+        {
+          "offset": 10,
+          "opcode": "b4",
+          "bytes": "b40004",
+          "constantPoolIndex": 4,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustedHosts.[Ljava/lang/String;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "setTrustedHosts",
+      "descriptor": "([Ljava/lang/String;)V",
+      "codeHex": "2bc7000b2a01b50004a7000e2a2bb60017c00016b50004b1",
+      "sites": [
+        {
+          "offset": 6,
+          "opcode": "b5",
+          "bytes": "b50004",
+          "constantPoolIndex": 4,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustedHosts.[Ljava/lang/String;"
+        },
+        {
+          "offset": 20,
+          "opcode": "b5",
+          "bytes": "b50004",
+          "constantPoolIndex": 4,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustedHosts.[Ljava/lang/String;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "isServerTrusted",
+      "descriptor": "(Ljava/lang/String;Ljavax/net/ssl/SSLSocket;)Z",
+      "codeHex": "2ab4000699000504ac2ab40004c600112ab40004b800182bb900190200ac04ac",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40006",
+          "constantPoolIndex": 6,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustAllHosts.Z"
+        },
+        {
+          "offset": 10,
+          "opcode": "b4",
+          "bytes": "b40004",
+          "constantPoolIndex": 4,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustedHosts.[Ljava/lang/String;"
+        },
+        {
+          "offset": 17,
+          "opcode": "b4",
+          "bytes": "b40004",
+          "constantPoolIndex": 4,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.trustedHosts.[Ljava/lang/String;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "createSocket",
+      "descriptor": "(Ljava/net/Socket;Ljava/lang/String;IZ)Ljava/net/Socket;",
+      "codeHex": "2ab400052b2c1d1504b6001ab0",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40005",
+          "constantPoolIndex": 5,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.adapteeFactory.Ljavax/net/ssl/SSLSocketFactory;"
+        },
+        {
+          "offset": 9,
+          "opcode": "b6",
+          "bytes": "b6001a",
+          "constantPoolIndex": 26,
+          "reference": "javax/net/ssl/SSLSocketFactory.createSocket.(Ljava/net/Socket;Ljava/lang/String;IZ)Ljava/net/Socket;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "getDefaultCipherSuites",
+      "descriptor": "()[Ljava/lang/String;",
+      "codeHex": "2ab40005b6001bb0",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40005",
+          "constantPoolIndex": 5,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.adapteeFactory.Ljavax/net/ssl/SSLSocketFactory;"
+        },
+        {
+          "offset": 4,
+          "opcode": "b6",
+          "bytes": "b6001b",
+          "constantPoolIndex": 27,
+          "reference": "javax/net/ssl/SSLSocketFactory.getDefaultCipherSuites.()[Ljava/lang/String;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "getSupportedCipherSuites",
+      "descriptor": "()[Ljava/lang/String;",
+      "codeHex": "2ab40005b6001cb0",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40005",
+          "constantPoolIndex": 5,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.adapteeFactory.Ljavax/net/ssl/SSLSocketFactory;"
+        },
+        {
+          "offset": 4,
+          "opcode": "b6",
+          "bytes": "b6001c",
+          "constantPoolIndex": 28,
+          "reference": "javax/net/ssl/SSLSocketFactory.getSupportedCipherSuites.()[Ljava/lang/String;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "createSocket",
+      "descriptor": "()Ljava/net/Socket;",
+      "codeHex": "2ab40005b6001db0",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40005",
+          "constantPoolIndex": 5,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.adapteeFactory.Ljavax/net/ssl/SSLSocketFactory;"
+        },
+        {
+          "offset": 4,
+          "opcode": "b6",
+          "bytes": "b6001d",
+          "constantPoolIndex": 29,
+          "reference": "javax/net/ssl/SSLSocketFactory.createSocket.()Ljava/net/Socket;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "createSocket",
+      "descriptor": "(Ljava/net/InetAddress;ILjava/net/InetAddress;I)Ljava/net/Socket;",
+      "codeHex": "2ab400052b1c2d1504b6001eb0",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40005",
+          "constantPoolIndex": 5,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.adapteeFactory.Ljavax/net/ssl/SSLSocketFactory;"
+        },
+        {
+          "offset": 9,
+          "opcode": "b6",
+          "bytes": "b6001e",
+          "constantPoolIndex": 30,
+          "reference": "javax/net/ssl/SSLSocketFactory.createSocket.(Ljava/net/InetAddress;ILjava/net/InetAddress;I)Ljava/net/Socket;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "createSocket",
+      "descriptor": "(Ljava/net/InetAddress;I)Ljava/net/Socket;",
+      "codeHex": "2ab400052b1cb6001fb0",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40005",
+          "constantPoolIndex": 5,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.adapteeFactory.Ljavax/net/ssl/SSLSocketFactory;"
+        },
+        {
+          "offset": 6,
+          "opcode": "b6",
+          "bytes": "b6001f",
+          "constantPoolIndex": 31,
+          "reference": "javax/net/ssl/SSLSocketFactory.createSocket.(Ljava/net/InetAddress;I)Ljava/net/Socket;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "createSocket",
+      "descriptor": "(Ljava/lang/String;ILjava/net/InetAddress;I)Ljava/net/Socket;",
+      "codeHex": "2ab400052b1c2d1504b60020b0",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40005",
+          "constantPoolIndex": 5,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.adapteeFactory.Ljavax/net/ssl/SSLSocketFactory;"
+        },
+        {
+          "offset": 9,
+          "opcode": "b6",
+          "bytes": "b60020",
+          "constantPoolIndex": 32,
+          "reference": "javax/net/ssl/SSLSocketFactory.createSocket.(Ljava/lang/String;ILjava/net/InetAddress;I)Ljava/net/Socket;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/MailSSLSocketFactory.class",
+      "classSha256": "dbccb3cbaeebf1cf2131986f1d29bf46f1a3194167dade86b495b6a88ffcb6a1",
+      "superclass": "javax/net/ssl/SSLSocketFactory",
+      "method": "createSocket",
+      "descriptor": "(Ljava/lang/String;I)Ljava/net/Socket;",
+      "codeHex": "2ab400052b1cb60021b0",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b4",
+          "bytes": "b40005",
+          "constantPoolIndex": 5,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.adapteeFactory.Ljavax/net/ssl/SSLSocketFactory;"
+        },
+        {
+          "offset": 6,
+          "opcode": "b6",
+          "bytes": "b60021",
+          "constantPoolIndex": 33,
+          "reference": "javax/net/ssl/SSLSocketFactory.createSocket.(Ljava/lang/String;I)Ljava/net/Socket;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/SocketFetcher.class",
+      "classSha256": "11ed09365dd5276b83451753f568abc76ded8a829465cd4c18e1f2453a063b85",
+      "superclass": "java/lang/Object",
+      "method": "getSocket",
+      "descriptor": "(Ljava/lang/String;ILjava/util/Properties;Ljava/lang/String;Z)Ljava/net/Socket;",
+      "codeHex": "b20002b20003b60004990038b20002bb000559b700061207b600082ab600081209b600081bb6000a120bb600082db60008120cb600081504b6000db6000eb6000f2dc7000612104e2cc7000bbb001159b700124d2cbb000559b700062db600081213b60008b6000e02b800143605013a062cbb000559b700062db600081215b60008b6000e01b600163a07013a081907c6000a1907b800173a082cbb000559b700062db600081218b60008b6000e03b8001436092cbb000559b700062db600081219b60008b6000e04b8001a360a02360b121b3a0c2cbb000559b700062db60008121cb60008b6000e02b80014360d013a0e013a0f15049900802cbb000559b700062db60008121db60008b6000eb6001e3a101910c1001f9900201910c0001f3a0ebb000559b700061220b60008190eb60021b6000e3a0c190ec700392cbb000559b700062db600081222b60008b6000eb600233a111911b800243a0ebb000559b700061225b600081911b60008b6000e3a0c12263a0f190ec700802cbb000559b700062db600081227b60008b6000eb6001e3a101910c1001f9900201910c0001f3a0ebb000559b700061228b60008190eb60021b6000e3a0c190ec700392cbb000559b700062db600081229b60008b6000eb600233a111911b800243a0ebb000559b70006122ab600081911b60008b6000e3a0c122b3a0f190ec6003c2cbb000559b700062db60008190fb60008b6000e02b80014360b150b02a000061b360b190815092a150b1505150d2c2d190e1504b8002c3a06a700613a0e190ebf3a0e150a9a0055190ec1002f99001c190ec0002fb600303a0f190fc1002e99000a190fc0002e3a0e190ec10031990009190ec00031bfbb003259bb000559b700061233b60008190cb60008b6000e190e2a150b1505b70034bf1906c7001a190815092a1b1505150d2c2d011504b8002c3a06a70035150d9b0030b20002b20035b6000499001db20002bb000559b700061236b60008150db6000ab6000eb600371906150db600381906b0",
+      "sites": [
+        {
+          "offset": 277,
+          "opcode": "c1",
+          "bytes": "c1001f",
+          "constantPoolIndex": 31,
+          "reference": "javax/net/SocketFactory"
+        },
+        {
+          "offset": 285,
+          "opcode": "c0",
+          "bytes": "c0001f",
+          "constantPoolIndex": 31,
+          "reference": "javax/net/SocketFactory"
+        },
+        {
+          "offset": 344,
+          "opcode": "b8",
+          "bytes": "b80024",
+          "constantPoolIndex": 36,
+          "reference": "com/sun/mail/util/SocketFetcher.getSocketFactory.(Ljava/lang/String;)Ljavax/net/SocketFactory;"
+        },
+        {
+          "offset": 407,
+          "opcode": "c1",
+          "bytes": "c1001f",
+          "constantPoolIndex": 31,
+          "reference": "javax/net/SocketFactory"
+        },
+        {
+          "offset": 415,
+          "opcode": "c0",
+          "bytes": "c0001f",
+          "constantPoolIndex": 31,
+          "reference": "javax/net/SocketFactory"
+        },
+        {
+          "offset": 474,
+          "opcode": "b8",
+          "bytes": "b80024",
+          "constantPoolIndex": 36,
+          "reference": "com/sun/mail/util/SocketFetcher.getSocketFactory.(Ljava/lang/String;)Ljavax/net/SocketFactory;"
+        },
+        {
+          "offset": 562,
+          "opcode": "b8",
+          "bytes": "b8002c",
+          "constantPoolIndex": 44,
+          "reference": "com/sun/mail/util/SocketFetcher.createSocket.(Ljava/net/InetAddress;ILjava/lang/String;IIILjava/util/Properties;Ljava/lang/String;Ljavax/net/SocketFactory;Z)Ljava/net/Socket;"
+        },
+        {
+          "offset": 684,
+          "opcode": "b8",
+          "bytes": "b8002c",
+          "constantPoolIndex": 44,
+          "reference": "com/sun/mail/util/SocketFetcher.createSocket.(Ljava/net/InetAddress;ILjava/lang/String;IIILjava/util/Properties;Ljava/lang/String;Ljavax/net/SocketFactory;Z)Ljava/net/Socket;"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/SocketFetcher.class",
+      "classSha256": "11ed09365dd5276b83451753f568abc76ded8a829465cd4c18e1f2453a063b85",
+      "superclass": "java/lang/Object",
+      "method": "createSocket",
+      "descriptor": "(Ljava/net/InetAddress;ILjava/lang/String;IIILjava/util/Properties;Ljava/lang/String;Ljavax/net/SocketFactory;Z)Ljava/net/Socket;",
+      "codeHex": "013a0ab20002b20035b60004990069b20002bb000559b70006123ab600081907b60008123bb600082ab60021123cb600081bb6000a123db600082cb600081209b600081db6000a123eb600081504b6000a123fb600081505b6000a1240b600081908b60021120cb600081509b6000db6000eb600371906bb000559b700061907b600081241b60008b6000e01b600163a0b1906bb000559b700061907b600081242b60008b6000e01b600163a0c1906bb000559b700061907b600081243b60008b6000e01b600163a0d1050360e013a0f1104383610013a11190bc600d1190b103ab60044361215129b0020190b15120460b60045b80046360ea700053a13190b031512b600483a0b1906bb000559b700061907b600081249b60008b6000e150eb80014360ebb000559b70006124ab60008190bb60008124bb60008150eb6000ab6000e3a11b20002b20003b6000499005ab20002bb000559b70006124cb60008190bb600081209b60008150eb6000ab6000eb6000f190cc60031b20002bb000559b70006124db60008190cb60008124eb60008190dc70008124fa700051250b60008b6000eb6000fa700bb1906bb000559b700061907b600081251b60008b6000e01b60016593a0fc6009b190f103ab60044361215129b0020190f15120460b60045b800463610a700053a13190f031512b600483a0f1906bb000559b700061907b600081252b60008b6000e1510b800143610bb000559b700061253b60008190fb60008124bb600081510b6000ab6000e3a11b20002b20003b60004990027b20002bb000559b700061254b60008190fb600081209b600081510b6000ab6000eb6000f1908c600121908c100559a000a1908b600563a0a190ac70062190fc60024bb005759bb005859b20059bb005a59190f1510b7005bb7005cb7005d3a0aa7003c1906bb000559b700061907b60008125eb60008b6000e03b8001a990016b20002125fb6000fb80060b600613a0aa7000cbb005759b700623a0a15059b0030b20002b20035b6000499001db20002bb000559b700061236b600081505b6000ab6000eb60037190a1505b600381906bb000559b700061907b600081263b60008b6000e02b8001436121512029f0036b20002b20035b6000499001db20002bb000559b700061264b600081512b6000ab6000eb60037bb006559190a1512b700663a0a2ac60011190abb005a592a1bb70067b60068b200021269b60037190bc60017190a190b150e190c190d2c1d1504b8006aa7002915049b0016190abb005a592c1db7005b1504b6006ba70011190abb005a592c1db7005bb6006cb20002126db60037a700223a13b20002b20035126e1913b6006fbb003259191119132c1d1504b70034bf15099a000b1908c1005599009b190ac100709a00931906bb000559b700061907b600081271b60008b6000eb60023593a13c6004abb007259b700733a1519131274b6007599000c191504b60076a7000f191519131277b60078b6007919153a14a700353a15bb003159127bb7007c3a1619161915b6007d571916bf1908c1005599000d1908c000553a14a7000bb8007ec000553a141914190a2c1d04b6007f3a0a19143a08190a2c190619071908b80080190ab0",
+      "sites": [
+        {
+          "offset": 618,
+          "opcode": "c1",
+          "bytes": "c10055",
+          "constantPoolIndex": 85,
+          "reference": "javax/net/ssl/SSLSocketFactory"
+        },
+        {
+          "offset": 626,
+          "opcode": "b6",
+          "bytes": "b60056",
+          "constantPoolIndex": 86,
+          "reference": "javax/net/SocketFactory.createSocket.()Ljava/net/Socket;"
+        },
+        {
+          "offset": 1004,
+          "opcode": "c1",
+          "bytes": "c10055",
+          "constantPoolIndex": 85,
+          "reference": "javax/net/ssl/SSLSocketFactory"
+        },
+        {
+          "offset": 1049,
+          "opcode": "bb",
+          "bytes": "bb0072",
+          "constantPoolIndex": 114,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory"
+        },
+        {
+          "offset": 1053,
+          "opcode": "b7",
+          "bytes": "b70073",
+          "constantPoolIndex": 115,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.<init>.()V"
+        },
+        {
+          "offset": 1071,
+          "opcode": "b6",
+          "bytes": "b60076",
+          "constantPoolIndex": 118,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.setTrustAllHosts.(Z)V"
+        },
+        {
+          "offset": 1086,
+          "opcode": "b6",
+          "bytes": "b60079",
+          "constantPoolIndex": 121,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.setTrustedHosts.([Ljava/lang/String;)V"
+        },
+        {
+          "offset": 1102,
+          "opcode": "12",
+          "bytes": "127b",
+          "constantPoolIndex": 123,
+          "reference": "Can't create MailSSLSocketFactory"
+        },
+        {
+          "offset": 1122,
+          "opcode": "c1",
+          "bytes": "c10055",
+          "constantPoolIndex": 85,
+          "reference": "javax/net/ssl/SSLSocketFactory"
+        },
+        {
+          "offset": 1130,
+          "opcode": "c0",
+          "bytes": "c00055",
+          "constantPoolIndex": 85,
+          "reference": "javax/net/ssl/SSLSocketFactory"
+        },
+        {
+          "offset": 1138,
+          "opcode": "b8",
+          "bytes": "b8007e",
+          "constantPoolIndex": 126,
+          "reference": "javax/net/ssl/SSLSocketFactory.getDefault.()Ljavax/net/SocketFactory;"
+        },
+        {
+          "offset": 1141,
+          "opcode": "c0",
+          "bytes": "c00055",
+          "constantPoolIndex": 85,
+          "reference": "javax/net/ssl/SSLSocketFactory"
+        },
+        {
+          "offset": 1153,
+          "opcode": "b6",
+          "bytes": "b6007f",
+          "constantPoolIndex": 127,
+          "reference": "javax/net/ssl/SSLSocketFactory.createSocket.(Ljava/net/Socket;Ljava/lang/String;IZ)Ljava/net/Socket;"
+        },
+        {
+          "offset": 1171,
+          "opcode": "b8",
+          "bytes": "b80080",
+          "constantPoolIndex": 128,
+          "reference": "com/sun/mail/util/SocketFetcher.configureSSLSocket.(Ljava/net/Socket;Ljava/lang/String;Ljava/util/Properties;Ljava/lang/String;Ljavax/net/SocketFactory;)V"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/SocketFetcher.class",
+      "classSha256": "11ed09365dd5276b83451753f568abc76ded8a829465cd4c18e1f2453a063b85",
+      "superclass": "java/lang/Object",
+      "method": "getSocketFactory",
+      "descriptor": "(Ljava/lang/String;)Ljavax/net/SocketFactory;",
+      "codeHex": "2ac6000a2ab600819a000501b0b800824c014d2bc6000e2a032bb800834da700044e2cc700082ab800854d2c128603bd0087b600884e2dbb008959b7000103bd0089b6008ac0001f3a041904b0",
+      "sites": [
+        {
+          "offset": 69,
+          "opcode": "c0",
+          "bytes": "c0001f",
+          "constantPoolIndex": 31,
+          "reference": "javax/net/SocketFactory"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/SocketFetcher.class",
+      "classSha256": "11ed09365dd5276b83451753f568abc76ded8a829465cd4c18e1f2453a063b85",
+      "superclass": "java/lang/Object",
+      "method": "startTLS",
+      "descriptor": "(Ljava/net/Socket;Ljava/lang/String;Ljava/util/Properties;Ljava/lang/String;)Ljava/net/Socket;",
+      "codeHex": "2ab6008f3604b20002b20003b60004990026b20002bb000559b700061290b600082bb600081209b600081504b6000ab6000eb6000f121b3a05013a06013a072cbb000559b700062db60008121db60008b6000eb6001e3a081908c1001f9900201908c0001f3a07bb000559b700061220b600081907b60021b6000e3a051907c700392cbb000559b700062db600081222b60008b6000eb600233a091909b800243a07bb000559b700061225b600081909b60008b6000e3a051907c600121907c1005599000a1907c000553a061906c700902cbb000559b700062db600081227b60008b6000eb6001e3a081908c1001f9900201908c0001f3a07bb000559b700061228b600081907b60021b6000e3a051907c700392cbb000559b700062db600081229b60008b6000eb600233a091909b800243a07bb000559b70006122ab600081909b60008b6000e3a051907c600121907c1005599000a1907c000553a061906c700772cbb000559b700062db600081271b60008b6000eb60023593a09c6004ebb007259b700733a0a19091274b6007599000c190a04b60076a7000f190a19091277b60078b60079190a3a0612913a05a700273a0abb003159127bb7007c3a0b190b190ab6007d57190bbfb8007ec000553a0612923a0519062a2b150404b6007f4b2a2b2c2d1906b80080a700793a061906c1002f99001c1906c0002fb600303a071907c1002e99000a1907c0002e3a061906c100319900091906c00031bfbb003159bb000559b700061293b600081905b600081294b600082bb60008124bb600081504b6000a1295b600081906b60021b6000eb7007c3a0719071906b6007d571907bf2ab0",
+      "sites": [
+        {
+          "offset": 90,
+          "opcode": "c1",
+          "bytes": "c1001f",
+          "constantPoolIndex": 31,
+          "reference": "javax/net/SocketFactory"
+        },
+        {
+          "offset": 98,
+          "opcode": "c0",
+          "bytes": "c0001f",
+          "constantPoolIndex": 31,
+          "reference": "javax/net/SocketFactory"
+        },
+        {
+          "offset": 157,
+          "opcode": "b8",
+          "bytes": "b80024",
+          "constantPoolIndex": 36,
+          "reference": "com/sun/mail/util/SocketFetcher.getSocketFactory.(Ljava/lang/String;)Ljavax/net/SocketFactory;"
+        },
+        {
+          "offset": 191,
+          "opcode": "c1",
+          "bytes": "c10055",
+          "constantPoolIndex": 85,
+          "reference": "javax/net/ssl/SSLSocketFactory"
+        },
+        {
+          "offset": 199,
+          "opcode": "c0",
+          "bytes": "c00055",
+          "constantPoolIndex": 85,
+          "reference": "javax/net/ssl/SSLSocketFactory"
+        },
+        {
+          "offset": 236,
+          "opcode": "c1",
+          "bytes": "c1001f",
+          "constantPoolIndex": 31,
+          "reference": "javax/net/SocketFactory"
+        },
+        {
+          "offset": 244,
+          "opcode": "c0",
+          "bytes": "c0001f",
+          "constantPoolIndex": 31,
+          "reference": "javax/net/SocketFactory"
+        },
+        {
+          "offset": 303,
+          "opcode": "b8",
+          "bytes": "b80024",
+          "constantPoolIndex": 36,
+          "reference": "com/sun/mail/util/SocketFetcher.getSocketFactory.(Ljava/lang/String;)Ljavax/net/SocketFactory;"
+        },
+        {
+          "offset": 337,
+          "opcode": "c1",
+          "bytes": "c10055",
+          "constantPoolIndex": 85,
+          "reference": "javax/net/ssl/SSLSocketFactory"
+        },
+        {
+          "offset": 345,
+          "opcode": "c0",
+          "bytes": "c00055",
+          "constantPoolIndex": 85,
+          "reference": "javax/net/ssl/SSLSocketFactory"
+        },
+        {
+          "offset": 384,
+          "opcode": "bb",
+          "bytes": "bb0072",
+          "constantPoolIndex": 114,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory"
+        },
+        {
+          "offset": 388,
+          "opcode": "b7",
+          "bytes": "b70073",
+          "constantPoolIndex": 115,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.<init>.()V"
+        },
+        {
+          "offset": 406,
+          "opcode": "b6",
+          "bytes": "b60076",
+          "constantPoolIndex": 118,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.setTrustAllHosts.(Z)V"
+        },
+        {
+          "offset": 421,
+          "opcode": "b6",
+          "bytes": "b60079",
+          "constantPoolIndex": 121,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.setTrustedHosts.([Ljava/lang/String;)V"
+        },
+        {
+          "offset": 441,
+          "opcode": "12",
+          "bytes": "127b",
+          "constantPoolIndex": 123,
+          "reference": "Can't create MailSSLSocketFactory"
+        },
+        {
+          "offset": 459,
+          "opcode": "b8",
+          "bytes": "b8007e",
+          "constantPoolIndex": 126,
+          "reference": "javax/net/ssl/SSLSocketFactory.getDefault.()Ljavax/net/SocketFactory;"
+        },
+        {
+          "offset": 462,
+          "opcode": "c0",
+          "bytes": "c00055",
+          "constantPoolIndex": 85,
+          "reference": "javax/net/ssl/SSLSocketFactory"
+        },
+        {
+          "offset": 478,
+          "opcode": "b6",
+          "bytes": "b6007f",
+          "constantPoolIndex": 127,
+          "reference": "javax/net/ssl/SSLSocketFactory.createSocket.(Ljava/net/Socket;Ljava/lang/String;IZ)Ljava/net/Socket;"
+        },
+        {
+          "offset": 488,
+          "opcode": "b8",
+          "bytes": "b80080",
+          "constantPoolIndex": 128,
+          "reference": "com/sun/mail/util/SocketFetcher.configureSSLSocket.(Ljava/net/Socket;Ljava/lang/String;Ljava/util/Properties;Ljava/lang/String;Ljavax/net/SocketFactory;)V"
+        }
+      ]
+    },
+    {
+      "entry": "com/sun/mail/util/SocketFetcher.class",
+      "classSha256": "11ed09365dd5276b83451753f568abc76ded8a829465cd4c18e1f2453a063b85",
+      "superclass": "java/lang/Object",
+      "method": "configureSSLSocket",
+      "descriptor": "(Ljava/net/Socket;Ljava/lang/String;Ljava/util/Properties;Ljava/lang/String;Ljavax/net/SocketFactory;)V",
+      "codeHex": "2ac100709a0004b12ac000703a052cbb000559b700062db600081296b60008b6000e01b600163a061906c6001019051906b80097b60098a700881905b600993a07b20002b20003b60004990020b20002bb000559b70006129ab600081907b8009bb60021b6000eb6000fbb009c59b7009d3a0803360915091907bea2002b1907150932c6001d1907150932129eb6009f9a001019081907150932b900a0020057840901a7ffd3190519081908b900a10100bd00a2b900a30200c000a4b600982cbb000559b700062db6000812a5b60008b6000e01b600163a071907c6000d19051907b80097b600a6b20002b20003b60004990043b20002bb000559b7000612a7b600081905b60099b8009bb60021b6000eb6000fb20002bb000559b7000612a8b600081905b600a9b8009bb60021b6000eb6000f1905b600aa2cbb000559b700062db6000812abb60008b6000e03b8001a360815089900092b1905b800ac1904c100729900351904c000723a0919092b1905b600ad9a00231905bb003159bb000559b7000612aeb600082bb60008b6000eb7007cb800afbfb1",
+      "sites": [
+        {
+          "offset": 352,
+          "opcode": "c1",
+          "bytes": "c10072",
+          "constantPoolIndex": 114,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory"
+        },
+        {
+          "offset": 360,
+          "opcode": "c0",
+          "bytes": "c00072",
+          "constantPoolIndex": 114,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory"
+        },
+        {
+          "offset": 370,
+          "opcode": "b6",
+          "bytes": "b600ad",
+          "constantPoolIndex": 173,
+          "reference": "com/sun/mail/util/MailSSLSocketFactory.isServerTrusted.(Ljava/lang/String;Ljavax/net/ssl/SSLSocket;)Z"
+        }
+      ]
+    },
+    {
+      "entry": "tlc2/tool/distributed/TLCServer.class",
+      "classSha256": "a6077a8445b4721912193ae240b5c5575775e136089c27e88f7f4e76977a1714",
+      "superclass": "java/rmi/server/UnicastRemoteObject",
+      "method": "<init>",
+      "descriptor": "(Ltlc2/tool/distributed/TLCApp;)V",
+      "codeHex": "2ab700042abb00055909b70006b500072ab80008b500092a01b5000a2a03b5000b2a03b5000c2abb000d59b7000eb500022bc6000704a7000403120fb800102a2bb60011b500122ab40012b600133d2ab40012b20014b600159900068402ff2ab40012b200141c0464b600163e2a2ab400121d04601cb60017b500182a2bb500032abb0019592ab40012b7001ab5001b2abb001c592ab400122ab40003b6001d2ab40003b7001eb5001f2a2a2b2ab40012b20020b60021b500222a2ab80023b50024b1",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b7",
+          "bytes": "b70004",
+          "constantPoolIndex": 4,
+          "reference": "java/rmi/server/UnicastRemoteObject.<init>.()V"
+        }
+      ]
+    },
+    {
+      "entry": "tlc2/tool/distributed/TLCServer.class",
+      "classSha256": "a6077a8445b4721912193ae240b5c5575775e136089c27e88f7f4e76977a1714",
+      "superclass": "java/rmi/server/UnicastRemoteObject",
+      "method": "modelCheck",
+      "descriptor": "()V",
+      "codeHex": "b8006040033e2ab40003b6006199003b1108952ab40012b800392ab6006211089605bd006359032ab40022b900640100b800655359042ab4001bb900660100b8006553b80067043eb8002ab600683a04b20069b8006a3a051905126b2ab9006c03002ab6006d1d9a00eb11088db8006e2ab7006f11088e05bd006359032ab4001bb900660100b80065535904127053b80067a700c03a062a04b5000b1906c100729900311906c00072b60073110861a000231906c00072b600741275b600769a00291906c00072b600741277b600769a00191906c1007899001d1906c00078b4007911086aa0000f11086c127ab8007b57a700611906b6007c3a071907c7000a1906b6007d3a072ab7007e9a002011083605bd0063590319075359042ab4000ab6007f53b8008057a7000c1103e81907b8007b572ab40003b600812ab7006fa700133a081108372ab40003b60082b8007b572ab4000b99003804092ab4001bb9006601002ab40022b90064010003b8008311088ab800601f65b80084b800392ab40009b9008501002a03b60086b1190512872ab9006c0300111b581904b800390937060937082a593a0ac22ab2008885b60089190ac3a7000b3a0b190ac3190bbfb8008a9900072ab6008b2a593a0ac22ab4000b9a00902ab6008c370b2ab40022b900640100370db200888714008d6f390f2a160b1606658a180f6f8fb5008f2a160d1608658a180f6f8fb500901108981006bd006359032ab4001fb60091b80092535904160bb80093535905160db800935359062ab60094b800935359072ab4008fb800935359082ab40090b8009353b800672ab2008885b60089160d3708160b37062ab4000b990009190ac3a70014190ac3a7000b3a11190ac31911bfa7ff422ab7007e99000f2ab4001bb90095010099000704a70004031103e8b800962ab40002b900970100b9009801003a0a190ab9009901009900ff190ab9009a0100c0009b3a0b190bb9009c0100c000323a0c190bb9009d0100c0003e3a0d190cb6009e190cb6009f360e190cb600a0360f190cb600a13910190cb6003f3a12111b5b07bd006359031912b60038535904150eb800a2535905150fb800a253590618100e989c000812a3a7001412a404bd00a559031810b800a653b800a753b80067190db900a801002ab40002190cb9003d020057a7005f3a131103e812aab800ab2ab40002190cb9003d020057a700463a131103e812aab800ab2ab40002190cb9003d020057a7002d3a131103e812aab800ab2ab40002190cb9003d020057a700143a142ab40002190cb9003d0200571914bfa7fefd2ab40009b9008501002ab40022b900640100b300ae2ab6008c370a2ab60094370c2ab4001fb60091360e2a09b5008f2a09b500902ab7007e9900262ab40022b900af0100370f2ab40022b900b001003711b200ae160f1611b800b1a700112ab4000c99000a2ab40003b60081150e160a160cb200ae2ab7007eb8008311088ab800601f65b80084b80039b800b22a2ab7007eb6008619051287b900b302001905126bb900b302002a03b800b457b1",
+      "sites": [
+        {
+          "offset": 83,
+          "opcode": "b8",
+          "bytes": "b8006a",
+          "constantPoolIndex": 106,
+          "reference": "java/rmi/registry/LocateRegistry.createRegistry.(I)Ljava/rmi/registry/Registry;"
+        },
+        {
+          "offset": 1119,
+          "opcode": "b8",
+          "bytes": "b800b4",
+          "constantPoolIndex": 180,
+          "reference": "java/rmi/server/UnicastRemoteObject.unexportObject.(Ljava/rmi/Remote;Z)Z"
+        }
+      ]
+    },
+    {
+      "entry": "tlc2/tool/distributed/TLCWorker.class",
+      "classSha256": "0dcfeb1e6d4089f11ec0f75d3392732a7b65965559a683842dcc6aed6fd58bc8",
+      "superclass": "java/rmi/server/UnicastRemoteObject",
+      "method": "<init>",
+      "descriptor": "(ILtlc2/tool/distributed/DistApp;Ltlc2/tool/distributed/fp/IFPSetManager;Ljava/lang/String;)V",
+      "codeHex": "2ab700012a03b500022a2cb500032a2db500042abb000559b700061207b600081904b600081209b600082ab7000ab6000b120cb600081bb6000bb6000db8000eb5000f2abb001059b70011b50012b1",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b7",
+          "bytes": "b70001",
+          "constantPoolIndex": 1,
+          "reference": "java/rmi/server/UnicastRemoteObject.<init>.()V"
+        }
+      ]
+    },
+    {
+      "entry": "tlc2/tool/distributed/TLCWorker.class",
+      "classSha256": "0dcfeb1e6d4089f11ec0f75d3392732a7b65965559a683842dcc6aed6fd58bc8",
+      "superclass": "java/rmi/server/UnicastRemoteObject",
+      "method": "exit",
+      "descriptor": "()V",
+      "codeHex": "b2004dbb000559b700062ab4000fb6004eb60008124fb60008bb005059b70051b600521253b600082ab40021b600541255b600082ab40012b900560100b600081257b60008b6000db60058b20035b900590100b2005ab6005b2a04b8005c57b2005db6005eb1",
+      "sites": [
+        {
+          "offset": 91,
+          "opcode": "b8",
+          "bytes": "b8005c",
+          "constantPoolIndex": 92,
+          "reference": "java/rmi/server/UnicastRemoteObject.unexportObject.(Ljava/rmi/Remote;Z)Z"
+        }
+      ]
+    },
+    {
+      "entry": "tlc2/tool/fp/FPSet.class",
+      "classSha256": "9771c6f9b0e1c725c3b47eb1edaf347593b6b371eeba4b25b090c1fce272c49a",
+      "superclass": "java/rmi/server/UnicastRemoteObject",
+      "method": "<init>",
+      "descriptor": "(Ltlc2/tool/fp/FPSetConfiguration;)V",
+      "codeHex": "2ab700012a09b500022a2bb50003b1",
+      "sites": [
+        {
+          "offset": 1,
+          "opcode": "b7",
+          "bytes": "b70001",
+          "constantPoolIndex": 1,
+          "reference": "java/rmi/server/UnicastRemoteObject.<init>.()V"
+        }
+      ]
+    },
+    {
+      "entry": "tlc2/tool/fp/FPSet.class",
+      "classSha256": "9771c6f9b0e1c725c3b47eb1edaf347593b6b371eeba4b25b090c1fce272c49a",
+      "superclass": "java/rmi/server/UnicastRemoteObject",
+      "method": "unexportObject",
+      "descriptor": "(Z)V",
+      "codeHex": "2a1bb8000e57b1",
+      "sites": [
+        {
+          "offset": 2,
+          "opcode": "b8",
+          "bytes": "b8000e",
+          "constantPoolIndex": 14,
+          "reference": "java/rmi/server/UnicastRemoteObject.unexportObject.(Ljava/rmi/Remote;Z)Z"
+        }
+      ]
+    },
+    {
+      "entry": "tlc2/tool/fp/MultiFPSet.class",
+      "classSha256": "5b2f0b820986d34be762fc23be6e765f6319695d318712e96eb68db6adc98a71",
+      "superclass": "tlc2/tool/fp/FPSet",
+      "method": "unexportObject",
+      "descriptor": "(Z)V",
+      "codeHex": "2ab4000db9002701004d2cb9002801009900152cb900290100c000234e2d1bb6002ba7ffe82a1bb8002c57b1",
+      "sites": [
+        {
+          "offset": 39,
+          "opcode": "b8",
+          "bytes": "b8002c",
+          "constantPoolIndex": 44,
+          "reference": "java/rmi/server/UnicastRemoteObject.unexportObject.(Ljava/rmi/Remote;Z)Z"
+        }
+      ]
+    }
+  ],
+  "directServerSocketSites": [],
+  "tlcOptionConstants": [
+    "-simulate",
+    "-modelcheck",
+    "-difftrace",
+    "-deadlock",
+    "-cleanup",
+    "-nowarning",
+    "-gzip",
+    "-terse",
+    "-continue",
+    "-view",
+    "-debug",
+    "-tool",
+    "-generateSpecTE",
+    "-help",
+    "-h",
+    "-lncheck",
+    "-config",
+    "-dump",
+    "-coverage",
+    "-checkpoint",
+    "-depth",
+    "-seed",
+    "-aril",
+    "-maxSetSize",
+    "-recover",
+    "-metadir",
+    "-userFile",
+    "-workers",
+    "-dfid",
+    "-fp",
+    "-fpmem",
+    "-fpbits",
+    "getProperty"
+  ],
+  "javaExecuted": false,
+  "limit": "Static instruction references, not dynamic reachability proof; supported-entry classification is recorded separately. No JVM, test or compiler executed."
+}

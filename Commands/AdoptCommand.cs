@@ -73,6 +73,7 @@ public static partial class AdoptCommand
     private static readonly (string Release, NudgeConfig Nudge)[] Migrations =
     [
         ("3.5.0", ConfigFactory.DocsOutsideDydoNudge),
+        ("3.6.0", ConfigFactory.InstallNudge),
     ];
 
     internal static List<NudgeConfig> ApplyMigrations(DydoConfig config, string adopted)

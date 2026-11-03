@@ -269,4 +269,69 @@ public class ConfigFactoryTests
         Assert.Equal("new-file", added.Match);
         Assert.Single(config.Nudges, n => n.Pattern == docs.Pattern && n.IsCommandMatch);
     }
+
+    #region Library-install warn nudge (DYD-499)
+
+    private static DydoConfig DefaultConfigWithoutTheInstallNudge()
+    {
+        var config = ConfigFactory.CreateDefault();
+        config.Nudges.RemoveAll(n => n.Pattern == InstallNudgeExpectation.Pattern);
+        return config;
+    }
+
+    [Fact]
+    public void CreateDefault_IncludesTheInstallNudge_AsAWarnCommandNudge()
+    {
+        var config = ConfigFactory.CreateDefault();
+
+        var nudge = Assert.Single(config.Nudges, n => n.Pattern == InstallNudgeExpectation.Pattern);
+        Assert.Equal(InstallNudgeExpectation.Message, nudge.Message);
+        Assert.Equal("warn", nudge.Severity);
+        Assert.True(nudge.IsCommandMatch);
+    }
+
+    [Fact]
+    public void EnsureDefaultNudges_AddsTheInstallNudge_ToAConfigLackingIt()
+    {
+        var config = DefaultConfigWithoutTheInstallNudge();
+
+        var added = ConfigFactory.EnsureDefaultNudges(config);
+
+        Assert.Equal(1, added);
+        var nudge = Assert.Single(config.Nudges, n => n.Pattern == InstallNudgeExpectation.Pattern);
+        Assert.Equal(InstallNudgeExpectation.Message, nudge.Message);
+        Assert.Equal("warn", nudge.Severity);
+    }
+
+    [Fact]
+    public void EnsureDefaultNudges_AddsNothing_WhenTheInterimCopyIsPresent()
+    {
+        var config = DefaultConfigWithoutTheInstallNudge();
+        config.Nudges.Add(new NudgeConfig
+        {
+            Pattern = InstallNudgeExpectation.Pattern,
+            Message = "Our own wording.",
+            Severity = "warn"
+        });
+
+        var added = ConfigFactory.EnsureDefaultNudges(config);
+
+        Assert.Equal(0, added);
+        var nudge = Assert.Single(config.Nudges, n => n.Pattern == InstallNudgeExpectation.Pattern);
+        Assert.Equal("Our own wording.", nudge.Message);
+    }
+
+    [Fact]
+    public void EnsureDefaultNudges_DoesNotDuplicateTheInstallNudge_WhenRunTwice()
+    {
+        var config = DefaultConfigWithoutTheInstallNudge();
+
+        ConfigFactory.EnsureDefaultNudges(config);
+        var second = ConfigFactory.EnsureDefaultNudges(config);
+
+        Assert.Equal(0, second);
+        Assert.Single(config.Nudges, n => n.Pattern == InstallNudgeExpectation.Pattern);
+    }
+
+    #endregion
 }

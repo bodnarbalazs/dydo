@@ -61,6 +61,11 @@
       "pattern": "(?:^|[;\u0026|]\\s*)gh\\s\u002Bpr\\s\u002Bcreate\\b(?![\\s\\S]*Independent review)",
       "message": "This PR carries no review block. Add the independent review under an \u0027Independent review\u0027 heading and follow this project\u0027s shared Communication and evidence standard.",
       "severity": "warn"
+    },
+    {
+      "pattern": "(?:^|[;&|]\\s*)(?:sudo\\s+(?:-\\S+\\s+)*)?((?:pnpm|npm|yarn|bun)\\s+(?:add|dlx|create|update|up|upgrade|link)\\b|(?:pnpm|npm|yarn|bun)\\s+(?:install|i)\\s+(?:-\\S+\\s+)*[^-\\s;&|]|npx\\s+(?:-y|--yes|-p|--package)\\b|uv\\s+(?:add|remove|pip\\s+install|tool\\s+install)\\b|uvx\\b|pipx\\b|pip3?\\s+install\\b|python3?\\s+-m\\s+pip\\s+install\\b|dotnet\\s+(?:add\\b|tool\\s+(?:install|update)\\b|workload\\s+install\\b|new\\s+install\\b)|apt(?:-get)?\\s+(?:install|reinstall)\\b|snap\\s+install\\b|flatpak\\s+install\\b|(?:cargo|go|gem)\\s+install\\b)(.*)",
+      "message": "Installing or adding a library or tool needs the user's permission ($1). Retry this exact command only if the user explicitly approved this install, in this conversation or in the approved plan/ticket you are executing that names it. Otherwise stop and ask the user. Restoring locked dependencies (pnpm install --frozen-lockfile, npm ci, uv sync --frozen, dotnet restore) needs no permission.",
+      "severity": "warn"
     }
   ]
 }

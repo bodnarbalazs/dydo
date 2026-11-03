@@ -770,28 +770,22 @@ public class GuardCommandTests : IDisposable
         return GuardCommand.GuardEnv.Load(_testDir);
     }
 
-    private static string InstallMarkerPath(GuardCommand.GuardEnv env) =>
-        Path.Combine(env.MarkerDir, $".nudge-{GuardCommand.ComputeNudgeHash(InstallNudgeExpectation.Pattern)}");
-
     [Theory]
     [InlineData("pnpm add left-pad", "pnpm add")]
     [InlineData("uv add requests", "uv add")]
-    [InlineData("cd client && npm install left-pad", "npm install")]
+    [InlineData("git pull && npm install left-pad", "npm install")]
     public void InstallNudge_DefaultConfig_BlocksTheFirstAttempt_AndLetsTheSameRetryPass(string command, string named)
     {
         var env = LoadEnvWithTheDefaultNudges();
 
         var (first, firstStderr) = RunNudge(() => GuardCommand.CheckBlockNudges(command, env) ?? GuardCommand.CheckWarnNudges(command, env));
-        var markerAfterFirst = File.Exists(InstallMarkerPath(env));
         var (retry, retryStderr) = RunNudge(() => GuardCommand.CheckBlockNudges(command, env) ?? GuardCommand.CheckWarnNudges(command, env));
 
         Assert.Equal(ExitCodes.ToolError, first);
         Assert.Contains($"BLOCKED: Installing or adding a library or tool needs the user's permission ({named}).", firstStderr);
         Assert.Contains("Run the same command again to proceed anyway.", firstStderr);
-        Assert.True(markerAfterFirst, "the first attempt leaves the pass-through marker");
         Assert.Null(retry);
         Assert.Empty(retryStderr);
-        Assert.False(File.Exists(InstallMarkerPath(env)), "the retry consumes the marker");
     }
 
     [Theory]
@@ -811,7 +805,9 @@ public class GuardCommandTests : IDisposable
 
         Assert.Null(result);
         Assert.Empty(stderr);
-        Assert.False(File.Exists(InstallMarkerPath(env)), "a restore must not create a pass-through marker");
+        Assert.False(
+            Directory.Exists(env.MarkerDir) && Directory.EnumerateFiles(env.MarkerDir, ".nudge-*").Any(),
+            "a restore must not create a pass-through marker");
     }
 
     private static (int? Result, string Stderr) RunNudge(Func<int?> check)

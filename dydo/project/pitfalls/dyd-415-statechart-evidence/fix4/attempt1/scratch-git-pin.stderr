@@ -1,2 +1,0 @@
-error: object directory C:/Users/User/Desktop/Projects/DynaDocs/.git/objects? does not exist; check .git/objects/info/alternates
-fatal: update_ref failed for ref 'refs/heads/proof': trying to write ref 'refs/heads/proof' with nonexistent object fb047aa7c41b97277aa75620677d221d882e4f5e

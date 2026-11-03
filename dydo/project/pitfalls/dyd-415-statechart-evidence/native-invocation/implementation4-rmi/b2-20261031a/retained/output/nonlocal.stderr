@@ -1,3 +1,0 @@
-Exception in thread "main" java.io.IOException: Statechart RMI rejects a nonlocal endpoint: 192.0.2.1
-	at dydo.statechart.LoopbackSockets.createSocket(LoopbackSockets.java:22)
-	at dydo.statechart.proof.SocketProbe.main(SocketProbe.java:135)

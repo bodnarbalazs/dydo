@@ -11,12 +11,25 @@ public class StatechartDownloadsTests
         var assets = new StatechartAssets();
         var downloads = StatechartDownloads.Select(assets, "win-x64");
         Assert.Equal(["node", "java", "tlc", "pele"], downloads.Select(item => item.Name));
-        Assert.Equal("https://nodejs.org/dist/v22.23.2/node-v22.23.2-win-x64.zip", downloads[0].Url);
-        Assert.Equal("1177b4137ba5adaa56354ae40f1080c7450e8ae09cecb47da459d1c52ac99f97", downloads[0].Integrity);
         Assert.Equal(128L * 1024 * 1024, downloads[0].Limit);
         Assert.Equal(96L * 1024 * 1024, downloads[1].Limit);
         Assert.StartsWith("sha512-", downloads[3].Integrity);
         Assert.Throws<IOException>(() => StatechartDownloads.Select(assets, "win-arm64"));
+    }
+
+    // Official nodejs.org SHASUMS256.txt for v26.13.0, signed by a Node.js release key.
+    [Theory]
+    [InlineData("win-x64", "node-v26.13.0-win-x64.zip", "dcc60d59a0746999f99064a01c020445d54d84228c691cdbf25b49ac3b59150a")]
+    [InlineData("linux-x64", "node-v26.13.0-linux-x64.tar.gz", "5848553868b402d3fabb5b09270649977780a390f832155721025a08b5104455")]
+    [InlineData("linux-arm64", "node-v26.13.0-linux-arm64.tar.gz", "439e9c438acdf6a6ffe47418da709153d66c4bed812e30a473faacb107dd2791")]
+    [InlineData("osx-x64", "node-v26.13.0-darwin-x64.tar.gz", "525c9b29bb0263d687de60a4cec0e2a6db876a8eb032369e5795eca71e7c358e")]
+    [InlineData("osx-arm64", "node-v26.13.0-darwin-arm64.tar.gz", "d38bd5e5a2ddce6bbb5ce45e46e208337da4d51fffe611e567fd32073d6439f6")]
+    public void EveryPlatformPinsManagedNode26(string rid, string file, string sha256)
+    {
+        var node = StatechartDownloads.Select(new StatechartAssets(), rid)[0];
+        Assert.Equal("node", node.Name);
+        Assert.Equal("https://nodejs.org/dist/v26.13.0/" + file, node.Url);
+        Assert.Equal(sha256, node.Integrity);
     }
 
     [Fact]

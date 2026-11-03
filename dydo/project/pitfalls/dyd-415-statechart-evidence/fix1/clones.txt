@@ -1,2 +1,0 @@
-[1mDuplications detection: Found 0 exact clones with 0(0.00%) duplicated lines in 19 (1 formats) files.[22m
-[32mJSON report saved to C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo\project\pitfalls\dyd-415-statechart-evidence\fix1\clones\jscpd-report.json[39m

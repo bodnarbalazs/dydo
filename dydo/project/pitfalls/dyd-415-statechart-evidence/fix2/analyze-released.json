@@ -1,9 +1,0 @@
-{
-  "owner": "DYD-415 fix2 analyze",
-  "pid": 100512,
-  "ticket": "0000000033-5cfe30926354801a",
-  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-assurance2-driver.py analyze",
-  "fifoReleased": true,
-  "heavyReleased": true,
-  "dydoLockReleased": true
-}

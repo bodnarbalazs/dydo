@@ -5,19 +5,23 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { test as nativeTest } from "node:test";
-const test: typeof nativeTest = process.platform === "win32"
-  ? ((name: string) => nativeTest(name, { skip: "POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows" }, () => {})) as typeof nativeTest
+const harnessSkip = process.platform === "win32"
+  ? "POSIX harness: executable shebangs, symlinks, process groups and signals; see acceptance.test.ts for Windows"
+  : noTlc;
+const test: typeof nativeTest = harnessSkip
+  ? ((name: string) => nativeTest(name, { skip: harnessSkip }, () => {})) as typeof nativeTest
   : nativeTest;
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { plainText } from "../backends/plain-text.ts";
 import { readMessages } from "../frontends/messages.ts";
 import { pinnedTlc } from "../run.ts";
+import { skip as noTlc } from "./tlc.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const corpus = path.join(here, "corpus");
 const read = (file: string) => fs.readFileSync(file, "utf8");
-const replayJar = pinnedTlc(path.resolve(process.env.TLA2TOOLS ?? "missing-pinned-TLC-fixture.jar"));
+const replayJar = noTlc ? "" : pinnedTlc(path.resolve(process.env.TLA2TOOLS!));
 
 function run(
   dir: string,
@@ -1329,7 +1333,7 @@ type JanitorEvent = {
 };
 
 function janitorProbe(mode: string) {
-  const base = fs.mkdtempSync(path.join(process.env.STATECHART_JANITOR_PROOF ?? os.tmpdir(), "janitor-proof-"));
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), "janitor-proof-"));
   const log = path.join(base, "events.jsonl");
   const preload = path.join(base, "observe.mjs");
   fs.writeFileSync(preload, `import cp from "node:child_process";

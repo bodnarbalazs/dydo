@@ -1,26 +1,17 @@
 namespace DynaDocs.Tests.Statechart;
 
 using System.Diagnostics;
-using System.Security.Cryptography;
-using System.Text.Json;
 using DynaDocs.Services.Statechart;
 
 public class StatechartLifecycleTests
 {
     private static ProcessStartInfo Binary()
     {
-        var binary = Environment.GetEnvironmentVariable("STATECHART_TEST_BINARY");
-        Assert.True(!string.IsNullOrEmpty(binary) && File.Exists(binary),
-            "STATECHART_TEST_BINARY must name the pinned real NativeAOT binary; no source fallback.");
-        using var manifest = JsonDocument.Parse(File.ReadAllBytes(binary + ".proof.json"));
-        Assert.True(manifest.RootElement.GetProperty("nativeAot").GetBoolean());
-        Assert.Equal("win-x64", manifest.RootElement.GetProperty("rid").GetString());
-        Assert.Equal(manifest.RootElement.GetProperty("sha256").GetString(),
-            Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(binary!))));
-        return new ProcessStartInfo(binary!);
+        Skip.IfNot(OperatingSystem.IsWindows(), "Windows Job Object lifetime runs only on Windows.");
+        return StatechartTestBinary.Start();
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task IndependentCleanupDeletesRegisteredScratchOnlyAfterNativeOwnerSealsAndDrains()
     {
         using var scope = new StatechartTestDirectory();
@@ -35,7 +26,7 @@ public class StatechartLifecycleTests
             Assert.Contains("deleted-after-authoritative-drain", File.ReadAllText(file)));
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task OwnerEofRetainsRegisteredScratchWithDurableUncertaintyReason()
     {
         using var scope = new StatechartTestDirectory();
@@ -48,7 +39,7 @@ public class StatechartLifecycleTests
             Assert.Contains("drain uncertain", File.ReadAllText(file)));
     }
 
-    [Theory]
+    [SkippableTheory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task InterruptionBeforeOrDuringRegistrationNeverDeletesAmbiguousDirectories(bool reserve)

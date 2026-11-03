@@ -2,66 +2,6 @@
   "schema": 1,
   "modules": [
     {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-source/driver.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_rmi_action.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-source/launcher.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_rmi_action.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-source/worker.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_rmi_action.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-action-source/interpret.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_rmi_action.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/driver.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_node_acquisition.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/launcher.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_node_acquisition.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-node-source/transfer.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_node_acquisition.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/driver.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_rmi_b3.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/launcher.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_rmi_b3.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/worker.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_rmi_b3.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/observe.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_rmi_b3.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b3-source/java_record.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_rmi_b3.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b2-source/driver.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_rmi_b2.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b2-source/launcher.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_rmi_b2.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b2-source/worker.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_rmi_b2.py"]
-    },
-    {
       "module": "Services/Statechart/StatechartChecker.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartCheckerTests.cs"]
     },
@@ -1711,18 +1651,6 @@
     {
       "module": "Services/Statechart/StatechartReady.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/driver.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_invocation_driver.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/launch.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_invocation_launch.py"]
-    },
-    {
-      "module": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation2/prepare.py",
-      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_invocation_prepare.py"]
     },
     {
       "module": "skills/engineering/statechart/scripts/test/corpus/CounterView/view.mjs",

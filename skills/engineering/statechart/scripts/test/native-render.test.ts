@@ -10,10 +10,12 @@ test("Native renderer rejects cwd-dependent module resolution", async () => {
   await assert.rejects(renderer("pele", guide), /absolute verified managed module/);
 });
 
-test("Native renderer imports the actual locked module and preserves marks and both themes", async () => {
-  const module = process.env.STATECHART_PELE;
-  assert.ok(module && fs.existsSync(module), "STATECHART_PELE must name the actual locked Pele1.9.0 module; no fake renderer.");
-  const render = await renderer(module, guide);
+const module = process.env.STATECHART_PELE;
+test("Native renderer imports the actual locked module and preserves marks and both themes", {
+  skip: !module && "STATECHART_PELE must name the actual locked Pele 1.9.0 module; no fake renderer",
+}, async () => {
+  assert.ok(fs.existsSync(module!), "STATECHART_PELE must name an existing module.");
+  const render = await renderer(module!, guide);
   const svg = render("stateDiagram-v2\n[*] --> s0\ns0 --> s1: increment\nclassDef breaks fill:#ffecee\nclass s1 breaks\nclass s1 bugPath\n");
   assert.match(svg, /^<svg/);
   assert.match(svg, /class="pele-node[^\"]* breaks/);

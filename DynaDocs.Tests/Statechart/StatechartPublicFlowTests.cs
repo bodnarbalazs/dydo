@@ -90,10 +90,12 @@ public class StatechartPublicFlowTests
 
     private static async Task<(int Exit, string Output, string Error)> Invoke(string root, string[] arguments, string? java = null)
     {
-        var binary = Environment.GetEnvironmentVariable("STATECHART_TEST_BINARY");
-        Assert.True(binary is not null && File.Exists(binary), "STATECHART_TEST_BINARY is required; no source fallback.");
-        var start = new ProcessStartInfo(binary!) { WorkingDirectory = root, UseShellExecute = false,
-            CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+        var start = StatechartTestBinary.Start();
+        start.WorkingDirectory = root;
+        start.UseShellExecute = false;
+        start.CreateNoWindow = true;
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         foreach (var argument in arguments) start.ArgumentList.Add(argument);
         foreach (var name in start.Environment.Keys.Where(name => name.StartsWith("DYDO_", StringComparison.Ordinal)).ToArray())
             start.Environment.Remove(name);

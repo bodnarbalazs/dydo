@@ -1,8 +1,0 @@
-{
-  "owner": "DYD-415 code-writer/gpt-6-astra",
-  "pid": 75164,
-  "ticket": "0000000098-5ca78d5d1f71d204",
-  "command": "npm test => node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test/*.test.ts",
-  "cwd": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\skills\\engineering\\statechart\\scripts",
-  "started": "2026-10-29T21:32:52.204986+00:00"
-}

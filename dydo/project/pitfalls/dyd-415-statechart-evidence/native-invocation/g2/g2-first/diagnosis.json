@@ -1,9 +1,0 @@
-{
-  "observedFailure": "anchor-loss fixture owner did not exit within 15 seconds",
-  "priorCasesPassed": ["exec pid/argv/environment/exit", "exec SIGTERM", "normal EOF with stable waitable child and authoritative drain"],
-  "location": "fixture/Program.cs PosixOwner: Console.In.ReadLineAsync evaluated before Task.WhenAny",
-  "cause": "Console.In is a synchronized TextReader; its async read may execute the blocking read synchronously. The fixture controller therefore could not race input against the native child-exit monitor.",
-  "correction": "Run each console control read on a separate task before racing it with the waitid monitor.",
-  "productionOwnershipSourceChangedForCorrection": false,
-  "retryJustification": "Diagnosed fixture scheduling defect, fresh source snapshot and new attempt. No topology fallback or unsupported pass."
-}

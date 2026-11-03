@@ -1,6 +1,0 @@
-{
-  "cause": "Owned snapshot git add exit128: Filename too long for retained nested static SARIF/raw receipts; before test discovery.",
-  "testsStarted": false,
-  "correction": "Command-scoped git -c core.longpaths=true for proof-driver Git calls; no global/local user config change, no retained path or raw-byte relocation.",
-  "next": "Same focused test selection, fresh request-store-longpaths attempt; no static/coverage retry."
-}

@@ -1,9 +1,0 @@
-{
-  "name": "repeat-install",
-  "exit": 1,
-  "observation": {
-    "expectedFailure": true,
-    "diagnostic": "java.net.SocketException: factory already defined",
-    "tlcControlEntered": false
-  }
-}

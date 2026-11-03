@@ -4,7 +4,7 @@
   "sourceBase": "7ba426604d7870f6596b2946c3255d1604618bfe",
   "release": "3.5.1",
   "upstream": "1ba91fc25c0977741dd0e267849e6234b037ed0a",
-  "dependencyLockSha256": "7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad",
+  "dependencyLockSha256": "3ad231072bddc04588d0f2cf1b61a3e62fc38b4ff400ccea5c3b5d41409575ab",
   "supportedLegacyAdaptersRetained": true,
   "files": [
     {
@@ -22,8 +22,8 @@
     {
       "path": "skills/engineering/statechart/PROVENANCE.md",
       "resource": "Statechart/payload/skills/engineering/statechart/PROVENANCE.md",
-      "bytes": 6297,
-      "sha256": "ddc633d92ec96cd770a46b5eadbddd147f5405740781d8a62fea61c9b8ba2891"
+      "bytes": 4856,
+      "sha256": "21e3e1405ea2f0fa70fad1b1b461af61619447bc961f6d41c106e69f32fd1f91"
     },
     {
       "path": "skills/engineering/statechart/SKILL.md",
@@ -46,8 +46,8 @@
     {
       "path": "skills/engineering/statechart/references/runtime.md",
       "resource": "Statechart/payload/skills/engineering/statechart/references/runtime.md",
-      "bytes": 6742,
-      "sha256": "2c439c2b1f411682c324539a805b0a11d70dd8843febf0f4a1bd3248dabdff8d"
+      "bytes": 2848,
+      "sha256": "7709c7f220c41c9b77155f5daf155c6add137cae3ec94e1c82d3fe49b3d377aa"
     },
     {
       "path": "skills/engineering/statechart/scripts/backends/cfg.ts",
@@ -142,38 +142,20 @@
     {
       "path": "skills/engineering/statechart/scripts/java/LICENSE",
       "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/LICENSE",
-      "bytes": 1091,
-      "sha256": "504a9148e0ceadeb788d9aa52d178f46be91452946332980abb7c74f9221fbb1"
+      "bytes": 1070,
+      "sha256": "ae6b6e7ae18d75c827b71b289ac2c2cfb38a69042088b2c2ebc7995e4d9d53bd"
     },
     {
       "path": "skills/engineering/statechart/scripts/java/build-lock.json",
       "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/build-lock.json",
-      "bytes": 4596,
-      "sha256": "3f90ad27cd010d6becb6c82c37564242692088962ba76187bf07524b8e58282c"
-    },
-    {
-      "path": "skills/engineering/statechart/scripts/java/build.py",
-      "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/build.py",
-      "bytes": 16119,
-      "sha256": "82939903e3774c3f29d4651541d170b301c100d60da4f1fde1faec471b1f38ea"
+      "bytes": 4223,
+      "sha256": "abda92fd7cf036fac776cea58ee29bf9db2f378f006ed40503c2fc079744183f"
     },
     {
       "path": "skills/engineering/statechart/scripts/java/readme.md",
       "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/readme.md",
-      "bytes": 5992,
-      "sha256": "c6d6678f8e04afcf79679c4a5dfd112ded741681be71f752d75a341daa634b75"
-    },
-    {
-      "path": "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackSockets.java",
-      "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackSockets.java",
-      "bytes": 1043,
-      "sha256": "56711ce74c3f7db93cc8ac1a928dfbe82de470dc566b730c06dc7bae43ee79a3"
-    },
-    {
-      "path": "skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackTlc.java",
-      "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackTlc.java",
-      "bytes": 720,
-      "sha256": "0edeb8431ba300737f2710d5c5dd495d424362f5f64698651737299337f95dc2"
+      "bytes": 2120,
+      "sha256": "9eb99c8cebbdc36858a54787c8783b83db9ea66c083962055e2af72cfab24560"
     },
     {
       "path": "skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar",
@@ -286,8 +268,8 @@
     {
       "path": "skills/engineering/statechart/scripts/statechart.ts",
       "resource": "Statechart/payload/skills/engineering/statechart/scripts/statechart.ts",
-      "bytes": 6852,
-      "sha256": "2305d329359666fd22e738a37aa6d204dc7ef135dcf87592a49cec7cc5a846ec"
+      "bytes": 9883,
+      "sha256": "3524650b2b38a90388e9344d4761ab025793cfdd94b68e6bdd6c99a3f172a345"
     },
     {
       "path": "skills/engineering/statechart/scripts/windows-cleanup.ts",

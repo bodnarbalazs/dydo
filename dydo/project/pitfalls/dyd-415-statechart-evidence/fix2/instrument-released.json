@@ -1,9 +1,0 @@
-{
-  "owner": "DYD-415 fix2 instrument",
-  "pid": 105560,
-  "ticket": "0000000014-6360ac58330e3ec8",
-  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-assurance2-driver.py instrument",
-  "fifoReleased": true,
-  "heavyReleased": true,
-  "dydoLockReleased": true
-}

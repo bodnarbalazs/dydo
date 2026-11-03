@@ -1,9 +1,0 @@
-{
-  "executionSnapshotsVerified": true,
-  "runtimeReceiptsEqual": true,
-  "restoredAssemblyPdbIdentityEqual": true,
-  "exactSourceAndSixCaseTemplateUnchanged": true,
-  "ownedSdkPathEntryRemoved": true,
-  "nativeTestsRerunForBookkeeping": false,
-  "scriptSha256": "36e476fa5e81d183a513d42ee2f3e964fb7d8093cf9b13c3a7f93d073b5d0020"
-}

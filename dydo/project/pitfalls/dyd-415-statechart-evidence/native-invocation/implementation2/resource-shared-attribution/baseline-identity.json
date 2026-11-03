@@ -1,7 +1,0 @@
-{
-  "base": "86931b9c47a93fa06287391495574865d9ce1d56",
-  "archiveSha256": "07f02d5b75e5ec6fc77dff257d3e7180088ac5476592d19aecc30b08469c4708",
-  "selection": "FullyQualifiedName~CanonicalSkillAssertionTests.CanonicalSkillTree_SortsEverySkillExactlyOnceByKind|FullyQualifiedName~CanonicalSkillAssertionTests.SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo40",
-  "sourceTree": "exact Git archive, no candidate product files",
-  "noRuntimeNativeOrPlatformCasesRepeated": true
-}

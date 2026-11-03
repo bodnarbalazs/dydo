@@ -1,4 +1,0 @@
-# Native output retains exact CRLF bytes, as in fix1.
-* whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
-*.stdout -diff
-*.stderr -diff

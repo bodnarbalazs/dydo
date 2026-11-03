@@ -1,8 +1,0 @@
-{
-  "js_metrics.cjs": "982fb4b1e5e869a0a4e81120126577669ef3f619fb0dfdf5881423e3e72a390a",
-  "typescript_join.py": "68c10ee7aafd2396b7226af81f71852e2a9b53e3fff8f783d4ebc114b11de474",
-  "gate_inventory.py": "542c84765bf7e3b82fdb83e82610dc22c096ae3c2d1d26991eba9d3899c42ff8",
-  "knip_reporter.mjs": "f00db9f33f8899167beae3c9f4633f09103aaf9bd87ede79adc93a5f87ed946f",
-  "package.json": "70084ed19a7ca0a8fa4bf49a037e6c5cc39407c9bc875374a992cc4449b551f2",
-  "package-lock.json": "8c21637d43ef457181e2cbc8b12a174709c9b6a249a47473929d4e1fbf251db8"
-}

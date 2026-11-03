@@ -1,9 +1,0 @@
-  Determining projects to restore...
-  Restored C:\Users\User\AppData\Local\Temp\dyd415-implementation2-rjdqq05t\source\DynaDocs.csproj (in 1.59 sec).
-  Restored C:\Users\User\AppData\Local\Temp\dyd415-implementation2-rjdqq05t\source\DynaDocs.Tests\DynaDocs.Tests.csproj (in 4.01 sec).
-  DynaDocs -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-rjdqq05t\source\bin\Release\net10.0\dydo.dll
-  DynaDocs.Tests -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-rjdqq05t\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll
-Test run for C:\Users\User\AppData\Local\Temp\dyd415-implementation2-rjdqq05t\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll (.NETCoreApp,Version=v10.0)
-The following Tests are available:
-    DynaDocs.Tests.Statechart.StatechartProbeTests.InstalledNativeProbePreservesBothOutputChannelsAndChildExitAfterGo(status: 0)
-    DynaDocs.Tests.Statechart.StatechartProbeTests.InstalledNativeProbePreservesBothOutputChannelsAndChildExitAfterGo(status: 7)

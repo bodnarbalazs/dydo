@@ -1,4 +1,0 @@
-{
-  "filter": "FullyQualifiedName~StatechartRequestTests|FullyQualifiedName~StatechartRequestsTests|FullyQualifiedName~StatechartDownloadsTests|FullyQualifiedName~StatechartHomeTests",
-  "purpose": "Request capture/store/replay identity, configured roots and locked-download bounds; no native/platform suite"
-}

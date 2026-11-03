@@ -1,9 +1,0 @@
-{
-  "name": "nonlocal",
-  "exit": 1,
-  "observation": {
-    "expectedFailure": true,
-    "diagnostic": "java.io.IOException: Statechart RMI rejects a nonlocal endpoint: 192.0.2.1",
-    "tlcControlEntered": false
-  }
-}

@@ -1,2 +1,0 @@
-# Preserve native report bytes inherited from ../.gitattributes; recognize CRLF.
-* whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

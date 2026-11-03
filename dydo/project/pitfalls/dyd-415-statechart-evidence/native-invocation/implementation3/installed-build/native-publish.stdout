@@ -1,3 +1,0 @@
-  Determining projects to restore...
-  Restored C:\Users\User\AppData\Local\Temp\dyd415-implementation2-3ufmayx8\source\DynaDocs.csproj (in 13.67 sec).
-C:\Users\User\AppData\Local\Temp\dyd415-implementation2-3ufmayx8\source\Services\Statechart\StatechartOuterLifetime.cs(10,19): error CA2022: Avoid inexact read with 'System.IO.Stream.ReadAsync(System.Memory<byte>, System.Threading.CancellationToken)' (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2022) [C:\Users\User\AppData\Local\Temp\dyd415-implementation2-3ufmayx8\source\DynaDocs.csproj]

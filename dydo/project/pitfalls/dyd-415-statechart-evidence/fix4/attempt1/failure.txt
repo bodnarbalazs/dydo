@@ -1,7 +1,0 @@
-First admitted attempt: exit 1 during scratch Git update-ref, before setup/scenario/recipe execution.
-The alternates file was written with Windows CRLF; Git interpreted its trailing CR as path content.
-Raw scratch-git-pin.stderr and exact executed-prove.py are retained beside this record.
-Correction: write forward-slash UTF-8 alternate path with explicit LF bytes.
-Python exception unwound suite_slot.book, Heavy context and the owned dydo lock's finally unlink.
-The original phase-release receipt sat after the raising context and was therefore not emitted;
-no scenario result or successful final release receipt is claimed for this failed attempt.

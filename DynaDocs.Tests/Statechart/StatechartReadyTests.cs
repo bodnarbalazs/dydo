@@ -1,24 +1,24 @@
 namespace DynaDocs.Tests.Statechart;
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using DynaDocs.Services.Statechart;
 
 public class StatechartReadyTests
 {
-    [Theory]
+    [SkippableTheory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task InstalledReadyInvocationRunsOfflineAndRejectsChangedManagedBytes(bool changed)
     {
         using var scope = new StatechartTestDirectory();
-        var binary = Environment.GetEnvironmentVariable("STATECHART_TEST_BINARY");
         var fixture = Environment.GetEnvironmentVariable("STATECHART_TEST_DEPENDENCY_ROOT");
-        Assert.True(binary is not null && File.Exists(binary), "STATECHART_TEST_BINARY is required; no source fallback.");
-        Assert.True(fixture is not null && Path.IsPathFullyQualified(fixture) && Directory.Exists(fixture),
+        Skip.If(fixture is null, "STATECHART_TEST_DEPENDENCY_ROOT must name a real verified managed installation (Node, Java, TLC, Pele).");
+        Assert.True(Path.IsPathFullyQualified(fixture) && Directory.Exists(fixture),
             "STATECHART_TEST_DEPENDENCY_ROOT must name the real task-local verified installation; no fake ready fixture.");
         var assets = new StatechartAssets();
-        var relative = Path.Combine(assets.LockDigest, "win-x64");
+        var relative = Path.Combine(assets.LockDigest, RuntimeInformation.RuntimeIdentifier);
         // The successful ready case reads the verified fixture at its stable runtime path.
         // Only the corruption case needs a private copy, and it rejects before Java launch.
         var dependencies = changed ? Path.Combine(scope.Path, "dependencies") : fixture!;
@@ -29,8 +29,12 @@ public class StatechartReadyTests
         File.WriteAllText(Path.Combine(scope.Path, "ReadyModel.tla"),
             "---- MODULE ReadyModel ----\nEXTENDS Naturals\nVARIABLE x\nInit == x = 0\nNext == (x < 2 /\\ x' = x + 1) \\/ (x = 2 /\\ x' = x)\nBound == x < 2\n====\n");
         File.WriteAllText(Path.Combine(scope.Path, "ReadyModel.cfg"), "INIT Init\nNEXT Next\nINVARIANT Bound\nCHECK_DEADLOCK FALSE\n");
-        var start = new ProcessStartInfo(binary!) { WorkingDirectory = scope.Path, UseShellExecute = false,
-            CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+        var start = StatechartTestBinary.Start();
+        start.WorkingDirectory = scope.Path;
+        start.UseShellExecute = false;
+        start.CreateNoWindow = true;
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         foreach (var argument in new[] { "statechart", "ReadyModel.tla", "--out", "chart" }) start.ArgumentList.Add(argument);
         foreach (var name in start.Environment.Keys.Where(name => name.StartsWith("DYDO_", StringComparison.Ordinal)).ToArray())
             start.Environment.Remove(name);
@@ -78,7 +82,7 @@ public class StatechartReadyTests
         foreach (var entry in Directory.EnumerateFileSystemEntries(source))
         {
             var attributes = File.GetAttributes(entry);
-            Assert.False((attributes & FileAttributes.ReparsePoint) != 0, "Windows proof fixture must contain plain archive files.");
+            Assert.False((attributes & FileAttributes.ReparsePoint) != 0, "Managed fixture must contain plain archive files.");
             var destination = Path.Combine(target, Path.GetFileName(entry));
             if ((attributes & FileAttributes.Directory) != 0) Copy(entry, destination);
             else File.Copy(entry, destination, overwrite: false);

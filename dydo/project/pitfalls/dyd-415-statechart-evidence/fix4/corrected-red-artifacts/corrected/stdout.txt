@@ -1,9 +1,0 @@
-# Safety
-
-TLC reached 3 states and 3 steps. The chart draws 3 states and 2 arrows.
-The chart does not draw 1 steps that stay in one chart state.
-
-## Rules that hold
-Safe, NoDeadlock
-
-Wrote C:\Users\User\AppData\Local\Temp\dyd415-fix4-a6wj_23v\tmp\statechart-acceptance-Q7int9\out

@@ -9,8 +9,9 @@ import { PassThrough } from "node:stream";
 import { test } from "node:test";
 import { guardWorker } from "../windows.ts";
 import { pinnedTlc } from "../run.ts";
+import { skip as noTlc } from "./tlc.ts";
 
-const replayJar = pinnedTlc(path.resolve(process.env.TLA2TOOLS ?? "missing-pinned-TLC-fixture.jar"));
+const replayJar = noTlc ? "" : pinnedTlc(path.resolve(process.env.TLA2TOOLS!));
 
 function child() {
   const events = new EventEmitter();
@@ -102,7 +103,7 @@ process.kill = () => {
 
 for (const tools of ["present", "installed", "failed"] as const) {
   test(`Caller tool discovery when mise tools are ${tools}`, {
-    skip: process.platform === "win32",
+    skip: process.platform === "win32" || noTlc,
   }, t => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-mise-test-"));
     t.after(() => fs.rmSync(dir, { recursive: true, force: true }));

@@ -1,8 +1,0 @@
-{
-  "failure": "CS1503 in native fixture Program.cs:64; TextWriter.WriteLineAsync has no nint overload",
-  "source": "fixture controller writes duplicated completion-port handle to observer",
-  "productionModuleCompilerErrorsObserved": 0,
-  "nativeCasesStarted": false,
-  "correction": "Serialize the numeric handle with ToString before writing the control line.",
-  "retryJustification": "One diagnosed ordinary fixture compilation correction; preserve original snapshot/logs, fresh source-bound output. No topology fallback or unexplained retry."
-}

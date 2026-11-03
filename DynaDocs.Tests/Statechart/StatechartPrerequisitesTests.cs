@@ -10,6 +10,8 @@ public class StatechartPrerequisitesTests
     [InlineData("node", "v23.5.0", false)]
     [InlineData("node", "v23.6.0", true)]
     [InlineData("node", "v24.0.0", true)]
+    [InlineData("node", "v26.13.0", true)]
+    [InlineData("node", "v21.7.3", false)]
     [InlineData("bun", "1.1.4", false)]
     [InlineData("bun", "1.1.5", true)]
     [InlineData("deno", "deno 2.0.0", true)]

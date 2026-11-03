@@ -1,7 +1,0 @@
-{
-  "exit": 1,
-  "firstFailingLine": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-milestone-final-_0npkxjk\\source\\DynaDocs.Tests\\Statechart\\StatechartArgumentsTests.cs(4,16): error CS0234: The type or namespace name 'Services' does not exist in the namespace 'DynaDocs' (are you missing an assembly reference?) [C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-native-milestone-final-_0npkxjk\\source\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\g1\\tests\\Tests.csproj]",
-  "method": "Exact final tests without new production Compile items, in owned snapshot only",
-  "kind": "absence-of-implementation compile rejection; not a functional test verdict",
-  "workingTreeProductNeverRemoved": true
-}

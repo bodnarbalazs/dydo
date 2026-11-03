@@ -1,4 +1,0 @@
-{
-  "type": "CalledProcessError",
-  "reason": "Command '['git', 'add', '-f', '-A']' returned non-zero exit status 128."
-}

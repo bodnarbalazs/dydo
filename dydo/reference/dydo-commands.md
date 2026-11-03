@@ -528,12 +528,11 @@ runner's exit code; configuration, startup, and cancellation failures exit `2`.
 dydo statechart SPEC.tla [--config FILE] [--view FILE] [--out DIR] [--skill DIR]
 ```
 
-The Windows engineering candidate captures the caller and original model inputs.
+Runs on Windows and Linux; other platforms are refused, and the skill's own
+launchers remain available there. Captures the caller and original model inputs.
 Missing prerequisites produce a locked JSON plan and saved request with exit `3`;
 the initial invocation starts no installer. A verified ready invocation checks the
 model without installing. Only complete checker verdicts `0` and `1` publish output.
-Other platforms still require native public-flow integration and actual proof;
-supported skill launchers remain available.
 
 ### dydo statechart resume
 

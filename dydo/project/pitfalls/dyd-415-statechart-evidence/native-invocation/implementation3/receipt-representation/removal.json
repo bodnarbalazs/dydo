@@ -1,8 +1,0 @@
-{
-  "removedOnly": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/installed-red/npm-eof-red.stdout",
-  "oldRawSha256": "e7a5f22362f1b32e0f24ac958ccdc5dfe35cab3d3e6265218d3ac34b3cf66187",
-  "exactBytesRetainedIn": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation3/receipt-representation/npm-eof-red.zip",
-  "member": "npm-eof-red.stdout",
-  "noOtherReceiptRemoval": true,
-  "temporaryDiagnosticUnchanged": true
-}

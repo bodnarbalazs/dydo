@@ -1,9 +1,0 @@
-{
-  "pid": 72040,
-  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-fix4-prove.py C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f",
-  "owned": true,
-  "inherited": false,
-  "ticket": "0000000001-049f8ac001ffdf41",
-  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
-  "driverSha256": "e32c4adec9a47429bd8431e11bce48ed3c0076dd2477a52b0117af68bfeab594"
-}

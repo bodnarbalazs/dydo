@@ -1,7 +1,0 @@
-  DynaDocs -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\bin\Release\net10.0\dydo.dll
-  DynaDocs.Tests -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll
-Test run for C:\Users\User\AppData\Local\Temp\dyd415-implementation2-noj0hobr\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll (.NETCoreApp,Version=v10.0)
-A total of 1 test files matched the specified pattern.
-Results File: C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\implementation2\public-flow-build2\test-results\public.trx
-
-Passed!  - Failed:     0, Passed:    12, Skipped:     0, Total:    12, Duration: 914 ms - DynaDocs.Tests.dll (net10.0)

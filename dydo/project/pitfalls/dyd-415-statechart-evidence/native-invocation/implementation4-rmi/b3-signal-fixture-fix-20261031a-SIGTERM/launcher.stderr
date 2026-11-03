@@ -1,3 +1,0 @@
-suite slot: waiting for this PC's test slot, queue position 2 (2 runs ahead); holder C:\Users\User\.t3\worktrees\LC\t3-663d6ee8 running LC-1391 fix3 cheap-checks started 2026-10-31T13:31:05+01:00 (pid 8256)
-suite slot: waiting for this PC's test slot, queue position 1 (1 run ahead); holder C:\Users\User\.t3\worktrees\DynaDocs\t3-1c9d22f0 running C:/Users/User/AppData/Local/Temp/dyd406-evidence/daytime-binding-20261031/final-refresh-v4/final-campaign.py --execute-final-campaign --expected-plan-sha256 AED870DD4A25FF10DF55321BF0A4DA165EFD77E9EF4007A25D5FE7AB37191A75 started not yet (pid 87304)
-suite slot: holding this PC's test slot after waiting 1906 s

@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { test } from "node:test";
+import { test as nativeTest } from "node:test";
 import { checkerJar, pinnedTlc, prepareChecker } from "../checker.ts";
+import { skip } from "./tlc.ts";
 
 // Real pinned checker DATA, never a JVM. No synthetic hash replaces the product pin.
-const input = pinnedTlc(path.resolve(process.env.TLA2TOOLS ?? "missing-pinned-TLC-fixture.jar"));
+const input = skip ? "" : pinnedTlc(path.resolve(process.env.TLA2TOOLS!));
+const test: typeof nativeTest = skip ? ((name: string) => nativeTest(name, { skip }, () => {})) as typeof nativeTest : nativeTest;
 function fixture() {
   const scope = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "statechart-checker-")));
   const source = path.join(scope, "input with spaces");

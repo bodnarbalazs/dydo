@@ -1,4 +1,0 @@
-{
-  "type": "RuntimeError",
-  "reason": "NativeAOT publish failed; stop dependent work and inspect retained output"
-}

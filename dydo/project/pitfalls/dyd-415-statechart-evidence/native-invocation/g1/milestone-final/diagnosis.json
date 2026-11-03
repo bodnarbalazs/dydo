@@ -1,8 +1,0 @@
-{
-  "observation": "dydo check exit1, 14 missing .md extension errors in the new verification page",
-  "cause": "Local Markdown hyperlinks to retained JSON/TXT/TRX artifacts violate the existing dydo document-link rule",
-  "correction": "Name non-Markdown evidence with literal paths; retain real Markdown navigation links",
-  "nativeAndModuleSourcesChanged": false,
-  "replacementSelection": "close: source binding, docs, owned stage, whitespace and custody only",
-  "priorNativeLightAndCompileRedReused": true
-}

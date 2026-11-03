@@ -4,15 +4,18 @@ using System.Diagnostics;
 
 public class StatechartProbeTests
 {
-    [Theory]
+    [SkippableTheory]
     [InlineData(0)]
     [InlineData(7)]
     public async Task InstalledNativeProbePreservesBothOutputChannelsAndChildExitAfterGo(int status)
     {
-        var binary = Environment.GetEnvironmentVariable("STATECHART_TEST_BINARY");
-        Assert.True(binary is not null && File.Exists(binary), "STATECHART_TEST_BINARY is required; no source fallback.");
-        var start = new ProcessStartInfo(binary!) { UseShellExecute = false, CreateNoWindow = true,
-            RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
+        Skip.IfNot(OperatingSystem.IsWindows(), "This probe fixture launches cmd.exe.");
+        var start = StatechartTestBinary.Start();
+        start.UseShellExecute = false;
+        start.CreateNoWindow = true;
+        start.RedirectStandardInput = true;
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         foreach (var argument in new[] { "__statechart-probe", Path.Combine(Environment.SystemDirectory, "cmd.exe"),
                 "/d", "/c", "echo statechart-probe-out& echo statechart-probe-err 1>&2& exit /b " + status })
             start.ArgumentList.Add(argument);

@@ -1,9 +1,0 @@
-{
-  "pid": 155720,
-  "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -B C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-rmi-b3-node-driver-20261031.py",
-  "ticket": "0000000006-e0b64e1204c1d11a",
-  "namespace": "C:\\Users\\User\\AppData\\Local\\lc-test\\suite-slot",
-  "bookingOwned": true,
-  "inherited": false,
-  "startedUtc": "2026-10-31T02:00:50.384418+00:00"
-}

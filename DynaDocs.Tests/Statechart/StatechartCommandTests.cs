@@ -15,17 +15,16 @@ public class StatechartCommandTests
         Assert.DoesNotContain(command.Options, option => option.Name.Contains("approved", StringComparison.Ordinal));
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task InstalledDoctorExtractsPayloadAndNeverClaimsChartReadinessOrInstallsPrerequisites()
     {
         using var scope = new StatechartTestDirectory();
-        var binary = Environment.GetEnvironmentVariable("STATECHART_TEST_BINARY");
-        Assert.True(!string.IsNullOrEmpty(binary) && File.Exists(binary), "STATECHART_TEST_BINARY is required; no source fallback.");
-        var start = new ProcessStartInfo(binary!)
-        {
-            UseShellExecute = false, CreateNoWindow = true,
-            RedirectStandardOutput = true, RedirectStandardError = true
-        };
+        Skip.IfNot(OperatingSystem.IsWindows(), "statechart doctor is Windows-only.");
+        var start = StatechartTestBinary.Start();
+        start.UseShellExecute = false;
+        start.CreateNoWindow = true;
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         start.ArgumentList.Add("statechart");
         start.ArgumentList.Add("doctor");
         foreach (var name in start.Environment.Keys.Where(name => name.StartsWith("DYDO_", StringComparison.Ordinal)).ToArray())

@@ -1,6 +1,0 @@
-{"parent":208,"event":"spawn","role":"worker","file":"/statechart-proof-missing-executable"}
-{"parent":208,"event":"error","role":"worker","code":"ENOENT"}
-{"parent":208,"event":"close","role":"worker","code":-2,"signal":null}
-{"parent":208,"event":"cleanup-return","file":"/work/tmp/statechart-cli-kXzt5v/.out.statechart-BedG0C"}
-{"parent":208,"event":"cleanup-return","file":"/work/tmp/statechart-SL6DyN"}
-{"parent":208,"event":"cli-exit","code":2}

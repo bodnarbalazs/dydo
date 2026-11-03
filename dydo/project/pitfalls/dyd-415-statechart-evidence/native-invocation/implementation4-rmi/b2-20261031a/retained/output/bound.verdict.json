@@ -1,8 +1,0 @@
-{
-  "name": "bound",
-  "exit": 0,
-  "observation": {
-    "processOwnedLoopbackListeners": 1,
-    "dualTables": true
-  }
-}

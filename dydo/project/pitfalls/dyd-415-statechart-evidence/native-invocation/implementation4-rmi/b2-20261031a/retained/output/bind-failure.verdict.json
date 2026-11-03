@@ -1,9 +1,0 @@
-{
-  "name": "bind-failure",
-  "exit": 1,
-  "observation": {
-    "expectedFailure": true,
-    "diagnostic": "java.net.BindException: Address already in use",
-    "tlcControlEntered": false
-  }
-}

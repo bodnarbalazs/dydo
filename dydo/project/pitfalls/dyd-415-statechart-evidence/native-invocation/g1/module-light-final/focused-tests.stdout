@@ -1,6 +1,0 @@
-  Tests -> C:\Users\User\AppData\Local\Temp\dyd415-native-module-light-final-ecyesqzp\source\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\g1\tests\bin\Release\net10.0\Tests.dll
-Test run for C:\Users\User\AppData\Local\Temp\dyd415-native-module-light-final-ecyesqzp\source\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\g1\tests\bin\Release\net10.0\Tests.dll (.NETCoreApp,Version=v10.0)
-A total of 1 test files matched the specified pattern.
-Results File: C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo\project\pitfalls\dyd-415-statechart-evidence\native-invocation\g1\module-light-final\test-results\statechart.trx
-
-Passed!  - Failed:     0, Passed:    18, Skipped:     0, Total:    18, Duration: 130 ms - Tests.dll (net10.0)

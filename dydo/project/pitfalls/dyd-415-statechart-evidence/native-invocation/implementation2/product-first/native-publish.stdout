@@ -1,7 +1,0 @@
-  Determining projects to restore...
-  Restored C:\Users\User\AppData\Local\Temp\dyd415-implementation2-_jnx8nb2\source\DynaDocs.csproj (in 13.57 sec).
-C:\Users\User\AppData\Local\Temp\dyd415-implementation2-_jnx8nb2\nuget\microsoft.build.tasks.git\10.0.112\build\Microsoft.Build.Tasks.Git.targets(25,5): error : Repository 'C:\Users\User\AppData\Local\Temp\dyd415-implementation2-_jnx8nb2\source' has no remote. [C:\Users\User\AppData\Local\Temp\dyd415-implementation2-_jnx8nb2\source\DynaDocs.csproj]
-C:\Users\User\AppData\Local\Temp\dyd415-implementation2-_jnx8nb2\nuget\microsoft.sourcelink.common\10.0.112\build\Microsoft.SourceLink.Common.targets(56,5): error : Source control information is not available - the generated source link is empty. [C:\Users\User\AppData\Local\Temp\dyd415-implementation2-_jnx8nb2\source\DynaDocs.csproj]
-  DynaDocs -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-_jnx8nb2\source\bin\Release\net10.0\win-x64\dydo.dll
-  Generating native code
-  DynaDocs -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-_jnx8nb2\publish\

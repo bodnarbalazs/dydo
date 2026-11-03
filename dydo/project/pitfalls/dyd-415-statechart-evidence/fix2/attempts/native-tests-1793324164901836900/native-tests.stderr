@@ -1,2 +1,0 @@
-[xUnit.net 00:00:00.29]     AdapterTests.InvalidPidThrowsAndClosesEveryAllocatedJob [FAIL]
-[xUnit.net 00:00:00.30]     AdapterTests.NonNestableOwnedJobRejectsAssignmentAndClosesJobAndProcessHandles [FAIL]

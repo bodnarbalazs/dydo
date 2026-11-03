@@ -1,9 +1,0 @@
-{
-  "name": "existing-factory",
-  "exit": 1,
-  "observation": {
-    "expectedFailure": true,
-    "diagnostic": "java.io.IOException: Statechart cannot replace an existing RMI socket factory.",
-    "tlcControlEntered": false
-  }
-}

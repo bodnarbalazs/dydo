@@ -1,5 +1,0 @@
-{
-  "filter": "FullyQualifiedName~StatechartArchiveTests",
-  "behavioralRed": false,
-  "purpose": "Bounded managed prerequisite archive extraction only; no native publish/platform/coverage run"
-}

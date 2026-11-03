@@ -1,3 +1,0 @@
-suite slot: waiting for this PC's test slot, queue position 2 (2 runs ahead); holder C:\Users\User\.t3\worktrees\LC\t3-663d6ee8 running LC-1391 fix2 proof-phase started 2026-10-31T02:39:11+01:00 (pid 143520)
-suite slot: waiting for this PC's test slot, queue position 1 (1 run ahead); holder C:\Users\User\.t3\worktrees\DynaDocs\t3-1c9d22f0 running C:\Users\User\AppData\Local\Programs\Python\Python312\python.exe C:\Users\User\AppData\Local\Temp\dyd406-evidence\night-20261031\night-proof.py green started not yet (pid 73068)
-suite slot: holding this PC's test slot after waiting 974 s

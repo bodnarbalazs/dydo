@@ -12,7 +12,7 @@
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/LICENSE" LogicalName="Statechart/payload/skills/engineering/statechart/LICENSE" />
     <StatechartPayload Include="skills/engineering/statechart/PROVENANCE.md">
-      <ExpectedHash>ddc633d92ec96cd770a46b5eadbddd147f5405740781d8a62fea61c9b8ba2891</ExpectedHash>
+      <ExpectedHash>21e3e1405ea2f0fa70fad1b1b461af61619447bc961f6d41c106e69f32fd1f91</ExpectedHash>
       <ResourceName>Statechart/payload/skills/engineering/statechart/PROVENANCE.md</ResourceName>
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/PROVENANCE.md" LogicalName="Statechart/payload/skills/engineering/statechart/PROVENANCE.md" />
@@ -32,7 +32,7 @@
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/references/render.md" LogicalName="Statechart/payload/skills/engineering/statechart/references/render.md" />
     <StatechartPayload Include="skills/engineering/statechart/references/runtime.md">
-      <ExpectedHash>2c439c2b1f411682c324539a805b0a11d70dd8843febf0f4a1bd3248dabdff8d</ExpectedHash>
+      <ExpectedHash>7709c7f220c41c9b77155f5daf155c6add137cae3ec94e1c82d3fe49b3d377aa</ExpectedHash>
       <ResourceName>Statechart/payload/skills/engineering/statechart/references/runtime.md</ResourceName>
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/references/runtime.md" LogicalName="Statechart/payload/skills/engineering/statechart/references/runtime.md" />
@@ -112,35 +112,20 @@
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/scripts/ir.ts" LogicalName="Statechart/payload/skills/engineering/statechart/scripts/ir.ts" />
     <StatechartPayload Include="skills/engineering/statechart/scripts/java/LICENSE">
-      <ExpectedHash>504a9148e0ceadeb788d9aa52d178f46be91452946332980abb7c74f9221fbb1</ExpectedHash>
+      <ExpectedHash>ae6b6e7ae18d75c827b71b289ac2c2cfb38a69042088b2c2ebc7995e4d9d53bd</ExpectedHash>
       <ResourceName>Statechart/payload/skills/engineering/statechart/scripts/java/LICENSE</ResourceName>
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/scripts/java/LICENSE" LogicalName="Statechart/payload/skills/engineering/statechart/scripts/java/LICENSE" />
     <StatechartPayload Include="skills/engineering/statechart/scripts/java/build-lock.json">
-      <ExpectedHash>3f90ad27cd010d6becb6c82c37564242692088962ba76187bf07524b8e58282c</ExpectedHash>
+      <ExpectedHash>abda92fd7cf036fac776cea58ee29bf9db2f378f006ed40503c2fc079744183f</ExpectedHash>
       <ResourceName>Statechart/payload/skills/engineering/statechart/scripts/java/build-lock.json</ResourceName>
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/scripts/java/build-lock.json" LogicalName="Statechart/payload/skills/engineering/statechart/scripts/java/build-lock.json" />
-    <StatechartPayload Include="skills/engineering/statechart/scripts/java/build.py">
-      <ExpectedHash>82939903e3774c3f29d4651541d170b301c100d60da4f1fde1faec471b1f38ea</ExpectedHash>
-      <ResourceName>Statechart/payload/skills/engineering/statechart/scripts/java/build.py</ResourceName>
-    </StatechartPayload>
-    <EmbeddedResource Include="skills/engineering/statechart/scripts/java/build.py" LogicalName="Statechart/payload/skills/engineering/statechart/scripts/java/build.py" />
     <StatechartPayload Include="skills/engineering/statechart/scripts/java/readme.md">
-      <ExpectedHash>c6d6678f8e04afcf79679c4a5dfd112ded741681be71f752d75a341daa634b75</ExpectedHash>
+      <ExpectedHash>9eb99c8cebbdc36858a54787c8783b83db9ea66c083962055e2af72cfab24560</ExpectedHash>
       <ResourceName>Statechart/payload/skills/engineering/statechart/scripts/java/readme.md</ResourceName>
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/scripts/java/readme.md" LogicalName="Statechart/payload/skills/engineering/statechart/scripts/java/readme.md" />
-    <StatechartPayload Include="skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackSockets.java">
-      <ExpectedHash>56711ce74c3f7db93cc8ac1a928dfbe82de470dc566b730c06dc7bae43ee79a3</ExpectedHash>
-      <ResourceName>Statechart/payload/skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackSockets.java</ResourceName>
-    </StatechartPayload>
-    <EmbeddedResource Include="skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackSockets.java" LogicalName="Statechart/payload/skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackSockets.java" />
-    <StatechartPayload Include="skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackTlc.java">
-      <ExpectedHash>0edeb8431ba300737f2710d5c5dd495d424362f5f64698651737299337f95dc2</ExpectedHash>
-      <ResourceName>Statechart/payload/skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackTlc.java</ResourceName>
-    </StatechartPayload>
-    <EmbeddedResource Include="skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackTlc.java" LogicalName="Statechart/payload/skills/engineering/statechart/scripts/java/src/dydo/statechart/LoopbackTlc.java" />
     <StatechartPayload Include="skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar">
       <ExpectedHash>1772e71e2d82f470f115fa7e6d63205c388f84a0fa55537f120b9d53f3d3fbfa</ExpectedHash>
       <ResourceName>Statechart/payload/skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar</ResourceName>
@@ -232,7 +217,7 @@
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/scripts/statechart.ps1" LogicalName="Statechart/payload/skills/engineering/statechart/scripts/statechart.ps1" />
     <StatechartPayload Include="skills/engineering/statechart/scripts/statechart.ts">
-      <ExpectedHash>2305d329359666fd22e738a37aa6d204dc7ef135dcf87592a49cec7cc5a846ec</ExpectedHash>
+      <ExpectedHash>3524650b2b38a90388e9344d4761ab025793cfdd94b68e6bdd6c99a3f172a345</ExpectedHash>
       <ResourceName>Statechart/payload/skills/engineering/statechart/scripts/statechart.ts</ResourceName>
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/scripts/statechart.ts" LogicalName="Statechart/payload/skills/engineering/statechart/scripts/statechart.ts" />

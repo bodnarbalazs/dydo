@@ -21,8 +21,7 @@ Local changes:
   on Windows use non-recursive rmdir before rename; existing content is never removed.
 - `exitClass` has an explicit literal return type. Two upstream async test callbacks
   discard their return values for the pinned local TypeScript check. Neither changes assertions.
-- The correction hop measures maintained adaptations separately from unchanged vendor
-  functions. CLI output validation, worker launch and publication are local functions
+- CLI output validation, worker launch and publication are local functions
   to meet the cognitive-complexity limit; verdict classification avoids a nested ternary.
   Native lifecycle tests retain real tool execution with absolute, relative, bare and
   unset `JAVA`, and controlled failure tests cover ownership and cleanup errors.
@@ -33,34 +32,20 @@ Local changes:
   TLC line endings, and explicitly skip the upstream POSIX CLI/recording harness on
   Windows. All original cases remain for POSIX. Native Gherkin acceptance and Windows
   lifecycle tests are added, alongside the CRLF regression. Skips are not Windows proof.
-- The retained Stage A draft adds original Balazs Bodnar MIT Java transport
-  sources and a build-only JDK lock under `scripts/java/`. It routes verdict,
-  ChartRun and native readiness TLC entry through a loopback RMI bootstrap;
-  SANY stays direct. That original checkpoint had no built helper artifact. The
-  [source checkpoint](../../../dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/checkpoint.md)
-  and its [closure result](../../../dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b1-20261031a/result.md)
-  record the original standalone input gap, tightened jar checks, held execution,
-  exact source identities and unavailable Java measurements. This is unvalidated local work,
-  not a change to the upstream license or a prompt-free platform claim.
+- dydo's native invocation enters through `native-entry.ts`. On Linux,
+  `posix-lifetime.ts` checks inside the control channel and process group that dydo's
+  native owner hands over; that owner performs scratch cleanup.
+- Checker input must be the official TLC 1.7.4 jar by SHA-256. A `CommunityModules.jar`
+  beside it is rejected as an unpinned dependency, and each run copies only the verified
+  jar into owned scratch. Replay tests therefore need the real jar in `TLA2TOOLS` and
+  skip without it.
+- Original Balazs Bodnar MIT Java sources under `scripts/java/` route TLC through a
+  loopback RMI socket bootstrap; SANY stays direct. TLC calls require the sealed helper
+  and never fall back to raw TLC. The helper is built but not runtime-validated; see
+  [its readme](scripts/java/readme.md).
 
-- The later checker-data isolation draft adds native and TypeScript helpers that
-  reject an external unpinned `CommunityModules.jar` and copy only the verified
-  official checker jar into existing owned scratch. SANY and bootstrap TLC share
-  that isolated data; original model/library roots remain. The compiler-only
-  exploded jar view is separate. The
-  [source checkpoint](../../../dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/runtime-isolation/checkpoint.md)
-  binds accepted recipes, source hashes and outstanding proof. That source amendment
-  established no runtime result or prompt-free claim.
-- B1c later passed 21 build-helper tests and produced two byte-identical release11
-  helper jars with exactly two major55 classes and no manifest or nested jar.
-  The captain-inspected 1,825-byte artifact is SHA256
-  `1772e71e2d82f470f115fa7e6d63205c388f84a0fa55537f120b9d53f3d3fbfa`.
-  The canonical build lock now binds that artifact and the immutable
-  [B1c receipt](../../../dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b1-20261031c/build-receipt.json),
-  preserving its pre-sealing lock identity. The
-  [binding checkpoint](../../../dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/seal-source/checkpoint.md)
-  records explicit payload rows. This is candidate distribution data, not runtime,
-  installed/readiness, prompt-free Windows or Java assurance acceptance.
+The Windows-era review and build records are at
+[67cd2127](https://github.com/bodnarbalazs/dydo/tree/67cd21278872679398479601b99d95125678b7cd/dydo/project/pitfalls/dyd-415-statechart-evidence).
 
 Dependencies and setup: [runtime](references/runtime.md). The original package test
 script is `node --disable-warning=ExperimentalWarning --test test/*.test.ts`;

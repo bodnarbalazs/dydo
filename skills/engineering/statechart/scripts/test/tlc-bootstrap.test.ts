@@ -3,13 +3,15 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { test } from "node:test";
+import { test as nativeTest } from "node:test";
 import { pathToFileURL } from "node:url";
 import childProcess from "node:child_process";
 import { syncBuiltinESMExports } from "node:module";
 import { pinnedTlc } from "../run.ts";
+import { skip } from "./tlc.ts";
 
-const replayJar = pinnedTlc(path.resolve(process.env.TLA2TOOLS ?? "missing-pinned-TLC-fixture.jar"));
+const replayJar = skip ? "" : pinnedTlc(path.resolve(process.env.TLA2TOOLS!));
+const test: typeof nativeTest = skip ? ((name: string) => nativeTest(name, { skip }, () => {})) as typeof nativeTest : nativeTest;
 
 // These are launch-resolution tests with synthetic helper bytes. They never claim
 // to compile Java, exercise RMI or establish real TLC/model semantics.

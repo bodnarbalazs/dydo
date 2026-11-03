@@ -1,9 +1,0 @@
-Checking C:\Users\User\.t3\worktrees\DynaDocs\t3-ba795f5f\dydo...
-
-  project/pitfalls/dyd-415-statechart-evidence/native-invocation/history/README.md
-    - Filename should be kebab-case: readme.md
-    - Line 39: Link missing .md extension: ../implementation2/archival-fidelity/fidelity.json
-
-Found 2 errors, 0 warnings in 861 files.
-
-Found errors.

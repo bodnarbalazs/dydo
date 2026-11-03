@@ -1,7 +1,0 @@
-{
-  "phase": "red",
-  "materialChecksExecuted": false,
-  "reason": "PreToolUse rejected shell variable expansion in Copy-Item plus Start-Process wrapper before execution",
-  "resolution": "Separate literal-path copy and normal TEMP Python launcher; CREATE_NO_WINDOW supervisor, exact exit propagation; same checks.py bytes",
-  "testResultRetry": false
-}

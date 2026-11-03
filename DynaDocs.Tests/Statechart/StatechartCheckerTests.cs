@@ -10,7 +10,8 @@ public class StatechartCheckerTests
     private static string CopyInput(string root)
     {
         var input = Environment.GetEnvironmentVariable("TLA2TOOLS");
-        Assert.True(input is not null && Path.IsPathFullyQualified(input), "TLA2TOOLS must identify real pinned checker DATA; no Java is invoked.");
+        Skip.If(input is null, "TLA2TOOLS must name the pinned tla2tools.jar 1.7.4; these tests read its bytes and invoke no Java.");
+        Assert.True(Path.IsPathFullyQualified(input), "TLA2TOOLS must identify real pinned checker DATA; no Java is invoked.");
         var source = Path.Combine(root, "input with spaces");
         Directory.CreateDirectory(source);
         var jar = Path.Combine(source, "original.jar");
@@ -18,7 +19,7 @@ public class StatechartCheckerTests
         return jar;
     }
 
-    [Fact]
+    [SkippableFact]
     public void OwnedCopyRetainsOfficialBytesAndManifestWithoutChangingOriginal()
     {
         using var scope = new StatechartTestDirectory();
@@ -35,7 +36,7 @@ public class StatechartCheckerTests
             Convert.ToHexStringLower(SHA256.HashData(manifest)));
     }
 
-    [Theory]
+    [SkippableTheory]
     [InlineData("file")]
     [InlineData("directory")]
     [InlineData("dangling")]
@@ -71,7 +72,7 @@ public class StatechartCheckerTests
         if (kind == "file-link") Assert.Equal("foreign target", File.ReadAllText(foreign));
     }
 
-    [Fact]
+    [SkippableFact]
     public void AliasedFileAndDirectoryInputsCheckTheActualJarCompanion()
     {
         using var scope = new StatechartTestDirectory();
@@ -88,7 +89,7 @@ public class StatechartCheckerTests
         Assert.Equal("foreign", File.ReadAllText(companion));
     }
 
-    [Theory]
+    [SkippableTheory]
     [InlineData("source")]
     [InlineData("destination")]
     [InlineData("missing")]
@@ -122,7 +123,7 @@ public class StatechartCheckerTests
         if (change == "extra") Assert.Equal("sentinel", File.ReadAllText(Path.Combine(directory, "foreign")));
     }
 
-    [Fact]
+    [SkippableFact]
     public void ExistingCheckerDirectoryIsRetainedWithoutOverwrite()
     {
         using var scope = new StatechartTestDirectory();
@@ -135,7 +136,7 @@ public class StatechartCheckerTests
         Assert.Equal("retain", File.ReadAllText(sentinel));
     }
 
-    [Theory]
+    [SkippableTheory]
     [InlineData("valid")]
     [InlineData("missing")]
     [InlineData("changed")]

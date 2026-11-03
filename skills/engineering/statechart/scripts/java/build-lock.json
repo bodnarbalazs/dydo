@@ -20,9 +20,7 @@
     "path": "statechart-tlc-bootstrap.jar",
     "state": "sealed-build",
     "sha256": "1772e71e2d82f470f115fa7e6d63205c388f84a0fa55537f120b9d53f3d3fbfa",
-    "bytes": 1825,
-    "receipt": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/b1-20261031c/build-receipt.json",
-    "receiptSha256": "60498308cfb5290f093a453e0ab20f4378ed9d35e1624304aa8d75ddad12c8ac"
+    "bytes": 1825
   },
   "jdk": {
     "vendor": "Eclipse Temurin",
@@ -59,7 +57,6 @@
     "manifestPath": "META-INF/MANIFEST.MF",
     "manifestSha256": "4b779480fedf8e1bf24411052bfbd00a914b1c80caee1c7b4719d8cb67c7b7ce",
     "manifestRole": "Original bytes retained as data in a compiler-only directory; no jar manifest classpath expansion",
-    "inventory": "dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/implementation4-rmi/compiler-view-source/tlc-members.json",
     "receipt": "work/compiler-input.json; created before javac",
     "runtimeRepresentationChanged": false
   },

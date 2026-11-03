@@ -1,7 +1,0 @@
-# Raw Windows streams and copied declarations retain their executed bytes.
-*/*.stdout -text whitespace=cr-at-eol
-*/*.stderr -text whitespace=cr-at-eol
-*/test-results/*.trx -text whitespace=cr-at-eol
-payload-installed-flow/before-dependency-lock.json -text whitespace=cr-at-eol
-payload-installed-flow/before-payload.items.props -text whitespace=cr-at-eol
-payload-installed-flow/declaration.json -text whitespace=cr-at-eol

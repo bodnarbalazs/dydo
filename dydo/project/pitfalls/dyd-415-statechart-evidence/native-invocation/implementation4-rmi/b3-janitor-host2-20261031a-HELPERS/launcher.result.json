@@ -1,7 +1,0 @@
-{
-  "exit": 0,
-  "directDriverReaped": true,
-  "nativeDeadlineSeconds": 180,
-  "directNativeReapSeconds": 5,
-  "outerOwnerKillForbidden": true
-}

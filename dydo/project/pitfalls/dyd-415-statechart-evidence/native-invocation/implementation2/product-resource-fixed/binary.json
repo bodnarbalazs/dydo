@@ -1,8 +1,0 @@
-{
-  "path": "C:\\Users\\User\\AppData\\Local\\Temp\\dyd415-implementation2-7qsxnolm\\publish\\dydo.exe",
-  "nativeAot": true,
-  "rid": "win-x64",
-  "sha256": "0324a5f5c1e2b725a4856b02b60d4391c8fa4f157f9649176b9f6a5f0624db15",
-  "sourceInputs": "C:\\Users\\User\\.t3\\worktrees\\DynaDocs\\t3-ba795f5f\\dydo\\project\\pitfalls\\dyd-415-statechart-evidence\\native-invocation\\implementation2\\product-resource-fixed\\source-inputs.json",
-  "sourceInputsSha256": "84b722f715fb2fcee135105224e196bc585928d83b25105c796bdd9ee1ab2262"
-}

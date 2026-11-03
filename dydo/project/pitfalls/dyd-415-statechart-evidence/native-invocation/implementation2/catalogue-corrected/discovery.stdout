@@ -1,9 +1,0 @@
-  Determining projects to restore...
-  Restored C:\Users\User\AppData\Local\Temp\dyd415-implementation2-df76_7el\source\DynaDocs.Tests\DynaDocs.Tests.csproj (in 6.83 sec).
-  Restored C:\Users\User\AppData\Local\Temp\dyd415-implementation2-df76_7el\source\DynaDocs.csproj (in 16.24 sec).
-  DynaDocs -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-df76_7el\source\bin\Release\net10.0\dydo.dll
-  DynaDocs.Tests -> C:\Users\User\AppData\Local\Temp\dyd415-implementation2-df76_7el\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll
-Test run for C:\Users\User\AppData\Local\Temp\dyd415-implementation2-df76_7el\source\DynaDocs.Tests\bin\Release\net10.0\DynaDocs.Tests.dll (.NETCoreApp,Version=v10.0)
-The following Tests are available:
-    DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.CanonicalSkillTree_SortsEverySkillExactlyOnceByKind
-    DynaDocs.Tests.Steps.CanonicalSkillAssertionTests.SkillsReadme_CategoryCountsMatchTheRealDirectoriesAndSumTo41

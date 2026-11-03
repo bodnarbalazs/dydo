@@ -1,7 +1,0 @@
---- executed-discovery-checks.py
-+++ checks.py
-@@ -161,1 +161,3 @@
--                    run('whitespace', ['git', 'diff', '--check', BASE])
-+                    git('add', '--', EVIDENCE + '/integration1',
-+                        'dydo/project/pitfalls/dyd-415-statechart-verification.md')
-+                    run('whitespace', ['git', 'diff', '--check', MERGE])

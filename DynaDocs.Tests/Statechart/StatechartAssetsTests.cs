@@ -15,7 +15,7 @@ public class StatechartAssetsTests
         Assert.True(File.Exists(Path.Combine(first, "setup-skills.mjs")));
         Assert.True(File.Exists(Path.Combine(first, "skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar")),
             "The sealed Java11 helper must be in the verified payload; no raw-TLC fallback.");
-        Assert.Equal("7bdbd8727178911b1b9501285d21c16edbc86ef87b7884433088fb4509c280ad", assets.LockDigest);
+        Assert.Equal("3ad231072bddc04588d0f2cf1b61a3e62fc38b4ff400ccea5c3b5d41409575ab", assets.LockDigest);
     }
 
     [Theory]

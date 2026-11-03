@@ -1,5 +1,0 @@
-  Determining projects to restore...
-  Restored /work/source/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/Fixture.csproj (in 10.17 sec).
-  Fixture -> /work/source/dydo/project/pitfalls/dyd-415-statechart-evidence/native-invocation/g1/fixture/bin/Release/net10.0/linux-x64/Fixture.dll
-  Generating native code
-  Fixture -> /work/publish/

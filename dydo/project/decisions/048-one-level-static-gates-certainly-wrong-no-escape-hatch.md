@@ -162,10 +162,15 @@ and adding a third file is another §5 triage to record, not a routine edit. Rea
 a driver whose logic was never extracted, or widen it past the coverage thresholds, and it becomes
 the escape hatch §1 refuses.
 
-## Proposed amendment 2026-11-04 — platform-scoped Python measurement
+## Amendment 2026-11-04 — platform-scoped Python measurement
 
-DYD-518 implements this amendment for Balazs's review before merge; this paragraph does not
-record his approval. The policy stays line ≥ 80%, branch ≥ 60% per module and HCRAP ≤ 20 per
+Balazs conditionally approved this amendment on 2026-11-04 (DYD-534), subject to fresh independent
+review and full hosted Linux/Windows coverage proof on the candidate before merge. His note:
+“in production the backend will be running on linux either way… I'm not sure if we should run anything on windows unless it's warranted.”
+A project measures on Windows only when it ships code executing natively there, so a
+Linux-deployed backend such as LC's needs no Windows coverage job.
+
+DYD-518 implements that bounded selection. The policy stays line ≥ 80%, branch ≥ 60% per module and HCRAP ≤ 20 per
 method. A native implementation is measured on the operating system where it executes. Linux
 continues to measure every platform-neutral Python module and the neutral remainder of mixed
 modules. Platform selection is measurement ownership, not an exclusion or coverage exemption.
@@ -186,9 +191,12 @@ body points, retaining its full complexity scores on each measured portion. Stat
 unchanged and still measures every maintained source on each invocation.
 
 Both gates must pass on the same clean PR candidate. Their receipts record all source hashes,
-the selection hash and every point's owner. A dependent union check requires identical complete
-denominators and source hashes, checks each platform's actual points, callable bodies and policy,
-and rejects missing measurements or different candidates. Native raw coverage and counters remain
+the selection hash and every point's owner. A dependent union check independently rebuilds the
+Python target inventory, executable points, compiled callable bodies and source metrics from the
+clean checkout matching the reports' commit. It recomputes source and selection hashes and owners,
+checks each platform's actual points, callable bodies and unchanged policy, and rejects matching
+omissions, altered ownership or different candidates. The union job runs even when a native leg
+fails and explicitly fails unless both jobs pass. Native raw coverage and counters remain
 in the artifacts; no point is discarded from the two-platform union. This amends measurement
 placement under §2, without widening the September coverage exemption or changing any threshold.
 

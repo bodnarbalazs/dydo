@@ -303,8 +303,9 @@ every top-level statement a type, an interface or a type-only import or export, 
 
 ## Python platform coverage
 
-Python coverage has explicit platform ownership under DR 048's proposed 2026-11-04 amendment
-(Balazs reviews it before merge). `DynaDocs.Tests/coverage/python-platforms.json` assigns native
+Python coverage has explicit platform ownership under
+[DR 048's platform measurement amendment](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md).
+`DynaDocs.Tests/coverage/python-platforms.json` assigns native
 callables to Windows; Linux measures every other target and every mixed module's neutral
 remainder. Source pins make selection drift a measurement error. Both hosted CI jobs run the
 whole Python suite, apply the same 80% line / 60% branch / HCRAP 20 policy to their portions, and

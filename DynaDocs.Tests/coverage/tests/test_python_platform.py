@@ -39,6 +39,21 @@ class PythonPlatformTests(unittest.TestCase):
         (self.root / 'mixed.py').write_text(SOURCE, encoding='utf-8')
         self.selection = {'schema': 1, 'neutral': 'linux', 'native': {'mixed.py': {
             'sha256': hashlib.sha256(SOURCE.encode()).hexdigest(), 'windows': ['native']}}}
+        selection = self.root / python_platform.SELECTION
+        selection.parent.mkdir(parents=True)
+        selection.write_text(json.dumps(self.selection), encoding='utf-8')
+        (self.root / '.gitignore').write_text('*\n', encoding='utf-8')
+        self.git('init', '-q')
+        self.git('add', '-f', 'mixed.py', str(python_platform.SELECTION), '.gitignore')
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'commit', '-qm', 'Pinned fixture sources and reviewed selection')
+        self.commit = self.git('rev-parse', 'HEAD').strip()
+
+    def git(self, *args):
+        return subprocess.check_output(['git', *args], cwd=self.root, text=True)
+
+    def verify(self, *reports):
+        return python_platform.verify_union(*reports, root=self.root)
 
     def scope(self, platform, selection=None, modules=None):
         return python_platform.scope(self.root, modules or [module()], platform,
@@ -50,7 +65,7 @@ class PythonPlatformTests(unittest.TestCase):
             rows, receipt = self.scope(platform)
             for row in rows:
                 row['branches'] = {edge: 1 for edge in row['branches']}
-            reports.append({'schema': 1, 'candidate': {'commit': 'a' * 40, 'dirty': False},
+            reports.append({'schema': 1, 'candidate': {'commit': self.commit, 'dirty': False},
                             'exitCode': 0, 'measurementComplete': True,
                             'stack': 'python', 'gate': 'coverage', 'findings': [], 'gaps': [],
                             'collectors': {'python-coverage': {'facts': {
@@ -60,7 +75,6 @@ class PythonPlatformTests(unittest.TestCase):
     def test_adapter_runs_the_whole_suite_then_gates_the_selected_native_points(self):
         import gate_adapter
         selection = self.root / python_platform.SELECTION
-        selection.parent.mkdir(parents=True)
         selection.write_text(json.dumps(self.selection), encoding='utf-8')
         tests = self.root / 'DynaDocs.Tests/coverage/tests'
         tests.mkdir()
@@ -90,7 +104,7 @@ class PythonPlatformTests(unittest.TestCase):
 
     def test_selection_file_is_required_and_used_from_the_candidate_root(self):
         path = self.root / python_platform.SELECTION
-        path.parent.mkdir(parents=True)
+        path.unlink()
         with self.assertRaises(FileNotFoundError):
             python_platform.scope(self.root, [module()], 'linux')
         path.write_text(json.dumps(self.selection), encoding='utf-8')
@@ -120,7 +134,7 @@ class PythonPlatformTests(unittest.TestCase):
             if defect == 'schema':
                 report['schema'] = 2
             with self.subTest(defect=defect), self.assertRaises(ValueError):
-                python_platform.verify_union(*pair)
+                self.verify(*pair)
 
     def test_union_cannot_drop_points_by_assigning_an_unsupported_owner(self):
         pair = self.reports()
@@ -128,8 +142,8 @@ class PythonPlatformTests(unittest.TestCase):
             receipt = report['collectors']['python-coverage']['facts']['platform_selection']
             receipt['denominators']['mixed.py']['lines']['7'] = 'darwin'
         del pair[1]['collectors']['python-coverage']['facts']['modules'][0]['lines']['7']
-        with self.assertRaisesRegex(ValueError, 'Unsupported platform point owner'):
-            python_platform.verify_union(*pair)
+        with self.assertRaisesRegex(ValueError, 'Source-derived platform denominators differ'):
+            self.verify(*pair)
 
     def test_union_command_writes_only_a_complete_passing_receipt(self):
         left, right = self.reports()
@@ -137,9 +151,10 @@ class PythonPlatformTests(unittest.TestCase):
         for path, value in zip(paths, (left, right)):
             path.write_text(json.dumps(value), encoding='utf-8')
         argv = [sys.executable, str(Path(python_platform.__file__)), '--linux', str(paths[0]),
-                '--windows', str(paths[1]), '--output', str(paths[2])]
-        result = subprocess.run(argv, capture_output=True, text=True)
+                '--windows', str(paths[1]), '--output', str(paths[2]), '--root', str(self.root)]
+        result = subprocess.run(argv, cwd=self.root, capture_output=True, text=True)
         self.assertEqual(0, result.returncode, result.stderr)
+        self.assertFalse((self.root / '.coverage').exists())
         self.assertEqual(['linux', 'windows'], json.loads(paths[2].read_text())['platforms'])
         paths[2].unlink()
         paths[1].write_text('{}', encoding='utf-8')
@@ -187,14 +202,14 @@ class PythonPlatformTests(unittest.TestCase):
         linux, left = self.scope('linux')
         windows, right = self.scope('windows')
         windows[0]['branches']['5:7'] = 1
-        candidate = {'commit': 'a' * 40, 'dirty': False}
+        candidate = {'commit': self.commit, 'dirty': False}
         def report(rows, receipt):
             return {'schema': 1, 'candidate': dict(candidate), 'exitCode': 0, 'measurementComplete': True,
                     'stack': 'python', 'gate': 'coverage', 'findings': [], 'gaps': [],
                     'collectors': {'python-coverage': {'facts': {
                         'modules': rows, 'platform_selection': receipt}}}}
         reports = [report(linux, left), report(windows, right)]
-        self.assertEqual(1, python_platform.verify_union(*reports)['modules'])
+        self.assertEqual(1, self.verify(*reports)['modules'])
         broken = copy.deepcopy(reports)
         del broken[1]['collectors']['python-coverage']['facts']['modules'][0]['lines']['7']
         changed = copy.deepcopy(reports)
@@ -203,7 +218,170 @@ class PythonPlatformTests(unittest.TestCase):
         failed[0]['exitCode'] = 1
         for pair in [broken, changed, failed, [reports[0], reports[0]]]:
             with self.subTest(pair=pair), self.assertRaises(ValueError):
-                python_platform.verify_union(*pair)
+                self.verify(*pair)
+
+    def test_correlated_callable_omission_is_rejected_against_source(self):
+        pair = self.reports()
+        for report in pair:
+            facts = report['collectors']['python-coverage']['facts']
+            row = facts['platform_selection']['denominators']['mixed.py']
+            del row['methods']['native:4:0']
+            del row['bodies']['native:4:0']
+            facts['modules'][0]['methods'] = [m for m in facts['modules'][0]['methods']
+                                             if m['id'] != 'native:4:0']
+        with self.assertRaisesRegex(ValueError, 'Source-derived platform denominators differ'):
+            self.verify(*pair)
+
+    def test_correlated_branch_omission_is_rejected_against_source(self):
+        pair = self.reports()
+        for report in pair:
+            receipt = report['collectors']['python-coverage']['facts']['platform_selection']
+            del receipt['denominators']['mixed.py']['branches']['5:7']
+        del pair[1]['collectors']['python-coverage']['facts']['modules'][0]['branches']['5:7']
+        with self.assertRaisesRegex(ValueError, 'Source-derived platform denominators differ'):
+            self.verify(*pair)
+
+    def test_correlated_neutral_transfer_is_rejected_against_reviewed_selection(self):
+        pair = self.reports()
+        changed = copy.deepcopy(self.selection)
+        changed['native']['mixed.py']['windows'].append('neutral')
+        for report, platform in zip(pair, python_platform.PLATFORMS):
+            facts = report['collectors']['python-coverage']['facts']
+            old_hash = facts['platform_selection']['selection_sha256']
+            rows, receipt = self.scope(platform, changed)
+            for row in rows:
+                row['branches'] = {edge: 1 for edge in row['branches']}
+            receipt['selection_sha256'] = old_hash
+            facts.update(modules=rows, platform_selection=receipt)
+        with self.assertRaisesRegex(ValueError, 'Source-derived platform denominators differ'):
+            self.verify(*pair)
+
+    def test_whole_neutral_module_cannot_disappear_from_both_reports(self):
+        pair = self.reports()
+        (self.root / 'extra.PY').write_text('value = 1\n', encoding='utf-8')
+        self.git('add', '-f', 'extra.PY')
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'commit', '-qm', 'Additional neutral target')
+        for report in pair:
+            report['candidate']['commit'] = self.git('rev-parse', 'HEAD').strip()
+        with self.assertRaisesRegex(ValueError, 'Source-derived platform sources differ'):
+            self.verify(*pair)
+
+    def test_correlated_hash_forgery_is_rejected(self):
+        for key in ('sources', 'selection_sha256'):
+            pair = self.reports()
+            for report in pair:
+                receipt = report['collectors']['python-coverage']['facts']['platform_selection']
+                receipt[key] = {'mixed.py': '0' * 64} if key == 'sources' else '0' * 64
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'Source-derived platform ' + key):
+                self.verify(*pair)
+
+    def test_checkout_source_and_selection_tampering_are_rejected(self):
+        pair = self.reports()
+        for path in (self.root / 'mixed.py', self.root / python_platform.SELECTION):
+            original = path.read_bytes()
+            try:
+                path.write_bytes(original + b'\n')
+                with self.subTest(path=path), self.assertRaisesRegex(ValueError, 'clean pinned checkout'):
+                    self.verify(*pair)
+            finally:
+                path.write_bytes(original)
+
+    def test_receipt_candidate_must_be_the_authoritative_checkout(self):
+        pair = self.reports()
+        for report in pair:
+            report['candidate']['commit'] = 'a' * 40
+        with self.assertRaisesRegex(ValueError, 'clean pinned checkout'):
+            self.verify(*pair)
+
+    def test_authoritative_root_cannot_be_a_partial_checkout_directory(self):
+        with self.assertRaisesRegex(ValueError, 'clean pinned checkout'):
+            python_platform.verify_union(*self.reports(), root=self.root / 'DynaDocs.Tests')
+
+    def test_cross_platform_hash_and_denominator_mismatch_have_specific_errors(self):
+        for key in ('selection_sha256', 'denominators'):
+            pair = self.reports()
+            receipt = pair[1]['collectors']['python-coverage']['facts']['platform_selection']
+            receipt[key] = {} if key == 'denominators' else '0' * 64
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'Platform source or denominator drift'):
+                self.verify(*pair)
+
+    def test_gaps_wrong_stack_and_incomplete_flag_each_reject_independently(self):
+        for key, value in (('gaps', ['unmeasured']), ('stack', 'node'), ('measurementComplete', False)):
+            pair = self.reports()
+            pair[0][key] = value
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'two clean passing Python coverage gates'):
+                self.verify(*pair)
+
+    def test_native_selection_requires_unique_nonempty_names_and_linux_neutral(self):
+        for names in ([], ['native', 'native']):
+            selection = copy.deepcopy(self.selection)
+            selection['native']['mixed.py']['windows'] = names
+            with self.subTest(names=names), self.assertRaisesRegex(ValueError, 'Missing or duplicate native callable'):
+                self.scope('linux', selection)
+        selection = {**self.selection, 'neutral': 'windows'}
+        with self.assertRaisesRegex(ValueError, 'Unsupported Python platform selection'):
+            self.scope('linux', selection)
+
+    def test_decorators_and_loop_exit_arcs_belong_to_native_origin(self):
+        source = 'def decorate(f):\n    return f\n@decorate\ndef native():\n    for x in (1, 2):\n        print(x)\n'
+        (self.root / 'mixed.py').write_text(source, encoding='utf-8')
+        selection = copy.deepcopy(self.selection)
+        selection['native']['mixed.py']['sha256'] = hashlib.sha256(source.encode()).hexdigest()
+        row = module()
+        row.update(lines={str(n): 1 for n in range(1, 7)}, branches={'5:6': 1, '5:-3': 1})
+        rows, receipt = self.scope('windows', selection, [row])
+        self.assertIn('3', rows[0]['lines'])
+        self.assertEqual({'5:6': 1, '5:-3': 1}, rows[0]['branches'])
+        self.assertEqual('windows', receipt['denominators']['mixed.py']['branches']['5:-3'])
+
+    def test_duplicate_modules_and_callables_are_rejected_by_policy(self):
+        for kind, message in (('modules', 'duplicate module identity'), ('methods', 'Duplicate method identity')):
+            pair = self.reports()
+            rows = pair[0]['collectors']['python-coverage']['facts']['modules']
+            target = rows if kind == 'modules' else rows[0]['methods']
+            target.append(copy.deepcopy(target[0]))
+            with self.subTest(kind=kind), self.assertRaisesRegex(ValueError, message):
+                self.verify(*pair)
+
+    def test_union_accepts_native_producer_then_rejects_correlated_body_loss(self):
+        from python_coverage import collect
+        from python_join import collect as join
+        pair = self.reports()
+        source = 'def neutral():\n    return 1\ndef native(flag):\n    if flag:\n        return 2\n    return 3\n'
+        (self.root / 'mixed.py').write_text(source, encoding='utf-8')
+        selection = copy.deepcopy(self.selection)
+        selection['native']['mixed.py']['sha256'] = hashlib.sha256(source.encode()).hexdigest()
+        (self.root / python_platform.SELECTION).write_text(json.dumps(selection), encoding='utf-8')
+        self.git('add', '-u')
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'commit', '-qm', 'Real producer fixture')
+        (self.root / 'exercise.py').write_text(
+            'import mixed\nassert mixed.neutral() == 1\nassert mixed.native(True) == 2\n'
+            'assert mixed.native(False) == 3\n', encoding='utf-8')
+        raw = self.root / 'native-coverage'
+        self.assertEqual(0, collect(self.root, raw, ['mixed.py'], [sys.executable, 'exercise.py']))
+        modules = join(self.root, raw, ['mixed.py'])
+        for report, platform in zip(pair, python_platform.PLATFORMS):
+            rows, receipt = python_platform.scope(self.root, modules, platform)
+            report['candidate']['commit'] = self.git('rev-parse', 'HEAD').strip()
+            report['collectors']['python-coverage']['facts'] = {'modules': rows, 'platform_selection': receipt}
+        self.assertEqual(0, self.verify(*pair)['exitCode'])
+        for report in pair:
+            receipt = report['collectors']['python-coverage']['facts']['platform_selection']
+            del receipt['denominators']['mixed.py']['bodies']['native:3:0']['6']
+        native = pair[1]['collectors']['python-coverage']['facts']['modules'][0]['methods'][0]
+        del native['body_lines']['6']
+        native.update(total=2, covered=2)
+        with self.assertRaisesRegex(ValueError, 'Source-derived platform denominators differ'):
+            self.verify(*pair)
+
+    def test_callable_metrics_cannot_be_lowered_in_receipts(self):
+        pair = self.reports()
+        method = pair[1]['collectors']['python-coverage']['facts']['modules'][0]['methods'][0]
+        method['cc'] = 1
+        with self.assertRaisesRegex(ValueError, 'Platform callable facts differ from source'):
+            self.verify(*pair)
 
 
 if __name__ == '__main__':

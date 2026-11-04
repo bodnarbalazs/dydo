@@ -4,6 +4,7 @@ import ast
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 import sys
 
 from gate_policy import evaluate_policy
@@ -111,33 +112,78 @@ def _report_facts(report, platform):
     return facts['modules'], receipt
 
 
-def _check_module(module, row, platform):
+def _check_module(module, row, platform, source_methods):
     for kind in ('lines', 'branches'):
         if set(module[kind]) != {point for point, owner in row[kind].items() if owner == platform}:
             raise ValueError('Incomplete platform point union')
     methods = {m['id']: m for m in module['methods']}
-    if (set(methods) != {key for key, owners in row['methods'].items() if platform in owners}
-            or len(methods) != len(module['methods'])):
+    if set(methods) != {key for key, owners in row['methods'].items() if platform in owners}:
         raise ValueError('Incomplete platform callable union')
     for key, method in methods.items():
-        if set(method['body_lines']) != {line for line, owner in row['bodies'][key].items() if owner == platform}:
-            raise ValueError('Incomplete platform callable body union')
-        if (method['total'] != len(method['body_lines'])
-                or method['covered'] != sum(hits > 0 for hits in method['body_lines'].values())):
-            raise ValueError('Platform callable coverage disagrees with its body points')
+        _check_method(method, row['bodies'][key], source_methods[key], platform)
 
 
-def _check_points(modules, receipt, platform):
+def _check_method(method, body, source_method, platform):
+    if any(method[field] != source_method[field] for field in
+           ('kind', 'line', 'end_line', 'cc', 'cognitive', 'parameters', 'constructor')):
+        raise ValueError('Platform callable facts differ from source')
+    if set(method['body_lines']) != {line for line, owner in body.items() if owner == platform}:
+        raise ValueError('Incomplete platform callable body union')
+    if (method['total'] != len(method['body_lines'])
+            or method['covered'] != sum(hits > 0 for hits in method['body_lines'].values())):
+        raise ValueError('Platform callable coverage disagrees with its body points')
+
+
+def _check_points(modules, receipt, platform, source_modules):
     expected = receipt['denominators']
     actual = {m['path']: m for m in modules}
     selected = {path for path, row in expected.items() if platform in row['lines'].values()}
-    if set(actual) != selected or len(actual) != len(modules):
+    if set(actual) != selected:
         raise ValueError('Incomplete platform module union')
     for path, module in actual.items():
-        _check_module(module, expected[path], platform)
+        source_methods = {method['id']: method for method in source_modules[path]['methods']}
+        _check_module(module, expected[path], platform, source_methods)
 
 
-def verify_union(linux, windows):
+def _source_modules(root, commit):
+    from gate_discovery import ordinary_discovery
+    from gate_inventory import assemble_inventory
+    from inventory import git_file_state
+    root = Path(root).resolve()
+    head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
+    toplevel = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=root, text=True).strip()
+    dirty = subprocess.check_output(['git', 'status', '--porcelain'], cwd=root)
+    if head != commit or dirty or Path(toplevel).resolve() != root:
+        raise ValueError('Platform union requires the clean pinned checkout')
+    paths, deleted = git_file_state(root)
+    python_paths = [path for path in paths if path.lower().endswith('.py') or path.endswith('/SHA256SUMS')]
+    inventory = assemble_inventory(root, python_paths, [], ordinary_discovery(root, python_paths), deleted)
+    if inventory['errors']:
+        raise ValueError(f"Invalid source-derived Python inventory: {inventory['errors']}")
+    return [_source_module(root, row['path']) for row in inventory['sources'] if row['role'] == 'target']
+
+
+def _source_module(root, path):
+    import coverage
+    from python_join import _methods
+    from python_runtime import callable_inventory, module_inventory
+    if sys.version_info[:3] != (3, 14, 4) or coverage.__version__ != '7.16.0':
+        raise ValueError('Platform union requires pinned CPython 3.14.4 and coverage.py 7.16.0')
+    absolute = str(root / path)
+    source = (root / path).read_text(encoding='utf-8-sig')
+    native = coverage.Coverage(data_file=None, branch=True, config_file=False)
+    native.get_data().add_arcs({absolute: []})
+    analysis = native._analyze(absolute)
+    counter = {'callables': callable_inventory(source, absolute),
+               'modules': [module_inventory(source, absolute)]}
+    return {'path': path, 'language': 'python', 'executable': bool(analysis.statements),
+            'lines': {str(line): 0 for line in analysis.statements},
+            'branches': {f'{start}:{end}': 0 for start, end in analysis.arc_possibilities
+                         if analysis.exit_counts[start] > 1},
+            'methods': _methods(source, absolute, counter)}
+
+
+def verify_union(linux, windows, root=Path('.')):
     """Fail closed unless both gates cover the complete same-candidate denominator."""
     left, lreceipt = _report_facts(linux, 'linux')
     right, rreceipt = _report_facts(windows, 'windows')
@@ -146,25 +192,17 @@ def verify_union(linux, windows):
     for key in ('sources', 'selection_sha256', 'denominators'):
         if not lreceipt[key] or lreceipt[key] != rreceipt[key]:
             raise ValueError('Platform source or denominator drift')
-    _validate_owners(lreceipt)
-    _check_points(left, lreceipt, 'linux')
-    _check_points(right, rreceipt, 'windows')
+    modules = _source_modules(root, linux['candidate']['commit'])
+    _, authoritative = scope(root, modules, 'linux')
+    for key in ('sources', 'selection_sha256', 'denominators'):
+        if lreceipt[key] != authoritative[key]:
+            raise ValueError(f'Source-derived platform {key} differ')
+    source_modules = {module['path']: module for module in modules}
+    _check_points(left, authoritative, 'linux', source_modules)
+    _check_points(right, authoritative, 'windows', source_modules)
     return {'schema': 1, 'commit': linux['candidate']['commit'],
             'modules': len(lreceipt['sources']), 'selection_sha256': lreceipt['selection_sha256'],
             'platforms': list(PLATFORMS), 'exitCode': 0}
-
-
-def _validate_owners(receipt):
-    if set(receipt['sources']) != set(receipt['denominators']):
-        raise ValueError('Incomplete platform source denominator')
-    for row in receipt['denominators'].values():
-        owners = [*row['lines'].values(), *row['branches'].values(),
-                  *(owner for body in row['bodies'].values() for owner in body.values())]
-        if set(owners) - set(PLATFORMS) or set(row['methods']) != set(row['bodies']):
-            raise ValueError('Unsupported platform point owner')
-        for key, platforms in row['methods'].items():
-            if not platforms or set(platforms) != set(row['bodies'][key].values()):
-                raise ValueError('Missing platform callable owner')
 
 
 def main():
@@ -172,11 +210,12 @@ def main():
     parser.add_argument('--linux', required=True, type=Path)
     parser.add_argument('--windows', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--root', default=Path('.'), type=Path)
     args = parser.parse_args()
     try:
         result = verify_union(json.loads(args.linux.read_text(encoding='utf-8')),
-                              json.loads(args.windows.read_text(encoding='utf-8')))
-    except (ValueError, KeyError, TypeError, OSError) as error:
+                              json.loads(args.windows.read_text(encoding='utf-8')), args.root)
+    except (ValueError, KeyError, TypeError, OSError, subprocess.CalledProcessError) as error:
         print(error, file=sys.stderr)
         return 2
     args.output.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')

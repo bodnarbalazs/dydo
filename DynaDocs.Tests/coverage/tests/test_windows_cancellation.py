@@ -2,12 +2,14 @@
 import json
 import os
 from pathlib import Path
+import select
 import signal
 import shutil
 import socket
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from contextlib import ExitStack
 from unittest import mock
@@ -19,6 +21,50 @@ import windows_job
 
 
 class CancellationProtocolTests(unittest.TestCase):
+    def test_native_fixture_passes_real_facade_preflight_on_every_platform(self):
+        for mode in ("facade", "repeat", "adapter-killed", "escalation"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                prepare_windows_fixture(mode, root)
+                child = subprocess.run([sys.executable, str(root / "gap_check.py"), "capabilities"],
+                                       cwd=root, capture_output=True, text=True, timeout=10)
+                self.assertEqual(0, child.returncode, child.stdout + child.stderr)
+                self.assertIn("coverage: configured", child.stdout)
+                self.assertFalse((root / "adapter-pid").exists())
+                self.assertFalse((root / "owner-pid").exists())
+
+    def test_readiness_reports_facade_rejection_before_accepting(self):
+        with tempfile.TemporaryDirectory() as folder, socket.socket() as listener:
+            root = Path(folder)
+            prepare_windows_fixture("facade", root)
+            manifest_path = root / "gap_check.json"
+            manifest = json.loads(manifest_path.read_text())
+            manifest["stacks"][0]["capabilities"]["coverage"]["artifacts"] = []
+            manifest_path.write_text(json.dumps(manifest))
+            with (root / "facade.stdout").open("wb") as stdout, (root / "facade.stderr").open("wb") as stderr:
+                with subprocess.Popen([sys.executable, str(root / "gap_check.py"), "gate", "coverage"],
+                                      cwd=root, stdout=stdout, stderr=stderr) as facade:
+                    self.assertEqual(2, facade.wait(timeout=10))
+                    # An unbound listener cannot accept: the exit must be diagnosed first.
+                    with self.assertRaisesRegex(AssertionError, "Facade exited 2 before subject readiness.*") as error:
+                        accept_subject(listener, facade, root)
+            self.assertIn("configured gates require a required artifact", str(error.exception))
+            self.assertFalse((root / "adapter-pid").exists())
+
+    def test_readiness_accepts_the_subject_while_facade_is_running(self):
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            listener.listen()
+            with socket.create_connection(listener.getsockname()) as subject:
+                subject.sendall(b"ready")
+                with accept_subject(listener, mock.Mock(poll=mock.Mock(return_value=None)), Path.cwd()) as ready:
+                    self.assertEqual(b"ready", ready.recv(5))
+
+    def test_readiness_keeps_a_bounded_deadline_for_a_live_facade(self):
+        with mock.patch.object(time, "monotonic", side_effect=[0, 20]):
+            with self.assertRaisesRegex(TimeoutError, "Subject readiness timed out"):
+                accept_subject(mock.Mock(), mock.Mock(poll=mock.Mock(return_value=None)), Path.cwd())
+
     def test_no_row_deadline_keeps_waiting_after_a_native_slice_expires(self):
         child = mock.Mock(returncode=0)
         completed = iter((False, False, True))
@@ -221,10 +267,45 @@ def windows_adapter(mode):
         [sys.executable, str(Path(__file__).resolve()), "--owner", mode], Path.cwd())
 
 
-def windows_probe(mode, root):
-    import run_tests
+def prepare_windows_fixture(mode, root):
+    """Build the same facade inputs for portable preflight and native cancellation."""
     # Bound facade root discovery even when CI retains fixtures beneath the checkout.
     subprocess.run(["git", "init", "--quiet", str(root)], check=True)
+    subject = root / "DynaDocs.Tests/coverage/csharp_coverage.py"
+    subject.parent.mkdir(parents=True)
+    subject.write_text("import runpy,sys; sys.argv=['subject','--subject']; runpy.run_path(" +
+                       repr(str(Path(__file__).resolve())) + ",run_name='__main__')")
+    shutil.copyfile(TOOLS / "gap_check.py", root / "gap_check.py")
+    command = [sys.executable, str(Path(__file__).resolve()), "--adapter", mode]
+    caps = {name: {"state": "unavailable", "reason": "fixture"} for name in ("test", "static", "mutation")}
+    # The campaign publishes this receipt on completion and cooperative interruption.
+    # Forced interruption may omit it; the facade's interrupted path preserves that truth.
+    caps["coverage"] = {"state": "configured", "command": {"kind": "argv", "argv": command},
+                        "artifacts": [{"path": "published/identities.json", "required": True}]}
+    manifest = {"schema": 1, "artifactRoot": "results", "stacks": [{"name": "dotnet", "kind": "fixture",
+                "cwd": ".", "isolation": {"requirement": "in-place", "evidence": {"state": "verified", "kind": "direct"}},
+                "capabilities": caps}]}
+    (root / "gap_check.json").write_text(json.dumps(manifest))
+
+
+def accept_subject(listener, facade, root):
+    deadline = time.monotonic() + 20
+    while True:
+        code = facade.poll()
+        if code is not None:
+            stdout = (root / "facade.stdout").read_text(encoding="utf-8", errors="replace")
+            stderr = (root / "facade.stderr").read_text(encoding="utf-8", errors="replace")
+            raise AssertionError(f"Facade exited {code} before subject readiness\nstdout:\n{stdout}\nstderr:\n{stderr}")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("Subject readiness timed out while facade was still running")
+        if select.select([listener], [], [], min(.2, remaining))[0]:
+            return listener.accept()[0]
+
+
+def windows_probe(mode, root):
+    import run_tests
+    prepare_windows_fixture(mode, root)
     # Even the red implementation's leaked tree is cleaned by this disposable supervisor.
     containment = run_tests.contain_descendants()
     kernel = windows_job.bindings()
@@ -234,18 +315,6 @@ def windows_probe(mode, root):
         listener.listen()
         listener.settimeout(20)
         env = {**os.environ, "CANCEL_PORT": str(listener.getsockname()[1])}
-        subject = root / "DynaDocs.Tests/coverage/csharp_coverage.py"
-        subject.parent.mkdir(parents=True)
-        subject.write_text("import runpy,sys; sys.argv=['subject','--subject']; runpy.run_path(" +
-                           repr(str(Path(__file__).resolve())) + ",run_name='__main__')")
-        shutil.copyfile(TOOLS / "gap_check.py", root / "gap_check.py")
-        command = [sys.executable, str(Path(__file__).resolve()), "--adapter", mode]
-        caps = {name: {"state": "unavailable", "reason": "fixture"} for name in ("test", "static", "mutation")}
-        caps["coverage"] = {"state": "configured", "command": {"kind": "argv", "argv": command}, "artifacts": []}
-        manifest = {"schema": 1, "artifactRoot": "results", "stacks": [{"name": "dotnet", "kind": "fixture",
-                    "cwd": ".", "isolation": {"requirement": "in-place", "evidence": {"state": "verified", "kind": "direct"}},
-                    "capabilities": caps}]}
-        (root / "gap_check.json").write_text(json.dumps(manifest))
         stdout = stack.enter_context((root / "facade.stdout").open("wb"))
         stderr = stack.enter_context((root / "facade.stderr").open("wb"))
         facade = subprocess.Popen([sys.executable, str(root / "gap_check.py"), "gate", "coverage"], cwd=root,
@@ -253,7 +322,7 @@ def windows_probe(mode, root):
         foreign = subprocess.Popen([sys.executable, "-c", "import threading; threading.Event().wait(80)"],
                                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
         try:
-            with listener.accept()[0] as ready:
+            with accept_subject(listener, facade, root) as ready:
                 pids = json.loads(ready.makefile("rb").readline())
             owner = int((root / "owner-pid").read_text())
             adapter = int((root / "adapter-pid").read_text())

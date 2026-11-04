@@ -6,6 +6,82 @@ date: 2026-11-04
 
 # DYD-504 toolchain modernization
 
+## Hosted Windows cancellation fixture fix — 2026-11-04
+
+This fix starts at clean, pushed `64f1f4bcd8c4287ec3961d5897faadb52152cd3c`
+on `DYD-504-modernize-toolchain`. The ticket branch, isolated worktree root,
+base ancestry, clean tree and owned-path checks passed before editing. Only
+`DynaDocs.Tests/coverage/tests/test_windows_cancellation.py` and this proof change.
+
+Hosted run `41851428407`, Windows job `126648463540`, failed all four native
+cancellation cases on `95d591dac64a33d62f22032c530592b7d3ab4ee6`. Each saved
+facade receipt (`facade`, `repeat`, `adapter-killed`, `escalation`) reports
+`state: invalid`, `aggregateExit: 2`, empty `argv`, null `childExit`, and
+`configured gates require a required artifact`. All four stdout files agree;
+stderr is empty and no adapter/owner PID files exist. The fixture declared
+`artifacts: []`, so the real facade correctly rejected it before launching the
+adapter. The listener then obscured that rejection with a 20-second timeout.
+These receipts establish a fixture defect, not a native cancellation verdict.
+
+The shared fixture builder now declares required `published/identities.json`,
+the actual campaign receipt written by `run_tests._publish_assurance` on normal
+completion and cooperative interruption. Forced termination can omit it; the
+existing facade interruption path and native escalation assertion retain that
+distinction. No dummy artifact or production policy change was introduced.
+All four native cases retain their sentinel-survival, held-handle and applicable
+receipt assertions. Readiness now checks for facade exit between bounded socket
+waits and reports the exit plus stdout/stderr; a live facade still has the same
+20-second readiness deadline.
+
+### Focused proof and captain recipe
+
+The portable regression builds exactly the native fixture for all four modes
+and invokes the copied real facade's `capabilities` CLI. It expects exit 0 and
+`coverage: configured`, without launching the adapter/owner. Before the fix,
+all four subcases failed with exit 2 and the hosted diagnostic (unittest exit 1).
+After the fix, all ten protocol tests passed (exit 0). Reverting only the
+artifact declaration reproduced the same four failures (exit 1), then the
+green-tested bytes were restored. Separate regressions exercise real facade
+rejection diagnostics, socket readiness and a deterministic live-process deadline.
+
+Run from the repository root with the existing locked CPython 3.14.4 environment:
+
+```bash
+PYTHONPATH=DynaDocs.Tests/coverage/tests dydo/_system/.local/static-gates/python/bin/python -m unittest -v test_windows_cancellation test_windows_job test_gate_adapter.CoverageCancellationTests
+dydo/_system/.local/static-gates/python/bin/python DynaDocs.Tests/coverage/gap_check.py gate static --stack python
+```
+
+The focused selection discovered 69 tests: 21 passed and 48 Windows-native tests
+were skipped, exit 0. Those skips include all four native cancellation cases;
+they are missing proof, not passes. Python static passed with exit 0, as did
+targeted Ruff and the repository's Python cognitive/parameter/nested-ternary
+checks on the edited test module. Fixture builder, readiness helper and native
+probe cognitive scores are 1, 7 and 8 respectively, below the unchanged limit 20.
+The initial socket tests were denied by the sandbox; the authorized loopback
+rerun passed. No runtime or dependency changes were needed.
+
+Evidence is retained under
+`DynaDocs.Tests/coverage/results/dyd-504-windows-fixture-fix/`: `pre-edit.json`,
+`hosted-red.json`, and per-command logs, argv/exits, input SHA-256 manifests and
+candidate patches for `red`, `green-loopback`, `reverted-red`, `focused`,
+`python-static`, `ruff` and `test-metrics`. The unsuccessful sandbox attempt is
+retained as `green`. The original hosted evidence remains under
+`results/dyd-504-hosted-windows-failure/`; the static facade receipt is
+`results/run-1793804764671-83bcb321/result.json`, relative to the coverage folder.
+
+Only fixture/test inputs and this proof changed. Prior build/viewer/full-stack
+evidence and the captain's 24/24 runner-fix replay remain historical evidence
+for their unchanged inputs; this hop does not claim a new whole-candidate pass
+or rerun those costly campaigns. The captain must push, replay the focused
+recipe, obtain fresh independent review covering both successor hops, and retain
+green hosted Windows evidence for all four cases. Windows B1 remains unestablished.
+The 18 DYD-518 findings and three DYD-507 tests remain known failed gates under
+their exact dispositions, with no new allowance. Other deferred findings remain
+unchanged. Integration into feature tip `14c43837` remains owed; it differs from
+the original `42882830` base. This writer commits only; delivery stays with the captain.
+
+code-writer/model: gpt-6-astra (high).
+
 ## Hosted Python runner compatibility fix — 2026-11-04
 
 This narrow successor starts at clean `95d591dac64a33d62f22032c530592b7d3ab4ee6`

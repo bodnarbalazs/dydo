@@ -73,6 +73,24 @@ class KnipAccountingTests(unittest.TestCase):
                          workspace['project'])
         self.assertEqual(['openai-sse-provider.mjs', 'run-host-canaries.mjs'], workspace['entry'])
 
+    def test_a_source_no_declared_package_owns_is_an_accounted_measurement_error(self):
+        (self.root / 'viewer').mkdir()
+        (self.root / 'viewer/package.json').write_text('{}', encoding='utf-8')
+        model = workspace_model(self.root, ['skills/runtime/scripts/run.ts'], 'typescript')
+        self.assertEqual([{'path': 'skills/runtime/scripts/run.ts',
+                           'message': 'No declared package owns this maintained source'}], model['errors'])
+        self.assertEqual([], model['sources'])
+
+    def test_excluded_typescript_is_judged_in_its_package_or_counted_unjudged_without_one(self):
+        (self.root / 'viewer').mkdir()
+        (self.root / 'viewer/package.json').write_text('{}', encoding='utf-8')
+        unowned = ['skills/runtime/scripts/run.ts', 'skills/runtime/scripts/test/run.test.ts']
+        model = workspace_model(self.root, ['viewer/src/main.tsx'], 'typescript',
+                                ['viewer/e2e/journey.spec.ts', *unowned])
+        self.assertEqual([], model['errors'])
+        self.assertEqual(['viewer/e2e/journey.spec.ts', 'viewer/src/main.tsx'], [row['path'] for row in model['sources']])
+        self.assertEqual({'count': 2, 'paths': unowned}, model['unjudged'])
+
     def native(self):
         return [{'issues': [{'file': '../../npm/lib/example.js', 'exports': [{'name': 'dead', 'line': 3}],
                             'files': [], 'nsExports': [], 'duplicates': [], 'unresolved': []}]},

@@ -19,11 +19,12 @@ which hands the flag to `RootPrefix`. Tests reach the overload through the exist
 `InternalsVisibleTo("DynaDocs.Tests")`. That substitution is the only logic change, so every host
 keeps base `00d09e65`'s output byte for byte.
 
-One shared `RootForms` table pins 30 inputs, each with its Windows and other-host reading. It
-covers `//server/share`, a bare `//server`, `..` stopping at the share, `//?/C:`,
-`//?/UNC/server/share` (any case, with and without a server), `//.`, too-short and slashless
-device forms, drives, and the other-host reading of a leading `//` as `/`. The host theory checks
-the running host's column. A new theory checks both columns through the seam on any host.
+One shared `RootForms` table pins 31 inputs, each with its Windows and other-host reading. It covers
+`//server/share`, a bare `//server`, `..` stopping at the share, `//?/C:`, `//?/UNC/server/share`
+(with and without a server, and a lowercase `unc` whose `..` stops at the share), `//.`, too-short
+and slashless device forms, drives, and the other-host reading of a leading `//` as `/`. The host
+theory checks the running host's column. A new theory checks both columns through the seam on any
+host.
 
 ## Characterisation and proof
 
@@ -35,6 +36,8 @@ the running host's column. A new theory checks both columns through the seam on 
 - Red proof against three deliberate `RootPrefix`/`ServerShareLength` breaks. Only the new theory
   failed: 6, 3 and 5 rows. The host theory stayed green on Linux each time, which shows these
   branches were unreached before.
+- First-round review nit: a case-sensitive `UNC/` match survived the table. The added lowercase
+  `//?/unc/s/sh/..` row fails against that mutant (`OrdinalIgnoreCase` to `Ordinal`).
 - Local AltCover 9.0.102 runs the PathUtils tests and reads `GateMetrics --syntax` on a `/tmp` copy:
 
 | Member | Base | Candidate |

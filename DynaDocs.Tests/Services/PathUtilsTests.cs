@@ -61,6 +61,7 @@ public class PathUtilsTests
         { "//?x/../y", "//?x/../y", "/y" },         // no device slash: server '?x', share '..'
         { "//./C:/..", "//./C:/", "/" },
         { "//?/unc/s/sh/x", "//?/unc/s/sh/x", "/?/unc/s/sh/x" },
+        { "//?/unc/s/sh/..", "//?/unc/s/sh/", "/?/unc/s" }, // a lowercase unc is still a share root
         { "//?/UNC/server", "//?/UNC/server/", "/?/UNC/server" },
         { "//?/UNC//x/..", "//?/UNC", "/?/UNC" },   // UNC without a server: the device root only
         { "//?/UNC/", "//?/UNC", "/?/UNC" },

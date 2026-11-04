@@ -10,7 +10,7 @@ date: 2026-10-29
 An agent merges a reviewed PR into a `feature/*` branch through `dydo merge`, whose refusals are code
 with no override flag. A merge into the default branch stays the user's click. Designed in
 [DYD-417](https://linear.app/bodnar-balazs/issue/DYD-417), ruled on by Balazs on 2026-10-29 and
-amended by the dydo admiral the same day.
+amended by the dydo admiral the same day and on 2026-11-04 (the target pin, see the Amendment).
 
 ## Context
 
@@ -42,14 +42,17 @@ server-side. Balazs ruled it unnecessary.
 ## Decision
 
 1. **One path.** Agents merge only into `feature/*` branches, and only through
-   `dydo merge <pr> --match-head-commit <sha40> [--dry-run]`. A merge into `master`, `main` or the
-   default branch is the user's click.
-2. **Refusals in code, no override.** The command takes no repository, base or override option; the
-   repository is the one the checkout's `origin` names. The base must match a fixed `feature/*`
-   pattern and git's branch-name rule, and is refused when it is GitHub's default branch, read fresh,
-   or the local `origin/HEAD` name. The PR head must equal the reviewed SHA, which is exactly what
-   merges. A closed PR is refused unless its SHA is already in its feature base (reconcile-first,
-   exit 0 `already integrated`). Draft and fork PRs are refused.
+   `dydo merge <pr> --match-head-commit <sha40> --match-base-commit <sha40> [--dry-run]`. A merge
+   into `master`, `main` or the default branch is the user's click.
+2. **Refusals in code, no override.** The command takes no repository, base-selection or override
+   option; `--match-base-commit` only adds a refusal. The repository is the one the checkout's
+   `origin` names, and the target is the PR's base. That base's tip, read from its branch ref and
+   never from the PR's `base.sha`, must equal the pin; the pin reaches a write only as the merge's
+   first parent. The base must match a fixed `feature/*` pattern and git's branch-name rule, and is
+   refused when it is GitHub's default branch, read fresh, or the local `origin/HEAD` name. The PR
+   head must equal the reviewed SHA, which is exactly what merges. A closed PR is refused unless its
+   SHA is already in its feature base (reconcile-first, exit 0 `already integrated`, comparing no
+   pin, since the run's own merge moved the tip). Draft and fork PRs are refused.
 3. **Merge commits only.** `POST /merges`, or an explicit two-parent commit where GitHub would
    fast-forward. No squash or rebase path exists.
 4. **The PASS comes from the PR body, bound to the SHA.** The `## Independent review` section must
@@ -101,13 +104,28 @@ server-side. Balazs ruled it unnecessary.
   - **The default-branch-switch race:** an admin switching the default branch to the feature branch
     during a run. The command re-reads `default_branch` after merging and warns when it changed;
     blocking agent default-branch changes is planned, delivery pending in DYD-425.
+  - **The `POST /merges` window.** GitHub cannot make that merge conditional on a tip. The command
+    re-reads the ref just before the call and checks the merge's first parent after it, so a branch
+    that moves inside that window still takes the merge: the command exits `2` naming both SHAs, and
+    the merge review judges its actual parents. The two-parent path has no window, since its
+    unforced ref move fails when the tip moved.
 - The merge SHA is the candidate for the combined gates and the merge review. A conflicted merge
   stays the Merge code-writer's local merge.
-- The command's stdout line is the merge evidence. Git and the PR timeline are the record; there is
-  no local log.
+- The command's stdout line, which names the pinned tip, and the merge commit's `Target-Tip` trailer
+  are the merge evidence. Git and the PR timeline are the record; there is no local log.
 - A repository whose CI does not run on PRs into `feature/*` gets every merge refused until it does.
 - The stopgap `autoMode.allow` entry and the user-level `Bash(gh pr merge:*)` allow rule go only
   after the planned DYD-426 parity gate passes in LC; the user removes them. That gate remains pending.
+
+## Amendment - 2026-11-04: the target pin (DYD-523)
+
+The DYD-521 merge receipt trusted the PR's `baseRefOid`, a tip the feature branch had left hours
+before, so the reviewed target and the merged one differed
+([DYD-523](https://linear.app/bodnar-balazs/issue/DYD-523)). Balazs delegated the call to the
+admiral on 2026-11-04, who chose a required `--match-base-commit`: decisions 1 and 2 read as above,
+and the POST-path window joins the accepted residuals. The pin keeps decision 2's guarantee because
+it can only refuse; the target stays the PR's base, and the command's own output, not PR metadata,
+records the tip it merged onto.
 
 ## Related
 

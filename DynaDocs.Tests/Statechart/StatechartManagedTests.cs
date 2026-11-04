@@ -17,19 +17,39 @@ public class StatechartManagedTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ForeignMarkerOrUnexpectedChildIsRetainedAndRejected(bool validMarker)
+    [InlineData("valid")]
+    [InlineData("foreign")]
+    [InlineData("missing")]
+    public void ForeignMarkerOrUnexpectedChildIsRetainedAndRejectedByPathWithTheRemedy(string marker)
     {
         using var scope = new StatechartTestDirectory();
         var assets = new StatechartAssets();
         var managed = Create(scope.Path);
         Directory.CreateDirectory(managed.Root);
-        File.WriteAllText(Path.Combine(managed.Root, ".statechart-store"), validMarker ? assets.LockDigest : "foreign");
+        if (marker != "missing") File.WriteAllText(Path.Combine(managed.Root, ".statechart-store"), marker == "valid" ? assets.LockDigest : "foreign");
         var sentinel = Path.Combine(managed.Root, "foreign");
         File.WriteAllText(sentinel, "keep");
-        Assert.Throws<IOException>(() => managed.Read());
+        var error = Assert.Throws<IOException>(() => managed.Read());
+        Assert.Contains(managed.Root, error.Message);
+        Assert.Contains("Move it aside", error.Message);
         Assert.Equal("keep", File.ReadAllText(sentinel));
+    }
+
+    // Crashes left these behind; the install lock shows no other run still uses them.
+    [Fact]
+    public async Task StagingAndReceiptTempFilesACrashLeftAreSweptUnderTheLock()
+    {
+        using var scope = new StatechartTestDirectory();
+        var managed = new StatechartManaged(new StatechartHome(Path.Combine(scope.Path, "assets"),
+            Path.Combine(scope.Path, "dependencies"), Path.Combine(scope.Path, "state")), new StatechartAssets(), "win-x64", Unreachable());
+        var parent = Path.GetDirectoryName(managed.Root)!;
+        Directory.CreateDirectory(Path.Combine(parent, ".install-win-x64-" + Guid.NewGuid().ToString("N"), "store"));
+        File.WriteAllText(Path.Combine(parent, ".receipt-win-x64-" + Guid.NewGuid().ToString("N")), "{}");
+        var other = Path.Combine(parent, ".receipt-linux-x64-" + Guid.NewGuid().ToString("N"));
+        File.WriteAllText(other, "{}");
+        await managed.InstallAsync(new("node", "java", "tlc", "pele"), Path.Combine(scope.Path, "unavailable-payload"), CancellationToken.None);
+        Assert.Equal([other, Path.Combine(parent, "win-x64.install.lock")],
+            Directory.GetFileSystemEntries(parent).Order(StringComparer.Ordinal));
     }
 
     [Fact]

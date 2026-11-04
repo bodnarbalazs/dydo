@@ -31,17 +31,12 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
             selected = Combine(selected, state.Dependencies);
             var missing = Missing(selected);
             if (missing.Length == 0) return selected;
-            if (!Directory.Exists(Root))
-            {
-                Directory.CreateDirectory(Root);
-                using var marker = new FileStream(Path.Combine(Root, ".statechart-store"), FileMode.CreateNew, FileAccess.Write);
-                marker.Write(System.Text.Encoding.UTF8.GetBytes(assets.LockDigest));
-            }
-            ValidateRoot();
             var stage = Path.Combine(parent, ".install-" + rid + "-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(stage);
             try
             {
+                if (!Directory.Exists(Root)) CreateRoot(stage);
+                ValidateRoot();
                 var installed = await FetchAsync(missing, stage, deadline.Token);
                 var candidate = Combine(new StatechartDependencies(installed.GetValueOrDefault("node"),
                     installed.GetValueOrDefault("java"), installed.GetValueOrDefault("tlc"), installed.GetValueOrDefault("pele")), selected);
@@ -67,6 +62,7 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
         var parent = Path.GetDirectoryName(Root)!;
         using (await Lock(parent, token))
         {
+            SweepStages(parent);
             _state = null;
             var state = Inspect();
             selected = Combine(selected, state.Dependencies);
@@ -101,7 +97,7 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
         var paths = _downloads.ToDictionary(item => item.Name, _ => (string?)null);
         if (!Directory.Exists(Root))
         {
-            if (new DirectoryInfo(Root).LinkTarget is not null) throw new IOException("Linked managed statechart root.");
+            if (new DirectoryInfo(Root).LinkTarget is not null) throw Foreign("is a link");
             return new(new(null, null, null, null), [], []);
         }
         ValidateRoot();
@@ -184,7 +180,7 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
         identity["payload"] = assets.Digest;
         identity["verifiedUtc"] = DateTimeOffset.UtcNow.ToString("O");
         identity["readiness"] = readiness.DeepClone();
-        var temp = Path.Combine(parent, ".receipt-" + Guid.NewGuid().ToString("N"));
+        var temp = Path.Combine(parent, ".receipt-" + rid + "-" + Guid.NewGuid().ToString("N"));
         using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write))
         {
             stream.Write(System.Text.Encoding.UTF8.GetBytes(identity.ToJsonString()));
@@ -196,11 +192,22 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
     private Task<FileStream> Lock(string parent, CancellationToken token) =>
         StatechartLock.AcquireAsync(Path.Combine(parent, rid + ".install.lock"), token);
 
-    // Runs under the install lock, so no other install for this RID still uses these stages.
+    // Runs under the install lock, so no other run for this RID still uses these stages or receipt files.
     private void SweepStages(string parent)
     {
         foreach (var stage in Directory.EnumerateDirectories(parent, ".install-" + rid + "-*"))
             if ((File.GetAttributes(stage) & FileAttributes.ReparsePoint) == 0) Directory.Delete(stage, recursive: true);
+        foreach (var receipt in Directory.EnumerateFiles(parent, ".receipt-" + rid + "-*"))
+            if ((File.GetAttributes(receipt) & FileAttributes.ReparsePoint) == 0) File.Delete(receipt);
+    }
+
+    // The root appears with its marker in one rename, so no crash leaves a root that every later run refuses.
+    private void CreateRoot(string stage)
+    {
+        var fresh = Path.Combine(stage, "store");
+        Directory.CreateDirectory(fresh);
+        File.WriteAllText(Path.Combine(fresh, ".statechart-store"), assets.LockDigest);
+        Directory.Move(fresh, Root);
     }
 
     private static void RemoveStage(string stage)
@@ -235,14 +242,18 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
     private void ValidateRoot()
     {
         StatechartPaths.RequirePlainDirectory(Root);
-        if ((File.GetAttributes(Path.Combine(Root, ".statechart-store")) & FileAttributes.ReparsePoint) != 0)
-            throw new IOException("Linked statechart store marker retained.");
-        if (File.ReadAllText(Path.Combine(Root, ".statechart-store")) != assets.LockDigest)
-            throw new IOException("Foreign statechart dependency destination retained.");
+        var marker = new FileInfo(Path.Combine(Root, ".statechart-store"));
+        if (!marker.Exists || (marker.Attributes & FileAttributes.ReparsePoint) != 0 || marker.Length > 1024 ||
+            File.ReadAllText(marker.FullName) != assets.LockDigest)
+            throw Foreign("has no store marker for this dependency lock");
         var allowed = _downloads.Select(item => item.Name).Append(".statechart-store").ToHashSet(StringComparer.Ordinal);
-        if (Directory.EnumerateFileSystemEntries(Root).Any(path => !allowed.Contains(Path.GetFileName(path)) ||
+        var foreign = Directory.EnumerateFileSystemEntries(Root).Where(path => !allowed.Contains(Path.GetFileName(path)) ||
                 (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0 ||
-                Path.GetFileName(path) != ".statechart-store" && !Directory.Exists(path)))
-            throw new IOException("Foreign content in statechart dependency destination retained.");
+                Path.GetFileName(path) != ".statechart-store" && !Directory.Exists(path))
+            .Select(Path.GetFileName).Order(StringComparer.Ordinal).ToArray();
+        if (foreign.Length != 0) throw Foreign("holds entries dydo did not install: " + string.Join(", ", foreign));
     }
+
+    private IOException Foreign(string problem) => new($"The statechart dependency store {Root} {problem}; dydo leaves it untouched. " +
+        "Move it aside, then run the chart again for a fresh locked install plan.");
 }

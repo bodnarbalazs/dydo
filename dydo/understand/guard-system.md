@@ -11,14 +11,6 @@ How dydo enforces boundaries through the PreToolUse hook. Every tool call the ho
 
 ## How the Hook Intercepts Tool Calls
 
-An executing `dydo mode set` has a built-in warning on every host and direct guard invocation:
-run it only as the chief of staff readying overnight mode or ending it; otherwise stop. The first
-attempt stops, then the same command's retry passes through the existing command-warn mechanism.
-The full command is keyed with whitespace runs normalized, so the opposite transition and other
-commands each receive their own warning. Hard blocks run first and leave warning markers intact.
-This prevents accidents; it authenticates no role or human approval. After actual execution,
-the chief of staff independently runs `dydo mode show` and verifies on/off before announcing it.
-
 The guard integrates with the platform through the **PreToolUse** hook event. Before each matched tool call, the platform pipes a JSON payload to `dydo guard` via stdin:
 
 ```json
@@ -131,6 +123,14 @@ Nudges are project-configurable rules in `dydo.json`: a pattern plus a message, 
 | `notice` | `NOTICE:` on stderr, never blocks (exit 0) |
 | `warn` | Blocks once with "(Run the same command again to proceed anyway.)"; the retry passes. The pass-through marker lives in `dydo/_system/.local/` (gitignored). A command warn's is keyed by the nudge's pattern hash and the command with whitespace runs collapsed, so only the same command, retried, passes; a different command matching the same nudge is warned on its own. Global, with no agent or session in the key ([Decision 041](../project/decisions/041-dydo-cedes-orchestration-becomes-authoring-knowledge-layer.md)). A marker has no expiry and stays until its retry spends it. |
 | `block` | Always blocks |
+
+An executing `dydo mode set` has a built-in warning on every host and direct guard invocation:
+run it only as the chief of staff readying overnight mode or ending it; otherwise stop. The first
+attempt stops, then the same command's retry passes through the existing command-warn mechanism.
+The full command is keyed with whitespace runs normalized, so the opposite transition and other
+commands each receive their own warning. Hard blocks run first and leave warning markers intact.
+This prevents accidents; it authenticates no role or human approval. After actual execution,
+the chief of staff independently runs `dydo mode show` and verifies on/off before announcing it.
 
 - **Command nudges** - regex matched against shell command text. Capture groups substitute into the message (`$1`, `$2`, …) from the first raw match that counts. Every unquoted match counts, including arguments of `rg`, `echo` and unfamiliar wrappers. Unknown quoted operands count too: `script -c`, `su -c`, `tmux` and unfamiliar command-string consumers cannot silence a warning by quoting it. Quoted-data relief is limited to four recorded forms: the single-quoted positional pattern after `rg -n` (with following `--glob` values and paths), the single-quoted positional pattern after `git grep -n -E` or `git grep -n -i -E`, the double-quoted positional pattern after `grep -iE`, and the quoted `-match` right operand in the recorded `Get-CimInstance Win32_Process | Where-Object` predicates on `$_.CommandLine` or `([string]$_.CommandLine)`. Other operands, option forms and quoted text do not inherit that relief. Interpolation, concatenation and malformed syntax earn no exemption. Comments and literal data bodies keep their scoped relief; executable or unknown script bodies count. Known shell/eval/remote command strings are read recursively, so an inner recognized data operand can be exempt while other code in the same string still counts. Quoted executable paths and substitutions retain their warnings. In `rg -n 'text; npm install example' docs; npm install real`, the capture belongs to the real launch. A line that cannot be read for certain matches as its text does.
 

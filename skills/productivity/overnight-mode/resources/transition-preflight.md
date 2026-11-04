@@ -12,9 +12,11 @@ End:   dydo mode set overnight off
 ## At either transition
 
 Run the applicable command only as the chief of staff readying overnight mode or ending it;
-otherwise stop. The guard's first attempt stops with that reminder on Claude, Codex, T3 and
-direct guard invocation. If the reminder applies to you, retry the same command once. The guard
-keys the warning by the full command with whitespace runs normalized. A different command,
+otherwise stop. On Claude, Codex, T3 and direct guard invocation, the guard stops an attempt
+with that reminder unless a pass-through marker is already armed. If the reminder applies to
+you, retry the same command once. Markers are global and have no expiry: an earlier caller may
+have armed the same command, so your next attempt may pass immediately. The guard keys the
+warning by the full command with whitespace runs normalized. A different command,
 including the opposite transition, receives its own warning. The retry passes the warning;
 ordinary hard blocks still apply on every attempt. This nudge prevents accidents. It does not
 authenticate your role or prove human approval.

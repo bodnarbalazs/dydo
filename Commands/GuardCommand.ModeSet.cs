@@ -66,6 +66,6 @@ public static partial class GuardCommand
         return modeSet || (scan.Uncertain && LooseModeSetRegex().IsMatch(NormaliseForDydoScan(command)));
     }
 
-    [GeneratedRegex(@"\bdydo\b[\s\S]*?\bmode\b\W*\bset\b(?<args>[^;&|)}\r\n]*)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\bdydo\b[\s\S]*?\bmode\b\W*\bset\b[^;&|)}\r\n]*", RegexOptions.IgnoreCase)]
     private static partial Regex LooseModeSetRegex();
 }

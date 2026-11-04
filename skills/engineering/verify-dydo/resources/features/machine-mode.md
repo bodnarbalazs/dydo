@@ -12,7 +12,7 @@ The already-invoked CoS follows `overnight-mode`: preflight while the user is pr
 chief-of-staff warning, same-command retry, actual execution, fresh `dydo mode show`, then
 announcement. Claude, Codex, T3 and direct guard invocation use the same route for `on` and `off`.
 Intent, a passed retry, setter exit, schedule and messages establish no mode transition.
-See that skill's transition preflight in `resources/approval-preflight.md`.
+See that skill's transition preflight in `resources/transition-preflight.md`.
 
 ## Driving it with control-dydo
 

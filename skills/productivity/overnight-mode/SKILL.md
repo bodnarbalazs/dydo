@@ -19,7 +19,7 @@ Project, set at muster. Night orders expire at the morning brief and win where t
 The already-invoked chief of staff uses its own resources below. Resolve each resource inside the
 installed `chief-of-staff` skill folder; read it directly without invoking another officer role.
 
-1. While the user is present, complete the [transition preflight](resources/approval-preflight.md)
+1. While the user is present, complete the [transition preflight](resources/transition-preflight.md)
    for both startup and shutdown. Record the current mode and prepare the warning/retry and
    independent readback steps before proceeding.
 2. Complete `chief-of-staff`'s `resources/muster.md`. Use `grilling` for
@@ -72,7 +72,7 @@ in the watch, rebuild from Linear and sweep everyone by Method step 5, Sweep the
 
 When the user says he's back, in the chief of staff's conversation:
 
-1. Complete the [transition preflight](resources/approval-preflight.md) for shutdown while the user
+1. Complete the [transition preflight](resources/transition-preflight.md) for shutdown while the user
    is present; record the current mode before changing it.
 2. Delete the watch schedule using the complete preserved ID. List schedules and confirm that exact
    ID is absent before claiming the watch stopped; report a deletion or verification gap.

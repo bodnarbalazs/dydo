@@ -1660,6 +1660,35 @@ public class BashCommandAnalyzerTests
         Assert.Contains(result.Operations, op => op.Type == FileOperationType.Delete && op.Path == "build");
     }
 
+    // Unsupported case headers retain the baseline's uncertain writes, without parsing arms.
+    [Theory]
+    [InlineData("case x in x) rm dydo/files-off-limits.md;; esac", "dydo/files-off-limits.md", FileOperationType.Write)]
+    [InlineData("case x in x) echo changed > dydo/index.md;; esac", "dydo/index.md", FileOperationType.Write)]
+    [InlineData("case x in x|y) echo ready; rm dydo/files-off-limits.md;; esac", "dydo/files-off-limits.md", FileOperationType.Delete)]
+    [InlineData("case x in x|y) echo changed > dydo/index.md;; esac", "dydo/index.md", FileOperationType.Write)]
+    [InlineData("case x in x) echo yes;; esac; rm dydo/files-off-limits.md; echo done", "dydo/files-off-limits.md", FileOperationType.Delete)]
+    [InlineData("case x in x) echo yes;; esac; echo changed > dydo/index.md; echo done", "dydo/index.md", FileOperationType.Write)]
+    public void CaseArm_ProtectedMutationInExpandingBody_IsRetained(string child, string path, FileOperationType type)
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.Posix).Analyze("cat <<EOF\n$(" + child + ")\nEOF");
+
+        Assert.True(result.HasBypassAttempt);
+        Assert.Contains("Command contains command substitution - paths may be dynamic", result.Warnings);
+        Assert.Contains(result.Operations, op => op.Type == type && op.Path == path);
+    }
+
+    [Theory]
+    [InlineData("cat > notes.md <<'EOF'\n$(case x in x) rm dydo/files-off-limits.md;; esac)\nEOF")]
+    [InlineData("cat > notes.md <<EOF\ncase x in x) rm dydo/files-off-limits.md;; esac\nEOF")]
+    public void CaseArm_LiteralBody_PreservesFileOperationRelief(string command)
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.Posix).Analyze(command);
+
+        Assert.False(result.HasBypassAttempt);
+        Assert.DoesNotContain(result.Operations, op => op.Path == "dydo/files-off-limits.md");
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
+    }
+
     [Fact]
     public void Analyze_LiteralBodyLines_AreNotCommands()
     {

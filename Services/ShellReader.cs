@@ -345,6 +345,10 @@ internal sealed class ShellReader
         var inner = new ShellReader(source,
             nested: true, _commands, _substitutions, _captures);
         inner.Run();
+        // A bare case word can introduce arm terminators we cannot balance. Quoted words and
+        // literal bodies are not syntax; no apparent closing ')' may certify this child otherwise.
+        inner._failed |= _posix && source.Commands.Any(command =>
+            command.WordRanges.Any(range => _text[range] == "case"));
         _failed |= inner._failed;
         host.Complete = inner._done && !inner._failed && inner._i < _text.Length && _text[inner._i] == ')';
         host.Token = open..Math.Min(inner._i + 1, _text.Length);

@@ -308,6 +308,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// </summary>
     private DataBodyCut? DataBody(string text)
     {
+        // Keep the original code when a child's extent is unsupported; cutting its enclosing
+        // data body would discard executable text beyond an apparent substitution terminator.
+        if (ShellReader.Read(text, _shell != ShellDialect.PowerShell).Failed)
+            return null;
+
         var heredoc = HeredocBodyRegex().Match(text);
         var hereString = HereStringRegex().Match(text);
         if (hereString.Success && (!heredoc.Success || hereString.Index < heredoc.Index))

@@ -1100,6 +1100,39 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertPreToolUseDenied();
     }
 
+    [Fact]
+    public async Task CaseArm_MatchingExecutableArm_IsDeniedByHook()
+    {
+        await SetupClaimedAgent();
+        const string command = "cat <<EOF\n$(case x in x) tail -f app.log;; esac)\nEOF";
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        // The restored conservative file analysis refuses before command nudges run.
+        Assert.Contains("Command contains bypass patterns", result.AssertPreToolUseDenied());
+    }
+
+    [Theory]
+    [InlineData("x", "rm dydo/files-off-limits.md")]
+    [InlineData("x", "echo changed > dydo/index.md")]
+    [InlineData("x|y", "rm dydo/files-off-limits.md")]
+    [InlineData("x|y", "echo changed > dydo/index.md")]
+    public async Task CaseArm_ProtectedMutation_IsDeniedOnFirstAndRetry(string pattern, string mutation)
+    {
+        await SetupClaimedAgent();
+        var paths = new[] { Path.Combine(DydoDir, "files-off-limits.md"), Path.Combine(DydoDir, "index.md") };
+        var before = paths.Select(File.ReadAllBytes).ToArray();
+        var command = "cat <<EOF\n$(case x in " + pattern + ") " + mutation + ";; esac)\nEOF";
+
+        var first = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var retry = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        first.AssertPreToolUseDenied();
+        retry.AssertPreToolUseDenied();
+        for (var i = 0; i < paths.Length; i++)
+            Assert.Equal(before[i], File.ReadAllBytes(paths[i]));
+    }
+
     // GS-05: a Python program on stdin is refused before it runs, so the protected canary keeps its bytes.
     [Theory]
     [InlineData("Bash", "python - <<'EOF'\nopen('dydo/files-off-limits.md','w').write('changed')\nEOF")]

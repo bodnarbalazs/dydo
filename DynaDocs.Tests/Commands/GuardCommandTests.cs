@@ -1331,6 +1331,45 @@ public class GuardCommandTests : IDisposable
         Assert.Contains("Open-ended Bash poll-loop detected", stderr);
     }
 
+    [Theory]
+    [InlineData("case x in x) tail -f app.log;; esac")]
+    [InlineData("case x in x|y) tail -f app.log;; esac")]
+    [InlineData("case x in (x) tail -f app.log;; esac")]
+    [InlineData("case x in y) echo no;; x) tail -f app.log;; esac")]
+    [InlineData("case x in x) echo yes;; esac; tail -f app.log")]
+    [InlineData("echo ready; case x in x) tail -f app.log;; esac")]
+    [InlineData("if true; then case x in x) tail -f app.log;; esac; fi")]
+    public void CaseArm_ExecutableExpandingBody_KeepsNudge(string child)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var command = "cat <<EOF\n$(" + child + ")\nEOF";
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env, shell: ShellDialect.Posix));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("Open-ended Bash poll-loop detected", stderr);
+    }
+
+    [Theory]
+    [InlineData("cat <<'EOF'\n$(case x in x) tail -f app.log;; esac)\nEOF")]
+    [InlineData("cat <<EOF\ncase x in x) tail -f app.log;; esac\nEOF")]
+    [InlineData("cat <<EOF\n$(cat <<'IN'\ncase x in x) tail -f app.log;; esac\nIN\n)\nEOF")]
+    [InlineData("cat <<EOF\n$(echo 'case'; cat <<'IN'\ntail -f app.log\nIN\n)\nEOF")]
+    [InlineData("cat <<EOF\n$(echo \"case\"; cat <<'IN'\ntail -f app.log\nIN\n)\nEOF")]
+    [InlineData("cat <<EOF\n$(echo showcase; cat <<'IN'\ntail -f app.log\nIN\n)\nEOF")]
+    [InlineData("rg -n 'case x in x) tail -f app.log;; esac' docs")]
+    public void CaseArm_LiteralBodyOrQuotedWord_PreservesNudgeRelief(string command)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env, shell: ShellDialect.Posix));
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
     // Only the inventoried quoted operand roles receive relief.
     [Theory]
     [InlineData("rg -n 'tail -f' docs")]

@@ -728,7 +728,7 @@ public static class InitCommand
         + "    pattern = [[\"dydo\", \"dydo.exe\"], \"merge\"],\n"
         + "    decision = \"allow\",\n"
         + "    justification = \"dydo merge merges a reviewed PR into a feature/* branch only; master, main and the default branch are refused in code\",\n"
-        + "    match = [\"dydo merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567\", \"dydo.exe merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567\"],\n"
+        + "    match = [\"dydo merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567 --match-base-commit fedcba9876543210fedcba9876543210fedcba98\", \"dydo.exe merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567 --match-base-commit fedcba9876543210fedcba9876543210fedcba98\"],\n"
         + "    not_match = [\"dydo init codex\"],\n"
         + ")\n";
 

@@ -475,7 +475,7 @@ class PublishedProvenanceTests(unittest.TestCase):
         self.assertEqual(sys.executable, interpreters["caller"]["path"])
         self.assertEqual(hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
                          interpreters["caller"]["sha256"])
-        self.assertEqual(("dydo/_system/.local/static-gates/python/" +
+        self.assertEqual((".static-gates/python/" +
                   ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")),
                          interpreters["dependencyBearing"]["path"])
         self.assertEqual(hashlib.sha256(STATIC_PYTHON.read_bytes()).hexdigest(),

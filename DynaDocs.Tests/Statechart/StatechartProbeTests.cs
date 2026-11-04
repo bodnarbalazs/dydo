@@ -6,6 +6,25 @@ using DynaDocs.Services.Statechart;
 public class StatechartProbeTests
 {
     [Fact]
+    public async Task AProbeWithoutAnExecutableRefusesBeforeSignallingReady()
+    {
+        var start = StatechartTestBinary.Start();
+        start.ArgumentList.Add("__statechart-probe");
+        start.UseShellExecute = false;
+        start.CreateNoWindow = true;
+        start.RedirectStandardInput = true;
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
+        using var child = Process.Start(start)!;
+        var output = child.StandardOutput.ReadToEndAsync();
+        var errors = child.StandardError.ReadToEndAsync();
+        await child.WaitForExitAsync();
+        Assert.Equal(2, child.ExitCode);
+        Assert.Equal("", await output);
+        Assert.Equal("Missing statechart probe executable.", (await errors).Trim());
+    }
+
+    [Fact]
     public async Task ProbeOutputIsReadUpTo64KiBAndRefusedBeyond()
     {
         Assert.Equal(65536, (await StatechartProbe.Bounded(new StringReader(new string('x', 65536)), CancellationToken.None)).Length);

@@ -57,7 +57,9 @@ python3 DynaDocs.Tests/coverage/run_tests.py -c Release --filter "FullyQualified
 
 Only Windows-only tests and config-fuzz should skip. The managed copy survives rebuilds:
 a build that keeps the dependency lock re-verifies and re-stamps it on the next run, and a
-damaged component comes back as an `approval-required` repair plan.
+damaged component comes back as an `approval-required` repair plan. The installed
+ready-invocation test runs on this copy itself, so after a payload change its first run
+re-stamps the copy's receipts; the content stays unchanged.
 
 ## History
 

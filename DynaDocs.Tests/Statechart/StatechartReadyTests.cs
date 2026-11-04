@@ -12,9 +12,10 @@ public class StatechartReadyTests
 {
     private static readonly string Relative = Path.Combine(new StatechartAssets().LockDigest, RuntimeInformation.RuntimeIdentifier);
 
-    // Reads the verified fixture at its stable runtime path; only the other cases need a private copy.
+    // Runs on the verified fixture at its stable runtime path; only the other cases need a private copy. A fixture
+    // an earlier build verified is re-stamped on this run: its receipts change, its content never does.
     [SkippableFact]
-    public async Task InstalledReadyInvocationRunsOfflineWithoutTouchingTheInstall()
+    public async Task InstalledReadyInvocationRunsOfflineWithContentUnchangedAndReceiptsCurrent()
     {
         using var scope = new StatechartTestDirectory();
         var fixture = Fixture();
@@ -27,7 +28,6 @@ public class StatechartReadyTests
         Assert.Contains("bugPath", File.ReadAllText(Path.Combine(scope.Path, "chart", "chart.svg")));
         Assert.All(Directory.GetFiles(Path.Combine(scope.Path, "state"), "scratch-*.journal"), journal =>
             Assert.Contains("deleted-after-authoritative-drain", File.ReadAllText(journal)));
-        // A fixture verified by an earlier build is re-stamped once; its content never changes.
         Assert.Equal(before, Content(fixture));
         AssertCurrentReceipts(fixture);
     }

@@ -546,6 +546,9 @@ missing locked prerequisites into the planned managed roots, proves readiness an
 continues the captured chart. A local flag or receipt is never host approval.
 Failures preserve the pending request; changed inputs require a fresh plan.
 Completed requests return the recorded verdict only while their output still matches.
+Managed dependencies live in a folder named for their dependency lock. A dydo whose lock
+changed installs into a new folder and keeps the old one, which another installed dydo
+may still use; remove an old lock folder only when no installed dydo uses that lock.
 
 ### dydo statechart install-skill
 

@@ -36,20 +36,29 @@ def run_coverage_command(argv, cwd):
     from run_tests import contain_descendants, defer_interruption
     deadline_text = os.environ.get(ROW_DEADLINE_ENV)
     deadline = float(deadline_text) if deadline_text is not None else None
-    timeout = None if deadline is None else max(0, deadline - time.monotonic() - CLEANUP_SECONDS)
-    containment = contain_descendants() if sys.platform == "linux" else None
+    execution_deadline = None if deadline is None else deadline - CLEANUP_SECONDS
+    containment = contain_descendants()
     child = subprocess.Popen(argv, cwd=cwd,
                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
                              start_new_session=sys.platform != "win32")
     try:
-        status = child.wait(timeout=timeout)
+        status = _wait_coverage_child(child, execution_deadline)
     except (subprocess.TimeoutExpired, KeyboardInterrupt) as error:
         # Leave time inside the facade's cleanup window for forced descendant cleanup.
         remaining = CLEANUP_SECONDS if deadline is None else max(0, deadline - time.monotonic())
+        cleanup_confirmed = False
         try:
             with defer_interruption():
-                _stop_coverage_campaign(child, min(remaining, CLEANUP_SECONDS) / 3, containment)
+                cleanup_deadline = time.monotonic() + min(remaining, CLEANUP_SECONDS)
+                stopped = _stop_coverage_campaign(child, cleanup_deadline, containment)
+                if stopped == 2:
+                    raise MeasurementTimeout("coverage owner could not confirm interrupted cleanup")
+                cleanup_confirmed = True
+        except (OSError, subprocess.TimeoutExpired) as cleanup_error:
+            raise MeasurementTimeout("coverage cleanup could not be confirmed") from cleanup_error
         except KeyboardInterrupt:
+            if not cleanup_confirmed:
+                raise MeasurementTimeout("coverage cleanup was interrupted before confirmation") from None
             raise SystemExit(130) from None
         if isinstance(error, KeyboardInterrupt):
             raise SystemExit(130) from None
@@ -59,14 +68,25 @@ def run_coverage_command(argv, cwd):
     return status
 
 
-def _stop_coverage_campaign(child, seconds, containment):
+def _wait_coverage_child(child, deadline):
+    # Windows' native wait does not dispatch Python SIGBREAK handlers until it returns.
+    while True:
+        remaining = .2 if deadline is None else max(0, deadline - time.monotonic())
+        try:
+            return child.wait(timeout=min(.2, remaining))
+        except subprocess.TimeoutExpired:
+            if deadline is not None and remaining <= .2:
+                raise
+
+
+def _stop_coverage_campaign(child, deadline, containment):
     from run_tests import end_descendants
     try:
         if sys.platform == "win32":
             child.send_signal(signal.CTRL_BREAK_EVENT)
         else:
             os.killpg(child.pid, signal.SIGINT)
-        child.wait(timeout=seconds)
+        _wait_coverage_child(child, time.monotonic() + max(0, deadline - time.monotonic()) / 3)
     except (OSError, subprocess.TimeoutExpired):
         if sys.platform == "win32":
             child.kill()
@@ -75,10 +95,11 @@ def _stop_coverage_campaign(child, seconds, containment):
                 os.killpg(child.pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
-        child.wait(timeout=5)
+        _wait_coverage_child(child, min(deadline, time.monotonic() + 5))
     finally:
         # A killed Linux owner can leave detached children adopted by this adapter.
-        end_descendants(containment)
+        end_descendants(containment, seconds=max(0, deadline - time.monotonic()))
+    return child.returncode
 
 
 def _sha256(path):

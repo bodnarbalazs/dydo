@@ -417,6 +417,19 @@ class AssuranceCampaignTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256((worktree / "Services/Thing.cs").read_bytes()).hexdigest(),
                              source["sha256"])
 
+    def test_interrupted_build_publishes_receipt_and_names_unbuilt_artifacts(self):
+        with tempfile.TemporaryDirectory() as folder:
+            worktree = Path(folder) / "worktree"
+            result_root = worktree / CAMPAIGN_RESULTS
+            result_root.mkdir(parents=True)
+            published = Path(folder) / "published"
+            owner_result = {"complete": False, "cleanup_confirmed": True, "failure_category": "KeyboardInterrupt"}
+            run_tests._publish_assurance(worktree, result_root, worktree / "owner", str(published), owner_result)
+            manifest = json.loads((published / "identities.json").read_text())
+            self.assertEqual(owner_result, manifest["campaign"])
+            self.assertEqual([], manifest["artifacts"])
+            self.assertEqual(sorted(CAMPAIGN_BINARIES), sorted(manifest["missing_artifacts"]))
+
     def test_publish_assurance_refuses_a_relative_or_already_owned_output(self):
         with tempfile.TemporaryDirectory() as folder:
             worktree = Path(folder) / "worktree"
@@ -770,11 +783,11 @@ class LinuxDescendantCleanupTests(unittest.TestCase):
             run_tests.end_descendants(None)
             self.assertFalse(reaped.called or members.called)
             run_tests.end_descendants(run_tests.SUBREAPER)
-            reaped.assert_called_once_with()
+            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS)
             members.assert_not_called()
-            run_tests.end_descendants(42)
-            members.assert_called_once_with(42)
-            reaped.assert_called_once_with()
+            run_tests.end_descendants(42, seconds=3)
+            members.assert_called_once_with(42, 3)
+            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS)
 
 
 class StaleWorktreeAgeOverrideTests(unittest.TestCase):

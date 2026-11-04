@@ -52,7 +52,7 @@ with tempfile.TemporaryDirectory() as folder:
     if mode != 'owner':
         adapter = root / 'adapter.py'
         adapter.write_text("import sys; sys.path.insert(0,"+repr(str(tools))+"); import gate_adapter; "
-            + ("gate_adapter.CLEANUP_SECONDS = 0.1; " if mode == 'escalation' else '') +
+            + ("gate_adapter.CLEANUP_SECONDS = 3; " if mode == 'escalation' else '') +
             "raise SystemExit(gate_adapter.run_coverage_command("+repr(command)+", '.'))")
         command = [sys.executable, str(adapter)]
     if mode == 'facade':
@@ -302,18 +302,26 @@ class GateAdapterTests(unittest.TestCase):
             self.assertEqual("foreign-lock", lock.read_text())
             self.assertTrue((run / "report.json").is_file())
 
-    def test_coverage_subprocess_gets_one_remaining_timeout_and_cooperative_cleanup(self):
+    def test_coverage_subprocess_slices_remaining_timeout_and_cooperative_cleanup(self):
         child = mock.Mock(returncode=130)
-        child.wait.side_effect = [subprocess.TimeoutExpired(["campaign"], 20), 130]
+        clock = [100.0]
+
+        def wait(timeout):
+            if clock[0] >= 120:
+                return 130
+            clock[0] += timeout
+            raise subprocess.TimeoutExpired(["campaign"], timeout)
+
+        child.wait.side_effect = wait
         with mock.patch.dict(os.environ, {"DYDO_ROW_DEADLINE": "150"}), \
-                mock.patch.object(gate_adapter.time, "monotonic", side_effect=[100, 120]), \
+                mock.patch.object(gate_adapter.time, "monotonic", side_effect=lambda: clock[0]), \
                 mock.patch.object(gate_adapter.os, "killpg", create=True) as killpg, \
                 mock.patch("run_tests.contain_descendants", return_value=None), \
                 mock.patch.object(gate_adapter.subprocess, "Popen", return_value=child) as popen:
-            with self.assertRaisesRegex(gate_adapter.MeasurementTimeout, "deadline"):
+            with self.assertRaisesRegex(gate_adapter.MeasurementTimeout, "cleanup|deadline"):
                 gate_adapter.run_coverage_command(["campaign"], Path.cwd())
-        self.assertEqual(20, child.wait.call_args_list[0].kwargs["timeout"])
-        self.assertEqual(10, child.wait.call_args_list[1].kwargs["timeout"])
+        self.assertTrue(all(call.kwargs["timeout"] <= .2 for call in child.wait.call_args_list))
+        self.assertAlmostEqual(120, clock[0])
         if sys.platform == "win32":
             child.send_signal.assert_called_once_with(signal.CTRL_BREAK_EVENT)
             killpg.assert_not_called()
@@ -330,14 +338,21 @@ class GateAdapterTests(unittest.TestCase):
 
     def test_coverage_subprocess_force_terminates_after_cleanup_budget(self):
         child = mock.Mock(returncode=2)
-        child.wait.side_effect = [subprocess.TimeoutExpired(["campaign"], 20),
-                                  subprocess.TimeoutExpired(["campaign"], 30), 2]
+        clock = [100.0]
+
+        def wait(timeout):
+            if clock[0] >= 130:
+                return 2
+            clock[0] += timeout
+            raise subprocess.TimeoutExpired(["campaign"], timeout)
+
+        child.wait.side_effect = wait
         with mock.patch.dict(os.environ, {"DYDO_ROW_DEADLINE": "150"}), \
-                mock.patch.object(gate_adapter.time, "monotonic", side_effect=[100, 120]), \
+                mock.patch.object(gate_adapter.time, "monotonic", side_effect=lambda: clock[0]), \
                 mock.patch.object(gate_adapter.os, "killpg", create=True) as killpg, \
                 mock.patch("run_tests.contain_descendants", return_value=None), \
                 mock.patch.object(gate_adapter.subprocess, "Popen", return_value=child):
-            with self.assertRaisesRegex(gate_adapter.MeasurementTimeout, "deadline"):
+            with self.assertRaisesRegex(gate_adapter.MeasurementTimeout, "cleanup|deadline"):
                 gate_adapter.run_coverage_command(["campaign"], Path.cwd())
         if sys.platform == "win32":
             child.send_signal.assert_called_once_with(signal.CTRL_BREAK_EVENT)
@@ -348,7 +363,8 @@ class GateAdapterTests(unittest.TestCase):
                              killpg.call_args_list)
             child.send_signal.assert_not_called()
             child.kill.assert_not_called()
-        self.assertEqual(3, child.wait.call_count)
+        self.assertTrue(all(call.kwargs["timeout"] <= .2 for call in child.wait.call_args_list))
+        self.assertAlmostEqual(130, clock[0])
 
     # A defect the catch tuple misses leaves main with exit 1 and no summary at all, which the
     # facade can only report as an unrefreshed artifact rather than a named measurement error.

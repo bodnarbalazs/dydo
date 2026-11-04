@@ -6,6 +6,172 @@ date: 2026-11-04
 
 # DYD-504 toolchain modernization
 
+## Round-two Windows cancellation successor — 2026-11-04
+
+This section supersedes the round-one B1/N3 closure language below. Windows B1
+is implemented with native PR-CI regression coverage; native Windows execution
+and fresh review remain owed. Linux cancellation remains proved with real .NET
+processes. The original base is still `42882830292f44133f796ee3d152cb446ea4091f`;
+this fix starts at clean, pushed `b08b57705d9331ca6a2c6afd9ba6ce08a7bc4354` on
+`DYD-504-modernize-toolchain` in the contracted isolated worktree. All five
+pre-edit checks passed; `pre-edit.json` retains branch/root/base/status/ownership.
+
+Balazs's 2026-11-04 ruling closes the DYD-517 question and assigns the existing
+18 native-Windows Python coverage findings to
+[DYD-518](https://linear.app/bodnar-balazs/issue/DYD-518). They remain a **known
+failed gate**, permitted for this feature merge only; DYD-518 blocks 3.6.0 landing.
+No threshold, exclusion, pass claim, inheritance attribution, aggregation, or
+`owned_process.py` ownership expansion is introduced. DYD-518 owns the separate
+native Windows coverage job and Balazs-reviewed DR 048 amendment. This hop's CI
+job tests cancellation only. DYD-507 retains its distinct three .NET failures.
+
+### Behavior and red proof
+
+Adapter waits now return to Python every 200 ms, so a Windows BREAK handler can
+run while the separately grouped owner is busy. The adapter joins an outer
+kill-on-close job before launching that owner; killing the adapter cannot abandon
+its owner and nested subject job. Cooperative cancellation, forced termination
+and descendant cleanup share the remaining cleanup deadline. A cleanup timeout
+or unconfirmed owner produces a measurement error, including when a repeated
+interrupt lands during cleanup; confirmed cancellation retains exit 130.
+
+The native owner records signals through teardown and receipt writing. It checks
+cancellation during supervision, terminates the job, and publishes actual job,
+handle and stream observations. An interruption without those observations
+retains `cleanup_confirmed: false`. Publication of an interrupted build now lists
+unbuilt artifacts instead of losing the receipt while hashing missing binaries;
+completed campaigns still require their full artifact set.
+
+Before editing, the protocol tests failed on a 1,770-second adapter wait and
+missing owner receipts. The final tests against exact parent production bytes
+also fail on the 1,000-ms native wait and repeated interruption. The disposable
+overlay retains all output; it simulates OS boundaries and is not Win32 proof.
+The real Linux early-build probe exposed the missing-binary publication failure;
+`red-interrupted-build` reproduces it before the fix and the captain recipe
+passes afterward.
+
+Implementation checks also caught and repaired a no-deadline regression: a
+200-ms wait expiration must continue waiting when no row deadline was supplied.
+All affected adapter callers are included in the final Light recipe. The existing
+Linux forced-escalation fixture now allows three seconds for total cleanup;
+its old 0.1-second override had shortened only cooperative waiting while leaving
+separate force/descendant allowances. It retains every real-process assertion.
+
+### Native proof and CI
+
+The new `test_windows_cancellation` regression drives the real facade, adapter,
+assurance owner and native job with a real subject and separately grouped child.
+Socket readiness puts signals after process creation; held process handles prove
+exit, and an unrelated sentinel must survive. Four Windows cases cover facade
+cancellation, repeated BREAK during native teardown, unresponsive-owner escalation,
+and adapter death. Cooperative cases require the published incomplete-but-cleaned
+receipt, empty job, completed root/retained handles and drained streams. Forced
+escalation never invents an owner receipt.
+
+`.github/workflows/ci.yml` job `assurance-cancellation` runs the native tests on
+`windows-latest` and preserves the Linux cancellation regression on `ubuntu-latest`.
+It uses `.python-version` (3.14.4), Node 26.13.0 and existing locked dependencies;
+it uploads cancellation evidence even on failure. It consumes no .NET executable;
+the existing .NET CI runtime provisioning is unchanged and its workflow tests pass.
+Native command from the repository root:
+
+```text
+PYTHONPATH=DynaDocs.Tests/coverage/tests
+python -m unittest -v test_windows_cancellation test_windows_job test_gate_adapter.CoverageCancellationTests
+```
+
+Set `PYTHONPATH` as an environment variable on Windows, as the CI job does.
+`DYDO_CANCELLATION_EVIDENCE` optionally names the retained output directory.
+Windows results are **awaiting hosted PR CI**, not inferred from Linux skips.
+
+The real Linux adapter → run_tests → csharp_coverage → dotnet probes preserve
+exit 130 and `cleanup_confirmed: true`: repeated early-build interruption exits
+in 0.36 s; interruption during actual tests exits in 0.26 s. Both leave no marked
+live process and remove their owner worktree. The later probe still reproduces
+the nested `dydo-interrupt-spelling` registration residue, which remains an open
+nit. Its residue was archived; cleanup's dry run refuses a detached test tree
+under T3's root. The retained tree was moved to `/tmp/dyd-504-round2-retained-nested`
+without discarding files; subsequent normal runner pruning removed its stale
+registration. A second probe's registered nested residue remains under
+`/tmp/dyd-504-round2-native/tmp/`; the underlying cleanup nit is not repaired.
+
+### Evidence and finding dispositions
+
+Persistent evidence is `DynaDocs.Tests/coverage/results/dyd-504-fix-round2/`.
+Command directories carry argv, exit, full output, input hashes and candidate
+patches. `sources.tar.gz`, `commands.tar.gz`, `gate-results.tar.gz` and
+`SHA256SUMS` preserve source and evidence; `commit.json` binds the successor SHA.
+Original round-one and reviewer archives remain intact. Initial sandbox-restricted
+runs and attempts invalidated by nested probe artifacts are retained as failed or
+interrupted attempts, never credited as final gates. Final discovery has 135
+unique evaluated C# test Compile identities after scratch was removed from the
+checkout. Final executable-input compatibility is checked against the commit;
+the only later difference is this proof index.
+
+| Final proof | Exit | Observation |
+|---|---|---|
+| Affected Light / captain recipe | 0 | 171 tests: 123 passes, 48 platform skips |
+| Workflow/runtime provisioning regression | 0 | 12 .NET tests, no skips |
+| Python static | 0 | Zero findings and gaps |
+| Shared clone/static row | 0 | Node static, including C#/Python/JavaScript clones: zero findings and gaps |
+| Python coverage suite | 0 | 643 tests: 587 passes, 56 platform skips, zero failures |
+| Python coverage policy | 1 | Exactly 18 DYD-518 findings, zero gaps |
+| Native Windows cancellation | Not run locally | Four new native cases await the PR-CI job |
+
+The final Python static and coverage source fingerprint is
+`de315877f12cf2b84914eb7f172902da2aeeb6290e7d8d42d331289b5416a718`.
+The coverage facade receipt is `results/run-1793802214043-44ed31ff/result.json`;
+Python static is `results/run-1793802199157-94b0278c/result.json`.
+`coverage-findings.json` compares the named findings (ignoring shifted line
+numbers) against the retained round-one report: the same 18 identities, no new
+finding. This is not comparison with original base coverage and is not inheritance
+attribution. Final measurements are:
+
+- `run_tests.py`: `_end_job_members` HCRAP 44 (one finding).
+- `windows_job.py`: line 35.924933%, branch 24.193548%; `members` HCRAP 33,
+  `retain_members` 32, `poll_pipe` 47, `close_pipe` 43, `make_pipe` 22, `pipes` 29,
+  `launch` 40, `finish` 236, `wait_campaign` 113, `supervise` 55, `native_run` 31
+  (13 findings). The changed native methods remain within the explicitly named
+  DYD-518 failed-gate disposition; their numbers are not hidden or relabeled.
+- Unchanged `owned_process.py`: line 17.948718%, branch 0%; `supervise` HCRAP 29
+  and `run_owned` 55 (four findings).
+
+No new whole-.NET, Node or viewer coverage verdict is claimed by this hop.
+Earlier full-gate receipts remain historical; their unchanged runtime/product
+inputs are not a substitute for the fresh affected Python gates above. The
+12-test workflow run reaches the new cancellation job's pinned declarations
+and the existing patched-runtime provisioning assertions. Native tests exercise
+processes; portable protocol tests alone do not establish Win32 delivery.
+
+Focused captain recipe (local locked assurance interpreter; run as a separate
+unittest process, because the existing DYD-516 fixture mutates its own parent):
+
+```bash
+PYTHONPATH=DynaDocs.Tests/coverage/tests \
+  dydo/_system/.local/static-gates/python/bin/python -m unittest -v \
+  test_windows_cancellation test_gate_adapter test_windows_job test_runner
+```
+
+The real-chain recipe is the retained `real_chain_probe.py`, using a fresh absolute
+scratch path under `/tmp`, delay `5` plus repeat `0.1` for build interruption, or
+delay `35` for mid-tests; inspect the recorded process samples, receipt and absence
+of marked live processes rather than treating its observer exit alone as success.
+Only the repository's normal isolated test runner creates worktrees.
+
+DYD-514 overlap is limited to adapter forced-wait/descendant-cleanup error
+classification and remaining budgets. Its separate runner-final-cleanup
+classification is not claimed fixed. DYD-516/N3 remains open: the other
+missing-producer fixture still changes its parent subreaper state. New probes
+are isolated in disposable subprocesses; this hop does not repair that fixture.
+N4 budget/category mismatch, N5 README/npm prerequisites and N6 AOT-only assessment
+remain retained/deferred at their existing severities. The nested-interruption
+residue nit remains open. Fresh independent review, hosted CI and captain proof
+rerun remain owed. No children, installs, global defaults, push, PR, merge, release,
+tag or publication were performed by this writer.
+
+code-writer/model: gpt-6-astra (high).
+
+
 ## Round-one fix successor — 2026-11-04
 
 This section supersedes the Python inheritance claims in the retained hops.

@@ -6,6 +6,46 @@ on:
   pull_request:
 
 jobs:
+  assurance-cancellation:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+
+      - name: Install locked assurance dependencies
+        run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Install locked coverage dependencies
+        run: npm ci --prefix DynaDocs.Tests/coverage
+
+      - name: Native cancellation regression
+        env:
+          PYTHONPATH: DynaDocs.Tests/coverage/tests
+          DYDO_CANCELLATION_EVIDENCE: DynaDocs.Tests/coverage/results/windows-cancellation
+        run: python -m unittest -v test_windows_cancellation test_windows_job test_gate_adapter.CoverageCancellationTests
+
+      - name: Upload cancellation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cancellation-${{ matrix.os }}
+          path: DynaDocs.Tests/coverage/results/windows-cancellation
+          if-no-files-found: warn
+
   viewer:
     runs-on: ubuntu-latest
 

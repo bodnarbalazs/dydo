@@ -542,16 +542,16 @@ def _end_member(kernel, job, pid, deadline):
         close_handle(kernel, handle)
 
 
-def end_descendants(job):
+def end_descendants(job, seconds=DESCENDANT_EXIT_SECONDS):
     """End every other process the run started, from `job` as contain_descendants returned it, and
     wait for each to exit, so none still holds or writes into the worktree or its TEMP when cleanup
     begins."""
     if job is None:
         return
     if job == SUBREAPER:
-        _end_reaped_descendants()
+        _end_reaped_descendants(seconds)
     else:
-        _end_job_members(job)
+        _end_job_members(job, seconds)
 
 
 def _stat_fields(pid):
@@ -593,10 +593,10 @@ def _kill(pid):
         pass  # it exited after the listing
 
 
-def _end_reaped_descendants():
+def _end_reaped_descendants(seconds=DESCENDANT_EXIT_SECONDS):
     """Kill every descendant of this process and wait until each has exited. As their subreaper
     this process still finds the ones whose own parent, the interrupted dotnet, is already gone."""
-    deadline = time.monotonic() + DESCENDANT_EXIT_SECONDS
+    deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
         live = _live_descendants(os.getpid())
         if not live:
@@ -607,18 +607,19 @@ def _end_reaped_descendants():
     raise TimeoutError("Linux descendant cleanup could not be confirmed")
 
 
-def _end_job_members(job):
+def _end_job_members(job, seconds=DESCENDANT_EXIT_SECONDS):
     from ctypes import wintypes
     from windows_job import bindings, members
     kernel = bindings()
     kernel.TerminateProcess.argtypes = [wintypes.HANDLE, wintypes.UINT]
-    deadline = time.monotonic() + DESCENDANT_EXIT_SECONDS
+    deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
         others = [pid for pid in members(kernel, job) if pid != os.getpid()]
         if not others:
             return
         for pid in others:
             _end_member(kernel, job, pid, deadline)
+    raise TimeoutError("Windows descendant cleanup could not be confirmed")
 
 
 def _campaign_identities(worktree, result_root):
@@ -647,9 +648,15 @@ def _publish_assurance(worktree, result_root, owner_output, assurance_output, ow
         shutil.copytree(result_root, output / "raw")
     if owner_output.is_dir():
         shutil.copytree(owner_output, output / "owner")
-    identities = snapshot_artifacts(worktree, _campaign_identities(worktree, result_root)) \
-        if result_root.is_dir() else []
+    artifacts = _campaign_identities(worktree, result_root) if result_root.is_dir() else []
+    missing = []
+    if owner_result.get("failure_category") == "KeyboardInterrupt":
+        missing = [path.relative_to(worktree).as_posix() for path in artifacts if not path.is_file()]
+        artifacts = [path for path in artifacts if path.is_file()]
+    identities = snapshot_artifacts(worktree, artifacts)
     manifest = {"schema": 1, "campaign": owner_result, "artifacts": identities}
+    if missing:
+        manifest["missing_artifacts"] = missing
     (output / "identities.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -699,7 +706,8 @@ def _run_assurance_campaign(worktree, extra_args, assurance_output):
         owner_result = run(request(command, worktree, owner_output,
                                    execution_seconds=1800, teardown_seconds=10),
                            isolated_environment())
-    _publish_assurance(worktree, result_root, owner_output, assurance_output, owner_result)
+    with defer_interruption():
+        _publish_assurance(worktree, result_root, owner_output, assurance_output, owner_result)
     if owner_result.get("failure_category") == "KeyboardInterrupt" and owner_result.get("cleanup_confirmed"):
         return 130
     if not owner_result.get("complete") or not owner_result.get("cleanup_confirmed"):

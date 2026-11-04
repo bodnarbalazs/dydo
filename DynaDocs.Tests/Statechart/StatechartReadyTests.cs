@@ -161,6 +161,163 @@ public class StatechartReadyTests
         Assert.DoesNotContain("Earlier release wording", File.ReadAllText(Path.Combine(skill, "SKILL.md")));
     }
 
+    // A fake runtime speaks the native bootstrap's startup gate, so the owned launch runs without Node, Java or TLC.
+    [SkippableFact]
+    [UnsupportedOSPlatform("windows")]
+    public async Task TheNativeBootstrapStartsOnlyAfterGoInsideTheOwnedGroupAndReportsItsExit()
+    {
+        Skip.IfNot(OperatingSystem.IsLinux(), "POSIX ownership runs on Linux.");
+        using var scope = new StatechartTestDirectory();
+        var node = FakeRuntime(scope.Path, "echo \"ready:1:$3\"\nread -r go\n[ \"$go\" = \"go:1:$3\" ] || exit 9\n" +
+            "cat \"$4\"\necho\necho \"JAVA=$JAVA TLA2TOOLS=$TLA2TOOLS TMPDIR=$TMPDIR args=$1,$2\" >&2\nexit 1\n");
+        var dependencies = new StatechartDependencies(node, "/managed/java", "/managed/tla2tools.jar", "/managed/pele.js");
+        await using var lifetime = await PosixStatechartLifetime.StartAsync(StatechartTestBinary.Start(), scope.Path, scope.Path, scope.Path);
+        await lifetime.RegisterAsync();
+        var (exit, forwarded) = await Forwarded(() => StatechartNode.RunAsync(dependencies, "/payload",
+            new JsonObject { ["mode"] = "render-ready" }, lifetime, scope.Path, CancellationToken.None));
+        Assert.Equal(1, exit);
+        var lines = forwarded.Split('\n');
+        var configuration = JsonNode.Parse(lines[0])!;
+        Assert.Equal("render-ready", configuration["mode"]!.GetValue<string>());
+        Assert.Equal(lifetime.Stage, configuration["stage"]!.GetValue<string>());
+        Assert.Equal("/managed/pele.js", configuration["renderer"]!.GetValue<string>());
+        Assert.Equal("/payload/skills/engineering/statechart/references/render.md", configuration["renderGuide"]!.GetValue<string>());
+        Assert.Equal($"JAVA=/managed/java TLA2TOOLS=/managed/tla2tools.jar TMPDIR={lifetime.Temp} " +
+            "args=--disable-warning=ExperimentalWarning,/payload/skills/engineering/statechart/scripts/native-entry.ts", lines[1]);
+        Assert.True(await lifetime.CompleteAsync());
+    }
+
+    [SkippableFact]
+    [UnsupportedOSPlatform("windows")]
+    public async Task ASilentBootstrapForwardsNothingAndReportsItsExit()
+    {
+        Skip.IfNot(OperatingSystem.IsLinux(), "POSIX ownership runs on Linux.");
+        using var scope = new StatechartTestDirectory();
+        var node = FakeRuntime(scope.Path, "echo \"ready:1:$3\"\nread -r go\n[ \"$go\" = \"go:1:$3\" ] || exit 9\n");
+        await using var lifetime = await PosixStatechartLifetime.StartAsync(StatechartTestBinary.Start(), scope.Path, scope.Path, scope.Path);
+        await lifetime.RegisterAsync();
+        var (exit, forwarded) = await Forwarded(() => StatechartNode.RunAsync(new StatechartDependencies(node, null, null, null),
+            "/payload", new JsonObject { ["mode"] = "render-ready" }, lifetime, scope.Path, CancellationToken.None));
+        Assert.Equal((0, ""), (exit, forwarded));
+        Assert.True(await lifetime.CompleteAsync());
+    }
+
+    [SkippableFact]
+    [UnsupportedOSPlatform("windows")]
+    public async Task ABootstrapWithoutTheExactReadyFrameNeverReceivesGo()
+    {
+        Skip.IfNot(OperatingSystem.IsLinux(), "POSIX ownership runs on Linux.");
+        using var scope = new StatechartTestDirectory();
+        var released = Path.Combine(scope.Path, "released");
+        var node = FakeRuntime(scope.Path, $"echo ready:1\nread -r go\necho \"$go\" > {released}\n");
+        await using var lifetime = await PosixStatechartLifetime.StartAsync(StatechartTestBinary.Start(), scope.Path, scope.Path, scope.Path);
+        await lifetime.RegisterAsync();
+        await Assert.ThrowsAsync<InvalidDataException>(() => StatechartNode.RunAsync(new StatechartDependencies(node, null, null, null),
+            "/payload", new JsonObject { ["mode"] = "check" }, lifetime, scope.Path, CancellationToken.None));
+        Assert.True(await lifetime.CompleteAsync());
+        Assert.False(File.Exists(released) && File.ReadAllText(released).StartsWith("go:", StringComparison.Ordinal));
+    }
+
+    [SkippableFact]
+    public async Task TheCheckingRuntimeIsConfiguredInsideTheOwnedStageAndStartsFromTheCaller()
+    {
+        Skip.IfNot(OperatingSystem.IsLinux(), "POSIX ownership runs on Linux.");
+        using var scope = new StatechartTestDirectory();
+        var request = CapturedRequest(scope.Path);
+        var dependencies = new StatechartDependencies("/managed/node", "/managed/java", "/managed/tla2tools.jar", "/managed/pele.js");
+        var executable = StatechartTestBinary.Start();
+        await using var owner = await PosixStatechartLifetime.StartAsync(executable, scope.Path, scope.Path, scope.Path);
+        await owner.RegisterAsync();
+        var start = await PosixStatechartRun.CheckingAsync(request, dependencies, "/payload", owner, executable,
+            "/requests/continued/request.json", CancellationToken.None);
+        var file = Path.Combine(owner.Stage, "posix-cli.json");
+        Assert.Equal("/managed/node", start.FileName);
+        Assert.Equal(request.Caller, start.WorkingDirectory);
+        Assert.Equal(["--disable-warning=ExperimentalWarning", "/payload/skills/engineering/statechart/scripts/native-entry.ts",
+            "posix-cli", file], start.ArgumentList);
+        Assert.Equal(["/managed/java", "/managed/tla2tools.jar", owner.Temp, owner.Temp, owner.Temp],
+            new[] { "JAVA", "TLA2TOOLS", "TEMP", "TMP", "TMPDIR" }.Select(name => start.Environment[name]));
+        var configuration = JsonNode.Parse(File.ReadAllText(file))!;
+        Assert.Equal("check", configuration["mode"]!.GetValue<string>());
+        Assert.Equal(request.Id, configuration["request"]!["Id"]!.GetValue<string>());
+        Assert.Equal([owner.Stage, owner.Temp, "/managed/pele.js", "/payload/skills/engineering/statechart/references/render.md",
+                executable.FileName, "/requests/continued/request.json"],
+            new[] { "stage", "temp", "renderer", "renderGuide", "nativeExecutable", "completedRequest" }
+                .Select(name => configuration[name]!.GetValue<string>()));
+        Assert.Empty(configuration["nativeArguments"]!.AsArray());
+        Assert.True(await owner.CompleteAsync());
+    }
+
+    // The exec fails here, so the handoff error reaches this process and the independent owner still drains and cleans up.
+    [SkippableFact]
+    public async Task AFailedRuntimeHandoffSurfacesAndTheOwnerStillCleansUp()
+    {
+        Skip.IfNot(OperatingSystem.IsLinux(), "POSIX ownership runs on Linux.");
+        using var scope = new StatechartTestDirectory();
+        var request = CapturedRequest(scope.Path);
+        var home = new StatechartHome(Path.Combine(scope.Path, "assets"), Path.Combine(scope.Path, "dependencies"),
+            Directory.CreateDirectory(Path.Combine(scope.Path, "state")).FullName);
+        var dependencies = new StatechartDependencies(Path.Combine(scope.Path, "missing-node"), null, null, null);
+        var directory = Environment.CurrentDirectory;
+        try
+        {
+            var error = await Assert.ThrowsAsync<System.ComponentModel.Win32Exception>(() => PosixStatechartRun.RunAsync(
+                request, dependencies, "/payload", home, null, StatechartTestBinary.Start(), CancellationToken.None));
+            Assert.Equal("Statechart exec handoff failed.", error.Message);
+            Assert.Equal(request.Caller, Environment.CurrentDirectory);
+        }
+        finally { Environment.CurrentDirectory = directory; }
+        var journals = Directory.GetFiles(home.State, "scratch-*.journal");
+        Assert.Equal(2, journals.Length);
+        Assert.All(journals, journal => Assert.EndsWith("deleted-after-authoritative-drain\n", File.ReadAllText(journal)));
+        Assert.False(Directory.Exists(request.Output));
+    }
+
+    // Cancellation before the handoff stops the run before any runtime starts; the owner still drains and cleans up.
+    [SkippableFact]
+    public async Task ACancelledRunNeverHandsOffAndTheOwnerStillCleansUp()
+    {
+        Skip.IfNot(OperatingSystem.IsLinux(), "POSIX ownership runs on Linux.");
+        using var scope = new StatechartTestDirectory();
+        var request = CapturedRequest(scope.Path);
+        var home = new StatechartHome(Path.Combine(scope.Path, "assets"), Path.Combine(scope.Path, "dependencies"),
+            Directory.CreateDirectory(Path.Combine(scope.Path, "state")).FullName);
+        var directory = Environment.CurrentDirectory;
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => PosixStatechartRun.RunAsync(request,
+            new StatechartDependencies("/managed/node", null, null, null), "/payload", home, null, StatechartTestBinary.Start(),
+            new CancellationToken(canceled: true)));
+        Assert.Equal(directory, Environment.CurrentDirectory);
+        var journals = Directory.GetFiles(home.State, "scratch-*.journal");
+        Assert.Equal(2, journals.Length);
+        Assert.All(journals, journal => Assert.EndsWith("deleted-after-authoritative-drain\n", File.ReadAllText(journal)));
+    }
+
+    private static StatechartRequest CapturedRequest(string root)
+    {
+        var caller = Directory.CreateDirectory(Path.Combine(root, "caller")).FullName;
+        WriteReadyModel(caller);
+        return StatechartRequest.Capture(["ReadyModel.tla", "--out", "chart"], caller, new StatechartAssets(), RuntimeInformation.RuntimeIdentifier);
+    }
+
+    [UnsupportedOSPlatform("windows")]
+    private static string FakeRuntime(string root, string script)
+    {
+        var path = Path.Combine(root, "fake-node");
+        File.WriteAllText(path, "#!/bin/sh\n" + script);
+        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        return path;
+    }
+
+    // The native bootstrap forwards the child's output to this process's standard error.
+    private static async Task<(int Exit, string Forwarded)> Forwarded(Func<Task<int>> run)
+    {
+        var original = Console.Error;
+        using var captured = new StringWriter();
+        Console.SetError(captured);
+        try { return (await run(), captured.ToString()); }
+        finally { Console.SetError(original); }
+    }
+
     private static string[] Content(string dependencies) => Files(Path.Combine(dependencies, Relative))
         .Where(file => !file.Contains(".ready.json", StringComparison.Ordinal)).ToArray();
 

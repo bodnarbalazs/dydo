@@ -5,6 +5,7 @@ disable-model-invocation: true
 ---
 
 <!-- Adapted from cursor/plugins pstack/create-formal-verification-skill at 5dba0b8d0bb778182411b2544f7a801d1529aef1 (MIT). -->
+<!-- Statechart companion adapted from cursor/plugins at 1ba91fc25c0977741dd0e267849e6234b037ed0a (MIT). -->
 
 # Create a formal verification skill
 
@@ -33,6 +34,8 @@ Pick the tool that answers the question at the lowest cost: a model checker, a p
 ## Generate the verify skill
 
 Write `skills/engineering/verify-<area>/SKILL.md` with frontmatter that names the area and says when to use it. Without frontmatter, the skill never registers. Then run `node setup-skills.mjs` so both hosts discover it. From the skill alone, the next agent must be able to tell whether a change touches the verified code, run the check, tell a real bug from a modeling error, and update the verification when a change is intended. Put the coverage record and the sync commit in the skill, and tell the next agent to move the sync commit forward only after it confirms that the verification describes the code at the new commit. Use this repo's real commands, paths, and nouns, and leave no placeholders.
+
+For a TLA+ check, name the user-invoked `statechart` skill as the companion for reading every result: shortest paths to invariant violations, or the checked state graph when the rules hold within its chart budget. When the user invokes it, use the same checked model, config, bounds and verification sync commit. Refer to `statechart` by name; keep its commands, options and paths in that skill so they stay current.
 
 ## Prove it before you hand off
 

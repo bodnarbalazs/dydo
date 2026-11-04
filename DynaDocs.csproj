@@ -38,6 +38,19 @@
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     </PropertyGroup>
 
+    <Import Project="Resources/Statechart/payload.items.props" />
+    <ItemGroup>
+        <EmbeddedResource Include="Resources/Statechart/payload.json" LogicalName="Statechart/manifest.json" />
+        <EmbeddedResource Include="Resources/Statechart/dependency-lock.json" LogicalName="Statechart/lock.json" />
+    </ItemGroup>
+    <Target Name="ValidateStatechartPayload" BeforeTargets="PrepareForBuild">
+        <GetFileHash Files="@(StatechartPayload)" Algorithm="SHA256">
+            <Output TaskParameter="Items" ItemName="StatechartPayloadHashes" />
+        </GetFileHash>
+        <Error Condition="'%(StatechartPayloadHashes.FileHash)' != '%(StatechartPayloadHashes.ExpectedHash)'"
+               Text="Statechart payload source drift: %(StatechartPayloadHashes.Identity). Review and explicitly update its manifest before building." />
+    </Target>
+
     <ItemGroup>
         <PackageReference Include="System.CommandLine" Version="2.0.2" />
         <PackageReference Include="CsToml" Version="1.8.4" />

@@ -6,6 +6,154 @@ date: 2026-11-04
 
 # DYD-504 toolchain modernization
 
+## Recovery successor — current disposition, 2026-11-04
+
+This section supersedes the unfinished-scope and routing statements in the retained
+hop below. The original archives and their checksum file remain unchanged. Before
+editing, the successor writer verified clean branch `DYD-504-modernize-toolchain`,
+root `/home/balazs/.t3/worktrees/DynaDocs/t3-7a947183`, retained HEAD
+`43a016ba9ada3ae8b8615f0a55646fd3299d4c90`, original base ancestry
+`42882830292f44133f796ee3d152cb446ea4091f`, and owned paths. Both archive hashes,
+every hash in `commit.json`, and the original tested input manifest were checked;
+only its two declared documentation deltas differed. The captain explicitly added
+the npm ZIP fixture, viewer storage setup and directly reached regression tests.
+The subsequent advisory addendum added `DynaDocs.csproj` and reached pin assertions/docs.
+
+### Implemented behavior and red/green proof
+
+- The npm extraction test writes a deterministic valid ZIP containing `dydo.exe`
+  with `binary fixture` bytes. It still invokes real platform extraction and checks
+  the extracted content. It needs no ZIP writer package or GNU-tar ZIP support.
+  `zip-red-native` fails with `End-of-central-directory signature not found`;
+  `zip-green-native` passes all seven tests, exit 0.
+- Browser tests use the actual jsdom local/session storage areas, replacing Node
+  26's host globals only in jsdom environments. Existing Node-environment fixtures
+  still run. Five new tests cover browser Storage identity, window/global access,
+  key/remove behavior, restoration after global stubbing, and separate storage areas.
+  `storage-revert-red` fails four of five new tests against retained setup;
+  `storage-final-focused` passes all 85 selected tests, including the 19 Node-only
+  fixture cases. `viewer-stable-coverage` passes all 389 tests.
+- `RuntimeFrameworkVersion` is now 10.0.14, the first patch fixing
+  GHSA-p3jp-9v83-76w9 / CVE-2026-111497. LatestMinor roll-forward remains in place.
+  Fresh unsuppressed restore of the old declaration fails NU1903 (`advisory-red`);
+  patched restore and Release build both pass. The runtime-pin assertion fails
+  against the old declaration (`runtime-pin-revert-red`) and all nine workflow/pin
+  tests pass (`patched-pin-test`). No audit/NoWarn suppression was added or used
+  for the fresh vulnerability restore/build proof.
+
+The RID restore resolves `Microsoft.DotNet.ILCompiler` and
+`runtime.linux-x64.Microsoft.DotNet.ILCompiler` at 10.0.14. Its download dependencies
+resolve Microsoft.NETCore.App Host, Runtime, Runtime.NativeAOT and
+Microsoft.AspNetCore.App Runtime for linux-x64 at 10.0.14. Saved assets and package
+SHA-512 receipts are in `recovery/patched-resolution/`. These are package-cache
+restores, not shared-runtime installation. The eight Python packages and all JS
+locks remain unchanged; the resolved-version collector passes on CPython 3.14.4,
+Node 26.13.0 and SDK 10.0.303. No new package, runtime or global default was installed.
+
+### Runtime blocker and captain handoff
+
+**Approval/install prerequisite: Microsoft.NETCore.App runtime 10.0.14, linux-x64,
+into the existing `/home/balazs/.dotnet` installation.** Both built dydo and the
+copy in the test output request 10.0.14 in their runtimeconfig. Direct framework-
+dependent launches both exit 150 and identify only 10.0.11 as installed. The test
+host itself targets 10.0.0 and runs on 10.0.11, but its dydo children cannot launch.
+No newer SDK or ASP.NET shared runtime is required by this measured launch failure.
+No install was attempted. The captain must obtain Balazs's authorization before
+provisioning, then complete the dependent final gates. CI setup currently pins SDK
+10.0.303; it does not establish availability of shared runtime 10.0.14. The approved
+CI provisioning choice and hosted checks remain pending with the captain.
+
+The advisory invalidates the retained build/static receipts as fresh-restore
+security proof; `patched-restore` and `patched-build` replace that claim. The
+retained ordinary .NET and C# coverage failures remain historical evidence,
+**not final-candidate results after the runtime-pin change**. Full .NET suite,
+.NET static/coverage, hosted CI, native Windows proof and fresh independent review
+remain outstanding. The runtime-dependent gates were stopped, not bypassed.
+
+A second blocker is Linux Python coverage: 19 threshold findings remain despite
+a passing full suite. `run_tests.py::_end_job_members` has HCRAP 44;
+`windows_job.py` has 23.3618% line / 4.31034% branch coverage and 12 HCRAP
+findings (22–239.792); `owned_process.py` has 17.9487% line / 0% branch
+coverage and HCRAP 29/55. Thresholds remain 80% line, 60% branch and HCRAP 20.
+The complete findings are in the Python adapter report. These are not measurement
+gaps and are not covered by DYD-507. Owner for routing/disposition: the DYD-504
+captain; no broader verification-driver redesign was authorized to this writer.
+
+Attribution evidence: `retained-python-coverage/threshold-diagnostic.json` replays
+the unchanged join and policy against the checksum-verified retained raw coverage
+for commit 43a016ba, validating every measured Python source/counter hash. It
+produces the identical 19 findings; the old functional failure had prevented
+the normal gate from reaching threshold evaluation. This diagnostic is not a gate
+pass. `coverage-finding-source-comparison.json` additionally proves every flagged
+method byte-identical to original base 42882830 and the entire `owned_process.py`
+file unchanged. No thresholds, exclusions or native-Windows assertions were weakened.
+
+DYD-507 owns exactly the three lifecycle failures recorded below. Its live issue
+was read during this hop: the admiral permits individual feature merges with those
+exact inherited failures documented; release landing still requires green. That
+disposition does not waive the new runtime prerequisite or any unrelated failure,
+threshold or measurement gap. No DYD-507 source was incorporated.
+
+### Successor receipts and reuse
+
+All successor commands have full output, exact argv/cwd, source manifests and patch,
+environment, timestamps and actual exit under `dydo/_system/.local/dyd-504-proof/recovery/`.
+The final commit binding and per-receipt input differences are in
+`recovery/commit.json` and `recovery/input-reuse.json`. Runtimeconfigs and both
+exit-150 launch logs are retained. New archives `recovery-commands.tar.gz` and
+`recovery-coverage-results.tar.gz` plus `RECOVERY-SHA256SUMS` travel with this
+worktree; they do not overwrite either old archive.
+
+| Successor receipt | Exit | Result |
+|---|---|---|
+| `patched-restore` | 0 | Fresh RID restore, audit enabled, patched packages |
+| `patched-build` | 0 | Release solution build, warnings as errors, zero warnings/errors |
+| `patched-pin-test` | 0 | Nine workflow/runtime-pin assertions |
+| `independent-static` | 1 | Python and Node pass; initial viewer lint fails, superseded by viewer rerun |
+| `viewer-stable-static` | 0 | Viewer static, zero findings/gaps |
+| `independent-coverage` | 1 | Node passes 91, one Windows skip; initial viewer environment failure superseded |
+| `viewer-stable-coverage` | 0 | Viewer 389 pass; coverage thresholds pass, zero findings/gaps |
+| `python-stable-coverage` | 1 | 630 tests, zero failures, 60 platform skips; 19 inherited thresholds, zero gaps |
+| `patched-dydo-launch`, `patched-test-child-launch` | 150 | Missing Microsoft.NETCore.App 10.0.14 x64 |
+
+Only the successful Python/Node rows of the mixed facade runs are reused, never
+their failed aggregate. Their measured sources/tests/dependencies did not change
+with the subsequent viewer-only correction or documentation updates. The same
+scope check binds the build evidence; these changes cannot alter its executable
+inputs. Python coverage was repeated on the frozen tree because the first run
+overlapped the temporary runtime-pin red overlay; that first run remains diagnostic
+evidence, not the final Python result. Python's coverage adapter records the exact full
+unittest-discovery argv and suite exit, so that producer's verdict serves as its
+ordinary-suite verdict without a duplicate run. The old red Python/viewer/Node
+coverage outcomes are superseded, not renamed as passes. `viewer-final-static`
+correctly rejected inputs changed by the overlapping pin-red overlay (exit 2);
+only `viewer-stable-static` is the final viewer static result. Initial sandbox
+attempts lacked native execution/store access and are not used as behavior proof.
+
+### Focused captain recipe
+
+From the worktree root, using the existing locked dependencies:
+
+```bash
+node --test --test-reporter=tap npm/test/download.test.cjs
+pnpm --dir viewer test src/testSetup.test.ts src/theme/useTheme.test.tsx src/app/App.test.tsx fixtures/fixtures.test.ts
+pnpm --dir viewer lint
+dotnet restore DynaDocs.csproj --force --no-http-cache -r linux-x64 -warnaserror
+dotnet build DynaDocs.sln -c Release --warnaserror
+dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj -c Release --no-build --no-restore --filter FullyQualifiedName~ReleaseWorkflowTests
+```
+
+The focused .NET assertions use only the existing test host; they do not prove
+that dydo children can launch. After authorized runtime provisioning, rerun the
+contract's ordinary .NET suite and required full static/coverage gates with
+`dydo/_system/.local/static-gates/python/bin/python`, and complete hosted CI.
+Until then the launch recipe `dotnet bin/Release/net10.0/dydo.dll --version`
+reproduces the missing-runtime blocker, not a product test failure.
+
+code-writer/model: gpt-6-astra (high). No self-review PASS is claimed.
+
+## Retained hop — historical record
+
 ## Pre-edit contract
 
 All five checks passed before source edits: branch `DYD-504-modernize-toolchain`;

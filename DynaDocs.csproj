@@ -26,11 +26,10 @@
         <ToolCommandName>dydo</ToolCommandName>
         <PackageId>dydo</PackageId>
 
-        <!-- Runtime rollforward: run on any .NET 10.x runtime regardless of the SDK patch
-             the tool was built with. Prevents users from being forced to upgrade .NET every
-             time we ship a build against a newer patch. -->
+        <!-- Keep the AOT compiler and runtime at the first patch fixing CVE-2026-111497.
+             Framework-dependent tools also require this runtime minimum. -->
         <RollForward>LatestMinor</RollForward>
-        <RuntimeFrameworkVersion>10.0.0</RuntimeFrameworkVersion>
+        <RuntimeFrameworkVersion>10.0.14</RuntimeFrameworkVersion>
 
         <!-- Native AOT publishing -->
         <PublishAot>true</PublishAot>

@@ -53,6 +53,13 @@ dotnet tool restore --tool-manifest .config/dotnet-tools.json
 dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
 ```
 
+The SDK pin is 10.0.303. `DynaDocs.csproj` separately requires runtime 10.0.14 or
+later and resolves its AOT compiler at 10.0.14, the first patch fixing CVE-2026-111497.
+An SDK 10.0.303 installation with only shared runtime 10.0.11 can build but cannot
+launch framework-dependent dydo or the dydo children used by tests. Check
+`dotnet --list-runtimes` before these gates; package restore does not install the
+shared runtime. Provisioning a newer runtime requires the host owner's authorization.
+
 The C# coverage campaign uses the existing Linux subreaper containment and retains raw streams,
 subject exit and cleanup evidence. A live detached descendant makes the campaign incomplete even
 when the subject exited zero. Unconfirmed cleanup retains the isolated snapshot. Windows continues
@@ -62,8 +69,10 @@ are missing Windows proof, not passing Windows proof.
 On Windows, the `tar` first on `PATH` must be the Windows one. `npm/test/download.test.cjs` builds its fixture
 archives by shelling out to `tar`, and `node_tests.cjs` runs that suite; Git for Windows' GNU tar
 (`C:\Program Files\Git\usr\bin\tar.exe`) reads the test's `C:\...` destination as a remote host, so
-three tests fail with `tar (child): Cannot connect to C: resolve failed` and the node coverage row
+the tar fixtures fail with `tar (child): Cannot connect to C: resolve failed` and the node coverage row
 reports a `functional` finding. Prepending `C:\Windows\System32`, whose `tar` is bsdtar, fixes it.
+The ZIP fixture uses fixed ZIP bytes and exercises real extraction on both platforms; it does not
+rely on tar to create ZIP archives.
 
 ---
 

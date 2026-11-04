@@ -11,6 +11,15 @@ public sealed class ReleaseWorkflowTests
     private const string CoverageEvidenceStep = "Upload coverage evidence";
 
     [Fact]
+    public void RuntimePin_RequiresThePatchedAotCompilerAndRuntime()
+    {
+        var project = System.Xml.Linq.XDocument.Load(RepositoryFile("DynaDocs.csproj"));
+        Assert.Equal("10.0.14", Assert.Single(project.Descendants("RuntimeFrameworkVersion")).Value);
+        Assert.Equal("true", Assert.Single(project.Descendants("PublishAot")).Value);
+        Assert.Equal("LatestMinor", Assert.Single(project.Descendants("RollForward")).Value);
+    }
+
+    [Fact]
     public void Workflows_UseTheExactInstalledNodeAndDotnetPins()
     {
         foreach (var name in new[] { "ci.yml", "release.yml" })

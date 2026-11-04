@@ -70,6 +70,25 @@ public class StatechartReadyTests
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(java));
     }
 
+    // The run is offline, so the restored assets can only come from the payload embedded in dydo.
+    [SkippableFact]
+    public async Task DamagedAssetsAreExtractedAgainOfflineAndTheRunReachesItsVerdict()
+    {
+        using var scope = new StatechartTestDirectory();
+        var fixture = Fixture();
+        var first = await RunReadyModel(scope.Path, fixture);
+        Assert.True(first.Exit == 1, first.Error);
+        var assets = new StatechartAssets();
+        var payload = Path.Combine(scope.Path, "assets", assets.Release, assets.Digest);
+        File.AppendAllText(Path.Combine(payload, "skills", "engineering", "statechart", "scripts", "worker.ts"), "\n// tampered");
+        File.Delete(Path.Combine(payload, "skills", "engineering", "statechart", "scripts", "java", "statechart-tlc-bootstrap.jar"));
+        Directory.Delete(Path.Combine(scope.Path, "chart"), recursive: true);
+        var second = await RunReadyModel(scope.Path, fixture);
+        Assert.True(second.Exit == 1, second.Error);
+        Assert.Contains("Bound breaks", second.Output);
+        assets.Verify(payload);
+    }
+
     [SkippableFact]
     public async Task AnUpdateThatKeepsTheLockReverifiesAndRestampsWithoutInstalling()
     {

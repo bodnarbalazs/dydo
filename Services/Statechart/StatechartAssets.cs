@@ -30,37 +30,66 @@ internal sealed class StatechartAssets
         ValidateEmbedded();
     }
 
-    public string Extract(string root)
+    // This payload's verified extraction. Under this payload's receipt, damaged content is extracted again offline
+    // from the embedded bytes; a directory without that receipt is not dydo's and stays untouched.
+    public async Task<string> ExtractAsync(string root, CancellationToken token)
     {
         var versionRoot = Path.Combine(root, Release);
         StatechartPaths.EnsureDirectory(versionRoot);
         var target = Path.Combine(versionRoot, Digest);
-        if (Directory.Exists(target))
-        {
-            Verify(target);
-            return target;
-        }
+        await using var held = await StatechartLock.AcquireAsync(Path.Combine(versionRoot, ".extract.lock"), token);
+        // Every extraction runs under this lock, so a staging directory found here was left by a crash.
+        foreach (var stale in Directory.EnumerateDirectories(versionRoot, ".extract-*")
+                     .Where(path => (File.GetAttributes(path) & FileAttributes.ReparsePoint) == 0))
+            Directory.Delete(stale, recursive: true);
+        if (Directory.Exists(target) && Intact(target)) return target;
         var staging = Path.Combine(versionRoot, ".extract-" + Guid.NewGuid().ToString("N"));
+        var damaged = staging + "-damaged";
+        try
+        {
+            Write(staging);
+            Verify(staging);
+            if (Directory.Exists(target)) Directory.Move(target, damaged);
+            Directory.Move(staging, target);
+        }
+        finally
+        {
+            foreach (var path in new[] { staging, damaged }.Where(Directory.Exists)) Directory.Delete(path, recursive: true);
+        }
+        return target;
+    }
+
+    // False when this payload's receipt marks the directory as dydo's own extraction but its content fails verification.
+    private bool Intact(string directory)
+    {
+        var receipt = new FileInfo(Path.Combine(directory, ".statechart-receipt"));
+        StatechartPaths.RequirePlainDirectory(directory);
+        if (!receipt.Exists || (receipt.Attributes & FileAttributes.ReparsePoint) != 0 || receipt.Length > 1024 ||
+            File.ReadAllText(receipt.FullName) != Digest)
+            throw new IOException($"Foreign statechart asset directory retained: {directory}. Move it aside; dydo then extracts its payload there again.");
+        try
+        {
+            Verify(directory);
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+    }
+
+    private void Write(string staging)
+    {
         Directory.CreateDirectory(staging);
         using var json = JsonDocument.Parse(_manifest);
         foreach (var row in json.RootElement.GetProperty("files").EnumerateArray())
         {
-            var name = row.GetProperty("path").GetString()!;
-            var destination = Contained(staging, name);
+            var destination = Contained(staging, row.GetProperty("path").GetString()!);
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             using var output = new FileStream(destination, FileMode.CreateNew, FileAccess.Write);
             output.Write(ReadResource(row.GetProperty("resource").GetString()!));
         }
         File.WriteAllText(Path.Combine(staging, ".statechart-receipt"), Digest);
-        Verify(staging);
-        try { Directory.Move(staging, target); }
-        catch (IOException) when (Directory.Exists(target))
-        {
-            Verify(target);
-            // Only this attempt's fully verified staging can be removed.
-            Directory.Delete(staging, recursive: true);
-        }
-        return target;
     }
 
     public void Verify(string directory)

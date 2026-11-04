@@ -10,7 +10,7 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
         RequirePlatform();
         token.ThrowIfCancellationRequested();
         var request = StatechartRequest.Capture(arguments, caller, assets, rid);
-        var payload = assets.Extract(home.Assets);
+        var payload = await assets.ExtractAsync(home.Assets, token);
         var managed = new StatechartManaged(home, assets, rid);
         var dependencies = await StatechartResolver.ResolveAsync(request, managed, home, token);
         if (StatechartManaged.Missing(dependencies).Length != 0)
@@ -35,7 +35,7 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
             var request = store.Load(path, validateInputs: false);
             if (store.Completed(path, request) is { } completed) return completed;
             StatechartRequest.Validate(request, assets, rid);
-            var payload = assets.Extract(home.Assets);
+            var payload = await assets.ExtractAsync(home.Assets, token);
             var managed = new StatechartManaged(home, assets, rid);
             var dependencies = await StatechartResolver.ResolveAsync(request, managed, home, token);
             if (StatechartManaged.Missing(dependencies).Length != 0)

@@ -73,7 +73,7 @@ public static class StatechartCommand
             var cache = StatechartPaths.Root("DYDO_STATECHART_ASSET_ROOT", Path.Combine(root, "assets"));
             var state = StatechartPaths.Root("DYDO_STATECHART_STATE_ROOT", Path.Combine(root, "state"));
             StatechartPaths.EnsureDirectory(state);
-            var payload = assets.Extract(cache);
+            var payload = await assets.ExtractAsync(cache, CancellationToken.None);
             await using var lifetime = await WindowsStatechartLifetime.StartAsync(StatechartExecutable.Current(),
                 state, state, Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar));
             await lifetime.RegisterAsync();

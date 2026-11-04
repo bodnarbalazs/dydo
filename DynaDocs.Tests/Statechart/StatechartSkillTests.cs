@@ -11,11 +11,11 @@ public class StatechartSkillTests
     [InlineData("protocol")]
     [InlineData("source")]
     [InlineData("missing")]
-    public void InstalledSkillMustMatchActualEmbeddedSourcesAndReleaseProtocolPayload(string change)
+    public async Task InstalledSkillMustMatchActualEmbeddedSourcesAndReleaseProtocolPayload(string change)
     {
         using var scope = new StatechartTestDirectory();
         var assets = new StatechartAssets();
-        var payload = assets.Extract(scope.Path);
+        var payload = await assets.ExtractAsync(scope.Path, CancellationToken.None);
         var skill = Path.Combine(payload, "skills", "engineering", "statechart");
         var identity = new JsonObject { ["schema"] = 1, ["protocol"] = change == "protocol" ? 2 : 1,
             ["release"] = assets.Release, ["payload"] = change == "payload" ? "other" : assets.Digest, ["lock"] = assets.LockDigest };
@@ -27,10 +27,10 @@ public class StatechartSkillTests
     }
 
     [Fact]
-    public void AnUnchangedSkillFromAnEarlierReleaseIsReplacedWithThisRelease()
+    public async Task AnUnchangedSkillFromAnEarlierReleaseIsReplacedWithThisRelease()
     {
         using var scope = new StatechartTestDirectory();
-        var (project, payload, skill) = Installed(scope.Path);
+        var (project, payload, skill) = await Installed(scope.Path);
         FromAnEarlierRelease(skill, inventory: true);
         Assert.Equal(skill, StatechartSkill.Place(project, payload, new StatechartAssets()));
         Assert.Equal(skill, StatechartSkill.Validate(skill, new StatechartAssets()));
@@ -39,10 +39,10 @@ public class StatechartSkillTests
     }
 
     [Fact]
-    public void LocalEditsToAnEarlierReleaseAreRefusedUntouchedWithTheRemedy()
+    public async Task LocalEditsToAnEarlierReleaseAreRefusedUntouchedWithTheRemedy()
     {
         using var scope = new StatechartTestDirectory();
-        var (project, payload, skill) = Installed(scope.Path);
+        var (project, payload, skill) = await Installed(scope.Path);
         FromAnEarlierRelease(skill, inventory: true);
         File.AppendAllText(Path.Combine(skill, "SKILL.md"), "\nlocal edit");
         var receipt = File.ReadAllBytes(Path.Combine(skill, ".statechart-skill.json"));
@@ -57,10 +57,10 @@ public class StatechartSkillTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void AnEarlierReceiptWithoutAnInventoryIsReplacedOnlyWhenItsFilesAreThisRelease(bool thisReleaseBytes)
+    public async Task AnEarlierReceiptWithoutAnInventoryIsReplacedOnlyWhenItsFilesAreThisRelease(bool thisReleaseBytes)
     {
         using var scope = new StatechartTestDirectory();
-        var (project, payload, skill) = Installed(scope.Path);
+        var (project, payload, skill) = await Installed(scope.Path);
         if (thisReleaseBytes) Restamp(skill, inventory: false);
         else FromAnEarlierRelease(skill, inventory: false);
         if (thisReleaseBytes)
@@ -74,10 +74,10 @@ public class StatechartSkillTests
     }
 
     [Fact]
-    public void AChartInvocationOnAnUnchangedEarlierSkillNamesTheInstallSkillCommand()
+    public async Task AChartInvocationOnAnUnchangedEarlierSkillNamesTheInstallSkillCommand()
     {
         using var scope = new StatechartTestDirectory();
-        var (project, _, skill) = Installed(scope.Path);
+        var (project, _, skill) = await Installed(scope.Path);
         FromAnEarlierRelease(skill, inventory: true);
         var error = Assert.Throws<IOException>(() => StatechartSkill.Validate(skill, new StatechartAssets()));
         Assert.Contains("dydo statechart install-skill --root " + project, error.Message);
@@ -101,10 +101,10 @@ public class StatechartSkillTests
         Assert.False(Directory.Exists(home.Dependencies));
     }
 
-    private static (string Project, string Payload, string Skill) Installed(string root)
+    private static async Task<(string Project, string Payload, string Skill)> Installed(string root)
     {
         var assets = new StatechartAssets();
-        var payload = assets.Extract(Path.Combine(root, "assets"));
+        var payload = await assets.ExtractAsync(Path.Combine(root, "assets"), CancellationToken.None);
         var project = Path.Combine(root, "project");
         Directory.CreateDirectory(project);
         return (project, payload, StatechartSkill.Place(project, payload, assets));

@@ -25,7 +25,7 @@ internal static class StatechartSkill
     {
         if (!Path.IsPathFullyQualified(project)) throw new IOException("Skill installation requires an explicit absolute project root.");
         StatechartPaths.RequirePlainDirectory(project);
-        var payload = assets.Extract(home.Assets);
+        var payload = await assets.ExtractAsync(home.Assets, token);
         Place(project, payload, assets);
         var node = new StatechartManaged(home, assets, rid).Read().Node ??
             StatechartPrerequisites.Find("node", Environment.GetEnvironmentVariable("PATH")) ??

@@ -13,7 +13,7 @@ import hashlib
 import subprocess
 from pathlib import Path
 
-from gate_run import checked_result, result
+from gate_run import STATIC_GATE_INTERPRETER, checked_result, result
 
 
 CLEANUP_SECONDS = 30
@@ -21,7 +21,6 @@ ROW_DEADLINE_ENV = "DYDO_ROW_DEADLINE"
 SUBJECT_NAME_CAP = 10
 _DOTNET_FAILURE = re.compile(r"(?m)^\s*Failed\s+(?P<name>\S.*?)\s+\[[^\]\r\n]*\]\s*$")
 _UNITTEST_FAILURE = re.compile(r"(?m)^(?:FAIL|ERROR):\s+(?P<name>\S+)(?:\s+\((?P<case>[^)\r\n]+)\))?")
-STATIC_GATE_INTERPRETER = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
 SUPPLIED_ENVIRONMENT = ("APPDATA", "NUGET_PACKAGES", ROW_DEADLINE_ENV)
 # A defective report is a broken measurement, never a policy outcome: ParseError is a
 # SyntaxError, and an unexpected join shape raises Type/Attribute/IndexError before any finding.
@@ -34,31 +33,73 @@ class MeasurementTimeout(ValueError):
 
 
 def run_coverage_command(argv, cwd):
+    from run_tests import contain_descendants, defer_interruption
     deadline_text = os.environ.get(ROW_DEADLINE_ENV)
     deadline = float(deadline_text) if deadline_text is not None else None
-    timeout = None if deadline is None else max(0, deadline - time.monotonic() - CLEANUP_SECONDS)
+    execution_deadline = None if deadline is None else deadline - CLEANUP_SECONDS
+    containment = contain_descendants()
     child = subprocess.Popen(argv, cwd=cwd,
                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
                              start_new_session=sys.platform != "win32")
     try:
-        return child.wait(timeout=timeout)
-    except subprocess.TimeoutExpired as error:
+        status = _wait_coverage_child(child, execution_deadline)
+    except (subprocess.TimeoutExpired, KeyboardInterrupt) as error:
+        # Leave time inside the facade's cleanup window for forced descendant cleanup.
+        remaining = CLEANUP_SECONDS if deadline is None else max(0, deadline - time.monotonic())
+        cleanup_confirmed = False
         try:
-            if sys.platform == "win32":
-                child.send_signal(signal.CTRL_BREAK_EVENT)
-            else:
-                os.killpg(child.pid, signal.SIGINT)
-            child.wait(timeout=max(0, deadline - time.monotonic()))
-        except (OSError, subprocess.TimeoutExpired):
-            if sys.platform == "win32":
-                child.kill()
-            else:
-                try:
-                    os.killpg(child.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-            child.wait()
+            with defer_interruption():
+                cleanup_deadline = time.monotonic() + min(remaining, CLEANUP_SECONDS)
+                stopped = _stop_coverage_campaign(child, cleanup_deadline, containment)
+                if stopped == 2:
+                    raise MeasurementTimeout("coverage owner could not confirm interrupted cleanup")
+                cleanup_confirmed = True
+        except (OSError, subprocess.TimeoutExpired) as cleanup_error:
+            raise MeasurementTimeout("coverage cleanup could not be confirmed") from cleanup_error
+        except KeyboardInterrupt:
+            if not cleanup_confirmed:
+                raise MeasurementTimeout("coverage cleanup was interrupted before confirmation") from None
+            raise SystemExit(130) from None
+        if isinstance(error, KeyboardInterrupt):
+            raise SystemExit(130) from None
         raise MeasurementTimeout("coverage campaign exceeded row deadline after owned cleanup") from error
+    if status == 130:
+        raise SystemExit(130)
+    return status
+
+
+def _wait_coverage_child(child, deadline):
+    # Windows' native wait does not dispatch Python SIGBREAK handlers until it returns.
+    while True:
+        remaining = .2 if deadline is None else max(0, deadline - time.monotonic())
+        try:
+            return child.wait(timeout=min(.2, remaining))
+        except subprocess.TimeoutExpired:
+            if deadline is not None and remaining <= .2:
+                raise
+
+
+def _stop_coverage_campaign(child, deadline, containment):
+    from run_tests import end_descendants
+    try:
+        if sys.platform == "win32":
+            child.send_signal(signal.CTRL_BREAK_EVENT)
+        else:
+            os.killpg(child.pid, signal.SIGINT)
+        _wait_coverage_child(child, time.monotonic() + max(0, deadline - time.monotonic()) / 3)
+    except (OSError, subprocess.TimeoutExpired):
+        if sys.platform == "win32":
+            child.kill()
+        else:
+            try:
+                os.killpg(child.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        _wait_coverage_child(child, min(deadline, time.monotonic() + 5))
+    finally:
+        # A killed Linux owner can leave detached children adopted by this adapter.
+        end_descendants(containment, seconds=max(0, deadline - time.monotonic()))
+    return child.returncode
 
 
 def _sha256(path):
@@ -637,6 +678,8 @@ def collect_coverage(root, output, stack, inventory):
 
 
 def main():
+    if sys.platform == "win32":
+        signal.signal(signal.SIGBREAK, signal.default_int_handler)
     parser = argparse.ArgumentParser()
     parser.add_argument("--gate", choices=("static", "coverage"), required=True)
     parser.add_argument("--stack", choices=("dotnet", "python", "node", "viewer"), required=True)

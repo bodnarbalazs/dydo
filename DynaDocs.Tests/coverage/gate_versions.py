@@ -16,8 +16,8 @@ def _json(path):
 def python_versions(coverage):
     runtime_pin = coverage / '.python-version'
     pin_text = runtime_pin.read_text(encoding='utf-8')
-    if not re.fullmatch(r'3\.12\.10\r?\n?', pin_text):
-        raise ValueError('Python runtime pin must contain exactly 3.12.10')
+    if not re.fullmatch(r'3\.14\.4\r?\n?', pin_text):
+        raise ValueError('Python runtime pin must contain exactly 3.14.4')
     rows = []
     for line in (coverage / 'requirements.lock').read_text(encoding='utf-8').splitlines():
         match = re.fullmatch(r'([A-Za-z0-9_.-]+)==([^\s]+)', line)
@@ -28,8 +28,8 @@ def python_versions(coverage):
             raise ValueError(f'Python resolved version mismatch: {match[1]} expected {match[2]}, found {actual}')
         rows.append({'name': match[1], 'version': actual})
     implementation = platform.python_implementation()
-    if implementation != 'CPython' or sys.version_info[:2] != (3, 12):
-        raise ValueError('The monitoring collector requires CPython 3.12')
+    if implementation != 'CPython' or sys.version_info[:2] != (3, 14):
+        raise ValueError('The monitoring collector requires CPython 3.14')
     return {'declared_runtime': pin_text.rstrip('\r\n'), 'runtime': platform.python_version(),
             'implementation': implementation, 'packages': rows,
             'runtime_pin_sha256': file_hash(runtime_pin),
@@ -82,7 +82,7 @@ def collect_versions(runner):
             facts[name] = collect(runner.coverage)
         except (ValueError, KeyError, OSError, importlib.metadata.PackageNotFoundError) as error:
             errors.append({'stack': name, 'message': str(error)})
-    for name, command, expected in [('node', ['node', '--version'], 'v22.13.0'), ('sdk', ['dotnet', '--version'], '10.0.300')]:
+    for name, command, expected in [('node', ['node', '--version'], 'v26.13.0'), ('sdk', ['dotnet', '--version'], '10.0.303')]:
         row = runner.log.run(name + '-version', command)
         version = Path(row['stdout']).read_text(encoding='utf-8').strip()
         facts[name] = {'version': version, 'command': row}

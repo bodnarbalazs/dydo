@@ -117,12 +117,14 @@ test('extractArchive expands a tar archive into the destination', async () => {
 });
 
 test('extractArchive expands a zip archive into the destination', async () => {
-  const source = path.join(fixtureRoot, 'zip-source');
   const destination = path.join(fixtureRoot, 'zip-extracted');
   const archive = path.join(fixtureRoot, 'fixture.zip');
-  fs.mkdirSync(source, { recursive: true });
-  fs.writeFileSync(path.join(source, 'dydo.exe'), 'binary fixture');
-  require('node:child_process').execFileSync('tar', ['-a', '-cf', archive, '-C', source, 'dydo.exe']);
+  // Stored ZIP containing dydo.exe = "binary fixture"; GNU tar cannot create ZIPs.
+  fs.writeFileSync(archive, Buffer.from(
+    'UEsDBBQAAAAAAAAAIVz2yRSqDgAAAA4AAAAIAAAAZHlkby5leGViaW5hcnkgZml4dHVyZVBLAQIUAxQA' +
+    'AAAAAAAAIVz2yRSqDgAAAA4AAAAIAAAAAAAAAAAAAACAAQAAAABkeWRvLmV4ZVBLBQYAAAAAAQABADYAAAA0AAAAAAA=',
+    'base64'
+  ));
 
   await extractArchive(archive, destination, { archiveExt: '.zip' });
 

@@ -11,6 +11,139 @@ public sealed class ReleaseWorkflowTests
     private const string CoverageEvidenceStep = "Upload coverage evidence";
 
     [Fact]
+    public void CiWorkflow_RunsNativeCancellationOnSupportedLinuxAndWindowsWithPinnedPython()
+    {
+        var workflow = File.ReadAllText(RepositoryFile(".github", "workflows", "ci.yml"));
+        AssertCancellationJob(ActiveJobs(workflow)["assurance-cancellation"]);
+        Assert.Equal("3.14.4\n", PythonRuntimePin().Replace("\r\n", "\n", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("ubuntu-24.04", "ubuntu-latest")]
+    [InlineData("ubuntu-24.04", "ubuntu-26.04")]
+    [InlineData("[ubuntu-24.04, windows-latest]", "[ubuntu-24.04]")]
+    [InlineData("runs-on: ${{ matrix.os }}", "runs-on: ubuntu-24.04")]
+    [InlineData("python-version-file:", "python-version:")]
+    [InlineData("DynaDocs.Tests/coverage/.python-version", "wrong/.python-version")]
+    [InlineData("run: python -m unittest", "# run: python -m unittest")]
+    [InlineData("test_windows_cancellation ", "")]
+    [InlineData("test_windows_job ", "")]
+    [InlineData(" test_gate_adapter.CoverageCancellationTests", "")]
+    public void CiWorkflow_RejectsUnsupportedRunnersOrMissingNativeCancellationProof(string original, string replacement)
+    {
+        var workflow = File.ReadAllText(RepositoryFile(".github", "workflows", "ci.yml"));
+        var job = ActiveJobs(workflow)["assurance-cancellation"];
+        AssertCancellationJob(job);
+        Assert.Contains(original, job);
+        var invalid = ActiveText(job.Replace(original, replacement, StringComparison.Ordinal));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertCancellationJob(invalid));
+    }
+
+    [Fact]
+    public void ReleaseWorkflow_UsesPinnedPythonOnlyOnSupportedWindowsValidation()
+    {
+        var pythonJobs = ActiveJobs(Workflow())
+            .Where(job => job.Value.Contains("actions/setup-python@", StringComparison.Ordinal)).ToArray();
+        var validation = Assert.Single(pythonJobs);
+        Assert.Equal("validation", validation.Key);
+        Assert.Equal("windows-latest", JobField(validation.Value, "runs-on"));
+        AssertValidationPythonContract(Workflow(), PythonRuntimePin());
+    }
+
+    private static void AssertCancellationJob(string job)
+    {
+        Assert.Equal("${{ matrix.os }}", JobField(job, "runs-on"));
+        Assert.Equal("[ubuntu-24.04, windows-latest]", StepField(job, "os"));
+        Assert.Equal("false", StepField(job, "fail-fast"));
+        Assert.Null(StepField(job, "exclude"));
+        Assert.Null(JobField(job, "if"));
+        Assert.Null(JobField(job, "continue-on-error"));
+
+        var setup = JobStep(job, "Setup Python");
+        Assert.Equal("actions/setup-python@v5", StepField(setup, "uses"));
+        Assert.Equal(PythonVersionFile, StepField(setup, "python-version-file"));
+        Assert.Null(StepField(setup, "python-version"));
+        Assert.Null(StepField(setup, "if"));
+        var regression = JobStep(job, "Native cancellation regression");
+        Assert.Equal("DynaDocs.Tests/coverage/tests", StepField(regression, "PYTHONPATH"));
+        Assert.Equal("python -m unittest -v test_windows_cancellation test_windows_job test_gate_adapter.CoverageCancellationTests",
+            StepField(regression, "run"));
+        Assert.Null(StepField(regression, "if"));
+        Assert.Null(StepField(regression, "continue-on-error"));
+        Assert.True(StepIndex(job, "Setup Python") < StepIndex(job, "Native cancellation regression"));
+    }
+
+    [Fact]
+    public void RuntimePin_RequiresThePatchedAotCompilerAndRuntime()
+    {
+        var project = System.Xml.Linq.XDocument.Load(RepositoryFile("DynaDocs.csproj"));
+        Assert.Equal("10.0.14", Assert.Single(project.Descendants("RuntimeFrameworkVersion")).Value);
+        Assert.Equal("true", Assert.Single(project.Descendants("PublishAot")).Value);
+        Assert.Equal("true", Assert.Single(project.Descendants("PackAsTool")).Value);
+        Assert.Equal("LatestMinor", Assert.Single(project.Descendants("RollForward")).Value);
+    }
+
+    [Theory]
+    [InlineData("ci.yml", 2)]
+    [InlineData("release.yml", 3)]
+    public void Workflows_ProvisionPatchedRuntimeBeforeDotnetConsumers(string name, int expectedJobs)
+    {
+        var workflow = File.ReadAllText(RepositoryFile(".github", "workflows", name));
+        var jobs = ActiveJobs(workflow).Values.Where(job => job.Contains("actions/setup-dotnet@", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(expectedJobs, jobs.Length);
+        Assert.All(jobs, AssertPatchedRuntimeProvisioning);
+    }
+
+    [Fact]
+    public void Workflows_RejectMissingMisorderedOrUnpinnedRuntimeProvisioning()
+    {
+        var job = ActiveJobs(Workflow())["validation"];
+        var setup = JobStep(job, "Setup .NET");
+        var provision = JobStep(job, "Provision patched .NET runtime");
+        foreach (var invalid in new[]
+        {
+            job.Replace(provision, "", StringComparison.Ordinal),
+            Swap(job, setup, provision),
+            job.Replace("shell: pwsh", "shell: bash", StringComparison.Ordinal),
+            job.Replace("run: ./.github/workflows/provision-dotnet-runtime.ps1", "# run: ./.github/workflows/provision-dotnet-runtime.ps1", StringComparison.Ordinal),
+            job.Replace("dotnet-version: '10.0.303'", "dotnet-version: '10.0.x'", StringComparison.Ordinal),
+            job.Replace("DOTNET_INSTALL_DIR:", "REMOVED_DOTNET_INSTALL_DIR:", StringComparison.Ordinal),
+            job.Replace(provision, "", StringComparison.Ordinal) + "\n" + provision
+        })
+            Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertPatchedRuntimeProvisioning(ActiveText(invalid)));
+    }
+
+    private static void AssertPatchedRuntimeProvisioning(string job)
+    {
+        var setup = JobStep(job, "Setup .NET");
+        var provision = JobStep(job, "Provision patched .NET runtime");
+        Assert.Equal("'10.0.303'", StepField(setup, "dotnet-version"));
+        Assert.Equal("${{ runner.temp }}/dydo-assurance-dotnet", StepField(setup, "DOTNET_INSTALL_DIR"));
+        Assert.Equal("pwsh", StepField(provision, "shell"));
+        Assert.Equal("./.github/workflows/provision-dotnet-runtime.ps1", StepField(provision, "run"));
+        Assert.Null(StepField(provision, "if"));
+        Assert.Null(StepField(provision, "continue-on-error"));
+        var following = job[(StepIndex(job, "Setup .NET") + setup.Length)..].TrimStart();
+        Assert.StartsWith("- name: Provision patched .NET runtime\n", following);
+    }
+
+    [Fact]
+    public void Workflows_UseTheExactInstalledNodeAndDotnetPins()
+    {
+        foreach (var name in new[] { "ci.yml", "release.yml" })
+        {
+            var workflow = File.ReadAllText(RepositoryFile(".github", "workflows", name));
+            foreach (var (field, expected) in new[] { ("node-version", "26.13.0"), ("dotnet-version", "10.0.303") })
+            {
+                var pins = ActiveText(workflow).Split('\n').Select(line => line.Trim())
+                    .Where(line => line.StartsWith(field + ":", StringComparison.Ordinal)).ToArray();
+                Assert.NotEmpty(pins);
+                Assert.All(pins, pin => Assert.Equal($"{field}: '{expected}'", pin));
+            }
+        }
+    }
+
+    [Fact]
     public void ReleaseWorkflow_ValidatesTheBuildBeforeEveryPublicationAction()
     {
         var workflow = Workflow();
@@ -51,10 +184,10 @@ public sealed class ReleaseWorkflowTests
         var versionFileField = $"python-version-file: '{PythonVersionFile}'";
 
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationPythonContract(
-            workflow.Replace(versionFileField, "python-version: '3.12.10'", StringComparison.Ordinal), PythonRuntimePin()));
+            workflow.Replace(versionFileField, "python-version: '3.14.4'", StringComparison.Ordinal), PythonRuntimePin()));
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationPythonContract(
-            workflow.Replace(versionFileField, "python-version: '3.12'", StringComparison.Ordinal), PythonRuntimePin()));
-        foreach (var pin in new[] { "", "3.12", "3.12.x", ">=3.12", "3.12.10\n3.12.11\n", " 3.12.10\n" })
+            workflow.Replace(versionFileField, "python-version: '3.14'", StringComparison.Ordinal), PythonRuntimePin()));
+        foreach (var pin in new[] { "", "3.14", "3.14.x", ">=3.14", "3.14.4\n3.14.5\n", " 3.14.4\n" })
             Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationPythonContract(workflow, pin));
     }
 
@@ -81,9 +214,9 @@ public sealed class ReleaseWorkflowTests
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
             workflow.Replace(localCoverage, "python DynaDocs.Tests/coverage/gap_check.py --force-run", StringComparison.Ordinal)));
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
-            workflow.Replace("dotnet-version: '10.0.300'", "dotnet-version: '10.0.x'", StringComparison.Ordinal)));
+            workflow.Replace("dotnet-version: '10.0.303'", "dotnet-version: '10.0.x'", StringComparison.Ordinal)));
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
-            workflow.Replace("node-version: '22.13.0'", "node-version: '22'", StringComparison.Ordinal)));
+            workflow.Replace("node-version: '26.13.0'", "node-version: '22'", StringComparison.Ordinal)));
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
             workflow.Replace("DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet", "REMOVED_DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet", StringComparison.Ordinal)));
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
@@ -170,10 +303,10 @@ public sealed class ReleaseWorkflowTests
         Assert.Equal("actions/setup-python@v5", StepField(setup, "uses"));
         Assert.Equal($"'{PythonVersionFile}'", StepField(setup, "python-version-file"));
         Assert.Null(StepField(setup, "python-version"));
-        Assert.Equal("3.12.10\n", pin.Replace("\r\n", "\n", StringComparison.Ordinal));
+        Assert.Equal("3.14.4\n", pin.Replace("\r\n", "\n", StringComparison.Ordinal));
         Assert.True(Version.TryParse(pin.TrimEnd('\r', '\n'), out var version));
         Assert.Equal(3, version.Major);
-        Assert.Equal(12, version.Minor);
+        Assert.Equal(14, version.Minor);
         Assert.True(version.Build >= 0);
     }
 
@@ -184,9 +317,9 @@ public sealed class ReleaseWorkflowTests
         var setupNode = JobStep(validation, "Setup Node.js");
         Assert.Equal("actions/setup-dotnet@v4", StepField(setupDotnet, "uses"));
         Assert.Equal("${{ runner.temp }}/dydo-assurance-dotnet", StepField(setupDotnet, "DOTNET_INSTALL_DIR"));
-        Assert.Equal("'10.0.300'", StepField(setupDotnet, "dotnet-version"));
+        Assert.Equal("'10.0.303'", StepField(setupDotnet, "dotnet-version"));
         Assert.Equal("actions/setup-node@v4", StepField(setupNode, "uses"));
-        Assert.Equal("'22.13.0'", StepField(setupNode, "node-version"));
+        Assert.Equal("'26.13.0'", StepField(setupNode, "node-version"));
         Assert.Equal($"python -m venv {AssurancePython}", StepField(JobStep(validation, "Create Python assurance environment"), "run"));
         Assert.Equal($"{AssurancePythonExecutable} -m pip install -r DynaDocs.Tests/coverage/requirements.lock", StepField(JobStep(validation, "Install Python assurance toolchain"), "run"));
         Assert.Equal("dotnet tool restore --tool-manifest .config/dotnet-tools.json", StepField(JobStep(validation, "Restore AltCover"), "run"));
@@ -195,7 +328,7 @@ public sealed class ReleaseWorkflowTests
         Assert.Equal("DynaDocs.Tests/coverage", StepField(JobStep(validation, "Install Node assurance toolchain"), "working-directory"));
         Assert.Equal($"{AssurancePythonExecutable} DynaDocs.Tests/coverage/run_tests.py", StepField(JobStep(validation, "Run isolated test adapter"), "run"));
         Assert.Equal($"{AssurancePythonExecutable} DynaDocs.Tests/coverage/gap_check.py --force-run", StepField(JobStep(validation, "Run coverage gate"), "run"));
-        Assert.Equal("if ((dotnet --version) -ne '10.0.300') { throw 'Expected .NET SDK 10.0.300.' }", StepField(JobStep(validation, "Verify .NET SDK"), "run"));
+        Assert.Equal("if ((dotnet --version) -ne '10.0.303') { throw 'Expected .NET SDK 10.0.303.' }", StepField(JobStep(validation, "Verify .NET SDK"), "run"));
 
         var adapter = validation.IndexOf("- name: Run isolated test adapter", StringComparison.Ordinal);
         foreach (var name in new[] { "Create Python assurance environment", "Install Python assurance toolchain", "Restore AltCover", "Restore coverage metrics", "Install Node assurance toolchain" })

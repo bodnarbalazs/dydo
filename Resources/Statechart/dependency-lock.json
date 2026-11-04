@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "protocol": 1,
+  "platforms": [
+    {
+      "rid": "win-x64",
+      "node": {
+        "version": "26.13.0",
+        "file": "node-v26.13.0-win-x64.zip",
+        "url": "https://nodejs.org/dist/v26.13.0/node-v26.13.0-win-x64.zip",
+        "sha256": "dcc60d59a0746999f99064a01c020445d54d84228c691cdbf25b49ac3b59150a",
+        "checksumUrl": "https://nodejs.org/dist/v26.13.0/SHASUMS256.txt"
+      },
+      "java": {
+        "version": "Temurin JRE 21.0.8+9 HotSpot",
+        "name": "OpenJDK21U-jre_x64_windows_hotspot_21.0.8_9.zip",
+        "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jre_x64_windows_hotspot_21.0.8_9.zip",
+        "sha256": "238d74ec4ec9422d416fa98805ba375eecd8bc8f971bd0c61a21051a4fe42db8",
+        "bytes": 48928520,
+        "githubDigest": "sha256:238d74ec4ec9422d416fa98805ba375eecd8bc8f971bd0c61a21051a4fe42db8",
+        "checksumUrl": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jre_x64_windows_hotspot_21.0.8_9.zip.sha256.txt"
+      }
+    },
+    {
+      "rid": "linux-x64",
+      "node": {
+        "version": "26.13.0",
+        "file": "node-v26.13.0-linux-x64.tar.gz",
+        "url": "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-x64.tar.gz",
+        "sha256": "5848553868b402d3fabb5b09270649977780a390f832155721025a08b5104455",
+        "checksumUrl": "https://nodejs.org/dist/v26.13.0/SHASUMS256.txt"
+      },
+      "java": {
+        "version": "Temurin JRE 21.0.8+9 HotSpot",
+        "name": "OpenJDK21U-jre_x64_linux_hotspot_21.0.8_9.tar.gz",
+        "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jre_x64_linux_hotspot_21.0.8_9.tar.gz",
+        "sha256": "968c283e104059dae86ea1d670672a80170f27a39529d815843ec9c1f0fa2a03",
+        "bytes": 51942501,
+        "githubDigest": "sha256:968c283e104059dae86ea1d670672a80170f27a39529d815843ec9c1f0fa2a03",
+        "checksumUrl": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jre_x64_linux_hotspot_21.0.8_9.tar.gz.sha256.txt"
+      }
+    },
+    {
+      "rid": "linux-arm64",
+      "node": {
+        "version": "26.13.0",
+        "file": "node-v26.13.0-linux-arm64.tar.gz",
+        "url": "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-arm64.tar.gz",
+        "sha256": "439e9c438acdf6a6ffe47418da709153d66c4bed812e30a473faacb107dd2791",
+        "checksumUrl": "https://nodejs.org/dist/v26.13.0/SHASUMS256.txt"
+      },
+      "java": {
+        "version": "Temurin JRE 21.0.8+9 HotSpot",
+        "name": "OpenJDK21U-jre_aarch64_linux_hotspot_21.0.8_9.tar.gz",
+        "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jre_aarch64_linux_hotspot_21.0.8_9.tar.gz",
+        "sha256": "f54f6e2a907c4aef95ce6d7388474c6d5d87ae87899dd309561672bcfda9121e",
+        "bytes": 51018988,
+        "githubDigest": "sha256:f54f6e2a907c4aef95ce6d7388474c6d5d87ae87899dd309561672bcfda9121e",
+        "checksumUrl": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jre_aarch64_linux_hotspot_21.0.8_9.tar.gz.sha256.txt"
+      }
+    },
+    {
+      "rid": "osx-x64",
+      "node": {
+        "version": "26.13.0",
+        "file": "node-v26.13.0-darwin-x64.tar.gz",
+        "url": "https://nodejs.org/dist/v26.13.0/node-v26.13.0-darwin-x64.tar.gz",
+        "sha256": "525c9b29bb0263d687de60a4cec0e2a6db876a8eb032369e5795eca71e7c358e",
+        "checksumUrl": "https://nodejs.org/dist/v26.13.0/SHASUMS256.txt"
+      },
+      "java": {
+        "version": "Temurin JRE 21.0.8+9 HotSpot",
+        "name": "OpenJDK21U-jre_x64_mac_hotspot_21.0.8_9.tar.gz",
+        "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jre_x64_mac_hotspot_21.0.8_9.tar.gz",
+        "sha256": "34464861ed170ea0e5acdf870011f9e92f836e712b620ba37c4b2d0e5aeb8675",
+        "bytes": 42065507,
+        "githubDigest": "sha256:34464861ed170ea0e5acdf870011f9e92f836e712b620ba37c4b2d0e5aeb8675",
+        "checksumUrl": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jre_x64_mac_hotspot_21.0.8_9.tar.gz.sha256.txt"
+      }
+    },
+    {
+      "rid": "osx-arm64",
+      "node": {
+        "version": "26.13.0",
+        "file": "node-v26.13.0-darwin-arm64.tar.gz",
+        "url": "https://nodejs.org/dist/v26.13.0/node-v26.13.0-darwin-arm64.tar.gz",
+        "sha256": "d38bd5e5a2ddce6bbb5ce45e46e208337da4d51fffe611e567fd32073d6439f6",
+        "checksumUrl": "https://nodejs.org/dist/v26.13.0/SHASUMS256.txt"
+      },
+      "java": {
+        "version": "Temurin JRE 21.0.8+9 HotSpot",
+        "name": "OpenJDK21U-jre_aarch64_mac_hotspot_21.0.8_9.tar.gz",
+        "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jre_aarch64_mac_hotspot_21.0.8_9.tar.gz",
+        "sha256": "7849fd9e0d48c6638a1f82a81000ef170e32600fd7a32fc257668e7e7ae041b4",
+        "bytes": 48076322,
+        "githubDigest": "sha256:7849fd9e0d48c6638a1f82a81000ef170e32600fd7a32fc257668e7e7ae041b4",
+        "checksumUrl": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jre_aarch64_mac_hotspot_21.0.8_9.tar.gz.sha256.txt"
+      }
+    }
+  ],
+  "tlc": {
+    "version": "1.7.4",
+    "url": "https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar",
+    "sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+    "bytes": 2274532
+  },
+  "pele": {
+    "version": "1.9.0",
+    "url": "https://registry.npmjs.org/pele/-/pele-1.9.0.tgz",
+    "integrity": "sha512-KUmBt7P5JduVKQaP6FKfXiRgH3LBVIKsmdgPJZU7jD3ye6F+Z8fbms+OjivE7rWY09Qx+5X65VKe/9ywKFJ9Sw==",
+    "runtimeDependencies": {},
+    "metadataUrl": "https://registry.npmjs.org/pele/1.9.0",
+    "unpackedBytes": 2318456,
+    "entry": "dist/pele.js",
+    "installScriptsExecuted": false
+  }
+}

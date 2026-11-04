@@ -85,18 +85,31 @@ class JavaScriptMetricsTests(unittest.TestCase):
         output = Path(tempfile.mkdtemp(prefix="dydo-node-baseline-", dir=os.environ.get("DYDO_NATIVE_TEST_EVIDENCE")))
         root = Path(__file__).resolve().parents[3]
         controller = output / "controller.py"
-        controller.write_bytes(Path(windows_job.__file__).read_bytes())
-        value = windows_job.request([shutil.which("node"), str(root / "DynaDocs.Tests/coverage/node_tests.cjs")],
+        if sys.platform == "linux":
+            controller.write_text(
+                "import json, sys; from pathlib import Path\n"
+                f"sys.path.insert(0, {str(root / 'DynaDocs.Tests/coverage')!r})\n"
+                "from run_tests import _run_linux_campaign\n"
+                "value = json.load(sys.stdin)\n"
+                "result = _run_linux_campaign(value['argv'], Path(value['cwd']), Path(value['output']))\n"
+                "print(json.dumps(result))\n", encoding="utf-8")
+        else:
+            controller.write_bytes(Path(windows_job.__file__).read_bytes())
+        value = windows_job.request([shutil.which("node"), str(root / "DynaDocs.Tests/coverage/node_tests.cjs"), "--test-reporter=tap"],
                                     root, output / "owner", 300, 10)
         observed = subprocess.run([sys.executable, str(controller)], input=json.dumps(value), text=True,
-                                  capture_output=True, encoding="utf-8", timeout=310)
+                                  capture_output=True, encoding="utf-8", timeout=1810)
         self.assertEqual(0, observed.returncode, observed.stdout + observed.stderr)
         result = json.loads(observed.stdout)
         self.assertTrue(result["complete"], result)
-        stdout = Path(result["stdout_path"]).read_text(encoding="utf-8")
-        stderr = Path(result["stderr_path"]).read_text(encoding="utf-8")
+        stdout = (output / "owner/stdout.log").read_text(encoding="utf-8")
+        stderr = (output / "owner/stderr.log").read_text(encoding="utf-8")
         self.assertEqual(0, result["subject_status"], stdout + stderr)
-        self.assertRegex(stdout, r"# skipped 0\b")
+        if sys.platform == "win32":
+            self.assertRegex(stdout, r"# skipped 0\b")
+        else:
+            self.assertRegex(stdout, r"# skipped 1\b")
+            self.assertRegex(stdout, r"invalid Windows executable # SKIP")
         self.assertRegex(stdout, r"# todo 0\b")
         if not os.environ.get("DYDO_NATIVE_TEST_EVIDENCE"):
             shutil.rmtree(output)

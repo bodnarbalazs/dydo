@@ -7,12 +7,13 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from gate_run import STATIC_GATE_INTERPRETER
 from python_coverage import combine_counters
 
 
 def _facade(root, output, sources, command):
     tools = Path(__file__).resolve().parents[1]
-    python = tools.parents[1] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+    python = tools.parents[1] / STATIC_GATE_INTERPRETER
     return subprocess.run([
         str(python), str(tools / "python_coverage.py"), "--root", str(root),
         "--output", str(output), "--sources-json", json.dumps(sources),
@@ -70,7 +71,7 @@ subject.only()
 class PythonCoverageTests(unittest.TestCase):
     def campaign(self, root, output, sources, command):
         tools = Path(__file__).resolve().parents[1]
-        python = tools.parents[1] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+        python = tools.parents[1] / STATIC_GATE_INTERPRETER
         result = subprocess.run([
             str(python), str(tools / "python_coverage.py"),
             "--root", str(root), "--output", str(output),
@@ -104,7 +105,7 @@ class PythonCoverageTests(unittest.TestCase):
 
     def test_real_unittest_and_python_child_share_native_campaign(self):
         tools = Path(__file__).resolve().parents[1]
-        python = tools.parents[1] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+        python = tools.parents[1] / STATIC_GATE_INTERPRETER
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             (root / "subject.py").write_text(
@@ -179,7 +180,7 @@ class PythonCoverageTests(unittest.TestCase):
 
     def test_startup_bootstraps_a_cold_module_graph_beside_an_inherited_campaign(self):
         tools = Path(__file__).resolve().parents[1]
-        python = tools.parents[1] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+        python = tools.parents[1] / STATIC_GATE_INTERPRETER
         with tempfile.TemporaryDirectory() as folder:
             work = Path(folder).resolve()
             (work / "subject.py").write_text("def only():\n    return 1\n", encoding="utf-8")

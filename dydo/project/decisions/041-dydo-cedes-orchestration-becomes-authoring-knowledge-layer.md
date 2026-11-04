@@ -71,6 +71,10 @@ Note this interim worker-running is explicitly a *stopgap that shrinks over time
 4. **The smallest dydo = compiler + knowledge + PM + nudges.** "dydo becomes dynamic documentation, mostly - like its name says (DynaDocs)." Most of the C# orchestration machinery gets deleted outright.
 5. **Migration = a deletion campaign.** Find the junctions ripe for deletion and cut aggressively; git review is the net. Guard is DISARMED during the campaign (renamed `dydo guard` → `dydo notguard` so it won't fire). Plan: `backlog/simplification-campaign-plan.md`.
 
+## Amendment - 2026-11-04: a command warn's marker names the command (DYD-503, DYD-499)
+
+The identity-free guard in Resolved 1 stands: warn pass-through markers stay global, with no agent or session identity in the key. Balazs amended one thing on 2026-11-04 (DYD-503, ruling option (a), raised by DYD-499's install nudge): a command warn's marker is keyed by the nudge's pattern hash and the whitespace-normalised full command, so "run this exact command again" is true. Only the same command, retried, passes; a different command matching the same nudge is warned on its own. The mode-set marker and the new-file markers keep their old keys. A marker has no expiry: it stays until its retry spends it.
+
 ## Related
 - [DR-024](./024-dydo-2-native-pivot.md) - the native pivot this completes (it kept top-level dispatch; this removes it).
 - [DR-026](./026-tier1-managers-doctrine.md) - Tier-1 agents are managers, not implementers (this generalizes it: dydo itself is not the implementer/runtime).

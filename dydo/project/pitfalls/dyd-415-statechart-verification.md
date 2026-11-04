@@ -32,7 +32,9 @@ A skipped test is missing proof, not a pass. These inputs decide which tests run
 | `TLA2TOOLS`: the pinned `tla2tools.jar` 1.7.4 | The runtime checks the jar's SHA-256, so the upstream replay suite (`cli.test.ts`), checker isolation, TLC bootstrap and real-TLC tests skip without it, in both TypeScript and .NET |
 | `JAVA`: a Java 11+ runtime | Real TLC acceptance, corpus recordings, plain-TLC agreement and differential tests |
 | A JDK as `JAVA` | The config-fuzz oracle, which runs in Java's source-file mode; the managed JRE has no compiler, so it skips there |
-| `STATECHART_PELE`: the Pele 1.9.0 module entry | Native renderer and SVG acceptance |
+| `STATECHART_PELE`: the Pele 1.9.0 module entry | Native renderer, SVG acceptance and the renderer tests |
+| `npm ci` in `scripts/`: fast-check 4.5.3, Mermaid 11.16.0 and jsdom 26.1.0 from `package-lock.json` | The differential tests, and the renderer tests' Mermaid parse |
+| `node setup-skills.mjs`: the `.claude` and `.agents` projections | One native acceptance test, which reads both |
 | `STATECHART_TEST_DEPENDENCY_ROOT`: a verified managed installation | The installed ready-invocation test |
 | Windows | Job Object lifetime, the probe fixture, `statechart doctor` and native PowerShell acceptance |
 
@@ -41,17 +43,22 @@ The .NET native tests run the `dydo` build beside the test assembly;
 
 ## Linux proof recipe
 
-Use the managed copy that `dydo statechart` installs on first use: run any chart once,
-then run the exact `installAndContinue` command its `approval-required` event names.
-Point each test command at that copy; change no PATH, JAVA_HOME or profile.
+Restore the assurance toolchain first, from its locks, as
+[Coverage Tools](../../reference/coverage-tools.md#provisioning) lists it. Use the managed copy
+that `dydo statechart` installs on first use: run any chart once, then run the exact
+`installAndContinue` command its `approval-required` event names. Point each test command at that
+copy; change no PATH, JAVA_HOME or profile. From the repository root:
 
 ```bash
 deps=~/.local/share/dydo/statechart/deps
 m=$(echo "$deps"/*/linux-x64)
 export JAVA=$m/java/content/jdk-21.0.8+9-jre/bin/java TLA2TOOLS=$m/tlc/tla2tools.jar
 export STATECHART_PELE=$m/pele/content/package/dist/pele.js STATECHART_TEST_DEPENDENCY_ROOT=$deps
-node setup-skills.mjs   # one acceptance test reads both host projections
-(cd skills/engineering/statechart/scripts && XDG_CACHE_HOME=$(mktemp -d) npm_config_cache=$(mktemp -d) npm test)
+py=dydo/_system/.local/static-gates/python/bin/python
+node setup-skills.mjs
+(cd skills/engineering/statechart/scripts && npm ci && npm test)
+node --test DynaDocs.Tests/coverage/tests/setup-skills.test.cjs DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs npm/test/statechart.test.cjs
+PYTHONPATH=DynaDocs.Tests/coverage/tests "$py" -m unittest test_statechart_java_build
 python3 DynaDocs.Tests/coverage/run_tests.py -c Release --filter "FullyQualifiedName~DynaDocs.Tests.Statechart"
 ```
 

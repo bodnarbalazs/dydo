@@ -59,6 +59,10 @@ satisfy it.
 
 dydo 3.6.0 is unreleased. Follow these steps only after its release.
 
+The .NET tool requires Microsoft.NETCore.App runtime **10.0.14 or later** in a compatible
+10.x version. Upgrade the shared runtime before updating the tool. npm and downloaded
+NativeAOT binaries embed the patched runtime and need no separate .NET shared runtime.
+
 1. Install the 3.6.0 CLI: `npm install -g dydo` or `dotnet tool update -g dydo`.
 2. Merge the release's `skills/` and `Scaffold/dydo/reference/dydo-commands.md` changes into the
    project, keeping its edits, then run `node setup-skills.mjs` from its root.

@@ -115,7 +115,13 @@ This repository exposes a project-local testing facade. It is a small Python run
 does not construct a shell command, infer an omitted gate, or turn missing assurance into success.
 
 Run this repository's facade with the pinned local interpreter, because the `dotnet` static row
-measures the caller's own package identities:
+measures the caller's own package identities. The assurance environment uses CPython 3.14.4,
+Node 26.13.0 and .NET SDK 10.0.303. Framework-dependent dydo and its test children
+also require shared runtime Microsoft.NETCore.App 10.0.14 or later, matching the
+patched AOT/runtime minimum in `DynaDocs.csproj`. Package restore alone does not
+provision that shared runtime. On Linux, use
+`py=dydo/_system/.local/static-gates/python/bin/python` and invoke `"$py"` instead of
+PowerShell's `& $py` below:
 
 ```powershell
 $py = "dydo/_system/.local/static-gates/python/Scripts/python.exe"

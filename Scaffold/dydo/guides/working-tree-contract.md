@@ -158,7 +158,7 @@ or its crew made (lanes, merge checkouts, temp checkouts) with `dydo clean --dry
 `dydo clean <worktree>`, run from outside that tree, set the parent `Todo`, unassign and wire any
 blocker; return `released <key>: <reason>`. The worktree its thread runs in belongs to T3: leave it. A dead session is
 treated as release from its last recorded hop without a final push. Fresh commission from the
-record works on both hosts. An invoked admiral wakes on a captain's return or the user's word and rereads
+record works on both hosts. An invoked admiral wakes on a captain's return, the user's word or its scheduled check-in, and rereads
 the board, including released and blocker-cleared tickets.
 
 Merge FAIL, a blocker, stays owned: fix integration defects inside Merge; revert a source defect there and

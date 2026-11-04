@@ -51,7 +51,7 @@ The [dydo glossary](../reference/dydo-glossary.md) names every member of each ca
 A captain's ticket is a Project one level down: the same Types, statuses and chain, with a different
 map holder. The [control-flow map](./control-flow.md) carries every contact, including captain
 two-step returns, release/takeover, review FAIL, merge FAIL and blocker-cleared resume. The board is
-the inbox; an admiral wakes on a captain's return or the user's word.
+the inbox; an admiral wakes on a captain's return, the user's word or its scheduled check-in.
 
 ## Canonical ownership
 

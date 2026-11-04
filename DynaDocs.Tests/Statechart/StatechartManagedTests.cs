@@ -3,6 +3,7 @@ namespace DynaDocs.Tests.Statechart;
 using DynaDocs.Services.Statechart;
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
+using System.Runtime.Versioning;
 
 public class StatechartManagedTests
 {
@@ -181,6 +182,47 @@ public class StatechartManagedTests
         await Assert.ThrowsAnyAsync<Exception>(() => managed.InstallAsync(new(null, null, null, null),
             Path.Combine(scope.Path, "unavailable-payload"), CancellationToken.None));
         Assert.Empty(Directory.GetDirectories(parent, ".install-*"));
+    }
+
+    // The receipt records content hashes, not modes, so a runtime that cannot start still matches it.
+    [SkippableTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [UnsupportedOSPlatform("windows")]
+    public void AManagedRuntimeThatCannotExecuteIsDamagedAndLeftInPlace(bool executable)
+    {
+        Skip.If(OperatingSystem.IsWindows(), "POSIX modes decide whether a runtime can start.");
+        using var scope = new StatechartTestDirectory();
+        var (managed, java) = InstalledJava(scope.Path);
+        if (!executable) File.SetUnixFileMode(java, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        var mode = File.GetUnixFileMode(java);
+        Assert.Equal(executable ? java : null, managed.Read().Java);
+        Assert.Equal(executable ? [] : ["java"], managed.Inspect().Damaged);
+        Assert.Equal(mode, File.GetUnixFileMode(java));
+    }
+
+    // A verified linux-x64 java component with a synthetic lock row.
+    [UnsupportedOSPlatform("windows")]
+    private static (StatechartManaged Managed, string Java) InstalledJava(string root)
+    {
+        var assets = new StatechartAssets();
+        byte[] archive = [5, 6, 7];
+        var downloads = Unreachable().Select(item => item.Name == "java"
+            ? item with { Integrity = Convert.ToHexStringLower(SHA256.HashData(archive)) } : item).ToArray();
+        var managed = new StatechartManaged(new StatechartHome(Path.Combine(root, "assets"),
+            Path.Combine(root, "dependencies"), Path.Combine(root, "state")), assets, "linux-x64", downloads);
+        var component = Path.Combine(managed.Root, "java");
+        var java = Path.Combine(component, "content", "jre", "bin", "java");
+        Directory.CreateDirectory(Path.GetDirectoryName(java)!);
+        File.WriteAllText(java, "#!/bin/sh\n");
+        File.SetUnixFileMode(java, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        File.WriteAllBytes(Path.Combine(component, "archive.tar.gz"), archive);
+        File.WriteAllText(Path.Combine(managed.Root, ".statechart-store"), assets.LockDigest);
+        var receipt = new JsonObject { ["schema"] = 1, ["protocol"] = 1, ["release"] = assets.Release, ["rid"] = "linux-x64",
+            ["payload"] = assets.Digest, ["lock"] = assets.LockDigest, ["integrity"] = downloads.Single(item => item.Name == "java").Integrity,
+            ["files"] = StatechartInventory.Capture(component) };
+        File.WriteAllText(Path.Combine(component, ".ready.json"), receipt.ToJsonString());
+        return (managed, java);
     }
 
     // A verified tlc component whose receipt names the given release and payload; the lock row is synthetic.

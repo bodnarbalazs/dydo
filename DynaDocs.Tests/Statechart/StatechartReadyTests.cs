@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DynaDocs.Services.Statechart;
+using System.Runtime.Versioning;
 
 public class StatechartReadyTests
 {
@@ -47,6 +48,26 @@ public class StatechartReadyTests
         Assert.False(Directory.Exists(Path.Combine(scope.Path, "chart")));
         Assert.EndsWith("changed managed content", File.ReadAllText(renderer));
         Assert.Equal(before, Files(dependencies));
+    }
+
+    [SkippableFact]
+    [UnsupportedOSPlatform("windows")]
+    public async Task AManagedRuntimeThatCannotExecuteYieldsARepairPlanAndStaysInPlace()
+    {
+        Skip.If(OperatingSystem.IsWindows(), "POSIX modes decide whether a runtime can start.");
+        using var scope = new StatechartTestDirectory();
+        var dependencies = PrivateCopy(Fixture(), scope.Path);
+        var java = Directory.GetFiles(Path.Combine(dependencies, Relative, "java", "content"), "java", SearchOption.AllDirectories)
+            .Single(path => Path.GetFileName(Path.GetDirectoryName(path)) == "bin");
+        File.SetUnixFileMode(java, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        var before = Files(dependencies);
+        var result = await RunReadyModel(scope.Path, dependencies);
+        Assert.True(result.Exit == 3, result.Error);
+        using var plan = JsonDocument.Parse(result.Output);
+        Assert.Equal(["java"], plan.RootElement.GetProperty("repair").EnumerateArray().Select(item => item.GetString()));
+        Assert.True(File.Exists(plan.RootElement.GetProperty("request").GetString()));
+        Assert.Equal(before, Files(dependencies));
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(java));
     }
 
     [SkippableFact]

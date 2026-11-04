@@ -226,6 +226,9 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
         else if (name == "java" && rid.StartsWith("osx-", StringComparison.Ordinal)) relative = "Contents/Home/bin/java";
         var target = Path.Combine(top, relative);
         if (!File.Exists(target)) throw new IOException("Locked " + name + " archive has no expected executable: " + relative);
+        // Receipts record content hashes, not modes, so a runtime that lost its execute bit still matches one.
+        if (!OperatingSystem.IsWindows() && (File.GetUnixFileMode(target) & UnixFileMode.UserExecute) == 0)
+            throw new IOException("Managed " + name + " cannot execute: " + relative);
         return target;
     }
 

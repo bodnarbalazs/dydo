@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using DynaDocs.Services.Statechart;
+using System.Runtime.Versioning;
 
 public class StatechartPublicFlowTests
 {
@@ -66,6 +67,23 @@ public class StatechartPublicFlowTests
         Assert.Equal(2, result.Exit);
         Assert.Contains("Invalid explicit JAVA", result.Error);
         Assert.False(Directory.Exists(Path.Combine(scope.Path, "dependencies")));
+        Assert.False(Directory.Exists(Path.Combine(scope.Path, "state", "requests")));
+    }
+
+    // Only managed content is repaired; a JAVA the caller named that cannot start stays the caller's error.
+    [SkippableFact]
+    [UnsupportedOSPlatform("windows")]
+    public async Task AnExplicitJavaThatCannotExecuteIsAnErrorWithoutAPlan()
+    {
+        Skip.If(OperatingSystem.IsWindows(), "POSIX modes decide whether a runtime can start.");
+        using var scope = new StatechartTestDirectory();
+        Model(scope.Path);
+        var java = Path.Combine(scope.Path, "java");
+        File.WriteAllText(java, "#!/bin/sh\necho 'openjdk version \"21.0.1\"' >&2\n");
+        File.SetUnixFileMode(java, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        var result = await Invoke(scope.Path, ["statechart", "spaced model.tla"], java: java);
+        Assert.Equal(2, result.Exit);
+        Assert.Equal("", result.Output);
         Assert.False(Directory.Exists(Path.Combine(scope.Path, "state", "requests")));
     }
 

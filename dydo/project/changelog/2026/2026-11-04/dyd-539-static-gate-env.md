@@ -31,9 +31,12 @@ unchanged.
 
 ## Guard behaviour the route relies on
 
-Venv creation, the `ln -s` link and the gate invocations pass outright. Every `pip install` meets the
-guard's install nudge: it refuses the first try once, and the identical retry passes when the user or
-the ticket being executed approved that install. The new test pins this warn behaviour. Against the
+Venv creation, the `ln -s` link and the gate invocations pass outright. This repository's `dydo.json`
+carries no install nudge, so its `pip install` passes outright too. Under the install nudge that
+`dydo init` writes by default, the POSIX `bin/python -m pip install` form is refused once, and the
+identical retry passes when the user or the ticket being executed approved that install. The new test
+pins this warn behaviour under that default configuration. The nudge's pattern does not match the
+Windows `Scripts/python.exe -m pip install` form. Against the
 old location, the documented link is a hard off-limits block.
 
 ## Proof

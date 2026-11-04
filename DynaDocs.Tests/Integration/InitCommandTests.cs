@@ -1374,7 +1374,7 @@ public class InitCommandTests : IntegrationTestBase
 
         var rules = ReadFile(".codex/rules/dydo.rules");
         Assert.Contains("pattern = [[\"dydo\", \"dydo.exe\"], \"merge\"]", rules);
-        Assert.Contains("dydo.exe merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567", rules);
+        Assert.Contains("dydo.exe merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567 --match-base-commit fedcba9876543210fedcba9876543210fedcba98", rules);
     }
 
     // Codex itself judges the rule init writes; it skips where Codex is not installed (CI).
@@ -1384,12 +1384,13 @@ public class InitCommandTests : IntegrationTestBase
         (await InitProjectAsync("codex")).AssertSuccess();
         var rules = Path.Combine(TestDir, ".codex", "rules", "dydo.rules");
         const string sha = "0123456789abcdef0123456789abcdef01234567";
+        const string pin = "fedcba9876543210fedcba9876543210fedcba98";
 
-        var merge = CodexExecPolicy(rules, "dydo", "merge", "12", "--match-head-commit", sha, "--dry-run");
+        var merge = CodexExecPolicy(rules, "dydo", "merge", "12", "--match-head-commit", sha, "--match-base-commit", pin, "--dry-run");
         Skip.If(merge == null, "codex is not on PATH");
 
         Assert.Contains("\"decision\":\"allow\"", merge);
-        Assert.Contains("\"decision\":\"allow\"", CodexExecPolicy(rules, "dydo.exe", "merge", "12", "--match-head-commit", sha));
+        Assert.Contains("\"decision\":\"allow\"", CodexExecPolicy(rules, "dydo.exe", "merge", "12", "--match-head-commit", sha, "--match-base-commit", pin));
         Assert.DoesNotContain("\"decision\":\"allow\"", CodexExecPolicy(rules, "dydo", "init", "codex"));
     }
 

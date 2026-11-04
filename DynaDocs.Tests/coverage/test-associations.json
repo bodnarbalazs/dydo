@@ -1553,6 +1553,18 @@
       "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
     },
     {
+      "module": "Services/Statechart/PosixStatechartRun.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartDescriptors.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartChild.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+    },
+    {
       "module": "Services/Statechart/StatechartLifetime.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartLifecycleTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
     },

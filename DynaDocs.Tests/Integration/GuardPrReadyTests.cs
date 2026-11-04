@@ -185,7 +185,7 @@ public class GuardPrReadyTests : IntegrationTestBase
     {
         await InitPushedProject();
         WriteFile("wip.txt", "w\n");
-        SilenceReviewBlockWarn();
+        SilenceReviewBlockWarn(command);
 
         var result = await GuardWithStdinAsync(Payload(command, codex: toolName == "exec", toolName: toolName));
 
@@ -1220,7 +1220,7 @@ public class GuardPrReadyTests : IntegrationTestBase
     {
         await InitPushedProject();
         WriteFile("readme.md", "changed\n");
-        SilenceReviewBlockWarn();
+        SilenceReviewBlockWarn(command);
 
         (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseAllowed();
         (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseAllowed();

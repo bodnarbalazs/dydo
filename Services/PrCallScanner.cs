@@ -133,17 +133,24 @@ internal static partial class PrCallScanner
     private static bool Wraps(ShellScript script, int depth) =>
         script.Encoded || depth >= MaxDepth || Scan(script.Text, script.Dialect, null, depth + 1).Count > 0;
 
-    // gh's own flags may precede its subcommand, each with at most one value word.
     private static PrCall? GhCall(List<string> rest, string? envRepo)
     {
-        var sub = rest.FindIndex(w => w.Equals("pr", StringComparison.OrdinalIgnoreCase) || w.Equals("api", StringComparison.OrdinalIgnoreCase));
-        if (sub < 0 || Enumerable.Range(0, sub).Any(i => !IsFlag(rest[i]) && (i == 0 || !IsFlag(rest[i - 1]))))
+        var sub = GhSubcommand(rest, "pr", "api");
+        if (sub < 0)
             return null;
 
         var args = rest[(sub + 1)..];
         if (!rest[sub].Equals("pr", StringComparison.OrdinalIgnoreCase))
             return ApiCall(args, envRepo);
         return PrVerbCall(args, Values(Parse(rest[..sub], RepoOptions).Options, "repo").LastOrDefault() ?? envRepo);
+    }
+
+    // The index of gh's first subcommand among names, or -1: gh's own flags may precede it, each
+    // with at most one value word.
+    private static int GhSubcommand(List<string> rest, params string[] names)
+    {
+        var sub = rest.FindIndex(w => names.Any(name => w.Equals(name, StringComparison.OrdinalIgnoreCase)));
+        return sub < 0 || Enumerable.Range(0, sub).Any(i => !IsFlag(rest[i]) && (i == 0 || !IsFlag(rest[i - 1]))) ? -1 : sub;
     }
 
     private static PrCall? PrVerbCall(List<string> args, string? repo)

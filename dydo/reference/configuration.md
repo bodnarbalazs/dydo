@@ -158,6 +158,8 @@ and blocks reject the action. Nudges enforce project process; they do not create
 The pattern is matched case-insensitively, and `$1`, `$2` and so on in the message take the
 matching capture groups.
 
+A `warn` on a command is passed by retrying the same command: its pass-through marker names the pattern and the command with whitespace runs collapsed, so a different command matching the same nudge is warned on its own. See [Layer 3: Nudges](../understand/guard-system.md#layer-3-nudges).
+
 An optional `match` picks what the pattern is matched against:
 
 | `match` | Pattern is matched against |

@@ -10,7 +10,8 @@ real approval UI and pending release prerequisites need their own proof.
 
 ## Launch
 
-From the candidate checkout on Windows, use CPython 3.12, Git and .NET 10 already installed. No authentication,
+From the candidate checkout on Windows, use the CPython pin in
+`DynaDocs.Tests/coverage/.python-version`, Git and .NET 10 already installed. No authentication,
 server, port or global installation is needed. Launch builds this checkout once in Release with
 compiler servers disabled, creates an ordinary mock Git repository, and runs real `init claude`.
 `CODEX_HOME` is redirected only for these owned CLI fixtures. Machine-mode storage is **not**

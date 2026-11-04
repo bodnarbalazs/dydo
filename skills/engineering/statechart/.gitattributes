@@ -1,0 +1,2 @@
+# Shell launchers and the byte-compared upstream corpus require LF on Windows too.
+* text eol=lf

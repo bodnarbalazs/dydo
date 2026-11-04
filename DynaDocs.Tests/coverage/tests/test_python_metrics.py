@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from gate_run import STATIC_GATE_INTERPRETER
 from python_metrics import callable_nodes, parameter_count, nested_ternaries, import_edges
 import ast
 import json
@@ -23,7 +24,7 @@ class PythonMetricsTests(unittest.TestCase):
 
     def test_module_metrics_keep_class_initializers_and_definition_expressions(self):
         root = Path(__file__).resolve().parents[3]
-        python = root / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+        python = root / STATIC_GATE_INTERPRETER
         source = 'flag = True\nclass C:\n    value = 1 if flag else 2\n    def unused(self, value=1 if flag else 2):\n        if flag: return 3\n'
         result = subprocess.run([str(python), str(Path(__file__).resolve().parents[1] / "python_metrics.py")],
                                 input=source, text=True, capture_output=True, check=True)
@@ -40,7 +41,7 @@ class PythonMetricsTests(unittest.TestCase):
             collector.root = root
             collector.output = root / "output"
             collector.coverage = Path(__file__).resolve().parents[1]
-            collector.python = Path(__file__).resolve().parents[3] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+            collector.python = Path(__file__).resolve().parents[3] / STATIC_GATE_INTERPRETER
             collector.log = CommandLog(root, collector.output / "commands")
             collector.inventory = {"sources": [{"path": "subject.py", "language": "python"}]}
             collector.static = {}
@@ -68,7 +69,7 @@ class PythonMetricsTests(unittest.TestCase):
             collector.root = root
             collector.output = root / "output"
             collector.coverage = Path(__file__).resolve().parents[1]
-            collector.python = Path(__file__).resolve().parents[3] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+            collector.python = Path(__file__).resolve().parents[3] / STATIC_GATE_INTERPRETER
             collector.log = CommandLog(root, collector.output / "commands")
             collector.inventory = {"sources": [{"path": "subject.py", "language": "python"}]}
             collector.static = {}
@@ -129,7 +130,7 @@ class PythonMetricsTests(unittest.TestCase):
 
     def test_real_complexipy_and_radon_score_nested_callables_separately(self):
         root = Path(__file__).resolve().parents[3]
-        python = root / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+        python = root / STATIC_GATE_INTERPRETER
         source = "def outer(x):\n    if x: return 1\n    def inner(y):\n        if y: return 2\n        return 0\n    return inner(x)\n"
         result = subprocess.run([str(python), str(Path(__file__).resolve().parents[1] / "python_metrics.py")],
                                 input=source, text=True, capture_output=True, check=True)
@@ -140,7 +141,7 @@ class PythonMetricsTests(unittest.TestCase):
 
     def test_decorated_callables_and_unicode_columns_use_exact_source_spans(self):
         root = Path(__file__).resolve().parents[3]
-        python = root / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+        python = root / STATIC_GATE_INTERPRETER
         source = '@decorator\ndef work(x):\n    if x: return 1\n    return 0\né = "😀"; value = lambda: 1\n'
         result = subprocess.run([str(python), str(Path(__file__).resolve().parents[1] / "python_metrics.py")],
                                 input=source, text=True, encoding='utf-8', capture_output=True)
@@ -171,7 +172,7 @@ class PythonCollectorTests(unittest.TestCase):
 
         runner = Collectors.__new__(Collectors)
         runner.root, runner.coverage = self.repository, self.tooling
-        runner.python = self.tooling.parents[1] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+        runner.python = self.tooling.parents[1] / STATIC_GATE_INTERPRETER
         runner.output = self.repository / "gate-output"
         runner.log = CommandLog(self.repository, runner.output / "commands")
         runner.inventory = {"sources": [{"path": name, "language": "python"} for name in names]}

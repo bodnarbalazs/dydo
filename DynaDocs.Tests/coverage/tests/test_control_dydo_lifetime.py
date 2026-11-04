@@ -18,7 +18,7 @@ import control_dydo as control
 import owned_process
 
 
-@unittest.skipUnless(os.name == "nt" and sys.version_info[:2] == (3, 12), "Windows CPython 3.12 owner")
+@unittest.skipUnless(os.name == "nt" and sys.version_info[:2] == (3, 14), "Windows CPython 3.14 owner")
 class ControlDydoLifetimeTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="dydo-lifetime-")

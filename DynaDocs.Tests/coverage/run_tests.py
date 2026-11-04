@@ -542,16 +542,16 @@ def _end_member(kernel, job, pid, deadline):
         close_handle(kernel, handle)
 
 
-def end_descendants(job):
+def end_descendants(job, seconds=DESCENDANT_EXIT_SECONDS):
     """End every other process the run started, from `job` as contain_descendants returned it, and
     wait for each to exit, so none still holds or writes into the worktree or its TEMP when cleanup
     begins."""
     if job is None:
         return
     if job == SUBREAPER:
-        _end_reaped_descendants()
+        _end_reaped_descendants(seconds)
     else:
-        _end_job_members(job)
+        _end_job_members(job, seconds)
 
 
 def _stat_fields(pid):
@@ -593,10 +593,10 @@ def _kill(pid):
         pass  # it exited after the listing
 
 
-def _end_reaped_descendants():
+def _end_reaped_descendants(seconds=DESCENDANT_EXIT_SECONDS):
     """Kill every descendant of this process and wait until each has exited. As their subreaper
     this process still finds the ones whose own parent, the interrupted dotnet, is already gone."""
-    deadline = time.monotonic() + DESCENDANT_EXIT_SECONDS
+    deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
         live = _live_descendants(os.getpid())
         if not live:
@@ -604,20 +604,22 @@ def _end_reaped_descendants():
         for pid in live:
             _kill(pid)
         time.sleep(0.05)
+    raise TimeoutError("Linux descendant cleanup could not be confirmed")
 
 
-def _end_job_members(job):
+def _end_job_members(job, seconds=DESCENDANT_EXIT_SECONDS):
     from ctypes import wintypes
     from windows_job import bindings, members
     kernel = bindings()
     kernel.TerminateProcess.argtypes = [wintypes.HANDLE, wintypes.UINT]
-    deadline = time.monotonic() + DESCENDANT_EXIT_SECONDS
+    deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
         others = [pid for pid in members(kernel, job) if pid != os.getpid()]
         if not others:
             return
         for pid in others:
             _end_member(kernel, job, pid, deadline)
+    raise TimeoutError("Windows descendant cleanup could not be confirmed")
 
 
 def _campaign_identities(worktree, result_root):
@@ -646,11 +648,49 @@ def _publish_assurance(worktree, result_root, owner_output, assurance_output, ow
         shutil.copytree(result_root, output / "raw")
     if owner_output.is_dir():
         shutil.copytree(owner_output, output / "owner")
-    identities = snapshot_artifacts(worktree, _campaign_identities(worktree, result_root)) \
-        if result_root.is_dir() else []
+    artifacts = _campaign_identities(worktree, result_root) if result_root.is_dir() else []
+    missing = []
+    if owner_result.get("failure_category") == "KeyboardInterrupt":
+        missing = [path.relative_to(worktree).as_posix() for path in artifacts if not path.is_file()]
+        artifacts = [path for path in artifacts if path.is_file()]
+    identities = snapshot_artifacts(worktree, artifacts)
     manifest = {"schema": 1, "campaign": owner_result, "artifacts": identities}
+    if missing:
+        manifest["missing_artifacts"] = missing
     (output / "identities.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _run_linux_campaign(command, worktree, output):
+    result = {"complete": False, "cleanup_confirmed": False, "subject_status": None,
+              "failure_category": "preflight", "error_message": None,
+              "containment": "linux-subreaper", "runtime": list(sys.version_info[:3])}
+    try:
+        if not worktree.is_dir():
+            raise ValueError("Campaign requires an existing worktree")
+        job = contain_descendants()
+        output.mkdir(parents=True, exist_ok=False)
+        with (output / "stdout.log").open("wb") as stdout, (output / "stderr.log").open("wb") as stderr:
+            try:
+                child = subprocess.run(command, cwd=worktree, stdin=subprocess.DEVNULL,
+                                       stdout=stdout, stderr=stderr, timeout=1800,
+                                       env={**isolated_environment(), **ISOLATED_BUILD_ENVIRONMENT})
+                result.update(subject_status=child.returncode, failure_category=None,
+                              complete=not _live_descendants(os.getpid()))
+                if not result["complete"]:
+                    result.update(failure_category="descendant_leak",
+                                  error_message="Campaign left live descendants")
+            finally:
+                with defer_interruption():
+                    end_descendants(job)
+                    result["cleanup_confirmed"] = True
+    except (OSError, ValueError, subprocess.TimeoutExpired, KeyboardInterrupt) as error:
+        result.update(complete=False, failure_category=type(error).__name__, error_message=str(error))
+        if result["subject_status"] is None and not output.exists():
+            result["failure_category"] = "preflight"
+    if output.is_dir():
+        (output / "result.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    return result
 
 
 def _run_assurance_campaign(worktree, extra_args, assurance_output):
@@ -660,10 +700,16 @@ def _run_assurance_campaign(worktree, extra_args, assurance_output):
     command = [sys.executable, str(worktree / "DynaDocs.Tests/coverage/csharp_coverage.py"),
                "--root", str(worktree), "--result-root", str(result_root),
                "--extra-json", json.dumps(list(extra_args or []))]
-    owner_result = run(request(command, worktree, owner_output,
-                               execution_seconds=1800, teardown_seconds=10),
-                       isolated_environment())
-    _publish_assurance(worktree, result_root, owner_output, assurance_output, owner_result)
+    if sys.platform == "linux":
+        owner_result = _run_linux_campaign(command, worktree, owner_output)
+    else:
+        owner_result = run(request(command, worktree, owner_output,
+                                   execution_seconds=1800, teardown_seconds=10),
+                           isolated_environment())
+    with defer_interruption():
+        _publish_assurance(worktree, result_root, owner_output, assurance_output, owner_result)
+    if owner_result.get("failure_category") == "KeyboardInterrupt" and owner_result.get("cleanup_confirmed"):
+        return 130
     if not owner_result.get("complete") or not owner_result.get("cleanup_confirmed"):
         return 2
     return owner_result.get("subject_status") if type(owner_result.get("subject_status")) is int else 2
@@ -713,12 +759,10 @@ def run_tests(extra_args=None, assurance_output=None, job=None):
     finally:
         # An interrupt that lands during cleanup is delivered once cleanup has finished.
         with defer_interruption():
-            try:
-                end_descendants(job)
-            finally:
-                if worktree and (worktree.exists() or is_registered_worktree(worktree)):
-                    print("  Cleaning up worktree...")
-                    remove_worktree(worktree)
+            end_descendants(job)
+            if worktree and (worktree.exists() or is_registered_worktree(worktree)):
+                print("  Cleaning up worktree...")
+                remove_worktree(worktree)
 
 
 def main():
@@ -738,7 +782,7 @@ def main():
 
     print("\n--- Running tests (worktree-isolated) ---")
     # The assurance campaign owns its processes in its own job and confirms their cleanup.
-    job = None if args.assurance_output else contain_descendants()
+    job = None if args.assurance_output and sys.platform == "win32" else contain_descendants()
     try:
         rc = run_tests(extra_args=extra or None, assurance_output=args.assurance_output, job=job)
     except KeyboardInterrupt:

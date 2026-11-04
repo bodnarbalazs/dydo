@@ -8,6 +8,23 @@ const { spawnSync } = require('node:child_process');
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
 const script = path.join(repoRoot, 'setup-skills.mjs');
 
+test('selected statechart projects only that skill and preserves unrelated dangling links and empty categories', () => {
+  inRoot((root) => {
+    writeSkill(root, 'statechart', { category: 'engineering' });
+    fs.mkdirSync(path.join(root, 'skills', 'empty'));
+    const unrelated = path.join(root, '.agents', 'skills', 'removed');
+    fs.mkdirSync(path.dirname(unrelated), { recursive: true });
+    fs.symlinkSync(path.join(root, 'skills', 'gone'), unrelated, 'junction');
+    const result = runSetup('--root', root, '--skill', 'statechart');
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /1 skills, 2 projections created, 0 links to deleted skills removed/);
+    assert.ok(fs.lstatSync(unrelated).isSymbolicLink());
+    for (const host of ['.agents', '.claude'])
+      assert.equal(fs.realpathSync(path.join(root, host, 'skills', 'statechart')),
+        fs.realpathSync(path.join(root, 'skills', 'engineering', 'statechart')));
+  });
+});
+
 function writeSkill(root, name, { category = 'cat', withBody = true } = {}) {
   const skillDir = path.join(root, 'skills', category, name);
   fs.mkdirSync(skillDir, { recursive: true });

@@ -22,10 +22,14 @@ function main() {
     process.exit(2);
   }
 
+  const statechart = process.argv[2] === 'statechart';
   const child = spawn(binaryPath, process.argv.slice(2), {
-    stdio: 'inherit',
-    windowsHide: false
+    stdio: statechart ? ['pipe', 'inherit', 'inherit'] : 'inherit',
+    windowsHide: statechart,
+    ...(statechart ? { env: { ...process.env, DYDO_STATECHART_NPM_LIFETIME: '1' } } : {})
   });
+  // Only this shim owns the writer. Kernel pipe EOF survives abrupt shim death.
+  if (statechart) child.stdin.on('error', () => {});
 
   child.on('error', (err) => {
     console.error(`Error launching dydo: ${err.message}`);

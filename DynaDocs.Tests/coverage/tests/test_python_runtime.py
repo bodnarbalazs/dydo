@@ -189,7 +189,7 @@ outer()
     def test_measurement_refuses_to_start_on_an_unpinned_interpreter(self):
         from unittest.mock import patch
         with patch.object(sys, 'version_info', (3, 13, 0, 'final', 0)):
-            with self.assertRaisesRegex(ValueError, 'pinned CPython 3.12'):
+            with self.assertRaisesRegex(ValueError, 'pinned CPython 3.14'):
                 CallableWitness({})
 
     def test_foreign_unknown_and_unexpected_events_are_refused_not_counted(self):

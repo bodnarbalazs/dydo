@@ -276,9 +276,10 @@ non-archived issues, the issues linked from them, their `blocks` and `related` r
 issue's priority, and the Project body.
 
 The ledger is the body section under the first `##` heading containing "ledger", in any case, up to
-the next `##` heading. Its rows are table rows and list items; a row names every issue identifier in
-it, bare or inside a Linear link. Closed means a `completed`, `canceled` or `duplicate` state;
-every other state, backlog and triage included, is open.
+the next `##` heading, read as markdown. Its rows are table rows, with or without edge pipes, and
+list items with their continuation lines; fenced code holds no rows and no headings. A row names
+every issue identifier in it, bare or inside a Linear link. Closed means a `completed`, `canceled` or
+`duplicate` state; every other state, backlog and triage included, is open.
 
 The first line is `dydo survey <Project name> <UTC ISO time>: <n> findings`. Each finding follows on
 its own line, `<kind> <KEY> <title> — <reason>`, sorted by kind and then key:
@@ -288,13 +289,15 @@ its own line, `<kind> <KEY> <title> — <reason>`, sorted by kind and then key:
 | `no-ledger` | The body has no ledger section; its key is `-`. Every open issue is then `unlaned`. |
 | `pickable` | An unstarted, unassigned Project issue with no open blocker, as the map draws it, and not already `unblocked`. |
 | `question-no-priority` | An open Project issue labelled `Question` with no priority. |
-| `stale-row` | A ledger row that names only closed issues and doesn't say done, merged, closed, completed, canceled, cancelled, shipped or landed. |
+| `stale-row` | A ledger row whose named issues in the read graph are all closed, and whose shown text, without link targets or URLs, doesn't say done, merged, closed, completed, canceled, cancelled, shipped or landed. A negated word, such as "not merged", doesn't count. |
 | `started-unassigned` | A started Project issue with no assignee. |
-| `unblocked` | An open, unassigned issue in the Project or linked from it, with at least one `blocks` relation into it and every blocker closed. |
+| `unblocked` | An open, unassigned issue in the Project or linked from it, with at least one `blocks` relation into it and every blocker closed. For a linked issue, only the blockers in the Project's graph are seen. |
+| `uncontracted` | An unassigned Backlog Project issue with no open blocker, waiting to be contracted to `Todo`. |
 | `unlaned` | An open Project issue that no ledger row names, nor its parent's. |
 
 A successful read exits `0`, findings or not. An argument that is not one Project UUID, slugId or
-Linear Project URL, and an unknown Project, are usage errors with exit `2`. An API or network
+Linear Project URL, and an unknown Project, are usage errors with exit `2`; the message names what
+Linear lacked. An API or network
 failure exits `2` with a message naming it. `DYDO_LINEAR_ENDPOINT` is the same test seam as for
 `dydo map`.
 

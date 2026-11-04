@@ -49,34 +49,44 @@ every boundary text. A second reading command needs its own decision.
 ## Decision
 
 1. **DR 052's rules.** Read-only and on demand: the caller decides when to run it. The user's key in
-   `LINEAR_API_KEY`; without one it prints `dydo map`'s missing-key help and exits 2 before any
-   request. No mirror, cache, polling or subscription.
+   `LINEAR_API_KEY`; without one it prints the missing-key help it shares with `dydo map` and exits 2
+   before any request. No mirror, cache, polling or subscription.
 2. **One reader.** It reads through `dydo map`'s `LinearReader`: the Project's non-archived issues,
    the linked far ends outside it, and their `blocks` and `related` relations. The survey adds the
-   Project body (`content`) in one more query, and each issue's priority. `dydo map`'s output is
-   unchanged.
+   Project body (`content`) in one more query, each issue's priority, and each Project issue's parent
+   identifier, so a parent outside the graph still lanes its sub-issues. `dydo map`'s output is
+   unchanged. Labels are read as the map reads them, the first ten per issue, so a `Question` label
+   past an issue's tenth is not seen.
 3. **The ledger.** The ledger is the body section under the first `##` heading containing "ledger"
-   (any case), up to the next `##` heading. A ledger row is a table row or a list item. The issues a
-   row names are every issue identifier in it, bare or inside a Linear link. Paragraph text in the
-   section names nothing.
+   (any case), up to the next `##` heading, read as markdown. A ledger row is a table row, with or
+   without edge pipes, or a list item with its continuation lines; a table's separator row is none.
+   Fenced code holds no rows and no headings. The issues a row names are every issue identifier in
+   it, bare or inside a Linear link. Paragraph text in the section names nothing.
 4. **The findings.** Closed means a `completed`, `canceled` or `duplicate` state; everything else,
    backlog and triage included, is open. Each finding is one line, `<kind> <KEY> <title> — <reason>`,
    sorted by kind and then key:
    - `unblocked`: an open, unassigned issue in the Project or linked from it, with at least one
-     `blocks` relation into it, where every blocker is closed.
+     `blocks` relation into it, where every blocker is closed. For a linked issue the reason says
+     every blocker in the Project's graph is closed, since its blockers elsewhere are not read.
    - `pickable`: the map viewer's rule (unstarted, unassigned, no open blocker), minus issues already
      listed as `unblocked`.
    - `unlaned`: an open Project issue the ledger doesn't name, unless the ledger names its parent.
-   - `stale-row`: a ledger row whose named issues are all closed, while the row doesn't read as done.
-     A row reads as done when it says done, merged, closed, completed, canceled, cancelled, shipped or
-     landed. A row naming an issue outside the read graph is not judged.
+   - `stale-row`: a ledger row whose named issues in the read graph are all closed, while the row
+     doesn't read as done. Only identifiers in the graph count, so a token such as `UTF-8` or an issue
+     elsewhere neither saves nor judges a row; a row naming none is not judged. A row reads as done
+     when the text it shows, without link targets or URLs, says done, merged, closed, completed,
+     canceled, cancelled, shipped or landed, not negated as in "not merged" or "never landed".
    - `started-unassigned`: a started-type Project issue with no assignee.
    - `question-no-priority`: an open Project issue labelled `Question` with no priority.
+   - `uncontracted`: an unassigned Project issue in a `backlog`-type state with no open blocker, with
+     the reason "Backlog, unassigned, no open blocker". The admiral contracts it to `Todo`
+     ([DYD-520](https://linear.app/bodnar-balazs/issue/DYD-520) ruling 8). It is never `pickable`.
    - `no-ledger`: the body has no ledger section. Its key is `-` and its title the Project's name.
      Every open Project issue is then `unlaned`.
 5. **Exit codes.** A successful read exits 0, findings or not. An argument that is not one Project
    UUID, slugId or Linear Project URL, or an unknown Project, is a usage error and exits 2. A missing
-   key, or an API or network failure, exits 2 with a message naming the failure.
+   key, or an API or network failure, exits 2 with a message naming the failure; a ticket that
+   vanishes mid-read is named as that ticket, not as an unknown Project.
 
 ## Consequences
 

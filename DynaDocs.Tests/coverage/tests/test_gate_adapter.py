@@ -3,6 +3,7 @@ import json
 import hashlib
 import io
 import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -12,11 +13,12 @@ from unittest import mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from gate_run import STATIC_GATE_INTERPRETER
 import gate_adapter
 from gate_adapter import _target_paths, publish
 
 TOOLS = Path(__file__).resolve().parents[1]
-STATIC_PYTHON = TOOLS.parents[1] / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+STATIC_PYTHON = TOOLS.parents[1] / STATIC_GATE_INTERPRETER
 
 PYTHON_TARGET = "def add(left, right):\n    return left + right\n"
 PYTHON_SUITE = ("import unittest\n\n\n"
@@ -212,12 +214,18 @@ class GateAdapterTests(unittest.TestCase):
         child.wait.side_effect = [subprocess.TimeoutExpired(["campaign"], 20), 130]
         with mock.patch.dict(os.environ, {"DYDO_ROW_DEADLINE": "150"}), \
                 mock.patch.object(gate_adapter.time, "monotonic", side_effect=[100, 120]), \
+                mock.patch.object(gate_adapter.os, "killpg", create=True) as killpg, \
                 mock.patch.object(gate_adapter.subprocess, "Popen", return_value=child) as popen:
             with self.assertRaisesRegex(gate_adapter.MeasurementTimeout, "deadline"):
                 gate_adapter.run_coverage_command(["campaign"], Path.cwd())
         self.assertEqual(20, child.wait.call_args_list[0].kwargs["timeout"])
         self.assertEqual(30, child.wait.call_args_list[1].kwargs["timeout"])
-        self.assertEqual(1, child.send_signal.call_count)
+        if sys.platform == "win32":
+            child.send_signal.assert_called_once_with(signal.CTRL_BREAK_EVENT)
+            killpg.assert_not_called()
+        else:
+            killpg.assert_called_once_with(child.pid, signal.SIGINT)
+            child.send_signal.assert_not_called()
         child.kill.assert_not_called()
         kwargs = popen.call_args.kwargs
         self.assertNotIn("stdout", kwargs)
@@ -232,11 +240,19 @@ class GateAdapterTests(unittest.TestCase):
                                   subprocess.TimeoutExpired(["campaign"], 30), 2]
         with mock.patch.dict(os.environ, {"DYDO_ROW_DEADLINE": "150"}), \
                 mock.patch.object(gate_adapter.time, "monotonic", side_effect=[100, 120]), \
+                mock.patch.object(gate_adapter.os, "killpg", create=True) as killpg, \
                 mock.patch.object(gate_adapter.subprocess, "Popen", return_value=child):
             with self.assertRaisesRegex(gate_adapter.MeasurementTimeout, "deadline"):
                 gate_adapter.run_coverage_command(["campaign"], Path.cwd())
-        self.assertEqual(1, child.send_signal.call_count)
-        child.kill.assert_called_once_with()
+        if sys.platform == "win32":
+            child.send_signal.assert_called_once_with(signal.CTRL_BREAK_EVENT)
+            child.kill.assert_called_once_with()
+            killpg.assert_not_called()
+        else:
+            self.assertEqual([mock.call(child.pid, signal.SIGINT), mock.call(child.pid, signal.SIGKILL)],
+                             killpg.call_args_list)
+            child.send_signal.assert_not_called()
+            child.kill.assert_not_called()
         self.assertEqual(3, child.wait.call_count)
 
     # A defect the catch tuple misses leaves main with exit 1 and no summary at all, which the
@@ -348,7 +364,8 @@ class PublishedProvenanceTests(unittest.TestCase):
         self.assertEqual(sys.executable, interpreters["caller"]["path"])
         self.assertEqual(hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
                          interpreters["caller"]["sha256"])
-        self.assertEqual("dydo/_system/.local/static-gates/python/Scripts/python.exe",
+        self.assertEqual(("dydo/_system/.local/static-gates/python/" +
+                  ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")),
                          interpreters["dependencyBearing"]["path"])
         self.assertEqual(hashlib.sha256(STATIC_PYTHON.read_bytes()).hexdigest(),
                          interpreters["dependencyBearing"]["sha256"])
@@ -1024,7 +1041,7 @@ class CoverageCampaignTests(unittest.TestCase):
             self.assertEqual(str(raw / "identities.json"), error["identitiesPath"])
 
     def test_an_exit_2_campaign_names_the_preflight_category_and_its_windows_cpython_message(self):
-        # windows_job.runtime_evidence() raises "Owner requires Windows CPython 3.12" from
+        # windows_job.runtime_evidence() raises "Owner requires Windows CPython 3.14" from
         # validate(), before run()'s try block ever creates `output`; run()'s except handler
         # then finds output is None, so failure_category stays at its "preflight" initial
         # value and error_message becomes str(error) -- the message never lands in the
@@ -1034,14 +1051,14 @@ class CoverageCampaignTests(unittest.TestCase):
             write_file(raw, "identities.json",
                       json.dumps({"schema": 1,
                                  "campaign": {"failure_category": "preflight",
-                                             "error_message": "Owner requires Windows CPython 3.12"}}))
+                                             "error_message": "Owner requires Windows CPython 3.14"}}))
 
             with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
                 answer = gate_adapter.collect_dotnet_coverage(root, raw)
 
             error = answer["errors"][0]
             self.assertEqual("preflight", error["failureCategory"])
-            self.assertEqual("Owner requires Windows CPython 3.12", error["errorMessage"])
+            self.assertEqual("Owner requires Windows CPython 3.14", error["errorMessage"])
             self.assertEqual(str(raw / "identities.json"), error["identitiesPath"])
 
     def test_an_exit_2_campaign_fails_closed_when_identities_json_is_missing(self):

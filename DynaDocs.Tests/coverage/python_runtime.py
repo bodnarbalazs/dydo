@@ -1,4 +1,4 @@
-"""CPython 3.12 code-object witnesses prevent definition-line coverage borrowing."""
+"""CPython 3.14 code-object witnesses prevent definition-line coverage borrowing."""
 import ast
 import hashlib
 import inspect
@@ -114,8 +114,8 @@ def module_inventory(source, path):
 
 class CallableWitness:
     def __init__(self, sources):
-        if sys.implementation.name != 'cpython' or sys.version_info[:2] != (3, 12):
-            raise ValueError('Callable measurement requires pinned CPython 3.12 monitoring semantics')
+        if sys.implementation.name != 'cpython' or sys.version_info[:2] != (3, 14):
+            raise ValueError('Callable measurement requires pinned CPython 3.14 monitoring semantics')
         self.tool_id = None
         self._rows, self._modules, self._index = [], [], {}
         for path, source in sources.items():

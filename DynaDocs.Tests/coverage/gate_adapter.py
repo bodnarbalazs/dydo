@@ -13,7 +13,7 @@ import hashlib
 import subprocess
 from pathlib import Path
 
-from gate_run import checked_result, result
+from gate_run import STATIC_GATE_INTERPRETER, checked_result, result
 
 
 CLEANUP_SECONDS = 30
@@ -21,7 +21,6 @@ ROW_DEADLINE_ENV = "DYDO_ROW_DEADLINE"
 SUBJECT_NAME_CAP = 10
 _DOTNET_FAILURE = re.compile(r"(?m)^\s*Failed\s+(?P<name>\S.*?)\s+\[[^\]\r\n]*\]\s*$")
 _UNITTEST_FAILURE = re.compile(r"(?m)^(?:FAIL|ERROR):\s+(?P<name>\S+)(?:\s+\((?P<case>[^)\r\n]+)\))?")
-STATIC_GATE_INTERPRETER = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
 SUPPLIED_ENVIRONMENT = ("APPDATA", "NUGET_PACKAGES", ROW_DEADLINE_ENV)
 # A defective report is a broken measurement, never a policy outcome: ParseError is a
 # SyntaxError, and an unexpected join shape raises Type/Attribute/IndexError before any finding.

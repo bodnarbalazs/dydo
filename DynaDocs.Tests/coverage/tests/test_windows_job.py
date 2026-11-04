@@ -51,6 +51,23 @@ if(role==='grandchild') {
 '''
 
 
+class WindowsJobPlatformTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "Non-Windows preflight contract")
+    def test_non_windows_owner_fails_closed_without_starting_a_subject(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            value = windows_job.request([sys.executable, "-c", "raise SystemExit(0)"],
+                                        root, root / "owner")
+            result = windows_job.run(value)
+            self.assertFalse(result["complete"])
+            self.assertFalse(result["cleanup_confirmed"])
+            self.assertIsNone(result["subject_status"])
+            self.assertEqual("preflight", result["failure_category"])
+            self.assertIn("requires Windows CPython 3.14", result["error_message"])
+            self.assertFalse((root / "owner").exists())
+
+
+@unittest.skipUnless(os.name == "nt", "Native Win32 Job Object contracts require Windows")
 class WindowsJobTests(unittest.TestCase):
     def setUp(self):
         evidence = os.environ.get("DYDO_NATIVE_TEST_EVIDENCE")
@@ -141,16 +158,16 @@ class WindowsJobTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256(Path(windows_job.__file__).read_bytes()).hexdigest(), value["helper_sha256"])
         self.assertNotIn("environment", value)
 
-    def test_runtime_contract_accepts_any_cpython_312_patch_and_reports_exact_evidence(self):
+    def test_runtime_contract_accepts_any_cpython_314_patch_and_reports_exact_evidence(self):
         value = windows_job.request([shutil.which("node")], self.root, self.root / "evidence")
         with patch.object(windows_job.platform, "python_implementation", return_value="CPython"), \
-             patch.object(windows_job.sys, "version_info", (3, 12, 99)):
+             patch.object(windows_job.sys, "version_info", (3, 14, 99)):
             evidence = windows_job.validate(value)
             capability = windows_job.preflight()
 
         self.assertEqual("CPython", evidence["implementation"])
-        self.assertEqual([3, 12, 99], evidence["version"])
-        self.assertEqual([3, 12, 99], capability["version"])
+        self.assertEqual([3, 14, 99], evidence["version"])
+        self.assertEqual([3, 14, 99], capability["version"])
         self.assertEqual(hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
                          evidence["executable_sha256"])
         self.assertEqual(hashlib.sha256(Path(sys._base_executable).read_bytes()).hexdigest(),
@@ -158,12 +175,12 @@ class WindowsJobTests(unittest.TestCase):
 
     def test_runtime_contract_rejects_non_cpython_and_wrong_series_in_validate_and_preflight(self):
         value = windows_job.request([shutil.which("node")], self.root, self.root / "evidence")
-        for implementation, version in (("PyPy", (3, 12, 10)), ("CPython", (3, 11, 10))):
+        for implementation, version in (("PyPy", (3, 14, 10)), ("CPython", (3, 11, 10))):
             for operation in (lambda: windows_job.validate(value), windows_job.preflight):
                 with self.subTest(implementation=implementation, version=version, operation=operation.__name__), \
                      patch.object(windows_job.platform, "python_implementation", return_value=implementation), \
                      patch.object(windows_job.sys, "version_info", version), \
-                     self.assertRaisesRegex(ValueError, "requires Windows CPython 3.12"):
+                     self.assertRaisesRegex(ValueError, "requires Windows CPython 3.14"):
                     operation()
 
     def test_boolean_protocol_version_is_not_version_one(self):

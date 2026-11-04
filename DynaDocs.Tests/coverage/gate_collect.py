@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 from gate_inventory import assembly_path, assemble_inventory, dependency_cycles, test_project_role
-from gate_run import CommandLog, result
+from gate_run import CommandLog, STATIC_GATE_INTERPRETER, result
 from inventory import build_file_rows, git_file_state, source_fingerprint
 
 
@@ -138,7 +138,7 @@ class Collectors:
         self.output = Path(output).resolve()
         self.log = CommandLog(self.root, self.output / 'commands')
         self.coverage = self.root / 'DynaDocs.Tests/coverage'
-        self.python = self.root / 'dydo/_system/.local/static-gates/python/Scripts/python.exe'
+        self.python = self.root / STATIC_GATE_INTERPRETER
         self.paths, self.deleted = git_file_state(self.root)
         self.source_fingerprint = source_fingerprint(
             build_file_rows(self.root, self.paths, self.deleted))

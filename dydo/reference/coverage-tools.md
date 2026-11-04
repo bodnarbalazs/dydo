@@ -22,7 +22,7 @@ in the workflow's order, because the three toolchains are independent of each ot
 that must precede another is creating the virtual environment its Python packages then install into.
 
 ```powershell
-# the Python assurance toolchain; create the environment with CPython 3.12.10 itself,
+# the Python assurance toolchain; create the environment with CPython 3.14.4 itself,
 # the patch DynaDocs.Tests/coverage/.python-version declares
 python -m venv dydo/_system/.local/static-gates/python
 & dydo/_system/.local/static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
@@ -35,22 +35,31 @@ dotnet tool restore --tool-manifest .config/dotnet-tools.json
 dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
 ```
 
-The interpreter that creates the virtual environment must be 3.12.10 itself, not merely some 3.12.
-`python_runtime._key` joins a code object to its parsed body on
-`(co_qualname, co_firstlineno, co_positions())`, and a different compiler emits different positions:
-on CPython 3.12.3 the isolated suite produces six errors in
-`DynaDocs.Tests/coverage/tests/test_python_runtime.py` - `Missing or ambiguous callable
-body/code-object join` and `Unexpected callable body line` - that a 3.12.10 environment does not
-produce, and rebuilding the environment on 3.12.10 clears all six. The `versions` collector does not
-catch this: `gate_versions.python_versions` requires the declaration to read exactly 3.12.10 and the
-running implementation to be CPython 3.12, and never compares the running patch to the declaration.
+The interpreter that creates the environment must be CPython 3.14.4, as declared in
+`.python-version`. The callable witness joins compiled code objects to parsed bodies using
+`co_positions()`, so use the declared patch and remove coverage-tool `__pycache__` directories
+when changing interpreters. The versions collector verifies the declaration and CPython series;
+it records the observed patch separately. Earlier 3.12 patch mismatches caused callable-position
+join failures; that historical evidence does not establish compatibility with a different 3.14 patch.
 
-Every CPython 3.12.x shares one `.pyc` magic number, so a `__pycache__` written by one patch is
-loaded by another without revalidation and carries the old positions into that same join. Delete
-every `__pycache__` under `DynaDocs.Tests/coverage` after changing interpreter; the symptom of
-skipping it is a surviving failure reporting `Unknown runtime callable: .../python_runtime.py:164`.
+On Linux, use the same locked packages with the POSIX venv path:
 
-The `tar` first on `PATH` must be the Windows one. `npm/test/download.test.cjs` builds its fixture
+```bash
+python3 -m venv dydo/_system/.local/static-gates/python
+dydo/_system/.local/static-gates/python/bin/python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+npm --prefix DynaDocs.Tests/coverage ci
+pnpm -C viewer install --frozen-lockfile
+dotnet tool restore --tool-manifest .config/dotnet-tools.json
+dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
+```
+
+The C# coverage campaign uses the existing Linux subreaper containment and retains raw streams,
+subject exit and cleanup evidence. A live detached descendant makes the campaign incomplete even
+when the subject exited zero. Unconfirmed cleanup retains the isolated snapshot. Windows continues
+to use its native Job Object owner. Native Windows tests require the Windows CI runner; Linux skips
+are missing Windows proof, not passing Windows proof.
+
+On Windows, the `tar` first on `PATH` must be the Windows one. `npm/test/download.test.cjs` builds its fixture
 archives by shelling out to `tar`, and `node_tests.cjs` runs that suite; Git for Windows' GNU tar
 (`C:\Program Files\Git\usr\bin\tar.exe`) reads the test's `C:\...` destination as a remote host, so
 three tests fail with `tar (child): Cannot connect to C: resolve failed` and the node coverage row
@@ -60,7 +69,9 @@ reports a `functional` finding. Prepending `C:\Windows\System32`, whose `tar` is
 
 ## Operations
 
-Run the facade with the pinned local interpreter, not an arbitrary Python:
+Run the facade with the pinned local interpreter. On Linux, set
+`py=dydo/_system/.local/static-gates/python/bin/python` and invoke `"$py"` in place of
+PowerShell's `& $py` below:
 
 ```powershell
 $py = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
@@ -201,7 +212,7 @@ never a silent overwrite. The identical bytes remain at
 ```json
 "tools": {
   "interpreters": {
-    "caller": {"path": "<absolute>/python.exe", "sha256": "<hex>", "version": "3.12.10"},
+    "caller": {"path": "<absolute>/python.exe", "sha256": "<hex>", "version": "3.14.4"},
     "dependencyBearing": {"path": "dydo/_system/.local/static-gates/python/Scripts/python.exe",
                           "sha256": "<hex>"}
   },
@@ -265,7 +276,7 @@ Before collecting, the adapter sets `APPDATA` to `dydo/_system/.local/appdata` a
 |---|---|---|
 | `dotnet` | `csharp-source` | `GateMetrics.dll --project <csproj> --root <root>`: a real Roslyn compilation per project, per-callable cognitive complexity and policy CC, parameter counts, namespace edges |
 | `dotnet` | `csharp-analyzers` | two `dotnet build` passes per project, the second with `-p:RunAnalyzers=true -p:ErrorLog=<sarif>`, joined to the maintained and generated inventories |
-| `dotnet` | `versions` | the resolved Python, JavaScript and .NET pins, plus `node --version` equal to `v22.13.0` and `dotnet --version` equal to `10.0.300` |
+| `dotnet` | `versions` | the resolved Python, JavaScript and .NET pins, plus `node --version` equal to `v26.13.0` and `dotnet --version` equal to `10.0.303` |
 | `python` | `python-source` | `python_metrics.py` under the dependency-bearing interpreter: complexipy cognitive, radon cyclomatic, nested ternaries, module-level score |
 | `python` | `python-dead-code` | `ruff check --isolated --select F` and `vulture` over every maintained Python source |
 | `python` | `python-dependencies` | AST import graph and cycles; a dynamic `__import__`, `import_module` or `spec_from_file_location` call is a gap, not a finding |
@@ -300,7 +311,8 @@ JavaScript or TypeScript is reported as `coverage-suppression`, and inline ESLin
 disabled outright, in the walker and in the viewer's lint.
 
 `versions` runs in the `dotnet` static row and measures the *caller* process, so running the facade
-with any interpreter other than `dydo/_system/.local/static-gates/python/Scripts/python.exe`
+with any interpreter other than the local assurance venv (`bin/python` on Linux or
+`Scripts/python.exe` on Windows)
 produces a gap such as `No package metadata was found for colorama` and fails that row closed with
 exit 2.
 
@@ -487,8 +499,8 @@ hashes in `tools.pins`; the Python inventory separately republishes the runtime 
 | Declaration | Supplies | Restored into |
 |---|---|---|
 | `.config/dotnet-tools.json` | AltCover 9.0.102 | the tool manifest, by `dotnet tool restore --tool-manifest .config/dotnet-tools.json` |
-| `DynaDocs.Tests/coverage/.python-version` | exact CPython 3.12.10 for Release CI | `actions/setup-python@v5`, through `python-version-file` |
-| `DynaDocs.Tests/coverage/requirements.lock` | coverage.py 7.16.0, ruff 0.16.6, vulture 2.16, complexipy 8.0.0, radon 6.0.1 | a local CPython 3.12.10 environment at `dydo/_system/.local/static-gates/python/Scripts/python.exe` |
+| `DynaDocs.Tests/coverage/.python-version` | exact CPython 3.14.4 for Release CI | `actions/setup-python@v5`, through `python-version-file` |
+| `DynaDocs.Tests/coverage/requirements.lock` | coverage.py 7.16.0, ruff 0.16.6, vulture 2.16, complexipy 8.0.0, radon 6.0.1 | a local CPython 3.14.4 environment at `dydo/_system/.local/static-gates/python/Scripts/python.exe` |
 | `DynaDocs.Tests/coverage/package.json`, resolved by `package-lock.json` | @typescript-eslint/parser, c8, dependency-cruiser, eslint, eslint-plugin-sonarjs, istanbul-lib-instrument, jscpd, knip | `node_modules` under `DynaDocs.Tests/coverage` |
 | `viewer/package.json`, resolved by `viewer/pnpm-lock.yaml` | the viewer's TypeScript, ESLint, vitest and Istanbul toolchain its scripts run | `viewer/node_modules`, by `pnpm -C viewer install --frozen-lockfile` |
 | `DynaDocs.Tests/coverage/metrics/packages.lock.json` | the Roslyn, SonarAnalyzer and Cecil closure of `GateMetrics.csproj` | that project's `obj/project.assets.json`, by `dotnet restore` |
@@ -496,13 +508,13 @@ hashes in `tools.pins`; the Python inventory separately republishes the runtime 
 The `versions` collector fails the `dotnet` static row closed if an installed version differs from
 its lock, if a declared JavaScript dependency and the lock disagree, if a locked package is missing
 without being optional, if the resolved NuGet closure differs from `obj/project.assets.json`, if the
-Python declaration is not exactly 3.12.10, or if the running implementation is not CPython 3.12.
+Python declaration is not exactly 3.14.4, or if the running implementation is not CPython 3.14.
 That last check stops at the series, so it is weaker than the environment actually needs: the
-callable witness is not patch-independent, and the local interpreter must be the declared 3.12.10,
+callable witness is not patch-independent, and the local interpreter must be the declared 3.14.4,
 as Provisioning above records. Python evidence records the declared pin and its hash, the exact
 observed implementation and patch, and the requirements-lock hash. The Windows job preflight and
 each accepted run likewise record the exact observed version plus the executable and base-executable
-digests. Node v22.13.0 and .NET SDK 10.0.300 remain exact runtime requirements.
+digests. Node v26.13.0 and .NET SDK 10.0.303 remain exact runtime requirements.
 
 ---
 

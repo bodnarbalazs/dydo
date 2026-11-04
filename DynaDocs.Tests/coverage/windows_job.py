@@ -73,8 +73,8 @@ EXECUTION_SECONDS_MAXIMUM = 1800
 
 def runtime_evidence():
     implementation = platform.python_implementation()
-    if os.name != "nt" or implementation != "CPython" or sys.version_info[:2] != (3, 12):
-        raise ValueError("Owner requires Windows CPython 3.12")
+    if os.name != "nt" or implementation != "CPython" or sys.version_info[:2] != (3, 14):
+        raise ValueError("Owner requires Windows CPython 3.14")
     return {"implementation": implementation, "version": list(sys.version_info[:3]),
             "executable": sys.executable,
             "executable_sha256": hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),

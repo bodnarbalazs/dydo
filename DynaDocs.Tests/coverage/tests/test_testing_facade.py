@@ -102,6 +102,8 @@ class TestingFacadeTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory(prefix='dydo-facade-')
         self.addCleanup(temporary.cleanup)
         directory = Path(temporary.name)
+        # Do not borrow a repository marker from a shared temporary ancestor.
+        (directory / '.git').mkdir()
         shutil.copyfile(self.runner, directory / 'gap_check.py')
         # Both legs run through the same launcher: the derived copy is byte-identical, so its
         # deadline policy is the project's and every case must hold for it too.
@@ -675,14 +677,14 @@ class TestingFacadeTests(unittest.TestCase):
     def test_derived_exit_2_diagnosis_joins_category_and_message_when_both_are_named(self):
         errors = [{'gate': 'csharp-coverage', 'message': 'native campaign incomplete',
                   'failureCategory': 'preflight',
-                  'errorMessage': 'Owner requires Windows CPython 3.12',
+                  'errorMessage': 'Owner requires Windows CPython 3.14',
                   'identitiesPath': '/tmp/run/identities.json'}]
         p, _, payload = self.derived_case(coverage_report('first-coverage', 2, errors=errors), 1)
         self.assert_exit(p, 2)
         self.assert_derived(payload, ('invalid', None, 2), ('failed', 1), 2)
         reason = payload['results'][0]['reason']
         self.assertTrue(reason.endswith(
-            '; preflight: Owner requires Windows CPython 3.12 at /tmp/run/identities.json'), reason)
+            '; preflight: Owner requires Windows CPython 3.14 at /tmp/run/identities.json'), reason)
 
     def test_derived_exit_2_diagnosis_unavailable_is_rendered_on_the_unattributed_row(self):
         errors = [{'gate': 'csharp-coverage', 'message': 'native campaign incomplete',
@@ -1120,6 +1122,7 @@ class TestingFacadeTests(unittest.TestCase):
     def test_copied_single_file_preserves_child_streams_exit_deadline_and_cleanup(self):
         with tempfile.TemporaryDirectory(prefix='dydo-standalone-facade-') as temporary:
             root = Path(temporary)
+            (root / '.git').mkdir()
             shutil.copyfile(RUNNER, root / 'gap_check.py')
             (root / 'child.py').write_text(
                 "import math,os,sys,time\nfrom pathlib import Path\n"

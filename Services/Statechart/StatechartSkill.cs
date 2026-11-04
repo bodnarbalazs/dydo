@@ -17,7 +17,7 @@ internal static class StatechartSkill
             throw new IOException("Missing or invalid installed statechart skill receipt; install the matching skill with dydo statechart install-skill --root PROJECT.");
         var identity = JsonNode.Parse(File.ReadAllBytes(receipt));
         if (identity?["schema"]?.GetValue<int>() != 1 || identity["protocol"]?.GetValue<int>() != 1 ||
-            identity["release"]?.GetValue<string>() != "3.5.1" || identity["payload"]?.GetValue<string>() != assets.Digest ||
+            identity["release"]?.GetValue<string>() != assets.Release || identity["payload"]?.GetValue<string>() != assets.Digest ||
             identity["lock"]?.GetValue<string>() != assets.LockDigest)
             throw new IOException("Installed statechart skill does not match this dydo release/protocol/payload; install into a fresh project or explicitly reconcile local files before dydo statechart install-skill --root PROJECT.");
         assets.VerifySkill(directory);
@@ -39,7 +39,7 @@ internal static class StatechartSkill
                 throw new IOException("Foreign statechart skill path retained: " + target);
             var stage = Path.Combine(Path.GetDirectoryName(target)!, ".statechart-skill-" + Guid.NewGuid().ToString("N"));
             Copy(Path.Combine(payload, "skills", "engineering", "statechart"), stage);
-            var receipt = new JsonObject { ["schema"] = 1, ["protocol"] = 1, ["release"] = "3.5.1",
+            var receipt = new JsonObject { ["schema"] = 1, ["protocol"] = 1, ["release"] = assets.Release,
                 ["payload"] = assets.Digest, ["lock"] = assets.LockDigest };
             await File.WriteAllTextAsync(Path.Combine(stage, Receipt), receipt.ToJsonString(), token);
             Validate(stage, assets);

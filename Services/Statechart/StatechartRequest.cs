@@ -19,7 +19,7 @@ internal sealed record StatechartRequest
     public string? Tlc { get; init; }
     public string? Skill { get; init; }
     public required string Rid { get; init; }
-    public string Release { get; init; } = "3.5.1";
+    public required string Release { get; init; }
     public required string PayloadDigest { get; init; }
     public required string LockDigest { get; init; }
 
@@ -40,7 +40,7 @@ internal sealed record StatechartRequest
     public static void ValidateIdentity(StatechartRequest request, StatechartAssets assets, string rid)
     {
         if (request.Schema != 1 || request.Protocol != 1 || !Guid.TryParseExact(request.Id, "N", out _) ||
-            request.Rid != rid || request.Release != "3.5.1" || request.PayloadDigest != assets.Digest ||
+            request.Rid != rid || request.Release != assets.Release || request.PayloadDigest != assets.Digest ||
             request.LockDigest != assets.LockDigest || request.Arguments is null || request.Caller is null ||
             request.Spec is null || request.Config is null || request.Output is null)
             throw new IOException("Unsupported, stale or malformed saved statechart request; prepare a fresh request.");
@@ -73,7 +73,7 @@ internal sealed record StatechartRequest
             Spec = Input(model, caller), Config = Input(parsed.GetValue(config) ?? defaultBase + ".cfg", caller),
             View = parsed.GetValue(view) is { } file ? Input(file, caller) : null,
             Output = Destination(parsed.GetValue(output) ?? defaultBase + "-chart", caller),
-            Java = java, Tlc = tlc, PayloadDigest = assets.Digest, LockDigest = assets.LockDigest,
+            Java = java, Tlc = tlc, Release = assets.Release, PayloadDigest = assets.Digest, LockDigest = assets.LockDigest,
             Skill = parsed.GetValue(skill) is { } installed ? StatechartSkill.Validate(Path.GetFullPath(installed, caller), assets) : null
         };
     }

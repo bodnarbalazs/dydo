@@ -10,7 +10,10 @@ import { readConfig } from "../frontends/config.ts";
 import { type Checks, readChecks } from "../frontends/spec.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const skip = !process.env.TLA2TOOLS && "set TLA2TOOLS to the path of tla2tools.jar to run TLC";
+// ConfigOracle.java runs in Java's source-file mode, which only a JDK (jdk.compiler) provides.
+const skip = !process.env.TLA2TOOLS ? "set TLA2TOOLS to the path of tla2tools.jar to run TLC"
+  : !spawnSync(process.env.JAVA || "java", ["--list-modules"], { encoding: "utf8", windowsHide: true }).stdout?.includes("jdk.compiler@")
+    && "ConfigOracle.java needs a JDK: this Java has no source-file launcher (jdk.compiler)";
 const SEED = 1;
 const CONFIGS = 4000;
 const KEYWORDS =

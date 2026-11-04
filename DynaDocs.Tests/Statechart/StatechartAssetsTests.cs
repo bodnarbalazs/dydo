@@ -1,6 +1,8 @@
 namespace DynaDocs.Tests.Statechart;
 
+using System.Text.RegularExpressions;
 using DynaDocs.Services.Statechart;
+using DynaDocs.Utils;
 
 public class StatechartAssetsTests
 {
@@ -47,5 +49,24 @@ public class StatechartAssetsTests
         File.WriteAllText(target, "foreign sentinel");
         Assert.Throws<IOException>(() => assets.Extract(scope.Path));
         Assert.Equal("foreign sentinel", File.ReadAllText(target));
+    }
+
+    [Fact]
+    public void ThePayloadReleaseIsTheProductVersion()
+    {
+        Assert.Equal(DydoVersion.Current, new StatechartAssets().Release);
+    }
+
+    // Requests, receipts and the asset root take the release from the assets, never from a literal of their own.
+    [Fact]
+    public void NoStatechartSourceCarriesItsOwnReleaseLiteral()
+    {
+        var root = new DirectoryInfo(AppContext.BaseDirectory);
+        while (!File.Exists(Path.Combine(root.FullName, "DynaDocs.csproj"))) root = root.Parent!;
+        var literals = Directory.GetFiles(Path.Combine(root.FullName, "Services", "Statechart"), "*.cs")
+            .SelectMany(file => Regex.Matches(File.ReadAllText(file), "\"\\d+\\.\\d+\\.\\d+\"")
+                .Select(match => Path.GetFileName(file) + ": " + match.Value))
+            .ToArray();
+        Assert.Empty(literals);
     }
 }

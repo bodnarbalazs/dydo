@@ -3,6 +3,7 @@ namespace DynaDocs.Services.Statechart;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
+using DynaDocs.Utils;
 
 internal sealed class StatechartAssets
 {
@@ -10,6 +11,7 @@ internal sealed class StatechartAssets
     private readonly byte[] _manifest;
     public string Digest { get; }
     public string LockDigest { get; }
+    public string Release { get; }
 
     public StatechartAssets()
     {
@@ -19,6 +21,9 @@ internal sealed class StatechartAssets
         if (json.RootElement.GetProperty("schema").GetInt32() != 1 ||
             json.RootElement.GetProperty("protocol").GetInt32() != 1)
             throw new InvalidDataException("Unsupported statechart payload protocol.");
+        Release = json.RootElement.GetProperty("release").GetString()!;
+        if (Release != DydoVersion.Current)
+            throw new InvalidDataException($"Statechart payload release {Release} differs from dydo {DydoVersion.Current}.");
         LockDigest = json.RootElement.GetProperty("dependencyLockSha256").GetString()!;
         if (Hash(ReadResource("Statechart/lock.json")) != LockDigest)
             throw new InvalidDataException("Embedded statechart dependency lock does not match its payload.");
@@ -27,7 +32,7 @@ internal sealed class StatechartAssets
 
     public string Extract(string root)
     {
-        var versionRoot = Path.Combine(root, "3.5.1");
+        var versionRoot = Path.Combine(root, Release);
         StatechartPaths.EnsureDirectory(versionRoot);
         var target = Path.Combine(versionRoot, Digest);
         if (Directory.Exists(target))

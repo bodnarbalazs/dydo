@@ -22,8 +22,8 @@
     {
       "path": "skills/engineering/statechart/PROVENANCE.md",
       "resource": "Statechart/payload/skills/engineering/statechart/PROVENANCE.md",
-      "bytes": 4856,
-      "sha256": "21e3e1405ea2f0fa70fad1b1b461af61619447bc961f6d41c106e69f32fd1f91"
+      "bytes": 4984,
+      "sha256": "3ffdbd4adbbd68820d7af23c73000184ac66e4fc4a54578c14e372b40cbf12ff"
     },
     {
       "path": "skills/engineering/statechart/SKILL.md",
@@ -46,8 +46,8 @@
     {
       "path": "skills/engineering/statechart/references/runtime.md",
       "resource": "Statechart/payload/skills/engineering/statechart/references/runtime.md",
-      "bytes": 2848,
-      "sha256": "7709c7f220c41c9b77155f5daf155c6add137cae3ec94e1c82d3fe49b3d377aa"
+      "bytes": 2886,
+      "sha256": "4a407b700c52d65203b2f3b3417afa6af80838d50cb2caa89740c7037480cb3b"
     },
     {
       "path": "skills/engineering/statechart/scripts/backends/cfg.ts",
@@ -148,14 +148,14 @@
     {
       "path": "skills/engineering/statechart/scripts/java/build-lock.json",
       "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/build-lock.json",
-      "bytes": 4223,
-      "sha256": "abda92fd7cf036fac776cea58ee29bf9db2f378f006ed40503c2fc079744183f"
+      "bytes": 3191,
+      "sha256": "890ea4a9d1ea7692fc04852c6a604790afb5d8fa0b0ff3a981a349bfa7a8a42f"
     },
     {
       "path": "skills/engineering/statechart/scripts/java/readme.md",
       "resource": "Statechart/payload/skills/engineering/statechart/scripts/java/readme.md",
-      "bytes": 2120,
-      "sha256": "9eb99c8cebbdc36858a54787c8783b83db9ea66c083962055e2af72cfab24560"
+      "bytes": 2250,
+      "sha256": "9637e2a8b81b77a00184531d380e5e9f7b28a1fc52c9a0449e0fea9a6991884f"
     },
     {
       "path": "skills/engineering/statechart/scripts/java/statechart-tlc-bootstrap.jar",

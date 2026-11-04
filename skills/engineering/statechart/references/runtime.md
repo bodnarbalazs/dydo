@@ -29,7 +29,8 @@ normal approval mechanism; a blocked launch is not a proof.
 TLC runs through the loopback RMI bootstrap in `scripts/java/`, whose sealed identity is
 `scripts/java/build-lock.json`. A missing or changed helper fails the check; there is no
 raw TLC fallback. SANY parsing runs directly. The build-only JDK is not a runtime
-requirement. The helper is built but not yet runtime-validated.
+requirement. Through the helper, TLC listens only on `127.0.0.1`; raw TLC listens on
+every interface.
 
 ## Tests
 

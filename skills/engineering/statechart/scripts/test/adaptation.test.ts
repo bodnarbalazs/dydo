@@ -119,10 +119,15 @@ fi
 [ "$STATECHART_TEST_TOOLS" = present ] || [ -e "$STATECHART_TEST_READY" ] || exit 1
 if [ "$1" = where ]; then printf '%s\\n' "$STATECHART_TEST_JAR"; else printf '%s\\n' "$STATECHART_TEST_JAVA"; fi
 `, { mode: 0o755 });
+    // PATH holds only the fake mise, so the replay Java names Node by absolute path.
+    const replayJava = path.join(dir, "replay-java");
+    fs.writeFileSync(replayJava, `#!/bin/sh
+exec ${JSON.stringify(process.execPath)} ${JSON.stringify(path.resolve(import.meta.dirname, "java.ts"))} "$@"
+`, { mode: 0o755 });
     const env: NodeJS.ProcessEnv = { ...process.env, PATH: dir,
       STATECHART_TEST_TOOLS: tools, STATECHART_TEST_READY: path.join(dir, "ready"),
       STATECHART_TEST_JAR: toolsJar,
-      STATECHART_TEST_JAVA: path.resolve(import.meta.dirname, "java.ts"),
+      STATECHART_TEST_JAVA: replayJava,
       STATECHART_REPLAY: path.join(import.meta.dirname, "corpus/CounterJump") };
     delete env.JAVA;
     delete env.TLA2TOOLS;

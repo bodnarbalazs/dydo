@@ -18,7 +18,7 @@ public class StatechartSkillTests
         var payload = assets.Extract(scope.Path);
         var skill = Path.Combine(payload, "skills", "engineering", "statechart");
         var identity = new JsonObject { ["schema"] = 1, ["protocol"] = change == "protocol" ? 2 : 1,
-            ["release"] = "3.5.1", ["payload"] = change == "payload" ? "other" : assets.Digest, ["lock"] = assets.LockDigest };
+            ["release"] = assets.Release, ["payload"] = change == "payload" ? "other" : assets.Digest, ["lock"] = assets.LockDigest };
         if (change != "missing") File.WriteAllText(Path.Combine(skill, ".statechart-skill.json"), identity.ToJsonString());
         if (change == "source") File.AppendAllText(Path.Combine(skill, "SKILL.md"), "\nlocal edit");
         if (change == "valid") Assert.Equal(skill, StatechartSkill.Validate(skill, assets));

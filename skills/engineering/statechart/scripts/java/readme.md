@@ -29,7 +29,9 @@ release-11 classes. Runtime checks the jar against that identity before every TL
 
 ## Status
 
-The jar was built during the Windows-era run; that build and its review are recorded at
+On Linux with Temurin 21.0.8+9 and TLC 1.7.4, TLC run through this helper listens only
+on `127.0.0.1`, during a real `dydo statechart` check too, where raw `tlc2.TLC` listens
+on every interface. Two fresh builds with the pinned JDK match the shipped jar byte for
+byte. Both were checked on [DYD-415](https://linear.app/bodnar-balazs/issue/DYD-415);
+the Windows-era build record is at
 [67cd2127](https://github.com/bodnarbalazs/dydo/tree/67cd21278872679398479601b99d95125678b7cd/dydo/project/pitfalls/dyd-415-statechart-evidence).
-It is not runtime-validated. It stays only if a Linux check shows TLC's RMI listeners
-bound to `127.0.0.1` and the jar rebuilds byte-identically with the pinned JDK.

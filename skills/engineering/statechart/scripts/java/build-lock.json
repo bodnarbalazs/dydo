@@ -1,6 +1,5 @@
 {
   "schema": 1,
-  "status": "built-not-runtime-validated",
   "bytecodeMajor": 55,
   "sources": [
     {
@@ -30,9 +29,6 @@
     "archive": "OpenJDK21U-jdk_x64_linux_hotspot_21.0.8_9.tar.gz",
     "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.8_9.tar.gz",
     "archiveSha256": "f2dc5418092c43003db8f9005c4a286e1c0104fea96ccdd49e8ebd037cac9219",
-    "archiveVerified": true,
-    "executed": true,
-    "executionScope": "Build-only javac/jar in pinned Linux containment; no bootstrap/runtime validation",
     "files": {
       "release": "93b52921a5efb10ac0dcf9e3c955fa209fc83687df897d6ab034af967e2f5088",
       "bin/javac": "b8c1509bfd245eaf891fcf453c02871ce7e794263e8f3af7655082ffc68281b2",
@@ -91,17 +87,5 @@
   ],
   "buildRecipe": "build.py",
   "requiredFreshBuilds": 2,
-  "requiredIdenticalJarBytes": true,
-  "authority": "https://linear.app/bodnar-balazs/document/dyd-415-compiler-classpath-correction-and-runtime-manifest-dependency-ba29510412e1",
-  "buildProvenance": {
-    "preSealingBuildLockSha256": "ab5d4052b97eb06e43d050ded02bac16b47f87421c44e154228d974c3e86a028",
-    "buildRecipeSha256": "82939903e3774c3f29d4651541d170b301c100d60da4f1fde1faec471b1f38ea",
-    "twoFreshBuildsByteIdentical": true,
-    "classes": {
-      "dydo/statechart/LoopbackTlc.class": "fbd79015c3119fa948807af70e2ecd9d3a730dbf062c357309c28a4be8a36f4f",
-      "dydo/statechart/LoopbackSockets.class": "9e247b666ecea75caeeda73ba790d1a1cc95a7cf51404427accf18abca70306a"
-    },
-    "runtimeValidated": false,
-    "authority": "https://linear.app/bodnar-balazs/document/dyd-415-inspected-b1c-artifact-binding-and-finite-b2-source-checkpoint-52e50ff5ac1a"
-  }
+  "requiredIdenticalJarBytes": true
 }

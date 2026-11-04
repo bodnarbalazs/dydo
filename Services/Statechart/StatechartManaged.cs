@@ -26,7 +26,7 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
                 throw new IOException("Linked or oversized managed statechart receipt.");
             var identity = JsonNode.Parse(File.ReadAllBytes(receipt))!.AsObject();
             if (identity["schema"]?.GetValue<int>() != 1 || identity["protocol"]?.GetValue<int>() != 1 ||
-                identity["release"]?.GetValue<string>() != "3.5.1" ||
+                identity["release"]?.GetValue<string>() != assets.Release ||
                 identity["rid"]?.GetValue<string>() != rid || identity["payload"]?.GetValue<string>() != assets.Digest ||
                 identity["lock"]?.GetValue<string>() != assets.LockDigest || identity["integrity"]?.GetValue<string>() != item.Integrity ||
                 !JsonNode.DeepEquals(identity["files"], StatechartInventory.Capture(directory, ".ready.json")))
@@ -76,7 +76,7 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
         foreach (var item in _downloads.Where(item => installed.ContainsKey(item.Name)))
         {
             var component = Path.Combine(stage, item.Name);
-            var receipt = new JsonObject { ["schema"] = 1, ["protocol"] = 1, ["release"] = "3.5.1", ["rid"] = rid,
+            var receipt = new JsonObject { ["schema"] = 1, ["protocol"] = 1, ["release"] = assets.Release, ["rid"] = rid,
                 ["payload"] = assets.Digest, ["lock"] = assets.LockDigest, ["integrity"] = item.Integrity,
                 ["url"] = item.Url, ["setupUtc"] = DateTimeOffset.UtcNow.ToString("O"),
                 ["readiness"] = readiness.DeepClone(), ["files"] = StatechartInventory.Capture(component) };

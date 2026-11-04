@@ -38,11 +38,12 @@ Local changes:
 - Checker input must be the official TLC 1.7.4 jar by SHA-256. A `CommunityModules.jar`
   beside it is rejected as an unpinned dependency, and each run copies only the verified
   jar into owned scratch. Replay tests therefore need the real jar in `TLA2TOOLS` and
-  skip without it.
+  skip without it. The config-fuzz oracle runs in Java's source-file mode and skips on
+  a Java without a compiler, such as the managed JRE.
 - Original Balazs Bodnar MIT Java sources under `scripts/java/` route TLC through a
   loopback RMI socket bootstrap; SANY stays direct. TLC calls require the sealed helper
-  and never fall back to raw TLC. The helper is built but not runtime-validated; see
-  [its readme](scripts/java/readme.md).
+  and never fall back to raw TLC, whose listener would otherwise bind every interface;
+  see [its readme](scripts/java/readme.md).
 
 The Windows-era review and build records are at
 [67cd2127](https://github.com/bodnarbalazs/dydo/tree/67cd21278872679398479601b99d95125678b7cd/dydo/project/pitfalls/dyd-415-statechart-evidence).

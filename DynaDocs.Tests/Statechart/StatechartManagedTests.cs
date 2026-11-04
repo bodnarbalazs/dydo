@@ -54,17 +54,61 @@ public class StatechartManagedTests
         Assert.Empty(StatechartManaged.Missing(StatechartManaged.Combine(explicitSelection, managed)));
     }
 
+    // Another process holds the lock while it installs or re-stamps; a waiter creates and downloads nothing.
     [Fact]
-    public async Task ConcurrentInstallerLockRejectsBeforeCreatingStoreOrDownloading()
+    public async Task AnInstallWaitsForAnotherProcessesLockThenRescans()
     {
         using var scope = new StatechartTestDirectory();
-        var managed = Create(scope.Path);
+        var managed = new StatechartManaged(new StatechartHome(Path.Combine(scope.Path, "assets"),
+            Path.Combine(scope.Path, "dependencies"), Path.Combine(scope.Path, "state")), new StatechartAssets(), "win-x64", Unreachable());
+        var parent = Path.GetDirectoryName(managed.Root)!;
+        Directory.CreateDirectory(parent);
+        var held = new FileStream(Path.Combine(parent, "win-x64.install.lock"),
+            FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+        var selected = new StatechartDependencies("node", "java", "tlc", "pele");
+        var install = managed.InstallAsync(selected, Path.Combine(scope.Path, "unavailable-payload"), CancellationToken.None);
+        Assert.False(install.IsCompleted);
+        held.Dispose();
+        Assert.Equal(selected, await install);
+        Assert.False(Directory.Exists(managed.Root));
+        Assert.Empty(Directory.GetDirectories(parent));
+    }
+
+    // The components are fakes, so a verification after the wait would fail the run.
+    [Fact]
+    public async Task ARestampThatWaitedRescansAndFindsTheHoldersRestamp()
+    {
+        using var scope = new StatechartTestDirectory();
+        var assets = new StatechartAssets();
+        var (managed, jar) = Installed(scope.Path, release: "0.0.1", payload: "earlier-payload");
+        var held = new FileStream(Path.Combine(Path.GetDirectoryName(managed.Root)!, "win-x64.install.lock"),
+            FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+        var restamp = managed.RestampAsync(new(null, null, jar, null), Path.Combine(scope.Path, "unavailable-payload"), CancellationToken.None);
+        Assert.False(restamp.IsCompleted);
+        var receipt = Path.Combine(Path.GetDirectoryName(jar)!, ".ready.json");
+        var identity = JsonNode.Parse(File.ReadAllText(receipt))!.AsObject();
+        identity["release"] = assets.Release;
+        identity["payload"] = assets.Digest;
+        File.WriteAllText(receipt, identity.ToJsonString());
+        held.Dispose();
+        Assert.False(await restamp);
+        Assert.Empty(managed.Inspect().Stale);
+    }
+
+    [Fact]
+    public async Task CancellingAWaitingInstallLeavesNothingBehind()
+    {
+        using var scope = new StatechartTestDirectory();
+        var managed = new StatechartManaged(new StatechartHome(Path.Combine(scope.Path, "assets"),
+            Path.Combine(scope.Path, "dependencies"), Path.Combine(scope.Path, "state")), new StatechartAssets(), "win-x64", Unreachable());
         var parent = Path.GetDirectoryName(managed.Root)!;
         Directory.CreateDirectory(parent);
         using var held = new FileStream(Path.Combine(parent, "win-x64.install.lock"),
             FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
-        await Assert.ThrowsAsync<IOException>(() => managed.InstallAsync(new(null, null, null, null),
-            Path.Combine(scope.Path, "unavailable-payload"), CancellationToken.None));
+        using var cancel = new CancellationTokenSource();
+        var install = managed.InstallAsync(new(null, null, null, null), Path.Combine(scope.Path, "unavailable-payload"), cancel.Token);
+        await cancel.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => install);
         Assert.False(Directory.Exists(managed.Root));
         Assert.Empty(Directory.GetDirectories(parent));
         Assert.Single(Directory.GetFiles(parent));

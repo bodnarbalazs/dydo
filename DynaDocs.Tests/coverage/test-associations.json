@@ -1621,6 +1621,10 @@
       "tests": ["DynaDocs.Tests/Statechart/StatechartRequestsTests.cs", "DynaDocs.Tests/Statechart/StatechartInventoryTests.cs"]
     },
     {
+      "module": "Services/Statechart/StatechartLock.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartLockTests.cs", "DynaDocs.Tests/Statechart/StatechartManagedTests.cs"]
+    },
+    {
       "module": "Services/Statechart/StatechartLinks.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartArchiveTests.cs", "DynaDocs.Tests/Statechart/StatechartInventoryTests.cs"]
     },

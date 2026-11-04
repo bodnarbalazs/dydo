@@ -20,12 +20,12 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
 
     public async Task<StatechartDependencies> InstallAsync(StatechartDependencies selected, string payload, CancellationToken token)
     {
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
-        deadline.CancelAfter(TimeSpan.FromMinutes(10));
         var parent = Path.GetDirectoryName(Root)!;
         StatechartPaths.EnsureDirectory(parent);
-        using (Lock(parent))
+        using (await Lock(parent, token))
         {
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
+            deadline.CancelAfter(TimeSpan.FromMinutes(10));
             SweepStages(parent);
             var state = Scan();
             selected = Combine(selected, state.Dependencies);
@@ -59,16 +59,20 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
         return Combine(selected, Read());
     }
 
-    // An update that kept the lock: prove the verified install with this payload, then re-stamp it.
-    public async Task RestampAsync(StatechartDependencies selected, string payload, CancellationToken token)
+    // An update that kept the lock: prove the verified install with this payload, then re-stamp it. False when
+    // the scan under the lock finds nothing stale, such as after waiting for another run's re-stamp.
+    public async Task<bool> RestampAsync(StatechartDependencies selected, string payload, CancellationToken token)
     {
         var parent = Path.GetDirectoryName(Root)!;
-        using (Lock(parent))
+        using (await Lock(parent, token))
         {
-            var state = Scan();
+            _state = null;
+            var state = Inspect();
+            if (state.Stale.Length == 0) return false;
             var readiness = await StatechartReady.VerifyAsync(Combine(selected, state.Dependencies), payload, home, full: true, token);
             foreach (var name in state.Stale) Restamp(Path.Combine(Root, name), parent, readiness);
             _state = null;
+            return true;
         }
     }
 
@@ -176,8 +180,8 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
         File.Move(temp, path, overwrite: true);
     }
 
-    private FileStream Lock(string parent) =>
-        new(Path.Combine(parent, rid + ".install.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+    private Task<FileStream> Lock(string parent, CancellationToken token) =>
+        StatechartLock.AcquireAsync(Path.Combine(parent, rid + ".install.lock"), token);
 
     // Runs under the install lock, so no other install for this RID still uses these stages.
     private void SweepStages(string parent)

@@ -57,8 +57,8 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
     // An install verified under an earlier release or payload is re-stamped; a current one gets the quick check.
     private async Task ReadyAsync(StatechartManaged managed, StatechartDependencies dependencies, string payload, CancellationToken token)
     {
-        if (managed.Inspect().Stale.Length != 0) await managed.RestampAsync(dependencies, payload, token);
-        else await StatechartReady.VerifyAsync(dependencies, payload, home, full: false, token);
+        if (managed.Inspect().Stale.Length == 0 || !await managed.RestampAsync(dependencies, payload, token))
+            await StatechartReady.VerifyAsync(dependencies, payload, home, full: false, token);
     }
 
     private JsonObject Plan(StatechartRequest request, string path, StatechartDependencies dependencies, StatechartManaged managed)

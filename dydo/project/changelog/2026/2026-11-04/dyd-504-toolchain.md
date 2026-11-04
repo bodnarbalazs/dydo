@@ -6,7 +6,151 @@ date: 2026-11-04
 
 # DYD-504 toolchain modernization
 
-## Distribution successor — current disposition, 2026-11-04
+## Round-one fix successor — 2026-11-04
+
+This section supersedes the Python inheritance claims in the retained hops.
+The combined Claude/Codex FAIL against `dbd16297d1feac0512bf28b4be5448642fc3dc36`
+is binding. B1 is repaired and proved locally; B2 remains an acceptance blocker.
+No threshold, exclusion, tier or native-Windows claim changed. No comparable
+coverage measurement of original base `42882830292f44133f796ee3d152cb446ea4091f`
+exists in this evidence. Replaying our own `43a016ba` hop and comparing source
+bodies cannot establish inheritance.
+
+All five pre-edit checks passed: the specified ticket branch and isolated root,
+the exact parent HEAD, original base ancestry, an empty status, and owned paths.
+`pre-edit.json` records those observations. This hop changes only the two coverage
+runner modules, their three reached Python test files, and this proof index.
+`owned_process.py`, guard/product code, DYD-507 tests, runtime pins and dependencies
+are unchanged. No installs, global defaults, children, branch switch, merge, push,
+PR, tag, release or publication were performed.
+
+### Cancellation repair and reproduction
+
+The adapter forwards interruption to its separately grouped campaign, defers
+repeat interrupts during bounded cleanup, waits for the owner, and escalates
+within the facade's cleanup allowance. On Linux the adapter is a subreaper so
+detached descendants of a forcibly terminated owner remain reachable. Cleanup
+targets its own descendants. Windows keeps CTRL_BREAK forwarding and its native
+owner; the adapter now installs the corresponding Python interrupt handler.
+An owner cancellation with confirmed cleanup retains its published evidence and
+returns 130. A campaign's own exit 130 survives the adapter unchanged.
+
+The original reviewer probe, with only source/evidence paths adapted, reproduced
+adapter exit -2, live owner and subject, and no receipt on the parent. Its strict
+successor replay stops with `ProcessLookupError` because its observation assumes
+the owner still exists; that replay is retained and is not labeled a passing test.
+The permanent equivalent regression observes absent processes correctly and also
+tests a detached descendant, the real facade, direct owner interruption, a direct
+campaign interruption, forced escalation, and an unrelated sibling process.
+All five entries return 130, leave no live owned process, and preserve the sibling.
+Cooperative entries retain `cleanup_confirmed: true` receipts. Forced escalation
+has no fabricated owner receipt. A parent-source overlay makes the regression red
+(including owner exit 2); restoring the successor makes it green. Full original,
+overlay and successor output and observer recipes are retained.
+
+### Portable validation and remaining scope
+
+Eight existing platform-neutral owner tests now execute on Linux, plus a new
+valid-request/deadline case. Only the reported OS identity is replaced at the OS
+boundary for these validation tests; no Win32 API is simulated and no native
+containment proof is claimed. Real Win32 execution stays Windows-specific.
+The reviewed in-process failure fixture now stubs containment so it cannot turn
+the shared unittest process into a subreaper.
+
+| Final evidence | Exit | Observation |
+|---|---|---|
+| `captain-recipe` | 0 | 16 focused tests, no skips; five native cancellation entries |
+| `final-python-static` | 0 | Zero findings and gaps; final executable inputs |
+| Python coverage suite | 0 | 632 cases: 580 passes, 52 skips, zero failures |
+| Python coverage policy | 1 | 18 threshold findings, zero gaps |
+| .NET coverage | 1 | 3,596 passes, exactly three DYD-507 failures, no skips; one functional finding, zero gaps |
+| Node coverage | 0 | 91 passes, one Windows skip; thresholds pass |
+| Viewer coverage | 0 | 389 passes, no skips; thresholds pass |
+| Four-stack coverage aggregate | 1 | Above failed rows remain failed |
+
+The .NET owner records complete execution and confirmed Linux subreaper cleanup;
+its snapshot is removed and deregistered. Functional failures prevent a passing
+.NET threshold claim. The source-pinned final facade receipt is
+`results/run-1793797383164-ab4aaf9d/result.json`; final Python static is
+`results/run-1793797654422-51a8372c/result.json`.
+
+Remaining B2 findings, at unchanged 80% line / 60% branch / HCRAP 20:
+
+| Module | Remaining measurements |
+|---|---|
+| `run_tests.py` | `_end_job_members` HCRAP 44 (one finding) |
+| `windows_job.py` | Line 31.0541%, branch 18.9655%; 11 HCRAP findings below (13 total) |
+| `skills/engineering/verify-dydo/scripts/owned_process.py` | Line 17.9487%, branch 0%; `supervise` HCRAP 29 and `run_owned` 55 (four total) |
+
+Windows-owner HCRAP findings are `members` 33, `retain_members` 32, `poll_pipe` 47,
+`close_pipe` 43, `make_pipe` 22, `pipes` 29, `launch` 40, `finish` 236,
+`wait_campaign` 92, `supervise` 41 and `native_run` 31. The validation finding
+(previously 239.792) is gone. Every changed production method meets HCRAP and
+cognitive limits; no new threshold finding was introduced. Exact floating-point
+measurements and member identities are in `summaries/python-coverage.json`.
+
+B2 needs native Windows execution and an explicit admiral/DR disposition for the
+unchanged per-module policy on a Linux run. Production changes to the verification
+driver's `owned_process.py` still need ownership expansion. These failures are
+not attributed to the base and are not covered by DYD-507's narrow disposition.
+
+Severity dispositions: B1 repaired locally, with native Windows/hosted CI still
+owed; B2 open. Should DYD-514 remains separate: `run_tests()` final cleanup and the
+owner's unconfirmed-cleanup classification are unchanged. This hop does not claim
+to fix it. N3's in-process fixture mutation is addressed. N4's requested-budget
+and category mismatch, N5's README/npm prerequisites, and N6's AOT-only alternative
+assessment remain deferred to their owners; no scope or severity was silently changed.
+
+### Evidence identity and captain recipe
+
+New persistent evidence is under
+`DynaDocs.Tests/coverage/results/dyd-504-fix-round1/`. The local hook refused direct
+access to `dydo/_system/**` despite the brief's authorization, so original archives
+remain untouched there; the reviewer's existing `/tmp` copy supplied the original
+probe. `commands.tar.gz`, `gate-results.tar.gz` and checked `SHA256SUMS` preserve
+the new full logs, source patches/hashes, commands, actual exits, environments,
+raw receipts and original reviewer files. `commit.json` binds the final candidate.
+
+The initial sandbox runs are diagnostic only: shared Git metadata was read-only
+and a sandbox-only empty `/tmp/.git` redirected facade fixtures. They were stopped
+with raw exits 130 and -2. The host preflight passed before the corrected runs.
+The only executable-input delta after the .NET campaign snapshot was the final
+Python owner-test file. `input-compatibility.json` records both hashes and changed
+function identities. The .NET snapshot contains final runner/adapter bytes and
+unchanged C# inputs; final Python coverage/static inventories contain the final
+test bytes. The ordinary 631-case Python run predates those last additions; the
+final coverage producer supplies the final suite verdict. Only this proof index
+changes after the final executable-input freeze.
+
+Parent build and .NET/Node/viewer static receipts remain credited only for their
+unchanged measured sources, configuration, dependency and runtime inputs, with
+the comparison recorded. They are not newly executed results. All four coverage
+rows were rerun because the shared cancellation adapter changed. Mutation remains
+unavailable under the existing manifest; hosted CI, native Windows, captain rerun
+and fresh independent review remain captain obligations.
+
+Run from this worktree with the installed dependencies and host filesystem access
+(the native facade fixtures need isolated Git worktree creation):
+
+```bash
+PYTHONPATH=DynaDocs.Tests/coverage/tests dydo/_system/.local/static-gates/python/bin/python -m unittest \
+  test_gate_adapter.CoverageCancellationTests \
+  test_gate_adapter.GateAdapterTests.test_coverage_subprocess_gets_one_remaining_timeout_and_cooperative_cleanup \
+  test_gate_adapter.GateAdapterTests.test_coverage_subprocess_force_terminates_after_cleanup_budget \
+  test_runner.LinuxCampaignTests \
+  test_windows_job.WindowsJobContractTests \
+  test_windows_job.WindowsJobPlatformTests
+```
+
+This recipe exercises native cancellation and detached cleanup, deadline cleanup,
+Linux owner completion/failure and portable validation. Full gate commands and
+per-row raw receipts are in the named command directories. No self-review PASS
+is claimed.
+
+code-writer/model: gpt-6-astra (high).
+
+
+## Distribution successor — retained disposition, 2026-11-04
 
 This section supersedes the runtime-install blocker and final-.NET-work statements
 in the retained hops below. The captain completed DYD-513: Microsoft.NETCore.App
@@ -122,8 +266,8 @@ of the old mixed facade runs are reused, never their failed aggregate. Current
 .NET static plus those compatible rows account for the static obligation; the
 full four-stack facade was not rerun redundantly.
 
-**Python coverage still fails with exactly 19 inherited threshold findings and
-zero gaps, exit 1.** The checksum-verified replay on 43a016ba and byte-identical
+**That hop failed Python coverage with 19 threshold findings and zero gaps,
+exit 1. Inheritance was unproven and is withdrawn.** The checksum-verified replay on 43a016ba and byte-identical
 flagged-method comparison to 42882830 remain in `recovery/`. No threshold,
 exclusion, waiver or policy changed. The captain/admiral owns this unresolved
 blocker; DYD-507's exception does not cover it. Coverage overall remains failed.
@@ -238,14 +382,15 @@ The complete findings are in the Python adapter report. These are not measuremen
 gaps and are not covered by DYD-507. Owner for routing/disposition: the DYD-504
 captain; no broader verification-driver redesign was authorized to this writer.
 
-Attribution evidence: `retained-python-coverage/threshold-diagnostic.json` replays
+Historical diagnostic, not base attribution: `retained-python-coverage/threshold-diagnostic.json` replays
 the unchanged join and policy against the checksum-verified retained raw coverage
 for commit 43a016ba, validating every measured Python source/counter hash. It
 produces the identical 19 findings; the old functional failure had prevented
 the normal gate from reaching threshold evaluation. This diagnostic is not a gate
 pass. `coverage-finding-source-comparison.json` additionally proves every flagged
 method byte-identical to original base 42882830 and the entire `owned_process.py`
-file unchanged. No thresholds, exclusions or native-Windows assertions were weakened.
+file unchanged. Neither establishes comparable base coverage or inheritance.
+No thresholds, exclusions or native-Windows assertions were weakened.
 
 DYD-507 owns exactly the three lifecycle failures recorded below. Its live issue
 was read during this hop: the admiral permits individual feature merges with those
@@ -272,7 +417,7 @@ worktree; they do not overwrite either old archive.
 | `viewer-stable-static` | 0 | Viewer static, zero findings/gaps |
 | `independent-coverage` | 1 | Node passes 91, one Windows skip; initial viewer environment failure superseded |
 | `viewer-stable-coverage` | 0 | Viewer 389 pass; coverage thresholds pass, zero findings/gaps |
-| `python-stable-coverage` | 1 | 630 tests, zero failures, 60 platform skips; 19 inherited thresholds, zero gaps |
+| `python-stable-coverage` | 1 | 630 tests, zero failures, 60 platform skips; 19 thresholds (inheritance unproven), zero gaps |
 | `patched-dydo-launch`, `patched-test-child-launch` | 150 | Missing Microsoft.NETCore.App 10.0.14 x64 |
 
 Only the successful Python/Node rows of the mixed facade runs are reused, never

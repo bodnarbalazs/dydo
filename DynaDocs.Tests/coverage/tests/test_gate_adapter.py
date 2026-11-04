@@ -20,6 +20,99 @@ from gate_adapter import _target_paths, publish
 TOOLS = Path(__file__).resolve().parents[1]
 STATIC_PYTHON = TOOLS.parents[1] / STATIC_GATE_INTERPRETER
 
+# This supervisor owns only its scratch process tree, including failed red probes.
+# A FIFO readiness message makes cancellation land after the detached subject exists.
+CANCELLATION_PROBE = r'''
+import json, os, select, shutil, signal, subprocess, sys, tempfile
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+import run_tests
+tools, mode = Path(sys.argv[1]), sys.argv[2]
+containment = run_tests.contain_descendants()
+with tempfile.TemporaryDirectory() as folder:
+    root = Path(folder)
+    subprocess.run(['git', 'init', '--quiet', str(root)], check=True)
+    fifo = root / 'ready'
+    os.mkfifo(fifo)
+    ready = os.open(fifo, os.O_RDWR | os.O_NONBLOCK)
+    descendant = "import os,signal; signal.signal(signal.SIGINT,signal.SIG_IGN); print(os.getpid(),flush=True); signal.pause()"
+    subject = root / 'DynaDocs.Tests/coverage/csharp_coverage.py'
+    subject.parent.mkdir(parents=True)
+    subject.write_text("import os,signal,subprocess,sys\n"
+        "child=subprocess.Popen([sys.executable,'-c',"+repr(descendant)+"],stdout=subprocess.PIPE,text=True,start_new_session=True)\n"
+        "pid=child.stdout.readline().strip()\n"
+        "with open('ready','w') as ready: ready.write(str(os.getpid())+' '+pid+'\\n')\n"
+        "signal.pause()\n")
+    owner = root / 'owner.py'
+    owner.write_text("import os,sys; from pathlib import Path; sys.path.insert(0,"+repr(str(tools))+"); import run_tests; "
+        "Path('owner-pid').write_text(str(os.getpid())); "
+        + ("import signal; signal.signal(signal.SIGINT, signal.SIG_IGN); " if mode == 'escalation' else '') +
+        "raise SystemExit(run_tests._run_assurance_campaign(Path.cwd(), [], str(Path('published').resolve())))")
+    command = [sys.executable, str(owner)]
+    if mode != 'owner':
+        adapter = root / 'adapter.py'
+        adapter.write_text("import sys; sys.path.insert(0,"+repr(str(tools))+"); import gate_adapter; "
+            + ("gate_adapter.CLEANUP_SECONDS = 0.1; " if mode == 'escalation' else '') +
+            "raise SystemExit(gate_adapter.run_coverage_command("+repr(command)+", '.'))")
+        command = [sys.executable, str(adapter)]
+    if mode == 'facade':
+        shutil.copyfile(tools / 'gap_check.py', root / 'gap_check.py')
+        caps = {name: {'state':'unavailable','reason':'fixture'} for name in ('test','static','mutation')}
+        caps['coverage'] = {'state':'configured','command':{'kind':'argv','argv':command},
+                            'artifacts':[{'path':'published/identities.json','required':True}]}
+        manifest = {'schema':1,'artifactRoot':'results','stacks':[{'name':'dotnet','kind':'fixture','cwd':'.',
+            'isolation':{'requirement':'in-place','evidence':{'state':'verified','kind':'direct'}},'capabilities':caps}]}
+        (root / 'gap_check.json').write_text(json.dumps(manifest))
+        command = [sys.executable, str(root / 'gap_check.py'), 'gate', 'coverage']
+    child = subprocess.Popen(command, cwd=root, start_new_session=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    foreign = subprocess.Popen([sys.executable, '-c', 'import signal; signal.pause()'], start_new_session=True)
+    try:
+        if not select.select([ready], [], [], 10)[0]:
+            raise RuntimeError(('campaign never became ready', child.poll(), child.communicate(timeout=1)))
+        pids = [int(item) for item in os.read(ready, 1024).split()]
+        pids.append(int((root / 'owner-pid').read_text()))
+        os.killpg(pids[-1] if mode == 'campaign' else child.pid, signal.SIGINT)
+        stdout, stderr = child.communicate(timeout=10)
+        def state(pid):
+            fields = run_tests._stat_fields(str(pid))
+            return fields[1] if fields else 'absent'
+        answer = {'exit':child.returncode, 'states':[state(pid) for pid in pids],
+                  'stdout':stdout.decode(), 'stderr':stderr.decode(), 'foreign_alive':foreign.poll() is None}
+        receipt = root / 'published/identities.json'
+        answer['campaign'] = json.loads(receipt.read_text())['campaign'] if receipt.exists() else None
+        if mode == 'facade':
+            answer['facade'] = json.loads(next((root / 'results').glob('*/result.json')).read_text())
+        print(json.dumps(answer))
+    finally:
+        os.close(ready)
+        run_tests.end_descendants(containment)
+        child.wait(timeout=5)
+        foreign.wait(timeout=5)
+'''
+
+
+@unittest.skipUnless(sys.platform == "linux", "Native Linux campaign cancellation")
+class CoverageCancellationTests(unittest.TestCase):
+    def test_cancellation_preserves_receipts_and_ends_detached_descendants_through_each_entry(self):
+        for entry in ("adapter", "owner", "facade", "escalation", "campaign"):
+            with self.subTest(entry=entry):
+                probe = subprocess.run([sys.executable, "-c", CANCELLATION_PROBE, str(TOOLS), entry],
+                                       capture_output=True, text=True, timeout=25)
+                self.assertEqual(0, probe.returncode, probe.stderr)
+                observed = json.loads(probe.stdout)
+                self.assertEqual(130, observed["exit"], observed)
+                self.assertTrue(all(state in ("absent", "Z") for state in observed["states"]), observed)
+                self.assertTrue(observed["foreign_alive"], observed)
+                if entry == "escalation":
+                    self.assertIsNone(observed["campaign"], observed)
+                    continue
+                self.assertTrue(observed["campaign"]["cleanup_confirmed"], observed)
+                self.assertFalse(observed["campaign"]["complete"], observed)
+                self.assertEqual("KeyboardInterrupt", observed["campaign"]["failure_category"])
+                if entry == "facade":
+                    self.assertEqual(130, observed["facade"]["aggregateExit"])
+                    self.assertEqual(130, observed["facade"]["results"][0]["childExit"])
+
 PYTHON_TARGET = "def add(left, right):\n    return left + right\n"
 PYTHON_SUITE = ("import unittest\n\n\n"
                 "class AddTests(unittest.TestCase):\n"
@@ -215,11 +308,12 @@ class GateAdapterTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"DYDO_ROW_DEADLINE": "150"}), \
                 mock.patch.object(gate_adapter.time, "monotonic", side_effect=[100, 120]), \
                 mock.patch.object(gate_adapter.os, "killpg", create=True) as killpg, \
+                mock.patch("run_tests.contain_descendants", return_value=None), \
                 mock.patch.object(gate_adapter.subprocess, "Popen", return_value=child) as popen:
             with self.assertRaisesRegex(gate_adapter.MeasurementTimeout, "deadline"):
                 gate_adapter.run_coverage_command(["campaign"], Path.cwd())
         self.assertEqual(20, child.wait.call_args_list[0].kwargs["timeout"])
-        self.assertEqual(30, child.wait.call_args_list[1].kwargs["timeout"])
+        self.assertEqual(10, child.wait.call_args_list[1].kwargs["timeout"])
         if sys.platform == "win32":
             child.send_signal.assert_called_once_with(signal.CTRL_BREAK_EVENT)
             killpg.assert_not_called()
@@ -241,6 +335,7 @@ class GateAdapterTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"DYDO_ROW_DEADLINE": "150"}), \
                 mock.patch.object(gate_adapter.time, "monotonic", side_effect=[100, 120]), \
                 mock.patch.object(gate_adapter.os, "killpg", create=True) as killpg, \
+                mock.patch("run_tests.contain_descendants", return_value=None), \
                 mock.patch.object(gate_adapter.subprocess, "Popen", return_value=child):
             with self.assertRaisesRegex(gate_adapter.MeasurementTimeout, "deadline"):
                 gate_adapter.run_coverage_command(["campaign"], Path.cwd())

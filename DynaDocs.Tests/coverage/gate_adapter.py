@@ -33,31 +33,52 @@ class MeasurementTimeout(ValueError):
 
 
 def run_coverage_command(argv, cwd):
+    from run_tests import contain_descendants, defer_interruption
     deadline_text = os.environ.get(ROW_DEADLINE_ENV)
     deadline = float(deadline_text) if deadline_text is not None else None
     timeout = None if deadline is None else max(0, deadline - time.monotonic() - CLEANUP_SECONDS)
+    containment = contain_descendants() if sys.platform == "linux" else None
     child = subprocess.Popen(argv, cwd=cwd,
                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
                              start_new_session=sys.platform != "win32")
     try:
-        return child.wait(timeout=timeout)
-    except subprocess.TimeoutExpired as error:
+        status = child.wait(timeout=timeout)
+    except (subprocess.TimeoutExpired, KeyboardInterrupt) as error:
+        # Leave time inside the facade's cleanup window for forced descendant cleanup.
+        remaining = CLEANUP_SECONDS if deadline is None else max(0, deadline - time.monotonic())
         try:
-            if sys.platform == "win32":
-                child.send_signal(signal.CTRL_BREAK_EVENT)
-            else:
-                os.killpg(child.pid, signal.SIGINT)
-            child.wait(timeout=max(0, deadline - time.monotonic()))
-        except (OSError, subprocess.TimeoutExpired):
-            if sys.platform == "win32":
-                child.kill()
-            else:
-                try:
-                    os.killpg(child.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-            child.wait()
+            with defer_interruption():
+                _stop_coverage_campaign(child, min(remaining, CLEANUP_SECONDS) / 3, containment)
+        except KeyboardInterrupt:
+            raise SystemExit(130) from None
+        if isinstance(error, KeyboardInterrupt):
+            raise SystemExit(130) from None
         raise MeasurementTimeout("coverage campaign exceeded row deadline after owned cleanup") from error
+    if status == 130:
+        raise SystemExit(130)
+    return status
+
+
+def _stop_coverage_campaign(child, seconds, containment):
+    from run_tests import end_descendants
+    try:
+        if sys.platform == "win32":
+            child.send_signal(signal.CTRL_BREAK_EVENT)
+        else:
+            os.killpg(child.pid, signal.SIGINT)
+        child.wait(timeout=seconds)
+    except (OSError, subprocess.TimeoutExpired):
+        if sys.platform == "win32":
+            child.kill()
+        else:
+            try:
+                os.killpg(child.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        child.wait(timeout=5)
+    finally:
+        # A killed Linux owner can leave detached children adopted by this adapter.
+        end_descendants(containment)
 
 
 def _sha256(path):
@@ -636,6 +657,8 @@ def collect_coverage(root, output, stack, inventory):
 
 
 def main():
+    if sys.platform == "win32":
+        signal.signal(signal.SIGBREAK, signal.default_int_handler)
     parser = argparse.ArgumentParser()
     parser.add_argument("--gate", choices=("static", "coverage"), required=True)
     parser.add_argument("--stack", choices=("dotnet", "python", "node", "viewer"), required=True)

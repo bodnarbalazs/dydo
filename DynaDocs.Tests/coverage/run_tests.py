@@ -700,6 +700,8 @@ def _run_assurance_campaign(worktree, extra_args, assurance_output):
                                    execution_seconds=1800, teardown_seconds=10),
                            isolated_environment())
     _publish_assurance(worktree, result_root, owner_output, assurance_output, owner_result)
+    if owner_result.get("failure_category") == "KeyboardInterrupt" and owner_result.get("cleanup_confirmed"):
+        return 130
     if not owner_result.get("complete") or not owner_result.get("cleanup_confirmed"):
         return 2
     return owner_result.get("subject_status") if type(owner_result.get("subject_status")) is int else 2

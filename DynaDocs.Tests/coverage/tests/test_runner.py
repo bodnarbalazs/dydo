@@ -507,7 +507,8 @@ class LinuxCampaignTests(unittest.TestCase):
         for failure in cases:
             with self.subTest(failure=type(failure).__name__), tempfile.TemporaryDirectory() as folder:
                 root = Path(folder)
-                with patch.object(subprocess, "run", side_effect=failure):
+                with patch.object(run_tests, "contain_descendants", return_value=None), \
+                     patch.object(subprocess, "run", side_effect=failure):
                     result = run_tests._run_linux_campaign(["subject"], root, root / "owner")
                 self.assertFalse(result["complete"])
                 self.assertTrue(result["cleanup_confirmed"])
@@ -515,7 +516,8 @@ class LinuxCampaignTests(unittest.TestCase):
                 self.assertIsNone(result["subject_status"])
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
-            with patch.object(run_tests, "end_descendants", side_effect=TimeoutError("still live")):
+            with patch.object(run_tests, "contain_descendants", return_value=None), \
+                 patch.object(run_tests, "end_descendants", side_effect=TimeoutError("still live")):
                 result = run_tests._run_linux_campaign(
                     [sys.executable, "-c", "pass"], root, root / "owner")
             self.assertFalse(result["complete"])

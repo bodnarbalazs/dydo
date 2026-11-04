@@ -22,8 +22,8 @@
     {
       "path": "skills/engineering/statechart/PROVENANCE.md",
       "resource": "Statechart/payload/skills/engineering/statechart/PROVENANCE.md",
-      "bytes": 4984,
-      "sha256": "3ffdbd4adbbd68820d7af23c73000184ac66e4fc4a54578c14e372b40cbf12ff"
+      "bytes": 5351,
+      "sha256": "11e7d4fc0ec6813fd73fefd8b141a5adb9ee0b6886f03c090d01210b57fb1c64"
     },
     {
       "path": "skills/engineering/statechart/SKILL.md",
@@ -46,8 +46,8 @@
     {
       "path": "skills/engineering/statechart/references/runtime.md",
       "resource": "Statechart/payload/skills/engineering/statechart/references/runtime.md",
-      "bytes": 3090,
-      "sha256": "474feeeddc98b1f72f3218a2cc684c9c0479515776b6c2693424d1e8ba805c93"
+      "bytes": 3082,
+      "sha256": "7f607f2e9f0f9a5dfeaab6e463d18e66d04caf3c5d94ec7fd4e6555c28bcbc08"
     },
     {
       "path": "skills/engineering/statechart/scripts/backends/cfg.ts",
@@ -178,8 +178,8 @@
     {
       "path": "skills/engineering/statechart/scripts/package.json",
       "resource": "Statechart/payload/skills/engineering/statechart/scripts/package.json",
-      "bytes": 254,
-      "sha256": "42369abae6761079df8c2ea75068992b0449a7db0bc63160c079c623175bb448"
+      "bytes": 303,
+      "sha256": "2893c9da47ecb8977f6100101b65e6a896cd808698666d7995d0e3265d12e9af"
     },
     {
       "path": "skills/engineering/statechart/scripts/passes/annotate.ts",

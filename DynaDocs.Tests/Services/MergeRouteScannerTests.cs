@@ -177,7 +177,8 @@ public class MergeRouteScannerTests
     [InlineData(new[] { "git", "push", "origin", "HEAD:main" }, "Push")]
     [InlineData(new[] { "eval", "gh pr merge 5" }, "Merge")]
     [InlineData(new[] { "timeout", "10", "gh", "pr", "merge", "5" }, "Merge")]
-    [InlineData(new[] { "nohup", "gh pr merge 5" }, "Merge")]
+    [InlineData(new[] { "nohup", "gh", "pr", "merge", "5" }, "Merge")]
+    [InlineData(new[] { "env", "gh", "pr", "merge", "5" }, "Merge")]
     public void Argv_IsReadAsItRuns(string[] argv, string kind)
     {
         Assert.Equal(kind, Assert.Single(PrCallScanner.FindMergeRoutesInArgv(argv)).Kind.ToString());
@@ -197,11 +198,26 @@ public class MergeRouteScannerTests
         Assert.All(lookAlikes, argv => Assert.Empty(PrCallScanner.FindMergeRoutesInArgv(argv)));
     }
 
+    // Another program's words are its data, as a shell reads them: no route, whatever they spell.
     [Fact]
-    public void ArgvOfAnotherProgram_ReadsEachWordAsALine()
+    public void ArgvOfAnotherProgram_TakesNoRoute()
     {
-        var routes = PrCallScanner.FindMergeRoutesInArgv(["echo", "git push origin x", "git push origin HEAD:main"]);
+        string[][] dataWords =
+        [
+            ["grep", "-rn", "gh pr merge", "."],
+            ["echo", "git push origin x", "git push origin HEAD:main"],
+            ["nohup", "gh pr merge 5"],
+        ];
 
-        Assert.Equal(["x", "main"], routes.Select(r => r.Destination));
+        Assert.All(dataWords, argv => Assert.Empty(PrCallScanner.FindMergeRoutesInArgv(argv)));
+        Assert.All(dataWords, argv => Assert.Empty(PrCallScanner.FindMergeRoutes(string.Join(' ', argv.Select(w => $"'{w}'")))));
+    }
+
+    // The PR check's bare-argv rule (admiral ruling 2026-10-27) is its own and stays: there another
+    // program's word that reads as a PR call is still refused as a wrapper's.
+    [Fact]
+    public void PrCheckBareArgvRule_IsUnchanged()
+    {
+        Assert.Equal("grep", Assert.Single(PrCallScanner.FindInArgv(["grep", "-rn", "gh pr create", "."])).Wrapper);
     }
 }

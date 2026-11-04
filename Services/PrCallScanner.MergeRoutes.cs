@@ -10,8 +10,8 @@ using System.Text.RegularExpressions;
 /// graphql</c> with a field naming mergePullRequest, enablePullRequestAutoMerge or mergeBranch;
 /// <c>gh repo edit --default-branch</c>, or a <c>gh api</c> PATCH of <c>repos/OWNER/REPO</c> with a
 /// default_branch field; and every <c>git push</c>, one route per branch it updates. A wrapper's
-/// command string, and any word of a non-gh, non-git argv array, is read the same way and its routes
-/// are the line's. An encoded command or nesting past the limit is left to the PR check, which
+/// command string is read the same way and its routes are the line's; another program's arguments,
+/// in a shell line or a bare argv array alike, are data. An encoded command or nesting past the limit is left to the PR check, which
 /// refuses it unread in a git tree. A GraphQL query or API body read from a file or stdin is not read.
 /// </summary>
 internal static partial class PrCallScanner
@@ -34,19 +34,11 @@ internal static partial class PrCallScanner
 
     /// <summary>
     /// The merge routes an argv array takes: Codex's shell envelope runs its script as a direct line,
-    /// any other array runs its first word, and any other program's words are read as lines.
+    /// and any other array runs as one command, its program's arguments data unless it is a wrapper,
+    /// as a shell would read the same words. (The PR check's bare-argv rule is stricter; see FindInArgv.)
     /// </summary>
-    public static List<MergeRoute> FindMergeRoutesInArgv(IReadOnlyList<string> argv)
-    {
-        if (argv.Count == 0)
-            return [];
-        if (CommandPosition.Envelope(argv) is { } envelope)
-            return FindMergeRoutes(envelope.Text, envelope.Dialect);
-        var routes = RoutesOf(argv, 0);
-        return routes.Count > 0 || CommandPosition.ProgramName(argv[0]) is "gh" or "git"
-            ? routes
-            : [.. argv.Skip(1).SelectMany(word => ScanRoutes(word, ShellDialect.Unknown, 1)).Distinct()];
-    }
+    public static List<MergeRoute> FindMergeRoutesInArgv(IReadOnlyList<string> argv) =>
+        CommandPosition.Envelope(argv) is { } envelope ? FindMergeRoutes(envelope.Text, envelope.Dialect) : RoutesOf(argv, 0);
 
     private static List<MergeRoute> ScanRoutes(string text, ShellDialect dialect, int depth)
     {

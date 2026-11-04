@@ -284,17 +284,48 @@ public class GuardMergeRouteTests : IntegrationTestBase
         AssertNoMisses(await Misses(denied: false, allowed));
     }
 
-    // A shell reads a grep pattern as data. A bare argv array has no shell: there another program's
-    // word that reads as a merge line is read as a wrapper's, as PR calls are (admiral ruling 2026-10-27).
+    // Parity: a look-alike naming a merge in another program's argument is data under every envelope,
+    // bare argv included, so each one's decision is the same allow across all five (DYD-425 fix).
     [Fact]
-    public async Task GrepPatternNamingAMerge_IsAllowedInAShell_AndReadAsAWrapperInBareArgv()
+    public async Task LookAlikeNamingAMerge_HasTheSameOutcome_UnderEveryEnvelope()
     {
         await InitPushedProject();
-        string[][] grep = [["grep", "-rn", "gh pr merge", "dydo"]];
+        string[][] lookAlikes =
+        [
+            ["grep", "-rn", "gh pr merge", "."],
+            ["grep", "-rn", "gh pr merge", "dydo"],
+            ["grep", "-rn", "git push origin HEAD:main", "."],
+            ["echo", "gh pr merge 5"],
+            ["echo", "git push origin HEAD:main"],
+            ["echo", "gh repo edit --default-branch x"],
+            ["git", "commit", "-m", "mention gh pr merge"],
+            ["git", "commit", "-m", "never git push origin HEAD:main"],
+        ];
 
-        AssertNoMisses(await Misses(denied: false, grep, ["claude-bash", "claude-powershell", "codex-bash", "codex-pwsh"]));
-        AssertNoMisses(await Misses(denied: true, grep, ["codex-argv"], reasonParts: ["dydo merge"]));
-        AssertNoMisses(await Misses(denied: false, [["echo", "git push origin feature/x"]], ["codex-argv"]));
+        AssertNoMisses(await Misses(denied: false, lookAlikes));
+    }
+
+    // Bare argv still blocks a real route: gh or git as the program, or a wrapper whose payload is one.
+    [Fact]
+    public async Task BareArgv_RealRoute_ByProgramOrWrapper_IsDenied()
+    {
+        await InitPushedProject();
+        string[][] routes =
+        [
+            ["gh", "pr", "merge", "5"],
+            ["gh.exe", "pr", "merge", "5"],
+            ["gh", "api", "-X", "PUT", "repos/o/r/pulls/5/merge"],
+            ["git", "push", "origin", "HEAD:main"],
+            ["bash", "-lc", "gh pr merge 5"],
+            ["bash", "-c", "git push origin HEAD:main"],
+            ["env", "gh", "pr", "merge", "5"],
+            ["env", "-S", "gh pr merge 5"],
+            ["nohup", "gh", "pr", "merge", "5"],
+            ["eval", "gh pr merge 5"],
+            ["sh", "-c", "echo hi; gh pr merge 5"],
+        ];
+
+        AssertNoMisses(await Misses(denied: true, routes, ["codex-argv"], reasonParts: ["dydo merge"]));
     }
 
     [Fact]

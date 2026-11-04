@@ -176,6 +176,34 @@ public class GuardPrReadyTests : IntegrationTestBase
         result.AssertPreToolUseAllowed();
     }
 
+    // GS-06: help is no PR. The first line is the retro's original Codex batch. The review-block warn
+    // is a configured nudge on the gh pr create text, not this rule, so it is spent first.
+    [Theory]
+    [InlineData("gh version; gh pr create --help; gh pr ready --help", "exec")]
+    [InlineData("gh pr new -h", "Bash")]
+    public async Task HelpForAPrVerb_FromADirtyTree_IsAllowed(string command, string toolName)
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+        SilenceReviewBlockWarn(command);
+
+        var result = await GuardWithStdinAsync(Payload(command, codex: toolName == "exec", toolName: toolName));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    [Fact]
+    public async Task HelpThenARealPrCall_FromADirtyTree_IsDenied()
+    {
+        await InitPushedProject();
+        WriteFile("wip.txt", "w\n");
+
+        var result = await GuardWithStdinAsync(Payload("gh pr create --help; " + PrCreate));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("untracked files: wip.txt");
+    }
+
     // A heredoc or PowerShell here-string body is text the command reads, not a command line.
     [Theory]
     [InlineData("cat <<'EOF'\ngh pr ready 12\nEOF")]
@@ -194,7 +222,7 @@ public class GuardPrReadyTests : IntegrationTestBase
         result.AssertPreToolUseAllowed();
     }
 
-    // The guard's file-write analysis refuses a multi-line write on its own; this rule must not.
+    // A PR body heredoc quoting a PR call is no call for this rule.
     [Fact]
     public async Task PrCallInsideAPrBodyHeredoc_FromADirtyTree_IsNotThisRulesBlock()
     {
@@ -1158,5 +1186,58 @@ public class GuardPrReadyTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(Payload(command));
 
         result.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("x=\"$(case a in a) echo y;; esac)\"; gh pr create --title t --body '## Independent review'")]
+    [InlineData("cat <<EOF\n$(case a in a) echo y;; esac)\nEOF\ngh pr create --title t --body '## Independent review'")]
+    [InlineData("echo \"$(case a in a) echo y;; esac)\" && gh pr ready")]
+    [InlineData("arch=\"$(case \"$(uname -m)\" in\n  x86_64) echo amd64;;\n  *) echo other;;\nesac)\"\ngh pr create --fill")]
+    [InlineData("x=\"$(echo y)\"; gh pr create --title t --body '## Independent review'")]
+    public async Task FailedReading_LaterPrCall_FromADirtyTree_IsDeniedOnFirstAndRetry(string command)
+    {
+        await InitPushedProject();
+        WriteFile("readme.md", "changed\n");
+        var canary = ReadFile("dydo/files-off-limits.md");
+
+        var first = await GuardWithStdinAsync(Payload(command));
+        var retry = await GuardWithStdinAsync(Payload(command));
+
+        foreach (var result in new[] { first, retry })
+        {
+            Assert.False(result.IsPreToolUseAllowed);
+            var reason = result.AssertPreToolUseDenied();
+            Assert.True(reason.Contains("PR check") || reason.Contains("unstaged changes: readme.md"), reason);
+        }
+        Assert.Equal(canary, ReadFile("dydo/files-off-limits.md"));
+    }
+
+    [Theory]
+    [InlineData("gh pr create --title 'Independent review' --help; gh pr ready -h")]
+    [InlineData("cat <<'EOF'\nx=\"$(case a in a) echo y;; esac)\"; gh pr ready\nEOF")]
+    [InlineData("echo '$(case a in a) gh pr ready;; esac)'")]
+    public async Task FailedReading_HelpAndLiteralControls_FromADirtyTree_StayAllowed(string command)
+    {
+        await InitPushedProject();
+        WriteFile("readme.md", "changed\n");
+        SilenceReviewBlockWarn(command);
+
+        (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseAllowed();
+        (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("gh pr create --title \"$(case a in a) echo t;; esac)\" --head missing")]
+    [InlineData("gh pr create --title \"$(case a in a) echo t;; esac)\" --repo other/repo")]
+    public async Task FailedReading_TruncatedTarget_FromACleanTree_IsRefusedUnread(string command)
+    {
+        await InitPushedProject();
+
+        foreach (var result in new[] { await GuardWithStdinAsync(Payload(command)),
+                     await GuardWithStdinAsync(Payload(command)) })
+        {
+            Assert.False(result.IsPreToolUseAllowed);
+            Assert.Contains("PR check", result.AssertPreToolUseDenied());
+        }
     }
 }

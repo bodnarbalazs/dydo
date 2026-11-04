@@ -798,4 +798,525 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertStderrContains("off-limits");
     }
 
+    // ================================================================
+    // DYD-406: the 3.6.0 session retro's guard misreadings, through the hook
+    // ================================================================
+
+    private static string ShellJson(string toolName, string command) =>
+        System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["session_id"] = TestSessionId,
+            ["tool_name"] = toolName,
+            ["tool_input"] = new Dictionary<string, string> { ["command"] = command },
+        });
+
+    // GS-02: literal data written to a literal destination is no bypass.
+    [Theory]
+    [InlineData("PowerShell", GuardRetroCommands.Gs02SetContentEvidence)]
+    [InlineData("PowerShell", GuardRetroCommands.Gs02SetContentVerdict)]
+    [InlineData("Bash", GuardRetroCommands.Gs02CatSlotScript)]
+    [InlineData("Bash", GuardRetroCommands.Gs02CatAppendEvidence)]
+    [InlineData("Bash", "cat > notes.md <<'EOF'\nplain words\nEOF")]
+    public async Task Gs02_LiteralDataWrite_ToALiteralDestination_IsAllowed(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // DYD-421 DECIDED: single-quoted text is searched for bypasses as on master, so these
+    // single-quoted GS-02 writes stay refused until DYD-422 designs a relaxation.
+    [Theory]
+    [InlineData("Bash", GuardRetroCommands.Gs02SedBacktickCommit)]
+    [InlineData("Bash", GuardRetroCommands.Gs02SedBacktickSingleLine)]
+    [InlineData("Bash", "sed -i 's/`x`/y/' f")]
+    [InlineData("Bash", "printf '%s' 'first line\n$HOME is literal' > notes.md")]
+    [InlineData("PowerShell", "Set-Content notes.md 'first line\n$HOME is literal'")]
+    public async Task Gs02_SingleQuotedDataWrite_IsDeniedAsOnMaster(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("bypass");
+    }
+
+    // DYD-421 DECIDED: apostrophes around a substitution or a variable, on a command line or in an
+    // expanding heredoc body, hide nothing; the protected canary keeps its bytes.
+    [Theory]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("cat > notes.md <<EOF\nDon't $(rm dydo/index.md) it's\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nDon't $(echo y > dydo/index.md) it's\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nthe user's file: $(cat dydo/index.md > /dev/null; rm dydo/index.md) isn't kept\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nDon't run $(date) or it's late\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nDon't touch $HOME, it's mine\nEOF")]
+    public async Task Gs02_ExpansionBetweenApostrophes_IsDeniedAndTheCanaryUnchanged(string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("Command contains bypass patterns (command substitution or variable expansion)");
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    [Theory]
+    [InlineData("Bash", "cat > $OUT <<'EOF'\nplain words\nEOF")]
+    [InlineData("Bash", "cat > notes.md <<EOF\n$(rm -rf build)\nEOF")]
+    [InlineData("Bash", "cat > notes.md <<EOF\nprice: $PRICE\nEOF")]
+    [InlineData("Bash", "cat > notes.md <<'EOF'\nplain words\nEOF\nrm $TARGET")]
+    [InlineData("Bash", "bash <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData("Bash", "bash -c 'echo x > $OUT'")]
+    [InlineData("Bash", "bash -c 'cd build\necho x > $OUT'")]
+    [InlineData("Bash", "echo hi # don't\necho x > $OUT\necho 'ok'")]
+    [InlineData("PowerShell", "Set-Content -LiteralPath $p -Value @'\nplain words\n'@")]
+    [InlineData("PowerShell", "@\"\n$(Remove-Item build -Recurse)\n\"@ | Set-Content notes.md")]
+    public async Task Gs02_DynamicWrite_NextToLiteralData_IsStillDenied(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("bypass");
+    }
+
+    [Theory]
+    [InlineData("Bash", "cat > dydo/files-off-limits.md <<'EOF'\nplain words\nEOF")]
+    [InlineData("Bash", "cat > notes.md <<'EOF'\nplain words\nEOF\nrm dydo/index.md")]
+    [InlineData("PowerShell", "Set-Content -LiteralPath 'dydo/index.md' -Value @'\nplain words\n'@")]
+    [InlineData("Bash", "cat > .env <<'EOF'\nplain words\nEOF")]
+    public async Task Gs02_LiteralDataWrite_ToAGuardedPath_IsStillDenied(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+    }
+
+    // GS-03 (review round 6): a launch a runner makes, or the command string ssh or watch runs, keeps
+    // master's poll-loop nudge. Unquoted and uninventoried quoted arguments still count;
+    // only the finite data operands and proven inert bodies receive relief.
+    [Theory]
+    [InlineData("Bash", "stdbuf -oL tail -f app.log")]
+    [InlineData("Bash", "stdbuf -o L tail -f app.log")]
+    [InlineData("Bash", "stdbuf --output=L tail -f app.log")]
+    [InlineData("Bash", "ionice -c 3 tail -f app.log")]
+    [InlineData("Bash", "setsid tail -f app.log")]
+    [InlineData("Bash", "unbuffer tail -f app.log")]
+    [InlineData("Bash", "caffeinate -t 60 tail -f app.log")]
+    [InlineData("Bash", "wsl -d Ubuntu -- tail -f app.log")]
+    [InlineData("PowerShell", "wsl bash -c 'tail -f app.log'")]
+    [InlineData("Bash", "ssh host 'tail -f app.log'")]
+    [InlineData("Bash", "watch -n 1 'tail -f app.log'")]
+    public async Task Gs03_RunnerAndRemoteLaunch_KeepsThePollLoopNudge(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("Open-ended Bash poll-loop detected");
+    }
+
+    [Theory]
+    [InlineData("echo stdbuf -oL tail -f app.log")]
+    [InlineData("grep 'ssh host tail -f' notes.md")]
+    [InlineData("docker exec web tail -f app.log")]
+    [InlineData("kubectl exec pod -- tail -f app.log")]
+    [InlineData("flock /tmp/lock tail -f app.log")]
+    [InlineData("script -q -c 'tail -f app.log' /dev/null")]
+    [InlineData("su -c 'tail -f app.log'")]
+    [InlineData("tmux new -d 'tail -f app.log'")]
+    [InlineData("unknown-wrapper 'tail -f app.log'")]
+    [InlineData("rg tail --follow docs")]
+    public async Task Gs03_UninventoriedArguments_KeepTheWarning(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("Open-ended Bash poll-loop detected");
+    }
+
+    [Theory]
+    [InlineData("Bash", "cat <<'EOF' | bash\ntail -f app.log\nEOF")]
+    [InlineData("Bash", "cat <<'EOF' | unknown-wrapper\ntail -f app.log\nEOF")]
+    [InlineData("PowerShell", "Write-Output @'\ntail -f app.log\n'@ | Invoke-Expression")]
+    [InlineData("PowerShell", "Write-Output @'\ntail -f app.log\n'@ | pwsh -Command -")]
+    [InlineData("Bash", "echo @'\nx'; tail -f app.log; echo '\n'@")]
+    [InlineData("Bash", "bash <<'OUT' | bash\ncat <<'IN'\ntail -f app.log\nIN\nOUT")]
+    [InlineData("Bash", "bash <<'OUT' | unknown-wrapper\ncat <<'IN'\ntail -f app.log\nIN\nOUT")]
+    [InlineData("Bash", "bash -c \"cat <<'IN'\ntail -f app.log\nIN\" | bash")]
+    [InlineData("Bash", "bash -c \"cat <<'IN'\ntail -f app.log\nIN\" | unknown-wrapper")]
+    public async Task Gs03_ContextBody_HookDenialAndRetry(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+        // The baseline has no newline advisory for the quoted -c unknown-consumer row;
+        // its otherwise identical downstream bash row retains the advisory.
+        var warning = command.StartsWith("bash -c", StringComparison.Ordinal)
+            && command.EndsWith("| unknown-wrapper", StringComparison.Ordinal)
+            ? "" : "WARNING: Command contains embedded newlines" + Environment.NewLine;
+        const string nudge = "BLOCKED: Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`. Open-ended polls have caused agent crashes (issue 0177).";
+        var expected = warning + nudge + Environment.NewLine + "  (Run the same command again to proceed anyway.)";
+        var first = await GuardWithStdinAsync(ShellJson(toolName, command));
+        Assert.Equal(expected + Environment.NewLine, first.Stderr);
+        Assert.Equal(expected, first.AssertPreToolUseDenied());
+        var retry = await GuardWithStdinAsync(ShellJson(toolName, command));
+        retry.AssertPreToolUseAllowed();
+        Assert.Equal(warning, retry.Stderr);
+    }
+
+    [Theory]
+    [InlineData("Bash", "cat <<'EOF'\ntail -f app.log\nEOF")]
+    [InlineData("PowerShell", "Write-Output @'\ntail -f app.log\n'@")]
+    [InlineData("Bash", "echo @'\n$(tail -f app.log)\n'@")]
+    [InlineData("Bash", "bash <<'OUT'\ncat <<'IN'\ntail -f app.log\nIN\nOUT")]
+    [InlineData("Bash", "bash -c \"cat <<'IN'\ntail -f app.log\nIN\"")]
+    public async Task Gs03_ContextBody_HookLiteralControl(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+        result.AssertPreToolUseAllowed();
+        Assert.DoesNotContain("Open-ended Bash poll-loop", result.Stderr);
+    }
+
+    [Fact]
+    public async Task Gs02_HereStringBoundary_RawWarningDenialAndRetryMatchMaster()
+    {
+        await SetupClaimedAgent();
+        const string command = "Write-Output @'\ntext\n'@tail -f app.log";
+        var warning = "WARNING: Command contains embedded newlines" + Environment.NewLine;
+        const string nudge = "BLOCKED: Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`. Open-ended polls have caused agent crashes (issue 0177).";
+        var expected = warning + nudge + Environment.NewLine + "  (Run the same command again to proceed anyway.)";
+
+        var first = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+
+        Assert.Equal(expected + Environment.NewLine, first.Stderr);
+        Assert.Equal(expected, first.AssertPreToolUseDenied());
+
+        var retry = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+
+        retry.AssertPreToolUseAllowed();
+        Assert.Equal(warning, retry.Stderr);
+    }
+
+    [Theory]
+    [InlineData("H01-posix", "Bash", "echo @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@", true)]
+    [InlineData("H03-data", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@", false)]
+    [InlineData("H04-child-quotes", "Bash", "echo @\"\n$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\n\"@", false)]
+    [InlineData("H05-code", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@ | bash", true)]
+    [InlineData("H06-unknown-consumer", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@ | unknown-wrapper", true)]
+    [InlineData("H07-malformed", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@suffix", true)]
+    [InlineData("H08-data", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@", false)]
+    [InlineData("H09-child-quotes", "PowerShell", "Write-Output @\"\n$(Write-Output @'\nIt's \"ready\"; tail -f app.log\n'@\n)\n\"@", false)]
+    [InlineData("H10-code", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@ | Invoke-Expression", true)]
+    [InlineData("H11-unknown-consumer", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@ | unknown-wrapper", true)]
+    [InlineData("H12-dash-suffix", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@-suffix", true)]
+    [InlineData("H13-space", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@ ", false)]
+    [InlineData("H13-tab", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@\t", false)]
+    [InlineData("H14-later-launch", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@; tail -f real.log", true)]
+    [InlineData("H15-backtick-data", "Bash", "echo @\"\n`cat <<'IN'\ntail -f app.log\nIN\n`\n\"@", false)]
+    [InlineData("H15-backtick-code", "Bash", "echo @\"\n`cat <<'IN'\ntail -f app.log\nIN\n`\n\"@ | bash", true)]
+    [InlineData("H16-identical-children", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@", false)]
+    [InlineData("H17-sibling-quotes-unknown", "Bash", "echo @\"\n$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@ | unknown-wrapper", true)]
+    [InlineData("H18-stdin-data", "Bash", "bash <<'OUT'\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\nOUT", false)]
+    [InlineData("H18-stdin-code", "Bash", "bash <<'OUT' | bash\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\nOUT", true)]
+    [InlineData("H18-stdin-unknown", "Bash", "bash <<'OUT' | unknown-wrapper\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\nOUT", true)]
+    [InlineData("H19-script-data", "Bash", "bash -c \"echo @\\\"\n\\$(cat <<'IN'\ntail -f app.log\nIN\n)\n\\\"@\"", false)]
+    [InlineData("H19-script-code", "Bash", "bash -c \"echo @\\\"\n\\$(cat <<'IN'\ntail -f app.log\nIN\n)\n\\\"@\" | bash", true)]
+    [InlineData("H20-script-ps-data", "Bash", "pwsh -Command \"Write-Output @\\\"\n\\$(Write-Output @'\ntail -f app.log\n'@\n)\n\\\"@\"", false)]
+    [InlineData("H20-script-ps-unknown", "Bash", "pwsh -Command \"Write-Output @\\\"\n\\$(Write-Output @'\ntail -f app.log\n'@\n)\n\\\"@\" | unknown-wrapper", true)]
+    [InlineData("H21-data-then-unsafe", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\necho @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@", true)]
+    [InlineData("H21-unsafe-then-data", "Bash", "echo @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@", true)]
+    [InlineData("H22-child-launch", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\ntail -f real.log\n)\n\"@", true)]
+    [InlineData("H23-child-launch-code", "Bash", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\ntail -f real.log\n)\n\"@ | bash", true)]
+    [InlineData("H24-crlf-posix", "Bash", "echo @\"\r\n$(cat <<'IN'\r\ntail -f app.log\r\nIN\r\n)\r\n\"@", false)]
+    [InlineData("H24-crlf-powershell", "PowerShell", "Write-Output @\"\r\n$(Write-Output @'\r\ntail -f app.log\r\n'@\r\n)\r\n\"@", false)]
+    [InlineData("H25-capture-stdin-data", "Bash", "echo @\"\n$(bash <<'MID'\ncat <<'IN'\ntail -f app.log\nIN\nMID\n)\n\"@", false)]
+    [InlineData("H25-capture-stdin-code", "Bash", "echo @\"\n$(bash <<'MID'\ncat <<'IN'\ntail -f app.log\nIN\nMID\n)\n\"@ | bash", true)]
+    [InlineData("H26-hereword-data", "Bash", "cat <<< \"$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\"", false)]
+    [InlineData("H26-hereword-code", "Bash", "cat <<< \"$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\" | bash", true)]
+    [InlineData("H27-two-captures-data", "Bash", "cat <<OUTER\n$(cat <<MIDDLE\n$(cat <<'INNER'\ntail -f app.log\nINNER\n)\nMIDDLE\n)\nOUTER", false)]
+    [InlineData("H27-two-captures-code", "Bash", "cat <<OUTER | bash\n$(cat <<MIDDLE\n$(cat <<'INNER'\ntail -f app.log\nINNER\n)\nMIDDLE\n)\nOUTER", true)]
+    public async Task Gs03_HostEdge_HookFirstAndRetry(string id, string toolName, string command, bool deny)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+        var payload = ShellJson(toolName, command);
+        var first = await GuardWithStdinAsync(payload, "--host", "claude");
+        var retry = await GuardWithStdinAsync(payload, "--host", "claude");
+        Assert.Equal(before, File.ReadAllBytes(canary));
+        retry.AssertPreToolUseAllowed();
+        if (!deny)
+        {
+            first.AssertPreToolUseAllowed();
+            Assert.Equal(first.Stderr, retry.Stderr);
+            Assert.DoesNotContain("Open-ended Bash poll-loop", first.Stderr);
+            return;
+        }
+        const string nudge = "BLOCKED: Open-ended Bash poll-loop detected. Prefer a bounded for i in {1..30}; do ...; sleep 1; done, or `gh run watch`. Open-ended polls have caused agent crashes (issue 0177).";
+        var expected = retry.Stderr + nudge + Environment.NewLine
+            + "  (Run the same command again to proceed anyway.)";
+        Assert.Equal(id + ":" + expected, id + ":" + first.AssertPreToolUseDenied());
+        Assert.Equal(expected + Environment.NewLine, first.Stderr);
+    }
+
+    // GS-01: a PowerShell variable assigned from a literal Get-Content is a read.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs01SlicedRead)]
+    [InlineData(GuardRetroCommands.Gs01SelectStringRead)]
+    [InlineData("$p = Get-Content dydo/index.md; $p[0..5]")]
+    public async Task Gs01_LiteralReadAssignment_IsAllowed(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("$p = Get-Content notes.md; Set-Content notes.md $p")]
+    [InlineData("$x = Remove-Item notes.md")]
+    [InlineData("$p=Get-Content notes.md | Set-Content dydo/index.md")]
+    [InlineData("$CMD dydo/files-off-limits.md")]
+    [InlineData("$p = Get-Content .env")]
+    public async Task Gs01_AssignmentNextToAMutationOrAGuardedRead_IsStillDenied(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+
+        result.AssertPreToolUseDenied();
+    }
+
+    [Fact]
+    public async Task CaseArm_MatchingExecutableArm_IsDeniedByHook()
+    {
+        await SetupClaimedAgent();
+        const string command = "cat <<EOF\n$(case x in x) tail -f app.log;; esac)\nEOF";
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        // The restored conservative file analysis refuses before command nudges run.
+        Assert.Contains("Command contains bypass patterns", result.AssertPreToolUseDenied());
+    }
+
+    [Theory]
+    [InlineData("x", "rm dydo/files-off-limits.md")]
+    [InlineData("x", "echo changed > dydo/index.md")]
+    [InlineData("x|y", "rm dydo/files-off-limits.md")]
+    [InlineData("x|y", "echo changed > dydo/index.md")]
+    public async Task CaseArm_ProtectedMutation_IsDeniedOnFirstAndRetry(string pattern, string mutation)
+    {
+        await SetupClaimedAgent();
+        var paths = new[] { Path.Combine(DydoDir, "files-off-limits.md"), Path.Combine(DydoDir, "index.md") };
+        var before = paths.Select(File.ReadAllBytes).ToArray();
+        var command = "cat <<EOF\n$(case x in " + pattern + ") " + mutation + ";; esac)\nEOF";
+
+        var first = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var retry = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        first.AssertPreToolUseDenied();
+        retry.AssertPreToolUseDenied();
+        for (var i = 0; i < paths.Length; i++)
+            Assert.Equal(before[i], File.ReadAllBytes(paths[i]));
+    }
+
+    // GS-05: a Python program on stdin is refused before it runs, so the protected canary keeps its bytes.
+    [Theory]
+    [InlineData("Bash", "python - <<'EOF'\nopen('dydo/files-off-limits.md','w').write('changed')\nEOF")]
+    [InlineData("Bash", "printf \"open('dydo/files-off-limits.md','w').write('changed')\" | python3")]
+    [InlineData("PowerShell", "@'\nopen('dydo/files-off-limits.md','w').write('changed')\n'@ | py -")]
+    [InlineData("Bash", GuardRetroCommands.Gs05ProtectedRewrite)]
+    [InlineData("Bash", "python3 < tools/rewrite.py")]
+    public async Task Gs05_PythonOnStdin_WritingTheProtectedCanary_IsDeniedAndTheCanaryUnchanged(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "files-off-limits.md");
+        var before = File.ReadAllBytes(canary);
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        var reason = result.AssertPreToolUseDenied();
+        Assert.Contains("Python program on stdin", reason);
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // A script file runs and its own file operations are not followed: the documented limit.
+    [Fact]
+    public async Task Gs05_PythonScriptFile_IsAllowed()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", "python tools/rewrite.py"));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // Nothing feeds stdin, so no program is read from it: a lookup, xargs operands, a prompt.
+    [Theory]
+    [InlineData("command -v python3")]
+    [InlineData("command -V python3")]
+    [InlineData("command -v python3 || command -v python")]
+    [InlineData("ls *.py | xargs python3")]
+    [InlineData("python")]
+    public async Task Gs05_PythonWithNothingFedToIt_IsAllowed(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // GS-02: every word eval, ssh or watch joins into the code it runs is code, and so is a line a
+    // shell reads from a pipe, so a dynamic write in any of them is still denied.
+    [Theory]
+    [InlineData("eval 'echo x' '> $OUT'")]
+    [InlineData("eval echo 'x > $OUT'")]
+    [InlineData("ssh host 'echo x' '> $OUT'")]
+    [InlineData("watch -n 1 'echo x > $OUT'")]
+    [InlineData("printf 'echo x > $OUT' | bash")]
+    public async Task Gs02_DynamicWrite_InAnyWordACommandRuns_IsDenied(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("bypass");
+    }
+
+    // GS-05: a < or | in a comment feeds nothing.
+    [Theory]
+    [InlineData("python # <stdin>")]
+    [InlineData("python # input < program.py")]
+    [InlineData("python # input | python")]
+    public async Task Gs05_PythonWithAFeedOnlyInAComment_IsAllowed(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // A real feed is still refused after a comment, into a group, and inside a substitution.
+    [Theory]
+    [InlineData("printf \"open('dydo/files-off-limits.md','w').write('changed')\" | python3 # feeds it")]
+    [InlineData("echo \"$(printf \"open('dydo/files-off-limits.md','w').write('changed')\" | python3)\"")]
+    [InlineData("printf \"open('dydo/files-off-limits.md','w').write('changed')\" | (python3)")]
+    [InlineData("printf \"open('dydo/files-off-limits.md','w').write('changed')\" | { python3; }")]
+    public async Task Gs05_PythonFedThroughACommentGroupOrSubstitution_IsDeniedAndTheCanaryUnchanged(string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "files-off-limits.md");
+        var before = File.ReadAllBytes(canary);
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        var reason = result.AssertPreToolUseDenied();
+        Assert.Contains("Python program on stdin", reason);
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // GS-02: a runner named only in a comment or an argument runs no body, and the blank or
+    // comment-only lines after a heredoc separate no commands.
+    [Theory]
+    [InlineData("Bash", "cat > helper.sh <<'EOF' # bash script\necho hello\nEOF")]
+    [InlineData("Bash", "grep -c bash <<'EOF'\nline one\nline two\nEOF")]
+    [InlineData("Bash", "cat > /tmp/python <<'EOF'\n$HOME\nEOF")]
+    [InlineData("PowerShell", "Set-Content -LiteralPath notes.md -Value @'\n$HOME\n'@ # bash example")]
+    [InlineData("Bash", "cat > notes.md <<'EOF'\n$HOME\nEOF\n\n")]
+    [InlineData("Bash", "cat > notes.md <<'EOF'\nplain\nEOF\n\n# written\n")]
+    public async Task Gs02_LiteralBody_WithARunnerInACommentOrTrailingBlankLines_IsAllowed(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("Bash", "bash <<'EOF' # bash script\necho x > $OUT\nEOF")]
+    [InlineData("Bash", "cat <<'EOF' | bash # bash script\necho x > $OUT\nEOF")]
+    [InlineData("PowerShell", "@'\necho x > $OUT\n'@ | pwsh -Command - # runs it")]
+    [InlineData("Bash", "cat > notes.md <<'EOF'\nplain\nEOF\n\nrm secret.txt")]
+    public async Task Gs02_BodyARunnerIsFed_OrACommandAfterABlankLine_IsStillDenied(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("bypass");
+    }
+
+    // Round 4: a body is data only when data commands alone read it; a quoted or pathed runner, a
+    // stdin source, a group piped on, a later line of code and a comment's apostrophe hide nothing.
+    [Theory]
+    [InlineData("Bash", "cat > notes.md <<'EOF' # don't expand\nplain\nEOF\nrm dydo/index.md")]
+    [InlineData("Bash", "\"C:/Program Files/Git/bin/bash.exe\" <<'EOF'\necho y > dydo/index.md\nEOF")]
+    [InlineData("Bash", "\"bash\" <<'EOF'\necho y > dydo/index.md\nEOF")]
+    [InlineData("Bash", ". /dev/stdin <<'EOF'\necho y > dydo/index.md\nEOF")]
+    [InlineData("Bash", "fish <<'EOF'\necho y > dydo/index.md\nEOF")]
+    [InlineData("Bash", "cat <<'EOF' | \"C:/Program Files/Git/bin/bash.exe\"\necho y > dydo/index.md\nEOF")]
+    [InlineData("Bash", "cat <<'EOF' |\necho y > dydo/index.md\nEOF\nbash")]
+    [InlineData("Bash", "{\ncat <<'EOF'\necho y > dydo/index.md\nEOF\n} | bash")]
+    [InlineData("Bash", "cat <<'EOF' > >(bash)\necho y > dydo/index.md\nEOF")]
+    [InlineData("Bash", "echo hi # don't\nrm 'dydo/index.md'; echo x > notes.md")]
+    [InlineData("PowerShell", "@'\necho y > dydo/index.md\n'@ | & \"C:\\Program Files\\Git\\bin\\bash.exe\"")]
+    [InlineData("PowerShell", "@'\necho y > dydo/index.md\n'@ | wsl bash")]
+    [InlineData("PowerShell", "@'\necho y > dydo/index.md\n'@\n| iex")]
+    [InlineData("PowerShell", "@'\nplain\n'@ | Set-Content notes.md # don't\nRemove-Item 'dydo/index.md'")]
+    public async Task Gs02_ProtectedChangeABodyOrALaterLineHolds_IsDenied(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    [Theory]
+    [InlineData("Bash", "cat > notes.md <<'END-OF-FILE'\nplain\nEND-OF-FILE")]
+    [InlineData("Bash", "cat > notes.md <<\"END_OF_FILE\"\nplain\nEND_OF_FILE")]
+    [InlineData("Bash", "cat > notes.md <<-'END-OF-FILE'\n\tplain\n\tEND-OF-FILE")]
+    [InlineData("Bash", "cat > notes.md <<'EOF' # don't expand\nplain $HOME\nEOF")]
+    [InlineData("PowerShell", "@'\nIt's ready.\n'@ | Set-Content notes.md")]
+    public async Task Gs02_LiteralBodyOnlyDataCommandsRead_IsAllowed(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("echo \"$(python3 tools/rewrite.py)\"")]
+    [InlineData("printf x | (python3 tools/rewrite.py)")]
+    public async Task Gs05_PythonScriptFileInAGroupOrSubstitution_IsAllowed(string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+
+        result.AssertPreToolUseAllowed();
+    }
 }

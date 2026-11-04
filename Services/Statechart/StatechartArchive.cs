@@ -12,7 +12,7 @@ internal sealed class StatechartArchive
     private readonly Dictionary<string, string> _names = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _directories = new(StringComparer.Ordinal);
     private readonly HashSet<string> _members = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, (string Target, string Original, bool Hard)> _links = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (string Target, bool Hard)> _links = new(StringComparer.Ordinal);
     private readonly Dictionary<string, UnixFileMode> _modes = new(StringComparer.Ordinal);
     private long _expanded;
 
@@ -88,8 +88,7 @@ internal sealed class StatechartArchive
                     break;
                 case TarEntryType.HardLink:
                 case TarEntryType.SymbolicLink:
-                    var hard = entry.EntryType == TarEntryType.HardLink;
-                    _links.Add(name, (LinkTarget(name, entry.LinkName, hard), entry.LinkName, hard));
+                    _links.Add(name, (entry.LinkName, entry.EntryType == TarEntryType.HardLink));
                     break;
                 default:
                     throw new IOException("Unsupported statechart tar device/special entry: " + entry.EntryType);
@@ -162,37 +161,34 @@ internal sealed class StatechartArchive
         if (!OperatingSystem.IsWindows() && _modes[name] != 0) File.SetUnixFileMode(Full(name), _modes[name]);
     }
 
-    private string LinkTarget(string name, string value, bool hard)
-    {
-        if (string.IsNullOrEmpty(value) || value.StartsWith('/') || value.Contains('\\') || value.Contains(':'))
-            throw new IOException("Unsafe statechart archive link target.");
-        var caller = hard ? _root : Path.GetDirectoryName(Full(name))!;
-        var target = Path.GetFullPath(value.Replace('/', Path.DirectorySeparatorChar), caller);
-        var relative = Path.GetRelativePath(_root, target).Replace('\\', '/');
-        ValidateName(relative);
-        return relative;
-    }
-
-    private string Resolve(string name)
+    // Tar names a hard link's target from the archive root and a symbolic link's from the link's directory.
+    // The walk expands symbolic links; a hard link it reaches is followed to the file it copies.
+    private string Resolve(string name, (string Target, bool Hard) link)
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        while (_links.TryGetValue(name, out var link))
+        while (true)
         {
             _token.ThrowIfCancellationRequested();
             if (!seen.Add(name)) throw new IOException("Cyclic statechart archive link.");
-            name = link.Target;
+            var target = StatechartLinks.Resolve(link.Hard ? "" : StatechartLinks.Parent(name), link.Target,
+                candidate => _links.TryGetValue(candidate, out var row) && !row.Hard ? row.Target : null,
+                candidate => _directories.TryGetValue(candidate, out var directory) ? directory : null);
+            if (!_links.TryGetValue(target, out link)) return target;
+            name = target;
         }
-        if (!_directories.ContainsKey(name)) throw new IOException("Missing statechart archive link target.");
-        return name;
     }
 
+    // The empty name is the extraction root, which a link may reach.
+    private bool IsDirectory(string name) => name.Length == 0 || _directories[name];
+
+    // Every link resolves before any is created, so a rejected archive leaves no link behind.
     private void Links()
     {
-        var resolved = _links.ToDictionary(row => row.Key, row => Resolve(row.Value.Target));
+        var resolved = _links.ToDictionary(row => row.Key, row => Resolve(row.Key, row.Value));
         foreach (var name in _links.Where(row => row.Value.Hard).Select(row => row.Key))
         {
             var target = resolved[name];
-            if (_directories[target]) throw new IOException("Statechart archive hardlink points to a directory.");
+            if (IsDirectory(target)) throw new IOException("Statechart archive hardlink points to a directory.");
             using var source = File.OpenRead(Full(target));
             Write(name, source, source.Length, _modes[target]);
         }
@@ -200,8 +196,8 @@ internal sealed class StatechartArchive
         {
             _token.ThrowIfCancellationRequested();
             StatechartPaths.RequirePlainDirectory(Path.GetDirectoryName(Full(name))!);
-            var target = link.Original.Replace('/', Path.DirectorySeparatorChar);
-            if (_directories[resolved[name]]) Directory.CreateSymbolicLink(Full(name), target);
+            var target = link.Target.Replace('/', Path.DirectorySeparatorChar);
+            if (IsDirectory(resolved[name])) Directory.CreateSymbolicLink(Full(name), target);
             else File.CreateSymbolicLink(Full(name), target);
         }
     }

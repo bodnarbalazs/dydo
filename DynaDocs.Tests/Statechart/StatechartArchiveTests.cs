@@ -110,6 +110,50 @@ public class StatechartArchiveTests
         Assert.Null(new FileInfo(Path.Combine(target, "link")).LinkTarget);
     }
 
+    // The filesystem follows a link before it applies `..`; each lexical target names an existing decoy entry.
+    [Theory]
+    [InlineData("a,a/b,d", "a/outside", "a/b/l", "../../d", "escape", "a/b/l/../../outside")]
+    [InlineData("p,p/q,r", "z", "p/q/x", "../../r", "p/q/y", "x/../../../z")]
+    public void ComposedLinksThatLeaveTheRootRejectBeforeAnyLinkExists(string directories, string decoy,
+        string first, string firstTarget, string second, string secondTarget)
+    {
+        using var scope = new StatechartTestDirectory();
+        File.WriteAllText(Path.Combine(scope.Path, "outside"), "sentinel");
+        var archive = Path.Combine(scope.Path, "links.tgz");
+        Tar(archive, [.. directories.Split(',').Select(name => (name, TarEntryType.Directory, "")),
+            (decoy, TarEntryType.RegularFile, "lexically contained decoy"),
+            (first, TarEntryType.SymbolicLink, firstTarget), (second, TarEntryType.SymbolicLink, secondTarget)]);
+        var target = Path.Combine(scope.Path, "staging");
+        Assert.Throws<IOException>(() => StatechartArchive.Extract(archive, target, CancellationToken.None));
+        Assert.Null(new FileInfo(Path.Combine(target, first)).LinkTarget);
+        Assert.Null(new FileInfo(Path.Combine(target, second)).LinkTarget);
+        Assert.Equal("sentinel", File.ReadAllText(Path.Combine(scope.Path, "outside")));
+    }
+
+    [Fact]
+    public void LinksThatLoopThroughEachOtherReject()
+    {
+        using var scope = new StatechartTestDirectory();
+        var archive = Path.Combine(scope.Path, "loop.tgz");
+        Tar(archive, [("c", TarEntryType.Directory, ""), ("l", TarEntryType.SymbolicLink, "m/../c"),
+            ("m", TarEntryType.SymbolicLink, "l/../c")]);
+        var target = Path.Combine(scope.Path, "staging");
+        Assert.Throws<IOException>(() => StatechartArchive.Extract(archive, target, CancellationToken.None));
+        Assert.Null(new FileInfo(Path.Combine(target, "l")).LinkTarget);
+    }
+
+    [Fact]
+    public void ALinkThroughAnotherLinkThatStaysInsideExtracts()
+    {
+        using var scope = new StatechartTestDirectory();
+        var archive = Path.Combine(scope.Path, "contained.tgz");
+        Tar(archive, [("a/b", TarEntryType.Directory, ""), ("d/x", TarEntryType.RegularFile, "inside"),
+            ("a/b/l", TarEntryType.SymbolicLink, "../../d"), ("through", TarEntryType.SymbolicLink, "a/b/l/x")]);
+        var target = Path.Combine(scope.Path, "staging");
+        StatechartArchive.Extract(archive, target, CancellationToken.None);
+        Assert.Equal("inside", File.ReadAllText(Path.Combine(target, "through")));
+    }
+
     [Fact]
     public void ForeignStagingAndCancellationAreRetainedWithoutOverwrite()
     {
@@ -127,6 +171,21 @@ public class StatechartArchiveTests
         var fresh = Path.Combine(scope.Path, "cancelled");
         Assert.Throws<OperationCanceledException>(() => StatechartArchive.Extract(archive, fresh, cancelled.Token));
         Assert.False(Directory.Exists(fresh));
+    }
+
+    // Content is a regular file's text or a link's target.
+    private static void Tar(string path, (string Name, TarEntryType Type, string Content)[] entries)
+    {
+        using var file = File.Create(path);
+        using var gzip = new GZipStream(file, CompressionMode.Compress);
+        using var writer = new TarWriter(gzip);
+        foreach (var (name, type, content) in entries)
+        {
+            var entry = new PaxTarEntry(type, name) { Mode = (UnixFileMode)0x1ed };
+            if (type == TarEntryType.RegularFile) entry.DataStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+            if (type == TarEntryType.SymbolicLink) entry.LinkName = content;
+            writer.WriteEntry(entry);
+        }
     }
 
     private static void Zip(string path, (string Name, string Content)[] entries)

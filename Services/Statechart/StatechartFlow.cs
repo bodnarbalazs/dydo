@@ -17,10 +17,10 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
         {
             var store = new StatechartRequests(home, assets, rid);
             var path = store.Save(request);
-            await output.WriteLineAsync(Plan(request, path, dependencies, managed.Root).ToJsonString());
+            await output.WriteLineAsync(Plan(request, path, dependencies, managed).ToJsonString());
             return 3;
         }
-        await StatechartReady.VerifyAsync(dependencies, payload, home, full: false, token);
+        await ReadyAsync(managed, dependencies, payload, token);
         return await StatechartRunner.RunAsync(request, dependencies, payload, home, output, token);
     }
 
@@ -40,7 +40,7 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
             var dependencies = await StatechartResolver.ResolveAsync(request, managed, home, token);
             if (StatechartManaged.Missing(dependencies).Length != 0)
                 dependencies = await managed.InstallAsync(dependencies, payload, token);
-            else await StatechartReady.VerifyAsync(dependencies, payload, home, full: false, token);
+            else await ReadyAsync(managed, dependencies, payload, token);
             StatechartRequest.Validate(request, assets, rid);
             var status = await StatechartRunner.RunAsync(request, dependencies, payload, home, output, token,
                 new StatechartContinuation(path, executionLock));
@@ -54,10 +54,19 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
         }
     }
 
-    private JsonObject Plan(StatechartRequest request, string path, StatechartDependencies dependencies, string destination)
+    // An install verified under an earlier release or payload is re-stamped; a current one gets the quick check.
+    private async Task ReadyAsync(StatechartManaged managed, StatechartDependencies dependencies, string payload, CancellationToken token)
+    {
+        if (managed.Inspect().Stale.Length != 0) await managed.RestampAsync(dependencies, payload, token);
+        else await StatechartReady.VerifyAsync(dependencies, payload, home, full: false, token);
+    }
+
+    private JsonObject Plan(StatechartRequest request, string path, StatechartDependencies dependencies, StatechartManaged managed)
     {
         var selected = StatechartDownloads.Select(assets, rid);
         var missing = StatechartManaged.Missing(dependencies);
+        var repair = managed.Inspect().Damaged.Where(name => missing.Contains(name, StringComparer.Ordinal)).ToArray();
+        var destination = managed.Root;
         var downloads = new JsonArray(selected.Where(item => missing.Contains(item.Name, StringComparer.Ordinal))
             .Select(item => (JsonNode)new JsonObject { ["name"] = item.Name, ["url"] = item.Url,
                 ["integrity"] = item.Integrity, ["compressedByteLimit"] = item.Limit,
@@ -67,12 +76,16 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
         return new JsonObject { ["schema"] = 1, ["state"] = "approval-required", ["requestId"] = request.Id,
             ["request"] = path, ["requestDigest"] = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(path))),
             ["payloadDigest"] = assets.Digest, ["lockDigest"] = assets.LockDigest,
-            ["missing"] = downloads, ["expandedByteLimitPerArchive"] = 1024L * 1024 * 1024,
+            ["missing"] = downloads, ["repair"] = new JsonArray(repair.Select(name => (JsonNode)JsonValue.Create(name)!).ToArray()),
+            ["expandedByteLimitPerArchive"] = 1024L * 1024 * 1024,
             ["entryLimitPerArchive"] = 20000, ["connectSeconds"] = 15, ["downloadSecondsPerArchive"] = 120,
             ["setupSeconds"] = 600, ["caller"] = request.Caller, ["spec"] = request.Spec.Path,
             ["config"] = request.Config.Path, ["view"] = request.View?.Path, ["output"] = request.Output,
             ["installAndContinue"] = new JsonArray(continuation.Select(argument => (JsonNode)JsonValue.Create(argument)!).ToArray()),
-            ["message"] = "Statechart prerequisites are missing. Submit this exact continuation through the host's normal installation authorization; no installation has started." };
+            ["message"] = repair.Length == 0
+                ? "Statechart prerequisites are missing. Submit this exact continuation through the host's normal installation authorization; no installation has started."
+                : "Managed statechart components failed verification: " + string.Join(", ", repair) +
+                  ". Submit this exact continuation through the host's normal installation authorization to replace only those components; nothing has changed yet." };
     }
 
     private static void RequirePlatform()

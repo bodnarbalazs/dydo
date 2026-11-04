@@ -52,8 +52,11 @@ host-authorized tool action because no in-process host approval interface is
 assumed. Optional doctor/setup interfaces share the capability's rules rather
 than delegate prerequisite choreography to the agent.
 
-Installed resources bind the exact skill/runtime/installer payload and dependency
-lock. Supported PS entry points remain until replacement proof covers applicable
+Managed dependencies bind the dependency lock, their verified content and the
+runtime identifier; the installed skill and extracted assets bind the payload and release.
+An update that keeps the lock re-verifies the existing install and re-stamps it with no
+download or consent. Content that fails verification yields an approval-required repair
+plan that the normal continuation executes; nothing managed is replaced without it. Supported PS entry points remain until replacement proof covers applicable
 interfaces and platforms. This decision states required behavior; a staged
 engineering candidate does not itself prove delivery.
 

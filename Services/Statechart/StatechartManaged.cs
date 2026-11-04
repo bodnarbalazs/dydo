@@ -1,41 +1,22 @@
 namespace DynaDocs.Services.Statechart;
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
-internal sealed class StatechartManaged(StatechartHome home, StatechartAssets assets, string rid)
+// Readiness keys on the lock entry, the verified content and the RID. Release and payload only record
+// the last verification, so an update that keeps the lock re-stamps instead of reinstalling.
+internal sealed class StatechartManaged(StatechartHome home, StatechartAssets assets, string rid, StatechartDownload[] downloads)
 {
-    private readonly StatechartDownload[] _downloads = StatechartDownloads.Select(assets, rid);
+    private readonly StatechartDownload[] _downloads = downloads;
+    private StatechartManagedState? _state;
     public string Root { get; } = Path.Combine(home.Dependencies, assets.LockDigest, rid);
 
-    public StatechartDependencies Read()
-    {
-        if (!Directory.Exists(Root))
-        {
-            if (new DirectoryInfo(Root).LinkTarget is not null) throw new IOException("Linked managed statechart root.");
-            return new(null, null, null, null);
-        }
-        ValidateRoot();
-        var paths = new Dictionary<string, string?>();
-        foreach (var item in _downloads)
-        {
-            var directory = Path.Combine(Root, item.Name);
-            if (!Directory.Exists(directory)) { paths[item.Name] = null; continue; }
-            StatechartPaths.RequirePlainDirectory(directory);
-            var receipt = Path.Combine(directory, ".ready.json");
-            if ((File.GetAttributes(receipt) & FileAttributes.ReparsePoint) != 0 || new FileInfo(receipt).Length > 8 * 1024 * 1024)
-                throw new IOException("Linked or oversized managed statechart receipt.");
-            var identity = JsonNode.Parse(File.ReadAllBytes(receipt))!.AsObject();
-            if (identity["schema"]?.GetValue<int>() != 1 || identity["protocol"]?.GetValue<int>() != 1 ||
-                identity["release"]?.GetValue<string>() != assets.Release ||
-                identity["rid"]?.GetValue<string>() != rid || identity["payload"]?.GetValue<string>() != assets.Digest ||
-                identity["lock"]?.GetValue<string>() != assets.LockDigest || identity["integrity"]?.GetValue<string>() != item.Integrity ||
-                !JsonNode.DeepEquals(identity["files"], StatechartInventory.Capture(directory, ".ready.json")))
-                throw new IOException("Managed statechart content changed; an explicit repair plan is required.");
-            StatechartDownloads.Verify(item, Archive(directory, item));
-            paths[item.Name] = Executable(directory, item.Name);
-        }
-        return new(paths["node"], paths["java"], paths["tlc"], paths["pele"]);
-    }
+    public StatechartManaged(StatechartHome home, StatechartAssets assets, string rid)
+        : this(home, assets, rid, StatechartDownloads.Select(assets, rid)) { }
+
+    public StatechartDependencies Read() => Inspect().Dependencies;
+
+    public StatechartManagedState Inspect() => _state ??= Scan();
 
     public async Task<StatechartDependencies> InstallAsync(StatechartDependencies selected, string payload, CancellationToken token)
     {
@@ -43,52 +24,52 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
         deadline.CancelAfter(TimeSpan.FromMinutes(10));
         var parent = Path.GetDirectoryName(Root)!;
         StatechartPaths.EnsureDirectory(parent);
-        using var installationLock = new FileStream(Path.Combine(parent, rid + ".install.lock"),
-            FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-        var retained = Read();
-        selected = Combine(selected, retained);
-        var missing = Missing(selected);
-        if (missing.Length == 0) return selected;
-        if (!Directory.Exists(Root))
+        using (Lock(parent))
         {
-            Directory.CreateDirectory(Root);
-            using var marker = new FileStream(Path.Combine(Root, ".statechart-store"), FileMode.CreateNew, FileAccess.Write);
-            marker.Write(System.Text.Encoding.UTF8.GetBytes(assets.LockDigest));
-        }
-        ValidateRoot();
-        var stage = Path.Combine(parent, ".install-" + rid + "-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(stage);
-        var installed = new Dictionary<string, string>();
-        foreach (var item in _downloads.Where(item => missing.Contains(item.Name, StringComparer.Ordinal)))
-        {
-            var component = Path.Combine(stage, item.Name);
-            Directory.CreateDirectory(component);
-            var archive = Archive(component, item);
-            await StatechartDownloads.FetchAsync(item, archive, deadline.Token);
-            StatechartDownloads.Verify(item, archive);
-            if (item.Name != "tlc") StatechartArchive.Extract(archive, Path.Combine(component, "content"), deadline.Token);
-            installed[item.Name] = Executable(component, item.Name);
-        }
-        var candidate = new StatechartDependencies(installed.GetValueOrDefault("node") ?? selected.Node,
-            installed.GetValueOrDefault("java") ?? selected.Java, installed.GetValueOrDefault("tlc") ?? selected.Tlc,
-            installed.GetValueOrDefault("pele") ?? selected.Renderer);
-        var readiness = await StatechartReady.VerifyAsync(candidate, payload, home, full: true, deadline.Token);
-        foreach (var item in _downloads.Where(item => installed.ContainsKey(item.Name)))
-        {
-            var component = Path.Combine(stage, item.Name);
-            var receipt = new JsonObject { ["schema"] = 1, ["protocol"] = 1, ["release"] = assets.Release, ["rid"] = rid,
-                ["payload"] = assets.Digest, ["lock"] = assets.LockDigest, ["integrity"] = item.Integrity,
-                ["url"] = item.Url, ["setupUtc"] = DateTimeOffset.UtcNow.ToString("O"),
-                ["readiness"] = readiness.DeepClone(), ["files"] = StatechartInventory.Capture(component) };
-            using (var stream = new FileStream(Path.Combine(component, ".ready.json"), FileMode.CreateNew, FileAccess.Write))
+            SweepStages(parent);
+            var state = Scan();
+            selected = Combine(selected, state.Dependencies);
+            var missing = Missing(selected);
+            if (missing.Length == 0) return selected;
+            if (!Directory.Exists(Root))
             {
-                stream.Write(System.Text.Encoding.UTF8.GetBytes(receipt.ToJsonString()));
-                stream.Flush(flushToDisk: true);
+                Directory.CreateDirectory(Root);
+                using var marker = new FileStream(Path.Combine(Root, ".statechart-store"), FileMode.CreateNew, FileAccess.Write);
+                marker.Write(System.Text.Encoding.UTF8.GetBytes(assets.LockDigest));
             }
-            Directory.Move(component, Path.Combine(Root, item.Name));
+            ValidateRoot();
+            var stage = Path.Combine(parent, ".install-" + rid + "-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(stage);
+            try
+            {
+                var installed = await FetchAsync(missing, stage, deadline.Token);
+                var candidate = Combine(new StatechartDependencies(installed.GetValueOrDefault("node"),
+                    installed.GetValueOrDefault("java"), installed.GetValueOrDefault("tlc"), installed.GetValueOrDefault("pele")), selected);
+                var readiness = await StatechartReady.VerifyAsync(candidate, payload, home, full: true, deadline.Token);
+                foreach (var item in _downloads.Where(item => installed.ContainsKey(item.Name)))
+                    Place(item, Path.Combine(stage, item.Name), stage, readiness);
+                foreach (var name in state.Stale) Restamp(Path.Combine(Root, name), parent, readiness);
+            }
+            finally
+            {
+                _state = null;
+                RemoveStage(stage);
+            }
         }
-        Directory.Delete(stage, recursive: false);
         return Combine(selected, Read());
+    }
+
+    // An update that kept the lock: prove the verified install with this payload, then re-stamp it.
+    public async Task RestampAsync(StatechartDependencies selected, string payload, CancellationToken token)
+    {
+        var parent = Path.GetDirectoryName(Root)!;
+        using (Lock(parent))
+        {
+            var state = Scan();
+            var readiness = await StatechartReady.VerifyAsync(Combine(selected, state.Dependencies), payload, home, full: true, token);
+            foreach (var name in state.Stale) Restamp(Path.Combine(Root, name), parent, readiness);
+            _state = null;
+        }
     }
 
     internal static string[] Missing(StatechartDependencies dependencies) =>
@@ -97,6 +78,122 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
 
     internal static StatechartDependencies Combine(StatechartDependencies selected, StatechartDependencies managed) =>
         new(selected.Node ?? managed.Node, selected.Java ?? managed.Java, selected.Tlc ?? managed.Tlc, selected.Renderer ?? managed.Renderer);
+
+    private StatechartManagedState Scan()
+    {
+        var paths = _downloads.ToDictionary(item => item.Name, _ => (string?)null);
+        if (!Directory.Exists(Root))
+        {
+            if (new DirectoryInfo(Root).LinkTarget is not null) throw new IOException("Linked managed statechart root.");
+            return new(new(null, null, null, null), [], []);
+        }
+        ValidateRoot();
+        var stale = new List<string>();
+        var damaged = new List<string>();
+        foreach (var item in _downloads.Where(item => Directory.Exists(Path.Combine(Root, item.Name))))
+        {
+            var verified = Verified(item, Path.Combine(Root, item.Name));
+            if (verified is not { } component) { damaged.Add(item.Name); continue; }
+            if (component.Identity["release"]?.GetValue<string>() != assets.Release ||
+                component.Identity["payload"]?.GetValue<string>() != assets.Digest)
+                stale.Add(item.Name);
+            paths[item.Name] = component.Executable;
+        }
+        return new(new(paths["node"], paths["java"], paths["tlc"], paths["pele"]), stale.ToArray(), damaged.ToArray());
+    }
+
+    // The receipt and executable while the lock entry, RID and content still match the receipt; otherwise null.
+    private (JsonObject Identity, string Executable)? Verified(StatechartDownload item, string directory)
+    {
+        try
+        {
+            StatechartPaths.RequirePlainDirectory(directory);
+            var receipt = new FileInfo(Path.Combine(directory, ".ready.json"));
+            if (!receipt.Exists || (receipt.Attributes & FileAttributes.ReparsePoint) != 0 || receipt.Length > 8 * 1024 * 1024 ||
+                JsonNode.Parse(File.ReadAllBytes(receipt.FullName)) is not JsonObject identity ||
+                identity["schema"]?.GetValue<int>() != 1 || identity["protocol"]?.GetValue<int>() != 1 ||
+                identity["rid"]?.GetValue<string>() != rid || identity["lock"]?.GetValue<string>() != assets.LockDigest ||
+                identity["integrity"]?.GetValue<string>() != item.Integrity ||
+                !JsonNode.DeepEquals(identity["files"], StatechartInventory.Capture(directory, ".ready.json")))
+                return null;
+            StatechartDownloads.Verify(item, Archive(directory, item));
+            return (identity, Executable(directory, item.Name));
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<Dictionary<string, string>> FetchAsync(string[] missing, string stage, CancellationToken token)
+    {
+        var installed = new Dictionary<string, string>();
+        foreach (var item in _downloads.Where(item => missing.Contains(item.Name, StringComparer.Ordinal)))
+        {
+            var component = Path.Combine(stage, item.Name);
+            Directory.CreateDirectory(component);
+            var archive = Archive(component, item);
+            await StatechartDownloads.FetchAsync(item, archive, token);
+            StatechartDownloads.Verify(item, archive);
+            if (item.Name != "tlc") StatechartArchive.Extract(archive, Path.Combine(component, "content"), token);
+            installed[item.Name] = Executable(component, item.Name);
+        }
+        return installed;
+    }
+
+    // Moves a verified component into the store; a component that failed verification moves into the stage it is deleted with.
+    private void Place(StatechartDownload item, string component, string stage, JsonObject readiness)
+    {
+        var now = DateTimeOffset.UtcNow.ToString("O");
+        var receipt = new JsonObject { ["schema"] = 1, ["protocol"] = 1, ["release"] = assets.Release, ["rid"] = rid,
+            ["payload"] = assets.Digest, ["lock"] = assets.LockDigest, ["integrity"] = item.Integrity,
+            ["url"] = item.Url, ["setupUtc"] = now, ["verifiedUtc"] = now,
+            ["readiness"] = readiness.DeepClone(), ["files"] = StatechartInventory.Capture(component) };
+        using (var stream = new FileStream(Path.Combine(component, ".ready.json"), FileMode.CreateNew, FileAccess.Write))
+        {
+            stream.Write(System.Text.Encoding.UTF8.GetBytes(receipt.ToJsonString()));
+            stream.Flush(flushToDisk: true);
+        }
+        var target = Path.Combine(Root, item.Name);
+        if (Directory.Exists(target)) Directory.Move(target, Path.Combine(stage, item.Name + ".replaced"));
+        Directory.Move(component, target);
+    }
+
+    private void Restamp(string component, string parent, JsonObject readiness)
+    {
+        var path = Path.Combine(component, ".ready.json");
+        var identity = JsonNode.Parse(File.ReadAllBytes(path))!.AsObject();
+        identity["release"] = assets.Release;
+        identity["payload"] = assets.Digest;
+        identity["verifiedUtc"] = DateTimeOffset.UtcNow.ToString("O");
+        identity["readiness"] = readiness.DeepClone();
+        var temp = Path.Combine(parent, ".receipt-" + Guid.NewGuid().ToString("N"));
+        using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write))
+        {
+            stream.Write(System.Text.Encoding.UTF8.GetBytes(identity.ToJsonString()));
+            stream.Flush(flushToDisk: true);
+        }
+        File.Move(temp, path, overwrite: true);
+    }
+
+    private FileStream Lock(string parent) =>
+        new(Path.Combine(parent, rid + ".install.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+
+    // Runs under the install lock, so no other install for this RID still uses these stages.
+    private void SweepStages(string parent)
+    {
+        foreach (var stage in Directory.EnumerateDirectories(parent, ".install-" + rid + "-*"))
+            if ((File.GetAttributes(stage) & FileAttributes.ReparsePoint) == 0) Directory.Delete(stage, recursive: true);
+    }
+
+    private static void RemoveStage(string stage)
+    {
+        try { Directory.Delete(stage, recursive: true); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            // A file still in use keeps this stage until the next install sweeps it.
+        }
+    }
 
     private static string Archive(string component, StatechartDownload item) =>
         Path.Combine(component, Path.GetFileName(new Uri(item.Url).AbsolutePath));

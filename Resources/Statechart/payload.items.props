@@ -17,7 +17,7 @@
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/PROVENANCE.md" LogicalName="Statechart/payload/skills/engineering/statechart/PROVENANCE.md" />
     <StatechartPayload Include="skills/engineering/statechart/SKILL.md">
-      <ExpectedHash>a8f78407e0310585f29c5d46cf9d697f4c343b75a37d49e1ee1c9fd1b6d3c847</ExpectedHash>
+      <ExpectedHash>719a9fcd61561f2a9fa7d67754655c6118b1443336f36ac2ea79d99e0f422dac</ExpectedHash>
       <ResourceName>Statechart/payload/skills/engineering/statechart/SKILL.md</ResourceName>
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/SKILL.md" LogicalName="Statechart/payload/skills/engineering/statechart/SKILL.md" />
@@ -32,7 +32,7 @@
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/references/render.md" LogicalName="Statechart/payload/skills/engineering/statechart/references/render.md" />
     <StatechartPayload Include="skills/engineering/statechart/references/runtime.md">
-      <ExpectedHash>4a407b700c52d65203b2f3b3417afa6af80838d50cb2caa89740c7037480cb3b</ExpectedHash>
+      <ExpectedHash>474feeeddc98b1f72f3218a2cc684c9c0479515776b6c2693424d1e8ba805c93</ExpectedHash>
       <ResourceName>Statechart/payload/skills/engineering/statechart/references/runtime.md</ResourceName>
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/references/runtime.md" LogicalName="Statechart/payload/skills/engineering/statechart/references/runtime.md" />

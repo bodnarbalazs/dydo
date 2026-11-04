@@ -1,7 +1,9 @@
 namespace DynaDocs.Tests.Statechart;
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.Json;
+using DynaDocs.Services.Statechart;
 
 public class StatechartPublicFlowTests
 {
@@ -65,6 +67,26 @@ public class StatechartPublicFlowTests
         Assert.Contains("Invalid explicit JAVA", result.Error);
         Assert.False(Directory.Exists(Path.Combine(scope.Path, "dependencies")));
         Assert.False(Directory.Exists(Path.Combine(scope.Path, "state", "requests")));
+    }
+
+    [Fact]
+    public async Task DamagedManagedComponentYieldsARepairPlanAndIsLeftInPlace()
+    {
+        using var scope = new StatechartTestDirectory();
+        Model(scope.Path);
+        var assets = new StatechartAssets();
+        var root = Path.Combine(scope.Path, "dependencies", assets.LockDigest, RuntimeInformation.RuntimeIdentifier);
+        Directory.CreateDirectory(Path.Combine(root, "tlc"));
+        File.WriteAllText(Path.Combine(root, ".statechart-store"), assets.LockDigest);
+        var damaged = Path.Combine(root, "tlc", "tla2tools.jar");
+        File.WriteAllText(damaged, "damaged managed bytes");
+        var result = await Invoke(scope.Path, ["statechart", "spaced model.tla"]);
+        Assert.Equal(3, result.Exit);
+        using var plan = JsonDocument.Parse(result.Output);
+        Assert.Equal("approval-required", plan.RootElement.GetProperty("state").GetString());
+        Assert.Equal(["tlc"], plan.RootElement.GetProperty("repair").EnumerateArray().Select(item => item.GetString()));
+        Assert.Contains("tlc", plan.RootElement.GetProperty("missing").EnumerateArray().Select(item => item.GetProperty("name").GetString()));
+        Assert.Equal("damaged managed bytes", File.ReadAllText(damaged));
     }
 
     [Fact]

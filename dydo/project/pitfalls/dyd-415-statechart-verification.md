@@ -55,10 +55,9 @@ node setup-skills.mjs   # one acceptance test reads both host projections
 python3 DynaDocs.Tests/coverage/run_tests.py -c Release --filter "FullyQualifiedName~DynaDocs.Tests.Statechart"
 ```
 
-Only Windows-only tests and config-fuzz should skip. Managed receipts bind the payload
-digest, so after a change to any file the payload ships, the copy is refused with
-"Managed statechart content changed". Delete `deps/<lock>/linux-x64` and approve a fresh
-setup; no repair command exists yet.
+Only Windows-only tests and config-fuzz should skip. The managed copy survives rebuilds:
+a build that keeps the dependency lock re-verifies and re-stamps it on the next run, and a
+damaged component comes back as an `approval-required` repair plan.
 
 ## History
 

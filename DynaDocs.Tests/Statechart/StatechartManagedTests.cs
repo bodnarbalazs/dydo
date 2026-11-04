@@ -1,6 +1,7 @@
 namespace DynaDocs.Tests.Statechart;
 
 using DynaDocs.Services.Statechart;
+using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 
 public class StatechartManagedTests
@@ -39,7 +40,7 @@ public class StatechartManagedTests
         File.WriteAllText(Path.Combine(managed.Root, ".statechart-store"), new StatechartAssets().LockDigest);
         var file = Path.Combine(managed.Root, "node", "foreign.exe");
         File.WriteAllText(file, "keep");
-        Assert.ThrowsAny<IOException>(() => managed.Read());
+        Assert.Null(managed.Read().Node);
         Assert.Equal("keep", File.ReadAllText(file));
     }
 
@@ -70,7 +71,7 @@ public class StatechartManagedTests
     }
 
     [Fact]
-    public void ReceiptFromAnotherReleaseRejectsBeforeUsingComponentBytes()
+    public void ReceiptFromAnotherReleaseNeverAdoptsUnverifiedBytes()
     {
         using var scope = new StatechartTestDirectory();
         var assets = new StatechartAssets();
@@ -84,9 +85,85 @@ public class StatechartManagedTests
             ["integrity"] = StatechartDownloads.Select(assets, "win-x64").Single(item => item.Name == "tlc").Integrity,
             ["files"] = StatechartInventory.Capture(component) };
         File.WriteAllText(Path.Combine(component, ".ready.json"), receipt.ToJsonString());
-        var error = Assert.Throws<IOException>(() => managed.Read());
-        Assert.Contains("content changed", error.Message);
+        Assert.Null(managed.Read().Tlc);
+        Assert.Equal("not a provisioned fixture", File.ReadAllText(Path.Combine(component, "tla2tools.jar")));
     }
+
+    [Fact]
+    public void ReceiptFromAnotherReleaseOrPayloadIsReadyWhenItsContentVerifies()
+    {
+        using var scope = new StatechartTestDirectory();
+        var (managed, jar) = Installed(scope.Path, release: "0.0.1", payload: "earlier-payload");
+        Assert.Equal(jar, managed.Read().Tlc);
+    }
+
+    [Theory]
+    [InlineData("tampered")]
+    [InlineData("receipt-missing")]
+    [InlineData("receipt-unreadable")]
+    public void ContentThatFailsVerificationIsReportedMissingAndLeftInPlace(string damage)
+    {
+        using var scope = new StatechartTestDirectory();
+        var (managed, jar) = Installed(scope.Path, new StatechartAssets().Release, new StatechartAssets().Digest);
+        var receipt = Path.Combine(Path.GetDirectoryName(jar)!, ".ready.json");
+        if (damage == "tampered") File.AppendAllText(jar, "tampered");
+        else if (damage == "receipt-missing") File.Delete(receipt);
+        else File.WriteAllText(receipt, "{not json");
+        var bytes = File.ReadAllBytes(jar);
+        Assert.Null(managed.Read().Tlc);
+        Assert.Equal(bytes, File.ReadAllBytes(jar));
+    }
+
+    [Fact]
+    public void ADifferentLockIsAnotherStoreSoItsContentIsNeverConsulted()
+    {
+        using var scope = new StatechartTestDirectory();
+        var (managed, _) = Installed(scope.Path, new StatechartAssets().Release, new StatechartAssets().Digest);
+        var other = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(managed.Root)!)!, new string('0', 64), "win-x64");
+        Directory.CreateDirectory(Path.GetDirectoryName(other)!);
+        Directory.Move(managed.Root, other);
+        Assert.Equal(["node", "java", "tlc", "pele"], StatechartManaged.Missing(managed.Read()));
+    }
+
+    [Fact]
+    public async Task FailedInstallLeavesNoStagingAndSweepsStaleStagesItOwns()
+    {
+        using var scope = new StatechartTestDirectory();
+        var assets = new StatechartAssets();
+        var home = new StatechartHome(Path.Combine(scope.Path, "assets"), Path.Combine(scope.Path, "dependencies"), Path.Combine(scope.Path, "state"));
+        var managed = new StatechartManaged(home, assets, "win-x64", Unreachable());
+        var parent = Path.GetDirectoryName(managed.Root)!;
+        Directory.CreateDirectory(Path.Combine(parent, ".install-win-x64-" + Guid.NewGuid().ToString("N"), "node"));
+        await Assert.ThrowsAnyAsync<Exception>(() => managed.InstallAsync(new(null, null, null, null),
+            Path.Combine(scope.Path, "unavailable-payload"), CancellationToken.None));
+        Assert.Empty(Directory.GetDirectories(parent, ".install-*"));
+    }
+
+    // A verified tlc component whose receipt names the given release and payload; the lock row is synthetic.
+    private static (StatechartManaged Managed, string Jar) Installed(string root, string release, string payload)
+    {
+        var assets = new StatechartAssets();
+        byte[] bytes = [1, 2, 3, 4];
+        var downloads = Unreachable().Select(item => item.Name == "tlc"
+            ? item with { Integrity = Convert.ToHexStringLower(SHA256.HashData(bytes)) } : item).ToArray();
+        var managed = new StatechartManaged(new StatechartHome(Path.Combine(root, "assets"),
+            Path.Combine(root, "dependencies"), Path.Combine(root, "state")), assets, "win-x64", downloads);
+        var component = Path.Combine(managed.Root, "tlc");
+        Directory.CreateDirectory(component);
+        File.WriteAllText(Path.Combine(managed.Root, ".statechart-store"), assets.LockDigest);
+        var jar = Path.Combine(component, "tla2tools.jar");
+        File.WriteAllBytes(jar, bytes);
+        var receipt = new JsonObject { ["schema"] = 1, ["protocol"] = 1, ["release"] = release, ["rid"] = "win-x64",
+            ["payload"] = payload, ["lock"] = assets.LockDigest, ["integrity"] = downloads.Single(item => item.Name == "tlc").Integrity,
+            ["files"] = StatechartInventory.Capture(component) };
+        File.WriteAllText(Path.Combine(component, ".ready.json"), receipt.ToJsonString());
+        return (managed, jar);
+    }
+
+    private static StatechartDownload[] Unreachable() => new[] { "node", "java", "tlc", "pele" }
+        .Select(name => new StatechartDownload(name,
+            $"http://127.0.0.1:9/{name}/{(name == "tlc" ? "tla2tools.jar" : "archive.tar.gz")}", new string('a', 64), 1024))
+        .ToArray();
 
     private static StatechartManaged Create(string root) => new(new StatechartHome(
         Path.Combine(root, "assets"), Path.Combine(root, "dependencies"), Path.Combine(root, "state")),

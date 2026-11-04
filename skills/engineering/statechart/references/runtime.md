@@ -8,7 +8,10 @@ preserves MIT Copyright (c) 2026 Lauren Tan. [Provenance](../PROVENANCE.md) reco
 
 `dydo statechart` installs and verifies its own locked prerequisites on first use:
 Node 26.13.0, Temurin JRE 21.0.8+9, TLC 1.7.4 and Pele 1.9.0. It accepts an existing
-Node 22.18–22.x or 23.6+ and Java 11+ found on PATH or named by `JAVA`.
+Node 22.18–22.x or 23.6+ and Java 11+ found on PATH or named by `JAVA`. The install is
+keyed by the dependency lock: a dydo update that keeps the lock re-verifies it without
+downloading, and components that fail verification are replaced only through an
+approved repair plan.
 
 The skill's own launchers need no dydo. The POSIX launcher selects Node 22.18–22.x or
 23.6+, Bun 1.1.5+, or Deno 2+; the PowerShell launcher selects Node with the same bounds

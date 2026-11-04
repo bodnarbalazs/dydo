@@ -1,9 +1,9 @@
 """Actual unittest cases for the maintained build helper; no JVM is invoked here."""
-import importlib.util
 import hashlib
 import io
 import json
 from pathlib import Path
+import sys
 import tarfile
 import tempfile
 import unittest
@@ -14,9 +14,8 @@ from unittest.mock import patch
 
 SOURCE = Path(__file__).resolve().parents[3]
 ROOT = SOURCE / 'skills/engineering/statechart/scripts/java'
-SPEC = importlib.util.spec_from_file_location('_statechart_java_build', ROOT / 'build.py')
-build = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(build)
+sys.path.insert(0, str(ROOT))
+import build
 
 
 class JavaBuildTests(unittest.TestCase):

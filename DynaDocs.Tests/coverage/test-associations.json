@@ -1525,10 +1525,6 @@
       "tests": ["DynaDocs.Tests/Statechart/StatechartJobTests.cs"]
     },
     {
-      "module": "Services/Statechart/WindowsStatechartCompletion.cs",
-      "tests": ["DynaDocs.Tests/Statechart/StatechartCompletionTests.cs"]
-    },
-    {
       "module": "Services/Statechart/PosixStatechartArguments.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartArgumentsTests.cs"]
     },

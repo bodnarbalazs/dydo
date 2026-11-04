@@ -15,11 +15,6 @@ internal static class WindowsStatechartNative
 
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool SetInformationJobObject(SafeFileHandle job, int kind,
-        ref WindowsJobPort port, uint size);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool QueryInformationJobObject(SafeFileHandle job, int kind,
         out WindowsJobAccounting accounting, uint size, nint returnedLength);
 
@@ -39,19 +34,4 @@ internal static class WindowsStatechartNative
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool TerminateJobObject(SafeFileHandle job, uint code);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    internal static extern SafeFileHandle CreateIoCompletionPort(nint file, nint existingPort,
-        nuint key, uint threads);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool DuplicateHandle(nint sourceProcess, SafeFileHandle source,
-        nint targetProcess, out nint target, uint access,
-        [MarshalAs(UnmanagedType.Bool)] bool inherit, uint options);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool GetQueuedCompletionStatus(SafeFileHandle port, out uint message,
-        out nuint key, out nint overlapped, uint milliseconds);
 }

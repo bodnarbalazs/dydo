@@ -8,9 +8,7 @@ using Microsoft.Win32.SafeHandles;
 internal sealed class WindowsStatechartJob : IDisposable
 {
     private readonly SafeFileHandle _job;
-    private readonly SafeFileHandle _port;
     private bool _sealed;
-    internal const nuint CompletionKey = 0x4151;
 
     public WindowsStatechartJob()
     {
@@ -22,13 +20,9 @@ internal sealed class WindowsStatechartJob : IDisposable
             var limits = new WindowsJobLimits { Basic = new WindowsJobBasicLimits { Flags = 0x2000 } };
             Check(WindowsStatechartNative.SetInformationJobObject(_job, 9, ref limits,
                 (uint)Marshal.SizeOf<WindowsJobLimits>()));
-            _port = WindowsStatechartNative.CreateIoCompletionPort(-1, 0, 0, 1);
-            if (_port.IsInvalid) throw new Win32Exception();
-            AssociateCompletionPort();
         }
         catch
         {
-            _port?.Dispose();
             _job.Dispose();
             throw;
         }
@@ -57,14 +51,6 @@ internal sealed class WindowsStatechartJob : IDisposable
         return accounting.ActiveProcesses;
     }
 
-    public nint DuplicateCompletionPortTo(Process cleanup)
-    {
-        // Duplicate the notification port only. A job handle in cleanup would defeat last-close killing.
-        Check(WindowsStatechartNative.DuplicateHandle(-1, _port, cleanup.Handle,
-            out var duplicate, 0, false, 2));
-        return duplicate;
-    }
-
     public void Terminate() => Check(WindowsStatechartNative.TerminateJobObject(_job, 2));
 
     public async Task<bool> SealAndDrainAsync(TimeSpan timeout)
@@ -80,18 +66,7 @@ internal sealed class WindowsStatechartJob : IDisposable
         return true;
     }
 
-    public void Dispose()
-    {
-        _job.Dispose();
-        _port.Dispose();
-    }
-
-    private void AssociateCompletionPort()
-    {
-        var association = new WindowsJobPort { Key = CompletionKey, Port = _port.DangerousGetHandle() };
-        Check(WindowsStatechartNative.SetInformationJobObject(_job, 7, ref association,
-            (uint)Marshal.SizeOf<WindowsJobPort>()));
-    }
+    public void Dispose() => _job.Dispose();
 
     private static void Check(bool result)
     {

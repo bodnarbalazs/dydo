@@ -10,13 +10,9 @@ internal static class StatechartPrerequisites
         if (!match.Success) return false;
         var major = int.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
         var minor = int.Parse(match.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture);
-        var patch = match.Groups[3].Success ? int.Parse(match.Groups[3].Value,
-            System.Globalization.CultureInfo.InvariantCulture) : 0;
         return runtime switch
         {
             "node" => major == 22 && minor >= 18 || major == 23 && minor >= 6 || major > 23,
-            "bun" => major > 1 || major == 1 && (minor > 1 || minor == 1 && patch >= 5),
-            "deno" => major >= 2,
             "java" => major >= 11,
             _ => false
         };

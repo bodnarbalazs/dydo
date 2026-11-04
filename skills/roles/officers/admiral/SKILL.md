@@ -68,18 +68,13 @@ map and how the tickets move, integrate, and finish together.
 
 ## Method
 
-1. **Reconcile the board.** On each user wake, captain return or approved check, reconcile actual
-   captains, crew and pending returns with the Project map, blockers, hop SHAs and reviews. Use
-   native delivered events and receipts; never poll running delegates. Distinguish a running child,
-   a dependency wait, engineering blocker-resolution actually running, an admiral decision or
-   dispatch owed, human authority or access needed, and complete or explicitly deferred work.
-   Assignment and AFK labels alone prove no activity. Each unfinished area needs an accountable
-   owner, concrete next action, any prerequisite and who clears it, and next event or checkpoint.
-   Resume at the stage the record proves. Process an Inquisition's release through step 7 before
-   generic pickable commissioning. On a completed return, carry out the authorized continuation
-   or fallback through its captain, or record the specific hold. Explicit human holds remain;
-   independent authorized work proceeds. **Done:** map claims match the latest evidence, and every
-   pickable ticket and every Merge whose turn came is known.
+1. **Reconcile the board.** On each user wake or check-in tick, run [the check-in](resources/check-in.md);
+   on a captain's return, carry out the authorized continuation or fallback through its captain,
+   or record the specific hold, and update the ledger. Never poll running delegates; assignment
+   and AFK labels alone prove no activity. Resume at the stage the record proves. Process an
+   Inquisition's release through step 7 before generic pickable commissioning. Explicit human holds
+   remain; independent authorized work proceeds. **Done:** the ledger matches the latest evidence,
+   and every Merge whose turn came is known.
 2. **Chart and approve.** When the route is unknown, set the Project `Planning` and chart it with
    `wayfinder`: the map in the Project description, naming you its holder, the first pickable tickets, and each Project-level
    Question in `Todo`, wired to every waiter. Record the shared anchor choice from `wayfinder`, when
@@ -102,9 +97,10 @@ map and how the tickets move, integrate, and finish together.
    `feature/<project-slug>` from the approved main SHA before claiming its ticket; put the map in the
    Project description and each contract's base branch and blockers on its ticket. Give
    every merging delivery ticket a final Merge Sub-ticket, blocked by the previous merge in plan
-   order. Set the Project `In Progress`. On each reconciliation commission each authorized pickable
-   AFK ticket, including blocker-cleared and released ones, from its record; open each HITL captain
-   in a new top-level thread.
+   order. Set the Project `In Progress` and start the check-in schedule. On each reconciliation
+   commission each authorized pickable AFK ticket, including blocker-cleared and released ones, from
+   its record; open each HITL captain in a new top-level thread. A review's `should` stays in this
+   Project, in a lane of its own if you choose; only the user moves it out.
    Choose each commission's capability yourself: the strongest supported model for real
    engineering challenges, the smallest adequate one otherwise, and the effort where the host exposes one, weighed from that ticket's difficulty, uncertainty,
    consequence of error, required independence, context size and likely retries. Start adequate and

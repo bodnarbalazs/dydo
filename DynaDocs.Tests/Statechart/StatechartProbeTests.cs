@@ -1,9 +1,17 @@
 namespace DynaDocs.Tests.Statechart;
 
 using System.Diagnostics;
+using DynaDocs.Services.Statechart;
 
 public class StatechartProbeTests
 {
+    [Fact]
+    public async Task ProbeOutputIsReadUpTo64KiBAndRefusedBeyond()
+    {
+        Assert.Equal(65536, (await StatechartProbe.Bounded(new StringReader(new string('x', 65536)), CancellationToken.None)).Length);
+        await Assert.ThrowsAsync<IOException>(() => StatechartProbe.Bounded(new StringReader(new string('x', 65537)), CancellationToken.None));
+    }
+
     [SkippableTheory]
     [InlineData(0)]
     [InlineData(7)]

@@ -10,12 +10,12 @@ using static GitHubJson;
 /// <c>dydo merge</c>: merge a reviewed PR into its <c>feature/*</c> base with a merge commit, or refuse.
 /// In order: the repository is origin's; a closed PR is reconciled first (its SHA already in a feature
 /// base is success, so a rerun after a lost answer is safe); the base is a feature branch and not the
-/// default; its tip, read from the branch ref and never from the PR's <c>base.sha</c>, is the pin; the
-/// head is the reviewed SHA; the PR body holds that SHA's PASS; its checks are green. The merge names
-/// the validated base and the SHA, so a retarget or a push after the checks cannot change where or what
-/// lands. The pin only refuses: it never names the target, and it reaches a write only as the merge's
-/// first parent, equal to the tip just read. Nothing writes before every check has passed, and a dry
-/// run writes nothing.
+/// default; the head is the reviewed SHA; the base's tip, read from the branch ref and never from the
+/// PR's <c>base.sha</c>, is the pin; the PR body holds that SHA's PASS; its checks are green. The merge
+/// names the validated base and the SHA, so a retarget or a push after the checks cannot change where or
+/// what lands. The pin only refuses: it never names the target, and it reaches a write only as the
+/// merge's first parent and as the value the ref must still hold for the move, equal to the tip just
+/// read. Nothing writes before every check has passed, and a dry run writes nothing.
 /// </summary>
 internal sealed partial class PullRequestMerge
 {
@@ -182,11 +182,14 @@ internal sealed partial class PullRequestMerge
     private JsonNode PinnedBranch(string name)
     {
         var branch = ReadBranch(name) ?? throw Moved(name);
-        var tip = Text(branch, "commit", "sha") ?? throw MergeStop.ToolError($"GitHub named no tip for {name}");
+        var tip = TipOf(branch, name);
         return tip == _pin
             ? branch
             : throw MergeStop.Refused($"{name} is at {Short(tip)}, not the pinned {Short(_pin)}; nothing merged - re-pin the target and re-contract");
     }
+
+    private static string TipOf(JsonNode branch, string name) =>
+        Text(branch, "commit", "sha") ?? throw MergeStop.ToolError($"GitHub named no tip for {name}");
 
     private JsonNode? ReadBranch(string name)
     {
@@ -234,10 +237,11 @@ internal sealed partial class PullRequestMerge
     }
 
     // The base tip is an ancestor of the SHA, so GitHub would fast-forward and leave no merge commit:
-    // write the two-parent commit on the pin by hand. force=false makes a tip that moved meanwhile fail
-    // the update.
+    // write the two-parent commit on the pin by hand, then move the ref only if it is still at the pin.
     private string WriteTwoParentMerge(string target, string message)
     {
+        var repositoryId = Text(Expect(_github.Send("GET", _repo), 200, $"could not read {_checkout.Origin.FullName}"), "node_id")
+            ?? throw MergeStop.ToolError($"GitHub named no node id for {_checkout.Origin.FullName}");
         var commit = Expect(_github.Send("GET", $"{_repo}/git/commits/{_sha}"), 200, $"could not read {Short(_sha)}");
         var created = Expect(_github.Send("POST", $"{_repo}/git/commits", new JsonObject
         {
@@ -245,14 +249,44 @@ internal sealed partial class PullRequestMerge
             ["tree"] = Text(commit, "tree", "sha"),
             ["parents"] = new JsonArray(_pin, _sha)
         }), 201, "could not write the merge commit");
-        var merge = Text(created, "sha") ?? throw MergeStop.ToolError("GitHub named no merge commit");
+        // An all-zero afterOid would delete the ref.
+        var merge = Text(created, "sha") is { } sha && FullShaRegex().IsMatch(sha) && sha.Trim('0').Length > 0
+            ? sha
+            : throw MergeStop.ToolError("GitHub named no merge commit");
+        return MoveFromThePin(repositoryId, target, merge);
+    }
 
-        var update = _github.Send("PATCH", $"{_repo}/git/refs/heads/{target}", new JsonObject { ["sha"] = merge, ["force"] = false });
-        if (update.Status == 200)
+    // An unforced PATCH git/refs takes any fast-forward, so a tip another merge moved into the SHA's history
+    // would still pass; updateRefs with beforeOid moves the ref atomically, only from the pin. On any other
+    // answer the ref itself decides, never GitHub's wording.
+    private string MoveFromThePin(string repositoryId, string target, string merge)
+    {
+        var reply = _github.Send("POST", "graphql", new JsonObject
+        {
+            ["query"] = "mutation($input: UpdateRefsInput!) { updateRefs(input: $input) { clientMutationId } }",
+            ["variables"] = new JsonObject
+            {
+                ["input"] = new JsonObject
+                {
+                    ["repositoryId"] = repositoryId,
+                    ["refUpdates"] = new JsonArray(new JsonObject
+                    {
+                        ["name"] = $"refs/heads/{target}", ["beforeOid"] = _pin, ["afterOid"] = merge, ["force"] = false
+                    })
+                }
+            }
+        });
+        var errors = Items(reply.Json, "errors").Select(error => Text(error, "message") ?? "an unnamed error").ToList();
+        if (reply.Status == 200 && errors.Count == 0 && At(reply.Json, "data", "updateRefs") is JsonObject)
             return merge;
-        if (update.Status == 404 || update.Status == 422 && update.Message.Contains("fast forward", StringComparison.OrdinalIgnoreCase))
+
+        var tip = TipOf(ReadBranch(target) ?? throw Moved(target), target);
+        if (tip == merge)
+            return merge;
+        if (tip != _pin)
             throw Moved(target);
-        throw Failed($"GitHub refused to move {target} to the merge commit", update);
+        var what = $"GitHub refused to move {target} to the merge commit";
+        throw errors.Count > 0 ? MergeStop.ToolError($"{what}: {string.Join("; ", errors)}") : Failed(what, reply);
     }
 
     private void Report(PullRequest pull, string merge, string defaultBranch)

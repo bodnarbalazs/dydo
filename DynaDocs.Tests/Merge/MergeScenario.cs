@@ -24,6 +24,8 @@ internal sealed class MergeScenario : IDisposable
     /// <summary>A target tip another merge moved the ref to during the run.</summary>
     public const string Moved = "7777777777777777777777777777777777777777";
     public const string Repo = "repos/acme/widgets";
+    /// <summary>The repository's GraphQL node id, as <c>GET repos/acme/widgets</c> names it.</summary>
+    public const string RepositoryId = "R_kgDOAcmeWidgets";
     public const string Target = "feature/x";
     public const int Number = 7;
 
@@ -46,7 +48,7 @@ internal sealed class MergeScenario : IDisposable
 
         PullJson = Pull(Body(PassLine()));
         GitHub.On("GET", Pulls, Reply(200, PullJson), Reply(200, MergedPull()));
-        GitHub.On("GET", Repo, Reply(200, """{ "full_name": "acme/widgets", "default_branch": "master" }"""));
+        GitHub.On("GET", Repo, Reply(200, $$"""{ "full_name": "acme/widgets", "default_branch": "master", "node_id": "{{RepositoryId}}" }"""));
         GitHub.On("GET", Branch, Reply(200, BranchJson));
         GitHub.On("GET", Rules, Reply(200, "[]"));
         GitHub.On("GET", Compare(ReviewBase, Tip), Reply(200, """{ "status": "ahead" }"""));

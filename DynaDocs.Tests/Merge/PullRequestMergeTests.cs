@@ -126,56 +126,76 @@ public sealed class PullRequestMergeTests : IDisposable
 
     #region Fast-forward eligible: the two-parent Git Data path
 
-    private void FastForwardEligible()
+    private const string ZeroSha = "0000000000000000000000000000000000000000";
+
+    // The tip is an ancestor of the SHA, so GitHub would fast-forward: the merge commit is written by hand.
+    private TargetBranch FastForwardEligible(Dictionary<string, string[]>? parents = null, string? landsMeanwhile = null)
     {
         _s.GitHub.On("GET", Compare(Tip, Sha), Reply(200, """{ "status": "ahead" }"""));
         _s.GitHub.On("GET", $"{Repo}/git/commits/{Sha}", Reply(200, $$"""{ "sha": "{{Sha}}", "tree": { "sha": "4444444444444444444444444444444444444444" } }"""));
-        _s.GitHub.On("POST", $"{Repo}/git/commits", Reply(201, $$"""{ "sha": "{{MergeSha}}" }"""));
-        _s.GitHub.On("PATCH", $"{Repo}/git/refs/heads/feature/x", Reply(200, $$"""{ "object": { "sha": "{{MergeSha}}" } }"""));
+        return new TargetBranch(_s.GitHub, parents ?? new() { [Sha] = [Tip] }, landsMeanwhile);
     }
 
+    private static JsonObject RefUpdate(JsonObject? request) =>
+        request!["variables"]!["input"]!["refUpdates"]!.AsArray().Single()!.AsObject();
+
+    private const string RefusedMove = "error: GitHub refused to move feature/x to the merge commit";
+
     [Fact]
-    public void BaseTipAncestorOfTheSha_WritesATwoParentCommitAndMovesTheBaseWithoutForce()
+    public void BaseTipAncestorOfTheSha_WritesATwoParentCommitAndMovesTheBaseOnlyFromThePin()
     {
-        FastForwardEligible();
+        var target = FastForwardEligible();
 
         var (exit, stdout, stderr) = _s.Merge();
 
         Assert.True(exit == 0, stderr);
         Assert.Contains("merged PR #7 (0123456789ab) into feature/x at 111111111111 as 333333333333; PR marked merged: yes", Lines(stdout));
         var writes = _s.GitHub.Writes.ToList();
-        Assert.Equal([("POST", $"{Repo}/git/commits"), ("PATCH", $"{Repo}/git/refs/heads/feature/x")],
-            writes.Select(write => (write.Method, write.Path)));
+        Assert.Equal([("POST", $"{Repo}/git/commits"), ("POST", "graphql")], writes.Select(write => (write.Method, write.Path)));
         var commit = writes[0].Body!;
         Assert.Equal("4444444444444444444444444444444444444444", Field(commit, "tree"));
         Assert.Equal([Tip, Sha], commit["parents"]!.AsArray().Select(parent => parent!.GetValue<string>()));
         Assert.StartsWith("Merge pull request #7 from acme/tauntphoenix/dyd-1-frame", Field(commit, "message"));
-        Assert.Equal(MergeSha, Field(writes[1].Body, "sha"));
-        Assert.False(writes[1].Body!["force"]!.GetValue<bool>());
+        Assert.Contains("updateRefs(", Field(writes[1].Body, "query"));
+        Assert.Equal(RepositoryId, writes[1].Body!["variables"]!["input"]!["repositoryId"]!.GetValue<string>());
+        var update = RefUpdate(writes[1].Body);
+        Assert.Equal(TargetBranch.RefName, Field(update, "name"));
+        Assert.Equal(Tip, Field(update, "beforeOid"));
+        Assert.Equal(MergeSha, Field(update, "afterOid"));
+        Assert.NotEqual(ZeroSha, Field(update, "afterOid"));
+        Assert.False(update["force"]!.GetValue<bool>());
+        Assert.Equal(MergeSha, target.Tip);
     }
 
-    // Proof (d), two-parent path: the commit sits on the pin, so a tip that moved fails the unforced move.
-    [Fact]
-    public void BaseTipThatMovedBeforeTheRefUpdate_Refused17()
+    // Proof (d), two-parent path (DYD-523 review round 1): the commit sits on the pin, and the ref moves only
+    // from the pin. Another merge landing first fails the move, even when its tip is in the SHA's history,
+    // where an unforced fast-forward from that tip to the merge commit would still have been allowed.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ATargetThatMovesBeforeTheRefMove_FailsTheMoveAndNothingMerges(bool movedIsInTheShasHistory)
     {
-        FastForwardEligible();
-        _s.GitHub.On("PATCH", $"{Repo}/git/refs/heads/feature/x", Reply(422, """{ "message": "Update is not a fast forward" }"""));
+        var target = FastForwardEligible(
+            movedIsInTheShasHistory ? new() { [Moved] = [Tip], [Sha] = [Moved] } : new() { [Moved] = [Tip], [Sha] = [Tip] },
+            landsMeanwhile: Moved);
 
         var (exit, stdout, stderr) = _s.Merge();
 
         Assert.Equal(1, exit);
         Assert.Equal("refused: feature/x moved or no longer exists on acme/widgets; nothing merged - rerun", Lines(stderr)[0]);
+        Assert.Equal(Moved, target.Tip);
+        Assert.DoesNotContain("merged PR", stdout);
         var writes = _s.GitHub.Writes.ToList();
         Assert.Equal([Tip, Sha], writes[0].Body!["parents"]!.AsArray().Select(parent => parent!.GetValue<string>()));
-        Assert.False(writes[1].Body!["force"]!.GetValue<bool>());
-        Assert.DoesNotContain("merged PR", stdout);
+        Assert.Equal(Tip, Field(RefUpdate(writes[1].Body), "beforeOid"));
     }
 
     [Fact]
-    public void BaseGoneBeforeTheRefUpdate_Refused17()
+    public void BaseGoneBeforeTheRefMove_Refused17()
     {
         FastForwardEligible();
-        _s.GitHub.On("PATCH", $"{Repo}/git/refs/heads/feature/x", Reply(404, """{ "message": "Reference does not exist" }"""));
+        _s.GitHub.On("POST", "graphql", Reply(200, """{ "data": { "updateRefs": null }, "errors": [ { "message": "A ref update was rejected" } ] }"""));
+        _s.GitHub.On("GET", Branch, Reply(200, _s.BranchJson), Reply(404, """{ "message": "Branch not found" }"""));
 
         var (exit, _, stderr) = _s.Merge();
 
@@ -183,16 +203,88 @@ public sealed class PullRequestMergeTests : IDisposable
         Assert.Equal("refused: feature/x moved or no longer exists on acme/widgets; nothing merged - rerun", Lines(stderr)[0]);
     }
 
-    [Fact]
-    public void ARefUpdateARulesetRejects_IsAToolError()
+    // Whatever GitHub says, the ref decides: still on the pin, the move failed for another reason.
+    [Theory]
+    [InlineData("""[ { "message": "Repository rule violations found" } ]""", "Repository rule violations found")]
+    [InlineData("""[ { "message": "one" }, { "type": "FORBIDDEN" } ]""", "one; an unnamed error")]
+    public void ARefMoveGitHubRejectsOnAnUnmovedTip_IsAToolErrorWithGitHubsMessage(string errors, string said)
     {
-        FastForwardEligible();
-        _s.GitHub.On("PATCH", $"{Repo}/git/refs/heads/feature/x", Reply(422, """{ "message": "Repository rule violations found" }"""));
+        var target = FastForwardEligible();
+        _s.GitHub.On("POST", "graphql", Reply(200, $$"""{ "data": { "updateRefs": null }, "errors": {{errors}} }"""));
+
+        var (exit, stdout, stderr) = _s.Merge();
+
+        Assert.Equal(ExitCodes.ToolError, exit);
+        Assert.Equal($"{RefusedMove}: {said}", Lines(stderr)[0]);
+        Assert.Equal(Tip, target.Tip);
+        Assert.DoesNotContain("merged PR", stdout);
+    }
+
+    [Theory]
+    [InlineData(200, """{ "data": null }""")]
+    [InlineData(200, """{ "data": { "updateRefs": null } }""")]
+    [InlineData(200, """{ "data": { "updateRefs": { "clientMutationId": null } }, "errors": [ { "message": "partial" } ] }""")]
+    [InlineData(200, "{}")]
+    [InlineData(200, null)]
+    [InlineData(500, """{ "data": { "updateRefs": { "clientMutationId": null } } }""")]
+    [InlineData(502, null)]
+    [InlineData(0, null)]
+    public void AMalformedOrFailedRefMoveAnswerOnAnUnmovedTip_IsAToolError(int status, string? json)
+    {
+        var target = FastForwardEligible();
+        _s.GitHub.On("POST", "graphql", json == null ? Reply(status) : Reply(status, json));
+
+        var (exit, stdout, stderr) = _s.Merge();
+
+        Assert.Equal(ExitCodes.ToolError, exit);
+        Assert.StartsWith(RefusedMove, Lines(stderr)[0]);
+        Assert.Equal(Tip, target.Tip);
+        Assert.DoesNotContain("merged PR", stdout);
+    }
+
+    // An all-zero afterOid would delete the ref, so only a real commit SHA reaches the move.
+    [Theory]
+    [InlineData(ZeroSha)]
+    [InlineData("3333")]
+    [InlineData(null)]
+    public void AMergeCommitGitHubDoesNotNameAsACommit_IsAToolErrorBeforeTheRefMoves(string? named)
+    {
+        var target = FastForwardEligible();
+        _s.GitHub.On("POST", $"{Repo}/git/commits", Reply(201, new JsonObject { ["sha"] = named }));
 
         var (exit, _, stderr) = _s.Merge();
 
         Assert.Equal(ExitCodes.ToolError, exit);
-        Assert.Contains("Repository rule violations found (HTTP 422)", stderr);
+        Assert.Equal("error: GitHub named no merge commit", Lines(stderr)[0]);
+        Assert.DoesNotContain(_s.GitHub.Writes, write => write.Path == "graphql");
+        Assert.Equal(Tip, target.Tip);
+    }
+
+    [Fact]
+    public void ARepositoryWithoutANodeId_IsAToolErrorBeforeAnyWrite()
+    {
+        FastForwardEligible();
+        _s.GitHub.On("GET", Repo, Reply(200, """{ "full_name": "acme/widgets", "default_branch": "master" }"""));
+
+        var (exit, _, stderr) = _s.Merge();
+
+        Assert.Equal(ExitCodes.ToolError, exit);
+        Assert.Equal("error: GitHub named no node id for acme/widgets", Lines(stderr)[0]);
+        Assert.Empty(_s.GitHub.Writes);
+    }
+
+    // The re-read finds the ref on the merge commit: the move landed, though its answer was lost.
+    [Fact]
+    public void ARefMoveWhoseAnswerWasLost_FindsTheRefOnTheMergeAndReportsIt()
+    {
+        FastForwardEligible();
+        _s.GitHub.On("POST", "graphql", Reply(0));
+        _s.GitHub.On("GET", Branch, Reply(200, _s.BranchJson), Reply(200, BranchAt(MergeSha)));
+
+        var (exit, stdout, stderr) = _s.Merge();
+
+        Assert.True(exit == 0, stderr);
+        Assert.Contains("merged PR #7 (0123456789ab) into feature/x at 111111111111 as 333333333333; PR marked merged: yes", Lines(stdout));
     }
 
     #endregion
@@ -327,7 +419,8 @@ public sealed class PullRequestMergeTests : IDisposable
         {
             ("POST", Merges, var body) => Field(body, "base") == Target && Field(body, "head") == Sha,
             ("POST", $"{Repo}/git/commits", var body) => body!["parents"]!.AsArray()[0]!.GetValue<string>() == Tip,
-            ("PATCH", $"{Repo}/git/refs/heads/feature/x", var body) => Field(body, "sha") == MergeSha,
+            ("POST", "graphql", var body) => Field(RefUpdate(body), "name") == TargetBranch.RefName
+                && Field(RefUpdate(body), "beforeOid") == Tip && Field(RefUpdate(body), "afterOid") == MergeSha,
             _ => false
         }, $"{write.Method} {write.Path}"));
     }

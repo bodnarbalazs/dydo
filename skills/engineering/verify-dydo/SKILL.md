@@ -118,7 +118,8 @@ python3 skills/engineering/verify-dydo/scripts/officer_transition.py campaign --
 python3 skills/engineering/verify-dydo/scripts/officer_transition.py evaluate --evidence artifacts/dyd435/<run>
 ```
 
-`evaluate` re-judges retained timelines without relaunching any agent.
+`evaluate` rebuilds and re-judges each run from its retained raw sources without relaunching any
+agent; evidence written before the receipt channel has no `run.json` and is skipped.
 
 ## Helpers
 

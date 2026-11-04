@@ -6,7 +6,166 @@ date: 2026-11-04
 
 # DYD-504 toolchain modernization
 
-## Recovery successor — current disposition, 2026-11-04
+## Distribution successor — current disposition, 2026-11-04
+
+This section supersedes the runtime-install blocker and final-.NET-work statements
+in the retained hops below. The captain completed DYD-513: Microsoft.NETCore.App
+10.0.14 is installed alongside 10.0.11; SDK 10.0.303 and ASP.NET runtime 10.0.11
+remain unchanged. The install receipt is `captain-04d05fb7/runtime-install.log`.
+This writer installed no SDK, runtime or package and changed no global defaults.
+
+### Contract and implementation
+
+Before editing, `provisioning/pre-edit.json` records clean branch
+`DYD-504-modernize-toolchain`, the contracted isolated worktree, HEAD
+`04d05fb7d67b6a66635c9a49d48085db6c36657b`, ancestry through retained
+`43a016ba9ada3ae8b8615f0a55646fd3299d4c90` to original base
+`42882830292f44133f796ee3d152cb446ea4091f`, and the explicitly owned paths.
+The live DYD-504 contract matched the supplied 12:16:41.953Z version. All four
+retained archive checksums were verified; no original evidence was overwritten.
+
+All five .NET setup sites now use an isolated SDK directory and immediately run
+`.github/workflows/provision-dotnet-runtime.ps1`: CI build/test and full-stack;
+release matrix build, Windows validation, and NuGet packing. Microsoft's Windows
+or Unix installer adds only runtime 10.0.14 for the host architecture, preserving
+non-versioned host files and PATH. The script checks exact SDK 10.0.303 before and
+after installation and requires the selected host to list runtime 10.0.14.
+Release cross-compilation still selects its target RID independently. Release
+workflows, tags and publication were not executed.
+
+The named workflow tests were declared before implementation. Twelve focused
+workflow/runtime cases pass. With both workflows reverted to parent bytes, the
+two new provisioning cases fail with `Missing release step 'Provision patched
+.NET runtime'`; the workflow bytes were restored. Negative fixtures reject a
+missing or commented invocation, wrong shell, unpinned SDK, missing isolated
+install directory, and provisioning before SDK setup or after its consumers.
+
+### Distribution evidence
+
+The locally packed `dydo.3.5.1.nupkg` retains the repository's current version;
+it was inspected without installation or publication. Its
+`tools/net10.0/any/dydo.runtimeconfig.json` requests Microsoft.NETCore.App 10.0.14
+with `LatestMinor`. This deliberately raises the .NET tool minimum, as do ordinary
+framework-dependent build/run outputs and the CLI copied to test output. The
+3.6.0 Upgrade steps now tell users to upgrade their shared runtime first.
+
+`provisioning/distribution-probes` records six direct launch expectations. Using
+an isolated host with links to already-installed runtime files, built dydo,
+the test-output child and the unpacked tool each exit **150** when only 10.0.11 is
+visible, and each exit **0** after 10.0.14 is visible. The isolated host was removed;
+no runtime installation or global tool installation was performed. The package
+hash, all runtimeconfigs and launch logs are in `provisioning/distribution/`.
+
+Fresh unsuppressed RID restore passes. Its assets resolve both
+`Microsoft.DotNet.ILCompiler` and `runtime.linux-x64.Microsoft.DotNet.ILCompiler`
+at 10.0.14, with Host, Runtime and Runtime.NativeAOT download dependencies at
+10.0.14. Package SHA-512 identities are recorded in `distribution/result.json`.
+The security pin remains unchanged and no audit or warning suppression was added.
+
+Inspection of `release.yml`, `npm/lib/platform.js`, `npm/lib/download.js`,
+`npm/bin/dydo.cjs` and `npm/install.js` establishes the other routes: the five
+win-x64, linux-x64, linux-arm64, osx-x64 and osx-arm64 release archives are
+self-contained NativeAOT outputs; npm downloads and executes those same assets.
+They embed the patched runtime and need no separately installed shared runtime.
+npm's unsupported-platform fallback points to the .NET tool and inherits its
+minimum. The viewer is an embedded bundle, not another .NET distribution.
+No native archive was built or republished by this hop; this route evidence is
+workflow/downloader inspection plus resolved AOT package evidence.
+
+### Final gates and receipt reuse
+
+All command receipts below live under `dydo/_system/.local/dyd-504-proof/provisioning/`
+and retain exact argv/cwd, timestamps, exit, environment, input SHA-256 manifest,
+source patch and full output. Preflight discovered 3,441 .NET identities, expanding
+to 3,599 executed cases. Installed dependency/version collectors pass on CPython
+3.14.4, Node 26.13.0 and SDK 10.0.303. Ordinary and coverage runners own their
+isolated worktrees/processes; their outer deadlines are 25 minutes.
+
+| Receipt | Exit | Observation |
+|---|---|---|
+| `focused-green` | 0 | 12 workflow/runtime cases passed |
+| `workflow-revert-red` | 1 | Both provisioning cases reject parent workflows |
+| `fresh-audit-restore` | 0 | Patched AOT dependencies; audit enabled |
+| `final-build` | 0 | Release solution build, zero warnings/errors |
+| `local-tool-pack` | 0 | Local-only .NET tool package |
+| `distribution-probes` | 0 | All six expected launches: three 150, then three 0 |
+| `final-dotnet-suite` | 1 | 3,596 passed, three DYD-507 failures, zero skips |
+| `final-dotnet-static` | 0 | Zero findings and zero measurement gaps |
+| `final-dotnet-coverage` | 1 | 3,596 passed, same three DYD-507 failures, zero skips; one functional finding, zero gaps |
+| `documentation-check-final` | 0 | Final documentation check |
+
+The ordinary-suite failures remain exactly
+`GapCheckCommandTests.LauncherCancelsTheRunnerProcessTreeAndWaitsForItsDirectChild`,
+`CliScenarioProcessTests.OrphanedPipe_ReportsUnconfirmedCleanupAndRetainsScratch`,
+and `CliScenarioProcessTests.Timeout_TerminatesAndReapsParentAndDescendant`.
+Their comparable base evidence and unchanged-source attribution are retained
+below. DYD-507 owns them; its admiral disposition permits individual feature
+merges with these failures documented, not a passing-suite claim. The ordinary
+worktree was removed and deregistered and its recorded lingering child was reaped.
+The coverage campaign also completed with those same three failures, 3,596 passes
+and zero skips. Its owner records `complete: true`, `cleanup_confirmed: true`,
+`containment: linux-subreaper`, CPython `[3,14,4]` and subject status 1 in
+`results/assurance/run-48794e86e65b4ec09a388490f6b56dce/`
+`raw-1b40b37f916344628b8951a224413e61/identities.json`. Its single functional
+finding prevents a passing .NET coverage/HCRAP threshold claim. The .NET static
+facade receipt is `results/run-1793794906070-03c14cf4/result.json`; coverage is
+`results/run-1793795066370-d2f8c310/result.json`.
+
+The brief explicitly authorizes reuse of unaffected Python/Node/viewer receipts.
+`provisioning/input-reuse.json` lists every full-manifest difference and the exact
+row scope credited. No measured Python/Node/viewer source, test, dependency lock
+or runtime pin changed in this hop. Reused results are: Python 630 tests with
+zero failures and 60 platform skips (suite exit 0), Node 91 passed and one Windows
+skip, viewer 389 passed, and all three static rows with zero findings/gaps.
+Node and viewer coverage thresholds pass. Only the successful Python/Node rows
+of the old mixed facade runs are reused, never their failed aggregate. Current
+.NET static plus those compatible rows account for the static obligation; the
+full four-stack facade was not rerun redundantly.
+
+**Python coverage still fails with exactly 19 inherited threshold findings and
+zero gaps, exit 1.** The checksum-verified replay on 43a016ba and byte-identical
+flagged-method comparison to 42882830 remain in `recovery/`. No threshold,
+exclusion, waiver or policy changed. The captain/admiral owns this unresolved
+blocker; DYD-507's exception does not cover it. Coverage overall remains failed.
+
+### Handoff and focused recipe
+
+The successor commit binding, per-file hashes and post-freeze documentation-only
+delta are in `provisioning/commit.json`. New `provisioning-commands.tar.gz` and
+`provisioning-coverage-results.tar.gz`, checked by `PROVISIONING-SHA256SUMS`, retain
+this hop's evidence alongside all original archives. These ignored artifacts
+must travel with the handoff before removing the worktree. The proof index is
+the only tracked file changed after the executable-input freeze.
+
+Captain recipe from the worktree root, with the existing local dependencies:
+
+```bash
+py=dydo/_system/.local/static-gates/python/bin/python
+dotnet --list-sdks
+dotnet --list-runtimes
+dotnet build DynaDocs.sln -c Release --warnaserror
+"$py" DynaDocs.Tests/coverage/run_tests.py -- -c Release --filter FullyQualifiedName~ReleaseWorkflowTests
+dotnet bin/Release/net10.0/dydo.dll --version
+dotnet DynaDocs.Tests/bin/Release/net10.0/dydo.dll --version
+```
+
+For distribution reinspection, run `dotnet pack DynaDocs.csproj -c Release
+--no-build --no-restore -o /tmp/dyd-504-tool-inspection`, then read
+`tools/net10.0/any/dydo.runtimeconfig.json` from that local nupkg. The exact six-case
+launch recipe is retained as `provisioning/distribution_probe.py`; it expects a
+fresh evidence destination. The raw gate receipts provide exact rerunnable argv.
+
+Remaining: the Python 19-finding disposition/repair; hosted PR CI and native
+Windows/platform proof; the captain's focused rerun, fresh independent review,
+and later target update/integration. PowerShell is absent on this Linux host, so
+the provisioning script itself has not been executed here; workflow assertions
+and local runtime/SDK launches do not substitute for hosted installer execution.
+The 60 Python and one Node platform skips remain missing Windows proof. No PR,
+branch switch, merge, push, release, tag, publication or child agent was used.
+
+code-writer/model: gpt-6-astra (high). No self-review PASS is claimed.
+
+## Recovery successor — retained disposition, 2026-11-04
 
 This section supersedes the unfinished-scope and routing statements in the retained
 hop below. The original archives and their checksum file remain unchanged. Before

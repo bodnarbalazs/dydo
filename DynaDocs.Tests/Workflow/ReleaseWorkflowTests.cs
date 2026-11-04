@@ -16,7 +16,52 @@ public sealed class ReleaseWorkflowTests
         var project = System.Xml.Linq.XDocument.Load(RepositoryFile("DynaDocs.csproj"));
         Assert.Equal("10.0.14", Assert.Single(project.Descendants("RuntimeFrameworkVersion")).Value);
         Assert.Equal("true", Assert.Single(project.Descendants("PublishAot")).Value);
+        Assert.Equal("true", Assert.Single(project.Descendants("PackAsTool")).Value);
         Assert.Equal("LatestMinor", Assert.Single(project.Descendants("RollForward")).Value);
+    }
+
+    [Theory]
+    [InlineData("ci.yml", 2)]
+    [InlineData("release.yml", 3)]
+    public void Workflows_ProvisionPatchedRuntimeBeforeDotnetConsumers(string name, int expectedJobs)
+    {
+        var workflow = File.ReadAllText(RepositoryFile(".github", "workflows", name));
+        var jobs = ActiveJobs(workflow).Values.Where(job => job.Contains("actions/setup-dotnet@", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(expectedJobs, jobs.Length);
+        Assert.All(jobs, AssertPatchedRuntimeProvisioning);
+    }
+
+    [Fact]
+    public void Workflows_RejectMissingMisorderedOrUnpinnedRuntimeProvisioning()
+    {
+        var job = ActiveJobs(Workflow())["validation"];
+        var setup = JobStep(job, "Setup .NET");
+        var provision = JobStep(job, "Provision patched .NET runtime");
+        foreach (var invalid in new[]
+        {
+            job.Replace(provision, "", StringComparison.Ordinal),
+            Swap(job, setup, provision),
+            job.Replace("shell: pwsh", "shell: bash", StringComparison.Ordinal),
+            job.Replace("run: ./.github/workflows/provision-dotnet-runtime.ps1", "# run: ./.github/workflows/provision-dotnet-runtime.ps1", StringComparison.Ordinal),
+            job.Replace("dotnet-version: '10.0.303'", "dotnet-version: '10.0.x'", StringComparison.Ordinal),
+            job.Replace("DOTNET_INSTALL_DIR:", "REMOVED_DOTNET_INSTALL_DIR:", StringComparison.Ordinal),
+            job.Replace(provision, "", StringComparison.Ordinal) + "\n" + provision
+        })
+            Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertPatchedRuntimeProvisioning(ActiveText(invalid)));
+    }
+
+    private static void AssertPatchedRuntimeProvisioning(string job)
+    {
+        var setup = JobStep(job, "Setup .NET");
+        var provision = JobStep(job, "Provision patched .NET runtime");
+        Assert.Equal("'10.0.303'", StepField(setup, "dotnet-version"));
+        Assert.Equal("${{ runner.temp }}/dydo-assurance-dotnet", StepField(setup, "DOTNET_INSTALL_DIR"));
+        Assert.Equal("pwsh", StepField(provision, "shell"));
+        Assert.Equal("./.github/workflows/provision-dotnet-runtime.ps1", StepField(provision, "run"));
+        Assert.Null(StepField(provision, "if"));
+        Assert.Null(StepField(provision, "continue-on-error"));
+        var following = job[(StepIndex(job, "Setup .NET") + setup.Length)..].TrimStart();
+        Assert.StartsWith("- name: Provision patched .NET runtime\n", following);
     }
 
     [Fact]

@@ -59,6 +59,30 @@ An SDK 10.0.303 installation with only shared runtime 10.0.11 can build but cann
 launch framework-dependent dydo or the dydo children used by tests. Check
 `dotnet --list-runtimes` before these gates; package restore does not install the
 shared runtime. Provisioning a newer runtime requires the host owner's authorization.
+CI installs SDK 10.0.303 into a job-local directory, then runs
+`.github/workflows/provision-dotnet-runtime.ps1` to add only Microsoft.NETCore.App
+10.0.14 with Microsoft's installer. It preserves the SDK/host files and verifies
+both the selected SDK and the installed shared runtime before any .NET consumer.
+The script selects the Windows or Unix installer for the runner's host architecture;
+the release matrix's cross-compilation RID does not select the host runtime.
+
+### Distribution runtime requirements
+
+`PackAsTool` packages a framework-dependent CLI. The NuGet/.NET tool and direct
+`dotnet dydo.dll` launches (including CLI children of tests) require
+Microsoft.NETCore.App 10.0.14 or later in a compatible 10.x version. The generated
+runtimeconfig retains `LatestMinor` roll-forward; it does not permit an earlier
+patch or a different major version. A host with only 10.0.0–10.0.13 cannot launch it.
+The SDK version alone does not establish this runtime prerequisite.
+
+The release workflow publishes self-contained NativeAOT archives for win-x64,
+linux-x64, linux-arm64, osx-x64 and osx-arm64. Both direct GitHub-release downloads
+and npm's platform downloader use these same binaries: the patched runtime is
+embedded, so no separate .NET shared runtime is needed. npm's suggested fallback
+on unsupported platforms is the .NET tool and therefore inherits its runtime
+minimum. Local `dotnet run` and ordinary build outputs are framework-dependent;
+local NativeAOT `dotnet publish` outputs follow the self-contained route. The
+viewer bundle is embedded in the CLI, not another .NET distribution.
 
 The C# coverage campaign uses the existing Linux subreaper containment and retains raw streams,
 subject exit and cleanup evidence. A live detached descendant makes the campaign incomplete even

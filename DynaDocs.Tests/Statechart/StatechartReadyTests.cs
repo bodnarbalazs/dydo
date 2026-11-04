@@ -17,7 +17,7 @@ public class StatechartReadyTests
     {
         using var scope = new StatechartTestDirectory();
         var fixture = Fixture();
-        var before = Files(fixture);
+        var before = Content(fixture);
         var result = await RunReadyModel(scope.Path, fixture);
         Assert.Equal(1, result.Exit);
         Assert.Equal("", result.Error);
@@ -26,7 +26,9 @@ public class StatechartReadyTests
         Assert.Contains("bugPath", File.ReadAllText(Path.Combine(scope.Path, "chart", "chart.svg")));
         Assert.All(Directory.GetFiles(Path.Combine(scope.Path, "state"), "scratch-*.journal"), journal =>
             Assert.Contains("deleted-after-authoritative-drain", File.ReadAllText(journal)));
-        Assert.Equal(before, Files(fixture));
+        // A fixture verified by an earlier build is re-stamped once; its content never changes.
+        Assert.Equal(before, Content(fixture));
+        AssertCurrentReceipts(fixture);
     }
 
     [SkippableFact]
@@ -61,21 +63,29 @@ public class StatechartReadyTests
             identity["payload"] = "earlier-payload";
             File.WriteAllText(receipt, identity.ToJsonString());
         }
-        string[] Content() => Files(Path.Combine(dependencies, Relative))
-            .Where(file => !file.Contains(".ready.json", StringComparison.Ordinal)).ToArray();
-        var before = Content();
+        var before = Content(dependencies);
         var result = await RunReadyModel(scope.Path, dependencies);
         Assert.True(result.Exit == 1, result.Error);
         Assert.DoesNotContain("approval-required", result.Output);
         Assert.Contains("Bound breaks", result.Output);
+        AssertCurrentReceipts(dependencies);
+        Assert.Equal(before, Content(dependencies));
+    }
+
+    private static string[] Content(string dependencies) => Files(Path.Combine(dependencies, Relative))
+        .Where(file => !file.Contains(".ready.json", StringComparison.Ordinal)).ToArray();
+
+    private static void AssertCurrentReceipts(string dependencies)
+    {
         var assets = new StatechartAssets();
+        var receipts = Directory.GetFiles(Path.Combine(dependencies, Relative), ".ready.json", SearchOption.AllDirectories);
+        Assert.Equal(4, receipts.Length);
         Assert.All(receipts, receipt =>
         {
             var identity = JsonNode.Parse(File.ReadAllText(receipt))!.AsObject();
             Assert.Equal(assets.Release, identity["release"]!.GetValue<string>());
             Assert.Equal(assets.Digest, identity["payload"]!.GetValue<string>());
         });
-        Assert.Equal(before, Content());
     }
 
     private static string Fixture()

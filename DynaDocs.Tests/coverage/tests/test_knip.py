@@ -156,6 +156,19 @@ class KnipAccountingTests(unittest.TestCase):
         self.assertEqual([('stray.mjs', 'knip-files')],
                          [(row['path'], row['gate']) for row in self.native_report(model)['findings']])
 
+    def test_a_corpus_view_the_cli_loads_by_path_is_a_root_whose_unread_export_is_still_found(self):
+        view = 'skills/engineering/statechart/scripts/test/corpus/CounterView/view.mjs'
+        test = 'DynaDocs.Tests/coverage/tests/views.test.cjs'
+        importer = ("require('node:test')('view', async () => {\n"
+                    f"  const {{ state }} = await import('../../../{view}');\n  state(1);\n}});\n")
+        for path, text in ((view, 'export const state = v => v;\nexport const planted = () => 1;\n'), (test, importer)):
+            (self.root / path).parent.mkdir(parents=True, exist_ok=True)
+            (self.root / path).write_text(text, encoding='utf-8')
+        model = workspace_model(self.root, [test, view])
+        self.assertEqual([view], model['config']['workspaces']['../..']['entry'])
+        self.assertEqual([(view, 'knip-exports', 'planted')],
+                         [(row['path'], row['gate'], row['diagnostic']['name']) for row in self.native_report(model)['findings']])
+
     def test_an_absent_native_knip_installation_is_never_a_green_gate(self):
         runner = Collectors.__new__(Collectors)
         runner.root = self.root

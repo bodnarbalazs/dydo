@@ -10,9 +10,14 @@ PACKAGE_ROOTS = {'.': '../..', 'DynaDocs.Tests/coverage': '.', 'DynaDocs.Tests/H
                  'npm': '../../npm'}
 EXTENSIONS = {'.js', '.mjs', '.cjs'}
 ISSUES = ('files', 'exports', 'nsExports', 'duplicates', 'unresolved')
+# The statechart CLI loads a corpus view by path (--view FILE), as the corpus harness does for each
+# corpus folder that has one, so a view is a root of the graph as a host entry is.
+CORPUS_VIEWS = {f'skills/engineering/statechart/scripts/test/corpus/{name}/view.mjs' for name in (
+    'CounterView', 'Login', 'LoginGuarded', 'LoginParallel', 'MediaPlayer', 'MediaPlayerFixed',
+    'MediaPlayerProps', 'TwoPhase', 'TwoPhaseFixed')}
 HOST_ENTRIES = {'js_metrics.cjs', 'js_runtime.cjs', 'js_loader.mjs', 'test_discovery.cjs',
                 'knip_reporter.mjs', 'install.js', 'bin/dydo', 'bin/dydo.cjs',
-                'run-host-canaries.mjs', 'openai-sse-provider.mjs', 'setup-skills.mjs'}
+                'run-host-canaries.mjs', 'openai-sse-provider.mjs', 'setup-skills.mjs', *CORPUS_VIEWS}
 # Knip always adds its working directory as a workspace, so the viewer's graph declares this
 # package too, with nothing in it; index.html loads the viewer's one host entry.
 LANGUAGES = {'javascript': {'packages': PACKAGE_ROOTS, 'extensions': EXTENSIONS, 'entries': HOST_ENTRIES},

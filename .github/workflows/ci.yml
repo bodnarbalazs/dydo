@@ -6,6 +6,128 @@ on:
   pull_request:
 
 jobs:
+  python-coverage:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux
+            python: dydo/_system/.local/static-gates/python/bin/python
+          - os: windows-latest
+            platform: windows
+            python: dydo/_system/.local/static-gates/python/Scripts/python.exe
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+
+      - uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
+        with:
+          dotnet-version: '10.0.303'
+
+      - name: Prepare pinned Python assurance environment
+        run: python -m venv dydo/_system/.local/static-gates/python
+
+      - name: Install locked Python dependencies
+        run: ${{ matrix.python }} -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Install locked coverage dependencies
+        run: npm ci --prefix DynaDocs.Tests/coverage
+
+      - name: Prepare native evidence directories
+        shell: bash
+        run: mkdir -p DynaDocs.Tests/coverage/results/native-jobs DynaDocs.Tests/coverage/results/native-lifetime
+
+      - name: Preflight candidate, pins, dependencies and nonzero discovery
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          "${{ matrix.python }}" - <<'PY'
+          import json, platform, subprocess, sys, unittest
+          from pathlib import Path
+          tools = Path('DynaDocs.Tests/coverage')
+          sys.path.insert(0, str(tools.resolve()))
+          from gate_versions import javascript_versions, python_versions
+          candidate = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert not subprocess.check_output(['git', 'status', '--porcelain']), 'Dirty PR candidate'
+          versions = python_versions(tools)
+          assert platform.python_version() == versions['declared_runtime']
+          assert subprocess.check_output(['node', '--version'], text=True).strip() == 'v26.13.0'
+          javascript_versions(tools)
+          loader = unittest.TestLoader()
+          suite = loader.discover(str(tools / 'tests'), pattern='test_*.py')
+          assert not loader.errors, loader.errors
+          def cases(suite):
+              for item in suite:
+                  if isinstance(item, unittest.TestSuite):
+                      yield from cases(item)
+                  else:
+                      yield item
+          ids = [case.id() for case in cases(suite)]
+          counts = {name: sum(value.startswith(name + '.') for value in ids) for name in
+                    ('test_windows_job', 'test_windows_cancellation', 'test_control_dydo_lifetime')}
+          assert ids and all(counts.values()), counts
+          receipt = {'candidate': candidate, 'python': versions, 'tests': len(ids), 'native_tests': counts}
+          (tools / 'results/preflight.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
+          print(json.dumps(receipt))
+          PY
+
+      - name: Full Python suite and platform coverage gate
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          DYDO_NATIVE_TEST_EVIDENCE: DynaDocs.Tests/coverage/results/native-jobs
+          DYDO_LIFETIME_EVIDENCE: DynaDocs.Tests/coverage/results/native-lifetime
+          DYDO_CANCELLATION_EVIDENCE: DynaDocs.Tests/coverage/results/windows-cancellation
+        run: ${{ matrix.python }} DynaDocs.Tests/coverage/gap_check.py gate coverage --stack python
+
+      - name: Upload platform coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage-${{ matrix.platform }}
+          path: DynaDocs.Tests/coverage/results
+          if-no-files-found: error
+
+  python-coverage-union:
+    needs: python-coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: python-coverage-*
+          path: coverage-platforms
+
+      - name: Verify complete same-candidate platform union
+        run: >-
+          python DynaDocs.Tests/coverage/python_platform.py
+          --linux coverage-platforms/python-coverage-linux/adapters/python-coverage.json
+          --windows coverage-platforms/python-coverage-windows/adapters/python-coverage.json
+          --output coverage-platforms/union.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage-union
+          path: coverage-platforms/union.json
+          if-no-files-found: error
+
   assurance-cancellation:
     strategy:
       fail-fast: false

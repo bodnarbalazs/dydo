@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import threading
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "DynaDocs.Tests/coverage"))
@@ -14,7 +15,7 @@ import windows_job as jobs
 
 
 def supervise(kernel, job, process, readers, request, stack):
-    state = {"readers": readers, "held": {}}
+    state = {"readers": readers, "held": {}, "interrupted": threading.Event()}
     failure = None
     error_message = None
     try:

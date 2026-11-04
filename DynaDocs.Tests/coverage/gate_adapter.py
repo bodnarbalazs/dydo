@@ -502,8 +502,11 @@ def collect_python_coverage(root, raw, inventory):
     from python_coverage import collect as native_collect
     from python_join import collect as join
     from gate_policy import evaluate_policy
+    from python_platform import load_selection, scope
     run = _report_root(raw)
     sources = _target_paths(inventory, "python")
+    native_platform = {"linux": "linux", "win32": "windows"}.get(sys.platform)
+    selection = load_selection(root, sources, native_platform)
     argv = [sys.executable, "-m", "unittest", "discover", "-s",
             "DynaDocs.Tests/coverage/tests", "-p", "test_*.py"]
     started = time.monotonic()
@@ -514,8 +517,9 @@ def collect_python_coverage(root, raw, inventory):
         return _coverage_report("python-coverage", facts,
                                 [{"gate": "functional", "child_exit": child}], [],
                                 commands, _python_artifacts(raw, run))
-    modules = join(root, raw, sources)
-    return _coverage_report("python-coverage", {**facts, "modules": modules},
+    modules, selection = scope(root, join(root, raw, sources), native_platform, selection)
+    return _coverage_report("python-coverage", {**facts, "modules": modules,
+                                               "platform_selection": selection},
                             evaluate_policy(modules), [], commands,
                             _python_artifacts(raw, run))
 

@@ -2,6 +2,10 @@
   "schema": 1,
   "modules": [
     {
+      "module": "DynaDocs.Tests/coverage/python_platform.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_python_platform.py"]
+    },
+    {
       "module": "Services/Statechart/StatechartChecker.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartCheckerTests.cs"]
     },

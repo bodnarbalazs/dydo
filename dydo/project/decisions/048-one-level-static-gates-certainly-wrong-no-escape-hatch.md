@@ -162,6 +162,36 @@ and adding a third file is another §5 triage to record, not a routine edit. Rea
 a driver whose logic was never extracted, or widen it past the coverage thresholds, and it becomes
 the escape hatch §1 refuses.
 
+## Proposed amendment 2026-11-04 — platform-scoped Python measurement
+
+DYD-518 implements this amendment for Balazs's review before merge; this paragraph does not
+record his approval. The policy stays line ≥ 80%, branch ≥ 60% per module and HCRAP ≤ 20 per
+method. A native implementation is measured on the operating system where it executes. Linux
+continues to measure every platform-neutral Python module and the neutral remainder of mixed
+modules. Platform selection is measurement ownership, not an exclusion or coverage exemption.
+
+`DynaDocs.Tests/coverage/python-platforms.json` records the selection explicitly: Linux owns
+neutral code; named top-level native callables in `run_tests.py`, `windows_job.py` and
+`skills/engineering/verify-dydo/scripts/owned_process.py` belong to Windows. Their spans include
+nested callables, decorators and defaults. Every other point in those mixed modules remains
+Linux-owned, including configuration, validation, orchestration and module initialization. Each
+mixed source has a normalized UTF-8 SHA-256 pin, so changes require reviewing the selection again.
+Missing sources or callables, source drift, missing selection and unsupported platforms fail closed.
+
+Both hosted jobs run the whole Python suite with ordinary coverage.py and callable monitoring.
+The consumer partitions the complete native line, branch and callable denominator by this
+selection and applies the unchanged policy to each platform's portion of each module. A branch
+belongs to the platform of its origin line; a module-initialization callable is partitioned by its
+body points, retaining its full complexity scores on each measured portion. Static assurance is
+unchanged and still measures every maintained source on each invocation.
+
+Both gates must pass on the same clean PR candidate. Their receipts record all source hashes,
+the selection hash and every point's owner. A dependent union check requires identical complete
+denominators and source hashes, checks each platform's actual points, callable bodies and policy,
+and rejects missing measurements or different candidates. Native raw coverage and counters remain
+in the artifacts; no point is discarded from the two-platform union. This amends measurement
+placement under §2, without widening the September coverage exemption or changing any threshold.
+
 ## Consequences
 
 - `gap_check.py` in each project: one threshold set; HCRAP replaces classic CRAP; per-method

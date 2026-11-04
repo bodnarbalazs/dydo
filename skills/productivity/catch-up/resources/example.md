@@ -27,7 +27,7 @@ The guard checks each shell command an agent runs. An October retro found six ki
 
 #### Recently completed
 
-✅ **The fix is not safe to merge: it lets two real commands through.**
+✅ **Review found the fix unsafe to merge: it lets two real commands through.**
 
 To allow harmless body text, the fix treats it as data. But a command can print text that a later shell runs, and Bash can run text that only looks like PowerShell data. In both cases the guard misses a real command.
 
@@ -38,7 +38,7 @@ Inside a nested command, the guard loses track of where the text goes. A local c
 <details>
 <summary>🔎 Evidence</summary>
 
-Eight review rounds failed. Reviewers fed inert strings to the hook harness and ran no payload. The general test suite passed and missed both cases. The code is `Services/BashCommandAnalyzer.cs`.
+Eight review rounds failed. The rounds found both misses by feeding inert strings to the hook harness, and ran no payload. The general test suite passed and missed both cases. The code is `Services/BashCommandAnalyzer.cs`.
 
 </details>
 
@@ -51,7 +51,7 @@ Eight review rounds failed. Reviewers fed inert strings to the hook harness and 
 ❓ **Keep body-text relief through a new design, give it up, or leave the fix held?**
 
 - **Design first.** An agent designs a way to keep all six fixes and stop both misses, with an estimate. A yes authorizes design only, no code. Cost and feasibility are unknown.
-- **Give up body-text relief.** The other five fixes stay. Harmless writes that mention a long-running command can warn again. This needs a scoped fix and a review.
+- **Give up body-text relief.** The other five fixes stay. Harmless writes whose body text quotes a risky command can be refused again. This needs a scoped fix and a review.
 - **Leave it held.** All six false refusals stay, and work that depends on the guard waits.
 
 ➡️ **Design first.** It is the only option that keeps the behavior you approved, and it costs one design step before any code changes.
@@ -70,7 +70,7 @@ Eight review rounds failed. Reviewers fed inert strings to the hook harness and 
 
 #### In flight
 
-✈️ **A docs writer is rewriting the skill and its example. Its captain reviews them next.**
+✈️ **A docs writer is rewriting the skill and its example. A fresh reviewer judges them next.**
 
 #### Next
 
@@ -123,6 +123,6 @@ A TeasePlayer catch-up asked you to approve "option B" for "creator-code admissi
 
 #### Next
 
-🤖 **The captain reviews the rewrite against your shape, then returns it to the admiral.**
+🤖 **A fresh reviewer judges the rewrite against your shape; the captain then returns it to the admiral.**
 
 💬 **Later: you read the example in a walkthrough and give your verdict on the wording.** Your approval is the last step before the skill is done. (DYD-442)

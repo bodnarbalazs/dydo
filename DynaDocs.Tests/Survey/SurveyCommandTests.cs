@@ -150,6 +150,25 @@ public sealed class SurveyCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task ANullRequiredField_IsAToolError_NamingIt()
+    {
+        _linear.Serve(_ => IssuesPage(Node(Issue("1").Replace("\"title\":\"Issue 1\"", "\"title\":null", StringComparison.Ordinal))));
+
+        var (exitCode, stdout, stderr) = await Run("25acbbb9a90b");
+
+        Assert.Equal(ExitCodes.ToolError, exitCode);
+        Assert.Contains("Linear sent an unexpected response: Linear sent null title.", stderr);
+        Assert.Empty(stdout);
+    }
+
+    [Fact]
+    public async Task ACanceledRun_IsNotReportedAsLinearsAnswer()
+    {
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => SurveyCommand.RunAsync(
+            ["25acbbb9a90b"], FakeLinear.ApiKey, _server.Endpoint.ToString(), new FixedClock(), new CancellationToken(true)));
+    }
+
+    [Fact]
     public void Command_TakesTheProjectArgument_AndSaysItNeedsTheKey()
     {
         var command = SurveyCommand.Create();

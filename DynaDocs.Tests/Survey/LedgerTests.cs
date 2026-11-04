@@ -126,4 +126,15 @@ public class LedgerTests
         Assert.Equal("the core lane and DYD-8", rows[1].Text);
         Assert.Equal(["DYD-7", "DYD-8"], rows[1].Keys);
     }
+
+    [Fact]
+    public void ARowsText_KeepsEmphasisCodeAndEntities_DropsHtmlTags_AndRowsInAQuoteCount()
+    {
+        var rows = Ledger.Parse(
+            "## Ledger\n- **DYD-1** _waits_ on `DYD-2` &amp; <span>review</span>\\\n  more\n> - DYD-3 quoted lane\n")!;
+
+        Assert.Equal("DYD-1 waits on DYD-2 & review more", rows[0].Text);
+        Assert.Equal(["DYD-1", "DYD-2"], rows[0].Keys);
+        Assert.Equal(["DYD-3"], rows[1].Keys);
+    }
 }

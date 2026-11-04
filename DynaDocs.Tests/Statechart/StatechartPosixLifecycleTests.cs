@@ -28,6 +28,22 @@ public class StatechartPosixLifecycleTests
             Assert.Contains("deleted-after-authoritative-drain", File.ReadAllText(journal)));
     }
 
+    // The socket path only serves the first connection; the connected pair no longer needs it.
+    [SkippableFact]
+    public async Task AConnectedChannelLeavesNoSocketFileBehind()
+    {
+        Skip.If(OperatingSystem.IsWindows(), "Windows pipes leave no socket file.");
+        var name = "statechart-" + Guid.NewGuid().ToString("N");
+        var socket = Path.Combine(Path.GetTempPath(), "CoreFxPipe_" + name);
+        using var server = PosixStatechartChannel.Listen(name);
+        var connecting = PosixStatechartChannel.ConnectAsync(name);
+        await server.AcceptAsync();
+        using var client = await connecting;
+        Assert.False(File.Exists(socket));
+        await client.SendAsync("still connected");
+        Assert.Equal("still connected", await server.ReadAsync());
+    }
+
     [Fact]
     public async Task PosixControlEofDrainsOutsideThePublicProcessBeforeRegisteredCleanup()
     {

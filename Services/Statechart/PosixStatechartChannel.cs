@@ -8,27 +8,33 @@ internal sealed class PosixStatechartChannel : IDisposable
     private readonly PipeStream _pipe;
     private readonly StreamReader _reader;
     private readonly StreamWriter _writer;
+    private readonly string _socket;
 
-    private PosixStatechartChannel(PipeStream pipe)
+    private PosixStatechartChannel(PipeStream pipe, string socket)
     {
         _pipe = pipe;
+        _socket = socket;
         _reader = new StreamReader(pipe, Encoding.UTF8, false, 1024, leaveOpen: true);
         _writer = new StreamWriter(pipe, new UTF8Encoding(false), 1024, leaveOpen: true) { NewLine = "\n" };
     }
 
-    public static PosixStatechartChannel Listen(string name) => new(new NamedPipeServerStream(name,
-        PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly));
+    public static PosixStatechartChannel Listen(string name) => new(new NamedPipeServerStream(Socket(name),
+        PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly), Socket(name));
 
-    public async Task AcceptAsync() => await ((NamedPipeServerStream)_pipe).WaitForConnectionAsync()
-        .WaitAsync(TimeSpan.FromSeconds(30));
+    // The path only admits the first connection; a run that ends by exec never disposes the listener to remove it.
+    public async Task AcceptAsync()
+    {
+        try { await ((NamedPipeServerStream)_pipe).WaitForConnectionAsync().WaitAsync(TimeSpan.FromSeconds(30)); }
+        finally { File.Delete(_socket); }
+    }
 
     public static async Task<PosixStatechartChannel> ConnectAsync(string name)
     {
-        var pipe = new NamedPipeClientStream(".", name, PipeDirection.InOut, PipeOptions.Asynchronous);
+        var pipe = new NamedPipeClientStream(".", Socket(name), PipeDirection.InOut, PipeOptions.Asynchronous);
         try
         {
             await pipe.ConnectAsync(30000);
-            return new PosixStatechartChannel(pipe);
+            return new PosixStatechartChannel(pipe, Socket(name));
         }
         catch { pipe.Dispose(); throw; }
     }
@@ -43,6 +49,9 @@ internal sealed class PosixStatechartChannel : IDisposable
     }
 
     public int Export() => PosixStatechartDescriptors.Inherit(_pipe.SafePipeHandle.DangerousGetHandle());
+
+    // An absolute pipe name is the socket's own path; this one is where .NET puts a bare name.
+    private static string Socket(string name) => Path.Combine(Path.GetTempPath(), "CoreFxPipe_" + name);
 
     public void Dispose()
     {

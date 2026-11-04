@@ -417,6 +417,19 @@ class AssuranceCampaignTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256((worktree / "Services/Thing.cs").read_bytes()).hexdigest(),
                              source["sha256"])
 
+    def test_interrupted_build_publishes_receipt_and_names_unbuilt_artifacts(self):
+        with tempfile.TemporaryDirectory() as folder:
+            worktree = Path(folder) / "worktree"
+            result_root = worktree / CAMPAIGN_RESULTS
+            result_root.mkdir(parents=True)
+            published = Path(folder) / "published"
+            owner_result = {"complete": False, "cleanup_confirmed": True, "failure_category": "KeyboardInterrupt"}
+            run_tests._publish_assurance(worktree, result_root, worktree / "owner", str(published), owner_result)
+            manifest = json.loads((published / "identities.json").read_text())
+            self.assertEqual(owner_result, manifest["campaign"])
+            self.assertEqual([], manifest["artifacts"])
+            self.assertEqual(sorted(CAMPAIGN_BINARIES), sorted(manifest["missing_artifacts"]))
+
     def test_publish_assurance_refuses_a_relative_or_already_owned_output(self):
         with tempfile.TemporaryDirectory() as folder:
             worktree = Path(folder) / "worktree"
@@ -453,6 +466,78 @@ class AssuranceCampaignTests(unittest.TestCase):
             self.assertEqual("preflight", manifest["campaign"]["failure_category"])
 
 
+@unittest.skipUnless(sys.platform == "linux", "Linux subreaper containment")
+class LinuxCampaignTests(unittest.TestCase):
+    def campaign(self, source):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            write_file(root / "DynaDocs.Tests/coverage/csharp_coverage.py", source)
+            owner = ("import sys; from pathlib import Path; "
+                     "sys.path.insert(0, sys.argv[1]); import run_tests; "
+                     "raise SystemExit(run_tests._run_assurance_campaign("
+                     "Path(sys.argv[2]), [], sys.argv[3]))")
+            completed = subprocess.run([sys.executable, "-c", owner,
+                                        str(Path(run_tests.__file__).parent), str(root),
+                                        str(root / "published")], capture_output=True, text=True)
+            output = root / "published"
+            result = json.loads((output / "identities.json").read_text())["campaign"]
+            streams = [(output / "owner" / name).read_text()
+                       for name in ("stdout.log", "stderr.log")]
+            return completed.returncode, result, streams
+
+    def test_linux_campaign_preserves_status_streams_and_clean_completion(self):
+        for status in (0, 7):
+            with self.subTest(status=status):
+                code, result, streams = self.campaign(
+                    "import sys; print('out'); print('err', file=sys.stderr); "
+                    f"raise SystemExit({status})")
+                self.assertEqual(status, code)
+                self.assertEqual(status, result["subject_status"])
+                self.assertTrue(result["complete"])
+                self.assertTrue(result["cleanup_confirmed"])
+                self.assertEqual(["out\n", "err\n"], streams)
+                self.assertEqual("linux-subreaper", result["containment"])
+
+    def test_detached_descendant_is_ended_and_cannot_report_success(self):
+        child = "import os, signal; print(os.getpid(), flush=True); signal.pause()"
+        source = ("import subprocess, sys\n"
+                  f"child = subprocess.Popen([sys.executable, '-c', {child!r}], "
+                  "stdout=subprocess.PIPE, text=True, start_new_session=True)\n"
+                  "print(child.stdout.readline(), end='', flush=True)\n")
+        code, result, streams = self.campaign(source)
+        self.assertEqual(2, code)
+        self.assertEqual(0, result["subject_status"])
+        self.assertFalse(result["complete"])
+        self.assertTrue(result["cleanup_confirmed"])
+        self.assertEqual("descendant_leak", result["failure_category"])
+        self.assertNotIn(int(streams[0]), run_tests._live_descendants(os.getpid()))
+        stat = run_tests._stat_fields(streams[0].strip())
+        self.assertTrue(stat is None or stat[1] == "Z", stat)
+
+    def test_execution_failure_and_cleanup_failure_are_incomplete_receipts(self):
+        cases = (FileNotFoundError("missing executable"),
+                 subprocess.TimeoutExpired(["subject"], 1800), KeyboardInterrupt())
+        for failure in cases:
+            with self.subTest(failure=type(failure).__name__), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                with patch.object(run_tests, "contain_descendants", return_value=None), \
+                     patch.object(subprocess, "run", side_effect=failure):
+                    result = run_tests._run_linux_campaign(["subject"], root, root / "owner")
+                self.assertFalse(result["complete"])
+                self.assertTrue(result["cleanup_confirmed"])
+                self.assertEqual(type(failure).__name__, result["failure_category"])
+                self.assertIsNone(result["subject_status"])
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            with patch.object(run_tests, "contain_descendants", return_value=None), \
+                 patch.object(run_tests, "end_descendants", side_effect=TimeoutError("still live")):
+                result = run_tests._run_linux_campaign(
+                    [sys.executable, "-c", "pass"], root, root / "owner")
+            self.assertFalse(result["complete"])
+            self.assertFalse(result["cleanup_confirmed"])
+            self.assertEqual("TimeoutError", result["failure_category"])
+
+
 class WorktreeCleanupTests(unittest.TestCase):
     """The runner registers a marker before running anything, and cleans up on every exit path."""
 
@@ -483,6 +568,18 @@ class WorktreeCleanupTests(unittest.TestCase):
             self.assertEqual(1, rc)
             remove.assert_called_once()
             self.assertEqual(Path(folder) / "dydo-test-cafefeed", remove.call_args.args[0])
+
+    def test_unconfirmed_cleanup_retains_the_snapshot(self):
+        with tempfile.TemporaryDirectory() as folder:
+            patches = self._isolate_run_tests(folder)
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], \
+                 patch.object(run_tests, "end_descendants", side_effect=TimeoutError("still live")), \
+                 patch.object(run_tests, "remove_worktree") as remove, \
+                 patch.object(subprocess, "run", return_value=subprocess.CompletedProcess([], 0)):
+                with self.assertRaisesRegex(TimeoutError, "still live"):
+                    run_tests.run_tests(job=run_tests.SUBREAPER)
+            remove.assert_not_called()
+            self.assertTrue((Path(folder) / "dydo-test-cafefeed").is_dir())
 
     def test_main_preserves_direct_and_leading_separator_filter_forms(self):
         for prefix in ([], ["--"]):
@@ -673,7 +770,8 @@ class LinuxDescendantCleanupTests(unittest.TestCase):
                  patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
                  patch.object(run_tests.os, "kill", side_effect=lambda pid, sig: kills.append(pid)), \
                  patch.object(run_tests.signal, "SIGKILL", SIGKILL, create=True):
-                run_tests._end_reaped_descendants()
+                with self.assertRaisesRegex(TimeoutError, "cleanup could not be confirmed"):
+                    run_tests._end_reaped_descendants()
 
         # Rounds at 0, 4 and 8 seconds; at 12 the 10-second deadline has passed.
         self.assertEqual(12.0, now[0])
@@ -685,11 +783,11 @@ class LinuxDescendantCleanupTests(unittest.TestCase):
             run_tests.end_descendants(None)
             self.assertFalse(reaped.called or members.called)
             run_tests.end_descendants(run_tests.SUBREAPER)
-            reaped.assert_called_once_with()
+            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS)
             members.assert_not_called()
-            run_tests.end_descendants(42)
-            members.assert_called_once_with(42)
-            reaped.assert_called_once_with()
+            run_tests.end_descendants(42, seconds=3)
+            members.assert_called_once_with(42, 3)
+            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS)
 
 
 class StaleWorktreeAgeOverrideTests(unittest.TestCase):
@@ -862,7 +960,7 @@ class StaleWorktreePruningTests(unittest.TestCase):
             real_scandir, real_listdir = os.scandir, os.listdir
 
             def poisoned_scandir(path="."):
-                if Path(path).resolve() == temp_root:
+                if not isinstance(path, int) and Path(path).resolve() == temp_root:
                     raise AssertionError(f"must not enumerate the temp root: {path}")
                 return real_scandir(path)
 

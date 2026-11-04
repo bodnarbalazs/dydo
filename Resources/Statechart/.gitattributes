@@ -1,0 +1,4 @@
+# Installed payload identities describe these exact cross-platform bytes.
+* -text
+dependency-lock.json whitespace=cr-at-eol
+payload.items.props whitespace=cr-at-eol

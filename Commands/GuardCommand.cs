@@ -698,7 +698,7 @@ public static partial class GuardCommand
     {
         var warns = MatchingCommandNudges(command, env, shell)
             .Where(m => IsWarn(m.Nudge))
-            .Select(m => new WarnStep(m.Nudge, m.Match, $".nudge-{ComputeNudgeHash(m.Nudge.Pattern)}",
+            .Select(m => new WarnStep(m.Nudge, m.Match, CommandWarnMarkerName(m.Nudge.Pattern, command),
                 "Run the same command again to proceed anyway."))
             .ToList();
         if (modeSet)
@@ -783,7 +783,8 @@ public static partial class GuardCommand
     /// <summary>
     /// Warns block once and pass the rerun, all of a call's warns together: while any has no marker,
     /// each unmarked one gets its marker and its message and the call is blocked; once all are
-    /// marked, the call spends every marker and passes. The marker is global, not per-agent (DR-041).
+    /// marked, the call spends every marker and passes. The marker is global, not per-agent (DR-041);
+    /// a command warn's also names the command (<see cref="CommandWarnMarkerName"/>).
     /// Callers run this only after every hard block on the call has passed (DYD-386).
     /// </summary>
     private static int? EnforceWarns(IReadOnlyList<WarnStep> warns, GuardEnv env)
@@ -814,6 +815,18 @@ public static partial class GuardCommand
     {
         var bytes = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(pattern));
         return Convert.ToHexString(bytes)[..8].ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// A command warn's pass-through marker, keyed by its nudge and by the command with whitespace
+    /// runs collapsed, so only the same command retried passes (DYD-503). Still global: no agent or
+    /// session in the key (DR-041).
+    /// </summary>
+    internal static string CommandWarnMarkerName(string pattern, string command)
+    {
+        var normalised = Regex.Replace(command, "[ \t\r\n]+", " ").Trim(' ');
+        var bytes = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(normalised));
+        return $".nudge-{ComputeNudgeHash(pattern)}-{Convert.ToHexString(bytes)[..16].ToLowerInvariant()}";
     }
 
     /// <summary>

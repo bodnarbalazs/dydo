@@ -5,12 +5,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 function parseRoot(argv) {
-  if (argv.length === 0) return path.dirname(fileURLToPath(import.meta.url));
-  if (argv.length !== 2 || argv[0] !== "--root" || !argv[1]) throw new Error("usage: setup-skills.mjs [--root <existing-directory>]");
-  return path.resolve(argv[1]);
+  if (argv.length === 0) return { root: path.dirname(fileURLToPath(import.meta.url)), selected: false };
+  if (![2, 4].includes(argv.length) || argv[0] !== "--root" || !argv[1] ||
+      argv.length === 4 && (argv[2] !== "--skill" || argv[3] !== "statechart"))
+    throw new Error("usage: setup-skills.mjs [--root <existing-directory>] [--skill statechart]");
+  return { root: path.resolve(argv[1]), selected: argv.length === 4 };
 }
 
-const root = parseRoot(process.argv.slice(2));
+const { root, selected } = parseRoot(process.argv.slice(2));
 const canonicalRoot = path.join(root, "skills");
 const hostRoots = [path.join(root, ".claude", "skills"), path.join(root, ".agents", "skills")];
 
@@ -72,6 +74,11 @@ async function walkCategory(categoryRoot, skills, seen) {
 async function canonicalSkills() {
   const rootEntry = await existing(canonicalRoot);
   if (!rootEntry?.isDirectory()) throw new Error(`Missing canonical skill directory: ${canonicalRoot}`);
+  if (selected) {
+    const source = path.join(canonicalRoot, "engineering", "statechart");
+    if (!(await existing(path.join(source, "SKILL.md")))?.isFile()) throw new Error(`Missing canonical statechart skill: ${source}`);
+    return [{ name: "statechart", source }];
+  }
 
   const skills = [];
   await walkCategory(canonicalRoot, skills, new Map());
@@ -128,7 +135,7 @@ if (!(await existing(root))?.isDirectory()) throw new Error(`Root is not a direc
 
 const skills = await canonicalSkills();
 const { planned, stale } = await planProjections(skills); // validates every host root and collision first
-const dead = await deadLinks(skills);
+const dead = selected ? [] : await deadLinks(skills);
 
 for (const target of [...stale, ...dead]) {
   // Always a symlink/junction (the only case that reaches `stale` or `dead`), so `force` alone unlinks it;

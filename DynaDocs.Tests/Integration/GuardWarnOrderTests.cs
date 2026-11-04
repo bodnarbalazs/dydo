@@ -31,7 +31,7 @@ public sealed class GuardWarnOrderTests : IntegrationTestBase
 
     private string MarkerPath(string name) => Path.Combine(GuardCommand.GuardEnv.Load(TestDir).MarkerDir, name);
 
-    private string WarnMarker => MarkerPath($".nudge-{GuardCommand.ComputeNudgeHash(WarnEverything)}");
+    private string WarnMarker(string command) => MarkerPath(GuardCommand.CommandWarnMarkerName(WarnEverything, command));
 
     private void Arm(string marker)
     {
@@ -87,14 +87,14 @@ public sealed class GuardWarnOrderTests : IntegrationTestBase
         string command, bool worker, string refusal, bool markerBefore)
     {
         await InitWithNudges();
-        if (markerBefore) Arm(WarnMarker);
+        if (markerBefore) Arm(WarnMarker(command));
 
         for (var attempt = 1; attempt <= 4; attempt++)
         {
             var reason = (await GuardWithStdinAsync(Hook(command, worker))).AssertPreToolUseDenied();
 
             Assert.True(reason.Contains(refusal) && !reason.Contains(WarnMessage), $"try {attempt}: {reason}");
-            Assert.True(File.Exists(WarnMarker) == markerBefore, $"try {attempt} changed the warn marker");
+            Assert.True(File.Exists(WarnMarker(command)) == markerBefore, $"try {attempt} changed the warn marker");
         }
     }
 
@@ -104,11 +104,12 @@ public sealed class GuardWarnOrderTests : IntegrationTestBase
         await InitWithNudges();
 
         var first = (await GuardWithStdinAsync(Hook("echo hi"))).AssertPreToolUseDenied();
+        Assert.True(File.Exists(WarnMarker("echo hi")), "the first try arms the command's marker");
         var second = await GuardWithStdinAsync(Hook("echo hi"));
 
         Assert.Contains("BLOCKED: " + WarnMessage, first);
         second.AssertPreToolUseAllowed();
-        Assert.False(File.Exists(WarnMarker));
+        Assert.False(File.Exists(WarnMarker("echo hi")));
     }
 
     // Contract item 3: a host that cannot ask refuses every try, and neither the command warn's
@@ -119,20 +120,21 @@ public sealed class GuardWarnOrderTests : IntegrationTestBase
     public async Task ModeSet_OnAHostThatCannotAsk_RefusesEveryTryAndLeavesTheMarkers(bool markersBefore)
     {
         await InitWithNudges();
+        const string modeSet = "dydo mode set overnight on";
         var reminderMarker = MarkerPath(".nudge-mode-set");
         if (markersBefore)
         {
-            Arm(WarnMarker);
+            Arm(WarnMarker(modeSet));
             Arm(reminderMarker);
         }
 
         for (var attempt = 1; attempt <= 4; attempt++)
         {
-            var result = await GuardWithStdinAsync(Hook("dydo mode set overnight on", permissionMode: "dontAsk"), ClaudeHook);
+            var result = await GuardWithStdinAsync(Hook(modeSet, permissionMode: "dontAsk"), ClaudeHook);
 
             var reason = result.AssertPreToolUseDenied();
             Assert.True(reason.StartsWith("BLOCKED: This host cannot ask"), $"try {attempt}: {reason}");
-            Assert.True(File.Exists(WarnMarker) == markersBefore, $"try {attempt} changed the warn marker");
+            Assert.True(File.Exists(WarnMarker(modeSet)) == markersBefore, $"try {attempt} changed the warn marker");
             Assert.True(File.Exists(reminderMarker) == markersBefore, $"try {attempt} changed the reminder marker");
         }
     }
@@ -149,6 +151,20 @@ public sealed class GuardWarnOrderTests : IntegrationTestBase
             decisions.Add(Decision(await GuardWithStdinAsync(Hook("dydo mode set overnight on"), ClaudeHook)));
 
         Assert.Equal(["deny", "ask", "deny", "ask"], decisions);
+    }
+
+    // DYD-503 through the hook: the shipped install warn passes only the same command retried; a
+    // different install after a warn is warned on its own.
+    [Fact]
+    public async Task InstallWarn_ADifferentInstallAfterAWarn_IsWarnedToo_AndEachRetryPasses()
+    {
+        await InitProjectAsync("none");
+        var decisions = new List<string>();
+
+        foreach (var command in new[] { "pnpm add left-pad", "pnpm add other", "pnpm add left-pad", "pnpm add other" })
+            decisions.Add(Decision(await GuardWithStdinAsync(Hook(command))));
+
+        Assert.Equal(["deny", "deny", "allow", "allow"], decisions);
     }
 
     [Fact]

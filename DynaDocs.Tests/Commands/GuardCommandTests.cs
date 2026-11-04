@@ -5,7 +5,9 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using DynaDocs.Commands;
 using DynaDocs.Models;
+using DynaDocs.Serialization;
 using DynaDocs.Services;
+using DynaDocs.Tests.Services;
 using DynaDocs.Utils;
 
 /// <summary>
@@ -652,8 +654,7 @@ public class GuardCommandTests : IDisposable
         var env = GuardCommand.GuardEnv.Load(_testDir);
         var workspace = env.MarkerDir;  // warn-nudge markers are global, machine-local state (DR-041)
         var pattern = @"dangerous-command";
-        var hash = GuardCommand.ComputeNudgeHash(pattern);
-        var markerPath = Path.Combine(workspace, $".nudge-{hash}");
+        var markerPath = Path.Combine(workspace, GuardCommand.CommandWarnMarkerName(pattern, "dangerous-command"));
 
         WriteConfigWithNudge(pattern, "Don't do that", "warn");
         env = GuardCommand.GuardEnv.Load(_testDir);
@@ -670,8 +671,7 @@ public class GuardCommandTests : IDisposable
         var env = GuardCommand.GuardEnv.Load(_testDir);
         var workspace = env.MarkerDir;
         var pattern = @"dangerous-command";
-        var hash = GuardCommand.ComputeNudgeHash(pattern);
-        var markerPath = Path.Combine(workspace, $".nudge-{hash}");
+        var markerPath = Path.Combine(workspace, GuardCommand.CommandWarnMarkerName(pattern, "dangerous-command"));
 
         WriteConfigWithNudge(pattern, "Don't do that", "warn");
         env = GuardCommand.GuardEnv.Load(_testDir);
@@ -696,8 +696,8 @@ public class GuardCommandTests : IDisposable
         var env = GuardCommand.GuardEnv.Load(_testDir);
 
         var workspace = env.MarkerDir;
-        var markerA = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternA)}");
-        var markerB = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternB)}");
+        var markerA = Path.Combine(workspace, GuardCommand.CommandWarnMarkerName(patternA, "risky-alpha"));
+        var markerB = Path.Combine(workspace, GuardCommand.CommandWarnMarkerName(patternB, "risky-beta"));
 
         GuardCommand.CheckWarnNudges("risky-alpha", env);
 
@@ -749,13 +749,176 @@ public class GuardCommandTests : IDisposable
         WriteConfigWithNudge(pattern, "Prefer the wrapper script.", "notice");
         var env = GuardCommand.GuardEnv.Load(_testDir);
         var markerPath = Path.Combine(
-            env.MarkerDir, $".nudge-{GuardCommand.ComputeNudgeHash(pattern)}");
+            env.MarkerDir, GuardCommand.CommandWarnMarkerName(pattern, "noticeable-command --now"));
 
         var (result, stderr) = RunNudge(() => GuardCommand.CheckBlockNudges("noticeable-command --now", env));
 
         Assert.Null(result);
         Assert.Contains("NOTICE: Prefer the wrapper script.", stderr);
         Assert.False(File.Exists(markerPath), "a notice must not create a pass-through marker");
+    }
+
+    // DYD-499: the shipped library-install nudge, driven through the real default config. These
+    // assert only the contract that holds however the pass-through marker is keyed: the first
+    // attempt warns, the same command retried passes, and a restore never warns.
+    private GuardCommand.GuardEnv LoadEnvWithTheDefaultNudges()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
+            JsonSerializer.Serialize(ConfigFactory.CreateDefault(), DydoConfigJsonContext.Default.DydoConfig));
+        return GuardCommand.GuardEnv.Load(_testDir);
+    }
+
+    [Theory]
+    [InlineData("pnpm add left-pad", "pnpm add")]
+    [InlineData("uv add requests", "uv add")]
+    [InlineData("git pull && npm install left-pad", "npm install")]
+    public void InstallNudge_DefaultConfig_BlocksTheFirstAttempt_AndLetsTheSameRetryPass(string command, string named)
+    {
+        var env = LoadEnvWithTheDefaultNudges();
+
+        var (first, firstStderr) = RunNudge(() => GuardCommand.CheckBlockNudges(command, env) ?? GuardCommand.CheckWarnNudges(command, env));
+        var (retry, retryStderr) = RunNudge(() => GuardCommand.CheckBlockNudges(command, env) ?? GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, first);
+        Assert.Contains($"BLOCKED: Installing or adding a library or tool needs the user's permission ({named}).", firstStderr);
+        Assert.Contains("Run the same command again to proceed anyway.", firstStderr);
+        Assert.Null(retry);
+        Assert.Empty(retryStderr);
+    }
+
+    [Theory]
+    [InlineData("pnpm install --frozen-lockfile")]
+    [InlineData("npm ci")]
+    [InlineData("uv sync --frozen")]
+    [InlineData("uv sync --locked")]
+    [InlineData("dotnet restore")]
+    [InlineData("dotnet tool restore")]
+    [InlineData("pnpm install")]
+    [InlineData("npm install")]
+    public void InstallNudge_DefaultConfig_RestoreNeverWarns_AndCreatesNoMarker(string command)
+    {
+        var env = LoadEnvWithTheDefaultNudges();
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckBlockNudges(command, env) ?? GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+        Assert.False(
+            Directory.Exists(env.MarkerDir) && Directory.EnumerateFiles(env.MarkerDir, ".nudge-*").Any(),
+            "a restore must not create a pass-through marker");
+    }
+
+    // DYD-503: a command warn's marker is keyed by the command, so "retry this exact command" holds.
+    private static string InstallMarker(GuardCommand.GuardEnv env, string command) =>
+        Path.Combine(env.MarkerDir, GuardCommand.CommandWarnMarkerName(ConfigFactory.InstallNudge.Pattern, command));
+
+    [Fact]
+    public void CommandWarn_ADifferentCommandAfterAWarn_IsBlockedAndLeavesTheFirstMarker()
+    {
+        var env = LoadEnvWithTheDefaultNudges();
+
+        var (first, _) = RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add left-pad", env));
+        var (other, otherStderr) = RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add other", env));
+
+        Assert.Equal(ExitCodes.ToolError, first);
+        Assert.Equal(ExitCodes.ToolError, other);
+        Assert.Contains("(pnpm add)", otherStderr);
+        Assert.True(File.Exists(InstallMarker(env, "pnpm add other")), "the other command arms its own marker");
+        Assert.True(File.Exists(InstallMarker(env, "pnpm add left-pad")), "the other command must not spend the first marker");
+
+        var (retry, retryStderr) = RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add left-pad", env));
+
+        Assert.Null(retry);
+        Assert.Empty(retryStderr);
+    }
+
+    [Fact]
+    public void CommandWarn_TheIdenticalRetry_SpendsOnlyItsOwnMarker()
+    {
+        var env = LoadEnvWithTheDefaultNudges();
+        RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add left-pad", env));
+        RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add other", env));
+
+        var (retry, _) = RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add left-pad", env));
+
+        Assert.Null(retry);
+        Assert.False(File.Exists(InstallMarker(env, "pnpm add left-pad")), "the retry spends its own marker");
+        Assert.True(File.Exists(InstallMarker(env, "pnpm add other")), "another command's marker stays");
+        Assert.Single(Directory.EnumerateFiles(env.MarkerDir, ".nudge-*"));
+    }
+
+    [Theory]
+    [InlineData("pnpm  add   left-pad", true)]
+    [InlineData("pnpm add\tleft-pad\n", true)]
+    [InlineData("  pnpm add left-pad\r\n", true)]
+    [InlineData("pnpm add Left-Pad", false)]
+    [InlineData("PNPM add left-pad", false)]
+    public void CommandWarn_ARetry_PassesOnlyWhenItIsTheSameCommandUpToWhitespace(string retryCommand, bool passes)
+    {
+        var env = LoadEnvWithTheDefaultNudges();
+        RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add left-pad", env));
+
+        var (retry, _) = RunNudge(() => GuardCommand.CheckWarnNudges(retryCommand, env));
+
+        Assert.Equal(passes ? null : ExitCodes.ToolError, retry);
+    }
+
+    [Theory]
+    [InlineData("pnpm add left-pad", "pnpm add left-pad", true)]
+    [InlineData("pnpm add left-pad", "  pnpm add left-pad  ", true)]
+    [InlineData("pnpm add left-pad", "pnpm\tadd\r\nleft-pad\n", true)]
+    [InlineData("pnpm add left-pad", "pnpm \t add  left-pad", true)]
+    [InlineData("echo 'a  b'", "echo 'a b'", true)]
+    [InlineData("pnpm add left-pad", "pnpm add Left-Pad", false)]
+    [InlineData("pnpm add left-pad", "pnpm add left-pad2", false)]
+    [InlineData("pnpm add left-pad", "pnpm addleft-pad", false)]
+    public void CommandWarnMarkerName_NormalisesWhitespaceOnly(string a, string b, bool same)
+    {
+        var nameA = GuardCommand.CommandWarnMarkerName("p", a);
+        var nameB = GuardCommand.CommandWarnMarkerName("p", b);
+
+        Assert.Equal(same, nameA == nameB);
+    }
+
+    [Fact]
+    public void CommandWarnMarkerName_IsThePatternHashThenTheCommandsSha256Prefix()
+    {
+        Assert.Equal($".nudge-{GuardCommand.ComputeNudgeHash("p")}-e57b95a7a197242d",
+            GuardCommand.CommandWarnMarkerName("p", " pnpm add\tleft-pad\n"));
+    }
+
+    [Fact]
+    public void CommandWarnMarkerName_DiffersByPatternForTheSameCommand()
+    {
+        Assert.NotEqual(
+            GuardCommand.CommandWarnMarkerName("risky-alpha", "risky-alpha risky-beta"),
+            GuardCommand.CommandWarnMarkerName("risky-beta", "risky-alpha risky-beta"));
+    }
+
+    // All-or-nothing across a call's warns: arming one leaves the call blocked on the other, and the
+    // call passes only once both of its command-keyed markers are set, spending both.
+    [Fact]
+    public void CommandWarn_TwoWarnsOnOneCall_BlockUntilBothAreMarked_ThenSpendBoth()
+    {
+        const string command = "risky-alpha risky-beta";
+        WriteConfigWithNudges(("risky-alpha", "Warning A", "warn"), ("risky-beta", "Warning B", "warn"));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var markerA = Path.Combine(env.MarkerDir, GuardCommand.CommandWarnMarkerName("risky-alpha", command));
+        var markerB = Path.Combine(env.MarkerDir, GuardCommand.CommandWarnMarkerName("risky-beta", command));
+        Directory.CreateDirectory(env.MarkerDir);
+        File.WriteAllText(markerA, "armed");
+
+        var (first, firstStderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, first);
+        Assert.DoesNotContain("Warning A", firstStderr);
+        Assert.Contains("BLOCKED: Warning B", firstStderr);
+        Assert.True(File.Exists(markerA) && File.Exists(markerB), "a blocked call spends no marker");
+
+        var (second, _) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Null(second);
+        Assert.False(File.Exists(markerA) || File.Exists(markerB), "the passing call spends both markers");
     }
 
     private static (int? Result, string Stderr) RunNudge(Func<int?> check)

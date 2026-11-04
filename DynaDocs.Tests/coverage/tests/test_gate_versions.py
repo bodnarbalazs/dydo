@@ -56,12 +56,12 @@ class GateVersionTests(unittest.TestCase):
         lock = self.root / 'requirements.lock'
         lock.write_text(f'six=={INSTALLED}\n', encoding='utf-8')
         runtime_pin = self.root / '.python-version'
-        runtime_pin.write_text('3.12.10\n', encoding='utf-8')
+        runtime_pin.write_text('3.14.4\n', encoding='utf-8')
 
         facts = gate_versions.python_versions(self.root)
 
         self.assertEqual([{'name': 'six', 'version': INSTALLED}], facts['packages'])
-        self.assertEqual('3.12.10', facts['declared_runtime'])
+        self.assertEqual('3.14.4', facts['declared_runtime'])
         self.assertEqual(platform.python_version(), facts['runtime'])
         self.assertEqual('CPython', facts['implementation'])
         self.assertEqual(hashlib.sha256(runtime_pin.read_bytes()).hexdigest(), facts['runtime_pin_sha256'])
@@ -69,7 +69,7 @@ class GateVersionTests(unittest.TestCase):
 
     def test_unpinned_absent_and_mismatched_python_requirements_fail_closed(self):
         lock = self.root / 'requirements.lock'
-        (self.root / '.python-version').write_text('3.12.10\n', encoding='utf-8')
+        (self.root / '.python-version').write_text('3.14.4\n', encoding='utf-8')
         cases = [(f'six>={INSTALLED}\n', ValueError), ('dydo-absent-distribution==1.0\n',
                  importlib.metadata.PackageNotFoundError), ('six==0.0.1\n', ValueError)]
         for text, failure in cases:
@@ -80,8 +80,8 @@ class GateVersionTests(unittest.TestCase):
     def test_python_runtime_pin_must_be_one_exact_single_line_version(self):
         (self.root / 'requirements.lock').write_text(f'six=={INSTALLED}\n', encoding='utf-8')
         pin = self.root / '.python-version'
-        cases = (None, '', '3.12', '3.12.x', '3.12.11\n', '>=3.12',
-                 '3.12.10\n3.12.11\n', ' 3.12.10\n')
+        cases = (None, '', '3.14', '3.14.x', '3.14.5\n', '>=3.14',
+                 '3.14.4\n3.14.5\n', ' 3.14.4\n')
         for value in cases:
             if pin.exists():
                 pin.unlink()
@@ -90,26 +90,26 @@ class GateVersionTests(unittest.TestCase):
             with self.subTest(pin=value), self.assertRaises((OSError, ValueError)):
                 gate_versions.python_versions(self.root)
 
-    def test_python_runtime_accepts_any_cpython_312_patch_and_reports_the_observed_version(self):
+    def test_python_runtime_accepts_any_cpython_314_patch_and_reports_the_observed_version(self):
         (self.root / 'requirements.lock').write_text(f'six=={INSTALLED}\n', encoding='utf-8')
-        (self.root / '.python-version').write_text('3.12.10\n', encoding='utf-8')
+        (self.root / '.python-version').write_text('3.14.4\n', encoding='utf-8')
 
         with patch.object(gate_versions.platform, 'python_implementation', return_value='CPython'), \
-             patch.object(gate_versions.platform, 'python_version', return_value='3.12.99'), \
-             patch.object(gate_versions.sys, 'version_info', (3, 12, 99)):
+             patch.object(gate_versions.platform, 'python_version', return_value='3.14.99'), \
+             patch.object(gate_versions.sys, 'version_info', (3, 14, 99)):
             facts = gate_versions.python_versions(self.root)
 
-        self.assertEqual('3.12.10', facts['declared_runtime'])
-        self.assertEqual('3.12.99', facts['runtime'])
+        self.assertEqual('3.14.4', facts['declared_runtime'])
+        self.assertEqual('3.14.99', facts['runtime'])
 
     def test_python_runtime_rejects_non_cpython_and_wrong_series(self):
         (self.root / 'requirements.lock').write_text(f'six=={INSTALLED}\n', encoding='utf-8')
-        (self.root / '.python-version').write_text('3.12.10\n', encoding='utf-8')
-        for implementation, version in (('PyPy', (3, 12, 10)), ('CPython', (3, 11, 10))):
+        (self.root / '.python-version').write_text('3.14.4\n', encoding='utf-8')
+        for implementation, version in (('PyPy', (3, 14, 10)), ('CPython', (3, 11, 10))):
             with self.subTest(implementation=implementation, version=version), \
                  patch.object(gate_versions.platform, 'python_implementation', return_value=implementation), \
                  patch.object(gate_versions.sys, 'version_info', version), \
-                 self.assertRaisesRegex(ValueError, 'requires CPython 3.12'):
+                 self.assertRaisesRegex(ValueError, 'requires CPython 3.14'):
                 gate_versions.python_versions(self.root)
 
     def test_javascript_lock_requires_every_declared_exact_version(self):
@@ -190,8 +190,8 @@ class GateVersionTests(unittest.TestCase):
         answer = gate_versions.collect_versions(
             self.runner(repository / 'DynaDocs.Tests/coverage', 'versions'))
 
-        for name, command, pin in (('node', ['node', '--version'], 'v22.13.0'),
-                                   ('sdk', ['dotnet', '--version'], '10.0.300')):
+        for name, command, pin in (('node', ['node', '--version'], 'v26.13.0'),
+                                   ('sdk', ['dotnet', '--version'], '10.0.303')):
             observed = _native_version(command)
             with self.subTest(name=name):
                 self.assertEqual(observed, answer['facts'][name]['version'])

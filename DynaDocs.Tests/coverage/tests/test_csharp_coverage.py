@@ -15,6 +15,7 @@ from pathlib import Path
 from copy import deepcopy
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from gate_run import STATIC_GATE_INTERPRETER
 from csharp_coverage import (ASSEMBLY_PROJECTS, GATE_METRICS_PREBUILT_ENV, _assembly_facts, _candidate_assemblies, _identity_classes, _identity_producer, _source_facts, _same_instrumented_map,
                              _altcover_aliases, _same_artifacts, _same_native_map, _same_restored_map,
                              _subject_commands, _template_original_map, _validate_instrumented,
@@ -210,7 +211,7 @@ def _replay_coverage(root, name):
 class CSharpCoverageTests(unittest.TestCase):
     def test_campaign_mechanism_callables_stay_within_cognitive_budget(self):
         root = Path(__file__).resolve().parents[3]
-        python = root / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+        python = root / STATIC_GATE_INTERPRETER
         metrics = subprocess.run([
             str(python), str(root / "DynaDocs.Tests/coverage/python_metrics.py")
         ], input=(root / "DynaDocs.Tests/coverage/csharp_coverage.py").read_text(encoding="utf-8"),
@@ -514,7 +515,7 @@ class CSharpCoverageTests(unittest.TestCase):
                 ("Missing or ambiguous template module",
                  _template_report(_template_module_xml("B", "bin/A.dll", "ab", method))),
                 ("Template module outside campaign root",
-                 _template_report(_template_module_xml("A", "C:/elsewhere/A.dll", "ab", method))),
+                 _template_report(_template_module_xml("A", (root.parent / "elsewhere/A.dll").as_posix(), "ab", method))),
                 ("Unknown template module alias",
                  _template_report(_template_module_xml("A", "bin/Other.dll", "ab", method))),
                 ("Original template module hash mismatch",

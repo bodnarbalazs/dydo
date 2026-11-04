@@ -56,6 +56,7 @@ public sealed class SurveyCommandTests : IDisposable
 
         Assert.Equal(ExitCodes.ToolError, exitCode);
         Assert.Equal(MapCommand.MissingKeyHelp, stderr);
+        Assert.StartsWith("LINEAR_API_KEY is not set, so dydo cannot read Linear.", stderr);
         Assert.Empty(stdout);
         Assert.Empty(_linear.Calls);
     }
@@ -75,6 +76,65 @@ public sealed class SurveyCommandTests : IDisposable
             + "pickable DYD-1 Issue 1 — unstarted, unassigned, no open blocker\n",
             stdout.ReplaceLineEndings("\n"));
         Assert.Empty(stderr);
+    }
+
+    [Fact]
+    public async Task AnEmptyProject_WithALedger_HasNoFindings()
+    {
+        _linear.Serve(call => call.Operation == "ProjectIssues" ? IssuesPage("") : ProjectContent("\"## Ledger\\n\""));
+
+        var (exitCode, stdout, _) = await Run("25acbbb9a90b");
+
+        Assert.Equal(ExitCodes.Success, exitCode);
+        Assert.Equal("dydo survey Map 2026-11-04T21:40:05Z: 0 findings\n", stdout.ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public async Task AProseOnlyLedger_LanesNothing()
+    {
+        _linear.Serve(call => call.Operation == "ProjectIssues"
+            ? IssuesPage(Node(Issue("1", state: Started, assignee: """{"name":"Ada"}""")))
+            : ProjectContent("\"## Ledger\\nDYD-1 is in the prose.\""));
+
+        var (_, stdout, _) = await Run("25acbbb9a90b");
+
+        Assert.Equal(
+            "dydo survey Map 2026-11-04T21:40:05Z: 1 findings\n"
+            + "unlaned DYD-1 Issue 1 — open, and no ledger row names it or its parent\n",
+            stdout.ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public async Task AnArchivedBlocker_IsNoBlocker()
+    {
+        _linear.Serve(call => call.Operation == "ProjectIssues"
+            ? IssuesPage(Node(Issue("1"), inverseRelations: Connection(
+                Incoming("r9", "blocks", Issue("9", state: Done, project: InOther, archivedAt: "\"2026-11-01T00:00:00.000Z\"")))))
+            : ProjectContent("\"## Ledger\\n- DYD-1 lane\""));
+
+        var (_, stdout, _) = await Run("25acbbb9a90b");
+
+        Assert.Equal(
+            "dydo survey Map 2026-11-04T21:40:05Z: 1 findings\n"
+            + "pickable DYD-1 Issue 1 — unstarted, unassigned, no open blocker\n",
+            stdout.ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public async Task ATicketMissingMidRead_IsNamed_NotCalledAnUnknownProject()
+    {
+        _linear.Serve(call => call.Operation switch
+        {
+            "ProjectIssues" => IssuesPage(Node(Issue("1"), relations: Connection("", more: true, cursor: "c1"))),
+            "IssueRelationsPage" => """{"data":{"issue":null}}""",
+            _ => ProjectContent("\"## Ledger\""),
+        });
+
+        var (exitCode, stdout, stderr) = await Run("25acbbb9a90b");
+
+        Assert.Equal(ExitCodes.ToolError, exitCode);
+        Assert.Equal("dydo survey: Linear has no ticket 1.\n", stderr.ReplaceLineEndings("\n"));
+        Assert.Empty(stdout);
     }
 
     [Fact]
@@ -98,6 +158,9 @@ public sealed class SurveyCommandTests : IDisposable
         Assert.Equal("project", Assert.Single(command.Arguments).Name);
         Assert.Contains("LINEAR_API_KEY", command.Description);
     }
+
+    private const string Started = """{"name":"In Progress","type":"started","color":"#f2c94c"}""";
+    private const string Done = """{"name":"Done","type":"completed","color":"#5e6ad2"}""";
 
     private sealed class FixedClock : TimeProvider
     {

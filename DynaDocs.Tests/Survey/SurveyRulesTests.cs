@@ -41,7 +41,9 @@ public class SurveyRulesTests
         priorities ??= [];
         foreach (var issue in issues.Concat(external))
             priorities.TryAdd(issue.Id, 0);
-        return SurveyRules.Find(new LinearProjectRead(graph, content ?? LedgerOf(issues), priorities));
+        var parents = issues.Where(issue => issue.ParentId != null)
+            .ToDictionary(issue => issue.Id, issue => "DYD-" + issue.ParentId!["id-".Length..]);
+        return SurveyRules.Find(new LinearProjectRead(graph, content ?? LedgerOf(issues), priorities, parents));
     }
 
     private static List<string> Lines(List<SurveyFinding> findings) => [.. findings.Select(finding => finding.ToString())];
@@ -69,7 +71,18 @@ public class SurveyRulesTests
         var findings = Survey([Issue(1, "duplicate")], external: [Issue(9, "backlog", external: true)],
             relations: [Blocks(1, 9)]);
 
-        Assert.Equal(["DYD-9"], Kinds(findings, "unblocked"));
+        Assert.Equal(["unblocked DYD-9 Issue 9 — every blocker in the Project's graph is closed: DYD-1"],
+            Lines(findings).Where(line => line.StartsWith("unblocked", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void Unblocked_NamesEachBlockerOnce_InKeyOrder_WhateverTheRelationOrder()
+    {
+        var findings = Survey(
+            [Issue(1, "backlog"), Issue(2, "completed"), Issue(3, "completed"), Issue(10, "canceled")],
+            relations: [Blocks(10, 1), Blocks(3, 1), new("r-again", "blocks", "id-2", "id-1"), Blocks(2, 1)]);
+
+        Assert.Contains("unblocked DYD-1 Issue 1 — every blocker is closed: DYD-2, DYD-3, DYD-10", Lines(findings));
     }
 
     [Fact]
@@ -109,16 +122,25 @@ public class SurveyRulesTests
     }
 
     [Fact]
+    public void Unlaned_NotWhenTheLedgerNamesAParentOutsideTheGraph()
+    {
+        var findings = Survey([Issue(1, "started", "Ada", parent: 99)], content: "## Ledger\n- DYD-99 owns this lane\n");
+
+        Assert.Empty(Kinds(findings, "unlaned"));
+    }
+
+    [Fact]
     public void StaleRow_NamesOnlyClosedIssues_AndDoesNotReadAsDone()
     {
         var findings = Survey(
             [Issue(1, "completed"), Issue(2, "canceled"), Issue(3, "completed"), Issue(4, "completed"), Issue(5, "started", "Ada")],
             content: """
                 ## Lane ledger
+                | Lane | Tickets | State |
+                | -- | -- | -- |
                 | Lane | DYD-1, DYD-2 | waiting on review |
                 - DYD-3 lane: Done
                 - DYD-4 and DYD-5, still running
-                - DYD-4 and LC-77, waiting on another team
                 """);
 
         Assert.Equal(
@@ -137,6 +159,64 @@ public class SurveyRulesTests
         var findings = Survey([Issue(1, "completed")], content: $"## Lane ledger\n- DYD-1 lane: {word}\n");
 
         Assert.Empty(Kinds(findings, "stale-row"));
+    }
+
+    [Theory]
+    [InlineData("not done")]
+    [InlineData("not merged")]
+    [InlineData("not yet merged")]
+    [InlineData("isn't merged")]
+    [InlineData("hasn't been merged")]
+    [InlineData("never landed")]
+    public void StaleRow_ANegatedDoneWord_DoesNotReadAsDone(string phrase)
+    {
+        var findings = Survey([Issue(2, "completed")], content: $"## Lane ledger\n- DYD-2: awaiting review; {phrase}\n");
+
+        Assert.Equal(["DYD-2"], Kinds(findings, "stale-row"));
+    }
+
+    [Theory]
+    [InlineData("[DYD-2](https://linear.app/x/issue/DYD-2/inquisition-completed) waiting for review")]
+    [InlineData("DYD-2 waiting for review, see https://example.com/merged")]
+    [InlineData("DYD-2 waiting for review, see <https://example.com/done>")]
+    public void StaleRow_ADoneWordInALinkTargetOrUrl_DoesNotReadAsDone(string row)
+    {
+        var findings = Survey([Issue(2, "completed")], content: $"## Lane ledger\n- {row}\n");
+
+        Assert.Equal(["DYD-2"], Kinds(findings, "stale-row"));
+    }
+
+    [Fact]
+    public void StaleRow_JudgesOnlyTheKeysInTheGraph()
+    {
+        var findings = Survey(
+            [Issue(1, "completed"), Issue(2, "completed"), Issue(3, "started", "Ada")],
+            content: """
+                ## Lane ledger
+                - DYD-1 checksums as SHA-256 over UTF-8, waiting
+                - DYD-2 and LC-77, waiting on another team
+                - UTF-8 and SHA-256 notes, waiting
+                - DYD-1 and DYD-3, waiting
+                """);
+
+        Assert.Equal(
+            ["stale-row DYD-1 Issue 1 — the row names only closed issues: DYD-1 Done",
+                "stale-row DYD-2 Issue 2 — the row names only closed issues: DYD-2 Done"],
+            Lines(findings).Where(line => line.StartsWith("stale-row", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void Uncontracted_AnUnassignedBacklogProjectIssue_WithNoOpenBlocker()
+    {
+        var findings = Survey(
+            [Issue(1, "backlog"), Issue(2, "backlog"), Issue(3, "started", "Ada"), Issue(4, "backlog", "Ada"),
+                Issue(5, "backlog"), Issue(6, "completed"), Issue(7), Issue(8, "triage")],
+            external: [Issue(9, "backlog", external: true)],
+            relations: [Blocks(3, 2), Blocks(6, 5)]);
+
+        Assert.Equal(["DYD-1", "DYD-5"], Kinds(findings, "uncontracted"));
+        Assert.Contains("uncontracted DYD-1 Issue 1 — Backlog, unassigned, no open blocker", Lines(findings));
+        Assert.Equal(["DYD-7"], Kinds(findings, "pickable"));
     }
 
     [Fact]
@@ -179,12 +259,12 @@ public class SurveyRulesTests
     public void Findings_AreSortedByKind_ThenByKeyNumber()
     {
         var findings = Survey(
-            [Issue(10, "started"), Issue(9, "started"), Issue(2), Issue(1, "started", "Ada")],
+            [Issue(10, "started"), Issue(9, "started"), Issue(3, "backlog"), Issue(2), Issue(1, "started", "Ada")],
             content: "## Ledger\n- DYD-1 lane\n");
 
         Assert.Equal(
-            ["pickable DYD-2", "started-unassigned DYD-9", "started-unassigned DYD-10",
-                "unlaned DYD-2", "unlaned DYD-9", "unlaned DYD-10"],
+            ["pickable DYD-2", "started-unassigned DYD-9", "started-unassigned DYD-10", "uncontracted DYD-3",
+                "unlaned DYD-2", "unlaned DYD-3", "unlaned DYD-9", "unlaned DYD-10"],
             findings.Select(finding => $"{finding.Kind} {finding.Key}"));
     }
 

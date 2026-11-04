@@ -16,6 +16,7 @@ Feature: Survey a Project's lanes
       | Shipped | DYD-4 | merged |
       - DYD-6 started lane
       - DYD-7 and DYD-11 question lane
+      - DYD-12 and DYD-13 backlog lane
       ## Notes
       - DYD-5 named after the ledger
       """
@@ -32,17 +33,20 @@ Feature: Survey a Project's lanes
       | DYD-9  | Backlog     |          |        | DYD-3      |          | 0        | Other   |
       | DYD-10 | Todo        | Ada      |        |            |          | 0        | Map     |
       | DYD-11 | Backlog     | Ada      |        |            | Question | 2        | Map     |
+      | DYD-12 | Backlog     |          |        |            |          | 0        | Map     |
+      | DYD-13 | Backlog     |          |        | DYD-1      |          | 0        | Map     |
     When I survey "25acbbb9a90b"
     Then the survey exits 0
     And the survey prints:
       """
-      dydo survey Map <time>: 8 findings
+      dydo survey Map <time>: 9 findings
       pickable DYD-8 Issue 8 — unstarted, unassigned, no open blocker
       question-no-priority DYD-7 Issue 7 — an open Question with no priority
       stale-row DYD-3 Issue 3 — the row names only closed issues: DYD-3 Done
       started-unassigned DYD-6 Issue 6 — In Progress, with no assignee
       unblocked DYD-5 Issue 5 — every blocker is closed: DYD-4
-      unblocked DYD-9 Issue 9 — every blocker is closed: DYD-3
+      unblocked DYD-9 Issue 9 — every blocker in the Project's graph is closed: DYD-3
+      uncontracted DYD-12 Issue 12 — Backlog, unassigned, no open blocker
       unlaned DYD-5 Issue 5 — open, and no ledger row names it or its parent
       unlaned DYD-10 Issue 10 — open, and no ledger row names it or its parent
       """
@@ -91,7 +95,7 @@ Feature: Survey a Project's lanes
     Given Linear has no such Project
     When I survey "25acbbb9a90b"
     Then the survey exits 2
-    And the error says "no such Linear Project: 25acbbb9a90b"
+    And the error says "Linear has no project 25acbbb9a90b"
 
   Scenario: Without LINEAR_API_KEY the survey prints dydo map's key help
     Given a quiet Project

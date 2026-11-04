@@ -161,7 +161,7 @@ public sealed partial class SurveySteps
         state: $$"""{"name":"{{StateTypes.Single(state => state.Value == issue.Type).Key}}","type":"{{issue.Type}}","color":"#000000"}""",
         project: issue.InMap ? InMap : InOther,
         assignee: issue.Assignee == "" ? "null" : $$"""{"name":"{{issue.Assignee}}"}""",
-        parent: issue.Parent == "" ? "null" : $$"""{"id":"{{Number(issue.Parent)}}"}""",
+        parent: issue.Parent == "" ? "null" : $$"""{"id":"{{Number(issue.Parent)}}","identifier":"{{issue.Parent}}"}""",
         labels: issue.Label == "" ? Labels() : Labels($"{issue.Label}:#000000")), issue.Priority);
 
     private static int Number(string key) => int.Parse(key["DYD-".Length..], System.Globalization.CultureInfo.InvariantCulture);

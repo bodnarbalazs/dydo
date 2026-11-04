@@ -7,8 +7,9 @@ using DynaDocs.Services.Map.Contract;
 /// Reads teams, a team's projects, and one Project's work graph from Linear, fresh on every call,
 /// and normalizes them into the map API's shapes. The query set is DYD-261's: every connection
 /// passes `first` so one page stays under Linear's 10k complexity cap, and a nested relation list
-/// that overflows its first page is followed with `IssueRelationsPage`. With ten labels on every
-/// issue and far end, an issue costs about 434 points, so a page holds 20 issues (about 8.7k).
+/// that overflows its first page is followed with `IssueRelationsPage`. On 2026-11-05 Linear's
+/// `x-complexity` header put a 20-issue page at 5,102 points and a relations page at 1,221, with the
+/// survey's priority and parent identifier (4,640 and 1,111 without them).
 /// </summary>
 internal sealed class LinearReader(LinearGraphQL linear)
 {
@@ -17,7 +18,7 @@ internal sealed class LinearReader(LinearGraphQL linear)
           id identifier title url archivedAt priority
           state { name type color }
           assignee { name }
-          parent { id }
+          parent { id identifier }
           team { id key }
           project { id name }
           labels(first: 10) { nodes { name color } }
@@ -109,18 +110,19 @@ internal sealed class LinearReader(LinearGraphQL linear)
 
     /// <summary>
     /// The graph plus what <c>dydo survey</c> reads beyond it: the Project body (<c>content</c>, the long
-    /// markdown, empty when unset) and every graph issue's priority, Linear's 0 meaning none.
+    /// markdown, empty when unset), every graph issue's priority, Linear's 0 meaning none, and every
+    /// Project issue's parent identifier, whether the parent is in the graph or not.
     /// </summary>
     public async Task<LinearProjectRead> ReadProjectAsync(string projectId, CancellationToken ct)
     {
-        var (graph, priorities) = await ReadGraphAsync(projectId, ct);
+        var (graph, priorities, parents) = await ReadGraphAsync(projectId, ct);
         var project = Found(
             await linear.QueryAsync(ProjectContentQuery, new() { ["projectId"] = graph.Project.Id }, ct),
             "project", $"Linear has no project {projectId}.");
-        return new LinearProjectRead(graph, OptionalText(project, "content") ?? "", priorities);
+        return new LinearProjectRead(graph, OptionalText(project, "content") ?? "", priorities, parents);
     }
 
-    private async Task<(MapGraph Graph, Dictionary<string, double> Priorities)> ReadGraphAsync(
+    private async Task<(MapGraph Graph, Dictionary<string, double> Priorities, Dictionary<string, string> Parents)> ReadGraphAsync(
         string projectId, CancellationToken ct)
     {
         JsonElement project = default;
@@ -141,13 +143,18 @@ internal sealed class LinearReader(LinearGraphQL linear)
         return Normalize(project, kept, sightings);
     }
 
-    private static (MapGraph, Dictionary<string, double>) Normalize(
+    private static (MapGraph, Dictionary<string, double>, Dictionary<string, string>) Normalize(
         JsonElement project, List<JsonElement> nodes, List<Sighting> sightings)
     {
         var issues = nodes.Select(ToIssue).ToList();
         var priorities = new Dictionary<string, double>();
+        var parents = new Dictionary<string, string>();
         foreach (var node in nodes)
+        {
             priorities[Text(node, "id")] = Priority(node);
+            if (Optional(node, "parent") is { } parent)
+                parents[Text(node, "id")] = Text(parent, "identifier");
+        }
         var external = new List<MapIssue>();
         var relations = new List<MapRelation>();
         var seen = new HashSet<string>();
@@ -167,7 +174,7 @@ internal sealed class LinearReader(LinearGraphQL linear)
 
         return (new MapGraph(
             new MapGraphProject(Text(project, "id"), Text(project, "name"), Text(project, "url")),
-            issues, external, relations), priorities);
+            issues, external, relations), priorities, parents);
     }
 
     private async Task CollectRelationsAsync(JsonElement node, List<Sighting> sightings, CancellationToken ct)

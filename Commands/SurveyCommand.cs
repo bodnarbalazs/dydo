@@ -58,23 +58,15 @@ public static class SurveyCommand
         using var http = new HttpClient();
         var reader = new LinearReader(new LinearGraphQL(
             http, new Uri(string.IsNullOrEmpty(endpoint) ? LinearEndpoint : endpoint), apiKey));
+        LinearProjectRead read;
         try
         {
-            var read = await reader.ReadProjectAsync(projectId, ct);
-            var findings = SurveyRules.Find(read);
-            var time = clock.GetUtcNow().UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
-            Console.WriteLine($"dydo survey {read.Graph.Project.Name} {time}: {findings.Count} findings");
-            foreach (var finding in findings)
-                Console.WriteLine(finding);
-            return ExitCodes.Success;
-        }
-        catch (MapApiException ex) when (ex.Code == "not_found")
-        {
-            Console.Error.WriteLine($"dydo survey: no such Linear Project: {argument}. {ex.Message}");
-            return UsageError;
+            read = await reader.ReadProjectAsync(projectId, ct);
         }
         catch (MapApiException ex)
         {
+            // The reader names what failed: an unknown Project (a usage error, the same exit 2), a ticket
+            // gone mid-read, a refused key, an HTTP failure or no answer.
             Console.Error.WriteLine($"dydo survey: {ex.Message}");
             return ExitCodes.ToolError;
         }
@@ -84,5 +76,12 @@ public static class SurveyCommand
             Console.Error.WriteLine($"dydo survey: Linear sent an unexpected response: {ex.Message}");
             return ExitCodes.ToolError;
         }
+
+        var findings = SurveyRules.Find(read);
+        var time = clock.GetUtcNow().UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+        Console.WriteLine($"dydo survey {read.Graph.Project.Name} {time}: {findings.Count} findings");
+        foreach (var finding in findings)
+            Console.WriteLine(finding);
+        return ExitCodes.Success;
     }
 }

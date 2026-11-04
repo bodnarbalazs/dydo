@@ -82,9 +82,16 @@ public class StatechartReadyTests
         foreach (var entry in Directory.EnumerateFileSystemEntries(source))
         {
             var attributes = File.GetAttributes(entry);
-            Assert.False((attributes & FileAttributes.ReparsePoint) != 0, "Managed fixture must contain plain archive files.");
+            var directory = (attributes & FileAttributes.Directory) != 0;
             var destination = Path.Combine(target, Path.GetFileName(entry));
-            if ((attributes & FileAttributes.Directory) != 0) Copy(entry, destination);
+            // POSIX runtime archives carry relative links; the managed inventory records them as links.
+            if ((attributes & FileAttributes.ReparsePoint) != 0)
+            {
+                var link = directory ? new DirectoryInfo(entry).LinkTarget! : new FileInfo(entry).LinkTarget!;
+                if (directory) Directory.CreateSymbolicLink(destination, link);
+                else File.CreateSymbolicLink(destination, link);
+            }
+            else if (directory) Copy(entry, destination);
             else File.Copy(entry, destination, overwrite: false);
         }
     }

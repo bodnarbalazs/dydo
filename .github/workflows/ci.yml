@@ -30,11 +30,16 @@ jobs:
         with:
           node-version: '26.13.0'
 
-      - uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         env:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
         with:
           dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
 
       - name: Prepare pinned Python assurance environment
         run: python -m venv dydo/_system/.local/static-gates/python

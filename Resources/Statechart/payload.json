@@ -28,8 +28,8 @@
     {
       "path": "skills/engineering/statechart/SKILL.md",
       "resource": "Statechart/payload/skills/engineering/statechart/SKILL.md",
-      "bytes": 10627,
-      "sha256": "719a9fcd61561f2a9fa7d67754655c6118b1443336f36ac2ea79d99e0f422dac"
+      "bytes": 10746,
+      "sha256": "e1ddd4529cf459dfe3760a6e831800e9f1fbff18f5fa944f298cc6f9ed9791f2"
     },
     {
       "path": "skills/engineering/statechart/agents/openai.yaml",

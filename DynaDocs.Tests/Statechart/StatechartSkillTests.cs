@@ -27,6 +27,64 @@ public class StatechartSkillTests
     }
 
     [Fact]
+    public void AnUnchangedSkillFromAnEarlierReleaseIsReplacedWithThisRelease()
+    {
+        using var scope = new StatechartTestDirectory();
+        var (project, payload, skill) = Installed(scope.Path);
+        FromAnEarlierRelease(skill, inventory: true);
+        Assert.Equal(skill, StatechartSkill.Place(project, payload, new StatechartAssets()));
+        Assert.Equal(skill, StatechartSkill.Validate(skill, new StatechartAssets()));
+        Assert.DoesNotContain("Earlier release wording", File.ReadAllText(Path.Combine(skill, "SKILL.md")));
+        Assert.Equal(["statechart"], Directory.GetFileSystemEntries(Path.GetDirectoryName(skill)!).Select(Path.GetFileName));
+    }
+
+    [Fact]
+    public void LocalEditsToAnEarlierReleaseAreRefusedUntouchedWithTheRemedy()
+    {
+        using var scope = new StatechartTestDirectory();
+        var (project, payload, skill) = Installed(scope.Path);
+        FromAnEarlierRelease(skill, inventory: true);
+        File.AppendAllText(Path.Combine(skill, "SKILL.md"), "\nlocal edit");
+        var receipt = File.ReadAllBytes(Path.Combine(skill, ".statechart-skill.json"));
+        var error = Assert.Throws<IOException>(() => StatechartSkill.Place(project, payload, new StatechartAssets()));
+        Assert.Contains("SKILL.md", error.Message);
+        Assert.Contains("aside", error.Message);
+        Assert.EndsWith("local edit", File.ReadAllText(Path.Combine(skill, "SKILL.md")));
+        Assert.Equal(receipt, File.ReadAllBytes(Path.Combine(skill, ".statechart-skill.json")));
+    }
+
+    // Receipts written before the inventory existed record no files, so only this release's exact bytes are safe to keep.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AnEarlierReceiptWithoutAnInventoryIsReplacedOnlyWhenItsFilesAreThisRelease(bool thisReleaseBytes)
+    {
+        using var scope = new StatechartTestDirectory();
+        var (project, payload, skill) = Installed(scope.Path);
+        if (thisReleaseBytes) Restamp(skill, inventory: false);
+        else FromAnEarlierRelease(skill, inventory: false);
+        if (thisReleaseBytes)
+        {
+            StatechartSkill.Place(project, payload, new StatechartAssets());
+            Assert.Equal(skill, StatechartSkill.Validate(skill, new StatechartAssets()));
+            return;
+        }
+        Assert.Throws<IOException>(() => StatechartSkill.Place(project, payload, new StatechartAssets()));
+        Assert.EndsWith("Earlier release wording.", File.ReadAllText(Path.Combine(skill, "SKILL.md")));
+    }
+
+    [Fact]
+    public void AChartInvocationOnAnUnchangedEarlierSkillNamesTheInstallSkillCommand()
+    {
+        using var scope = new StatechartTestDirectory();
+        var (project, _, skill) = Installed(scope.Path);
+        FromAnEarlierRelease(skill, inventory: true);
+        var error = Assert.Throws<IOException>(() => StatechartSkill.Validate(skill, new StatechartAssets()));
+        Assert.Contains("dydo statechart install-skill --root " + project, error.Message);
+        Assert.EndsWith("Earlier release wording.", File.ReadAllText(Path.Combine(skill, "SKILL.md")));
+    }
+
+    [Fact]
     public async Task ForeignCanonicalSkillIsPreservedBeforeProjectionOrPrerequisiteLaunch()
     {
         using var scope = new StatechartTestDirectory();
@@ -41,5 +99,29 @@ public class StatechartSkillTests
         Assert.Equal("human-owned", File.ReadAllText(sentinel));
         Assert.False(Directory.Exists(Path.Combine(project, ".agents")));
         Assert.False(Directory.Exists(home.Dependencies));
+    }
+
+    private static (string Project, string Payload, string Skill) Installed(string root)
+    {
+        var assets = new StatechartAssets();
+        var payload = assets.Extract(Path.Combine(root, "assets"));
+        var project = Path.Combine(root, "project");
+        Directory.CreateDirectory(project);
+        return (project, payload, StatechartSkill.Place(project, payload, assets));
+    }
+
+    // The skill as an earlier dydo release left it: other SKILL.md bytes under a receipt naming that release.
+    private static void FromAnEarlierRelease(string skill, bool inventory)
+    {
+        File.AppendAllText(Path.Combine(skill, "SKILL.md"), "\nEarlier release wording.");
+        Restamp(skill, inventory);
+    }
+
+    private static void Restamp(string skill, bool inventory)
+    {
+        var receipt = new JsonObject { ["schema"] = 1, ["protocol"] = 1, ["release"] = "0.0.1",
+            ["payload"] = "earlier-payload", ["lock"] = "earlier-lock" };
+        if (inventory) receipt["files"] = StatechartInventory.Capture(skill, ".statechart-skill.json");
+        File.WriteAllText(Path.Combine(skill, ".statechart-skill.json"), receipt.ToJsonString());
     }
 }

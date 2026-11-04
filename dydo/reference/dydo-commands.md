@@ -554,10 +554,14 @@ dydo statechart install-skill --root ABSOLUTE_PROJECT
 ```
 
 Installs this executable's embedded statechart skill into the explicitly named
-project and projects it into both agent discovery roots. Preserves foreign skills,
-local edits and any project setup script. `--skill DIR` on chart invocation verifies
-the installed skill's exact release, protocol, payload and file identities before
-checking; a mismatch requires explicit reconciliation, never an automatic overwrite.
+project and projects it into both agent discovery roots. The skill's receipt records
+its installed files; after a dydo update, a skill whose files still match that record
+is replaced with this release's. A receipt without that record is replaced only when
+its files are already this release's. Foreign skills, local edits and any project setup
+script stay untouched, and the refusal names the changed files and the remedy.
+`--skill DIR` on chart invocation verifies the installed skill's exact release,
+protocol, payload and file identities before checking; an unchanged skill from an
+earlier release is refused with the `install-skill` command that updates it.
 
 ### dydo statechart doctor
 

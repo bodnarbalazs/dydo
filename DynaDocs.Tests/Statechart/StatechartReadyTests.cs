@@ -72,6 +72,31 @@ public class StatechartReadyTests
         Assert.Equal(before, Content(dependencies));
     }
 
+    [SkippableFact]
+    public async Task AnUnchangedSkillFromAnEarlierReleaseUpdatesThroughInstallSkillAndCharts()
+    {
+        using var scope = new StatechartTestDirectory();
+        var fixture = Fixture();
+        var project = Path.Combine(scope.Path, "project");
+        Directory.CreateDirectory(project);
+        var installed = await Run(scope.Path, fixture, ["statechart", "install-skill", "--root", project]);
+        Assert.True(installed.Exit == 0, installed.Error);
+        var skill = Path.Combine(project, "skills", "engineering", "statechart");
+        File.AppendAllText(Path.Combine(skill, "SKILL.md"), "\nEarlier release wording.");
+        var receipt = new JsonObject { ["schema"] = 1, ["protocol"] = 1, ["release"] = "0.0.1", ["payload"] = "earlier-payload",
+            ["lock"] = "earlier-lock", ["files"] = StatechartInventory.Capture(skill, ".statechart-skill.json") };
+        File.WriteAllText(Path.Combine(skill, ".statechart-skill.json"), receipt.ToJsonString());
+        var stranded = await RunReadyModel(scope.Path, fixture, "--skill", skill);
+        Assert.Equal(2, stranded.Exit);
+        Assert.Contains("dydo statechart install-skill --root " + project, stranded.Error);
+        var updated = await Run(scope.Path, fixture, ["statechart", "install-skill", "--root", project]);
+        Assert.True(updated.Exit == 0, updated.Error);
+        var result = await RunReadyModel(scope.Path, fixture, "--skill", skill);
+        Assert.True(result.Exit == 1, result.Error);
+        Assert.Contains("Bound breaks", result.Output);
+        Assert.DoesNotContain("Earlier release wording", File.ReadAllText(Path.Combine(skill, "SKILL.md")));
+    }
+
     private static string[] Content(string dependencies) => Files(Path.Combine(dependencies, Relative))
         .Where(file => !file.Contains(".ready.json", StringComparison.Ordinal)).ToArray();
 
@@ -105,18 +130,24 @@ public class StatechartReadyTests
     }
 
     // Runs the built dydo offline on a model whose Bound breaks after two steps.
-    private static async Task<(int Exit, string Output, string Error)> RunReadyModel(string scope, string dependencies)
+    private static Task<(int Exit, string Output, string Error)> RunReadyModel(string scope, string dependencies, params string[] options)
     {
         File.WriteAllText(Path.Combine(scope, "ReadyModel.tla"),
             "---- MODULE ReadyModel ----\nEXTENDS Naturals\nVARIABLE x\nInit == x = 0\nNext == (x < 2 /\\ x' = x + 1) \\/ (x = 2 /\\ x' = x)\nBound == x < 2\n====\n");
         File.WriteAllText(Path.Combine(scope, "ReadyModel.cfg"), "INIT Init\nNEXT Next\nINVARIANT Bound\nCHECK_DEADLOCK FALSE\n");
+        return Run(scope, dependencies, ["statechart", "ReadyModel.tla", "--out", "chart", .. options]);
+    }
+
+    // Runs the built dydo offline with the given managed dependencies and private asset and state roots.
+    private static async Task<(int Exit, string Output, string Error)> Run(string scope, string dependencies, string[] arguments)
+    {
         var start = StatechartTestBinary.Start();
         start.WorkingDirectory = scope;
         start.UseShellExecute = false;
         start.CreateNoWindow = true;
         start.RedirectStandardOutput = true;
         start.RedirectStandardError = true;
-        foreach (var argument in new[] { "statechart", "ReadyModel.tla", "--out", "chart" }) start.ArgumentList.Add(argument);
+        foreach (var argument in arguments) start.ArgumentList.Add(argument);
         foreach (var name in start.Environment.Keys.Where(name => name.StartsWith("DYDO_", StringComparison.Ordinal)).ToArray())
             start.Environment.Remove(name);
         start.Environment["DYDO_STATECHART_DEPENDENCY_ROOT"] = dependencies;

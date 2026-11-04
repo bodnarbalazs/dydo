@@ -38,26 +38,57 @@ public class PathUtilsTests
 
     // On Windows a UNC share root (and a \\?\ or \\.\ device root) is the root '..' cannot climb
     // above, kept as written after slash normalisation (DYD-396). Elsewhere a leading '//' is
-    // just '/', as the OS reads it.
+    // just '/', as the OS reads it. Columns: input, Windows reading, other hosts' reading.
+    public static TheoryData<string, string, string> RootForms => new()
+    {
+        { @"\\server\share\repo\dydo\index.md", "//server/share/repo/dydo/index.md", "/server/share/repo/dydo/index.md" },
+        { "//server/share/repo/dydo/index.md", "//server/share/repo/dydo/index.md", "/server/share/repo/dydo/index.md" },
+        { @"\\server\share\repo\src\..\dydo\index.md", "//server/share/repo/dydo/index.md", "/server/share/repo/dydo/index.md" },
+        { "//server/share/repo/./src/../dydo/index.md", "//server/share/repo/dydo/index.md", "/server/share/repo/dydo/index.md" },
+        { @"\\server\share\repo\..\..\..\etc", "//server/share/etc", "/etc" },
+        { "//server/share/../other/x", "//server/share/other/x", "/server/other/x" },
+        { @"\\server\share\..", "//server/share/", "/server" },
+        { @"\\server\share", "//server/share/", "/server/share" },
+        { @"\\server", "//server/", "/server" },
+        { @"\\?\C:\x\..\y", "//?/C:/y", "/?/C:/y" },
+        { @"\\?\C:\..\..\y", "//?/C:/y", "/y" },
+        { @"\\?\UNC\server\share\..\x", "//?/UNC/server/share/x", "/?/UNC/server/x" },
+        { "//./pipe/../x", "//./x", "/x" },
+        { "///x/../y", "/y", "/y" },                // an empty server name is no UNC root
+        { "//", "/", "/" },
+        { "//a", "//a/", "/a" },
+        { "//?", "//?/", "/?" },                    // too short for a device root: '?' is a server
+        { "//?x/../y", "//?x/../y", "/y" },         // no device slash: server '?x', share '..'
+        { "//./C:/..", "//./C:/", "/" },
+        { "//?/unc/s/sh/x", "//?/unc/s/sh/x", "/?/unc/s/sh/x" },
+        { "//?/UNC/server", "//?/UNC/server/", "/?/UNC/server" },
+        { "//?/UNC//x/..", "//?/UNC", "/?/UNC" },   // UNC without a server: the device root only
+        { "//?/UNC/", "//?/UNC", "/?/UNC" },
+        { "//./", "//./", "/" },
+        { "//?/", "//?/", "/?" },
+        { "//?/x/../..", "//?/", "/" },
+        { "C:", "C:", "C:" },
+        { "c:..", "c:..", "c:.." },
+        { "/a/../../escape", "/escape", "/escape" },
+        { "a/../../escape", "../escape", "../escape" },
+    };
+
     [Theory]
-    [InlineData(@"\\server\share\repo\dydo\index.md", "//server/share/repo/dydo/index.md", "/server/share/repo/dydo/index.md")]
-    [InlineData("//server/share/repo/dydo/index.md", "//server/share/repo/dydo/index.md", "/server/share/repo/dydo/index.md")]
-    [InlineData(@"\\server\share\repo\src\..\dydo\index.md", "//server/share/repo/dydo/index.md", "/server/share/repo/dydo/index.md")]
-    [InlineData("//server/share/repo/./src/../dydo/index.md", "//server/share/repo/dydo/index.md", "/server/share/repo/dydo/index.md")]
-    [InlineData(@"\\server\share\repo\..\..\..\etc", "//server/share/etc", "/etc")]
-    [InlineData("//server/share/../other/x", "//server/share/other/x", "/server/other/x")]
-    [InlineData(@"\\server\share\..", "//server/share/", "/server")]
-    [InlineData(@"\\server\share", "//server/share/", "/server/share")]
-    [InlineData(@"\\server", "//server/", "/server")]
-    [InlineData(@"\\?\C:\x\..\y", "//?/C:/y", "/?/C:/y")]
-    [InlineData(@"\\?\C:\..\..\y", "//?/C:/y", "/y")]
-    [InlineData(@"\\?\UNC\server\share\..\x", "//?/UNC/server/share/x", "/?/UNC/server/x")]
-    [InlineData("//./pipe/../x", "//./x", "/x")]
-    [InlineData("///x/../y", "/y", "/y")]                // an empty server name is no UNC root
+    [MemberData(nameof(RootForms))]
     public void CollapseRelativeSegments_KeepsUncRootOnWindows(string input, string windowsExpected, string otherExpected)
     {
         var expected = OperatingSystem.IsWindows() ? windowsExpected : otherExpected;
         Assert.Equal(expected, PathUtils.CollapseRelativeSegments(input));
+    }
+
+    // The host-independent seam runs both readings on every host, so a Linux run exercises the
+    // Windows root forms too (DYD-547).
+    [Theory]
+    [MemberData(nameof(RootForms))]
+    public void CollapseRelativeSegments_BothReadings_OnAnyHost(string input, string windowsExpected, string otherExpected)
+    {
+        Assert.Equal(windowsExpected, PathUtils.CollapseRelativeSegments(input, windows: true));
+        Assert.Equal(otherExpected, PathUtils.CollapseRelativeSegments(input, windows: false));
     }
 
     [Theory]

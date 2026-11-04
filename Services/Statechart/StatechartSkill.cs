@@ -80,7 +80,9 @@ internal static class StatechartSkill
         }
         finally
         {
-            foreach (var path in new[] { stage, replaced }.Where(Directory.Exists)) Directory.Delete(path, recursive: true);
+            if (Directory.Exists(stage)) Directory.Delete(stage, recursive: true);
+            // A failed restore leaves the earlier skill only here, so it goes once a skill is back in place.
+            if (Directory.Exists(replaced) && Directory.Exists(target)) Directory.Delete(replaced, recursive: true);
         }
         return target;
     }

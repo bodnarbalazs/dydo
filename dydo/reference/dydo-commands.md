@@ -549,6 +549,7 @@ Completed requests return the recorded verdict only while their output still mat
 Managed dependencies live in a folder named for their dependency lock. A dydo whose lock
 changed installs into a new folder and keeps the old one, which another installed dydo
 may still use; remove an old lock folder only when no installed dydo uses that lock.
+Extracted assets are kept per release and payload for the same reason.
 
 ### dydo statechart install-skill
 

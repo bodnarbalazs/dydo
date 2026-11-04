@@ -107,9 +107,24 @@ is absent. It is repeatable and works after a failed launch. Confirm RUN/evidenc
 the command logs and cleanup receipt. A busy run belongs to the live driver; do not remove its
 lock or another run's resources. There are no global processes, schedules or installations to undo.
 
+## Officer transition
+
+On Linux, a real headless officer runs muster `on` and morning brief `off` against a scratch mode
+store; [machine-mode](resources/features/machine-mode.md) says what it observes. Each run spends real
+model budget once and is never retried:
+
+```text
+python3 skills/engineering/verify-dydo/scripts/officer_transition.py campaign --cases unsupported mismatch supported codex
+python3 skills/engineering/verify-dydo/scripts/officer_transition.py evaluate --evidence artifacts/dyd435/<run>
+```
+
+`evaluate` re-judges retained timelines without relaunching any agent.
+
 ## Helpers
 
 `scripts/control_dydo.py` is the executable helper; its entire interface is shown above.
+`scripts/officer_transition.py` is the officer-transition driver above; its unit tests are
+`DynaDocs.Tests/coverage/tests/test_officer_transition.py` and launch no agent.
 `scripts/owned_process.py` is its internal adapter over `DynaDocs.Tests/coverage/windows_job.py`;
 it supplies guard stdin and orderly interruption receipts using the existing job primitives,
 and has no standalone command interface. For boundary and real descendant-lifetime tests, run

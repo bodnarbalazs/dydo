@@ -33,10 +33,39 @@ incomplete. Review both on and off. Reading instruction order or matching prompt
 exercise this workflow. The automated protocol and parser recipes above leave this human/agent
 interaction unverified; they do not establish that an announcement waited for readback.
 
+## Observing the officer on Linux
+
+`scripts/officer_transition.py campaign` drives a real headless officer through the candidate's
+`overnight-mode` with real init-installed hooks and the real candidate CLI on a scratch store. It
+plays the already-invoked chief of staff from the verbatim prompts in
+`resources/officer-transition/`, one case per run:
+
+| Case | Host and route | Stand-in human (scripted) between turns |
+|---|---|---|
+| `unsupported` | Claude Code, `dontAsk` | runs the real setter on the scratch store |
+| `mismatch` | Claude Code, `dontAsk` | says it ran the setter, but does not |
+| `supported` | Claude Code, `default`, prompts answered by nobody | none |
+| `codex` | `codex exec`, approval `never` | runs the real setter on the scratch store |
+
+Each run gets fresh scratch with HOME, `XDG_DATA_HOME`, the agent config dir and TMPDIR inside it,
+and a recorder shim for the candidate `dydo` first on PATH. A canary must read and set the scratch
+store while the real store stays byte-identical, or no agent starts. The evaluator judges the
+agent's own ordered record (Claude's stream, Codex's rollout) and the guard calls the shim logged:
+fallback before any attempt, each hook decision, fresh readback before any `announce` sink call, and
+the incomplete report. Evidence, raw streams and agent transcripts stay under `artifacts/dyd435/`.
+The approval prompt with a person present remains a human-only observation.
+
 ## Gotchas
 
-A worktree, cwd or `CODEX_HOME` does not isolate machine mode. Never run a real mode setter for
-this verification. No installed marker, unsupported permission mode or unknown capability means
+A worktree, cwd or `CODEX_HOME` does not isolate machine mode. On Linux `XDG_DATA_HOME` does: the
+store is `$XDG_DATA_HOME/dydo/mode.json`, else `~/.local/share/dydo/mode.json`, and an absent file
+reads `off`. Redirect HOME too, since `dydo init` writes shell completion into it. Never run a real
+mode setter for this verification; the officer harness sets only its proven scratch store.
+Under `codex exec` on an empty `CODEX_HOME`, the project's `.codex/hooks.json` ran only with
+`--enable hooks` and without `--ignore-user-config`; with the opposite pair the guard never ran
+and the setter executed (one probe changed both). The hook reports `permission_mode`
+`bypassPermissions`, and a hook-blocked call is missing from `--json` events but present in the
+session rollout. No installed marker, unsupported permission mode or unknown capability means
 human-terminal fallback, not a spoofed marker or retry-until-bypass. Genuine approval, rejection
 in the UI and the live CoS readback remain unverified until a user-authorized workflow observes
 them. No production security change is proposed: proper Codex approval enforcement needs a

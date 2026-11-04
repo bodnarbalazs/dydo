@@ -16,10 +16,11 @@ internal static class LinearJson
         string assignee = "null",
         string parent = "null",
         string archivedAt = "null",
-        string? labels = null) => $$"""
+        string? labels = null,
+        string? priority = null) => $$"""
         "id":"{{id}}","identifier":"DYD-{{id}}","title":"Issue {{id}}","url":"https://linear.app/x/issue/DYD-{{id}}",
         "archivedAt":{{archivedAt}},"state":{{state}},"assignee":{{assignee}},"parent":{{parent}},
-        "team":{"id":"t-dyd","key":"DYD"},"project":{{project}}{{(labels == null ? "" : $",\"labels\":{labels}")}}
+        "team":{"id":"t-dyd","key":"DYD"},"project":{{project}}{{(labels == null ? "" : $",\"labels\":{labels}")}}{{(priority == null ? "" : $",\"priority\":{priority}")}}
         """;
 
     /// <summary>An issue's `labels` connection, from `name:color` pairs.</summary>
@@ -38,6 +39,8 @@ internal static class LinearJson
 
     public static string Node(string issue, string? relations = null, string? inverseRelations = null) =>
         $$"""{{{issue}},"relations":{{relations ?? Connection("")}},"inverseRelations":{{inverseRelations ?? Connection("")}}}""";
+
+    public static string ProjectContent(string content) => $$"""{"data":{"project":{"content":{{content}} } } }""";
 
     public static string IssuesPage(string nodes, bool more = false, string? cursor = null) =>
         $$"""{"data":{"project":{"id":"p-map","name":"Map","url":"https://linear.app/x/project/map","issues":{{Connection(nodes, more, cursor)}} } } }""";

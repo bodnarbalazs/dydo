@@ -14,7 +14,7 @@ internal sealed class LinearReader(LinearGraphQL linear)
 {
     private const string IssueFields = """
         fragment IssueFields on Issue {
-          id identifier title url archivedAt
+          id identifier title url archivedAt priority
           state { name type color }
           assignee { name }
           parent { id }
@@ -66,6 +66,12 @@ internal sealed class LinearReader(LinearGraphQL linear)
         }
         """ + IssueFields;
 
+    private const string ProjectContentQuery = """
+        query ProjectContent($projectId: String!) {
+          project(id: $projectId) { content }
+        }
+        """;
+
     private const string IssueRelationsPageQuery = """
         query IssueRelationsPage($id: String!, $after: String, $invAfter: String) {
           issue(id: $id) {
@@ -98,7 +104,24 @@ internal sealed class LinearReader(LinearGraphQL linear)
         return [.. projects.OrderBy(project => project.Name, StringComparer.OrdinalIgnoreCase)];
     }
 
-    public async Task<MapGraph> GetGraphAsync(string projectId, CancellationToken ct)
+    public async Task<MapGraph> GetGraphAsync(string projectId, CancellationToken ct) =>
+        (await ReadGraphAsync(projectId, ct)).Graph;
+
+    /// <summary>
+    /// The graph plus what <c>dydo survey</c> reads beyond it: the Project body (<c>content</c>, the long
+    /// markdown, empty when unset) and every graph issue's priority, Linear's 0 meaning none.
+    /// </summary>
+    public async Task<LinearProjectRead> ReadProjectAsync(string projectId, CancellationToken ct)
+    {
+        var (graph, priorities) = await ReadGraphAsync(projectId, ct);
+        var project = Found(
+            await linear.QueryAsync(ProjectContentQuery, new() { ["projectId"] = graph.Project.Id }, ct),
+            "project", $"Linear has no project {projectId}.");
+        return new LinearProjectRead(graph, OptionalText(project, "content") ?? "", priorities);
+    }
+
+    private async Task<(MapGraph Graph, Dictionary<string, double> Priorities)> ReadGraphAsync(
+        string projectId, CancellationToken ct)
     {
         JsonElement project = default;
         var nodes = new List<JsonElement>();
@@ -118,10 +141,13 @@ internal sealed class LinearReader(LinearGraphQL linear)
         return Normalize(project, kept, sightings);
     }
 
-    private static MapGraph Normalize(JsonElement project, List<JsonElement> nodes, List<Sighting> sightings)
+    private static (MapGraph, Dictionary<string, double>) Normalize(
+        JsonElement project, List<JsonElement> nodes, List<Sighting> sightings)
     {
         var issues = nodes.Select(ToIssue).ToList();
-        var present = issues.Select(issue => issue.Id).ToHashSet();
+        var priorities = new Dictionary<string, double>();
+        foreach (var node in nodes)
+            priorities[Text(node, "id")] = Priority(node);
         var external = new List<MapIssue>();
         var relations = new List<MapRelation>();
         var seen = new HashSet<string>();
@@ -134,14 +160,14 @@ internal sealed class LinearReader(LinearGraphQL linear)
                 continue;
 
             var far = ToIssue(farEnd);
-            if (present.Add(far.Id))
+            if (priorities.TryAdd(far.Id, Priority(farEnd)))
                 external.Add(far);
             relations.Add(new MapRelation(id, type, from, to));
         }
 
-        return new MapGraph(
+        return (new MapGraph(
             new MapGraphProject(Text(project, "id"), Text(project, "name"), Text(project, "url")),
-            issues, external, relations);
+            issues, external, relations), priorities);
     }
 
     private async Task CollectRelationsAsync(JsonElement node, List<Sighting> sightings, CancellationToken ct)
@@ -250,6 +276,9 @@ internal sealed class LinearReader(LinearGraphQL linear)
         Optional(node, "labels") is { } labels
             ? [.. labels.GetProperty("nodes").EnumerateArray().Select(label => new MapLabel(Text(label, "name"), Text(label, "color")))]
             : [];
+
+    // Linear always sends priority; the viewer's end-to-end fake Linear does not, so absent reads as none.
+    private static double Priority(JsonElement issue) => Optional(issue, "priority")?.GetDouble() ?? 0;
 
     private static bool IsArchived(JsonElement issue) => OptionalText(issue, "archivedAt") != null;
 

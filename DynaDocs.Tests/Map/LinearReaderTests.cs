@@ -277,4 +277,55 @@ public class LinearReaderTests
 
         Assert.Equal("not_found", error.Code);
     }
+
+    [Fact]
+    public async Task Graph_ForTheMap_ReadsNoProjectBody()
+    {
+        _linear.Serve(_ => IssuesPage(Node(Issue("1"))));
+
+        await Graph();
+
+        Assert.Equal(["ProjectIssues"], _linear.Calls.Select(call => call.Operation));
+        Assert.Contains("archivedAt priority", _linear.Calls[0].Query);
+        Assert.DoesNotContain("content", _linear.Calls[0].Query);
+    }
+
+    [Fact]
+    public async Task ReadProject_ReadsTheBody_ByTheGraphsProjectId_AndEveryIssuesPriority()
+    {
+        _linear.Serve(call => call.Operation == "ProjectIssues"
+            ? IssuesPage(Node(Issue("1", priority: "2"),
+                inverseRelations: Connection(Incoming("r1", "blocks", Issue("9", project: InOther, priority: "1.0")))) + "," +
+                Node(Issue("2")))
+            : ProjectContent("\"## Lane ledger\\n| DYD-1 |\""));
+
+        var read = await _linear.Reader().ReadProjectAsync("slug1234abcd", CancellationToken.None);
+
+        Assert.Equal("p-map", read.Graph.Project.Id);
+        Assert.Equal("## Lane ledger\n| DYD-1 |", read.Content);
+        Assert.Equal(new Dictionary<string, double> { ["1"] = 2, ["2"] = 0, ["9"] = 1 }, read.Priorities);
+        Assert.Equal(["slug1234abcd", "p-map"], _linear.Calls.Select(call => call.Var("projectId")));
+        Assert.Equal("ProjectContent", _linear.Calls[1].Operation);
+    }
+
+    [Fact]
+    public async Task ReadProject_WithoutABody_HasEmptyContent()
+    {
+        _linear.Serve(call => call.Operation == "ProjectIssues" ? IssuesPage("") : ProjectContent("null"));
+
+        var read = await _linear.Reader().ReadProjectAsync("p-map", CancellationToken.None);
+
+        Assert.Equal("", read.Content);
+    }
+
+    [Fact]
+    public async Task ReadProject_WhenTheBodyReadFindsNoProject_IsNotFound()
+    {
+        _linear.Serve(call => call.Operation == "ProjectIssues" ? IssuesPage("") : """{"data":{"project":null}}""");
+
+        var error = await Assert.ThrowsAsync<MapApiException>(
+            () => _linear.Reader().ReadProjectAsync("p-map", CancellationToken.None));
+
+        Assert.Equal("not_found", error.Code);
+    }
 }

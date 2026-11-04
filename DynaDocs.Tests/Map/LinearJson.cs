@@ -16,12 +16,14 @@ internal static class LinearJson
         string assignee = "null",
         string parent = "null",
         string archivedAt = "null",
-        string? labels = null,
-        string? priority = null) => $$"""
+        string? labels = null) => $$"""
         "id":"{{id}}","identifier":"DYD-{{id}}","title":"Issue {{id}}","url":"https://linear.app/x/issue/DYD-{{id}}",
         "archivedAt":{{archivedAt}},"state":{{state}},"assignee":{{assignee}},"parent":{{parent}},
-        "team":{"id":"t-dyd","key":"DYD"},"project":{{project}}{{(labels == null ? "" : $",\"labels\":{labels}")}}{{(priority == null ? "" : $",\"priority\":{priority}")}}
+        "team":{"id":"t-dyd","key":"DYD"},"project":{{project}}{{(labels == null ? "" : $",\"labels\":{labels}")}}
         """;
+
+    /// <summary>An <see cref="Issue"/> with Linear's numeric priority; without it, an issue has none.</summary>
+    public static string WithPriority(string issue, string priority) => $$"""{{issue}},"priority":{{priority}}""";
 
     /// <summary>An issue's `labels` connection, from `name:color` pairs.</summary>
     public static string Labels(params string[] labels) =>

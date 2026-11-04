@@ -294,8 +294,8 @@ public class LinearReaderTests
     public async Task ReadProject_ReadsTheBody_ByTheGraphsProjectId_AndEveryIssuesPriority()
     {
         _linear.Serve(call => call.Operation == "ProjectIssues"
-            ? IssuesPage(Node(Issue("1", priority: "2"),
-                inverseRelations: Connection(Incoming("r1", "blocks", Issue("9", project: InOther, priority: "1.0")))) + "," +
+            ? IssuesPage(Node(WithPriority(Issue("1"), "2"),
+                inverseRelations: Connection(Incoming("r1", "blocks", WithPriority(Issue("9", project: InOther), "1.0")))) + "," +
                 Node(Issue("2")))
             : ProjectContent("\"## Lane ledger\\n| DYD-1 |\""));
 

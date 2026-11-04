@@ -36,6 +36,7 @@ public class HelpCommandTests
         Assert.Contains("validate", output);
         Assert.Contains("gap-check", output);
         Assert.Contains("  map [--no-browser]", output);
+        Assert.Contains("  survey <project>", output);
         Assert.DoesNotContain(lines, line => line.StartsWith("  issue "));
         Assert.Contains("version", output);
         Assert.Contains("help", output);

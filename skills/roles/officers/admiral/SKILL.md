@@ -68,13 +68,13 @@ map and how the tickets move, integrate, and finish together.
 
 ## Method
 
-1. **Reconcile the board.** On each user wake or check-in tick, run [the check-in](resources/check-in.md);
-   on a captain's return, carry out the authorized continuation or fallback through its captain,
-   or record the specific hold, and update the ledger. Never poll running delegates; assignment
-   and AFK labels alone prove no activity. Resume at the stage the record proves. Process an
-   Inquisition's release through step 7 before generic pickable commissioning. Explicit human holds
-   remain; independent authorized work proceeds. **Done:** the ledger matches the latest evidence,
-   and every Merge whose turn came is known.
+1. **Reconcile the board.** On each user wake, check-in tick or `done <key>: merged`, run
+   [the check-in](resources/check-in.md); on any other captain return, carry out the authorized
+   continuation or fallback through its captain, or record the specific hold, and update the
+   ledger. Never poll running delegates; assignment and AFK labels alone prove no activity.
+   Resume at the stage the record proves. Process an Inquisition's release through step 7 before
+   generic pickable commissioning. Explicit human holds remain; independent authorized work
+   proceeds. **Done:** the ledger matches the latest evidence, and every Merge whose turn came is known.
 2. **Chart and approve.** When the route is unknown, set the Project `Planning` and chart it with
    `wayfinder`: the map in the Project description, naming you its holder, the first pickable tickets, and each Project-level
    Question in `Todo`, wired to every waiter. Record the shared anchor choice from `wayfinder`, when
@@ -100,7 +100,7 @@ map and how the tickets move, integrate, and finish together.
    order. Set the Project `In Progress` and start the check-in schedule. On each reconciliation
    commission each authorized pickable AFK ticket, including blocker-cleared and released ones, from
    its record; open each HITL captain in a new top-level thread. A review's `should` stays in this
-   Project, in a lane of its own if you choose; only the user moves it out.
+   Project, as filler unless it blocks; only the user moves it out.
    Choose each commission's capability yourself: the strongest supported model for real
    engineering challenges, the smallest adequate one otherwise, and the effort where the host exposes one, weighed from that ticket's difficulty, uncertainty,
    consequence of error, required independence, context size and likely retries. Start adequate and

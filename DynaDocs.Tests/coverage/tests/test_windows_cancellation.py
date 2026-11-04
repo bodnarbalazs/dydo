@@ -11,7 +11,7 @@ import sys
 import tempfile
 import time
 import unittest
-from contextlib import ExitStack
+from contextlib import ExitStack, chdir
 from unittest import mock
 
 TOOLS = Path(__file__).resolve().parents[1]
@@ -21,6 +21,58 @@ import windows_job
 
 
 class CancellationProtocolTests(unittest.TestCase):
+    def test_adapter_records_the_launched_group_even_with_a_python_redirector(self):
+        child = mock.Mock(pid=2468, returncode=0)
+        child.wait.return_value = 0
+        with tempfile.TemporaryDirectory() as folder, chdir(folder), \
+                mock.patch.object(signal, "SIGBREAK", signal.SIGINT, create=True), \
+                mock.patch.object(signal, "signal"), \
+                mock.patch.object(gate_adapter, "sys", platform="win32"), \
+                mock.patch.object(subprocess, "CREATE_NEW_PROCESS_GROUP", 512, create=True), \
+                mock.patch.object(subprocess, "Popen", return_value=child) as launch, \
+                mock.patch("run_tests.contain_descendants", return_value=None):
+            self.assertEqual(0, windows_adapter("repeat"))
+            self.assertEqual("2468", Path("owner-group-pid").read_text())
+            self.assertEqual(512, launch.call_args.kwargs["creationflags"])
+
+    def test_repeat_break_targets_the_launched_group_not_the_python_pid(self):
+        # Model a venv redirector: Python PID 1780 belongs to launch group 2468.
+        # Exercise the supervisor through its OS boundaries, including both teardown ACKs.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for name, pid in (("owner-pid", 1780), ("owner-group-pid", 2468), ("adapter-pid", 2676)):
+                (root / name).write_text(str(pid))
+            result = root / "results/run/result.json"
+            result.parent.mkdir(parents=True)
+            result.write_text('{"aggregateExit": 130}')
+            listener, ready = mock.MagicMock(), mock.MagicMock()
+            listener.__enter__.return_value = listener
+            listener.accept.return_value = (ready, None)
+            ready.__enter__.return_value = ready
+            ready.makefile.return_value.readline.side_effect = [b"[3176, 8644]\n", b"teardown\n", b"ack\n", b"ack\n"]
+            facade, foreign = mock.Mock(), mock.Mock()
+            facade.poll.return_value = foreign.poll.return_value = None
+            facade.wait.return_value = 130
+            kernel = mock.Mock()
+            kernel.OpenProcess.side_effect = lambda _access, _inherit, pid: pid
+            kernel.WaitForSingleObject.return_value = 0
+            with mock.patch.object(subprocess, "run"), \
+                    mock.patch.object(subprocess, "Popen", side_effect=[facade, foreign]), \
+                    mock.patch.object(subprocess, "CREATE_NEW_PROCESS_GROUP", 512, create=True), \
+                    mock.patch.object(signal, "CTRL_BREAK_EVENT", 1, create=True), \
+                    mock.patch.object(socket, "socket", return_value=listener), \
+                    mock.patch.object(select, "select", return_value=([listener], [], [])), \
+                    mock.patch.object(windows_job, "bindings", return_value=kernel), \
+                    mock.patch("run_tests.contain_descendants", return_value=None), \
+                    mock.patch("run_tests.end_descendants"), \
+                    mock.patch.object(os, "kill") as send_break:
+                windows_probe("repeat", root)
+            self.assertEqual([mock.call(2468, 1), mock.call(2468, 1)], send_break.call_args_list)
+            self.assertEqual([mock.call(b"x"), mock.call(b"x")], ready.sendall.call_args_list)
+            observed = json.loads((root / "observation.json").read_text())
+            self.assertTrue(observed["foreign_alive"])
+            self.assertTrue(all(observed["signaled"]))
+
     def test_native_fixture_passes_real_facade_preflight_on_every_platform(self):
         for mode in ("facade", "repeat", "adapter-killed", "escalation"):
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as folder:
@@ -263,8 +315,17 @@ def windows_adapter(mode):
     Path("adapter-pid").write_text(str(os.getpid()))
     if mode == "escalation":
         gate_adapter.CLEANUP_SECONDS = 3
-    return gate_adapter.run_coverage_command(
-        [sys.executable, str(Path(__file__).resolve()), "--owner", mode], Path.cwd())
+    launch = subprocess.Popen
+
+    def record_group(*args, **kwargs):
+        child = launch(*args, **kwargs)
+        # A Windows venv redirector is the group leader; its Python child has another PID.
+        Path("owner-group-pid").write_text(str(child.pid))
+        return child
+
+    with mock.patch.object(subprocess, "Popen", side_effect=record_group):
+        return gate_adapter.run_coverage_command(
+            [sys.executable, str(Path(__file__).resolve()), "--owner", mode], Path.cwd())
 
 
 def prepare_windows_fixture(mode, root):
@@ -341,8 +402,14 @@ def windows_probe(mode, root):
                     ready.settimeout(15)
                     stream = ready.makefile("rb")
                     assert stream.readline() == b"teardown\n"
+                    # The adapter records this before forwarding the first break, so the
+                    # teardown handshake also guarantees publication and a live group.
+                    owner_group = int((root / "owner-group-pid").read_text())
+                    handle = windows_job.checked(kernel.OpenProcess(0x101001, False, owner_group))
+                    stack.callback(windows_job.close_handle, kernel, handle)
+                    handles.append(handle)
                     for _ in range(2):
-                        os.kill(owner, signal.CTRL_BREAK_EVENT)
+                        os.kill(owner_group, signal.CTRL_BREAK_EVENT)
                         ready.sendall(b"x")
                         assert stream.readline() == b"ack\n"
             code = facade.wait(timeout=35)

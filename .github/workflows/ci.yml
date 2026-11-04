@@ -10,7 +10,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # CPython 3.14.4 has a hosted build for Ubuntu 24.04, not 26.04.
+        os: [ubuntu-24.04, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:

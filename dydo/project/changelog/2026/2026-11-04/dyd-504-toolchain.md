@@ -6,6 +6,68 @@ date: 2026-11-04
 
 # DYD-504 toolchain modernization
 
+## Hosted Python runner compatibility fix — 2026-11-04
+
+This narrow successor starts at clean `95d591dac64a33d62f22032c530592b7d3ab4ee6`
+on `DYD-504-modernize-toolchain`. All five pre-edit checks passed: ticket branch,
+contracted isolated root, supplied base ancestry, clean tree and owned paths.
+Only `ci.yml`, `ReleaseWorkflowTests.cs` and this proof change in this hop.
+
+Hosted CI run `41851428407`, Linux cancellation job `126648462928`, failed before
+native tests: `actions/setup-python@v5` could not find Python 3.14.4 x64 for
+Ubuntu 26.04, the image selected by `ubuntu-latest`. The captain checked the
+official Python manifest and confirmed Ubuntu 24.04 support. The cancellation
+matrix now uses `[ubuntu-24.04, windows-latest]`. Node 26.13.0, SDK 10.0.303,
+Python 3.14.4 and shared runtime 10.0.14 remain unchanged.
+
+Inspection of the reached release workflow found its sole Python setup in
+`validation` on `windows-latest`. Its Linux AOT build matrix does not set up
+Python; no release runner change or release execution was needed. A new workflow
+regression asserts that Python remains confined to the supported validation job.
+
+Round-three nit 7 is addressed in code: the cancellation workflow regression
+checks the supported Linux image, retained Windows matrix leg, matrix dispatch,
+`.python-version`, exact native unittest invocation and unconditional execution.
+Ten negative fixtures reject floating/unsupported Linux images, a dropped Windows
+leg, bypassed matrix dispatch, missing/wrong version-file configuration, a
+commented command and each omitted native test module/class. Each fixture first
+proves the unchanged job valid and its replacement applicable, then requires
+the altered job to fail the same assertions.
+
+### Focused proof and captain recipe
+
+Using the existing CPython 3.14.4 interpreter, SDK 10.0.303 and shared runtime
+10.0.14, run from the repository root:
+
+```bash
+dydo/_system/.local/static-gates/python/bin/python DynaDocs.Tests/coverage/run_tests.py -- --filter FullyQualifiedName~ReleaseWorkflowTests
+```
+
+The same command with `--list-tests` discovered 24 cases, exit 0. Before the
+runner fix, 11 failed and 13 passed, exit 1; the deciding assertion expected
+`[ubuntu-24.04, windows-latest]` but observed `[ubuntu-latest, windows-latest]`.
+With the fix, all 24 passed without skips, exit 0. Reverting only the runner
+change reproduced the same 11 failures, exit 1; the fix was then restored to
+the exact green-tested workflow bytes. No unaffected full suite or coverage
+gate was rerun. `git diff --check` passed.
+
+Evidence is retained in `DynaDocs.Tests/coverage/results/dyd-504-hosted-runner-fix/`:
+full logs, commands, exits, source hashes and candidate patches for discovery,
+red, green and reverted-red, plus the hosted setup-failure log. The initial
+sandbox-blocked discovery attempt is retained separately; the authorized retry
+passed. Each adapter run owned its own temporary directory and cleaned its test
+worktree. Existing evidence archives were preserved.
+
+The one-time hosted status read found viewer successful, the Linux setup failure,
+and Windows cancellation/build/full-stack still running. This hop does **not**
+claim a hosted pass. The captain owns focused replay, fresh review and hosted
+Linux/Windows native cancellation and runtime-provisioning proof, plus delivery.
+Exactly the 18 DYD-518 coverage findings and three DYD-507 tests remain known
+failed gates under their existing dispositions. All other round-three deferrals
+are unchanged; no production defect was repaired or reclassified here.
+
+code-writer/model: gpt-6-astra (high).
+
 ## Round-two Windows cancellation successor — 2026-11-04
 
 This section supersedes the round-one B1/N3 closure language below. Windows B1

@@ -11,6 +11,69 @@ public sealed class ReleaseWorkflowTests
     private const string CoverageEvidenceStep = "Upload coverage evidence";
 
     [Fact]
+    public void CiWorkflow_RunsNativeCancellationOnSupportedLinuxAndWindowsWithPinnedPython()
+    {
+        var workflow = File.ReadAllText(RepositoryFile(".github", "workflows", "ci.yml"));
+        AssertCancellationJob(ActiveJobs(workflow)["assurance-cancellation"]);
+        Assert.Equal("3.14.4\n", PythonRuntimePin().Replace("\r\n", "\n", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("ubuntu-24.04", "ubuntu-latest")]
+    [InlineData("ubuntu-24.04", "ubuntu-26.04")]
+    [InlineData("[ubuntu-24.04, windows-latest]", "[ubuntu-24.04]")]
+    [InlineData("runs-on: ${{ matrix.os }}", "runs-on: ubuntu-24.04")]
+    [InlineData("python-version-file:", "python-version:")]
+    [InlineData("DynaDocs.Tests/coverage/.python-version", "wrong/.python-version")]
+    [InlineData("run: python -m unittest", "# run: python -m unittest")]
+    [InlineData("test_windows_cancellation ", "")]
+    [InlineData("test_windows_job ", "")]
+    [InlineData(" test_gate_adapter.CoverageCancellationTests", "")]
+    public void CiWorkflow_RejectsUnsupportedRunnersOrMissingNativeCancellationProof(string original, string replacement)
+    {
+        var workflow = File.ReadAllText(RepositoryFile(".github", "workflows", "ci.yml"));
+        var job = ActiveJobs(workflow)["assurance-cancellation"];
+        AssertCancellationJob(job);
+        Assert.Contains(original, job);
+        var invalid = ActiveText(job.Replace(original, replacement, StringComparison.Ordinal));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertCancellationJob(invalid));
+    }
+
+    [Fact]
+    public void ReleaseWorkflow_UsesPinnedPythonOnlyOnSupportedWindowsValidation()
+    {
+        var pythonJobs = ActiveJobs(Workflow())
+            .Where(job => job.Value.Contains("actions/setup-python@", StringComparison.Ordinal)).ToArray();
+        var validation = Assert.Single(pythonJobs);
+        Assert.Equal("validation", validation.Key);
+        Assert.Equal("windows-latest", JobField(validation.Value, "runs-on"));
+        AssertValidationPythonContract(Workflow(), PythonRuntimePin());
+    }
+
+    private static void AssertCancellationJob(string job)
+    {
+        Assert.Equal("${{ matrix.os }}", JobField(job, "runs-on"));
+        Assert.Equal("[ubuntu-24.04, windows-latest]", StepField(job, "os"));
+        Assert.Equal("false", StepField(job, "fail-fast"));
+        Assert.Null(StepField(job, "exclude"));
+        Assert.Null(JobField(job, "if"));
+        Assert.Null(JobField(job, "continue-on-error"));
+
+        var setup = JobStep(job, "Setup Python");
+        Assert.Equal("actions/setup-python@v5", StepField(setup, "uses"));
+        Assert.Equal(PythonVersionFile, StepField(setup, "python-version-file"));
+        Assert.Null(StepField(setup, "python-version"));
+        Assert.Null(StepField(setup, "if"));
+        var regression = JobStep(job, "Native cancellation regression");
+        Assert.Equal("DynaDocs.Tests/coverage/tests", StepField(regression, "PYTHONPATH"));
+        Assert.Equal("python -m unittest -v test_windows_cancellation test_windows_job test_gate_adapter.CoverageCancellationTests",
+            StepField(regression, "run"));
+        Assert.Null(StepField(regression, "if"));
+        Assert.Null(StepField(regression, "continue-on-error"));
+        Assert.True(StepIndex(job, "Setup Python") < StepIndex(job, "Native cancellation regression"));
+    }
+
+    [Fact]
     public void RuntimePin_RequiresThePatchedAotCompilerAndRuntime()
     {
         var project = System.Xml.Linq.XDocument.Load(RepositoryFile("DynaDocs.csproj"));

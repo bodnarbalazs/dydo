@@ -1186,4 +1186,57 @@ public class GuardPrReadyTests : IntegrationTestBase
 
         result.AssertPreToolUseAllowed();
     }
+
+    [Theory]
+    [InlineData("x=\"$(case a in a) echo y;; esac)\"; gh pr create --title t --body '## Independent review'")]
+    [InlineData("cat <<EOF\n$(case a in a) echo y;; esac)\nEOF\ngh pr create --title t --body '## Independent review'")]
+    [InlineData("echo \"$(case a in a) echo y;; esac)\" && gh pr ready")]
+    [InlineData("arch=\"$(case \"$(uname -m)\" in\n  x86_64) echo amd64;;\n  *) echo other;;\nesac)\"\ngh pr create --fill")]
+    [InlineData("x=\"$(echo y)\"; gh pr create --title t --body '## Independent review'")]
+    public async Task FailedReading_LaterPrCall_FromADirtyTree_IsDeniedOnFirstAndRetry(string command)
+    {
+        await InitPushedProject();
+        WriteFile("readme.md", "changed\n");
+        var canary = ReadFile("dydo/files-off-limits.md");
+
+        var first = await GuardWithStdinAsync(Payload(command));
+        var retry = await GuardWithStdinAsync(Payload(command));
+
+        foreach (var result in new[] { first, retry })
+        {
+            Assert.False(result.IsPreToolUseAllowed);
+            var reason = result.AssertPreToolUseDenied();
+            Assert.True(reason.Contains("PR check") || reason.Contains("unstaged changes: readme.md"), reason);
+        }
+        Assert.Equal(canary, ReadFile("dydo/files-off-limits.md"));
+    }
+
+    [Theory]
+    [InlineData("gh pr create --title 'Independent review' --help; gh pr ready -h")]
+    [InlineData("cat <<'EOF'\nx=\"$(case a in a) echo y;; esac)\"; gh pr ready\nEOF")]
+    [InlineData("echo '$(case a in a) gh pr ready;; esac)'")]
+    public async Task FailedReading_HelpAndLiteralControls_FromADirtyTree_StayAllowed(string command)
+    {
+        await InitPushedProject();
+        WriteFile("readme.md", "changed\n");
+        SilenceReviewBlockWarn();
+
+        (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseAllowed();
+        (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("gh pr create --title \"$(case a in a) echo t;; esac)\" --head missing")]
+    [InlineData("gh pr create --title \"$(case a in a) echo t;; esac)\" --repo other/repo")]
+    public async Task FailedReading_TruncatedTarget_FromACleanTree_IsRefusedUnread(string command)
+    {
+        await InitPushedProject();
+
+        foreach (var result in new[] { await GuardWithStdinAsync(Payload(command)),
+                     await GuardWithStdinAsync(Payload(command)) })
+        {
+            Assert.False(result.IsPreToolUseAllowed);
+            Assert.Contains("PR check", result.AssertPreToolUseDenied());
+        }
+    }
 }

@@ -82,12 +82,19 @@ internal static partial class PrCallScanner
             .Distinct()];
     }
 
-    // A reading's calls: its commands', then those its bash backtick substitutions run, read as bash.
-    private static List<PrCall> Calls(ShellReader.Reading reading, string? inheritedRepo, int depth) =>
-    [
-        .. reading.Commands.Select(command => Match(command.Words, inheritedRepo, depth)).OfType<PrCall>(),
-        .. reading.Substitutions.SelectMany(text => Scan(text, ShellDialect.Posix, inheritedRepo, depth + 1)),
-    ];
+    private static List<PrCall> Calls(ShellReader.Reading reading, string? inheritedRepo, int depth)
+    {
+        List<PrCall> calls =
+        [
+            .. reading.Commands.Select(command => Match(command.Words, inheritedRepo, depth)).OfType<PrCall>(),
+            .. reading.Substitutions.SelectMany(text => Scan(text, ShellDialect.Posix, inheritedRepo, depth + 1)),
+        ];
+        // A failed child may hide later calls, and a partial call may have lost its target flags.
+        // Refuse either unread; an unfinished literal alone still introduces no PR call.
+        return reading.Failed && (calls.Count > 0 || reading.Source.Children.Count > 0)
+            ? [new PrCall(null, Wrapper: "unreadable shell syntax")]
+            : calls;
+    }
 
     private static bool[] Readings(ShellDialect dialect, string line) => dialect switch
     {

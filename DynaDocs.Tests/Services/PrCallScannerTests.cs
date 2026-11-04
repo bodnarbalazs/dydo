@@ -351,4 +351,71 @@ public class PrCallScannerTests
     {
         Assert.NotEmpty(PrCallScanner.Find(command));
     }
+
+    // DYD-406 round 2: these are inert input strings, never shell programs.
+    [Theory]
+    [InlineData("x=\"$(case a in a) echo y;; esac)\"; gh pr create --title t --body '## Independent review'")]
+    [InlineData("cat <<EOF\n$(case a in a) echo y;; esac)\nEOF\ngh pr create --title t --body '## Independent review'")]
+    [InlineData("echo \"$(case a in a) echo y;; esac)\" && gh pr ready")]
+    [InlineData("arch=\"$(case \"$(uname -m)\" in\n  x86_64) echo amd64;;\n  *) echo other;;\nesac)\"\ngh pr create --fill")]
+    [InlineData("x=\"$(echo y)\"; gh pr create --title t --body '## Independent review'")]
+    public void FailedReading_LaterPrCall_IsNotLost(string command)
+    {
+        Assert.NotEmpty(PrCallScanner.Find(command, ShellDialect.Posix));
+    }
+
+    [Theory]
+    [InlineData("gh pr create --help; gh pr ready -h")]
+    [InlineData("cat <<'EOF'\nx=\"$(case a in a) echo y;; esac)\"; gh pr ready\nEOF")]
+    [InlineData("echo '$(case a in a) gh pr ready;; esac)'")]
+    public void FailedReading_HelpAndLiteralControls_HaveNoCall(string command)
+    {
+        Assert.Empty(PrCallScanner.Find(command, ShellDialect.Posix));
+    }
+
+    [Theory]
+    [InlineData("Posix")]
+    [InlineData("Unknown")]
+    public void FailedReading_TruncatedTarget_IsNeverACurrentTreeCall(string dialect)
+    {
+        var calls = PrCallScanner.Find(
+            "gh pr create --title \"$(case a in a) echo t;; esac)\" --head topic --repo other/repo",
+            Enum.Parse<ShellDialect>(dialect));
+
+        Assert.NotEmpty(calls);
+        Assert.All(calls, call => Assert.True(call.Wrapper != null
+            || (call.Branch == "topic" && call.Repo == "other/repo")));
+    }
+
+    [Theory]
+    [InlineData("gh pr create --head topic", "Posix")]
+    [InlineData("gh pr ready topic --repo other/repo", "Unknown")]
+    [InlineData("GH_REPO=other/repo gh pr create", "Posix")]
+    [InlineData("gh api repos/other/repo/pulls -f head=topic", "Posix")]
+    [InlineData("gh api graphql -f query=createPullRequest", "Unknown")]
+    public void FailedReading_LaterTargetOrApiCall_IsRefusedUnread(string suffix, string dialect)
+    {
+        var calls = PrCallScanner.Find("x=\"$(case a in a) echo y;; esac)\"; " + suffix,
+            Enum.Parse<ShellDialect>(dialect), "inherited/repo");
+
+        Assert.Contains(calls, call => call.Wrapper != null);
+    }
+
+    [Theory]
+    [InlineData("gh pr create --title \"unfinished", "Posix")]
+    [InlineData("Write-Host \"$(gh pr create", "PowerShell")]
+    public void FailedReading_PartialCall_IsRefusedUnread(string command, string dialect)
+    {
+        var call = Assert.Single(PrCallScanner.Find(command, Enum.Parse<ShellDialect>(dialect)));
+
+        Assert.NotNull(call.Wrapper);
+    }
+
+    [Theory]
+    [InlineData(new object[] { new[] { "bash", "-lc", "x=\"$(case a in a) echo y;; esac)\"; gh pr ready" } })]
+    [InlineData(new object[] { new[] { "node", "-e", "x=\"$(case a in a) echo y;; esac)\"; gh pr ready" } })]
+    public void FailedReading_ArgvEnvelopeAndWrapper_AreRefusedUnread(string[] argv)
+    {
+        Assert.Contains(PrCallScanner.FindInArgv(argv), call => call.Wrapper != null);
+    }
 }

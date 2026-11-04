@@ -22,7 +22,9 @@ base, and every earlier check holds.
   pin is refused before any network call; the head pin is checked first. A base whose tip is not the
   pin, dry run or real, refuses with nothing written:
   `refused: <base> is at <tip12>, not the pinned <pin12>; nothing merged - re-pin the target and re-contract`.
-- The two-parent path writes parents pin and SHA and moves the ref without force. The `POST /merges`
+- The two-parent path writes parents pin and SHA and moves the ref atomically, only if it is still at
+  the pin (GraphQL `updateRefs` with `beforeOid` the pin), without force; a target that moved
+  meanwhile, even into the SHA's history, is refused with nothing merged. The `POST /merges`
   path re-reads the ref just before the call and refuses on a mismatch; after it, a merge whose first
   parent is not the pin exits `2` with an `error:` line naming both SHAs.
 - The output names the pin: `would merge <sha12> into <base> at <pin12> (PR #<n>)` and
@@ -46,9 +48,10 @@ No change in this entry renames a term mechanically, so it has no merge normalis
 ## Files Changed
 
 `Services/Merge/PullRequestMerge.cs`, `Commands/MergeCommand.cs`, `Commands/HelpCommand.cs`,
-`Commands/InitCommand.cs`, `.codex/rules/dydo.rules`, `DynaDocs.Tests/Merge/` (`MergeCommandTests.cs`,
-`MergeScenario.cs`, `PullRequestMergeTests.cs`), `DynaDocs.Tests/Integration/InitCommandTests.cs`,
-`DynaDocs.Tests/Integration/GuardWorkerLaneMergeTests.cs`, `dydo/reference/dydo-commands.md`,
+`Commands/InitCommand.cs`, `.codex/rules/dydo.rules`, `DynaDocs.Tests/Merge/` (`FakeGitHub.cs`,
+`MergeCommandTests.cs`, `MergeScenario.cs`, `PullRequestMergeTests.cs`, `TargetBranch.cs`),
+`DynaDocs.Tests/Integration/InitCommandTests.cs`, `DynaDocs.Tests/Integration/GuardWorkerLaneMergeTests.cs`,
+`dydo/reference/dydo-commands.md`,
 `Scaffold/dydo/reference/dydo-commands.md`,
 `dydo/project/decisions/061-agents-merge-only-into-feature-branches.md`,
 `skills/roles/crew/code-writer/resources/merge.md`, and this entry.

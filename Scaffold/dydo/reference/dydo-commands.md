@@ -440,11 +440,11 @@ the base pin only adds a refusal. In order, it checks:
   `origin/HEAD` name, whatever the case; it must be `feature/` and one or more `/`-separated
   segments, each starting with a letter or digit (`[A-Za-z0-9][A-Za-z0-9._-]*`), and pass
   `git check-ref-format --branch`. An unreadable default branch is refused.
+- **Head:** the PR head must equal the SHA.
 - **Target tip:** the base's tip, read from `GET repos/<owner>/<repo>/branches/<base>`, must equal
   the pin, dry run or real; otherwise
   `refused: <base> is at <tip12>, not the pinned <pin12>; nothing merged - re-pin the target and re-contract`.
   A closed PR's reconcile compares no pin, since the run's own merge moved the tip.
-- **Head:** the PR head must equal the SHA.
 - **Review:** the PR body's `## Independent review` section, up to the next level-one or level-two
   heading, must hold a `PASS - rubric/type: <rubric>; ...` line whose `candidate` is the SHA: fenced
   or not, a hyphen, en dash or em dash after `PASS`, the SHA possibly backticked. An abbreviated
@@ -470,7 +470,10 @@ retarget or push cannot change where or what lands. GitHub cannot make that call
 tip, so the command reads the branch ref again just before it, refusing as above on a mismatch, and
 afterwards checks that the merge commit's first parent is the pin. When the pin is an ancestor of
 the SHA, where GitHub would fast-forward, it writes a two-parent commit (the SHA's tree, parents the
-pin and the SHA) and moves the base without force, so a base that moved meanwhile is refused. There
+pin and the SHA) and moves the base atomically, only if it is still at the pin: GraphQL `updateRefs`
+with `beforeOid` the pin, without force. A base that moved meanwhile, even to a commit in the SHA's
+history, fails that move; the command then reads the branch ref again and, when the base is off the
+pin, refuses with nothing merged. A base still at the pin is a tool error with GitHub's message. There
 is no squash or rebase. The commit message is `Merge pull request #<n> from <owner>/<head-ref>`, the
 PR title, and the trailers `Dydo-Merge: dydo <version>`, `Reviewed-Candidate: <sha>`,
 `Target-Tip: <pin>` and `Review: <the PASS line, first 200 characters>`. A conflict (`409`) is

@@ -48,7 +48,7 @@ server-side. Balazs ruled it unnecessary.
    option; `--match-base-commit` only adds a refusal. The repository is the one the checkout's
    `origin` names, and the target is the PR's base. That base's tip, read from its branch ref and
    never from the PR's `base.sha`, must equal the pin; the pin reaches a write only as the merge's
-   first parent. The base must match a fixed `feature/*` pattern and git's branch-name rule, and is
+   first parent and as the tip the base must still hold for the two-parent ref move. The base must match a fixed `feature/*` pattern and git's branch-name rule, and is
    refused when it is GitHub's default branch, read fresh, or the local `origin/HEAD` name. The PR
    head must equal the reviewed SHA, which is exactly what merges. A closed PR is refused unless its
    SHA is already in its feature base (reconcile-first, exit 0 `already integrated`, comparing no
@@ -107,8 +107,10 @@ server-side. Balazs ruled it unnecessary.
   - **The `POST /merges` window.** GitHub cannot make that merge conditional on a tip. The command
     re-reads the ref just before the call and checks the merge's first parent after it, so a branch
     that moves inside that window still takes the merge: the command exits `2` naming both SHAs, and
-    the merge review judges its actual parents. The two-parent path has no window, since its
-    unforced ref move fails when the tip moved.
+    the merge review judges its actual parents. The two-parent path has no window: it moves the
+    base atomically, only if it is still at the pin (GraphQL `updateRefs` with `beforeOid` the pin),
+    without force. An unforced `PATCH git/refs` would not do, since it accepts any fast-forward, and
+    a tip another merge moved into the SHA's history still fast-forwards to the merge commit.
 - The merge SHA is the candidate for the combined gates and the merge review. A conflicted merge
   stays the Merge code-writer's local merge.
 - The command's stdout line, which names the pinned tip, and the merge commit's `Target-Tip` trailer

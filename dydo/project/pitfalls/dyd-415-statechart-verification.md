@@ -30,15 +30,35 @@ A skipped test is missing proof, not a pass. These inputs decide which tests run
 | Input | Tests that need it |
 |---|---|
 | `TLA2TOOLS`: the pinned `tla2tools.jar` 1.7.4 | The runtime checks the jar's SHA-256, so the upstream replay suite (`cli.test.ts`), checker isolation, TLC bootstrap and real-TLC tests skip without it, in both TypeScript and .NET |
-| A Java 11+ runtime | Real TLC acceptance, plain-TLC agreement and differential tests |
+| `JAVA`: a Java 11+ runtime | Real TLC acceptance, corpus recordings, plain-TLC agreement and differential tests |
+| A JDK as `JAVA` | The config-fuzz oracle, which runs in Java's source-file mode; the managed JRE has no compiler, so it skips there |
 | `STATECHART_PELE`: the Pele 1.9.0 module entry | Native renderer and SVG acceptance |
 | `STATECHART_TEST_DEPENDENCY_ROOT`: a verified managed installation | The installed ready-invocation test |
-| Windows | Job Object lifetime, the probe fixture and `statechart doctor` |
+| Windows | Job Object lifetime, the probe fixture, `statechart doctor` and native PowerShell acceptance |
 
 The .NET native tests run the `dydo` build beside the test assembly;
 `STATECHART_TEST_BINARY` points them at another build, such as a NativeAOT publish.
-Run `node setup-skills.mjs` before the skill's `npm test`: one acceptance test reads
-both host projections.
+
+## Linux proof recipe
+
+Use the managed copy that `dydo statechart` installs on first use: run any chart once,
+then run the exact `installAndContinue` command its `approval-required` event names.
+Point each test command at that copy; change no PATH, JAVA_HOME or profile.
+
+```bash
+deps=~/.local/share/dydo/statechart/deps
+m=$(echo "$deps"/*/linux-x64)
+export JAVA=$m/java/content/jdk-21.0.8+9-jre/bin/java TLA2TOOLS=$m/tlc/tla2tools.jar
+export STATECHART_PELE=$m/pele/content/package/dist/pele.js STATECHART_TEST_DEPENDENCY_ROOT=$deps
+node setup-skills.mjs   # one acceptance test reads both host projections
+(cd skills/engineering/statechart/scripts && XDG_CACHE_HOME=$(mktemp -d) npm_config_cache=$(mktemp -d) npm test)
+python3 DynaDocs.Tests/coverage/run_tests.py -c Release --filter "FullyQualifiedName~DynaDocs.Tests.Statechart"
+```
+
+Only Windows-only tests and config-fuzz should skip. Managed receipts bind the payload
+digest, so after a change to any file the payload ships, the copy is refused with
+"Managed statechart content changed". Delete `deps/<lock>/linux-x64` and approve a fresh
+setup; no repair command exists yet.
 
 ## History
 

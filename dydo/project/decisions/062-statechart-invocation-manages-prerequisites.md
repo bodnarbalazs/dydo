@@ -71,8 +71,9 @@ The Windows investigation found firewall rules for the managed Java executable p
 an RMI listener in TLC's fingerprint set, a likely but unobserved prompt mechanism.
 Prefer compatible existing runtimes or user-scoped archive installations, and let tests
 reuse a verified runtime's stable path when their assertion allows. A stable path does not
-remove TLC's listener. Whether checking keeps the loopback TLC bootstrap is decided on real
-Java evidence. The Windows-era record is kept at
+remove TLC's listener. Checking therefore routes TLC through the loopback bootstrap: on
+Linux, TLC through it listens only on `127.0.0.1`, where raw TLC listens on every interface
+(verified on DYD-415, 2026-11-04). The Windows-era record is kept at
 [67cd2127](https://github.com/bodnarbalazs/dydo/tree/67cd21278872679398479601b99d95125678b7cd/dydo/project/pitfalls/dyd-415-statechart-evidence).
 
 ## Related

@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using DynaDocs.Commands;
 using DynaDocs.Services;
+using DynaDocs.Tests.Services;
 using DynaDocs.Utils;
 
 namespace DynaDocs.Tests.Integration;
@@ -204,6 +205,105 @@ public class AdoptCommandTests : IntegrationTestBase
     {
         var raw = ReadConfigJson();
         raw["nudges"]!.AsArray().Single(IsDocsNudge)!["message"] = message;
+        File.WriteAllText(ConfigPath, raw.ToJsonString());
+    }
+
+    #endregion
+
+    #region 3.6.0 migration: the library-install warn nudge (DYD-499)
+
+    [Theory]
+    [InlineData("3.5.1", "3.6.0")]
+    [InlineData(null, "3.6.0")]
+    [InlineData("3.5.1", "3.6.0-beta.3")]
+    [InlineData("3.4.1", "v3.6.1")]
+    public async Task Adopt_Crossing360_AddsTheInstallNudgeOnce(string? recorded, string adopted)
+    {
+        await InitPre360Project(recorded);
+
+        var result = await AdoptAsync(adopted);
+
+        result.AssertSuccess();
+        Assert.Contains($"Added command nudge: {InstallNudgeExpectation.Message}", result.Stdout);
+        var nudge = Assert.Single(InstallNudges());
+        Assert.Equal("warn", nudge["severity"]!.GetValue<string>());
+        Assert.Equal(InstallNudgeExpectation.Message, nudge["message"]!.GetValue<string>());
+        Assert.Null(nudge["match"]);
+    }
+
+    [Theory]
+    [InlineData("3.5.0", "3.5.2")]
+    [InlineData("3.6.0", "3.6.1")]
+    [InlineData("3.6.0-beta.3", "3.6.0")]
+    public async Task Adopt_NotCrossing360_AddsNoInstallNudge(string recorded, string adopted)
+    {
+        await InitPre360Project(recorded);
+
+        var result = await AdoptAsync(adopted);
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("Added", result.Stdout);
+        Assert.Empty(InstallNudges());
+    }
+
+    [Fact]
+    public async Task Adopt_ProjectCarryingTheInterimInstallNudge_AddsNoDuplicate_AndKeepsItsMessage()
+    {
+        await InitPre360Project("3.5.1");
+        AddInstallNudge("Our own wording.");
+
+        var result = await AdoptAsync("3.6.0");
+
+        result.AssertSuccess();
+        Assert.DoesNotContain("Added", result.Stdout);
+        var nudge = Assert.Single(InstallNudges());
+        Assert.Equal("Our own wording.", nudge["message"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task Adopt_AfterTheUserRemovedTheInstallNudge_DoesNotReAddIt()
+    {
+        await InitPre360Project("3.5.1");
+        (await AdoptAsync("3.6.0")).AssertSuccess();
+        RemoveInstallNudges();
+
+        (await AdoptAsync("3.6.1")).AssertSuccess();
+
+        Assert.Empty(InstallNudges());
+    }
+
+    /// <summary>An initialized project as dydo below 3.6.0 left it: no install nudge.</summary>
+    private async Task InitPre360Project(string? recorded)
+    {
+        (await InitProjectAsync("none")).AssertSuccess();
+        RemoveInstallNudges();
+        SetDydoVersion(recorded);
+    }
+
+    private static bool IsInstallNudge(JsonNode? nudge) =>
+        nudge?["pattern"]?.GetValue<string>() == InstallNudgeExpectation.Pattern;
+
+    private List<JsonNode> InstallNudges() =>
+        ReadConfigJson()["nudges"]!.AsArray().Where(IsInstallNudge).Select(n => n!).ToList();
+
+    private void RemoveInstallNudges()
+    {
+        var raw = ReadConfigJson();
+        var nudges = raw["nudges"]!.AsArray();
+        foreach (var nudge in nudges.Where(IsInstallNudge).ToList())
+            nudges.Remove(nudge);
+        File.WriteAllText(ConfigPath, raw.ToJsonString());
+    }
+
+    private void AddInstallNudge(string message)
+    {
+        var raw = ReadConfigJson();
+        raw["nudges"]!.AsArray().Add(new JsonObject
+        {
+            ["pattern"] = InstallNudgeExpectation.Pattern,
+            ["message"] = message,
+            ["severity"] = "warn"
+        });
         File.WriteAllText(ConfigPath, raw.ToJsonString());
     }
 

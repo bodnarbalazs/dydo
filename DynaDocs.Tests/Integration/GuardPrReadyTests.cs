@@ -45,13 +45,15 @@ public class GuardPrReadyTests : IntegrationTestBase
         WriteFile("wip.txt", "w\n");
     }
 
-    private void SilenceReviewBlockWarn()
+    // Arms the review-block warn's marker for each command a test sends, so the warn passes and
+    // the tree check decides. The marker is keyed by the command the guard reads (DYD-503).
+    private void SilenceReviewBlockWarn(params string[] commands)
     {
         var reviewBlockWarn = ConfigFactory.DefaultNudges.Single(n => n.Message.StartsWith("This PR carries no review block"));
-        var marker = Path.Combine(GuardCommand.GuardEnv.Load(TestDir).MarkerDir,
-            $".nudge-{GuardCommand.ComputeNudgeHash(reviewBlockWarn.Pattern)}");
-        Directory.CreateDirectory(Path.GetDirectoryName(marker)!);
-        File.WriteAllText(marker, "spent");
+        var markerDir = GuardCommand.GuardEnv.Load(TestDir).MarkerDir;
+        Directory.CreateDirectory(markerDir);
+        foreach (var command in commands)
+            File.WriteAllText(Path.Combine(markerDir, GuardCommand.CommandWarnMarkerName(reviewBlockWarn.Pattern, command)), "spent");
     }
 
     private string Payload(object command, bool withCwd = true, bool codex = false,
@@ -264,7 +266,7 @@ public class GuardPrReadyTests : IntegrationTestBase
         var reviewBlockWarn = ConfigFactory.DefaultNudges
             .Single(n => n.Message.StartsWith("This PR carries no review block"));
         var marker = Path.Combine(GuardCommand.GuardEnv.Load(TestDir).MarkerDir,
-            $".nudge-{GuardCommand.ComputeNudgeHash(reviewBlockWarn.Pattern)}");
+            GuardCommand.CommandWarnMarkerName(reviewBlockWarn.Pattern, "gh pr create --fill"));
         if (markerBefore)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(marker)!);
@@ -345,7 +347,7 @@ public class GuardPrReadyTests : IntegrationTestBase
     public async Task BranchNamedCall_FromADirtyMain_ChecksTheCleanBranchWorktree(string command)
     {
         await InitDirtyMainWithCleanWorktree();
-        SilenceReviewBlockWarn();
+        SilenceReviewBlockWarn(command);
 
         var result = await GuardWithStdinAsync(Payload(command));
 
@@ -465,7 +467,6 @@ public class GuardPrReadyTests : IntegrationTestBase
     {
         await InitPushedProject();
         WriteFile("wip.txt", "w\n");
-        SilenceReviewBlockWarn();
         string[] commands =
         [
             "gh pr view 12", "ls", "git commit -m \"gh pr create later\"", "grep -rn \"gh pr create\" dydo",
@@ -476,6 +477,7 @@ public class GuardPrReadyTests : IntegrationTestBase
             "cat <<'EOF'\ngh pr create --fill\nEOF", "bash -c \"gh pr view 12\"",
             "pwsh -NoProfile -Command \"git status\"", "cmd /c dir", "eval \"$(ssh-agent -s)\"",
         ];
+        SilenceReviewBlockWarn(commands);
 
         Assert.Empty(await Misses(denied: false, commands));
     }
@@ -586,7 +588,7 @@ public class GuardPrReadyTests : IntegrationTestBase
     public async Task CallNamingThisRepository_FromACleanTree_Proceeds(string command)
     {
         await InitPushedProject();
-        SilenceReviewBlockWarn();
+        SilenceReviewBlockWarn(command);
 
         var result = await GuardWithStdinAsync(Payload(command));
 
@@ -599,7 +601,6 @@ public class GuardPrReadyTests : IntegrationTestBase
     public async Task WrappedPrCall_FromACleanTree_IsRefused()
     {
         await InitPushedProject();
-        SilenceReviewBlockWarn();
         string[] commands =
         [
             "bash -c \"gh pr create --fill\"", "sh -c 'git status; gh pr ready 12'",
@@ -614,6 +615,7 @@ public class GuardPrReadyTests : IntegrationTestBase
             "pwsh -EncodedCommand ZwBoACAAcAByACAAYwByAGUAYQB0AGUAIAAtAC0AZgBpAGwAbAA=",
             "powershell.exe -ec ZwBoACAAcAByACAAYwByAGUAYQB0AGUAIAAtAC0AZgBpAGwAbAA=",
         ];
+        SilenceReviewBlockWarn(commands);
 
         Assert.Empty(await Misses(denied: true, commands, "run gh directly so the PR check can see it"));
     }
@@ -680,7 +682,7 @@ public class GuardPrReadyTests : IntegrationTestBase
     public async Task ArgvCommand_FromACleanTree_IsAllowed()
     {
         await InitPushedProject();
-        SilenceReviewBlockWarn();
+        SilenceReviewBlockWarn("gh pr create --fill");
 
         var result = await GuardWithStdinAsync(Payload(new[] { "bash", "-lc", "gh pr create --fill" }, codex: true));
 
@@ -728,7 +730,7 @@ public class GuardPrReadyTests : IntegrationTestBase
     {
         await InitPushedProject(withWorktree: true);
         File.WriteAllText(Path.Combine(Worktree, "draft.txt"), "d\n");
-        SilenceReviewBlockWarn();
+        SilenceReviewBlockWarn(command);
 
         var reason = (await GuardWithStdinAsync(Payload(command, toolName: toolName))).AssertPreToolUseDenied();
 
@@ -800,7 +802,7 @@ public class GuardPrReadyTests : IntegrationTestBase
     public async Task SameHostInAnotherCase_IsThisRepository(string command)
     {
         await InitPushedProject();
-        SilenceReviewBlockWarn();
+        SilenceReviewBlockWarn(command);
 
         var result = await GuardWithStdinAsync(Payload(command));
 
@@ -856,13 +858,13 @@ public class GuardPrReadyTests : IntegrationTestBase
     public async Task WrappedPrCallAcrossAQuotedSeparator_IsRefused()
     {
         await InitPushedProject();
-        SilenceReviewBlockWarn();
         string[] commands =
         [
             "bash -c 'gh api -X POST -H \"Content-Type: application/json; charset=utf-8\" repos/acme/lc/pulls --input body.json'",
             "pwsh -Command \"gh pr create --title 'a; b' --fill\"",
             "bash -c 'echo \"x | y\" && gh pr ready 12'",
         ];
+        SilenceReviewBlockWarn(commands);
 
         Assert.Empty(await Misses(denied: true, commands, "run gh directly so the PR check can see it"));
     }
@@ -973,7 +975,6 @@ public class GuardPrReadyTests : IntegrationTestBase
     public async Task WrapperInsideOrBesideTheEnvelope_FromACleanTree_IsRefused(string[] argv)
     {
         await InitPushedProject();
-        SilenceReviewBlockWarn();
 
         var result = await GuardWithStdinAsync(Payload(argv, codex: true));
 
@@ -993,7 +994,7 @@ public class GuardPrReadyTests : IntegrationTestBase
     public async Task EffectiveRepository_DecidesTheForeignRefusal(string? inherited, string command, bool refused)
     {
         await InitPushedProject();
-        SilenceReviewBlockWarn();
+        SilenceReviewBlockWarn(command);
         var before = Environment.GetEnvironmentVariable("GH_REPO");
         Environment.SetEnvironmentVariable("GH_REPO", inherited);
         try
@@ -1064,7 +1065,7 @@ public class GuardPrReadyTests : IntegrationTestBase
     public async Task BashLabelledContinuationNamingACleanWorktree_FromADirtyMain_IsAllowed(string command)
     {
         await InitDirtyMainWithCleanWorktree();
-        SilenceReviewBlockWarn();
+        SilenceReviewBlockWarn(command);
 
         var result = await GuardWithStdinAsync(Payload(command));
 
@@ -1103,7 +1104,7 @@ public class GuardPrReadyTests : IntegrationTestBase
     public async Task ApiPathWithPlaceholders_ComparesItsLiteralSegments(string command, bool refused)
     {
         await InitPushedProject();
-        SilenceReviewBlockWarn();
+        SilenceReviewBlockWarn(command);
 
         var result = await GuardWithStdinAsync(Payload(command));
 
@@ -1120,7 +1121,7 @@ public class GuardPrReadyTests : IntegrationTestBase
     public async Task ApiPathPlaceholder_ResolvesAgainstGhRepo(string inherited, string command, bool refused)
     {
         await InitPushedProject();
-        SilenceReviewBlockWarn();
+        SilenceReviewBlockWarn(command);
 
         var result = await GuardWithInheritedGhRepo(inherited, Payload(command));
 

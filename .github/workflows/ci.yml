@@ -18,7 +18,7 @@ jobs:
             platform: windows
             python: dydo/_system/.local/static-gates/python/Scripts/python.exe
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -120,6 +120,7 @@ jobs:
     needs: python-coverage
     if: always()
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 

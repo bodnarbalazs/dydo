@@ -70,6 +70,24 @@ public class StatechartPublicFlowTests
         Assert.False(Directory.Exists(Path.Combine(scope.Path, "state", "requests")));
     }
 
+    // The IDE runtime lives under Program Files, which Linux lacks, so a JetBrains folder in the caller's directory is no Java.
+    [SkippableFact]
+    [UnsupportedOSPlatform("windows")]
+    public async Task AnIdeJavaIsNeverLookedForOutsideWindows()
+    {
+        Skip.If(OperatingSystem.IsWindows(), "Windows looks for the IDE runtime under Program Files.");
+        using var scope = new StatechartTestDirectory();
+        Model(scope.Path);
+        var java = Path.Combine(scope.Path, "JetBrains", "ide", "jbr", "bin", "java.exe");
+        Directory.CreateDirectory(Path.GetDirectoryName(java)!);
+        File.WriteAllText(java, "#!/bin/sh\necho 'openjdk version \"21.0.1\"' >&2\n");
+        File.SetUnixFileMode(java, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var result = await Invoke(scope.Path, ["statechart", "spaced model.tla"]);
+        Assert.Equal(3, result.Exit);
+        using var plan = JsonDocument.Parse(result.Output);
+        Assert.Contains("java", plan.RootElement.GetProperty("missing").EnumerateArray().Select(item => item.GetProperty("name").GetString()));
+    }
+
     // Only managed content is repaired; a JAVA the caller named that cannot start stays the caller's error.
     [SkippableFact]
     [UnsupportedOSPlatform("windows")]

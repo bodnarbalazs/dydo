@@ -33,8 +33,10 @@ internal static class StatechartResolver
         }
     }
 
+    // Only Windows has Program Files; elsewhere the folder path is empty and would name the caller's directory.
     private static string? IdeJava()
     {
+        if (!OperatingSystem.IsWindows()) return null;
         var jetbrains = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "JetBrains");
         if (!Directory.Exists(jetbrains)) return null;
         return Directory.EnumerateDirectories(jetbrains).Order(StringComparer.Ordinal)

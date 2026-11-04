@@ -11,6 +11,14 @@ How dydo enforces boundaries through the PreToolUse hook. Every tool call the ho
 
 ## How the Hook Intercepts Tool Calls
 
+An executing `dydo mode set` has a built-in warning on every host and direct guard invocation:
+run it only as the chief of staff readying overnight mode or ending it; otherwise stop. The first
+attempt stops, then the same command's retry passes through the existing command-warn mechanism.
+The full command is keyed with whitespace runs normalized, so the opposite transition and other
+commands each receive their own warning. Hard blocks run first and leave warning markers intact.
+This prevents accidents; it authenticates no role or human approval. After actual execution,
+the chief of staff independently runs `dydo mode show` and verifies on/off before announcing it.
+
 The guard integrates with the platform through the **PreToolUse** hook event. Before each matched tool call, the platform pipes a JSON payload to `dydo guard` via stdin:
 
 ```json

@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 
 /// <summary>
 /// The built-in mode-set nudge's edges beyond the machine-mode scenarios: it cannot be configured
-/// away, an ask is only ever a PreToolUse answer, and any other block still wins over it.
+/// away, command-keyed retries work on every host, and any hard block still wins over it.
 /// </summary>
 [Collection("Integration")]
 public sealed class GuardModeSetTests : IntegrationTestBase
@@ -32,7 +32,7 @@ public sealed class GuardModeSetTests : IntegrationTestBase
 
     private async Task<CommandResult> Twice(string hook)
     {
-        await GuardWithStdinAsync(hook, ClaudeHook);
+        Assert.Contains("otherwise stop", (await GuardWithStdinAsync(hook, ClaudeHook)).AssertPreToolUseDenied());
         return await GuardWithStdinAsync(hook, ClaudeHook);
     }
 
@@ -55,59 +55,64 @@ public sealed class GuardModeSetTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task MissingPermissionMode_IsDenied()
+    public async Task MissingPermissionMode_WarnsThenPasses()
     {
         await InitProjectAsync("none");
 
         var result = await Twice(Hook("dydo mode set overnight on", permissionMode: null));
 
-        Assert.Contains("BLOCKED: This host cannot ask", result.AssertPreToolUseDenied());
+        result.AssertPreToolUseAllowed();
     }
 
-    // env -S's split string is the command env runs, so its dydo mode set still needs the user (DYD-391 r3).
+    // env -S's split string is the command env runs, so it meets the reminder (DYD-391 r3).
     [Theory]
     [InlineData("env -S dydo mode set overnight on")]
     [InlineData("env -S 'dydo' mode set overnight on")]
-    public async Task EnvSplitStringModeSet_OnAHostThatCannotAsk_IsDenied(string command)
+    public async Task EnvSplitStringModeSet_WarnsThenPasses(string command)
     {
         await InitProjectAsync("none");
 
         var result = await Twice(Hook(command, permissionMode: null));
 
-        Assert.False(result.IsPreToolUseAllowed, $"allowed: exit={result.ExitCode}, stdout=[{result.Stdout}], stderr=[{result.Stderr}]");
-        Assert.Contains("BLOCKED: This host cannot ask", result.AssertPreToolUseDenied());
+        result.AssertPreToolUseAllowed();
     }
 
     [Fact]
-    public async Task OtherHookEvent_NeverAsks()
+    public async Task OtherHookEvent_WarnsWithExitTwoThenPasses()
     {
         await InitProjectAsync("none");
 
-        var result = await Twice(Hook("dydo mode set overnight on", eventName: "PostToolUse"));
-
-        result.AssertExitCode(2);
-        Assert.Equal("", result.Stdout);
-        result.AssertStderrContains("ASK: ");
+        var hook = Hook("dydo mode set overnight on", eventName: "PostToolUse");
+        var first = await GuardWithStdinAsync(hook, ClaudeHook);
+        first.AssertExitCode(2);
+        Assert.Equal("", first.Stdout);
+        first.AssertStderrContains("otherwise stop");
+        (await GuardWithStdinAsync(hook, ClaudeHook)).AssertSuccess();
     }
 
     [Fact]
-    public async Task CliLane_BlocksTheRerunWithExitTwo()
+    public async Task CliLane_WarnsWithExitTwoThenPasses()
     {
         await InitProjectAsync("none");
 
-        await GuardCommandAsync("dydo mode set overnight on");
+        var first = await GuardCommandAsync("dydo mode set overnight on");
+        first.AssertExitCode(2);
+        Assert.Equal("", first.Stdout);
+        first.AssertStderrContains("otherwise stop");
         var result = await GuardCommandAsync("dydo mode set overnight on");
 
-        result.AssertExitCode(2);
-        result.AssertStderrContains("Ask the user to run it in their own terminal: dydo mode set overnight on");
+        result.AssertSuccess();
+        Assert.Equal("", result.Stdout);
     }
 
     [Fact]
-    public async Task AnotherBlock_WinsOverTheAsk()
+    public async Task AnotherBlock_WinsOverTheWarn()
     {
         await InitProjectAsync("none");
 
-        var result = await Twice(Hook("dydo mode set overnight on && cat .env"));
+        var hook = Hook("dydo mode set overnight on && cat .env");
+        Assert.Contains("off-limits", (await GuardWithStdinAsync(hook, ClaudeHook)).AssertPreToolUseDenied());
+        var result = await GuardWithStdinAsync(hook, ClaudeHook);
 
         Assert.StartsWith("BLOCKED: Command references off-limits path.", result.AssertPreToolUseDenied());
     }
@@ -123,13 +128,13 @@ public sealed class GuardModeSetTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task OnlyTheModeSetSegment_IsNamed()
+    public async Task CompoundCommand_RetryPasses()
     {
         await InitProjectAsync("none");
 
         var result = await Twice(Hook("dydo mode set overnight off; echo done", permissionMode: "dontAsk"));
 
-        Assert.EndsWith("their own terminal: dydo mode set overnight off", result.AssertPreToolUseDenied());
+        result.AssertPreToolUseAllowed();
     }
 
     // A backslash path is a path only where backslashes are literal: bash reads C:\tools\dydo.exe
@@ -152,13 +157,13 @@ public sealed class GuardModeSetTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task ObfuscatedRerun_NamesTheCanonicalCommand()
+    public async Task ObfuscatedRerun_Passes()
     {
         await InitProjectAsync("none");
 
         var result = await Twice(Hook("\"C:/tools/dydo.exe\" mode 'set' overnight \"off\"", permissionMode: "dontAsk"));
 
-        Assert.EndsWith("their own terminal: dydo mode set overnight off", result.AssertPreToolUseDenied());
+        result.AssertPreToolUseAllowed();
     }
 
     [Theory]
@@ -210,14 +215,14 @@ public sealed class GuardModeSetTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task StartProcessRerun_NamesTheCanonicalCommand()
+    public async Task StartProcessRerun_Passes()
     {
         await InitProjectAsync("none");
 
         var result = await Twice(Hook("Start-Process dydo -ArgumentList \"mode\", \"set\", \"overnight\", \"off\"",
             permissionMode: "dontAsk"));
 
-        Assert.EndsWith("their own terminal: dydo mode set overnight off", result.AssertPreToolUseDenied());
+        result.AssertPreToolUseAllowed();
     }
 
     [Theory]
@@ -235,14 +240,14 @@ public sealed class GuardModeSetTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task PowerShellArrayRerun_NamesTheCanonicalCommand()
+    public async Task PowerShellArrayRerun_Passes()
     {
         await InitProjectAsync("none");
 
         var result = await Twice(Hook("Start-Process dydo -ArgumentList @('mode', 'set', 'overnight', 'off') -Wait",
             permissionMode: "dontAsk", tool: "PowerShell"));
 
-        Assert.EndsWith("their own terminal: dydo mode set overnight off", result.AssertPreToolUseDenied());
+        result.AssertPreToolUseAllowed();
     }
 
     // PowerShell escapes a quote inside double quotes with a backtick or a doubled quote, and keeps a
@@ -318,7 +323,7 @@ public sealed class GuardModeSetTests : IntegrationTestBase
         if (OperatingSystem.IsWindows())
             result.AssertPreToolUseAllowed();
         else
-            Assert.Contains("BLOCKED: This host cannot ask", result.AssertPreToolUseDenied());
+            Assert.Contains("otherwise stop", result.AssertPreToolUseDenied());
     }
 
     [Theory]
@@ -338,6 +343,40 @@ public sealed class GuardModeSetTests : IntegrationTestBase
         string? userShell, string expected)
     {
         Assert.Equal(expected, DynaDocs.Commands.GuardCommand.ExecutingShell(tool, host, fromCodex, windows, userShell).ToString());
+    }
+
+    [Fact]
+    public async Task ModeSetWarn_KeysTheFullCommandAndNormalizesWhitespace()
+    {
+        await InitProjectAsync("none");
+        var commands = new[]
+        {
+            "dydo mode set overnight on", "dydo mode set overnight off",
+            "dydo mode set overnight on; echo done",
+            "  dydo\tmode  set overnight on  ", "dydo mode set overnight off",
+            "dydo mode set overnight on; echo done", "dydo mode set overnight on"
+        };
+        var allowed = new[] { false, false, false, true, true, true, false };
+        for (var index = 0; index < commands.Length; index++)
+        {
+            var result = await GuardWithStdinAsync(Hook(commands[index]));
+            if (allowed[index])
+                result.AssertPreToolUseAllowed();
+            else
+                Assert.Contains("otherwise stop", result.AssertPreToolUseDenied());
+        }
+    }
+
+    [Fact]
+    public async Task LegacyGlobalMarker_DoesNotBypassTheCommandWarning()
+    {
+        await InitProjectAsync("none");
+        var marker = Path.Combine(DynaDocs.Commands.GuardCommand.GuardEnv.Load(TestDir).MarkerDir, ".nudge-mode-set");
+        Directory.CreateDirectory(Path.GetDirectoryName(marker)!);
+        File.WriteAllText(marker, "legacy");
+
+        Assert.Contains("otherwise stop", (await GuardWithStdinAsync(Hook("dydo mode set overnight on"))).AssertPreToolUseDenied());
+        Assert.Equal("legacy", File.ReadAllText(marker));
     }
 
     private Task<CommandResult> GuardCommandAsync(string command) =>

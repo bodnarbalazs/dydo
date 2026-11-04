@@ -112,37 +112,35 @@ public sealed class GuardWarnOrderTests : IntegrationTestBase
         Assert.False(File.Exists(WarnMarker("echo hi")));
     }
 
-    // Contract item 3: a host that cannot ask refuses every try, and neither the command warn's
-    // marker nor the mode-set reminder's marker moves.
+    // A hard block preserves both command-keyed warnings, armed or unarmed, on every try.
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task ModeSet_OnAHostThatCannotAsk_RefusesEveryTryAndLeavesTheMarkers(bool markersBefore)
+    public async Task ModeSet_WithAHardBlock_NeitherArmsNorSpendsAnyWarn(bool markersBefore)
     {
         await InitWithNudges();
-        const string modeSet = "dydo mode set overnight on";
-        var reminderMarker = MarkerPath(".nudge-mode-set");
+        const string command = "dydo mode set overnight on && cat .env";
+        var env = GuardCommand.GuardEnv.Load(TestDir);
         if (markersBefore)
-        {
-            Arm(WarnMarker(modeSet));
-            Arm(reminderMarker);
-        }
+            Assert.Equal(2, GuardCommand.CheckWarnNudges(command, env, modeSet: true));
+        Directory.CreateDirectory(env.MarkerDir);
+        var before = Directory.GetFiles(env.MarkerDir, ".nudge-*")
+            .ToDictionary(path => path, File.ReadAllText);
+        Assert.Equal(markersBefore ? 2 : 0, before.Count);
 
         for (var attempt = 1; attempt <= 4; attempt++)
         {
-            var result = await GuardWithStdinAsync(Hook(modeSet, permissionMode: "dontAsk"), ClaudeHook);
-
-            var reason = result.AssertPreToolUseDenied();
-            Assert.True(reason.StartsWith("BLOCKED: This host cannot ask"), $"try {attempt}: {reason}");
-            Assert.True(File.Exists(WarnMarker(modeSet)) == markersBefore, $"try {attempt} changed the warn marker");
-            Assert.True(File.Exists(reminderMarker) == markersBefore, $"try {attempt} changed the reminder marker");
+            var result = await GuardWithStdinAsync(Hook(command, permissionMode: "dontAsk"), ClaudeHook);
+            Assert.Contains("off-limits", result.AssertPreToolUseDenied());
+            var after = Directory.GetFiles(env.MarkerDir, ".nudge-*")
+                .ToDictionary(path => path, File.ReadAllText);
+            Assert.Equal(before.OrderBy(pair => pair.Key), after.OrderBy(pair => pair.Key));
         }
     }
 
-    // Where the host can ask, a warn and the mode-set reminder block together once, and the rerun
-    // asks: they never take turns.
+    // The reminder and other warnings block together once, then pass together.
     [Fact]
-    public async Task ModeSet_WithAWarn_OnAHostThatCanAsk_AsksOnEveryRerun()
+    public async Task ModeSet_WithAWarn_BlocksAndPassesTogether()
     {
         await InitWithNudges();
         var decisions = new List<string>();
@@ -150,7 +148,7 @@ public sealed class GuardWarnOrderTests : IntegrationTestBase
         for (var attempt = 1; attempt <= 4; attempt++)
             decisions.Add(Decision(await GuardWithStdinAsync(Hook("dydo mode set overnight on"), ClaudeHook)));
 
-        Assert.Equal(["deny", "ask", "deny", "ask"], decisions);
+        Assert.Equal(["deny", "allow", "deny", "allow"], decisions);
     }
 
     // DYD-503 through the hook: the shipped install warn passes only the same command retried; a
@@ -168,7 +166,7 @@ public sealed class GuardWarnOrderTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task ModeSet_WithAWarn_OnAHostThatCanAsk_NamesBothOnTheFirstTry()
+    public async Task ModeSet_WithAWarn_NamesBothOnTheFirstTry()
     {
         await InitWithNudges();
 

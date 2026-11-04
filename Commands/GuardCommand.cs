@@ -25,7 +25,6 @@ using DynaDocs.Utils;
 /// - Exit code 0, empty stdout = action allowed
 /// - Hook-mode refusal: exit code 0 with one PreToolUse deny-decision object on stdout
 ///   (GuardCommand.Refusal.cs); the same text also goes to stderr
-/// - Hook-mode ask (the mode-set rerun on Claude Code only): exit 0 with one ask-decision object
 /// - CLI-mode or non-PreToolUse-event refusal: exit code 2, message on stderr
 /// </summary>
 public static partial class GuardCommand
@@ -128,7 +127,7 @@ public static partial class GuardCommand
         string? ToolName, string? SessionId, string? SearchPath,
         bool HasCliArgs, string? AgentId, string? AgentType,
         IReadOnlyList<WriteTarget> WriteTargets, string? Cwd, string? HookEventName,
-        string? PermissionMode, string? Host, bool FromCodex, string? ToolCwd,
+        string? Host, bool FromCodex, string? ToolCwd,
         IReadOnlyList<string>? CommandArgv);
 
     // --host is the hook's own marker, not a diagnostic argument: a call carrying only it still
@@ -138,7 +137,7 @@ public static partial class GuardCommand
         var hasCliArgs = cliAction != null || cliPath != null || cliCommand != null;
         string? filePath = null, action = null, bashCommand = null;
         string? toolName = null, sessionId = null, searchPath = null;
-        string? agentId = null, agentType = null, cwd = null, hookEventName = null, permissionMode = null, toolCwd = null;
+        string? agentId = null, agentType = null, cwd = null, hookEventName = null, toolCwd = null;
         var fromCodex = false;
         IReadOnlyList<WriteTarget> writeTargets = [];
         IReadOnlyList<string>? commandArgv = null;
@@ -166,7 +165,6 @@ public static partial class GuardCommand
                     toolCwd = ToolDirectory(Blank(hookInput.ToolInput?.Cwd) ?? Blank(hookInput.ToolInput?.Workdir), cwd);
                     commandArgv = hookInput.ToolInput?.CommandArgv;
                     hookEventName = hookInput.HookEventName;
-                    permissionMode = hookInput.PermissionMode;
                     fromCodex = hookInput.TurnId != null;
                 }
             }
@@ -187,7 +185,7 @@ public static partial class GuardCommand
             action ?? cliAction ?? "edit",
             bashCommand ?? cliCommand,
             toolName, sessionId, searchPath, hasCliArgs,
-            agentId, agentType, writeTargets, cwd, hookEventName, permissionMode, host, fromCodex, toolCwd, commandArgv);
+            agentId, agentType, writeTargets, cwd, hookEventName, host, fromCodex, toolCwd, commandArgv);
     }
 
     // A blank directory is one the host did not send.
@@ -263,7 +261,7 @@ public static partial class GuardCommand
 
     private static int Decide(GuardContext ctx, OffLimitsService offLimitsService, GuardEnv env)
     {
-        var bashAnalyzer = new BashCommandAnalyzer(ModeSetCallerOf(ctx).Shell);
+        var bashAnalyzer = new BashCommandAnalyzer(ExecutingShellOf(ctx));
 
         RunDailyValidationIfDue();
 
@@ -616,23 +614,18 @@ public static partial class GuardCommand
         var command = ctx.BashCommand!;
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(ctx.SessionId);
 
-        var caller = ModeSetCallerOf(ctx);
+        var shell = ExecutingShellOf(ctx);
 
         // dydo commands skip the cd-chain coaching (they are never a needless cd compound).
         var hardBlock = (isDydo && isWorker ? BlockIfWorkerDydoCommand(command) : null)
             ?? BlockIfDangerous(command, bashAnalyzer)
-            ?? CheckBlockNudges(command, env, caller.Shell)
-            ?? CheckPrReady(command, ctx.CommandArgv, ctx.ToolCwd ?? ctx.Cwd, caller.Shell, env)
+            ?? CheckBlockNudges(command, env, shell)
+            ?? CheckPrReady(command, ctx.CommandArgv, ctx.ToolCwd ?? ctx.Cwd, shell, env)
             ?? (isDydo ? null : BlockIfCdChain(command, bashAnalyzer))
             ?? AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer, env.Memory);
         if (hardBlock != null) return hardBlock.Value;
 
-        var modeSet = FindModeSetArgs(command, caller.Shell);
-        if (modeSet != null && !caller.CanAsk)
-            return RefuseModeSet(modeSet);
-
-        return CheckWarnNudges(command, env, modeSet != null, caller.Shell)
-            ?? (modeSet == null ? ExitCodes.Success : AskModeSet(modeSet));
+        return CheckWarnNudges(command, env, IsModeSet(command, shell), shell) ?? ExitCodes.Success;
     }
 
     private static int? BlockIfWorkerDydoCommand(string command)
@@ -702,7 +695,8 @@ public static partial class GuardCommand
                 "Run the same command again to proceed anyway."))
             .ToList();
         if (modeSet)
-            warns.Add(ModeSetWarn);
+            warns.Add(new WarnStep(ModeSetNudge, Match.Empty, CommandWarnMarkerName(ModeSetNudge.Pattern, command),
+                "Run the same command again to proceed anyway."));
         return EnforceWarns(warns, env);
     }
 

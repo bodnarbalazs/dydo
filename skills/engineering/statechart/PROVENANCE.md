@@ -35,9 +35,9 @@ Local changes:
 - The renderer tests install nothing while they run. Upstream's `before` hook runs
   `npm install` for Pele 1.9.0, Mermaid 11.16.0 and jsdom 26.1.0. Here Pele is the
   managed module that `STATECHART_PELE` names. Mermaid and jsdom are dev dependencies,
-  locked with fast-check in `scripts/package-lock.json` and restored by `npm ci`.
-  Without either, the renderer cases skip by name. Their cases and assertions are
-  upstream's.
+  locked with fast-check in `scripts/pnpm-lock.yaml` and restored by
+  `pnpm install --frozen-lockfile`, which runs no dependency build scripts. Without
+  either, the renderer cases skip by name. Their cases and assertions are upstream's.
 - dydo's native invocation enters through `native-entry.ts`. On Linux,
   `posix-lifetime.ts` checks inside the control channel and process group that dydo's
   native owner hands over; that owner performs scratch cleanup.

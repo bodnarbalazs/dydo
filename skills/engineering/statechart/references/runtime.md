@@ -38,8 +38,8 @@ every interface.
 ## Tests
 
 Rendering uses Pele 1.9.0 as specified in [render](render.md). Tests additionally use
-fast-check 4.5.3, Mermaid 11.16.0 and jsdom 26.1.0, locked in `scripts/package-lock.json`;
-restore them with `npm ci` in `scripts/`. The package test command is in
+fast-check 4.5.3, Mermaid 11.16.0 and jsdom 26.1.0, locked in `scripts/pnpm-lock.yaml`;
+restore them with `pnpm install --frozen-lockfile` in `scripts/`. The package test command is in
 `scripts/package.json`; it serializes test files with `--test-concurrency=1` on a shared
 host.
 

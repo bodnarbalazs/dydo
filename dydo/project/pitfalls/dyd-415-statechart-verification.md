@@ -33,7 +33,7 @@ A skipped test is missing proof, not a pass. These inputs decide which tests run
 | `JAVA`: a Java 11+ runtime | Real TLC acceptance, corpus recordings, plain-TLC agreement and differential tests |
 | A JDK as `JAVA` | The config-fuzz oracle, which runs in Java's source-file mode; the managed JRE has no compiler, so it skips there |
 | `STATECHART_PELE`: the Pele 1.9.0 module entry | Native renderer, SVG acceptance and the renderer tests |
-| `npm ci` in `scripts/`: fast-check 4.5.3, Mermaid 11.16.0 and jsdom 26.1.0 from `package-lock.json` | The differential tests, and the renderer tests' Mermaid parse |
+| `pnpm install --frozen-lockfile` in `scripts/`: fast-check 4.5.3, Mermaid 11.16.0 and jsdom 26.1.0 from `pnpm-lock.yaml` | The differential tests, and the renderer tests' Mermaid parse |
 | `node setup-skills.mjs`: the `.claude` and `.agents` projections | One native acceptance test, which reads both |
 | `STATECHART_TEST_DEPENDENCY_ROOT`: a verified managed installation | The installed ready-invocation test |
 | Windows | Job Object lifetime, the probe fixture, `statechart doctor` and native PowerShell acceptance |
@@ -56,7 +56,7 @@ export JAVA=$m/java/content/jdk-21.0.8+9-jre/bin/java TLA2TOOLS=$m/tlc/tla2tools
 export STATECHART_PELE=$m/pele/content/package/dist/pele.js STATECHART_TEST_DEPENDENCY_ROOT=$deps
 py=dydo/_system/.local/static-gates/python/bin/python
 node setup-skills.mjs
-(cd skills/engineering/statechart/scripts && npm ci && npm test)
+(cd skills/engineering/statechart/scripts && pnpm install --frozen-lockfile && pnpm test)
 node --test DynaDocs.Tests/coverage/tests/setup-skills.test.cjs DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs npm/test/statechart.test.cjs
 PYTHONPATH=DynaDocs.Tests/coverage/tests "$py" -m unittest test_statechart_java_build
 python3 DynaDocs.Tests/coverage/run_tests.py -c Release --filter "FullyQualifiedName~DynaDocs.Tests.Statechart"

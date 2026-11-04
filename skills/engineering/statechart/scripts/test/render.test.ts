@@ -27,7 +27,7 @@ const missing = (() => {
     locked.resolve("mermaid");
     locked.resolve("jsdom");
   } catch {
-    return "Mermaid 11.16.0 and jsdom 26.1.0 come from package-lock.json; run npm ci in scripts/";
+    return "Mermaid 11.16.0 and jsdom 26.1.0 come from pnpm-lock.yaml; run pnpm install --frozen-lockfile in scripts/";
   }
   return false;
 })();

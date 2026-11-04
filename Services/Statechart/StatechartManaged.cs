@@ -48,7 +48,7 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
                 var readiness = await StatechartReady.VerifyAsync(candidate, payload, home, full: true, deadline.Token);
                 foreach (var item in _downloads.Where(item => installed.ContainsKey(item.Name)))
                     Place(item, Path.Combine(stage, item.Name), stage, readiness);
-                foreach (var name in state.Stale) Restamp(Path.Combine(Root, name), parent, readiness);
+                foreach (var name in Exercised(state, candidate)) Restamp(Path.Combine(Root, name), parent, readiness);
             }
             finally
             {
@@ -59,26 +59,39 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
         return Combine(selected, Read());
     }
 
-    // An update that kept the lock: prove the verified install with this payload, then re-stamp it. False when
-    // the scan under the lock finds nothing stale, such as after waiting for another run's re-stamp.
+    // An update that kept the lock: prove the selection with this payload, then re-stamp the stale components it ran.
+    // False when there are none, such as after waiting for another run's re-stamp or under an explicit override.
     public async Task<bool> RestampAsync(StatechartDependencies selected, string payload, CancellationToken token)
     {
+        if (Exercised(Inspect(), selected).Length == 0) return false;
         var parent = Path.GetDirectoryName(Root)!;
         using (await Lock(parent, token))
         {
             _state = null;
             var state = Inspect();
-            if (state.Stale.Length == 0) return false;
-            var readiness = await StatechartReady.VerifyAsync(Combine(selected, state.Dependencies), payload, home, full: true, token);
-            foreach (var name in state.Stale) Restamp(Path.Combine(Root, name), parent, readiness);
+            selected = Combine(selected, state.Dependencies);
+            var stale = Exercised(state, selected);
+            if (stale.Length == 0) return false;
+            var readiness = await StatechartReady.VerifyAsync(selected, payload, home, full: true, token);
+            foreach (var name in stale) Restamp(Path.Combine(Root, name), parent, readiness);
             _state = null;
             return true;
         }
     }
 
     internal static string[] Missing(StatechartDependencies dependencies) =>
-        new[] { ("node", dependencies.Node), ("java", dependencies.Java), ("tlc", dependencies.Tlc), ("pele", dependencies.Renderer) }
-            .Where(item => item.Item2 is null).Select(item => item.Item1).ToArray();
+        Components(dependencies).Where(item => item.Path is null).Select(item => item.Name).ToArray();
+
+    private static (string Name, string? Path)[] Components(StatechartDependencies dependencies) =>
+        [("node", dependencies.Node), ("java", dependencies.Java), ("tlc", dependencies.Tlc), ("pele", dependencies.Renderer)];
+
+    // Stale components the selection runs from this store; a readiness proof says nothing about one an override replaced.
+    private static string[] Exercised(StatechartManagedState state, StatechartDependencies selected)
+    {
+        var managed = Components(state.Dependencies);
+        return Components(selected).Where((item, index) => state.Stale.Contains(item.Name) && item.Path == managed[index].Path)
+            .Select(item => item.Name).ToArray();
+    }
 
     internal static StatechartDependencies Combine(StatechartDependencies selected, StatechartDependencies managed) =>
         new(selected.Node ?? managed.Node, selected.Java ?? managed.Java, selected.Tlc ?? managed.Tlc, selected.Renderer ?? managed.Renderer);

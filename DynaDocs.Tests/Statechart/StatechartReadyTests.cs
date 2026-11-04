@@ -72,6 +72,30 @@ public class StatechartReadyTests
         Assert.Equal(before, Content(dependencies));
     }
 
+    // An explicit JAVA proves readiness with another Java, so the managed JRE's receipt keeps its earlier stamp.
+    [SkippableFact]
+    public async Task ARestampWritesOnlyTheComponentsTheVerifiedSelectionRan()
+    {
+        using var scope = new StatechartTestDirectory();
+        var fixture = Fixture();
+        var dependencies = PrivateCopy(fixture, scope.Path);
+        foreach (var receipt in Directory.GetFiles(Path.Combine(dependencies, Relative), ".ready.json", SearchOption.AllDirectories))
+        {
+            var identity = JsonNode.Parse(File.ReadAllText(receipt))!.AsObject();
+            identity["release"] = "0.0.1";
+            File.WriteAllText(receipt, identity.ToJsonString());
+        }
+        var java = Directory.GetFiles(Path.Combine(fixture, Relative, "java", "content"), "java", SearchOption.AllDirectories)
+            .Single(path => Path.GetFileName(Path.GetDirectoryName(path)) == "bin");
+        WriteReadyModel(scope.Path);
+        var result = await Run(scope.Path, dependencies, ["statechart", "ReadyModel.tla", "--out", "chart"], java);
+        Assert.True(result.Exit == 1, result.Error);
+        var releases = new[] { "java", "node", "pele", "tlc" }.Select(component => JsonNode.Parse(File.ReadAllText(
+            Path.Combine(dependencies, Relative, component, ".ready.json")))!["release"]!.GetValue<string>());
+        var current = new StatechartAssets().Release;
+        Assert.Equal(["0.0.1", current, current, current], releases);
+    }
+
     [SkippableFact]
     public async Task AnUnchangedSkillFromAnEarlierReleaseUpdatesThroughInstallSkillAndCharts()
     {
@@ -132,14 +156,20 @@ public class StatechartReadyTests
     // Runs the built dydo offline on a model whose Bound breaks after two steps.
     private static Task<(int Exit, string Output, string Error)> RunReadyModel(string scope, string dependencies, params string[] options)
     {
-        File.WriteAllText(Path.Combine(scope, "ReadyModel.tla"),
-            "---- MODULE ReadyModel ----\nEXTENDS Naturals\nVARIABLE x\nInit == x = 0\nNext == (x < 2 /\\ x' = x + 1) \\/ (x = 2 /\\ x' = x)\nBound == x < 2\n====\n");
-        File.WriteAllText(Path.Combine(scope, "ReadyModel.cfg"), "INIT Init\nNEXT Next\nINVARIANT Bound\nCHECK_DEADLOCK FALSE\n");
+        WriteReadyModel(scope);
         return Run(scope, dependencies, ["statechart", "ReadyModel.tla", "--out", "chart", .. options]);
     }
 
+    private static void WriteReadyModel(string scope)
+    {
+        File.WriteAllText(Path.Combine(scope, "ReadyModel.tla"),
+            "---- MODULE ReadyModel ----\nEXTENDS Naturals\nVARIABLE x\nInit == x = 0\nNext == (x < 2 /\\ x' = x + 1) \\/ (x = 2 /\\ x' = x)\nBound == x < 2\n====\n");
+        File.WriteAllText(Path.Combine(scope, "ReadyModel.cfg"), "INIT Init\nNEXT Next\nINVARIANT Bound\nCHECK_DEADLOCK FALSE\n");
+    }
+
     // Runs the built dydo offline with the given managed dependencies and private asset and state roots.
-    private static async Task<(int Exit, string Output, string Error)> Run(string scope, string dependencies, string[] arguments)
+    private static async Task<(int Exit, string Output, string Error)> Run(string scope, string dependencies, string[] arguments,
+        string? java = null)
     {
         var start = StatechartTestBinary.Start();
         start.WorkingDirectory = scope;
@@ -156,7 +186,8 @@ public class StatechartReadyTests
         foreach (var name in new[] { "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY" }) start.Environment[name] = "http://127.0.0.1:9";
         start.Environment["NO_PROXY"] = "";
         start.Environment["PATH"] = "";
-        start.Environment.Remove("JAVA");
+        if (java is null) start.Environment.Remove("JAVA");
+        else start.Environment["JAVA"] = java;
         start.Environment.Remove("TLA2TOOLS");
         using var child = Process.Start(start)!;
         var output = child.StandardOutput.ReadToEndAsync();

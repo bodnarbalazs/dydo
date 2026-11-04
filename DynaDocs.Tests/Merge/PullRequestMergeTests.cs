@@ -9,7 +9,8 @@ using static MergeScenario;
 
 /// <summary>
 /// <c>dydo merge</c> end to end against the fake GitHub (DYD-424): each of design §2's refusals, the
-/// reconcile-first rerun, GitHub's answers to the merge, the two-parent path and the report.
+/// reconcile-first rerun, GitHub's answers to the merge, the two-parent path and the report; and the
+/// target pin (DYD-523), which only refuses.
 /// </summary>
 [Collection("Integration")]
 public sealed class PullRequestMergeTests : IDisposable
@@ -37,7 +38,7 @@ public sealed class PullRequestMergeTests : IDisposable
         var (exit, stdout, stderr) = _s.Merge();
 
         Assert.True(exit == 0, stderr);
-        Assert.Contains("merged PR #7 (0123456789ab) into feature/x as 333333333333; PR marked merged: yes", Lines(stdout));
+        Assert.Contains("merged PR #7 (0123456789ab) into feature/x at 111111111111 as 333333333333; PR marked merged: yes", Lines(stdout));
         Assert.Equal("github.com", _s.Host);
         var post = Assert.Single(_s.GitHub.Writes);
         Assert.Equal(("POST", Merges), (post.Method, post.Path));
@@ -45,7 +46,7 @@ public sealed class PullRequestMergeTests : IDisposable
         Assert.Equal(Target, Field(post.Body, "base"));
         Assert.Equal(Sha, Field(post.Body, "head"));
         Assert.Equal("Merge pull request #7 from acme/tauntphoenix/dyd-1-frame\n\nWidgets get a frame\n\n"
-            + $"Dydo-Merge: dydo {DydoVersion.Current}\nReviewed-Candidate: {Sha}\nReview: {PassLine()[..200]}",
+            + $"Dydo-Merge: dydo {DydoVersion.Current}\nReviewed-Candidate: {Sha}\nTarget-Tip: {Tip}\nReview: {PassLine()[..200]}",
             Field(post.Body, "commit_message"));
     }
 
@@ -64,7 +65,7 @@ public sealed class PullRequestMergeTests : IDisposable
         var (exit, stdout, stderr) = _s.Merge(dryRun: true);
 
         Assert.True(exit == 0, stderr);
-        Assert.Contains("would merge 0123456789ab into feature/x (PR #7)", Lines(stdout));
+        Assert.Contains("would merge 0123456789ab into feature/x at 111111111111 (PR #7)", Lines(stdout));
         Assert.Empty(_s.GitHub.Writes);
         Assert.Contains(_s.GitHub.Calls, call => call.Path == Runs);
         Assert.Contains(_s.GitHub.Calls, call => call.Path == Rules);
@@ -141,7 +142,7 @@ public sealed class PullRequestMergeTests : IDisposable
         var (exit, stdout, stderr) = _s.Merge();
 
         Assert.True(exit == 0, stderr);
-        Assert.Contains("merged PR #7 (0123456789ab) into feature/x as 333333333333; PR marked merged: yes", Lines(stdout));
+        Assert.Contains("merged PR #7 (0123456789ab) into feature/x at 111111111111 as 333333333333; PR marked merged: yes", Lines(stdout));
         var writes = _s.GitHub.Writes.ToList();
         Assert.Equal([("POST", $"{Repo}/git/commits"), ("PATCH", $"{Repo}/git/refs/heads/feature/x")],
             writes.Select(write => (write.Method, write.Path)));
@@ -153,16 +154,21 @@ public sealed class PullRequestMergeTests : IDisposable
         Assert.False(writes[1].Body!["force"]!.GetValue<bool>());
     }
 
+    // Proof (d), two-parent path: the commit sits on the pin, so a tip that moved fails the unforced move.
     [Fact]
     public void BaseTipThatMovedBeforeTheRefUpdate_Refused17()
     {
         FastForwardEligible();
         _s.GitHub.On("PATCH", $"{Repo}/git/refs/heads/feature/x", Reply(422, """{ "message": "Update is not a fast forward" }"""));
 
-        var (exit, _, stderr) = _s.Merge();
+        var (exit, stdout, stderr) = _s.Merge();
 
         Assert.Equal(1, exit);
         Assert.Equal("refused: feature/x moved or no longer exists on acme/widgets; nothing merged - rerun", Lines(stderr)[0]);
+        var writes = _s.GitHub.Writes.ToList();
+        Assert.Equal([Tip, Sha], writes[0].Body!["parents"]!.AsArray().Select(parent => parent!.GetValue<string>()));
+        Assert.False(writes[1].Body!["force"]!.GetValue<bool>());
+        Assert.DoesNotContain("merged PR", stdout);
     }
 
     [Fact]
@@ -191,6 +197,143 @@ public sealed class PullRequestMergeTests : IDisposable
 
     #endregion
 
+    #region The target pin (DYD-523): read from the ref, and it only refuses
+
+    // Proof (a): GitHub's PR metadata kept the tip from before the ref advanced, and the pin trusted it.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AStaleBaseShaPinnedWhileTheRefAdvanced_RefusesWithNothingWritten(bool dryRun)
+    {
+        _s.PullJson["base"]!["sha"] = Stale;
+
+        AssertRefused(_s.Merge(dryRun: dryRun, pin: Stale),
+            "feature/x is at 111111111111, not the pinned 666666666666; nothing merged - re-pin the target and re-contract");
+    }
+
+    // Proof (b): the same stale metadata, with the pin on the actual ref.
+    [Fact]
+    public void AStaleBaseShaWithThePinOnTheActualRef_MergesOntoTheRef()
+    {
+        _s.PullJson["base"]!["sha"] = Stale;
+
+        var (exit, stdout, stderr) = _s.Merge(pin: Tip);
+
+        Assert.True(exit == 0, stderr);
+        Assert.Contains("merged PR #7 (0123456789ab) into feature/x at 111111111111 as 333333333333; PR marked merged: yes", Lines(stdout));
+        Assert.Contains($"\nTarget-Tip: {Tip}\n", Field(Assert.Single(_s.GitHub.Writes).Body, "commit_message"));
+        Assert.DoesNotContain(_s.GitHub.Calls, call => call.Path.Contains(Stale, StringComparison.Ordinal));
+    }
+
+    // Proof (c): pin, ref and base.sha agree; the output and the trailer name the pin, on both paths.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AnUnchangedTip_MergesAndNamesThePinInTheOutputAndTheTrailer(bool twoParent)
+    {
+        if (twoParent)
+            FastForwardEligible();
+        _s.GitHub.On("GET", Pulls, Reply(200, _s.PullJson), Reply(200, _s.PullJson), Reply(200, MergedPull()));
+
+        var dry = _s.Merge(dryRun: true);
+        var (exit, stdout, stderr) = _s.Merge();
+
+        Assert.Equal("would merge 0123456789ab into feature/x at 111111111111 (PR #7)", Lines(dry.Stdout)[^1]);
+        Assert.True(exit == 0, stderr);
+        Assert.Contains("merged PR #7 (0123456789ab) into feature/x at 111111111111 as 333333333333; PR marked merged: yes", Lines(stdout));
+        var message = Field(_s.GitHub.Writes.First().Body, twoParent ? "message" : "commit_message");
+        Assert.Contains($"\nReviewed-Candidate: {Sha}\nTarget-Tip: {Tip}\nReview: ", message);
+    }
+
+    // Proof (d), POST path: GitHub cannot make POST /merges conditional on a tip, so the ref is read again first.
+    [Fact]
+    public void ATipThatMovesBeforeThePost_RefusesWithoutPosting()
+    {
+        _s.GitHub.On("GET", Branch, Reply(200, _s.BranchJson), Reply(200, BranchAt(Moved)));
+
+        AssertRefused(_s.Merge(),
+            "feature/x is at 777777777777, not the pinned 111111111111; nothing merged - re-pin the target and re-contract");
+        Assert.Equal(2, _s.GitHub.Calls.Count(call => call.Path == Branch));
+    }
+
+    // Proof (d), POST path: the tip moved between the re-read and GitHub's merge.
+    [Theory]
+    [InlineData(Moved, "777777777777")]
+    [InlineData(null, "unnamed")]
+    public void AMergeWhoseFirstParentIsNotThePin_ExitsTwoNamingBothShas(string? firstParent, string named)
+    {
+        var commit = MergeCommitJson(Moved);
+        if (firstParent == null)
+            commit["parents"] = new JsonArray();
+        _s.GitHub.On("GET", MergeCommit, Reply(200, commit));
+
+        var (exit, stdout, stderr) = _s.Merge();
+
+        Assert.Equal(ExitCodes.ToolError, exit);
+        Assert.Equal($"error: PR #7 merged into feature/x as 333333333333, but its first parent is {named}, not the pinned "
+            + "111111111111; the merge landed and its actual parents need merge review", Lines(stderr)[0]);
+        Assert.DoesNotContain("merged PR", stdout);
+    }
+
+    [Fact]
+    public void AMergeWhoseParentsCannotBeRead_ExitsTwoSayingItLanded()
+    {
+        _s.GitHub.On("GET", MergeCommit, Reply(404, """{ "message": "Not Found" }"""));
+
+        var (exit, _, stderr) = _s.Merge();
+
+        Assert.Equal(ExitCodes.ToolError, exit);
+        Assert.Equal("error: PR #7 merged into feature/x as 333333333333, but its parents could not be read; the merge landed and "
+            + "its actual parents need merge review: Not Found (HTTP 404)", Lines(stderr)[0]);
+    }
+
+    // Proof (f): the run's own merge moved the tip, so a rerun after a lost answer compares no pin.
+    [Fact]
+    public void AClosedIntegratedPr_WithAPinOffTheTip_StillExitsZero()
+    {
+        _s.PullJson["state"] = "closed";
+        _s.PullJson["merged"] = true;
+        _s.GitHub.On("GET", Compare(Sha, Tip), Reply(200, """{ "status": "ahead" }"""));
+
+        var (exit, stdout, stderr) = _s.Merge(pin: Stale);
+
+        Assert.True(exit == 0, stderr);
+        Assert.Equal("already integrated (no new merge commit): PR #7 (0123456789ab) is in feature/x", Lines(stdout)[0]);
+        Assert.Empty(_s.GitHub.Writes);
+    }
+
+    // Proof (g): the PR metadata always agrees with the pin, so only the ref decides; a pin can only refuse.
+    [Theory]
+    [InlineData(false, Tip, false)]
+    [InlineData(true, Tip, false)]
+    [InlineData(false, Tip, true)]
+    [InlineData(false, Stale, false)]
+    [InlineData(true, Stale, false)]
+    [InlineData(false, Stale, true)]
+    [InlineData(false, Moved, false)]
+    [InlineData(true, Moved, false)]
+    public void ThePinOnlyRefuses_EveryWriteTargetsTheBaseRefAndAPinOffTheTipWritesNothing(bool twoParent, string pin, bool dryRun)
+    {
+        if (twoParent)
+            FastForwardEligible();
+        _s.PullJson["base"]!["sha"] = pin;
+
+        var (exit, _, _) = _s.Merge(dryRun: dryRun, pin: pin);
+
+        var writes = _s.GitHub.Writes.ToList();
+        Assert.Equal(pin == Tip ? 0 : 1, exit);
+        Assert.Equal(pin == Tip && !dryRun, writes.Count > 0);
+        Assert.All(writes, write => Assert.True(write switch
+        {
+            ("POST", Merges, var body) => Field(body, "base") == Target && Field(body, "head") == Sha,
+            ("POST", $"{Repo}/git/commits", var body) => body!["parents"]!.AsArray()[0]!.GetValue<string>() == Tip,
+            ("PATCH", $"{Repo}/git/refs/heads/feature/x", var body) => Field(body, "sha") == MergeSha,
+            _ => false
+        }, $"{write.Method} {write.Path}"));
+    }
+
+    #endregion
+
     #region Report: post-verify and the default branch
 
     [Fact]
@@ -212,7 +355,7 @@ public sealed class PullRequestMergeTests : IDisposable
         var (exit, stdout, _) = _s.Merge();
 
         Assert.Equal(0, exit);
-        Assert.Contains("merged PR #7 (0123456789ab) into feature/x as 333333333333; PR marked merged: unverified", Lines(stdout));
+        Assert.Contains("merged PR #7 (0123456789ab) into feature/x at 111111111111 as 333333333333; PR marked merged: unverified", Lines(stdout));
     }
 
     [Fact]

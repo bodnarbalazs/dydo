@@ -5,7 +5,7 @@ public sealed class ReleaseWorkflowTests
     private const string AllowedTagGuard = "github.event_name == 'push' && github.ref == 'refs/tags/v3.5.1'";
     private const string NpmPublishRun = "npm publish --access public --provenance --tag latest";
     private const string PythonVersionFile = "DynaDocs.Tests/coverage/.python-version";
-    private const string AssurancePython = "dydo/_system/.local/static-gates/python";
+    private const string AssurancePython = ".static-gates/python";
     private const string AssurancePythonExecutable = AssurancePython + "/Scripts/python.exe";
     private const string ViewerInstallStep = "Install viewer dependencies";
     private const string CoverageEvidenceStep = "Upload coverage evidence";

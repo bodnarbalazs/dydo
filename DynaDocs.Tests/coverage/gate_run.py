@@ -9,7 +9,7 @@ from pathlib import Path
 from run_tests import isolated_environment
 
 
-STATIC_GATE_INTERPRETER = ("dydo/_system/.local/static-gates/python/"
+STATIC_GATE_INTERPRETER = (".static-gates/python/"
                            + ("Scripts/python.exe" if sys.platform == "win32" else "bin/python"))
 
 

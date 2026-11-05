@@ -119,12 +119,18 @@ measures the caller's own package identities. The assurance environment uses CPy
 Node 26.13.0 and .NET SDK 10.0.303. Framework-dependent dydo and its test children
 also require shared runtime Microsoft.NETCore.App 10.0.14 or later, matching the
 patched AOT/runtime minimum in `DynaDocs.csproj`. Package restore alone does not
-provision that shared runtime. On Linux, use
-`py=dydo/_system/.local/static-gates/python/bin/python` and invoke `"$py"` instead of
-PowerShell's `& $py` below:
+provision that shared runtime. The pinned interpreter lives in the repo-root, gitignored
+`.static-gates/python`, which an agent provisions without user action: on Linux,
+`python3.14 -m venv .static-gates/python` then
+`.static-gates/python/bin/python -m pip install -r DynaDocs.Tests/coverage/requirements.lock`;
+on Windows, `python -m venv .static-gates/python` then
+`& .static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock`.
+[Provisioning](../reference/coverage-tools.md#provisioning) lists the other toolchains and the
+prepared-environment link. On Linux, use `py=.static-gates/python/bin/python` and invoke `"$py"`
+instead of PowerShell's `& $py` below:
 
 ```powershell
-$py = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+$py = ".static-gates/python/Scripts/python.exe"
 & $py DynaDocs.Tests/coverage/gap_check.py all
 & $py DynaDocs.Tests/coverage/gap_check.py gate static
 & $py DynaDocs.Tests/coverage/gap_check.py gate coverage

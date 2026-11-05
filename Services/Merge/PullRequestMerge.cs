@@ -23,26 +23,33 @@ internal sealed partial class PullRequestMerge
 
     private static readonly HashSet<string> DefaultBranchNames = new(["master", "main"], StringComparer.OrdinalIgnoreCase);
 
+    // The pauses before each reread of a PR not yet marked merged: three rereads after the first, four seconds in all.
+    private static readonly TimeSpan[] RereadPauses = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2)];
+
     private readonly MergeCheckout _checkout;
     private readonly IGitHubApi _github;
     private readonly int _number;
     private readonly string _sha;
     private readonly string _pin;
     private readonly string _repo;
+    private readonly Action<TimeSpan> _wait;
 
-    private PullRequestMerge(MergeCheckout checkout, IGitHubApi github, int number, string sha, string pin)
+    private PullRequestMerge(MergeCheckout checkout, IGitHubApi github, int number, string sha, string pin, Action<TimeSpan> wait)
     {
         _checkout = checkout;
         _github = github;
         _number = number;
         _sha = sha;
         _pin = pin;
+        _wait = wait;
         _repo = checkout.Origin.ApiPath;
     }
 
     /// <param name="pin">The target branch tip the caller pinned; a target at any other tip is refused.</param>
     /// <param name="connect">Opens GitHub on origin's host; production passes <see cref="GhApi"/>.</param>
-    public static int Run(string currentDirectory, int number, string? sha, string? pin, bool dryRun, Func<string, IGitHubApi> connect)
+    /// <param name="wait">Sleeps between the report's rereads; tests pass a recorder, production sleeps.</param>
+    public static int Run(string currentDirectory, int number, string? sha, string? pin, bool dryRun, Func<string, IGitHubApi> connect,
+        Action<TimeSpan>? wait = null)
     {
         try
         {
@@ -53,7 +60,7 @@ internal sealed partial class PullRequestMerge
             if (pin == null || !FullShaRegex().IsMatch(pin))
                 throw MergeStop.Refused("--match-base-commit takes the full 40-character SHA of the target branch tip you pinned");
             var checkout = MergeCheckout.Locate(currentDirectory);
-            return new PullRequestMerge(checkout, connect(checkout.Origin.Host), number, sha, pin).Merge(dryRun);
+            return new PullRequestMerge(checkout, connect(checkout.Origin.Host), number, sha, pin, wait ?? Thread.Sleep).Merge(dryRun);
         }
         catch (MergeStop stop)
         {
@@ -291,18 +298,29 @@ internal sealed partial class PullRequestMerge
 
     private void Report(PullRequest pull, string merge, string defaultBranch)
     {
-        var reread = _github.Send("GET", $"{_repo}/pulls/{_number}");
-        var marked = (reread.Status, Flag(reread.Json, "merged")) switch
-        {
-            (200, true) => "yes",
-            (200, false) => "no",
-            _ => "unverified"
-        };
-        Console.WriteLine($"merged PR #{_number} ({Short(_sha)}) into {pull.Base} at {Short(_pin)} as {Short(merge)}; PR marked merged: {marked}");
+        Console.WriteLine($"merged PR #{_number} ({Short(_sha)}) into {pull.Base} at {Short(_pin)} as {Short(merge)}; PR marked merged: {MarkedMerged()}");
 
         var now = _github.Send("GET", _repo);
         if (now.Status == 200 && Text(now.Json, "default_branch") is { Length: > 0 } current && current != defaultBranch)
             Console.WriteLine($"warning: {_checkout.Origin.FullName}'s default branch changed during the run, from {defaultBranch} to {current}");
+    }
+
+    // GitHub marks a PR merged asynchronously, so a good write can still read merged:false at first. Each
+    // answer decides: true is yes, a failed read is unverified, and false is read again after a pause until
+    // the pauses run out, then pending. It only reads, and never reports no after a successful write.
+    private string MarkedMerged()
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            var reread = _github.Send("GET", $"{_repo}/pulls/{_number}");
+            if (reread.Status != 200)
+                return "unverified";
+            if (Flag(reread.Json, "merged"))
+                return "yes";
+            if (attempt == RereadPauses.Length)
+                return "pending";
+            _wait(RereadPauses[attempt]);
+        }
     }
 
     private string CommitMessage(PullRequest pull, ReviewVerdict pass) =>

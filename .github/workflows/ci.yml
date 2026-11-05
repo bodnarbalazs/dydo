@@ -13,10 +13,10 @@ jobs:
         include:
           - os: ubuntu-24.04
             platform: linux
-            python: dydo/_system/.local/static-gates/python/bin/python
+            python: .static-gates/python/bin/python
           - os: windows-latest
             platform: windows
-            python: dydo/_system/.local/static-gates/python/Scripts/python.exe
+            python: .static-gates/python/Scripts/python.exe
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
@@ -44,7 +44,7 @@ jobs:
         run: ./.github/workflows/provision-dotnet-runtime.ps1
 
       - name: Prepare pinned Python assurance environment
-        run: python -m venv dydo/_system/.local/static-gates/python
+        run: python -m venv .static-gates/python
 
       - name: Install locked Python dependencies
         run: ${{ matrix.python }} -m pip install -r DynaDocs.Tests/coverage/requirements.lock

@@ -23,6 +23,9 @@ dydo/agents/
 
 dydo/_system/.local/
 
+# Static-gate Python environment, provisioned per checkout from DynaDocs.Tests/coverage/requirements.lock
+/.static-gates/
+
 /DynaDocs.Tests/coverage/report
 /DynaDocs.Tests/coverage/results
 /DynaDocs.Tests/coverage/__pycache__/

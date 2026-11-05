@@ -172,8 +172,8 @@
     {
       "path": "skills/engineering/statechart/scripts/native-entry.ts",
       "resource": "Statechart/payload/skills/engineering/statechart/scripts/native-entry.ts",
-      "bytes": 2609,
-      "sha256": "7e485c792e362c8a45c43d6cb75deee00301bc5631ff65080560857c19456395"
+      "bytes": 2562,
+      "sha256": "ed9b1dfdf0c35128125800c865c425593a3cf2c309c15572b3e34e81d950b780"
     },
     {
       "path": "skills/engineering/statechart/scripts/package.json",
@@ -292,8 +292,8 @@
     {
       "path": "skills/engineering/statechart/scripts/worker.ts",
       "resource": "Statechart/payload/skills/engineering/statechart/scripts/worker.ts",
-      "bytes": 1250,
-      "sha256": "d9726362ed21fe75a7eecc3f76a2c07550db2066c64d0d52ef6054428a268a2f"
+      "bytes": 1157,
+      "sha256": "5f97637f1e6bd37a473a2315448844a239131737d91005fa2ad03ab3901d80d0"
     }
   ]
 }

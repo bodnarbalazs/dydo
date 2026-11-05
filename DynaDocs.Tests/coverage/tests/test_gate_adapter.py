@@ -113,6 +113,40 @@ class CoverageCancellationTests(unittest.TestCase):
                     self.assertEqual(130, observed["facade"]["aggregateExit"])
                     self.assertEqual(130, observed["facade"]["results"][0]["childExit"])
 
+    @unittest.skipUnless(sys.platform == "linux", "the coverage owner is its descendants' subreaper on Linux")
+    def test_an_orphan_that_exits_during_the_campaign_is_reaped_as_init_would(self):
+        probe = subprocess.run([sys.executable, "-c", ORPHAN_PROBE, str(TOOLS)],
+                               capture_output=True, text=True, timeout=60)
+
+        self.assertEqual("0", probe.stdout.strip(), probe.stderr)
+
+
+# The campaign leaves an orphan that exits at once, as a killed process group's members do, and
+# exits 0 only if the orphan is then reaped rather than left a zombie of the coverage owner.
+ORPHAN_CAMPAIGN = """
+import os, sys, time
+read, write = os.pipe()
+middle = os.fork()
+if middle == 0:
+    orphan = os.fork()
+    if orphan == 0:
+        os._exit(0)
+    os.write(write, str(orphan).encode())
+    os._exit(0)
+os.waitpid(middle, 0)
+orphan = int(os.read(read, 32))
+for _ in range(250):
+    if not os.path.exists(f"/proc/{orphan}"):
+        sys.exit(0)
+    time.sleep(0.02)
+sys.exit(1)
+"""
+ORPHAN_PROBE = (
+    "import sys\n"
+    "sys.path.insert(0, sys.argv[1])\n"
+    "import gate_adapter\n"
+    f"print(gate_adapter.run_coverage_command([sys.executable, '-c', {ORPHAN_CAMPAIGN!r}], '.'))\n")
+
 PYTHON_TARGET = "def add(left, right):\n    return left + right\n"
 PYTHON_SUITE = ("import unittest\n\n\n"
                 "class AddTests(unittest.TestCase):\n"

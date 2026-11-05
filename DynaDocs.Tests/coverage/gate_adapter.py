@@ -77,8 +77,25 @@ def _wait_coverage_child(child, deadline):
         try:
             return child.wait(timeout=min(.2, remaining))
         except subprocess.TimeoutExpired:
+            _reap_orphans(child.pid)
             if deadline is not None and remaining <= .2:
                 raise
+
+
+def _reap_orphans(campaign):
+    """As its descendants' subreaper on Linux, this process collects each orphan that has exited, as
+    init would, so a test watching a killed process group disappear sees it go. Popen keeps the
+    campaign's own status."""
+    if sys.platform != "linux":
+        return
+    while True:
+        try:
+            exited = os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+        except ChildProcessError:
+            return
+        if exited is None or exited.si_pid == campaign:
+            return
+        os.waitpid(exited.si_pid, 0)
 
 
 def _stop_coverage_campaign(child, deadline, containment):

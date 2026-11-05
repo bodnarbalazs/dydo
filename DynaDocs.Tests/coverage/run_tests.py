@@ -33,6 +33,8 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 # read ROOT, not a temporary worktree, and this file lives only inside the snapshot.
 MARKER_NAME = ".dydo-test-worktree.json"
 MARKER_SCHEMA = 1
+# Written beside identities.json when the runner's own descendant cleanup is unconfirmed.
+RUNNER_CLEANUP_NAME = "runner-cleanup.json"
 
 # A caller overrides this by setting the DYDO_TEST_WORKTREE_STALE_SECONDS environment variable
 # before invoking run_tests.py (isolated_environment strips DYDO_-prefixed variables only from the
@@ -881,10 +883,72 @@ def _run_assurance_campaign(worktree, extra_args, assurance_output):
     return owner_result.get("subject_status") if type(owner_result.get("subject_status")) is int else 2
 
 
+class CleanupUnconfirmed(Exception):
+    """The run's own descendant cleanup could not be confirmed, so its worktree is kept: a process
+    still alive may hold or write into it. The run is incomplete, whatever its subject returned."""
+
+    def __init__(self, worktree, error):
+        retained = (f"retained test worktree, the user must clear it: {worktree}" if worktree
+                    else "no test worktree was created")
+        super().__init__(f"Descendant cleanup could not be confirmed "
+                         f"({type(error).__name__}: {error}); {retained}")
+        self.worktree, self.error = worktree, error
+
+
+def _cleanup_receipt(assurance_output):
+    """Where an unconfirmed cleanup is recorded for the gate adapter: beside identities.json in the
+    assurance output, and only in one that did not exist before this run, so never into a directory
+    the runner does not own. identities.json is never rewritten."""
+    output = Path(assurance_output) if assurance_output else None
+    if output is None or not output.is_absolute() or output.exists():
+        return None
+    return output / RUNNER_CLEANUP_NAME
+
+
+def _record_unconfirmed_cleanup(receipt, unconfirmed):
+    if receipt is None:
+        return
+    record = {"schema": 1, "cleanup_confirmed": False,
+              "error_category": type(unconfirmed.error).__name__,
+              "error_message": str(unconfirmed.error),
+              "retained_worktree": str(unconfirmed.worktree) if unconfirmed.worktree else None}
+    try:
+        receipt.parent.mkdir(parents=True, exist_ok=True)
+        receipt.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    except OSError as error:
+        print(f"{RUNNER_CLEANUP_NAME} could not be written at {receipt}: {error}", file=sys.stderr)
+
+
+def _end_run(job, worktree, receipt):
+    """End the run's other processes, then remove `worktree` once that is confirmed. An unconfirmed
+    cleanup keeps the worktree and its marker, is recorded at `receipt`, and raises
+    CleanupUnconfirmed. An interrupt that lands during cleanup is delivered once cleanup has
+    finished, unless cleanup was unconfirmed: that outranks it."""
+    unconfirmed = None
+    try:
+        with defer_interruption():
+            try:
+                end_descendants(job)
+                reap_adopted(job)
+            except OSError as error:
+                unconfirmed = CleanupUnconfirmed(worktree, error)
+                _record_unconfirmed_cleanup(receipt, unconfirmed)
+            else:
+                if worktree and (worktree.exists() or is_registered_worktree(worktree)):
+                    print("  Cleaning up worktree...")
+                    remove_worktree(worktree)
+    except KeyboardInterrupt:
+        if unconfirmed is None:
+            raise
+    if unconfirmed is not None:
+        raise unconfirmed from unconfirmed.error
+
+
 def run_tests(extra_args=None, assurance_output=None, job=None):
     """Returns the dotnet exit code. `job`, from contain_descendants, has its other members ended
-    before the worktree is removed."""
+    before the worktree is removed; raises CleanupUnconfirmed when that cannot be confirmed."""
     worktree = None
+    receipt = _cleanup_receipt(assurance_output)
     try:
         try:
             prune_stale_test_worktrees()
@@ -923,13 +987,7 @@ def run_tests(extra_args=None, assurance_output=None, job=None):
 
         return result.returncode
     finally:
-        # An interrupt that lands during cleanup is delivered once cleanup has finished.
-        with defer_interruption():
-            end_descendants(job)
-            reap_adopted(job)
-            if worktree and (worktree.exists() or is_registered_worktree(worktree)):
-                print("  Cleaning up worktree...")
-                remove_worktree(worktree)
+        _end_run(job, worktree, receipt)
 
 
 def main():
@@ -954,6 +1012,9 @@ def main():
         rc = run_tests(extra_args=extra or None, assurance_output=args.assurance_output, job=job)
     except KeyboardInterrupt:
         rc = 130
+    except CleanupUnconfirmed as unconfirmed:
+        print(f"\n  {unconfirmed}", file=sys.stderr)
+        rc = 2
 
     if rc != 0:
         print(f"\n  Tests failed (exit code {rc})")

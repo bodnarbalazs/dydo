@@ -297,6 +297,38 @@ def committed_repository(root):
     return root
 
 
+# The real run_tests.py main() in assurance mode, with git, the campaign and the descendant scan
+# stubbed: the campaign publishes a complete receipt, then the runner's own cleanup is unconfirmed.
+UNCONFIRMED_CLEANUP_RUNNER = """\
+import json, sys
+from pathlib import Path
+sys.path.insert(0, {tools!r})
+import run_tests
+
+
+def published(worktree, extra_args, output):
+    Path(output).mkdir(parents=True)
+    campaign = {{"complete": True, "cleanup_confirmed": True, "subject_status": 0}}
+    (Path(output) / "identities.json").write_text(json.dumps({{"schema": 1, "campaign": campaign}}))
+    return 0
+
+
+def unconfirmed(seconds, pinned):
+    raise TimeoutError("Linux descendant cleanup could not be confirmed")
+
+
+run_tests.tempfile.tempdir = {temp!r}
+run_tests.prune_stale_test_worktrees = lambda: []
+run_tests.is_registered_worktree = lambda path: False
+run_tests.create_worktree = lambda path: True
+run_tests.copy_dirty_files = run_tests.materialize_skill_links = lambda worktree: None
+run_tests.contain_descendants = lambda: run_tests.SUBREAPER
+run_tests._run_assurance_campaign = published
+run_tests._end_reaped_descendants = unconfirmed
+run_tests.main()
+"""
+
+
 def collector_row(answer, name):
     return answer["facts"]["collectors"][name]
 
@@ -1282,6 +1314,65 @@ class CoverageCampaignTests(unittest.TestCase):
                 self.assertEqual(str(raw / "identities.json"), error["identitiesPath"])
                 self.assertNotIn("failureCategory", error)
                 self.assertNotIn("errorMessage", error)
+
+    def test_an_exit_2_campaign_names_unconfirmed_runner_cleanup_from_its_receipt(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            write_file(raw, "identities.json",
+                       json.dumps({"schema": 1, "campaign": {"complete": True, "cleanup_confirmed": True,
+                                                             "subject_status": 0}}))
+            receipt = write_file(raw, "runner-cleanup.json",
+                                 json.dumps({"schema": 1, "cleanup_confirmed": False,
+                                             "error_category": "TimeoutError",
+                                             "error_message": "Linux descendant cleanup could not be confirmed",
+                                             "retained_worktree": "/tmp/dydo-test-cafefeed"}))
+
+            with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
+                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+            self.assertEqual(("error", []), (answer["status"], answer["findings"]))
+            error = answer["errors"][0]
+            self.assertEqual("native campaign incomplete", error["message"])
+            self.assertNotIn("diagnosisUnavailable", error)
+            self.assertEqual({"path": str(receipt), "errorCategory": "TimeoutError",
+                              "errorMessage": "Linux descendant cleanup could not be confirmed",
+                              "retainedWorktree": "/tmp/dydo-test-cafefeed"}, error["runnerCleanup"])
+            self.assertEqual(["raw-abc/identities.json", "raw-abc/runner-cleanup.json"],
+                             [row["path"] for row in collector_row(answer, "csharp-coverage")["artifacts"]])
+
+    def test_a_runner_cleanup_receipt_that_names_no_error_leaves_the_identities_diagnosis(self):
+        for label, text in (("not json", "{"), ("not an object", "[]"),
+                            ("no error message", json.dumps({"schema": 1, "cleanup_confirmed": False}))):
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as folder:
+                root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+                write_file(raw, "runner-cleanup.json", text)
+
+                with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
+                    answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+                error = answer["errors"][0]
+                self.assertNotIn("runnerCleanup", error)
+                self.assertEqual("identities.json is missing or unreadable", error["diagnosisUnavailable"])
+
+    def test_a_runner_whose_cleanup_is_unconfirmed_is_an_incomplete_campaign_not_a_functional_failure(self):
+        """The real runner's main(), in its own process, after a subject that passed: only its
+        Linux descendant cleanup, at the _end_reaped_descendants seam, is unconfirmed."""
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw, temp = Path(folder) / "repo", Path(folder) / "run/raw-abc", Path(folder) / "temp"
+            temp.mkdir()
+            write_file(root, "DynaDocs.Tests/coverage/run_tests.py",
+                       UNCONFIRMED_CLEANUP_RUNNER.format(tools=str(TOOLS), temp=str(temp)))
+
+            with mock.patch("run_tests.contain_descendants", return_value=None):
+                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+            self.assertEqual(2, collector_row(answer, "csharp-coverage")["facts"]["child_exit"])
+            self.assertEqual(("error", []), (answer["status"], answer["findings"]))
+            cleanup = answer["errors"][0]["runnerCleanup"]
+            self.assertEqual("Linux descendant cleanup could not be confirmed", cleanup["errorMessage"])
+            retained = Path(cleanup["retainedWorktree"])
+            self.assertEqual(temp, retained.parent)
+            self.assertTrue((retained / ".dydo-test-worktree.json").is_file())
 
     def test_node_coverage_passes_when_the_native_c8_campaign_covers_every_target(self):
         with tempfile.TemporaryDirectory() as folder:

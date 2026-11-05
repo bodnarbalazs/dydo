@@ -267,6 +267,31 @@ def _failing_subjects(evidence):
 
 
 def _campaign_diagnosis(raw):
+    """The diagnosis for an incomplete native campaign: the runner's own unconfirmed cleanup when
+    its receipt names one, beside what identities.json records."""
+    diagnosis = _identities_diagnosis(raw)
+    cleanup = _runner_cleanup(raw)
+    if cleanup is not None:
+        diagnosis.pop("diagnosisUnavailable", None)
+        diagnosis["runnerCleanup"] = cleanup
+    return diagnosis
+
+
+def _runner_cleanup(raw):
+    """run_tests.py's receipt for a descendant cleanup it could not confirm, or None without one."""
+    from run_tests import RUNNER_CLEANUP_NAME
+    path = Path(raw) / RUNNER_CLEANUP_NAME
+    try:
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(receipt, dict) or not isinstance(receipt.get("error_message"), str):
+        return None
+    return {"path": str(path), "errorCategory": receipt.get("error_category"),
+            "errorMessage": receipt["error_message"], "retainedWorktree": receipt.get("retained_worktree")}
+
+
+def _identities_diagnosis(raw):
     """windows_job's diagnosis for an incomplete native campaign, honest about what it could not read."""
     path = Path(raw) / "identities.json"
     try:
@@ -602,6 +627,7 @@ def collect_viewer_coverage(root, raw, inventory):
 
 
 def collect_dotnet_coverage(root, raw):
+    from run_tests import RUNNER_CLEANUP_NAME
     run, evidence = _report_root(raw), raw / "raw"
     script = root / "DynaDocs.Tests/coverage/run_tests.py"
     argv = [sys.executable, str(script), "--assurance-output", str(raw)]
@@ -610,7 +636,8 @@ def collect_dotnet_coverage(root, raw):
     commands = [_inherited_row("csharp-campaign", argv, root, child, started),
                 *_campaign_commands(evidence, run)]
     artifacts = _raw_artifacts([evidence / "joined.json", evidence / "commands.json",
-                                evidence / "coverage.opencover.xml", raw / "identities.json"], run)
+                                evidence / "coverage.opencover.xml", raw / "identities.json",
+                                raw / RUNNER_CLEANUP_NAME], run)
     facts = {"child_exit": child, "raw": _report_location(raw, run)}
     if child not in (0, 1):
         finding = {"gate": "csharp-coverage", "message": "native campaign incomplete"}

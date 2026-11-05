@@ -10,9 +10,9 @@ import unittest
 import tempfile
 import subprocess
 from datetime import datetime, timedelta, timezone
-from contextlib import redirect_stderr
+from contextlib import ExitStack, redirect_stderr, redirect_stdout
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import run_tests
@@ -538,22 +538,26 @@ class LinuxCampaignTests(unittest.TestCase):
             self.assertEqual("TimeoutError", result["failure_category"])
 
 
+def isolated_run_tests(folder):
+    """Patch run_tests() down to: real candidate allocation under `folder`, a fake git worktree
+    add/remove, and no real dotnet/skill/dirty-copy work -- so only cleanup ordering is tested.
+    """
+    return (
+        patch.object(run_tests, "prune_stale_test_worktrees"),
+        patch.object(run_tests.tempfile, "gettempdir", return_value=folder),
+        patch.object(run_tests.uuid, "uuid4", return_value=type("U", (), {"hex": "cafefeed"})()),
+        patch.object(run_tests, "is_registered_worktree", return_value=False),
+        patch.object(run_tests, "create_worktree", return_value=True),
+        patch.object(run_tests, "copy_dirty_files"),
+        patch.object(run_tests, "materialize_skill_links"),
+    )
+
+
 class WorktreeCleanupTests(unittest.TestCase):
     """The runner registers a marker before running anything, and cleans up on every exit path."""
 
     def _isolate_run_tests(self, folder):
-        """Patch run_tests() down to: real candidate allocation under `folder`, a fake git worktree
-        add/remove, and no real dotnet/skill/dirty-copy work -- so only cleanup ordering is tested.
-        """
-        return (
-            patch.object(run_tests, "prune_stale_test_worktrees"),
-            patch.object(run_tests.tempfile, "gettempdir", return_value=folder),
-            patch.object(run_tests.uuid, "uuid4", return_value=type("U", (), {"hex": "cafefeed"})()),
-            patch.object(run_tests, "is_registered_worktree", return_value=False),
-            patch.object(run_tests, "create_worktree", return_value=True),
-            patch.object(run_tests, "copy_dirty_files"),
-            patch.object(run_tests, "materialize_skill_links"),
-        )
+        return isolated_run_tests(folder)
 
     def test_cleanup_runs_when_the_test_subprocess_exits_nonzero(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -568,18 +572,6 @@ class WorktreeCleanupTests(unittest.TestCase):
             self.assertEqual(1, rc)
             remove.assert_called_once()
             self.assertEqual(Path(folder) / "dydo-test-cafefeed", remove.call_args.args[0])
-
-    def test_unconfirmed_cleanup_retains_the_snapshot(self):
-        with tempfile.TemporaryDirectory() as folder:
-            patches = self._isolate_run_tests(folder)
-            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], \
-                 patch.object(run_tests, "end_descendants", side_effect=TimeoutError("still live")), \
-                 patch.object(run_tests, "remove_worktree") as remove, \
-                 patch.object(run_tests, "run_contained", return_value=subprocess.CompletedProcess([], 0)):
-                with self.assertRaisesRegex(TimeoutError, "still live"):
-                    run_tests.run_tests(job=run_tests.SUBREAPER)
-            remove.assert_not_called()
-            self.assertTrue((Path(folder) / "dydo-test-cafefeed").is_dir())
 
     def test_main_preserves_direct_and_leading_separator_filter_forms(self):
         for prefix in ([], ["--"]):
@@ -680,6 +672,167 @@ class WorktreeCleanupTests(unittest.TestCase):
 
         unlock_call = next(call for call in calls if call[0] == ("worktree", "unlock", str(worktree)))
         self.assertTrue(unlock_call[1], "the unlock call must pass capture=True")
+
+
+class UnconfirmedCleanupExitTests(unittest.TestCase):
+    """The runner's own descendant cleanup decides its exit. Unconfirmed, the run exits 2
+    (incomplete) whatever the subject returned or an interrupt asked, keeps its worktree and marker,
+    and names both on stderr; confirmed, 0, 1 and 130 stand."""
+
+    def exit_of_main(self, folder, job, *patches, argv=()):
+        """main()'s exit code, its stderr and the remove_worktree mock, with run_tests() isolated
+        under `folder`, contain_descendants returning `job`, and `patches` applied."""
+        stderr = io.StringIO()
+        with ExitStack() as stack:
+            for each in (*isolated_run_tests(folder), *patches,
+                         patch.object(sys, "argv", ["run_tests.py", *argv]),
+                         patch.object(run_tests, "contain_descendants", return_value=job),
+                         redirect_stdout(io.StringIO()), redirect_stderr(stderr)):
+                stack.enter_context(each)
+            remove = stack.enter_context(patch.object(run_tests, "remove_worktree"))
+            with self.assertRaises(SystemExit) as exited:
+                run_tests.main()
+        return exited.exception.code, stderr.getvalue(), remove
+
+    def subject(self, status=None, error=None):
+        if error is not None:
+            return patch.object(run_tests, "run_contained", side_effect=error)
+        return patch.object(run_tests, "run_contained", return_value=subprocess.CompletedProcess([], status))
+
+    def unconfirmed(self, effect=None):
+        return patch.object(run_tests, "end_descendants", side_effect=effect or TimeoutError("still live"))
+
+    def assert_retained(self, folder, outcome, error):
+        code, stderr, remove = outcome
+        worktree = Path(folder) / "dydo-test-cafefeed"
+        self.assertEqual(2, code, stderr)
+        remove.assert_not_called()
+        self.assertTrue((worktree / run_tests.MARKER_NAME).is_file())
+        self.assertIn(str(worktree), stderr)
+        self.assertIn(error, stderr)
+        self.assertNotIn("Traceback", stderr)
+
+    def test_unconfirmed_linux_cleanup_exits_2_over_any_subject_status_and_keeps_the_worktree(self):
+        for status in (0, 1):
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as folder:
+                proc = Path(folder) / "proc"
+                fake_process_table(proc)  # its descendants never exit
+                now = [0.0]
+
+                def sleep(_seconds):
+                    now[0] += 1.0
+
+                outcome = self.exit_of_main(
+                    folder, run_tests.SUBREAPER, self.subject(status),
+                    patch.object(run_tests, "PROC_ROOT", proc),
+                    patch.object(run_tests.os, "getpid", return_value=SELF_PID),
+                    patch.object(run_tests.os, "kill"),
+                    patch.object(run_tests.signal, "SIGKILL", SIGKILL, create=True),
+                    patch.object(run_tests.time, "monotonic", side_effect=lambda: now[0]),
+                    patch.object(run_tests.time, "sleep", side_effect=sleep))
+
+                self.assert_retained(folder, outcome, "Linux descendant cleanup could not be confirmed")
+                self.assertGreaterEqual(now[0], run_tests.DESCENDANT_EXIT_SECONDS)
+
+    def test_unconfirmed_windows_cleanup_exits_2_through_the_job_member_seam(self):
+        job = object()
+        members = MagicMock(side_effect=TimeoutError("Windows descendant cleanup could not be confirmed"))
+        with tempfile.TemporaryDirectory() as folder:
+            outcome = self.exit_of_main(folder, job, self.subject(0),
+                                        patch.object(run_tests, "_end_job_members", members))
+
+            self.assert_retained(folder, outcome, "Windows descendant cleanup could not be confirmed")
+        members.assert_called_once_with(job, run_tests.DESCENDANT_EXIT_SECONDS)
+
+    def test_an_interrupted_run_whose_cleanup_is_unconfirmed_exits_2_not_130(self):
+        with tempfile.TemporaryDirectory() as folder:
+            outcome = self.exit_of_main(folder, None, self.subject(error=KeyboardInterrupt),
+                                        self.unconfirmed())
+
+            self.assert_retained(folder, outcome, "still live")
+
+    def test_an_interrupt_deferred_during_unconfirmed_cleanup_cannot_mask_exit_2(self):
+        def interrupted_then_unconfirmed(_job):
+            signal.raise_signal(signal.SIGINT)  # deferred until cleanup has finished
+            raise TimeoutError("still live")
+
+        with tempfile.TemporaryDirectory() as folder:
+            outcome = self.exit_of_main(folder, None, self.subject(0),
+                                        self.unconfirmed(interrupted_then_unconfirmed))
+
+            self.assert_retained(folder, outcome, "still live")
+
+    def test_confirmed_cleanup_keeps_pass_0_functional_failure_1_and_interrupt_130(self):
+        def interrupted_then_confirmed(_job):
+            signal.raise_signal(signal.SIGINT)  # deferred until cleanup has finished
+
+        cases = (("pass", (self.subject(0),), 0), ("functional failure", (self.subject(1),), 1),
+                 ("interrupted subject", (self.subject(error=KeyboardInterrupt),), 130),
+                 ("interrupted cleanup", (self.subject(0), patch.object(
+                     run_tests, "end_descendants", side_effect=interrupted_then_confirmed)), 130))
+        for case, patches, expected in cases:
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as folder:
+                code, stderr, remove = self.exit_of_main(folder, None, *patches)
+
+                self.assertEqual(expected, code, stderr)
+                remove.assert_called_once_with(Path(folder) / "dydo-test-cafefeed")
+
+    def test_unconfirmed_cleanup_before_any_worktree_exits_2_and_says_none_was_kept(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder) / "published"
+            code, stderr, remove = self.exit_of_main(
+                folder, None, self.unconfirmed(),
+                # The candidate path is taken, so no worktree is allocated.
+                patch.object(run_tests, "is_registered_worktree", return_value=True),
+                argv=("--assurance-output", str(output)))
+
+            self.assertEqual(2, code, stderr)
+            remove.assert_not_called()
+            self.assertIn("no test worktree was created", stderr)
+            self.assertNotIn("Traceback", stderr)
+            receipt = json.loads((output / "runner-cleanup.json").read_text(encoding="utf-8"))
+            self.assertIsNone(receipt["retained_worktree"])
+
+    def test_unconfirmed_assurance_cleanup_writes_its_receipt_and_leaves_identities_untouched(self):
+        identities = b'{"schema": 1, "campaign": {"complete": true, "subject_status": 0}}\n'
+
+        def published(_worktree, _extra_args, assurance_output):
+            Path(assurance_output).mkdir()
+            (Path(assurance_output) / "identities.json").write_bytes(identities)
+            return 0
+
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder) / "published"
+            outcome = self.exit_of_main(
+                folder, None, self.unconfirmed(),
+                patch.object(run_tests, "_run_assurance_campaign", side_effect=published),
+                argv=("--assurance-output", str(output)))
+
+            self.assert_retained(folder, outcome, "still live")
+            self.assertEqual(identities, (output / "identities.json").read_bytes())
+            self.assertEqual({"schema": 1, "cleanup_confirmed": False, "error_category": "TimeoutError",
+                              "error_message": "still live",
+                              "retained_worktree": str(Path(folder) / "dydo-test-cafefeed")},
+                             json.loads((output / "runner-cleanup.json").read_text(encoding="utf-8")))
+
+    def test_unconfirmed_cleanup_exits_2_where_no_receipt_belongs_or_none_can_be_written(self):
+        for case in ("foreign output", "unwritable output"):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as folder:
+                if case == "foreign output":
+                    output = Path(folder) / "published"
+                    write_file(output / "foreign.txt", "not the runner's")
+                else:
+                    output = write_file(Path(folder) / "blocker", "a file, not a directory") / "published"
+                outcome = self.exit_of_main(
+                    folder, None, self.unconfirmed(),
+                    patch.object(run_tests, "_run_assurance_campaign", return_value=2),
+                    argv=("--assurance-output", str(output)))
+
+                self.assert_retained(folder, outcome, "still live")
+                if case == "foreign output":
+                    self.assertEqual(["foreign.txt"], [path.name for path in output.iterdir()])
+                else:
+                    self.assertIn("runner-cleanup.json could not be written", outcome[1])
 
 
 SELF_PID = 100

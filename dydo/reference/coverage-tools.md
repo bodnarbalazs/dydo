@@ -134,7 +134,12 @@ viewer bundle is embedded in the CLI, not another .NET distribution.
 
 The C# coverage campaign uses the existing Linux subreaper containment and retains raw streams,
 subject exit and cleanup evidence. A live detached descendant makes the campaign incomplete even
-when the subject exited zero. Unconfirmed cleanup retains the isolated snapshot. Windows continues
+when the subject exited zero. Unconfirmed cleanup retains the isolated snapshot. When the runner
+cannot confirm its own descendant cleanup, on Linux or Windows, it keeps the snapshot and its marker,
+names both on stderr and exits 2 (incomplete), whatever the subject returned and even when
+interrupted. In assurance mode it records that cleanup in `runner-cleanup.json` beside
+`identities.json`, which it never rewrites. The adapter reports this as `native campaign incomplete`
+with `runnerCleanup`, not as a functional failure. Windows continues
 to use its native Job Object owner. Native Windows tests require the Windows CI runner; Linux skips
 are missing Windows proof, not passing Windows proof.
 

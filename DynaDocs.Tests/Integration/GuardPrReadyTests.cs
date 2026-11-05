@@ -354,7 +354,6 @@ public class GuardPrReadyTests : IntegrationTestBase
     [Theory]
     [InlineData("gh pr create --title t --body-file dydo/agents/body.md")]
     [InlineData("gh pr create --title t --body-file=dydo/agents/body.md")]
-    [InlineData("gh pr new --title t --body-file dydo/agents/body.md")]
     public async Task PrCreate_InTreeBodyFileWithTheReviewBlock_DoesNotWarn(string command)
     {
         await InitPushedProject();
@@ -491,6 +490,56 @@ public class GuardPrReadyTests : IntegrationTestBase
         WriteFile("dydo/agents/body.md", ReviewedBody);
 
         Assert.Empty(await Misses(denied: true, ["gh pr create -F dydo/agents/body.md"], ReviewBlockWarning));
+    }
+
+    // GIT_DIR and GIT_WORK_TREE exported to the session name one tree for every directory; a file
+    // outside the call directory's tree still warns, and an in-tree one is still read.
+    [Fact]
+    public async Task PrCreate_BodyFileOutsideTheWorkTree_WithGitDirAndWorkTreeExported_Warns()
+    {
+        await InitPushedProject();
+        using var outside = new OutsideDirectory();
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+        var saved = new[] { "GIT_DIR", "GIT_WORK_TREE" }.ToDictionary(name => name, Environment.GetEnvironmentVariable);
+        try
+        {
+            Environment.SetEnvironmentVariable("GIT_DIR", Path.Combine(TestDir, ".git"));
+            Environment.SetEnvironmentVariable("GIT_WORK_TREE", TestDir);
+
+            Assert.Empty(await Misses(denied: true, [$"gh pr create -F '{outside.Body}'"], ReviewBlockWarning));
+            (await GuardWithStdinAsync(Payload("gh pr create -F dydo/agents/body.md"))).AssertPreToolUseAllowed();
+        }
+        finally
+        {
+            foreach (var (name, value) in saved)
+                Environment.SetEnvironmentVariable(name, value);
+        }
+    }
+
+    // Each gh pr create is cleared only by its own body, inline or from its own file, so one
+    // call's reviewed file leaves another call's warning standing.
+    [Fact]
+    public async Task PrCreates_EachClearedOnlyByItsOwnBody()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+        WriteFile("dydo/agents/other.md", ReviewedBody);
+        WriteFile("dydo/agents/plain.md", "DYD-1\n\n## Summary\n");
+
+        Assert.Empty(await Misses(denied: true,
+        [
+            "gh pr create -F dydo/agents/body.md; gh pr create -F dydo/agents/missing.md",
+            "gh pr create -F dydo/agents/body.md; gh pr create -F dydo/agents/plain.md",
+            "gh pr create -F dydo/agents/body.md; gh pr create --title other",
+            "gh pr create -F dydo/agents/plain.md; gh pr create -F dydo/agents/body.md",
+            "gh pr create --title other; gh pr create -F dydo/agents/body.md",
+        ], ReviewBlockWarning));
+        Assert.Empty(await Misses(denied: false,
+        [
+            "gh pr create -F dydo/agents/body.md; gh pr create -F dydo/agents/other.md",
+            "gh pr create --body '## Independent review'; gh pr create -F dydo/agents/body.md",
+            "gh pr create -F dydo/agents/body.md && gh pr create --body '## Independent review'",
+        ]));
     }
 
     // A directory beside the test's tree, outside it, holding a body with the review block.

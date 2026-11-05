@@ -375,9 +375,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // Only blank and comment lines come before the body's line, so no group, quote or pipe is open there.
     private static bool StartsItsPiece(string text, int lineStart) => !CodeLines(text[..lineStart]).Any();
 
-    // The lines of text that hold code: neither blank nor a comment.
+    // The lines of text that hold code: neither blank nor a comment. A bare carriage return ends a
+    // line, as pwsh 7.6.9 ends a comment at one (DYD-641); to bash, which reads it as word text, the
+    // split can only add code, and a line a pipe starts goes on only in pwsh.
     private static IEnumerable<string> CodeLines(string text) =>
-        text.Split('\n').Select(line => line.Trim()).Where(line => line is [not '#', ..]);
+        text.Split('\n', '\r').Select(line => line.Trim()).Where(line => line is [not '#', ..]);
 
     /// <summary>
     /// Whether a body, at the mark in its command <paramref name="line"/>, feeds only data commands
@@ -435,6 +437,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return stretches.Length % 2 == 1 && stretches.Where((_, i) => i % 2 == 1).All(stretch => !BashStructureRegex().IsMatch(stretch));
     }
 
+    // A body's line starts after a line feed only: each reading of the line takes a bare carriage
+    // return as its shell does, and bash's must see a comment before one hide the opener (DYD-641).
     private static int LineStart(string text, int index) => index == 0 ? 0 : text.LastIndexOf('\n', index - 1) + 1;
 
     // A double-quoted string (backslash escapes skipped, lines spanned) or a single-quoted one, the
@@ -443,14 +447,15 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex QuotedTextRegex();
 
     // A piece's layout: each double-quoted string emptied, so a line break left in the piece separates
-    // commands. One spanning lines is emptied only where each reading of the piece holds it in a word:
-    // an apostrophe in a comment quotes nothing, so it hides no line break after it. Single-quoted text
-    // is kept, so a line break in it counts (DYD-421); literal data is emptied before (DYD-422).
+    // commands. One spanning lines, a bare carriage return among the breaks (DYD-641), is emptied only
+    // where each reading of the piece holds it in a word: an apostrophe in a comment quotes nothing, so
+    // it hides no line break after it. Single-quoted text is kept, so a line break in it counts
+    // (DYD-421); literal data is emptied before (DYD-422).
     private static string Layout(string code)
     {
         var read = new Lazy<(List<CommandLine> Lines, bool Uncertain)>(() => CommandLines(code, ShellDialect.Unknown));
         return QuotedTextRegex().Replace(code, quoted =>
-            quoted.Groups["single"].Success || (quoted.Value.Contains('\n') && !IsQuotedWord(code, quoted, read.Value))
+            quoted.Groups["single"].Success || (quoted.Value.AsSpan().IndexOfAny('\n', '\r') >= 0 && !IsQuotedWord(code, quoted, read.Value))
                 ? quoted.Value
                 : "\"\"");
     }

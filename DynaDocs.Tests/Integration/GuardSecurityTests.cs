@@ -1016,11 +1016,40 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("echo x\riex @'\n$(echo x > $OUT)\n'@")]
     [InlineData("echo hello\rrm dydo/index.md")]
     [InlineData("echo hello # note\rRemove-Item dydo/index.md")]
+    [InlineData("# x\riex (\n@'\n$(echo x > dydo/index.md)\n'@\n)")]
+    [InlineData("# x\riex `\n@'\n$(echo x > dydo/index.md)\n'@")]
+    [InlineData("echo a > notes.md # x\"\rRemove-Item dydo/index.md\r# y\"")]
     public async Task Dyd641_StatementPwshRuns_IsDeniedWhereverPwshMayRunIt(string command)
     {
         await SetupClaimedAgent();
         var canary = Path.Combine(DydoDir, "index.md");
         var before = File.ReadAllBytes(canary);
+
+        await AssertPwshToolsDenyAsync(command);
+        var unknown = await UnknownShellGuardAsync(command);
+
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains("bypass");
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // A line starting with @ reaches the CLI lane's argv parser as a response file, so the unknown
+    // shell's reading of this one is proved in the analyzer's tests.
+    [Fact]
+    public async Task Dyd641_PipeAfterABareCarriageReturn_IsDeniedWherePwshRunsIt()
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        await AssertPwshToolsDenyAsync("@'\n$(echo x > dydo/index.md)\n'@\n# c\r| iex");
+
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // Claude's PowerShell tool and a Codex pwsh argv envelope both refuse the command as a bypass.
+    private async Task AssertPwshToolsDenyAsync(string command)
+    {
         var codex = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
         {
             ["session_id"] = TestSessionId,
@@ -1032,15 +1061,11 @@ public class GuardSecurityTests : IntegrationTestBase
 
         var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
         var envelope = await GuardWithStdinAsync(codex);
-        var unknown = await UnknownShellGuardAsync(command);
 
         powerShell.AssertPreToolUseDenied();
         powerShell.AssertStderrContains("bypass");
         envelope.AssertPreToolUseDenied();
         envelope.AssertStderrContains("bypass");
-        unknown.AssertExitCode(2);
-        unknown.AssertStderrContains("bypass");
-        Assert.Equal(before, File.ReadAllBytes(canary));
     }
 
     // Split seat B's expanding-word probes that write no path: master warns, and so does every lane.

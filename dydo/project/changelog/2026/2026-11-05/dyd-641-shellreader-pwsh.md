@@ -23,12 +23,18 @@ DYD-422's local bans on these characters in the literal-data relief stay as defe
   between words it continues the line. So `echo 'x'<CR>gh pr merge 5` is refused as a raw merge.
   Inside quotes it stays literal.
 - The embedded-newline check and file-operation extraction count a bare carriage return as a line
-  break in every dialect, so `echo hello<CR>rm dydo/index.md` is refused.
+  break in every dialect, so `echo hello<CR>rm dydo/index.md` is refused. The embedded-newline check
+  counts one inside a double-quoted span too, unless every reading holds the span in a word, so
+  `echo a > notes.md # x"<CR>Remove-Item dydo/index.md<CR># y"` is refused.
 - `‘ ’ ‚ ‛` and `“ ” „` are PowerShell quotes. They open and close a string as `'` and `"` do, a
   doubled one is literal, and they work in here-string openers and terminators too. So
   `echo ‘a'; dydo mode set overnight on; ’b'` meets the mode-set warning.
 - The here-string relief keeps a body as code when pwsh ends the here-string sooner, at a line break
   or bare carriage return followed by a quote of the opener's family and `@`.
+- Around a heredoc or here-string body, the literal-body relief ends a line at a bare carriage
+  return too. So a comment it ends hides no code before the opener, and no leading pipe after the
+  terminator. `# x<CR>iex (` before a here-string, and `# c<CR>| iex` after one, keep the body as
+  code and are refused.
 - A caret is literal to pwsh and an escape to cmd. Where the two would read a line differently, the
   reading holds both commands and is uncertain. `echo a^;git push origin main` is refused as a push
   to the default branch, and a PR call on such a line is refused unread.
@@ -43,8 +49,10 @@ Guards stop accidents, not rogue agents.
 
 - cmd's own handling of a bare carriage return is not modelled. There was no cmd host to measure it.
 - File-operation extraction does not know typographic quotes, so in PowerShell
-  `echo 'a’; Remove-Item notes.md; ’b'` deletes the file but extracts no delete. This is reported
-  for a follow-up.
+  `echo 'a’; Remove-Item notes.md; ’b'` deletes the file but extracts no delete (DYD-661).
+- Inside a word, a backtick before a CRLF still reads as a line continuation, but pwsh ends the
+  statement at the line feed (DYD-665).
+- The command string `iex` runs is not searched for file operations (DYD-666).
 
 ## Files Changed
 

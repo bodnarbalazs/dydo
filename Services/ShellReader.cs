@@ -312,13 +312,14 @@ internal sealed class ShellReader
 
     private void SingleQuoted()
     {
-        var end = IndexOfAny(SingleQuoteChars, _i + 1);
-        if (end < 0)
+        var length = _text.AsSpan(_i + 1).IndexOfAny(SingleQuoteChars);
+        if (length < 0)
         {
             _failed = true;
             return;
         }
 
+        var end = _i + 1 + length;
         _scope.SingleQuotes.Add(_i..(end + 1));
         AppendSlice(_i + 1, end - _i - 1);
         _i = end + 1;
@@ -326,12 +327,6 @@ internal sealed class ShellReader
             return;
         Append(Peek(0));
         SingleQuoted();
-    }
-
-    private int IndexOfAny(string chars, int start)
-    {
-        var at = _text.AsSpan(start).IndexOfAny(chars);
-        return at < 0 ? -1 : start + at;
     }
 
     private void DoubleQuoted()

@@ -1821,10 +1821,26 @@ public class BashCommandAnalyzerTests
     [InlineData("echo @'\nx\r'@; iex '$(echo x > $OUT)'\n'@ # '")]
     [InlineData("echo @'\nx\n’@; iex $(echo x > $OUT)\n'@ # '")]
     [InlineData("echo x\riex @'\n$(echo x > $OUT)\n'@")]
+    [InlineData("# x\riex (\n@'\n$(echo x > dydo/index.md)\n'@\n)")]
+    [InlineData("# x\riex `\n@'\n$(echo x > dydo/index.md)\n'@")]
+    [InlineData("@'\n$(echo x > dydo/index.md)\n'@\n# c\r| iex")]
     public void Analyze_HereStringBodyPwshRunsAsCode_IsABypass(string command)
     {
         foreach (var dialect in PowerShellReadings)
             AssertBypassWithAChange(command, dialect);
+    }
+
+    // The line a body's opener is on runs to its line feed, and each shell's reading of it takes a
+    // bare carriage return as that shell does. bash reads one as word text, so a comment before it
+    // hides the opener and bash runs the body's line; pwsh reads one as a break, so a pipe after the
+    // terminator feeds the body on (both measured).
+    [Fact]
+    public void Analyze_BareCarriageReturnOnTheOpenersLine_IsReadByEachShell()
+    {
+        foreach (var dialect in BashReadings)
+            AssertBypassWithAChange("# x\r@'\n$(echo x > dydo/index.md)\n'@", dialect);
+        foreach (var dialect in PowerShellReadings)
+            AssertBypassWithAChange("@'\n$(echo x > dydo/index.md)\n'@\r| iex", dialect);
     }
 
     [Theory]
@@ -1832,6 +1848,7 @@ public class BashCommandAnalyzerTests
     [InlineData("echo hello # note\rrm dydo/index.md")]
     [InlineData("echo \"a”\nrm dydo/index.md\n“b\"")]
     [InlineData("echo @\"\nx\n”@\nrm dydo/index.md\n\"@ # \"")]
+    [InlineData("echo a > notes.md # x\"\rRemove-Item dydo/index.md\r# y\"")]
     public void Analyze_StatementPwshStartsOnALaterLine_IsAnEmbeddedNewline(string command)
     {
         foreach (var dialect in PowerShellReadings)

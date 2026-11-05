@@ -125,3 +125,9 @@ FutureFeature type and human-only promotion rule. Wayfinding's Fog/frontier dist
 [DR 052](./052-dydo-map-read-only-linear-view.md) adds `dydo map`, a read-only, on-demand view of
 one Linear Project. It reads Linear's API with the user's `LINEAR_API_KEY` and never writes, caches,
 polls, subscribes to or mirrors Linear. The canonical ownership above stands.
+
+## Amendment - 2026-11-04
+
+[DR 063](./063-dydo-survey-read-only-lane-digest.md) adds `dydo survey`, a read-only, on-demand digest
+of one Project's lanes, under DR 052's rules and through the same reader. The canonical ownership
+above stands.

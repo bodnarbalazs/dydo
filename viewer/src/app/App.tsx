@@ -23,7 +23,7 @@ interface View extends VisitState {
 /** A laid-out graph, and the marks of the refresh it landed, if it did. */
 interface Layout {
   graph: Graph;
-  loaded: Loaded<{ flow: MapFlow; fitKey: number }>;
+  loaded: Loaded<{ flow: MapFlow; fitKey: number; centreKey: number }>;
   cascade: Cascade | null;
 }
 
@@ -71,6 +71,7 @@ export function App({ elk }: { elk: ELK }) {
   const [showRelated, setShowRelated] = useState(false);
   const [layout, setLayout] = useState<Layout | null>(null);
   const [fitKey, setFitKey] = useState(0);
+  const [centreKey, setCentreKey] = useState(0);
   const { preference, theme, choose } = useThemePreference();
 
   const { url, refresh, refreshing, visit } = view;
@@ -139,24 +140,26 @@ export function App({ elk }: { elk: ELK }) {
     const reduced = prefersReducedMotion();
     const hold = refresh !== null && shownLayout.current?.graph === refresh.from ? exitHold(refresh.diff, reduced) : 0;
     const laid = layoutMap(elk, buildMapModel(graph, { collapsed, showRelated }));
-    const request = (hold === 0 ? laid : Promise.all([laid, pause(hold)]).then(([flow]) => flow)).then((flow) => ({ flow, fitKey }));
+    const request = (hold === 0 ? laid : Promise.all([laid, pause(hold)]).then(([flow]) => flow)).then((flow) => ({ flow, fitKey, centreKey }));
     return settle(request, (loaded) => {
       setLayout((shown) => ({ graph, loaded, cascade: landed(refresh, shown, loaded, reduced) }));
       if ('failure' in loaded) activeVisit.current?.layoutFailed(graph);
     });
-  }, [elk, graph, collapsed, showRelated, fitKey, refresh, visit]);
+  }, [elk, graph, collapsed, showRelated, fitKey, centreKey, refresh, visit]);
 
   const plateIds = useMemo(() => new Set(graph?.issues.flatMap((issue) => (issue.parentId === null ? [] : [issue.parentId]))), [graph]);
   const allPlates = useMemo(() => new Set(graph?.issues.filter((issue) => plateIds.has(issue.id)).map((issue) => issue.id)), [graph, plateIds]);
 
   const focus = useCallback((id: string) => navigate({ ...url, focus: id }, 'replace'), [navigate, url]);
-  // The pill's click also reaches its plate, which focuses it.
+  // The pill's click also reaches its plate, which focuses it. Its centring lands with the layout the
+  // toggle asks for, as the plate moves there: centred on the old layout, it could end off screen.
   const togglePlate = useCallback((id: string) => {
     setCollapsed((current) => {
       const next = new Set(current.visit === visit ? current.ids : []);
       if (!next.delete(id)) next.add(id);
       return { visit, ids: next };
     });
+    setCentreKey((key) => key + 1);
   }, [visit]);
   const openExternal = useCallback(
     (issue: Issue) => navigate({ team: issue.team.id, project: issue.project?.id ?? null, focus: issue.id }, 'push'),
@@ -210,6 +213,7 @@ export function App({ elk }: { elk: ELK }) {
                 onReady={canvasReady}
                 focus={url.focus}
                 fitKey={map.fitKey}
+                centreKey={map.centreKey}
                 cascade={replacing ? exiting : (layout?.cascade ?? null)}
                 onFocus={focus}
                 onOpenExternal={openExternal}

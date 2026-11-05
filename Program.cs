@@ -60,6 +60,7 @@ rootCommand.Subcommands.Add(CompleteCommand.Create());
 rootCommand.Subcommands.Add(ValidateCommand.Create());
 rootCommand.Subcommands.Add(GapCheckCommand.Create());
 rootCommand.Subcommands.Add(MapCommand.Create());
+rootCommand.Subcommands.Add(SurveyCommand.Create());
 rootCommand.Subcommands.Add(ModeCommand.Create());
 rootCommand.Subcommands.Add(CleanCommand.Create());
 rootCommand.Subcommands.Add(PrReadyCommand.Create());

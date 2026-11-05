@@ -22,6 +22,9 @@ internal static class LinearJson
         "team":{"id":"t-dyd","key":"DYD"},"project":{{project}}{{(labels == null ? "" : $",\"labels\":{labels}")}}
         """;
 
+    /// <summary>An <see cref="Issue"/> with Linear's numeric priority; without it, an issue has none.</summary>
+    public static string WithPriority(string issue, string priority) => $$"""{{issue}},"priority":{{priority}}""";
+
     /// <summary>An issue's `labels` connection, from `name:color` pairs.</summary>
     public static string Labels(params string[] labels) =>
         $$"""{"nodes":[{{string.Join(",", labels.Select(label => label.Split(':')).Select(pair => $$"""{"name":"{{pair[0]}}","color":"{{pair[1]}}"}"""))}}]}""";
@@ -38,6 +41,8 @@ internal static class LinearJson
 
     public static string Node(string issue, string? relations = null, string? inverseRelations = null) =>
         $$"""{{{issue}},"relations":{{relations ?? Connection("")}},"inverseRelations":{{inverseRelations ?? Connection("")}}}""";
+
+    public static string ProjectContent(string content) => $$"""{"data":{"project":{"content":{{content}} } } }""";
 
     public static string IssuesPage(string nodes, bool more = false, string? cursor = null) =>
         $$"""{"data":{"project":{"id":"p-map","name":"Map","url":"https://linear.app/x/project/map","issues":{{Connection(nodes, more, cursor)}} } } }""";

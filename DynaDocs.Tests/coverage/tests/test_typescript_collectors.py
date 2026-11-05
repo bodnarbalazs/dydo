@@ -143,10 +143,10 @@ class ViewerKnipTests(unittest.TestCase):
                          model["config"]["workspaces"])
         self.assertEqual(["DynaDocs.Tests/coverage", "viewer"], model["packages"])
 
-    def test_collector_measures_the_real_viewer_graph(self):
+    def measure_real(self, paths):
+        """The real TypeScript knip collector over these repository paths, inventoried as the gate does."""
         from gate_inventory import assemble_inventory
         import gate_adapter
-        paths = [path for path in git_file_state(REPOSITORY)[0] if path.startswith("viewer/")]
         inventory = assemble_inventory(REPOSITORY, paths, [], gate_adapter._ordinary_discovery(REPOSITORY, paths))
         runner = Collectors.__new__(Collectors)
         runner.root, runner.coverage = REPOSITORY, TOOLS
@@ -154,14 +154,29 @@ class ViewerKnipTests(unittest.TestCase):
             runner.output = Path(folder)
             runner.log = CommandLog(REPOSITORY, runner.output / "commands")
             runner.inventory = inventory
+            return inventory, collect_knip(runner, "typescript")
 
-            answer = collect_knip(runner, "typescript")
+    def test_collector_measures_the_real_viewer_graph(self):
+        inventory, answer = self.measure_real(
+            [path for path in git_file_state(REPOSITORY)[0] if path.startswith("viewer/")])
 
         judged = sorted(row["path"] for row in answer["facts"]["model"]["sources"])
         self.assertEqual([], answer["errors"])
         self.assertEqual(sorted([*(row["path"] for row in inventory["sources"]),
                                  *(row["path"] for row in inventory["excluded"])]), judged)
         self.assertEqual(len(judged), answer["facts"]["native"][1]["counters"]["processed"])
+
+    def test_real_typescript_no_declared_package_owns_is_counted_unjudged_not_a_gap(self):
+        inventory, answer = self.measure_real(
+            [path for path in git_file_state(REPOSITORY)[0] if path.endswith((".ts", ".tsx"))])
+
+        self.assertEqual([], answer["errors"])
+        unjudged = answer["facts"]["model"]["unjudged"]
+        self.assertEqual(sorted(row["path"] for row in inventory["excluded"] if not row["path"].startswith("viewer/")),
+                         unjudged["paths"])
+        self.assertEqual(len(unjudged["paths"]), unjudged["count"])
+        self.assertTrue(unjudged["paths"])
+        self.assertTrue(all(path.startswith("skills/engineering/statechart/scripts/") for path in unjudged["paths"]))
 
 
 if __name__ == "__main__":

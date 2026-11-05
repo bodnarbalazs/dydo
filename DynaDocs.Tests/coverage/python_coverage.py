@@ -24,6 +24,25 @@ _SETTLE_SECONDS = 5
 # at most (4 x 0.1 s + 0.07 s), and a process that connects at once pays nothing more.
 _CONNECT_TIMEOUT_SECONDS = 0.1
 _CONNECT_BACKOFF_SECONDS = (0.01, 0.02, 0.04)
+# Every measured process's startup. Without a campaign config it imports nothing. With one, a
+# `python_coverage` that cannot be imported ends the process before its program runs, where `site` would
+# run it unmeasured; `os` and `sys` are loaded already, so that exit takes nothing new. An exception that
+# escapes `startup_from_environment` has already reached `collect`, and `site` swallows nothing broader.
+_SITECUSTOMIZE = """\
+import os
+import sys
+if os.environ.get("DYDO_PYTHON_COVERAGE_CONFIG"):
+    try:
+        from python_coverage import startup_from_environment
+    except BaseException as error:
+        try:
+            print(f"Python measurement failed in process {os.getpid()} at startup ({sys.orig_argv}): "
+                  f"{type(error).__name__}: {error}; it could not be recorded: python_coverage did not import",
+                  file=sys.stderr, flush=True)
+        finally:
+            os._exit(%d)
+    startup_from_environment()
+""" % _UNRECORDED_FAILURE_EXIT
 
 
 def _identity(row):
@@ -372,9 +391,7 @@ def collect(root, output, source_paths, command):
         config["inventory"] = str(output / "inventory.pickle")
     startup = output / "startup"
     startup.mkdir()
-    (startup / "sitecustomize.py").write_text(
-        "from python_coverage import startup_from_environment\nstartup_from_environment()\n",
-        encoding="utf-8")
+    (startup / "sitecustomize.py").write_text(_SITECUSTOMIZE, encoding="utf-8")
     env = dict(os.environ)
     config_path = output / "config.json"
     env["DYDO_PYTHON_COVERAGE_CONFIG"] = str(config_path)

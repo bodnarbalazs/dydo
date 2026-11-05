@@ -340,6 +340,28 @@ Path("failed.exit").write_text(str(child.wait()), encoding="utf-8")
 """
 
 
+# A measured child after another, started through the campaign's own sitecustomize, whose exit the driver
+# ignores and whose `python_coverage` cannot be imported: one earlier on its path raises, or none is on it.
+# Without a campaign config, the raising one stays on its path.
+_UNIMPORTABLE_AND_IGNORED = """\
+import json, os, subprocess, sys
+from pathlib import Path
+
+case = sys.argv[1]
+subprocess.run([sys.executable, "-c", "import subject; subject.work()"], check=True)
+startup, tools, *rest = os.environ["PYTHONPATH"].split(os.pathsep)
+env = {**os.environ, "PYTHONPATH": os.pathsep.join([startup, str(Path("poisoned").resolve()), tools, *rest])}
+if case == "python_coverage missing":
+    env["PYTHONPATH"] = startup
+if case == "no campaign config":
+    del env["DYDO_PYTHON_COVERAGE_CONFIG"]
+child = subprocess.Popen([sys.executable, "-c", "open('ran', 'x').close(); import subject; subject.work()"],
+                         env=env, stderr=subprocess.PIPE, text=True)
+_, stderr = child.communicate()
+Path("child.json").write_text(json.dumps({"pid": child.pid, "exit": child.returncode, "stderr": stderr}))
+"""
+
+
 _START = "from python_coverage import startup_from_environment\nstartup_from_environment()\n"
 
 
@@ -729,6 +751,31 @@ class PythonCoverageTests(unittest.TestCase):
                 self.assertEqual((70, False), (exit_code, ran), result.stdout + result.stderr)
                 self.assertIn(f"Python measurement failed in process {pid} at startup", result.stderr)
                 self.assertIn("could not be recorded", result.stderr)
+
+    def unimportable(self, case):
+        """What the last child of a campaign, its `python_coverage` as `case` says, recorded of itself."""
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+            (root / "driver.py").write_text(_UNIMPORTABLE_AND_IGNORED, encoding="utf-8")
+            (root / "poisoned").mkdir()
+            (root / "poisoned" / "python_coverage.py").write_text(
+                'raise RuntimeError("this python_coverage cannot be imported")\n', encoding="utf-8")
+            result = _facade(root, root / "evidence", ["subject.py"], ["{python}", "-S", "driver.py", case],
+                             timeout=60)
+            self.assertTrue((root / "child.json").exists(), result.stdout + result.stderr)
+            return json.loads((root / "child.json").read_text(encoding="utf-8")), (root / "ran").exists()
+
+    def test_a_process_that_cannot_import_its_measurement_ends_before_its_program_runs(self):
+        for case in ("python_coverage poisoned", "python_coverage missing"):
+            with self.subTest(case=case):
+                child, ran = self.unimportable(case)
+                self.assertEqual((70, False), (child["exit"], ran), child["stderr"])
+                self.assertIn(f"Python measurement failed in process {child['pid']} at startup", child["stderr"])
+                self.assertIn("could not be recorded", child["stderr"])
+        with self.subTest(case="no campaign config"):
+            child, ran = self.unimportable("no campaign config")
+            self.assertEqual((0, True, ""), (child["exit"], ran, child["stderr"]))
 
     def test_a_connect_that_fails_at_first_is_retried_into_the_connection_its_process_reports_on(self):
         with self.subTest(case="measured"):

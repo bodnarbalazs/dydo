@@ -1006,6 +1006,43 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertStderrContains("bypass");
     }
 
+    // DYD-641: pwsh 7.6.9 ends a statement and a comment at a bare carriage return, and a here-string
+    // at a bare carriage return or a typographic quote before @ (measured in /tmp/dyd641-evidence);
+    // the text after each runs, so Claude's PowerShell tool, a Codex pwsh argv envelope and an
+    // unknown shell refuse it, and the protected canary keeps its bytes.
+    [Theory]
+    [InlineData("echo @'\nx\n’@; iex '$(echo x > $OUT)'\n'@ # '")]
+    [InlineData("echo @'\nx\r'@; iex '$(echo x > $OUT)'\n'@ # '")]
+    [InlineData("echo x\riex @'\n$(echo x > $OUT)\n'@")]
+    [InlineData("echo hello\rrm dydo/index.md")]
+    [InlineData("echo hello # note\rRemove-Item dydo/index.md")]
+    public async Task Dyd641_StatementPwshRuns_IsDeniedWhereverPwshMayRunIt(string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+        var codex = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["session_id"] = TestSessionId,
+            ["turn_id"] = "t1",
+            ["tool_name"] = "shell_command",
+            ["cwd"] = TestDir,
+            ["tool_input"] = new Dictionary<string, object> { ["command"] = new[] { "pwsh", "-Command", command }, ["workdir"] = TestDir },
+        });
+
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        var envelope = await GuardWithStdinAsync(codex);
+        var unknown = await UnknownShellGuardAsync(command);
+
+        powerShell.AssertPreToolUseDenied();
+        powerShell.AssertStderrContains("bypass");
+        envelope.AssertPreToolUseDenied();
+        envelope.AssertStderrContains("bypass");
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains("bypass");
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
     // Split seat B's expanding-word probes that write no path: master warns, and so does every lane.
     [Theory]
     [MemberData(nameof(GuardRetroCommands.Gs02ExpandingWordWarningLines), MemberType = typeof(GuardRetroCommands))]

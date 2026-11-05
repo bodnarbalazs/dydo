@@ -1811,6 +1811,55 @@ public class BashCommandAnalyzerTests
             Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
     }
 
+    // DYD-641: where pwsh may run the line, its reading decides. pwsh 7.6.9 ends a statement and a
+    // comment at a bare carriage return and closes a here-string at a bare carriage return or a
+    // typographic quote before @, so the text after each is code (measured in /tmp/dyd641-evidence).
+    private static readonly ShellDialect[] PowerShellReadings = [ShellDialect.Unknown, ShellDialect.PowerShell];
+
+    [Theory]
+    [InlineData("echo @'\nx\n’@; iex '$(echo x > $OUT)'\n'@ # '")]
+    [InlineData("echo @'\nx\r'@; iex '$(echo x > $OUT)'\n'@ # '")]
+    [InlineData("echo @'\nx\n’@; iex $(echo x > $OUT)\n'@ # '")]
+    [InlineData("echo x\riex @'\n$(echo x > $OUT)\n'@")]
+    public void Analyze_HereStringBodyPwshRunsAsCode_IsABypass(string command)
+    {
+        foreach (var dialect in PowerShellReadings)
+            AssertBypassWithAChange(command, dialect);
+    }
+
+    [Theory]
+    [InlineData("echo hello\rrm dydo/index.md")]
+    [InlineData("echo hello # note\rrm dydo/index.md")]
+    [InlineData("echo \"a”\nrm dydo/index.md\n“b\"")]
+    [InlineData("echo @\"\nx\n”@\nrm dydo/index.md\n\"@ # \"")]
+    public void Analyze_StatementPwshStartsOnALaterLine_IsAnEmbeddedNewline(string command)
+    {
+        foreach (var dialect in PowerShellReadings)
+            Assert.Contains("Command contains embedded newlines", new BashCommandAnalyzer(dialect).Analyze(command).Warnings);
+    }
+
+    [Theory]
+    [InlineData("echo x\rpass show bank", "Password store access")]
+    [InlineData("echo ‘a'; pass show bank; ’b'", "Password store access")]
+    [InlineData("echo x\rpython -", "Python program on stdin")]
+    [InlineData("echo ‘a'; python -; ’b'", "Python program on stdin")]
+    public void CheckDangerousPatterns_CommandPwshRuns_IsDangerous(string command, string reason)
+    {
+        var (dangerous, why) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, command);
+        Assert.StartsWith(reason, why);
+    }
+
+    [Theory]
+    [InlineData("rg -n 'x’; tail -f app.log; ‘y'")]
+    [InlineData("echo ready # note\rtail -f app.log")]
+    public void RunsAt_CommandPwshRuns_Counts(string command)
+    {
+        foreach (var dialect in PowerShellReadings)
+            Assert.True(BashCommandAnalyzer.RunsAt(command, command.IndexOf("tail", StringComparison.Ordinal), dialect), $"{dialect}: {command}");
+    }
+
     // Inside single quotes bash 5.3.9 and pwsh 7.6.9 keep a carriage return, NEL and the Unicode
     // separators literal (measured), so a quote holding them stays literal data.
     [Theory]

@@ -238,6 +238,7 @@
     {
       "module": "Services/ShellReader.cs",
       "tests": [
+        "DynaDocs.Tests/Services/ShellReaderTests.cs",
         "DynaDocs.Tests/Services/DydoInvocationScannerTests.cs"
       ]
     },

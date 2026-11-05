@@ -350,7 +350,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         var line = text[lineStart..hereString.Index] + $" {BodyMark} " + text[end..lineEnd];
         var powerShell = _shell == ShellDialect.PowerShell;
         bool[] readings = powerShell ? [false] : [false, true];
-        if (!StartsItsPiece(text, lineStart) || HeredocOperatorRegex().IsMatch(line)
+        if (PwshEndsSooner(hereString) || !StartsItsPiece(text, lineStart) || HeredocOperatorRegex().IsMatch(line)
             || (!powerShell && !BashReadsAsWords(hereString.Value))
             || !FeedsDataOnly(line, readings, hereString: true, text[resume..]))
             return null;
@@ -358,6 +358,19 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         var code = text[..hereString.Index] + "''" + text[end..lineEnd];
         return new DataBodyCut(new CodePiece(code, hereString.Groups[1].Value == "\"" ? text[..lineEnd] : code), resume);
     }
+
+    // pwsh 7.6.9 ends a here-string at the first line break, a bare carriage return among them, that a
+    // quote of the opener's family and @ follow (DYD-641); HereStringRegex takes a line feed and the
+    // opener's own quote only, so a body pwsh ends sooner holds code it runs.
+    private static bool PwshEndsSooner(Match hereString) =>
+        (hereString.Groups[1].Value == "'" ? PwshSingleTerminatorRegex() : PwshDoubleTerminatorRegex())
+            .IsMatch(hereString.ValueSpan[..^2]);
+
+    [GeneratedRegex(@"[\r\n]['\u2018\u2019\u201A\u201B]@")]
+    private static partial Regex PwshSingleTerminatorRegex();
+
+    [GeneratedRegex(@"[\r\n][""\u201C\u201D\u201E]@")]
+    private static partial Regex PwshDoubleTerminatorRegex();
 
     // Only blank and comment lines come before the body's line, so no group, quote or pipe is open there.
     private static bool StartsItsPiece(string text, int lineStart) => !CodeLines(text[..lineStart]).Any();
@@ -1564,11 +1577,12 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     // Whether more than one line of the layout holds a command. A blank or comment-only line, such as
     // the one a heredoc's trailing line break leaves, holds none unless the line before continues
-    // into it (a trailing \ or `), where its # no longer starts a comment.
+    // into it (a trailing \ or `), where its # no longer starts a comment. A bare carriage return
+    // ends a line too: pwsh 7.6.9 starts a statement after one (DYD-641).
     private static bool SeparatesCommandLines(string layout)
     {
-        var lines = layout.Split('\n');
-        return lines.Where((line, i) => line.TrimStart() is [not '#', ..] || (i > 0 && lines[i - 1].TrimEnd('\r') is [.., '\\' or '`']))
+        var lines = layout.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n', '\r');
+        return lines.Where((line, i) => line.TrimStart() is [not '#', ..] || (i > 0 && lines[i - 1] is [.., '\\' or '`']))
             .Skip(1).Any();
     }
 
@@ -1584,10 +1598,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         }
     }
 
+    // A bare carriage return separates commands as a line feed does: pwsh 7.6.9 starts a statement after one (DYD-641).
     private static int CheckCommandSeparator(string command, int i)
     {
         var c = command[i];
-        if (c == ';' || c == '\n')
+        if (c == ';' || c == '\n' || (c == '\r' && (i + 1 == command.Length || command[i + 1] != '\n')))
             return 1;
         if (c == '&' && i + 1 < command.Length && command[i + 1] == '&')
             return 2;

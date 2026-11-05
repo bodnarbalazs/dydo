@@ -110,11 +110,19 @@ jobs:
           PYTHONDONTWRITEBYTECODE: '1'
         run: ${{ matrix.python }} DynaDocs.Tests/coverage/gap_check.py gate static --stack python
 
+      # A rerun of failed jobs reruns only the failed leg, so each artifact names the attempt that made it.
+      - name: Stamp platform coverage artifact identity
+        if: always()
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py stamp --stack python
+          --platform ${{ matrix.platform }} --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --results DynaDocs.Tests/coverage/results
+
       - name: Upload platform coverage evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: python-coverage-${{ matrix.platform }}
+          name: python-coverage-${{ matrix.platform }}-attempt-${{ github.run_attempt }}
           path: DynaDocs.Tests/coverage/results
           if-no-files-found: error
 
@@ -133,10 +141,12 @@ jobs:
       - name: Install locked union analysis dependencies
         run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 
+      # Every attempt's leg artifacts; the selection below takes each leg's latest attempt.
       - uses: actions/download-artifact@v4
         with:
-          pattern: python-coverage-*
-          path: DynaDocs.Tests/coverage/results/coverage-platforms
+          pattern: python-coverage-*-attempt-*
+          path: DynaDocs.Tests/coverage/results/coverage-legs
+          merge-multiple: false
 
       - name: Require both native jobs to pass
         if: always()
@@ -147,6 +157,15 @@ jobs:
           mkdir -p DynaDocs.Tests/coverage/results/coverage-platforms
           echo "$PLATFORM_RESULT" > DynaDocs.Tests/coverage/results/coverage-platforms/native-job-result.txt
           test "$PLATFORM_RESULT" = success
+
+      - name: Select each leg's latest-attempt artifact
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py select --stack python
+          --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --staging DynaDocs.Tests/coverage/results/coverage-legs
+          --linux DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-linux
+          --windows DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-windows
+          --receipt DynaDocs.Tests/coverage/results/coverage-platforms/artifact-selection.json
 
       - name: Verify complete same-candidate platform union
         run: >-
@@ -260,11 +279,19 @@ jobs:
           PYTHONDONTWRITEBYTECODE: '1'
         run: ${{ matrix.python }} DynaDocs.Tests/coverage/gap_check.py gate coverage --stack dotnet
 
+      # A rerun of failed jobs reruns only the failed leg, so each artifact names the attempt that made it.
+      - name: Stamp platform .NET coverage artifact identity
+        if: always()
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py stamp --stack dotnet
+          --platform ${{ matrix.platform }} --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --results DynaDocs.Tests/coverage/results
+
       - name: Upload platform .NET coverage evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dotnet-coverage-${{ matrix.platform }}
+          name: dotnet-coverage-${{ matrix.platform }}-attempt-${{ github.run_attempt }}
           path: DynaDocs.Tests/coverage/results
           if-no-files-found: error
 
@@ -302,15 +329,12 @@ jobs:
           dotnet restore --locked-mode
           dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
 
+      # Every attempt's leg artifacts; the selection below takes each leg's latest attempt.
       - uses: actions/download-artifact@v4
         with:
-          name: dotnet-coverage-linux
-          path: DynaDocs.Tests/coverage/results/coverage-platforms/linux
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: dotnet-coverage-windows
-          path: DynaDocs.Tests/coverage/results/coverage-platforms/windows
+          pattern: dotnet-coverage-*-attempt-*
+          path: DynaDocs.Tests/coverage/results/coverage-legs
+          merge-multiple: false
 
       - name: Require both native jobs to pass
         if: always()
@@ -321,6 +345,15 @@ jobs:
           mkdir -p DynaDocs.Tests/coverage/results/coverage-platforms
           echo "$PLATFORM_RESULT" > DynaDocs.Tests/coverage/results/coverage-platforms/native-job-result.txt
           test "$PLATFORM_RESULT" = success
+
+      - name: Select each leg's latest-attempt artifact
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py select --stack dotnet
+          --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --staging DynaDocs.Tests/coverage/results/coverage-legs
+          --linux DynaDocs.Tests/coverage/results/coverage-platforms/linux
+          --windows DynaDocs.Tests/coverage/results/coverage-platforms/windows
+          --receipt DynaDocs.Tests/coverage/results/coverage-platforms/artifact-selection.json
 
       # Rebuilds this candidate's complete zero-hit denominator and checks each platform's portion against it.
       - name: Verify the complete same-candidate platform partition

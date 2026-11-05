@@ -230,7 +230,8 @@ fails when the join is scoped, after the campaign.
 Linux runs the full suite and measures every other point, including the neutral remainder of mixed
 sources. Windows runs only the selection's fourteen named tests, seventeen cases with their theory
 rows, which reach the Windows members. It passes only if that run is nonempty and none of its tests
-fails or is skipped. Linux already measures every point Windows does not own, so a full Windows
+fails or is skipped. The ratified rule is stricter: every declared test must run. Enforcing that is
+pending [DYD-718](https://linear.app/bodnar-balazs/issue/DYD-718). Linux already measures every point Windows does not own, so a full Windows
 suite would measure nothing more. Both platforms keep the full native join as raw evidence and
 apply the unchanged policy to their own portion.
 

@@ -71,6 +71,7 @@ export function App({ elk }: { elk: ELK }) {
   const [showRelated, setShowRelated] = useState(false);
   const [layout, setLayout] = useState<Layout | null>(null);
   const [fitKey, setFitKey] = useState(0);
+  const [drawn, setDrawn] = useState<Graph>();
   const { preference, theme, choose } = useThemePreference();
 
   const { url, refresh, refreshing, visit } = view;
@@ -84,7 +85,8 @@ export function App({ elk }: { elk: ELK }) {
   const laidOut = layout !== null && (layout.graph === graph || replacing) ? layout.loaded : null;
   const map = valueOf(laidOut);
   const mapFailure = failureOf(view.graph) ?? failureOf(laidOut);
-  const busy = refreshing || replacing || (graph !== null && map === null && mapFailure === null);
+  // It also waits for the canvas to draw the new map, which React Flow does a render after App hands it down.
+  const busy = refreshing || replacing || (graph !== null && map === null && mapFailure === null) || (map !== null && drawn !== layout?.graph);
   // One slot per stage, in a fixed order, so each failure on screen keeps its place.
   const failures = [failureOf(teams), failureOf(view.projects), mapFailure, view.refreshFailure];
 
@@ -124,6 +126,8 @@ export function App({ elk }: { elk: ELK }) {
   }, [url.project, visit]);
 
   const refreshMap = useCallback(() => activeVisit.current?.refresh(), []);
+  // Keyed to the graph, not the layout: a relayout of the graph on screen leaves Refresh free.
+  const canvasDrawn = useCallback(() => setDrawn(layout?.graph), [layout]);
   const canvasReady = useCallback(() => {
     if (graph !== null) activeVisit.current?.ready(graph);
   }, [graph]);
@@ -208,6 +212,7 @@ export function App({ elk }: { elk: ELK }) {
                 key={visit}
                 flow={map.flow}
                 onReady={canvasReady}
+                onDrawn={canvasDrawn}
                 focus={url.focus}
                 fitKey={map.fitKey}
                 cascade={replacing ? exiting : (layout?.cascade ?? null)}

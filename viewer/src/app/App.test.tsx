@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { Viewport } from '@xyflow/react';
+import type { useStoreApi, Viewport } from '@xyflow/react';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import type { ELK as ElkApi } from 'elkjs/lib/elk-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,8 +8,8 @@ import { blocks, makeGraph, makeIssue, related } from '../graph/testIssues';
 import { TIMING } from '../map/cascade';
 import { App } from './App';
 
-/** Every viewport React Flow reported through its public onMoveEnd, oldest first. */
-const flow = vi.hoisted(() => ({ moveEnds: [] as Viewport[] }));
+/** Every viewport React Flow reported through its public onMoveEnd, oldest first, and the store of the canvas on screen. */
+const flow = vi.hoisted(() => ({ moveEnds: [] as Viewport[], store: null as ReturnType<typeof useStoreApi> | null }));
 
 // The real ReactFlow, called through, with each move end it reports while mounted recorded as well:
 // React Flow reports a move end a task after the move, so an unmounted map's late report is dropped.
@@ -18,10 +18,12 @@ vi.mock('@xyflow/react', async (original) => {
   const { useEffect, useRef } = await import('react');
   const ReactFlow = (props: React.ComponentProps<typeof actual.ReactFlow>) => {
     const mounted = useRef(false);
+    const store = actual.useStoreApi();
     useEffect(() => {
       mounted.current = true;
+      flow.store = store;
       return () => { mounted.current = false; };
-    }, []);
+    }, [store]);
     return (
       <actual.ReactFlow
         {...props}
@@ -777,6 +779,24 @@ describe('App refresh in place', () => {
     return { timers, release };
   }
 
+  /**
+   * Holds the nodes and links React Flow takes into its store, as its StoreUpdater does an effect after App hands
+   * them down, so the canvas keeps drawing the old map until `release`. Returns the ids of the latest nodes held.
+   */
+  function holdDrawing() {
+    const store = flow.store!;
+    const { setNodes, setEdges } = store.getState();
+    const held: { nodes?: Parameters<typeof setNodes>[0]; edges?: Parameters<typeof setEdges>[0] } = {};
+    store.setState({ setNodes: (nodes) => { held.nodes = nodes; }, setEdges: (edges) => { held.edges = edges; } });
+    const heldIds = () => held.nodes?.map((node) => node.id);
+    const release = () => act(() => {
+      store.setState({ setNodes, setEdges });
+      if (held.edges) setEdges(held.edges);
+      if (held.nodes) setNodes(held.nodes);
+    });
+    return { heldIds, release };
+  }
+
   async function openMap(focus = '') {
     await fitBy(() => open(`?team=team-1&project=project-1${focus}`));
     await mapShown();
@@ -831,6 +851,7 @@ describe('App refresh in place', () => {
     graphAnswer = () => json(withoutX);
     fireEvent.click(refreshButton());
     await waitFor(() => expect(card('T-X')).toBeNull());
+    await waitFor(() => expect(refreshButton().disabled).toBe(false));
     fireEvent.keyDown(document.body, { key: 'r' });
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('No changes'));
     await waitFor(() => expect(document.querySelector('.react-flow__node[class*="refresh-"]')).toBeNull());
@@ -883,7 +904,17 @@ describe('App refresh in place', () => {
     fireEvent.click(refreshButton());
     expect(vi.mocked(fetch).mock.calls.length).toBe(fetches);
 
+    // The new map is laid out and handed to the canvas, which has not drawn it yet: Refresh still waits.
+    const drawing = holdDrawing();
     exits.release();
+    await waitFor(() => expect(drawing.heldIds()).not.toContain('X'));
+    expect(card('T-X')).not.toBeNull();
+    expect(refreshButton().disabled).toBe(true);
+    fireEvent.keyDown(document.body, { key: 'r' });
+    fireEvent.click(refreshButton());
+    expect(vi.mocked(fetch).mock.calls.length).toBe(fetches);
+
+    drawing.release();
     await waitFor(() => expect(card('T-X')).toBeNull());
     expect(wrapper('T-A')?.classList.contains('refresh-changed')).toBe(true);
     expect(screen.getByRole('status').textContent).toBe('1 changed · 1 removed · 1 link removed');
@@ -899,7 +930,7 @@ describe('App refresh in place', () => {
     open('?team=team-1&project=project-1');
     expect(refreshButton().disabled).toBe(true);
     await mapShown();
-    expect(refreshButton().disabled).toBe(false);
+    await waitFor(() => expect(refreshButton().disabled).toBe(false));
   });
 
   it('frees Refresh on leaving a Project mid-refresh, and drops that answer on coming back', async () => {
@@ -914,7 +945,7 @@ describe('App refresh in place', () => {
       });
     go('?team=team-1&project=project-2');
     await waitFor(() => expect(card('T-E')).not.toBeNull());
-    expect(refreshButton().disabled).toBe(false);
+    await waitFor(() => expect(refreshButton().disabled).toBe(false));
     go('?team=team-1&project=project-1');
     await mapShown();
     await act(async () => {

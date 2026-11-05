@@ -55,6 +55,7 @@ test('Refresh swaps in the new graph in place and cascades what changed, then fi
   await expect(page.getByRole('checkbox', { name: 'Show related' })).toBeChecked();
   await expect(page.locator('.edge-related').first()).toBeAttached();
 
+  await expect(refresh(page)).toBeEnabled();
   await page.keyboard.press('r');
   await expect(notice(page)).toHaveText('No changes');
   await expect(page.locator('.react-flow__node[class*="refresh-"]')).toHaveCount(0);
@@ -72,11 +73,17 @@ test('a second Refresh waits for the first to land, keeping the map, its viewpor
   await openA(page);
   await page.evaluate(() => {
     const seen: string[] = [];
-    Object.assign(window, { placeholdersSeen: seen });
+    // Once Refresh is busy, every moment it is free again while the old map is still drawn.
+    const freedEarly: boolean[] = [];
+    let busy = false;
+    Object.assign(window, { placeholdersSeen: seen, freedEarly });
     new MutationObserver(() => {
       const shown = document.querySelector('.placeholder');
       if (shown !== null) seen.push(shown.textContent ?? '');
-    }).observe(document.body, { childList: true, subtree: true });
+      const disabled = document.querySelector<HTMLButtonElement>('.refresh-button')?.disabled === true;
+      busy ||= disabled;
+      if (busy && !disabled && document.querySelector('[data-identifier="DYD-9001"]') !== null) freedEarly.push(true);
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled'] });
   });
   const shown = await viewport(page);
   // Pausing needs a moment still ahead of the page's clock; nothing is pending on the settled map.
@@ -95,6 +102,7 @@ test('a second Refresh waits for the first to land, keeping the map, its viewpor
   expect(asked).toHaveLength(2);
   expect(await viewport(page)).toBe(shown);
   expect(await page.evaluate(() => (window as unknown as { placeholdersSeen: string[] }).placeholdersSeen)).toEqual([]);
+  expect(await page.evaluate(() => (window as unknown as { freedEarly: boolean[] }).freedEarly)).toEqual([]);
 });
 
 test('each refresh cross-fades the cards it changed from their old look, the same cards again too', async ({ page }) => {

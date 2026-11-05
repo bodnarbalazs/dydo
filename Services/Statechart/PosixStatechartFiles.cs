@@ -15,14 +15,15 @@ internal static class PosixStatechartFiles
     public static void CreateExclusive(string path)
     {
         RequireLinux();
-        if (Mkdir(path, 0x1c0) != 0) throw new Win32Exception(); // 0700
+        PosixStatechartNative.Check(Mkdir(path, 0x1c0), Marshal.GetLastPInvokeError()); // 0700
     }
 
     public static SafeFileHandle Open(string path)
     {
         RequireLinux();
-        var fd = OpenDirectory(path, 0x10000 | 0x20000 | 0x80000); // O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC
-        if (fd < 0) throw new Win32Exception();
+        // O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC
+        var (fd, error) = (OpenDirectory(path, 0x10000 | 0x20000 | 0x80000), Marshal.GetLastPInvokeError());
+        if (fd < 0) throw new Win32Exception(error);
         return new SafeFileHandle(fd, ownsHandle: true);
     }
 
@@ -33,8 +34,8 @@ internal static class PosixStatechartFiles
         try
         {
             // Linux statx is a fixed kernel ABI on both shipped Linux architectures.
-            if (Statx(handle.DangerousGetHandle().ToInt32(), "", 0x1000, 0x101, info) != 0)
-                throw new Win32Exception();
+            PosixStatechartNative.Check(Statx(handle.DangerousGetHandle().ToInt32(), "", 0x1000, 0x101, info),
+                Marshal.GetLastPInvokeError());
             if ((Marshal.ReadInt32(info) & 0x101) != 0x101 || (Marshal.ReadInt16(info, 28) & 0xf000) != 0x4000)
                 throw new IOException("Statechart scratch has no verified directory identity.");
             return $"{Marshal.ReadInt32(info, 136):x8}:{Marshal.ReadInt32(info, 140):x8}:{Marshal.ReadInt64(info, 32):x16}";

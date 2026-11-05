@@ -44,6 +44,10 @@ internal static class StatechartCleanup
         return null;
     }
 
+    // The helper's created:<stage>:<temp> frame names the scratch it reserved; anything else, EOF included, is the given error.
+    public static (string Stage, string Temp) Created(string? frame, string error) =>
+        frame?.Split(':') is ["created", var stage, var temp] ? (Decode(stage), Decode(temp)) : throw new InvalidDataException(error);
+
     public static string Encode(string path) => Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(path));
     public static string Decode(string path) => System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(path));
     public static async Task Say(TextWriter output, string message)

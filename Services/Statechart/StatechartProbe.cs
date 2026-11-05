@@ -19,9 +19,6 @@ internal static class StatechartProbe
         return process.ExitCode;
     }
 
-    public static async Task<string> CaptureAsync(string file, string argument, StatechartLifetime lifetime)
-        => await CaptureAsync(file, [argument], lifetime, Environment.CurrentDirectory, CancellationToken.None);
-
     public static async Task<string> CaptureAsync(string file, IReadOnlyList<string> arguments,
         StatechartLifetime lifetime, string cwd, CancellationToken token)
     {

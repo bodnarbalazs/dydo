@@ -76,6 +76,15 @@ public sealed class GuardPrReadyBodyFileTests : IDisposable
         Assert.Null(Read(path));
     }
 
+    // gh reads - as stdin, so a file of that name is never its body.
+    [Fact]
+    public void StdinOperand_IsNull_ThoughAFileHasThatName()
+    {
+        Write(Path.Combine(Tree, "-"), Body);
+
+        Assert.Null(Read("-"));
+    }
+
     [Fact]
     public void OutsideFileNamedAbsolutely_IsNull()
     {

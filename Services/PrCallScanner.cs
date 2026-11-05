@@ -37,10 +37,8 @@ internal static partial class PrCallScanner
         new() { ['X'] = "method", ['H'] = "header", ['f'] = "field", ['F'] = "field", ['q'] = "jq", ['t'] = "template", ['p'] = "preview" },
         ["method", "header", "raw-field", "field", "hostname", "input", "jq", "template", "cache", "preview"]);
 
-    // What bash or PowerShell may expand in a word, quoted or not: $ and backtick substitutions and
-    // variables, ~, glob and brace characters, and PowerShell's ( ) group and @ splat. Over-matching
-    // a literal name only keeps the warning.
-    private static readonly char[] ExpansionCharacters = ['$', '`', '~', '*', '?', '[', '{', '}', '(', '@'];
+    // Programs that cannot move the shell's directory: a child process cannot, and these builtins do not.
+    private static readonly HashSet<string> DirectoryKeepers = ["dydo", "git", "gh", "echo", "printf", "true", "test"];
 
     private sealed record Options(Dictionary<char, string> Short, HashSet<string> Long);
 
@@ -77,33 +75,40 @@ internal static partial class PrCallScanner
 
     /// <summary>
     /// The body file of the <c>gh pr create</c> call launched at <paramref name="launch"/> in
-    /// <paramref name="command"/> (DYD-639): its last <c>--body-file</c> or <c>-F</c>, as gh takes
-    /// it, written as the call wrote it. Null when the call names none, when no reading of the call
-    /// finishes, or when its readings disagree. A call inside a wrapper's string or a substitution
-    /// reads unfinished from its launch, so a check that needs the body keeps its warning. Null too
-    /// when the operand's word, as written, holds anything its shell may expand
-    /// (<see cref="ExpansionCharacters"/>): the file gh opens is then unknown, so the guard fails closed.
+    /// <paramref name="command"/> (DYD-639): its last <c>--body-file</c> or <c>-F</c>, as gh takes it,
+    /// or null when the guard may not read it. The guard emulates no shell; it reads an allowlist.
+    /// Every reading of the whole line must finish, find the call at <paramref name="launch"/> at the
+    /// line's top level, and name the same operand written plainly (<see cref="PlainOperand"/>). An
+    /// absolute operand names its file wherever the call sits; a relative one only when no command
+    /// before the call may move the shell's directory (<see cref="KeepsDirectory"/>). Anything else
+    /// reads as null, so a check that needs the body keeps its warning.
     /// </summary>
     public static string? BodyFileAt(string command, int launch, ShellDialect dialect = ShellDialect.Unknown)
     {
-        var line = GhPlaceholderRegex().Replace(command[launch..], ":$1");
-        var files = Readings(dialect, line)
-            .Select(posix => ShellReader.Read(line, posix))
-            .Where(reading => !reading.Failed)
-            .Select(reading => BodyFileOf(reading.Source.Commands[0]))
+        var files = Readings(dialect, command)
+            .Select(posix => BodyFileIn(ShellReader.Read(command, posix), launch, posix))
             .Distinct()
             .ToList();
         return files is [{ } file] ? file : null;
     }
 
-    private static string? BodyFileOf(ShellReader.Command command)
+    // On Windows a path rooted at no drive opens on the shell's current drive, so it is never read there.
+    private static string? BodyFileIn(ShellReader.Reading reading, int launch, bool posix)
     {
-        var words = command.Words;
-        var at = CommandPosition.Skip(words);
-        if (at >= words.Count || CommandPosition.ProgramName(words[at]) != "gh")
+        var commands = reading.Commands.ToList();
+        var call = commands.FindIndex(c => c.Source == reading.Source && c.WordRanges is [var first, ..] && first.Start.Value == launch);
+        if (reading.Failed || call < 0 || PlainOperand(commands[call], posix) is not { } file)
+            return null;
+        return Path.IsPathFullyQualified(file) || (!Path.IsPathRooted(file) && KeepsDirectory(reading, commands, call)) ? file : null;
+    }
+
+    private static string? PlainOperand(ShellReader.Command call, bool posix)
+    {
+        var words = call.Words;
+        if (CommandPosition.ProgramName(words[0]) != "gh")
             return null;
 
-        var rest = words.Skip(at + 1).ToList();
+        var rest = words.Skip(1).ToList();
         var sub = GhSubcommand(rest, "pr", "api");
         if (sub < 0 || !rest[sub].Equals("pr", StringComparison.OrdinalIgnoreCase))
             return null;
@@ -116,18 +121,54 @@ internal static partial class PrCallScanner
         if (last < 0)
             return null;
         var file = parsed.Options[last];
-        var written = at + sub + 2 + file.Word;
-        return written >= words.Count || WrittenAround(command, written).IndexOfAny(ExpansionCharacters) >= 0 ? null : file.Value;
+        var at = sub + 2 + file.Word;
+        return at < words.Count && IsWrittenPlainly(call, at, file.Value, posix) ? file.Value : null;
     }
 
-    // A word as its command wrote it, with the character on either side. The reading's words drop
-    // or keep expansions unexpanded, and it ends a word at a brace or parenthesis bash would not
-    // split at, so the operand is checked as written, together with its neighbours.
-    private static string WrittenAround(ShellReader.Command command, int word)
+    /// <summary>
+    /// Whether the word at <paramref name="at"/>, which ends in the operand <paramref name="value"/>,
+    /// is written as its reading decodes it: the flag (<c>--body-file=</c>, or short flags with no
+    /// <c>=</c>, since gh drops one <c>=</c> after a short flag and the reader every one), then the
+    /// operand bare or wholly in one pair of quotes, of the reading's literal characters (<see cref="PosixLiteralRegex"/>,
+    /// <see cref="PowerShellLiteralRegex"/>). The reader splits a word at a brace, a parenthesis, a
+    /// carriage return or any Unicode space, where bash does not, so the word must also stand between
+    /// a blank and a blank, a separator or the line's end.
+    /// </summary>
+    private static bool IsWrittenPlainly(ShellReader.Command call, int at, string value, bool posix)
     {
-        var range = command.WordRanges[word];
-        var text = command.Source.Text;
-        return text[Math.Max(range.Start.Value - 1, 0)..Math.Min(range.End.Value + 1, text.Length)];
+        var flag = call.Words[at][..^value.Length];
+        var written = call.RawWord(at);
+        var operand = written.StartsWith(flag, StringComparison.Ordinal) ? written[flag.Length..] : null;
+        var (text, range) = (call.Source.Text, call.WordRanges[at]);
+        return (flag == "--body-file=" || !flag.Contains('='))
+            && (operand == value || operand == $"'{value}'" || operand == $"\"{value}\"")
+            && (posix ? PosixLiteralRegex() : PowerShellLiteralRegex()).IsMatch(value)
+            && text[range.Start.Value - 1] is ' ' or '\t'
+            && (range.End.Value == text.Length || text[range.End.Value] is ' ' or '\t' or '\n' or ';' or '&' or '|');
+    }
+
+    /// <summary>
+    /// Whether no command before the call at <paramref name="call"/> may move the shell's directory:
+    /// each, nested ones too, runs one of <see cref="DirectoryKeepers"/>, and only blanks and
+    /// <c>; &amp; |</c> join the line's commands up to the call, so no group, subshell, function,
+    /// redirection or comment comes before it. bash 5.3 runs <c>${ cmd; }</c> in the shell itself,
+    /// so a line holding one keeps nothing.
+    /// </summary>
+    private static bool KeepsDirectory(ShellReader.Reading reading, List<ShellReader.Command> commands, int call)
+    {
+        var text = reading.Source.Text;
+        if (FunctionSubstitutionRegex().IsMatch(text)
+            || !commands.Take(call).All(c => c.Words is [var program, ..] && DirectoryKeepers.Contains(CommandPosition.ProgramName(program))))
+            return false;
+
+        var end = 0;
+        foreach (var command in commands.Take(call + 1).Where(c => c.Source == reading.Source))
+        {
+            if (!JoinRegex().IsMatch(text[end..command.WordRanges[0].Start.Value]))
+                return false;
+            end = command.WordRanges[^1].End.Value;
+        }
+        return true;
     }
 
     private static List<PrCall> Scan(string text, ShellDialect dialect, string? inheritedRepo, int depth)
@@ -384,6 +425,21 @@ internal static partial class PrCallScanner
 
     [GeneratedRegex(@"\{(owner|repo|branch)\}")]
     private static partial Regex GhPlaceholderRegex();
+
+    // A plainly written body file's characters (DYD-639 ruling): letters, digits, . _ - + / and,
+    // quoted, space. PowerShell also takes \ and a leading drive; in bash a backslash escapes.
+    [GeneratedRegex(@"^[A-Za-z0-9._+/ -]+\z")]
+    private static partial Regex PosixLiteralRegex();
+
+    [GeneratedRegex(@"^(?:[A-Za-z]:[\\/])?[A-Za-z0-9._+/\\ -]+\z")]
+    private static partial Regex PowerShellLiteralRegex();
+
+    [GeneratedRegex(@"^[ \t\n;&|]*\z")]
+    private static partial Regex JoinRegex();
+
+    // bash 5.3's ${ cmd; } and ${| cmd; } run cmd in the shell itself.
+    [GeneratedRegex(@"\$\{[\s|]")]
+    private static partial Regex FunctionSubstitutionRegex();
 
     [GeneratedRegex(@"^(?:https?://(?<host>[^/]+)(?:/api/v3)?)?/?repos/(?<owner>[^/]+)/(?<repo>[^/?]+)/pulls/?(?:\?.*)?$", RegexOptions.IgnoreCase)]
     private static partial Regex RestPullsRegex();

@@ -601,6 +601,8 @@ public class PrCallScannerTests
     [InlineData("Posix", "gh pr create -F 'a b.md'", "a b.md")]
     [InlineData("Posix", "gh pr create -F \"a+b_c-d.md\" --title t", "a+b_c-d.md")]
     [InlineData("Posix", "gh pr create -dF'a b.md'", "a b.md")]
+    [InlineData("Posix", "gh pr create -F\ta.md\necho done", "a.md")]
+    [InlineData("Posix", "gh pr create -F a.md|cat", "a.md")]
     [InlineData("Posix", "gh pr create -F a.md\\", null)]
     [InlineData("Posix", "gh pr create -F a\\\r\n.md", null)]
     [InlineData("Posix", "gh pr create -F a.md\r\n", null)]
@@ -647,6 +649,7 @@ public class PrCallScannerTests
     [InlineData("Posix", "git status > log.txt && gh pr create -F a.md", null)]
     [InlineData("Posix", "# note\ngit status; gh pr create -F a.md", null)]
     [InlineData("Posix", "GIT_DIR=x git status; gh pr create -F a.md", null)]
+    [InlineData("Posix", "> log.txt; gh pr create -F a.md", null)]
     [InlineData("Posix", "echo \"$(cd sub)\"; gh pr create -F a.md", null)]
     [InlineData("Posix", "echo ${ cd sub; }; gh pr create -F a.md", null)]
     [InlineData("Posix", "echo ${| cd sub; }; gh pr create -F a.md", null)]
@@ -661,6 +664,16 @@ public class PrCallScannerTests
         var launch = command.LastIndexOf("gh pr create", StringComparison.Ordinal);
 
         Assert.Equal(file, PrCallScanner.BodyFileAt(command, launch, Enum.Parse<ShellDialect>(dialect)));
+    }
+
+    // Only a call the line runs at its top level, starting at the launch, names a body file.
+    [Theory]
+    [InlineData("x gh pr create -F a.md", 2)]
+    [InlineData("echo $(gh pr create -F a.md)", 7)]
+    [InlineData("echo 'x; gh pr create -F a.md'", 9)]
+    public void LaunchStartingNoTopLevelCommand_NamesNone(string command, int launch)
+    {
+        Assert.Null(PrCallScanner.BodyFileAt(command, launch, ShellDialect.Posix));
     }
 
     // An absolute body file names one file wherever the call sits.

@@ -162,7 +162,8 @@ public static partial class GuardCommand
 
     /// <summary>
     /// The text of the PR body file <paramref name="path"/>, named from <paramref name="directory"/>,
-    /// the call directory, or null when the guard may not read it. The guard may read a regular file
+    /// the call directory, or null when the guard may not read it. The path must be plain names past
+    /// its root (<see cref="Names"/>): the guard emulates no traversal. It may read a regular file
     /// that sits, once every link on its path resolves, in the same git work tree as the call
     /// directory. It must not be off-limits, must be at most <see cref="PrBodyFileMaxBytes"/>, and
     /// must be valid UTF-8. Anything else, or any I/O error, reads as null, so the caller keeps its
@@ -172,15 +173,14 @@ public static partial class GuardCommand
     /// </summary>
     internal static string? ReadPrBodyFile(string path, string directory, IOffLimitsService offLimits)
     {
-        if (path is "" or "-")
+        if (path == "-" || Names(path) == null)
             return null;
         try
         {
-            // Windows takes .. by name before it opens a path; elsewhere .. follows the links before it.
-            var named = Path.Combine(directory, path);
-            if (RealPath(OperatingSystem.IsWindows() ? Path.GetFullPath(named) : named) is not { } file
+            var named = Path.GetFullPath(path, directory);
+            if (RealPath(named) is not { } file
                 || !InWorkTreeOf(file, directory)
-                || offLimits.IsPathOffLimits(Path.GetFullPath(named)) != null || offLimits.IsPathOffLimits(file) != null)
+                || offLimits.IsPathOffLimits(named) != null || offLimits.IsPathOffLimits(file) != null)
                 return null;
             return BoundedText(file);
         }
@@ -226,40 +226,39 @@ public static partial class GuardCommand
     }
 
     /// <summary>
-    /// The rooted <paramref name="path"/> with every link on it resolved and each <c>..</c> taken
-    /// after the links before it, as the OS opens it (realpath(3)); null past <see cref="MaxPathLinks"/> links.
+    /// The full <paramref name="path"/> with every link on it resolved, as the OS opens it; null past
+    /// <see cref="MaxPathLinks"/> links, or at a link whose target is not plain names (<see cref="Names"/>).
     /// </summary>
     private static string? RealPath(string path)
     {
         var resolved = Path.GetPathRoot(path)!;
-        var pending = new Stack<string>(PathSegments(path[resolved.Length..]).Reverse());
+        var pending = new Stack<string>(path[resolved.Length..].Split(PathSeparators).Reverse());
         var links = 0;
-        while (pending.TryPop(out var segment))
+        while (pending.TryPop(out var name))
         {
-            if (segment == "..")
-            {
-                resolved = Path.GetDirectoryName(resolved) ?? resolved;
-                continue;
-            }
-
-            var next = Path.Join(resolved, segment);
+            var next = Path.Join(resolved, name);
             if (new FileInfo(next).LinkTarget is not { } target)
             {
                 resolved = next;
                 continue;
             }
-            if (++links > MaxPathLinks)
+            if (++links > MaxPathLinks || Names(target) is not { } names)
                 return null;
 
             var targetRoot = Path.GetPathRoot(target)!;
             if (targetRoot.Length > 0)
                 resolved = targetRoot;
-            foreach (var part in PathSegments(target[targetRoot.Length..]).Reverse())
+            foreach (var part in names.Reverse())
                 pending.Push(part);
         }
         return resolved;
     }
 
-    private static IEnumerable<string> PathSegments(string path) =>
-        path.Split(PathSeparators, StringSplitOptions.RemoveEmptyEntries).Where(segment => segment != ".");
+    // The names past path's root, or null when one is empty (a doubled or trailing separator), . or
+    // .., which the OS may open differently or not at all: the guard refuses them rather than emulates them.
+    private static string[]? Names(string path)
+    {
+        var names = path[(Path.GetPathRoot(path)?.Length ?? 0)..].Split(PathSeparators);
+        return names.Any(name => name is "" or "." or "..") ? null : names;
+    }
 }

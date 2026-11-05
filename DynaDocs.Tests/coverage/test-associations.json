@@ -513,6 +513,12 @@
       ]
     },
     {
+      "module": "DynaDocs.Tests/HostCanaries/candidate-fingerprint.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/candidate-fingerprint.test.mjs"
+      ]
+    },
+    {
       "module": "DynaDocs.Tests/HostCanaries/path-containment.mjs",
       "tests": [
         "DynaDocs.Tests/coverage/tests/path-containment.test.mjs"
@@ -1607,7 +1613,11 @@
     },
     {
       "module": "Services/Statechart/PosixStatechartChannel.cs",
-      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixChannelTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartSocket.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixChannelTests.cs"]
     },
     {
       "module": "Services/Statechart/PosixStatechartFiles.cs",

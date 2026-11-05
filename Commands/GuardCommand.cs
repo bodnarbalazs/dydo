@@ -712,8 +712,8 @@ public static partial class GuardCommand
 
     // A nudge's pattern is matched on the raw text, and a match counts only where its launch word
     // counts under the bounded data-operand rules (DYD-406); captures come from that raw match.
-    // The review-block nudge, shipped or a dydo.json copy keeping its pattern, also reads each
-    // call's own body file (DYD-639).
+    // The review-block nudge, shipped or a dydo.json copy keeping its pattern, also reads the body
+    // file of a gh pr create that is the line's only command (DYD-639).
     private static IEnumerable<(NudgeConfig Nudge, Match Match)> MatchingCommandNudges(string command, GuardEnv env, ShellDialect shell,
         Func<int, string?>? prBodyAt)
     {

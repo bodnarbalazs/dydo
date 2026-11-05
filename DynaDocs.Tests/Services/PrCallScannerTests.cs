@@ -523,18 +523,10 @@ public class PrCallScannerTests
     [InlineData("gh pr create -F a.md --body-file b.md", "b.md")]
     [InlineData("gh pr Create -R o/r -F a.md", "a.md")]
     [InlineData("gh pr create -F -", "-")]
-    [InlineData("gh pr create -F a.md; gh pr create -F b.md", "a.md")]
+    [InlineData("gh pr create -F \"dydo/agents/a b.md\"", "dydo/agents/a b.md")]
     public void BodyFileAt_IsTheLaunchedCallsLastBodyFile(string command, string file)
     {
         Assert.Equal(file, PrCallScanner.BodyFileAt(command, 0, ShellDialect.Posix));
-    }
-
-    [Fact]
-    public void BodyFileAt_ReadsTheCallLaunchedThere()
-    {
-        const string command = "echo -F a.md; gh pr create -F b.md && echo done";
-
-        Assert.Equal("b.md", PrCallScanner.BodyFileAt(command, command.LastIndexOf("gh pr", StringComparison.Ordinal), ShellDialect.Posix));
     }
 
     [Theory]
@@ -586,14 +578,14 @@ public class PrCallScannerTests
         Assert.Null(PrCallScanner.BodyFileAt(command, 0, Enum.Parse<ShellDialect>(dialect)));
     }
 
+    // Ruling 7: an expansion in another word of the line, quoted or not, names none too.
     [Theory]
-    [InlineData("gh pr create --title \"$(git log -1 --format=%s)\" -F a.md", "a.md")]
-    [InlineData("gh pr create -F a.md --title \"$TITLE\"", "a.md")]
-    [InlineData("gh pr create -F \"$OLD\" -F a.md", "a.md")]
-    [InlineData("gh pr create -F \"dydo/agents/a b.md\"", "dydo/agents/a b.md")]
-    public void ExpansionOutsideTheBodyFileOperand_LeavesItRead(string command, string file)
+    [InlineData("gh pr create --title \"$(git log -1 --format=%s)\" -F a.md")]
+    [InlineData("gh pr create -F a.md --title \"$TITLE\"")]
+    [InlineData("gh pr create -F \"$OLD\" -F a.md")]
+    public void ExpansionOutsideTheBodyFileOperand_NamesNone(string command)
     {
-        Assert.Equal(file, PrCallScanner.BodyFileAt(command, 0, ShellDialect.Posix));
+        Assert.Null(PrCallScanner.BodyFileAt(command, 0, ShellDialect.Posix));
     }
 
     // An unknown shell reads the call both ways: one file when they agree, none when they differ.
@@ -614,8 +606,9 @@ public class PrCallScannerTests
     [InlineData("Posix", "gh pr create -F 'a b.md'", "a b.md")]
     [InlineData("Posix", "gh pr create -F \"a+b_c-d.md\" --title t", "a+b_c-d.md")]
     [InlineData("Posix", "gh pr create -dF'a b.md'", "a b.md")]
-    [InlineData("Posix", "gh pr create -F\ta.md\necho done", "a.md")]
-    [InlineData("Posix", "gh pr create -F a.md|cat", "a.md")]
+    [InlineData("Posix", "gh pr create -F\ta.md \n", "a.md")]
+    [InlineData("Posix", "gh pr create -F\ta.md\necho done", null)]
+    [InlineData("Posix", "gh pr create -F a.md|cat", null)]
     [InlineData("Posix", "gh pr create -F a.md\\", null)]
     [InlineData("Posix", "gh pr create -F a\\\r\n.md", null)]
     [InlineData("Posix", "gh pr create -F a.md\r\n", null)]
@@ -641,43 +634,42 @@ public class PrCallScannerTests
         Assert.Equal(file, PrCallScanner.BodyFileAt(command, 0, Enum.Parse<ShellDialect>(dialect)));
     }
 
-    // R3-B1: a relative body file is read only when no command before the call, nested ones too,
-    // may move the shell's directory, and only blanks and ; & | join them. Ruling 6 narrows those
-    // commands to the read-only ones, so git push no longer comes first.
+    // R3-B1, ruling 7: a command before the call may move the shell's directory, so a relative body
+    // file after any earlier command names none.
     [Theory]
-    [InlineData("Posix", "dydo pr-ready --body a.md && gh pr create --body-file a.md", "a.md")]
-    [InlineData("Posix", "git status --short && echo ok; printf x | true || test -f a.md && gh pr create -F a.md", "a.md")]
-    [InlineData("Posix", "/usr/bin/git status\ngit push; gh pr create -F a.md", null)]
-    [InlineData("Posix", "echo \"$(git rev-parse HEAD)\"; gh pr create -F a.md", "a.md")]
-    [InlineData("Posix", "cd sub && gh pr create -F a.md", null)]
-    [InlineData("Posix", "git status && cd sub && gh pr create -F a.md", null)]
-    [InlineData("Posix", "pushd sub; gh pr create -F a.md", null)]
-    [InlineData("Posix", "popd; gh pr create -F a.md", null)]
-    [InlineData("Posix", "source env.sh; gh pr create -F a.md", null)]
-    [InlineData("Posix", ". env.sh; gh pr create -F a.md", null)]
-    [InlineData("Posix", "eval cd sub; gh pr create -F a.md", null)]
-    [InlineData("Posix", "exec 3<a.md; gh pr create -F a.md", null)]
-    [InlineData("Posix", "f() { true; }; f; gh pr create -F a.md", null)]
-    [InlineData("Posix", "(git status) && gh pr create -F a.md", null)]
-    [InlineData("Posix", "{ git status; } && gh pr create -F a.md", null)]
-    [InlineData("Posix", "git status > log.txt && gh pr create -F a.md", null)]
-    [InlineData("Posix", "# note\ngit status; gh pr create -F a.md", null)]
-    [InlineData("Posix", "GIT_DIR=x git status; gh pr create -F a.md", null)]
-    [InlineData("Posix", "> log.txt; gh pr create -F a.md", null)]
-    [InlineData("Posix", "echo \"$(cd sub)\"; gh pr create -F a.md", null)]
-    [InlineData("Posix", "echo ${ cd sub; }; gh pr create -F a.md", null)]
-    [InlineData("Posix", "echo ${| cd sub; }; gh pr create -F a.md", null)]
-    [InlineData("Posix", "gh pr create --title \"$(cd sub; pwd)\" -F a.md", null)]
-    [InlineData("PowerShell", "git status; gh pr create -F a.md", "a.md")]
-    [InlineData("PowerShell", "git status; Set-Location sub; gh pr create -F a.md", null)]
-    [InlineData("PowerShell", "sl sub; gh pr create -F a.md", null)]
-    [InlineData("PowerShell", "Push-Location sub; gh pr create -F a.md", null)]
-    [InlineData("PowerShell", "echo (Set-Location sub); gh pr create -F a.md", null)]
-    public void RelativeBodyFile_IsReadOnlyWhereNoEarlierCommandMayMoveTheDirectory(string dialect, string command, string? file)
+    [InlineData("Posix", "dydo pr-ready --body a.md && gh pr create --body-file a.md")]
+    [InlineData("Posix", "git status --short && echo ok; printf x | true || test -f a.md && gh pr create -F a.md")]
+    [InlineData("Posix", "/usr/bin/git status\ngit push; gh pr create -F a.md")]
+    [InlineData("Posix", "echo \"$(git rev-parse HEAD)\"; gh pr create -F a.md")]
+    [InlineData("Posix", "cd sub && gh pr create -F a.md")]
+    [InlineData("Posix", "git status && cd sub && gh pr create -F a.md")]
+    [InlineData("Posix", "pushd sub; gh pr create -F a.md")]
+    [InlineData("Posix", "popd; gh pr create -F a.md")]
+    [InlineData("Posix", "source env.sh; gh pr create -F a.md")]
+    [InlineData("Posix", ". env.sh; gh pr create -F a.md")]
+    [InlineData("Posix", "eval cd sub; gh pr create -F a.md")]
+    [InlineData("Posix", "exec 3<a.md; gh pr create -F a.md")]
+    [InlineData("Posix", "f() { true; }; f; gh pr create -F a.md")]
+    [InlineData("Posix", "(git status) && gh pr create -F a.md")]
+    [InlineData("Posix", "{ git status; } && gh pr create -F a.md")]
+    [InlineData("Posix", "git status > log.txt && gh pr create -F a.md")]
+    [InlineData("Posix", "# note\ngit status; gh pr create -F a.md")]
+    [InlineData("Posix", "GIT_DIR=x git status; gh pr create -F a.md")]
+    [InlineData("Posix", "> log.txt; gh pr create -F a.md")]
+    [InlineData("Posix", "echo \"$(cd sub)\"; gh pr create -F a.md")]
+    [InlineData("Posix", "echo ${ cd sub; }; gh pr create -F a.md")]
+    [InlineData("Posix", "echo ${| cd sub; }; gh pr create -F a.md")]
+    [InlineData("Posix", "gh pr create --title \"$(cd sub; pwd)\" -F a.md")]
+    [InlineData("PowerShell", "git status; gh pr create -F a.md")]
+    [InlineData("PowerShell", "git status; Set-Location sub; gh pr create -F a.md")]
+    [InlineData("PowerShell", "sl sub; gh pr create -F a.md")]
+    [InlineData("PowerShell", "Push-Location sub; gh pr create -F a.md")]
+    [InlineData("PowerShell", "echo (Set-Location sub); gh pr create -F a.md")]
+    public void RelativeBodyFileAfterAnEarlierCommand_NamesNone(string dialect, string command)
     {
         var launch = command.LastIndexOf("gh pr create", StringComparison.Ordinal);
 
-        Assert.Equal(file, PrCallScanner.BodyFileAt(command, launch, Enum.Parse<ShellDialect>(dialect)));
+        Assert.Null(PrCallScanner.BodyFileAt(command, launch, Enum.Parse<ShellDialect>(dialect)));
     }
 
     // Only a call the line runs at its top level, starting at the launch, names a body file.
@@ -690,12 +682,13 @@ public class PrCallScannerTests
         Assert.Null(PrCallScanner.BodyFileAt(command, launch, ShellDialect.Posix));
     }
 
-    // Ruling 6: an absolute body file faces the same earlier commands as a relative one.
+    // Ruling 7: an absolute body file is read, as a relative one is, only for a lone call.
     [Theory]
-    [InlineData("git status && gh pr create -F {0}", true)]
+    [InlineData("gh pr create -F {0}", true)]
+    [InlineData("git status && gh pr create -F {0}", false)]
     [InlineData("cd sub && gh pr create -F {0}", false)]
     [InlineData("printf x > {0} && gh pr create -F {0}", false)]
-    public void AbsoluteBodyFile_IsReadOnlyAfterCommandsThatOnlyRead(string template, bool read)
+    public void AbsoluteBodyFile_IsReadOnlyForALoneCall(string template, bool read)
     {
         var (dialect, file) = OperatingSystem.IsWindows() ? (ShellDialect.PowerShell, @"C:\pr\a.md") : (ShellDialect.Posix, "/pr/a.md");
         var command = string.Format(template, file);
@@ -747,15 +740,12 @@ public class PrCallScannerTests
         Assert.Null(PrCallScanner.BodyFileAt(command, 0, Enum.Parse<ShellDialect>(dialect)));
     }
 
-    // Quoted text that cannot split stays read: bash's single quotes, and its double quotes around a
-    // plain scalar, a command substitution or literal glob, brace and tilde characters; PowerShell's
-    // single quotes, and double quotes holding no $ or @. A redirection adds no argument.
+    // Quoted text that cannot expand stays read: bash's single quotes, and its double quotes around
+    // literal glob, brace and tilde characters; PowerShell's single quotes, and double quotes holding
+    // no $ or @.
     [Theory]
-    [InlineData("Posix", "gh pr create --title \"$TITLE\" -F a.md")]
-    [InlineData("Posix", "gh pr create --title \"$(git log -1 --format=\"%s\")\" -F a.md")]
     [InlineData("Posix", "gh pr create --title 'Fix $HOME, * {a,b} ~ \"x' -F a.md")]
     [InlineData("Posix", "gh pr create --title \"Why? [WIP] {a,b} * ~ it's\" -F a.md")]
-    [InlineData("Posix", "gh pr create -F a.md --title t 2>&1 | cat")]
     [InlineData("PowerShell", "gh pr create --title 'Fix $x @y (z), {w} \"q' -F a.md")]
     [InlineData("PowerShell", "gh pr create --title \"Fix (z), {w} it's\" -F a.md")]
     [InlineData("Unknown", "gh pr create --title 'Fix: a [WIP] thing?' -F a.md")]
@@ -764,98 +754,94 @@ public class PrCallScannerTests
         Assert.Equal("a.md", PrCallScanner.BodyFileAt(command, 0, Enum.Parse<ShellDialect>(dialect)));
     }
 
-    // Ruling 6: the guard reads the body file as it stands when the hook runs, so every command
-    // before the call, nested ones too, only reads: echo, true, printf and test with no -v (which
-    // runs an array subscript's substitution), dydo pr-ready, and git status, diff, log, show and
-    // rev-parse, by bare name, with no global option and no --output. Text the reader does not
-    // read as commands, a backtick, ${...} or bash's $'...', keeps the warning there too.
+    // Ruling 7: the guard reads the body file as it stands when the hook runs, and a command before
+    // the call, even one that only reads, may change it first, as git diff does given --output in
+    // an exported variable. A body file after any earlier command names none.
     [Theory]
-    [InlineData("Posix", "git diff --stat; git log -1 --format=%H; git show HEAD; git rev-parse HEAD; gh pr create -F a.md", "a.md")]
-    [InlineData("Posix", "printf '%s' x; test -f a.md; true; echo -n; gh pr create -F a.md", "a.md")]
-    [InlineData("Posix", "dydo pr-ready --body a.md 2>&1 && gh pr create -F a.md", "a.md")]
-    [InlineData("Posix", "git status < /dev/null && gh pr create -F a.md", "a.md")]
-    [InlineData("Posix", "echo \"$(git log -1 --format=%s)\" && gh pr create -F a.md", "a.md")]
-    [InlineData("Posix", "true & git status ||\ngh pr create -F a.md", "a.md")]
-    [InlineData("Posix", "git status & gh pr create -F a.md", "a.md")]
-    [InlineData("Posix", "git status\n# note\ngh pr create -F a.md", null)]
-    [InlineData("Posix", "git status <<EOF --short && gh pr create -F a.md\nx\nEOF", null)]
-    [InlineData("Posix", "git switch plain && gh pr create -F a.md", null)]
-    [InlineData("Posix", "git checkout x && gh pr create -F a.md", null)]
-    [InlineData("Posix", "git -C x status && gh pr create -F a.md", null)]
-    [InlineData("Posix", "git stash pop && gh pr create -F a.md", null)]
-    [InlineData("Posix", "git diff --output=a.md && gh pr create -F a.md", null)]
-    [InlineData("Posix", "git log --output a.md && gh pr create -F a.md", null)]
-    [InlineData("Posix", "git && gh pr create -F a.md", null)]
-    [InlineData("Posix", "dydo init && gh pr create -F a.md", null)]
-    [InlineData("Posix", "printf -v 'x[$(rm a.md)]' y && gh pr create -F a.md", null)]
-    [InlineData("Posix", "test -v 'x[$(rm a.md)]' && gh pr create -F a.md", null)]
-    [InlineData("Posix", "/usr/bin/git status && gh pr create -F a.md", null)]
-    [InlineData("Posix", "./echo x; gh pr create -F a.md", null)]
-    [InlineData("Posix", "gh pr create -F b.md; gh pr create -F a.md", null)]
-    [InlineData("Posix", "git status > log && gh pr create -F a.md", null)]
-    [InlineData("Posix", "echo \"$(git checkout x)\"; gh pr create -F a.md", null)]
-    [InlineData("Posix", "echo \"$(git status > a.md)\"; gh pr create -F a.md", null)]
-    [InlineData("Posix", "echo \"`git checkout x`\"; gh pr create -F a.md", null)]
-    [InlineData("Posix", "echo ${x:-$(git checkout x)}; gh pr create -F a.md", null)]
-    [InlineData("Posix", "echo $'\\'' ; git checkout x ; echo \\' ; gh pr create -F a.md", null)]
-    [InlineData("Posix", "echo <<EOF; gh pr create -F a.md; echo\n$(git checkout x)\nEOF", null)]
-    [InlineData("PowerShell", "git status; echo ok; gh pr create -F a.md", "a.md")]
-    [InlineData("PowerShell", "echo $x.Delete(); gh pr create -F a.md", null)]
-    [InlineData("PowerShell", "Set-Content a.md x; gh pr create -F a.md", null)]
-    public void BodyFile_IsReadOnlyAfterCommandsThatOnlyRead(string dialect, string command, string? file)
+    [InlineData("Posix", "git diff --stat; git log -1 --format=%H; git show HEAD; git rev-parse HEAD; gh pr create -F a.md")]
+    [InlineData("Posix", "printf '%s' x; test -f a.md; true; echo -n; gh pr create -F a.md")]
+    [InlineData("Posix", "dydo pr-ready --body a.md 2>&1 && gh pr create -F a.md")]
+    [InlineData("Posix", "git status < /dev/null && gh pr create -F a.md")]
+    [InlineData("Posix", "echo \"$(git log -1 --format=%s)\" && gh pr create -F a.md")]
+    [InlineData("Posix", "true & git status ||\ngh pr create -F a.md")]
+    [InlineData("Posix", "git status & gh pr create -F a.md")]
+    [InlineData("Posix", "git status\n# note\ngh pr create -F a.md")]
+    [InlineData("Posix", "git status <<EOF --short && gh pr create -F a.md\nx\nEOF")]
+    [InlineData("Posix", "git switch plain && gh pr create -F a.md")]
+    [InlineData("Posix", "git checkout x && gh pr create -F a.md")]
+    [InlineData("Posix", "git -C x status && gh pr create -F a.md")]
+    [InlineData("Posix", "git stash pop && gh pr create -F a.md")]
+    [InlineData("Posix", "git diff --output=a.md && gh pr create -F a.md")]
+    [InlineData("Posix", "git log --output a.md && gh pr create -F a.md")]
+    [InlineData("Posix", "git && gh pr create -F a.md")]
+    [InlineData("Posix", "dydo init && gh pr create -F a.md")]
+    [InlineData("Posix", "printf -v 'x[$(rm a.md)]' y && gh pr create -F a.md")]
+    [InlineData("Posix", "test -v 'x[$(rm a.md)]' && gh pr create -F a.md")]
+    [InlineData("Posix", "/usr/bin/git status && gh pr create -F a.md")]
+    [InlineData("Posix", "./echo x; gh pr create -F a.md")]
+    [InlineData("Posix", "gh pr create -F b.md; gh pr create -F a.md")]
+    [InlineData("Posix", "git status > log && gh pr create -F a.md")]
+    [InlineData("Posix", "echo \"$(git checkout x)\"; gh pr create -F a.md")]
+    [InlineData("Posix", "echo \"$(git status > a.md)\"; gh pr create -F a.md")]
+    [InlineData("Posix", "echo \"`git checkout x`\"; gh pr create -F a.md")]
+    [InlineData("Posix", "echo ${x:-$(git checkout x)}; gh pr create -F a.md")]
+    [InlineData("Posix", "echo $'\\'' ; git checkout x ; echo \\' ; gh pr create -F a.md")]
+    [InlineData("Posix", "echo <<EOF; gh pr create -F a.md; echo\n$(git checkout x)\nEOF")]
+    [InlineData("PowerShell", "git status; echo ok; gh pr create -F a.md")]
+    [InlineData("PowerShell", "echo $x.Delete(); gh pr create -F a.md")]
+    [InlineData("PowerShell", "Set-Content a.md x; gh pr create -F a.md")]
+    public void BodyFileAfterAnEarlierCommand_NamesNone(string dialect, string command)
     {
         var launch = command.LastIndexOf("gh pr create", StringComparison.Ordinal);
 
-        Assert.Equal(file, PrCallScanner.BodyFileAt(command, launch, Enum.Parse<ShellDialect>(dialect)));
+        Assert.Null(PrCallScanner.BodyFileAt(command, launch, Enum.Parse<ShellDialect>(dialect)));
     }
 
-    // Ruling 6: nothing may run alongside gh. The call and every other member of its pipeline take
-    // no file redirection or heredoc; only an input or an fd duplicated or closed. Only cat, head,
-    // tail and grep may follow it in that pipeline, and nothing may come before it there. Its list
-    // ends at ; && || or a line break with no lone & after it, which would put it in the background.
+    // Ruling 7: nothing may follow the call, in its pipeline, its list or the background, and it
+    // takes no redirection or heredoc of any kind, so a body file there names none.
     [Theory]
-    [InlineData("Posix", "gh pr create -F a.md 2>&1 | cat", "a.md")]
-    [InlineData("Posix", "gh pr create -F a.md | head -5 | tail -1 | grep -v x", "a.md")]
-    [InlineData("Posix", "gh pr create -F a.md < /dev/null >&2 0<&-", "a.md")]
-    [InlineData("Posix", "gh pr create -F a.md |\n cat && echo done || true; git checkout x > a.md", "a.md")]
-    [InlineData("Posix", "gh pr create -F a.md || echo failed", "a.md")]
-    [InlineData("Posix", "gh pr create -F a.md && echo 'x' 2>&1 <&0 &>/dev/null", "a.md")]
-    [InlineData("Posix", "gh pr create -F a.md | grep \"$(git log -1 --format=%s)\"", "a.md")]
-    [InlineData("Posix", "git status && gh pr create -F a.md > a.md", null)]
-    [InlineData("Posix", "gh pr create <<EOF -F a.md\nx\nEOF", null)]
-    [InlineData("Posix", "gh pr create -F a.md > a.md", null)]
-    [InlineData("Posix", "gh pr create -F a.md >> a.md", null)]
-    [InlineData("Posix", "gh pr create -F a.md &> a.md", null)]
-    [InlineData("Posix", "gh pr create -F a.md 2>a.md", null)]
-    [InlineData("Posix", "gh pr create -F a.md >| a.md", null)]
-    [InlineData("Posix", "gh pr create -F a.md <> a.md", null)]
-    [InlineData("Posix", "gh pr create -F a.md >&a.md", null)]
-    [InlineData("Posix", "gh pr create -F a.md 2>/dev/null", null)]
-    [InlineData("Posix", "gh pr create -F a.md <<EOF\nx\nEOF", null)]
-    [InlineData("Posix", "gh pr create -F a.md & git status", null)]
-    [InlineData("Posix", "gh pr create -F a.md &", null)]
-    [InlineData("Posix", "gh pr create -F a.md && true & git status", null)]
-    [InlineData("Posix", "gh pr create -F a.md | tee a.md", null)]
-    [InlineData("Posix", "gh pr create -F a.md | cat > a.md", null)]
-    [InlineData("Posix", "gh pr create -F a.md | cat | tee a.md", null)]
-    [InlineData("Posix", "gh pr create -F a.md | grep \"$(git checkout x)\"", null)]
-    [InlineData("Posix", "gh pr create -F a.md | cat <(git checkout x)", null)]
-    [InlineData("Posix", "gh pr create -F a.md >(tee a.md)", null)]
-    [InlineData("Posix", "gh pr create -F a.md |& cat", null)]
-    [InlineData("Posix", "gh pr create -F a.md | > a.md", null)]
-    [InlineData("Posix", "echo x | gh pr create -F a.md", null)]
-    [InlineData("PowerShell", "gh pr create -F a.md 2>&1 | cat", "a.md")]
-    [InlineData("PowerShell", "gh pr create -F a.md > a.md", null)]
-    [InlineData("PowerShell", "gh pr create -F a.md *> a.md", null)]
-    [InlineData("PowerShell", "gh pr create -F a.md | Out-File a.md", null)]
-    [InlineData("PowerShell", "gh pr create -F a.md | Set-Content a.md", null)]
-    [InlineData("PowerShell", "gh pr create -F a.md | Tee-Object a.md", null)]
-    [InlineData("PowerShell", "gh pr create -F a.md &", null)]
-    public void BodyFile_IsReadOnlyWhereNothingRunsAlongsideTheCall(string dialect, string command, string? file)
+    [InlineData("Posix", "gh pr create -F a.md 2>&1 | cat")]
+    [InlineData("Posix", "gh pr create -F a.md | head -5 | tail -1 | grep -v x")]
+    [InlineData("Posix", "gh pr create -F a.md < /dev/null >&2 0<&-")]
+    [InlineData("Posix", "gh pr create -F a.md |\n cat && echo done || true; git checkout x > a.md")]
+    [InlineData("Posix", "gh pr create -F a.md || echo failed")]
+    [InlineData("Posix", "gh pr create -F a.md && echo 'x' 2>&1 <&0 &>/dev/null")]
+    [InlineData("Posix", "gh pr create -F a.md | grep \"$(git log -1 --format=%s)\"")]
+    [InlineData("Posix", "git status && gh pr create -F a.md > a.md")]
+    [InlineData("Posix", "gh pr create <<EOF -F a.md\nx\nEOF")]
+    [InlineData("Posix", "gh pr create -F a.md > a.md")]
+    [InlineData("Posix", "gh pr create -F a.md >> a.md")]
+    [InlineData("Posix", "gh pr create -F a.md &> a.md")]
+    [InlineData("Posix", "gh pr create -F a.md 2>a.md")]
+    [InlineData("Posix", "gh pr create -F a.md >| a.md")]
+    [InlineData("Posix", "gh pr create -F a.md <> a.md")]
+    [InlineData("Posix", "gh pr create -F a.md >&a.md")]
+    [InlineData("Posix", "gh pr create -F a.md 2>/dev/null")]
+    [InlineData("Posix", "gh pr create -F a.md <<EOF\nx\nEOF")]
+    [InlineData("Posix", "gh pr create -F a.md & git status")]
+    [InlineData("Posix", "gh pr create -F a.md &")]
+    [InlineData("Posix", "gh pr create -F a.md && true & git status")]
+    [InlineData("Posix", "gh pr create -F a.md | tee a.md")]
+    [InlineData("Posix", "gh pr create -F a.md | cat > a.md")]
+    [InlineData("Posix", "gh pr create -F a.md | cat | tee a.md")]
+    [InlineData("Posix", "gh pr create -F a.md | grep \"$(git checkout x)\"")]
+    [InlineData("Posix", "gh pr create -F a.md | cat <(git checkout x)")]
+    [InlineData("Posix", "gh pr create -F a.md >(tee a.md)")]
+    [InlineData("Posix", "gh pr create -F a.md |& cat")]
+    [InlineData("Posix", "gh pr create -F a.md | > a.md")]
+    [InlineData("Posix", "echo x | gh pr create -F a.md")]
+    [InlineData("PowerShell", "gh pr create -F a.md 2>&1 | cat")]
+    [InlineData("PowerShell", "gh pr create -F a.md > a.md")]
+    [InlineData("PowerShell", "gh pr create -F a.md *> a.md")]
+    [InlineData("PowerShell", "gh pr create -F a.md | Out-File a.md")]
+    [InlineData("PowerShell", "gh pr create -F a.md | Set-Content a.md")]
+    [InlineData("PowerShell", "gh pr create -F a.md | Tee-Object a.md")]
+    [InlineData("PowerShell", "gh pr create -F a.md &")]
+    public void BodyFileBesideALaterCommandOrARedirection_NamesNone(string dialect, string command)
     {
         var launch = command.IndexOf("gh pr create", StringComparison.Ordinal);
 
-        Assert.Equal(file, PrCallScanner.BodyFileAt(command, launch, Enum.Parse<ShellDialect>(dialect)));
+        Assert.Null(PrCallScanner.BodyFileAt(command, launch, Enum.Parse<ShellDialect>(dialect)));
     }
 
     // Ruling 7: the body file is read only when gh pr create is the line's one command. Anything
@@ -872,6 +858,15 @@ public class PrCallScannerTests
     [InlineData("Posix", "FOO=1 gh pr create -F a.md")]
     [InlineData("Posix", "echo \"$(git diff $DIFF_OPTIONS)\" && gh pr create --title \"DYD-1 fix: thing\" -F dydo/agents/body.md")]
     [InlineData("Posix", "git diff \"$DIFF_OPTION\" && gh pr create --title t -F dydo/agents/body.md")]
+    [InlineData("Posix", "gh pr create -F a.md; gh pr create -F b.md")]
+    [InlineData("Posix", "echo -F a.md; gh pr create -F b.md && echo done")]
+    [InlineData("Posix", "gh pr create --title \"$(git log -1 --format=\"%s\")\" -F a.md")]
+    [InlineData("Posix", "gh pr create -F a.md --title t 2>&1 | cat")]
+    [InlineData("Posix", "gh pr create -F a.md 2>&1")]
+    [InlineData("Posix", "gh pr create -F a.md <<< x")]
+    [InlineData("Posix", "gh pr create -F a.md # note")]
+    [InlineData("Posix", "(gh pr create -F a.md)")]
+    [InlineData("Posix", "{ gh pr create -F a.md; }")]
     [InlineData("PowerShell", "git status; gh pr create -F a.md")]
     [InlineData("PowerShell", "gh pr create -F a.md 2>&1 | cat")]
     public void BodyFile_IsReadOnlyForALoneCall(string dialect, string command)

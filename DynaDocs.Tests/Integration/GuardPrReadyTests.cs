@@ -381,8 +381,8 @@ public class GuardPrReadyTests : IntegrationTestBase
         (await GuardWithStdinAsync(Payload("gh pr create -F agents/body.md", toolCwd: DydoDir))).AssertPreToolUseAllowed();
     }
 
-    // An absolute body file is read as a relative one is, after read-only commands only. A Windows
-    // path needs the PowerShell reading, which a Bash call there shares with bash's, which keeps no backslash.
+    // An absolute body file is read as a relative one is, for a lone call only. A Windows path needs
+    // the PowerShell reading, which a Bash call there shares with bash's, which keeps no backslash.
     [SkippableFact]
     public async Task PrCreate_AbsoluteBodyFile_DoesNotWarn()
     {
@@ -391,25 +391,20 @@ public class GuardPrReadyTests : IntegrationTestBase
         WriteFile("dydo/agents/body.md", ReviewedBody);
         var absolute = Path.Combine(TestDir, "dydo", "agents", "body.md");
 
-        Assert.Empty(await Misses(denied: false,
-            [$"gh pr create -F '{absolute}'", $"git status --short && gh pr create -F {absolute}"]));
+        Assert.Empty(await Misses(denied: false, [$"gh pr create -F '{absolute}'", $"gh pr create -F {absolute}"]));
     }
 
-    // The plain spellings stay read: quoted with a space, attached, and after commands that cannot
-    // move the shell's directory.
+    // The plain spellings stay read: quoted with a space, and attached.
     [Fact]
     public async Task PrCreate_PlainlyWrittenBodyFile_DoesNotWarn()
     {
         await InitPushedProject();
-        WriteFile("dydo/agents/body.md", ReviewedBody);
         WriteFile("dydo/agents/pr body.md", ReviewedBody);
 
         Assert.Empty(await Misses(denied: false,
         [
             "gh pr create -F \"dydo/agents/pr body.md\"",
             "gh pr create --body-file='dydo/agents/pr body.md'",
-            "dydo pr-ready --body dydo/agents/body.md && gh pr create --body-file dydo/agents/body.md",
-            "git status --short && echo ready; true && test -f dydo/agents/body.md && gh pr create -F dydo/agents/body.md",
         ]));
     }
 
@@ -546,8 +541,9 @@ public class GuardPrReadyTests : IntegrationTestBase
     }
 
     // Each gh pr create is cleared only by its own body, inline or from its own file, so one
-    // call's reviewed file leaves another call's warning standing. A gh call is no read-only
-    // command, so a later call's file is not read after one (ruling 6).
+    // call's reviewed file leaves another call's warning standing. A body file is read only for a
+    // lone call (ruling 7), so no file on a line of two calls clears either; the command text
+    // still clears every call it shows the block after.
     [Fact]
     public async Task PrCreates_EachClearedOnlyByItsOwnBody()
     {
@@ -704,16 +700,14 @@ public class GuardPrReadyTests : IntegrationTestBase
             ["gh pr create --title 'Fix $x @y' -F dydo/agents/reviewed.md"], toolName: "PowerShell"));
     }
 
-    // bash keeps a double-quoted scalar one word. An unmarked Bash call on Windows is also read as
-    // PowerShell, where any $ outside single quotes keeps the warning.
-    [SkippableFact]
-    public async Task PrCreate_DoubleQuotedScalarBesideTheBodyFile_DoesNotWarnInBash()
+    // Ruling 7: no expansion anywhere in the line, so a double-quoted scalar keeps the warning too.
+    [Fact]
+    public async Task PrCreate_DoubleQuotedScalarBesideTheBodyFile_Warns()
     {
-        Skip.If(OperatingSystem.IsWindows(), "An unmarked Bash call on Windows is also read as PowerShell.");
         await InitPushedProject();
         WriteFile("dydo/agents/reviewed.md", ReviewedBody);
 
-        (await GuardWithStdinAsync(Payload("gh pr create --title \"$TITLE\" -F dydo/agents/reviewed.md"))).AssertPreToolUseAllowed();
+        Assert.Empty(await Misses(denied: true, ["gh pr create --title \"$TITLE\" -F dydo/agents/reviewed.md"], ReviewBlockWarning));
     }
 
     // R4-B1: the shell opens the call's redirections before gh runs, so a file target such as the
@@ -762,9 +756,9 @@ public class GuardPrReadyTests : IntegrationTestBase
         ], ReviewBlockWarning, toolCwd: Path.Combine(DydoDir, "agents")));
     }
 
-    // Ruling 6: an absolute body file faces the same earlier commands as a relative one.
+    // Ruling 7: an absolute body file after any earlier command keeps the warning, as a relative one does.
     [SkippableFact]
-    public async Task PrCreate_AbsoluteBodyFileAfterACommandThatMayChangeIt_Warns()
+    public async Task PrCreate_AbsoluteBodyFileAfterAnEarlierCommand_Warns()
     {
         Skip.If(OperatingSystem.IsWindows(), "A Bash call on Windows is also read as bash, which takes no backslash.");
         await InitPushedProject();
@@ -776,11 +770,12 @@ public class GuardPrReadyTests : IntegrationTestBase
             $"printf 'Summary only' > {absolute} && gh pr create -F {absolute}",
             $"git switch plain && gh pr create -F {absolute}",
             $"git status --short && cd dydo && gh pr create -F {absolute}",
+            $"git status --short && gh pr create -F {absolute}",
         ], ReviewBlockWarning));
     }
 
-    // Ruling 6: nothing may run alongside gh, neither the line's next command once a lone & puts
-    // the call in the background, nor a pipeline member other than a read-only filter.
+    // Nothing may run alongside gh, neither the line's next command once a lone & puts the call in
+    // the background, nor any other pipeline member.
     [Fact]
     public async Task PrCreate_BodyFileBesideACommandRunningAlongside_Warns()
     {
@@ -794,29 +789,10 @@ public class GuardPrReadyTests : IntegrationTestBase
         ], ReviewBlockWarning));
     }
 
-    // Ruling 6 keeps the main path read: dydo pr-ready or git status first, and an fd duplication,
-    // an input or a read-only filter on the call.
-    [Fact]
-    public async Task PrCreate_BodyFileBesideReadOnlyCommands_DoesNotWarn()
-    {
-        await InitPushedProject();
-        WriteFile("dydo/agents/body.md", ReviewedBody);
-
-        Assert.Empty(await Misses(denied: false,
-        [
-            "dydo pr-ready --body dydo/agents/body.md && gh pr create --base feature/x --title \"DYD-1 fix: thing\" --body-file dydo/agents/body.md",
-            "dydo pr-ready --body dydo/agents/body.md && gh pr create --base feature/x --title \"DYD-1 fix: thing\" -F dydo/agents/body.md",
-            "git status --short && gh pr create -F dydo/agents/body.md",
-            "gh pr create -F dydo/agents/body.md 2>&1 | cat",
-            "gh pr create -F dydo/agents/body.md < /dev/null",
-        ]));
-        Assert.Empty(await Misses(denied: false,
-            ["git status --short; gh pr create -F dydo/agents/body.md 2>&1 | cat"], toolName: "PowerShell"));
-    }
-
     // Ruling 7: the guard reads the body file only for a lone gh pr create, so any other command on
     // the line, a redirection or an expansion keeps the warning, though the file holds the block.
-    // With DIFF_OPTIONS=--output=dydo/agents/body.md exported, an earlier git diff writes the file.
+    // The chained dydo pr-ready form warns too: that cost is accepted. With
+    // DIFF_OPTIONS=--output=dydo/agents/body.md exported, an earlier git diff writes the file.
     [Fact]
     public async Task PrCreate_BodyFileOnALineHoldingMoreThanTheCall_Warns()
     {
@@ -825,6 +801,8 @@ public class GuardPrReadyTests : IntegrationTestBase
 
         Assert.Empty(await Misses(denied: true,
         [
+            "dydo pr-ready --body dydo/agents/body.md && gh pr create --base feature/x --title \"DYD-1 fix: thing\" --body-file dydo/agents/body.md",
+            "dydo pr-ready --body dydo/agents/body.md && gh pr create --base feature/x --title \"DYD-1 fix: thing\" -F dydo/agents/body.md",
             "dydo pr-ready --body dydo/agents/body.md && gh pr create --title t -F dydo/agents/body.md",
             "git status && gh pr create -F dydo/agents/body.md",
             "echo x; gh pr create -F dydo/agents/body.md",
@@ -837,7 +815,7 @@ public class GuardPrReadyTests : IntegrationTestBase
             "git diff \"$DIFF_OPTION\" && gh pr create --title t -F dydo/agents/body.md",
         ], ReviewBlockWarning));
         Assert.Empty(await Misses(denied: true,
-            ["git status; gh pr create -F dydo/agents/body.md", "gh pr create -F dydo/agents/body.md 2>&1 | cat"],
+            ["git status; gh pr create -F dydo/agents/body.md", "git status --short; gh pr create -F dydo/agents/body.md 2>&1 | cat"],
             ReviewBlockWarning, toolName: "PowerShell"));
     }
 

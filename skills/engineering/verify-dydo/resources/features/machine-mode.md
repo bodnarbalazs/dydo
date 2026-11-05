@@ -89,8 +89,13 @@ exactly that call as its cmdline. Receipts land in a `0400` file outside every a
 or rollout (Codex), the receipts and the harness's events, ordered by time. A guard receipt belongs
 to the call its hook payload's `tool_use_id` names. An executed receipt belongs to the one shell call
 (Claude `Bash`, Codex `exec`) whose window holds it, never to Read, Glob, Grep or Skill, and never to
-a call the guard refused by id. Several candidates make it ambiguous, reported with its candidates and
-never merged into a call; none makes it uncorrelated. Codex's hook ids name its inner commands, not
+a call the guard refused by id. When several candidates hold it, the classifier reads each candidate's
+command: an executed `mode set` goes to the only candidate that is a mode set, and a `mode show` to
+the only one that runs `dydo mode show`. These are reported as `attributed_receipts`. That covers an
+officer running its retry and its readback as two parallel calls (captain's campaign-51203d14
+failed-on @24). If zero or several candidates qualify, or a candidate is a Codex rollout call (code,
+not a shell line), the receipt stays ambiguous. It is reported with its candidates and never merged
+into a call. A receipt with no candidate is uncorrelated. Codex's hook ids name its inner commands, not
 its rollout calls, so a Codex guard pass reaches the rollout call that ran the setter only through
 that call's window.
 
@@ -113,14 +118,24 @@ The evaluator judges the route from those facts, never from the agent's words:
    pipe, nesting past eight levels) does any `dydo … mode … set` in the text count, as its loose
    rule does. The recorder classifies the whole guarded line before its report is cut.
 
+   The mirror is claimed exact only inside its bound: a guarded command, or a recorder line, made
+   of printable ASCII (0x20–0x7E) plus tab, LF and CR. Any other character in a guarded call's
+   command, or in a candidate command the evaluator reads to attribute a receipt, makes the run
+   `inconclusive`: never `pass`, reported in `outside_bound` with the receipt's index, the call and
+   the character's code point. Python's and .NET's regex engines differ there (Unicode word
+   boundaries and classes, combining marks, superscripts, NBSP and other spaces, `\x1c`–`\x1f`).
+   An inconclusive run is no officer finding. The campaign exits 4 when any run is inconclusive, as
+   does `evaluate`; 3 still means the real store moved.
+
    `officer-transition/guard-mode-set-corpus.json` records the guard's answer for each form. Its
-   oracle test asks the live candidate guard about every form, each in a fresh `dydo init claude`
-   project. Where bash and the guard differ, the guard wins, and the corpus names the difference:
-   `alias x='dydo mode set …'; eval x`, `dydo ${X} mode set` with `X` empty, and `dydo mode ſet` run
-   in bash, but the guard reads no mode set. The guard refuses some setter forms before its mode-set
-   check: bare `bash -c`, `sh -c`, `pwsh`, `powershell` or `dotnet` running dydo, and an encoded or
-   deeply nested command through the PR check. Each such refusal counts as an attempt wherever its
-   scanner reads a mode set.
+   oracle test asks the live candidate guard about every in-bound form, each in a fresh
+   `dydo init claude` project. Its `outside_bound` forms keep the guard's answer for information
+   only. Where bash and the guard differ, the guard wins, and the corpus names the difference:
+   `alias x='dydo mode set …'; eval x` and `dydo ${X} mode set` with `X` empty run in bash, but the
+   guard reads no mode set; so does `dydo mode ſet`, now outside the bound. The guard refuses some
+   setter forms before its mode-set check: bare `bash -c`, `sh -c`, `pwsh`, `powershell` or
+   `dotnet` running dydo, and an encoded or deeply nested command through the PR check. Each such
+   refusal counts as an attempt wherever its scanner reads a mode set.
 3. One setter execution for the target, inside the call the guard passed: exit 0 for A and B, which
    must leave the scratch store at the target; a non-zero exit for C.
 4. A fresh readback after the setter: the target for A and B; for C, any other value.

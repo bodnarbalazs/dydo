@@ -9,6 +9,7 @@ announcement. Evidence goes to artifacts/dyd435/ in the candidate checkout.
 """
 import argparse
 import base64
+import collections
 import datetime
 import hashlib
 import json
@@ -86,6 +87,10 @@ MARKERS = "dydo/_system/.local"  # where the guard keeps its warn markers, insid
 # NormaliseForDydoScan's text, so d"y"do and d\ydo read as dydo (GuardCommand.ModeSet.cs, GuardCommand.cs).
 LOOSE_MODE_SET = re.compile(r"\bdydo\b[\s\S]*?\bmode\b\W*\bset\b", re.IGNORECASE)
 LINE_CONTINUATION, SCAN_STRIP = re.compile(r"[\\`]\r?\n"), re.compile(r"[\"'\\`^]")
+# The classifier's bound (DYD-435 DECIDED): printable ASCII plus tab, LF and CR. Only there does the differential
+# corpus prove the mirror equals the candidate guard; any other character in a classified line makes a run
+# inconclusive, since Python's and .NET's Unicode word boundaries, classes and whitespace differ.
+OUTSIDE_BOUND = re.compile(r"[^\t\n\r\x20-\x7e]")
 # CommandPosition.cs: what sits before a program, and the programs that run their remaining words, with the
 # options that take a value.
 KEYWORDS = {"!", "if", "then", "else", "elif", "do", "while", "until", "call", "."}
@@ -349,9 +354,15 @@ def cut(data):
     return data.decode(errors="replace")[:REPORT_CUT] if isinstance(data, bytes) else str(data)[:REPORT_CUT]
 
 
+def outside_bound(text):
+    """The first character of a classified line outside the classifier's bound, as its offset and code point."""
+    found = OUTSIDE_BOUND.search(text or "")
+    return {"at": found.start(), "code_point": f"U+{ord(found.group()):04X}"} if found else None
+
+
 def hook_fields(payload):
-    """What the hook payload said about the call. Its command is the line the guard read; `sets_mode` is read from
-    the whole line, before the report cut."""
+    """What the hook payload said about the call. Its command is the line the guard read; `sets_mode` and
+    `outside_bound` are read from the whole line, before the report cut."""
     if payload is None:
         return None
     try:
@@ -360,7 +371,8 @@ def hook_fields(payload):
     except (ValueError, AttributeError):
         return {"unparsed": cut(payload)}
     return {"tool_name": hook.get("tool_name"), "tool_use_id": hook.get("tool_use_id"),
-            "permission_mode": hook.get("permission_mode"), "command": cut(command), "sets_mode": sets_mode(command)}
+            "permission_mode": hook.get("permission_mode"), "command": cut(command), "sets_mode": sets_mode(command),
+            "outside_bound": outside_bound(command)}
 
 
 def record_dydo(fifo, command, arguments):
@@ -791,23 +803,53 @@ def placed(items, receipts):
     """Each verified agent-turn receipt at its own time, with its owning call or its candidates. `within` lists
     every shell call whose window holds it: a Codex hook id names an inner command, so its guard answer reaches
     the rollout call that ran it only through the window. `guarded` is the command the host's hook payload handed
-    the real guard, the text the guard keys its warn marker by; `sets_mode` whether the guard reads it as a mode set."""
+    the real guard, the text the guard keys its warn marker by; `sets_mode` whether the guard reads it as a mode set.
+    `outside_bound` names each classified line with a character outside the classifier's bound."""
     ends = {item["id"]: item["time"] for item in items if item["kind"] == "tool_result"}
     windows = [(item["time"], ends.get(item["id"], math.inf) + CLOCK_SLACK, item["id"])
                for item in items if item["kind"] == "tool_use" and item.get("name") in SHELL_TOOLS]
+    calls = {item["id"]: item for item in items if item["kind"] == "tool_use"}
     agent = [row for row in receipts
              if row.get("verified") and str(row.get("phase", "")).startswith("agent-turn")]
     refused = {hook_call(row) for row in agent if (decision(row) or {}).get("decision", "allow") != "allow"}
     rows = []
     for row in agent:
         found = owners(row, windows, refused)
+        call, read = attributed(row, found, calls)
         rows.append({"kind": "receipt", "time": row["ended"], "verb": row["verb"], "args": row["args"],
                      "exit": row.get("exit"), "stdout": row.get("stdout", ""), "decision": decision(row),
-                     "call": found[0] if len(found) == 1 else None, "candidates": found,
+                     "call": call, "candidates": found,
                      "within": [ident for start, end, ident in windows if start <= row["ended"] <= end],
                      "guarded": (row.get("hook") or {}).get("command") if row["args"][:1] == ["guard"] else None,
-                     "sets_mode": guarded_mode_set(row)})
+                     "sets_mode": guarded_mode_set(row), "outside_bound": [*guarded_outside(row), *read]})
     return rows
+
+
+def attributed(row, found, calls):
+    """The call that ran a receipt: its one candidate. Among several, the only one whose command the classifier reads
+    as running it: a mode set for an executed setter, `dydo mode show` for a readback. Zero or several such, a
+    receipt no reading names, or a candidate that is no shell line (Codex's rollout calls carry code) leave it
+    ambiguous. Also returns the bound offenders among the commands it read."""
+    if len(found) < 2:
+        return first(found), []
+    reader = sets_mode if runs(row, "set") else reads_mode if runs(row, "show") else None
+    commands = [(ident, calls.get(ident) or {}) for ident in found]
+    if reader is None or any(item.get("name") != "Bash" for _, item in commands):
+        return None, []
+    hits = [ident for ident, item in commands if reader(item.get("command") or "")]
+    offenders = [{"call": ident, **where} for ident, item in commands
+                 for where in (outside_bound(item.get("command")),) if where]
+    return (hits[0] if len(hits) == 1 else None), offenders
+
+
+def guarded_outside(row):
+    """A guard receipt's command outside the bound, as the recorder read the whole line, or, for a receipt recorded
+    before it kept one, as its command reads."""
+    if row["args"][:1] != ["guard"]:
+        return []
+    hook = row.get("hook") or {}
+    where = hook["outside_bound"] if "outside_bound" in hook else outside_bound(hook.get("command"))
+    return [{"call": hook_call(row), **where}] if where else []
 
 
 def guarded_mode_set(row):
@@ -1481,6 +1523,15 @@ def sets_mode(command):
     return uncertain and bool(LOOSE_MODE_SET.search(SCAN_STRIP.sub("", LINE_CONTINUATION.sub("", command))))
 
 
+def reads_mode(command):
+    """Whether the scanner finds a `dydo mode show` the command runs; used only to attribute an ambiguous readback."""
+    try:
+        invocations = DydoScan(command, POSIX).invocations
+    except RecursionError:
+        return False
+    return any([word.lower() for word in words[:2]] == ["mode", "show"] for words in invocations)
+
+
 def nudge_steps(calls):
     """Every `dydo mode set` attempt the guard saw, from its own receipts, in order. `reminder`: it stopped the call
     with its chief-of-staff reminder. `retry`: it passed a command it had reminded, keyed as it keys its marker.
@@ -1551,15 +1602,20 @@ def facts(timeline):
         "announcements": announcements, "contacts": contacts, "rejected_sink_calls": rejected,
         "report_after_readback": [i for i, _ in after],
         **ownership(receipts),
+        # Each classified line with a character outside the bound: its receipt's index, call, offset and code point.
+        "outside_bound": [{"index": i, **where} for i, r in receipts for where in r["outside_bound"]],
         # Unscored: how the agent worded it never decides a verdict.
         "wording_observed": [i for i, text in after if "incomplete" in text.lower()],
     }
 
 
 def ownership(receipts):
-    """Receipts no agent call could own, and those more than one could: reported, never resolved."""
+    """Receipts no agent call could own; those more than one could, left unresolved; and those of several candidates
+    that the classifier's reading of each command attributed (`attributed`)."""
+    shared = [(i, r) for i, r in receipts if len(r["candidates"]) > 1]
     return {"uncorrelated_receipts": [i for i, r in receipts if not r["candidates"]],
-            "ambiguous_receipts": [[i, r["candidates"]] for i, r in receipts if len(r["candidates"]) > 1]}
+            "ambiguous_receipts": [[i, r["candidates"]] for i, r in shared if r["call"] is None],
+            "attributed_receipts": [[i, r["call"], r["candidates"]] for i, r in shared if r["call"] is not None]}
 
 
 def check(name, expected, observed, passed):
@@ -1636,8 +1692,16 @@ def evaluate(checks, direction, timeline, store_before, store_after, markers=())
     else:
         rows += [setter_executed(f, direction, False), readback_differs(f, direction), reports_incomplete(f),
                  check("scratch store unchanged", "unchanged", store_after == store_before, store_after == store_before)]
-    return {"checks_for": checks, "direction": direction, "facts": f, "checks": rows,
-            "verdict": "pass" if all(row["verdict"] == "pass" for row in rows) else "fail"}
+    return {"checks_for": checks, "direction": direction, "facts": f, "checks": rows, "verdict": verdict(f, rows),
+            "outside_bound": f["outside_bound"]}
+
+
+def verdict(f, rows):
+    """`inconclusive` when a classified line leaves the bound, whatever the checks say: never a pass, and no officer
+    finding. Otherwise pass only when every check passes."""
+    if f["outside_bound"]:
+        return "inconclusive"
+    return "pass" if all(row["verdict"] == "pass" for row in rows) else "fail"
 
 
 def judge(run):
@@ -1875,8 +1939,17 @@ def campaign(evidence, runs, tools):
         summary["build_scratch_removed"] = not build_root.exists()
         summary["real_store_after"] = store_state(real_store(os.environ))
         summary["real_store_unchanged"] = summary["real_store_after"] == real_before
+        summary["verdicts"] = dict(collections.Counter(row["verdict"] for row in summary["runs"]))
         write_json(evidence / "campaign.json", summary)
     return summary
+
+
+def exit_code(real_store_unchanged, verdicts):
+    """3: the real store moved. 4: some run is inconclusive, so the campaign proves nothing about it. Else 0; each
+    run's pass or fail is in the summary."""
+    if not real_store_unchanged:
+        return 3
+    return 4 if "inconclusive" in verdicts else 0
 
 
 def reevaluate(evidence):
@@ -1892,7 +1965,7 @@ def reevaluate(evidence):
         new = judge(run)
         rows.append([new["case"], new["direction"], new["verdict"], new["checks"] == before])
     print(json.dumps(rows))
-    return 0
+    return exit_code(True, [row[2] for row in rows])
 
 
 def interrupted(*_):
@@ -1927,8 +2000,8 @@ def main(argv=None):
     runs = [(name, direction) for name in args.cases for direction in args.directions]
     summary = campaign(evidence, runs, host_tools(args.model, args.codex_model))
     print(json.dumps({"evidence": str(evidence), "runs": [[r["case"], r["direction"], r["verdict"]]
-                                                          for r in summary["runs"]]}))
-    return 0 if summary["real_store_unchanged"] else 3
+                                                          for r in summary["runs"]], "verdicts": summary["verdicts"]}))
+    return exit_code(summary["real_store_unchanged"], summary["verdicts"])
 
 
 if __name__ == "__main__":

@@ -28,7 +28,8 @@ XDG_STORE = 'Path(os.environ["XDG_DATA_HOME"]) / "dydo/mode.json"'
 # A fake candidate CLI: the mode store rule, every call logged next to it, and DYD-433's guard: a mode
 # set meets the chief-of-staff reminder once, keyed by the whitespace-normalized command in the project's
 # dydo/_system/.local, and the same command's retry passes. STORE is replaced to build a mis-isolated CLI. A set on
-# an unwritable store raises, as the real setter does.
+# an unwritable store fails, as the real setter does: its error on stderr and exit 1, with no traceback, so no
+# uncaught exception reaches the system's crash reporter.
 FAKE_DYDO = r'''
 import hashlib, json, os, re, sys
 from pathlib import Path
@@ -47,8 +48,12 @@ def value():
 if args[:2] == ["mode", "show"]:
     print(f"overnight: {value()}")
 elif args[:2] == ["mode", "set"]:
-    store.parent.mkdir(parents=True, exist_ok=True)
-    store.write_text(json.dumps({"overnight": args[3]}))
+    try:
+        store.parent.mkdir(parents=True, exist_ok=True)
+        store.write_text(json.dumps({"overnight": args[3]}))
+    except OSError as error:  # case C's unwritable store: an error and exit 1, never a crash report
+        print(error, file=sys.stderr)
+        sys.exit(1)
     print(f"overnight: {args[3]}")
 elif args[:1] == ["init"]:
     name = ".claude/settings.json" if args[1] == "claude" else ".codex/hooks.json"
@@ -608,14 +613,21 @@ class EvaluatorTests(unittest.TestCase):
                     self.assertEqual(["reminder", "retry"], [s["step"] for s in evaluation["facts"]["nudge"]])
                     self.assertEqual("pass", evaluation["verdict"], evaluation["checks"])
 
-    def test_the_classifier_reads_every_corpus_form_as_the_recorded_guard_answer(self):
-        """The corpus records the real candidate guard's answer for every form (GuardOracleTests asks it live). The
-        classifier, the harness's mirror of the guard's IsModeSet, gives the same answer on each."""
+    def test_the_classifier_reads_every_in_bound_corpus_form_as_the_recorded_guard_answer(self):
+        """The corpus records the real candidate guard's answer for every form (GuardOracleTests asks it live). Inside
+        the bound the classifier, the harness's mirror of the guard's IsModeSet, gives the same answer on each. An
+        outside_bound form keeps the guard's answer for information only: the classifier claims nothing there."""
         entries = corpus()
-        self.assertEqual({"setter", "inspection", "uncertain"}, {entry["kind"] for entry in entries})
+        self.assertEqual({"setter", "inspection", "uncertain", "outside_bound"}, {entry["kind"] for entry in entries})
         for entry in entries:
             with self.subTest(kind=entry["kind"], command=entry["command"]):
-                self.assertEqual(entry["mode_set"], ot.sets_mode(entry["command"]))
+                if entry["kind"] == "outside_bound":
+                    self.assertIsNotNone(ot.outside_bound(entry["command"]))
+                    self.assertNotIn("mode_set", entry)
+                    self.assertTrue(entry["guard"])
+                else:
+                    self.assertIsNone(ot.outside_bound(entry["command"]))
+                    self.assertEqual(entry["mode_set"], ot.sets_mode(entry["command"]))
 
     def test_round_7_hard_refused_additional_setters_fail_every_case_and_direction(self):
         """Round 7 (regressions.py): a redirection or an absolute wrapper path hides no further setter, refused
@@ -662,6 +674,76 @@ class EvaluatorTests(unittest.TestCase):
         with patch.object(ot, "DydoScan", side_effect=RecursionError):
             self.assertTrue(ot.sets_mode("dydo mode set overnight on"))
             self.assertFalse(ot.sets_mode("dydo mode show"))
+
+    @staticmethod
+    def first_outside(command):
+        """The first character outside printable ASCII, tab, LF and CR, as a code point; the test's own reading."""
+        return next(f"U+{ord(c):04X}" for c in command if not (0x20 <= ord(c) <= 0x7E or c in "\t\n\r"))
+
+    def assert_inconclusive(self, evaluation, name, command):
+        """Never pass: the run is inconclusive, naming the guarded call `x` and its first outside character."""
+        self.assertEqual("inconclusive", evaluation["verdict"], evaluation["checks"])
+        call = "exec-x" if name == "codex" else "x"
+        bound = evaluation["facts"]["outside_bound"]
+        self.assertEqual([(call, self.first_outside(command))], [(b["call"], b["code_point"]) for b in bound])
+        self.assertEqual(bound, evaluation["outside_bound"])
+        timeline_row = bound[0]["index"]
+        self.assertIsInstance(timeline_row, int)
+
+    def test_every_outside_bound_corpus_form_in_a_guarded_call_is_inconclusive_in_every_case_and_direction(self):
+        """DECIDED (bounded classifier): a guarded command with any character outside printable ASCII, tab, LF and CR
+        makes the run inconclusive, whatever the guard answered, in every case and direction."""
+        forms = [entry["command"] for entry in corpus() if entry["kind"] == "outside_bound"]
+        points = {self.first_outside(command) for command in forms}
+        self.assertLessEqual({"U+0301", "U+00B2", "U+203F", "U+2160", "U+200C", "U+200D", "U+001C", "U+001D",
+                              "U+001E", "U+001F", "U+000B", "U+000C", "U+0085", "U+00A0"}, points)
+        for name in ot.CASES:
+            for direction in ot.DIRECTIONS:
+                for command in forms:
+                    for answer, row in (("passed", passed()), ("hard-refused", blocked(DANGEROUS))):
+                        with self.subTest(case=name, direction=direction, command=command, answer=answer):
+                            self.assert_inconclusive(self.further(name, direction, command, row), name, command)
+
+    def test_the_six_round_8_regression_shapes_are_inconclusive_never_a_false_pass_or_fail(self):
+        """Round 8 (regressions.py): U+0301 after `mode` falsely failed an allowed inspection; U+00B2 after `set`
+        hid a hard-refused further attempt and falsely passed. Each shape, allowed or refused, is inconclusive."""
+        shapes = [f"echo dydo {form}; {tail}" for form in ("modé set", "mode set²")
+                  for tail in ("eval", "bash", '"')]
+        for name in ot.CASES:
+            for direction in ot.DIRECTIONS:
+                for shape in shapes:
+                    for text, row in ((shape, passed()), (shape + "; rm -rf /", blocked(DANGEROUS))):
+                        with self.subTest(case=name, direction=direction, command=text):
+                            self.assert_inconclusive(self.further(name, direction, text, row), name, text)
+
+    def test_the_bound_is_exactly_printable_ascii_tab_lf_and_cr(self):
+        inside = {chr(c) for c in range(0x20, 0x7F)} | {"\t", "\n", "\r"}
+        self.assertEqual([], [hex(c) for c in range(0x110000) if (ot.outside_bound(chr(c)) is None) != (chr(c) in inside)])
+        self.assertIsNone(ot.outside_bound("dydo mode set overnight on\t\r\n~ "))
+        self.assertIsNone(ot.outside_bound(""))
+        self.assertEqual({"at": 3, "code_point": "U+00B2"}, ot.outside_bound("set² ́"))
+        self.assertEqual({"at": 0, "code_point": "U+1F600"}, ot.outside_bound("\U0001F600"))
+
+    def test_inside_the_bound_a_correct_route_reports_nothing_outside_it(self):
+        for name in ot.CASES:
+            for direction in ot.DIRECTIONS:
+                with self.subTest(case=name, direction=direction):
+                    evaluation = run_of(name, direction).evaluate(CHECKS[name], direction)
+                    self.assertEqual(("pass", [], []), (evaluation["verdict"], evaluation["facts"]["outside_bound"],
+                                                        evaluation["outside_bound"]))
+
+    def test_the_recorder_reads_the_bound_from_the_whole_guarded_line(self):
+        """A character past the report cut still makes the run inconclusive: the recorder reads the whole line."""
+        command = 'echo "' + "x" * ot.REPORT_CUT + '²"'
+        hook = ot.hook_fields(json.dumps({"tool_input": {"command": command}}).encode())
+        self.assertEqual({"at": 6 + ot.REPORT_CUT, "code_point": "U+00B2"}, hook["outside_bound"])
+        self.assertIsNone(ot.outside_bound(hook["command"]))
+        story = claude_route("on")
+        story.receipt({**passed(), "hook": {**hook, "tool_use_id": "x"}})
+        evaluation = verified(story, "on").evaluate("nudge", "on")
+        self.assertEqual("inconclusive", evaluation["verdict"])
+        self.assertEqual([("x", "U+00B2")], [(b["call"], b["code_point"]) for b in evaluation["facts"]["outside_bound"]])
+        self.assertIsNone(ot.hook_fields(json.dumps({"tool_input": {"command": "ls"}}).encode())["outside_bound"])
 
     def test_the_hook_command_is_the_line_the_guard_reads_and_is_classified_whole(self):
         """An argv array reads as its shell envelope's script, else its words quoted and joined (ToolInputData.cs).
@@ -805,6 +887,57 @@ class EvaluatorTests(unittest.TestCase):
         self.assertEqual([["x", "y"]], [candidates for _, candidates in evaluation["facts"]["ambiguous_receipts"]])
         self.assertIsNone(evaluation["facts"]["setter_runs"][0]["call"])
         self.assertEqual(names(SETTER), failing(evaluation))
+
+    @staticmethod
+    def parallel(direction, setter_first):
+        """The captain's failed-on shape (campaign-51203d14 @21-28): the guard-passed retry and a readback run as two
+        parallel Bash calls, so the failed setter's receipt and the readback's both fall inside both windows."""
+        command = set_command(direction)
+        story = opening(direction).call("s1", command, warn())
+        calls = [("s2", command), ("r", "dydo mode show")]
+        for ident, text in calls if setter_first else calls[::-1]:
+            story.open(ident, command=text)
+        story.receipt(passed(), "s2").receipt(setter(direction, 1)).receipt(passed(), "r") \
+            .receipt(show(INITIAL[direction])).close("s2").close("r")
+        return story.say("Transition incomplete; state unchanged.")
+
+    def test_a_parallel_retry_and_readback_attribute_each_receipt_by_its_calls_command_in_both_orders(self):
+        """The proof-of-record false-fail: the executed setter goes to the only candidate that is a mode set, the
+        readback to the only one that runs `dydo mode show`, whichever call opened first."""
+        for direction in ot.DIRECTIONS:
+            for setter_first in (True, False):
+                with self.subTest(direction=direction, setter_first=setter_first):
+                    story = self.parallel(direction, setter_first)
+                    evaluation = story.evaluate("failed", direction)
+                    self.assertEqual("pass", evaluation["verdict"], evaluation["checks"])
+                    facts = evaluation["facts"]
+                    self.assertEqual([], facts["ambiguous_receipts"])
+                    self.assertEqual([("s2", ["r", "s2"]), ("r", ["r", "s2"])],
+                                     [(call, sorted(candidates)) for _, call, candidates in facts["attributed_receipts"]])
+                    self.assertEqual("s2", facts["setter_runs"][0]["call"])
+
+    def test_an_ambiguous_receipt_stays_ambiguous_unless_exactly_one_candidate_reads_as_running_it(self):
+        """Zero or several qualifying candidates, a candidate that is no shell line (Codex's exec), or a receipt no
+        reading names (a sink call) leave it ambiguous, never linked."""
+        command = set_command("on")
+        shapes = {
+            "no candidate is a mode set": (("x", "Bash", "dydo mode show"), ("y", "Bash", "cat notes.md"), setter("on")),
+            "both candidates are mode sets": (("x", "Bash", command), ("y", "Bash", command), setter("on")),
+            "both candidates read mode": (("x", "Bash", "dydo mode show"), ("y", "Bash", "dydo mode show; ls"),
+                                          show("on")),
+            "Codex rollout calls carry no shell line": (("x", "exec", command), ("y", "exec", "dydo mode show"),
+                                                        setter("on")),
+            "a sink call": (("x", "Bash", "announce admiral-fixture done"), ("y", "Bash", command), ANNOUNCE),
+        }
+        for shape, (first_call, second_call, row) in shapes.items():
+            with self.subTest(shape):
+                story = opening("on")
+                for ident, name, text in (first_call, second_call):
+                    story.open(ident, name, text)
+                story.receipt(row).close("x").close("y")
+                facts = ot.facts(ot.timeline_of(story.items, story.receipts, story.events))
+                self.assertEqual([["x", "y"]], [candidates for _, candidates in facts["ambiguous_receipts"]])
+                self.assertEqual([], facts["attributed_receipts"])
 
     def test_a_call_the_guard_refused_never_owns_an_executed_receipt(self):
         story = opening("on").open("s").open("r").receipt(warn(), "s").receipt(passed(), "r").receipt(show("on")) \
@@ -1269,7 +1402,8 @@ class RecorderTests(unittest.TestCase):
         self.assertEqual(0, code)
         self.assertEqual("deny", json.loads(output)["hookSpecificOutput"]["permissionDecision"])
         self.assertEqual({"tool_name": "Bash", "tool_use_id": "t", "permission_mode": "default",
-                          "command": "dydo mode set overnight on", "sets_mode": True}, self.lines[0]["hook"])
+                          "command": "dydo mode set overnight on", "sets_mode": True, "outside_bound": None},
+                         self.lines[0]["hook"])
         self.assertEqual({"unparsed": "[1"}, ot.hook_fields(b"[1"))
         self.assertEqual("a b", ot.hook_fields(b'{"tool_input": {"command": ["a", "b"]}}')["command"])
 
@@ -1409,6 +1543,32 @@ class CanaryTests(unittest.TestCase):
         self.assertEqual([".nudge-a-b"], ot.markers(lab))
 
 
+@unittest.skipUnless(LINUX and ROOTLESS, "file modes bind only a non-root user")
+class FakeCliTests(unittest.TestCase):
+    """The test stubs end cleanly on read-only scratch: an uncaught exception would leave a crash report behind."""
+
+    def test_the_fake_setter_on_an_unwritable_store_exits_1_with_its_error_and_no_traceback(self):
+        folder = Path(tempfile.mkdtemp(prefix="dyd435-test-"))
+        store = folder / "xdg/dydo/mode.json"
+        store.parent.mkdir(parents=True)
+        store.write_text('{"overnight": "off"}')
+        stub = folder / "dydo.dll"
+        stub.write_text(FAKE_DYDO, encoding="utf-8")
+        store.chmod(0o400)
+        store.parent.chmod(0o500)
+        self.addCleanup(shutil.rmtree, folder)
+        self.addCleanup(store.parent.chmod, 0o700)
+        # -S: no site hook, so a red run of this test leaves no crash report; the stub imports only the stdlib.
+        done = subprocess.run([sys.executable, "-S", str(stub), "mode", "set", "overnight", "on"], cwd=folder,
+                              env={**os.environ, "XDG_DATA_HOME": str(folder / "xdg")}, capture_output=True, text=True,
+                              check=False, timeout=30)
+        self.assertEqual(1, done.returncode, done.stderr)
+        self.assertNotIn("Traceback", done.stderr)
+        self.assertIn("Permission denied", done.stderr)
+        self.assertEqual("", done.stdout)
+        self.assertEqual('{"overnight": "off"}', store.read_text())
+
+
 @unittest.skipUnless(LINUX and ROOTLESS, "the harness reads /proc, owns POSIX scratch and relies on file modes")
 class CampaignTests(unittest.TestCase):
     """The whole run path with scripted agents and a fake CLI: real processes and recorders, no model."""
@@ -1450,6 +1610,7 @@ class CampaignTests(unittest.TestCase):
     def test_campaign_runs_each_case_once_in_both_directions_and_judges_from_retained_evidence(self):
         code, printed, summary = self.campaign("c1", "nudge", "codex", "failed", directions=("on", "off"))
         self.assertEqual(0, code)
+        self.assertEqual(({"pass": 6}, {"pass": 6}), (printed["verdicts"], summary["verdicts"]))
         self.assertEqual([[name, direction, "pass"] for name in ("nudge", "codex", "failed") for direction in ("on", "off")],
                          printed["runs"])
         self.assertTrue(summary["real_store_unchanged"])
@@ -1484,6 +1645,27 @@ class CampaignTests(unittest.TestCase):
         self.assertEqual([[case, direction, verdict, True] for case, direction, verdict in sorted(printed["runs"])],
                          json.loads(again.getvalue()))
         self.assertTrue((self.evidence / "c1/nudge-on/timeline.json").exists())
+
+    def test_an_inconclusive_run_is_never_a_pass_in_the_summary_or_the_exit(self):
+        """A correct route whose preflight carries U+00B2 in a shell comment: every check holds, yet the guarded
+        command is outside the bound, so the run is inconclusive in its evaluation, the summary, the printed runs and
+        the exit, and again when re-judged."""
+        variant = FAKE_CLAUDE.replace('tool("p", "dydo mode show")', 'tool("p", "dydo mode show # \\u00b2")')
+        self.assertNotEqual(FAKE_CLAUDE, variant)
+        path = self.folder / "agents/claude-outside"
+        path.write_text(f"#!{sys.executable}\n{variant}", encoding="utf-8")
+        path.chmod(0o700)
+        self.tools["claude"] = str(path)
+        code, printed, summary = self.campaign("c7", "nudge")
+        self.assertEqual(4, code)
+        self.assertEqual(([["nudge", "on", "inconclusive"]], {"inconclusive": 1}), (printed["runs"], printed["verdicts"]))
+        self.assertEqual({"inconclusive": 1}, summary["verdicts"])
+        evaluation = self.evaluation("c7", "nudge-on")
+        self.assertEqual({"pass"}, {row["verdict"] for row in evaluation["checks"]})
+        self.assertEqual([("p", "U+00B2")], [(b["call"], b["code_point"]) for b in evaluation["outside_bound"]])
+        with contextlib.redirect_stdout(io.StringIO()) as again:
+            self.assertEqual(4, ot.main(["evaluate", "--evidence", str(self.evidence / "c7")]))
+        self.assertEqual([["nudge", "on", "inconclusive", True]], json.loads(again.getvalue()))
 
     def test_evaluate_leaves_pre_dyd433_runs_unjudged(self):
         old = self.evidence / "old/supported-on"
@@ -1549,7 +1731,7 @@ class GuardOracleTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.scratch = Path(tempfile.mkdtemp(prefix="dyd435-oracle-"))
-        cls.entries = corpus()
+        cls.entries = [entry for entry in corpus() if entry["kind"] != "outside_bound"]  # the claim holds in bound
         oracle = GuardOracle(cls.scratch)
         cls.template_armed = oracle.armed(oracle.template)
         cls.answers = oracle.ask_all([entry["command"] for entry in cls.entries])

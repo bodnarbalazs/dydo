@@ -635,13 +635,6 @@
  },
  {
   "kind": "setter",
-  "command": "dydo mode ſet overnight on",
-  "source": "fix6 brief",
-  "guard_own": "OrdinalIgnoreCase folds no long s: the guard compares mode and set by ASCII case",
-  "mode_set": false
- },
- {
-  "kind": "setter",
   "command": "dydo ${X} mode set",
   "source": "fix6 brief",
   "guard_own": "an empty ${X} vanishes in bash; the guard keeps ${X} as dydo's first word",
@@ -1556,5 +1549,360 @@
   "command": "echo dydo mode set overnight on | /usr/bin/pwsh -Command -",
   "source": "fix6 brief",
   "mode_set": true
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode ſet overnight on",
+  "source": "fix6 brief",
+  "guard": "allow",
+  "guard_own": "OrdinalIgnoreCase folds no long s: the guard compares mode and set by ASCII case"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo modé set; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo modé set; bash",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo modé set; \"",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set²; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set²; bash",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set²; \"",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydó mode set; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set́; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo² mode set; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode² set; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo‿ mode set; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode‿ set; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set‿; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydoⅠ mode set; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo modeⅠ set; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode setⅠ; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo‌ mode set; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode‌ set; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set‌; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo‍ mode set; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode‍ set; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set‍; eval",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set²; eval; rm -rf /",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "refused: BLOCKED: Dangerous command pattern detected."
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo modé set; eval; rm -rf /",
+  "source": "round-8 reviewer (probe.py, guard_more.py, regressions.py)",
+  "guard": "refused: BLOCKED: Dangerous command pattern detected."
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo\u001cmode set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode\u001cset overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set\u001c; eval",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo\u001dmode set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode\u001dset overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set\u001d; eval",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo\u001emode set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode\u001eset overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set\u001e; eval",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo\u001fmode set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode\u001fset overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set\u001f; eval",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo\u000bmode set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode\u000bset overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set\u000b; eval",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo\fmode set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode\fset overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set\f; eval",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydomode set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo modeset overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set; eval",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydomode set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo modeset overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set; eval",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set ; eval",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set ; eval",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo　mode set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode　set overnight on",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set　; eval",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "announce admiral-fixture \"Overnight mode is on — verified\"",
+  "source": "fix7 brief: ASCII controls, NBSP and Unicode spaces",
+  "guard": "allow"
  }
 ]

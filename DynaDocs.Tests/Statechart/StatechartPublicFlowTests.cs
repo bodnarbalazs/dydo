@@ -3,6 +3,7 @@ namespace DynaDocs.Tests.Statechart;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DynaDocs.Services.Statechart;
 using System.Runtime.Versioning;
 
@@ -317,6 +318,69 @@ public class StatechartPublicFlowTests
         var continuation = plan.RootElement.GetProperty("installAndContinue").EnumerateArray().Select(item => item.GetString()!).ToArray();
         Assert.Equal("dotnet", Path.GetFileNameWithoutExtension(continuation[0]));
         Assert.Equal([assembly, "statechart", "resume", "--request", plan.RootElement.GetProperty("request").GetString()!], continuation[1..]);
+    }
+
+    // The flow in-process under a test-built lock: stand-in components arrive from loopback and face every real check. Only
+    // the run is substituted, because the real one replaces the calling process with the checking runtime.
+    [SkippableFact]
+    [UnsupportedOSPlatform("windows")]
+    public async Task AnApprovedResumeInstallsProvesAndContinuesThenLaterRunsReuseOrRestampTheStore()
+    {
+        Skip.IfNot(OperatingSystem.IsLinux(), "POSIX ownership runs on Linux.");
+        StatechartExecutable.RelaunchThrough(StatechartTestBinary.Start().FileName);
+        using var scope = new StatechartTestDirectory();
+        var caller = Directory.CreateDirectory(Path.Combine(scope.Path, "caller")).FullName;
+        Model(caller);
+        var log = Path.Combine(scope.Path, "java.log");
+        var served = StatechartStandIns.Components(log, StatechartStandIns.CleanRun);
+        var runs = new List<(string Output, string? Continuation, StatechartDependencies Dependencies)>();
+        var status = 1;
+        Task<int> Run(StatechartRequest request, StatechartDependencies dependencies, string payload, StatechartHome home,
+            TextWriter output, CancellationToken token, StatechartContinuation? continuation)
+        {
+            runs.Add((request.Output, continuation?.Path, dependencies));
+            Directory.CreateDirectory(request.Output);
+            File.WriteAllText(Path.Combine(request.Output, "report.md"), "Bound breaks");
+            return Task.FromResult(status);
+        }
+        await StatechartStandIns.WithoutCallerRuntimes(() => StatechartStandIns.Serve(served, async root =>
+        {
+            var assets = StatechartStandIns.Assets(StatechartStandIns.Lock(root, served, StatechartStandIns.Sha256(served["/tlc/tla2tools.jar"])));
+            var rid = RuntimeInformation.RuntimeIdentifier;
+            var home = new StatechartHome(Path.Combine(scope.Path, "assets"), Path.Combine(scope.Path, "dependencies"), Path.Combine(scope.Path, "state"));
+            var flow = new StatechartFlow(home, assets, rid, Run);
+            using var plan = new StringWriter();
+            Assert.Equal(3, await flow.StartAsync(["spaced model.tla", "--out", "first"], caller, plan, CancellationToken.None));
+            var path = JsonNode.Parse(plan.ToString())!["request"]!.GetValue<string>();
+            Assert.Equal(1, await flow.ResumeAsync(path, TextWriter.Null, CancellationToken.None));
+            var store = new StatechartRequests(home, assets, rid);
+            Assert.Equal(1, store.Completed(path, store.Load(path, validateInputs: false)));
+            Assert.Equal((Path.Combine(caller, "first"), path), (runs[0].Output, runs[0].Continuation));
+            var managed = new StatechartManaged(home, assets, rid);
+            Assert.Equal(managed.Read(), runs[0].Dependencies);
+
+            status = 0;
+            Assert.Equal(0, await flow.StartAsync(["spaced model.tla", "--out", "second"], caller, TextWriter.Null, CancellationToken.None));
+            Assert.Null(runs[1].Continuation);
+            foreach (var receipt in Directory.GetFiles(managed.Root, ".ready.json", SearchOption.AllDirectories))
+            {
+                var identity = JsonNode.Parse(File.ReadAllText(receipt))!.AsObject();
+                identity["release"] = "0.0.1";
+                File.WriteAllText(receipt, identity.ToJsonString());
+            }
+            Assert.Equal(0, await flow.StartAsync(["spaced model.tla", "--out", "third"], caller, TextWriter.Null, CancellationToken.None));
+            Assert.Empty(new StatechartManaged(home, assets, rid).Inspect().Stale);
+
+            var request = StatechartRequest.Capture(["spaced model.tla", "--out", "fourth"], caller, assets, rid);
+            var saved = store.Save(request);
+            status = 2;
+            Assert.Equal(2, await flow.ResumeAsync(saved, TextWriter.Null, CancellationToken.None));
+            Assert.Null(store.Completed(saved, request));
+            Assert.Equal((Path.Combine(caller, "fourth"), saved), (runs[3].Output, runs[3].Continuation));
+        }));
+        Assert.Equal(4, runs.Count);
+        // Full proofs at install and re-stamp; the other runs' quick checks probe only the version.
+        Assert.Equal(2, File.ReadAllLines(log).Count(call => call.Contains("dydo.statechart.LoopbackTlc", StringComparison.Ordinal)));
     }
 
     [UnsupportedOSPlatform("windows")]

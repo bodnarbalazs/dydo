@@ -292,6 +292,83 @@ public class StatechartReadyTests
         Assert.All(journals, journal => Assert.EndsWith("deleted-after-authoritative-drain\n", File.ReadAllText(journal)));
     }
 
+    // Readiness under a real owned lifetime and the real payload's sealed bootstrap: stand-in runtimes answer the version,
+    // render, SANY and TLC calls, TLC replaying an upstream recording; the stand-in jar passes only under its own pin.
+    [SkippableTheory]
+    [UnsupportedOSPlatform("windows")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReadinessProvesTheSelectedRuntimesRendererAndCheckerUnderOwnership(bool full)
+    {
+        Skip.IfNot(OperatingSystem.IsLinux(), "POSIX ownership runs on Linux.");
+        using var scope = new StatechartTestDirectory();
+        StatechartExecutable.RelaunchThrough(StatechartTestBinary.Start().FileName);
+        var (dependencies, payload, home, log, digest) = await StandIns(scope.Path, StatechartStandIns.Node(), StatechartStandIns.CleanRun);
+        var readiness = await StatechartReady.VerifyAsync(dependencies, payload, home, digest, full, CancellationToken.None);
+        Assert.Equal(["v26.13.0", "openjdk version \"21.0.8\" 2025-07-15 LTS", "Pele1.9.0 import/render verified"],
+            new[] { "node", "java", "renderer" }.Select(name => readiness[name]!.GetValue<string>()));
+        Assert.Equal(full, readiness["sanyAndTlc"]!.GetValue<bool>());
+        var calls = File.ReadAllLines(log);
+        Assert.Equal(full ? 3 : 1, calls.Length);
+        Assert.Equal("-version", calls[0]);
+        if (full)
+        {
+            Assert.Matches(@"^-cp /\S+/checker/tla2tools\.jar tla2sany\.SANY /\S+/Readiness\.tla$", calls[1]);
+            Assert.Matches(@"^-XX:\+UseParallelGC -cp /\S+/statechart-tlc-bootstrap\.jar:/\S+/checker/tla2tools\.jar " +
+                @"dydo\.statechart\.LoopbackTlc -workers 1 -fp 0 -lncheck final -config /\S+/Readiness\.cfg /\S+/Readiness\.tla$", calls[2]);
+        }
+        AssertCleaned(home.State);
+    }
+
+    [SkippableTheory]
+    [UnsupportedOSPlatform("windows")]
+    [InlineData("checker", "Statechart requires the pinned TLC1.7.4 jar: ")]
+    [InlineData("node", "Selected statechart runtimes are incompatible.")]
+    [InlineData("render", "Locked Pele renderer readiness failed.")]
+    [InlineData("sany", "Statechart prerequisite probe failed: ")]
+    [InlineData("tlc", "Locked TLC did not complete the real readiness fixture.")]
+    public async Task ReadinessRefusesAnyComponentThatDoesNotProveItself(string failing, string error)
+    {
+        Skip.IfNot(OperatingSystem.IsLinux(), "POSIX ownership runs on Linux.");
+        using var scope = new StatechartTestDirectory();
+        StatechartExecutable.RelaunchThrough(StatechartTestBinary.Start().FileName);
+        var node = StatechartStandIns.Node(failing == "node" ? "v22.17.0" : "v26.13.0", failing == "render" ? 1 : 0);
+        var (dependencies, payload, home, log, digest) = await StandIns(scope.Path, node,
+            failing == "tlc" ? StatechartStandIns.ViolatedRun : StatechartStandIns.CleanRun, failing == "sany" ? 1 : 0);
+        if (failing == "checker") digest = new StatechartAssets().CheckerDigest;
+        var thrown = await Assert.ThrowsAsync<IOException>(() =>
+            StatechartReady.VerifyAsync(dependencies, payload, home, digest, full: true, CancellationToken.None));
+        Assert.StartsWith(error, thrown.Message);
+        Assert.Equal(failing == "checker" ? 0 : 1, File.Exists(log) ? File.ReadAllLines(log).Count(call => call == "-version") : 0);
+        AssertCleaned(home.State);
+    }
+
+    // Stand-in Node and Java scripts, the stand-in jar and its pin, and the real payload extracted under a private home.
+    // Callers name the relaunch build first: an async helper's own setting would not reach them.
+    [UnsupportedOSPlatform("windows")]
+    private static async Task<(StatechartDependencies Dependencies, string Payload, StatechartHome Home, string Log, string Digest)>
+        StandIns(string root, string node, string tlc, int sany = 0)
+    {
+        var home = new StatechartHome(Path.Combine(root, "assets"), Path.Combine(root, "dependencies"), Path.Combine(root, "state"));
+        var payload = await new StatechartAssets().ExtractAsync(home.Assets, CancellationToken.None);
+        var log = Path.Combine(root, "java.log");
+        var bin = Path.Combine(root, "runtimes");
+        var jar = Path.Combine(bin, "tla2tools.jar");
+        Directory.CreateDirectory(bin);
+        File.WriteAllBytes(jar, StatechartStandIns.Jar());
+        var dependencies = new StatechartDependencies(StatechartStandIns.Executable(Path.Combine(bin, "node"), node),
+            StatechartStandIns.Executable(Path.Combine(bin, "java"), StatechartStandIns.Java(log, tlc, sany: sany)), jar,
+            Path.Combine(bin, "pele.js"));
+        return (dependencies, payload, home, log, StatechartStandIns.Sha256(File.ReadAllBytes(jar)));
+    }
+
+    private static void AssertCleaned(string state)
+    {
+        var journals = Directory.GetFiles(state, "scratch-*.journal");
+        Assert.NotEmpty(journals);
+        Assert.All(journals, journal => Assert.EndsWith("deleted-after-authoritative-drain\n", File.ReadAllText(journal)));
+    }
+
     private static StatechartRequest CapturedRequest(string root)
     {
         var caller = Directory.CreateDirectory(Path.Combine(root, "caller")).FullName;

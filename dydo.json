@@ -13,6 +13,17 @@
   ],
   "nudges": [
     {
+      "pattern": "(?:^|[;&|\\n]\\s*)npm\\s+((?:install|i)(?![\\w-]).*)",
+      "message": "Use pnpm, not npm. Try: pnpm $1",
+      "severity": "warn"
+    },
+    {
+      "pattern": "(?:^|[;&|\\n]\\s*)npx\\s+(?!-)(.*)",
+      "message": "Use pnpm, not npx. Try: pnpm exec $1",
+      "severity": "warn"
+    },
+
+    {
       "pattern": "(?:^|[;\u0026|]\\s*)npx\\s\u002B(?:(?:-\\w\u002B|--[\\w-]\u002B(?:\\s\u002B\\S\u002B)?)\\s\u002B)*dydo\\b(.*)",
       "message": "Don\u0027t use npx to run dydo \u2014 it\u0027s already on your PATH. Just use: dydo $1",
       "severity": "block"

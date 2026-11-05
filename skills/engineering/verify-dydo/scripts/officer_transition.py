@@ -8,6 +8,7 @@ chief-of-staff reminder, one same-command retry, the setter, then a fresh readba
 announcement. Evidence goes to artifacts/dyd435/ in the candidate checkout.
 """
 import argparse
+import base64
 import datetime
 import hashlib
 import json
@@ -81,20 +82,41 @@ DIRECTIONS = {"on": {"prompt": "muster.md", "initial": "off", "settled": ("Linea
 # The real guard's own mode-set warning (GuardCommand.ModeSet.cs), read from its answer, never from the agent.
 REMINDER = "the chief of staff readying overnight mode or ending it"
 MARKERS = "dydo/_system/.local"  # where the guard keeps its warn markers, inside the fixture project
-# The guard's own fail-closed reading of a mode set (LooseModeSetRegex over NormaliseForDydoScan's text, so d"y"do
-# and d\ydo read as dydo), and what makes a reading unsure.
+# The guard's own fail-closed reading of a mode set, used only where its scan is uncertain: LooseModeSetRegex over
+# NormaliseForDydoScan's text, so d"y"do and d\ydo read as dydo (GuardCommand.ModeSet.cs, GuardCommand.cs).
 LOOSE_MODE_SET = re.compile(r"\bdydo\b[\s\S]*?\bmode\b\W*\bset\b", re.IGNORECASE)
 LINE_CONTINUATION, SCAN_STRIP = re.compile(r"[\\`]\r?\n"), re.compile(r"[\"'\\`^]")
-SUBSTITUTION = re.compile(r"\$\(|`|<\(")
-DYDO = ("dydo", "dydo.exe", "dydo.cmd", "dydo.ps1", "dydo.bat")
-TEXT_RUNNERS = {"sh", "bash", "zsh", "dash", "ksh", "eval", "source", "xargs", "pwsh", "powershell", "cmd"}
-KEYWORDS = {"if", "then", "else", "elif", "do", "while", "until", "!", "{"}
-WRAPPERS = {"env", "sudo", "doas", "nohup", "command", "exec", "builtin", "time", "nice", "timeout", "stdbuf"}
+# CommandPosition.cs: what sits before a program, and the programs that run their remaining words, with the
+# options that take a value.
+KEYWORDS = {"!", "if", "then", "else", "elif", "do", "while", "until", "call", "."}
+RUNNERS = {
+    "env": {"-u", "--unset", "-C", "--chdir"}, "command": set(), "builtin": set(), "exec": {"-a"}, "nohup": set(),
+    "time": {"-f", "-o", "--format", "--output"}, "nice": {"-n", "--adjustment"},
+    "timeout": {"-s", "-k", "--signal", "--kill-after"},
+    "sudo": {"-u", "-g", "-C", "-h", "-p", "-r", "-t", "-U", "-D", "-R", "-T", "--user", "--group"},
+    "doas": {"-u", "-C"},
+    "xargs": {"-I", "-L", "-n", "-P", "-s", "-d", "-E", "-a", "--max-args", "--max-procs", "--delimiter",
+              "--arg-file", "--max-lines", "--max-chars"},
+    "stdbuf": {"-i", "-o", "-e", "--input", "--output", "--error"},
+    "ionice": {"-c", "-n", "-p", "-P", "-u", "--class", "--classdata", "--pid", "--pgid", "--uid"},
+    "setsid": set(), "unbuffer": set(), "caffeinate": {"-t", "-w"},
+    "wsl": {"-d", "--distribution", "-u", "--user", "--cd"},
+}
+POSIX_SHELLS = {"bash", "sh", "zsh", "dash", "ksh"}
+ENVELOPE_SHELLS = {"bash", "sh", "zsh", "pwsh", "powershell"}
+PWSH_VALUE_OPTIONS = ("-executionpolicy", "-ep", "-ex", "-windowstyle", "-workingdirectory", "-wd",
+                      "-configurationname", "-version", "-inputformat", "-if", "-outputformat", "-of",
+                      "-settingsfile", "-psconsolefile", "-custompipename")
+START_PROCESS_VALUE_OPTIONS = ("-workingdirectory", "-wd", "-redirectstandardinput", "-rsi",
+                               "-redirectstandardoutput", "-rso", "-redirectstandarderror", "-rse", "-credential",
+                               "-windowstyle", "-verb", "-environment")
 ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
-# A POSIX shell token: an operator or newline (group 1), or a word (group 2) of plain text, escapes and quotes.
-SHELL_TOKEN = re.compile(r"[ \t\r]*(?:(\n|[;&|()<>])"
-                         r"""|((?:[^\s'"\\;&|()<>]|\\[\s\S]|'[^']*'|"(?:[^"\\]|\\[\s\S])*")+))""")
-WORD_PART = re.compile(r"""\\([\s\S])|'([^']*)'|"((?:[^"\\]|\\[\s\S])*)"|([^\\'"]+)""")
+EXECUTABLE_SUFFIX = re.compile(r"\.(?:exe|cmd|bat|com|ps1)$")
+PROJECT_OPTION = re.compile(r"^(?:--project|-p)(?:[=:](.*))?$")
+BASE64 = re.compile(r"[A-Za-z0-9+/]*={0,2}")
+POSIX, POWERSHELL, UNKNOWN = "posix", "powershell", "unknown"
+READINGS = {POSIX: (True,), POWERSHELL: (False,), UNKNOWN: (True, False)}  # DydoInvocationScanner.Readings
+MAX_DEPTH = 8
 
 READ_VALUE = re.compile(r"overnight:\s*(on|off)\b")
 # Tool calls that run a shell, so only they can own an executed receipt: Claude's Bash and the command
@@ -328,17 +350,17 @@ def cut(data):
 
 
 def hook_fields(payload):
-    """What the hook payload said about the call; its command is display only, never evidence."""
+    """What the hook payload said about the call. Its command is the line the guard read; `sets_mode` is read from
+    the whole line, before the report cut."""
     if payload is None:
         return None
     try:
         hook = json.loads(payload)
-        command = (hook.get("tool_input") or {}).get("command", "")
+        command = guard_command((hook.get("tool_input") or {}).get("command", ""))
     except (ValueError, AttributeError):
         return {"unparsed": cut(payload)}
     return {"tool_name": hook.get("tool_name"), "tool_use_id": hook.get("tool_use_id"),
-            "permission_mode": hook.get("permission_mode"),
-            "command": cut(" ".join(command) if isinstance(command, list) else command)}
+            "permission_mode": hook.get("permission_mode"), "command": cut(command), "sets_mode": sets_mode(command)}
 
 
 def record_dydo(fifo, command, arguments):
@@ -769,7 +791,7 @@ def placed(items, receipts):
     """Each verified agent-turn receipt at its own time, with its owning call or its candidates. `within` lists
     every shell call whose window holds it: a Codex hook id names an inner command, so its guard answer reaches
     the rollout call that ran it only through the window. `guarded` is the command the host's hook payload handed
-    the real guard, the text the guard keys its warn marker by."""
+    the real guard, the text the guard keys its warn marker by; `sets_mode` whether the guard reads it as a mode set."""
     ends = {item["id"]: item["time"] for item in items if item["kind"] == "tool_result"}
     windows = [(item["time"], ends.get(item["id"], math.inf) + CLOCK_SLACK, item["id"])
                for item in items if item["kind"] == "tool_use" and item.get("name") in SHELL_TOOLS]
@@ -783,8 +805,18 @@ def placed(items, receipts):
                      "exit": row.get("exit"), "stdout": row.get("stdout", ""), "decision": decision(row),
                      "call": found[0] if len(found) == 1 else None, "candidates": found,
                      "within": [ident for start, end, ident in windows if start <= row["ended"] <= end],
-                     "guarded": (row.get("hook") or {}).get("command") if row["args"][:1] == ["guard"] else None})
+                     "guarded": (row.get("hook") or {}).get("command") if row["args"][:1] == ["guard"] else None,
+                     "sets_mode": guarded_mode_set(row)})
     return rows
+
+
+def guarded_mode_set(row):
+    """Whether the guard read a guard receipt's call as a mode set: the recorder's reading of the whole guarded line,
+    or, for a receipt recorded before it kept one, its command's."""
+    if row["args"][:1] != ["guard"]:
+        return False
+    hook = row.get("hook") or {}
+    return hook["sets_mode"] if "sets_mode" in hook else sets_mode(hook.get("command") or "")
 
 
 def timeline_of(items, receipts, events):
@@ -813,60 +845,648 @@ def reminded(receipt):
     return bool(verdict) and verdict["decision"] != "allow" and REMINDER in verdict["reason"]
 
 
-def unquoted(part):
-    escaped, single, double, plain = part.groups()
-    if double is not None:
-        return re.sub(r"\\([\s\S])", r"\1", double)
-    return next(text for text in (escaped, single, plain) if text is not None)
+def is_space(c):
+    """char.IsWhiteSpace: Python's isspace less the four ASCII information separators .NET does not count."""
+    return c.isspace() and c not in "\x1c\x1d\x1e\x1f"
 
 
-def simple_commands(command):
-    """A command's simple commands as POSIX shell words, quotes removed, split at every operator and newline;
-    None when a quote or an escape is left open. `#` starts no comment here, so no text after it is hidden."""
-    commands, at, end = [[]], 0, len(command.rstrip(" \t\r"))
-    while at < end:
-        token = SHELL_TOKEN.match(command, at)
-        if not token:
-            return None
-        if token[1]:
-            commands.append([])
+class ShellCommand:
+    """One command a reading found: its words, the raw text of each, its stdin bodies and its redirections."""
+
+    def __init__(self):
+        self.words, self.raws, self.stdin, self.redirections = [], [], [], 0
+
+
+class ShellReading:
+    """ShellReader.Read, as far as the guard's mode-set scan reads it: the commands' words and stdin, the backtick
+    texts handed back for a fresh scan, and whether the reading failed. posix reads as bash (backslash escapes,
+    backtick substitution); otherwise as PowerShell or cmd (backtick and caret escapes, doubled quotes). Commands
+    split only on unquoted ; & | ( ) { } and line breaks. Quotes, here-strings and heredoc bodies are word text, a
+    heredoc or <<< word is stdin, and a redirection target is dropped."""
+
+    def __init__(self, text, posix, start=0, nested=False, commands=None, substitutions=None):
+        self.text, self.posix, self.i, self.nested = text, posix, start, nested
+        self.commands = [] if commands is None else commands  # shared with nested readers, as ShellReader's
+        self.substitutions = [] if substitutions is None else substitutions
+        self.own, self.heredocs, self.command = [], [], ShellCommand()
+        self.word, self.word_start, self.depth = None, 0, 0
+        self.redirect_next = self.here_string_next = self.failed = self.done = False
+
+    @classmethod
+    def read(cls, text, posix):
+        reader = cls(text, posix)
+        reader.run()
+        return reader
+
+    def run(self):
+        while self.i < len(self.text) and not self.failed and not self.done:
+            self.step()
+        self.end_command()
+        self.failed |= self.nested and not self.done
+
+    def char(self, at):
+        return self.text[at] if at < len(self.text) else "\0"
+
+    def peek(self, offset):
+        return self.char(self.i + offset)
+
+    def step(self):
+        c = self.text[self.i]
+        handler = self.escape if self.is_escape(c) else self.special(c)
+        if handler:
+            handler()
+            return
+        if is_space(c):
+            self.end_word()
         else:
-            commands[-1].append(WORD_PART.sub(unquoted, token[2]))
-        at = token.end()
-    return [words for words in commands if words]
+            self.append(c)
+        self.i += 1
+
+    def is_escape(self, c):
+        return c == "\\" if self.posix else c in "`^"
+
+    def special(self, c):
+        """The handler ShellReader.Step's switch picks for c, in its order; None for a plain character."""
+        rules = (
+            (c == "'", self.single_quoted),
+            (c == '"', self.double_quoted),
+            (c == "`", self.backtick_word),
+            (c == "@" and self.word is None and self.here_string_body_start() > 0, self.here_string),
+            (c == "@" and not self.posix and self.peek(1) == "(", lambda: self.group_word(self.i + 2)),
+            (c == "(" and not self.posix and (self.word is not None or bool(self.command.words)),
+             lambda: self.group_word(self.i + 1)),
+            (c == "#" and self.word is None, self.skip_comment),
+            (c == "<" and not self.posix and self.peek(1) == "#", self.skip_block_comment),
+            (c == "$" and self.peek(1) == "{", self.variable_in_braces),
+            (c in "<>" or (c == "&" and self.peek(1) == ">"), self.redirect),
+            (c == "\n", self.end_line),
+            (c == ")", self.close_paren),
+            (c in ";&|{}(", self.separator),
+        )
+        return next((handler for matched, handler in rules if matched), None)
+
+    def end_line(self):
+        self.end_command()
+        self.i += 1
+        self.read_heredoc_bodies()
+
+    def separator(self):
+        self.end_command()
+        self.depth += self.text[self.i] == "("
+        self.i += 1
+
+    def escape(self):
+        """An escaped line break continues the line; any other escaped character is literal."""
+        following = self.peek(1)
+        if following == "\r" and self.peek(2) == "\n":
+            self.i += 3
+            return
+        if following not in ("\n", "\0"):
+            self.append(following)
+        self.i += 2
+
+    def single_quoted(self):
+        while True:
+            end = self.text.find("'", self.i + 1)
+            if end < 0:
+                self.failed = True
+                return
+            self.append(self.text[self.i + 1:end])
+            self.i = end + 1
+            if self.posix or self.peek(0) != "'":
+                return
+            self.append("'")  # PowerShell's doubled quote inside single quotes
+
+    def double_quoted(self):
+        self.start_word()
+        at = self.i + 1
+        while at < len(self.text) and not self.failed:
+            c, following = self.text[at], self.char(at + 1)
+            if c == '"' and not self.quoted_escape(c, following):
+                self.i = at + 1
+                return
+            at = self.quoted_char(at, c, following)
+        self.failed = True
+
+    def quoted_char(self, at, c, following):
+        if c == "$" and following == "(":
+            return self.substitution(at + 2)
+        if self.posix and c == "`":
+            return self.backtick_substitution(at)
+        if self.quoted_escape(c, following):
+            if following != "\n":
+                self.append(following)
+            return at + 2
+        self.append(c)
+        return at + 1
+
+    def quoted_escape(self, c, following):
+        if self.posix:
+            return c == "\\" and following in ("$", "`", '"', "\\", "\n")
+        return (c == "`" and following != "\0") or (c == '"' and following == '"')
+
+    def substitution(self, start):
+        """$( ... ) from start, read as commands of its own; the index after its closing parenthesis. A bare `case`
+        word in it fails a bash reading: its arm terminators cannot be balanced."""
+        inner = ShellReading(self.text, self.posix, start, True, self.commands, self.substitutions)
+        inner.run()
+        inner.failed |= self.posix and any(raw == "case" for command in inner.own for raw in command.raws)
+        self.failed |= inner.failed
+        return inner.i + 1
+
+    def group_word(self, start):
+        """A PowerShell @( ... ) or argument ( ... ): its commands are read, and their words joined become one word."""
+        self.start_word()
+        first = len(self.commands)
+        self.i = self.substitution(start)
+        self.word.append(" ".join(word for command in self.commands[first:] for word in command.words))
+
+    def backtick_word(self):
+        self.i = self.backtick_substitution(self.i)
+        self.start_word()
+
+    def backtick_substitution(self, opening):
+        at = opening + 1
+        while at < len(self.text) and self.text[at] != "`":
+            at += 2 if self.text[at] == "\\" else 1
+        if at >= len(self.text):
+            self.failed = True
+            return len(self.text)
+        self.substitutions.append(self.text[opening + 1:at].replace("\\`", "`"))
+        return at + 1
+
+    def close_paren(self):
+        if self.nested and self.depth == 0:
+            self.done = True
+            return
+        self.depth = max(0, self.depth - 1)
+        self.end_command()
+        self.i += 1
+
+    def here_string_body_start(self):
+        """Where the body of an @' or @" that ends its line starts, or 0."""
+        if self.peek(1) not in ("'", '"'):
+            return 0
+        at = self.i + 2
+        while at < len(self.text) and self.text[at] in " \t\r":
+            at += 1
+        return at + 1 if self.char(at) == "\n" else 0
+
+    def here_string(self):
+        quote, start = self.peek(1), self.here_string_body_start()
+        terminator = "\n" + quote + "@"
+        end = self.text.find(terminator, start - 1)
+        if end < 0:
+            self.failed = True
+            return
+        body = self.text[start:end].rstrip("\r") if end > start else ""
+        if quote == '"':
+            self.read_expansions(body)
+        self.append(body)
+        self.i = end + len(terminator)
+
+    def read_expansions(self, body):
+        """The $( ... ) and, for bash, backtick substitutions in an expanding here-string or heredoc body."""
+        reader = ShellReading(body, self.posix, 0, False, self.commands, self.substitutions)
+        at = 0
+        while at < len(body) and not reader.failed:
+            if body.startswith("$(", at):
+                at = reader.substitution(at + 2)
+            elif self.posix and body[at] == "`":
+                at = reader.backtick_substitution(at)
+            else:
+                at += 2 if self.posix and body[at] == "\\" else 1
+        self.failed |= reader.failed
+
+    def skip_comment(self):
+        end = self.text.find("\n", self.i)
+        self.i = len(self.text) if end < 0 else end
+
+    def skip_block_comment(self):
+        self.end_word()
+        end = self.text.find("#>", self.i + 2)
+        if end < 0:
+            self.failed = True
+            return
+        self.i = end + 2
+
+    def variable_in_braces(self):
+        end = self.text.find("}", self.i)
+        if end < 0:
+            self.failed = True
+            return
+        self.append(self.text[self.i:end + 1])
+        self.i = end + 1
+
+    def redirect(self):
+        """A redirection: a word of digits before it is its descriptor, and its target is no word of the command."""
+        pending = "".join(self.word) if self.word is not None else ""
+        if pending and all(c in "0123456789" for c in pending):
+            self.word = None
+        self.end_word()
+        if self.text.startswith("<<", self.i):
+            self.heredoc()
+            return
+        while self.i < len(self.text) and self.text[self.i] in "<>&|":
+            self.i += 1
+        self.redirect_next = True
+
+    def heredoc(self):
+        if self.peek(2) == "<":
+            self.i += 3
+            self.here_string_next = True
+            return
+        self.i += 2
+        strip = self.peek(0) == "-"
+        self.i += strip
+        while self.i < len(self.text) and self.text[self.i] in " \t":
+            self.i += 1
+        start = self.i
+        while self.i < len(self.text) and not is_space(self.text[self.i]) and self.text[self.i] not in ";&|()<>":
+            self.i += 1
+        raw = self.text[start:self.i]
+        self.command.redirections += 1
+        delimiter = "".join(c for c in raw if c not in "'\"\\")
+        if not delimiter:
+            self.failed = True
+            return
+        self.heredocs.append((self.command, delimiter, strip, len(delimiter) == len(raw)))
+
+    def read_heredoc_bodies(self):
+        for command, delimiter, strip, expands in self.heredocs:
+            body, terminated = self.heredoc_body(delimiter, strip)
+            command.stdin.append(body)
+            self.failed |= not terminated
+            if expands:
+                self.read_expansions(body)
+        self.heredocs.clear()
+
+    def heredoc_body(self, delimiter, strip):
+        lines = []
+        while self.i < len(self.text):
+            end = self.text.find("\n", self.i)
+            line = (self.text[self.i:] if end < 0 else self.text[self.i:end]).rstrip("\r")
+            self.i = len(self.text) if end < 0 else end + 1
+            if (line.lstrip("\t") if strip else line) == delimiter:
+                return "".join(lines), True
+            lines.append(line + "\n")
+        return "".join(lines), False
+
+    def start_word(self):
+        if self.word is None:
+            self.word_start, self.word = self.i, []
+
+    def append(self, text):
+        self.start_word()
+        self.word.append(text)
+
+    def end_word(self):
+        if self.word is None:
+            return
+        word, raw = "".join(self.word), self.text[self.word_start:min(self.i, len(self.text))]
+        self.word = None
+        if self.redirect_next:
+            self.redirect_next = False
+            self.command.redirections += 1
+        elif self.here_string_next:
+            self.here_string_next = False
+            self.command.stdin.append(word)
+        else:
+            self.command.words.append(word)
+            self.command.raws.append(raw)
+
+    def end_command(self):
+        self.end_word()
+        self.redirect_next = self.here_string_next = False
+        if self.command.words or self.command.stdin or self.command.redirections:
+            self.commands.append(self.command)
+            self.own.append(self.command)
+        self.command = ShellCommand()
 
 
-def program(words):
-    """The words from command position on: past environment assignments, shell keywords and wrappers with their
-    options. Whether a wrapper was crossed is returned with it: its option arguments cannot be told from a program."""
-    rest, wrapped = list(words), False
-    while rest and (ASSIGNMENT.match(rest[0]) or rest[0] in KEYWORDS | WRAPPERS or (wrapped and rest[0][:1] == "-")):
-        wrapped = wrapped or rest[0] in WRAPPERS
-        rest = rest[1:]
-    return rest, wrapped
+def program_name(word):
+    """CommandPosition.ProgramName: no directory, lower case, no executable suffix."""
+    name = word[max(word.rfind("/"), word.rfind("\\")) + 1:].lower()
+    return EXECUTABLE_SUFFIX.sub("", name)
+
+
+def skip(words):
+    """CommandPosition.Skip: the index of the program word, past VAR=value words, shell keywords and runners with
+    their options. env -S runs a string, so env is then the program."""
+    at = 0
+    while at < len(words):
+        name = program_name(words[at])
+        if ASSIGNMENT.match(words[at]) or name in KEYWORDS:
+            at += 1
+        elif name == "env" and env_split_string(words[at + 1:]) is not None:
+            break
+        elif name in RUNNERS:
+            at = skip_runner_options(words, at + 1, RUNNERS[name], name == "timeout")
+        else:
+            break
+    return at
+
+
+def skip_runner_options(words, at, value_options, takes_operand):
+    while at < len(words) and len(words[at]) > 1 and words[at][0] == "-":
+        if words[at] == "--":
+            return at + 1 + takes_operand
+        at += 2 if words[at] in value_options else 1
+    return at + takes_operand
+
+
+def env_split_string(rest):
+    """The string env -S (--split-string) runs, with env's remaining words after it; None without -S."""
+    at = 0
+    while at < len(rest) and len(rest[at]) > 1 and rest[at][0] == "-" and rest[at] != "--":
+        split, after = split_option(rest, at)
+        if split is not None:
+            return " ".join([split, *rest[after:]])
+        at += 2 if rest[at] in RUNNERS["env"] else 1
+    return None
+
+
+def split_option(rest, at):
+    word = rest[at]
+    if word in ("-S", "--split-string"):
+        return (rest[at + 1] if at + 1 < len(rest) else ""), at + 2
+    if word.startswith("--split-string="):
+        return word[len("--split-string="):], at + 1
+    if word.startswith("-S"):
+        return word[2:], at + 1
+    return None, 0
+
+
+def posix_shell_operands(rest):
+    """A POSIX shell's options, and whether one of them (-c, -lc, ...) makes its first operand the command string."""
+    command_mode, at = False, 0
+    while at < len(rest) and len(rest[at]) > 1 and rest[at][0] in "-+" and rest[at] != "--":
+        option = rest[at]
+        command_mode |= option[0] == "-" and not option.startswith("--") and "c" in option
+        at += 2 if option in ("-o", "+o", "-O", "+O", "--rcfile", "--init-file") else 1
+    if at < len(rest) and rest[at] == "--":
+        at += 1
+    return command_mode, at
+
+
+def posix_shell_string(rest):
+    """The command string with -c; "" for a script file or -c without one; None when the shell reads stdin."""
+    command_mode, at = posix_shell_operands(rest)
+    if command_mode:
+        return rest[at] if at < len(rest) else ""
+    return "" if at < len(rest) else None
+
+
+def cmd_switch_length(word):
+    slashes = 2 if word.startswith("//") else 1
+    return slashes + 1 if len(word) > slashes and word[0] == "/" and word[slashes].lower() in ("c", "k") else 0
+
+
+def cmd_string(rest):
+    """cmd's command string: the words after /c or /k (//c from Git Bash)."""
+    at = next((index for index, word in enumerate(rest) if cmd_switch_length(word) > 0), None)
+    if at is None:
+        return None
+    return " ".join(word for word in [rest[at][cmd_switch_length(rest[at]):], *rest[at + 1:]] if word)
+
+
+def is_prefix_option(option, name):
+    """PowerShell takes any unambiguous prefix of a parameter name; -c and -co read as -Command."""
+    return len(option) >= 2 and name.startswith(option)
+
+
+def eval_string(rest):
+    words = rest[1:] if rest and is_prefix_option(rest[0].lower(), "-command") else rest
+    return " ".join(words) if words else None
+
+
+def pwsh_mode(option):
+    if is_prefix_option(option, "-command"):
+        return "command"
+    if option == "-ec" or is_prefix_option(option, "-encodedcommand"):
+        return "encoded"
+    return "file" if is_prefix_option(option, "-file") else None
+
+
+def read_pwsh(rest):
+    """CommandPosition.ReadPwsh: how pwsh is told what to run, and the words after that choice."""
+    at = 0
+    while at < len(rest) and len(rest[at]) >= 2 and rest[at][0] in "-/":
+        option = "-" + rest[at][1:].lower()
+        mode = pwsh_mode(option)
+        if mode:
+            return mode, rest[at + 1:]
+        at += 2 if any(value.startswith(option) for value in PWSH_VALUE_OPTIONS) else 1
+    return "positional", rest[at:]
+
+
+def envelope(argv):
+    """CommandPosition.Envelope: Codex's [shell, options..., script flag, script] runs its script; None otherwise."""
+    name = program_name(argv[0]) if argv else ""
+    if len(argv) < 3 or name not in ENVELOPE_SHELLS:
+        return None
+    rest = argv[1:]
+    if name in ("pwsh", "powershell"):
+        mode, tail = read_pwsh(rest)
+        return tail[0] if mode == "command" and len(tail) == 1 else None
+    command_mode, at = posix_shell_operands(rest)
+    return rest[at] if command_mode and at == len(rest) - 1 else None
+
+
+def shell_quoted(word):
+    """ToolInputData.Quoted: a word as one POSIX word."""
+    plain = word and all(c.isalpha() or c.isdecimal() or c in "-_./:=@,+%" for c in word)
+    return word if plain else "'" + word.replace("'", "'\\''") + "'"
+
+
+def guard_command(command):
+    """The command line the guard reads from a hook payload's tool_input.command (GuardCommand.cs, ToolInputData.cs):
+    a string as sent; an argv array as its shell envelope's script, else its words quoted and joined."""
+    if not isinstance(command, list):
+        return command if isinstance(command, str) else ""
+    words = [word if isinstance(word, str) else json.dumps(word, separators=(",", ":")) for word in command]
+    script = envelope(words)
+    return script if script is not None else " ".join(map(shell_quoted, words))
+
+
+def read_array(rest, at, arguments):
+    """One PowerShell array argument: words joined by commas, each split again into command-line words."""
+    while at < len(rest):
+        word = rest[at]
+        at += 1
+        arguments.extend(part for part in re.split(r"[, \t\r\n]", word) if part)
+        if not (word.endswith(",") or (at < len(rest) and rest[at].startswith(","))):
+            break
+    return at
+
+
+def start_process_option(word):
+    """A Start-Process option word, lower case; None for a positional word."""
+    return word.lower() if len(word) > 1 and word[0] == "-" else None
+
+
+def parse_start_process(rest):
+    """Start-Process's FilePath (its first positional word) and its ArgumentList (its second, or -ArgumentList)."""
+    file, arguments, at = None, [], 0
+    while at < len(rest):
+        option = start_process_option(rest[at])
+        if option is None and file is None:
+            file, at = rest[at], at + 1
+        elif option is None or option == "-args" or is_prefix_option(option, "-argumentlist"):
+            at = read_array(rest, at + (option is not None), arguments)
+        elif option in ("-path", "-pspath") or is_prefix_option(option, "-filepath"):
+            file, at = (rest[at + 1] if at + 1 < len(rest) else None), at + 2
+        else:
+            at += 2 if any(value.startswith(option) for value in START_PROCESS_VALUE_OPTIONS) else 1
+    return file, arguments
+
+
+def runs_dydo(options):
+    """dotnet run targets dydo when --project or -p names dydo or DynaDocs; with no project it may: counted."""
+    project, at = None, 0
+    while at < len(options):
+        match = PROJECT_OPTION.match(options[at])
+        if match and match.group(1) is not None:
+            project = match.group(1)
+        elif match:
+            at += 1
+            project = options[at] if at < len(options) else ""
+        at += 1
+    if project is None:
+        return True
+    path = project.rstrip("/\\")
+    name = path[max(path.rfind("/"), path.rfind("\\")) + 1:]
+    name = name[:-len(".csproj")] if name.lower().endswith(".csproj") else name
+    return name.lower() in ("dydo", "dynadocs")
+
+
+def base64_bytes(encoded):
+    """Convert.FromBase64String: whitespace ignored, whole quads, padding only at the end; None when malformed."""
+    text = re.sub(r"[ \t\r\n]", "", encoded)
+    return base64.b64decode(text) if len(text) % 4 == 0 and BASE64.fullmatch(text) else None
+
+
+# The programs whose command string the scanner reads again, and the dialect it reads it in.
+COMMAND_STRINGS = {"cmd": (cmd_string, UNKNOWN), "env": (env_split_string, POSIX), "eval": (eval_string, POSIX),
+                   "iex": (eval_string, POWERSHELL), "invoke-expression": (eval_string, POWERSHELL),
+                   **{shell: (posix_shell_string, POSIX) for shell in POSIX_SHELLS}}
+
+
+class DydoScan:
+    """DydoInvocationScanner.Find: the words after every dydo a command line runs, read as its shell reads it, and
+    whether any reading could not finish. Only a word at command position is a program. A quoted word, here-string or
+    heredoc is an argument, except where a shell runs it: $( ... ), backticks, and the command string of bash -c,
+    cmd /c, pwsh -Command, env -S, eval or Invoke-Expression, read again in that shell's dialect."""
+
+    def __init__(self, command, dialect):
+        self.invocations, self.uncertain = [], False
+        self.scan(command, 0, dialect)
+
+    def scan(self, text, depth, dialect):
+        if depth > MAX_DEPTH:
+            self.uncertain = True
+            return
+        for posix in READINGS[dialect]:
+            reading = ShellReading.read(text, posix)
+            self.uncertain |= reading.failed
+            for substitution in reading.substitutions:
+                self.scan(substitution, depth + 1, POSIX)
+            for command in reading.commands:
+                self.analyse(command.words, command.stdin, depth)
+
+    def analyse(self, words, stdin, depth):
+        at = skip(words)
+        if at >= len(words):
+            return
+        name, rest = program_name(words[at]), words[at + 1:]
+        if name == "dydo":
+            self.invocations.append(rest)
+        elif name == "dotnet":
+            self.dotnet(rest)
+        elif name in ("start-process", "saps", "start"):
+            self.start_process(rest, name == "start", depth)
+        elif name in ("pwsh", "powershell"):
+            self.pwsh(rest, stdin, depth)
+        else:
+            self.command_string(name, rest, stdin, depth)
+
+    def command_string(self, name, rest, stdin, depth):
+        if name in COMMAND_STRINGS:
+            reader, dialect = COMMAND_STRINGS[name]
+            self.run(reader(rest), stdin, depth, dialect)
+
+    def run(self, text, stdin, depth, dialect):
+        """A shell given no command string reads stdin: a heredoc or here-string is read again, a pipe is unseen."""
+        if text is not None:
+            self.scan(text, depth + 1, dialect)
+            return
+        self.uncertain |= not stdin
+        for body in stdin:
+            self.scan(body, depth + 1, dialect)
+
+    def dotnet(self, rest):
+        if rest[:1] == ["run"]:
+            if "--" in rest and runs_dydo(rest[:rest.index("--")]):
+                self.invocations.append(rest[rest.index("--") + 1:])
+            return
+        at = 1 if rest[:1] == ["exec"] else 0
+        while at < len(rest) and rest[at].startswith("-"):
+            at += 2
+        if at < len(rest) and program_name(rest[at]) == "dydo.dll":
+            self.invocations.append(rest[at + 1:])
+
+    def pwsh(self, rest, stdin, depth):
+        mode, tail = read_pwsh(rest)
+        if mode == "encoded":
+            self.encoded(tail[0] if tail else "", depth)
+        elif mode == "command":
+            self.run(None if tail in ([], ["-"]) else " ".join(tail), stdin, depth, POWERSHELL)
+        elif mode == "positional":
+            self.run(" ".join(tail) if tail else None, stdin, depth, POWERSHELL)
+
+    def encoded(self, encoded, depth):
+        data = base64_bytes(encoded)
+        if data is None:
+            self.uncertain = True
+        else:
+            self.scan(data.decode("utf-16-le", errors="replace"), depth + 1, POWERSHELL)
+
+    def start_process(self, rest, cmd_start, depth):
+        """Start-Process runs its FilePath with its ArgumentList; cmd's start its first word that is neither a
+        /switch nor the window title."""
+        file, arguments = parse_start_process(rest)
+        if file is not None:
+            self.analyse([file, *arguments], [], depth + 1)
+        if cmd_start:
+            words = [word for word in rest if not word.startswith("/")]
+            self.analyse(words, [], depth + 1)
+            self.analyse(words[1:], [], depth + 1)
 
 
 def sets_mode(command):
-    """Whether a shell command runs `dydo mode set`, as the guard decides it (GuardCommand.ModeSet.cs IsModeSet):
-    only a dydo at command position runs, so quoted setter text and inspection calls are no attempt. Where the
-    reading is unsure (an open quote, a substitution, a shell, eval or xargs that may run text, a wrapper's
-    options), any dydo ... mode ... set in the shell's words counts, failing closed as the guard does."""
-    commands = simple_commands(LINE_CONTINUATION.sub("", command))
-    unsure = commands is None or bool(SUBSTITUTION.search(command))
-    for simple in commands or ():
-        rest, wrapped = program(simple)
-        name = os.path.basename(rest[0]).lower() if rest else ""
-        if name in DYDO and [word.lower() for word in rest[1:3]] == ["mode", "set"]:
-            return True
-        unsure = unsure or wrapped or name in TEXT_RUNNERS
-    return unsure and bool(LOOSE_MODE_SET.search(SCAN_STRIP.sub("", LINE_CONTINUATION.sub("", command))))
+    """Whether the guard reads a shell command as `dydo mode set` (GuardCommand.ModeSet.cs IsModeSet), mirrored line
+    for line: an invocation its scanner finds whose first words are mode set; or, only where the scan is uncertain
+    (an unbalanced quote, nesting past its limit, a shell reading a pipe), the loose rule over the normalised text.
+    Inspection that names the setter as an argument, quoted text or heredoc data is no mode set, as for the guard.
+    Every hook payload this harness records is read POSIX: its Claude Bash calls carry --host claude and its Codex
+    calls run in the lab's /bin/bash on Linux (GuardCommand.ExecutingShell)."""
+    try:
+        scan = DydoScan(command, POSIX)
+        invocations, uncertain = scan.invocations, scan.uncertain
+    except RecursionError:  # nesting no hook payload reaches: uncertain, never a crash of the evaluator
+        invocations, uncertain = [], True
+    # OrdinalIgnoreCase folds ASCII letters only here: the guard reads `mode ſet` as no mode set.
+    if any(len(words) >= 2 and words[0].lower() == "mode" and words[1].lower() == "set" for words in invocations):
+        return True
+    return uncertain and bool(LOOSE_MODE_SET.search(SCAN_STRIP.sub("", LINE_CONTINUATION.sub("", command))))
 
 
 def nudge_steps(calls):
     """Every `dydo mode set` attempt the guard saw, from its own receipts, in order. `reminder`: it stopped the call
     with its chief-of-staff reminder. `retry`: it passed a command it had reminded, keyed as it keys its marker.
-    `attempt`: any other call that runs the setter, whatever the guard answered (another block, a refusal of any
-    text, a pass it never reminded). A call that runs no setter is no step, so inspection is never an attempt."""
+    `attempt`: any other call the guard reads as a mode set (`sets_mode`), whatever it answered (another block, a
+    refusal of any text, a pass it never reminded). A call it reads as none is no step, so inspection is never an
+    attempt."""
     steps, reminded_commands = [], set()
     for index, receipt in calls:
         if not receipt["decision"]:
@@ -878,7 +1498,7 @@ def nudge_steps(calls):
             steps.append({"step": "reminder", **step})
         elif receipt["decision"]["decision"] == "allow" and command in reminded_commands:
             steps.append({"step": "retry", **step, "within": receipt["within"]})
-        elif sets_mode(receipt["guarded"] or ""):
+        elif receipt["sets_mode"]:
             steps.append({"step": "attempt", **step})
     return steps
 

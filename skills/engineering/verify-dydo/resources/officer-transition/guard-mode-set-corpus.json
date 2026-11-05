@@ -1,0 +1,1560 @@
+[
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": ">/dev/null dydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo </dev/null mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode >/dev/null set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/env dydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/nohup dydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "env dydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "command dydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "nohup dydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "X=1 dydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "\"dydo\" \"mode\" \"set\" overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "d\\ydo mo\"d\"e s\\et overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "(:); dydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "false || dydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "true && dydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode show\ndydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on | /bin/cat",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "echo $(dydo mode set overnight on)",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "echo `dydo mode set overnight on`",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "eval 'dydo mode set overnight on'",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/bin/bash -c 'dydo mode set overnight on'",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "function f { dydo mode set overnight on; }; f",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "alias x='dydo mode set overnight on'; eval x",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "guard_own": "eval runs the alias name x; the guard reads no alias definition",
+  "mode_set": false
+ },
+ {
+  "kind": "setter",
+  "command": "/var/tmp/dyd435-review-r7-sol/sealed-bin/dydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "cd /var/tmp/dyd435-review-r7-sol/sealed-bin; ./dydo mode set overnight on",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo </dev/null mode set overnight off",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/env dydo mode set overnight off",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/nohup dydo mode set overnight off",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on",
+  "source": "round-6 reviewer (hard_refusal_probe.py, without its dangerous suffix)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight off",
+  "source": "round-6 reviewer (hard_refusal_probe.py, without its dangerous suffix)",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/dydo  mode\tset on",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "cd p && dydo mode set overnight on",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode show; dydo mode set overnight off",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "(dydo mode set overnight on)",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "sudo -u me dydo mode set overnight on",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "timeout 5 dydo mode set overnight on",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "if dydo mode set overnight on; then :; fi",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "DYDO MODE SET overnight on",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on # again",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "echo a#b; dydo mode set overnight on",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "bash -c \"dydo mode set overnight on\"",
+  "source": "fix5 classifier test",
+  "mode_set": true,
+  "refused_first": "BLOCKED: Don't use 'bash' to run dydo - it's already on your PATH. Just use: dydo mode set overnight on"
+ },
+ {
+  "kind": "setter",
+  "command": "echo 'dydo mode set overnight on' | sh",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "eval \"dydo mode set overnight on\"",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "echo 'dydo mode set overnight on",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on \\",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "\"dydo\" mode 'set' overnight on",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "d\\ydo mode s\"e\"t on",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "echo \"a;b\" ; dydo mode set overnight on  ",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode \\\nset overnight on",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "bash -c \"d'y'do mode set overnight on\"",
+  "source": "fix5 classifier test",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo >/dev/null mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set >/dev/null overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on >/dev/null",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on 2>&1",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "2>/dev/null dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on &>/dev/null",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on <<<x",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on <<EOF\nx\nEOF",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo 2>/dev/null mode 1>&2 set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on>/dev/null",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "env -i dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "env -u HOME dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "env X=1 dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "env -S 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/env -S 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/command dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "sudo dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/sudo dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "sudo -E dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "exec dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "exec -a name dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "time dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "nice -n 5 dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "timeout -s KILL 5 dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "stdbuf -o0 dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "setsid dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "doas dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/timeout 5 dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "nohup env sudo dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "echo on | xargs dydo mode set overnight",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "{ dydo mode set overnight on; }",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "f() { dydo mode set overnight on; }; f",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "( ( dydo mode set overnight on ) )",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "echo \"$(dydo mode set overnight on)\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "x=$(dydo mode set overnight on)",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "echo \"`dydo mode set overnight on`\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "eval dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "sh -c 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: Don't use 'sh' to run dydo - it's already on your PATH. Just use: dydo mode set overnight on"
+ },
+ {
+  "kind": "setter",
+  "command": "bash -lc 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: Don't use 'bash' to run dydo - it's already on your PATH. Just use: dydo mode set overnight on"
+ },
+ {
+  "kind": "setter",
+  "command": "bash <<EOF\ndydo mode set overnight on\nEOF",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "bash <<<'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "echo 'dydo mode set overnight on' | bash",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "cat <<EOF\n$(dydo mode set overnight on)\nEOF",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "bash -c \"bash -c \\\"dydo mode set overnight on\\\"\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "'dydo' mode 'set' on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "d\"y\"do mode set on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo.exe mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on &",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode show & dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode show | dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "! dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "while dydo mode set overnight on; do break; done",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "./dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/local/bin/dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode SET overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode ſet overnight on",
+  "source": "fix6 brief",
+  "guard_own": "OrdinalIgnoreCase folds no long s: the guard compares mode and set by ASCII case",
+  "mode_set": false
+ },
+ {
+  "kind": "setter",
+  "command": "dydo ${X} mode set",
+  "source": "fix6 brief",
+  "guard_own": "an empty ${X} vanishes in bash; the guard keeps ${X} as dydo's first word",
+  "mode_set": false
+ },
+ {
+  "kind": "setter",
+  "command": "dotnet dydo.dll mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: Don't use dotnet to run dydo - it's already on your PATH. Just use: dydo .dll mode set overnight on"
+ },
+ {
+  "kind": "setter",
+  "command": "dotnet exec /x/dydo.dll mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dotnet run --project DynaDocs.csproj -- mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dotnet run -p=dydo -- mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dotnet run -- mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "pwsh -Command \"dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: Don't use 'pwsh' to run dydo - it's already on your PATH. Just use: dydo mode set overnight on"
+ },
+ {
+  "kind": "setter",
+  "command": "pwsh -c 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: Don't use 'pwsh' to run dydo - it's already on your PATH. Just use: dydo mode set overnight on"
+ },
+ {
+  "kind": "setter",
+  "command": "powershell dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: Don't use 'powershell' to run dydo - it's already on your PATH. Just use: dydo mode set overnight on"
+ },
+ {
+  "kind": "setter",
+  "command": "pwsh -EncodedCommand ZAB5AGQAbwAgAG0AbwBkAGUAIABzAGUAdAAgAG8AdgBlAHIAbgBpAGcAaAB0ACAAbwBuAA==",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: This command runs a PR call through pwsh, which the PR check does not read."
+ },
+ {
+  "kind": "setter",
+  "command": "pwsh -ec ZAB5AGQAbwAgAG0AbwBkAGUAIABzAGUAdAAgAG8AdgBlAHIAbgBpAGcAaAB0ACAAbwBuAA==",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: This command runs a PR call through pwsh, which the PR check does not read."
+ },
+ {
+  "kind": "setter",
+  "command": "pwsh -NoProfile -ExecutionPolicy Bypass -Command \"dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "pwsh -c \"<# note #> dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "pwsh -c \"dydo mode `set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: Don't use 'pwsh' to run dydo - it's already on your PATH. Just use: dydo mode `set overnight on"
+ },
+ {
+  "kind": "setter",
+  "command": "cmd /c dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "cmd //c \"dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "cmd /k dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "Start-Process dydo -ArgumentList 'mode','set','overnight','on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "Start-Process -FilePath dydo -ArgumentList 'mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "start /b dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "iex 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "Invoke-Expression -Command 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "pwsh -c \"Write-Output (dydo mode set overnight on)\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "pwsh -c \"@(dydo mode set overnight on)\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/bin/sh -c 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/bin/bash -lc 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/bin/bash -c \"dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/pwsh -c \"dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/pwsh -Command \"dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/powershell dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/pwsh -c \"dydo mode `set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/pwsh -NoProfile -c \"dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/pwsh -c 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/pwsh -c \"$x = @(\"\"mode\"\"); dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/dotnet dydo.dll mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "cmd /c \"dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/dotnet --roll-forward Major /x/dydo.dll mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode \\\r\nset overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "\"dydo\" \"mo\\\nde\" set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/pwsh -c \"Write-Output 'it''s'; dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/pwsh -c 'Write-Output \"a\"\"b\"; dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/pwsh -c 'Write-Output \"a`\"b\"; dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/pwsh -c '@\"\n$(dydo mode set overnight on)\n\"@'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/pwsh -c \"@'  \ndydo mode set overnight on\n'@; dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "cat <<EOF\n`dydo mode set overnight on`\nEOF",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "cat << EOF\n$(dydo mode set overnight on)\nEOF",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "cat <<-EOF\n\t$(dydo mode set overnight on)\n\tEOF",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "env -- dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "timeout -- 5 dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "env --split-string='dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "env -S'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "env -u X -S 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/bin/bash -c -- 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/bin/bash -o pipefail -c 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "cmd dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: Don't use 'cmd' to run dydo - it's already on your PATH. Just use: dydo mode set overnight on"
+ },
+ {
+  "kind": "setter",
+  "command": "Start-Process dydo -ArgumentList mode, set, overnight, on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "Start-Process -WindowStyle Hidden dydo -ArgumentList 'mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "Start-Process -Wait dydo mode,set",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "saps -FilePath dydo -Args mode,set",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on | /usr/bin/pwsh -Command -",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "/usr/bin/pwsh -c \"@'\n$(dydo mode set overnight on)\n'@\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "inspection",
+  "command": "env grep \"dydo mode set\" file",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "command grep \"dydo mode set\" file",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "cat <<EOF\ndydo mode set overnight on\nEOF",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "printf '%s' 'dydo mode set overnight on' | /usr/bin/xargs",
+  "source": "round-7 reviewer (shell_probe.py, regressions.py)",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "dydo mode show",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "echo \"dydo mode set overnight on\"",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "grep -n 'dydo mode set' x.md",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "dydo help mode set",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "rg \"dydo mode set\" skills/x.sh",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "printf '%s' 'dydo mode set'",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "cat machine-mode.md",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "echo hi # dydo mode set overnight on",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "echo \"say \\\"dydo mode set\\\" first\"; grep -rn 'mode set' .",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "echo dydo\\ mode\\ set on",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "grep -n \"dydo mode set\" dydo/guides/x.md",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "rg 'mode set' skills/x.sh 2>&1",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "dydo mode show; echo done",
+  "source": "fix5 classifier test",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "grep \"dydo mode set\" file",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "/usr/bin/env grep \"dydo mode set\" file",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "nohup grep \"dydo mode set\" file",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "sudo grep \"dydo mode set\" file",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "xargs grep \"dydo mode set\"",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "cat <<'EOF'\ndydo mode set overnight on\nEOF",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "cat <<-EOF\n\tdydo mode set overnight on\n\tEOF",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "cat <<<'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "echo dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "printf '%s\\n' 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "echo 'dydo mode set overnight on' > notes.txt",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "dydo mode show >/dev/null",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "dydo mode",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "sh -c 'echo dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "bash -c \"grep 'dydo mode set' f\"",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "bash script.sh",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "git log --grep \"dydo mode set\"",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "ssh host dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "source notes.sh",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "echo \"dydo mode set overnight on\" | tee notes.txt",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "python3 notes.py 'dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "echo '$(dydo mode set overnight on)'",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "echo '`dydo mode set overnight on`'",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "cat <<'EOF'\n$(dydo mode set overnight on)\nEOF",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "env",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "dydo mode show # then dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "pwsh -File dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": false,
+  "refused_first": "BLOCKED: Don't use 'pwsh' to run dydo - it's already on your PATH. Just use: dydo mode set overnight on"
+ },
+ {
+  "kind": "inspection",
+  "command": "dotnet run --project other.csproj -- mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "Start-Process notepad",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "pwsh -c \"Write-Output 'dydo mode set overnight on'\"",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "cmd /c echo dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "/usr/bin/pwsh -File x.ps1 dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "/usr/bin/pwsh -c \"@'\ndydo mode set overnight on\n'@\"",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "/usr/bin/pwsh -c \"Write-Output 'dydo mode set overnight on'\"",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "/usr/bin/pwsh -c \"@'\ndydo mode set overnight on\n'@ | Out-Null\"",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "/usr/bin/dotnet run --project other -- mode set",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "/bin/sh -c 'echo dydo mode set overnight on'",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "/usr/bin/dotnet --info",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "Start-Process -Wait",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "start /b /wait",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "Start-Process dydo -ArgumentList mode,",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "/usr/bin/dotnet run --project DynaDocs.csproj",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "cat <<'EOF'\n`dydo mode set overnight on`\nEOF",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "/usr/bin/pwsh -c '@'\"'\"'\n$(dydo mode set overnight on)\n'\"'\"'@'",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "uncertain",
+  "command": "grep \"dydo mode set",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "echo \"$(dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "echo `dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "cat <<EOF\ndydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "printf 'dydo mode set overnight on' | sh -s",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "grep \"dydo mode set\" f | sh",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "cat notes.txt | bash",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "uncertain",
+  "command": "echo dydo mode set overnight on | eval",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "eval",
+  "source": "fix6 brief",
+  "mode_set": false
+ },
+ {
+  "kind": "uncertain",
+  "command": "eval eval eval eval eval eval eval eval eval eval dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: This command runs a PR call through eval, which the PR check does not read."
+ },
+ {
+  "kind": "uncertain",
+  "command": "eval eval eval eval eval eval eval eval eval eval true",
+  "source": "fix6 brief",
+  "mode_set": false,
+  "refused_first": "BLOCKED: This command runs a PR call through eval, which the PR check does not read."
+ },
+ {
+  "kind": "uncertain",
+  "command": "grep \"$(case x in x) echo y;; esac)\" 'dydo mode set' f",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "pwsh -EncodedCommand !!!; echo dydo mode set",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: This command runs a PR call through pwsh, which the PR check does not read."
+ },
+ {
+  "kind": "uncertain",
+  "command": "pwsh -EncodedCommand !!!",
+  "source": "fix6 brief",
+  "mode_set": false,
+  "refused_first": "BLOCKED: This command runs a PR call through pwsh, which the PR check does not read."
+ },
+ {
+  "kind": "uncertain",
+  "command": "pwsh -c \"<# open dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "echo ${X dydo mode set",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "cat <<''\ndydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "pwsh -c \"@'\ndydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "echo d'y'do mode \"set",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "env -S env -S env -S env -S env -S env -S env -S env -S env -S env -S dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: This command runs a PR call through env, which the PR check does not read."
+ },
+ {
+  "kind": "uncertain",
+  "command": "env -S env -S env -S env -S env -S env -S env -S env -S env -S env -S true",
+  "source": "fix6 brief",
+  "mode_set": false,
+  "refused_first": "BLOCKED: This command runs a PR call through env, which the PR check does not read."
+ },
+ {
+  "kind": "uncertain",
+  "command": "eval eval eval eval eval eval eval eval eval eval echo dydo mode set overnight on",
+  "source": "fix6 brief",
+  "mode_set": true,
+  "refused_first": "BLOCKED: This command runs a PR call through eval, which the PR check does not read."
+ },
+ {
+  "kind": "uncertain",
+  "command": "/usr/bin/pwsh -c \"<# dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "/usr/bin/pwsh -c \"echo 'dydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "/usr/bin/pwsh -c \"@'\ndydo mode set overnight on\"",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "echo dydo mode set overnight on | /usr/bin/pwsh",
+  "source": "fix6 brief",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "echo dydo mode set overnight on | /usr/bin/pwsh -Command -",
+  "source": "fix6 brief",
+  "mode_set": true
+ }
+]

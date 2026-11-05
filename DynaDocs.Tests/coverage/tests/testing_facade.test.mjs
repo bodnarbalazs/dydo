@@ -11,6 +11,8 @@ const runner = process.env.FACADE_RUNNER || join(root, 'DynaDocs.Tests', 'covera
 test('configured Node adapter preserves literal argv, streams, and raw child exit 17', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'facade-node-'));
   try {
+    // Pin the facade root here: neither a stray marker nor a repository above may claim it.
+    assert.equal(spawnSync('git', ['init', '--quiet', directory]).status, 0);
     await copyFile(runner, join(directory, 'gap_check.py'));
     const fixture = join(directory, 'fixture.mjs');
     await writeFile(fixture, [

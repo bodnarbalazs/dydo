@@ -102,8 +102,8 @@ class TestingFacadeTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory(prefix='dydo-facade-')
         self.addCleanup(temporary.cleanup)
         directory = Path(temporary.name)
-        # Do not borrow a repository marker from a shared temporary ancestor.
-        (directory / '.git').mkdir()
+        # Pin the facade root here: neither a stray marker nor a repository above may claim it.
+        subprocess.run(['git', 'init', '--quiet', str(directory)], check=True)
         shutil.copyfile(self.runner, directory / 'gap_check.py')
         # Both legs run through the same launcher: the derived copy is byte-identical, so its
         # deadline policy is the project's and every case must hold for it too.
@@ -883,7 +883,6 @@ class TestingFacadeTests(unittest.TestCase):
 
     def test_result_artifact(self):
         root = self.fixture()
-        subprocess.run(['git', 'init', '-q'], cwd=root, check=True, capture_output=True)
         subprocess.run(['git', '-c', 'user.name=Facade Test', '-c', 'user.email=facade@example.invalid', 'commit', '--allow-empty', '-qm', 'fixture'], cwd=root, check=True, capture_output=True)
         expected = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, check=True, capture_output=True, text=True).stdout.strip()
         for expected_exit in [0, 1, 2]:
@@ -1122,7 +1121,7 @@ class TestingFacadeTests(unittest.TestCase):
     def test_copied_single_file_preserves_child_streams_exit_deadline_and_cleanup(self):
         with tempfile.TemporaryDirectory(prefix='dydo-standalone-facade-') as temporary:
             root = Path(temporary)
-            (root / '.git').mkdir()
+            subprocess.run(['git', 'init', '--quiet', str(root)], check=True)
             shutil.copyfile(RUNNER, root / 'gap_check.py')
             (root / 'child.py').write_text(
                 "import math,os,sys,time\nfrom pathlib import Path\n"
@@ -1155,6 +1154,32 @@ class TestingFacadeTests(unittest.TestCase):
             self.assertEqual(('failed', 17, 1),
                              (row['state'], row['childExit'], row['resultExit']))
             self.assertEqual(deadline, float(row['environment']['DYDO_ROW_DEADLINE']))
+
+    def test_root_is_the_nearest_ancestor_with_a_repository_marker(self):
+        # A sandbox can leave an empty `.git` mount point in a shared temporary ancestor; only a
+        # gitfile or a directory holding HEAD names a repository.
+        plants = {
+            'an empty .git directory': (lambda git: git.mkdir(), False),
+            'a .git file': (lambda git: git.write_text('gitdir: elsewhere\n', encoding='utf-8'), True),
+            'a .git directory holding HEAD': (lambda git: (git.mkdir(), (git / 'HEAD').write_text('ref: refs/heads/main\n', encoding='utf-8')), True),
+        }
+        for marker, (plant, adopted) in plants.items():
+            with self.subTest(marker=marker), tempfile.TemporaryDirectory(prefix='dydo-facade-root-') as temporary:
+                repository = Path(temporary).resolve()
+                subprocess.run(['git', 'init', '--quiet', str(repository)], check=True)
+                ancestor = repository / 'ancestor'
+                project = ancestor / 'project'
+                project.mkdir(parents=True)
+                plant(ancestor / '.git')
+                shutil.copyfile(self.runner, project / 'gap_check.py')
+                (project / 'gap_check.json').write_text(json.dumps(manifest()), encoding='utf-8')
+                p = subprocess.run([sys.executable, '-u', str(project / 'gap_check.py'), 'all'], cwd=project,
+                                   capture_output=True, text=True, encoding='utf-8', timeout=60)
+                self.assert_exit(p, 0)
+                result = next(Path(line[8:]) for line in p.stdout.splitlines() if line.startswith('Result: '))
+                expected = ancestor if adopted else repository
+                self.assertEqual(expected / 'results', result.parents[1])
+                self.assertTrue((expected / 'dotnet-test.txt').is_file())
 
     def test_owned_policy_docs_replace_tiers_with_the_dr048_gate_set(self):
         for path in ['dydo/guides/testing-strategy.md', 'dydo/reference/coverage-tools.md', 'Scaffold/dydo/guides/coding-standards.md']:

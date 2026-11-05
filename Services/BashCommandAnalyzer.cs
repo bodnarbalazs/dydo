@@ -432,7 +432,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // A piece's layout: each double-quoted string emptied, so a line break left in the piece separates
     // commands. One spanning lines is emptied only where each reading of the piece holds it in a word:
     // an apostrophe in a comment quotes nothing, so it hides no line break after it. Single-quoted text
-    // is kept, so a line break in it counts, as on master (DYD-421).
+    // is kept, so a line break in it counts (DYD-421); literal data is emptied before (DYD-422).
     private static string Layout(string code)
     {
         var read = new Lazy<(List<CommandLine> Lines, bool Uncertain)>(() => CommandLines(code, ShellDialect.Unknown));
@@ -453,6 +453,117 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         bool Holds(string word) => word.Contains(raw, StringComparison.Ordinal) || word.Contains(unescaped, StringComparison.Ordinal);
         return !read.Uncertain && read.Lines.Where(line => line.Text == code)
             .All(line => line.Commands.Any(command => command.Words.Any(Holds)));
+    }
+
+    /// <summary>
+    /// The programs whose single-quoted arguments may be literal data (DYD-422): each prints or
+    /// filters the text it is given and runs none of it; sed only as <see cref="IsDataSedScript"/> says.
+    /// </summary>
+    private static readonly HashSet<string> QuotedDataCommands = new(StringComparer.OrdinalIgnoreCase)
+        { "sed", "printf", "echo", "grep" };
+
+    // Typographic quotes, which open and close PowerShell strings as ' and " do.
+    private const string TypographicQuotes = "\u2018\u2019\u201A\u201B\u201C\u201D\u201E";
+
+    // One sed s command: a punctuation delimiter, two parts it ends (a backslash escapes the next
+    // character), then only the g, p, i, I, m, M or count flags; e would run the result, w write a file.
+    [GeneratedRegex(@"^s(?<d>[^\w\s\\])(?:(?!\k<d>)(?:\\.|[^\\]))*\k<d>(?:(?!\k<d>)(?:\\.|[^\\]))*\k<d>[gpiImM0-9]*\z", RegexOptions.Singleline)]
+    private static partial Regex SedSubstitutionRegex();
+
+    // A single-quoted argument one reading certifies as literal data: its quotes and the word holding
+    // them, where that reading places them.
+    private readonly record struct DataQuote(Range Quote, Range Word);
+
+    /// <summary>
+    /// The piece's code with each single-quoted argument that is literal data emptied to '' (DYD-422):
+    /// every reading the dialect allows certifies it in the same word (<see cref="DataQuotes"/>).
+    /// Anything else is kept and searched, failing closed.
+    /// </summary>
+    private string WithoutLiteralData(string code)
+    {
+        bool[] readings = _shell switch
+        {
+            ShellDialect.Posix => [true],
+            ShellDialect.PowerShell => [false],
+            _ => [true, false],
+        };
+        var data = DataQuotes(code, readings[0]);
+        foreach (var posix in readings.Skip(1))
+            data.IntersectWith(DataQuotes(code, posix));
+        return Emptied(code, data.Select(quote => quote.Quote));
+    }
+
+    // The text with each quote replaced by ''.
+    private static string Emptied(string text, IEnumerable<Range> quotes)
+    {
+        var emptied = new StringBuilder(text);
+        foreach (var quote in quotes.OrderByDescending(quote => quote.Start.Value))
+            emptied.Remove(quote.Start.Value, quote.End.Value - quote.Start.Value).Insert(quote.Start.Value, "''");
+        return emptied.ToString();
+    }
+
+    /// <summary>
+    /// The single-quoted arguments one reading of a line holds as literal data. The reading is
+    /// certain, runs no substitution or PowerShell group word, has no group, compound command,
+    /// continuation or background, and no text where the shell may pair quotes otherwise: bash's
+    /// $'...' outside single quotes, and for PowerShell a caret outside them (an escape only to cmd)
+    /// or a typographic quote anywhere. Each is a quote in a word of a quoted-data command whose
+    /// output is piped only to data commands (<see cref="DataCommands"/>). A substitution outside
+    /// single quotes is never emptied, so it is still found; a quote inside one is its own scope's.
+    /// </summary>
+    private static HashSet<DataQuote> DataQuotes(string code, bool posix)
+    {
+        var reading = ShellReader.Read(code, posix);
+        var quotes = reading.Source.SingleQuotes;
+        var outside = Emptied(code, quotes);
+        if (reading.Failed || reading.Source.Executions.Count > 0
+            || !reading.Commands.All(command => !command.UncertainFeed && IsSimple(command.Words))
+            || outside.Contains("$'", StringComparison.Ordinal)
+            || (!posix && (outside.Contains('^') || code.AsSpan().IndexOfAny(TypographicQuotes) >= 0)))
+            return [];
+        return [.. quotes.Select(quote => DataQuoteIn(reading.Commands, quote)).OfType<DataQuote>()];
+    }
+
+    // The quote in a word of the one command whose word holds it, when that command takes it as data.
+    private static DataQuote? DataQuoteIn(IReadOnlyList<ShellReader.Command> commands, Range quote)
+    {
+        foreach (var command in commands)
+        {
+            var word = command.WordRanges.FindIndex(range => range.Start.Value <= quote.Start.Value && quote.End.Value <= range.End.Value);
+            if (word >= 0)
+                return IsDataArgument(command, word) ? new DataQuote(quote, command.WordRanges[word]) : null;
+        }
+        return null;
+    }
+
+    private static bool IsDataArgument(ShellReader.Command command, int word) =>
+        QuotedDataCommands.Contains(command.Words[0]) && PipesToDataOnly(command)
+        && (!command.Words[0].Equals("sed", StringComparison.OrdinalIgnoreCase) || IsDataSedScript(command, word));
+
+    // Each command the output is piped on to is a data command.
+    private static bool PipesToDataOnly(ShellReader.Command command)
+    {
+        var at = command;
+        while (at.PipesOutput)
+        {
+            if (at.Next is not { Words: [var program, ..] } next || !DataCommands.Contains(program))
+                return false;
+            at = next;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Whether the word is sed's one script and the script only substitutes: no option names a
+    /// script or a script file (each of -e, -f, --expression and --file holds an e or an f), the
+    /// word is the first after the options, and it is one s command (<see cref="SedSubstitutionRegex"/>).
+    /// </summary>
+    private static bool IsDataSedScript(ShellReader.Command command, int word)
+    {
+        var arguments = command.Words.Skip(1).ToList();
+        return arguments.FindIndex(argument => !argument.StartsWith('-')) + 1 == word
+            && arguments.Where(argument => argument.StartsWith('-')).All(option => option.IndexOfAny(['e', 'f']) < 0)
+            && SedSubstitutionRegex().IsMatch(command.Words[word]);
     }
 
     // Bypass detection patterns
@@ -1299,20 +1410,29 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         var strippedCommand = CatHeredocRegex().Replace(command, "HEREDOC_STRIPPED");
 
         // A literal body only data commands read is neither expansion nor code, so each piece of code
-        // is read on its own and only its expanding text is searched for bypasses (DYD-406).
-        // Single-quoted text is searched as on master (DYD-421).
+        // is read on its own and only its expanding text is searched for bypasses (DYD-406), without
+        // the single-quoted literal data of a piece that is all code (DYD-422).
         var pieces = CodePieces(strippedCommand);
-        List<string> expanding = [.. pieces.Select(piece => piece.Expanding)];
-        CheckBypassAttempts(expanding, string.Join("; ", pieces.Select(piece => Layout(piece.Code))), result);
+        List<CodePiece> searched = [.. pieces.Select(Searched)];
+        CheckBypassAttempts(pieces, searched, string.Join("; ", searched.Select(piece => Layout(piece.Code))), result);
 
         foreach (var subCmd in pieces.SelectMany(piece => SplitCommand(piece.Code)))
             AnalyzeSubCommand(subCmd.Trim(), result);
 
-        // Analyze contents of command substitutions so hidden operations are detected
-        if (result.HasBypassAttempt)
-            expanding.ForEach(piece => AnalyzeCommandSubstitutions(piece, result));
+        // Analyze contents of command substitutions so hidden operations are detected, in literal
+        // data too: it relieves the bypass only, never a path check (DYD-422).
+        pieces.ForEach(piece => AnalyzeCommandSubstitutions(piece.Expanding, result));
 
         return result;
+    }
+
+    // A piece that is all code, with its literal data emptied; one with an expanding body is searched whole.
+    private CodePiece Searched(CodePiece piece)
+    {
+        if (piece.Expanding != piece.Code)
+            return piece;
+        var code = WithoutLiteralData(piece.Code);
+        return new CodePiece(code, code);
     }
 
     private void AnalyzeCommandSubstitutions(string command, BashAnalysisResult result)
@@ -1350,15 +1470,16 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return (false, null);
     }
 
-    // Each check reads the expanding text of each piece; a line break counts only in the layout of the
-    // pieces, joined, where it separates commands rather than sitting in quoted text or a body.
-    private static readonly (Func<string, string, bool> Check, string Warning)[] BypassChecks =
+    // Each check reads the expanding text of each piece, a substitution or variable search without its
+    // literal data (DYD-422); a line break counts only in the layout of the pieces, joined, where it
+    // separates commands rather than sitting in quoted text, a body or literal data.
+    private static readonly (Func<string, string, bool> Check, bool WithoutLiteralData, string Warning)[] BypassChecks =
     [
-        ((code, _) => CommandSubstitutionRegex().IsMatch(code), "Command contains command substitution - paths may be dynamic"),
-        ((code, _) => Base64DecodeRegex().IsMatch(code), "Command contains base64 decode - potential obfuscation"),
-        ((code, _) => HexDecodeRegex().IsMatch(code), "Command contains hex decode - potential obfuscation"),
-        ((code, _) => VariableExpansionRegex().IsMatch(code), "Command contains variable expansion - paths may be dynamic"),
-        ((code, layout) => SeparatesCommandLines(layout) || code.Contains("$'\\n'") || code.Contains("%0a"), "Command contains embedded newlines"),
+        ((code, _) => CommandSubstitutionRegex().IsMatch(code), true, "Command contains command substitution - paths may be dynamic"),
+        ((code, _) => Base64DecodeRegex().IsMatch(code), false, "Command contains base64 decode - potential obfuscation"),
+        ((code, _) => HexDecodeRegex().IsMatch(code), false, "Command contains hex decode - potential obfuscation"),
+        ((code, _) => VariableExpansionRegex().IsMatch(code), true, "Command contains variable expansion - paths may be dynamic"),
+        ((code, layout) => SeparatesCommandLines(layout) || code.Contains("$'\\n'") || code.Contains("%0a"), false, "Command contains embedded newlines"),
     ];
 
     // Whether more than one line of the layout holds a command. A blank or comment-only line, such as
@@ -1371,11 +1492,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             .Skip(1).Any();
     }
 
-    private static void CheckBypassAttempts(List<string> expanding, string layout, BashAnalysisResult result)
+    private static void CheckBypassAttempts(List<CodePiece> pieces, List<CodePiece> searched, string layout, BashAnalysisResult result)
     {
-        foreach (var (check, warning) in BypassChecks)
+        foreach (var (check, withoutLiteralData, warning) in BypassChecks)
         {
-            if (expanding.Any(code => check(code, layout)))
+            if ((withoutLiteralData ? searched : pieces).Any(piece => check(piece.Expanding, layout)))
             {
                 result.Warnings.Add(warning);
                 result.HasBypassAttempt = true;

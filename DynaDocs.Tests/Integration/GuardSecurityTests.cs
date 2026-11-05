@@ -826,22 +826,152 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertPreToolUseAllowed();
     }
 
-    // DYD-421 DECIDED: single-quoted text is searched for bypasses as on master, so these
-    // single-quoted GS-02 writes stay refused until DYD-422 designs a relaxation.
+    // The CLI lane reads its command as an unknown shell, both ways.
+    private Task<CommandResult> UnknownShellGuardAsync(string command) => GuardWithStdinAsync("", "--command", command);
+
+    // DYD-422: single-quoted literal data written to a literal destination is no bypass, through
+    // Claude's Bash tool and in an unknown shell.
     [Theory]
-    [InlineData("Bash", GuardRetroCommands.Gs02SedBacktickCommit)]
-    [InlineData("Bash", GuardRetroCommands.Gs02SedBacktickSingleLine)]
-    [InlineData("Bash", "sed -i 's/`x`/y/' f")]
-    [InlineData("Bash", "printf '%s' 'first line\n$HOME is literal' > notes.md")]
-    [InlineData("PowerShell", "Set-Content notes.md 'first line\n$HOME is literal'")]
-    public async Task Gs02_SingleQuotedDataWrite_IsDeniedAsOnMaster(string toolName, string command)
+    [InlineData(GuardRetroCommands.Gs02SedBacktickCommit)]
+    [InlineData(GuardRetroCommands.Gs02SedBacktickSingleLine)]
+    [InlineData("sed -i 's/`x`/y/' f")]
+    [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md")]
+    public async Task Gs02_SingleQuotedLiteralDataWrite_IsAllowed(string command)
     {
         await SetupClaimedAgent();
 
-        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        bash.AssertPreToolUseAllowed();
+        unknown.AssertSuccess();
+    }
+
+    // Literal data keeps its path checks: a guarded destination, or a guarded path a substitution
+    // in it names, is refused for that path.
+    [Theory]
+    [InlineData("printf '%s' 'first line\n$HOME is literal' > dydo/index.md", "protected")]
+    [InlineData("sed -i 's/`x`/y/' dydo/files-off-limits.md", "protected")]
+    [InlineData("sed -i 's#`rm dydo/index.md`#y#' notes.md", "protected")]
+    [InlineData("printf '%s' '$HOME' > .env", "off-limits")]
+    public async Task Gs02_SingleQuotedLiteralDataWrite_ToAGuardedPath_IsStillDenied(string command, string tier)
+    {
+        await SetupClaimedAgent();
+
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        bash.AssertPreToolUseDenied();
+        bash.AssertStderrContains(tier);
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains(tier);
+    }
+
+    // Single-quoted text no reading certifies as literal data is refused as on master.
+    [Fact]
+    public async Task Gs02_SingleQuotedSetContentWrite_IsDeniedAsOnMaster()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("PowerShell", "Set-Content notes.md 'first line\n$HOME is literal'"));
 
         result.AssertPreToolUseDenied();
         result.AssertStderrContains("bypass");
+    }
+
+    // DYD-422: where a program on the line may run the single-quoted text, a reading may not be the
+    // shell's, or the text sits in a comment or a body, the call is refused as on master and the
+    // protected canary keeps its bytes.
+    [Theory]
+    [InlineData("bash -c 'echo x > $OUT'")]
+    [InlineData("sh -c 'printf x > $OUT'")]
+    [InlineData("zsh -c 'echo $(rm dydo/index.md)'")]
+    [InlineData("eval 'echo x' '> $OUT'")]
+    [InlineData("iex 'echo x' '> $OUT'")]
+    [InlineData("Invoke-Expression 'echo x > $OUT'")]
+    [InlineData("cmd /c echo 'x > $OUT'")]
+    [InlineData("env -S 'echo x' '> $OUT'")]
+    [InlineData("pwsh -Command 'echo x' '> $OUT'")]
+    [InlineData("ssh host 'echo x' '> $OUT'")]
+    [InlineData("watch -n 1 'echo x > $OUT'")]
+    [InlineData("watch echo '$(rm dydo/index.md)'")]
+    [InlineData("su -c 'echo x > $OUT'")]
+    [InlineData("script -c 'echo x > $OUT'")]
+    [InlineData("xargs sh -c 'echo x > $OUT'")]
+    [InlineData("xargs echo '$(rm dydo/index.md)'")]
+    [InlineData("find . -exec sh -c 'echo x > $OUT' \\;")]
+    [InlineData("find . -exec echo '$(rm dydo/index.md)' \\;")]
+    [InlineData("docker exec box sh -c 'echo x > $OUT'")]
+    [InlineData("kubectl exec pod -- sh -c 'echo x > $OUT'")]
+    [InlineData("tmux send-keys 'echo x > $OUT' Enter")]
+    [InlineData("printf '%s' '$(rm dydo/index.md)' | sh")]
+    [InlineData("echo '$(rm dydo/index.md)' | tee notes.md | bash")]
+    [InlineData("printf '%s' '$(rm dydo/index.md)' > /dev/stdout | sh")]
+    [InlineData("echo '$(rm dydo/index.md)' | iex")]
+    [InlineData("sh <(printf '%s' '$(rm dydo/index.md)')")]
+    [InlineData("source <(echo '$(rm dydo/index.md)')")]
+    [InlineData("printf '%s' '$(rm dydo/index.md)' > >(sh)")]
+    [InlineData("{ printf '%s' '$(rm dydo/index.md)'; } | sh")]
+    [InlineData("{ echo '$(rm dydo/index.md)'; echo y; } | sh")]
+    [InlineData("(echo '$(rm dydo/index.md)') | sh")]
+    [InlineData("for f in a; do echo '$(rm dydo/index.md)'; done | sh")]
+    [InlineData("for f in a; do echo a; echo '$(rm dydo/index.md)'; done | sh")]
+    [InlineData("echo '$(rm dydo/index.md)' & sh")]
+    [InlineData("echo '$(rm dydo/index.md)' \\\n| sh")]
+    [InlineData("echo '$HOME' (iex 'rm dydo/index.md') > notes.md")]
+    [InlineData("sed -i 's/x/$TARGET/e' notes.md")]
+    [InlineData("sed -i '1e rm $TARGET' notes.md")]
+    [InlineData("sed -i 's/`x`/y/;e rm dydo/index.md' notes.md")]
+    [InlineData("sed -e 's/`x`/y/' -e '1e rm dydo/index.md' -i notes.md")]
+    [InlineData("sed -i -f run.sed 's/`x`/y/' notes.md")]
+    [InlineData("sed -i '1e rm dydo/index.md' 's/`x`/y/' notes.md")]
+    [InlineData("sed -i 's/`x`/y/w dydo/index.md' notes.md")]
+    [InlineData("awk '{system(\"rm $TARGET\")}' notes.md > out.md")]
+    [InlineData("echo $'\\'' $(echo x > $OUT) '$'\\'''")]
+    [InlineData("echo ^\"'$(echo x > $OUT)'^\"")]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("echo hi # don't\necho $(rm dydo/index.md) 'ok'")]
+    [InlineData("cat <<EOF\necho don\\'t $(rm dydo/index.md) won\\'t\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nprintf '%s' '$(rm dydo/index.md)'\nEOF")]
+    [InlineData("grep x <<< '$(rm dydo/index.md)'")]
+    [InlineData("printf '%s' 'a $b' > $OUT")]
+    [InlineData("echo 'x' > \"$OUT\"")]
+    [InlineData("printf '%s' 'x' > $(echo notes.md)")]
+    [InlineData("sed -i 's/`x`/y/' $FILE")]
+    public async Task Gs02_SingleQuotedTextAProgramMayRun_IsDeniedAndTheCanaryUnchanged(string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        bash.AssertPreToolUseDenied();
+        bash.AssertStderrContains("bypass");
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains("bypass");
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // Where PowerShell may run the line: a typographic quote closes its string, a caret escapes
+    // nothing, and a group word runs, so the text they expose is code.
+    [Theory]
+    [InlineData("echo 'a’ $(echo x > $OUT) ’b'")]
+    [InlineData("echo “a '$(echo x > $OUT)' b”")]
+    [InlineData("echo ^\"'$(echo x > $OUT)'^\"")]
+    [InlineData("echo '$HOME' (iex 'rm dydo/index.md') > notes.md")]
+    public async Task Gs02_TextPowerShellMayRun_IsDenied(string command)
+    {
+        await SetupClaimedAgent();
+
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        powerShell.AssertPreToolUseDenied();
+        powerShell.AssertStderrContains("bypass");
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains("bypass");
     }
 
     // DYD-421 DECIDED: apostrophes around a substitution or a variable, on a command line or in an

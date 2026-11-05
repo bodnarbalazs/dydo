@@ -50,11 +50,10 @@ public class GuardPrReadyTests : IntegrationTestBase
     // the tree check decides. The marker is keyed by the command the guard reads (DYD-503).
     private void SilenceReviewBlockWarn(params string[] commands)
     {
-        var reviewBlockWarn = ConfigFactory.DefaultNudges.Single(n => n.Message.StartsWith("This PR carries no review block"));
         var markerDir = GuardCommand.GuardEnv.Load(TestDir).MarkerDir;
         Directory.CreateDirectory(markerDir);
         foreach (var command in commands)
-            File.WriteAllText(Path.Combine(markerDir, GuardCommand.CommandWarnMarkerName(reviewBlockWarn.Pattern, command)), "spent");
+            File.WriteAllText(Path.Combine(markerDir, GuardCommand.CommandWarnMarkerName(ConfigFactory.ReviewBlockPattern, command)), "spent");
     }
 
     private string Payload(object command, bool withCwd = true, bool codex = false,

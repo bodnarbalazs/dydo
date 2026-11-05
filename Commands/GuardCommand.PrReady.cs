@@ -147,18 +147,18 @@ public static partial class GuardCommand
 
     private static readonly char[] PathSeparators = [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar];
 
+    private static readonly Dictionary<string, string> NoGitEnvironment = [];
+
     /// <summary>
-    /// The PR body text that the command's <c>gh pr create</c> and <c>gh pr new</c> calls read from
-    /// body files the guard may read (<see cref="ReadPrBodyFile"/>), named from the call directory.
-    /// The text is empty when there is none (DYD-639).
+    /// The text of the body file that the <c>gh pr create</c> launched at <paramref name="launch"/>
+    /// reads (<see cref="PrCallScanner.BodyFileAt"/>), named from the call directory, or null when
+    /// it names none or the guard may not read it (<see cref="ReadPrBodyFile"/>; DYD-639).
     /// </summary>
-    private static string PrBodyFileText(string command, IReadOnlyList<string>? argv, string? cwd, ShellDialect shell,
-        GuardEnv env, IOffLimitsService offLimitsService)
-    {
-        var files = argv != null ? PrCallScanner.BodyFilesInArgv(argv) : PrCallScanner.BodyFiles(command, shell);
-        var directory = CallDirectory(cwd, env);
-        return string.Concat(files.Select(file => ReadPrBodyFile(file, directory, offLimitsService)));
-    }
+    private static string? PrBodyAt(string command, int launch, string? cwd, ShellDialect shell, GuardEnv env,
+        IOffLimitsService offLimitsService) =>
+        PrCallScanner.BodyFileAt(command, launch, shell) is { } file
+            ? ReadPrBodyFile(file, CallDirectory(cwd, env), offLimitsService)
+            : null;
 
     /// <summary>
     /// The text of the PR body file <paramref name="path"/>, named from <paramref name="directory"/>,
@@ -166,7 +166,9 @@ public static partial class GuardCommand
     /// that sits, once every link on its path resolves, in the same git work tree as the call
     /// directory. It must not be off-limits, must be at most <see cref="PrBodyFileMaxBytes"/>, and
     /// must be valid UTF-8. Anything else, or any I/O error, reads as null, so the caller keeps its
-    /// warning. It stops accidents, not a deliberate bypass.
+    /// warning. It stops accidents, not a deliberate bypass: a link swapped between these checks and
+    /// the open takes a deliberate race, and at worst it quiets one warning, so that window is
+    /// accepted rather than closed.
     /// </summary>
     internal static string? ReadPrBodyFile(string path, string directory, IOffLimitsService offLimits)
     {
@@ -189,8 +191,8 @@ public static partial class GuardCommand
         }
     }
 
-    // git names one work tree for the file's own directory and the call directory. Git resolves
-    // links and short names itself, and a .git directory is no work tree.
+    // git names one work tree for the file's own directory and the call directory, and finds each
+    // inside it. Git resolves links and short names itself, and a .git directory is no work tree.
     private static bool InWorkTreeOf(string file, string directory)
     {
         var tree = WorkTreeOf(directory);
@@ -198,10 +200,15 @@ public static partial class GuardCommand
             && WorkTreeOf(parent) == tree;
     }
 
+    // The work tree holding the directory. An exported GIT_DIR or GIT_WORK_TREE names one tree for
+    // every directory, and a repository's core.worktree may name a tree its directory lies outside,
+    // so git runs without inherited GIT_* variables and must find the directory inside the tree.
     private static string? WorkTreeOf(string directory)
     {
-        var top = GitRunner.Run(directory, "rev-parse", "--show-toplevel");
-        return top.Ok ? Path.GetFullPath(top.Text.Trim()) : null;
+        var top = GitRunner.RunIsolated(directory, NoGitEnvironment, "rev-parse", "--is-inside-work-tree", "--show-toplevel");
+        return top.Ok && top.Text.Split('\n', 2, StringSplitOptions.TrimEntries) is ["true", var root]
+            ? Path.GetFullPath(root)
+            : null;
     }
 
     // An empty size is no body. A FIFO or device reports one too, so it is never opened. The cap

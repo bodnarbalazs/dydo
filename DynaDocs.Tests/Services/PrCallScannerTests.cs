@@ -499,54 +499,57 @@ public class PrCallScannerTests
         Assert.Contains(PrCallScanner.FindInArgv(argv), call => call.Wrapper != null);
     }
 
-    // DYD-639: the body file a gh pr create or new call reads, its last --body-file or -F as gh takes it.
+    // DYD-639: the body file of the gh pr create launched at an index, its last --body-file or -F as gh takes it.
     [Theory]
     [InlineData("gh pr create --body-file a.md", "a.md")]
     [InlineData("gh pr create --body-file=a.md", "a.md")]
     [InlineData("gh pr create -F a.md", "a.md")]
     [InlineData("gh pr create -Fa.md", "a.md")]
     [InlineData("gh pr create -dFa.md", "a.md")]
-    [InlineData("gh pr new -F 'my body.md' --title t", "my body.md")]
+    [InlineData("gh pr create -F 'my body.md' --title t", "my body.md")]
     [InlineData("gh pr create -F a.md --body-file b.md", "b.md")]
-    [InlineData("git status && GH_REPO=o/r gh -R o/r pr Create -F a.md", "a.md")]
-    [InlineData("/usr/bin/gh pr create -F -", "-")]
-    public void BodyFile_IsTheCallsLastBodyFile(string command, string file)
+    [InlineData("gh pr Create -R {owner}/r -F a.md", "a.md")]
+    [InlineData("gh pr create -F -", "-")]
+    [InlineData("gh pr create -F a.md; gh pr create -F b.md", "a.md")]
+    public void BodyFileAt_IsTheLaunchedCallsLastBodyFile(string command, string file)
     {
-        Assert.Equal([file], PrCallScanner.BodyFiles(command, ShellDialect.Posix));
+        Assert.Equal(file, PrCallScanner.BodyFileAt(command, 0, ShellDialect.Posix));
+    }
+
+    [Fact]
+    public void BodyFileAt_ReadsTheCallLaunchedThere()
+    {
+        const string command = "gh pr create -F a.md; gh pr create -F b.md && echo done";
+
+        Assert.Equal("b.md", PrCallScanner.BodyFileAt(command, command.LastIndexOf("gh pr", StringComparison.Ordinal), ShellDialect.Posix));
     }
 
     [Theory]
     [InlineData("gh pr create --fill")]
     [InlineData("gh pr create --body 'see a.md'")]
+    [InlineData("gh pr new -F a.md")]
     [InlineData("gh pr ready -F a.md")]
     [InlineData("gh pr create -F a.md --help")]
     [InlineData("gh pr")]
     [InlineData("gh api repos/o/r/pulls -F body=@a.md")]
     [InlineData("gh issue create -F a.md")]
     [InlineData("hub pr create -F a.md")]
-    [InlineData("echo 'gh pr create -F a.md'")]
-    [InlineData("bash -c 'gh pr create -F a.md'")]
     [InlineData("gh pr create -F a.md 'unfinished")]
+    [InlineData("gh pr create -F a.md'")]
     [InlineData("GH_REPO=o/r")]
     public void CallReadingNoBodyFile_NamesNone(string command)
     {
-        Assert.Empty(PrCallScanner.BodyFiles(command, ShellDialect.Posix));
+        Assert.Null(PrCallScanner.BodyFileAt(command, 0, ShellDialect.Posix));
     }
 
-    [Fact]
-    public void BodyFiles_AreEveryCallsOnceInEveryReading()
-    {
-        Assert.Equal(["a.md", "b.md"], PrCallScanner.BodyFiles("gh pr create -F a.md; gh pr new -F b.md; gh pr create -F a.md"));
-        Assert.Equal(["a.md"], PrCallScanner.BodyFiles("gh pr create -F a.md", ShellDialect.PowerShell));
-    }
-
+    // An unknown shell reads the call both ways: one file when they agree, none when they differ.
     [Theory]
-    [InlineData(new[] { "gh", "pr", "create", "-F", "a.md" }, "a.md")]
-    [InlineData(new[] { "bash", "-lc", "gh pr create --body-file a.md" }, "a.md")]
-    [InlineData(new[] { "gh", "pr", "create", "--fill" }, null)]
-    [InlineData(new[] { "echo", "gh pr create -F a.md" }, null)]
-    public void BodyFilesInArgv_ReadTheArrayOrItsEnvelope(string[] argv, string? file)
+    [InlineData("Unknown", @"gh pr create -F a.md", "a.md")]
+    [InlineData("PowerShell", @"gh pr create -F a\ b.md", @"a\")]
+    [InlineData("Posix", @"gh pr create -F a\ b.md", "a b.md")]
+    [InlineData("Unknown", @"gh pr create -F a\ b.md", null)]
+    public void BodyFileAt_HoldsOnlyWhereEveryReadingAgrees(string dialect, string command, string? file)
     {
-        Assert.Equal(file == null ? [] : [file], PrCallScanner.BodyFilesInArgv(argv));
+        Assert.Equal(file, PrCallScanner.BodyFileAt(command, 0, Enum.Parse<ShellDialect>(dialect)));
     }
 }

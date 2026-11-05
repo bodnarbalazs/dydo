@@ -40,6 +40,12 @@ public static class ConfigFactory
         Severity = "warn"
     };
 
+    /// <summary>
+    /// The review-block nudge's pattern. dydo.json copies of the nudge are matched by it, so it never
+    /// changes; the guard reads each <c>gh pr create</c>'s own in-tree body file for it too (DYD-639).
+    /// </summary>
+    public const string ReviewBlockPattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)";
+
     public static readonly List<NudgeConfig> DefaultNudges =
     [
         new()
@@ -93,11 +99,9 @@ public static class ConfigFactory
         // DR 045 §3: nothing reaches the user that an independent agent has not reviewed, and
         // the PR body is where that proof lands. Warn = block once, run again to proceed, so an
         // honest exception costs one retry; DR 042's rule escalates it to block if discipline erodes.
-        // The guard reads an in-tree --body-file or -F after the command text (DYD-639, PrBodyFile);
-        // dydo.json copies are matched by this pattern, so it never changes.
         new()
         {
-            Pattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)",
+            Pattern = ReviewBlockPattern,
             Message = "This PR carries no review block. Add the independent review under an 'Independent review' heading and follow this project's shared Communication and evidence standard.",
             Severity = "warn"
         },

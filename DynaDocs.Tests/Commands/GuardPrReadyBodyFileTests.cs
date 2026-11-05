@@ -75,6 +75,17 @@ public sealed class GuardPrReadyBodyFileTests : IDisposable
         Assert.Null(Read(Path.Combine(Outside, "body.md")));
     }
 
+    // git reports the tree's root for a repository whose core.worktree names the tree, though its
+    // own directory lies outside that tree.
+    [Fact]
+    public void OutsideRepositoryNamingTheTreeAsItsWorkTree_IsNull()
+    {
+        Assert.True(GitRunner.Run(Outside, "init").Ok);
+        Assert.True(GitRunner.Run(Outside, "config", "core.worktree", Tree).Ok);
+
+        Assert.Null(Read(Path.Combine(Outside, "body.md")));
+    }
+
     [Fact]
     public void CallDirectoryOutsideGit_IsNull()
     {

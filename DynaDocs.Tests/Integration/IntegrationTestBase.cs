@@ -62,7 +62,7 @@ public abstract class IntegrationTestBase : IDisposable
     protected async Task<CommandResult> RunAsync(Command command, params string[] args)
     {
         var (exitCode, stdout, stderr) = await ConsoleCapture.AllAsync(
-            async () => await command.Parse(args).InvokeAsync());
+            async () => await CliParsing.Parse(command, args).InvokeAsync());
         return new CommandResult(exitCode, stdout, stderr);
     }
 
@@ -99,7 +99,7 @@ public abstract class IntegrationTestBase : IDisposable
         var stdinReader = new StringReader(json);
 
         var (exitCode, stdout, stderr) = await ConsoleCapture.AllAsyncWithStdin(
-            stdinReader, async () => await command.Parse(args).InvokeAsync());
+            stdinReader, async () => await CliParsing.Parse(command, args).InvokeAsync());
         return new CommandResult(exitCode, stdout, stderr);
     }
 

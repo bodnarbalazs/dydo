@@ -25,7 +25,7 @@ class ControlDydoContractTests(unittest.TestCase):
         self.child = patch.object(control, "run_owned", side_effect=self.process).start()
         self.head = "pinned\n"
         self.untracked = ""
-        self.sessions = set()
+        self.warned_commands = set()
         self.run = control.allocate()
 
     def process(self, argv, **options):
@@ -58,7 +58,7 @@ class ControlDydoContractTests(unittest.TestCase):
         elif verb == "check" and (project / "dydo/verification-broken.md").exists():
             code, output = 1, "broken link: missing-target.md"
         elif verb == "guard":
-            output = self.hook(argv, options["input"])
+            output = self.hook(options["input"])
         return subprocess.CompletedProcess(argv, code, output, "")
 
     def scaffold(self, project):
@@ -70,16 +70,16 @@ class ControlDydoContractTests(unittest.TestCase):
         control.write_json(project / ".claude/settings.json", {"hooks": {"PreToolUse": [
             {"hooks": [{"command": "dydo guard --host claude"}]}]}})
 
-    def hook(self, argv, data):
+    def hook(self, data):
         payload = json.loads(data)
         command = payload["tool_input"]["command"]
-        session = payload["session_id"]
         verdict, reason = "deny", "blocked"
         if "mode set" in command:
-            reason = f"own terminal: {command}"
-            if "--host" in argv and session in self.sessions:
-                verdict = "ask"
-            self.sessions.add(session)
+            reason = "Run this only if you are the chief of staff readying overnight mode or ending it; otherwise stop."
+            if command in self.warned_commands:
+                self.warned_commands.remove(command)
+                return ""
+            self.warned_commands.add(command)
         return json.dumps({"hookSpecificOutput": {
             "permissionDecision": verdict, "permissionDecisionReason": reason}})
 
@@ -278,17 +278,21 @@ class ControlDydoContractTests(unittest.TestCase):
         for call in self.child.call_args_list:
             self.assertNotIn("rm", call.args[0])
 
-    def test_activation_records_both_directions_without_claiming_ui(self):
+    def test_activation_records_both_directions_and_host_independent_retry_without_executing_setter(self):
         self.ready()
         self.invoke("drive", "activation")
         receipts = [json.loads(path.read_text()) for path in (self.run / "evidence").glob("guard-*.json")]
         for value in ("on", "off"):
             rows = [row for row in receipts if f"overnight {value}" in row["stdin"]]
-            decisions = [json.loads(row["stdout"])["hookSpecificOutput"]["permissionDecision"] for row in rows]
-            self.assertEqual(["ask", "deny", "deny"], sorted(decisions))
+            decisions = [json.loads(row["stdout"])["hookSpecificOutput"]["permissionDecision"]
+                         if row["stdout"].strip() else "allow" for row in rows]
+            self.assertEqual(["allow", "allow", "deny", "deny"], sorted(decisions))
+            self.assertEqual(2, sum("--host" in row["argv"] for row in rows))
         limits = json.loads((self.run / "evidence/activation-limits.json").read_text())
         self.assertFalse(limits["mode_set_executed"])
-        self.assertEqual("unverified", limits["host_approval_ui"])
+        self.assertFalse(limits["role_authenticated"])
+        self.assertFalse(limits["human_approval_proven"])
+        self.assertEqual("requires injected seam tests", limits["state_readback"])
 
     def test_main_launch_returns_reconnectable_run(self):
         output = io.StringIO()

@@ -4,14 +4,14 @@ using System.Text.Json;
 using DynaDocs.Commands;
 using DynaDocs.Services;
 
-/// <summary>Injected command-parser seam evidence, not a real host approval UI or public CLI isolation.</summary>
+/// <summary>Injected command-parser seam evidence, not live machine state or public CLI isolation.</summary>
 [Collection("Integration")]
 public sealed class VerificationModeTests : IntegrationTestBase
 {
     [Theory]
     [InlineData("off", "on")]
     [InlineData("on", "off")]
-    public async Task DenialPreservesOwnedState_ThenExplicitParserTransitionNeedsReadback(string initial, string target)
+    public async Task WarningAndRetryPreserveOwnedState_ThenExplicitParserTransitionNeedsReadback(string initial, string target)
     {
         var root = Path.GetFullPath(Path.Combine(TestDir, "machine-state"));
         Assert.StartsWith(Path.GetFullPath(TestDir) + Path.DirectorySeparatorChar, root);
@@ -33,12 +33,14 @@ public sealed class VerificationModeTests : IntegrationTestBase
             tool_input = new { command = $"dydo mode set overnight {target}" }
         });
         var denied = await GuardWithStdinAsync(payload);
-        Assert.Contains($"own terminal: dydo mode set overnight {target}", denied.AssertPreToolUseDenied());
+        Assert.Contains("otherwise stop", denied.AssertPreToolUseDenied());
         Assert.Equal(before, await File.ReadAllTextAsync(path));
         var unchanged = await RunAsync(ModeCommand.Create(new ModeState(root)), "show");
         unchanged.AssertSuccess();
         Assert.Equal($"overnight: {initial}", unchanged.Stdout.Trim());
 
+        (await GuardWithStdinAsync(payload)).AssertPreToolUseAllowed();
+        Assert.Equal(before, await File.ReadAllTextAsync(path));
         (await RunAsync(ModeCommand.Create(state), "set", "overnight", target)).AssertSuccess();
         var readback = await RunAsync(ModeCommand.Create(new ModeState(root)), "show");
         readback.AssertSuccess();

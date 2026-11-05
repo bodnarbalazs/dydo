@@ -21,6 +21,8 @@ The scope follows the speaker:
 - **Ticket captain**: its own deliverable, placed in its Project in one sentence. Split it into parts only for real parallel lanes. Tell the deliverable's story; the crew's hops, retries and review rounds are evidence for that story.
 - **Any other agent**: the thing it worked on.
 
+The project is the one you hold; work that only passed through the chat is not in it. Leave out work another officer owns unless it blocks or changes yours; then give it one line naming its owner, not a section.
+
 ## Gather the facts
 
 Keep the turn read-only: start no work, walkthrough or tribunal. Read the intent, delivery records, returns and decisions, and check live PR, CI and agent state where you can. A newer decision replaces an older entry. Keep landed code, completed proof, observed behavior and Balazs's acceptance apart. Name a missing fact or an uncertain cause once, where it matters.

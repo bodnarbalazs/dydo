@@ -1568,15 +1568,15 @@ public class BashCommandAnalyzerTests
         Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
     }
 
-    // The documented residual: literal data is not followed into a script a later command runs, as
-    // a quoted-heredoc script is not.
+    // The documented residual: literal data is not followed into a file a state-free command on the
+    // line runs, such as a git hook git commit runs; a quoted-heredoc hook is not followed either.
     [Fact]
-    public void Analyze_LiteralDataWrittenToAScriptThenRun_IsNotFollowed()
+    public void Analyze_LiteralDataWrittenToAGitHookThenCommitted_IsNotFollowed()
     {
-        var result = new BashCommandAnalyzer(ShellDialect.Posix).Analyze("printf '%s' '$(date)' > run.sh && sh run.sh");
+        var result = new BashCommandAnalyzer(ShellDialect.Posix).Analyze("printf '%s' '$(date)' > .git/hooks/pre-commit && git commit -m x");
 
         Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
-        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "run.sh");
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == ".git/hooks/pre-commit");
     }
 
     // Single-quoted text no reading certifies as literal data is searched as on master (DYD-421).
@@ -1641,9 +1641,28 @@ public class BashCommandAnalyzerTests
     [InlineData("echo 'x' > \"$OUT\"")]
     [InlineData("printf '%s' 'x' > $(echo notes.md)")]
     [InlineData("sed -i 's/`x`/y/' $FILE")]
+    [MemberData(nameof(StateChangingLines))]
     public void Analyze_SingleQuotedTextAProgramMayRun_IsABypass(string command)
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            AssertBypassWithAChange(command, dialect);
+    }
+
+    // DYD-422 review: a line with literal data runs only state-free commands. printf -v or %n assigns
+    // a variable (bash evaluates a -v name's subscript); an alias, builtin, assignment or unknown
+    // command anywhere, in any piece, may change what runs; a non-data command may consume the output.
+    public static TheoryData<string> StateChangingLines => GuardRetroCommands.Gs02StateChangingLines;
+
+    // PowerShell's stop-parsing token hands the rest of the line over unparsed, and its echo, the
+    // Write-Output cmdlet, assigns a variable through -OutVariable or another common parameter.
+    [Theory]
+    [InlineData("echo --% '$(echo x > $OUT)' > notes.md")]
+    [InlineData("echo '$(echo x > $OUT)' -OutVariable a > notes.md")]
+    [InlineData("echo '$(echo x > $OUT)' –ov a > notes.md")]
+    [InlineData("echo -n '$(echo x > $OUT)' > notes.md")]
+    public void Analyze_StopParsingToken_IsABypassWherePowerShellMayRun(string command)
+    {
+        foreach (var dialect in PowerShellReadings)
             AssertBypassWithAChange(command, dialect);
     }
 

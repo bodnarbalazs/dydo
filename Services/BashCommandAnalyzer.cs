@@ -459,8 +459,29 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// The programs whose single-quoted arguments may be literal data (DYD-422): each prints or
     /// filters the text it is given and runs none of it; sed only as <see cref="IsDataSedScript"/> says.
     /// </summary>
-    private static readonly HashSet<string> QuotedDataCommands = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> QuotedDataCommands = new(StringComparer.Ordinal)
         { "sed", "printf", "echo", "grep" };
+
+    /// <summary>
+    /// The only commands a line with literal data may run (DYD-422): each reads its arguments,
+    /// files and stdin as text and changes no alias, function, builtin, variable, trap, option or
+    /// sourced file, so none changes what another command on the line runs. Named exactly, with
+    /// no path, assignment or case change; printf only as <see cref="IsStateFree"/> says.
+    /// </summary>
+    private static readonly HashSet<string> StateFreeCommands = new(StringComparer.Ordinal)
+        { "sed", "printf", "echo", "grep", "head" };
+
+    // The git subcommands the GS-02 writes run, directly after git: no option such as -c comes first.
+    private static readonly HashSet<string> StateFreeGitCommands = new(StringComparer.Ordinal)
+        { "diff", "add", "status", "commit", "log" };
+
+    // A printf %n conversion, which assigns the variable its argument names.
+    [GeneratedRegex(@"%[^A-Za-z%]*n")]
+    private static partial Regex PrintfAssignmentRegex();
+
+    // A lone & outside quotes: bash's background job, or PowerShell's call operator.
+    [GeneratedRegex(@"(?<![&>])&(?![&>])")]
+    private static partial Regex LoneAmpersandRegex();
 
     // Typographic quotes, which open and close PowerShell strings as ' and " do.
     private const string TypographicQuotes = "\u2018\u2019\u201A\u201B\u201C\u201D\u201E";
@@ -499,11 +520,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     }
 
     /// <summary>
-    /// The single-quoted arguments one reading of a line holds as literal data. The reading is
-    /// certain, runs no substitution or PowerShell group word, has no group, compound command,
-    /// continuation or background, and no text where the shell may pair quotes otherwise: bash's
-    /// $'...' outside single quotes, and for PowerShell a caret outside them (an escape only to cmd)
-    /// or a typographic quote anywhere. Each is a quote in a word of a quoted-data command whose
+    /// The single-quoted arguments one reading of a line holds as literal data: the reading runs
+    /// state-free commands only (<see cref="RunsStateFreeOnly"/>) and pairs no quote otherwise
+    /// (<see cref="PairsQuotesOtherwise"/>). Each is a quote in a word of a quoted-data command whose
     /// output is piped only to data commands (<see cref="DataCommands"/>). A substitution outside
     /// single quotes is never emptied, so it is still found; a quote inside one is its own scope's.
     /// </summary>
@@ -511,14 +530,40 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     {
         var reading = ShellReader.Read(code, posix);
         var quotes = reading.Source.SingleQuotes;
-        var outside = Emptied(code, quotes);
-        if (reading.Failed || reading.Source.Executions.Count > 0
-            || !reading.Commands.All(command => !command.UncertainFeed && IsSimple(command.Words))
-            || outside.Contains("$'", StringComparison.Ordinal)
-            || (!posix && (outside.Contains('^') || code.AsSpan().IndexOfAny(TypographicQuotes) >= 0)))
-            return [];
-        return [.. quotes.Select(quote => DataQuoteIn(reading.Commands, quote)).OfType<DataQuote>()];
+        return RunsStateFreeOnly(reading) && !PairsQuotesOtherwise(code, Emptied(code, quotes), posix)
+            ? [.. quotes.Select(quote => DataQuoteIn(reading.Commands, quote)).OfType<DataQuote>()]
+            : [];
     }
+
+    // The reading is certain and every command in it, each sequence member and pipeline stage, is
+    // state-free: no substitution or PowerShell group word, group, continuation or process substitution.
+    private static bool RunsStateFreeOnly(ShellReader.Reading reading) =>
+        !reading.Failed && reading.Source.Executions.Count == 0
+        && reading.Commands.All(command => !command.UncertainFeed && IsStateFree(command.Words, reading.Source.Posix));
+
+    /// <summary>
+    /// Whether the command is one <see cref="StateFreeCommands"/> names, or git with a subcommand
+    /// <see cref="StateFreeGitCommands"/> names. A printf with -v in any spelling, or a %n
+    /// conversion, assigns a variable, and bash evaluates a -v name's subscript, so it is not. Nor
+    /// is PowerShell's echo, the Write-Output cmdlet, with a parameter word, since -OutVariable and
+    /// the other common parameters assign variables.
+    /// </summary>
+    private static bool IsStateFree(List<string> words, bool posix) => words switch
+    {
+        ["git", var subcommand, ..] => StateFreeGitCommands.Contains(subcommand),
+        ["printf", ..] => !words.Any(word => word.StartsWith("-v", StringComparison.Ordinal) || PrintfAssignmentRegex().IsMatch(word)),
+        ["echo", .. var arguments] when !posix => !arguments.Any(word => word is ['-' or '\u2013' or '\u2014' or '\u2015', ..]),
+        [var program, ..] => StateFreeCommands.Contains(program),
+        _ => false,
+    };
+
+    // Text outside single quotes where the shell may pair quotes or start commands otherwise:
+    // bash's $'...', a lone &, and where PowerShell may run the line a caret (an escape only to
+    // cmd), the stop-parsing token --% or a typographic quote anywhere.
+    private static bool PairsQuotesOtherwise(string code, string outside, bool posix) =>
+        outside.Contains("$'", StringComparison.Ordinal) || LoneAmpersandRegex().IsMatch(outside)
+        || (!posix && (outside.Contains('^') || outside.Contains("--%", StringComparison.Ordinal)
+            || code.AsSpan().IndexOfAny(TypographicQuotes) >= 0));
 
     // The quote in a word of the one command whose word holds it, when that command takes it as data.
     private static DataQuote? DataQuoteIn(IReadOnlyList<ShellReader.Command> commands, Range quote)
@@ -1407,9 +1452,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
         // A literal body only data commands read is neither expansion nor code, so each piece of code
         // is read on its own and only its expanding text is searched for bypasses (DYD-406), without
-        // the single-quoted literal data of a piece that is all code (DYD-422).
+        // the single-quoted literal data of a command that is one piece, all code (DYD-422).
         var pieces = CodePieces(strippedCommand);
-        List<CodePiece> searched = [.. pieces.Select(Searched)];
+        List<CodePiece> searched = pieces is [var only] && only.Expanding == only.Code ? [Relieved(only.Code)] : pieces;
         CheckBypassAttempts(pieces, searched, string.Join("; ", searched.Select(piece => Layout(piece.Code))), result);
 
         foreach (var subCmd in pieces.SelectMany(piece => SplitCommand(piece.Code)))
@@ -1422,13 +1467,12 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return result;
     }
 
-    // A piece that is all code, with its literal data emptied; one with an expanding body is searched whole.
-    private CodePiece Searched(CodePiece piece)
+    // The command's code with its literal data emptied. A command with a heredoc or here-string body
+    // is searched whole, so no piece's state change, such as an alias, reaches another piece's data.
+    private CodePiece Relieved(string code)
     {
-        if (piece.Expanding != piece.Code)
-            return piece;
-        var code = WithoutLiteralData(piece.Code);
-        return new CodePiece(code, code);
+        var relieved = WithoutLiteralData(code);
+        return new CodePiece(relieved, relieved);
     }
 
     private void AnalyzeCommandSubstitutions(string command, BashAnalysisResult result)

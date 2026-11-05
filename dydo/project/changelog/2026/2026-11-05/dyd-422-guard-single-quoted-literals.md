@@ -23,9 +23,16 @@ their literal destinations, which are still path-checked.
   PowerShell tool call or an unknown shell), must close it as one single-quoted string in the same
   word. That word must be an argument
   of `sed` (one `s` command, no `e` or `w` flag, no option holding an `e` or an `f`), `printf`, `echo`
-  or `grep`, whose output goes only to a file, the terminal or a data command. The line must read for
-  certain as simple commands: no substitution, group, compound command, continuation, background
-  job, `$'...'`, or, where PowerShell may run it, a caret or typographic quote.
+  or `grep`, whose output goes only to a file, the terminal or a pipe into `grep` or `echo`.
+- Every command in the command, in each reading, must be state-free: `sed`, `printf`, `echo`,
+  `grep`, `head`, or `git diff|add|status|commit|log`, named exactly. An alias, function or builtin
+  change (`alias`, `enable`, `Set-Alias`, `New-Alias`, `sal`, `nal`, `Set-Item alias:`), an
+  assignment, an unknown program or `git -c` anywhere takes the relief away. So do `printf -v` in any
+  spelling and `%n`, which assign variables (bash evaluates a `-v` name's subscript), and
+  PowerShell's `echo` with a parameter word such as `-OutVariable`. A command with a heredoc or
+  here-string body gets no single-quote relief.
+- The line must read for certain: no substitution, group, compound command, continuation, lone `&`,
+  `$'...'`, or, where PowerShell may run it, a caret, `--%` or typographic quote.
 - Everything else is searched as before and refused as on master: `echo don\'t $(rm dydo/index.md)
   won\'t` for every caller, a PowerShell tool call included, since bash's reading is always
   required; the same line in a `cat <<EOF` body, `eval 'echo x' '> $OUT'`,
@@ -43,14 +50,16 @@ No change in this entry renames a term mechanically, so it has no merge normalis
 
 Guards stop accidents, not rogue agents.
 
-- The relief does not follow a file it writes: `printf '%s' '$(...)' > run.sh && sh run.sh` passes,
-  as a quoted-heredoc script then run does.
+- The relief does not follow a file it writes into a state-free command that runs it: a git hook
+  written with `printf` and run by `git commit` on the same line passes, as a quoted-heredoc hook
+  does. `printf ... > run.sh && sh run.sh` is refused, since `sh` is not state-free.
+- A profile, alias or git config set before the call is not read; only the call's own text is.
 - A `sed` script's `r`, `R`, `w` or `W` command naming a file is not a path the guard extracts, with
   or without the relief; the relief takes only a single `s` command.
 
 ## Files Changed
 
-`Services/BashCommandAnalyzer.cs`, `Services/ShellReader.cs`,
+`Services/BashCommandAnalyzer.cs`, `Services/ShellReader.cs`, `DynaDocs.Tests/GuardRetroCommands.cs`,
 `DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs`,
 `DynaDocs.Tests/Integration/GuardSecurityTests.cs`, `dydo/understand/guard-system.md`, and this entry.
 

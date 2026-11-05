@@ -91,6 +91,44 @@ public static class GuardRetroCommands
     // GS-02, Claude Bash, same session: single-line sed -i with backticks in single quotes.
     public const string Gs02SedBacktickSingleLine = "sed -i 's#repository path `tools/ci_runner/host/README.md` points#repository path `infra/ci/README.md` points#' dydo/guides/ripple-e1-activation.md; git diff dydo/guides/ripple-e1-activation.md | grep '^[+-]' ; git add infra/ci/README.md infra/ci/lc1108-linux-preflight.sh infra/ci/lc1108-windows-preparation.sh dydo/guides/ripple-e1-activation.md; git status --short | head";
 
+    // DYD-422 review (Codex seat 2, c49dd869): lines whose single-quoted text a state change or a
+    // non-data command on the same command line makes code, each refused as on master.
+    public static Xunit.TheoryData<string> Gs02StateChangingLines => new()
+    {
+        "printf -v 'a[$(echo x > $OUT)]' '%s' x",
+        "printf -v'a[$(echo x > $OUT)]' '%s' x",
+        "printf -v 'a[`echo x > $OUT`]' '%s' x",
+        "printf -v 'a[0+$(echo x > $OUT)]' '%s' x",
+        "\\printf -v 'a[$(echo x > $OUT)]' '%s' x",
+        "printf -v PS4 '$(echo x > $OUT)'; set -x; echo x > notes.md",
+        "printf -v PS0 '$(echo x > $OUT)'; set -x; echo x > notes.md",
+        "printf -v PS1 '$(echo x > $OUT)'; set -x; echo x > notes.md",
+        "printf -v PROMPT_COMMAND '$(echo x > $OUT)'; set -x; echo x > notes.md",
+        "printf -v 'BASH_CMDS[x]' '$(echo x > $OUT)'",
+        "printf '%n' PS4; echo '$(echo x > $OUT)' > notes.md",
+        "alias echo=eval; echo 'echo x > $OUT'",
+        "shopt -s expand_aliases\nalias echo=eval\necho 'echo x > $OUT'",
+        "enable -n printf; printf '$(echo x > $OUT)' > notes.md",
+        "cat > x.md <<'EOF'; shopt -s expand_aliases; alias echo=eval\nplain\nEOF\necho 'echo x > $OUT'",
+        "X=1 echo '$(echo x > $OUT)' > notes.md",
+        "Set-Alias echo Invoke-Expression; echo 'echo x > $OUT'",
+        "New-Alias printf Invoke-Expression; printf 'echo x > $OUT'",
+        "sal echo iex; echo 'echo x > $OUT'",
+        "nal echo iex; echo 'echo x > $OUT'",
+        "Set-Item alias:echo Invoke-Expression; echo 'echo x > $OUT'",
+        "New-Item -Path function:echo -Value 'iex $args[0]'; echo 'echo x > $OUT'",
+        "$x = 1; echo '$(echo x > $OUT)' > notes.md",
+        "Echo '$(echo x > $OUT)' > notes.md",
+        "& echo '$(echo x > $OUT)' > notes.md",
+        "echo '$(echo x > $OUT)' > /dev/stdout; sh < /dev/stdout",
+        "echo '$(echo x > $OUT)' ; sh > notes.md",
+        "printf '$(echo x > $OUT)' && sh > notes.md",
+        "grep '$(echo x > $OUT)' || sh > notes.md",
+        "echo '$(echo x > $OUT)' | cat > notes.md",
+        "printf '%s' '$(date)' > run.sh && sh run.sh",
+        "git -c alias.x='!sh' x; echo '$(echo x > $OUT)' > notes.md",
+    };
+
     // GS-02, Claude Bash: evidence appended through cat >> and a quoted heredoc holding backticks.
     public const string Gs02CatAppendEvidence =
         "cat >> C:/Users/User/.t3/worktrees/LC/LC.worktrees/LC-749-typed-admission/dydo/agents/workspace/LC-749/fix13/evidence.md << 'EOF'\n" +

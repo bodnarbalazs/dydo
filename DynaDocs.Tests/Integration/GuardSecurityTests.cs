@@ -938,6 +938,7 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("echo 'x' > \"$OUT\"")]
     [InlineData("printf '%s' 'x' > $(echo notes.md)")]
     [InlineData("sed -i 's/`x`/y/' $FILE")]
+    [MemberData(nameof(GuardRetroCommands.Gs02StateChangingLines), MemberType = typeof(GuardRetroCommands))]
     public async Task Gs02_SingleQuotedTextAProgramMayRun_IsDeniedAndTheCanaryUnchanged(string command)
     {
         await SetupClaimedAgent();
@@ -983,12 +984,21 @@ public class GuardSecurityTests : IntegrationTestBase
     }
 
     // Where PowerShell may run the line: a typographic quote closes its string, a caret escapes
-    // nothing, and a group word runs, so the text they expose is code.
+    // nothing, --% stops parsing, and a group word, an alias, an assignment or a call operator may
+    // run the text, so it is code.
     [Theory]
     [InlineData("echo 'a’ $(echo x > $OUT) ’b'")]
     [InlineData("echo “a '$(echo x > $OUT)' b”")]
     [InlineData("echo ^\"'$(echo x > $OUT)'^\"")]
     [InlineData("echo '$HOME' (iex 'rm dydo/index.md') > notes.md")]
+    [InlineData("echo --% '$(echo x > $OUT)' > notes.md")]
+    [InlineData("echo '$(echo x > $OUT)' -OutVariable a > notes.md")]
+    [InlineData("Set-Alias echo Invoke-Expression; echo 'echo x > $OUT'")]
+    [InlineData("New-Alias printf Invoke-Expression; printf 'echo x > $OUT'")]
+    [InlineData("sal echo iex; echo 'echo x > $OUT'")]
+    [InlineData("Set-Item alias:echo Invoke-Expression; echo 'echo x > $OUT'")]
+    [InlineData("$x = 1; echo '$(echo x > $OUT)' > notes.md")]
+    [InlineData("& echo '$(echo x > $OUT)' > notes.md")]
     public async Task Gs02_TextPowerShellMayRun_IsDenied(string command)
     {
         await SetupClaimedAgent();

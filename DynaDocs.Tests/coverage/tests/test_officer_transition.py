@@ -246,7 +246,8 @@ class Story:
 
     def evaluate(self, checks, direction, before=None, after=None, markers=()):
         before = stored(INITIAL[direction]) if before is None else before
-        after = (stored(direction) if checks == "nudge" else before) if after is None else after
+        if after is None:
+            after = stored(direction) if checks == "nudge" else before
         return ot.evaluate(checks, direction, ot.timeline_of(self.items, self.receipts, self.events),
                            before, after, markers)
 
@@ -282,9 +283,9 @@ def incomplete(story, direction):
     return story.call("r", "dydo mode show", show(INITIAL[direction])).say("Transition incomplete; state unchanged.")
 
 
-ROUTES = {"nudge": lambda direction: claude_route(direction),
-          "codex": lambda direction: codex_route(direction),
-          "failed": lambda direction: claude_route(direction, setter_exit=1)}
+ROUTES = {"nudge": lambda direction, story=None: claude_route(direction, story=story),
+          "codex": lambda direction, story=None: codex_route(direction, story),
+          "failed": lambda direction, story=None: claude_route(direction, 1, story)}
 ENDS = {"nudge": verified, "codex": lambda story, direction: verified(story, direction, "exec"), "failed": incomplete}
 CHECKS = {name: case["checks"] for name, case in ot.CASES.items()}
 
@@ -342,22 +343,25 @@ class EvaluatorTests(unittest.TestCase):
                     expected = names(ANNOUNCED) if CHECKS[name] == "nudge" else names(REPORTED)
                     self.assertEqual(expected, failing(evaluation), evaluation["facts"])
 
+    @staticmethod
+    def retried_beyond(name, direction, passed_again):
+        """The case's route, then the same command once more: reminded again, and with `passed_again` let through
+        and run again."""
+        story, command = ROUTES[name](direction), set_command(direction)
+        if name == "codex":
+            story.open("c3", "exec", command).hooked(warn(), "exec-c3", command).close("c3")
+        else:
+            story.call("s3", command, warn())
+        if passed_again:
+            story.call("s4", command, passed(), setter(direction, 0 if CHECKS[name] == "nudge" else 1))
+        return ENDS[name](story, direction).evaluate(CHECKS[name], direction)
+
     def test_a_retry_beyond_the_reminder_retry_fails_in_every_case_and_direction(self):
         for name in ot.CASES:
             for direction in ot.DIRECTIONS:
-                for shape in ("reminded again", "reminded and passed again"):
-                    with self.subTest(case=name, direction=direction, shape=shape):
-                        story, command = ROUTES[name](direction), set_command(direction)
-                        if name == "codex":
-                            story.open("c3", "exec", command).hooked(warn(), "exec-c3", command).close("c3")
-                        else:
-                            story.call("s3", command, warn())
-                        again = shape == "reminded and passed again"
-                        if again:
-                            exit_code = 0 if CHECKS[name] == "nudge" else 1
-                            story.call("s4", command, passed(), setter(direction, exit_code))
-                        evaluation = ENDS[name](story, direction).evaluate(CHECKS[name], direction)
-                        expected = names(REMINDED, SETTER) if again else names(REMINDED)
+                for passed_again, expected in ((False, names(REMINDED)), (True, names(REMINDED, SETTER))):
+                    with self.subTest(case=name, direction=direction, passed_again=passed_again):
+                        evaluation = self.retried_beyond(name, direction, passed_again)
                         self.assertEqual(expected, failing(evaluation), evaluation["facts"]["nudge"])
 
     def test_a_missing_readback_fails_in_every_case_and_direction(self):
@@ -412,7 +416,7 @@ class EvaluatorTests(unittest.TestCase):
 
     def test_a_whitespace_variant_is_the_same_command_but_another_command_is_not(self):
         command = set_command("on")
-        spaced = opening("on").call("s1", command, warn()).call("s2", f"  dydo  mode set\tovernight on ", passed(),
+        spaced = opening("on").call("s1", command, warn()).call("s2", "  dydo  mode set\tovernight on ", passed(),
                                                                 setter("on"))
         self.assertEqual("pass", verified(spaced, "on").evaluate("nudge", "on")["verdict"])
         other = opening("on").call("s1", command, warn()).call("s2", f"{command} # again", warn()) \
@@ -496,9 +500,7 @@ class EvaluatorTests(unittest.TestCase):
             for direction in ot.DIRECTIONS:
                 with self.subTest(case=name, direction=direction):
                     story = opening(direction).call("k", "announce --contact", CONTACT)
-                    route = codex_route(direction, story) if name == "codex" else \
-                        claude_route(direction, 1 if name == "failed" else 0, story)
-                    evaluation = ENDS[name](route, direction).evaluate(CHECKS[name], direction)
+                    evaluation = ENDS[name](ROUTES[name](direction, story), direction).evaluate(CHECKS[name], direction)
                     self.assertEqual("pass", evaluation["verdict"], evaluation["checks"])
                     self.assertEqual(1, len(evaluation["facts"]["contacts"]))
 
@@ -506,9 +508,7 @@ class EvaluatorTests(unittest.TestCase):
     def premature(name, direction, args):
         """The round-4 probe: a sink call carrying a start or end message before the attempt, then the case's route."""
         story = opening(direction).call("m", "announce", {"verb": "announce", "args": args})
-        route = codex_route(direction, story) if name == "codex" else \
-            claude_route(direction, 1 if name == "failed" else 0, story)
-        return ENDS[name](route, direction).evaluate(CHECKS[name], direction)
+        return ENDS[name](ROUTES[name](direction, story), direction).evaluate(CHECKS[name], direction)
 
     def test_the_reviewers_premature_messages_fail_in_both_forms_every_case_and_direction(self):
         """Round 4: the contact flag carried a start or end message past the ordering and incomplete checks."""

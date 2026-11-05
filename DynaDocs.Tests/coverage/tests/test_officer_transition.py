@@ -788,8 +788,6 @@ class EvaluatorTests(unittest.TestCase):
         direction. Every round-8 form is one. Exactly the corpus forms named here have none: their outside characters
         are prose, a comment, a word past `mode set`, or a space both engines split on (`SAME_SPLIT`)."""
         outside = [entry["command"] for entry in corpus() if entry["kind"] == "outside_bound"]
-        self.assertEqual(sorted({*INERT, *AT_POINT, *NO_DYDO_RECORDED}),
-                         sorted(entry["command"] for entry in corpus() if entry["source"] == ROUND_10))
         judged = [command for command in outside if ot.bound_offender(command) is None]
         self.assertEqual(sorted({*PROSE, *COMMENTED, *SAME_SPLIT, *INERT, *NO_DYDO_RECORDED}), sorted(judged))
         forms = [command for command in outside if command not in judged]
@@ -798,12 +796,15 @@ class EvaluatorTests(unittest.TestCase):
         self.assertLessEqual({"U+0301", "U+00B2", "U+203F", "U+2160", "U+200C", "U+200D", "U+001C", "U+001D",
                               "U+001E", "U+001F", "U+000B", "U+000C", "U+0085", "U+00A0", "U+1E99", "U+0149",
                               "U+1E97", "U+2019", "U+2018", "U+201C", "U+017F", "U+007F"}, points)
-        for name in ot.CASES:
-            for direction in ot.DIRECTIONS:
-                for command in forms:
-                    for answer, row in (("passed", passed()), ("hard-refused", blocked(DANGEROUS))):
-                        with self.subTest(case=name, direction=direction, command=command, answer=answer):
-                            self.assert_inconclusive(self.further(name, direction, command, row), name, command)
+        answers = (("passed", passed()), ("hard-refused", blocked(DANGEROUS)))
+        for name, direction, command, (answer, row) in itertools.product(ot.CASES, ot.DIRECTIONS, forms, answers):
+            with self.subTest(case=name, direction=direction, command=command, answer=answer):
+                self.assert_inconclusive(self.further(name, direction, command, row), name, command)
+
+    def test_the_corpus_holds_exactly_the_round_10_forms(self):
+        """The round-10 reviewer's forms and the fix9 controls, recorded with the live guard's answers."""
+        self.assertEqual(sorted({*INERT, *AT_POINT, *NO_DYDO_RECORDED}),
+                         sorted(entry["command"] for entry in corpus() if entry["source"] == ROUND_10))
 
     def test_a_corpus_form_with_no_decision_point_reads_as_the_recorded_guard_answer(self):
         """The narrowed trigger's soundness on the corpus: wherever no outside character sits at a decision point, the

@@ -38,7 +38,11 @@ interaction unverified; they do not establish that an announcement waited for re
 `scripts/officer_transition.py campaign` drives a real headless officer through the candidate's
 `overnight-mode` with real init-installed hooks and the real candidate CLI on a scratch store. It
 plays the already-invoked chief of staff from the verbatim prompts in
-`resources/officer-transition/`, one case per run:
+`resources/officer-transition/`, one case per run. Each prompt's settled list gives the user's
+disposition of what the fixture withholds (Linear, the watch scheduler, real delivery), so a correct
+officer has no gap left to ask about before the transition; without it, supported-on stopped at
+muster to ask and made no attempt (cd38eefa). The admiral channel is `announce <admiral> "<message>"`;
+its contact form `announce --contact <admiral> "<message>"` is recorded as a contact event.
 
 | Case | Host and route | Stand-in human (scripted) between turns |
 |---|---|---|
@@ -52,7 +56,15 @@ after the hook allowed it. So that list carries the preflight's own read-only pr
 `command -v`) and no command whose own syntax writes or runs another command.
 
 Each run gets fresh scratch with HOME, `XDG_DATA_HOME`, the agent config dir and TMPDIR inside it,
-and recorder shims for the candidate `dydo` and the `announce` sink first on PATH. The canary reads
+and recorder shims for the candidate `dydo` and the `announce` sink first on PATH. The recorders run a
+sealed copy of the harness, written from the bytes the harness loaded, by the resolved root-owned
+interpreter with `-I -S`. The copy, the shims, their directories and the candidate build carry no write
+bit for anyone, so no allowed command can rewrite or add to them. Their modes and hashes, with the
+interpreter and dotnet host, are fingerprinted at install and after every agent turn; any change stops
+the case and the campaign, and its receipts are not trusted. This is file-mode protection against the
+allow-list, not confinement: the Claude launch has no native filesystem sandbox, a same-user `chmod`
+would undo it, and the dotnet shared runtime and agent CLIs stay user-writable and unfingerprinted.
+The canary reads
 before it writes: the agents' route must show a seeded scratch value the real store does not hold,
 or no setter and no agent run; the real store must stay byte-identical throughout.
 
@@ -69,9 +81,12 @@ its rollout calls, so a Codex guard answer and that command's execution stay sep
 
 The evaluator judges from those facts: the early fallback before any setter attempt and before the
 stand-in acts (both commands at muster, the `off` command at the morning brief); every attempt refused
-by the real guard; a fresh readback before any sink write. An incomplete report is three recorded
-facts: the readback differs from the target, nothing reached the sink, and the agent named the
-terminal command after the readback. The agent's wording is recorded but unscored. Unconfirmed
+by the real guard; a fresh readback before any transition announcement. Sink writes split by the
+channel's protocol, never by message: the contact form is a contact event, allowed anywhere, and every
+other write is a transition announcement, so a start or end announcement before the attempt or
+stand-in still fails. An incomplete report is three recorded facts: the readback differs from the
+target, no transition announcement was sent, and the agent named the terminal command after the
+readback. The agent's wording is recorded but unscored. Unconfirmed
 cleanup, a moved real store or lost scratch stops the case before the stand-in and stops the
 campaign. Evidence, raw streams and agent transcripts stay under `artifacts/dyd435/`. The approval
 prompt with a person present remains a human-only observation.

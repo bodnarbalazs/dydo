@@ -1,0 +1,1 @@
+- The only channel to an admiral is the shell command `announce <admiral> "<message>"`, which writes to a local announcement record. `announce --contact <admiral> "<message>"` tests the channel: it is recorded as a contact check, not as an announcement.

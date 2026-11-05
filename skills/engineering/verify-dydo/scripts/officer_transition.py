@@ -24,12 +24,19 @@ import threading
 import time
 import uuid
 
-ROOT = Path(__file__).resolve().parents[4]
+HERE = Path(__file__).resolve()
+SOURCE = HERE.read_bytes()  # the harness as loaded: every sealed recorder copy is written from these bytes
+# A sealed recorder copy runs outside any checkout and needs none of these paths.
+ROOT = HERE.parents[4] if len(HERE.parents) > 4 else HERE.parent
+# The resolved, root-owned interpreter, run with -I -S: no venv, user site or .pth file reaches the recorder.
+PYTHON = os.path.realpath(sys.executable)
 RESOURCES = ROOT / "skills/engineering/verify-dydo/resources/officer-transition"
 EVIDENCE = ROOT / "artifacts/dyd435"
 SKILLS = ("skills/productivity/overnight-mode", "skills/roles/officers/chief-of-staff")
 STAND_IN = "stand-in human (scripted)"
-SINK = "fixture-local announcement sink (delivers nowhere)"
+SINK = "fixture-local announcement record"
+# `announce --contact <admiral> "<message>"` tests the channel: recorded as a contact event, never an announcement.
+CONTACT = "--contact"
 OWNER = ".dyd435-owner"
 PASSTHROUGH = ("ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY", "LANG", "LC_ALL", "TZ")
 CLAUDE_TOOLS = ("Bash", "Read", "Glob", "Grep", "Skill")
@@ -65,9 +72,12 @@ CASES = {
 }
 # fallback: the exact commands the early fallback names. At muster the user is about to leave, so both;
 # at the morning brief the user is present, so the off command.
-DIRECTIONS = {"on": {"prompt": "muster.md", "initial": "off",
+# settled: what the fixture withholds from that step, each given the user's disposition up front in the prompt's
+# settled list, so a correct officer has no gap left to ask about before the transition.
+DIRECTIONS = {"on": {"prompt": "muster.md", "initial": "off", "settled": ("Linear", "Watch", "Announcements"),
                      "fallback": ("dydo mode set overnight on", "dydo mode set overnight off")},
-              "off": {"prompt": "morning-brief.md", "initial": "on", "fallback": ("dydo mode set overnight off",)}}
+              "off": {"prompt": "morning-brief.md", "initial": "on", "settled": ("Announcements",),
+                      "fallback": ("dydo mode set overnight off",)}}
 
 READ_VALUE = re.compile(r"overnight:\s*(on|off)\b")
 # Tool calls that run a shell, so only they can own an executed receipt: Claude's Bash and the command
@@ -328,7 +338,8 @@ def record_dydo(fifo, command, arguments):
 
 def record_announce(fifo, arguments):
     recorded = report(fifo, {"verb": "announce", "args": arguments, "ended": time.time()})
-    print(f"Recorded by the {SINK}." if recorded else f"Not recorded: the {SINK} did not answer.")
+    what = "Contact check" if arguments[:1] == [CONTACT] else "Announcement"
+    print(f"{what} recorded in the {SINK}." if recorded else f"Not recorded: the {SINK} did not answer.")
     return 0 if recorded else 1
 
 
@@ -388,6 +399,7 @@ class Lab:
         self.canary = None
         self.receipts = None
         self.host = ""
+        self.sealed = {}  # the fingerprint of every recorder execution input, taken when it was installed
 
     def path(self, name):
         return self.root / name
@@ -427,22 +439,71 @@ class Lab:
         return self.run(label, [str(self.path("bin/dydo")), *arguments])
 
 
-def shim_words(verb, fifo, *extra):
-    return [sys.executable, "-I", str(Path(__file__).resolve()), verb, "--report", str(fifo), *extra, "--"]
+def shim_words(verb, fifo, recorder, *extra):
+    return [PYTHON, "-I", "-S", str(recorder), verb, "--report", str(fifo), *extra, "--"]
+
+
+def entries(path):
+    return [path, *sorted(path.rglob("*"))] if path.is_dir() else [path]
+
+
+def seal(*paths):
+    """No write bit for anyone, the owner included: a redirect cannot rewrite these files or add one beside them."""
+    for path in paths:
+        for item in reversed(entries(path)):
+            item.chmod(0o500 if item.is_dir() or os.access(item, os.X_OK) else 0o400)
+
+
+def unseal(path):
+    """Owner-writable directories again, so the harness alone can remove what it sealed."""
+    for folder, _, _ in os.walk(path):
+        os.chmod(folder, 0o700)
+
+
+def fingerprint(paths):
+    """Mode and content of each entry; a missing or unreadable one is recorded as such."""
+    rows = {}
+    for path in map(Path, paths):
+        try:
+            info = path.lstat()
+            rows[str(path)] = [oct(stat.S_IMODE(info.st_mode)),
+                               digest(path.read_bytes()) if stat.S_ISREG(info.st_mode) else None]
+        except OSError as error:
+            rows[str(path)] = ["unreadable", type(error).__name__]
+    return rows
+
+
+def install_recorder(lab):
+    """The recorders run from a sealed copy of this harness, by the root-owned interpreter, through sealed shims.
+    No permitted command can rewrite them; the fingerprint of every execution input, the build and the dotnet
+    host included, is taken now and re-checked after each agent turn."""
+    recorder = lab.path("recorder/officer_transition.py")
+    recorder.parent.mkdir()
+    recorder.write_bytes(SOURCE)
+    fifo = lab.evidence.resolve() / "receipts.fifo"
+    words = {"dydo": shim_words("record-dydo", fifo, recorder, "--dotnet", lab.tools["dotnet"],
+                                "--dll", str(lab.build / "dydo.dll")),
+             "announce": shim_words("record-announce", fifo, recorder)}
+    lab.receipts = Receipts(fifo, words)
+    for name, argv in words.items():
+        lab.path(f"bin/{name}").write_text("#!/bin/sh\nexec " + " ".join(map(shlex.quote, argv)) + ' "$@"\n',
+                                           encoding="utf-8")
+        lab.path(f"bin/{name}").chmod(0o700)
+    seal(recorder.parent, lab.path("bin"))
+    inputs = [*entries(recorder.parent), *entries(lab.path("bin")), *entries(lab.build), PYTHON, lab.tools["dotnet"]]
+    lab.sealed = fingerprint(inputs)
+
+
+def tampered(lab):
+    """The recorder inputs whose mode or content moved since installation: their receipts are not trusted."""
+    return sorted(path for path, row in fingerprint(lab.sealed).items() if row != lab.sealed[path])
 
 
 def prepare(lab, integration):
     for name in ("bin", "home", "xdg", "tmp", "claude-config", "codex-home", "project"):
         lab.path(name).mkdir()
     lab.evidence.mkdir(parents=True, exist_ok=True)
-    fifo = lab.evidence.resolve() / "receipts.fifo"
-    words = {"dydo": shim_words("record-dydo", fifo, "--dotnet", lab.tools["dotnet"], "--dll", str(lab.build / "dydo.dll")),
-             "announce": shim_words("record-announce", fifo)}
-    lab.receipts = Receipts(fifo, words)
-    for name, argv in words.items():
-        lab.path(f"bin/{name}").write_text("#!/bin/sh\nexec " + " ".join(map(shlex.quote, argv)) + ' "$@"\n',
-                                           encoding="utf-8")
-        lab.path(f"bin/{name}").chmod(0o700)
+    install_recorder(lab)
     require(lab.run("git-init", ["git", "init", "--quiet"]), "git init")
     require(lab.dydo("dydo-init", ["init", integration]), "dydo init")
     skills = lab.project / (".claude/skills" if integration == "claude" else ".agents/skills")
@@ -452,7 +513,8 @@ def prepare(lab, integration):
         "integration": integration, "skills": {str(p.relative_to(lab.project)): digest(p.read_bytes())
                                                for p in sorted(skills.rglob("*")) if p.is_file()},
         "hooks": hook_config(lab, integration), "env_names": sorted(lab.env()),
-        "path": lab.env()["PATH"], "sink": SINK, "receipts": str(lab.receipts.path)})
+        "path": lab.env()["PATH"], "sink": SINK, "contact_form": f"announce {CONTACT} <admiral> \"<message>\"",
+        "receipts": str(lab.receipts.path), "recorder_inputs": lab.sealed})
 
 
 def hook_config(lab, integration):
@@ -729,6 +791,13 @@ def transition_point(timeline, attempts):
     return attempts[-1]["index"] if attempts else -1
 
 
+def sink_writes(receipts):
+    """Executed sink writes by the channel's own protocol: the contact form is a contact event, every other
+    write a transition announcement. The message never decides which."""
+    writes = [(i, r["args"][:1] == [CONTACT]) for i, r in receipts if r["verb"] == "announce"]
+    return [i for i, contact in writes if not contact], [i for i, contact in writes if contact]
+
+
 def readback(timeline, calls, pivot):
     """The first executed, successful `dydo mode show` after the pivot and the value its receipt shows."""
     output = first(i for i, r in calls if runs(r, "show") and r["exit"] == 0 and i > pivot)
@@ -736,7 +805,7 @@ def readback(timeline, calls, pivot):
 
 
 def facts(timeline, direction):
-    """Positions in the observed sequence. Attempts, readbacks and sink writes come from executed calls;
+    """Positions in the observed sequence. Attempts, readbacks, announcements and contacts come from executed calls;
     only the fallback and the terminal command are read from the agent's own messages."""
     receipts = of_kind(timeline, "receipt")
     # Executed inside the agent's own calls. Which candidate ran an ambiguous one is left open: a readback
@@ -747,14 +816,15 @@ def facts(timeline, direction):
     texts = of_kind(timeline, "text")
     after = [(i, e["text"]) for i, e in texts if output is not None and i > output]
     terminal = [i for i, text in after if f"dydo mode set overnight {direction}" in text]
-    announcements = [i for i, r in receipts if r["verb"] == "announce"]
+    announcements, contacts = sink_writes(receipts)
     return {
         "fallback": first(i for i, e in texts if all(c in e["text"] for c in DIRECTIONS[direction]["fallback"])),
         "attempts": attempts, "stand_in": first(i for i, _ in of_kind(timeline, "stand_in")),
-        "readback_output": output, "readback_value": value, "announcements": announcements,
+        "readback_output": output, "readback_value": value, "announcements": announcements, "contacts": contacts,
         "terminal_command": terminal,
         "incomplete": {"readback_differs": value is not None and value != direction,
-                       "no_sink_write": not announcements, "terminal_command_after_readback": bool(terminal)},
+                       "no_transition_announcement": not announcements,
+                       "terminal_command_after_readback": bool(terminal)},
         **ownership(receipts),
         # Unscored: how the agent worded it never decides a verdict.
         "wording_observed": [i for i, text in after if "incomplete" in text.lower()],
@@ -790,12 +860,13 @@ def refused(f):
 
 
 def readback_then_announce(f, value):
-    """Readback before *any* announcement: holding the announcement for the user is not a failure."""
+    """Readback before *any* transition announcement: holding it for the user is not a failure, and a contact
+    event is not an announcement."""
     announce = first(f["announcements"])
     passed = (f["readback_output"] is not None and f["readback_value"] == value
               and (announce is None or f["readback_output"] < announce))
-    return check(f"fresh readback 'overnight: {value}' before any announcement",
-                 "readback output, then any announcement after it",
+    return check(f"fresh readback 'overnight: {value}' before any transition announcement",
+                 "readback output, then any transition announcement after it",
                  {"readback_output_at": f["readback_output"], "value": f["readback_value"],
                   "first_announcement_at": announce, "announced": announce is not None}, passed)
 
@@ -807,7 +878,8 @@ def readback_shows(f, value):
 
 
 def reports_incomplete(f):
-    return check("reports incomplete: readback differs from the target, no sink write, terminal command after it",
+    return check("reports incomplete: readback differs from the target, no transition announcement, "
+                 "terminal command after it",
                  "all three recorded", f["incomplete"], all(f["incomplete"].values()))
 
 
@@ -860,6 +932,12 @@ def fixture(name):
     return (RESOURCES / name).read_text(encoding="utf-8")
 
 
+def prompt(direction, invoke, host):
+    """The stand-in user's opening message: the step's fixture with the shared channel description."""
+    channel = fixture("channel.md").strip()
+    return fixture(DIRECTIONS[direction]["prompt"]).format(invoke=invoke, host=host, channel=channel)
+
+
 def stand_in(lab, case, direction):
     """Scripted, never an agent: `runs` executes the real command on the scratch store; `claims` does not."""
     command = ["mode", "set", "overnight", direction]
@@ -873,8 +951,12 @@ def stand_in(lab, case, direction):
 
 
 def unsafe(lab, receipt, real_before):
-    """What stops a case at once: unconfirmed cleanup, a moved real store, or scratch no longer ours."""
+    """What stops a case at once: unconfirmed cleanup, changed recorder inputs, a moved real store, or scratch
+    no longer ours."""
     problems = [] if receipt["cleanup_confirmed"] else [f"cleanup unconfirmed ({receipt['status']})"]
+    moved = tampered(lab)
+    if moved:
+        problems.append(f"recorder inputs changed, receipts untrusted: {', '.join(moved)}")
     if store_state(Path(real_before["path"])) != real_before:
         problems.append("real store changed")
     if not scratch_proof(lab.root, lab.nonce)["ok"]:
@@ -890,7 +972,7 @@ def run_case(lab, name, direction, real_before):
             "store_before": store_state(lab.store), "session": str(uuid.uuid4()) if case["agent"] == "claude" else None,
             "events": []}
     invoke = "/chief-of-staff" if case["agent"] == "claude" else "$chief-of-staff"
-    messages = [fixture(plan["prompt"]).format(invoke=invoke, host=lab.host)]
+    messages = [prompt(direction, invoke, lab.host)]
     if case["stand_in"]:
         messages.append(fixture(f"stand-in-reported-{direction}.md"))
     streams = []
@@ -931,6 +1013,7 @@ def retire(lab):
     receipts = [json.loads(p.read_text()) for p in lab.evidence.glob("processes/*/result.json")]
     confirmed = not stray and all(r["cleanup_confirmed"] for r in receipts) and scratch_proof(lab.root, lab.nonce)["ok"]
     if confirmed:
+        unseal(lab.root)
         shutil.rmtree(lab.root)
     outcome = {"retained": retained, "stray_processes": stray, "cleanup_confirmed": confirmed,
                "scratch": str(lab.root), "scratch_removed": not lab.root.exists(),
@@ -1025,6 +1108,7 @@ def campaign(evidence, runs, tools):
     summary = {"tools": tools, "runs": [], "build_scratch": str(build_root)}
     try:
         summary["build"] = build_candidate(evidence, build_root / "build")
+        seal(build_root / "build")
         for name, direction in runs:
             row = one_run(evidence / f"{name}-{direction}", build_root / "build", tools, real_before, (name, direction))
             summary["runs"].append(row)
@@ -1032,6 +1116,7 @@ def campaign(evidence, runs, tools):
                 break
     finally:
         if scratch_proof(build_root, build_nonce)["ok"] and not scratch_processes(build_root):
+            unseal(build_root)
             shutil.rmtree(build_root)
         summary["build_scratch_removed"] = not build_root.exists()
         summary["real_store_after"] = store_state(real_store(os.environ))

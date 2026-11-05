@@ -28,6 +28,7 @@ from pathlib import Path
 sys.path.insert(0, sys.argv[1])
 import run_tests
 tools, mode = Path(sys.argv[1]), sys.argv[2]
+preamble = sys.argv[3] if len(sys.argv) > 3 else ''
 containment = run_tests.contain_descendants()
 with tempfile.TemporaryDirectory() as folder:
     root = Path(folder)
@@ -52,7 +53,7 @@ with tempfile.TemporaryDirectory() as folder:
     if mode != 'owner':
         adapter = root / 'adapter.py'
         adapter.write_text("import sys; sys.path.insert(0,"+repr(str(tools))+"); import gate_adapter; "
-            + ("gate_adapter.CLEANUP_SECONDS = 3; " if mode == 'escalation' else '') +
+            + ("gate_adapter.CLEANUP_SECONDS = 3; " if mode == 'escalation' else '') + preamble +
             "raise SystemExit(gate_adapter.run_coverage_command("+repr(command)+", '.'))")
         command = [sys.executable, str(adapter)]
     if mode == 'facade':
@@ -77,7 +78,8 @@ with tempfile.TemporaryDirectory() as folder:
             fields = run_tests._stat_fields(str(pid))
             return fields[1] if fields else 'absent'
         answer = {'exit':child.returncode, 'states':[state(pid) for pid in pids],
-                  'stdout':stdout.decode(), 'stderr':stderr.decode(), 'foreign_alive':foreign.poll() is None}
+                  'stdout':stdout.decode(), 'stderr':stderr.decode(), 'foreign_alive':foreign.poll() is None,
+                  'listing_delayed':(root / 'listing-delayed').exists()}
         receipt = root / 'published/identities.json'
         answer['campaign'] = json.loads(receipt.read_text())['campaign'] if receipt.exists() else None
         if mode == 'facade':
@@ -89,6 +91,18 @@ with tempfile.TemporaryDirectory() as folder:
         child.wait(timeout=5)
         foreign.wait(timeout=5)
 '''
+
+# An adapter preamble: the first process-table listing the adapter makes, its cleanup's first
+# descendant listing, takes 2.1 of the escalation's 3 cleanup seconds, as on a loaded host (DYD-605).
+SLOW_FIRST_LISTING = "exec(" + repr(
+    "import pathlib, time, run_tests\n"
+    "listing = run_tests._process_table\n"
+    "def slow_first_listing():\n"
+    "    run_tests._process_table = listing\n"
+    "    pathlib.Path('listing-delayed').touch()\n"
+    "    time.sleep(2.1)\n"
+    "    return listing()\n"
+    "run_tests._process_table = slow_first_listing\n") + "); "
 
 
 @unittest.skipUnless(sys.platform == "linux", "Native Linux campaign cancellation")
@@ -112,6 +126,66 @@ class CoverageCancellationTests(unittest.TestCase):
                 if entry == "facade":
                     self.assertEqual(130, observed["facade"]["aggregateExit"])
                     self.assertEqual(130, observed["facade"]["results"][0]["childExit"])
+
+    def test_an_escalation_whose_first_descendant_listing_is_slow_still_confirms_cleanup_in_budget(self):
+        probe = subprocess.run([sys.executable, "-c", CANCELLATION_PROBE, str(TOOLS), "escalation",
+                                SLOW_FIRST_LISTING], capture_output=True, text=True, timeout=25)
+        self.assertEqual(0, probe.returncode, probe.stderr)
+        observed = json.loads(probe.stdout)
+        self.assertTrue(observed["listing_delayed"], observed)
+        self.assertEqual(130, observed["exit"], observed)
+        self.assertTrue(all(state in ("absent", "Z") for state in observed["states"]), observed)
+        self.assertTrue(observed["foreign_alive"], observed)
+        self.assertIsNone(observed["campaign"], observed)
+
+
+@unittest.skipIf(sys.platform == "win32", "POSIX process-group escalation")
+class EscalationOrderTests(unittest.TestCase):
+    """The owner's grace runs from its interrupt and pays for the first descendant listing: no kill
+    comes before the grace ends, and what that listing pinned reaches the cleanup."""
+
+    def _stop(self, pin):
+        import run_tests
+        events, clock = [], [0.0]
+
+        def wait(_child, deadline):
+            events.append(("wait", clock[0], deadline))
+            if sum(event[0] == "wait" for event in events) == 1:
+                raise subprocess.TimeoutExpired("owner", 0)  # the owner ignores its interrupt
+            return -9
+
+        def slow_listing(job):
+            events.append(("pin", clock[0]))
+            clock[0] += 2.1
+            return pin(job)
+
+        with mock.patch.object(gate_adapter.time, "monotonic", side_effect=lambda: clock[0]), \
+                mock.patch.object(gate_adapter, "_wait_coverage_child", side_effect=wait), \
+                mock.patch.object(gate_adapter.os, "killpg",
+                                  side_effect=lambda _pid, sig: events.append(("killpg", clock[0], sig))), \
+                mock.patch.object(run_tests, "pin_descendants", side_effect=slow_listing), \
+                mock.patch.object(run_tests, "end_descendants",
+                                  side_effect=lambda _job, seconds, pinned: events.append(
+                                      ("end", clock[0], round(seconds, 6), pinned))):
+            self.assertEqual(-9, gate_adapter._stop_coverage_campaign(
+                mock.Mock(pid=4321, returncode=-9), 3.0, run_tests.SUBREAPER))
+        return events
+
+    def test_the_grace_runs_from_the_interrupt_and_its_listing_s_pins_die_after_it(self):
+        self.assertEqual([("killpg", 0.0, signal.SIGINT), ("pin", 0.0), ("wait", 2.1, 1.0),
+                          ("killpg", 2.1, signal.SIGKILL), ("wait", 2.1, 3.0), ("end", 2.1, 0.9, [7, 8])],
+                         self._stop(lambda _job: [7, 8]))
+
+    def test_a_first_listing_that_fails_pins_nothing_and_still_waits_out_the_grace(self):
+        import run_tests
+        real_pin = run_tests.pin_descendants
+        for failure in (OSError("proc unreadable"), ValueError("malformed stat")):
+            with self.subTest(failure=type(failure).__name__), \
+                    mock.patch.object(run_tests, "_process_table", side_effect=failure):
+                self.assertEqual([("killpg", 0.0, signal.SIGINT), ("pin", 0.0), ("wait", 2.1, 1.0),
+                                  ("killpg", 2.1, signal.SIGKILL), ("wait", 2.1, 3.0),
+                                  ("end", 2.1, 0.9, [])],
+                                 self._stop(real_pin))
 
 PYTHON_TARGET = "def add(left, right):\n    return left + right\n"
 PYTHON_SUITE = ("import unittest\n\n\n"

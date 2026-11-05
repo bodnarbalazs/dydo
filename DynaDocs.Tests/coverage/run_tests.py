@@ -470,20 +470,26 @@ def prune_stale_test_worktrees(max_age_seconds=None):
 
 @contextmanager
 def defer_interruption():
-    """Publish directory ownership before delivering a graceful interruption."""
-    interrupted = False
+    """Publish directory ownership before delivering a graceful interruption. The block may call
+    the `hold` it is given to keep interrupts deferred after it, to the end of the process: for an
+    outcome already decided that no interrupt may replace."""
+    interrupted = held = False
     previous = {}
 
     def remember_interrupt(_signum, _frame):
         nonlocal interrupted
         interrupted = True
 
+    def hold():
+        nonlocal held
+        held = True
+
     try:
         for signum in [signal.SIGINT, *([signal.SIGBREAK] if sys.platform == "win32" else [])]:
             previous[signum] = signal.signal(signum, remember_interrupt)
-        yield
+        yield hold
     finally:
-        while True:
+        while not held:
             try:
                 for signum, handler in previous.items():
                     signal.signal(signum, handler)
@@ -491,7 +497,7 @@ def defer_interruption():
             except KeyboardInterrupt:
                 # Retry the whole restoration, including its loop bookkeeping.
                 interrupted = True
-        if interrupted:
+        if interrupted and not held:
             raise KeyboardInterrupt
 
 
@@ -804,12 +810,26 @@ def _campaign_identities(worktree, result_root):
     return [*sources, *binaries, *reports]
 
 
-def _publish_assurance(worktree, result_root, owner_output, assurance_output, owner_result):
-    from csharp_coverage import snapshot_artifacts
+# Each assurance output this process created, with the identity it was created with. The runner
+# writes into no other. A process makes one run, so no entry is ever cleared.
+_ACQUIRED_OUTPUTS = {}
+
+
+def _acquire_output(assurance_output):
+    """Create the assurance output for this process alone, refusing a relative path or one
+    anything already holds."""
     output = Path(assurance_output)
     if not output.is_absolute() or output.exists():
         raise ValueError("--assurance-output requires a new absolute owned directory")
     output.mkdir(parents=True)
+    created = output.lstat()
+    _ACQUIRED_OUTPUTS[output] = (created.st_dev, created.st_ino)
+    return output
+
+
+def _publish_assurance(worktree, result_root, owner_output, assurance_output, owner_result):
+    from csharp_coverage import snapshot_artifacts
+    output = _acquire_output(assurance_output)
     if result_root.is_dir():
         shutil.copytree(result_root, output / "raw")
     if owner_output.is_dir():
@@ -895,60 +915,54 @@ class CleanupUnconfirmed(Exception):
         self.worktree, self.error = worktree, error
 
 
-def _cleanup_receipt(assurance_output):
-    """Where an unconfirmed cleanup is recorded for the gate adapter: beside identities.json in the
-    assurance output, and only in one that did not exist before this run, so never into a directory
-    the runner does not own. identities.json is never rewritten."""
-    output = Path(assurance_output) if assurance_output else None
-    if output is None or not output.is_absolute() or output.exists():
-        return None
-    return output / RUNNER_CLEANUP_NAME
-
-
-def _record_unconfirmed_cleanup(receipt, unconfirmed):
-    if receipt is None:
+def _record_unconfirmed_cleanup(assurance_output, unconfirmed):
+    """Record an unconfirmed cleanup for the gate adapter in a new receipt beside identities.json,
+    only in the assurance output this process created, acquiring it if nothing was published:
+    never into another directory, and never over or through an entry already there."""
+    if not assurance_output:
         return
+    receipt = Path(assurance_output) / RUNNER_CLEANUP_NAME
     record = {"schema": 1, "cleanup_confirmed": False,
               "error_category": type(unconfirmed.error).__name__,
               "error_message": str(unconfirmed.error),
               "retained_worktree": str(unconfirmed.worktree) if unconfirmed.worktree else None}
     try:
-        receipt.parent.mkdir(parents=True, exist_ok=True)
-        receipt.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    except OSError as error:
+        if receipt.parent not in _ACQUIRED_OUTPUTS:
+            _acquire_output(assurance_output)
+        current = receipt.parent.lstat()
+        if (current.st_dev, current.st_ino) != _ACQUIRED_OUTPUTS[receipt.parent]:
+            raise ValueError("the output was replaced after this run created it")
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
+        with os.fdopen(os.open(receipt, flags, 0o644), "wb") as written:
+            written.write((json.dumps(record, indent=2, sort_keys=True) + "\n").encode("utf-8"))
+    except (OSError, ValueError) as error:
         print(f"{RUNNER_CLEANUP_NAME} could not be written at {receipt}: {error}", file=sys.stderr)
 
 
-def _end_run(job, worktree, receipt):
-    """End the run's other processes, then remove `worktree` once that is confirmed. An unconfirmed
-    cleanup keeps the worktree and its marker, is recorded at `receipt`, and raises
-    CleanupUnconfirmed. An interrupt that lands during cleanup is delivered once cleanup has
-    finished, unless cleanup was unconfirmed: that outranks it."""
-    unconfirmed = None
-    try:
-        with defer_interruption():
-            try:
-                end_descendants(job)
-                reap_adopted(job)
-            except OSError as error:
-                unconfirmed = CleanupUnconfirmed(worktree, error)
-                _record_unconfirmed_cleanup(receipt, unconfirmed)
-            else:
-                if worktree and (worktree.exists() or is_registered_worktree(worktree)):
-                    print("  Cleaning up worktree...")
-                    remove_worktree(worktree)
-    except KeyboardInterrupt:
-        if unconfirmed is None:
-            raise
-    if unconfirmed is not None:
-        raise unconfirmed from unconfirmed.error
+def _end_run(job, worktree, assurance_output):
+    """End the run's other processes, then remove `worktree` once that is confirmed. An interrupt
+    that lands during cleanup is delivered once cleanup has finished. An unconfirmed cleanup keeps
+    the worktree and its marker, is recorded for `assurance_output`, and raises CleanupUnconfirmed
+    with interrupts still deferred, so none can replace the exit 2 it decides."""
+    with defer_interruption() as hold:
+        try:
+            end_descendants(job)
+            reap_adopted(job)
+        except OSError as error:
+            hold()
+            unconfirmed = CleanupUnconfirmed(worktree, error)
+            _record_unconfirmed_cleanup(assurance_output, unconfirmed)
+            raise unconfirmed from error
+        if worktree and (worktree.exists() or is_registered_worktree(worktree)):
+            print("  Cleaning up worktree...")
+            remove_worktree(worktree)
 
 
 def run_tests(extra_args=None, assurance_output=None, job=None):
     """Returns the dotnet exit code. `job`, from contain_descendants, has its other members ended
-    before the worktree is removed; raises CleanupUnconfirmed when that cannot be confirmed."""
+    before the worktree is removed; raises CleanupUnconfirmed when that cannot be confirmed, and
+    leaves interrupts deferred for the rest of the process."""
     worktree = None
-    receipt = _cleanup_receipt(assurance_output)
     try:
         try:
             prune_stale_test_worktrees()
@@ -987,7 +1001,7 @@ def run_tests(extra_args=None, assurance_output=None, job=None):
 
         return result.returncode
     finally:
-        _end_run(job, worktree, receipt)
+        _end_run(job, worktree, assurance_output)
 
 
 def main():

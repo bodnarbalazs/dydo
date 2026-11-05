@@ -307,7 +307,7 @@ import run_tests
 
 
 def published(worktree, extra_args, output):
-    Path(output).mkdir(parents=True)
+    run_tests._acquire_output(output)
     campaign = {{"complete": True, "cleanup_confirmed": True, "subject_status": 0}}
     (Path(output) / "identities.json").write_text(json.dumps({{"schema": 1, "campaign": campaign}}))
     return 0

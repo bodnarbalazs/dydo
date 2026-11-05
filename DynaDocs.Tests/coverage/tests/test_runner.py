@@ -684,6 +684,9 @@ class UnconfirmedCleanupExitTests(unittest.TestCase):
         under `folder`, contain_descendants returning `job`, and `patches` applied."""
         stderr = io.StringIO()
         with ExitStack() as stack:
+            # An unconfirmed cleanup keeps interrupts deferred until its process exits; this one doesn't.
+            for signum in (signal.SIGINT, *([signal.SIGBREAK] if hasattr(signal, "SIGBREAK") else [])):
+                stack.callback(signal.signal, signum, signal.getsignal(signum))
             for each in (*isolated_run_tests(folder), *patches,
                          patch.object(sys, "argv", ["run_tests.py", *argv]),
                          patch.object(run_tests, "contain_descendants", return_value=job),
@@ -797,8 +800,7 @@ class UnconfirmedCleanupExitTests(unittest.TestCase):
         identities = b'{"schema": 1, "campaign": {"complete": true, "subject_status": 0}}\n'
 
         def published(_worktree, _extra_args, assurance_output):
-            Path(assurance_output).mkdir()
-            (Path(assurance_output) / "identities.json").write_bytes(identities)
+            run_tests._acquire_output(assurance_output).joinpath("identities.json").write_bytes(identities)
             return 0
 
         with tempfile.TemporaryDirectory() as folder:
@@ -833,6 +835,149 @@ class UnconfirmedCleanupExitTests(unittest.TestCase):
                     self.assertEqual(["foreign.txt"], [path.name for path in output.iterdir()])
                 else:
                     self.assertIn("runner-cleanup.json could not be written", outcome[1])
+
+    def assert_every_late_interrupt_exits_2(self, job, seam, assurance=False, repeated=False):
+        """One run per point a real SIGINT can land at, from the moment cleanup at `seam` proves
+        unconfirmed until main() exits: each still exits 2 and names the retained worktree. With
+        `repeated`, a first SIGINT has already landed during that cleanup."""
+        point, delivered = 0, True
+        while delivered:
+            delivered, unconfirmed, lines = False, False, 0
+
+            def cleanup(*_args):
+                nonlocal unconfirmed
+                if repeated:
+                    signal.raise_signal(signal.SIGINT)
+                unconfirmed = True
+                raise TimeoutError("still live")
+
+            def trace(frame, event, _arg):
+                nonlocal delivered, lines
+                if frame.f_code.co_filename != run_tests.__file__:
+                    return None
+                if event == "line" and unconfirmed and not delivered:
+                    lines += 1
+                    if lines > point:
+                        delivered = True
+                        signal.raise_signal(signal.SIGINT)
+                return trace
+
+            with self.subTest(point=point), tempfile.TemporaryDirectory() as folder:
+                argv = ("--assurance-output", str(Path(folder) / "published")) if assurance else ()
+                previous = sys.gettrace()
+                sys.settrace(trace)
+                try:
+                    outcome = self.exit_of_main(
+                        folder, job, self.subject(0), patch.object(run_tests, seam, side_effect=cleanup),
+                        patch.object(run_tests, "_run_assurance_campaign", return_value=0), argv=argv)
+                except KeyboardInterrupt:
+                    outcome = (130, "KeyboardInterrupt escaped main()", MagicMock())
+                finally:
+                    sys.settrace(previous)
+                if delivered:
+                    self.assert_retained(folder, outcome, "still live")
+            point += 1
+        self.assertGreater(point, 10, "the trace never reached the unconfirmed cleanup")
+
+    def test_an_interrupt_after_unconfirmed_cleanup_cannot_mask_exit_2(self):
+        for platform, job, seam, assurance in (
+                ("linux", run_tests.SUBREAPER, "_end_reaped_descendants", False),
+                ("linux assurance", run_tests.SUBREAPER, "_end_reaped_descendants", True),
+                ("windows job", object(), "_end_job_members", False)):
+            for repeated in (False, True):
+                with self.subTest(platform=platform, repeated=repeated):
+                    self.assert_every_late_interrupt_exits_2(job, seam, assurance, repeated)
+
+    def directory_entries(self, folder):
+        """Each entry in `folder` by name: a link's target, else a file's bytes."""
+        return {path.name: os.readlink(path) if path.is_symlink() else path.read_bytes()
+                for path in Path(folder).iterdir()}
+
+    def require_symlinks(self, folder):
+        try:
+            os.symlink("absent", Path(folder) / "link-probe")
+        except OSError as error:  # Windows grants symlinks only to some accounts
+            self.skipTest(f"symlinks unavailable: {error}")
+        os.unlink(Path(folder) / "link-probe")
+
+    def link_receipt_to_identities(self, output):
+        os.symlink("identities.json", output / run_tests.RUNNER_CLEANUP_NAME)
+
+    def publish(self, worktree, destination):
+        run_tests._publish_assurance(worktree, worktree / "results", worktree / "owner", destination,
+                                     {"complete": True, "cleanup_confirmed": True, "subject_status": 0})
+
+    def test_a_receipt_goes_only_into_the_output_this_run_created(self):
+        identities = b'{"schema": 1, "campaign": {"complete": true}}\n'
+
+        def foreign_output(output, linked):
+            output.mkdir()
+            write_file(output / "foreign.txt", "belongs to a competing run")
+            (output / "identities.json").write_bytes(identities)
+            if linked:
+                self.link_receipt_to_identities(output)
+
+        def competing(linked):
+            def campaign(worktree, _extra_args, destination):
+                foreign_output(Path(destination), linked)  # created while the subject ran
+                self.publish(worktree, destination)  # refuses it: ValueError
+            return campaign
+
+        def replaced(worktree, _extra_args, destination):
+            self.publish(worktree, destination)
+            Path(destination).rename(Path(destination).with_name("ours"))
+            foreign_output(Path(destination), False)
+            return 0
+
+        for case, campaign in (("competing output", competing(False)),
+                               ("competing output with a receipt link", competing(True)),
+                               ("output replaced after publication", replaced)):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as folder:
+                if "link" in case:
+                    self.require_symlinks(folder)
+                output = Path(folder) / "published"
+                foreign = {}
+
+                def snapshot(*args):
+                    try:
+                        return campaign(*args)
+                    finally:
+                        foreign.update(self.directory_entries(output))
+
+                outcome = self.exit_of_main(
+                    folder, None, self.unconfirmed(),
+                    patch.object(run_tests, "_run_assurance_campaign", side_effect=snapshot),
+                    argv=("--assurance-output", str(output)))
+
+                self.assert_retained(folder, outcome, "still live")
+                self.assertEqual(foreign, self.directory_entries(output))
+                self.assertEqual(identities, (output / "identities.json").read_bytes())
+                self.assertIn("runner-cleanup.json could not be written", outcome[1])
+
+    def test_a_receipt_never_replaces_or_follows_an_entry_already_in_its_output(self):
+        def published_then_linked(worktree, _extra_args, destination):
+            self.publish(worktree, destination)
+            self.link_receipt_to_identities(Path(destination))
+            return 0
+
+        with tempfile.TemporaryDirectory() as folder:
+            self.require_symlinks(folder)
+            output = Path(folder) / "published"
+            published = {}
+
+            def snapshot(*args):
+                status = published_then_linked(*args)
+                published.update(self.directory_entries(output))
+                return status
+
+            outcome = self.exit_of_main(
+                folder, None, self.unconfirmed(),
+                patch.object(run_tests, "_run_assurance_campaign", side_effect=snapshot),
+                argv=("--assurance-output", str(output)))
+
+            self.assert_retained(folder, outcome, "still live")
+            self.assertEqual(published, self.directory_entries(output))
+            self.assertIn("runner-cleanup.json could not be written", outcome[1])
 
 
 SELF_PID = 100

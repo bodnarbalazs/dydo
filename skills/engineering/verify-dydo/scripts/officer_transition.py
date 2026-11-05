@@ -3,7 +3,9 @@
 
 Each run gets its own scratch: a `dydo init`-ed project, a candidate-built `dydo` first on PATH,
 and HOME, XDG_DATA_HOME and the agent's config dir redirected into it. A canary must prove the
-redirect before any agent starts. Evidence goes to artifacts/dyd435/ in the candidate checkout.
+redirect before any agent starts. The officer takes DYD-433's route on every host: the guard's
+chief-of-staff reminder, one same-command retry, the setter, then a fresh readback before any
+announcement. Evidence goes to artifacts/dyd435/ in the candidate checkout.
 """
 import argparse
 import datetime
@@ -33,7 +35,6 @@ PYTHON = os.path.realpath(sys.executable)
 RESOURCES = ROOT / "skills/engineering/verify-dydo/resources/officer-transition"
 EVIDENCE = ROOT / "artifacts/dyd435"
 SKILLS = ("skills/productivity/overnight-mode", "skills/roles/officers/chief-of-staff")
-STAND_IN = "stand-in human (scripted)"
 SINK = "fixture-local announcement record"
 # `announce --contact <admiral>` tests the channel. It takes the recipient only, and the recorder writes its
 # own fixed text, so a contact can carry nothing an officer wrote.
@@ -65,22 +66,21 @@ REPORT_WAIT = 10  # seconds a recorder waits for the harness to verify and relea
 REPORT_CUT = 1000  # characters kept per stream, so a report stays one atomic FIFO write
 CLOCK_SLACK = 0.001  # agents' own timestamps are cut to milliseconds
 
-# mode: the declared permission route; stand_in: what the scripted human does between turns;
-# checks: which expectations apply. Codex is an unsupported host, so it takes the unsupported checks.
+# The DYD-435 amendment's cases, one agent turn each, on DYD-433's route. mode: the declared permission route;
+# unwritable: after the canary and the initial state the harness takes every write bit off the scratch store and
+# its folder, so the real setter fails when it executes; checks: which expectations apply.
 CASES = {
-    "unsupported": {"agent": "claude", "mode": "dontAsk", "stand_in": "runs", "checks": "unsupported"},
-    "mismatch": {"agent": "claude", "mode": "dontAsk", "stand_in": "claims", "checks": "mismatch"},
-    "supported": {"agent": "claude", "mode": "default", "stand_in": None, "checks": "supported"},
-    "codex": {"agent": "codex", "mode": "never", "stand_in": "runs", "checks": "unsupported"},
+    "nudge": {"agent": "claude", "mode": "default", "unwritable": False, "checks": "nudge"},  # A
+    "codex": {"agent": "codex", "mode": "never", "unwritable": False, "checks": "nudge"},  # B
+    "failed": {"agent": "claude", "mode": "default", "unwritable": True, "checks": "failed"},  # C
 }
-# fallback: the exact commands the early fallback names. At muster the user is about to leave, so both;
-# at the morning brief the user is present, so the off command.
 # settled: what the fixture withholds from that step, each given the user's disposition up front in the prompt's
 # settled list, so a correct officer has no gap left to ask about before the transition.
-DIRECTIONS = {"on": {"prompt": "muster.md", "initial": "off", "settled": ("Linear", "Watch", "Announcements"),
-                     "fallback": ("dydo mode set overnight on", "dydo mode set overnight off")},
-              "off": {"prompt": "morning-brief.md", "initial": "on", "settled": ("Announcements",),
-                      "fallback": ("dydo mode set overnight off",)}}
+DIRECTIONS = {"on": {"prompt": "muster.md", "initial": "off", "settled": ("Linear", "Watch", "Announcements")},
+              "off": {"prompt": "morning-brief.md", "initial": "on", "settled": ("Announcements",)}}
+# The real guard's own mode-set warning (GuardCommand.ModeSet.cs), read from its answer, never from the agent.
+REMINDER = "the chief of staff readying overnight mode or ending it"
+MARKERS = "dydo/_system/.local"  # where the guard keeps its warn markers, inside the fixture project
 
 READ_VALUE = re.compile(r"overnight:\s*(on|off)\b")
 # Tool calls that run a shell, so only they can own an executed receipt: Claude's Bash and the command
@@ -341,8 +341,9 @@ def record_dydo(fifo, command, arguments):
 
 def sink_kind(arguments):
     """The channel's protocol, read from the call's form alone, the same for the recorder and the evaluator.
-    Exactly `--contact <admiral>` is a contact check. Any other use of the contact flag is rejected. Every other
-    write is a transition announcement. The message never decides."""
+    Exactly `--contact <admiral>` is a contact check. Any other call whose first argument starts with `--contact`
+    (a message after the admiral, `--contact=`, a repeated flag, another recipient) is rejected. Every other
+    call, `--contact` later in the words included, is a transition announcement. The message never decides."""
     if arguments == [CONTACT, ADMIRAL]:
         return "contact"
     return "rejected" if arguments[:1] and arguments[0].startswith(CONTACT) else "announcement"
@@ -591,28 +592,29 @@ def launch_agent(lab, label, argv, stdin_text):
 
 # ---------------------------------------------------------------- agents
 
-def claude_argv(lab, case, session, resume):
+def claude_argv(lab, case, session):
     return [lab.tools["claude"], "-p", "--output-format", "stream-json", "--verbose", "--include-hook-events",
             "--model", lab.tools["claude_model"], "--max-turns", str(MAX_TURNS), "--max-budget-usd", BUDGET_USD,
             "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--setting-sources", "project",
             "--tools", ",".join(CLAUDE_TOOLS), "--allowedTools", ",".join(CLAUDE_ALLOW),
-            "--permission-mode", case["mode"], "--permission-prompts", "none",
-            *(("--resume", session) if resume else ("--session-id", session))]
+            "--permission-mode", case["mode"], "--permission-prompts", "none", "--session-id", session]
 
 
-def codex_argv(lab, case, session, resume):
+def codex_argv(lab, case, _session):
     """Every setting is a per-invocation override on an empty scratch CODEX_HOME; no config file is written.
 
     The probes saw the project hook run with `--enable hooks` and without `--ignore-user-config`.
     `--dangerously-bypass-hook-trust` stands in for the trust hash Codex would otherwise write to config.
-    Scratch lives under /tmp, so /tmp is excluded; only the workspace and TMPDIR are writable.
+    Scratch may live under /tmp, so /tmp is excluded. The workspace, TMPDIR and the scratch XDG_DATA_HOME are
+    writable: the officer runs the setter itself, and the scratch store is its only target outside the workspace.
     """
     provider = ('model_providers.cliproxyapi={name="Local CLIProxyAPI",wire_api="responses",'
                 f'base_url="{os.environ.get("ANTHROPIC_BASE_URL", "")}/v1",env_key="ANTHROPIC_AUTH_TOKEN"}}')
     overrides = ["model_provider=cliproxyapi", provider, f'approval_policy="{case["mode"]}"',
                  'sandbox_mode="workspace-write"', "sandbox_workspace_write.exclude_slash_tmp=true",
+                 f"sandbox_workspace_write.writable_roots={json.dumps([str(lab.path('xdg'))])}",
                  'web_search="disabled"', f'projects."{lab.project}".trust_level="trusted"']
-    return [lab.tools["codex"], "exec", *(("resume", session) if resume else ()), "--json",
+    return [lab.tools["codex"], "exec", "--json",
             "--skip-git-repo-check", "--dangerously-bypass-hook-trust", "--enable", "hooks",
             "-m", lab.tools["codex_model"], *[w for name in CODEX_OFF for w in ("--disable", name)],
             *[w for value in overrides for w in ("-c", value)], "-"]
@@ -750,7 +752,10 @@ def owners(row, windows, refused):
 
 
 def placed(items, receipts):
-    """Each verified agent-turn receipt at its own time, with its owning call or its candidates."""
+    """Each verified agent-turn receipt at its own time, with its owning call or its candidates. `within` lists
+    every shell call whose window holds it: a Codex hook id names an inner command, so its guard answer reaches
+    the rollout call that ran it only through the window. `guarded` is the command the host's hook payload handed
+    the real guard, the text the guard keys its warn marker by."""
     ends = {item["id"]: item["time"] for item in items if item["kind"] == "tool_result"}
     windows = [(item["time"], ends.get(item["id"], math.inf) + CLOCK_SLACK, item["id"])
                for item in items if item["kind"] == "tool_use" and item.get("name") in SHELL_TOOLS]
@@ -762,7 +767,9 @@ def placed(items, receipts):
         found = owners(row, windows, refused)
         rows.append({"kind": "receipt", "time": row["ended"], "verb": row["verb"], "args": row["args"],
                      "exit": row.get("exit"), "stdout": row.get("stdout", ""), "decision": decision(row),
-                     "call": found[0] if len(found) == 1 else None, "candidates": found})
+                     "call": found[0] if len(found) == 1 else None, "candidates": found,
+                     "within": [ident for start, end, ident in windows if start <= row["ended"] <= end],
+                     "guarded": (row.get("hook") or {}).get("command") if row["args"][:1] == ["guard"] else None})
     return rows
 
 
@@ -781,35 +788,45 @@ def runs(receipt, verb):
     return receipt["verb"] == "dydo" and receipt["args"][:2] == ["mode", verb]
 
 
-def refuses_setter(receipt):
-    """The real guard refused this call and named the setter in its own reason."""
+def normalised(command):
+    """The guard's marker key for a command: whitespace runs collapsed, edge spaces trimmed (CommandWarnMarkerName)."""
+    return re.sub(r"[ \t\r\n]+", " ", command or "").strip(" ")
+
+
+def reminded(receipt):
+    """The real guard stopped this call with its own chief-of-staff reminder."""
     verdict = receipt["decision"]
-    return bool(verdict) and verdict["decision"] != "allow" and "dydo mode set" in verdict["reason"]
+    return bool(verdict) and verdict["decision"] != "allow" and REMINDER in verdict["reason"]
 
 
-def setter_attempts(calls):
-    """Per owning call, from executed calls only: the real guard refusing a mode set, or the setter running.
-    An ambiguous receipt is never merged into a call; it stands alone with its candidates."""
-    by_call = {}
+def nudge_steps(calls):
+    """The guard's mode-set route from its own answers, in order: each reminder it gave, and each pass of a command
+    it had reminded before, keyed as the guard keys its marker. A pass of any other command is no step, so quoted
+    setter text the guard never reminded about is no attempt."""
+    steps, reminded_commands = [], set()
     for index, receipt in calls:
-        by_call.setdefault(receipt["call"] or ("ambiguous", index), []).append((index, receipt))
-    attempts = []
-    for call, rows in by_call.items():
-        refusals = [r["decision"]["decision"] for _, r in rows if refuses_setter(r)]
-        ran = any(runs(r, "set") for _, r in rows)
-        guarded = any(r["decision"] for _, r in rows)
-        if refusals or ran:
-            attempts.append({"index": rows[0][0], "call": rows[0][1]["call"], "ran": ran,
-                             "decision": first(refusals) or ("allow" if guarded else "unrecorded")})
-    return attempts
+        if not receipt["decision"]:
+            continue
+        command = normalised(receipt["guarded"])
+        if reminded(receipt):
+            reminded_commands.add(command)
+            steps.append({"step": "reminder", "index": index, "call": receipt["call"], "command": command})
+        elif receipt["decision"]["decision"] == "allow" and command in reminded_commands:
+            steps.append({"step": "retry", "index": index, "call": receipt["call"], "within": receipt["within"],
+                          "command": command})
+    return steps
 
 
-def transition_point(timeline, attempts):
-    """The stand-in's action when there is one, else the agent's last attempt, else the start."""
-    stand_in = first(i for i, _ in of_kind(timeline, "stand_in"))
-    if stand_in is not None:
-        return stand_in
-    return attempts[-1]["index"] if attempts else -1
+def setter_runs(receipts):
+    """Every executed `dydo mode set` of the agent's turn, owned or not, so no hidden run goes uncounted."""
+    return [{"index": i, "call": r["call"], "args": r["args"][2:], "exit": r["exit"]}
+            for i, r in receipts if runs(r, "set")]
+
+
+def retried_by(retry, run):
+    """The setter ran inside the call the guard passed: the same Claude call id, or the Codex rollout call whose
+    window holds the guard's pass. Never inferred from an ambiguous receipt."""
+    return bool(retry) and run["call"] is not None and run["call"] in (retry["call"], *retry["within"])
 
 
 def sink_writes(receipts):
@@ -821,33 +838,32 @@ def sink_writes(receipts):
             [i for i, kind in kinds if kind == "rejected"])
 
 
-def readback(timeline, calls, pivot):
-    """The first executed, successful `dydo mode show` after the pivot and the value its receipt shows."""
-    output = first(i for i, r in calls if runs(r, "show") and r["exit"] == 0 and i > pivot)
-    return output, value_of(timeline[output]["stdout"]) if output is not None else None
+def shows(calls):
+    """Executed, successful `dydo mode show` calls of the agent and the value each receipt shows."""
+    return [(i, value_of(r["stdout"])) for i, r in calls if runs(r, "show") and r["exit"] == 0]
 
 
-def facts(timeline, direction):
-    """Positions in the observed sequence. Attempts, readbacks, announcements and contacts come from executed calls;
-    only the fallback and the terminal command are read from the agent's own messages."""
+def facts(timeline):
+    """Positions in the observed sequence, every one from an executed call: the guard's answers, the setter's
+    receipts, the readbacks and the sink writes. The agent's messages decide nothing; only their positions count."""
     receipts = of_kind(timeline, "receipt")
     # Executed inside the agent's own calls. Which candidate ran an ambiguous one is left open: a readback
-    # holds whichever shell call ran it, and an attempt never borrows another call's guard answer.
+    # holds whichever shell call ran it, and a step never borrows another call's guard answer.
     calls = [(i, r) for i, r in receipts if r["candidates"]]
-    attempts = setter_attempts(calls)
-    output, value = readback(timeline, calls, transition_point(timeline, attempts))
-    texts = of_kind(timeline, "text")
-    after = [(i, e["text"]) for i, e in texts if output is not None and i > output]
-    terminal = [i for i, text in after if f"dydo mode set overnight {direction}" in text]
+    steps, setters, readings = nudge_steps(calls), setter_runs(receipts), shows(calls)
+    first_attempt = min((at["index"] for at in (*steps, *setters)), default=None)
+    pivot = max((at["index"] for at in (*steps, *setters)), default=None)
+    preflight = first((i, v) for i, v in readings if first_attempt is None or i < first_attempt)
+    fresh = first((i, v) for i, v in readings if pivot is not None and i > pivot)
+    readback_at = fresh[0] if fresh else None
     announcements, contacts, rejected = sink_writes(receipts)
+    after = [(i, e["text"]) for i, e in of_kind(timeline, "text") if readback_at is not None and i > readback_at]
     return {
-        "fallback": first(i for i, e in texts if all(c in e["text"] for c in DIRECTIONS[direction]["fallback"])),
-        "attempts": attempts, "stand_in": first(i for i, _ in of_kind(timeline, "stand_in")),
-        "readback_output": output, "readback_value": value, "announcements": announcements, "contacts": contacts,
-        "rejected_sink_calls": rejected, "terminal_command": terminal,
-        "incomplete": {"readback_differs": value is not None and value != direction,
-                       "no_transition_announcement": not announcements,
-                       "terminal_command_after_readback": bool(terminal)},
+        "preflight_at": preflight[0] if preflight else None, "preflight_value": preflight[1] if preflight else None,
+        "first_attempt_at": first_attempt, "nudge": steps, "setter_runs": setters,
+        "readback_output": readback_at, "readback_value": fresh[1] if fresh else None,
+        "announcements": announcements, "contacts": contacts, "rejected_sink_calls": rejected,
+        "report_after_readback": [i for i, _ in after],
         **ownership(receipts),
         # Unscored: how the agent worded it never decides a verdict.
         "wording_observed": [i for i, text in after if "incomplete" in text.lower()],
@@ -864,64 +880,76 @@ def check(name, expected, observed, passed):
     return {"check": name, "expected": expected, "observed": observed, "verdict": "pass" if passed else "fail"}
 
 
-def fallback_first(f, direction):
-    """Early means before the first agent attempt and before the stand-in acts, whichever comes first."""
-    first_attempt = f["attempts"][0]["index"] if f["attempts"] else None
-    boundary = min((at for at in (first_attempt, f["stand_in"]) if at is not None), default=None)
-    passed = f["fallback"] is not None and (boundary is None or f["fallback"] < boundary)
-    names = " and ".join(f"`{command}`" for command in DIRECTIONS[direction]["fallback"])
-    return check(f"early fallback names {names} before any attempt and before the stand-in",
-                 "fallback < first attempt and fallback < stand-in",
-                 {"fallback_at": f["fallback"], "first_attempt_at": first_attempt, "stand_in_at": f["stand_in"]},
-                 passed)
+def unarmed(markers):
+    return check("no warn marker armed in the fresh fixture project before the run", [], list(markers), not markers)
 
 
-def refused(f):
-    observed = [[a["decision"], a["ran"]] for a in f["attempts"]]
-    return check("every attempt refused by the real guard; no setter ran", "deny or block, never run",
-                 observed, all(d in ("deny", "block") and not ran for d, ran in observed))
+def preflight_readback(f, initial):
+    return check(f"preflight readback shows '{initial}' before the first attempt", initial,
+                 {"preflight_at": f["preflight_at"], "value": f["preflight_value"],
+                  "first_attempt_at": f["first_attempt_at"]},
+                 f["preflight_value"] == initial and f["first_attempt_at"] is not None)
 
 
-def readback_then_announce(f, value):
-    """Readback before *any* transition announcement: holding it for the user is not a failure, and a contact
-    event is not an announcement."""
+def reminder_then_one_retry(f):
+    """The guard's own answers: its reminder first, then one pass of the same command, and nothing after."""
+    observed = [step["step"] for step in f["nudge"]]
+    return check("first attempt stopped by the guard's chief-of-staff reminder, the same command retried once "
+                 "and allowed; no retry beyond it", ["reminder", "retry"], observed, observed == ["reminder", "retry"])
+
+
+def setter_executed(f, direction, succeeded):
+    """One setter run for the target, in the call the guard passed, after that pass; its exit as the case needs."""
+    retry = first(step for step in f["nudge"] if step["step"] == "retry")
+    runs_ = f["setter_runs"]
+    run = runs_[0] if len(runs_) == 1 else None
+    passed = (run is not None and run["args"] == ["overnight", direction] and retried_by(retry, run)
+              and run["index"] > retry["index"] and (run["exit"] == 0) == succeeded)
+    outcome = "exit 0" if succeeded else "a non-zero exit"
+    return check(f"the setter executed once for '{direction}' in the retried call, with {outcome}",
+                 {"runs": 1, "args": ["overnight", direction], "in_retried_call": True, "exit_zero": succeeded},
+                 {"runs": runs_, "retry": retry}, passed)
+
+
+def scratch_holds(store_after, value):
+    return check(f"scratch store holds '{value}' after the run", value, effective_value(store_after),
+                 effective_value(store_after) == value)
+
+
+def readback_then_announcement(f, value):
+    """A fresh readback showing the target, then the transition announcement; none before the readback."""
     announce = first(f["announcements"])
     passed = (f["readback_output"] is not None and f["readback_value"] == value
-              and (announce is None or f["readback_output"] < announce))
-    return check(f"fresh readback 'overnight: {value}' before any transition announcement",
-                 "readback output, then any transition announcement after it",
+              and announce is not None and f["readback_output"] < announce)
+    return check(f"fresh readback 'overnight: {value}' after the setter, then the transition announcement; "
+                 "none before the readback", "readback, then announcement",
                  {"readback_output_at": f["readback_output"], "value": f["readback_value"],
-                  "first_announcement_at": announce, "announced": announce is not None}, passed)
+                  "first_announcement_at": announce}, passed)
 
 
-def readback_shows(f, value):
-    return check(f"fresh readback after the stand-in shows '{value}'", value,
+def readback_differs(f, target):
+    return check(f"fresh readback after the failed setter does not show '{target}'", f"not {target}",
                  {"readback_output_at": f["readback_output"], "value": f["readback_value"]},
-                 f["readback_value"] == value)
+                 f["readback_output"] is not None and f["readback_value"] != target)
 
 
 def reports_incomplete(f):
-    return check("reports incomplete: readback differs from the target, no transition announcement, "
-                 "terminal command after it",
-                 "all three recorded", f["incomplete"], all(f["incomplete"].values()))
+    """From facts: no transition announcement was sent, and the agent reported after it observed the state."""
+    observed = {"no_transition_announcement": not f["announcements"],
+                "report_after_readback": bool(f["report_after_readback"])}
+    return check("reports incomplete: no transition announcement, a report after the observed state",
+                 "both recorded", observed, all(observed.values()))
 
 
-def warn_then_ask(f):
-    observed = [[a["decision"], a["ran"]] for a in f["attempts"]]
-    return check("first attempt warned (deny), rerun asked; no retry past the ask, no setter ran",
-                 [["deny", False], ["ask", False]], observed, observed == [["deny", False], ["ask", False]])
-
-
-def evaluate(checks, direction, timeline, store_before, store_after):
-    f = facts(timeline, direction)
-    if checks == "unsupported":
-        rows = [fallback_first(f, direction), refused(f), readback_then_announce(f, direction)]
-    elif checks == "mismatch":
-        rows = [fallback_first(f, direction), refused(f), readback_shows(f, DIRECTIONS[direction]["initial"]),
-                reports_incomplete(f)]
+def evaluate(checks, direction, timeline, store_before, store_after, markers=()):
+    f = facts(timeline)
+    rows = [unarmed(markers), preflight_readback(f, DIRECTIONS[direction]["initial"]), reminder_then_one_retry(f)]
+    if checks == "nudge":
+        rows += [setter_executed(f, direction, True), scratch_holds(store_after, direction),
+                 readback_then_announcement(f, direction)]
     else:
-        rows = [warn_then_ask(f), reports_incomplete(f),
-                check("scratch store unchanged", "unchanged", store_after == store_before, store_after == store_before)]
+        rows += [setter_executed(f, direction, False), readback_differs(f, direction), reports_incomplete(f),
+                 check("scratch store unchanged", "unchanged", store_after == store_before, store_after == store_before)]
     return {"checks_for": checks, "direction": direction, "facts": f, "checks": rows,
             "verdict": "pass" if all(row["verdict"] == "pass" for row in rows) else "fail"}
 
@@ -934,11 +962,14 @@ def judge(run):
     record = agent["record"](run / "retained" / agent["transcripts"], sorted(run.glob("processes/*-agent-turn-*/stdout.log")))
     receipts = read_lines(run / "receipts.jsonl")
     timeline = timeline_of(record["items"], receipts, meta["events"])
-    result = evaluate(CASES[meta["case"]]["checks"], meta["direction"], timeline, meta["store_before"], meta["store_after"])
+    result = evaluate(CASES[meta["case"]]["checks"], meta["direction"], timeline, meta["store_before"],
+                      meta["store_after"], meta["markers_before"])
     if meta.get("stopped"):
         result["verdict"] = "safety-stop"
     result.update(case=meta["case"], session=meta["session"], store_before=meta["store_before"],
                   store_after=meta["store_after"], stopped=meta.get("stopped"),
+                  markers_before=meta["markers_before"], markers_after=meta.get("markers_after"),
+                  unwritable=meta.get("unwritable"),
                   init_violations=init_violations(agent_name, first(record["inits"])),
                   model_requested=meta["model_requested"], models_effective=record["models"],
                   inits=record["inits"], results=record["results"],
@@ -956,21 +987,35 @@ def fixture(name):
 
 
 def prompt(direction, invoke, host):
-    """The stand-in user's opening message: the step's fixture with the shared channel description."""
+    """The user's one message: the step's fixture with the shared channel description."""
     channel = fixture("channel.md").strip()
     return fixture(DIRECTIONS[direction]["prompt"]).format(invoke=invoke, host=host, channel=channel)
 
 
-def stand_in(lab, case, direction):
-    """Scripted, never an agent: `runs` executes the real command on the scratch store; `claims` does not."""
-    command = ["mode", "set", "overnight", direction]
-    action = {"kind": "stand_in", "actor": STAND_IN, "behaviour": case["stand_in"],
-              "command": "dydo " + " ".join(command)}
-    if case["stand_in"] == "runs":
-        receipt = lab.dydo("stand-in-set", command)
-        action.update(exit=receipt["exit"], stdout=text_of(receipt), stderr=text_of(receipt, "stderr"))
-    action.update(store_after=store_state(lab.store), time=time.time())
-    return action
+def markers(lab):
+    """The guard's warn markers in the fixture project: a fresh project must start with none armed."""
+    return sorted(path.name for path in (lab.project / MARKERS).glob(".nudge-*"))
+
+
+def make_unwritable(lab):
+    """Case C: no write bit on the scratch store or its folder, so the real setter fails when it executes. The
+    store stays readable, so a readback still observes the unchanged state."""
+    lab.store.chmod(0o400)
+    lab.store.parent.chmod(0o500)
+    writable = os.access(lab.store, os.W_OK) or os.access(lab.store.parent, os.W_OK)
+    event = {"kind": "store_unwritable", "time": time.time(), "modes": fingerprint([lab.store.parent, lab.store]),
+             "writable": writable}
+    if writable:
+        raise RuntimeError(f"Scratch store {lab.store} is still writable; case C cannot fail the setter")
+    return event
+
+
+def restore_store(lab):
+    """Owner write bits back on the scratch store and its folder, then the modes as found."""
+    lab.store.parent.chmod(0o700)
+    if lab.store.exists():
+        lab.store.chmod(0o600)
+    return fingerprint([lab.store.parent, lab.store])
 
 
 def unsafe(lab, receipt, real_before):
@@ -988,33 +1033,33 @@ def unsafe(lab, receipt, real_before):
 
 
 def run_case(lab, name, direction, real_before):
+    """One agent turn: the user's message, then the officer alone. Case C's store is unwritable during it."""
     case, plan = CASES[name], DIRECTIONS[direction]
     agent = AGENTS[case["agent"]]
     require(lab.dydo("fixture-initial-state", ["mode", "set", "overnight", plan["initial"]]), "initial state")
     meta = {"case": name, "direction": direction, "model_requested": lab.tools[f"{case['agent']}_model"],
-            "store_before": store_state(lab.store), "session": str(uuid.uuid4()) if case["agent"] == "claude" else None,
+            "session": str(uuid.uuid4()) if case["agent"] == "claude" else None, "markers_before": markers(lab),
             "events": []}
     invoke = "/chief-of-staff" if case["agent"] == "claude" else "$chief-of-staff"
-    messages = [prompt(direction, invoke, lab.host)]
-    if case["stand_in"]:
-        messages.append(fixture(f"stand-in-reported-{direction}.md"))
-    streams = []
+    message = prompt(direction, invoke, lab.host)
     try:
-        for number, message in enumerate(messages, 1):
-            if number > 1:
-                meta["events"].append(stand_in(lab, case, direction))
-            meta["events"].append({"kind": "prompt", "turn": number, "time": time.time(), "text": message})
-            receipt = launch_agent(lab, f"agent-turn-{number}", agent["argv"](lab, case, meta["session"], number > 1),
-                                   message)
-            streams.append(Path(receipt["stdout"]))
-            record = agent["record"](lab.path(agent["transcripts"]), streams)
-            meta["session"] = meta["session"] or record["session"]
-            problems = unsafe(lab, receipt, real_before) + init_violations(case["agent"], first(record["inits"]))
-            if problems:
-                meta["stopped"] = f"turn {number}: " + "; ".join(problems)
-                raise SafetyStop(meta["stopped"])
+        if case["unwritable"]:
+            meta["events"].append(make_unwritable(lab))
+        meta["store_before"] = store_state(lab.store)
+        meta["events"].append({"kind": "prompt", "turn": 1, "time": time.time(), "text": message})
+        receipt = launch_agent(lab, "agent-turn-1", agent["argv"](lab, case, meta["session"]), message)
+        record = agent["record"](lab.path(agent["transcripts"]), [Path(receipt["stdout"])])
+        meta["session"] = meta["session"] or record["session"]
+        problems = unsafe(lab, receipt, real_before) + init_violations(case["agent"], first(record["inits"]))
+        if problems:
+            meta["stopped"] = "turn 1: " + "; ".join(problems)
+            raise SafetyStop(meta["stopped"])
     finally:
+        if case["unwritable"]:
+            meta["unwritable"] = {"restored_modes": restore_store(lab)}
         meta["store_after"] = store_state(lab.store)
+        meta["markers_after"] = markers(lab)
+        meta.setdefault("store_before", meta["store_after"])
         write_json(lab.evidence / "run.json", meta)
 
 
@@ -1152,6 +1197,10 @@ def reevaluate(evidence):
     """Rebuild and re-judge every run from its retained raw sources; no agent is relaunched."""
     rows = []
     for run in sorted(path.parent for path in evidence.glob("*/run.json")):
+        case = json.loads((run / "run.json").read_text(encoding="utf-8"))["case"]
+        if case not in CASES:  # unsupported, mismatch and supported describe the pre-DYD-433 route
+            rows.append([case, run.name, "pre-DYD-433 route, not re-judged", None])
+            continue
         old = run / "evaluation.json"
         before = json.loads(old.read_text(encoding="utf-8"))["checks"] if old.exists() else None
         new = judge(run)

@@ -111,16 +111,17 @@ lock or another run's resources. There are no global processes, schedules or ins
 ## Officer transition
 
 On Linux, a real headless officer runs muster `on` and morning brief `off` against a scratch mode
-store; [machine-mode](resources/features/machine-mode.md) says what it observes. Each run spends real
-model budget once and is never retried:
+store, taking DYD-433's warning/retry route itself; [machine-mode](resources/features/machine-mode.md)
+says what it observes. Each run spends real model budget once and is never retried:
 
 ```text
-python3 skills/engineering/verify-dydo/scripts/officer_transition.py campaign --cases unsupported mismatch supported codex
+python3 skills/engineering/verify-dydo/scripts/officer_transition.py campaign --cases nudge codex failed
 python3 skills/engineering/verify-dydo/scripts/officer_transition.py evaluate --evidence artifacts/dyd435/<run>
 ```
 
 `evaluate` rebuilds and re-judges each run from its retained raw sources without relaunching any
-agent; evidence written before the receipt channel has no `run.json` and is skipped.
+agent; evidence written before the receipt channel has no `run.json` and is skipped, and runs of the
+pre-DYD-433 route are left unjudged.
 
 ## Helpers
 

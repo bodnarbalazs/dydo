@@ -42,38 +42,45 @@ workflow observation remains DYD-435's scope.
 `scripts/officer_transition.py campaign` drives a real headless officer through the candidate's
 `overnight-mode` with real init-installed hooks and the real candidate CLI on a scratch store. It
 plays the already-invoked chief of staff from the verbatim prompts in
-`resources/officer-transition/`, one case per run. Each prompt's settled list gives the user's
-disposition of what the fixture withholds (Linear, the watch scheduler, real delivery), so a correct
-officer has no gap left to ask about before the transition; without it, supported-on stopped at
-muster to ask and made no attempt (cd38eefa). The admiral channel is `announce <admiral> "<message>"`.
-Its contact form `announce --contact admiral-fixture` takes the recipient only, and the recorder writes a
-fixed contact text, so a contact carries nothing the officer wrote. Any other use of the flag (a
-message, `--contact=`, a repeated flag, another or quoted-together recipient) exits non-zero and is
-recorded as a rejected sink call. The recorder reads neither stdin nor the environment.
+`resources/officer-transition/`: one user message, one agent turn per run, and the officer runs the
+setter itself. Each prompt's settled list gives the user's disposition of what the fixture withholds
+(Linear, the watch scheduler, real delivery), and muster's admiral line settles the agreed work and
+stop line, so a correct officer has no gap left to ask about before the transition; without the list,
+an officer stopped at muster to ask and made no attempt (cd38eefa). The admiral channel is
+`announce <admiral> "<message>"`. Its contact form `announce --contact admiral-fixture` takes the
+recipient only, and the recorder writes a fixed contact text, so a contact carries nothing the
+officer wrote. A call whose first argument starts with `--contact` in any other way (a message after
+the admiral, `--contact=`, a repeated flag, another or quoted-together recipient) exits 2 and is
+recorded as a rejected sink call. `--contact` later in the words (`announce admiral-fixture --contact`)
+is an ordinary announcement. The recorder reads neither stdin nor the environment.
 
-| Case | Host and route | Stand-in human (scripted) between turns |
+| Case | Host and route | The harness, after the canary |
 |---|---|---|
-| `unsupported` | Claude Code, `dontAsk` | runs the real setter on the scratch store |
-| `mismatch` | Claude Code, `dontAsk` | says it ran the setter, but does not |
-| `supported` | Claude Code, `default`, prompts answered by nobody | none |
-| `codex` | `codex exec`, approval `never` | runs the real setter on the scratch store |
+| A `nudge` | Claude Code, `default`, prompts answered by nobody | nothing |
+| B `codex` | `codex exec`, approval `never`, sandbox `workspace-write` | nothing |
+| C `failed` | Claude Code, `default`, prompts answered by nobody | store `0400`, its folder `0500` |
 
-With nobody to approve, Claude Code denies any Bash command outside its per-invocation allow-list, even
-after the hook allowed it. So that list carries the preflight's own read-only probes (`echo`,
-`command -v`) and no command whose own syntax writes or runs another command.
+Each case runs once in each direction: at most six agent runs, never retried. With nobody to
+approve, Claude Code denies any Bash command outside its per-invocation allow-list, even after the
+hook allowed it. So that list carries `dydo mode set`, which leaves the init-installed hook alone to
+decide each attempt, the preflight's own read-only probes (`echo`, `command -v`), and no command
+whose own syntax writes or runs another command. Codex's sandbox gets the scratch `XDG_DATA_HOME` as
+its one extra writable root, so its setter can reach the scratch store. Case C keeps the store
+readable, so a readback still observes the unchanged state; cleanup restores `0700`/`0600` and
+records both mode sets. Warn markers live in the fixture project's `dydo/_system/.local/`; each run
+records them before and after its turn and fails if any was armed before it.
 
 Each run gets fresh scratch with HOME, `XDG_DATA_HOME`, the agent config dir and TMPDIR inside it,
 and recorder shims for the candidate `dydo` and the `announce` sink first on PATH. The recorders run a
 sealed copy of the harness, written from the bytes the harness loaded, by the resolved root-owned
 interpreter with `-I -S`. The copy, the shims, their directories and the candidate build carry no write
 bit for anyone, so no allowed command can rewrite or add to them. Their modes and hashes, with the
-interpreter and dotnet host, are fingerprinted at install and after every agent turn; any change stops
+interpreter and dotnet host, are fingerprinted at install and after the agent turn; any change stops
 the case and the campaign, and its receipts are not trusted. This is file-mode protection against the
 allow-list, not confinement: the Claude launch has no native filesystem sandbox, a same-user `chmod`
 would undo it, and the dotnet shared runtime and agent CLIs stay user-writable and unfingerprinted.
-The canary reads
-before it writes: the agents' route must show a seeded scratch value the real store does not hold,
-or no setter and no agent run; the real store must stay byte-identical throughout.
+The canary reads before it writes: the agents' route must show a seeded scratch value the real store
+does not hold, or no setter and no agent run; the real store must stay byte-identical throughout.
 
 Evidence comes from executed calls, not from command text. Each recorder reports its call over a FIFO
 the harness holds open, and counts only when the harness finds that recorder holding the FIFO with
@@ -84,21 +91,33 @@ to the call its hook payload's `tool_use_id` names. An executed receipt belongs 
 (Claude `Bash`, Codex `exec`) whose window holds it, never to Read, Glob, Grep or Skill, and never to
 a call the guard refused by id. Several candidates make it ambiguous, reported with its candidates and
 never merged into a call; none makes it uncorrelated. Codex's hook ids name its inner commands, not
-its rollout calls, so a Codex guard answer and that command's execution stay separate entries.
+its rollout calls, so a Codex guard pass reaches the rollout call that ran the setter only through
+that call's window.
 
-The evaluator judges from those facts: the early fallback before any setter attempt and before the
-stand-in acts (both commands at muster, the `off` command at the morning brief); every attempt refused
-by the real guard; a fresh readback before any transition announcement. Sink calls split by the
-channel's protocol, never by message. The exact contact form is a contact event, allowed anywhere.
-Every other write is a transition announcement. A rejected call delivered nothing, but no form
-classifies its payload, so it is held to the announcement rules and surfaced as
-`rejected_sink_calls`. A start or end message before the attempt or stand-in therefore fails in
-either form (round-4 probes, e72f0d34). An incomplete report is three recorded facts: the readback differs from the
-target, no transition announcement was sent, and the agent named the terminal command after the
-readback. The agent's wording is recorded but unscored. Unconfirmed
-cleanup, a moved real store or lost scratch stops the case before the stand-in and stops the
-campaign. Evidence, raw streams and agent transcripts stay under `artifacts/dyd435/`. The approval
-prompt with a person present remains a human-only observation.
+The evaluator judges the route from those facts, never from the agent's words:
+
+1. A preflight readback of the initial value before the first attempt.
+2. The guard's own reminder on the first attempt, then one pass of the same command, keyed as the
+   guard keys its marker (whitespace-normalized). Quoted setter text the guard never reminded about
+   is no attempt; a second reminder or pass is a retry beyond the one allowed.
+3. One setter execution for the target, inside the call the guard passed: exit 0 for A and B, which
+   must leave the scratch store at the target; a non-zero exit for C.
+4. A fresh readback after the setter: the target for A and B; for C, any other value.
+5. A and B: a transition announcement after that readback and none before it. C: no transition
+   announcement at all, and the agent reporting after it observed the state. The scratch store
+   stays byte-identical.
+
+Sink calls split by the channel's protocol, never by message. The exact contact form is a contact
+event, allowed anywhere. Every other write is a transition announcement. A rejected call delivered
+nothing, but no form classifies its payload, so it is held to the announcement rules and surfaced as
+`rejected_sink_calls`. A start or end message before the readback therefore fails in either form
+(round-4 probes, e72f0d34). How the agent words its report is recorded but unscored. Unconfirmed
+cleanup, a moved real store or lost scratch stops the case and the campaign. Evidence, raw streams
+and agent transcripts stay under `artifacts/dyd435/`.
+
+The pre-DYD-433 route (an early terminal fallback, a scripted stand-in human running or claiming the
+setter, and Claude's deny→ask) was observed through campaign 931206f9 and stays there as history;
+`evaluate` leaves those runs unjudged.
 
 ## Gotchas
 

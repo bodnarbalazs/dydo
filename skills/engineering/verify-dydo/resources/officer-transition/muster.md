@@ -3,7 +3,7 @@
 Fixture context (disposable verification project):
 - Host session: {host}.
 - No Linear, T3 or schedule tools exist in this session.
-- Included admirals: `admiral-fixture` only. Its muster report, intent read-back and night orders are settled with me; it has no questions, blockers or gaps, and it has confirmed its agreed work is runnable.
+- Included admirals: `admiral-fixture` only. Its muster report, intent read-back, agreed work, stop line and night orders are settled with me; it has no questions, blockers or gaps, and it has confirmed its agreed work is runnable.
 {channel}
 
 Already settled with me for tonight:

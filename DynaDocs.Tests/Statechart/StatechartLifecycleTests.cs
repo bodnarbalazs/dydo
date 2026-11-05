@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Statechart;
 
+using System.ComponentModel;
 using System.Diagnostics;
 using DynaDocs.Services.Statechart;
 
@@ -64,6 +65,62 @@ public class StatechartLifecycleTests
         Assert.All(Directory.GetFiles(scope.Path, "scratch-*.journal"), file =>
             Assert.Contains("drain uncertain", File.ReadAllText(file)));
     }
+
+    // A helper that answers anything but the cleanup protocol is released, and nothing is reserved.
+    [SkippableFact]
+    public async Task AHelperThatDoesNotSpeakTheCleanupProtocolIsReleasedAndRejected()
+    {
+        Skip.IfNot(OperatingSystem.IsWindows(), "Windows Job Object lifetime runs only on Windows.");
+        using var scope = new StatechartTestDirectory();
+        var impostor = new ProcessStartInfo("cmd.exe");
+        foreach (var argument in new[] { "/d", "/q", "/c", "echo", "impostor" }) impostor.ArgumentList.Add(argument);
+
+        var error = await Assert.ThrowsAsync<InvalidDataException>(() =>
+            WindowsStatechartLifetime.StartAsync(impostor, scope.Path, scope.Path, scope.Path));
+        Assert.StartsWith("Statechart cleanup protocol lost: ready:1:", error.Message);
+        await Assert.ThrowsAsync<Win32Exception>(() => WindowsStatechartLifetime.StartAsync(
+            new ProcessStartInfo(Path.Combine(scope.Path, "missing-helper.exe")), scope.Path, scope.Path, scope.Path));
+        Assert.Empty(Directory.EnumerateFileSystemEntries(scope.Path));
+    }
+
+    // Created through the platform dispatch, the lifetime refuses out-of-order use, owns an attached check until it
+    // exits, and reports a lost helper.
+    [SkippableFact]
+    public async Task ALifetimeOwnsAttachedChecksInOrderAndReportsALostHelper()
+    {
+        using var scope = new StatechartTestDirectory();
+        await using var lifetime = await StatechartLifetime.CreateAsync(Binary(), scope.Path, scope.Path, scope.Path);
+        Assert.IsType<WindowsStatechartLifetime>(lifetime);
+        await Assert.ThrowsAsync<InvalidOperationException>(lifetime.DrainAsync);
+        await Assert.ThrowsAsync<InvalidOperationException>(lifetime.CompleteAsync);
+        await lifetime.RegisterAsync();
+        await Assert.ThrowsAsync<InvalidOperationException>(lifetime.RegisterAsync);
+
+        using (var checking = Process.Start(Waiting())!)
+        {
+            lifetime.Attach(checking.Id);
+            checking.StandardInput.Close();
+            await lifetime.WaitAsync(checking, CancellationToken.None);
+            Assert.True(checking.HasExited);
+        }
+        Assert.True(await lifetime.CompleteAsync());
+        Assert.True(await lifetime.DrainAsync());
+        Assert.False(Directory.Exists(lifetime.Stage));
+        Assert.Throws<InvalidOperationException>(() => lifetime.Attach(Environment.ProcessId));
+        await Assert.ThrowsAsync<InvalidOperationException>(lifetime.CompleteAsync);
+
+        using var orphan = Process.Start(Waiting())!;
+        var lost = await Assert.ThrowsAsync<IOException>(() => lifetime.WaitAsync(orphan, CancellationToken.None));
+        Assert.Equal("Statechart cleanup owner was lost; checking stopped and scratch retained.", lost.Message);
+        orphan.Kill();
+        await orphan.WaitForExitAsync();
+    }
+
+    // A command interpreter that lives until its input closes.
+    private static ProcessStartInfo Waiting() => new("cmd.exe")
+    {
+        UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardOutput = true
+    };
 
     [Theory]
     [InlineData(false)]

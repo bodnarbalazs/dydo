@@ -1639,14 +1639,64 @@ public class BashCommandAnalyzerTests
         Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
     }
 
-    // DYD-421 DECIDED: single-quoted text is searched for bypasses exactly as on master; these
-    // single-quoted GS-02 writes stay refused until DYD-422 designs a relaxation.
+    private static readonly ShellDialect[] BashReadings = [ShellDialect.Posix, ShellDialect.Unknown];
+
+    // DYD-422: single-quoted text is literal data, so it makes no write unverifiable, where the whole
+    // line is one sed (one s command), printf or echo and both bash's and PowerShell's readings hold
+    // it as that command's data. The write keeps its literal destination, in every dialect.
+    [Theory]
+    [InlineData("sed -i 's/`x`/y/' f", "f")]
+    [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md", "notes.md")]
+    [InlineData("echo 'cost: $5 and `date`' > notes.md", "notes.md")]
+    public void Analyze_SingleQuotedLiteralDataWrite_IsNoBypass(string command, string destination)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
+            Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == destination);
+        }
+    }
+
+    // Literal data is still path-checked: the change a substitution in it would make is analysed as on master.
+    [Fact]
+    public void Analyze_SingleQuotedLiteralData_KeepsTheChangeASubstitutionWouldMake()
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.Posix).Analyze("sed -i 's#`rm dydo/index.md`#y#' notes.md");
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Delete && op.Path == "dydo/index.md");
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
+    }
+
+    // The documented residual: literal data is not followed into a file a later call runs, such as
+    // a git hook written on a line that runs no git; a quoted-heredoc hook is not followed either.
+    [Fact]
+    public void Analyze_LiteralDataWrittenToAGitHookWithoutGit_IsNotFollowed()
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.Posix).Analyze("printf '%s' '$(date)' > .git/hooks/pre-commit");
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == ".git/hooks/pre-commit");
+    }
+
+    // Every redirection the shell reads counts as a write, an fd-numbered one too, though path
+    // extraction, as on master, records no write for it.
+    [Theory]
+    [InlineData("printf '%s' '$(echo PWNED >&2)' 1> .git/config; git diff")]
+    [InlineData("printf '%s' '$(echo PWNED >&2)' 2>.gitattributes; git add notes.md")]
+    public void Analyze_FdRedirectionToAGitPath_KeepsTheBypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+    }
+
+    // Single-quoted text no reading certifies as literal data is searched as on master (DYD-421): the
+    // GS-02 sed writes chain git, so they are no single data command.
     [Theory]
     [InlineData(GuardRetroCommands.Gs02SedBacktickCommit, "Command contains command substitution - paths may be dynamic")]
     [InlineData(GuardRetroCommands.Gs02SedBacktickSingleLine, "Command contains command substitution - paths may be dynamic")]
-    [InlineData("sed -i 's/`x`/y/' f", "Command contains command substitution - paths may be dynamic")]
-    [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md", "Command contains variable expansion - paths may be dynamic")]
-    [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md", "Command contains embedded newlines")]
     [InlineData("Set-Content notes.md 'first line\n$HOME is literal'", "Command contains variable expansion - paths may be dynamic")]
     [InlineData("bash -c 'echo x' 'name $HOME'", "Command contains variable expansion - paths may be dynamic")]
     public void Analyze_SingleQuotedDataWrite_IsABypassAsOnMaster(string command, string warning)
@@ -1655,6 +1705,215 @@ public class BashCommandAnalyzerTests
 
         Assert.True(result.HasBypassAttempt, $"Expected a bypass: {command}");
         Assert.Contains(warning, result.Warnings);
+    }
+
+    // DYD-422: no relief where a program on the line may run the text, a reading may not be the
+    // shell's, or the text sits in a comment or a body; the bypass and the change stay, as on master.
+    [Theory]
+    [InlineData("bash -c 'echo x > $OUT'")]
+    [InlineData("sh -c 'printf x > $OUT'")]
+    [InlineData("zsh -c 'echo $(rm dydo/index.md)'")]
+    [InlineData("su -c 'echo x > $OUT'")]
+    [InlineData("script -c 'echo x > $OUT'")]
+    [InlineData("xargs sh -c 'echo x > $OUT'")]
+    [InlineData("xargs echo '$(rm dydo/index.md)'")]
+    [InlineData("find . -exec sh -c 'echo x > $OUT' \\;")]
+    [InlineData("find . -exec echo '$(rm dydo/index.md)' \\;")]
+    [InlineData("docker exec box sh -c 'echo x > $OUT'")]
+    [InlineData("kubectl exec pod -- sh -c 'echo x > $OUT'")]
+    [InlineData("tmux send-keys 'echo x > $OUT' Enter")]
+    [InlineData("watch echo '$(rm dydo/index.md)'")]
+    [InlineData("Invoke-Expression 'echo x > $OUT'")]
+    [InlineData("printf '%s' '$(rm dydo/index.md)' | sh")]
+    [InlineData("echo '$(rm dydo/index.md)' | tee notes.md | bash")]
+    [InlineData("printf '%s' '$(rm dydo/index.md)' > /dev/stdout | sh")]
+    [InlineData("echo '$(rm dydo/index.md)' | iex")]
+    [InlineData("sh <(printf '%s' '$(rm dydo/index.md)')")]
+    [InlineData("source <(echo '$(rm dydo/index.md)')")]
+    [InlineData("printf '%s' '$(rm dydo/index.md)' > >(sh)")]
+    [InlineData("{ printf '%s' '$(rm dydo/index.md)'; } | sh")]
+    [InlineData("{ echo '$(rm dydo/index.md)'; echo y; } | sh")]
+    [InlineData("(echo '$(rm dydo/index.md)') | sh")]
+    [InlineData("for f in a; do echo '$(rm dydo/index.md)'; done | sh")]
+    [InlineData("for f in a; do echo a; echo '$(rm dydo/index.md)'; done | sh")]
+    [InlineData("echo '$(rm dydo/index.md)' & sh")]
+    [InlineData("echo '$(rm dydo/index.md)' \\\n| sh")]
+    [InlineData("echo '$HOME' (iex 'rm dydo/index.md') > notes.md")]
+    [InlineData("sed -i 's/x/$TARGET/e' notes.md")]
+    [InlineData("sed -i '1e rm $TARGET' notes.md")]
+    [InlineData("sed -i 's/`x`/y/;e rm dydo/index.md' notes.md")]
+    [InlineData("sed -e 's/`x`/y/' -e '1e rm dydo/index.md' -i notes.md")]
+    [InlineData("sed -i -f run.sed 's/`x`/y/' notes.md")]
+    [InlineData("sed -i '1e rm dydo/index.md' 's/`x`/y/' notes.md")]
+    [InlineData("sed -i 's/`x`/y/w dydo/index.md' notes.md")]
+    [InlineData("awk '{system(\"rm $TARGET\")}' notes.md > out.md")]
+    [InlineData("echo $'\\'' $(echo x > $OUT) '$'\\'''")]
+    [InlineData("echo ^\"'$(echo x > $OUT)'^\"")]
+    [InlineData("echo hi # don't\necho $(rm dydo/index.md) 'ok'")]
+    [InlineData("cat <<EOF\necho don\\'t $(rm dydo/index.md) won\\'t\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nprintf '%s' '$(rm dydo/index.md)'\nEOF")]
+    [InlineData("grep x <<< '$(rm dydo/index.md)'")]
+    [InlineData("printf '%s' 'a $b' > $OUT")]
+    [InlineData("echo 'x' > \"$OUT\"")]
+    [InlineData("printf '%s' 'x' > $(echo notes.md)")]
+    [InlineData("sed -i 's/`x`/y/' $FILE")]
+    [MemberData(nameof(StateChangingLines))]
+    [MemberData(nameof(WriteThenRunLines))]
+    [MemberData(nameof(OptionLines))]
+    [MemberData(nameof(OptionValueLines))]
+    [MemberData(nameof(NarrowedLines))]
+    [MemberData(nameof(ExpandingWordLines))]
+    [MemberData(nameof(PowerShellReadingLines))]
+    [MemberData(nameof(BreakCharacterLines))]
+    public void Analyze_SingleQuotedTextAProgramMayRun_IsABypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            AssertBypassWithAChange(command, dialect);
+    }
+
+    // DYD-422 review: a line with literal data runs only state-free commands. printf -v or %n assigns
+    // a variable (bash evaluates a -v name's subscript); an alias, builtin, assignment or unknown
+    // command anywhere, in any piece, may change what runs; a non-data command may consume the output.
+    public static TheoryData<string> StateChangingLines => GuardRetroCommands.Gs02StateChangingLines;
+
+    // DYD-422 review: no command on a line with literal data reads a file the line writes as code:
+    // every sed only substitutes, grep takes no --pre, and a line that runs git writes no git path.
+    public static TheoryData<string> WriteThenRunLines => GuardRetroCommands.Gs02WriteThenRunLines;
+
+    // DYD-422 review: each state-free command takes only the options on its closed list, in any
+    // spelling; a sed -i backup suffix, an abbreviation or an unlisted option takes the relief away.
+    public static TheoryData<string> OptionLines => GuardRetroCommands.Gs02OptionLines;
+
+    // DYD-422 review: an option that takes a value consumes the next word, -- included.
+    public static TheoryData<string> OptionValueLines => GuardRetroCommands.Gs02OptionValueLines;
+
+    // DYD-422 narrowing: relief is for one sed, printf or echo command alone; a second command of
+    // any kind (git, grep, head, a pipe) leaves the line searched as on master.
+    public static TheoryData<string> NarrowedLines => GuardRetroCommands.Gs02NarrowedLines;
+
+    // DYD-422 review: a word the shell may still expand is not the one the guard reads.
+    public static TheoryData<string> ExpandingWordLines => GuardRetroCommands.Gs02ExpandingWordLines;
+
+    // DYD-422 review: text only PowerShell runs; relief needs PowerShell's reading for every caller.
+    public static TheoryData<string> PowerShellReadingLines => GuardRetroCommands.Gs02PowerShellReadingLines;
+
+    // DYD-422 review: a break character outside single quotes, which pwsh may read as a new statement.
+    public static TheoryData<string> BreakCharacterLines => GuardRetroCommands.Gs02BreakCharacterLines;
+
+    // The narrow seat's exact forms, which write no path: the bypass stays in every dialect.
+    [Theory]
+    [InlineData("echo 'x'\riex '$(touch PWNED)'")]
+    [InlineData("printf 'x'\riex '$(touch PWNED)'")]
+    [InlineData("echo x\rInvoke-Expression '$(touch PWNED)'")]
+    public void Analyze_BreakCharacterOutsideTheQuote_IsABypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+    }
+
+    // Inside single quotes bash 5.3.9 and pwsh 7.6.9 keep a carriage return, NEL and the Unicode
+    // separators literal (measured), so a quote holding them stays literal data.
+    [Theory]
+    [InlineData("printf '%s' 'a\r$(touch PWNED)\rb' > notes.md")]
+    [InlineData("printf '%s' 'a\r\n$HOME\r\n' > notes.md")]
+    [InlineData("echo 'a\u0085$(touch PWNED)\u2028b\u2029' > notes.md")]
+    public void Analyze_BreakCharacterInsideTheQuote_StaysLiteralData(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.False(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+    }
+
+    // Split seat B's probes that write no path keep master's bypass warning; sed with a ?f operand
+    // and no single-quoted bypass text is no bypass, on master or now.
+    [Theory]
+    [MemberData(nameof(ExpandingWordWarningLines))]
+    public void Analyze_ExpandingWordWithoutAWrite_KeepsTheBypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+        Assert.False(_analyzer.Analyze("sed 's/a/b/' ?f run.sed notes.md").HasBypassAttempt);
+    }
+
+    public static TheoryData<string> ExpandingWordWarningLines => GuardRetroCommands.Gs02ExpandingWordWarningLines;
+
+    // sed's closed option list keeps its read-only spellings, in every dialect.
+    [Theory]
+    [InlineData("sed -Ei 's/`x`/y/' notes.md")]
+    [InlineData("sed -n -E 's/`x`/y/p' notes.md > out.md")]
+    [InlineData("sed -i -- 's/`x`/y/' notes.md")]
+    [InlineData("sed --in-place --posix 's/`x`/y/' notes.md")]
+    public void Analyze_ListedOptions_KeepTheRelief(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
+        }
+    }
+
+    // PowerShell's stop-parsing token hands the rest of the line over unparsed, and its echo, the
+    // Write-Output cmdlet, assigns a variable through -OutVariable or another common parameter.
+    // PowerShell's reading is required for every caller, so bash's echo -n loses relief too.
+    [Theory]
+    [InlineData("echo --% '$(echo x > $OUT)' > notes.md")]
+    [InlineData("echo '$(echo x > $OUT)' -OutVariable a > notes.md")]
+    [InlineData("echo '$(echo x > $OUT)' –ov a > notes.md")]
+    [InlineData("echo -n '$(echo x > $OUT)' > notes.md")]
+    [InlineData("echo -n '$HOME' > out.md")]
+    public void Analyze_PowerShellParameterOrStopParsing_IsABypassInEveryDialect(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            AssertBypassWithAChange(command, dialect);
+    }
+
+    // Both readings must place the quote in the same word: bash reads a\ '$HOME' as one word,
+    // PowerShell as two, so no caller gets relief for it.
+    [Theory]
+    [InlineData("echo a\\ '$HOME' > notes.md", "Unknown", true)]
+    [InlineData("echo a\\ '$HOME' > notes.md", "Posix", true)]
+    [InlineData("echo a\\ '$HOME' > notes.md", "PowerShell", true)]
+    [InlineData("echo 'cost: $5 and $HOME' > notes.md", "PowerShell", false)]
+    public void Analyze_QuoteInEveryReadingsWord_DecidesTheBypass(string command, string dialect, bool bypass)
+    {
+        var result = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect)).Analyze(command);
+
+        Assert.Equal(bypass, result.HasBypassAttempt);
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
+    }
+
+    // The round-5 apostrophes pair only in PowerShell. Bash's reading is required in every dialect,
+    // so they stay code for a PowerShell call too, as on master, after a comment or a body as well.
+    [Theory]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("echo don\\'t $(echo x > $OUT) won\\'t")]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t # it's")]
+    [InlineData("# don't\necho don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("cat > notes.md <<'EOF'\nplain words\nEOF\necho don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("cat <<EOF\necho don\\'t $(rm dydo/index.md) won\\'t\nEOF")]
+    public void Analyze_RoundFiveApostrophes_AreABypassInEveryDialect(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            AssertBypassWithAChange(command, dialect);
+    }
+
+    // A typographic quote closes a PowerShell string only, and PowerShell's reading is required for
+    // every caller, so the text after it is code in every dialect.
+    [Theory]
+    [InlineData("echo 'a’ $(echo x > $OUT) ’b'")]
+    [InlineData("echo “a '$(echo x > $OUT)' b”")]
+    public void Analyze_TypographicQuote_IsABypassInEveryDialect(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            AssertBypassWithAChange(command, dialect);
+    }
+
+    private static void AssertBypassWithAChange(string command, ShellDialect dialect)
+    {
+        var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+        Assert.True(result.HasBypassAttempt, $"{dialect}: expected a bypass: {command}");
+        Assert.Contains(result.Operations, op => op.Type is FileOperationType.Write or FileOperationType.Delete);
     }
 
     // DYD-421 DECIDED: apostrophes around a substitution, on a command line or in an expanding

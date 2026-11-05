@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "neutral": "linux",
+  "windows_tests": {
+    "reason": "Windows measures only the members named below, and these are the tests that reach them. Linux runs the full suite over every other point, so a full Windows suite would measure nothing more.",
+    "tests": [
+      "DynaDocs.Tests.Statechart.StatechartCommandTests.InstalledDoctorExtractsPayloadAndNeverClaimsChartReadinessOrInstallsPrerequisites",
+      "DynaDocs.Tests.Statechart.StatechartCommandTests.InstalledDoctorNamesMissingRuntimesWithoutProbingThem",
+      "DynaDocs.Tests.Statechart.StatechartJobTests.ANewJobOwnsNoUnrelatedProcess",
+      "DynaDocs.Tests.Statechart.StatechartJobTests.ASealedJobDrainsItsMemberAndAcceptsNoOther",
+      "DynaDocs.Tests.Statechart.StatechartJobTests.AnExitedProcessIsRefusedRatherThanOwned",
+      "DynaDocs.Tests.Statechart.StatechartJobTests.NativeAttachmentFailuresPreserveTheirWin32Error",
+      "DynaDocs.Tests.Statechart.StatechartLifecycleTests.AHelperThatDoesNotSpeakTheCleanupProtocolIsReleasedAndRejected",
+      "DynaDocs.Tests.Statechart.StatechartLifecycleTests.ALifetimeOwnsAttachedChecksInOrderAndReportsALostHelper",
+      "DynaDocs.Tests.Statechart.StatechartLifecycleTests.IndependentCleanupDeletesRegisteredScratchOnlyAfterNativeOwnerSealsAndDrains",
+      "DynaDocs.Tests.Statechart.StatechartLifecycleTests.OwnerEofRetainsRegisteredScratchWithDurableUncertaintyReason",
+      "DynaDocs.Tests.Statechart.StatechartScratchTests.AuthoritativeDrainDeletesOnlyRegisteredScratch",
+      "DynaDocs.Tests.Statechart.StatechartScratchTests.NativeDirectoryPrimitivesRefuseExistingMissingPlainFileAndOccupiedTargets",
+      "DynaDocs.Tests.Statechart.StatechartWindowsRunnerTests.ACancelledWindowsCheckStillDrainsAndCleansItsScratch",
+      "DynaDocs.Tests.Statechart.StatechartWindowsRunnerTests.AWindowsCheckPublishesOnlyAVerdictItsExitAgreesWithThenCleansItsScratch"
+    ]
+  },
+  "native": {
+    "Commands/StatechartCommand.cs": {
+      "sha256": "89d935c1f9c141bfd6d2a5d00f8adcc39268dec054c5d22bb1478727349c38fb",
+      "windows": [
+        "DiagnoseAsync",
+        "VersionAsync"
+      ]
+    },
+    "Services/Statechart/StatechartLifetime.cs": {
+      "sha256": "a487a63813de9228704e821129f87fd1198093b119c6a85979ba165de818ff90",
+      "windows": [
+        "CreateWindowsAsync"
+      ]
+    },
+    "Services/Statechart/StatechartRunner.cs": {
+      "sha256": "b20394bb7efb19b215a6d7d4254b26297699de7756d9a65ee7f41f8a6526330b",
+      "windows": [
+        "RunWindowsAsync"
+      ]
+    },
+    "Services/Statechart/WindowsStatechartFiles.cs": {
+      "sha256": "17f4f1b36d26e308864b33a5d0e94d1a769825112639f9a3ed87285963350a16",
+      "windows": [
+        "CreateExclusive",
+        "Open",
+        "Identity",
+        "DeleteOnClose",
+        "Check"
+      ]
+    },
+    "Services/Statechart/WindowsStatechartJob.cs": {
+      "sha256": "1431af332f23f04f57b48582c667da58cc648a65622ade6181f235f6a0794f12",
+      "windows": [
+        ".ctor",
+        "Attach",
+        "Contains",
+        "ActiveProcesses",
+        "Terminate",
+        "SealAndDrainAsync",
+        "Dispose",
+        "Check",
+        "Valid"
+      ]
+    },
+    "Services/Statechart/WindowsStatechartLifetime.cs": {
+      "sha256": "58c6f5f2e902b0ed4fd7ea6fd066d3bd3792b491644e5c2f5cf10f704bf8591f",
+      "windows": [
+        "get_Stage",
+        "get_Temp",
+        ".ctor",
+        "StartAsync",
+        "RegisterAsync",
+        "Attach",
+        "CompleteAsync",
+        "DrainAsync",
+        "WaitAsync",
+        "DisposeAsync",
+        "Expect"
+      ]
+    }
+  }
+}

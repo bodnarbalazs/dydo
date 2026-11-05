@@ -18,9 +18,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gate_run import STATIC_GATE_INTERPRETER
 from csharp_coverage import (ASSEMBLY_PROJECTS, GATE_METRICS_PREBUILT_ENV, _assembly_facts, _candidate_assemblies, _identity_classes, _identity_producer, _source_facts, _same_instrumented_map,
                              _altcover_aliases, _same_artifacts, _same_native_map, _same_restored_map,
-                             _subject_commands, _template_original_map, _validate_instrumented,
-                             _validate_restored, _write_commands, altcover_commands, main,
-                             run_campaign, run_subject, snapshot_artifacts)
+                             _platform_tests, _subject_commands, _template_original_map,
+                             _validate_instrumented, _validate_restored, _write_commands,
+                             altcover_commands, main, run_campaign, run_denominator, run_subject,
+                             snapshot_artifacts)
 from csharp_join import coverage_methods, excluded_physical_tokens, join_methods
 
 MINIMAL_SOLUTION = """Microsoft Visual Studio Solution File, Format Version 12.00
@@ -336,6 +337,71 @@ class CSharpCoverageTests(unittest.TestCase):
             self.assertEqual(2, runner.count("--"))
             self.assertIn("--_subject", runner)
             self.assertTrue(str(output / "template.opencover.xml") in rendered)
+
+    def test_a_windows_campaign_runs_only_the_reviewed_selection_without_the_metrics_suite(self):
+        from test_dotnet_platform import WINDOWS_TEST, write_dotnet_fixture
+        with tempfile.TemporaryDirectory() as folder:
+            root = write_dotnet_fixture(Path(folder).resolve())
+            tests = _platform_tests(root, "windows")
+            self.assertEqual("FullyQualifiedName=" + WINDOWS_TEST, tests)
+            self.assertIsNone(_platform_tests(root, "linux"))
+            self.assertIsNone(_platform_tests(root, None))
+            with self.assertRaisesRegex(ValueError, "Unsupported"):
+                _platform_tests(root, "darwin")
+            commands = _subject_commands(root, tests)
+            self.assertEqual(1, len(commands))
+            self.assertEqual(["--filter", tests, "--", "RunConfiguration.TreatNoTestsAsError=true"], commands[0][-4:])
+            _, runner = altcover_commands(root, root / "evidence", tests)
+            self.assertEqual(["--tests", tests], runner[-2:])
+            with patch("csharp_coverage.subprocess.run",
+                       return_value=subprocess.CompletedProcess([], 0)) as run:
+                self.assertEqual(0, run_subject(root, tests))
+            self.assertEqual(commands, [call.args[0] for call in run.call_args_list])
+            with patch.object(sys, "argv", ["csharp_coverage.py", "--_subject", "--root", str(root),
+                                            "--tests", tests]), \
+                    patch("csharp_coverage.run_subject", return_value=0) as subject:
+                self.assertEqual(0, main())
+            subject.assert_called_once_with(str(root), tests)
+
+    def test_the_campaign_command_measures_on_its_native_platform(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            arguments = ["csharp_coverage.py", "--root", str(root), "--result-root", str(root / "fresh")]
+            for platform in ("linux", "windows", None):
+                with self.subTest(platform=platform), patch.object(sys, "argv", arguments), \
+                        patch("dotnet_platform.native_platform", return_value=platform), \
+                        patch("csharp_coverage.run_campaign", return_value=0) as campaign:
+                    self.assertEqual(0, main())
+                campaign.assert_called_once_with(str(root), str(root / "fresh"), [], platform)
+            with patch.object(sys, "argv", [*arguments, "--denominator"]), \
+                    patch("csharp_coverage.run_campaign") as campaign, \
+                    patch("csharp_coverage.run_denominator", return_value=0) as denominator:
+                self.assertEqual(0, main())
+            denominator.assert_called_once_with(str(root), str(root / "fresh"))
+            campaign.assert_not_called()
+
+    def test_the_denominator_is_the_campaigns_zero_hit_join_without_a_suite(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root, output = Path(folder).resolve(), Path(folder).resolve() / "denominator"
+            built = {"template": output / "template.opencover.xml"}
+            with patch.dict(os.environ), \
+                    patch("csharp_coverage._build", return_value=built) as build, \
+                    patch("csharp_coverage._instrument", return_value=True) as instrument, \
+                    patch("csharp_coverage._run_recorded") as recorded, \
+                    patch("csharp_coverage._restore_and_join") as join:
+                self.assertEqual(0, run_denominator(root, output))
+                self.assertEqual("0", os.environ["DOTNET_CLI_USE_MSBUILD_SERVER"])
+            build.assert_called_once_with(root, output, [])
+            instrument.assert_called_once_with(root, output, [], built)
+            recorded.assert_not_called()
+            join.assert_called_once_with(root, output, built, built["template"])
+            for index, (build_result, instrumented) in enumerate(((None, True), (built, False))):
+                with self.subTest(build=build_result, instrumented=instrumented), patch.dict(os.environ), \
+                        patch("csharp_coverage._build", return_value=build_result), \
+                        patch("csharp_coverage._instrument", return_value=instrumented), \
+                        patch("csharp_coverage._restore_and_join") as join:
+                    self.assertEqual(2, run_denominator(root, root / f"failed-{index}"))
+                join.assert_not_called()
 
     def test_snapshot_hashes_assembly_pdb_source_and_reports(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -690,6 +756,27 @@ class CSharpCampaignTests(unittest.TestCase):
         self.assertEqual(sorted(pre), sorted(instrumented))
         self.assertTrue(all(pre[alias] != instrumented[alias] for alias in pre))
         self.assertEqual(self.recorded("identity-pre.json"), self.recorded("identity-post.json"))
+
+    def test_the_denominator_rebuilds_the_campaigns_exact_points_with_zero_hits(self):
+        output = self.root / "denominator"
+        # In-place AltCover keeps its originals beside the build; a fresh checkout, as the union rebuilds, has none.
+        for saved in self.root.rglob("__Saved"):
+            shutil.rmtree(saved)
+        with patch.dict(os.environ):
+            self.assertEqual(0, run_denominator(self.root, output))
+
+        def points(joined):
+            return {row["path"]: (sorted(row["lines"]), sorted(row["branches"]),
+                                  sorted(method["id"] for method in row["methods"])) for row in joined["modules"]}
+        rebuilt = json.loads((output / "joined.json").read_text(encoding="utf-8"))
+        self.assertEqual(points(self.recorded("joined.json")), points(rebuilt))
+        self.assertTrue(any(row["lines"] for row in rebuilt["modules"]))
+        self.assertEqual({0}, {hits for row in rebuilt["modules"]
+                               for hits in [*row["lines"].values(), *row["branches"].values()]})
+        commands = json.loads((output / "commands.json").read_text(encoding="utf-8"))
+        self.assertEqual(["build-0", "build-1", "build-2", "altcover-prepare"], [row["name"] for row in commands])
+        self.assertEqual(self.recorded("identity-pre.json"),
+                         json.loads((output / "identity-post.json").read_text(encoding="utf-8")))
 
     def test_real_campaign_joins_collected_hits_onto_the_authored_source_method(self):
         joined = self.recorded("joined.json")

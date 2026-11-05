@@ -82,13 +82,17 @@ def _wait_coverage_child(child, deadline):
 
 
 def _stop_coverage_campaign(child, deadline, containment):
-    from run_tests import end_descendants
+    from run_tests import end_descendants, pin_descendants
+    pinned = []
     try:
         if sys.platform == "win32":
             child.send_signal(signal.CTRL_BREAK_EVENT)
         else:
             os.killpg(child.pid, signal.SIGINT)
-        _wait_coverage_child(child, time.monotonic() + max(0, deadline - time.monotonic()) / 3)
+        grace = time.monotonic() + max(0, deadline - time.monotonic()) / 3
+        # The owner's grace pays for the first descendant listing; what it pins dies after the grace.
+        pinned = pin_descendants(containment)
+        _wait_coverage_child(child, grace)
     except (OSError, subprocess.TimeoutExpired):
         if sys.platform == "win32":
             child.kill()
@@ -101,7 +105,7 @@ def _stop_coverage_campaign(child, deadline, containment):
     finally:
         # A killed Linux owner can leave detached children adopted by this adapter; the caller's
         # reaping collects them once they are ended.
-        end_descendants(containment, seconds=max(0, deadline - time.monotonic()))
+        end_descendants(containment, seconds=max(0, deadline - time.monotonic()), pinned=pinned)
     return child.returncode
 
 
@@ -597,7 +601,27 @@ def collect_viewer_coverage(root, raw, inventory):
                             commands, artifacts)
 
 
+def _scoped_dotnet(root, evidence, platform, selection):
+    """The native join partitioned by the reviewed selection; the raw join keeps every point."""
+    from dotnet_platform import read_source_files, scope, selected_test_counts
+    from gate_policy import evaluate_policy
+    joined = json.loads((evidence / "joined.json").read_text(encoding="utf-8"))
+    modules, receipt = scope(root, joined["modules"], read_source_files(evidence), platform, selection)
+    if platform == "windows":
+        receipt["tests"] = selected_test_counts(
+            (evidence / "altcover-runner.stdout").read_text(encoding="utf-8", errors="replace"))
+    targets = [{key: value for key, value in target.items() if key != "modules"}
+               for target in joined["targets"]]
+    return {"schema": joined["schema"], "targets": targets, "modules": modules,
+            "platform_selection": receipt}, evaluate_policy(modules)
+
+
 def collect_dotnet_coverage(root, raw):
+    from dotnet_platform import discover_windows_tests, load_selection, native_platform
+    platform = native_platform()
+    selection = load_selection(root, platform)
+    if platform == "windows":
+        discover_windows_tests(root, selection)
     run, evidence = _report_root(raw), raw / "raw"
     script = root / "DynaDocs.Tests/coverage/run_tests.py"
     argv = [sys.executable, str(script), "--assurance-output", str(raw)]
@@ -621,8 +645,8 @@ def collect_dotnet_coverage(root, raw):
                                 [{"gate": "functional", "child_exit": child,
                                   "failingTests": names, "failingTestsSummary": summary}], [],
                                 commands, artifacts)
-    joined = json.loads((evidence / "joined.json").read_text(encoding="utf-8"))
-    return _coverage_report("csharp-coverage", {**facts, **joined}, joined["findings"], [],
+    joined, findings = _scoped_dotnet(root, evidence, platform, selection)
+    return _coverage_report("csharp-coverage", {**facts, **joined}, findings, [],
                             commands, artifacts)
 
 

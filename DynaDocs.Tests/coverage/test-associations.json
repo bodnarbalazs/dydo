@@ -14,6 +14,10 @@
       "tests": ["DynaDocs.Tests/coverage/tests/test_dotnet_platform.py", "DynaDocs.Tests/coverage/tests/test_gate_adapter.py"]
     },
     {
+      "module": "DynaDocs.Tests/coverage/coverage_artifacts.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_coverage_artifacts.py"]
+    },
+    {
       "module": "Services/Statechart/StatechartChecker.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartCheckerTests.cs"]
     },
@@ -110,6 +114,13 @@
       "module": "Commands/CheckDocValidator.cs",
       "tests": [
         "DynaDocs.Tests/Commands/CheckDocValidatorTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/CliParsing.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/GuardAtCommandTests.cs",
+        "DynaDocs.Tests/EndToEnd/GuardAtCommandProcessTests.cs"
       ]
     },
     {
@@ -356,6 +367,12 @@
       ]
     },
     {
+      "module": "DynaDocs.Tests/coverage/held_directory.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_assurance_publication.py"
+      ]
+    },
+    {
       "module": "DynaDocs.Tests/coverage/inventory.py",
       "tests": [
         "DynaDocs.Tests/coverage/tests/test_inventory.py"
@@ -593,7 +610,8 @@
     {
       "module": "DynaDocs.Tests/coverage/run_tests.py",
       "tests": [
-        "DynaDocs.Tests/coverage/tests/test_runner.py"
+        "DynaDocs.Tests/coverage/tests/test_runner.py",
+        "DynaDocs.Tests/coverage/tests/test_assurance_publication.py"
       ]
     },
     {
@@ -812,7 +830,10 @@
     {
       "module": "Services/BashCommandAnalyzer.cs",
       "tests": [
-        "DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs"
+        "DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs",
+        "DynaDocs.Tests/Services/DangerousPatternBudgetTests.cs",
+        "DynaDocs.Tests/Services/DangerousPatternCultureTests.cs",
+        "DynaDocs.Tests/Services/DangerousPatternOracleTests.cs"
       ]
     },
     {

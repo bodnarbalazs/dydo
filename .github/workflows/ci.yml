@@ -28,9 +28,17 @@ jobs:
         with:
           python-version-file: DynaDocs.Tests/coverage/.python-version
 
-      - uses: actions/setup-node@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '26.13.0'
+          cache: pnpm
+          cache-dependency-path: DynaDocs.Tests/coverage/pnpm-lock.yaml
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -50,7 +58,7 @@ jobs:
         run: ${{ matrix.python }} -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 
       - name: Install locked coverage dependencies
-        run: npm ci --prefix DynaDocs.Tests/coverage
+        run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
 
       - name: Prepare native evidence directories
         shell: bash
@@ -110,11 +118,19 @@ jobs:
           PYTHONDONTWRITEBYTECODE: '1'
         run: ${{ matrix.python }} DynaDocs.Tests/coverage/gap_check.py gate static --stack python
 
+      # A rerun of failed jobs reruns only the failed leg, so each artifact names the attempt that made it.
+      - name: Stamp platform coverage artifact identity
+        if: always()
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py stamp --stack python
+          --platform ${{ matrix.platform }} --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --results DynaDocs.Tests/coverage/results
+
       - name: Upload platform coverage evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: python-coverage-${{ matrix.platform }}
+          name: python-coverage-${{ matrix.platform }}-attempt-${{ github.run_attempt }}
           path: DynaDocs.Tests/coverage/results
           if-no-files-found: error
 
@@ -123,6 +139,9 @@ jobs:
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -133,10 +152,12 @@ jobs:
       - name: Install locked union analysis dependencies
         run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 
+      # Every attempt's leg artifacts; the selection below takes each leg's latest execution.
       - uses: actions/download-artifact@v4
         with:
-          pattern: python-coverage-*
-          path: DynaDocs.Tests/coverage/results/coverage-platforms
+          pattern: python-coverage-*-attempt-*
+          path: DynaDocs.Tests/coverage/results/coverage-legs
+          merge-multiple: false
 
       - name: Require both native jobs to pass
         if: always()
@@ -147,6 +168,30 @@ jobs:
           mkdir -p DynaDocs.Tests/coverage/results/coverage-platforms
           echo "$PLATFORM_RESULT" > DynaDocs.Tests/coverage/results/coverage-platforms/native-job-result.txt
           test "$PLATFORM_RESULT" = success
+
+      # A rerun copies each leg it does not rerun into the new attempt, keeping the leg's original start time.
+      - name: Record each leg's latest execution from the run's job record
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_API: repos/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api --paginate "$RUN_API/attempts/${{ github.run_attempt }}/jobs?per_page=100" --jq '.jobs[]' > DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          for attempt in $(seq ${{ github.run_attempt }}); do
+            gh api "$RUN_API/attempts/$attempt" --jq '{run_attempt, run_started_at}'
+          done > DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
+
+      - name: Select each leg's latest-execution artifact
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py select --stack python
+          --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --expected-commit ${{ github.sha }}
+          --jobs DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          --attempts DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
+          --staging DynaDocs.Tests/coverage/results/coverage-legs
+          --linux DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-linux
+          --windows DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-windows
+          --receipt DynaDocs.Tests/coverage/results/coverage-platforms/artifact-selection.json
 
       - name: Verify complete same-candidate platform union
         run: >-
@@ -191,9 +236,17 @@ jobs:
         with:
           python-version-file: DynaDocs.Tests/coverage/.python-version
 
-      - uses: actions/setup-node@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '26.13.0'
+          cache: pnpm
+          cache-dependency-path: DynaDocs.Tests/coverage/pnpm-lock.yaml
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -213,7 +266,7 @@ jobs:
         run: ${{ matrix.python }} -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 
       - name: Install locked coverage dependencies
-        run: npm ci --prefix DynaDocs.Tests/coverage
+        run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
 
       - name: Restore locked .NET tools and packages
         run: |
@@ -260,11 +313,19 @@ jobs:
           PYTHONDONTWRITEBYTECODE: '1'
         run: ${{ matrix.python }} DynaDocs.Tests/coverage/gap_check.py gate coverage --stack dotnet
 
+      # A rerun of failed jobs reruns only the failed leg, so each artifact names the attempt that made it.
+      - name: Stamp platform .NET coverage artifact identity
+        if: always()
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py stamp --stack dotnet
+          --platform ${{ matrix.platform }} --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --results DynaDocs.Tests/coverage/results
+
       - name: Upload platform .NET coverage evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dotnet-coverage-${{ matrix.platform }}
+          name: dotnet-coverage-${{ matrix.platform }}-attempt-${{ github.run_attempt }}
           path: DynaDocs.Tests/coverage/results
           if-no-files-found: error
 
@@ -273,6 +334,9 @@ jobs:
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -302,15 +366,12 @@ jobs:
           dotnet restore --locked-mode
           dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
 
+      # Every attempt's leg artifacts; the selection below takes each leg's latest execution.
       - uses: actions/download-artifact@v4
         with:
-          name: dotnet-coverage-linux
-          path: DynaDocs.Tests/coverage/results/coverage-platforms/linux
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: dotnet-coverage-windows
-          path: DynaDocs.Tests/coverage/results/coverage-platforms/windows
+          pattern: dotnet-coverage-*-attempt-*
+          path: DynaDocs.Tests/coverage/results/coverage-legs
+          merge-multiple: false
 
       - name: Require both native jobs to pass
         if: always()
@@ -321,6 +382,30 @@ jobs:
           mkdir -p DynaDocs.Tests/coverage/results/coverage-platforms
           echo "$PLATFORM_RESULT" > DynaDocs.Tests/coverage/results/coverage-platforms/native-job-result.txt
           test "$PLATFORM_RESULT" = success
+
+      # A rerun copies each leg it does not rerun into the new attempt, keeping the leg's original start time.
+      - name: Record each leg's latest execution from the run's job record
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_API: repos/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api --paginate "$RUN_API/attempts/${{ github.run_attempt }}/jobs?per_page=100" --jq '.jobs[]' > DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          for attempt in $(seq ${{ github.run_attempt }}); do
+            gh api "$RUN_API/attempts/$attempt" --jq '{run_attempt, run_started_at}'
+          done > DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
+
+      - name: Select each leg's latest-execution artifact
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py select --stack dotnet
+          --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --expected-commit ${{ github.event.pull_request.head.sha || github.sha }}
+          --jobs DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          --attempts DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
+          --staging DynaDocs.Tests/coverage/results/coverage-legs
+          --linux DynaDocs.Tests/coverage/results/coverage-platforms/linux
+          --windows DynaDocs.Tests/coverage/results/coverage-platforms/windows
+          --receipt DynaDocs.Tests/coverage/results/coverage-platforms/artifact-selection.json
 
       # Rebuilds this candidate's complete zero-hit denominator and checks each platform's portion against it.
       - name: Verify the complete same-candidate platform partition
@@ -355,16 +440,23 @@ jobs:
         with:
           python-version-file: DynaDocs.Tests/coverage/.python-version
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '26.13.0'
+          cache: pnpm
+          cache-dependency-path: DynaDocs.Tests/coverage/pnpm-lock.yaml
 
       - name: Install locked assurance dependencies
         run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 
       - name: Install locked coverage dependencies
-        run: npm ci --prefix DynaDocs.Tests/coverage
+        run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
 
       - name: Native cancellation regression
         env:

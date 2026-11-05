@@ -7,6 +7,7 @@ import os
 import platform
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -83,6 +84,36 @@ class WindowsJobTests(unittest.TestCase):
         request = windows_job.request([shutil.which("node"), str(subject), *args],
                                       self.root, self.root / "evidence", budget, 3)
         return windows_job.run(request, environment)
+
+    def test_runner_job_reaps_native_descendants_and_checks_its_deadline(self):
+        script = self.root / 'runner_job.py'
+        script.write_text('''import subprocess, sys
+sys.path.insert(0, sys.argv[1])
+import run_tests
+job = run_tests.contain_descendants()
+child = subprocess.Popen([sys.executable, '-c',
+    "import threading; print('ready', flush=True); threading.Event().wait()"],
+    stdout=subprocess.PIPE)
+try:
+    assert child.stdout.readline() == b'ready\\r\\n'
+    try:
+        run_tests.end_descendants(job, seconds=0)
+    except TimeoutError:
+        pass
+    else:
+        raise AssertionError('cleanup deadline was ignored')
+    run_tests.end_descendants(job, seconds=5)
+    assert child.wait(timeout=5) != 0
+    run_tests.end_descendants(job, seconds=5)
+finally:
+    if child.poll() is None:
+        child.kill()
+        child.wait(timeout=5)
+    child.stdout.close()
+''', encoding='utf-8')
+        child = subprocess.run([sys.executable, str(script), str(Path(windows_job.__file__).parent)],
+                               capture_output=True, text=True, timeout=20)
+        self.assertEqual(0, child.returncode, child.stdout + child.stderr)
 
     def test_native_argv_environment_cwd_and_nonzero_are_preserved(self):
         secret = "safe-test-" + os.urandom(16).hex()

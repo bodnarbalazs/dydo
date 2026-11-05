@@ -801,11 +801,12 @@ def _run_assurance_campaign(worktree, extra_args, assurance_output):
                "--extra-json", json.dumps(list(extra_args or []))]
     if sys.platform == "linux":
         owner_result = _run_linux_campaign(command, worktree, owner_output)
-    else:
-        owner_result = run(request(command, worktree, owner_output,
-                                   execution_seconds=1800, teardown_seconds=10),
-                           isolated_environment())
     with defer_interruption():
+        if sys.platform != "linux":
+            # The native owner restores these deferred handlers before publication.
+            owner_result = run(request(command, worktree, owner_output,
+                                       execution_seconds=1800, teardown_seconds=10),
+                               isolated_environment())
         _publish_assurance(worktree, result_root, owner_output, assurance_output, owner_result)
     if owner_result.get("failure_category") == "KeyboardInterrupt" and owner_result.get("cleanup_confirmed"):
         return 130

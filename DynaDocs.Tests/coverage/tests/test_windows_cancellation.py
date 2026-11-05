@@ -11,7 +11,7 @@ import sys
 import tempfile
 import time
 import unittest
-from contextlib import ExitStack
+from contextlib import ExitStack, chdir
 from unittest import mock
 
 TOOLS = Path(__file__).resolve().parents[1]
@@ -21,6 +21,138 @@ import windows_job
 
 
 class CancellationProtocolTests(unittest.TestCase):
+    def test_native_wait_observes_the_owner_interrupt_before_touching_handles(self):
+        kernel = mock.Mock()
+        with self.assertRaises(KeyboardInterrupt):
+            windows_job.wait_campaign(kernel, None, None, {"interrupted": {"requested": True}}, None, 60)
+        self.assertEqual([], kernel.mock_calls)
+
+    def test_reentrant_owner_signal_preserves_the_published_campaign_receipt(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            # The watchdog bounds a deadlocked child; tracing forces the interleaving.
+            try:
+                child = subprocess.run([sys.executable, str(Path(__file__).resolve()),
+                                        "--reentrant-owner", str(root)],
+                                       capture_output=True, text=True, timeout=10)
+            except subprocess.TimeoutExpired as error:
+                self.fail(f"Reentrant signal deadlocked the owner before publication: {error.stderr}")
+            self.assertEqual(130, child.returncode, child.stdout + child.stderr)
+            receipt = json.loads((root / "published/identities.json").read_text())["campaign"]
+            self.assertTrue(receipt["cleanup_confirmed"])
+            self.assertFalse(receipt["complete"])
+            self.assertEqual("KeyboardInterrupt", receipt["failure_category"])
+            self.assertGreater(int((root / "repeat-dispatches").read_text()), 0)
+
+    def test_adapter_records_the_launched_group_even_with_a_python_redirector(self):
+        child = mock.Mock(pid=2468, returncode=0)
+        child.wait.return_value = 0
+        with tempfile.TemporaryDirectory() as folder, chdir(folder), \
+                mock.patch.object(signal, "SIGBREAK", signal.SIGINT, create=True), \
+                mock.patch.object(signal, "signal"), \
+                mock.patch.object(gate_adapter, "sys", platform="win32"), \
+                mock.patch.object(subprocess, "CREATE_NEW_PROCESS_GROUP", 512, create=True), \
+                mock.patch.object(subprocess, "Popen", return_value=child) as launch, \
+                mock.patch("run_tests.contain_descendants", return_value=None):
+            self.assertEqual(0, windows_adapter("repeat"))
+            self.assertEqual("2468", Path("owner-group-pid").read_text())
+            self.assertEqual(512, launch.call_args.kwargs["creationflags"])
+
+    def test_signal_after_native_run_preserves_receipt_before_delivering_interruption(self):
+        import run_tests
+
+        def teardown(*_args):
+            signal.raise_signal(signal.SIGINT)
+            return {"cleanup_confirmed": True, "complete": True}
+
+        for signum in (None, signal.SIGINT, getattr(signal, "SIGBREAK", signal.SIGTERM)):
+            with self.subTest(signum=signum), tempfile.TemporaryDirectory() as folder, ExitStack() as stack:
+                root = Path(folder)
+                stack.enter_context(mock.patch.object(run_tests, "sys", platform="win32", executable=sys.executable))
+                stack.enter_context(mock.patch.object(signal, "SIGBREAK", getattr(signal, "SIGBREAK", signal.SIGTERM), create=True))
+                stack.enter_context(mock.patch.object(windows_job, "validate", return_value={}))
+                stack.enter_context(mock.patch.object(windows_job, "native_run", side_effect=teardown))
+                previous = {}
+                for number in (signal.SIGINT, signal.SIGBREAK):
+                    stack.callback(signal.signal, number, signal.signal(number, signal.default_int_handler))
+                    previous[number] = signal.getsignal(number)
+                returned = delivered = False
+
+                def trace(frame, event, _arg):
+                    nonlocal returned, delivered
+                    if frame.f_code is windows_job.run.__code__ and event == "return":
+                        returned = True
+                    if (returned and not delivered and signum is not None and event == "line"
+                            and frame.f_code is run_tests._run_assurance_campaign.__code__):
+                        delivered = True
+                        signal.raise_signal(signum)
+                    return trace
+
+                stack.callback(sys.settrace, sys.gettrace())
+                sys.settrace(trace)
+                interrupted = False
+                try:
+                    status = run_tests._run_assurance_campaign(root, [], str(root / "published"))
+                except KeyboardInterrupt:
+                    interrupted = True
+                    status = 130
+                finally:
+                    sys.settrace(None)
+                self.assertEqual(130, status)
+                self.assertTrue(returned)
+                self.assertEqual(signum is not None, delivered)
+                self.assertEqual(signum is not None, interrupted)
+                for number, handler in previous.items():
+                    self.assertIs(handler, signal.getsignal(number))
+                manifest = json.loads((root / "published/identities.json").read_text())
+                receipt = manifest["campaign"]
+                owner = json.loads((root / "published/owner/result.json").read_text())
+                self.assertEqual(owner, receipt)
+                self.assertTrue(receipt["owner_id"])
+                self.assertTrue(receipt["config_sha256"])
+                self.assertTrue(receipt["helper_sha256"])
+                self.assertTrue(receipt["cleanup_confirmed"])
+                self.assertFalse(receipt["complete"])
+                self.assertEqual("KeyboardInterrupt", receipt["failure_category"])
+
+    def test_repeat_break_targets_the_launched_group_not_the_python_pid(self):
+        # Model a venv redirector: Python PID 1780 belongs to launch group 2468.
+        # Exercise the supervisor through its OS boundaries, including both teardown ACKs.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for name, pid in (("owner-pid", 1780), ("owner-group-pid", 2468), ("adapter-pid", 2676)):
+                (root / name).write_text(str(pid))
+            result = root / "results/run/result.json"
+            result.parent.mkdir(parents=True)
+            result.write_text('{"aggregateExit": 130}')
+            listener, ready = mock.MagicMock(), mock.MagicMock()
+            listener.__enter__.return_value = listener
+            listener.accept.return_value = (ready, None)
+            ready.__enter__.return_value = ready
+            ready.makefile.return_value.readline.side_effect = [b"[3176, 8644]\n", b"teardown\n", b"ack\n", b"ack\n"]
+            facade, foreign = mock.Mock(), mock.Mock()
+            facade.poll.return_value = foreign.poll.return_value = None
+            facade.wait.return_value = 130
+            kernel = mock.Mock()
+            kernel.OpenProcess.side_effect = lambda _access, _inherit, pid: pid
+            kernel.WaitForSingleObject.return_value = 0
+            with mock.patch.object(subprocess, "run"), \
+                    mock.patch.object(subprocess, "Popen", side_effect=[facade, foreign]), \
+                    mock.patch.object(subprocess, "CREATE_NEW_PROCESS_GROUP", 512, create=True), \
+                    mock.patch.object(signal, "CTRL_BREAK_EVENT", 1, create=True), \
+                    mock.patch.object(socket, "socket", return_value=listener), \
+                    mock.patch.object(select, "select", return_value=([listener], [], [])), \
+                    mock.patch.object(windows_job, "bindings", return_value=kernel), \
+                    mock.patch("run_tests.contain_descendants", return_value=None), \
+                    mock.patch("run_tests.end_descendants"), \
+                    mock.patch.object(os, "kill") as send_break:
+                windows_probe("repeat", root)
+            self.assertEqual([mock.call(2468, 1), mock.call(2468, 1)], send_break.call_args_list)
+            self.assertEqual([mock.call(b"x"), mock.call(b"x")], ready.sendall.call_args_list)
+            observed = json.loads((root / "observation.json").read_text())
+            self.assertTrue(observed["foreign_alive"])
+            self.assertTrue(all(observed["signaled"]))
+
     def test_native_fixture_passes_real_facade_preflight_on_every_platform(self):
         for mode in ("facade", "repeat", "adapter-killed", "escalation"):
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as folder:
@@ -213,6 +345,43 @@ class NativeWindowsCancellationTests(unittest.TestCase):
             self.assertTrue(all(row["signaled"] for row in receipt["held_handles"]))
 
 
+def reentrant_owner(root):
+    """Deliver a second real signal at each Python line reached by the first handler."""
+    import run_tests
+    repeats = 0
+
+    def repeat(frame, event, _arg):
+        nonlocal repeats
+        if event == "line":
+            repeats += 1
+            signal.raise_signal(signal.SIGINT)
+        return repeat
+
+    def trace(frame, _event, _arg):
+        if frame.f_code.co_name == "remember_interrupt" or frame.f_back.f_trace is repeat:
+            return repeat
+        return None
+
+    def teardown(*_args):
+        previous = sys.gettrace()
+        try:
+            sys.settrace(trace)
+            signal.raise_signal(signal.SIGINT)
+        finally:
+            sys.settrace(previous)
+        (root / "repeat-dispatches").write_text(str(repeats))
+        return {"cleanup_confirmed": True, "complete": True}
+
+    previous = signal.getsignal(signal.SIGINT)
+    with mock.patch.object(run_tests, "sys", platform="win32", executable=sys.executable), \
+            mock.patch.object(signal, "SIGBREAK", getattr(signal, "SIGBREAK", signal.SIGTERM), create=True), \
+            mock.patch.object(windows_job, "validate", return_value={}), \
+            mock.patch.object(windows_job, "native_run", side_effect=teardown):
+        result = run_tests._run_assurance_campaign(root, [], str(root / "published"))
+    assert signal.getsignal(signal.SIGINT) is previous
+    return result
+
+
 def windows_subject():
     """A real, separately grouped descendant, ready before the supervisor interrupts."""
     with subprocess.Popen([sys.executable, "-c", "import threading; threading.Event().wait(80)"],
@@ -227,14 +396,15 @@ def windows_owner(mode):
     signal.signal(signal.SIGBREAK, signal.default_int_handler)
     Path("owner-pid").write_text(str(os.getpid()))
     if mode == "escalation":
-        # Emulate an owner stuck in native code: capture and discard cooperative requests.
-        original = windows_job.run
+        # Hide requests from the native wait; the adapter kills the owner before
+        # _run's post-wait check can observe the real requested flag.
+        original = windows_job.wait_campaign
 
-        def ignore_break(*args, **kwargs):
-            with mock.patch.object(windows_job.threading.Event, "set"):
-                return original(*args, **kwargs)
+        def ignore_break(kernel, job, pi, state, stack, seconds):
+            state = {**state, "interrupted": {"requested": False}}
+            return original(kernel, job, pi, state, stack, seconds)
 
-        windows_job.run = ignore_break
+        windows_job.wait_campaign = ignore_break
     if mode == "repeat":
         original_bindings = windows_job.bindings
 
@@ -263,8 +433,17 @@ def windows_adapter(mode):
     Path("adapter-pid").write_text(str(os.getpid()))
     if mode == "escalation":
         gate_adapter.CLEANUP_SECONDS = 3
-    return gate_adapter.run_coverage_command(
-        [sys.executable, str(Path(__file__).resolve()), "--owner", mode], Path.cwd())
+    launch = subprocess.Popen
+
+    def record_group(*args, **kwargs):
+        child = launch(*args, **kwargs)
+        # A Windows venv redirector is the group leader; its Python child has another PID.
+        Path("owner-group-pid").write_text(str(child.pid))
+        return child
+
+    with mock.patch.object(subprocess, "Popen", side_effect=record_group):
+        return gate_adapter.run_coverage_command(
+            [sys.executable, str(Path(__file__).resolve()), "--owner", mode], Path.cwd())
 
 
 def prepare_windows_fixture(mode, root):
@@ -341,8 +520,14 @@ def windows_probe(mode, root):
                     ready.settimeout(15)
                     stream = ready.makefile("rb")
                     assert stream.readline() == b"teardown\n"
+                    # The adapter records this before forwarding the first break, so the
+                    # teardown handshake also guarantees publication and a live group.
+                    owner_group = int((root / "owner-group-pid").read_text())
+                    handle = windows_job.checked(kernel.OpenProcess(0x101001, False, owner_group))
+                    stack.callback(windows_job.close_handle, kernel, handle)
+                    handles.append(handle)
                     for _ in range(2):
-                        os.kill(owner, signal.CTRL_BREAK_EVENT)
+                        os.kill(owner_group, signal.CTRL_BREAK_EVENT)
                         ready.sendall(b"x")
                         assert stream.readline() == b"ack\n"
             code = facade.wait(timeout=35)
@@ -360,7 +545,9 @@ def windows_probe(mode, root):
 
 
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["--probe"]:
+    if sys.argv[1:2] == ["--reentrant-owner"]:
+        raise SystemExit(reentrant_owner(Path(sys.argv[2])))
+    elif sys.argv[1:2] == ["--probe"]:
         windows_probe(sys.argv[2], Path(sys.argv[3]))
     elif sys.argv[1:2] == ["--owner"]:
         raise SystemExit(windows_owner(sys.argv[2]))

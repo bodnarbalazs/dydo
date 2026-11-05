@@ -84,7 +84,7 @@ public sealed class ReleaseWorkflowTests
     }
 
     [Theory]
-    [InlineData("ci.yml", 2)]
+    [InlineData("ci.yml", 3)]
     [InlineData("release.yml", 3)]
     public void Workflows_ProvisionPatchedRuntimeBeforeDotnetConsumers(string name, int expectedJobs)
     {

@@ -129,6 +129,46 @@ public static class GuardRetroCommands
         "git -c alias.x='!sh' x; echo '$(echo x > $OUT)' > notes.md",
     };
 
+    // DYD-422 review (Codex seat 3, 31b6c7a2): lines that write single-quoted text and then run it
+    // through sed -f, a sed e command, grep --pre, or git configuration, attributes or hooks the same
+    // line writes, each refused as on master.
+    public static Xunit.TheoryData<string> Gs02WriteThenRunLines => new()
+    {
+        "printf '%s' 'e echo $(echo PWNED >&2)' > run.sed; sed -f run.sed notes.md",
+        "printf '%s' 'e echo $(echo PWNED >&2)' > run.sed; sed --file=run.sed notes.md",
+        "printf '%s' 'e echo $(echo PWNED >&2)' > run.sed; sed -frun.sed notes.md",
+        "printf '%s' 'e echo $(echo PWNED >&2)' > run.sed; sed -nf run.sed notes.md",
+        "printf '%s' 's/x/$(echo PWNED >&2)/e' > run.sed; sed -f run.sed notes.md",
+        "printf '%s' 'e echo PWNED > $OUT' > run.sed; sed -f run.sed notes.md",
+        "echo '$(echo PWNED >&2)' > run.sed; sed -e 'e sh run.sed' notes.md",
+        "echo '$(echo PWNED >&2)' > run.sed; sed --expression='e sh run.sed' notes.md",
+        "echo '$(echo PWNED >&2)' > run.sed; sed 'e sh run.sed' notes.md",
+        "echo '$(echo PWNED >&2)' > run.sed; sed 's/x/y/;e sh run.sed' notes.md",
+        "echo '$(echo PWNED >&2)' > run.sed; sed '1r run.sed' notes.md",
+        "printf '%s' 'echo $(echo PWNED >&2)' > run.sh; grep --pre=sh run.sh notes.md",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > .git/config; git diff",
+        "printf '[core]\\n pager = echo $(echo PWNED >&2)\\n' > .git/config; git log",
+        "printf '[core]\\n editor = echo $(echo PWNED >&2)\\n' > .git/config; git commit",
+        "printf '[filter \"run\"]\\n clean = echo $(echo PWNED >&2)\\n' > .git/config; git add notes.md",
+        "printf '[diff \"run\"]\\n textconv = echo $(echo PWNED >&2)\\n' > .git/config; git diff --textconv",
+        "printf '%s' '* diff=$(echo PWNED >&2)' > .gitattributes; git diff",
+        "sed -i 's/x/$(echo PWNED >&2)/' .git/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .git/hooks/pre-commit && git commit -m x",
+        "printf '%s' '$(echo PWNED >&2)' >> .git/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > '.git'/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > sub/../.git/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > ./.GIT/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .g\\it/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .git\\config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .git./config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .gi?/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > ~/.gitconfig; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .config/git/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .gitmodules; git status",
+        "printf '%s' '$(echo PWNED >&2)' > .mailmap; git log",
+        "git diff --output=notes.md; echo '$(echo PWNED >&2)' > notes.md",
+    };
+
     // GS-02, Claude Bash: evidence appended through cat >> and a quoted heredoc holding backticks.
     public const string Gs02CatAppendEvidence =
         "cat >> C:/Users/User/.t3/worktrees/LC/LC.worktrees/LC-749-typed-admission/dydo/agents/workspace/LC-749/fix13/evidence.md << 'EOF'\n" +

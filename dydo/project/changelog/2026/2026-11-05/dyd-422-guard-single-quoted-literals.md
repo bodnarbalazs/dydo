@@ -31,6 +31,14 @@ their literal destinations, which are still path-checked.
   spelling and `%n`, which assign variables (bash evaluates a `-v` name's subscript), and
   PowerShell's `echo` with a parameter word such as `-OutVariable`. A command with a heredoc or
   here-string body gets no single-quote relief.
+- No command on the line may read a file the line writes as code. Every `sed` on it must only
+  substitute (no `-f`, `--file`, `-e`, `--expression`, `e`/`w` flag or `e`, `r`, `R`, `w`, `W`
+  command), `grep` takes no `--pre`, and `git` no `--output`. A line that runs `git` may write no path
+  git reads as configuration, attributes or hooks: a `.git` component, `.gitattributes`,
+  `.gitmodules`, `.gitconfig`, `.mailmap` or `.config/git/`, through any redirection or `sed -i`
+  operand. These checks are case-blind, read `\` both ways, fold `.` and `..`, and count a target the
+  shell may expand. So `sed -f run.sed` after writing `run.sed`, and `git diff` after writing
+  `.git/config`, are refused as on master.
 - The line must read for certain: no substitution, group, compound command, continuation, lone `&`,
   `$'...'`, or, where PowerShell may run it, a caret, `--%` or typographic quote.
 - Everything else is searched as before and refused as on master: `echo don\'t $(rm dydo/index.md)
@@ -50,10 +58,14 @@ No change in this entry renames a term mechanically, so it has no merge normalis
 
 Guards stop accidents, not rogue agents.
 
-- The relief does not follow a file it writes into a state-free command that runs it: a git hook
-  written with `printf` and run by `git commit` on the same line passes, as a quoted-heredoc hook
-  does. `printf ... > run.sh && sh run.sh` is refused, since `sh` is not state-free.
-- A profile, alias or git config set before the call is not read; only the call's own text is.
+- The relief does not follow a file between calls: a git hook written on a line that runs no git
+  passes, and a later `git commit` runs it, as with a quoted-heredoc hook. On one line, both the hook
+  with `git commit` and `printf ... > run.sh && sh run.sh` are refused.
+- A profile, alias or git configuration set before the call is not read, including an `include` or
+  `core.hooksPath` that names another file, nor a link that leads to a git path; only the call's own
+  text is.
+- An fd-numbered redirection (`1> .git/config`) takes the relief away, but master's path extraction
+  records no write for it, so the call passes with a warning, as on master.
 - A `sed` script's `r`, `R`, `w` or `W` command naming a file is not a path the guard extracts, with
   or without the relief; the relief takes only a single `s` command.
 

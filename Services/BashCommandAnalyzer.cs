@@ -457,7 +457,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     /// <summary>
     /// The programs whose single-quoted arguments may be literal data (DYD-422): each prints or
-    /// filters the text it is given and runs none of it; sed only as <see cref="IsDataSedScript"/> says.
+    /// filters the text it is given and runs none of it; sed only its script (<see cref="SedScriptIndex"/>).
     /// </summary>
     private static readonly HashSet<string> QuotedDataCommands = new(StringComparer.Ordinal)
         { "sed", "printf", "echo", "grep" };
@@ -535,27 +535,82 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             : [];
     }
 
-    // The reading is certain and every command in it, each sequence member and pipeline stage, is
-    // state-free: no substitution or PowerShell group word, group, continuation or process substitution.
+    // The reading is certain, every command in it, each sequence member and pipeline stage, is
+    // state-free, with no substitution or PowerShell group word, group, continuation or process
+    // substitution, and the line writes nothing git reads as code if it runs git.
     private static bool RunsStateFreeOnly(ShellReader.Reading reading) =>
         !reading.Failed && reading.Source.Executions.Count == 0
-        && reading.Commands.All(command => !command.UncertainFeed && IsStateFree(command.Words, reading.Source.Posix));
+        && reading.Commands.All(command => !command.UncertainFeed && IsStateFree(command.Words, reading.Source.Posix))
+        && !WritesWhatGitReads(reading.Commands);
 
     /// <summary>
     /// Whether the command is one <see cref="StateFreeCommands"/> names, or git with a subcommand
-    /// <see cref="StateFreeGitCommands"/> names. A printf with -v in any spelling, or a %n
-    /// conversion, assigns a variable, and bash evaluates a -v name's subscript, so it is not. Nor
-    /// is PowerShell's echo, the Write-Output cmdlet, with a parameter word, since -OutVariable and
-    /// the other common parameters assign variables.
+    /// <see cref="StateFreeGitCommands"/> names. None of them reads a file as code: a sed must only
+    /// substitute (<see cref="SedScriptIndex"/>), so no sed runs a script file or an e command; a
+    /// grep takes no --pre program, and a git writes no --output file. A printf with -v in any
+    /// spelling, or a %n conversion, assigns a variable, and bash evaluates a -v name's subscript,
+    /// so it is not state-free. Nor is PowerShell's echo, the Write-Output cmdlet, with a parameter
+    /// word, since -OutVariable and the other common parameters assign variables.
     /// </summary>
     private static bool IsStateFree(List<string> words, bool posix) => words switch
     {
-        ["git", var subcommand, ..] => StateFreeGitCommands.Contains(subcommand),
+        ["git", var subcommand, ..] => StateFreeGitCommands.Contains(subcommand) && !words.Any(word => word.StartsWith("--output", StringComparison.Ordinal)),
+        ["sed", ..] => SedScriptIndex(words) > 0,
+        ["grep", ..] => !words.Any(word => word.StartsWith("--pre", StringComparison.Ordinal)),
         ["printf", ..] => !words.Any(word => word.StartsWith("-v", StringComparison.Ordinal) || PrintfAssignmentRegex().IsMatch(word)),
         ["echo", .. var arguments] when !posix => !arguments.Any(word => word is ['-' or '\u2013' or '\u2014' or '\u2015', ..]),
         [var program, ..] => StateFreeCommands.Contains(program),
         _ => false,
     };
+
+    // A line that runs git writes, in any way, a path git reads as configuration, attributes or hooks.
+    private static bool WritesWhatGitReads(IReadOnlyList<ShellReader.Command> commands) =>
+        commands.Any(command => command.Words is ["git", ..]) && commands.SelectMany(WriteTargets).Any(IsGitReadPath);
+
+    // Each place a command may write: its output redirection targets, and every word of a sed after
+    // its script, since sed -i rewrites them.
+    private static IEnumerable<string> WriteTargets(ShellReader.Command command) =>
+        command.RedirectTargets.Where(target => target.Operator.Contains('>'))
+            .Select(target => command.Source.Text[target.Range][target.Operator.Length..].Trim())
+            .Concat(command.Words is ["sed", ..] ? command.Words.Skip(SedScriptIndex(command.Words) + 1) : []);
+
+    /// <summary>
+    /// Whether git may read the write target as code: unquoted, with \ read both as a separator and
+    /// as an escape, it has a .git component, names a .gitattributes, .gitmodules, .gitconfig or
+    /// .mailmap file, or lies in a .config/git folder, with . and .. folded. A target the shell may
+    /// still expand ($, `, a glob or ~) may be any of them.
+    /// </summary>
+    private static bool IsGitReadPath(string target)
+    {
+        if (target.AsSpan().IndexOfAny("$`*?[{~") >= 0)
+            return true;
+        var unquoted = target.Replace("'", "").Replace("\"", "");
+        return IsGitPath(unquoted.Replace('\\', '/')) || IsGitPath(unquoted.Replace("\\", ""));
+    }
+
+    private static readonly HashSet<string> GitReadFiles = new(StringComparer.OrdinalIgnoreCase)
+        { ".gitattributes", ".gitmodules", ".gitconfig", ".mailmap" };
+
+    // Case is ignored and Windows' trailing dots and spaces dropped; a .git component counts before
+    // and after folding, since .git/.. may lead elsewhere through a link.
+    private static bool IsGitPath(string path)
+    {
+        var segments = path.Split('/').Where(segment => segment is not ("" or ".")).ToList();
+        List<string> folded = [];
+        foreach (var segment in segments)
+        {
+            if (segment != "..")
+                folded.Add(segment.TrimEnd('.', ' '));
+            else if (folded.Count > 0)
+                folded.RemoveAt(folded.Count - 1);
+        }
+
+        bool IsGit(string segment) => segment.Equals(".git", StringComparison.OrdinalIgnoreCase);
+        return segments.Select(segment => segment.TrimEnd('.', ' ')).Any(IsGit) || folded.Any(IsGit)
+            || (folded.Count > 0 && GitReadFiles.Contains(folded[^1]))
+            || folded.Zip(folded.Skip(1)).Any(pair => pair.First.Equals(".config", StringComparison.OrdinalIgnoreCase)
+                && pair.Second.Equals("git", StringComparison.OrdinalIgnoreCase));
+    }
 
     // Text outside single quotes where the shell may pair quotes or start commands otherwise:
     // bash's $'...', a lone &, and where PowerShell may run the line a caret (an escape only to
@@ -579,7 +634,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private static bool IsDataArgument(ShellReader.Command command, int word) =>
         QuotedDataCommands.Contains(command.Words[0]) && PipesToDataOnly(command)
-        && (!command.Words[0].Equals("sed", StringComparison.OrdinalIgnoreCase) || IsDataSedScript(command, word));
+        && (command.Words[0] != "sed" || SedScriptIndex(command.Words) == word);
 
     // Each command the output is piped on to is a data command.
     private static bool PipesToDataOnly(ShellReader.Command command)
@@ -595,16 +650,19 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     }
 
     /// <summary>
-    /// Whether the word is sed's one script and the script only substitutes: no option names a
-    /// script or a script file (each of -e, -f, --expression and --file holds an e or an f), the
-    /// word is the first after the options, and it is one s command (<see cref="SedSubstitutionRegex"/>).
+    /// The index of a sed's one script when the sed only substitutes, or -1: no option names a
+    /// script or a script file (each of -e, -f, --expression and --file holds an e or an f), and the
+    /// first word after the options is one s command (<see cref="SedSubstitutionRegex"/>), so no e,
+    /// w, r, R or W command or flag runs or writes a file.
     /// </summary>
-    private static bool IsDataSedScript(ShellReader.Command command, int word)
+    private static int SedScriptIndex(List<string> words)
     {
-        var arguments = command.Words.Skip(1).ToList();
-        return arguments.FindIndex(argument => !argument.StartsWith('-')) + 1 == word
-            && arguments.Where(argument => argument.StartsWith('-')).All(option => option.IndexOfAny(['e', 'f']) < 0)
-            && SedSubstitutionRegex().IsMatch(command.Words[word]);
+        var script = words.FindIndex(1, word => !word.StartsWith('-'));
+        return script > 0
+            && words.Skip(1).Where(word => word.StartsWith('-')).All(option => option.IndexOfAny(['e', 'f']) < 0)
+            && SedSubstitutionRegex().IsMatch(words[script])
+            ? script
+            : -1;
     }
 
     // Bypass detection patterns

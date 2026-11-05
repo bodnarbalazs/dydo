@@ -1568,15 +1568,40 @@ public class BashCommandAnalyzerTests
         Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
     }
 
-    // The documented residual: literal data is not followed into a file a state-free command on the
-    // line runs, such as a git hook git commit runs; a quoted-heredoc hook is not followed either.
+    // The documented residual: literal data is not followed into a file a later call runs, such as
+    // a git hook written on a line that runs no git; a quoted-heredoc hook is not followed either.
     [Fact]
-    public void Analyze_LiteralDataWrittenToAGitHookThenCommitted_IsNotFollowed()
+    public void Analyze_LiteralDataWrittenToAGitHookWithoutGit_IsNotFollowed()
     {
-        var result = new BashCommandAnalyzer(ShellDialect.Posix).Analyze("printf '%s' '$(date)' > .git/hooks/pre-commit && git commit -m x");
+        var result = new BashCommandAnalyzer(ShellDialect.Posix).Analyze("printf '%s' '$(date)' > .git/hooks/pre-commit");
 
         Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
         Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == ".git/hooks/pre-commit");
+    }
+
+    // Every redirection the shell reads counts as a write, an fd-numbered one too, though path
+    // extraction, as on master, records no write for it.
+    [Theory]
+    [InlineData("printf '%s' '$(echo PWNED >&2)' 1> .git/config; git diff")]
+    [InlineData("printf '%s' '$(echo PWNED >&2)' 2>.gitattributes; git add notes.md")]
+    public void Analyze_FdRedirectionToAGitPath_KeepsTheBypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+    }
+
+    // A line that runs git keeps its relief while it writes no path git reads as code.
+    [Theory]
+    [InlineData("printf '%s' '$(date)' > docs/.github-notes.md; git diff")]
+    [InlineData("sed -i 's/`x`/y/' docs/git/config.md && git add docs/git/config.md")]
+    public void Analyze_GitLineWritingNoGitPath_KeepsItsRelief(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
+        }
     }
 
     // Single-quoted text no reading certifies as literal data is searched as on master (DYD-421).
@@ -1642,6 +1667,7 @@ public class BashCommandAnalyzerTests
     [InlineData("printf '%s' 'x' > $(echo notes.md)")]
     [InlineData("sed -i 's/`x`/y/' $FILE")]
     [MemberData(nameof(StateChangingLines))]
+    [MemberData(nameof(WriteThenRunLines))]
     public void Analyze_SingleQuotedTextAProgramMayRun_IsABypass(string command)
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
@@ -1652,6 +1678,10 @@ public class BashCommandAnalyzerTests
     // a variable (bash evaluates a -v name's subscript); an alias, builtin, assignment or unknown
     // command anywhere, in any piece, may change what runs; a non-data command may consume the output.
     public static TheoryData<string> StateChangingLines => GuardRetroCommands.Gs02StateChangingLines;
+
+    // DYD-422 review: no command on a line with literal data reads a file the line writes as code:
+    // every sed only substitutes, grep takes no --pre, and a line that runs git writes no git path.
+    public static TheoryData<string> WriteThenRunLines => GuardRetroCommands.Gs02WriteThenRunLines;
 
     // PowerShell's stop-parsing token hands the rest of the line over unparsed, and its echo, the
     // Write-Output cmdlet, assigns a variable through -OutVariable or another common parameter.

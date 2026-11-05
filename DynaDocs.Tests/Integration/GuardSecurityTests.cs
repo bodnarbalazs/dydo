@@ -955,6 +955,27 @@ public class GuardSecurityTests : IntegrationTestBase
         Assert.Equal(before, File.ReadAllBytes(canary));
     }
 
+    // DYD-422 review: a line that writes single-quoted text and then runs it through sed -f, a sed e
+    // command, grep --pre, or git configuration, attributes or hooks it writes, is refused through
+    // Claude's Bash and PowerShell tools and an unknown shell, as on master.
+    [Theory]
+    [MemberData(nameof(GuardRetroCommands.Gs02WriteThenRunLines), MemberType = typeof(GuardRetroCommands))]
+    public async Task Gs02_WriteThenRun_IsDeniedInEveryShell(string command)
+    {
+        await SetupClaimedAgent();
+
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        bash.AssertPreToolUseDenied();
+        bash.AssertStderrContains("bypass");
+        powerShell.AssertPreToolUseDenied();
+        powerShell.AssertStderrContains("bypass");
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains("bypass");
+    }
+
     // The round-5 apostrophes pair only in PowerShell; bash's reading is required for every caller,
     // so Claude's Bash and PowerShell tools and an unknown shell all refuse them, as on master.
     [Theory]

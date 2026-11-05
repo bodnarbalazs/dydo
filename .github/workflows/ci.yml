@@ -2,8 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, 'feature/**']
   pull_request:
+
+# A newer push to the same feature branch cancels its superseded run. Every other run, a
+# master/main push or a pull request, has a group of its own, so nothing cancels it.
+concurrency:
+  group: ci-${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/') && github.ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   python-coverage:

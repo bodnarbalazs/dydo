@@ -42,6 +42,23 @@ public sealed class ReleaseWorkflowTests
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertCancellationJob(invalid));
     }
 
+    // Each feature-tip merge commit gets a hosted verdict. A newer push to the same feature branch
+    // cancels its superseded run; master/main pushes and pull requests get a group of their own run,
+    // so they are never cancelled, and no run cancels another ref's run.
+    [Fact]
+    public void CiWorkflow_RunsOnFeatureTipPushesAndCancelsOnlyASupersededRunOnTheSameFeatureBranch()
+    {
+        var workflow = File.ReadAllText(RepositoryFile(".github", "workflows", "ci.yml"));
+
+        Assert.Equal("on:\n  push:\n    branches: [master, main, 'feature/**']\n  pull_request:", TopLevelBlock(workflow, "on"));
+        Assert.Equal(
+            "concurrency:\n" +
+            "  group: ci-${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/') && github.ref || github.run_id }}\n" +
+            "  cancel-in-progress: true",
+            TopLevelBlock(workflow, "concurrency"));
+        Assert.DoesNotContain("concurrency:", TopLevelBlock(workflow, "jobs"));
+    }
+
     [Fact]
     public void ReleaseWorkflow_UsesPinnedPythonOnlyOnSupportedWindowsValidation()
     {
@@ -548,6 +565,19 @@ public sealed class ReleaseWorkflowTests
         while (end < lines.Length &&
                (!lines[end].StartsWith("  ", StringComparison.Ordinal) ||
                 lines[end].StartsWith("    ", StringComparison.Ordinal)))
+            end++;
+
+        return string.Join('\n', lines[start..end]);
+    }
+
+    private static string TopLevelBlock(string workflow, string key)
+    {
+        var lines = ActiveText(workflow).Split('\n');
+        var start = Array.IndexOf(lines, $"{key}:");
+        Assert.True(start >= 0, $"Missing active top-level {key} block.");
+
+        var end = start + 1;
+        while (end < lines.Length && lines[end].StartsWith(' '))
             end++;
 
         return string.Join('\n', lines[start..end]);

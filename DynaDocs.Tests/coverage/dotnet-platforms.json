@@ -41,16 +41,17 @@
       ]
     },
     "Services/Statechart/WindowsStatechartFiles.cs": {
-      "sha256": "63e7936024634a9867103f460b77090b83e302a54caff5ea62c00e2745ac0c9e",
+      "sha256": "17f4f1b36d26e308864b33a5d0e94d1a769825112639f9a3ed87285963350a16",
       "windows": [
         "CreateExclusive",
         "Open",
         "Identity",
-        "DeleteOnClose"
+        "DeleteOnClose",
+        "Check"
       ]
     },
     "Services/Statechart/WindowsStatechartJob.cs": {
-      "sha256": "fdc8f3afcc239862d463cfd28f4ea66814626b499e51e6271be3f43972c146bb",
+      "sha256": "1431af332f23f04f57b48582c667da58cc648a65622ade6181f235f6a0794f12",
       "windows": [
         ".ctor",
         "Attach",
@@ -59,7 +60,8 @@
         "Terminate",
         "SealAndDrainAsync",
         "Dispose",
-        "Check"
+        "Check",
+        "Valid"
       ]
     },
     "Services/Statechart/WindowsStatechartLifetime.cs": {

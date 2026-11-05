@@ -335,10 +335,17 @@ initializer goes with its member. A branch belongs to its origin line. Linux run
 and measures every other point, including the neutral remainder of mixed files. Windows runs only
 the selection's named tests, which reach the named members, and must run all of them without a
 skip. Both gates apply 80% line / 60% branch / HCRAP 20 to their own portion. The hosted
-`dotnet-windows-coverage` job measures the PR head. The dependent `dotnet-coverage-union` job
-rebuilds that commit's complete zero-hit Linux denominator. It then checks that the Windows report
-holds exactly the Windows-owned points and agrees on every owner. With `--linux`, it checks a Linux
-gate report on the same commit as well. A failing Linux gate keeps its own exit as its verdict.
+`dotnet-coverage` job runs both gates on the PR head, Linux on `ubuntu-24.04` and Windows on
+`windows-latest`. The dependent `dotnet-coverage-union` job requires both reports and both
+passing gates on the same clean commit. It rebuilds that commit's complete zero-hit Linux
+denominator and checks that each report holds exactly its own platform's points and agrees on
+every owner. Neither report alone establishes .NET coverage success.
+
+Native error codes are read in the native call's own statement, as in
+`Check(Native(...), Marshal.GetLastPInvokeError())`. The gate instruments with AltCover `--eager`,
+and each visit flushes its trace through a P/Invoke that replaces the thread's last error. Visits
+fall at statement and branch boundaries, so a read in a later statement sees the visit's error,
+not the native call's.
 
 ## Recorded gate correction: three dynamic Vulture uses
 

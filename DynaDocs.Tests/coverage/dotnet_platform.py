@@ -208,9 +208,15 @@ def _report_facts(report, platform):
             or report['measurementComplete'] is not True or report['gaps']
             or report['candidate']['dirty'] is not False or not report['candidate']['commit']):
         raise ValueError('Platform union requires complete clean .NET coverage gates')
+    if report['exitCode'] != 0 or report['findings']:
+        raise ValueError(f'Platform union requires a passing {platform} .NET coverage gate')
     facts = report['collectors']['csharp-coverage']['facts']
     receipt = facts['platform_selection']
-    if type(receipt['schema']) is not int or receipt['schema'] != 1 or receipt['platform'] != platform:
+    # Windows counts the selected tests it ran; Linux counts none, because it runs the full suite.
+    tests = receipt.get('tests')
+    suite = bool(tests and tests['total']) if platform == 'windows' else tests is None
+    if (type(receipt['schema']) is not int or receipt['schema'] != 1 or receipt['platform'] != platform
+            or not suite):
         raise ValueError('Missing or wrong platform coverage receipt')
     if evaluate_policy(facts['modules']) != report['findings']:
         raise ValueError('Platform coverage findings disagree with its measured points')
@@ -263,47 +269,42 @@ def rebuild_denominator(root, output):
     return joined['modules'], read_source_files(output)
 
 
-def _platform_result(report, platform, authoritative, rebuilt):
-    modules, receipt = _report_facts(report, platform)
+def _platform_result(platform, facts, authoritative, rebuilt):
+    modules, receipt = facts
     for key in ('sources', 'selection_sha256', 'denominators'):
         if receipt[key] != authoritative[key]:
             raise ValueError(f'Source-derived platform {key} differ: {platform}')
     _check_points(modules, authoritative, platform, rebuilt)
-    return {'commit': report['candidate']['commit'], 'exitCode': report['exitCode'],
-            'findings': len(report['findings']), 'modules': len(modules)}
+    return {'modules': len(modules), **({'tests': receipt['tests']} if 'tests' in receipt else {})}
 
 
-def verify_union(windows, root, output, linux=None):
-    """Fail closed unless Windows passes on its exact portion of the rebuilt candidate partition."""
-    if windows['exitCode'] != 0 or windows['findings']:
-        raise ValueError('Platform union requires a passing Windows .NET coverage gate')
-    commit = windows['candidate']['commit']
+def verify_union(linux, windows, root, output):
+    """Fail closed unless both gates pass on their exact portions of the rebuilt candidate partition."""
+    facts = {'linux': _report_facts(linux, 'linux'), 'windows': _report_facts(windows, 'windows')}
+    commit = linux['candidate']['commit']
+    if windows['candidate']['commit'] != commit:
+        raise ValueError('Platform gates measured different candidates')
     _clean_checkout(root, commit)
     modules, source_files = rebuild_denominator(root, output)
     _, authoritative = scope(root, modules, source_files, 'linux')
     rebuilt = {module['path']: module for module in modules}
-    result = {'schema': 1, 'commit': commit, 'selection_sha256': authoritative['selection_sha256'],
-              'modules': len(rebuilt), 'windows': _platform_result(windows, 'windows', authoritative, rebuilt)}
-    if linux is not None:
-        if linux['candidate']['commit'] != commit:
-            raise ValueError('Platform gates measured different candidates')
-        # The Linux gate's own exit stays its verdict; the union proves the partition it measured.
-        result['linux'] = _platform_result(linux, 'linux', authoritative, rebuilt)
-    result['exitCode'] = 0
-    return result
+    return {'schema': 1, 'commit': commit, 'selection_sha256': authoritative['selection_sha256'],
+            'modules': len(rebuilt), 'exitCode': 0,
+            'platforms': {platform: _platform_result(platform, rows, authoritative, rebuilt)
+                          for platform, rows in facts.items()}}
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--linux', required=True, type=Path)
     parser.add_argument('--windows', required=True, type=Path)
-    parser.add_argument('--linux', type=Path)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--root', default=Path('.'), type=Path)
     args = parser.parse_args()
     try:
-        linux = json.loads(args.linux.read_text(encoding='utf-8')) if args.linux else None
-        result = verify_union(json.loads(args.windows.read_text(encoding='utf-8')), args.root,
-                              args.output / 'denominator', linux)
+        result = verify_union(json.loads(args.linux.read_text(encoding='utf-8')),
+                              json.loads(args.windows.read_text(encoding='utf-8')), args.root,
+                              args.output / 'denominator')
     except (ValueError, KeyError, TypeError, OSError, subprocess.CalledProcessError) as error:
         print(error, file=sys.stderr)
         return 2

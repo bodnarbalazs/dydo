@@ -44,19 +44,29 @@ in place; release and publishing workflows are independent.
 Windows runs only them. `dotnet_platform.py` partitions the native join by emitted-body owner and
 writes `platform_selection` beside the measured modules in `adapters/dotnet-coverage.json`. That
 receipt holds the source and selection hashes, the owner of every line, branch and callable, and
-on Windows the selected suite's pass count. A missing or drifted selection, a missing member, an
-undeclared test or an unsupported platform fails before the campaign starts. A skipped selected
-test fails the Windows gate. The raw `joined.json` keeps every native point.
+on Windows the selected suite's pass count. A missing or drifted selection or an unsupported
+platform fails before the campaign starts. So does, on Windows only, a selected test that is not
+declared exactly once in its class (`discover_windows_tests`). A named member missing from the
+compiled source inventory fails after the campaign, when the join is scoped (`_members` in
+`scope`). A skipped selected test fails the Windows gate. The raw `joined.json` keeps every native
+point.
 
-The union rebuilds the clean candidate's denominator on Linux with the campaign's own builds and
-AltCover instrumentation, without running a suite. Matching omissions therefore fail too. CI runs:
+The `dotnet-coverage` CI job runs the gate on `ubuntu-24.04` (the full suite) and on
+`windows-latest` (the selected tests), each on the PR head, and uploads `dotnet-coverage-linux`
+and `dotnet-coverage-windows`. The dependent `dotnet-coverage-union` job requires both legs to
+pass and runs:
 
 ```sh
-python DynaDocs.Tests/coverage/dotnet_platform.py --windows DynaDocs.Tests/coverage/results/coverage-platforms/windows/adapters/dotnet-coverage.json --output DynaDocs.Tests/coverage/results/coverage-platforms
+python DynaDocs.Tests/coverage/dotnet_platform.py --linux DynaDocs.Tests/coverage/results/coverage-platforms/linux/adapters/dotnet-coverage.json --windows DynaDocs.Tests/coverage/results/coverage-platforms/windows/adapters/dotnet-coverage.json --output DynaDocs.Tests/coverage/results/coverage-platforms
 ```
 
-Add `--linux <adapters/dotnet-coverage.json>` to check a local Linux gate on the same commit as
-well. Run it from a clean checkout with no earlier in-place AltCover output (`__Saved`) in `bin/`.
+Both reports are required. The union rejects a missing report, a failed, incomplete or dirty gate,
+reports from different commits, a Windows receipt without its selected-test count and a Linux
+receipt with one. It then rebuilds the clean candidate's zero-hit denominator on Linux, using the
+campaign's own builds and AltCover instrumentation without running a suite. Each report must hold
+exactly its platform's lines, branches and callables of that denominator, under the same source
+and selection hashes and owners, so matching omissions fail too. It writes `union.json`. Run it
+from a clean checkout with no earlier in-place AltCover output (`__Saved`) in `bin/`.
 
 `DynaDocs.Tests/coverage/gap_check.py` is the canonical project testing facade. Its adjacent
 `gap_check.json` is the schema 1 manifest that declares each stack's test, static, coverage and

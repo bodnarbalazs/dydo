@@ -294,54 +294,90 @@ class UnionTests(unittest.TestCase):
 
     def report(self, platform, modules=None):
         rows, receipt = dotnet_platform.scope(self.root, modules or joined_modules(), source_files(), platform)
+        if platform == 'windows':
+            receipt['tests'] = {'passed': 1, 'total': 1}
         findings = evaluate_policy(rows)
         return {'schema': 1, 'candidate': {'commit': self.commit, 'dirty': False},
                 'exitCode': 1 if findings else 0, 'measurementComplete': True,
                 'stack': 'dotnet', 'gate': 'coverage', 'findings': findings, 'gaps': [],
                 'collectors': {'csharp-coverage': {'facts': {'modules': rows, 'platform_selection': receipt}}}}
 
-    def verify(self, windows, linux=None):
-        return dotnet_platform.verify_union(windows, self.root, self.output, linux)
+    def verify(self, linux=None, windows=None):
+        return dotnet_platform.verify_union(linux or self.report('linux'), windows or self.report('windows'),
+                                            self.root, self.output)
 
     def rows(self, report):
         return report['collectors']['csharp-coverage']['facts']
 
-    def test_a_passing_windows_portion_of_the_rebuilt_candidate_partition_unions(self):
-        result = self.verify(self.report('windows'), self.report('linux', joined_modules(linux=0)))
+    def test_two_passing_gates_on_their_exact_portions_of_the_rebuilt_candidate_partition_union(self):
+        result = self.verify()
         self.assertEqual(self.commit, result['commit'])
         self.assertEqual((0, 3), (result['exitCode'], result['modules']))
-        self.assertEqual({'commit': self.commit, 'exitCode': 0, 'findings': 0, 'modules': 2}, result['windows'])
-        self.assertEqual((1, 2), (result['linux']['exitCode'], result['linux']['modules']))
+        self.assertEqual({'linux': {'modules': 2}, 'windows': {'modules': 2, 'tests': {'passed': 1, 'total': 1}}},
+                         result['platforms'])
         self.rebuild.assert_called_once_with(self.root, self.output)
 
-    def test_a_failing_incomplete_or_dirty_windows_gate_never_unions(self):
-        failing = self.report('windows', joined_modules(windows=0))
-        with self.assertRaisesRegex(ValueError, 'passing Windows'):
-            self.verify(failing)
-        for change in ({'measurementComplete': False}, {'gaps': [{'message': 'x'}]}, {'stack': 'python'},
-                       {'candidate': {'commit': self.commit, 'dirty': True}}):
-            with self.subTest(change=change), self.assertRaisesRegex(ValueError, 'complete clean'):
-                self.verify({**self.report('windows'), **change})
-        hidden = {**self.report('windows', joined_modules(windows=0)), 'exitCode': 0, 'findings': []}
-        with self.assertRaisesRegex(ValueError, 'findings disagree'):
-            self.verify(hidden)
+    def test_a_failing_incomplete_or_dirty_gate_on_either_platform_never_unions(self):
+        for platform in dotnet_platform.PLATFORMS:
+            def verify(report):
+                return self.verify(**{platform: report})
+            with self.subTest(platform=platform):
+                failing = self.report(platform, joined_modules(**{platform: 0}))
+                with self.assertRaisesRegex(ValueError, f'passing {platform} .NET coverage gate'):
+                    verify(failing)
+                for change in ({'measurementComplete': False}, {'gaps': [{'message': 'x'}]}, {'stack': 'python'},
+                               {'candidate': {'commit': self.commit, 'dirty': True}}):
+                    with self.subTest(change=change), self.assertRaisesRegex(ValueError, 'complete clean'):
+                        verify({**self.report(platform), **change})
+                hidden = {**self.report(platform, joined_modules(**{platform: 0})), 'exitCode': 0, 'findings': []}
+                with self.assertRaisesRegex(ValueError, 'findings disagree'):
+                    verify(hidden)
         tampered = self.report('windows')
         self.rows(tampered)['modules'][0]['lines']['6'] = 0
         with self.assertRaisesRegex(ValueError, 'ownership does not account'):
-            self.verify(tampered)
+            self.verify(windows=tampered)
+        self.rebuild.assert_not_called()
 
-    def test_the_union_runs_only_on_the_clean_checkout_of_the_measured_candidate(self):
-        moved = self.report('windows')
-        moved['candidate']['commit'] = '0' * 40
+    def test_windows_counts_the_selected_tests_it_ran_and_linux_ran_the_full_suite(self):
+        unselected = self.report('windows')
+        del self.rows(unselected)['platform_selection']['tests']
+        empty = self.report('windows')
+        self.rows(empty)['platform_selection']['tests'] = {'passed': 0, 'total': 0}
+        filtered = self.report('linux')
+        self.rows(filtered)['platform_selection']['tests'] = {'passed': 1, 'total': 1}
+        for case in ({'windows': unselected}, {'windows': empty}, {'linux': filtered}):
+            with self.subTest(case=list(case)), self.assertRaisesRegex(ValueError, 'wrong platform coverage receipt'):
+                self.verify(**case)
+        self.rebuild.assert_not_called()
+
+    def test_the_union_runs_only_on_the_clean_checkout_of_one_measured_candidate(self):
+        for platform in dotnet_platform.PLATFORMS:
+            moved = self.report(platform)
+            moved['candidate']['commit'] = '0' * 40
+            with self.subTest(platform=platform), self.assertRaisesRegex(ValueError, 'different candidates'):
+                self.verify(**{platform: moved})
+        linux, windows = self.report('linux'), self.report('windows')
+        for report in (linux, windows):
+            report['candidate']['commit'] = '0' * 40
         with self.assertRaisesRegex(ValueError, 'clean pinned checkout'):
-            self.verify(moved)
-        with self.assertRaisesRegex(ValueError, 'different candidates'):
-            linux = self.report('linux')
-            linux['candidate']['commit'] = '0' * 40
-            self.verify(self.report('windows'), linux)
+            self.verify(linux, windows)
         (self.root / 'Lib/Neutral.cs').write_text('changed', encoding='utf-8')
         with self.assertRaisesRegex(ValueError, 'clean pinned checkout'):
-            self.verify(self.report('windows'))
+            self.verify()
+        self.rebuild.assert_not_called()
+
+    def test_a_gate_measured_under_another_selection_never_unions(self):
+        for platform in dotnet_platform.PLATFORMS:
+            other = self.report(platform)
+            self.rows(other)['platform_selection']['selection_sha256'] = '0' * 64
+            with self.subTest(platform=platform), \
+                    self.assertRaisesRegex(ValueError, f'selection_sha256 differ: {platform}'):
+                self.verify(**{platform: other})
+        both = [self.report(platform) for platform in dotnet_platform.PLATFORMS]
+        for report in both:
+            self.rows(report)['platform_selection']['selection_sha256'] = '0' * 64
+        with self.assertRaisesRegex(ValueError, 'selection_sha256 differ: linux'):
+            self.verify(*both)
 
     def test_matching_omissions_or_altered_ownership_fail_against_the_rebuilt_partition(self):
         # The constructor's field-initializer line vanishes from the report and its receipt alike.
@@ -354,50 +390,65 @@ class UnionTests(unittest.TestCase):
         del rows['platform_selection']['denominators']['Lib/Native.cs']['lines']['2']
         self.assertEqual([], evaluate_policy(rows['modules']))
         with self.assertRaisesRegex(ValueError, 'denominators differ: windows'):
-            self.verify(omitted)
+            self.verify(windows=omitted)
         relabeled = self.report('windows')
         self.rows(relabeled)['platform_selection']['denominators']['Lib/Mixed.cs']['lines']['3'] = 'windows'
         with self.assertRaisesRegex(ValueError, 'denominators differ'):
-            self.verify(relabeled)
+            self.verify(windows=relabeled)
         wrong = self.report('windows')
         self.rows(wrong)['platform_selection']['platform'] = 'linux'
         with self.assertRaisesRegex(ValueError, 'wrong platform coverage receipt'):
-            self.verify(wrong)
+            self.verify(windows=wrong)
 
     def test_a_report_missing_its_own_points_or_callables_fails_the_union(self):
         missing = self.report('windows')
         del self.rows(missing)['modules'][1]
         with self.assertRaisesRegex(ValueError, 'Incomplete platform module union: windows'):
-            self.verify(missing)
+            self.verify(windows=missing)
         stray = self.report('windows')
         native = self.rows(stray)['modules'][1]
         native['branches']['stray:5:0:1:0:0'] = 1
         native['body_owners'][1]['branches']['stray:5:0:1:0:0'] = 1
         with self.assertRaisesRegex(ValueError, 'Incomplete platform branches union: Lib/Native.cs'):
-            self.verify(stray)
+            self.verify(windows=stray)
         altered = self.report('windows')
         self.rows(altered)['modules'][1]['methods'][1]['cognitive'] = 3
         with self.assertRaisesRegex(ValueError, 'Platform callable facts differ from source'):
-            self.verify(altered)
+            self.verify(windows=altered)
+        neutral = self.report('linux')
+        del self.rows(neutral)['modules'][1]
+        with self.assertRaisesRegex(ValueError, 'Incomplete platform module union: linux'):
+            self.verify(linux=neutral)
 
-    def test_the_command_line_writes_the_union_or_names_why_it_failed(self):
+    def test_the_command_line_needs_both_reports_and_writes_the_union_or_names_why_it_failed(self):
         output = self.root / 'results'
         windows, linux = output / 'windows.json', output / 'linux.json'
         output.mkdir(exist_ok=True)
         windows.write_text(json.dumps(self.report('windows')), encoding='utf-8')
         linux.write_text(json.dumps(self.report('linux')), encoding='utf-8')
-        argv = ['dotnet_platform.py', '--windows', str(windows), '--linux', str(linux),
+        argv = ['dotnet_platform.py', '--linux', str(linux), '--windows', str(windows),
                 '--output', str(output), '--root', str(self.root)]
         with mock.patch.object(sys, 'argv', argv):
             self.assertEqual(0, dotnet_platform.main())
         self.assertEqual(self.commit, json.loads((output / 'union.json').read_text(encoding='utf-8'))['commit'])
-        stderr = io.StringIO()
-        with mock.patch.object(sys, 'argv', argv[:3] + argv[5:]), redirect_stderr(stderr):
-            (output / 'union.json').unlink()
-            windows.write_text('{}', encoding='utf-8')
-            self.assertEqual(2, dotnet_platform.main())
-        self.assertIn('exitCode', stderr.getvalue())
+        (output / 'union.json').unlink()
+        for absent in (argv[:1] + argv[3:], argv[:3] + argv[5:]):
+            with self.subTest(argv=absent), mock.patch.object(sys, 'argv', absent), \
+                    redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as parsed:
+                dotnet_platform.main()
+            self.assertEqual(2, parsed.exception.code)
+        for report, text, reason in ((linux, None, 'linux.json'), (windows, '{}', "'schema'")):
+            stderr = io.StringIO()
+            if text is None:
+                report.unlink()
+            else:
+                report.write_text(text, encoding='utf-8')
+            with self.subTest(reason=reason), mock.patch.object(sys, 'argv', argv), redirect_stderr(stderr):
+                self.assertEqual(2, dotnet_platform.main())
+            self.assertIn(reason, stderr.getvalue())
+            linux.write_text(json.dumps(self.report('linux')), encoding='utf-8')
         self.assertFalse((output / 'union.json').exists())
+        self.rebuild.assert_called_once()
 
 
 class DenominatorTests(unittest.TestCase):

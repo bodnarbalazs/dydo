@@ -23,10 +23,20 @@ kill can wait until the grace is over. After the grace, `end_descendants` kills 
 descendants first, then lists. When the pins were all that lived, that first listing confirms the
 cleanup. A descendant left unpinned is listed and killed as before.
 
+`_REAP_LOCK` stops only this process's reaping, and the owner is still alive during the grace, so a
+listed descendant's own parent can collect it, and its pid can pass to another process, before its
+pidfd opens. The listing therefore records each descendant's start time, field 22 of its
+`/proc/<pid>/stat`. Once the pidfd is open, `pin_descendants` reads that field again. A pid passes
+only to later processes, so the same start time proves the pidfd names the listed descendant. A
+pidfd whose process shows another start time, or none, is closed at once and never signalled. An
+interrupted pinning closes every pidfd it opened before the interrupt propagates.
+
 Budgets are unchanged: `CLEANUP_SECONDS`, `DESCENDANT_EXIT_SECONDS`, the cleanup deadline and the
 grace fraction. Success still needs a listing after the last kill that shows no live descendant.
-Neither pinned kills nor a new pass start after the deadline. A first listing that cannot read
-`/proc` pins nothing, so the grace still ends before any kill. The Windows job path is untouched.
+The deadline is checked before each pinned kill and before each pass, so neither starts after it;
+pins left unsignalled at the deadline are closed and the cleanup raises. A first listing that
+cannot read `/proc` pins nothing, so the grace still ends before any kill. The Windows job path is
+untouched.
 
 ## Proof
 
@@ -34,13 +44,15 @@ The new `CoverageCancellationTests` regression drives the native escalation entr
 adapter's first process-table listing delayed 2.1 seconds. At base `88d9dcd4` it exits 1 with the
 filed chain while the descendants have ended and the foreign process lives. On the fix it exits
 130. Unit tests pin the pin-under-lock invariant, pidfd kills that skip a collected process, the
-grace order, and expiry without a confirming listing.
+grace order, and expiry without a confirming listing. They also cover a deadline that falls between
+two pinned kills, a listed pid that names another process by the time its pidfd opens, and an
+interrupt during pinning.
 
 ## Files Changed
 
 `DynaDocs.Tests/coverage/run_tests.py`, `DynaDocs.Tests/coverage/gate_adapter.py`, and the tests
 `test_gate_adapter.py`, `test_reaping.py` and `test_runner.py` (proof commit a87ae611, then the
-DYD-605 implement commit), and this entry.
+DYD-605 implement and fix commits), and this entry.
 
 ## Related
 

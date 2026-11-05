@@ -207,13 +207,13 @@ def drive(entry, folder, orphans, leak):
         elif entry != "cancel":
             stack.enter_context(held_status(command))
         status = DRIVERS[entry](command, folder)
-    zombies = [pid for pid, (parent, state) in run_tests._process_table().items()
+    zombies = [pid for pid, (parent, state, _) in run_tests._process_table().items()
                if parent == os.getpid() and state == "Z"]
     observed = json.loads(report.read_text(encoding="utf-8"))
     print(json.dumps({"status": status, "driver": os.getpid(), "subject_driver": observed["driver"],
                       "unreaped_during_run": observed["unreaped"], "leaked": observed["leaked"],
                       "zombies_after_return": zombies,
-                      "live_after_return": run_tests._live_descendants(os.getpid())}))
+                      "live_after_return": list(run_tests._live_descendants(os.getpid()))}))
 
 
 def probe(entry, orphans=ORPHANS, leak="none"):
@@ -280,6 +280,7 @@ class AdoptedOrphanReapingTests(unittest.TestCase):
         # freed pid could be reused and the kill would reach an unrelated process.
         listed = subprocess.Popen([sys.executable, "-c", "import sys; sys.stdin.read()"],
                                   stdin=subprocess.PIPE)
+        listing = started(listed)
         progressed, observed = threading.Event(), {}
 
         class ContendedLock:
@@ -320,7 +321,7 @@ class AdoptedOrphanReapingTests(unittest.TestCase):
         finally:
             if not listed.stdin.closed:
                 listed.stdin.close()
-        self.assertEqual((os.getpid(), "Z"), observed["at_kill"])
+        self.assertEqual((os.getpid(), "Z", listing[listed.pid]), observed["at_kill"])
         self.assertFalse(reaper.is_alive())
         self.assertIsNone(run_tests._stat_fields(str(listed.pid)), "reaping resumes after the kill")
         listed.wait()
@@ -329,6 +330,7 @@ class AdoptedOrphanReapingTests(unittest.TestCase):
         # As at a kill: a reap pass racing the pin must wait, or the pidfd could name a reused pid.
         listed = subprocess.Popen([sys.executable, "-c", "import sys; sys.stdin.read()"],
                                   stdin=subprocess.PIPE)
+        listing = started(listed)
         progressed, observed = threading.Event(), {}
         reaper = threading.Thread(target=lambda: (run_tests.reap_adopted(run_tests.SUBREAPER),
                                                   progressed.set()))
@@ -357,7 +359,7 @@ class AdoptedOrphanReapingTests(unittest.TestCase):
 
         try:
             with mock.patch.object(run_tests, "_REAP_LOCK", ContendedLock()), \
-                    mock.patch.object(run_tests, "_live_descendants", return_value=[listed.pid]), \
+                    mock.patch.object(run_tests, "_live_descendants", return_value=listing), \
                     mock.patch.object(run_tests.os, "pidfd_open", side_effect=pidfd_open), \
                     mock.patch.object(run_tests, "_children", return_value={listed.pid}):
                 pinned = run_tests.pin_descendants(run_tests.SUBREAPER)
@@ -367,7 +369,7 @@ class AdoptedOrphanReapingTests(unittest.TestCase):
                 listed.stdin.close()
         for handle in pinned:
             os.close(handle)
-        self.assertEqual((os.getpid(), "Z"), observed["at_pin"])
+        self.assertEqual((os.getpid(), "Z", listing[listed.pid]), observed["at_pin"])
         self.assertEqual(1, len(pinned))
         self.assertFalse(reaper.is_alive())
         self.assertIsNone(run_tests._stat_fields(str(listed.pid)), "reaping resumes after the pin")
@@ -377,7 +379,7 @@ class AdoptedOrphanReapingTests(unittest.TestCase):
         doomed, gone = (subprocess.Popen([sys.executable, "-c", "import sys; sys.stdin.read()"],
                                          stdin=subprocess.PIPE) for _ in range(2))
         try:
-            with mock.patch.object(run_tests, "_live_descendants", return_value=[doomed.pid, gone.pid]):
+            with mock.patch.object(run_tests, "_live_descendants", return_value=started(doomed, gone)):
                 pinned = run_tests.pin_descendants(run_tests.SUBREAPER)
             gone.communicate()  # exited and collected: its pid is free for reuse from here on
             with mock.patch.object(run_tests, "_live_descendants", return_value=[]):
@@ -427,9 +429,15 @@ class AdoptedOrphanReapingTests(unittest.TestCase):
             child.communicate()
 
 
+def started(*children):
+    """A listing of `children`, live descendants of this process, each with its start time."""
+    return {child.pid: run_tests._stat_fields(str(child.pid))[2] for child in children}
+
+
 def write_stat(proc, pid, state, parent):
     (proc / str(pid)).mkdir(parents=True, exist_ok=True)
-    (proc / str(pid) / "stat").write_text(f"{pid} (name) {state} {parent} 0 0\n", encoding="utf-8")
+    (proc / str(pid) / "stat").write_text(f"{pid} (name) {state} {parent} 0 0 0 0 0 0 0 0 0 0 0 0 0 0 20 0 1 0 "
+                                          f"{7000 + pid} 0\n", encoding="utf-8")
 
 
 class ReapingSeamTests(unittest.TestCase):

@@ -562,14 +562,17 @@ def end_descendants(job, seconds=DESCENDANT_EXIT_SECONDS, pinned=()):
 
 
 def _stat_fields(pid):
-    """Return (parent pid, state) from /proc/<pid>/stat, or None when the process already exited."""
+    """Return (parent pid, state, start time) from /proc/<pid>/stat, or None when the process
+    already exited. The start time, in clock ticks since boot, tells it from a later process given
+    its pid."""
     try:
         stat = (PROC_ROOT / pid / "stat").read_text(encoding="utf-8", errors="replace")
     except OSError:
         return None
-    # The command name sits in parentheses and may itself hold spaces or parentheses.
-    state, parent = stat[stat.rindex(")") + 2:].split()[:2]
-    return int(parent), state
+    # The command name sits in parentheses and may itself hold spaces or parentheses; the start
+    # time is the stat line's field 22.
+    fields = stat[stat.rindex(")") + 2:].split()
+    return int(fields[1]), fields[0], int(fields[19])
 
 
 def _process_table():
@@ -582,15 +585,16 @@ def _process_table():
 
 
 def _live_descendants(root):
-    """Every descendant of `root` that has not yet exited; an exited one (a zombie) holds no file."""
+    """Every descendant of `root` that has not yet exited, each with its start time; an exited one
+    (a zombie) holds no file."""
     table = _process_table()
     found, frontier = [], [root]
     while frontier:
         parent = frontier.pop()
-        children = [pid for pid, (ppid, _) in table.items() if ppid == parent]
+        children = [pid for pid, (ppid, _, _) in table.items() if ppid == parent]
         found += children
         frontier += children
-    return [pid for pid in found if table[pid][1] != "Z"]
+    return {pid: table[pid][2] for pid in found if table[pid][1] != "Z"}
 
 
 def _kill(pid):
@@ -604,21 +608,44 @@ def pin_descendants(job):
     """A pidfd for each live descendant listed now, for end_descendants to kill and close: a pidfd
     names its process and never a later one given the same pid, so the kill can wait out a grace
     without a second listing. Empty without a subreaper or when /proc cannot be listed or read, so
-    a caller's grace never ends early; a descendant left unpinned is listed again at its kill."""
+    a caller's grace never ends early; a descendant left unpinned is listed again at its kill. An
+    interrupted pinning closes what it opened."""
     if job != SUBREAPER:
         return []
+    pinned = []
     try:
         with _REAP_LOCK:
-            return [handle for handle in map(_pin, _live_descendants(os.getpid())) if handle is not None]
-    except (OSError, ValueError):
-        return []
+            for pid, start in _live_descendants(os.getpid()).items():
+                handle = _pin(pid, start)
+                if handle is not None:
+                    pinned.append(handle)
+    except BaseException as error:
+        for handle in pinned:
+            os.close(handle)
+        if isinstance(error, (OSError, ValueError)):
+            return []
+        raise
+    return pinned
 
 
-def _pin(pid):
+def _pin(pid, start):
+    """A pidfd for `pid` when it still names the process the listing saw started at `start`, else
+    None. The reap lock holds only this process's reaping: a live parent may collect the listed
+    process, and its pid pass to another, before the pidfd opens. A pid passes only to later
+    processes, so the listed start time, read once the pidfd is open, proves whom it names."""
     try:
-        return os.pidfd_open(pid)
+        handle = os.pidfd_open(pid)
     except OSError:
         return None  # it exited after the listing, or this kernel offers no pidfd
+    kept = None
+    try:
+        fields = _stat_fields(str(pid))
+        if fields is not None and fields[2] == start:
+            kept = handle
+    finally:
+        if kept is None:
+            os.close(handle)
+    return kept
 
 
 def _kill_pinned(handle):
@@ -632,12 +659,13 @@ def _end_reaped_descendants(seconds=DESCENDANT_EXIT_SECONDS, pinned=()):
     """Kill every descendant of this process and wait until each has exited. As their subreaper
     this process still finds the ones whose own parent, the interrupted dotnet, is already gone.
     The pinned ones die first, so when they were all that lived, the first listing confirms. No
-    pass starts once the deadline has passed."""
+    pinned kill and no pass starts once the deadline has passed."""
     deadline = time.monotonic() + seconds
     try:
-        if time.monotonic() < deadline:
-            for handle in pinned:
-                _kill_pinned(handle)
+        for handle in pinned:
+            if time.monotonic() >= deadline:
+                break
+            _kill_pinned(handle)
         while time.monotonic() < deadline:
             with _REAP_LOCK:
                 live = _live_descendants(os.getpid())
@@ -676,7 +704,7 @@ def _children():
         return {int(child) for task in os.listdir(tasks)
                 for child in (tasks / task / "children").read_text(encoding="utf-8").split()}
     except OSError:
-        return {child for child, (parent, _) in _process_table().items() if parent == pid}
+        return {child for child, (parent, _, _) in _process_table().items() if parent == pid}
 
 
 def reap_adopted(job, owned=()):

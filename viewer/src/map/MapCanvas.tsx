@@ -1,4 +1,4 @@
-import { Background, BackgroundVariant, Controls, MiniMap, Panel, ReactFlow, useReactFlow, type NodeMouseHandler } from '@xyflow/react';
+import { Background, BackgroundVariant, Controls, MiniMap, Panel, ReactFlow, useReactFlow, useStore, type NodeMouseHandler } from '@xyflow/react';
 import { useEffect, useMemo, useRef } from 'react';
 import type { Issue } from '../api/types';
 import type { MapFlow, MapFlowNode } from '../layout/toFlow';
@@ -21,12 +21,14 @@ interface MapCanvasProps {
   /** The latest refresh's marks, or null when nothing is animating. */
   cascade: Cascade | null;
   onReady?: () => void;
+  /** Called once the canvas draws this flow's nodes, an effect after they are handed down. */
+  onDrawn: () => void;
   onFocus: (id: string) => void;
   onOpenExternal: (issue: Issue) => void;
   onTogglePlate: (id: string) => void;
 }
 
-export function MapCanvas({ flow, focus, fitKey, centreKey, cascade, onReady, onFocus, onOpenExternal, onTogglePlate }: MapCanvasProps) {
+export function MapCanvas({ flow, focus, fitKey, centreKey, cascade, onReady, onDrawn, onFocus, onOpenExternal, onTogglePlate }: MapCanvasProps) {
   const nodes = useMemo(
     () => flow.nodes.map((node) => ({ ...node, selected: node.id === focus, ...marked(cascade?.nodes.get(node.id)) })),
     [flow.nodes, focus, cascade],
@@ -60,6 +62,7 @@ export function MapCanvas({ flow, focus, fitKey, centreKey, cascade, onReady, on
           style={TIMING_PROPERTIES}
         >
           <Viewport nodes={nodes} focus={focus} fitKey={fitKey} centreKey={centreKey} onReady={onReady} />
+          <Drawn nodes={nodes} onDrawn={onDrawn} />
           {/* Graph paper: a faint line every 24 px under a stronger one every five cells. */}
           <Background id="minor" variant={BackgroundVariant.Lines} gap={24} color="var(--grid-minor)" />
           <Background id="major" variant={BackgroundVariant.Lines} gap={120} color="var(--grid-major)" />
@@ -83,6 +86,15 @@ function marked(mark: NodeMark | EdgeMark | undefined): { className?: string; st
   if (mark === undefined) return {};
   const delay = mark.kind === 'removed' ? {} : { style: { '--refresh-delay': `${String(mark.delay)}ms` } as React.CSSProperties };
   return { className: `refresh-${mark.kind}`, ...delay };
+}
+
+/** React Flow takes the nodes it is handed into its store, and draws them, only in an effect after that render. */
+function Drawn({ nodes, onDrawn }: { nodes: MapFlowNode[]; onDrawn: () => void }) {
+  const drawn = useStore((state) => state.nodes);
+  useEffect(() => {
+    if (drawn === nodes) onDrawn();
+  }, [drawn, nodes, onDrawn]);
+  return null;
 }
 
 interface ViewportProps {

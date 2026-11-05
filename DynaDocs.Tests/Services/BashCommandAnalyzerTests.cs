@@ -1765,6 +1765,121 @@ public class BashCommandAnalyzerTests
             Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
     }
 
+    // DYD-641: where pwsh may run the line, its reading decides. pwsh 7.6.9 ends a statement and a
+    // comment at a bare carriage return and closes a here-string at a bare carriage return or a
+    // typographic quote before @, so the text after each is code (measured in /tmp/dyd641-evidence).
+    private static readonly ShellDialect[] PowerShellReadings = [ShellDialect.Unknown, ShellDialect.PowerShell];
+
+    [Theory]
+    [InlineData("echo @'\nx\n’@; iex '$(echo x > $OUT)'\n'@ # '")]
+    [InlineData("echo @'\nx\r'@; iex '$(echo x > $OUT)'\n'@ # '")]
+    [InlineData("echo @'\nx\n’@; iex $(echo x > $OUT)\n'@ # '")]
+    [InlineData("echo x\riex @'\n$(echo x > $OUT)\n'@")]
+    [InlineData("# x\riex (\n@'\n$(echo x > dydo/index.md)\n'@\n)")]
+    [InlineData("# x\riex `\n@'\n$(echo x > dydo/index.md)\n'@")]
+    [InlineData("@'\n$(echo x > dydo/index.md)\n'@\n# c\r| iex")]
+    public void Analyze_HereStringBodyPwshRunsAsCode_IsABypass(string command)
+    {
+        foreach (var dialect in PowerShellReadings)
+            AssertBypassWithAChange(command, dialect);
+    }
+
+    // The line a body's opener is on runs to its line feed, and each shell's reading of it takes a
+    // bare carriage return as that shell does (both measured). bash reads one as word text, so a
+    // comment before it hides the opener and bash runs the body's line.
+    [Fact]
+    public void Analyze_CommentABareCarriageReturnEndsOnlyInPwsh_HidesTheOpenerFromBash()
+    {
+        foreach (var dialect in BashReadings)
+            AssertBypassWithAChange("# x\r@'\n$(echo x > dydo/index.md)\n'@", dialect);
+    }
+
+    // pwsh reads a bare carriage return as a break, so a pipe after the terminator feeds the body on.
+    [Fact]
+    public void Analyze_PipeAfterABareCarriageReturnOnTheTerminatorsLine_FeedsTheBodyInPwsh()
+    {
+        foreach (var dialect in PowerShellReadings)
+            AssertBypassWithAChange("@'\n$(echo x > dydo/index.md)\n'@\r| iex", dialect);
+    }
+
+    // bash 5.3.9 reads a bare carriage return as word text, so the words after one are still the
+    // command's arguments: it deletes, truncates, edits or chmods the file (measured in
+    // /tmp/dyd641-evidence/fix2). Wherever bash may run the line, the change is extracted.
+    [Theory]
+    [InlineData("rm \r dydo/index.md", FileOperationType.Delete)]
+    [InlineData("rm -- \r dydo/index.md", FileOperationType.Delete)]
+    [InlineData("tee \r dydo/index.md", FileOperationType.Write)]
+    [InlineData("sed -i\r s/a/b/ dydo/index.md", FileOperationType.Write)]
+    [InlineData("truncate -s 0 \r dydo/index.md", FileOperationType.Write)]
+    [InlineData("chmod 000 \r dydo/index.md", FileOperationType.PermissionChange)]
+    [InlineData("echo $(rm \r dydo/index.md)", FileOperationType.Delete)]
+    public void Analyze_ArgumentsAfterABareCarriageReturn_AreTheCommandsWhereBashMayRunIt(string command, FileOperationType type)
+    {
+        foreach (var dialect in BashReadings)
+            Assert.Contains(new BashCommandAnalyzer(dialect).Analyze(command).Operations, op => op.Type == type && op.Path == "dydo/index.md");
+    }
+
+    // A bash -c string is bash's in every dialect, the call's own shell only hands it on.
+    [Fact]
+    public void Analyze_BashCommandStringWithABareCarriageReturn_IsReadAsBashReadsIt()
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.Contains(new BashCommandAnalyzer(dialect).Analyze("bash -c 'rm \r dydo/index.md'").Operations,
+                op => op.Type == FileOperationType.Delete && op.Path == "dydo/index.md");
+    }
+
+    // Each carriage return here is half of a CRLF, so the line holds none of the three characters and
+    // reads as before: a Windows-authored here-string write is literal data (pwsh 7.6.9 runs each harmlessly).
+    [Theory]
+    [InlineData("@'\r\nhello\r\n'@ | Set-Content notes.md\r\necho done")]
+    [InlineData("@'\r\na\r\n'@ | Set-Content notes.md\r\n@'\r\nb\r\n'@ | Add-Content notes.md")]
+    [InlineData("@'\nhello\n'@ | Set-Content notes.md\r\n")]
+    [InlineData("cat @'\r\nhello\r\n'@ > notes.md\r\n")]
+    public void Analyze_CrlfAfterAHereStringWrite_IsNoBypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
+            Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
+        }
+    }
+
+    [Theory]
+    [InlineData("echo hello\rrm dydo/index.md")]
+    [InlineData("echo hello # note\rrm dydo/index.md")]
+    [InlineData("echo \"a”\nrm dydo/index.md\n“b\"")]
+    [InlineData("echo @\"\nx\n”@\nrm dydo/index.md\n\"@ # \"")]
+    [InlineData("echo a > notes.md # x\"\rRemove-Item dydo/index.md\r# y\"")]
+    public void Analyze_StatementPwshStartsOnALaterLine_IsAnEmbeddedNewline(string command)
+    {
+        foreach (var dialect in PowerShellReadings)
+            Assert.Contains("Command contains embedded newlines", new BashCommandAnalyzer(dialect).Analyze(command).Warnings);
+    }
+
+    [Theory]
+    [InlineData("echo x\rpass show bank", "Password store access")]
+    [InlineData("echo ‘a'; pass show bank; ’b'", "Password store access")]
+    [InlineData("echo x\rpython -", "Python program on stdin")]
+    [InlineData("echo ‘a'; python -; ’b'", "Python program on stdin")]
+    public void CheckDangerousPatterns_CommandPwshRuns_IsDangerous(string command, string reason)
+    {
+        var (dangerous, why) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, command);
+        Assert.StartsWith(reason, why);
+    }
+
+    [Theory]
+    [InlineData("rg -n 'x’; tail -f app.log; ‘y'")]
+    [InlineData("echo ready # note\rtail -f app.log")]
+    public void RunsAt_CommandPwshRuns_Counts(string command)
+    {
+        foreach (var dialect in PowerShellReadings)
+            Assert.True(BashCommandAnalyzer.RunsAt(command, command.IndexOf("tail", StringComparison.Ordinal), dialect), $"{dialect}: {command}");
+    }
+
     // Inside single quotes bash 5.3.9 and pwsh 7.6.9 keep a carriage return, NEL and the Unicode
     // separators literal (measured), so a quote holding them stays literal data.
     [Theory]

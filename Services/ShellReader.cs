@@ -5,7 +5,10 @@ using System.Text;
 /// <summary>
 /// One reading of a shell command line into commands and their words. <c>posix</c> reads it as bash
 /// does (backslash escapes, backtick substitution); otherwise as PowerShell or cmd do (backtick and
-/// caret escapes, doubled quotes inside quotes, backslashes literal, <c>&lt;# ... #&gt;</c> block comments). Commands split only on unquoted separators: ; &amp; | ( ) { }
+/// caret escapes, doubled quotes inside quotes, backslashes literal, <c>&lt;# ... #&gt;</c> block comments).
+/// That reading follows pwsh 7.6.9 (DYD-641): a bare carriage return ends a line as a line feed does,
+/// and ‘ ’ ‚ ‛ quote as ' does, “ ” „ as " does. A caret is cmd's escape and literal to pwsh; where
+/// the two would read the line differently, the reading holds both and fails. Commands split only on unquoted separators: ; &amp; | ( ) { }
 /// and line breaks. Quotes, PowerShell here-strings and heredoc bodies are word text; a heredoc or
 /// <c>&lt;&lt;&lt;</c> word is the command's stdin, and a redirection target is dropped. The text of
 /// a <c>$(...)</c> inside double quotes or a here-string is read as commands, and a backtick
@@ -141,6 +144,7 @@ internal sealed class ShellReader
 
     private readonly string _text;
     private readonly bool _posix;
+    private readonly bool _caretEscapes;
     private readonly bool _nested;
     private readonly List<Command> _commands;
     private readonly List<string> _substitutions;
@@ -157,6 +161,7 @@ internal sealed class ShellReader
     private bool _redirectNext;
     private bool _hereStringNext;
     private bool _failed;
+    private bool _caretDiverges;
     private bool _done;
     private int _groups;
     private int _redirectStart;
@@ -165,11 +170,12 @@ internal sealed class ShellReader
     private TextOrigins? _wordOrigins;
 
     private ShellReader(Scope scope, bool nested, List<Command> commands, List<string> substitutions,
-        List<Capture> captures, Body? expandingBody = null)
+        List<Capture> captures, bool caretEscapes, Body? expandingBody = null)
     {
         _scope = scope;
         _text = scope.Text;
         _posix = scope.Posix;
+        _caretEscapes = caretEscapes;
         _i = scope.Start;
         _nested = nested;
         _commands = commands;
@@ -181,9 +187,22 @@ internal sealed class ShellReader
 
     public static Reading Read(string text, bool posix)
     {
-        var reader = new ShellReader(new Scope(text, posix, 0, null), nested: false, [], [], []);
+        var reader = ReadWith(text, posix, caretEscapes: !posix);
+        if (!reader._caretDiverges)
+            return new Reading(reader._commands, reader._substitutions, reader._failed, reader._captures, reader._scope);
+
+        // cmd escapes with a caret and pwsh keeps it literal: where the two read the line apart,
+        // the reading holds both and fails, so no consumer takes either for certain.
+        var literal = ReadWith(text, posix, caretEscapes: false);
+        return new Reading([.. reader._commands, .. literal._commands], [.. reader._substitutions, .. literal._substitutions],
+            Failed: true, [.. reader._captures, .. literal._captures], reader._scope);
+    }
+
+    private static ShellReader ReadWith(string text, bool posix, bool caretEscapes)
+    {
+        var reader = new ShellReader(new Scope(text, posix, 0, null), nested: false, [], [], [], caretEscapes);
         reader.Run();
-        return new Reading(reader._commands, reader._substitutions, reader._failed, reader._captures, reader._scope);
+        return reader;
     }
 
     private void Run()
@@ -199,7 +218,12 @@ internal sealed class ShellReader
 
     private char Peek(int offset) => _i + offset < _text.Length ? _text[_i + offset] : '\0';
 
-    private bool IsEscape(char c) => _posix ? c == '\\' : c is '`' or '^';
+    private bool IsEscape(char c) => _posix ? c == '\\' : c == '`' || (_caretEscapes && c == '^');
+
+    // pwsh opens and closes a string at any quote of a family (measured on 7.6.9); bash only at ' and ".
+    private string SingleQuoteChars => _posix ? "'" : "'\u2018\u2019\u201A\u201B";
+
+    private string DoubleQuoteChars => _posix ? "\"" : "\"\u201C\u201D\u201E";
 
     private void Step()
     {
@@ -212,8 +236,8 @@ internal sealed class ShellReader
 
         switch (c)
         {
-            case '\'': SingleQuoted(); return;
-            case '"': DoubleQuoted(); return;
+            case var quote when SingleQuoteChars.Contains(quote): SingleQuoted(); return;
+            case var quote when DoubleQuoteChars.Contains(quote): DoubleQuoted(); return;
             case '`': _i = BacktickSubstitution(_i); StartWord(); return;
             case '@' when _word == null && HereStringBodyStart() > 0: HereString(); return;
             case '@' when !_posix && Peek(1) == '(': GroupWord(_i + 2); return;
@@ -224,6 +248,7 @@ internal sealed class ShellReader
             case '<' or '>':
             case '&' when Peek(1) == '>': Redirect(); return;
             case '\n': EndLine(); return;
+            case '\r' when !_posix && Peek(1) != '\n': EndLine(); return;
             case ')': CloseParen(); return;
             case ';' or '&' or '|' or '{' or '}' or '(':
                 Separator(c); return;
@@ -263,10 +288,14 @@ internal sealed class ShellReader
         _i++;
     }
 
-    // An escaped line break continues the line; any other escaped character is literal.
+    // An escaped line break continues the line; any other escaped character is literal. pwsh 7.6.9
+    // also continues at an escaped bare carriage return between words, and keeps one inside a word.
+    // pwsh and cmd read a caret before a letter, a digit, a caret or the end alike; before anything
+    // else they read the line apart.
     private void Escape()
     {
         var next = Peek(1);
+        _caretDiverges |= _text[_i] == '^' && _i + 1 < _text.Length && !char.IsAsciiLetterOrDigit(next) && next != '^';
         if (next == '\r' && Peek(2) == '\n')
         {
             _command.UncertainFeed = true;
@@ -274,28 +303,29 @@ internal sealed class ShellReader
             return;
         }
 
-        if (next == '\n')
+        if (next == '\n' || (next == '\r' && !_posix && _word == null))
             _command.UncertainFeed = true;
-        if (next != '\n' && next != '\0')
+        else if (next != '\0')
             Append(next, _i + 1);
         _i += 2;
     }
 
     private void SingleQuoted()
     {
-        var end = _text.IndexOf('\'', _i + 1);
-        if (end < 0)
+        var length = _text.AsSpan(_i + 1).IndexOfAny(SingleQuoteChars);
+        if (length < 0)
         {
             _failed = true;
             return;
         }
 
+        var end = _i + 1 + length;
         _scope.SingleQuotes.Add(_i..(end + 1));
         AppendSlice(_i + 1, end - _i - 1);
         _i = end + 1;
-        if (_posix || Peek(0) != '\'')
+        if (_posix || !SingleQuoteChars.Contains(Peek(0)))
             return;
-        Append('\'');
+        Append(Peek(0));
         SingleQuoted();
     }
 
@@ -307,7 +337,7 @@ internal sealed class ShellReader
         {
             var c = _text[at];
             var next = at + 1 < _text.Length ? _text[at + 1] : '\0';
-            if (c == '"' && !IsQuotedEscape(c, next))
+            if (DoubleQuoteChars.Contains(c) && !IsQuotedEscape(c, next))
             {
                 _i = at + 1;
                 return;
@@ -336,7 +366,7 @@ internal sealed class ShellReader
     // PowerShell keeps a backslash literal: only a backtick or a doubled quote escapes inside "...".
     private bool IsQuotedEscape(char c, char next) => _posix
         ? c == '\\' && next is '$' or '`' or '"' or '\\' or '\n'
-        : (c == '`' && next != '\0') || (c == '"' && next == '"');
+        : (c == '`' && next != '\0') || (DoubleQuoteChars.Contains(c) && DoubleQuoteChars.Contains(next));
 
     // Reads $( ... ) from start as commands of its own; returns the index after the closing parenthesis.
     private int Substitution(int start, int open, ExecutionKind kind = ExecutionKind.Substitution)
@@ -346,13 +376,14 @@ internal sealed class ShellReader
         host.Child = source;
         _scope.Children.Add(source);
         var inner = new ShellReader(source,
-            nested: true, _commands, _substitutions, _captures);
+            nested: true, _commands, _substitutions, _captures, _caretEscapes);
         inner.Run();
         // A bare case word can introduce arm terminators we cannot balance. Quoted words and
         // literal bodies are not syntax; no apparent closing ')' may certify this child otherwise.
         inner._failed |= _posix && source.Commands.Any(command =>
             command.WordRanges.Any(range => _text[range] == "case"));
         _failed |= inner._failed;
+        _caretDiverges |= inner._caretDiverges;
         host.Complete = inner._done && !inner._failed && inner._i < _text.Length && _text[inner._i] == ')';
         host.Token = open..Math.Min(inner._i + 1, _text.Length);
         return inner._i + 1;
@@ -455,20 +486,31 @@ internal sealed class ShellReader
     // @' or @" ending its line opens a PowerShell here-string; returns where its body starts, or 0.
     private int HereStringBodyStart()
     {
-        if (Peek(1) is not ('\'' or '"'))
+        var quote = Peek(1);
+        if (!SingleQuoteChars.Contains(quote) && !DoubleQuoteChars.Contains(quote))
             return 0;
         var at = _i + 2;
-        while (at < _text.Length && _text[at] is ' ' or '\t' or '\r')
+        while (at < _text.Length && (_text[at] is ' ' or '\t' || (_posix && _text[at] == '\r')))
             at++;
-        return at < _text.Length && _text[at] == '\n' ? at + 1 : 0;
+        var length = LineBreakLength(at);
+        return length > 0 ? at + length : 0;
     }
 
+    // The length of the line break at at: \n, \r\n, and in PowerShell a bare \r; 0 for none.
+    private int LineBreakLength(int at) => at >= _text.Length ? 0 : _text[at] switch
+    {
+        '\n' => 1,
+        '\r' when at + 1 < _text.Length && _text[at + 1] == '\n' => 2,
+        '\r' when !_posix => 1,
+        _ => 0,
+    };
+
+    // The here-string's terminator starts a line: a quote of the opener's family, then @.
     private void HereString()
     {
-        var quote = Peek(1);
+        var expands = DoubleQuoteChars.Contains(Peek(1));
         var bodyStart = HereStringBodyStart();
-        var terminator = "\n" + quote + "@";
-        var end = _text.IndexOf(terminator, bodyStart - 1, StringComparison.Ordinal);
+        var end = HereStringEnd(bodyStart - 1, expands ? DoubleQuoteChars : SingleQuoteChars);
         if (end < 0)
         {
             _failed = true;
@@ -477,7 +519,7 @@ internal sealed class ShellReader
 
         var body = end > bodyStart ? _text[bodyStart..end].TrimEnd('\r') : "";
         var descriptor = new Body(_command, body, bodyStart..Math.Max(bodyStart, end),
-            _i..(end + terminator.Length), BodyKind.HereString, quote == '"', _command.Words.Count);
+            _i..(end + 3), BodyKind.HereString, expands, _command.Words.Count);
         descriptor.Origins.Add(0, body.Length, _scope, bodyStart);
         _command.Bodies.Add(descriptor);
         if (descriptor.Expands)
@@ -485,7 +527,18 @@ internal sealed class ShellReader
         var word = StartWord();
         _wordOrigins!.Append(descriptor.Origins, word.Length);
         word.Append(body);
-        _i = end + terminator.Length;
+        _i = end + 3;
+    }
+
+    // The line break before a here-string's terminator, from from on; -1 when there is none.
+    private int HereStringEnd(int from, string quotes)
+    {
+        for (var at = from; at + 2 < _text.Length; at++)
+        {
+            if (LineBreakLength(at) == 1 && quotes.Contains(_text[at + 1]) && _text[at + 2] == '@')
+                return at;
+        }
+        return -1;
     }
 
     // The $( ... ) and, for bash, backtick substitutions in an expanding here-string or heredoc body.
@@ -494,7 +547,7 @@ internal sealed class ShellReader
         var body = source.Text;
         var scope = new Scope(body, _posix, 0, null) { DerivedBody = source };
         source.ExpansionSource = scope;
-        var reader = new ShellReader(scope, nested: false, _commands, _substitutions, _captures, source);
+        var reader = new ShellReader(scope, nested: false, _commands, _substitutions, _captures, _caretEscapes, source);
         _scope.Children.Add(reader._scope);
         var at = 0;
         while (at < body.Length && !reader._failed)
@@ -511,13 +564,15 @@ internal sealed class ShellReader
         }
 
         _failed |= reader._failed;
+        _caretDiverges |= reader._caretDiverges;
     }
 
+    // A comment runs to the end of its line; pwsh 7.6.9 ends it at a carriage return too.
     private void SkipComment()
     {
         var start = _i;
-        var end = _text.IndexOf('\n', _i);
-        _i = end < 0 ? _text.Length : end;
+        var length = _posix ? _text.AsSpan(_i).IndexOf('\n') : _text.AsSpan(_i).IndexOfAny('\n', '\r');
+        _i = length < 0 ? _text.Length : _i + length;
         _scope.Comments.Add(start.._i);
     }
 

@@ -237,7 +237,9 @@ outer()
                 witness._start(work, 0)
                 witness._line(work, 2)
                 witness._branch(work, 0, 4)
-        self.assertEqual(1, scan.call_count)
+        # only `work`'s scans: under the coverage campaign this module is itself a target, and the
+        # campaign's witness scans the callbacks above once each through the same module global
+        self.assertEqual(1, sum(call.args[0] is work for call in scan.call_args_list))
         row = witness.rows()[0]
         self.assertEqual((50, 50), (row['execution_count'], row['body_lines']['2']))
 

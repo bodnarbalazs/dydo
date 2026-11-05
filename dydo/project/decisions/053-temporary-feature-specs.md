@@ -35,6 +35,19 @@ updates existing verification maps and executable scenarios where applicable bef
 preserves lasting knowledge, removes active references and deletes its temporary subtree; canceled
 intent is not shipped behavior. Git retains pinned historical evidence.
 
+## Amendment 2026-11-05 - always a Project spec
+
+Decided by the human on 2026-11-05 in the DYD-520 captain thread, recorded on
+[DYD-570](https://linear.app/bodnar-balazs/issue/DYD-570). Every other section stands.
+
+- **A scaffolded Project always gets a spec.** A Project the admiral scaffolds gets one working spec
+  under `dydo/reference/working-specs/<project-slug>/`, holding the agreed intent: the problem, the
+  behavior, the decisions, what is out of scope and the acceptance checks. It follows
+  `skills/roles/officers/admiral/resources/scaffold-project.md`.
+- **Feature specs stay optional.** Specs for features inside the Project remain optional.
+- **Reason.** Balazs: "If the shared understanding from the grilling sessions and brainstorming
+  lives there it's much more likely that it's going to be used down the line."
+
 ## Related
 
 - [Feature Spec Convention](../../reference/feature-spec-convention.md)

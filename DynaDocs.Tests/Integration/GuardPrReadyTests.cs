@@ -732,6 +732,14 @@ public class GuardPrReadyTests : IntegrationTestBase
             "gh pr create -F dydo/agents/body.md 2>dydo/agents/body.md",
             "gh pr create -F dydo/agents/body.md >| dydo/agents/body.md",
         ], ReviewBlockWarning));
+    }
+
+    [Fact]
+    public async Task PrCreate_PowerShellCallRedirectingToAFile_Warns()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+
         Assert.Empty(await Misses(denied: true,
             ["gh pr create -F dydo/agents/body.md > dydo/agents/body.md", "gh pr create -F dydo/agents/body.md *> dydo/agents/body.md"],
             ReviewBlockWarning, toolName: "PowerShell"));

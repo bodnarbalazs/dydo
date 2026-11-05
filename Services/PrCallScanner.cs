@@ -37,9 +37,6 @@ internal static partial class PrCallScanner
         new() { ['X'] = "method", ['H'] = "header", ['f'] = "field", ['F'] = "field", ['q'] = "jq", ['t'] = "template", ['p'] = "preview" },
         ["method", "header", "raw-field", "field", "hostname", "input", "jq", "template", "cache", "preview"]);
 
-    // Programs that cannot move the shell's directory: a child process cannot, and these builtins do not.
-    private static readonly HashSet<string> DirectoryKeepers = ["dydo", "git", "gh", "echo", "printf", "true", "test"];
-
     private sealed record Options(Dictionary<char, string> Short, HashSet<string> Long);
 
     // An option's value and the index of the word it was read from (Words.Count when it is missing).
@@ -78,11 +75,10 @@ internal static partial class PrCallScanner
     /// <paramref name="command"/> (DYD-639): its last <c>--body-file</c> or <c>-F</c>, as gh takes it,
     /// or null when the guard may not read it. The guard emulates no shell; it reads an allowlist.
     /// Every reading of the whole line must finish, find the call at <paramref name="launch"/> at the
-    /// line's top level, and name the same operand written plainly (<see cref="PlainOperand"/>), with
-    /// no word of the call able to add arguments (<see cref="AddsNoArguments"/>). An absolute operand
-    /// names its file wherever the call sits; a relative one only when no command before the call may
-    /// move the shell's directory (<see cref="KeepsDirectory"/>). Anything else reads as null, so a
-    /// check that needs the body keeps its warning.
+    /// line's top level, and name the same operand written plainly (<see cref="PlainOperand"/>).
+    /// Nothing else in the line may change that file before gh opens it, so the guard reads it as gh
+    /// will (<see cref="LeavesTheFileAlone"/>). Anything else reads as null, so a check that needs the
+    /// body keeps its warning.
     /// </summary>
     public static string? BodyFileAt(string command, int launch, ShellDialect dialect = ShellDialect.Unknown)
     {
@@ -98,33 +94,104 @@ internal static partial class PrCallScanner
     {
         var commands = reading.Commands.ToList();
         var call = commands.FindIndex(c => c.Source == reading.Source && c.WordRanges is [var first, ..] && first.Start.Value == launch);
-        if (reading.Failed || call < 0 || !AddsNoArguments(reading, commands, call, posix)
+        if (reading.Failed || call < 0 || !LeavesTheFileAlone(reading, commands, call, posix)
             || PlainOperand(commands[call], posix) is not { } file)
             return null;
-        return Path.IsPathFullyQualified(file) || (!Path.IsPathRooted(file) && KeepsDirectory(reading, commands, call)) ? file : null;
+        return Path.IsPathFullyQualified(file) || !Path.IsPathRooted(file) ? file : null;
     }
 
     /// <summary>
-    /// Whether no word of the call at <paramref name="call"/> may expand into more arguments, which
-    /// could hand gh a later body file (DYD-639 ruling, point 5). It reads the raw text from the call
-    /// to the line's next command, with single-quoted text and each substitution masked, split at
-    /// double quotes. bash expands an unquoted <c>$</c>, backtick, glob, brace or tilde, and
-    /// <c>"$@"</c> or an array's <c>[@]</c> in double quotes, so double-quoted text may hold only a
-    /// plain <c>$name</c> or a substitution. PowerShell passes a variable, a splat, a group or a
-    /// comma list as many arguments and <c>--%</c> the rest unread, so no <c>$</c> or <c>@</c> may
-    /// stand outside single quotes. A backslash or backtick leaves the quoting unknown, so it counts too.
+    /// Whether nothing else in the line may change the body file before gh opens it (DYD-639 ruling,
+    /// point 6). Up to the end of the call's pipeline (<see cref="Pipeline"/>), every command, nested
+    /// ones included, takes no file redirection or heredoc (<see cref="Quiet"/>); the call's later
+    /// members are filters, and every other command only reads (<see cref="ReadsOnly"/>). The rest of
+    /// the line starts with <c>;</c>, <c>&amp;&amp;</c>, <c>||</c> or a line break and holds no lone
+    /// <c>&amp;</c>, which would run the call in the background beside what follows. No word up to
+    /// the pipeline's end may expand (<see cref="ExpandsNothing"/>), and the line holds no backtick
+    /// substitution, whose commands the reader returns unread.
     /// </summary>
-    private static bool AddsNoArguments(ShellReader.Reading reading, List<ShellReader.Command> commands, int call, bool posix)
+    private static bool LeavesTheFileAlone(ShellReader.Reading reading, List<ShellReader.Command> commands, int call, bool posix)
     {
         var source = reading.Source;
-        var start = commands[call].WordRanges[0].Start.Value;
-        var end = commands.Skip(call + 1).FirstOrDefault(c => c.Source == source && c.WordRanges.Count > 0)?.WordRanges[0].Start.Value
-            ?? source.Text.Length;
-        var raw = source.Text.ToCharArray(start, end - start);
+        if (reading.Substitutions.Count > 0 || Pipeline(source, commands[call]) is not var (last, end))
+            return false;
+
+        var rest = source.Text[end..];
+        return EndRegex().IsMatch(rest) && !LoneAmpersandRegex().IsMatch(rest) && ExpandsNothing(source, end, posix)
+            && commands.Take(commands.IndexOf(last) + 1).Select((command, i) => MayRun(command, i, call, source)).All(ok => ok);
+    }
+
+    /// <summary>
+    /// The last member of the pipeline holding <paramref name="call"/>, one of the line's top-level
+    /// commands, and where its text ends; null when anything but blanks and <c>; &amp; |</c> joins the
+    /// commands before the call, when a pipe joins the call to the one before it, or when a command
+    /// up to the one after the pipeline has no word.
+    /// </summary>
+    private static (ShellReader.Command Last, int End)? Pipeline(ShellReader.Scope source, ShellReader.Command call)
+    {
+        var at = source.Commands.IndexOf(call);
+        var (last, end) = (call, 0);
+        for (var i = 0; i < source.Commands.Count; i++)
+        {
+            var command = source.Commands[i];
+            if (command.WordRanges is not [var first, ..])
+                return null;
+            var gap = source.Text[end..first.Start.Value];
+            var joined = (i - at) switch
+            {
+                < 0 => JoinRegex().IsMatch(gap),
+                0 => CallJoinRegex().IsMatch(gap),
+                _ => PipeRegex().IsMatch(gap),
+            };
+            if (!joined)
+                return i > at ? (last, end) : null;
+            (last, end) = (command, command.RedirectTargets.Select(r => r.Range.End.Value).Append(command.WordRanges[^1].End.Value).Max());
+        }
+        return (last, end);
+    }
+
+    // A filter after the call in its pipeline, the call itself, and a read-only command anywhere else up to there.
+    private static bool MayRun(ShellReader.Command command, int index, int call, ShellReader.Scope source) =>
+        Quiet(command) && (index > call && command.Source == source ? Filters(command.Words) : index == call || ReadsOnly(command.Words));
+
+    // No heredoc and no redirection to a file: only an input, or an fd duplicated or closed.
+    private static bool Quiet(ShellReader.Command command) =>
+        command.Redirections.Count == command.RedirectTargets.Count
+        && command.RedirectTargets.All(r => ReadOnlyRedirectionRegex().IsMatch(command.Source.Text[r.Range]));
+
+    private static bool Filters(List<string> words) => words is ["cat" or "head" or "tail" or "grep", ..];
+
+    // Commands that write no file, by bare name: echo and true; printf and test with no -v, which
+    // evaluates an array subscript and so runs a substitution in it; dydo pr-ready; and git status,
+    // diff, log, show and rev-parse with no global option before them and no --output, which writes one.
+    private static bool ReadsOnly(List<string> words) => words switch
+    {
+        ["echo" or "true", ..] => true,
+        ["printf" or "test", .. var args] => !args.Any(a => a.StartsWith("-v", StringComparison.Ordinal)),
+        ["dydo", "pr-ready", ..] => true,
+        ["git", "status" or "diff" or "log" or "show" or "rev-parse", .. var args] => !args.Any(a => a.StartsWith("--output", StringComparison.Ordinal)),
+        _ => false,
+    };
+
+    /// <summary>
+    /// Whether no word before <paramref name="end"/>, the end of the call's pipeline, may expand
+    /// (DYD-639 ruling, points 5 and 6): into more arguments, which could hand gh a later body file,
+    /// or into commands the reader does not read. It reads the raw text from the line's start, with
+    /// single-quoted text and each substitution masked, split at double quotes. bash expands an
+    /// unquoted <c>$</c> (<c>${...}</c> and <c>$'...'</c> among them), backtick, glob, brace or tilde,
+    /// and <c>"$@"</c>, an array's <c>[@]</c> or a <c>${...}</c> in double quotes, so double-quoted
+    /// text may hold only a plain <c>$name</c> or a substitution, whose commands are read. PowerShell
+    /// passes a variable, a splat, a group or a comma list as many arguments, runs a variable's
+    /// methods, and passes <c>--%</c> the rest unread, so no <c>$</c> or <c>@</c> may stand outside
+    /// single quotes. A backslash or backtick leaves the quoting unknown, so it counts too.
+    /// </summary>
+    private static bool ExpandsNothing(ShellReader.Scope source, int end, bool posix)
+    {
+        var raw = source.Text.ToCharArray(0, end);
         foreach (var (range, mark) in source.SingleQuotes.Select(q => (q, '_')).Concat(source.Executions.Select(h => (h.Token, '$'))))
         {
-            for (var at = Math.Max(range.Start.Value, start); at < Math.Min(range.End.Value, end); at++)
-                raw[at - start] = at == range.Start.Value ? mark : '_';
+            for (var at = range.Start.Value; at < Math.Min(range.End.Value, end); at++)
+                raw[at] = at == range.Start.Value ? mark : '_';
         }
 
         var pieces = new string(raw).Split((posix ? "\"" : "\"“”„").ToCharArray());
@@ -177,30 +244,6 @@ internal static partial class PrCallScanner
             && (posix ? PosixLiteralRegex() : PowerShellLiteralRegex()).IsMatch(value)
             && text[range.Start.Value - 1] is ' ' or '\t'
             && (range.End.Value == text.Length || text[range.End.Value] is ' ' or '\t' or '\n' or ';' or '&' or '|');
-    }
-
-    /// <summary>
-    /// Whether no command before the call at <paramref name="call"/> may move the shell's directory:
-    /// each, nested ones too, runs one of <see cref="DirectoryKeepers"/>, and only blanks and
-    /// <c>; &amp; |</c> join the line's commands up to the call, so no group, subshell, function,
-    /// redirection or comment comes before it. bash 5.3 runs <c>${ cmd; }</c> in the shell itself,
-    /// so a line holding one keeps nothing.
-    /// </summary>
-    private static bool KeepsDirectory(ShellReader.Reading reading, List<ShellReader.Command> commands, int call)
-    {
-        var text = reading.Source.Text;
-        if (FunctionSubstitutionRegex().IsMatch(text)
-            || !commands.Take(call).All(c => c.Words is [var program, ..] && DirectoryKeepers.Contains(CommandPosition.ProgramName(program))))
-            return false;
-
-        var end = 0;
-        foreach (var command in commands.Take(call + 1).Where(c => c.Source == reading.Source))
-        {
-            if (!JoinRegex().IsMatch(text[end..command.WordRanges[0].Start.Value]))
-                return false;
-            end = command.WordRanges[^1].End.Value;
-        }
-        return true;
     }
 
     private static List<PrCall> Scan(string text, ShellDialect dialect, string? inheritedRepo, int depth)
@@ -466,8 +509,27 @@ internal static partial class PrCallScanner
     [GeneratedRegex(@"^(?:[A-Za-z]:[\\/])?[A-Za-z0-9._+/\\ -]+\z")]
     private static partial Regex PowerShellLiteralRegex();
 
+    // What may join the line's commands before the call, before the call itself (no lone pipe), and
+    // the call's pipeline members; and how the rest of the line after that pipeline may start.
     [GeneratedRegex(@"^[ \t\n;&|]*\z")]
     private static partial Regex JoinRegex();
+
+    [GeneratedRegex(@"^(?:[ \t\n;&]|\|\|)*\z")]
+    private static partial Regex CallJoinRegex();
+
+    [GeneratedRegex(@"^[ \t]*\|[ \t\n]*\z")]
+    private static partial Regex PipeRegex();
+
+    [GeneratedRegex(@"^[ \t]*(?:[;\n]|&&|\|\||\z)")]
+    private static partial Regex EndRegex();
+
+    // A & that backgrounds a list: neither && nor part of a redirection (2>&1, <&0, &>).
+    [GeneratedRegex(@"(?<![&<>])&(?![&>])")]
+    private static partial Regex LoneAmpersandRegex();
+
+    // A redirection that writes no file: an input (2<f, not <> or <<), or an fd duplicated or closed.
+    [GeneratedRegex(@"^\d*(?:<(?![<>&])|[<>]&[ \t]*(?:\d+|-)\z)")]
+    private static partial Regex ReadOnlyRedirectionRegex();
 
     // What may add arguments, outside and inside double quotes (DYD-639 ruling, point 5).
     [GeneratedRegex(@"[$`*?\[{}~()\\]")]
@@ -481,10 +543,6 @@ internal static partial class PrCallScanner
 
     [GeneratedRegex(@"[$@`]")]
     private static partial Regex PowerShellQuotedExpansionRegex();
-
-    // bash 5.3's ${ cmd; } and ${| cmd; } run cmd in the shell itself.
-    [GeneratedRegex(@"\$\{[\s|]")]
-    private static partial Regex FunctionSubstitutionRegex();
 
     [GeneratedRegex(@"^(?:https?://(?<host>[^/]+)(?:/api/v3)?)?/?repos/(?<owner>[^/]+)/(?<repo>[^/?]+)/pulls/?(?:\?.*)?$", RegexOptions.IgnoreCase)]
     private static partial Regex RestPullsRegex();

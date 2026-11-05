@@ -28,6 +28,7 @@ from pathlib import Path
 sys.path.insert(0, sys.argv[1])
 import run_tests
 tools, mode = Path(sys.argv[1]), sys.argv[2]
+preamble = sys.argv[3] if len(sys.argv) > 3 else ''
 containment = run_tests.contain_descendants()
 with tempfile.TemporaryDirectory() as folder:
     root = Path(folder)
@@ -52,7 +53,7 @@ with tempfile.TemporaryDirectory() as folder:
     if mode != 'owner':
         adapter = root / 'adapter.py'
         adapter.write_text("import sys; sys.path.insert(0,"+repr(str(tools))+"); import gate_adapter; "
-            + ("gate_adapter.CLEANUP_SECONDS = 3; " if mode == 'escalation' else '') +
+            + ("gate_adapter.CLEANUP_SECONDS = 3; " if mode == 'escalation' else '') + preamble +
             "raise SystemExit(gate_adapter.run_coverage_command("+repr(command)+", '.'))")
         command = [sys.executable, str(adapter)]
     if mode == 'facade':
@@ -77,7 +78,8 @@ with tempfile.TemporaryDirectory() as folder:
             fields = run_tests._stat_fields(str(pid))
             return fields[1] if fields else 'absent'
         answer = {'exit':child.returncode, 'states':[state(pid) for pid in pids],
-                  'stdout':stdout.decode(), 'stderr':stderr.decode(), 'foreign_alive':foreign.poll() is None}
+                  'stdout':stdout.decode(), 'stderr':stderr.decode(), 'foreign_alive':foreign.poll() is None,
+                  'listing_delayed':(root / 'listing-delayed').exists()}
         receipt = root / 'published/identities.json'
         answer['campaign'] = json.loads(receipt.read_text())['campaign'] if receipt.exists() else None
         if mode == 'facade':
@@ -89,6 +91,18 @@ with tempfile.TemporaryDirectory() as folder:
         child.wait(timeout=5)
         foreign.wait(timeout=5)
 '''
+
+# An adapter preamble: the first process-table listing the adapter makes, its cleanup's first
+# descendant listing, takes 2.1 of the escalation's 3 cleanup seconds, as on a loaded host (DYD-605).
+SLOW_FIRST_LISTING = "exec(" + repr(
+    "import pathlib, time, run_tests\n"
+    "listing = run_tests._process_table\n"
+    "def slow_first_listing():\n"
+    "    run_tests._process_table = listing\n"
+    "    pathlib.Path('listing-delayed').touch()\n"
+    "    time.sleep(2.1)\n"
+    "    return listing()\n"
+    "run_tests._process_table = slow_first_listing\n") + "); "
 
 
 @unittest.skipUnless(sys.platform == "linux", "Native Linux campaign cancellation")
@@ -112,6 +126,17 @@ class CoverageCancellationTests(unittest.TestCase):
                 if entry == "facade":
                     self.assertEqual(130, observed["facade"]["aggregateExit"])
                     self.assertEqual(130, observed["facade"]["results"][0]["childExit"])
+
+    def test_an_escalation_whose_first_descendant_listing_is_slow_still_confirms_cleanup_in_budget(self):
+        probe = subprocess.run([sys.executable, "-c", CANCELLATION_PROBE, str(TOOLS), "escalation",
+                                SLOW_FIRST_LISTING], capture_output=True, text=True, timeout=25)
+        self.assertEqual(0, probe.returncode, probe.stderr)
+        observed = json.loads(probe.stdout)
+        self.assertTrue(observed["listing_delayed"], observed)
+        self.assertEqual(130, observed["exit"], observed)
+        self.assertTrue(all(state in ("absent", "Z") for state in observed["states"]), observed)
+        self.assertTrue(observed["foreign_alive"], observed)
+        self.assertIsNone(observed["campaign"], observed)
 
 PYTHON_TARGET = "def add(left, right):\n    return left + right\n"
 PYTHON_SUITE = ("import unittest\n\n\n"

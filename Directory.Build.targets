@@ -1,0 +1,60 @@
+<Project>
+  <!--
+    Microsoft.Build.Tasks.Git 10.0.112 reads packed-refs from a linked worktree's own git dir
+    (.git/worktrees/<name>) instead of the common dir, so a branch whose ref is only packed
+    resolves to no commit: "Repository has no commit" and an empty SourceLink file (DYD-603).
+    When Tasks.Git finds the repository and its remote but no commit, while git itself resolves
+    HEAD, supply git's commit and silence only that false warning. Every other case, CI's
+    detached checkout included, runs Tasks.Git unchanged.
+  -->
+  <Target Name="_DydoProbeGitHeadCommit"
+          BeforeTargets="InitializeSourceControlInformationFromSourceControlManager"
+          Condition="'$(PkgMicrosoft_Build_Tasks_Git)' != ''">
+    <Microsoft.Build.Tasks.Git.LocateRepository
+      Path="$(MSBuildProjectDirectory)"
+      RemoteName="$(GitRepositoryRemoteName)"
+      ConfigurationScope="$(GitRepositoryConfigurationScope)"
+      NoWarnOnMissingInfo="true">
+      <Output TaskParameter="WorkingDirectory" PropertyName="_DydoGitWorkingDirectory" />
+      <Output TaskParameter="Url" PropertyName="_DydoGitUrl" />
+      <Output TaskParameter="RevisionId" PropertyName="_DydoTasksGitRevisionId" />
+      <Output TaskParameter="BranchName" PropertyName="_DydoGitBranchName" />
+    </Microsoft.Build.Tasks.Git.LocateRepository>
+
+    <Exec Command="git rev-parse --verify --quiet HEAD"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          Condition="'$(_DydoGitWorkingDirectory)' != '' and '$(_DydoGitUrl)' != '' and '$(_DydoTasksGitRevisionId)' == ''"
+          ConsoleToMSBuild="true"
+          EchoOff="true"
+          IgnoreExitCode="true"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_DydoGitHeadCommit" />
+    </Exec>
+
+    <PropertyGroup Condition="'$(_DydoGitHeadCommit)' != '' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(_DydoGitHeadCommit)', '^([0-9a-f]{40}|[0-9a-f]{64})$'))">
+      <_DydoSuppliedGitHeadCommit>$(_DydoGitHeadCommit)</_DydoSuppliedGitHeadCommit>
+      <!-- The package target warns only when this path property is set; restored below. -->
+      <_DydoPkgMicrosoftBuildTasksGit>$(PkgMicrosoft_Build_Tasks_Git)</_DydoPkgMicrosoftBuildTasksGit>
+      <PkgMicrosoft_Build_Tasks_Git></PkgMicrosoft_Build_Tasks_Git>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_DydoSupplyGitHeadCommit"
+          AfterTargets="InitializeSourceControlInformationFromSourceControlManager"
+          Condition="'$(_DydoSuppliedGitHeadCommit)' != ''">
+    <Message Importance="normal"
+             Text="Tasks.Git found no commit for HEAD (packed-only branch ref in a linked worktree); using git rev-parse HEAD = $(_DydoSuppliedGitHeadCommit)." />
+    <ItemGroup>
+      <SourceRoot Include="$([MSBuild]::EnsureTrailingSlash('$(_DydoGitWorkingDirectory)'))"
+                  SourceControl="git"
+                  ScmRepositoryUrl="$(_DydoGitUrl)"
+                  RevisionId="$(_DydoSuppliedGitHeadCommit)"
+                  BranchName="$(_DydoGitBranchName)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <SourceRevisionId Condition="'$(SourceRevisionId)' == ''">$(_DydoSuppliedGitHeadCommit)</SourceRevisionId>
+      <PkgMicrosoft_Build_Tasks_Git>$(_DydoPkgMicrosoftBuildTasksGit)</PkgMicrosoft_Build_Tasks_Git>
+    </PropertyGroup>
+  </Target>
+</Project>

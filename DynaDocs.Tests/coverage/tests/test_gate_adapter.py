@@ -138,6 +138,55 @@ class CoverageCancellationTests(unittest.TestCase):
         self.assertTrue(observed["foreign_alive"], observed)
         self.assertIsNone(observed["campaign"], observed)
 
+
+@unittest.skipIf(sys.platform == "win32", "POSIX process-group escalation")
+class EscalationOrderTests(unittest.TestCase):
+    """The owner's grace runs from its interrupt and pays for the first descendant listing: no kill
+    comes before the grace ends, and what that listing pinned reaches the cleanup."""
+
+    def _stop(self, pin):
+        import run_tests
+        events, clock = [], [0.0]
+
+        def wait(_child, deadline):
+            events.append(("wait", clock[0], deadline))
+            if sum(event[0] == "wait" for event in events) == 1:
+                raise subprocess.TimeoutExpired("owner", 0)  # the owner ignores its interrupt
+            return -9
+
+        def slow_listing(job):
+            events.append(("pin", clock[0]))
+            clock[0] += 2.1
+            return pin(job)
+
+        with mock.patch.object(gate_adapter.time, "monotonic", side_effect=lambda: clock[0]), \
+                mock.patch.object(gate_adapter, "_wait_coverage_child", side_effect=wait), \
+                mock.patch.object(gate_adapter.os, "killpg",
+                                  side_effect=lambda _pid, sig: events.append(("killpg", clock[0], sig))), \
+                mock.patch.object(run_tests, "pin_descendants", side_effect=slow_listing), \
+                mock.patch.object(run_tests, "end_descendants",
+                                  side_effect=lambda _job, seconds, pinned: events.append(
+                                      ("end", clock[0], round(seconds, 6), pinned))):
+            self.assertEqual(-9, gate_adapter._stop_coverage_campaign(
+                mock.Mock(pid=4321, returncode=-9), 3.0, run_tests.SUBREAPER))
+        return events
+
+    def test_the_grace_runs_from_the_interrupt_and_its_listing_s_pins_die_after_it(self):
+        self.assertEqual([("killpg", 0.0, signal.SIGINT), ("pin", 0.0), ("wait", 2.1, 1.0),
+                          ("killpg", 2.1, signal.SIGKILL), ("wait", 2.1, 3.0), ("end", 2.1, 0.9, [7, 8])],
+                         self._stop(lambda _job: [7, 8]))
+
+    def test_a_first_listing_that_fails_pins_nothing_and_still_waits_out_the_grace(self):
+        import run_tests
+        real_pin = run_tests.pin_descendants
+        for failure in (OSError("proc unreadable"), ValueError("malformed stat")):
+            with self.subTest(failure=type(failure).__name__), \
+                    mock.patch.object(run_tests, "_process_table", side_effect=failure):
+                self.assertEqual([("killpg", 0.0, signal.SIGINT), ("pin", 0.0), ("wait", 2.1, 1.0),
+                                  ("killpg", 2.1, signal.SIGKILL), ("wait", 2.1, 3.0),
+                                  ("end", 2.1, 0.9, [])],
+                                 self._stop(real_pin))
+
 PYTHON_TARGET = "def add(left, right):\n    return left + right\n"
 PYTHON_SUITE = ("import unittest\n\n\n"
                 "class AddTests(unittest.TestCase):\n"

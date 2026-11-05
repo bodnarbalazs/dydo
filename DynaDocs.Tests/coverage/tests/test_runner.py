@@ -783,11 +783,115 @@ class LinuxDescendantCleanupTests(unittest.TestCase):
             run_tests.end_descendants(None)
             self.assertFalse(reaped.called or members.called)
             run_tests.end_descendants(run_tests.SUBREAPER)
-            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS)
+            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS, ())
             members.assert_not_called()
             run_tests.end_descendants(42, seconds=3)
             members.assert_called_once_with(42, 3)
-            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS)
+            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS, ())
+            run_tests.end_descendants(run_tests.SUBREAPER, seconds=2, pinned=[7])
+            reaped.assert_called_with(2, [7])
+
+    def test_the_first_listing_pins_each_live_descendant_it_can_and_skips_one_gone_since(self):
+        def pidfd_open(pid):
+            if pid == 104:
+                raise ProcessLookupError(pid)  # it exited and was collected after the listing
+            return 1000 + pid
+
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            with patch.object(run_tests, "PROC_ROOT", proc), \
+                 patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
+                 patch.object(run_tests.os, "pidfd_open", side_effect=pidfd_open, create=True) as opened:
+                self.assertEqual([], run_tests.pin_descendants(None))
+                self.assertEqual([], run_tests.pin_descendants(42))
+                opened.assert_not_called()
+                pinned = run_tests.pin_descendants(run_tests.SUBREAPER)
+
+        self.assertCountEqual([1101, 1102], pinned)
+
+    def test_a_first_listing_that_cannot_list_or_read_proc_pins_nothing(self):
+        with tempfile.TemporaryDirectory() as folder:
+            unreadable = Path(folder)
+            write_file(unreadable / "101" / "stat", "101 no command name\n")
+            for proc in (Path(folder) / "missing", unreadable):
+                with self.subTest(proc=proc.name), patch.object(run_tests, "PROC_ROOT", proc), \
+                        patch.object(run_tests.os, "pidfd_open", create=True) as opened:
+                    self.assertEqual([], run_tests.pin_descendants(run_tests.SUBREAPER))
+                    opened.assert_not_called()
+
+    def _pinned_kills(self, proc, kills):
+        """A pidfd kill of fake handle 1000 + pid: it leaves that pid a zombie, or finds it gone."""
+        def send(handle, sig):
+            kills.append((handle, sig))
+            pid = handle - 1000
+            if pid == 104:
+                raise ProcessLookupError(pid)  # it exited after its pin
+            write_stat(proc, pid, "killed", "Z", 101 if pid == 102 else SELF_PID)
+        return patch.object(run_tests.signal, "pidfd_send_signal", side_effect=send, create=True)
+
+    def test_pinned_descendants_die_first_so_the_first_listing_confirms_and_each_pin_is_closed(self):
+        kills, closed = [], []
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            shutil.rmtree(proc / "104")
+            now, monotonic, sleep = self._clock(step=0.05)
+            with patch.object(run_tests, "PROC_ROOT", proc), monotonic, sleep, \
+                 patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
+                 patch.object(run_tests.os, "kill", side_effect=AssertionError("listed again")), \
+                 patch.object(run_tests.os, "close", side_effect=closed.append), \
+                 patch.object(run_tests, "_process_table", wraps=run_tests._process_table) as listed, \
+                 patch.object(run_tests.signal, "SIGKILL", SIGKILL, create=True), \
+                 self._pinned_kills(proc, kills):
+                run_tests.end_descendants(run_tests.SUBREAPER, seconds=1, pinned=[1101, 1102, 1104])
+
+        self.assertEqual([(1101, SIGKILL), (1102, SIGKILL), (1104, SIGKILL)], kills)
+        self.assertEqual(1, listed.call_count)
+        self.assertEqual(0.0, now[0])
+        self.assertEqual([1101, 1102, 1104], closed)
+
+    def test_an_expired_cleanup_kills_no_pin_closes_each_and_still_raises(self):
+        kills, closed = [], []
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            _now, monotonic, sleep = self._clock(step=0.05)
+            with patch.object(run_tests, "PROC_ROOT", proc), monotonic, sleep, \
+                 patch.object(run_tests.os, "close", side_effect=closed.append), \
+                 self._pinned_kills(proc, kills):
+                with self.assertRaisesRegex(TimeoutError, "cleanup could not be confirmed"):
+                    run_tests.end_descendants(run_tests.SUBREAPER, seconds=0, pinned=[1101, 1102])
+
+        self.assertEqual([], kills)
+        self.assertEqual([1101, 1102], closed)
+
+    def test_pins_killed_but_never_observed_dead_before_the_deadline_still_raise(self):
+        # Every pinned descendant really dies, but the kills use up the budget: without a listing
+        # after them that shows none live, cleanup is unconfirmed.
+        kills, closed = [], []
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            now, monotonic, sleep = self._clock(step=0.05)
+
+            def slow_kill(handle, sig):
+                kills.append((handle, sig))
+                write_stat(proc, handle - 1000, "killed", "Z", SELF_PID)
+                now[0] += 0.6  # each kill takes 0.6 of the 1-second budget
+
+            with patch.object(run_tests, "PROC_ROOT", proc), monotonic, sleep, \
+                 patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
+                 patch.object(run_tests.os, "close", side_effect=closed.append), \
+                 patch.object(run_tests.signal, "pidfd_send_signal", side_effect=slow_kill, create=True), \
+                 patch.object(run_tests.signal, "SIGKILL", SIGKILL, create=True), \
+                 patch.object(run_tests, "_process_table", wraps=run_tests._process_table) as listed:
+                with self.assertRaisesRegex(TimeoutError, "cleanup could not be confirmed"):
+                    run_tests.end_descendants(run_tests.SUBREAPER, seconds=1, pinned=[1101, 1104])
+
+        self.assertEqual([(1101, SIGKILL), (1104, SIGKILL)], kills)
+        self.assertEqual(0, listed.call_count)
+        self.assertEqual([1101, 1104], closed)
 
 
 class StaleWorktreeAgeOverrideTests(unittest.TestCase):

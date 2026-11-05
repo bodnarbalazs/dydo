@@ -4,6 +4,7 @@ import io
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -323,6 +324,72 @@ class AdoptedOrphanReapingTests(unittest.TestCase):
         self.assertFalse(reaper.is_alive())
         self.assertIsNone(run_tests._stat_fields(str(listed.pid)), "reaping resumes after the kill")
         listed.wait()
+
+    def test_a_descendant_the_first_listing_pins_keeps_its_pid_until_its_pidfd_is_open(self):
+        # As at a kill: a reap pass racing the pin must wait, or the pidfd could name a reused pid.
+        listed = subprocess.Popen([sys.executable, "-c", "import sys; sys.stdin.read()"],
+                                  stdin=subprocess.PIPE)
+        progressed, observed = threading.Event(), {}
+        reaper = threading.Thread(target=lambda: (run_tests.reap_adopted(run_tests.SUBREAPER),
+                                                  progressed.set()))
+        real_open = os.pidfd_open
+
+        class ContendedLock:
+            """The reap lock, announcing a pass that must wait for it."""
+            def __init__(self):
+                self.lock = threading.Lock()
+
+            def __enter__(self):
+                if not self.lock.acquire(blocking=False):
+                    progressed.set()
+                    self.lock.acquire()
+
+            def __exit__(self, *_):
+                self.lock.release()
+
+        def pidfd_open(pid):
+            listed.stdin.close()
+            os.waitid(os.P_PID, pid, os.WEXITED | os.WNOWAIT)  # exited, not yet collected
+            reaper.start()
+            self.assertTrue(progressed.wait(30), "the reap pass neither ran nor waited")
+            observed["at_pin"] = run_tests._stat_fields(str(pid))
+            return real_open(pid)
+
+        try:
+            with mock.patch.object(run_tests, "_REAP_LOCK", ContendedLock()), \
+                    mock.patch.object(run_tests, "_live_descendants", return_value=[listed.pid]), \
+                    mock.patch.object(run_tests.os, "pidfd_open", side_effect=pidfd_open), \
+                    mock.patch.object(run_tests, "_children", return_value={listed.pid}):
+                pinned = run_tests.pin_descendants(run_tests.SUBREAPER)
+                reaper.join(30)
+        finally:
+            if not listed.stdin.closed:
+                listed.stdin.close()
+        for handle in pinned:
+            os.close(handle)
+        self.assertEqual((os.getpid(), "Z"), observed["at_pin"])
+        self.assertEqual(1, len(pinned))
+        self.assertFalse(reaper.is_alive())
+        self.assertIsNone(run_tests._stat_fields(str(listed.pid)), "reaping resumes after the pin")
+        listed.wait()
+
+    def test_a_pinned_descendant_dies_through_its_pidfd_and_one_collected_since_its_pin_is_skipped(self):
+        doomed, gone = (subprocess.Popen([sys.executable, "-c", "import sys; sys.stdin.read()"],
+                                         stdin=subprocess.PIPE) for _ in range(2))
+        try:
+            with mock.patch.object(run_tests, "_live_descendants", return_value=[doomed.pid, gone.pid]):
+                pinned = run_tests.pin_descendants(run_tests.SUBREAPER)
+            gone.communicate()  # exited and collected: its pid is free for reuse from here on
+            with mock.patch.object(run_tests, "_live_descendants", return_value=[]):
+                run_tests.end_descendants(run_tests.SUBREAPER, pinned=pinned)
+            self.assertEqual(-signal.SIGKILL, doomed.wait(timeout=30))
+        finally:
+            for child in (doomed, gone):
+                if child.poll() is None:
+                    child.kill()
+                child.communicate()
+        self.assertEqual(2, len(pinned))
+        self.assertEqual(0, gone.returncode)
 
     def test_a_contained_run_keeps_its_status_while_reaper_passes_follow_its_exit(self):
         command = [sys.executable, "-c", "raise SystemExit(7)"]

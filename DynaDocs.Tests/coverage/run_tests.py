@@ -59,8 +59,9 @@ SUBREAPER = "subreaper"
 PROC_ROOT = Path("/proc")
 # How often a contained wait reaps the orphans the subreaper adopted meanwhile.
 REAP_INTERVAL_SECONDS = 0.2
-# Held by each reap pass and by each list-and-kill pass of descendant cleanup: a pid cleanup lists
-# stays reserved, its exited process a zombie, until its kill is sent, never freed for reuse.
+# Held by each reap pass and by each list-and-kill or list-and-pin pass of descendant cleanup: a pid
+# cleanup lists stays reserved, its exited process a zombie, until its kill is sent or its pidfd is
+# open, never freed for reuse.
 _REAP_LOCK = threading.Lock()
 
 
@@ -548,14 +549,14 @@ def _end_member(kernel, job, pid, deadline):
         close_handle(kernel, handle)
 
 
-def end_descendants(job, seconds=DESCENDANT_EXIT_SECONDS):
+def end_descendants(job, seconds=DESCENDANT_EXIT_SECONDS, pinned=()):
     """End every other process the run started, from `job` as contain_descendants returned it, and
     wait for each to exit, so none still holds or writes into the worktree or its TEMP when cleanup
-    begins."""
+    begins. `pinned`, from pin_descendants, is ended first and closed."""
     if job is None:
         return
     if job == SUBREAPER:
-        _end_reaped_descendants(seconds)
+        _end_reaped_descendants(seconds, pinned)
     else:
         _end_job_members(job, seconds)
 
@@ -599,18 +600,55 @@ def _kill(pid):
         pass  # it exited after the listing
 
 
-def _end_reaped_descendants(seconds=DESCENDANT_EXIT_SECONDS):
-    """Kill every descendant of this process and wait until each has exited. As their subreaper
-    this process still finds the ones whose own parent, the interrupted dotnet, is already gone."""
-    deadline = time.monotonic() + seconds
-    while time.monotonic() < deadline:
+def pin_descendants(job):
+    """A pidfd for each live descendant listed now, for end_descendants to kill and close: a pidfd
+    names its process and never a later one given the same pid, so the kill can wait out a grace
+    without a second listing. Empty without a subreaper or when /proc cannot be listed or read, so
+    a caller's grace never ends early; a descendant left unpinned is listed again at its kill."""
+    if job != SUBREAPER:
+        return []
+    try:
         with _REAP_LOCK:
-            live = _live_descendants(os.getpid())
-            for pid in live:
-                _kill(pid)
-        if not live:
-            return
-        time.sleep(0.05)  # unlocked, so orphans are reaped as they exit
+            return [handle for handle in map(_pin, _live_descendants(os.getpid())) if handle is not None]
+    except (OSError, ValueError):
+        return []
+
+
+def _pin(pid):
+    try:
+        return os.pidfd_open(pid)
+    except OSError:
+        return None  # it exited after the listing, or this kernel offers no pidfd
+
+
+def _kill_pinned(handle):
+    try:
+        signal.pidfd_send_signal(handle, signal.SIGKILL)
+    except ProcessLookupError:
+        pass  # it exited after its pin
+
+
+def _end_reaped_descendants(seconds=DESCENDANT_EXIT_SECONDS, pinned=()):
+    """Kill every descendant of this process and wait until each has exited. As their subreaper
+    this process still finds the ones whose own parent, the interrupted dotnet, is already gone.
+    The pinned ones die first, so when they were all that lived, the first listing confirms. No
+    pass starts once the deadline has passed."""
+    deadline = time.monotonic() + seconds
+    try:
+        if time.monotonic() < deadline:
+            for handle in pinned:
+                _kill_pinned(handle)
+        while time.monotonic() < deadline:
+            with _REAP_LOCK:
+                live = _live_descendants(os.getpid())
+                for pid in live:
+                    _kill(pid)
+            if not live:
+                return
+            time.sleep(0.05)  # unlocked, so orphans are reaped as they exit
+    finally:
+        for handle in pinned:
+            os.close(handle)
     raise TimeoutError("Linux descendant cleanup could not be confirmed")
 
 

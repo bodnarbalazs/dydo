@@ -33,7 +33,7 @@ class MeasurementTimeout(ValueError):
 
 
 def run_coverage_command(argv, cwd):
-    from run_tests import contain_descendants, defer_interruption
+    from run_tests import contain_descendants, defer_interruption, reaping
     deadline_text = os.environ.get(ROW_DEADLINE_ENV)
     deadline = float(deadline_text) if deadline_text is not None else None
     execution_deadline = None if deadline is None else deadline - CLEANUP_SECONDS
@@ -42,7 +42,8 @@ def run_coverage_command(argv, cwd):
                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
                              start_new_session=sys.platform != "win32")
     try:
-        status = _wait_coverage_child(child, execution_deadline)
+        with reaping(containment, child):
+            status = _wait_coverage_child(child, execution_deadline)
     except (subprocess.TimeoutExpired, KeyboardInterrupt) as error:
         # Leave time inside the facade's cleanup window for forced descendant cleanup.
         remaining = CLEANUP_SECONDS if deadline is None else max(0, deadline - time.monotonic())
@@ -80,7 +81,7 @@ def _wait_coverage_child(child, deadline):
 
 
 def _stop_coverage_campaign(child, deadline, containment):
-    from run_tests import end_descendants
+    from run_tests import end_descendants, reap_adopted
     try:
         if sys.platform == "win32":
             child.send_signal(signal.CTRL_BREAK_EVENT)
@@ -99,6 +100,7 @@ def _stop_coverage_campaign(child, deadline, containment):
     finally:
         # A killed Linux owner can leave detached children adopted by this adapter.
         end_descendants(containment, seconds=max(0, deadline - time.monotonic()))
+        reap_adopted(containment, owned=(child.pid,))
     return child.returncode
 
 

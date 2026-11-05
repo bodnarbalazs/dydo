@@ -575,7 +575,7 @@ class WorktreeCleanupTests(unittest.TestCase):
             with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], \
                  patch.object(run_tests, "end_descendants", side_effect=TimeoutError("still live")), \
                  patch.object(run_tests, "remove_worktree") as remove, \
-                 patch.object(subprocess, "run", return_value=subprocess.CompletedProcess([], 0)):
+                 patch.object(run_tests, "run_contained", return_value=subprocess.CompletedProcess([], 0)):
                 with self.assertRaisesRegex(TimeoutError, "still live"):
                     run_tests.run_tests(job=run_tests.SUBREAPER)
             remove.assert_not_called()

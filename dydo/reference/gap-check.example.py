@@ -279,6 +279,31 @@ def artifact_snapshot(root, value):
     return snapshot
 
 
+def held(call, *args):
+    """Make one Popen call with SIGINT held. An interrupt raised inside POSIX Popen after it takes
+    its waitpid lock leaks the lock, and the facade can then never reap an exited adapter. Held, the
+    interrupt surfaces here once the call returns. Windows Popen reaps by handle and takes no lock."""
+    if not hasattr(signal, "pthread_sigmask") or signal.SIGINT in signal.pthread_sigmask(signal.SIG_BLOCK, ()):
+        return call(*args)
+    try:
+        signal.pthread_sigmask(signal.SIG_BLOCK, (signal.SIGINT,))
+        return call(*args)
+    finally:
+        signal.pthread_sigmask(signal.SIG_UNBLOCK, (signal.SIGINT,))
+
+
+def exit_confirmed(child, deadline):
+    """Wait in short held slices, so an interrupt surfaces between them, never inside the reap."""
+    while held(child.poll) is None:
+        if time.monotonic() >= deadline:
+            return False
+        try:
+            held(child.wait, min(0.2, max(0, deadline - time.monotonic())))
+        except subprocess.TimeoutExpired:
+            pass
+    return True
+
+
 def kill_child(child):
     if sys.platform == "win32":
         child.kill()
@@ -287,21 +312,23 @@ def kill_child(child):
             os.killpg(child.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
-    try:
-        child.wait(timeout=REAP_SECONDS)
-    except subprocess.TimeoutExpired:
-        pass  # Stuck in the kernel: the reap stays unconfirmed and returncode stays None.
+    # Stuck in the kernel: the reap stays unconfirmed and returncode stays None.
+    exit_confirmed(child, time.monotonic() + REAP_SECONDS)
 
 
 def stop_child(child, deadline):
+    if child.returncode is not None:
+        return  # Already reaped: its pid, and so its process group, may belong to another process.
     try:
         if sys.platform == "win32":
             child.send_signal(signal.CTRL_BREAK_EVENT)
         else:
             os.killpg(child.pid, signal.SIGINT)
-        child.wait(timeout=max(0, deadline - time.monotonic()))
-    except (OSError, subprocess.TimeoutExpired):
-        kill_child(child)
+        if exit_confirmed(child, deadline):
+            return
+    except OSError:
+        pass
+    kill_child(child)
 
 
 def stopped(reason, child):
@@ -310,16 +337,11 @@ def stopped(reason, child):
 
 def wait_for_child(child, capability, deadline):
     execution_deadline = deadline if capability != "test" else deadline - CLEANUP_SECONDS
-    while child.poll() is None and time.monotonic() < execution_deadline:
-        try:
-            child.wait(timeout=min(0.2, max(0, execution_deadline - time.monotonic())))
-        except subprocess.TimeoutExpired:
-            pass
+    exit_confirmed(child, execution_deadline)
     # The clock is read after the exit is observed, so an exit that races the deadline is deadline-exceeded.
     if time.monotonic() < execution_deadline:
         return True
-    if child.returncode is None:
-        stop_child(child, deadline)
+    stop_child(child, deadline)
     return False
 
 

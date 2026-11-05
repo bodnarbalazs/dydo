@@ -1860,6 +1860,60 @@ print('INTER_ITERATION_CASES=' + str(count))
                     reader.join(timeout=5)
                     facade.stdout.close()
 
+    @unittest.skipIf(os.name == 'nt', 'Windows Popen reaps through its process handle and takes no waitpid lock')
+    def test_an_interrupt_landing_while_popen_holds_its_waitpid_lock_still_confirms_the_adapter_exit(self):
+        # The facade's SIGINT is delivered as soon as Popen has taken its waitpid lock, before the
+        # try that releases it: a facade that lets the interrupt surface there can no longer reap
+        # its adapter, waits out the cleanup window and records no child exit.
+        cleanup_seconds = 5
+        root = self.fixture(cleanup_seconds=cleanup_seconds)
+        (root / 'adapter.py').write_text(
+            "import signal,sys,time\nfrom pathlib import Path\n"
+            "def interrupted(signum, frame):\n    raise KeyboardInterrupt\n"
+            "signal.signal(signal.SIGINT, interrupted)\n"
+            "try:\n    Path('ready.txt').write_text('ready')\n    deadline=time.monotonic()+60\n"
+            "    while time.monotonic()<deadline:\n        time.sleep(0.05)\n"
+            "except KeyboardInterrupt:\n    Path('cleanup.txt').write_text('complete')\n    sys.exit(130)\n"
+            "sys.exit(99)\n", encoding='utf-8')
+        data = manifest(stack('first'))
+        data['stacks'][0]['capabilities']['test'] = configured(['-u', 'adapter.py'])
+        (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
+        (root / 'trapped_gap_check.py').write_text(
+            "import runpy,signal,subprocess\nfrom pathlib import Path\n"
+            "class InterruptedAfterAcquire:\n"
+            "    def __init__(self, lock):\n        self.lock, self.armed = lock, True\n"
+            "    def acquire(self, blocking=True, timeout=-1):\n"
+            "        acquired = self.lock.acquire(blocking, timeout)\n"
+            "        if acquired and self.armed and Path('ready.txt').exists():\n"
+            "            self.armed = False\n"
+            "            print('INTERRUPT_UNDER_WAITPID_LOCK', flush=True)\n"
+            "            signal.raise_signal(signal.SIGINT)\n"
+            "        return acquired\n"
+            "    def release(self):\n        self.lock.release()\n"
+            "    def __enter__(self):\n        self.acquire()\n        return self\n"
+            "    def __exit__(self, *details):\n        self.release()\n"
+            "class TrappedPopen(subprocess.Popen):\n"
+            "    def __init__(self, args, *rest, **options):\n"
+            "        super().__init__(args, *rest, **options)\n"
+            "        if 'adapter.py' in args:\n"
+            "            self._waitpid_lock = InterruptedAfterAcquire(self._waitpid_lock)\n"
+            "subprocess.Popen = TrappedPopen\n"
+            "runpy.run_path('run_gap_check.py', run_name='__main__')\n", encoding='utf-8')
+        started = time.monotonic()
+        process = subprocess.run([sys.executable, '-u', 'trapped_gap_check.py', 'test', '--stack', 'first'],
+                                 cwd=root, capture_output=True, text=True, encoding='utf-8', timeout=60)
+        elapsed = time.monotonic() - started
+        output = process.stdout + process.stderr
+        self.assertIn('INTERRUPT_UNDER_WAITPID_LOCK', output)
+        self.assert_exit(process, 130)
+        self.assertEqual('complete', (root / 'cleanup.txt').read_text(encoding='utf-8'))
+        result_path = next(line[8:] for line in process.stdout.splitlines() if line.startswith('Result: '))
+        row = json.loads(Path(result_path).read_text(encoding='utf-8'))['results'][0]
+        self.assertEqual(('interrupted', 130), (row['state'], row['resultExit']))
+        self.assertEqual(130, row['childExit'], row['reason'])
+        self.assertNotIn('not reaped', row['reason'])
+        self.assertLess(elapsed, cleanup_seconds, output)
+
     def test_absolute_row_deadline_cleans_cooperative_child_before_publication(self):
         data = manifest(stack('first'), stack('later'))
         root = self.fixture(data, execution_seconds=.15, cleanup_seconds=.25)

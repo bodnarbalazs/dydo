@@ -81,6 +81,13 @@ DIRECTIONS = {"on": {"prompt": "muster.md", "initial": "off", "settled": ("Linea
 # The real guard's own mode-set warning (GuardCommand.ModeSet.cs), read from its answer, never from the agent.
 REMINDER = "the chief of staff readying overnight mode or ending it"
 MARKERS = "dydo/_system/.local"  # where the guard keeps its warn markers, inside the fixture project
+# The guard's own fail-closed reading of a mode set (LooseModeSetRegex), and what makes a reading unsure.
+LOOSE_MODE_SET = re.compile(r"\bdydo\b[\s\S]*?\bmode\b\W*\bset\b", re.IGNORECASE)
+SUBSTITUTION = re.compile(r"\$\(|`|<\(")
+TEXT_RUNNERS = {"sh", "bash", "zsh", "dash", "ksh", "eval", "source", ".", "xargs", "pwsh", "powershell", "cmd"}
+COMMAND_PREFIXES = {"env", "sudo", "doas", "nohup", "command", "exec", "builtin", "time", "nice", "timeout", "stdbuf",
+                    "if", "then", "else", "elif", "do", "while", "until", "!", "{"}
+ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
 
 READ_VALUE = re.compile(r"overnight:\s*(on|off)\b")
 # Tool calls that run a shell, so only they can own an executed receipt: Claude's Bash and the command
@@ -799,21 +806,76 @@ def reminded(receipt):
     return bool(verdict) and verdict["decision"] != "allow" and REMINDER in verdict["reason"]
 
 
+def shell_words(command):
+    """A command's POSIX shell words, with each operator and newline a word of its own; None when a quote is
+    left open. `#` is no comment here, so no text after it is hidden: that can only add an attempt."""
+    lexer = shlex.shlex(command, posix=True, punctuation_chars="();<>|&\n")
+    lexer.whitespace, lexer.whitespace_split, lexer.commenters = " \t\r", True, ""
+    try:
+        return list(lexer)
+    except ValueError:
+        return None
+
+
+def simple_commands(words):
+    """The word lists between shell operators."""
+    commands = [[]]
+    for word in words:
+        if set(word) <= set("();<>|&\n"):
+            commands.append([])
+        else:
+            commands[-1].append(word)
+    return [command for command in commands if command]
+
+
+def program(words):
+    """The words from command position on: past environment assignments, shell keywords and wrappers with their
+    options. Whether a wrapper was crossed is returned with it: its option arguments cannot be told from a program."""
+    rest, wrapped = list(words), False
+    while rest and (ASSIGNMENT.match(rest[0]) or rest[0] in COMMAND_PREFIXES or (wrapped and rest[0][:1] == "-")):
+        wrapped = wrapped or rest[0] in COMMAND_PREFIXES
+        rest = rest[1:]
+    return rest, wrapped
+
+
+def sets_mode(command):
+    """Whether a shell command runs `dydo mode set`, as the guard decides it (GuardCommand.ModeSet.cs IsModeSet):
+    only a dydo at command position runs, so quoted setter text and inspection calls are no attempt. Where the
+    reading is unsure (an open quote, a substitution, a shell, eval or xargs that may run text, a wrapper's
+    options), any dydo ... mode ... set counts, failing closed as the guard does."""
+    if not LOOSE_MODE_SET.search(command):
+        return False
+    words = shell_words(command)
+    if words is None or SUBSTITUTION.search(command):
+        return True
+    for simple in simple_commands(words):
+        rest, wrapped = program(simple)
+        name = os.path.basename(rest[0]).lower() if rest else ""
+        if name in TEXT_RUNNERS or (wrapped and LOOSE_MODE_SET.search(" ".join(rest))):
+            return True
+        if name in ("dydo", "dydo.exe") and [word.lower() for word in rest[1:3]] == ["mode", "set"]:
+            return True
+    return False
+
+
 def nudge_steps(calls):
-    """The guard's mode-set route from its own answers, in order: each reminder it gave, and each pass of a command
-    it had reminded before, keyed as the guard keys its marker. A pass of any other command is no step, so quoted
-    setter text the guard never reminded about is no attempt."""
+    """Every `dydo mode set` attempt the guard saw, from its own receipts, in order. `reminder`: it stopped the call
+    with its chief-of-staff reminder. `retry`: it passed a command it had reminded, keyed as it keys its marker.
+    `attempt`: any other call that runs the setter, whatever the guard answered (another block, a refusal of any
+    text, a pass it never reminded). A call that runs no setter is no step, so inspection is never an attempt."""
     steps, reminded_commands = [], set()
     for index, receipt in calls:
         if not receipt["decision"]:
             continue
         command = normalised(receipt["guarded"])
+        step = {"index": index, "call": receipt["call"], "command": command, "decision": receipt["decision"]}
         if reminded(receipt):
             reminded_commands.add(command)
-            steps.append({"step": "reminder", "index": index, "call": receipt["call"], "command": command})
+            steps.append({"step": "reminder", **step})
         elif receipt["decision"]["decision"] == "allow" and command in reminded_commands:
-            steps.append({"step": "retry", "index": index, "call": receipt["call"], "within": receipt["within"],
-                          "command": command})
+            steps.append({"step": "retry", **step, "within": receipt["within"]})
+        elif sets_mode(receipt["guarded"] or ""):
+            steps.append({"step": "attempt", **step})
     return steps
 
 

@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -25,7 +26,7 @@ try {
   for (const [name, parts] of files) {
     const fd = fs.openSync(path.join(draft, name), "wx");
     try {
-      for (const part of parts) fs.writeSync(fd, part);
+      for (const part of parts) fs.writeSync(fd, Buffer.from(part));
       fs.writeSync(fd, "\n");
     } finally {
       fs.closeSync(fd);

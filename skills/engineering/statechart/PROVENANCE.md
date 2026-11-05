@@ -21,6 +21,10 @@ Local changes:
   on Windows use non-recursive rmdir before rename; existing content is never removed.
 - `exitClass` has an explicit literal return type. Two upstream async test callbacks
   discard their return values for the pinned local TypeScript check. Neither changes assertions.
+- `tsconfig.json` adds `noUnusedLocals` and `noUnusedParameters`, which dydo's static gate
+  checks with strict types; the unused bindings upstream left in byte-identical files stay.
+  `worker.ts` and `native-entry.ts` write each part through `Buffer.from`, the same bytes as
+  upstream's string-only conversion, without the arm no compiled part reaches.
 - CLI output validation, worker launch and publication are local functions
   to meet the cognitive-complexity limit; verdict classification avoids a nested ternary.
   Native lifecycle tests retain real tool execution with absolute, relative, bare and

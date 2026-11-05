@@ -469,7 +469,8 @@ def _stack_methods(collector, stack):
                         "typescript-unused-exports": collector.typescript_unused_exports,
                         "clones": collector.typescript_clones})
     elif stack == "statechart":
-        methods.update({"typescript-source": collector.typescript_source,
+        methods.update({"typescript-build": collector.statechart_typecheck,
+                        "typescript-source": collector.typescript_source,
                         "typescript-dependencies": collector.typescript_dependencies,
                         "typescript-unused-exports": collector.typescript_unused_exports,
                         "clones": collector.typescript_clones})
@@ -685,12 +686,14 @@ def collect_viewer_coverage(root, raw, inventory):
 
 
 def _statechart_argv(root, raw):
-    """The package's own test script, run by node with its test coverage and two machine reporters."""
+    """The package's own test script, run by node with its test coverage and two machine reporters.
+    Node's default coverage leaves out every file under a test folder; only the test files are left out
+    here, so an executable helper beside them is measured."""
     script = json.loads((root / STATECHART_PACKAGE / "package.json").read_text(encoding="utf-8"))["scripts"]["test"]
     node, *arguments = shlex.split(script)
     if node != "node":
         raise ValueError(f"The statechart test script does not run node: {script}")
-    return ["node", "--experimental-test-coverage",
+    return ["node", "--experimental-test-coverage", "--test-coverage-exclude=**/*.test.ts",
             "--test-reporter=spec", "--test-reporter-destination=stdout",
             "--test-reporter=tap", f"--test-reporter-destination={raw / 'suite.tap'}",
             "--test-reporter=lcov", f"--test-reporter-destination={raw / 'lcov.info'}", *arguments]

@@ -198,6 +198,10 @@ and `statechart` coverage rows write their LCOV and suite reports under their ow
 under the ignored `viewer/coverage/` or the skill folder. The statechart rows run the package's
 tests with whatever managed prerequisites the caller's environment names (`TLA2TOOLS`, `JAVA`,
 `STATECHART_PELE`); a test that lacks one skips by name, and its code then counts as uncovered.
+The release workflow's Windows `validation` job downloads the TLC jar, the win-x64 JRE and Pele
+from their pinned sources in `Resources/Statechart/dependency-lock.json`, refuses any that does not
+match its pinned hash, and names them to the `--force-run` step. The POSIX-only statechart tests
+still skip there by name, so the code only they reach counts as uncovered on Windows.
 The runner also materializes the
 gitignored `.claude/skills` and `.agents/skills` host discovery directories into the snapshot, so
 the canonical-tree guard's link-resolution check is not vacuous there. The runner marks its
@@ -350,6 +354,7 @@ Before collecting, the adapter sets `APPDATA` to `dydo/_system/.local/appdata` a
 | `viewer` | `typescript-dependencies` | `dependency-cruiser --ts-pre-compilation-deps` over `viewer/src`, so a type-only import is still an edge |
 | `viewer` | `typescript-unused-exports` | `knip` over the viewer package with `src/main.tsx` and the test files as entries; its plugins load the whole package, so the out-of-root viewer TypeScript is judged too and counted |
 | `viewer` | `clones` | `jscpd` over `viewer/src`, `.ts` under its `typescript` grammar and `.tsx` under `tsx`, with the same eligibility proof |
+| `statechart` | `typescript-build` | `node viewer/node_modules/typescript/bin/tsc -p skills/engineering/statechart/scripts/tsconfig.json --typeRoots viewer/node_modules/@types --pretty false`: the viewer's locked TypeScript and node types over the package's own tsconfig, strict with `noUnused*`. Each `file(line,col): error TSnnnn` line is a finding, except an unused binding (`TS6133`, `TS6138`, `TS6192`, `TS6196`, `TS6198`, `TS6199`, `TS6205`) in a byte-identical upstream file, which the row lists as `upstreamUnusedBindings`. A diagnostic it cannot attribute, or a nonzero exit with none, is a gap |
 | `statechart` | `typescript-source` | the same walker over the statechart runtime's measured TypeScript |
 | `statechart` | `typescript-dependencies` | `dependency-cruiser --ts-pre-compilation-deps` over the measured statechart TypeScript |
 | `statechart` | `typescript-unused-exports` | `knip` over the `skills/engineering/statechart/scripts` package, with its test files and the modules launchers and tests run by path (`statechart.ts`, `native-entry.ts`, `worker.ts`, `windows-cleanup.ts`, `test/java.ts`) as entries. The byte-identical upstream files and the package's corpus views are members of the graph, so the consumers they hold count, but knip ignores their own issues; the model lists them as `ignored` |
@@ -357,8 +362,12 @@ Before collecting, the adapter sets `APPDATA` to `dydo/_system/.local/appdata` a
 
 The `viewer` and `statechart` rows split the inventory's TypeScript between them: a path under
 `skills/engineering/statechart/scripts/` belongs to `statechart`, and every other one to `viewer`.
-The statechart rows have no compiler or lint row: the package declares no TypeScript compiler, and
-node runs its sources by stripping their types.
+The package declares no TypeScript compiler, since node runs its sources by stripping their types,
+so its typecheck borrows the viewer's. A byte-identical upstream file stays in that program, because
+the types it declares and uses decide the targets', so a type error in it is still a finding; only
+its own unused bindings go unjudged, as knip holds it without judging it. The statechart stack has no
+ESLint row: the compiler's `noUnused*` carries its unused bindings, and the walker carries complexity,
+parameters and nested ternaries, as the lint does for the viewer.
 
 Three of those rows feed one judgment. `csharp-source` derives namespace edges with
 `GateMetrics.NamespaceDependencies`, from every identifier outside a `using` directive whose symbol
@@ -395,7 +404,7 @@ exit 2.
 | `node` | `javascript-coverage` | `node javascript_coverage.cjs` driving c8 12.0.0 with `--all --exclude-after-remap=false` over `node_tests.cjs`; Istanbul function and branch counters are joined to the ESLint callable inventory |
 | `dotnet` | `csharp-coverage` | `run_tests.py --assurance-output <dir>`: one isolated Git worktree copy of the working candidate, one AltCover campaign inside a Windows Job object, evidence published back outside the snapshot |
 | `viewer` | `typescript-coverage` | `pnpm -C viewer run coverage` with `--coverage.reporter=lcov`, `--coverage.reportsDirectory=<raw>/coverage` and a vitest JSON report added; `typescript_join.py` joins the Istanbul LCOV to the `typescript-source` walker's callables |
-| `statechart` | `typescript-coverage` | the package's own `test` script from its `package.json`, run by `node` from the package folder with `--experimental-test-coverage` and two more reporters: TAP to `<raw>/suite.tap` and LCOV to `<raw>/lcov.info`. Node's coverage follows the processes the tests spawn, so the CLI, worker and native entry each count. `typescript_join.py` joins that LCOV to the walker as for the viewer |
+| `statechart` | `typescript-coverage` | the package's own `test` script from its `package.json`, run by `node` from the package folder with `--experimental-test-coverage`, `--test-coverage-exclude=**/*.test.ts` and two more reporters: TAP to `<raw>/suite.tap` and LCOV to `<raw>/lcov.info`. Node's default coverage leaves out every file under a test folder; the explicit exclusion leaves out only the test files, so a helper beside them, such as `test/tlc.ts` or the `test/java.ts` stand-in, is measured. Node's coverage follows the processes the tests spawn, so the CLI, worker, native entry and stand-in each count. `typescript_join.py` joins that LCOV to the walker as for the viewer |
 
 A maintained JavaScript file with no filename extension is recorded as a gap naming DYD-105, so the
 row fails closed rather than quietly measuring less than the inventory.
@@ -410,7 +419,9 @@ closed - an unextracted or unassociated driver produces the gap `host-driver-log
 `host-driver-unassociated` instead of the exemption, and the file returns to the coverage targets.
 
 The TypeScript join reads Istanbul LCOV per module: `DA` lines for the line floor, `BRDA` branches
-for the branch floor, and `FN`/`FNDA` function counters. Each `DA` line belongs to the innermost
+for the branch floor, and `FN`/`FNDA` function counters. Node's reporter can give two functions the
+same name; their `FNDA` counters follow their `FN` lines in order, so each pairs with its own line
+rather than the last counter of that name. Each `DA` line belongs to the innermost
 callable spanning it, so a component is charged neither the complexity nor the coverage of its
 callbacks. A callable whose own Istanbul counter is zero covers none of its lines, even on a line
 other code hit, and a callable with no line of its own is measured by that counter alone; with no
@@ -432,7 +443,8 @@ host derives no verdict for `dotnet` and keeps that stack's separate test execut
 JavaScript collectors need `DynaDocs.Tests/coverage/requirements.lock` and
 `DynaDocs.Tests/coverage`'s npm lock installed, or they cannot launch a suite at all. The TypeScript
 collectors also need `viewer/node_modules` from `pnpm -C viewer install --frozen-lockfile` and the
-statechart package's from `pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile`.
+statechart package's from `pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile`;
+the statechart static row needs both, since its typecheck compiles with the viewer's TypeScript.
 
 `gate_policy.evaluate_policy` judges the joined modules of every stack the same way: line coverage
 at least 80% and branch coverage at least 60% per module, HCRAP

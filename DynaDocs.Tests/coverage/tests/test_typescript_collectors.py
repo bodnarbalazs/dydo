@@ -116,6 +116,36 @@ class TypeScriptCollectorTests(unittest.TestCase):
                           "severity": "error", "code": "TS2322", "message": "Type 'string' is not assignable."},
                          self.first_finding(output, 2, "viewer_typecheck"))
 
+    def statechart_typecheck(self, stdout, exit_code):
+        """The statechart typecheck against a stand-in tsc printing `stdout`, beside one upstream file."""
+        tsc = self.repository / "viewer/node_modules/typescript/bin/tsc"
+        tsc.parent.mkdir(parents=True, exist_ok=True)
+        tsc.write_text(f"process.stdout.write({json.dumps(stdout)});\nprocess.exit({exit_code});\n", encoding="utf-8")
+        runner = self.collector([f"{STATECHART}/worker.ts"])
+        runner.inventory["excluded"] = [{"path": f"{STATECHART}/pipeline.ts", "reason": "typescript-outside-viewer-src",
+                                         "origin": {"upstream": {"path": "pstack/skills/statechart/scripts/pipeline.ts"}}}]
+        return runner.statechart_typecheck()
+
+    def test_every_statechart_compiler_diagnostic_is_a_finding_but_an_upstream_unused_binding(self):
+        target = f"{STATECHART}/worker.ts(28,50): error TS2769: No overload matches this call.\n"
+        upstream_type = f"{STATECHART}/pipeline.ts(9,3): error TS2322: Type 'string' is not assignable.\n"
+        upstream_unused = f"{STATECHART}/pipeline.ts(7,8): error TS6133: 'Chart' is declared but never read.\n"
+        target_unused = f"{STATECHART}/worker.ts(2,8): error TS6133: 'Buffer' is declared but never read.\n"
+        cases = ((target + "  Overload 1 of 2 gave the following error.\n", 2, "fail", ["worker.ts"], 0),
+                 (upstream_type, 2, "fail", ["pipeline.ts"], 0), (target_unused, 2, "fail", ["worker.ts"], 0),
+                 (upstream_unused, 2, "pass", [], 1), ("", 0, "pass", [], 0), ("", 2, "error", [], 0),
+                 (upstream_unused + "error TS5023: Unknown compiler option 'x'.\n", 1, "error", [], 1))
+        for stdout, exit_code, status, paths, held in cases:
+            with self.subTest(stdout=stdout, exit_code=exit_code):
+                answer = self.statechart_typecheck(stdout, exit_code)
+
+                self.assertEqual(status, answer["status"])
+                self.assertEqual(paths, [Path(row["path"]).name for row in answer["findings"]])
+                self.assertEqual(held, len(answer["facts"]["upstreamUnusedBindings"]))
+        self.assertEqual({"gate": "typescript-build", "path": f"{STATECHART}/worker.ts", "line": "28", "column": "50",
+                          "severity": "error", "code": "TS2769", "message": "No overload matches this call."},
+                         self.statechart_typecheck(target, 2)["findings"][0])
+
     def test_each_lint_message_is_a_finding_and_a_crash_is_a_gap(self):
         report = json.dumps([{"filePath": str(self.repository / "viewer/src/left.ts"),
                               "messages": [{"ruleId": "no-nested-ternary", "severity": 1, "line": 2}]}])
@@ -156,8 +186,8 @@ class TypeScriptKnipTests(unittest.TestCase):
                          model["config"]["workspaces"]["../../skills/engineering/statechart/scripts"])
         self.assertEqual(["DynaDocs.Tests/coverage", STATECHART], model["packages"])
 
-    def measure_real(self, paths, graph="viewer"):
-        """The real TypeScript knip collector over these repository paths, inventoried as the gate does."""
+    def measure_real(self, paths, graph="viewer", measure=None):
+        """A real TypeScript collector, knip by default, over these repository paths, inventoried as the gate does."""
         from gate_inventory import assemble_inventory
         import gate_adapter
         inventory = assemble_inventory(REPOSITORY, paths, [], gate_adapter._ordinary_discovery(REPOSITORY, paths))
@@ -167,7 +197,16 @@ class TypeScriptKnipTests(unittest.TestCase):
             runner.output = Path(folder)
             runner.log = CommandLog(REPOSITORY, runner.output / "commands")
             runner.inventory = inventory
-            return inventory, collect_knip(runner, graph)
+            return inventory, (measure or (lambda runner: collect_knip(runner, graph)))(runner)
+
+    def test_the_real_statechart_package_typechecks_holding_only_upstream_unused_bindings(self):
+        package = [path for path in git_file_state(REPOSITORY)[0]
+                   if path.startswith(f"{STATECHART}/") and path.endswith(".ts")]
+        inventory, answer = self.measure_real(package, "statechart", Collectors.statechart_typecheck)
+
+        upstream = {row["path"] for row in inventory["excluded"]}
+        self.assertEqual(([], []), (answer["findings"], answer["errors"]))
+        self.assertEqual(set(), {row["path"] for row in answer["facts"]["upstreamUnusedBindings"]} - upstream)
 
     def test_collector_measures_the_real_viewer_graph(self):
         inventory, answer = self.measure_real(

@@ -42,6 +42,14 @@
       "tests": ["skills/engineering/statechart/scripts/test/cli.test.ts", "skills/engineering/statechart/scripts/test/adaptation.test.ts", "skills/engineering/statechart/scripts/test/acceptance.test.ts"]
     },
     {
+      "module": "skills/engineering/statechart/scripts/test/java.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/corpus.test.ts", "skills/engineering/statechart/scripts/test/cli.test.ts", "skills/engineering/statechart/scripts/test/tlc-out.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/tlc.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/corpus.test.ts", "skills/engineering/statechart/scripts/test/cli.test.ts"]
+    },
+    {
       "module": "skills/engineering/statechart/scripts/windows-cleanup.ts",
       "tests": ["skills/engineering/statechart/scripts/test/adaptation.test.ts"]
     },

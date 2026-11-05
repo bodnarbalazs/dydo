@@ -345,18 +345,19 @@ class GateInventoryTests(unittest.TestCase):
                          [(row['path'], row['role']) for row in after['sources']])
         self.assertEqual([], after['excluded'])
 
-    def test_a_statechart_helper_in_its_test_folder_is_harness_no_association_can_name(self):
+    def test_a_statechart_helper_is_harness_by_importing_the_runner_never_by_its_folder(self):
         from associations import validate_associations
         local = {'run.ts': 'export const run = 1;\n', 'test/tlc.ts': 'export const skip = false;\n',
+                 'test/hooks.ts': "import { after } from 'node:test';\nafter(() => {});\n",
                  'test/run.test.ts': "import { test } from 'node:test';\ntest('run', () => {});\n"}
 
         report = self.statechart_inventory(local, _provenance({}))
 
         roles = {row['path'].removeprefix(f'{_STATECHART}/'): (row['role'], row.get('nativeTest', True))
                  for row in report['sources']}
-        self.assertEqual({'run.ts': ('target', True), 'test/tlc.ts': ('test', False),
-                          'test/run.test.ts': ('test', True)}, roles)
-        manifest = {'schema': 1, 'modules': [{'module': f'{_STATECHART}/run.ts', 'tests': [f'{_STATECHART}/test/tlc.ts']}]}
+        self.assertEqual({'run.ts': ('target', True), 'test/tlc.ts': ('target', True),
+                          'test/hooks.ts': ('test', False), 'test/run.test.ts': ('test', True)}, roles)
+        manifest = {'schema': 1, 'modules': [{'module': f'{_STATECHART}/run.ts', 'tests': [f'{_STATECHART}/test/hooks.ts']}]}
         with self.assertRaisesRegex(ValueError, 'non-test association'):
             validate_associations(report['sources'], manifest)
 

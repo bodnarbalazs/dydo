@@ -50,13 +50,12 @@ _DERIVED_TEST = 'DynaDocs.Tests/coverage/tests/test_sync_testing_example.py'
 _NATIVE_EVIDENCE = 'dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence'
 _TYPESCRIPT_ROOT = 'viewer/src/'
 STATECHART_ROOT = 'skills/engineering/statechart/scripts/'
-_STATECHART_TESTS = STATECHART_ROOT + 'test/'
 _PROVENANCE = 'skills/engineering/statechart/PROVENANCE.md'
 _UPSTREAM_SKILL = 'pstack/skills/statechart/'
 _UPSTREAM_BLOBS = re.compile(r'^```upstream-blobs\n(?P<body>.*?)^```$', re.MULTILINE | re.DOTALL)
 _UPSTREAM_PIN = re.compile(r'commit `(?P<commit>[0-9a-f]{40})`')
 TYPESCRIPT_OUTSIDE_ROOT = 'typescript-outside-viewer-src'
-_VITEST_IMPORT = re.compile(r'''\bfrom\s+['"]vitest['"]''')
+_TEST_RUNNER_IMPORT = re.compile(r'''\bfrom\s+['"](?:vitest|node:test)['"]''')
 
 
 def typescript_stack(relative):
@@ -217,12 +216,9 @@ def _source_row(root, relative, path, existing, projects, test_files, associatio
     source = {'path': relative, 'sha256': digest, 'language': language, 'role': role,
               'projects': [owner['path'] for owner in owners], 'executable': executable,
               'testFiles': association_map.get(relative, [])}
-    if language == 'typescript' and role == 'target' and (
-            _VITEST_IMPORT.search(text) or relative.startswith(_STATECHART_TESTS)):
+    if language == 'typescript' and role == 'target' and _TEST_RUNNER_IMPORT.search(text):
         # Only the runner can load a module importing it, so it is test harness, as a C# test
-        # project's helpers are; it cannot be named as another module's test file. Node's own test
-        # discovery counts every module in a test folder as a test file and leaves it out of coverage,
-        # so a statechart helper there that the package's test script does not run is harness too.
+        # project's helpers are; it cannot be named as another module's test file.
         source.update(role='test', nativeTest=False)
     exemption, exemption_error = _coverage_exemption(root, relative, existing, association_map)
     if exemption:

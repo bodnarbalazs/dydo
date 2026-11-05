@@ -273,10 +273,15 @@ upstream file makes it a target with no list to update. Its test row runs the pa
 the caller's environment, as `TLA2TOOLS`, `JAVA` and `STATECHART_PELE`; a test without one skips
 by name and leaves its code uncovered. The coverage row runs the same script under node's test
 coverage, which follows the CLI, worker and native-entry processes the tests spawn, and joins the
-LCOV to the walker for HCRAP. The static row runs the walker, dependency-cruiser, jscpd and knip in
-the package's own workspace. Knip keeps the byte-identical upstream files in that graph, since their
-imports decide whether a measured export is used, but it does not judge them. The package declares
-no TypeScript compiler, so this stack has no typecheck or lint row.
+LCOV to the walker for HCRAP. Node's default coverage leaves out a whole test folder, so the row
+leaves out only the test files, and a helper beside them is measured. The static row typechecks the
+package's own tsconfig, strict with `noUnusedLocals` and `noUnusedParameters`, using the viewer's
+locked TypeScript, since the package declares no compiler, and reads each diagnostic as a finding.
+It also runs the walker, dependency-cruiser, jscpd and knip in the package's own workspace. Knip and
+the typecheck keep the byte-identical upstream files in their programs, since what those files
+import and declare decides whether a measured export is used or a measured call type-checks. A type
+error in one is still a finding, but neither judges its own dead code. The compiler's unused checks
+stand in for the viewer's lint, as no lint row runs here.
 
 Static measurement covers all maintained source of a stack, test files included: complexity,
 parameters, dead code, nested ternaries, dependency cycles, unused exports, clones and the native
@@ -288,10 +293,10 @@ TypeScript from native test discovery. A viewer test is a `viewer/src/**/*.test.
 imports `vitest` and calls `test` or `it`. Any other viewer module that imports `vitest`, such as
 the `testSetup.ts` vitest loads before every file, can only run under the runner, so it is test
 harness: role `test` with `nativeTest: false`, which no association can name as another module's
-test file. A statechart test is a `test/*.test.ts` file that imports `node:test` and calls `test`.
-Node's own discovery counts every module in a test folder as a test file and leaves it out of
-coverage, so a statechart helper there, such as `test/tlc.ts` or the stand-in `test/java.ts`, is
-harness in the same way. Test bodies, fixtures and assertion helpers supply the evidence; they are
+test file. A statechart test is a `test/*.test.ts` file that imports `node:test` and calls `test`;
+any other statechart module that imports `node:test` is harness in the same way. A folder makes no
+module harness: `test/tlc.ts` and the stand-in `test/java.ts` import no runner, so they are targets
+like any other module. Test bodies, fixtures and assertion helpers supply the evidence; they are
 not coverage targets and are never required to cover themselves. A maintained gate producer or
 runner is a target even under a test directory - `GateMetrics` and the `DynaDocs.Tests/coverage`
 runners are measured, while the `DynaDocs.Tests` assembly is instrumented for identity only.
@@ -325,9 +330,10 @@ The third gap is the statechart runtime's TypeScript that is still byte-identica
 upstream file, which DYD-590 decides. The same rule records it: the inventory lists each such file in
 `excluded` with the reason `typescript-outside-viewer-src`, and its `origin` carries the upstream
 commit, path and blob hash it matches. No association names one. The package's tests still run it,
-and the statechart knip graph holds it, listed as `ignored`, so the exports it uses count. What it
-lacks is the walker, the clone and cycle gates, coverage and the association gate. The moment its
-bytes change, it leaves this gap and becomes a measured target.
+and the statechart knip graph holds it, listed as `ignored`, so the exports it uses count. It stays
+under the strict typecheck, but its own unused bindings are listed rather than judged. What it
+lacks is the walker, the clone and cycle gates, coverage, and the unused-binding and association
+gates. The moment its bytes change, it leaves this gap and becomes a measured target.
 
 A viewer module absent from the LCOV report passes only if the walker proves it declarative, with
 every top-level statement a type, an interface or a type-only import or export, as

@@ -3,6 +3,7 @@ import json
 import hashlib
 import io
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -954,6 +955,25 @@ class StatechartGateTests(unittest.TestCase):
         self.assertEqual(["viewer/src/sum.ts", "viewer/src/types.ts", "viewer/src/unused.ts"],
                          [module["path"] for module in modules])
 
+    def test_node_measures_an_executable_helper_beside_the_tests_and_leaves_the_tests_out(self):
+        sources = {"package.json": STATECHART_SOURCES[f"{STATECHART}/package.json"],
+                   "test/helper.ts": "export const next = (value: number) => value + 1;\n",
+                   "test/helper.test.ts": ("import { test } from 'node:test';\nimport assert from 'node:assert/strict';\n"
+                                           "import { next } from './helper.ts';\n\n"
+                                           "test('next', () => assert.equal(next(1), 2));\n")}
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw = Path(folder), Path(folder) / "raw"
+            for relative, text in sources.items():
+                write_file(root, f"{STATECHART}/{relative}", text)
+            raw.mkdir()
+
+            child = subprocess.run(gate_adapter._statechart_argv(root, raw), cwd=root / STATECHART,
+                                   capture_output=True, text=True)
+
+            self.assertEqual(0, child.returncode, child.stdout + child.stderr)
+            self.assertEqual(["test/helper.ts"],
+                             re.findall(r"(?m)^SF:(.*)$", (raw / "lcov.info").read_text(encoding="utf-8")))
+
     def test_a_package_script_that_does_not_run_node_is_refused(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -1020,7 +1040,7 @@ class CandidateInventoryTests(unittest.TestCase):
             "node": shared | {"javascript-source", "javascript-dependencies",
                               "javascript-unused-exports", "clones"},
             "dotnet": shared | {"csharp-source", "csharp-analyzers", "versions"},
-            "statechart": shared | {"typescript-source", "typescript-dependencies",
+            "statechart": shared | {"typescript-build", "typescript-source", "typescript-dependencies",
                                     "typescript-unused-exports", "clones"},
         }
         with tempfile.TemporaryDirectory() as folder:

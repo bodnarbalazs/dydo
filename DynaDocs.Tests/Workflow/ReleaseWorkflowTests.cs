@@ -12,6 +12,12 @@ public sealed class ReleaseWorkflowTests
     private const string CoverageRestore = "pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile";
     private const string ValidationCacheLocks = "\n            DynaDocs.Tests/coverage/pnpm-lock.yaml\n            viewer/pnpm-lock.yaml";
     private const string ValidationCacheKey = "cache-dependency-path: |" + ValidationCacheLocks;
+    private const string StatechartProvisionStep = "Provision statechart prerequisites";
+    private const string StatechartTestStep = "Windows statechart tests";
+    private const string StatechartGuardStep = "Require every Windows statechart test to run";
+    private const string StatechartTap = "${{ runner.temp }}/statechart-windows.tap";
+    private const string StatechartTestRun = "node --disable-warning=ExperimentalWarning --test-reporter=spec --test-reporter-destination=stdout " +
+        "--test-reporter=tap --test-reporter-destination=" + StatechartTap + " test/windows.test.ts";
 
     [Fact]
     public void CiWorkflow_RunsNativeCancellationOnSupportedLinuxAndWindowsWithPinnedPython()
@@ -107,6 +113,137 @@ public sealed class ReleaseWorkflowTests
         Assert.Null(StepField(regression, "continue-on-error"));
         Assert.True(StepIndex(job, "Setup Python") < StepIndex(job, "Native cancellation regression"));
     }
+
+    // DYD-622: the statechart runtime's Windows paths run only on Windows, so a hosted Windows leg runs
+    // windows.test.ts with real TLC and fails when a test skips or none runs.
+    [Fact]
+    public void CiWorkflow_RunsEveryWindowsStatechartTestWithThePinnedPrerequisites() =>
+        AssertStatechartWindowsJob(ActiveJobs(CiWorkflow())["statechart-windows"]);
+
+    [Theory]
+    [InlineData("runs-on: windows-latest", "runs-on: ubuntu-24.04")]
+    [InlineData("    runs-on: windows-latest", "    if: github.event_name == 'push'\n    runs-on: windows-latest")]
+    [InlineData("    timeout-minutes: 20", "    timeout-minutes: 20\n    continue-on-error: true")]
+    [InlineData("scripts install --frozen-lockfile", "scripts install")]
+    [InlineData("run: ./.github/workflows/provision-statechart.ps1", "run: echo unprovisioned")]
+    [InlineData("TLA2TOOLS: ${{ steps.statechart.outputs.tla2tools }}", "")]
+    [InlineData("JAVA: ${{ steps.statechart.outputs.java }}", "")]
+    [InlineData("STATECHART_PELE: ${{ steps.statechart.outputs.pele }}", "")]
+    [InlineData("test/windows.test.ts", "test/chart.test.ts")]
+    [InlineData("--disable-warning=ExperimentalWarning --test-reporter=spec", "--disable-warning=ExperimentalWarning --test --test-reporter=spec")]
+    [InlineData(" --test-reporter=tap --test-reporter-destination=${{ runner.temp }}/statechart-windows.tap", "")]
+    [InlineData("run: ./.github/workflows/assert-node-tests-ran.ps1", "# run: ./.github/workflows/assert-node-tests-ran.ps1")]
+    [InlineData("      - name: " + StatechartGuardStep, "      - name: " + StatechartGuardStep + "\n        if: false")]
+    [InlineData("      - name: " + StatechartGuardStep, "      - name: " + StatechartGuardStep + "\n        continue-on-error: true")]
+    [InlineData("      - name: " + StatechartTestStep, "      - name: " + StatechartTestStep + "\n        continue-on-error: true")]
+    public void CiWorkflow_RejectsAWindowsStatechartLegThatCanSkipOrPassVacuously(string original, string replacement)
+    {
+        var job = ActiveJobs(CiWorkflow())["statechart-windows"];
+        AssertStatechartWindowsJob(job);
+        Assert.Contains(original, job);
+        var invalid = ActiveText(job.Replace(original, replacement, StringComparison.Ordinal));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertStatechartWindowsJob(invalid));
+    }
+
+    [Fact]
+    public void CiWorkflow_RejectsAWindowsStatechartGuardBeforeItsTests()
+    {
+        var job = ActiveJobs(CiWorkflow())["statechart-windows"];
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertStatechartWindowsJob(
+            Swap(job, JobStep(job, StatechartTestStep), JobStep(job, StatechartGuardStep))));
+    }
+
+    // Both Windows statechart consumers provision through one script, so their pins cannot drift apart.
+    [Theory]
+    [InlineData("ci.yml", "statechart-windows", StatechartTestStep)]
+    [InlineData("release.yml", "validation", "Run coverage gate")]
+    public void Workflows_ProvisionStatechartPrerequisitesThroughTheSharedScript(string name, string jobName, string consumer)
+    {
+        var workflow = ActiveText(File.ReadAllText(RepositoryFile(".github", "workflows", name)));
+        var job = ActiveJobs(workflow)[jobName];
+
+        AssertStatechartProvisioning(job, consumer);
+        Assert.DoesNotContain("dependency-lock.json", workflow);
+        Assert.DoesNotContain("Get-FileHash", workflow);
+    }
+
+    [Fact]
+    public void StatechartProvisioning_ChecksEveryDownloadAgainstItsDependencyLockPin()
+    {
+        var script = File.ReadAllText(RepositoryFile(".github", "workflows", "provision-statechart.ps1"));
+
+        foreach (var check in new[]
+        {
+            "Get-Content Resources/Statechart/dependency-lock.json -Raw",
+            "Where-Object rid -eq 'win-x64'",
+            "(Get-FileHash $jar -Algorithm SHA256).Hash -ne $lock.tlc.sha256) { throw",
+            "(Get-FileHash $archive -Algorithm SHA256).Hash -ne $jre.sha256) { throw",
+            "$integrity -cne $lock.pele.integrity) { throw",
+            "\"tla2tools=$jar\" >> $env:GITHUB_OUTPUT",
+            "\"java=$($java[0].FullName)\" >> $env:GITHUB_OUTPUT",
+            "\"pele=$entry\" >> $env:GITHUB_OUTPUT",
+        })
+            Assert.Contains(check, script);
+    }
+
+    [Fact]
+    public void NodeTestGuard_RejectsAMissingReportZeroTestsSkipsTodosAndFailures()
+    {
+        var guard = File.ReadAllText(RepositoryFile(".github", "workflows", "assert-node-tests-ran.ps1"));
+
+        foreach (var check in new[]
+        {
+            "if (-not (Test-Path -LiteralPath $Tap -PathType Leaf)) { throw",
+            "if ($missing) { throw",
+            "if ($counts.tests -eq 0) { throw",
+            "if ($counts.skipped -ne 0 -or $counts.todo -ne 0) { throw",
+            "if ($counts.pass -ne $counts.tests) { throw",
+        })
+            Assert.Contains(check, guard);
+    }
+
+    private static void AssertStatechartWindowsJob(string job)
+    {
+        Assert.Equal("windows-latest", JobField(job, "runs-on"));
+        Assert.Null(JobField(job, "strategy"));
+        Assert.Null(JobField(job, "if"));
+        Assert.Null(JobField(job, "continue-on-error"));
+        Assert.Equal("pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile",
+            StepField(JobStep(job, "Install statechart test dependencies"), "run"));
+        AssertStatechartProvisioning(job, StatechartTestStep);
+
+        var tests = JobStep(job, StatechartTestStep);
+        var guard = JobStep(job, StatechartGuardStep);
+        Assert.Equal("skills/engineering/statechart/scripts", StepField(tests, "working-directory"));
+        Assert.Equal(StatechartTestRun, StepField(tests, "run"));
+        Assert.Equal("pwsh", StepField(guard, "shell"));
+        Assert.Equal($"./.github/workflows/assert-node-tests-ran.ps1 -Tap '{StatechartTap}'", StepField(guard, "run"));
+        foreach (var step in new[] { tests, guard })
+        {
+            Assert.Null(StepField(step, "if"));
+            Assert.Null(StepField(step, "continue-on-error"));
+        }
+        Assert.True(StepIndex(job, "Install statechart test dependencies") < StepIndex(job, StatechartTestStep));
+        Assert.True(StepIndex(job, StatechartTestStep) < StepIndex(job, StatechartGuardStep), "The guard must read the report its tests wrote.");
+    }
+
+    private static void AssertStatechartProvisioning(string job, string consumer)
+    {
+        var provision = JobStep(job, StatechartProvisionStep);
+        Assert.Equal("statechart", StepField(provision, "id"));
+        Assert.Equal("pwsh", StepField(provision, "shell"));
+        Assert.Equal("./.github/workflows/provision-statechart.ps1", StepField(provision, "run"));
+        Assert.Null(StepField(provision, "if"));
+        Assert.Null(StepField(provision, "continue-on-error"));
+
+        var consuming = JobStep(job, consumer);
+        Assert.Equal("${{ steps.statechart.outputs.tla2tools }}", StepField(consuming, "TLA2TOOLS"));
+        Assert.Equal("${{ steps.statechart.outputs.java }}", StepField(consuming, "JAVA"));
+        Assert.Equal("${{ steps.statechart.outputs.pele }}", StepField(consuming, "STATECHART_PELE"));
+        Assert.True(StepIndex(job, StatechartProvisionStep) < StepIndex(job, consumer), "Provisioning must precede its consumer.");
+    }
+
+    private static string CiWorkflow() => File.ReadAllText(RepositoryFile(".github", "workflows", "ci.yml"));
 
     [Fact]
     public void RuntimePin_RequiresThePatchedAotCompilerAndRuntime()

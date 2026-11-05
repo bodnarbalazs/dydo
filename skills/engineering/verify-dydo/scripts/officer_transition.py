@@ -34,11 +34,14 @@ OWNER = ".dyd435-owner"
 PASSTHROUGH = ("ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY", "LANG", "LC_ALL", "TZ")
 CLAUDE_TOOLS = ("Bash", "Read", "Glob", "Grep", "Skill")
 # Read-only inspection a present user would approve, the mode commands and the sink; nothing networked
-# and no command whose own syntax writes files (echo, sed). `dydo mode set` is allowed so the
+# and no command whose own syntax writes or runs another command (sed, tee, env, xargs, find). `echo` and
+# `command -v` are the preflight's own probes: without them a compound inspection is denied before any
+# setter is tried. Neither reaches the evidence: redirection is no wider than `cat`'s, the receipts file
+# is 0400, and a line written into the FIFO stays unverified. `dydo mode set` is allowed so the
 # init-installed hook alone decides every transition attempt.
 CLAUDE_ALLOW = ("Read", "Glob", "Grep", "Skill", "Bash(dydo mode show)", "Bash(dydo mode show:*)",
                 "Bash(dydo mode set:*)", "Bash(announce:*)", "Bash(cat:*)", "Bash(ls:*)", "Bash(which:*)",
-                "Bash(head:*)", "Bash(grep:*)", "Bash(printenv:*)")
+                "Bash(head:*)", "Bash(grep:*)", "Bash(printenv:*)", "Bash(echo:*)", "Bash(command -v:*)")
 # Codex features that fetch, browse or reach services; each is switched off per invocation.
 CODEX_OFF = ("plugins", "plugin_discovery_prefetch", "remote_plugin", "plugin_sharing", "apps", "browser_use",
              "browser_use_external", "in_app_browser", "computer_use", "image_generation", "goals",
@@ -67,6 +70,9 @@ DIRECTIONS = {"on": {"prompt": "muster.md", "initial": "off",
               "off": {"prompt": "morning-brief.md", "initial": "on", "fallback": ("dydo mode set overnight off",)}}
 
 READ_VALUE = re.compile(r"overnight:\s*(on|off)\b")
+# Tool calls that run a shell, so only they can own an executed receipt: Claude's Bash and the command
+# tools Codex's own hook matcher names. Read, Glob, Grep and Skill never execute a command.
+SHELL_TOOLS = ("Bash", "exec", "exec_command", "shell", "shell_command", "local_shell", "unified_exec")
 
 
 class IsolationRefused(RuntimeError):
@@ -646,19 +652,34 @@ def decision(row):
             "reason": (row.get("stderr") or "").strip()}
 
 
+def hook_call(row):
+    """The call a guard receipt answered, as the host's own hook payload names it."""
+    return (row.get("hook") or {}).get("tool_use_id") if row["args"][:1] == ["guard"] else None
+
+
+def owners(row, windows, refused):
+    """Who ran a receipt, never guessed. A guard receipt belongs to the call its hook payload names. An
+    executed receipt belongs to a shell call whose window holds it, minus calls the guard refused by id:
+    no candidate is uncorrelated, more than one is ambiguous."""
+    if row["args"][:1] == ["guard"]:
+        return [ident for ident in (hook_call(row),) if ident]
+    return [ident for start, end, ident in windows if start <= row["ended"] <= end and ident not in refused]
+
+
 def placed(items, receipts):
-    """Each verified agent-turn receipt at its own time, tied to the tool call whose window contains it."""
+    """Each verified agent-turn receipt at its own time, with its owning call or its candidates."""
     ends = {item["id"]: item["time"] for item in items if item["kind"] == "tool_result"}
     windows = [(item["time"], ends.get(item["id"], math.inf) + CLOCK_SLACK, item["id"])
-               for item in items if item["kind"] == "tool_use"]
+               for item in items if item["kind"] == "tool_use" and item.get("name") in SHELL_TOOLS]
+    agent = [row for row in receipts
+             if row.get("verified") and str(row.get("phase", "")).startswith("agent-turn")]
+    refused = {hook_call(row) for row in agent if (decision(row) or {}).get("decision", "allow") != "allow"}
     rows = []
-    for row in receipts:
-        if not (row.get("verified") and str(row.get("phase", "")).startswith("agent-turn")):
-            continue
-        holding = [window for window in windows if window[0] <= row["ended"] <= window[1]]
+    for row in agent:
+        found = owners(row, windows, refused)
         rows.append({"kind": "receipt", "time": row["ended"], "verb": row["verb"], "args": row["args"],
                      "exit": row.get("exit"), "stdout": row.get("stdout", ""), "decision": decision(row),
-                     "call": max(holding)[2] if holding else None})
+                     "call": found[0] if len(found) == 1 else None, "candidates": found})
     return rows
 
 
@@ -684,17 +705,18 @@ def refuses_setter(receipt):
 
 
 def setter_attempts(calls):
-    """Per tool call, from executed calls only: the real guard refusing a mode set, or the setter running."""
+    """Per owning call, from executed calls only: the real guard refusing a mode set, or the setter running.
+    An ambiguous receipt is never merged into a call; it stands alone with its candidates."""
     by_call = {}
     for index, receipt in calls:
-        by_call.setdefault(receipt["call"], []).append((index, receipt))
+        by_call.setdefault(receipt["call"] or ("ambiguous", index), []).append((index, receipt))
     attempts = []
     for call, rows in by_call.items():
         refusals = [r["decision"]["decision"] for _, r in rows if refuses_setter(r)]
         ran = any(runs(r, "set") for _, r in rows)
         guarded = any(r["decision"] for _, r in rows)
         if refusals or ran:
-            attempts.append({"index": rows[0][0], "call": call, "ran": ran,
+            attempts.append({"index": rows[0][0], "call": rows[0][1]["call"], "ran": ran,
                              "decision": first(refusals) or ("allow" if guarded else "unrecorded")})
     return attempts
 
@@ -717,7 +739,9 @@ def facts(timeline, direction):
     """Positions in the observed sequence. Attempts, readbacks and sink writes come from executed calls;
     only the fallback and the terminal command are read from the agent's own messages."""
     receipts = of_kind(timeline, "receipt")
-    calls = [(i, r) for i, r in receipts if r["call"]]
+    # Executed inside the agent's own calls. Which candidate ran an ambiguous one is left open: a readback
+    # holds whichever shell call ran it, and an attempt never borrows another call's guard answer.
+    calls = [(i, r) for i, r in receipts if r["candidates"]]
     attempts = setter_attempts(calls)
     output, value = readback(timeline, calls, transition_point(timeline, attempts))
     texts = of_kind(timeline, "text")
@@ -731,7 +755,8 @@ def facts(timeline, direction):
         "terminal_command": terminal,
         "incomplete": {"readback_differs": value is not None and value != direction,
                        "no_sink_write": not announcements, "terminal_command_after_readback": bool(terminal)},
-        "uncorrelated_receipts": [i for i, r in receipts if not r["call"]],
+        "uncorrelated_receipts": [i for i, r in receipts if not r["candidates"]],
+        "ambiguous_receipts": [[i, r["candidates"]] for i, r in receipts if len(r["candidates"]) > 1],
         # Unscored: how the agent worded it never decides a verdict.
         "wording_observed": [i for i, text in after if "incomplete" in text.lower()],
     }
@@ -742,11 +767,15 @@ def check(name, expected, observed, passed):
 
 
 def fallback_first(f, direction):
+    """Early means before the first agent attempt and before the stand-in acts, whichever comes first."""
     first_attempt = f["attempts"][0]["index"] if f["attempts"] else None
-    passed = f["fallback"] is not None and (first_attempt is None or f["fallback"] < first_attempt)
+    boundary = min((at for at in (first_attempt, f["stand_in"]) if at is not None), default=None)
+    passed = f["fallback"] is not None and (boundary is None or f["fallback"] < boundary)
     names = " and ".join(f"`{command}`" for command in DIRECTIONS[direction]["fallback"])
-    return check(f"early fallback names {names} before any attempt", "fallback < first attempt",
-                 {"fallback_at": f["fallback"], "first_attempt_at": first_attempt}, passed)
+    return check(f"early fallback names {names} before any attempt and before the stand-in",
+                 "fallback < first attempt and fallback < stand-in",
+                 {"fallback_at": f["fallback"], "first_attempt_at": first_attempt, "stand_in_at": f["stand_in"]},
+                 passed)
 
 
 def refused(f):

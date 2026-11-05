@@ -47,6 +47,10 @@ plays the already-invoked chief of staff from the verbatim prompts in
 | `supported` | Claude Code, `default`, prompts answered by nobody | none |
 | `codex` | `codex exec`, approval `never` | runs the real setter on the scratch store |
 
+With nobody to approve, Claude Code denies any Bash command outside its per-invocation allow-list, even
+after the hook allowed it. So that list carries the preflight's own read-only probes (`echo`,
+`command -v`) and no command whose own syntax writes or runs another command.
+
 Each run gets fresh scratch with HOME, `XDG_DATA_HOME`, the agent config dir and TMPDIR inside it,
 and recorder shims for the candidate `dydo` and the `announce` sink first on PATH. The canary reads
 before it writes: the agents' route must show a seeded scratch value the real store does not hold,
@@ -56,17 +60,21 @@ Evidence comes from executed calls, not from command text. Each recorder reports
 the harness holds open, and counts only when the harness finds that recorder holding the FIFO with
 exactly that call as its cmdline. Receipts land in a `0400` file outside every agent-writable root.
 `evaluate` rebuilds each timeline from the retained raw sources: the agent's own transcript (Claude)
-or rollout (Codex), the receipts and the harness's events, ordered by time. A receipt counts only
-inside the window of the tool call that ran it.
+or rollout (Codex), the receipts and the harness's events, ordered by time. A guard receipt belongs
+to the call its hook payload's `tool_use_id` names. An executed receipt belongs to the one shell call
+(Claude `Bash`, Codex `exec`) whose window holds it, never to Read, Glob, Grep or Skill, and never to
+a call the guard refused by id. Several candidates make it ambiguous, reported with its candidates and
+never merged into a call; none makes it uncorrelated. Codex's hook ids name its inner commands, not
+its rollout calls, so a Codex guard answer and that command's execution stay separate entries.
 
-The evaluator judges from those facts: the early fallback before any setter attempt (both commands at
-muster, the `off` command at the morning brief); every attempt refused by the real guard; a fresh
-readback before any sink write. An incomplete report is three recorded facts: the readback differs
-from the target, nothing reached the sink, and the agent named the terminal command after the
-readback. The agent's wording is recorded but unscored. Unconfirmed cleanup, a moved real store or
-lost scratch stops the case before the stand-in and stops the campaign. Evidence, raw streams and
-agent transcripts stay under `artifacts/dyd435/`. The approval prompt with a person present remains
-a human-only observation.
+The evaluator judges from those facts: the early fallback before any setter attempt and before the
+stand-in acts (both commands at muster, the `off` command at the morning brief); every attempt refused
+by the real guard; a fresh readback before any sink write. An incomplete report is three recorded
+facts: the readback differs from the target, nothing reached the sink, and the agent named the
+terminal command after the readback. The agent's wording is recorded but unscored. Unconfirmed
+cleanup, a moved real store or lost scratch stops the case before the stand-in and stops the
+campaign. Evidence, raw streams and agent transcripts stay under `artifacts/dyd435/`. The approval
+prompt with a person present remains a human-only observation.
 
 ## Gotchas
 

@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using DynaDocs.Commands;
 using DynaDocs.Services;
+using DynaDocs.Tests.Services;
 using static DynaDocs.Tests.Integration.PushedRepository;
 
 /// <summary>
@@ -1238,6 +1239,67 @@ public class GuardPrReadyTests : IntegrationTestBase
         {
             Assert.False(result.IsPreToolUseAllowed);
             Assert.Contains("PR check", result.AssertPreToolUseDenied());
+        }
+    }
+
+    // DYD-515: "cli" is dydo guard --command, which reads the line both ways (Unknown); an argv
+    // array is a Codex call. Inert input strings, never shell programs.
+    private async Task<CommandResult> Attempt(string tool, object command) => tool == "cli"
+        ? await RunAsync(GuardCommand.Create(), "--command", (string)command)
+        : await GuardWithStdinAsync(Payload(command, codex: command is string[], toolName: tool));
+
+    private static bool Allowed(CommandResult result) => result.ExitCode == 0 && result.Stdout.Length == 0;
+
+    public static TheoryData<string, object> FailedReadingsWithoutGh => new()
+    {
+        { "Bash", PrCallScannerTests.ArchIdiom },
+        { "Bash", PrCallScannerTests.EchoCase },
+        { "PowerShell", PrCallScannerTests.EscapedApostrophe },
+        { "cli", PrCallScannerTests.EscapedApostrophe },
+        { "cli", PrCallScannerTests.ArchIdiom },
+        { "Bash", "bash -c '" + PrCallScannerTests.EchoCase + "'" },
+        { "PowerShell", "pwsh -Command 'v=$(date); echo it\\''s'" },
+        { "Bash", new[] { "bash", "-lc", PrCallScannerTests.ArchIdiom } },
+        { "Bash", new[] { "pwsh", "-Command", PrCallScannerTests.EscapedApostrophe } },
+        { "Bash", new[] { "echo", PrCallScannerTests.EchoCase } },
+    };
+
+    [Theory]
+    [MemberData(nameof(FailedReadingsWithoutGh))]
+    public async Task FailedReading_WithoutAGhWord_FromACleanOrDirtyTree_IsAllowedOnFirstAndRetry(string tool, object command)
+    {
+        await InitPushedProject();
+        List<CommandResult> results = [await Attempt(tool, command), await Attempt(tool, command)];
+        WriteFile("readme.md", "changed\n");
+        results.AddRange([await Attempt(tool, command), await Attempt(tool, command)]);
+
+        Assert.All(results, result => Assert.True(Allowed(result), $"exit {result.ExitCode}\n{result.Stdout}\n{result.Stderr}"));
+    }
+
+    public static TheoryData<string, object> FailedReadingsWithALaterGhWord => new()
+    {
+        { "Bash", PrCallScannerTests.ArchIdiom + "\n/usr/bin/gh pr create --fill" },
+        { "Bash", PrCallScannerTests.EchoCase + " && GH.EXE pr ready" },
+        { "Bash", PrCallScannerTests.EchoCase + " \"$(gh pr ready)\"" },
+        { "PowerShell", PrCallScannerTests.EscapedApostrophe + "; C:\\tools\\gh.exe pr ready" },
+        { "cli", PrCallScannerTests.FailsBothReadings + "; gh pr ready" },
+        { "Bash", "bash -c '" + PrCallScannerTests.EchoCase + "; gh pr ready'" },
+        { "Bash", new[] { "bash", "-lc", PrCallScannerTests.EchoCase + "; gh pr ready" } },
+        { "Bash", new[] { "pwsh", "-Command", PrCallScannerTests.EscapedApostrophe + "; gh pr ready" } },
+        { "Bash", new[] { "echo", PrCallScannerTests.FailsBothReadings + "; gh pr ready" } },
+    };
+
+    // A clean tree would let a call the reading found through, so only the unread refusal denies these.
+    [Theory]
+    [MemberData(nameof(FailedReadingsWithALaterGhWord))]
+    public async Task FailedReading_LaterGhWord_FromACleanTree_IsRefusedUnreadOnFirstAndRetry(string tool, object command)
+    {
+        await InitPushedProject();
+
+        foreach (var result in new[] { await Attempt(tool, command), await Attempt(tool, command) })
+        {
+            Assert.False(Allowed(result), $"allowed: {command}");
+            Assert.Contains("PR check", result.Stdout + result.Stderr);
         }
     }
 }

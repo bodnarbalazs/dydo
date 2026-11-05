@@ -105,8 +105,8 @@ internal static partial class PrCallScanner
     /// point 6). Up to the end of the call's pipeline (<see cref="Pipeline"/>), every command, nested
     /// ones included, takes no file redirection or heredoc (<see cref="Quiet"/>); the call's later
     /// members are filters, and every other command only reads (<see cref="ReadsOnly"/>). The rest of
-    /// the line starts with <c>;</c>, <c>&amp;&amp;</c>, <c>||</c> or a line break and holds no lone
-    /// <c>&amp;</c>, which would run the call in the background beside what follows. No word up to
+    /// the line is empty or starts with <c>;</c>, <c>&amp;&amp;</c>, <c>||</c> or a line break, and holds
+    /// no lone <c>&amp;</c>, which would run the call in the background beside what follows. No word up to
     /// the pipeline's end may expand (<see cref="ExpandsNothing"/>), and the line holds no backtick
     /// substitution, whose commands the reader returns unread.
     /// </summary>

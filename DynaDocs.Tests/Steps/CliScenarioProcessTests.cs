@@ -49,14 +49,14 @@ public class CliScenarioProcessTests(CliProcessProbe probe) : IClassFixture<CliP
     }
 
     [Fact]
-    public async Task Timeout_TerminatesAndReapsParentAndDescendant()
+    public async Task Timeout_ReapsParentAndTerminatesDescendant()
     {
         var error = await Assert.ThrowsAsync<TimeoutException>(() => _scenario.RunProcessAsync(
             probe.Command(_scenario.DirectoryPath, "tree", _scenario.DirectoryPath),
             TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(5)));
         Assert.Contains("parent ready", error.Message);
         Assert.Contains("parent stderr", error.Message);
-        Assert.True(Exited("tree"));
+        AssertReaped("tree");
         Assert.True(Exited("hold"));
     }
 
@@ -70,7 +70,7 @@ public class CliScenarioProcessTests(CliProcessProbe probe) : IClassFixture<CliP
                 TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(1)));
             Assert.Contains(_scenario.DirectoryPath, error.Message);
             Assert.Contains("termination", error.Message);
-            Assert.True(Exited("orphan"));
+            AssertReaped("orphan");
             Assert.False(Exited("hold"));
             Assert.ThrowsAny<XunitException>(_scenario.Cleanup);
             Assert.True(Directory.Exists(_scenario.DirectoryPath));
@@ -87,12 +87,15 @@ public class CliScenarioProcessTests(CliProcessProbe probe) : IClassFixture<CliP
     private bool Exited(string name)
     {
         var pid = int.Parse(File.ReadAllText(Path.Combine(_scenario.DirectoryPath, name + ".pid")));
-        try
-        {
-            using var process = Process.GetProcessById(pid);
-            return process.HasExited;
-        }
-        catch (ArgumentException) { return true; }
+        return ProcessLiveness.HasTerminated(pid);
+    }
+
+    private void AssertReaped(string name)
+    {
+        Assert.True(Exited(name));
+        var pid = int.Parse(File.ReadAllText(Path.Combine(_scenario.DirectoryPath, name + ".pid")));
+        if (OperatingSystem.IsLinux())
+            Assert.False(Directory.Exists($"/proc/{pid}"), "Direct child was not reaped.");
     }
 
     private async Task StopDescendant()
@@ -102,8 +105,8 @@ public class CliScenarioProcessTests(CliProcessProbe probe) : IClassFixture<CliP
             return;
         using var child = Process.GetProcessById(int.Parse(File.ReadAllText(path)));
         child.Kill(entireProcessTree: true);
-        await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.True(child.HasExited);
+        await ProcessLiveness.WaitForTerminationAsync(child.Id);
+        Assert.True(Exited("hold"));
     }
 
     public void Dispose()

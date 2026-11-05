@@ -77,7 +77,7 @@ map and how the tickets move, integrate, and finish together.
    known. Wait for the user's word only when nothing is in flight and no authorized work is pickable.
 2. **Chart and approve.** When the route is unknown, set the Project `Planning` and chart it with
    `wayfinder`: the map in the Project description, naming you its holder, the first pickable tickets, and each Project-level
-   Question in `Todo`, wired to every waiter. Record the shared anchor choice from `wayfinder`, when
+   Question in `Todo`, wired to every waiter. Scaffolding a new Project: follow [the recipe](resources/scaffold-project.md). Record the shared anchor choice from `wayfinder`, when
    one is needed, and contract affected tickets from its relevant sections before commissioning them.
    The Project and its tickets are the plan. Place the map's Milestones in Linear. Keep them few,
    each one a meaningful chunk of work where a drift from the user's intent would show. The first

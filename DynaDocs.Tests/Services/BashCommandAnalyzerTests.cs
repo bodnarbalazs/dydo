@@ -1506,6 +1506,12 @@ public class BashCommandAnalyzerTests
     [InlineData("uv run -p python3.12 python -")]
     [InlineData("sudo uv run python -")]
     [InlineData("bash -c \"cat x.py | uv run python\"")]
+    // An option's value named run is no subcommand: the run after it still starts Python.
+    [InlineData("uv --directory run run python -")]
+    [InlineData("uv --project run run python -")]
+    [InlineData("poetry --directory run run python3 -")]
+    [InlineData("uv --directory run run python < input.txt")]
+    [InlineData("printf 'print(1)' | uv --directory run run python")]
     public void PythonARunSubcommandStartsOnStdin_IsRefused(string command)
     {
         var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
@@ -1535,11 +1541,25 @@ public class BashCommandAnalyzerTests
     [InlineData("echo uv run python -")]
     [InlineData("printf 'x' | uv run python tools/gen.py")]
     [InlineData("gh run list")]
+    [InlineData("uv --directory run run python tools/x.py")]
+    [InlineData("uv --directory run run python -m pytest")]
+    [InlineData("uv run --with=requests tools/gen.py python -")]
     public void RunSubcommandWithoutAPythonStdinProgram_StaysAllowed(string command)
     {
         var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
 
         Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    // A known, documented over-refusal: the shape names no tool, so a python word another tool's
+    // run receives while something feeds it reads as Python on stdin.
+    [Fact]
+    public void PythonWordAnotherToolsRunReceivesWhileFed_IsRefused()
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns("echo x | cargo run -- python");
+
+        Assert.True(dangerous);
+        Assert.Contains("stdin", reason);
     }
 
     // The documented limit: Python behind a runner with no run subcommand, or behind a second

@@ -18,8 +18,9 @@ program on stdin was refused.
 
 - One shape, for any runner: the runner's first operand is `run`, and Python is the first operand
   after it, with options allowed before each. A word after an option may be that option's value, so
-  `uv --directory tools run python -`, `uv run --with requests python -` and
-  `conda run -n env python3 -` are refused too
+  every `run` and Python word that may be the first operand is checked, and
+  `uv --directory tools run python -`, `uv --directory run run python -`,
+  `uv run --with requests python -` and `conda run -n env python3 -` are refused too
   ([Guard System](../../../../understand/guard-system.md)).
 - The refusal and its message are the same as for Python at command position.
 - `uv run python script.py`, `uv run python -m pytest`, `poetry run pytest`, `uv pip install ...`,
@@ -27,6 +28,8 @@ program on stdin was refused.
 - Remaining limit: Python behind a runner with no `run` subcommand (`uvx python -`,
   `pyenv exec python -`) or behind a second runner that `run` starts (`uv run poetry run python -`)
   is not recognised. The guard stops accidents, not a deliberate route around it.
+- Known over-refusal: the shape names no tool, so a fed `python` word another tool's `run` receives
+  is refused too (`echo x | cargo run -- python`).
 
 No change in this entry renames a term mechanically, so it has no merge normalisations.
 

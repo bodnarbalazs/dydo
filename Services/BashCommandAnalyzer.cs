@@ -708,10 +708,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// The Python words a run subcommand may start, by one shape whatever the runner (uv run, poetry
     /// run, conda run -n env, ...): the program's first operand is the word run, and Python is the
     /// first operand after it, with options before each. An operand after an option may be that
-    /// option's value, so each such Python word counts, as run's own first operand may still follow.
+    /// option's value, so each run word that may be the first operand counts (<c>uv --directory run
+    /// run python -</c>), and so does each Python word that may be run's.
     /// </summary>
     private static IEnumerable<int> RunPythonPrograms(IReadOnlyList<string> words, int program) =>
-        LeadingOperands(words, program + 1).Where(i => words[i] == "run").Take(1)
+        LeadingOperands(words, program + 1).Where(i => words[i] == "run")
             .SelectMany(run => LeadingOperands(words, run + 1)).Where(i => IsPythonProgram(words[i]));
 
     // The operands from words[from] on that may be the first: each after an option, then the first

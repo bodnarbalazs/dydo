@@ -83,13 +83,17 @@ def _wait_coverage_child(child, deadline):
 
 
 def _stop_coverage_campaign(child, deadline, containment):
-    from run_tests import end_descendants
+    from run_tests import end_descendants, pin_descendants
+    pinned = []
     try:
         if sys.platform == "win32":
             child.send_signal(signal.CTRL_BREAK_EVENT)
         else:
             os.killpg(child.pid, signal.SIGINT)
-        _wait_coverage_child(child, time.monotonic() + max(0, deadline - time.monotonic()) / 3)
+        grace = time.monotonic() + max(0, deadline - time.monotonic()) / 3
+        # The owner's grace pays for the first descendant listing; what it pins dies after the grace.
+        pinned = pin_descendants(containment)
+        _wait_coverage_child(child, grace)
     except (OSError, subprocess.TimeoutExpired):
         if sys.platform == "win32":
             child.kill()
@@ -102,7 +106,7 @@ def _stop_coverage_campaign(child, deadline, containment):
     finally:
         # A killed Linux owner can leave detached children adopted by this adapter; the caller's
         # reaping collects them once they are ended.
-        end_descendants(containment, seconds=max(0, deadline - time.monotonic()))
+        end_descendants(containment, seconds=max(0, deadline - time.monotonic()), pinned=pinned)
     return child.returncode
 
 

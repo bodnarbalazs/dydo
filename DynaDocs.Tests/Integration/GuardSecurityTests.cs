@@ -826,22 +826,256 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertPreToolUseAllowed();
     }
 
-    // DYD-421 DECIDED: single-quoted text is searched for bypasses as on master, so these
-    // single-quoted GS-02 writes stay refused until DYD-422 designs a relaxation.
+    // The CLI lane reads its command as an unknown shell, both ways.
+    private Task<CommandResult> UnknownShellGuardAsync(string command) => GuardWithStdinAsync("", "--command", command);
+
+    // DYD-422: one sed, printf or echo command writing single-quoted literal data to a literal
+    // destination is no bypass, through Claude's Bash and PowerShell tools and in an unknown shell.
     [Theory]
-    [InlineData("Bash", GuardRetroCommands.Gs02SedBacktickCommit)]
-    [InlineData("Bash", GuardRetroCommands.Gs02SedBacktickSingleLine)]
-    [InlineData("Bash", "sed -i 's/`x`/y/' f")]
-    [InlineData("Bash", "printf '%s' 'first line\n$HOME is literal' > notes.md")]
-    [InlineData("PowerShell", "Set-Content notes.md 'first line\n$HOME is literal'")]
-    public async Task Gs02_SingleQuotedDataWrite_IsDeniedAsOnMaster(string toolName, string command)
+    [InlineData("sed -i 's/`x`/y/' f")]
+    [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md")]
+    [InlineData("echo 'cost: $5 and `date`' > notes.md")]
+    public async Task Gs02_SingleQuotedLiteralDataWrite_IsAllowed(string command)
     {
         await SetupClaimedAgent();
 
-        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        bash.AssertPreToolUseAllowed();
+        powerShell.AssertPreToolUseAllowed();
+        unknown.AssertSuccess();
+    }
+
+    // Literal data keeps its path checks: a guarded destination, or a guarded path a substitution
+    // in it names, is refused for that path.
+    [Theory]
+    [InlineData("printf '%s' 'first line\n$HOME is literal' > dydo/index.md", "protected")]
+    [InlineData("sed -i 's/`x`/y/' dydo/files-off-limits.md", "protected")]
+    [InlineData("sed -i 's#`rm dydo/index.md`#y#' notes.md", "protected")]
+    [InlineData("printf '%s' '$HOME' > .env", "off-limits")]
+    public async Task Gs02_SingleQuotedLiteralDataWrite_ToAGuardedPath_IsStillDenied(string command, string tier)
+    {
+        await SetupClaimedAgent();
+
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        bash.AssertPreToolUseDenied();
+        bash.AssertStderrContains(tier);
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains(tier);
+    }
+
+    // Single-quoted text no reading certifies as literal data is refused as on master.
+    [Fact]
+    public async Task Gs02_SingleQuotedSetContentWrite_IsDeniedAsOnMaster()
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson("PowerShell", "Set-Content notes.md 'first line\n$HOME is literal'"));
 
         result.AssertPreToolUseDenied();
         result.AssertStderrContains("bypass");
+    }
+
+    // DYD-422: where a program on the line may run the single-quoted text, a reading may not be the
+    // shell's, or the text sits in a comment or a body, the call is refused as on master and the
+    // protected canary keeps its bytes.
+    [Theory]
+    [InlineData("bash -c 'echo x > $OUT'")]
+    [InlineData("sh -c 'printf x > $OUT'")]
+    [InlineData("zsh -c 'echo $(rm dydo/index.md)'")]
+    [InlineData("eval 'echo x' '> $OUT'")]
+    [InlineData("iex 'echo x' '> $OUT'")]
+    [InlineData("Invoke-Expression 'echo x > $OUT'")]
+    [InlineData("cmd /c echo 'x > $OUT'")]
+    [InlineData("env -S 'echo x' '> $OUT'")]
+    [InlineData("pwsh -Command 'echo x' '> $OUT'")]
+    [InlineData("ssh host 'echo x' '> $OUT'")]
+    [InlineData("watch -n 1 'echo x > $OUT'")]
+    [InlineData("watch echo '$(rm dydo/index.md)'")]
+    [InlineData("su -c 'echo x > $OUT'")]
+    [InlineData("script -c 'echo x > $OUT'")]
+    [InlineData("xargs sh -c 'echo x > $OUT'")]
+    [InlineData("xargs echo '$(rm dydo/index.md)'")]
+    [InlineData("find . -exec sh -c 'echo x > $OUT' \\;")]
+    [InlineData("find . -exec echo '$(rm dydo/index.md)' \\;")]
+    [InlineData("docker exec box sh -c 'echo x > $OUT'")]
+    [InlineData("kubectl exec pod -- sh -c 'echo x > $OUT'")]
+    [InlineData("tmux send-keys 'echo x > $OUT' Enter")]
+    [InlineData("printf '%s' '$(rm dydo/index.md)' | sh")]
+    [InlineData("echo '$(rm dydo/index.md)' | tee notes.md | bash")]
+    [InlineData("printf '%s' '$(rm dydo/index.md)' > /dev/stdout | sh")]
+    [InlineData("echo '$(rm dydo/index.md)' | iex")]
+    [InlineData("sh <(printf '%s' '$(rm dydo/index.md)')")]
+    [InlineData("source <(echo '$(rm dydo/index.md)')")]
+    [InlineData("printf '%s' '$(rm dydo/index.md)' > >(sh)")]
+    [InlineData("{ printf '%s' '$(rm dydo/index.md)'; } | sh")]
+    [InlineData("{ echo '$(rm dydo/index.md)'; echo y; } | sh")]
+    [InlineData("(echo '$(rm dydo/index.md)') | sh")]
+    [InlineData("for f in a; do echo '$(rm dydo/index.md)'; done | sh")]
+    [InlineData("for f in a; do echo a; echo '$(rm dydo/index.md)'; done | sh")]
+    [InlineData("echo '$(rm dydo/index.md)' & sh")]
+    [InlineData("echo '$(rm dydo/index.md)' \\\n| sh")]
+    [InlineData("echo '$HOME' (iex 'rm dydo/index.md') > notes.md")]
+    [InlineData("sed -i 's/x/$TARGET/e' notes.md")]
+    [InlineData("sed -i '1e rm $TARGET' notes.md")]
+    [InlineData("sed -i 's/`x`/y/;e rm dydo/index.md' notes.md")]
+    [InlineData("sed -e 's/`x`/y/' -e '1e rm dydo/index.md' -i notes.md")]
+    [InlineData("sed -i -f run.sed 's/`x`/y/' notes.md")]
+    [InlineData("sed -i '1e rm dydo/index.md' 's/`x`/y/' notes.md")]
+    [InlineData("sed -i 's/`x`/y/w dydo/index.md' notes.md")]
+    [InlineData("awk '{system(\"rm $TARGET\")}' notes.md > out.md")]
+    [InlineData("echo $'\\'' $(echo x > $OUT) '$'\\'''")]
+    [InlineData("echo ^\"'$(echo x > $OUT)'^\"")]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("echo hi # don't\necho $(rm dydo/index.md) 'ok'")]
+    [InlineData("cat <<EOF\necho don\\'t $(rm dydo/index.md) won\\'t\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nprintf '%s' '$(rm dydo/index.md)'\nEOF")]
+    [InlineData("grep x <<< '$(rm dydo/index.md)'")]
+    [InlineData("printf '%s' 'a $b' > $OUT")]
+    [InlineData("echo 'x' > \"$OUT\"")]
+    [InlineData("printf '%s' 'x' > $(echo notes.md)")]
+    [InlineData("sed -i 's/`x`/y/' $FILE")]
+    [MemberData(nameof(GuardRetroCommands.Gs02StateChangingLines), MemberType = typeof(GuardRetroCommands))]
+    public async Task Gs02_SingleQuotedTextAProgramMayRun_IsDeniedAndTheCanaryUnchanged(string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        bash.AssertPreToolUseDenied();
+        bash.AssertStderrContains("bypass");
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains("bypass");
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // DYD-422 review: every route the reviews found (a second command, a file the line writes and
+    // then runs, an option off sed's list, a word the shell may expand, text only PowerShell runs)
+    // is refused through Claude's Bash and PowerShell tools and an unknown shell, as on master.
+    [Theory]
+    [MemberData(nameof(GuardRetroCommands.Gs02WriteThenRunLines), MemberType = typeof(GuardRetroCommands))]
+    [MemberData(nameof(GuardRetroCommands.Gs02OptionLines), MemberType = typeof(GuardRetroCommands))]
+    [MemberData(nameof(GuardRetroCommands.Gs02OptionValueLines), MemberType = typeof(GuardRetroCommands))]
+    [MemberData(nameof(GuardRetroCommands.Gs02NarrowedLines), MemberType = typeof(GuardRetroCommands))]
+    [MemberData(nameof(GuardRetroCommands.Gs02ExpandingWordLines), MemberType = typeof(GuardRetroCommands))]
+    [MemberData(nameof(GuardRetroCommands.Gs02PowerShellReadingLines), MemberType = typeof(GuardRetroCommands))]
+    [MemberData(nameof(GuardRetroCommands.Gs02BreakCharacterLines), MemberType = typeof(GuardRetroCommands))]
+    public async Task Gs02_WriteThenRun_IsDeniedInEveryShell(string command)
+    {
+        await SetupClaimedAgent();
+
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        bash.AssertPreToolUseDenied();
+        bash.AssertStderrContains("bypass");
+        powerShell.AssertPreToolUseDenied();
+        powerShell.AssertStderrContains("bypass");
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains("bypass");
+    }
+
+    // Split seat D: a Codex pwsh argv envelope runs its script in PowerShell, from a caller read as
+    // bash; relief needs PowerShell's reading too, so the text it runs is refused as on master.
+    [Theory]
+    [MemberData(nameof(GuardRetroCommands.Gs02PowerShellReadingLines), MemberType = typeof(GuardRetroCommands))]
+    [MemberData(nameof(GuardRetroCommands.Gs02BreakCharacterLines), MemberType = typeof(GuardRetroCommands))]
+    public async Task Gs02_CodexPwshEnvelope_IsDenied(string script)
+    {
+        await SetupClaimedAgent();
+        var payload = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["session_id"] = TestSessionId,
+            ["turn_id"] = "t1",
+            ["tool_name"] = "shell_command",
+            ["cwd"] = TestDir,
+            ["tool_input"] = new Dictionary<string, object> { ["command"] = new[] { "pwsh", "-Command", script }, ["workdir"] = TestDir },
+        });
+
+        var result = await GuardWithStdinAsync(payload);
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("bypass");
+    }
+
+    // Split seat B's expanding-word probes that write no path: master warns, and so does every lane.
+    [Theory]
+    [MemberData(nameof(GuardRetroCommands.Gs02ExpandingWordWarningLines), MemberType = typeof(GuardRetroCommands))]
+    public async Task Gs02_ExpandingWordWithoutAWrite_KeepsTheBypassWarning(string command)
+    {
+        await SetupClaimedAgent();
+
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        foreach (var result in new[] { bash, powerShell, unknown })
+            result.AssertStderrContains("WARNING: Command contains command substitution - paths may be dynamic");
+    }
+
+    // The round-5 apostrophes pair only in PowerShell; bash's reading is required for every caller,
+    // so Claude's Bash and PowerShell tools and an unknown shell all refuse them, as on master.
+    [Theory]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("echo don\\'t $(echo x > $OUT) won\\'t")]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t # it's")]
+    [InlineData("# don't\necho don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("cat > notes.md <<'EOF'\nplain words\nEOF\necho don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("cat <<EOF\necho don\\'t $(rm dydo/index.md) won\\'t\nEOF")]
+    public async Task Gs02_RoundFiveApostrophes_AreDeniedInEveryShellAndTheCanaryUnchanged(string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        bash.AssertPreToolUseDenied();
+        bash.AssertStderrContains("bypass");
+        powerShell.AssertPreToolUseDenied();
+        powerShell.AssertStderrContains("bypass");
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains("bypass");
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // Where PowerShell may run the line: a typographic quote closes its string, a caret escapes
+    // nothing, --% stops parsing, and a group word, an alias, an assignment or a call operator may
+    // run the text, so it is code.
+    [Theory]
+    [InlineData("echo 'a’ $(echo x > $OUT) ’b'")]
+    [InlineData("echo “a '$(echo x > $OUT)' b”")]
+    [InlineData("echo ^\"'$(echo x > $OUT)'^\"")]
+    [InlineData("echo '$HOME' (iex 'rm dydo/index.md') > notes.md")]
+    [InlineData("echo --% '$(echo x > $OUT)' > notes.md")]
+    [InlineData("echo '$(echo x > $OUT)' -OutVariable a > notes.md")]
+    [InlineData("Set-Alias echo Invoke-Expression; echo 'echo x > $OUT'")]
+    [InlineData("New-Alias printf Invoke-Expression; printf 'echo x > $OUT'")]
+    [InlineData("sal echo iex; echo 'echo x > $OUT'")]
+    [InlineData("Set-Item alias:echo Invoke-Expression; echo 'echo x > $OUT'")]
+    [InlineData("$x = 1; echo '$(echo x > $OUT)' > notes.md")]
+    [InlineData("& echo '$(echo x > $OUT)' > notes.md")]
+    public async Task Gs02_TextPowerShellMayRun_IsDenied(string command)
+    {
+        await SetupClaimedAgent();
+
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        powerShell.AssertPreToolUseDenied();
+        powerShell.AssertStderrContains("bypass");
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains("bypass");
     }
 
     // DYD-421 DECIDED: apostrophes around a substitution or a variable, on a command line or in an

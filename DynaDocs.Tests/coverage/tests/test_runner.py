@@ -35,12 +35,15 @@ def write_file(path, text):
 
 
 def subreaper_flag():
-    """This process's PR_GET_CHILD_SUBREAPER flag on Linux, else None."""
+    """This process's PR_GET_CHILD_SUBREAPER flag on Linux, else None. A failed read raises, so it
+    can never pass for an unchanged 0."""
     if sys.platform != "linux":
         return None
     import ctypes
     flag = ctypes.c_int()
-    ctypes.CDLL(None).prctl(37, ctypes.byref(flag), 0, 0, 0)  # PR_GET_CHILD_SUBREAPER
+    if ctypes.CDLL(None, use_errno=True).prctl(37, ctypes.byref(flag), 0, 0, 0):  # PR_GET_CHILD_SUBREAPER
+        code = ctypes.get_errno()
+        raise OSError(code, f"prctl(PR_GET_CHILD_SUBREAPER): {os.strerror(code)}")
     return flag.value
 
 

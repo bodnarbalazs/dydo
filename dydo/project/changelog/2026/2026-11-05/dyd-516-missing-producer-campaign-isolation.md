@@ -25,7 +25,8 @@ process the test owns. The contract is unchanged: exit 2, no artifacts, `cleanup
 `subject_status` 2. The test also asserts two things across the call. The unittest process's
 `PR_GET_CHILD_SUBREAPER` flag stays as it was, and a sentinel child started before the call is
 still alive afterwards. On Windows the flag reads as `None`, the sentinel check still applies, and
-the child goes through the native job owner as before.
+the child goes through the native job owner as before. On Linux a failed `prctl` read raises
+`OSError` with its errno, so a failed read can't pass for an unchanged 0.
 
 The child inherits the Python coverage producer's `sitecustomize` through `PYTHONPATH` and exits
 through `SystemExit`, so its lines of `_run_assurance_campaign` and `_run_linux_campaign` are still
@@ -44,8 +45,8 @@ the in-process call fails the test again with the same tuple.
 
 ## Files Changed
 
-`DynaDocs.Tests/coverage/tests/test_runner.py` (proof commit `8a463704`, then the DYD-516 implement
-commit), the N3 wording in [DYD-504's toolchain entry](../2026-11-04/dyd-504-toolchain.md), and this
+`DynaDocs.Tests/coverage/tests/test_runner.py` (proof commit `8a463704`, the DYD-516 implement
+commit, then the DYD-516 fix commit for the `prctl` read), the N3 wording in [DYD-504's toolchain entry](../2026-11-04/dyd-504-toolchain.md), and this
 entry.
 
 ## Related

@@ -301,6 +301,8 @@ classification and remaining budgets. Its separate runner-final-cleanup
 classification is not claimed fixed. DYD-516/N3 remains open: the other
 missing-producer fixture still changes its parent subreaper state. New probes
 are isolated in disposable subprocesses; this hop does not repair that fixture.
+[DYD-516](../2026-11-05/dyd-516-missing-producer-campaign-isolation.md) closes it:
+the fixture now runs its campaign in a child interpreter.
 N4 budget/category mismatch, N5 README/npm prerequisites and N6 AOT-only assessment
 remain retained/deferred at their existing severities. The nested-interruption
 residue nit remains open. Fresh independent review, hosted CI and captain proof
@@ -358,8 +360,10 @@ Eight existing platform-neutral owner tests now execute on Linux, plus a new
 valid-request/deadline case. Only the reported OS identity is replaced at the OS
 boundary for these validation tests; no Win32 API is simulated and no native
 containment proof is claimed. Real Win32 execution stays Windows-specific.
-The reviewed in-process failure fixture now stubs containment so it cannot turn
-the shared unittest process into a subreaper.
+Only the reviewed in-process failure fixture was fixed here: it now stubs
+containment so it cannot turn the shared unittest process into a subreaper. The
+missing-producer fixture still ran the real Linux campaign in the unittest
+process; DYD-516 closes that N3 residue.
 
 | Final evidence | Exit | Observation |
 |---|---|---|
@@ -401,7 +405,8 @@ not attributed to the base and are not covered by DYD-507's narrow disposition.
 Severity dispositions: B1 repaired locally, with native Windows/hosted CI still
 owed; B2 open. Should DYD-514 remains separate: `run_tests()` final cleanup and the
 owner's unconfirmed-cleanup classification are unchanged. This hop does not claim
-to fix it. N3's in-process fixture mutation is addressed. N4's requested-budget
+to fix it. N3 was addressed only for the reviewed failure fixture; the
+missing-producer fixture's mutation stayed open until DYD-516. N4's requested-budget
 and category mismatch, N5's README/npm prerequisites, and N6's AOT-only alternative
 assessment remain deferred to their owners; no scope or severity was silently changed.
 

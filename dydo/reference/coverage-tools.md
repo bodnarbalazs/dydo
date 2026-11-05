@@ -52,9 +52,12 @@ compiled source inventory fails after the campaign, when the join is scoped (`_m
 point.
 
 The `dotnet-coverage` CI job runs the gate on `ubuntu-24.04` (the full suite) and on
-`windows-latest` (the selected tests), each on the PR head, and uploads `dotnet-coverage-linux`
-and `dotnet-coverage-windows`. The dependent `dotnet-coverage-union` job requires both legs to
-pass and runs:
+`windows-latest` (the selected tests), each on the PR head, and uploads
+`dotnet-coverage-linux-attempt-<run_attempt>` and `dotnet-coverage-windows-attempt-<run_attempt>`.
+The dependent `dotnet-coverage-union` job requires both legs to pass. It then reads the run's job
+record for its own attempt, and `coverage_artifacts.py select` takes the artifact of the attempt in
+which each leg last ran. The identity and the report of that artifact must name the PR head. Then
+the job runs:
 
 ```sh
 python DynaDocs.Tests/coverage/dotnet_platform.py --linux DynaDocs.Tests/coverage/results/coverage-platforms/linux/adapters/dotnet-coverage.json --windows DynaDocs.Tests/coverage/results/coverage-platforms/windows/adapters/dotnet-coverage.json --output DynaDocs.Tests/coverage/results/coverage-platforms
@@ -471,7 +474,7 @@ exit 2.
 
 | Stack | Collector | Mechanism |
 |---|---|---|
-| `python` | `python-coverage` | coverage.py 7.16.0 with branch coverage, plus a flat per-process callable witness. `python_coverage.collect` writes `config.json` and a generated `startup/sitecustomize.py` onto `PYTHONPATH`, runs the ordinary unittest suite, then combines the `.coverage` data with every `counter-*.json` receipt |
+| `python` | `python-coverage` | coverage.py 7.16.0 with branch coverage, plus a flat per-process callable witness. `python_coverage.collect` writes `config.json`, the callable inventory of every target computed once (`inventory.pickle`, sealed with the SHA-256 of its pickled body and written only when it reads back through a process's own path as exactly the inventory computed, which a process reuses only for a source whose SHA-256 and compile state - interpreter build, `-O` level and debug ranges - match and whose entry is internally consistent, recomputing the rest; a missing, unreadable, damaged or malformed cache is a miss, never a startup failure; a cache deliberately rewritten and resealed is a forgery and out of scope, since whoever can write it can rewrite `sitecustomize.py`) and a generated `startup/sitecustomize.py` onto `PYTHONPATH`, runs the ordinary unittest suite, then combines the `.coverage` data with every `counter-*.json` receipt |
 | `node` | `javascript-coverage` | `node javascript_coverage.cjs` driving c8 12.0.0 with `--all --exclude-after-remap=false` over `node_tests.cjs`; Istanbul function and branch counters are joined to the ESLint callable inventory |
 | `dotnet` | `csharp-coverage` | `run_tests.py --assurance-output <dir>`: one isolated Git worktree copy of the working candidate, one AltCover campaign inside a Windows Job object, evidence published back outside the snapshot |
 | `viewer` | `typescript-coverage` | `pnpm -C viewer run coverage` with `--coverage.reporter=lcov`, `--coverage.reportsDirectory=<raw>/coverage` and a vitest JSON report added; `typescript_join.py` joins the Istanbul LCOV to the `typescript-source` walker's callables |

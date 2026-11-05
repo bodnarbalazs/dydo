@@ -86,6 +86,14 @@ def combine_counters(receipts):
     return output
 
 
+def _inventory_cache(config):
+    """The campaign's prebuilt inventory, or None (a miss, counted fresh) when it cannot be read."""
+    try:
+        return Path(config["inventory"]).read_bytes()
+    except (KeyError, TypeError, ValueError, OSError):
+        return None
+
+
 def startup_from_environment():
     """Start once in the current process when the invocation config is inherited."""
     global _ACTIVE
@@ -98,10 +106,11 @@ def startup_from_environment():
     if config.get("schema") != 1 or coverage.__version__ != "7.16.0":
         raise RuntimeError("Python campaign requires schema 1 and coverage.py 7.16.0")
     sources = {path: Path(path).read_text(encoding="utf-8-sig") for path in config["sources"]}
+    cache = _inventory_cache(config)
     collector = coverage.Coverage(data_file=str(Path(config["output"]) / ".coverage"),
                                   data_suffix=True, branch=True, source=[config["root"]],
                                   config_file=False)
-    witness = CallableWitness(sources)
+    witness = CallableWitness(sources, cache)
     collector.start()
     witness.__enter__()
     _ACTIVE = collector, witness
@@ -130,6 +139,7 @@ def startup_from_environment():
 def collect(root, output, source_paths, command):
     """Run one ordinary command, then combine native data and flat process counters."""
     import coverage
+    from python_runtime import inventory_cache
     root, output = Path(root).resolve(), Path(output).resolve()
     if output.exists() or not source_paths or not command:
         raise ValueError("Python campaign requires a new output and nonempty sources/command")
@@ -141,6 +151,10 @@ def collect(root, output, source_paths, command):
             raise ValueError(f"Invalid Python target source: {relative}")
         sources.append(str(path))
     config = {"schema": 1, "root": str(root), "output": str(output), "sources": sources}
+    cache = inventory_cache({path: Path(path).read_text(encoding="utf-8-sig") for path in sources})
+    if cache is not None:  # None: it did not read back as computed, so every process computes fresh
+        (output / "inventory.pickle").write_bytes(cache)
+        config["inventory"] = str(output / "inventory.pickle")
     config_path = output / "config.json"
     config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
     startup = output / "startup"

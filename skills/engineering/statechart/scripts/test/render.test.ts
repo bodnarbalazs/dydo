@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import { createRequire } from "node:module";
-import os from "node:os";
 import path from "node:path";
 import { before, test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -18,31 +16,32 @@ const guide = fs.readFileSync(path.join(here, "../../references/render.md"), "ut
 const css = guide.match(/```css\n([\s\S]*?)```/);
 assert.ok(css, "references/render.md has no css block");
 const theme = css[1];
-const cache = path.join(
-  process.env.XDG_CACHE_HOME ?? path.join(os.homedir(), ".cache"),
-  "statechart",
-);
-const install = (name: string, ...packages: string[]) => {
-  const dir = path.join(cache, name);
-  execFileSync(
-    process.execPath,
-    [process.env.npm_execpath ?? path.join(path.dirname(process.execPath), "node_modules/npm/bin/npm-cli.js"), "install", "--prefix", dir, "--no-audit", "--no-fund", "--save-exact", ...packages],
-    { stdio: ["ignore", "pipe", "pipe"], windowsHide: true },
-  );
-  return createRequire(path.join(dir, "package.json"));
-};
+// Pele is the managed module dydo verifies; Mermaid and jsdom are restored from this package's lock.
+const pele = process.env.STATECHART_PELE;
+const locked = createRequire(path.join(here, "../package.json"));
+const missing = (() => {
+  if (!pele) return "STATECHART_PELE must name the managed Pele 1.9.0 module";
+  const { version } = JSON.parse(fs.readFileSync(path.resolve(pele, "../../package.json"), "utf8"));
+  if (version !== "1.9.0") return `STATECHART_PELE names Pele ${version}, not 1.9.0`;
+  try {
+    locked.resolve("mermaid");
+    locked.resolve("jsdom");
+  } catch {
+    return "Mermaid 11.16.0 and jsdom 26.1.0 come from pnpm-lock.yaml; run pnpm install --frozen-lockfile in scripts/";
+  }
+  return false;
+})();
 
 let render: Render;
 let mermaid: Mermaid;
 let html: Html;
 before(async () => {
-  const pele = install("test-pele-1.9.0", "pele@1.9.0");
-  ({ render } = await import(pathToFileURL(pele.resolve("pele")).href));
+  if (missing) return;
+  ({ render } = await import(pathToFileURL(pele!).href));
 
-  const parser = install("test-mermaid-11.16.0", "mermaid@11.16.0", "jsdom@26.1.0");
-  const { window } = new (parser("jsdom").JSDOM)("");
+  const { window } = new (locked("jsdom").JSDOM)("");
   Object.assign(globalThis, { window, document: window.document, DOMParser: window.DOMParser });
-  mermaid = (await import(pathToFileURL(parser.resolve("mermaid")).href)).default;
+  mermaid = (await import(pathToFileURL(locked.resolve("mermaid")).href)).default;
   html = (markup) => {
     const t = window.document.createElement("template");
     t.innerHTML = markup;
@@ -57,19 +56,19 @@ for (const chart of charts) {
   const marks = [...text.matchAll(/^ {2}class (\w+) (\w+)$/gm)];
   for (const [, , mark] of marks) classes.add(mark);
 
-  test(`${name} renders in Pele 1.9.0 with each class on its node`, () => {
+  test(`${name} renders in Pele 1.9.0 with each class on its node`, { skip: missing }, () => {
     const { svg } = render(text);
     assert.match(svg, /^<svg /);
     for (const [, id, mark] of marks)
       assert.match(svg, new RegExp(`class="pele-node[^"]* ${mark}\\b[^"]*" data-id="${id}"`), id);
   });
 
-  test(`${name} parses in mermaid.js, which chat views use`, async () => {
+  test(`${name} parses in mermaid.js, which chat views use`, { skip: missing }, async () => {
     await mermaid.parse(text);
   });
 }
 
-test("random labels and colors keep their text and the chart's shape in Mermaid and Pele", async () => {
+test("random labels and colors keep their text and the chart's shape in Mermaid and Pele", { skip: missing }, async () => {
   const { drawn, refused, failure } = await fuzz({ seed: 1, charts: 500, render, mermaid, html });
   if (failure) assert.fail(failure);
   assert.ok(drawn > 400 && refused > 20, `${drawn} charts drawn, ${refused} refused`);

@@ -15,6 +15,7 @@ using DynaDocs.Utils;
 /// 1. Off-limits patterns (files-off-limits.md) - block every operation
 /// 1b. Protected patterns (files-off-limits.md) - block writes and deletes, allow reads
 /// 2. Dangerous shell-command patterns - always blocked
+/// 2b. Merge routes around dydo merge (GuardCommand.MergeRoutes.cs) - always blocked
 /// 3. Shell command analysis - extracts file operations and checks each
 ///
 /// Input modes:
@@ -263,7 +264,7 @@ public static partial class GuardCommand
 
     private static int Decide(GuardContext ctx, OffLimitsService offLimitsService, GuardEnv env)
     {
-        var bashAnalyzer = new BashCommandAnalyzer();
+        var bashAnalyzer = new BashCommandAnalyzer(ModeSetCallerOf(ctx).Shell);
 
         RunDailyValidationIfDue();
 
@@ -621,7 +622,8 @@ public static partial class GuardCommand
         // dydo commands skip the cd-chain coaching (they are never a needless cd compound).
         var hardBlock = (isDydo && isWorker ? BlockIfWorkerDydoCommand(command) : null)
             ?? BlockIfDangerous(command, bashAnalyzer)
-            ?? CheckBlockNudges(command, env)
+            ?? BlockIfMergeRoute(command, ctx.CommandArgv, ctx.ToolCwd ?? ctx.Cwd, caller.Shell, env)
+            ?? CheckBlockNudges(command, env, caller.Shell)
             ?? CheckPrReady(command, ctx.CommandArgv, ctx.ToolCwd ?? ctx.Cwd, caller.Shell, env)
             ?? (isDydo ? null : BlockIfCdChain(command, bashAnalyzer))
             ?? AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer, env.Memory);
@@ -631,7 +633,7 @@ public static partial class GuardCommand
         if (modeSet != null && !caller.CanAsk)
             return RefuseModeSet(modeSet);
 
-        return CheckWarnNudges(command, env, modeSet != null)
+        return CheckWarnNudges(command, env, modeSet != null, caller.Shell)
             ?? (modeSet == null ? ExitCodes.Success : AskModeSet(modeSet));
     }
 
@@ -677,9 +679,9 @@ public static partial class GuardCommand
     /// <summary>
     /// The command nudges that are not warns: a notice prints and passes, a block refuses.
     /// </summary>
-    internal static int? CheckBlockNudges(string command, GuardEnv env)
+    internal static int? CheckBlockNudges(string command, GuardEnv env, ShellDialect shell = ShellDialect.Unknown)
     {
-        foreach (var (nudge, match) in MatchingCommandNudges(command, env))
+        foreach (var (nudge, match) in MatchingCommandNudges(command, env, shell))
         {
             if (IsWarn(nudge)) continue;
 
@@ -694,9 +696,9 @@ public static partial class GuardCommand
     /// The command warn nudges, and the mode-set reminder when <paramref name="modeSet"/>, as one
     /// once-only step (<see cref="EnforceWarns"/>).
     /// </summary>
-    internal static int? CheckWarnNudges(string command, GuardEnv env, bool modeSet = false)
+    internal static int? CheckWarnNudges(string command, GuardEnv env, bool modeSet = false, ShellDialect shell = ShellDialect.Unknown)
     {
-        var warns = MatchingCommandNudges(command, env)
+        var warns = MatchingCommandNudges(command, env, shell)
             .Where(m => IsWarn(m.Nudge))
             .Select(m => new WarnStep(m.Nudge, m.Match, CommandWarnMarkerName(m.Nudge.Pattern, command),
                 "Run the same command again to proceed anyway."))
@@ -706,16 +708,38 @@ public static partial class GuardCommand
         return EnforceWarns(warns, env);
     }
 
-    private static IEnumerable<(NudgeConfig Nudge, Match Match)> MatchingCommandNudges(string command, GuardEnv env)
+    // A nudge's pattern is matched on the raw text, and a match counts only where its launch word
+    // counts under the bounded data-operand rules (DYD-406); captures come from that raw match.
+    private static IEnumerable<(NudgeConfig Nudge, Match Match)> MatchingCommandNudges(string command, GuardEnv env, ShellDialect shell)
     {
         foreach (var nudge in MergeSystemNudges(env.Config?.Nudges))
         {
-            if (!nudge.IsCommandMatch) continue;
-
-            var match = CompileNudgePattern(nudge.Pattern)?.Match(command);
-            if (match is { Success: true })
+            if (nudge.IsCommandMatch && CompileNudgePattern(nudge.Pattern) is { } pattern
+                && FirstRunningMatch(pattern, command, shell) is { } match)
                 yield return (nudge, match);
         }
+    }
+
+    /// <summary>
+    /// The first match of <paramref name="pattern"/> whose launch word, the text past any space or
+    /// separator the match opens with, sits where a command runs (<see cref="BashCommandAnalyzer.RunsAt"/>),
+    /// excluding only recognized quoted data operands, comments and data bodies. Unquoted and
+    /// ambiguous quoted operands count. Each later try starts past the last launch word.
+    /// </summary>
+    private static Match? FirstRunningMatch(Regex pattern, string command, ShellDialect shell)
+    {
+        var match = pattern.Match(command);
+        while (match.Success)
+        {
+            var launch = match.Index;
+            while (launch < match.Index + match.Length && (char.IsWhiteSpace(command[launch]) || command[launch] is ';' or '&' or '|'))
+                launch++;
+            if (BashCommandAnalyzer.RunsAt(command, launch, shell))
+                return match;
+            match = launch < command.Length ? pattern.Match(command, launch + 1) : Match.Empty;
+        }
+
+        return null;
     }
 
     private static bool IsWarn(NudgeConfig nudge) =>

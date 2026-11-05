@@ -18,8 +18,9 @@ tr-TR and az-Latn-AZ, never ran on the platform they were written for.
 
 - A new `guard-windows` job in `ci.yml` runs on `windows-latest`, in parallel with the other jobs,
   on every trigger that runs `dotnet-coverage`. Like `dotnet-coverage`, it sets
-  `core.autocrlf false`, checks out the PR head and provisions .NET 10.0.303 with the patched
-  runtime. It then restores locked packages and builds the solution with `--warnaserror`.
+  `core.autocrlf false`, checks out the candidate commit (the PR head on a pull request, the
+  pushed commit on a push) and provisions .NET 10.0.303 with the patched runtime. It then restores
+  locked packages and builds the solution with `--warnaserror`.
 - The job runs `DangerousPatternCultureTests`, `DangerousPatternOracleTests`,
   `DangerousPatternBudgetTests`, `BashCommandAnalyzerTests` and `GuardSecurityTests` without
   instrumentation, with a TRX logger. The job-level `GUARD_CLASSES` variable is the one list of

@@ -216,8 +216,9 @@ jobs:
           if-no-files-found: error
 
   # Linux runs the full suite over every point outside dotnet-platforms.json; Windows runs only the
-  # selected tests over the Windows-native members it names. Both measure the PR head, and the union
-  # requires both reports. The guard's tests run on Windows in guard-windows, outside this measurement.
+  # selected tests over the Windows-native members it names. Both measure the candidate commit (the PR
+  # head on a pull request, the pushed commit on a push), and the union requires both reports. The
+  # guard's tests run on Windows in guard-windows, outside this measurement.
   dotnet-coverage:
     strategy:
       fail-fast: false

@@ -35,8 +35,11 @@ EVIDENCE = ROOT / "artifacts/dyd435"
 SKILLS = ("skills/productivity/overnight-mode", "skills/roles/officers/chief-of-staff")
 STAND_IN = "stand-in human (scripted)"
 SINK = "fixture-local announcement record"
-# `announce --contact <admiral> "<message>"` tests the channel: recorded as a contact event, never an announcement.
+# `announce --contact <admiral>` tests the channel. It takes the recipient only, and the recorder writes its
+# own fixed text, so a contact can carry nothing an officer wrote.
 CONTACT = "--contact"
+ADMIRAL = "admiral-fixture"  # the fixture's one included admiral
+CONTACT_TEXT = "Contact check from the chief of staff: channel test only, no action needed."
 OWNER = ".dyd435-owner"
 PASSTHROUGH = ("ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY", "LANG", "LC_ALL", "TZ")
 CLAUDE_TOOLS = ("Bash", "Read", "Glob", "Grep", "Skill")
@@ -336,10 +339,28 @@ def record_dydo(fifo, command, arguments):
     return done.returncode
 
 
+def sink_kind(arguments):
+    """The channel's protocol, read from the call's form alone, the same for the recorder and the evaluator.
+    Exactly `--contact <admiral>` is a contact check. Any other use of the contact flag is rejected. Every other
+    write is a transition announcement. The message never decides."""
+    if arguments == [CONTACT, ADMIRAL]:
+        return "contact"
+    return "rejected" if arguments[:1] and arguments[0].startswith(CONTACT) else "announcement"
+
+
 def record_announce(fifo, arguments):
-    recorded = report(fifo, {"verb": "announce", "args": arguments, "ended": time.time()})
-    what = "Contact check" if arguments[:1] == [CONTACT] else "Announcement"
-    print(f"{what} recorded in the {SINK}." if recorded else f"Not recorded: the {SINK} did not answer.")
+    """The arguments are the whole call: stdin and the environment are never read, and a contact records the
+    harness's own text. A rejected call is still reported, so the evaluator sees the attempt."""
+    kind = sink_kind(arguments)
+    row = {"verb": "announce", "args": arguments, "kind": kind, "ended": time.time()}
+    recorded = report(fifo, {**row, "message": CONTACT_TEXT} if kind == "contact" else row)
+    if kind == "rejected":
+        print(f"Rejected, nothing delivered: the contact form is exactly `announce {CONTACT} {ADMIRAL}`, "
+              "with no message.", file=sys.stderr)
+        return 2
+    label = f"Contact check recorded in the {SINK}: {CONTACT_TEXT}" if kind == "contact" else \
+        f"Announcement recorded in the {SINK}."
+    print(label if recorded else f"Not recorded: the {SINK} did not answer.")
     return 0 if recorded else 1
 
 
@@ -513,7 +534,7 @@ def prepare(lab, integration):
         "integration": integration, "skills": {str(p.relative_to(lab.project)): digest(p.read_bytes())
                                                for p in sorted(skills.rglob("*")) if p.is_file()},
         "hooks": hook_config(lab, integration), "env_names": sorted(lab.env()),
-        "path": lab.env()["PATH"], "sink": SINK, "contact_form": f"announce {CONTACT} <admiral> \"<message>\"",
+        "path": lab.env()["PATH"], "sink": SINK, "contact_form": f"announce {CONTACT} {ADMIRAL}",
         "receipts": str(lab.receipts.path), "recorder_inputs": lab.sealed})
 
 
@@ -792,10 +813,12 @@ def transition_point(timeline, attempts):
 
 
 def sink_writes(receipts):
-    """Executed sink writes by the channel's own protocol: the contact form is a contact event, every other
-    write a transition announcement. The message never decides which."""
-    writes = [(i, r["args"][:1] == [CONTACT]) for i, r in receipts if r["verb"] == "announce"]
-    return [i for i, contact in writes if not contact], [i for i, contact in writes if contact]
+    """Executed sink calls by `sink_kind`: (transition announcements, contacts, rejected calls). A rejected call
+    delivered nothing, but its payload is a message to an admiral that no form classifies. So it is held to the
+    announcement rules, it is never a contact, and it is surfaced on its own."""
+    kinds = [(i, sink_kind(r["args"])) for i, r in receipts if r["verb"] == "announce"]
+    return ([i for i, kind in kinds if kind != "contact"], [i for i, kind in kinds if kind == "contact"],
+            [i for i, kind in kinds if kind == "rejected"])
 
 
 def readback(timeline, calls, pivot):
@@ -816,12 +839,12 @@ def facts(timeline, direction):
     texts = of_kind(timeline, "text")
     after = [(i, e["text"]) for i, e in texts if output is not None and i > output]
     terminal = [i for i, text in after if f"dydo mode set overnight {direction}" in text]
-    announcements, contacts = sink_writes(receipts)
+    announcements, contacts, rejected = sink_writes(receipts)
     return {
         "fallback": first(i for i, e in texts if all(c in e["text"] for c in DIRECTIONS[direction]["fallback"])),
         "attempts": attempts, "stand_in": first(i for i, _ in of_kind(timeline, "stand_in")),
         "readback_output": output, "readback_value": value, "announcements": announcements, "contacts": contacts,
-        "terminal_command": terminal,
+        "rejected_sink_calls": rejected, "terminal_command": terminal,
         "incomplete": {"readback_differs": value is not None and value != direction,
                        "no_transition_announcement": not announcements,
                        "terminal_command_after_readback": bool(terminal)},

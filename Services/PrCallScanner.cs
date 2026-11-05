@@ -78,10 +78,11 @@ internal static partial class PrCallScanner
     /// <paramref name="command"/> (DYD-639): its last <c>--body-file</c> or <c>-F</c>, as gh takes it,
     /// or null when the guard may not read it. The guard emulates no shell; it reads an allowlist.
     /// Every reading of the whole line must finish, find the call at <paramref name="launch"/> at the
-    /// line's top level, and name the same operand written plainly (<see cref="PlainOperand"/>). An
-    /// absolute operand names its file wherever the call sits; a relative one only when no command
-    /// before the call may move the shell's directory (<see cref="KeepsDirectory"/>). Anything else
-    /// reads as null, so a check that needs the body keeps its warning.
+    /// line's top level, and name the same operand written plainly (<see cref="PlainOperand"/>), with
+    /// no word of the call able to add arguments (<see cref="AddsNoArguments"/>). An absolute operand
+    /// names its file wherever the call sits; a relative one only when no command before the call may
+    /// move the shell's directory (<see cref="KeepsDirectory"/>). Anything else reads as null, so a
+    /// check that needs the body keeps its warning.
     /// </summary>
     public static string? BodyFileAt(string command, int launch, ShellDialect dialect = ShellDialect.Unknown)
     {
@@ -97,9 +98,40 @@ internal static partial class PrCallScanner
     {
         var commands = reading.Commands.ToList();
         var call = commands.FindIndex(c => c.Source == reading.Source && c.WordRanges is [var first, ..] && first.Start.Value == launch);
-        if (reading.Failed || call < 0 || PlainOperand(commands[call], posix) is not { } file)
+        if (reading.Failed || call < 0 || !AddsNoArguments(reading, commands, call, posix)
+            || PlainOperand(commands[call], posix) is not { } file)
             return null;
         return Path.IsPathFullyQualified(file) || (!Path.IsPathRooted(file) && KeepsDirectory(reading, commands, call)) ? file : null;
+    }
+
+    /// <summary>
+    /// Whether no word of the call at <paramref name="call"/> may expand into more arguments, which
+    /// could hand gh a later body file (DYD-639 ruling, point 5). It reads the raw text from the call
+    /// to the line's next command, with single-quoted text and each substitution masked, split at
+    /// double quotes. bash expands an unquoted <c>$</c>, backtick, glob, brace or tilde, and
+    /// <c>"$@"</c> or an array's <c>[@]</c> in double quotes, so double-quoted text may hold only a
+    /// plain <c>$name</c> or a substitution. PowerShell passes a variable, a splat, a group or a
+    /// comma list as many arguments and <c>--%</c> the rest unread, so no <c>$</c> or <c>@</c> may
+    /// stand outside single quotes. A backslash or backtick leaves the quoting unknown, so it counts too.
+    /// </summary>
+    private static bool AddsNoArguments(ShellReader.Reading reading, List<ShellReader.Command> commands, int call, bool posix)
+    {
+        var source = reading.Source;
+        var start = commands[call].WordRanges[0].Start.Value;
+        var end = commands.Skip(call + 1).FirstOrDefault(c => c.Source == source && c.WordRanges.Count > 0)?.WordRanges[0].Start.Value
+            ?? source.Text.Length;
+        var raw = source.Text.ToCharArray(start, end - start);
+        foreach (var (range, mark) in source.SingleQuotes.Select(q => (q, '_')).Concat(source.Executions.Select(h => (h.Token, '$'))))
+        {
+            for (var at = Math.Max(range.Start.Value, start); at < Math.Min(range.End.Value, end); at++)
+                raw[at - start] = at == range.Start.Value ? mark : '_';
+        }
+
+        var pieces = new string(raw).Split((posix ? "\"" : "\"“”„").ToCharArray());
+        var (unquoted, quoted) = posix
+            ? (PosixUnquotedExpansionRegex(), PosixQuotedExpansionRegex())
+            : (PowerShellUnquotedExpansionRegex(), PowerShellQuotedExpansionRegex());
+        return pieces.Length % 2 == 1 && !pieces.Where((piece, i) => (i % 2 == 0 ? unquoted : quoted).IsMatch(piece)).Any();
     }
 
     private static string? PlainOperand(ShellReader.Command call, bool posix)
@@ -436,6 +468,19 @@ internal static partial class PrCallScanner
 
     [GeneratedRegex(@"^[ \t\n;&|]*\z")]
     private static partial Regex JoinRegex();
+
+    // What may add arguments, outside and inside double quotes (DYD-639 ruling, point 5).
+    [GeneratedRegex(@"[$`*?\[{}~()\\]")]
+    private static partial Regex PosixUnquotedExpansionRegex();
+
+    [GeneratedRegex(@"[`\\]|\$(?![A-Za-z0-9_])")]
+    private static partial Regex PosixQuotedExpansionRegex();
+
+    [GeneratedRegex(@"[$@`(){},%]")]
+    private static partial Regex PowerShellUnquotedExpansionRegex();
+
+    [GeneratedRegex(@"[$@`]")]
+    private static partial Regex PowerShellQuotedExpansionRegex();
 
     // bash 5.3's ${ cmd; } and ${| cmd; } run cmd in the shell itself.
     [GeneratedRegex(@"\$\{[\s|]")]

@@ -20,4 +20,21 @@ public class StatechartOuterLifetimeTests
         await observed.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.True(owner.IsCancellationRequested);
     }
+
+    // A pipe already at EOF still cancels the owner, whose registered work runs; an owner already gone is left alone.
+    [Fact]
+    public async Task AnAlreadyClosedPipeCancelsTheOwnerAndAGoneOwnerIsIgnored()
+    {
+        using var owner = new CancellationTokenSource();
+        var stopped = new TaskCompletionSource();
+        await using (owner.Token.Register(stopped.SetResult))
+        {
+            await StatechartOuterLifetime.ObserveAsync(new MemoryStream(), owner);
+            await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        Assert.True(owner.IsCancellationRequested);
+        var gone = new CancellationTokenSource();
+        gone.Dispose();
+        await StatechartOuterLifetime.ObserveAsync(new MemoryStream(), gone);
+    }
 }

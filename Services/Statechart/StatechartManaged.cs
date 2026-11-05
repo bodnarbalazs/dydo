@@ -40,7 +40,7 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
                 var installed = await FetchAsync(missing, stage, deadline.Token);
                 var candidate = Combine(new StatechartDependencies(installed.GetValueOrDefault("node"),
                     installed.GetValueOrDefault("java"), installed.GetValueOrDefault("tlc"), installed.GetValueOrDefault("pele")), selected);
-                var readiness = await StatechartReady.VerifyAsync(candidate, payload, home, full: true, deadline.Token);
+                var readiness = await StatechartReady.VerifyAsync(candidate, payload, home, assets.CheckerDigest, full: true, deadline.Token);
                 foreach (var item in _downloads.Where(item => installed.ContainsKey(item.Name)))
                     Place(item, Path.Combine(stage, item.Name), stage, readiness);
                 foreach (var name in Exercised(state, candidate)) Restamp(Path.Combine(Root, name), parent, readiness);
@@ -68,7 +68,7 @@ internal sealed class StatechartManaged(StatechartHome home, StatechartAssets as
             selected = Combine(selected, state.Dependencies);
             var stale = Exercised(state, selected);
             if (stale.Length == 0) return false;
-            var readiness = await StatechartReady.VerifyAsync(selected, payload, home, full: true, token);
+            var readiness = await StatechartReady.VerifyAsync(selected, payload, home, assets.CheckerDigest, full: true, token);
             foreach (var name in stale) Restamp(Path.Combine(Root, name), parent, readiness);
             _state = null;
             return true;

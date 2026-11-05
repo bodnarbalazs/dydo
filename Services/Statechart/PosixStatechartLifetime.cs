@@ -55,10 +55,8 @@ internal sealed class PosixStatechartLifetime : StatechartLifetime
     {
         if (_registered || Stage.Length != 0) throw new InvalidOperationException("Statechart POSIX scratch already reserved.");
         await _channel.SendAsync("reserve:" + _nonce);
-        var fields = (await _channel.ReadAsync().WaitAsync(TimeSpan.FromSeconds(30)))?.Split(':');
-        if (fields is not ["created", var stage, var temp]) throw new InvalidDataException("Missing statechart POSIX reservations.");
-        _stage = StatechartCleanup.Decode(stage);
-        _temp = StatechartCleanup.Decode(temp);
+        (_stage, _temp) = StatechartCleanup.Created(await _channel.ReadAsync().WaitAsync(TimeSpan.FromSeconds(30)),
+            "Missing statechart POSIX reservations.");
         await _channel.SendAsync("register:" + _nonce);
         await _channel.ExpectAsync("registered:" + _nonce);
         _registered = true;
@@ -125,9 +123,8 @@ internal sealed class PosixStatechartLifetime : StatechartLifetime
         if (continuation is not null)
             PosixStatechartDescriptors.Inherit(continuation.ExecutionLock.SafeFileHandle.DangerousGetHandle());
         if (target.WorkingDirectory.Length != 0) Environment.CurrentDirectory = target.WorkingDirectory;
-        PosixStatechartProcess.Handoff(target.FileName, target.ArgumentList.Concat([fd.ToString(), _nonce, Group.ToString()]),
+        throw PosixStatechartProcess.Handoff(target.FileName, target.ArgumentList.Concat([fd.ToString(), _nonce, Group.ToString()]),
             target.Environment.Select(pair => pair.Key + "=" + pair.Value));
-        throw new IOException("Statechart POSIX exec returned unexpectedly.");
     }
 
     public override async ValueTask DisposeAsync()

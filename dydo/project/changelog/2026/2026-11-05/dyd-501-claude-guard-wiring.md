@@ -20,8 +20,10 @@ every guard nudge silently skipped Claude agents there.
   whose `command` is exactly `dydo guard --host claude`, whatever its matcher
   ([CLI Commands](../../../../reference/dydo-commands.md#dydo-validate)). A missing file, a file
   without that hook, a guard only in `settings.local.json` or a bare `dydo guard` gets one warning
-  naming the fix, `dydo init claude --join`. A file that is not valid JSON or not an object gets a
-  warning to fix the JSON first, since `--join` refuses such a file. The warning alone keeps exit `0`.
+  naming the fix, `dydo init claude --join`. A file that cannot be read gets a warning to make it
+  readable first. A file that is not valid JSON or not an object, or whose `hooks` is not an object
+  or `hooks.PreToolUse` not an array, gets a warning to fix the JSON first, since `--join` refuses
+  such a file. The warning alone keeps exit `0`.
 - The guard's daily validation shows the same warning and still allows the tool call.
 - Init and validate read the hook command and the `--host` value from one source,
   `Services/ClaudeGuardWiring.cs`; what init writes is unchanged.
@@ -34,7 +36,8 @@ No change in this entry renames a term mechanically, so it has no merge normalis
 `Commands/GuardCommand.ModeSet.cs`, `DynaDocs.Tests/Services/ValidationServiceTests.cs`,
 `DynaDocs.Tests/Commands/ValidateCommandTests.cs`, `DynaDocs.Tests/Integration/ClaudeGuardWiringTests.cs`,
 `DynaDocs.Tests/Features/claude-guard-wiring.feature`, `DynaDocs.Tests/Steps/ClaudeGuardWiringSteps.cs`,
-`DynaDocs.Tests/coverage/test-associations.json`, `dydo/reference/dydo-commands.md`, and this entry.
+`DynaDocs.Tests/coverage/test-associations.json`, `dydo/reference/dydo-commands.md`,
+`Scaffold/dydo/reference/dydo-commands.md`, and this entry.
 
 ## Related
 

@@ -28,28 +28,47 @@ public static class ClaudeGuardWiring
     /// </summary>
     public static ValidationIssue? Check(string projectRoot)
     {
-        var stored = JsonText.Read(Path.Combine(projectRoot, ".claude", "settings.json"));
+        StoredText? stored;
+        try
+        {
+            stored = JsonText.Read(Path.Combine(projectRoot, ".claude", "settings.json"));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return Warning("the file cannot be read. Make it readable, then run 'dydo init claude --join'.");
+        }
+
         if (stored == null)
             return Unguarded("the file is missing");
 
-        JsonNode? root;
         try
         {
-            root = JsonNode.Parse(stored.Text.TrimStart('\uFEFF'), documentOptions: NoDuplicateKeys);
+            return Inspect(JsonNode.Parse(stored.Text.TrimStart('\uFEFF'), documentOptions: NoDuplicateKeys));
         }
-        catch (JsonException)
+        // A lone surrogate escape parses, then throws InvalidOperationException once its string is read.
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException)
         {
             return UnguardedUntilFixed("the file is not valid JSON");
         }
-
-        if (root is not JsonObject settings)
-            return UnguardedUntilFixed("the file is not a JSON object");
-        return RunsGuard(settings) ? null : Unguarded($"it has no PreToolUse hook running '{HookCommand}'");
     }
 
-    private static bool RunsGuard(JsonObject settings) =>
-        settings["hooks"] is JsonObject hooks &&
-        hooks["PreToolUse"] is JsonArray entries &&
+    // init --join reads a present hooks as an object and its PreToolUse as an array, and fails on any other shape.
+    private static ValidationIssue? Inspect(JsonNode? root)
+    {
+        if (root is not JsonObject settings)
+            return UnguardedUntilFixed("the file is not a JSON object");
+        var hooks = settings["hooks"];
+        if (hooks is not (null or JsonObject))
+            return UnguardedUntilFixed("its 'hooks' is not a JSON object");
+        var entries = hooks?["PreToolUse"];
+        if (entries is not (null or JsonArray))
+            return UnguardedUntilFixed("its 'hooks.PreToolUse' is not a JSON array");
+        return entries is JsonArray array && RunsGuard(array)
+            ? null
+            : Unguarded($"it has no PreToolUse hook running '{HookCommand}'");
+    }
+
+    private static bool RunsGuard(JsonArray entries) =>
         entries.OfType<JsonObject>()
             .Select(entry => entry["hooks"])
             .OfType<JsonArray>()
@@ -60,7 +79,7 @@ public static class ClaudeGuardWiring
     private static ValidationIssue Unguarded(string reason) =>
         Warning($"{reason}. Run 'dydo init claude --join'.");
 
-    // init --join refuses a file it cannot parse rather than repair it.
+    // init --join refuses a file it cannot parse, or whose hooks it cannot read, rather than repair it.
     private static ValidationIssue UnguardedUntilFixed(string reason) =>
         Warning($"{reason}. Fix the JSON, then run 'dydo init claude --join'.");
 

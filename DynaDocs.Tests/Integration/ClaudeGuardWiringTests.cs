@@ -66,18 +66,23 @@ public sealed class ClaudeGuardWiringTests : IntegrationTestBase
         AssertPasses(await ValidateAsync());
     }
 
-    // --join refuses a file it cannot parse rather than repair it, which is why the warning says to
-    // fix the JSON first.
-    [Fact]
-    public async Task MalformedSettings_WarnWithoutThrowing_AndJoinRefusesThem()
+    // --join refuses a file it cannot parse, or whose hooks it cannot read, rather than repair it,
+    // which is why the warning says to fix the JSON first.
+    [Theory]
+    [InlineData("{\"hooks\":", "the file is not valid JSON")]
+    [InlineData("""{"\uD800":0}""", "the file is not valid JSON")]
+    [InlineData("""{"hooks":{"PreToolUse":[{"hooks":[{"command":"\uD800"}]}]}}""", "the file is not valid JSON")]
+    [InlineData("""{"hooks":[]}""", "its 'hooks' is not a JSON object")]
+    [InlineData("""{"hooks":{"PreToolUse":{}}}""", "its 'hooks.PreToolUse' is not a JSON array")]
+    public async Task MalformedSettings_WarnWithoutThrowing_AndJoinRefusesThem(string settings, string reason)
     {
         (await InitProjectAsync("claude")).AssertSuccess();
-        WriteFile(SettingsPath, "{\"hooks\":");
+        WriteFile(SettingsPath, settings);
 
         var reported = await ValidateAsync();
         reported.AssertSuccess();
         Assert.Contains(
-            $"{SettingsPath}: {Unguarded}: the file is not valid JSON. Fix the JSON, then run 'dydo init claude --join'.",
+            $"{SettingsPath}: {Unguarded}: {reason}. Fix the JSON, then run 'dydo init claude --join'.",
             reported.Stderr);
 
         Assert.False((await JoinProjectAsync("claude")).IsSuccess);
@@ -87,6 +92,7 @@ public sealed class ClaudeGuardWiringTests : IntegrationTestBase
     [InlineData(null)]
     [InlineData("{\"hooks\":")]
     [InlineData("[]")]
+    [InlineData("""{"\uD800":0}""")]
     public async Task GuardDailyValidation_ShowsTheWarning_AndStillAllowsTheCall(string? settings)
     {
         (await InitProjectAsync("claude")).AssertSuccess();

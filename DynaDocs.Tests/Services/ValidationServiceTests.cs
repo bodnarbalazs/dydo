@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Services;
 
+using System.Runtime.Versioning;
 using System.Text.Json;
 using DynaDocs.Models;
 using DynaDocs.Services;
@@ -266,6 +267,9 @@ public class ValidationServiceTests : IDisposable
     private const string FixJson =
         "Claude agents run without the dydo guard: {0}. Fix the JSON, then run 'dydo init claude --join'.";
 
+    private const string Unreadable =
+        "Claude agents run without the dydo guard: the file cannot be read. Make it readable, then run 'dydo init claude --join'.";
+
     private const string WiredSettings = """
         {"hooks":{"PreToolUse":[
           {"matcher":"Bash","hooks":[{"type":"command","command":"echo before"}]},
@@ -307,9 +311,8 @@ public class ValidationServiceTests : IDisposable
         "it has no PreToolUse hook running 'dydo guard --host claude'")]
     [InlineData("""{"hooks":{"PreToolUse":["dydo guard --host claude",{"matcher":"Bash"}]}}""",
         "it has no PreToolUse hook running 'dydo guard --host claude'")]
-    [InlineData("""{"hooks":{"PreToolUse":{"matcher":"Bash"}}}""",
-        "it has no PreToolUse hook running 'dydo guard --host claude'")]
-    [InlineData("""{"hooks":[]}""", "it has no PreToolUse hook running 'dydo guard --host claude'")]
+    [InlineData("""{"hooks":null}""", "it has no PreToolUse hook running 'dydo guard --host claude'")]
+    [InlineData("""{"hooks":{"PreToolUse":null}}""", "it has no PreToolUse hook running 'dydo guard --host claude'")]
     public void ValidateSystem_ClaudeRecordedWithoutGuardHook_WarnsWithRejoin(string settings, string reason)
     {
         CreateDydoJson();
@@ -350,9 +353,15 @@ public class ValidationServiceTests : IDisposable
     [InlineData("""{"hooks":{},"hooks":{}}""", "the file is not valid JSON")]
     [InlineData("""{"hooks":{"PreToolUse":[{"hooks":[{"command":"dydo guard --host claude","command":"x"}]}]}}""",
         "the file is not valid JSON")]
+    [InlineData("""{"\uD800":0}""", "the file is not valid JSON")]
+    [InlineData("""{"hooks":{"PreToolUse":[{"hooks":[{"command":"\uD800"}]}]}}""", "the file is not valid JSON")]
     [InlineData("[]", "the file is not a JSON object")]
     [InlineData("null", "the file is not a JSON object")]
     [InlineData("\"dydo guard --host claude\"", "the file is not a JSON object")]
+    [InlineData("""{"hooks":[]}""", "its 'hooks' is not a JSON object")]
+    [InlineData("""{"hooks":"dydo guard --host claude"}""", "its 'hooks' is not a JSON object")]
+    [InlineData("""{"hooks":{"PreToolUse":{"matcher":"Bash"}}}""", "its 'hooks.PreToolUse' is not a JSON array")]
+    [InlineData("""{"hooks":{"PreToolUse":"dydo guard --host claude"}}""", "its 'hooks.PreToolUse' is not a JSON array")]
     public void ValidateSystem_ClaudeSettingsMalformedOrNotObject_WarnsToFixJsonFirst(string settings, string reason)
     {
         CreateDydoJson();
@@ -362,6 +371,34 @@ public class ValidationServiceTests : IDisposable
 
         Assert.Equal("warning", issue.Severity);
         Assert.Equal(string.Format(FixJson, reason), issue.Message);
+    }
+
+    [Fact]
+    public void ValidateSystem_ClaudeSettingsLocked_WarnsTheFileCannotBeRead()
+    {
+        CreateDydoJson();
+        WriteClaudeSettings("settings.json", WiredSettings);
+        using var locked = new FileStream(
+            Path.Combine(_testDir, ".claude", "settings.json"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        var issue = Assert.Single(ClaudeIssues());
+
+        Assert.Equal("warning", issue.Severity);
+        Assert.Equal(Unreadable, issue.Message);
+    }
+
+    [SkippableFact]
+    [UnsupportedOSPlatform("windows")]
+    public void ValidateSystem_ClaudeSettingsWithoutReadPermission_WarnsTheFileCannotBeRead()
+    {
+        Skip.If(OperatingSystem.IsWindows(), "POSIX modes decide whether the file can be read.");
+        CreateDydoJson();
+        WriteClaudeSettings("settings.json", WiredSettings);
+        File.SetUnixFileMode(Path.Combine(_testDir, ".claude", "settings.json"), UnixFileMode.None);
+
+        var issue = Assert.Single(ClaudeIssues());
+
+        Assert.Equal(Unreadable, issue.Message);
     }
 
     [Theory]

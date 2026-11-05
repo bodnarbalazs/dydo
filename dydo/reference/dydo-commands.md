@@ -567,11 +567,13 @@ When `dydo.json` records `integrations.claude: true`, validate also checks that 
 `.claude/settings.json` runs the guard: some `PreToolUse` hook's `command` is exactly
 `dydo guard --host claude`, the one [`dydo init`](#dydo-init) writes, whatever its matcher. A guard
 only in `.claude/settings.local.json`, or a bare `dydo guard`, does not count. When the file is
-missing, does not run the guard, or is not a valid JSON object, validate prints one warning against
-`.claude/settings.json`: Claude agents run without the dydo guard. The fix is
-`dydo init claude --join`; for a file that is not valid JSON or not an object, fix the JSON first,
-because `dydo init claude --join` refuses such a file. The warning alone leaves the exit code `0`. The guard's daily
-validation prints the same warning and still allows the tool call.
+missing, cannot be read, does not run the guard, or is not valid settings JSON, validate prints one
+warning against `.claude/settings.json`: Claude agents run without the dydo guard. The fix is
+`dydo init claude --join`. Make an unreadable file readable first. Fix the JSON first when the file
+is not valid JSON, is not an object, or has a `hooks` that is not an object or a
+`hooks.PreToolUse` that is not an array, because `dydo init claude --join` refuses such a file.
+The warning alone leaves the exit code `0`. The guard's daily validation prints the same warning
+and still allows the tool call.
 
 This validates dydo's local configuration. It does not validate or provision Linear.
 

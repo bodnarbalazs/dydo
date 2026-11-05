@@ -225,16 +225,19 @@ subprocess.run([sys.executable, "-c", "import subject; subject.work(); subject.h
 """
 
 
-def _measured_as_itself(root, startup):
+def _measured_as_itself(root, output, case=None):
     """Give the one measured child whose failure a test names a sitecustomize of its own in `root/own-pid`: it
-    writes the pid that child runs as to `root/failed.pid`, then runs `startup`.
+    writes the pid that child runs as to `root/failed.pid` and reads in `startup`, the sitecustomize `collect`
+    wrote for the campaign in `output`, as it stands. Then it runs `startup`, or `case`: setup that runs it.
 
     A measured process names itself by that pid, and `Popen.pid` is not always it: on Windows a venv's
     python.exe is a redirector that runs the base interpreter as a child process of its own."""
+    generated = str(output / "startup" / "sitecustomize.py")
     (root / "own-pid").mkdir()
     (root / "own-pid" / "sitecustomize.py").write_text(
         f"import os\nwith open({str(root / 'failed.pid')!r}, 'x', encoding='utf-8') as own:\n"
-        f"    own.write(str(os.getpid()))\n{startup}", encoding="utf-8")
+        f"    own.write(str(os.getpid()))\nwith open({generated!r}, encoding='utf-8') as generated:\n"
+        f"    startup = compile(generated.read(), generated.name, 'exec')\n{case or _START}", encoding="utf-8")
 
 
 # Measured children around one that fails measurement: at startup on a config of another schema, or
@@ -337,8 +340,8 @@ _GHOST = ("import subject\nsubject.work()\n"
 
 
 # A measured child after another, whose reporting connection is hard to open and whose exit the driver
-# ignores. Its own sitecustomize, found ahead of the campaign's, sets up the case before starting
-# measurement as the campaign's does; its program leaves a marker once it runs.
+# ignores. Its own sitecustomize, found ahead of the campaign's, sets up the case before running the
+# campaign's; its program leaves a marker once it runs.
 _UNCONNECTED_AND_IGNORED = """\
 import os, subprocess, sys
 from pathlib import Path
@@ -351,8 +354,8 @@ Path("failed.exit").write_text(str(child.wait()), encoding="utf-8")
 
 
 # A measured child after another, whose exit the driver ignores, started through the campaign's sitecustomize
-# as its test copied it, in place of the campaign's own, and whose `python_coverage` cannot be imported: one
-# earlier on its path raises, or none is on it. Without a campaign config, the raising one stays on its path.
+# from a directory of its test's, and whose `python_coverage` cannot be imported: one earlier on its path
+# raises, or none is on it. Without a campaign config, the raising one stays on its path.
 _UNIMPORTABLE_AND_IGNORED = """\
 import json, os, subprocess, sys
 from pathlib import Path
@@ -373,7 +376,7 @@ Path("child.json").write_text(json.dumps({"exit": child.returncode, "stderr": st
 """
 
 
-_START = "from python_coverage import startup_from_environment\nstartup_from_environment()\n"
+_START = "exec(startup)\n"
 
 
 _CONNECT_FAILING_ONCE = """\
@@ -400,7 +403,7 @@ with contextlib.suppress(OSError):
     while True:
         held.append(os.open(os.devnull, os.O_RDONLY))
 try:
-    python_coverage.startup_from_environment()
+    exec(startup)
 finally:  # a program that startup lets run may open files again
     for descriptor in held:
         os.close(descriptor)
@@ -718,8 +721,8 @@ class PythonCoverageTests(unittest.TestCase):
             (root / "driver.py").write_text(driver, encoding="utf-8")
             (root / "exhaust.py").write_text(_EXHAUST, encoding="utf-8")
             (root / "ghost.py").write_text(_GHOST, encoding="utf-8")
-            _measured_as_itself(root, python_coverage._SITECUSTOMIZE)
             output = root / "evidence"
+            _measured_as_itself(root, output)
             result = _facade(root, output, ["subject.py"], ["{python}", "-S", "driver.py", argument])
             failed = (root / "failed.pid").read_text(encoding="utf-8")
             self.assertEqual(2, result.returncode, result.stdout + result.stderr)
@@ -747,8 +750,8 @@ class PythonCoverageTests(unittest.TestCase):
             root = Path(folder)
             (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
             (root / "driver.py").write_text(_UNCONNECTED_AND_IGNORED, encoding="utf-8")
-            _measured_as_itself(root, _UNCONNECTED[case])
             output = root / "evidence"
+            _measured_as_itself(root, output, _UNCONNECTED[case])
             result = _facade(root, output, ["subject.py"], ["{python}", "-S", "driver.py"], timeout=60)
             counters = output / "counters.json"
             return (result, (root / "failed.pid").read_text(encoding="utf-8"),
@@ -774,7 +777,7 @@ class PythonCoverageTests(unittest.TestCase):
             (root / "poisoned").mkdir()
             (root / "poisoned" / "python_coverage.py").write_text(
                 'raise RuntimeError("this python_coverage cannot be imported")\n', encoding="utf-8")
-            _measured_as_itself(root, python_coverage._SITECUSTOMIZE)
+            _measured_as_itself(root, root / "evidence")
             result = _facade(root, root / "evidence", ["subject.py"], ["{python}", "-S", "driver.py", case],
                              timeout=60)
             self.assertTrue((root / "child.json").exists(), result.stdout + result.stderr)

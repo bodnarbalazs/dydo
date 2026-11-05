@@ -81,13 +81,20 @@ DIRECTIONS = {"on": {"prompt": "muster.md", "initial": "off", "settled": ("Linea
 # The real guard's own mode-set warning (GuardCommand.ModeSet.cs), read from its answer, never from the agent.
 REMINDER = "the chief of staff readying overnight mode or ending it"
 MARKERS = "dydo/_system/.local"  # where the guard keeps its warn markers, inside the fixture project
-# The guard's own fail-closed reading of a mode set (LooseModeSetRegex), and what makes a reading unsure.
+# The guard's own fail-closed reading of a mode set (LooseModeSetRegex over NormaliseForDydoScan's text, so d"y"do
+# and d\ydo read as dydo), and what makes a reading unsure.
 LOOSE_MODE_SET = re.compile(r"\bdydo\b[\s\S]*?\bmode\b\W*\bset\b", re.IGNORECASE)
+LINE_CONTINUATION, SCAN_STRIP = re.compile(r"[\\`]\r?\n"), re.compile(r"[\"'\\`^]")
 SUBSTITUTION = re.compile(r"\$\(|`|<\(")
-TEXT_RUNNERS = {"sh", "bash", "zsh", "dash", "ksh", "eval", "source", ".", "xargs", "pwsh", "powershell", "cmd"}
-COMMAND_PREFIXES = {"env", "sudo", "doas", "nohup", "command", "exec", "builtin", "time", "nice", "timeout", "stdbuf",
-                    "if", "then", "else", "elif", "do", "while", "until", "!", "{"}
+DYDO = ("dydo", "dydo.exe", "dydo.cmd", "dydo.ps1", "dydo.bat")
+TEXT_RUNNERS = {"sh", "bash", "zsh", "dash", "ksh", "eval", "source", "xargs", "pwsh", "powershell", "cmd"}
+KEYWORDS = {"if", "then", "else", "elif", "do", "while", "until", "!", "{"}
+WRAPPERS = {"env", "sudo", "doas", "nohup", "command", "exec", "builtin", "time", "nice", "timeout", "stdbuf"}
 ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
+# A POSIX shell token: an operator or newline (group 1), or a word (group 2) of plain text, escapes and quotes.
+SHELL_TOKEN = re.compile(r"[ \t\r]*(?:(\n|[;&|()<>])"
+                         r"""|((?:[^\s'"\\;&|()<>]|\\[\s\S]|'[^']*'|"(?:[^"\\]|\\[\s\S])*")+))""")
+WORD_PART = re.compile(r"""\\([\s\S])|'([^']*)'|"((?:[^"\\]|\\[\s\S])*)"|([^\\'"]+)""")
 
 READ_VALUE = re.compile(r"overnight:\s*(on|off)\b")
 # Tool calls that run a shell, so only they can own an executed receipt: Claude's Bash and the command
@@ -806,34 +813,35 @@ def reminded(receipt):
     return bool(verdict) and verdict["decision"] != "allow" and REMINDER in verdict["reason"]
 
 
-def shell_words(command):
-    """A command's POSIX shell words, with each operator and newline a word of its own; None when a quote is
-    left open. `#` is no comment here, so no text after it is hidden: that can only add an attempt."""
-    lexer = shlex.shlex(command, posix=True, punctuation_chars="();<>|&\n")
-    lexer.whitespace, lexer.whitespace_split, lexer.commenters = " \t\r", True, ""
-    try:
-        return list(lexer)
-    except ValueError:
-        return None
+def unquoted(part):
+    escaped, single, double, plain = part.groups()
+    if double is not None:
+        return re.sub(r"\\([\s\S])", r"\1", double)
+    return next(text for text in (escaped, single, plain) if text is not None)
 
 
-def simple_commands(words):
-    """The word lists between shell operators."""
-    commands = [[]]
-    for word in words:
-        if set(word) <= set("();<>|&\n"):
+def simple_commands(command):
+    """A command's simple commands as POSIX shell words, quotes removed, split at every operator and newline;
+    None when a quote or an escape is left open. `#` starts no comment here, so no text after it is hidden."""
+    commands, at, end = [[]], 0, len(command.rstrip(" \t\r"))
+    while at < end:
+        token = SHELL_TOKEN.match(command, at)
+        if not token:
+            return None
+        if token[1]:
             commands.append([])
         else:
-            commands[-1].append(word)
-    return [command for command in commands if command]
+            commands[-1].append(WORD_PART.sub(unquoted, token[2]))
+        at = token.end()
+    return [words for words in commands if words]
 
 
 def program(words):
     """The words from command position on: past environment assignments, shell keywords and wrappers with their
     options. Whether a wrapper was crossed is returned with it: its option arguments cannot be told from a program."""
     rest, wrapped = list(words), False
-    while rest and (ASSIGNMENT.match(rest[0]) or rest[0] in COMMAND_PREFIXES or (wrapped and rest[0][:1] == "-")):
-        wrapped = wrapped or rest[0] in COMMAND_PREFIXES
+    while rest and (ASSIGNMENT.match(rest[0]) or rest[0] in KEYWORDS | WRAPPERS or (wrapped and rest[0][:1] == "-")):
+        wrapped = wrapped or rest[0] in WRAPPERS
         rest = rest[1:]
     return rest, wrapped
 
@@ -842,20 +850,16 @@ def sets_mode(command):
     """Whether a shell command runs `dydo mode set`, as the guard decides it (GuardCommand.ModeSet.cs IsModeSet):
     only a dydo at command position runs, so quoted setter text and inspection calls are no attempt. Where the
     reading is unsure (an open quote, a substitution, a shell, eval or xargs that may run text, a wrapper's
-    options), any dydo ... mode ... set counts, failing closed as the guard does."""
-    if not LOOSE_MODE_SET.search(command):
-        return False
-    words = shell_words(command)
-    if words is None or SUBSTITUTION.search(command):
-        return True
-    for simple in simple_commands(words):
+    options), any dydo ... mode ... set in the shell's words counts, failing closed as the guard does."""
+    commands = simple_commands(LINE_CONTINUATION.sub("", command))
+    unsure = commands is None or bool(SUBSTITUTION.search(command))
+    for simple in commands or ():
         rest, wrapped = program(simple)
         name = os.path.basename(rest[0]).lower() if rest else ""
-        if name in TEXT_RUNNERS or (wrapped and LOOSE_MODE_SET.search(" ".join(rest))):
+        if name in DYDO and [word.lower() for word in rest[1:3]] == ["mode", "set"]:
             return True
-        if name in ("dydo", "dydo.exe") and [word.lower() for word in rest[1:3]] == ["mode", "set"]:
-            return True
-    return False
+        unsure = unsure or wrapped or name in TEXT_RUNNERS
+    return unsure and bool(LOOSE_MODE_SET.search(SCAN_STRIP.sub("", LINE_CONTINUATION.sub("", command))))
 
 
 def nudge_steps(calls):

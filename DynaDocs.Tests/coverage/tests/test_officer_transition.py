@@ -541,10 +541,14 @@ class EvaluatorTests(unittest.TestCase):
                     "dydo mode set overnight on # again", "echo a#b; dydo mode set overnight on",
                     'bash -c "dydo mode set overnight on"', "echo 'dydo mode set overnight on' | sh",
                     'eval "dydo mode set overnight on"', "echo $(dydo mode set overnight on)",
-                    "echo `dydo mode set overnight on`", "echo 'dydo mode set overnight on")
+                    "echo `dydo mode set overnight on`", "echo 'dydo mode set overnight on",
+                    "dydo mode set overnight on \\", '"dydo" mode \'set\' overnight on', "d\\ydo mode s\"e\"t on",
+                    'echo "a;b" ; dydo mode set overnight on  ', "dydo mode \\\nset overnight on",
+                    "bash -c \"d'y'do mode set overnight on\"")
         inspections = ("dydo mode show", 'echo "dydo mode set overnight on"', "grep -n 'dydo mode set' x.md",
                        "dydo help mode set", 'rg "dydo mode set" skills/x.sh', "printf '%s' 'dydo mode set'",
-                       "cat machine-mode.md", "", "echo hi # dydo mode set overnight on")
+                       "cat machine-mode.md", "", "echo hi # dydo mode set overnight on",
+                       'echo "say \\"dydo mode set\\" first"; grep -rn \'mode set\' .', "echo dydo\\ mode\\ set on")
         for command in attempts:
             with self.subTest(attempt=command):
                 self.assertTrue(ot.sets_mode(command))

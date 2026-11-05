@@ -23,7 +23,9 @@ public static partial class GuardCommand
         if (routes.FirstOrDefault(r => r.Kind == MergeRouteKind.Merge) is { } merge)
             return RefusePr("BLOCKED: Agents merge PRs only through dydo merge, never with gh or the GitHub API (DR 061).",
                 $"  Detected: {merge.Form}",
-                "  Run dydo merge <pr> --match-head-commit <sha40>, which merges a reviewed PR into its feature/* branch;",
+                "  Run dydo merge <pr> --match-head-commit <reviewed sha40> --match-base-commit <feature-tip sha40>,",
+                "  which merges a reviewed PR into its feature/* branch. Read the feature tip from the branch ref",
+                "  (git ls-remote origin refs/heads/<base>), never from the PR's baseRefOid;",
                 "  a merge into the default branch is the user's click.");
         if (routes.FirstOrDefault(r => r.Kind == MergeRouteKind.DefaultBranchChange) is { } change)
             return RefusePr("BLOCKED: Agents do not change the repository's default branch; the default branch is the user's (DR 061).",

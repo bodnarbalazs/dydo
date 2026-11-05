@@ -107,11 +107,12 @@ public class GuardMergeRouteTests : IntegrationTestBase
     ];
 
     [Fact]
-    public async Task RawMerge_UnderEveryEnvelope_IsDeniedNamingDydoMerge()
+    public async Task RawMerge_UnderEveryEnvelope_IsDeniedNamingDydoMergeWithBothPins()
     {
         await InitPushedProject();
 
-        AssertNoMisses(await Misses(denied: true, RawMerges, reasonParts: ["dydo merge"]));
+        AssertNoMisses(await Misses(denied: true, RawMerges,
+            reasonParts: ["dydo merge", "--match-head-commit", "--match-base-commit", "git ls-remote origin refs/heads/<base>", "baseRefOid"]));
     }
 
     [Fact]

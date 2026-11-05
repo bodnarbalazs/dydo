@@ -11,7 +11,7 @@
       ]
     },
     "DynaDocs.Tests/coverage/windows_job.py": {
-      "sha256": "0212fe7004a3e9d7994f52f4dad6b2f091cdec08e47925c40d267fb7cc81a6a4",
+      "sha256": "3af11982ff0a9da624fc3dc7bb11396f0d602342eaafda73629b02717ceb03fb",
       "windows": [
         "bindings",
         "checked",

@@ -21,6 +21,29 @@ import windows_job
 
 
 class CancellationProtocolTests(unittest.TestCase):
+    def test_native_wait_observes_the_owner_interrupt_before_touching_handles(self):
+        kernel = mock.Mock()
+        with self.assertRaises(KeyboardInterrupt):
+            windows_job.wait_campaign(kernel, None, None, {"interrupted": {"requested": True}}, None, 60)
+        self.assertEqual([], kernel.mock_calls)
+
+    def test_reentrant_owner_signal_preserves_the_published_campaign_receipt(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            # The watchdog bounds a deadlocked child; tracing forces the interleaving.
+            try:
+                child = subprocess.run([sys.executable, str(Path(__file__).resolve()),
+                                        "--reentrant-owner", str(root)],
+                                       capture_output=True, text=True, timeout=10)
+            except subprocess.TimeoutExpired as error:
+                self.fail(f"Reentrant signal deadlocked the owner before publication: {error.stderr}")
+            self.assertEqual(130, child.returncode, child.stdout + child.stderr)
+            receipt = json.loads((root / "published/identities.json").read_text())["campaign"]
+            self.assertTrue(receipt["cleanup_confirmed"])
+            self.assertFalse(receipt["complete"])
+            self.assertEqual("KeyboardInterrupt", receipt["failure_category"])
+            self.assertGreater(int((root / "repeat-dispatches").read_text()), 0)
+
     def test_adapter_records_the_launched_group_even_with_a_python_redirector(self):
         child = mock.Mock(pid=2468, returncode=0)
         child.wait.return_value = 0
@@ -265,6 +288,43 @@ class NativeWindowsCancellationTests(unittest.TestCase):
             self.assertTrue(all(row["signaled"] for row in receipt["held_handles"]))
 
 
+def reentrant_owner(root):
+    """Deliver a second real signal at each Python line reached by the first handler."""
+    import run_tests
+    repeats = 0
+
+    def repeat(frame, event, _arg):
+        nonlocal repeats
+        if event == "line":
+            repeats += 1
+            signal.raise_signal(signal.SIGINT)
+        return repeat
+
+    def trace(frame, _event, _arg):
+        if frame.f_code.co_name == "remember_interrupt" or frame.f_back.f_trace is repeat:
+            return repeat
+        return None
+
+    def teardown(*_args):
+        previous = sys.gettrace()
+        try:
+            sys.settrace(trace)
+            signal.raise_signal(signal.SIGINT)
+        finally:
+            sys.settrace(previous)
+        (root / "repeat-dispatches").write_text(str(repeats))
+        return {"cleanup_confirmed": True, "complete": True}
+
+    previous = signal.getsignal(signal.SIGINT)
+    with mock.patch.object(run_tests, "sys", platform="win32", executable=sys.executable), \
+            mock.patch.object(signal, "SIGBREAK", getattr(signal, "SIGBREAK", signal.SIGTERM), create=True), \
+            mock.patch.object(windows_job, "validate", return_value={}), \
+            mock.patch.object(windows_job, "native_run", side_effect=teardown):
+        result = run_tests._run_assurance_campaign(root, [], str(root / "published"))
+    assert signal.getsignal(signal.SIGINT) is previous
+    return result
+
+
 def windows_subject():
     """A real, separately grouped descendant, ready before the supervisor interrupts."""
     with subprocess.Popen([sys.executable, "-c", "import threading; threading.Event().wait(80)"],
@@ -279,14 +339,14 @@ def windows_owner(mode):
     signal.signal(signal.SIGBREAK, signal.default_int_handler)
     Path("owner-pid").write_text(str(os.getpid()))
     if mode == "escalation":
-        # Emulate an owner stuck in native code: capture and discard cooperative requests.
-        original = windows_job.run
+        # Emulate an owner stuck in native code that cannot observe cooperative requests.
+        original = windows_job.wait_campaign
 
-        def ignore_break(*args, **kwargs):
-            with mock.patch.object(windows_job.threading.Event, "set"):
-                return original(*args, **kwargs)
+        def ignore_break(kernel, job, pi, state, stack, seconds):
+            state = {**state, "interrupted": {"requested": False}}
+            return original(kernel, job, pi, state, stack, seconds)
 
-        windows_job.run = ignore_break
+        windows_job.wait_campaign = ignore_break
     if mode == "repeat":
         original_bindings = windows_job.bindings
 
@@ -427,7 +487,9 @@ def windows_probe(mode, root):
 
 
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["--probe"]:
+    if sys.argv[1:2] == ["--reentrant-owner"]:
+        raise SystemExit(reentrant_owner(Path(sys.argv[2])))
+    elif sys.argv[1:2] == ["--probe"]:
         windows_probe(sys.argv[2], Path(sys.argv[3]))
     elif sys.argv[1:2] == ["--owner"]:
         raise SystemExit(windows_owner(sys.argv[2]))

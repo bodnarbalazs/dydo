@@ -95,7 +95,11 @@ the only one that runs `dydo mode show`. These are reported as `attributed_recei
 officer running its retry and its readback as two parallel calls (captain's campaign-51203d14
 failed-on @24). If zero or several candidates qualify, or a candidate is a Codex rollout call (code,
 not a shell line), the receipt stays ambiguous. It is reported with its candidates and never merged
-into a call. A receipt with no candidate is uncorrelated. Codex's hook ids name its inner commands, not
+into a call. A receipt with no candidate is uncorrelated. The limit: attribution reads commands, not
+execution. A candidate whose mode set never runs (`false && dydo mode set overnight on`), beside a
+parallel call whose script runs the setter, is credited with that setter. A synthetic record of
+that shape is judged as if the credited call ran it. Running a script is outside Claude's launched
+allow-list, and broadening the supported calls needs execution provenance first. Codex's hook ids name its inner commands, not
 its rollout calls, so a Codex guard pass reaches the rollout call that ran the setter only through
 that call's window.
 
@@ -119,11 +123,20 @@ The evaluator judges the route from those facts, never from the agent's words:
    rule does. The recorder classifies the whole guarded line before its report is cut.
 
    The mirror is claimed exact only inside its bound: a guarded command, or a recorder line, made
-   of printable ASCII (0x20–0x7E) plus tab, LF and CR. Any other character in a guarded call's
-   command, or in a candidate command the evaluator reads to attribute a receipt, makes the run
-   `inconclusive`: never `pass`, reported in `outside_bound` with the receipt's index, the call and
-   the character's code point. Python's and .NET's regex engines differ there (Unicode word
-   boundaries and classes, combining marks, superscripts, NBSP and other spaces, `\x1c`–`\x1f`).
+   of printable ASCII (0x20–0x7E) plus tab, LF and CR. Any other character makes the run
+   `inconclusive` only in a line either engine could read as running dydo (`reads_dydo`): a guarded
+   call's command, or a candidate command the evaluator reads to attribute a receipt. The run is
+   then never `pass`, and `outside_bound` reports the receipt's index, the call and the character's
+   code point. Python's and .NET's regex engines differ there (Unicode word boundaries and classes,
+   combining marks, superscripts, NBSP and other spaces, `\x1c`–`\x1f`).
+
+   Both engines reach a dydo only through a word naming `dydo` or `dotnet` (`dotnet run` with no
+   project). So a line reads as dydo when a folded `dydo` or `dotnet` appears in the text the loose
+   rule reads, or in any word or stdin body the scanner reads, nested and decoded ones included. The
+   fold is ASCII case plus every code point whose Python or .NET casing or case-insensitive match
+   yields one of their letters, computed over all of Unicode: U+0149, U+1E97, U+1E99, U+FB05 and
+   U+FB06. The two engines split words on the same characters. Any other line is judged normally,
+   so an announcement with typographic quotes is (captain's campaign-e33435ef codex-on @28).
    An inconclusive run is no officer finding. The campaign exits 4 when any run is inconclusive, as
    does `evaluate`; 3 still means the real store moved.
 

@@ -808,7 +808,9 @@
     {
       "module": "Services/BashCommandAnalyzer.cs",
       "tests": [
-        "DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs"
+        "DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs",
+        "DynaDocs.Tests/Services/DangerousPatternBudgetTests.cs",
+        "DynaDocs.Tests/Services/DangerousPatternOracleTests.cs"
       ]
     },
     {

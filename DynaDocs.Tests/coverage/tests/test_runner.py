@@ -686,8 +686,11 @@ SELF_PID = 100
 SIGKILL = getattr(signal, "SIGKILL", 9)
 
 
-def write_stat(proc, pid, command, state, parent):
-    write_file(proc / str(pid) / "stat", f"{pid} ({command}) {state} {parent} {pid} {pid} 0 -1 4194304\n")
+def write_stat(proc, pid, command, state, parent, start=None):
+    """A stat line as /proc writes it, started at `start` clock ticks after boot (default 7000 + pid)."""
+    start = 7000 + pid if start is None else start
+    write_file(proc / str(pid) / "stat", f"{pid} ({command}) {state} {parent} {pid} {pid} 0 -1 4194304 "
+                                         f"0 0 0 0 0 0 0 0 20 0 1 0 {start} 0\n")
 
 
 def fake_process_table(proc):
@@ -730,9 +733,10 @@ class LinuxDescendantCleanupTests(unittest.TestCase):
                 table = run_tests._process_table()
                 live = run_tests._live_descendants(SELF_PID)
 
-        self.assertEqual({SELF_PID: (1, "S"), 101: (SELF_PID, "S"), 102: (101, "R"),
-                          103: (SELF_PID, "Z"), 104: (SELF_PID, "S"), 200: (1, "S")}, table)
-        self.assertCountEqual([101, 102, 104], live)
+        self.assertEqual({SELF_PID: (1, "S", 7100), 101: (SELF_PID, "S", 7101), 102: (101, "R", 7102),
+                          103: (SELF_PID, "Z", 7103), 104: (SELF_PID, "S", 7104), 200: (1, "S", 7200)},
+                         table)
+        self.assertEqual({101: 7101, 102: 7102, 104: 7104}, live)
 
     def test_reaped_descendants_are_killed_once_and_the_wait_ends_when_none_is_live(self):
         kills = []
@@ -756,7 +760,7 @@ class LinuxDescendantCleanupTests(unittest.TestCase):
                 remaining = run_tests._live_descendants(SELF_PID)
 
         self.assertCountEqual([(101, SIGKILL), (102, SIGKILL), (104, SIGKILL)], kills)
-        self.assertEqual([], remaining)
+        self.assertEqual({}, remaining)
         self.assertLess(now[0], run_tests.DESCENDANT_EXIT_SECONDS)
 
     def test_the_kill_loop_gives_up_at_the_deadline_when_a_descendant_never_exits(self):
@@ -783,11 +787,175 @@ class LinuxDescendantCleanupTests(unittest.TestCase):
             run_tests.end_descendants(None)
             self.assertFalse(reaped.called or members.called)
             run_tests.end_descendants(run_tests.SUBREAPER)
-            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS)
+            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS, ())
             members.assert_not_called()
             run_tests.end_descendants(42, seconds=3)
             members.assert_called_once_with(42, 3)
-            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS)
+            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS, ())
+            run_tests.end_descendants(run_tests.SUBREAPER, seconds=2, pinned=[7])
+            reaped.assert_called_with(2, [7])
+
+    def test_the_first_listing_pins_each_live_descendant_it_can_and_skips_one_gone_since(self):
+        def pidfd_open(pid):
+            if pid == 104:
+                raise ProcessLookupError(pid)  # it exited and was collected after the listing
+            return 1000 + pid
+
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            with patch.object(run_tests, "PROC_ROOT", proc), \
+                 patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
+                 patch.object(run_tests.os, "pidfd_open", side_effect=pidfd_open, create=True) as opened:
+                self.assertEqual([], run_tests.pin_descendants(None))
+                self.assertEqual([], run_tests.pin_descendants(42))
+                opened.assert_not_called()
+                pinned = run_tests.pin_descendants(run_tests.SUBREAPER)
+
+        self.assertCountEqual([1101, 1102], pinned)
+
+    def test_a_first_listing_that_cannot_list_or_read_proc_pins_nothing(self):
+        with tempfile.TemporaryDirectory() as folder:
+            unreadable = Path(folder)
+            write_file(unreadable / "101" / "stat", "101 no command name\n")
+            for proc in (Path(folder) / "missing", unreadable):
+                with self.subTest(proc=proc.name), patch.object(run_tests, "PROC_ROOT", proc), \
+                        patch.object(run_tests.os, "pidfd_open", create=True) as opened:
+                    self.assertEqual([], run_tests.pin_descendants(run_tests.SUBREAPER))
+                    opened.assert_not_called()
+
+    def _pinned_kills(self, proc, kills):
+        """A pidfd kill of fake handle 1000 + pid: it leaves that pid a zombie, or finds it gone."""
+        def send(handle, sig):
+            kills.append((handle, sig))
+            pid = handle - 1000
+            if pid == 104:
+                raise ProcessLookupError(pid)  # it exited after its pin
+            write_stat(proc, pid, "killed", "Z", 101 if pid == 102 else SELF_PID)
+        return patch.object(run_tests.signal, "pidfd_send_signal", side_effect=send, create=True)
+
+    def test_pinned_descendants_die_first_so_the_first_listing_confirms_and_each_pin_is_closed(self):
+        kills, closed = [], []
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            shutil.rmtree(proc / "104")
+            now, monotonic, sleep = self._clock(step=0.05)
+            with patch.object(run_tests, "PROC_ROOT", proc), monotonic, sleep, \
+                 patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
+                 patch.object(run_tests.os, "kill", side_effect=AssertionError("listed again")), \
+                 patch.object(run_tests.os, "close", side_effect=closed.append), \
+                 patch.object(run_tests, "_process_table", wraps=run_tests._process_table) as listed, \
+                 patch.object(run_tests.signal, "SIGKILL", SIGKILL, create=True), \
+                 self._pinned_kills(proc, kills):
+                run_tests.end_descendants(run_tests.SUBREAPER, seconds=1, pinned=[1101, 1102, 1104])
+
+        self.assertEqual([(1101, SIGKILL), (1102, SIGKILL), (1104, SIGKILL)], kills)
+        self.assertEqual(1, listed.call_count)
+        self.assertEqual(0.0, now[0])
+        self.assertEqual([1101, 1102, 1104], closed)
+
+    def test_an_expired_cleanup_kills_no_pin_closes_each_and_still_raises(self):
+        kills, closed = [], []
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            _now, monotonic, sleep = self._clock(step=0.05)
+            with patch.object(run_tests, "PROC_ROOT", proc), monotonic, sleep, \
+                 patch.object(run_tests.os, "close", side_effect=closed.append), \
+                 self._pinned_kills(proc, kills):
+                with self.assertRaisesRegex(TimeoutError, "cleanup could not be confirmed"):
+                    run_tests.end_descendants(run_tests.SUBREAPER, seconds=0, pinned=[1101, 1102])
+
+        self.assertEqual([], kills)
+        self.assertEqual([1101, 1102], closed)
+
+    def test_pins_killed_but_never_observed_dead_before_the_deadline_still_raise(self):
+        # Every pinned descendant really dies, but the kills use up the budget: without a listing
+        # after them that shows none live, cleanup is unconfirmed.
+        kills, closed = self._slow_pinned_kills([1101, 1104])
+        self.assertEqual([(1101, SIGKILL), (1104, SIGKILL)], kills)
+        self.assertEqual([1101, 1104], closed)
+
+    def test_no_pinned_kill_is_sent_once_the_deadline_has_passed(self):
+        # Kills at 0.0 and 0.6 of a 1-second budget; at 1.2 the third pin is closed unsignalled.
+        kills, closed = self._slow_pinned_kills([1101, 1102, 1104])
+        self.assertEqual([(1101, SIGKILL), (1102, SIGKILL)], kills)
+        self.assertEqual([1101, 1102, 1104], closed)
+
+    def _slow_pinned_kills(self, pinned):
+        """End `pinned` within 1 second while each pidfd kill takes 0.6; it must raise unconfirmed
+        without listing. Returns the kills sent and the pins closed."""
+        kills, closed = [], []
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            now, monotonic, sleep = self._clock(step=0.05)
+
+            def slow_kill(handle, sig):
+                kills.append((handle, sig))
+                write_stat(proc, handle - 1000, "killed", "Z", SELF_PID)
+                now[0] += 0.6  # each kill takes 0.6 of the 1-second budget
+
+            with patch.object(run_tests, "PROC_ROOT", proc), monotonic, sleep, \
+                 patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
+                 patch.object(run_tests.os, "close", side_effect=closed.append), \
+                 patch.object(run_tests.signal, "pidfd_send_signal", side_effect=slow_kill, create=True), \
+                 patch.object(run_tests.signal, "SIGKILL", SIGKILL, create=True), \
+                 patch.object(run_tests, "_process_table", wraps=run_tests._process_table) as listed:
+                with self.assertRaisesRegex(TimeoutError, "cleanup could not be confirmed"):
+                    run_tests.end_descendants(run_tests.SUBREAPER, seconds=1, pinned=pinned)
+
+        self.assertEqual(0, listed.call_count)
+        return kills, closed
+
+    def test_a_pin_whose_pid_no_longer_names_the_listed_process_is_closed_and_never_killed(self):
+        # Before their pidfds open, 104's live parent collects it and its pid goes to a foreign
+        # process, and 102 is collected outright: only 101 is still what the listing saw.
+        kills, closed = [], []
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+
+            def pidfd_open(pid):
+                if pid == 104:
+                    write_stat(proc, 104, "foreign", "S", 1, start=9999)
+                if pid == 102:
+                    (proc / "102" / "stat").unlink()
+                return 1000 + pid
+
+            _now, monotonic, sleep = self._clock(step=0.05)
+            with patch.object(run_tests, "PROC_ROOT", proc), monotonic, sleep, \
+                 patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
+                 patch.object(run_tests.os, "pidfd_open", side_effect=pidfd_open, create=True), \
+                 patch.object(run_tests.os, "close", side_effect=closed.append), \
+                 patch.object(run_tests.os, "kill", side_effect=AssertionError("listed again")), \
+                 patch.object(run_tests.signal, "SIGKILL", SIGKILL, create=True), \
+                 self._pinned_kills(proc, kills):
+                pinned = run_tests.pin_descendants(run_tests.SUBREAPER)
+                run_tests.end_descendants(run_tests.SUBREAPER, seconds=1, pinned=pinned)
+
+        self.assertEqual([1101], pinned)
+        self.assertEqual([(1101, SIGKILL)], kills)
+        self.assertCountEqual([1101, 1102, 1104], closed)
+
+    def test_an_interrupted_pinning_closes_each_pidfd_it_opened_and_reraises(self):
+        # 101 is pinned, then the interrupt lands while 102's pidfd is open but not yet checked.
+        closed = []
+
+        def stat_fields(pid):
+            if pid == "102":
+                raise KeyboardInterrupt
+            return SELF_PID, "S", 7101
+
+        with patch.object(run_tests, "_live_descendants", return_value={101: 7101, 102: 7102}), \
+             patch.object(run_tests.os, "pidfd_open", side_effect=lambda pid: 1000 + pid, create=True), \
+             patch.object(run_tests.os, "close", side_effect=closed.append), \
+             patch.object(run_tests, "_stat_fields", side_effect=stat_fields):
+            with self.assertRaises(KeyboardInterrupt):
+                run_tests.pin_descendants(run_tests.SUBREAPER)
+
+        self.assertCountEqual([1101, 1102], closed)
 
 
 class StaleWorktreeAgeOverrideTests(unittest.TestCase):

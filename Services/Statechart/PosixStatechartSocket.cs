@@ -23,7 +23,7 @@ internal static class PosixStatechartSocket
     public static string Private(string directory, uint owner)
     {
         try { PosixStatechartFiles.CreateExclusive(directory); }
-        catch (Win32Exception error) when (error.NativeErrorCode == 17) { } // EEXIST: vetted below like a new one.
+        catch (Win32Exception) { } // Whatever stands there now, or nothing, is vetted below; errno is not trusted here.
         var info = Marshal.AllocHGlobal(256);
         try
         {

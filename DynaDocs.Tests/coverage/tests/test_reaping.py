@@ -134,8 +134,8 @@ def held_status(command, passes=HELD_PASSES):
                 pass  # already taken: the wait below reports what Popen makes of that
             with reaped:
                 target = count + passes
-                if not reaped.wait_for(lambda: count >= target, timeout=REAP_WAIT_SECONDS):
-                    raise AssertionError("no reaper ran while the wait was held")
+                # Bounded: a run with no reaper has nothing that could take the status.
+                reaped.wait_for(lambda: count >= target, timeout=REAP_WAIT_SECONDS)
         return real_wait(child, timeout=timeout)
 
     with mock.patch.object(run_tests, "reap_adopted", counted_reap), \

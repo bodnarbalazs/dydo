@@ -116,7 +116,11 @@ The evaluator judges the route from those facts, never from the agent's words:
    guard reads every Bash and Codex call of this Linux lab. The setter is a `dydo` at command
    position, past assignments, keywords and runners (env, nohup, sudo, ...) by any path, whose first
    words are `mode set`. Redirections, braces, `$( )`, backticks, `eval`, `bash -c`, `env -S`,
-   `pwsh -Command` and `cmd /c` read as the guard reads them. Argument text, quoted text and heredoc
+   `pwsh -Command` and `cmd /c` read as the guard reads them. A body read as PowerShell or cmd follows
+   the guard's pwsh 7.6.9 reading (DYD-641): a bare carriage return ends a statement, a `#` comment
+   and a here-string line; `‘ ’ ‚ ‛` quote as `'` does and `“ ” „` as `"` does, here-string openers
+   and terminators included; a caret is cmd's escape and literal to pwsh, and where the two read the
+   line apart the scan holds both readings and is uncertain. Argument text, quoted text and heredoc
    data are no mode set, so `env grep "dydo mode set" f` and `cat <<EOF` with setter text are
    inspection. Only where the guard's own scan is uncertain (an unbalanced quote, a shell reading a
    pipe, nesting past eight levels) does any `dydo … mode … set` in the text count, as its loose
@@ -141,6 +145,15 @@ The evaluator judges the route from those facts, never from the agent's words:
      into words, nested and decoded texts included. Python's `isspace` and .NET's
      `char.IsWhiteSpace` differ exactly on U+001C–U+001F, computed over all of Unicode. A lone
      surrogate counts too: the guard cannot read its payload ("Failed to parse hook input").
+   - **quote:** a typographic quote (`‘ ’ ‚ ‛ “ ” „`) anywhere in a text the scanner reads as
+     PowerShell or cmd: `iex`, `Invoke-Expression`, `pwsh -Command`, decoded `-EncodedCommand`, and
+     `cmd /c`, whose text is read both ways. That reading opens and closes strings at them, so it
+     can run a setter its words seem to quote, or hold setter text in a string
+     (`iex "echo ‘a'; dydo mode set overnight on; ’b'"` is a mode set to the guard). Bash keeps them
+     as word text, so in a line or body bash alone reads they are inert.
+   - **envelope:** an outside character in the shell or option words of a Codex argv envelope
+     (`["bash", "-lc", script]`). The guard reads the script alone, but compares those words to
+     decide that the array is an envelope.
    - **word:** an outside character in a word the scanner compares. That covers every word up to
      and including the program (assignments, keywords, wrappers such as `env`, `sudo` or `nohup`,
      their options, the program name) and dydo's first two words (`mode set`, `mode show`). It also
@@ -157,8 +170,9 @@ The evaluator judges the route from those facts, never from the agent's words:
 
    Every other character is inert, because no comparison reads it. Examples are an argument of a
    program the scanner does not interpret (`announce`, `echo`, `grep`, even one quoting
-   `dydo mode show`), a word past dydo's `mode set`, a comment, heredoc data no shell reads, and a
-   space both engines split on alike (NBSP, U+2003, VT). Such a line is judged normally. So the
+   `dydo mode show`), a word past dydo's `mode set`, a comment, heredoc data no shell reads, a
+   typographic quote only bash reads, and a space both engines split on alike (NBSP, U+2003, VT).
+   Such a line is judged normally. So the
    round-10 reviewer's `announce … "Verified by dydo mode show; tonight’s work is settled."` gets
    the same verdict as its ASCII twin, as does the captain's campaign-e33435ef codex-on @28. The
    live oracle test checks that every corpus form judged this way meets the real guard exactly as
@@ -168,7 +182,10 @@ The evaluator judges the route from those facts, never from the agent's words:
    `officer-transition/guard-mode-set-corpus.json` records the guard's answer for each form. Its
    oracle test asks the live candidate guard about every form, each in a fresh `dydo init claude`
    project. An `outside_bound` form with no decision point must meet the guard as the mirror reads
-   it; the others keep the guard's answer for information only. Where bash and the guard differ,
+   it; the others keep the guard's answer for information only, though the mirror reads each
+   DYD-641 typographic body as the merged guard answered it. In bound, the corpus holds DYD-641's
+   bare carriage returns and carets, in bash's own line and in PowerShell and cmd bodies, with and
+   without a setter. Where bash and the guard differ,
    the guard wins, and the corpus names the difference:
    `alias x='dydo mode set …'; eval x` and `dydo ${X} mode set` with `X` empty run in bash, but the
    guard reads no mode set; so does `dydo mode ſet`, now outside the bound. The guard refuses some

@@ -97,6 +97,12 @@ OUTSIDE_BOUND = re.compile(r"[^\t\n\r\x20-\x7e]")
 # `is_space` follows .NET, and the bound still counts them. A lone surrogate is a string Python holds and the guard's
 # UTF-16 JSON reader cannot hold the same way.
 SPLIT_DIFFERS = re.compile(r"[\x1c-\x1f\ud800-\udfff]")
+# PowerShell's and cmd's reading (ShellReader, DYD-641, measured on pwsh 7.6.9) opens and closes a string at these as
+# at ' and ": outside the bound, yet they change where that reading splits, so each is a decision point there.
+SINGLE_QUOTES, DOUBLE_QUOTES = "'‘’‚‛", '"“”„'
+TYPOGRAPHIC_QUOTES = re.compile("[‘’‚‛“”„]")
+# What each text-wide decision point looks for (`bound_offender`); a word or a text never read counts any outside one.
+POINT_PATTERNS = {"split": SPLIT_DIFFERS, "quote": TYPOGRAPHIC_QUOTES}
 # Refined DECIDED: a decision point matters only in a line either engine could read as running dydo. Both reach a
 # dydo only through a word naming dydo (the program, dydo.dll, a dydo project) or dotnet (`dotnet run` with no
 # project runs the current one), so `reads_dydo` looks for those words under a fold wider than either engine: ASCII
@@ -381,12 +387,13 @@ def hook_fields(payload):
         return None
     try:
         hook = json.loads(payload)
-        command = guard_command((hook.get("tool_input") or {}).get("command", ""))
+        raw = (hook.get("tool_input") or {}).get("command", "")
+        command = guard_command(raw)
     except (ValueError, AttributeError):
         return {"unparsed": cut(payload)}
     return {"tool_name": hook.get("tool_name"), "tool_use_id": hook.get("tool_use_id"),
             "permission_mode": hook.get("permission_mode"), "command": cut(command), "sets_mode": sets_mode(command),
-            "bound_offender": bound_offender(command)}
+            "bound_offender": payload_offender(raw)}
 
 
 def record_dydo(fifo, command, arguments):
@@ -933,20 +940,32 @@ class ShellReading:
     texts handed back for a fresh scan, and whether the reading failed. posix reads as bash (backslash escapes,
     backtick substitution); otherwise as PowerShell or cmd (backtick and caret escapes, doubled quotes). Commands
     split only on unquoted ; & | ( ) { } and line breaks. Quotes, here-strings and heredoc bodies are word text, a
-    heredoc or <<< word is stdin, and a redirection target is dropped."""
+    heredoc or <<< word is stdin, and a redirection target is dropped. The non-posix reading follows pwsh 7.6.9
+    (DYD-641): a bare carriage return ends a line, ‘ ’ ‚ ‛ quote as ' does and “ ” „ as " does, and a caret is cmd's
+    escape and literal to pwsh; where the two read the line apart, the reading holds both and fails."""
 
-    def __init__(self, text, posix, start=0, nested=False, commands=None, substitutions=None):
+    def __init__(self, text, posix, start=0, nested=False, commands=None, substitutions=None, caret_escapes=False):
         self.text, self.posix, self.i, self.nested = text, posix, start, nested
         self.commands = [] if commands is None else commands  # shared with nested readers, as ShellReader's
         self.substitutions = [] if substitutions is None else substitutions
+        self.caret_escapes, self.caret_diverges = caret_escapes, False
         self.own, self.heredocs, self.command = [], [], ShellCommand()
         self.word, self.word_start, self.depth = None, 0, 0
         self.redirect_next = self.here_string_next = self.failed = self.done = False
+        self.single_quotes, self.double_quotes = ("'", '"') if posix else (SINGLE_QUOTES, DOUBLE_QUOTES)
 
     @classmethod
     def read(cls, text, posix):
-        reader = cls(text, posix)
+        reader = cls(text, posix, caret_escapes=not posix)
         reader.run()
+        if not reader.caret_diverges:
+            return reader
+        # cmd escapes with a caret and pwsh keeps it literal: where the two read the line apart, both count, uncertain.
+        literal = cls(text, posix)
+        literal.run()
+        reader.commands += literal.commands
+        reader.substitutions += literal.substitutions
+        reader.failed = True
         return reader
 
     def run(self):
@@ -974,13 +993,13 @@ class ShellReading:
         self.i += 1
 
     def is_escape(self, c):
-        return c == "\\" if self.posix else c in "`^"
+        return c == "\\" if self.posix else c == "`" or (self.caret_escapes and c == "^")
 
     def special(self, c):
         """The handler ShellReader.Step's switch picks for c, in its order; None for a plain character."""
         rules = (
-            (c == "'", self.single_quoted),
-            (c == '"', self.double_quoted),
+            (c in self.single_quotes, self.single_quoted),
+            (c in self.double_quotes, self.double_quoted),
             (c == "`", self.backtick_word),
             (c == "@" and self.word is None and self.here_string_body_start() > 0, self.here_string),
             (c == "@" and not self.posix and self.peek(1) == "(", lambda: self.group_word(self.i + 2)),
@@ -991,6 +1010,7 @@ class ShellReading:
             (c == "$" and self.peek(1) == "{", self.variable_in_braces),
             (c in "<>" or (c == "&" and self.peek(1) == ">"), self.redirect),
             (c == "\n", self.end_line),
+            (c == "\r" and not self.posix and self.peek(1) != "\n", self.end_line),
             (c == ")", self.close_paren),
             (c in ";&|{}(", self.separator),
         )
@@ -1007,33 +1027,38 @@ class ShellReading:
         self.i += 1
 
     def escape(self):
-        """An escaped line break continues the line; any other escaped character is literal."""
+        """An escaped line break continues the line; any other escaped character is literal. pwsh 7.6.9 also continues
+        at an escaped bare carriage return between words, and keeps one inside a word. pwsh and cmd read a caret
+        before an ASCII letter, a digit, a caret or the end alike; before anything else they read the line apart."""
         following = self.peek(1)
+        self.caret_diverges |= (self.text[self.i] == "^" and self.i + 1 < len(self.text)
+                                and not (following.isascii() and following.isalnum()) and following != "^")
         if following == "\r" and self.peek(2) == "\n":
             self.i += 3
             return
-        if following not in ("\n", "\0"):
+        if following != "\n" and not (following == "\r" and not self.posix and self.word is None) and following != "\0":
             self.append(following)
         self.i += 2
 
     def single_quoted(self):
         while True:
-            end = self.text.find("'", self.i + 1)
-            if end < 0:
+            found = [at for at in (self.text.find(quote, self.i + 1) for quote in self.single_quotes) if at >= 0]
+            if not found:
                 self.failed = True
                 return
+            end = min(found)
             self.append(self.text[self.i + 1:end])
             self.i = end + 1
-            if self.posix or self.peek(0) != "'":
+            if self.posix or self.peek(0) not in self.single_quotes:
                 return
-            self.append("'")  # PowerShell's doubled quote inside single quotes
+            self.append(self.peek(0))  # PowerShell's doubled quote inside single quotes
 
     def double_quoted(self):
         self.start_word()
         at = self.i + 1
         while at < len(self.text) and not self.failed:
             c, following = self.text[at], self.char(at + 1)
-            if c == '"' and not self.quoted_escape(c, following):
+            if c in self.double_quotes and not self.quoted_escape(c, following):
                 self.i = at + 1
                 return
             at = self.quoted_char(at, c, following)
@@ -1054,15 +1079,16 @@ class ShellReading:
     def quoted_escape(self, c, following):
         if self.posix:
             return c == "\\" and following in ("$", "`", '"', "\\", "\n")
-        return (c == "`" and following != "\0") or (c == '"' and following == '"')
+        return (c == "`" and following != "\0") or (c in self.double_quotes and following in self.double_quotes)
 
     def substitution(self, start):
         """$( ... ) from start, read as commands of its own; the index after its closing parenthesis. A bare `case`
         word in it fails a bash reading: its arm terminators cannot be balanced."""
-        inner = ShellReading(self.text, self.posix, start, True, self.commands, self.substitutions)
+        inner = ShellReading(self.text, self.posix, start, True, self.commands, self.substitutions, self.caret_escapes)
         inner.run()
         inner.failed |= self.posix and any(raw == "case" for command in inner.own for raw in command.raws)
         self.failed |= inner.failed
+        self.caret_diverges |= inner.caret_diverges
         return inner.i + 1
 
     def group_word(self, start):
@@ -1095,30 +1121,41 @@ class ShellReading:
         self.i += 1
 
     def here_string_body_start(self):
-        """Where the body of an @' or @" that ends its line starts, or 0."""
-        if self.peek(1) not in ("'", '"'):
+        """Where the body of an @' or @" (or a typographic quote of either family) that ends its line starts, or 0."""
+        if self.peek(1) not in self.single_quotes + self.double_quotes:
             return 0
         at = self.i + 2
-        while at < len(self.text) and self.text[at] in " \t\r":
+        while at < len(self.text) and (self.text[at] in " \t" or (self.posix and self.text[at] == "\r")):
             at += 1
-        return at + 1 if self.char(at) == "\n" else 0
+        length = self.line_break_length(at)
+        return at + length if length else 0
+
+    def line_break_length(self, at):
+        """The length of the line break at at: \\n, \\r\\n, and in PowerShell a bare \\r; 0 for none."""
+        if self.char(at) == "\n":
+            return 1
+        if self.char(at) == "\r":
+            return 2 if self.char(at + 1) == "\n" else int(not self.posix)
+        return 0
 
     def here_string(self):
-        quote, start = self.peek(1), self.here_string_body_start()
-        terminator = "\n" + quote + "@"
-        end = self.text.find(terminator, start - 1)
+        """The terminator starts a line: a quote of the opener's family, then @."""
+        expands, start = self.peek(1) in self.double_quotes, self.here_string_body_start()
+        quotes = self.double_quotes if expands else self.single_quotes
+        end = next((at for at in range(start - 1, len(self.text) - 2) if self.line_break_length(at) == 1
+                    and self.text[at + 1] in quotes and self.text[at + 2] == "@"), -1)
         if end < 0:
             self.failed = True
             return
         body = self.text[start:end].rstrip("\r") if end > start else ""
-        if quote == '"':
+        if expands:
             self.read_expansions(body)
         self.append(body)
-        self.i = end + len(terminator)
+        self.i = end + 3
 
     def read_expansions(self, body):
         """The $( ... ) and, for bash, backtick substitutions in an expanding here-string or heredoc body."""
-        reader = ShellReading(body, self.posix, 0, False, self.commands, self.substitutions)
+        reader = ShellReading(body, self.posix, 0, False, self.commands, self.substitutions, self.caret_escapes)
         at = 0
         while at < len(body) and not reader.failed:
             if body.startswith("$(", at):
@@ -1128,10 +1165,12 @@ class ShellReading:
             else:
                 at += 2 if self.posix and body[at] == "\\" else 1
         self.failed |= reader.failed
+        self.caret_diverges |= reader.caret_diverges
 
     def skip_comment(self):
-        end = self.text.find("\n", self.i)
-        self.i = len(self.text) if end < 0 else end
+        """A comment runs to the end of its line; pwsh 7.6.9 ends it at a carriage return too."""
+        ends = [at for at in (self.text.find(c, self.i) for c in ("\n" if self.posix else "\n\r")) if at >= 0]
+        self.i = min(ends) if ends else len(self.text)
 
     def skip_block_comment(self):
         self.end_word()
@@ -1383,9 +1422,29 @@ def guard_command(command):
     a string as sent; an argv array as its shell envelope's script, else its words quoted and joined."""
     if not isinstance(command, list):
         return command if isinstance(command, str) else ""
-    words = [word if isinstance(word, str) else json.dumps(word, separators=(",", ":")) for word in command]
+    words = argv_words(command)
     script = envelope(words)
     return script if script is not None else " ".join(map(shell_quoted, words))
+
+
+def argv_words(command):
+    """ToolInputData.WordOf: an argv array's words, a non-string element as its compact JSON."""
+    return [word if isinstance(word, str) else json.dumps(word, separators=(",", ":")) for word in command]
+
+
+def payload_offender(command):
+    """`bound_offender` for a hook payload's tool_input.command. An argv envelope reads as its script alone, yet the
+    guard compares the words before it (the shell and its options, `CommandPosition.Envelope`) to decide that it is
+    one, so an outside character among them, in a payload either engine could read as running dydo, is a decision
+    point ("envelope") no line holds."""
+    line = guard_command(command)
+    where = bound_offender(line)
+    words = argv_words(command) if isinstance(command, list) else []
+    hidden = words[:-1] if where is None and envelope(words) is not None else []
+    found = OUTSIDE_BOUND.search(" ".join(hidden))
+    if found and (reads_dydo(line) or names_dydo(hidden)):
+        return {"at": None, "code_point": f"U+{ord(found.group()):04X}", "point": "envelope"}
+    return where
 
 
 def read_array(rest, at, arguments):
@@ -1508,8 +1567,9 @@ class DydoScan:
     cmd /c, pwsh -Command, env -S, eval or Invoke-Expression, read again in that shell's dialect.
 
     `texts` keeps every word and stdin body read. `points` keeps where the two engines' readings could part, the
-    bound's decision points: each text it splits into words ("split"), each word it compares ("word":
-    `compared_words`) and each text past its nesting limit, never read ("depth")."""
+    bound's decision points: each text it splits into words ("split"), each text it reads as PowerShell or cmd, where
+    a typographic quote opens or closes a string ("quote"), each word it compares ("word": `compared_words`) and
+    each text past its nesting limit, never read ("depth")."""
 
     def __init__(self, command, dialect):
         self.invocations, self.uncertain, self.texts, self.points = [], False, [], []
@@ -1522,6 +1582,8 @@ class DydoScan:
             return
         self.points.append(("split", text))
         for posix in READINGS[dialect]:
+            if not posix:
+                self.points.append(("quote", text))
             reading = ShellReading.read(text, posix)
             self.uncertain |= reading.failed
             for substitution in reading.substitutions:
@@ -1644,7 +1706,8 @@ def bound_offender(command):
     could read as running dydo (`reads_dydo`): the first such character's code point, its decision point and its
     offset in the line (None when only a decoded body holds it). None for any other line. The decision points
     (`DydoScan.points`): a character whose whitespace class differs (SPLIT_DIFFERS) in any text the scanner splits;
-    a character outside the bound in a word it compares (`compared_words`), recursively through every body it reads
+    a typographic quote in any text it reads as PowerShell or cmd, where that reading quotes at one (DYD-641); a
+    character outside the bound in a word it compares (`compared_words`), recursively through every body it reads
     again, or in a text past its nesting limit; and, only where its scan is uncertain, one in the loose rule's text.
     An inert argument of a program the scanner does not interpret is no decision point. A line the reader cannot
     finish counts its first outside character."""
@@ -1657,7 +1720,7 @@ def bound_offender(command):
     if not names_dydo([loose, *scan.texts]):
         return None
     for point, text in [*scan.points, *([("loose", loose)] if scan.uncertain else [])]:
-        found = (SPLIT_DIFFERS if point == "split" else OUTSIDE_BOUND).search(text)
+        found = POINT_PATTERNS.get(point, OUTSIDE_BOUND).search(text)
         if found:
             at = command.find(found.group())
             return {"at": at if at >= 0 else None, "code_point": f"U+{ord(found.group()):04X}", "point": point}

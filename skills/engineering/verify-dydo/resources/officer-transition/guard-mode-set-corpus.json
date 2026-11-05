@@ -2204,5 +2204,239 @@
   "command": "NOTE’=1 dydo mode set overnight on",
   "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
   "guard": "allow"
+ },
+ {
+  "kind": "setter",
+  "command": "iex \"echo 'x'\rdydo mode set overnight on\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": true
+ },
+ {
+  "kind": "setter",
+  "command": "iex \"echo x # note\rdydo mode set overnight on\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": true
+ },
+ {
+  "kind": "inspection",
+  "command": "iex 'echo a `\rdydo mode set overnight on'",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "iex 'echo a`\rdydo mode set overnight on'",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": false
+ },
+ {
+  "kind": "setter",
+  "command": "iex \"echo @'\rabc\r'@\rdydo mode set overnight on\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": true
+ },
+ {
+  "kind": "inspection",
+  "command": "iex \"echo 'a\rdydo mode set overnight on'\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": false
+ },
+ {
+  "kind": "setter",
+  "command": "pwsh -Command \"echo x\rdydo mode set overnight on\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": true
+ },
+ {
+  "kind": "inspection",
+  "command": "echo 'x'\rdydo mode set overnight on",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "echo x # note\rdydo mode set overnight on",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": false
+ },
+ {
+  "kind": "setter",
+  "command": "dydo mode set overnight on\r",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": true
+ },
+ {
+  "kind": "inspection",
+  "command": "cmd /c \"echo x\rdydo mode show\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": false
+ },
+ {
+  "kind": "uncertain",
+  "command": "iex 'echo a^;dydo mode set overnight on'",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "iex 'echo a^;dydo mode show'",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": false
+ },
+ {
+  "kind": "setter",
+  "command": "iex 'dydo mode ^set overnight on'",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "iex \"echo ^'dydo mode set overnight on'\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "iex 'echo $(echo a^); dydo mode show'",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": false
+ },
+ {
+  "kind": "inspection",
+  "command": "iex 'echo a^b; dydo mode show'",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": false
+ },
+ {
+  "kind": "setter",
+  "command": "echo a^;dydo mode set overnight on",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": true
+ },
+ {
+  "kind": "uncertain",
+  "command": "cmd /c \"echo a^&dydo mode show\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": false
+ },
+ {
+  "kind": "uncertain",
+  "command": "pwsh -Command 'echo a^;dydo mode set overnight on'",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": true
+ },
+ {
+  "kind": "outside_bound",
+  "command": "iex \"echo ‘a'; dydo mode set overnight on; ’b'\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "iex \"echo 'a’; dydo mode set overnight on; ’b'\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "iex 'echo \"a”; dydo mode set overnight on; “b\"'",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "iex \"echo ‘x’\rdydo mode set overnight on\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "pwsh -Command \"echo ‘a'; dydo mode set overnight on; ’b'\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "cmd /c \"echo ‘a’ & dydo mode set overnight on\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "cmd /c \"echo “x & dydo mode set overnight on”\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "iex 'echo “a; dydo mode set overnight on; b”'",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "iex 'echo ‘dydo mode set overnight on’'",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "iex '@\"\nx\n“@; echo dydo mode set'",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "iex \"@‘\ndydo mode set overnight on\n’@\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "iex \"echo „dydo mode set overnight on“; dydo mode show\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "pwsh -Command \"echo ‘dydo mode set overnight on’\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "cmd /c \"echo ‘a' & dydo mode show\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "cmd /c \"echo “dydo mode set overnight on”\"",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo ‘a’; dydo mode set overnight on",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo ‘a'; dydo mode show; ’b'",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode show # “done”",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "guard": "allow"
+ },
+ {
+  "kind": "inspection",
+  "command": "echo dydo mode ^set overnight on",
+  "source": "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets",
+  "mode_set": false
  }
 ]

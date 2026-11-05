@@ -215,6 +215,25 @@ AT_POINT = {
     "echo dydo mode set; eval # it\u2019s": ("loose", "U+2019"), "echo dydo it\x1cs": ("split", "U+001C"),
     "NOTE\u2019=1 dydo mode set overnight on": ("word", "U+2019"),
 }
+DYD_641 = "fix10 brief: DYD-641 typographic quotes, bare carriage returns and carets"
+# DYD-641's typographic quotes in a text the scanner reads as PowerShell or cmd (iex, pwsh -Command, cmd /c), where
+# they open and close strings: each a "quote" decision point, so inconclusive. The mirror still reads each as the
+# live guard answered: a setter the quotes reveal, and setter text they hold in a string or a here-string.
+TYPOGRAPHIC_BODIES = (
+    "iex \"echo ‘a'; dydo mode set overnight on; ’b'\"", "iex \"echo 'a’; dydo mode set overnight on; ’b'\"",
+    "iex 'echo \"a”; dydo mode set overnight on; “b\"'", "iex \"echo ‘x’\rdydo mode set overnight on\"",
+    "pwsh -Command \"echo ‘a'; dydo mode set overnight on; ’b'\"",
+    "cmd /c \"echo ‘a’ & dydo mode set overnight on\"", "cmd /c \"echo “x & dydo mode set overnight on”\"",
+    "iex 'echo “a; dydo mode set overnight on; b”'", "iex 'echo ‘dydo mode set overnight on’'",
+    "iex '@\"\nx\n“@; echo dydo mode set'", "iex \"@‘\ndydo mode set overnight on\n’@\"",
+    "iex \"echo „dydo mode set overnight on“; dydo mode show\"",
+    "pwsh -Command \"echo ‘dydo mode set overnight on’\"", "cmd /c \"echo ‘a' & dydo mode show\"",
+    "cmd /c \"echo “dydo mode set overnight on”\"")
+# The same quotes where bash alone reads them, as word text: inert, judged normally.
+TYPOGRAPHIC_POSIX = ("echo ‘a’; dydo mode set overnight on", "echo ‘a'; dydo mode show; ’b'",
+                     "dydo mode show # “done”")
+# The corpus's outside-bound forms with no decision point, judged normally.
+JUDGED = (*PROSE, *COMMENTED, *SAME_SPLIT, *INERT, *NO_DYDO_RECORDED, *TYPOGRAPHIC_POSIX)
 # Outside the corpus: an ASCII line whose decoded body holds the character, and a lone surrogate, which the live guard
 # cannot even read ("Failed to parse hook input"; artifacts/dyd435/fix9/live-forms.json).
 ENCODED_SET = "pwsh -EncodedCommand " + base64.b64encode("dydo mode ſet overnight on".encode("utf-16-le")).decode()
@@ -786,10 +805,11 @@ class EvaluatorTests(unittest.TestCase):
         """Narrowed trigger (round-10 FAIL disposition): a guarded command whose outside character sits where Python's
         and .NET's readings could part makes the run inconclusive, whatever the guard answered, in every case and
         direction. Every round-8 form is one. Exactly the corpus forms named here have none: their outside characters
-        are prose, a comment, a word past `mode set`, or a space both engines split on (`SAME_SPLIT`)."""
+        are prose, a comment, a word past `mode set`, a space both engines split on (`SAME_SPLIT`), or a typographic
+        quote only bash reads (`TYPOGRAPHIC_POSIX`)."""
         outside = [entry["command"] for entry in corpus() if entry["kind"] == "outside_bound"]
         judged = [command for command in outside if ot.bound_offender(command) is None]
-        self.assertEqual(sorted({*PROSE, *COMMENTED, *SAME_SPLIT, *INERT, *NO_DYDO_RECORDED}), sorted(judged))
+        self.assertEqual(sorted({*JUDGED}), sorted(judged))
         forms = [command for command in outside if command not in judged]
         self.assertTrue(all(entry["command"] in forms for entry in corpus() if entry["source"] == ROUND_8))
         points = {self.first_outside(command) for command in forms}
@@ -805,6 +825,77 @@ class EvaluatorTests(unittest.TestCase):
         """The round-10 reviewer's forms and the fix9 controls, recorded with the live guard's answers."""
         self.assertEqual(sorted({*INERT, *AT_POINT, *NO_DYDO_RECORDED}),
                          sorted(entry["command"] for entry in corpus() if entry["source"] == ROUND_10))
+
+    def test_the_corpus_holds_the_dyd_641_forms_in_bound_and_typographic_ones_outside_it(self):
+        """DYD-641's forms, recorded with the merged guard's answers: bare carriage returns and carets in bound, in
+        bash's own line and in bodies read as PowerShell or cmd, each with and without a setter; the typographic
+        quotes outside it."""
+        entries = [entry for entry in corpus() if entry["source"] == DYD_641]
+        inside = [entry for entry in entries if entry["kind"] != "outside_bound"]
+        self.assertEqual(sorted({*TYPOGRAPHIC_BODIES, *TYPOGRAPHIC_POSIX}),
+                         sorted(entry["command"] for entry in entries if entry["kind"] == "outside_bound"))
+        self.assertEqual(21, len(inside))
+        bodies = ("iex", "pwsh", "cmd")
+        shapes = {(mark, entry["command"].startswith(bodies), entry["mode_set"])
+                  for entry in inside for mark in ("\r", "^") if mark in entry["command"]}
+        self.assertEqual(set(itertools.product(("\r", "^"), (True, False), (True, False))), shapes)
+        self.assertEqual({True, False}, {entry["guard"] == "reminder" for entry in entries if entry["kind"] == "outside_bound"})
+
+    def test_a_typographic_body_reads_as_the_recorded_guard_answer_yet_is_inconclusive_at_its_quote(self):
+        """The mirror follows DYD-641 outside the bound too: each typographic body reads as the merged guard answered
+        it (a setter the quotes reveal, setter text they hold), yet its quote is a decision point, so the run is never
+        judged on it. Where bash alone reads the quotes they are word text: no decision point."""
+        for entry in corpus():
+            if entry["source"] == DYD_641 and entry["kind"] == "outside_bound":
+                with self.subTest(command=entry["command"]):
+                    self.assertEqual(entry["guard"] == "reminder", ot.sets_mode(entry["command"]))
+                    where = ot.bound_offender(entry["command"])
+                    if entry["command"] in TYPOGRAPHIC_POSIX:
+                        self.assertIsNone(where)
+                    else:
+                        self.assertEqual(("quote", self.first_outside(entry["command"])),
+                                         (where["point"], where["code_point"]))
+
+    def test_a_typographic_quote_is_a_decision_point_only_where_powershell_or_cmd_reads_it(self):
+        """Every reading the scanner may take counts its own significant characters: a typographic quote in a text read
+        as PowerShell or cmd (iex, pwsh -Command, cmd /c, a decoded -EncodedCommand), never in bash's reading, and only
+        in a line naming dydo."""
+        encoded = base64.b64encode("echo ‘a'; dydo mode show".encode("utf-16-le")).decode()
+        cases = {
+            "iex \"echo ‘a'; dydo mode show\"": {"at": 10, "code_point": "U+2018", "point": "quote"},
+            "Invoke-Expression 'echo “a”; dydo mode show'": {"at": 24, "code_point": "U+201C", "point": "quote"},
+            "pwsh -NoProfile -Command \"echo ‚a‛; dydo mode show\"": {"at": 31, "code_point": "U+201A",
+                                                                                "point": "quote"},
+            "cmd /c \"echo „a“ & dydo mode show\"": {"at": 13, "code_point": "U+201E", "point": "quote"},
+            f"pwsh -EncodedCommand {encoded}": {"at": None, "code_point": "U+2018", "point": "quote"},
+            "echo ‘a'; dydo mode show; ’b'": None, "bash -c \"echo ‘a’; dydo mode show\"": None,
+            "eval \"echo “a”; dydo mode show\"": None, "iex \"echo ‘a’\"": None,
+        }
+        for command, where in cases.items():
+            with self.subTest(command=command):
+                self.assertEqual(where, ot.bound_offender(command))
+
+    def test_an_argv_envelope_counts_its_shell_and_option_words_against_the_bound(self):
+        """A Codex argv envelope reads as its script alone, yet the guard compares the shell and its options to decide
+        it is one: an outside character there is a decision point ("envelope") in a payload naming dydo, and the run
+        is inconclusive. A non-envelope array is read as its joined words, so its own points decide."""
+        cases = {
+            ("bash", "-l’c", "dydo mode show"): {"at": None, "code_point": "U+2019", "point": "envelope"},
+            ("pwsh", "-NoProfile²", "-Command", "dydo mode show"): {"at": None, "code_point": "U+00B2",
+                                                                         "point": "envelope"},
+            ("bash", "-lc", "dydo mode show # it’s"): None, ("bash", "-l’c", "echo done"): None,
+            ("baſh", "-lc", "dydo mode show"): {"at": 2, "code_point": "U+017F", "point": "word"},
+        }
+        for argv, where in cases.items():
+            with self.subTest(argv=argv):
+                self.assertEqual(where, ot.payload_offender(list(argv)))
+        self.assertEqual(ot.bound_offender("dydo mode set overnight on"),
+                         ot.payload_offender("dydo mode set overnight on"))
+        hook = ot.hook_fields(json.dumps({"tool_input": {"command": ["bash", "-l’c", "dydo mode show"]}}).encode())
+        self.assertEqual(("dydo mode show", "envelope"), (hook["command"], hook["bound_offender"]["point"]))
+        evaluation = self.with_receipt_fields(hook)
+        self.assertEqual(("inconclusive", [("x", "U+2019")]),
+                         (evaluation["verdict"], [(b["call"], b["code_point"]) for b in evaluation["facts"]["outside_bound"]]))
 
     def test_a_corpus_form_with_no_decision_point_reads_as_the_recorded_guard_answer(self):
         """The narrowed trigger's soundness on the corpus: wherever no outside character sits at a decision point, the
@@ -1325,6 +1416,98 @@ class EvaluatorTests(unittest.TestCase):
                          ot.init_violations("claude", {"tools": ["Bash", "WebFetch"], "mcp_servers": ["linear"]}))
         self.assertEqual(["unexpected tool mcp.linear"],
                          ot.init_violations("codex", {"tools": ["functions.exec", "mcp.linear"]}))
+
+
+def read_commands(text, posix=False):
+    return [" ".join(command.words) for command in ot.ShellReading.read(text, posix).commands]
+
+
+class ShellReadingTests(unittest.TestCase):
+    """DYD-641, mirrored line for line: ShellReaderTests', DydoInvocationScannerTests' and CommandPositionTests' new
+    cases at feature/dydo-3-6-0 88f12b05, each the .NET test's own input and expectation. The non-posix reading
+    follows pwsh 7.6.9: a bare carriage return ends a statement, a comment, a here-string header and body; the
+    typographic quotes are PowerShell's quotes; a caret is literal to pwsh and an escape only to cmd. Bash's reading
+    keeps all three as word text."""
+
+    def test_a_bare_carriage_return_ends_what_a_line_feed_ends(self):
+        cases = {"echo 'x'\riex 'y'": ["echo x", "iex y"], "echo x # note\rrm y": ["echo x", "rm y"],
+                 "echo @'\rabc\r'@\rrm y": ["echo abc", "rm y"], "echo @'  \r\rabc\r'@\rrm y": ["echo \rabc", "rm y"],
+                 "echo @'\nabc\r'@; rm y\n": ["echo abc", "rm y"],
+                 "echo @'\rabc\r '@\rx\r'@\rrm y": ["echo abc\r '@\rx", "rm y"], "echo a `\rb": ["echo a b"],
+                 "echo a`\rb": ["echo a\rb"], "echo a\r\nrm y": ["echo a", "rm y"], "echo 'a\rrm y'": ["echo a\rrm y"],
+                 'echo "a\rrm y"': ["echo a\rrm y"]}
+        for text, commands in cases.items():
+            with self.subTest(text=text):
+                self.assertFalse(ot.ShellReading.read(text, False).failed)
+                self.assertEqual(commands, read_commands(text))
+
+    def test_the_posix_reading_keeps_all_three_as_word_text(self):
+        cases = {"echo 'x'\riex 'y'": ["echo x iex y"], "echo x # note\rrm y": ["echo x"],
+                 "echo ‘a'; rm y; ’b'": ["echo ‘a; rm y; ’b"], "echo a^;rm y": ["echo a^", "rm y"]}
+        for text, commands in cases.items():
+            with self.subTest(text=text):
+                self.assertFalse(ot.ShellReading.read(text, True).failed)
+                self.assertEqual(commands, read_commands(text, posix=True))
+
+    def test_typographic_quotes_are_powershell_quotes(self):
+        cases = {
+            "echo 'a’; rm y": ["echo a", "rm y"], "echo 'a‘; rm y": ["echo a", "rm y"],
+            "echo 'a‚; rm y": ["echo a", "rm y"], "echo 'a‛; rm y": ["echo a", "rm y"],
+            'echo "a”; rm y': ["echo a", "rm y"], 'echo "a“; rm y': ["echo a", "rm y"],
+            'echo "a„; rm y': ["echo a", "rm y"], "echo ‘a'; rm y; ’b'": ["echo a", "rm y", "b"],
+            "echo 'a’’b' ‘c''d’ 'e'‛f'": ["echo a’b c'd e‛f"],
+            'echo "a””b" “c""d” „e““f"': ['echo a”b c"d e“f'],
+            "echo \"a’b\" 'c”d' “e'f” ‘g\"h’": ["echo a’b c”d e'f g\"h"],
+            'echo "a`”b"': ["echo a”b"], "echo a‘b c’d": ["echo ab cd"],
+            "echo @‘\nabc\n’@; rm y": ["echo abc", "rm y"], "echo @'\nabc\n‘@; rm y\n": ["echo abc", "rm y"],
+            "echo @‚\nabc\n‛@; echo @„\nxyz\n\"@; rm y": ["echo abc", "echo xyz", "rm y"]}
+        for text, commands in cases.items():
+            with self.subTest(text=text):
+                self.assertFalse(ot.ShellReading.read(text, False).failed)
+                self.assertEqual(commands, read_commands(text))
+
+    def test_a_typographic_expanding_here_string_reads_its_substitution(self):
+        for text in ("echo @“\n$(rm y)\n”@", 'echo @"\n$(rm y)\n“@; echo z'):
+            with self.subTest(text=text):
+                self.assertIn("rm y", read_commands(text))
+
+    def test_where_pwsh_and_cmd_read_a_caret_apart_the_reading_holds_both_and_fails(self):
+        cases = {"echo a^;rm y": "rm y", "echo a^\nrm y": "rm y", "echo a^\r\nrm y": "rm y", "echo a^ b": "echo a^ b",
+                 "echo ^$(rm y)": "rm y", "echo ^'a b'": "echo ^a b", "echo $(echo a^)": "echo a^",
+                 "dydo ^\r\ncheck": "dydo check", 'echo @"\n$(echo a^)\n"@': "echo a^"}
+        for text, command in cases.items():
+            with self.subTest(text=text):
+                self.assertTrue(ot.ShellReading.read(text, False).failed)
+                self.assertIn(command, read_commands(text))
+
+    def test_where_both_read_a_caret_alike_the_reading_is_certain(self):
+        cases = {"echo a^b x^^y HEAD^2 HEAD^": "echo ab x^y HEAD2 HEAD", 'echo "a^;b"': "echo a^;b",
+                 "echo 'a^;b'": "echo a^;b"}
+        for text, command in cases.items():
+            with self.subTest(text=text):
+                self.assertFalse(ot.ShellReading.read(text, False).failed)
+                self.assertEqual([command], read_commands(text))
+
+    def test_the_powershell_reading_finds_the_dydo_pwsh_runs(self):
+        for command in ("echo 'x'\rdydo mode set overnight on", "echo x # note\rdydo mode set overnight on",
+                        "echo ‘a'; dydo mode set overnight on; ’b'",
+                        'echo "a”; dydo mode set overnight on; “b"', "echo a^;dydo mode set overnight on"):
+            with self.subTest(command=command):
+                found = [" ".join(words) for words in ot.DydoScan(command, ot.POWERSHELL).invocations]
+                self.assertIn("mode set overnight on", found)
+
+    def test_where_pwsh_and_cmd_read_a_caret_differently_the_scan_is_uncertain(self):
+        scan = ot.DydoScan("dydo ^\r\ncheck", ot.POWERSHELL)
+        self.assertTrue(scan.uncertain)
+        self.assertIn(["check"], scan.invocations)
+        self.assertIn(["^"], scan.invocations)
+
+    def test_the_command_string_a_shell_is_given_is_taken_from_pwshs_reading(self):
+        for line in ("bash -c ‘rm \u0001y' ‘'", "echo x\rbash -c 'rm \u0001y'", "echo a^;bash -c 'rm \u0001y'"):
+            with self.subTest(line=line):
+                scripts = [ot.posix_shell_string(command.words[1:]) for command in ot.ShellReading.read(line, False).commands
+                           if ot.program_name(command.words[0]) == "bash"]
+                self.assertIn("rm \u0001y", scripts)
 
 
 class RecordTests(unittest.TestCase):
@@ -2137,7 +2320,7 @@ class GuardOracleTests(unittest.TestCase):
         the encoded form, whose decoded body holds the character, before its mode-set check."""
         judged = [(entry, answer) for entry, answer in zip(self.outside, self.outside_answers)
                   if ot.bound_offender(entry["command"]) is None]
-        self.assertEqual(len({*PROSE, *COMMENTED, *SAME_SPLIT, *INERT, *NO_DYDO_RECORDED}), len(judged))
+        self.assertEqual(len({*JUDGED}), len(judged))
         for entry, answer in judged:
             with self.subTest(command=entry["command"]):
                 if answer.startswith("refused: "):

@@ -5,7 +5,7 @@ using System.Text.Json.Nodes;
 internal static class StatechartReady
 {
     public static async Task<JsonObject> VerifyAsync(StatechartDependencies dependencies, string payload,
-        StatechartHome home, bool full, CancellationToken token)
+        StatechartHome home, string checkerDigest, bool full, CancellationToken token)
     {
         StatechartPaths.EnsureDirectory(home.State);
         await using var owner = await StatechartLifetime.CreateAsync(StatechartExecutable.Current(),
@@ -13,7 +13,7 @@ internal static class StatechartReady
         await owner.RegisterAsync();
         try
         {
-            var checker = StatechartChecker.Prepare(dependencies.Tlc!, owner.Stage);
+            var checker = StatechartChecker.Prepare(dependencies.Tlc!, owner.Stage, checkerDigest);
             checker.TlcArguments(payload);
             var node = await StatechartProbe.CaptureAsync(dependencies.Node!, ["--version"], owner, owner.Temp, token);
             var java = await StatechartProbe.CaptureAsync(dependencies.Java!, ["-version"], owner, owner.Temp, token);

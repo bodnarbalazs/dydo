@@ -28,7 +28,7 @@ internal static class PosixStatechartSocket
         try
         {
             // AT_FDCWD, AT_SYMLINK_NOFOLLOW, STATX_TYPE | STATX_MODE | STATX_UID; fields as in PosixStatechartFiles.
-            if (Statx(-100, directory, 0x100, 0xb, info) != 0) throw new Win32Exception();
+            PosixStatechartNative.Check(Statx(-100, directory, 0x100, 0xb, info), Marshal.GetLastPInvokeError());
             var mode = Marshal.ReadInt16(info, 28) & 0xffff;
             if ((mode & 0xf000) == 0x4000 && (mode & 0xe3f) == 0 && (uint)Marshal.ReadInt32(info, 20) == owner)
                 return directory;

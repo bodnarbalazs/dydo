@@ -138,6 +138,20 @@ public class CommandPositionTests
         Assert.Null(CommandPosition.Envelope(argv));
     }
 
+    // DYD-641: the command string a shell is given, taken from pwsh's reading of the line: a
+    // typographic quote holds it whole, and a bare carriage return starts the shell's statement.
+    [Theory]
+    [InlineData("bash -c ‘rm \u0001y' ‘'", "rm \u0001y")]
+    [InlineData("echo x\rbash -c 'rm \u0001y'", "rm \u0001y")]
+    [InlineData("echo a^;bash -c 'rm \u0001y'", "rm \u0001y")]
+    public void ScriptOf_IsTheStringPwshPasses(string line, string script)
+    {
+        var scripts = ShellReader.Read(line, posix: false).Commands
+            .Select(command => CommandPosition.ScriptOf(command, "\u0001")).OfType<ShellScript>();
+
+        Assert.Contains(scripts, found => found.Text == script && found.Origin != null);
+    }
+
     [Theory]
     [InlineData(new[] { "/c", "gh", "pr" }, "gh pr")]
     [InlineData(new[] { "//c", "gh" }, "gh")]

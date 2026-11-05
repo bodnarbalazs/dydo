@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gate_run import STATIC_GATE_INTERPRETER
 import gate_adapter
 from gate_adapter import _target_paths, publish
+from typescript_join import parse_lcov
 
 TOOLS = Path(__file__).resolve().parents[1]
 STATIC_PYTHON = TOOLS.parents[1] / STATIC_GATE_INTERPRETER
@@ -127,6 +128,13 @@ class CoverageCancellationTests(unittest.TestCase):
                     self.assertEqual(130, observed["facade"]["aggregateExit"])
                     self.assertEqual(130, observed["facade"]["results"][0]["childExit"])
 
+    @unittest.skipUnless(sys.platform == "linux", "the coverage owner is its descendants' subreaper on Linux")
+    def test_an_orphan_that_exits_during_the_campaign_is_reaped_as_init_would(self):
+        probe = subprocess.run([sys.executable, "-c", ORPHAN_PROBE, str(TOOLS)],
+                               capture_output=True, text=True, timeout=60)
+
+        self.assertEqual("0", probe.stdout.strip(), probe.stderr)
+
     def test_an_escalation_whose_first_descendant_listing_is_slow_still_confirms_cleanup_in_budget(self):
         probe = subprocess.run([sys.executable, "-c", CANCELLATION_PROBE, str(TOOLS), "escalation",
                                 SLOW_FIRST_LISTING], capture_output=True, text=True, timeout=25)
@@ -186,6 +194,33 @@ class EscalationOrderTests(unittest.TestCase):
                                   ("killpg", 2.1, signal.SIGKILL), ("wait", 2.1, 3.0),
                                   ("end", 2.1, 0.9, [])],
                                  self._stop(real_pin))
+
+
+# The campaign leaves an orphan that exits at once, as a killed process group's members do, and
+# exits 0 only if the orphan is then reaped rather than left a zombie of the coverage owner.
+ORPHAN_CAMPAIGN = """
+import os, sys, time
+read, write = os.pipe()
+middle = os.fork()
+if middle == 0:
+    orphan = os.fork()
+    if orphan == 0:
+        os._exit(0)
+    os.write(write, str(orphan).encode())
+    os._exit(0)
+os.waitpid(middle, 0)
+orphan = int(os.read(read, 32))
+for _ in range(250):
+    if not os.path.exists(f"/proc/{orphan}"):
+        sys.exit(0)
+    time.sleep(0.02)
+sys.exit(1)
+"""
+ORPHAN_PROBE = (
+    "import sys\n"
+    "sys.path.insert(0, sys.argv[1])\n"
+    "import gate_adapter\n"
+    f"print(gate_adapter.run_coverage_command([sys.executable, '-c', {ORPHAN_CAMPAIGN!r}], '.'))\n")
 
 PYTHON_TARGET = "def add(left, right):\n    return left + right\n"
 PYTHON_SUITE = ("import unittest\n\n\n"
@@ -911,6 +946,164 @@ class ViewerGateTests(unittest.TestCase):
         self.assertEqual("vitest failed for a reason the gate did not measure", answer["errors"][0]["message"])
 
 
+STATECHART = "skills/engineering/statechart/scripts"
+STATECHART_SOURCES = {
+    f"{STATECHART}/package.json": json.dumps({"scripts": {"test": "node --test --test-concurrency=1 test/*.test.ts"}}),
+    f"{STATECHART}/run.ts": ("export function run(flag: boolean): number {\n  if (flag) {\n"
+                             "    return 1;\n  }\n  return 0;\n}\n"),
+    f"{STATECHART}/test/run.test.ts": ("import { test } from 'node:test';\nimport { run } from '../run.ts';\n\n"
+                                      "test('runs', () => {\n  run(true);\n});\n"),
+    **VIEWER_SOURCES,
+}
+STATECHART_LCOV = ("TN:\nSF:run.ts\nFN:1,run\nFNDA:1,run\nDA:1,1\nDA:2,1\nDA:3,1\nDA:4,1\nDA:5,0\nDA:6,1\n"
+                   "BRDA:2,0,0,1\nBRDA:2,1,0,0\nend_of_record\n"
+                   "SF:../../../../../managed/pele.js\nDA:1,1\nend_of_record\n")
+
+
+def node_tap(failed=(), cancelled=0, tests=None):
+    lines = ["TAP version 13", "ok 1 - runs", *(f"not ok {index} - {name}" for index, name in enumerate(failed, 2)),
+             "ok 9 - later # SKIP Windows only"]
+    total = 2 + len(failed) if tests is None else tests
+    return "\n".join([*lines, f"# tests {total}", "# suites 0", f"# pass {total - len(failed)}",
+                      f"# fail {len(failed)}", f"# cancelled {cancelled}", "# skipped 1", "# todo 0", ""])
+
+
+def fake_node_test(exit_code=0, tap=None, lcov=STATECHART_LCOV):
+    """Stands in for `node --test`: writes the TAP and LCOV reports where the argv asks."""
+    calls = []
+
+    def run(argv, cwd):
+        calls.append((argv, cwd))
+        destinations = [item.split("=", 1)[1] for item in argv if item.startswith("--test-reporter-destination=")]
+        if tap is not None:
+            Path(next(path for path in destinations if path.endswith("suite.tap"))).write_text(tap, encoding="utf-8")
+        Path(next(path for path in destinations if path.endswith("lcov.info"))).write_text(lcov, encoding="utf-8")
+        return exit_code
+    run.calls = calls
+    return run
+
+
+class StatechartGateTests(unittest.TestCase):
+    def test_node_discovery_accepts_typescript_test_files_that_use_node_test(self):
+        sources = {f"{STATECHART}/test/a.test.ts": "import { test } from 'node:test';\ntest('a', () => {});\n",
+                   f"{STATECHART}/test/b.test.ts": "test('b', () => {});\n",
+                   f"{STATECHART}/test/tlc.ts": "import { test } from 'node:test';\ntest('c', () => {});\n"}
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for relative, text in sources.items():
+                write_file(root, relative, text)
+
+            rows = gate_adapter._ordinary_discovery(root, sorted(sources))
+
+        self.assertEqual([{"id": f"{STATECHART}/test/a.test.ts#node-test", "file": f"{STATECHART}/test/a.test.ts"}],
+                         rows)
+
+    def test_the_tap_suite_verdict_fails_a_failed_cancelled_or_empty_run(self):
+        with tempfile.TemporaryDirectory() as folder:
+            report = Path(folder) / "suite.tap"
+            verdicts = []
+            for text in (node_tap(), node_tap(["breaks"]), node_tap(cancelled=1), node_tap(tests=0),
+                         "TAP version 13\n# tests 1\n"):
+                report.write_text(text, encoding="utf-8")
+                verdicts.append(gate_adapter._node_test_suite(report))
+            missing = gate_adapter._node_test_suite(Path(folder) / "absent.tap")
+
+        self.assertEqual([(0, [], 1), (1, ["breaks"], 1), (1, [], 1), (1, [], 1), (None, [], None)], verdicts)
+        self.assertEqual((None, [], None), missing)
+
+    def repository(self, folder):
+        from gate_inventory import assemble_inventory
+        from inventory import git_file_state
+        root = Path(folder) / "repo"
+        for relative, text in STATECHART_SOURCES.items():
+            write_file(root, relative, text)
+        write_file(root, "DynaDocs.Tests/coverage/js_metrics.cjs", WALKER_SHIM)
+        git_repository(root)
+        paths, deleted = git_file_state(root)
+        payload = assemble_inventory(root, paths, [], gate_adapter._ordinary_discovery(root, paths), deleted)
+        inventory = root.parent / "inventory.json"
+        inventory.write_text(json.dumps(payload), encoding="utf-8")
+        raw = Path(folder) / "output/raw"
+        raw.parent.mkdir()
+        return root, raw, inventory
+
+    def test_statechart_coverage_runs_the_package_script_and_judges_only_its_own_targets(self):
+        child = fake_node_test(tap=node_tap())
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw, inventory = self.repository(folder)
+            with mock.patch.object(gate_adapter, "run_coverage_command", side_effect=child):
+                answer = gate_adapter.collect_statechart_coverage(root, raw, inventory)
+
+            row = collector_row(answer, "typescript-coverage")
+            self.assertEqual("fail", answer["status"], json.dumps(answer["errors"]))
+            self.assertEqual([f"{STATECHART}/run.ts"], [module["path"] for module in row["facts"]["modules"]])
+            self.assertEqual({(f"{STATECHART}/run.ts", "branch-coverage")},
+                             {(finding["path"], finding["gate"]) for finding in answer["findings"]})
+            self.assertEqual((0, 1), (row["facts"]["suite_exit"], row["facts"]["skipped"]))
+            argv, cwd = child.calls[0]
+            self.assertEqual(root / STATECHART, cwd)
+            self.assertEqual(["node", "--experimental-test-coverage"], argv[:2])
+            self.assertEqual(["--test", "--test-concurrency=1", "test/*.test.ts"], argv[-3:])
+
+    def test_a_failing_statechart_suite_is_named_before_any_policy(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw, inventory = self.repository(folder)
+            with mock.patch.object(gate_adapter, "run_coverage_command",
+                                   side_effect=fake_node_test(1, node_tap(["breaks"]))):
+                answer = gate_adapter.collect_statechart_coverage(root, raw, inventory)
+
+        self.assertEqual([{"gate": "functional", "child_exit": 1, "failingTests": ["breaks"],
+                           "failingTestsSummary": "1 failing tests"}], answer["findings"])
+
+    def test_a_statechart_run_without_a_readable_suite_report_is_a_measurement_gap(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw, inventory = self.repository(folder)
+            with mock.patch.object(gate_adapter, "run_coverage_command", side_effect=fake_node_test(1)):
+                answer = gate_adapter.collect_statechart_coverage(root, raw, inventory)
+
+        self.assertEqual("error", answer["status"])
+        self.assertEqual("node --test recorded no readable suite result", answer["errors"][0]["message"])
+
+    def test_viewer_coverage_leaves_the_statechart_targets_to_their_own_stack(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw, inventory = self.repository(folder)
+            with mock.patch.object(gate_adapter, "run_coverage_command",
+                                   side_effect=fake_vitest(report=vitest_report())):
+                answer = gate_adapter.collect_viewer_coverage(root, raw, inventory)
+
+        modules = collector_row(answer, "typescript-coverage")["facts"]["modules"]
+        self.assertEqual(["viewer/src/sum.ts", "viewer/src/types.ts", "viewer/src/unused.ts"],
+                         [module["path"] for module in modules])
+
+    def test_node_measures_an_executable_helper_beside_the_tests_and_leaves_the_tests_out(self):
+        sources = {"package.json": STATECHART_SOURCES[f"{STATECHART}/package.json"],
+                   "test/helper.ts": "export const next = (value: number) => value + 1;\n",
+                   "test/helper.test.ts": ("import { test } from 'node:test';\nimport assert from 'node:assert/strict';\n"
+                                           "import { next } from './helper.ts';\n\n"
+                                           "test('next', () => assert.equal(next(1), 2));\n")}
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw = Path(folder), Path(folder) / "raw"
+            for relative, text in sources.items():
+                write_file(root, f"{STATECHART}/{relative}", text)
+            raw.mkdir()
+
+            child = subprocess.run(gate_adapter._statechart_argv(root, raw), cwd=root / STATECHART,
+                                   capture_output=True, text=True)
+
+            self.assertEqual(0, child.returncode, child.stdout + child.stderr)
+            # Read as the gate reads it: node names each source in the platform's own separators.
+            self.assertEqual([f"{STATECHART}/test/helper.ts"],
+                             list(parse_lcov((raw / "lcov.info").read_text(encoding="utf-8"), root, root / STATECHART)))
+
+    def test_a_package_script_that_does_not_run_node_is_refused(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            write_file(root, f"{STATECHART}/package.json", json.dumps({"scripts": {"test": "vitest run"}}))
+
+            with self.assertRaisesRegex(ValueError, "does not run node"):
+                gate_adapter._statechart_argv(root, root / "raw")
+
+
 class CandidateInventoryTests(unittest.TestCase):
     def test_candidate_reports_the_head_commit_and_notices_an_untracked_change(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -968,6 +1161,8 @@ class CandidateInventoryTests(unittest.TestCase):
             "node": shared | {"javascript-source", "javascript-dependencies",
                               "javascript-unused-exports", "clones"},
             "dotnet": shared | {"csharp-source", "csharp-analyzers", "versions"},
+            "statechart": shared | {"typescript-build", "typescript-source", "typescript-dependencies",
+                                    "typescript-unused-exports", "clones"},
         }
         with tempfile.TemporaryDirectory() as folder:
             root = python_repository(folder)

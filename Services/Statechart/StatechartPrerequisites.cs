@@ -37,9 +37,9 @@ internal static class StatechartPrerequisites
         return resolved;
     }
 
-    public static string? Tlc(string cwd, string? value)
+    public static string? Tlc(string cwd, string? value, string digest)
     {
         if (value is null) return null;
-        return StatechartChecker.Input(Path.GetFullPath(value, cwd));
+        return StatechartChecker.Input(Path.GetFullPath(value, cwd), digest);
     }
 }

@@ -109,7 +109,7 @@ public class LinearReaderTests
     {
         _linear.Serve(call => call.Var("after") == null
             ? IssuesPage(Node(Issue("1", assignee: """{"name":"Balazs"}""")), more: true, cursor: "page1")
-            : IssuesPage(Node(Issue("2", state: Duplicate, parent: """{"id":"1"}"""))));
+            : IssuesPage(Node(Issue("2", state: Duplicate, parent: """{"id":"1","identifier":"DYD-1"}"""))));
 
         var graph = await Graph();
 
@@ -274,6 +274,71 @@ public class LinearReaderTests
             : """{"data":{"issue":null}}""");
 
         var error = await Assert.ThrowsAsync<MapApiException>(Graph);
+
+        Assert.Equal("not_found", error.Code);
+    }
+
+    [Fact]
+    public async Task Graph_ForTheMap_ReadsNoProjectBody()
+    {
+        _linear.Serve(_ => IssuesPage(Node(Issue("1"))));
+
+        await Graph();
+
+        Assert.Equal(["ProjectIssues"], _linear.Calls.Select(call => call.Operation));
+        Assert.Contains("archivedAt priority", _linear.Calls[0].Query);
+        Assert.DoesNotContain("content", _linear.Calls[0].Query);
+    }
+
+    [Fact]
+    public async Task ReadProject_ReadsTheBody_ByTheGraphsProjectId_AndEveryIssuesPriority()
+    {
+        _linear.Serve(call => call.Operation == "ProjectIssues"
+            ? IssuesPage(Node(WithPriority(Issue("1"), "2"),
+                inverseRelations: Connection(Incoming("r1", "blocks", WithPriority(Issue("9", project: InOther), "1.0")))) + "," +
+                Node(Issue("2")))
+            : ProjectContent("\"## Lane ledger\\n| DYD-1 |\""));
+
+        var read = await _linear.Reader().ReadProjectAsync("slug1234abcd", CancellationToken.None);
+
+        Assert.Equal("p-map", read.Graph.Project.Id);
+        Assert.Equal("## Lane ledger\n| DYD-1 |", read.Content);
+        Assert.Equal(new Dictionary<string, double> { ["1"] = 2, ["2"] = 0, ["9"] = 1 }, read.Priorities);
+        Assert.Equal(["slug1234abcd", "p-map"], _linear.Calls.Select(call => call.Var("projectId")));
+        Assert.Equal("ProjectContent", _linear.Calls[1].Operation);
+    }
+
+    [Fact]
+    public async Task ReadProject_ReadsEachProjectIssuesParentIdentifier_InTheGraphOrNot()
+    {
+        _linear.Serve(call => call.Operation == "ProjectIssues"
+            ? IssuesPage(Node(Issue("1", parent: """{"id":"99","identifier":"DYD-99"}""")) + "," + Node(Issue("2")))
+            : ProjectContent("null"));
+
+        var read = await _linear.Reader().ReadProjectAsync("p-map", CancellationToken.None);
+
+        Assert.Equal(new Dictionary<string, string> { ["1"] = "DYD-99" }, read.Parents);
+        Assert.Equal("99", read.Graph.Issues[0].ParentId);
+        Assert.Contains("parent { id identifier }", _linear.Calls[0].Query);
+    }
+
+    [Fact]
+    public async Task ReadProject_WithoutABody_HasEmptyContent()
+    {
+        _linear.Serve(call => call.Operation == "ProjectIssues" ? IssuesPage("") : ProjectContent("null"));
+
+        var read = await _linear.Reader().ReadProjectAsync("p-map", CancellationToken.None);
+
+        Assert.Equal("", read.Content);
+    }
+
+    [Fact]
+    public async Task ReadProject_WhenTheBodyReadFindsNoProject_IsNotFound()
+    {
+        _linear.Serve(call => call.Operation == "ProjectIssues" ? IssuesPage("") : """{"data":{"project":null}}""");
+
+        var error = await Assert.ThrowsAsync<MapApiException>(
+            () => _linear.Reader().ReadProjectAsync("p-map", CancellationToken.None));
 
         Assert.Equal("not_found", error.Code);
     }

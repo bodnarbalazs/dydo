@@ -8,7 +8,7 @@ type: reference
 Complete reference for dydo's local setup, documentation, guard, worktree cleanup, validation, testing, and utility
 commands.
 Live work is managed in Linear through its official surfaces; no dydo command creates, updates,
-polls, or mirrors a Linear object; `dydo map` reads Linear on demand and keeps disposable saved maps. FutureFeatures live in Linear and are promoted by the user; historical repository records remain
+polls, or mirrors a Linear object; `dydo map` and `dydo survey` read Linear on demand, and only `dydo map` keeps disposable saved maps. FutureFeatures live in Linear and are promoted by the user; historical repository records remain
 durable evidence rather than a second work board.
 
 Commands find the project by walking up to the nearest `dydo.json`; `dydo validate` is the exception
@@ -194,7 +194,7 @@ of [dydo pr-ready](#dydo-pr-ready).
 
 ---
 
-## Linear Command
+## Linear Commands
 
 ### dydo map
 
@@ -257,6 +257,49 @@ without it serves a page at `/` saying the viewer was not built, and `dydo map -
 
 `DYDO_LINEAR_ENDPOINT` replaces the Linear GraphQL URL. It is a test seam for pointing dydo map at a
 fake Linear, not a user setting.
+
+### dydo survey
+
+Print a read-only digest of one Linear Project's lanes.
+
+```bash
+dydo survey 4e6aa9da-f325-4b53-a318-deba4b1b4d26                          # by Project UUID
+dydo survey 25acbbb9a90b                                                  # by slugId
+dydo survey https://linear.app/<workspace>/project/<name>-25acbbb9a90b    # by Project URL
+```
+
+`dydo survey` reads one Project once, with the user's `LINEAR_API_KEY`, and prints plain text. It
+writes nothing, keeps nothing, and never polls: the caller decides when to run it. Without a key it prints
+the same key help as [dydo map](#dydo-map) and exits `2` before any request. It reads the Project's
+non-archived issues, the issues linked from them, their `blocks` and `related` relations, each
+issue's priority, and the Project body.
+
+The ledger is the body section under the first `##` heading containing "ledger", in any case, up to
+the next `##` heading, read as markdown. Its rows are table rows, with or without edge pipes, and
+list items with their continuation lines and the prose under them, quotes included; a nested list
+item or table row is a row of its own, and code holds no rows, no identifiers and no headings. A row
+names every issue identifier in it, bare or inside a Linear link. Closed means a `completed`, `canceled` or
+`duplicate` state; every other state, backlog and triage included, is open.
+
+The first line is `dydo survey <Project name> <UTC ISO time>: <n> findings`. Each finding follows on
+its own line, `<kind> <KEY> <title> — <reason>`, sorted by kind and then key:
+
+| Kind | Finding |
+|---|---|
+| `no-ledger` | The body has no ledger section; its key is `-`. Every open issue is then `unlaned`. |
+| `pickable` | An unstarted, unassigned Project issue with no open blocker, as the map draws it, and not already `unblocked`. |
+| `question-no-priority` | An open Project issue labelled `Question` with no priority. |
+| `stale-row` | A ledger row whose named issues in the read graph are all closed, unless it is a table row whose `State` cell, the column under a `State` header, is `done` (trimmed, any case, backticks allowed). A list item, or a row of a table with no `State` column, is always stale then. |
+| `started-unassigned` | A started Project issue with no assignee. |
+| `unblocked` | An open, unassigned issue in the Project or linked from it, with at least one `blocks` relation into it and every blocker closed. For a linked issue, only the blockers in the Project's graph are seen. |
+| `uncontracted` | An unassigned Backlog Project issue with no open blocker, waiting to be contracted to `Todo`. |
+| `unlaned` | An open Project issue that no ledger row names, nor its parent's. |
+
+A successful read exits `0`, findings or not. An argument that is not one Project UUID, slugId or
+Linear Project URL, and an unknown Project, are usage errors with exit `2`; the message names what
+Linear lacked. An API or network
+failure exits `2` with a message naming it. `DYDO_LINEAR_ENDPOINT` is the same test seam as for
+`dydo map`.
 
 ---
 
@@ -498,8 +541,11 @@ about four seconds, and never prints `no` after a successful merge).
 
 `dydo init` and `--join` write narrow allow rules for both hosts (see [dydo init](#dydo-init)),
 and the guard lets a sub-agent run it: a Merge Sub-ticket's code-writer runs it. The guard hard blocks
-for alternative merge paths are planned, pending in DYD-425. The Claude bash/Codex PowerShell parity
-gate is planned, pending in DYD-426; writing these rules does not prove host parity.
+the other merge routes for every caller: raw `gh pr merge`, `gh api` and GraphQL merge calls, a
+`git push` to the default branch and default-branch changes
+([dydo guard](#dydo-guard)); each refusal names `dydo merge`.
+The Claude bash/Codex PowerShell parity gate is planned, pending in DYD-426; writing these rules or
+shipping the blocks does not prove host parity.
 
 ---
 

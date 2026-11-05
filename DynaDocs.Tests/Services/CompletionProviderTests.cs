@@ -18,6 +18,7 @@ public class CompletionProviderTests
     [InlineData("complete")]
     [InlineData("validate")]
     [InlineData("map")]
+    [InlineData("survey")]
     public void TopLevelCommands_ContainsCommand(string command)
     {
         var completions = CompletionProvider.GetCompletions(1, ["dydo"]).ToList();

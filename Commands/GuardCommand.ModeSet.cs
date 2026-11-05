@@ -17,7 +17,7 @@ public static partial class GuardCommand
     private const int AskUser = -1;
 
     /// <summary>The <c>--host</c> value in the Claude Code hook command dydo init writes.</summary>
-    internal const string ClaudeHost = "claude";
+    internal const string ClaudeHost = ClaudeGuardWiring.Host;
 
     // Claude Code prompts on a PreToolUse ask in these modes, auto included. bypassPermissions and
     // dontAsk never prompt, and Codex parses ask but runs the tool, so those are denied.

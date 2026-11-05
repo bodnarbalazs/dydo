@@ -256,4 +256,135 @@ public class ValidationServiceTests : IDisposable
     }
 
     #endregion
+
+    #region ValidateSystem - Claude guard wiring
+
+    private const string ClaudeSettings = ".claude/settings.json";
+
+    private const string Rejoin = "Claude agents run without the dydo guard: {0}. Run 'dydo init claude --join'.";
+
+    private const string FixJson =
+        "Claude agents run without the dydo guard: {0}. Fix the JSON, then run 'dydo init claude --join'.";
+
+    private const string WiredSettings = """
+        {"hooks":{"PreToolUse":[
+          {"matcher":"Bash","hooks":[{"type":"command","command":"echo before"}]},
+          {"matcher":"Anything","hooks":[{"type":"command","command":"echo mixed"},{"type":"command","command":"dydo guard --host claude"}]}
+        ]}}
+        """;
+
+    private void WriteClaudeSettings(string fileName, string content)
+    {
+        Directory.CreateDirectory(Path.Combine(_testDir, ".claude"));
+        File.WriteAllText(Path.Combine(_testDir, ".claude", fileName), content);
+    }
+
+    private List<ValidationIssue> ClaudeIssues() =>
+        _service.ValidateSystem(_testDir).Where(i => i.File == ClaudeSettings).ToList();
+
+    [Theory]
+    [InlineData(WiredSettings)]
+    [InlineData("\uFEFF" + WiredSettings)]
+    public void ValidateSystem_ClaudeRecordedWithGuardWired_ReportsNothing(string settings)
+    {
+        CreateDydoJson();
+        WriteClaudeSettings("settings.json", settings);
+
+        Assert.Empty(_service.ValidateSystem(_testDir));
+    }
+
+    [Theory]
+    [InlineData("{}", "it has no PreToolUse hook running 'dydo guard --host claude'")]
+    [InlineData("""{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"dydo guard"}]}]}}""",
+        "it has no PreToolUse hook running 'dydo guard --host claude'")]
+    [InlineData("""{"hooks":{"PostToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"dydo guard --host claude"}]}]}}""",
+        "it has no PreToolUse hook running 'dydo guard --host claude'")]
+    [InlineData("""{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":" dydo guard --host claude"}]}]}}""",
+        "it has no PreToolUse hook running 'dydo guard --host claude'")]
+    [InlineData("""{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":42}]}]}}""",
+        "it has no PreToolUse hook running 'dydo guard --host claude'")]
+    [InlineData("""{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":["dydo guard --host claude"]}]}}""",
+        "it has no PreToolUse hook running 'dydo guard --host claude'")]
+    [InlineData("""{"hooks":{"PreToolUse":["dydo guard --host claude",{"matcher":"Bash"}]}}""",
+        "it has no PreToolUse hook running 'dydo guard --host claude'")]
+    [InlineData("""{"hooks":{"PreToolUse":{"matcher":"Bash"}}}""",
+        "it has no PreToolUse hook running 'dydo guard --host claude'")]
+    [InlineData("""{"hooks":[]}""", "it has no PreToolUse hook running 'dydo guard --host claude'")]
+    public void ValidateSystem_ClaudeRecordedWithoutGuardHook_WarnsWithRejoin(string settings, string reason)
+    {
+        CreateDydoJson();
+        WriteClaudeSettings("settings.json", settings);
+
+        var issue = Assert.Single(ClaudeIssues());
+
+        Assert.Equal("warning", issue.Severity);
+        Assert.Equal(string.Format(Rejoin, reason), issue.Message);
+    }
+
+    [Fact]
+    public void ValidateSystem_ClaudeRecordedWithoutSettingsFile_WarnsWithRejoin()
+    {
+        CreateDydoJson();
+
+        var issue = Assert.Single(_service.ValidateSystem(_testDir));
+
+        Assert.Equal("warning", issue.Severity);
+        Assert.Equal(ClaudeSettings, issue.File);
+        Assert.Equal(string.Format(Rejoin, "the file is missing"), issue.Message);
+    }
+
+    [Fact]
+    public void ValidateSystem_ClaudeGuardOnlyInLocalSettings_WarnsWithRejoin()
+    {
+        CreateDydoJson();
+        WriteClaudeSettings("settings.local.json", WiredSettings);
+
+        var issue = Assert.Single(ClaudeIssues());
+
+        Assert.Equal(string.Format(Rejoin, "the file is missing"), issue.Message);
+    }
+
+    [Theory]
+    [InlineData("{not valid json", "the file is not valid JSON")]
+    [InlineData("", "the file is not valid JSON")]
+    [InlineData("""{"hooks":{},"hooks":{}}""", "the file is not valid JSON")]
+    [InlineData("""{"hooks":{"PreToolUse":[{"hooks":[{"command":"dydo guard --host claude","command":"x"}]}]}}""",
+        "the file is not valid JSON")]
+    [InlineData("[]", "the file is not a JSON object")]
+    [InlineData("null", "the file is not a JSON object")]
+    [InlineData("\"dydo guard --host claude\"", "the file is not a JSON object")]
+    public void ValidateSystem_ClaudeSettingsMalformedOrNotObject_WarnsToFixJsonFirst(string settings, string reason)
+    {
+        CreateDydoJson();
+        WriteClaudeSettings("settings.json", settings);
+
+        var issue = Assert.Single(ClaudeIssues());
+
+        Assert.Equal("warning", issue.Severity);
+        Assert.Equal(string.Format(FixJson, reason), issue.Message);
+    }
+
+    [Theory]
+    [InlineData("""{"version":1,"structure":{"root":"dydo"},"integrations":{"claude":false,"codex":true}}""")]
+    [InlineData("""{"version":1,"structure":{"root":"dydo"},"integrations":{"codex":true}}""")]
+    [InlineData("""{"version":1,"structure":{"root":"dydo"}}""")]
+    public void ValidateSystem_ClaudeNotRecorded_ChecksNoClaudeSettings(string config)
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), config);
+
+        Assert.Empty(_service.ValidateSystem(_testDir));
+    }
+
+    [Fact]
+    public void ValidateSystem_InvalidDydoJson_ChecksNoClaudeSettings()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"), """{"integrations":{"claude":true},"testing":{"runner":[]}}""");
+
+        var issues = _service.ValidateSystem(_testDir);
+
+        Assert.NotEmpty(issues);
+        Assert.All(issues, i => Assert.Equal("dydo.json", i.File));
+    }
+
+    #endregion
 }

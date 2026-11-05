@@ -541,6 +541,26 @@ public class GuardPrReadyTests : IntegrationTestBase
         ]));
     }
 
+    // R2-B1: bash hands gh the expanded operand, so an operand the guard cannot resolve to a literal
+    // path keeps the warning, even when its literal part names an in-tree reviewed file.
+    [Fact]
+    public async Task PrCreate_BodyFileOperandWithAnExpansion_Warns()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/reviewed.md", ReviewedBody);
+        WriteFile("dydo/agents/reviewed.md.plain", "DYD-1\n\n## Summary\n");
+        // A file literally named as the unexpanded operand, which bash never opens.
+        WriteFile("dydo/agents/reviewed.md$SUFFIX", ReviewedBody);
+
+        Assert.Empty(await Misses(denied: true,
+        [
+            "gh pr create -F \"dydo/agents/reviewed.md$(printf .plain)\"",
+            "gh pr create -F \"dydo/agents/reviewed.md`printf .plain`\"",
+            "SUFFIX=.plain; gh pr create -F \"dydo/agents/reviewed.md$SUFFIX\"",
+        ], ReviewBlockWarning));
+        (await GuardWithStdinAsync(Payload("gh pr create -F \"dydo/agents/reviewed.md\""))).AssertPreToolUseAllowed();
+    }
+
     // A directory beside the test's tree, outside it, holding a body with the review block.
     private sealed class OutsideDirectory : IDisposable
     {

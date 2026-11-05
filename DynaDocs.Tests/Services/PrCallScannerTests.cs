@@ -542,6 +542,43 @@ public class PrCallScannerTests
         Assert.Null(PrCallScanner.BodyFileAt(command, 0, ShellDialect.Posix));
     }
 
+    // R2-B1: a body-file operand holding anything the shell expands names no file the guard can
+    // know, so it names none and the warning stays. An expansion in another word leaves it alone.
+    [Theory]
+    [InlineData("Posix", "gh pr create -F \"a.md$(printf .plain)\"")]
+    [InlineData("Posix", "gh pr create -F \"a.md`printf .plain`\"")]
+    [InlineData("Posix", "gh pr create -F a.md`printf .plain`")]
+    [InlineData("Posix", "gh pr create -F \"a.md$SUFFIX\"")]
+    [InlineData("Posix", "gh pr create -F $BODY")]
+    [InlineData("Posix", "gh pr create -F \"${BODY}\"")]
+    [InlineData("Posix", "gh pr create --body-file=\"$(echo a.md)\"")]
+    [InlineData("Posix", "gh pr create -F\"$BODY\"")]
+    [InlineData("Posix", "gh pr create -F ~/a.md")]
+    [InlineData("Posix", "gh pr create -F a*.md")]
+    [InlineData("Posix", "gh pr create -F a?.md")]
+    [InlineData("Posix", "gh pr create -F a[12].md")]
+    [InlineData("Posix", "gh pr create -F a{1,2}.md")]
+    [InlineData("PowerShell", "gh pr create -F \"a$suffix.md\"")]
+    [InlineData("PowerShell", "gh pr create -F $body")]
+    [InlineData("PowerShell", "gh pr create -F \"a$(Get-Suffix).md\"")]
+    [InlineData("PowerShell", "gh pr create -F (Get-Body)")]
+    [InlineData("PowerShell", "gh pr create -F @body")]
+    [InlineData("Unknown", "gh pr create -F \"a.md$(printf .plain)\"")]
+    public void BodyFileWithAnExpansion_NamesNone(string dialect, string command)
+    {
+        Assert.Null(PrCallScanner.BodyFileAt(command, 0, Enum.Parse<ShellDialect>(dialect)));
+    }
+
+    [Theory]
+    [InlineData("gh pr create --title \"$(git log -1 --format=%s)\" -F a.md", "a.md")]
+    [InlineData("gh pr create -F a.md --title \"$TITLE\"", "a.md")]
+    [InlineData("gh pr create -F \"$OLD\" -F a.md", "a.md")]
+    [InlineData("gh pr create -F \"dydo/agents/a b.md\"", "dydo/agents/a b.md")]
+    public void ExpansionOutsideTheBodyFileOperand_LeavesItRead(string command, string file)
+    {
+        Assert.Equal(file, PrCallScanner.BodyFileAt(command, 0, ShellDialect.Posix));
+    }
+
     // An unknown shell reads the call both ways: one file when they agree, none when they differ.
     [Theory]
     [InlineData("Unknown", @"gh pr create -F a.md", "a.md")]

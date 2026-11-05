@@ -1292,7 +1292,24 @@ public class GuardPrReadyTests : IntegrationTestBase
     // A clean tree would let a call the reading found through, so only the unread refusal denies these.
     [Theory]
     [MemberData(nameof(FailedReadingsWithALaterGhWord))]
-    public async Task FailedReading_LaterGhWord_FromACleanTree_IsRefusedUnreadOnFirstAndRetry(string tool, object command)
+    public Task FailedReading_LaterGhWord_FromACleanTree_IsRefusedUnreadOnFirstAndRetry(string tool, object command) =>
+        AssertRefusedUnreadFromACleanTree(tool, command);
+
+    // An encoded command shows no gh word; pwsh or powershell reads it.
+    public static TheoryData<string, object> FailedReadingsWithALaterEncodedCommand => new()
+    {
+        { "Bash", PrCallScannerTests.EchoCase + "; pwsh -EncodedCommand " + PrCallScannerTests.EncodedGhPrReady },
+        { "PowerShell", PrCallScannerTests.EscapedApostrophe + "; powershell -ec " + PrCallScannerTests.EncodedGhPrReady },
+        { "Bash", "bash -c '" + PrCallScannerTests.EchoCase + "; pwsh -enc " + PrCallScannerTests.EncodedGhPrReady + "'" },
+        { "Bash", new[] { "bash", "-lc", PrCallScannerTests.EchoCase + "; pwsh -EncodedCommand " + PrCallScannerTests.EncodedGhPrReady } },
+    };
+
+    [Theory]
+    [MemberData(nameof(FailedReadingsWithALaterEncodedCommand))]
+    public Task FailedReading_LaterEncodedCommand_FromACleanTree_IsRefusedUnreadOnFirstAndRetry(string tool, object command) =>
+        AssertRefusedUnreadFromACleanTree(tool, command);
+
+    private async Task AssertRefusedUnreadFromACleanTree(string tool, object command)
     {
         await InitPushedProject();
 

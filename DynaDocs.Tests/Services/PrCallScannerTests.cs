@@ -476,4 +476,26 @@ public class PrCallScannerTests
     {
         Assert.Contains(PrCallScanner.FindInArgv(argv), call => call.Wrapper != null);
     }
+
+    // An encoded command hides gh without its word; only pwsh or powershell reads one (DYD-515).
+    internal const string EncodedGhPrReady = "ZwBoACAAcAByACAAcgBlAGEAZAB5AA==";
+
+    [Theory]
+    [InlineData(EchoCase + "; pwsh -EncodedCommand " + EncodedGhPrReady, "Posix")]
+    [InlineData(ArchIdiom + "\n/usr/bin/PWSH.EXE -enc " + EncodedGhPrReady, "Posix")]
+    [InlineData(EscapedApostrophe + "; powershell -ec " + EncodedGhPrReady, "PowerShell")]
+    [InlineData("bash -c '" + EchoCase + "; pwsh -enc " + EncodedGhPrReady + "'", "Posix")]
+    [InlineData("bash -c '" + EchoCase + "; powershell.exe -EncodedCommand " + EncodedGhPrReady + "'", "PowerShell")]
+    public void FailedReading_LaterEncodedCommand_IsRefusedUnread(string command, string dialect)
+    {
+        Assert.Contains(PrCallScanner.Find(command, Enum.Parse<ShellDialect>(dialect)), call => call.Wrapper != null);
+    }
+
+    [Theory]
+    [InlineData(new object[] { new[] { "bash", "-lc", EchoCase + "; pwsh -EncodedCommand " + EncodedGhPrReady } })]
+    [InlineData(new object[] { new[] { "pwsh", "-Command", EscapedApostrophe + "; pwsh -ec " + EncodedGhPrReady } })]
+    public void FailedReading_ArgvWithALaterEncodedCommand_IsRefusedUnread(string[] argv)
+    {
+        Assert.Contains(PrCallScanner.FindInArgv(argv), call => call.Wrapper != null);
+    }
 }

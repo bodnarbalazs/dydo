@@ -19,11 +19,13 @@ syntax". The refusal fired in clean and dirty trees alike, on first call and on 
 
 - A line the check cannot finish reading is still refused unread when it holds a partial PR call. When
   it holds a nested part (a `$(...)`, a group, an expanding body), it is refused unread only when its
-  raw text holds the word `gh`, under any path, case or `.exe`
+  raw text holds the word `gh`, `pwsh` or `powershell`, under any path, case or `.exe`
   ([Guard System](../../../../understand/guard-system.md)). This is the same raw-shape gate the
   password-store, Python-stdin and mode-set rules use. Wrapper strings, argv arrays and substitutions
-  are covered, since gh still shows in the text.
-- A real gh PR call after such a failure is still refused unread, on the same paths.
+  are covered, since gh still shows in the text. An encoded call (`pwsh -EncodedCommand`, `-enc`,
+  `-ec`) shows no gh, so the word of the program that decodes it counts too.
+- A real gh PR call after such a failure is still refused unread, on the same paths, and so is an
+  encoded PowerShell command after it.
 
 No change in this entry renames a term mechanically, so it has no merge normalisations.
 

@@ -91,8 +91,9 @@ internal static partial class PrCallScanner
         ];
         // A failed child may hide later calls, and a partial call may have lost its target flags.
         // Refuse either unread; an unfinished literal alone still introduces no PR call. A hidden
-        // call needs gh, so a line whose raw text holds no gh word hides none (DYD-515).
-        return reading.Failed && (calls.Count > 0 || (reading.Source.Children.Count > 0 && GhWordRegex().IsMatch(reading.Source.Text)))
+        // call needs gh, or pwsh or powershell to run it encoded, so a line whose raw text holds
+        // none of those words hides none (DYD-515).
+        return reading.Failed && (calls.Count > 0 || (reading.Source.Children.Count > 0 && HiderWordRegex().IsMatch(reading.Source.Text)))
             ? [new PrCall(null, Wrapper: "unreadable shell syntax")]
             : calls;
     }
@@ -310,9 +311,10 @@ internal static partial class PrCallScanner
     private static IEnumerable<string> Values(List<(string Name, string Value)> options, string name) =>
         options.Where(o => o.Name == name).Select(o => o.Value);
 
-    // gh as a word anywhere, under any path, case or .exe; over-matching only keeps a refusal.
-    [GeneratedRegex(@"\bgh\b", RegexOptions.IgnoreCase)]
-    private static partial Regex GhWordRegex();
+    // gh, or pwsh or powershell (the only programs that run -EncodedCommand), as a word anywhere,
+    // under any path, case or .exe; over-matching only keeps a refusal.
+    [GeneratedRegex(@"\b(?:gh|pwsh|powershell)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex HiderWordRegex();
 
     [GeneratedRegex(@"\{(owner|repo|branch)\}")]
     private static partial Regex GhPlaceholderRegex();

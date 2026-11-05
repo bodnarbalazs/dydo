@@ -397,6 +397,24 @@ Bullets 1 and 2 replace the two parks kept in the amendments above.
 
 Amended by [DR 051](./051-captains-by-default-admiral-on-invocation.md) (2026-09-24): the admiral runs only when the human invokes it, the map holder charts without a project-planner and sets Project statuses, and a repository plan file is written only for a cross-cutting architecture contract (§1, §2, §3, §8, §10).
 
+## Amendment 2026-11-04 - the scheduled check-in
+
+Decided by the human on 2026-11-04 in the
+[DYD-520](https://linear.app/bodnar-balazs/issue/DYD-520) thread, its witness. §2's two signals
+become three: an admiral also wakes on its scheduled check-in. That check-in is a T3
+`schedule_task` interval bound to the admiral's own thread, every 20 minutes, that runs
+`skills/roles/officers/admiral/resources/check-in.md`. The admiral keeps the schedule while work is
+in flight or pickable, and deletes it when it waits on the human's word alone.
+
+§2 rejected a scheduled poll because Codex had no scheduler. T3 now schedules for both Claude and
+Codex admirals, so the wake is worded for T3 alone, with no host-neutral fallback. The evidence is
+the five misses DYD-520 records: a blocker-cleared ticket left unseen, Backlog work treated as
+later, no live answer to what is in flight, lanes stalled silently after a host restart, and no
+wake on an unblocking merge.
+
+The check-in is a scheduled wake. It does not poll running delegates, and the never-poll rule
+stands. §2's text is kept as written; this amendment governs where they differ.
+
 ---
 
 ## Affects

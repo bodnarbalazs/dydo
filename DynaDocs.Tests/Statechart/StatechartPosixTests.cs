@@ -37,6 +37,15 @@ public class StatechartPosixTests
         Assert.Throws<IOException>(() => PosixStatechartProcess.RequireGroup(Environment.ProcessId, int.MaxValue));
     }
 
+    // A task the kernel releases while ps reads it has no group yet: procps lists its pgid -1 unsigned, as 4294967295.
+    [Fact]
+    public void AGroupInspectionReadsATaskBeingReleasedAsNoMember()
+    {
+        Assert.False(PosixStatechartProcess.ListsLiveMember("   4321 Z\n4294967295 X+\n4294967295 Z+\n", 4321));
+        Assert.True(PosixStatechartProcess.ListsLiveMember("4294967295 X+\n   4321 S\n", 4321));
+        Assert.Throws<InvalidDataException>(() => PosixStatechartProcess.ListsLiveMember("   4321\n", 4321));
+    }
+
     // A child that never became its own group leader cannot stand for an owned group, and a reaped one is gone for good.
     [SkippableFact]
     public async Task AnUnconfirmedChildIsNeitherAGroupNorReusableAfterItsReap()

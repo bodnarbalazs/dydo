@@ -1243,6 +1243,17 @@ class EvaluatorTests(unittest.TestCase):
                 self.assertEqual("inconclusive", evaluation["verdict"])
                 self.assertEqual({("r", "U+0301")},
                                  {(b["call"], b["code_point"]) for b in evaluation["facts"]["outside_bound"]})
+            with self.subTest(direction=direction, candidate="unguarded readback at a decision point"):
+                # No guard receipt of its own, so only attribution reads its command; U+2019 is the program word of the
+                # body eval reads again, U+201C an inert echo argument.
+                command, readback = set_command(direction), "dydo mode show; echo \u201cdone\u201d; eval \u2019"
+                story = opening(direction).call("s1", command, warn()).open("s2", command=command) \
+                    .open("q", command=readback).receipt(passed(), "s2").receipt(setter(direction, 1)) \
+                    .receipt(show(INITIAL[direction])).close("s2").close("q")
+                evaluation = incomplete(story, direction).evaluate("failed", direction)
+                self.assertEqual("inconclusive", evaluation["verdict"], evaluation["checks"])
+                self.assertEqual({("q", "U+2019", "word")}, {(b["call"], b["code_point"], b["point"])
+                                                            for b in evaluation["facts"]["outside_bound"]})
             with self.subTest(direction=direction, candidate="readback with a comment"):
                 evaluation = self.parallel(direction, True, "dydo mode show # it\u2019s").evaluate("failed", direction)
                 self.assertEqual(("pass", []), (evaluation["verdict"], evaluation["facts"]["outside_bound"]),

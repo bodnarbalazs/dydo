@@ -623,8 +623,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static readonly HashSet<string> PythonInfoFlags = new(StringComparer.Ordinal)
         { "-V", "-VV", "--version", "-h", "-?", "--help", "--help-env", "--help-xoptions", "--help-all", "--list", "--list-paths", "-0", "-0p" };
 
-    // Where a Python call takes its program from, when not from a script, -c or -m.
-    private enum PythonSource { None, Dash, NoOperand }
+    // Where a Python call takes its program from, when not from a script, -c or -m; a later one reads stdin more surely.
+    private enum PythonSource { None, NoOperand, Dash }
 
     /// <summary>
     /// A Python program is read from stdin when a Python call names - as its program, or names none
@@ -666,17 +666,30 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// <summary>
     /// Where a Python call (python, python3.12, pythonw or py, under any path, case or .exe) takes its
     /// program: <c>Dash</c> when its first operand is -, <c>NoOperand</c> when it has none, so it reads
-    /// stdin when something feeds it and prompts otherwise. A script operand, -c or -m (a short option
-    /// cluster naming c or m), a help or version flag, operands xargs supplies, a lookup by
-    /// command -v or -V, and any other command are <c>None</c>.
+    /// stdin when something feeds it and prompts otherwise. The call is the command's program, or the
+    /// program a run subcommand starts (<see cref="RunPythonPrograms"/>). A script operand, -c or -m (a
+    /// short option cluster naming c or m), a help or version flag, operands xargs supplies, a lookup
+    /// by command -v or -V, and any other command are <c>None</c>.
     /// </summary>
     private static PythonSource PythonSourceOf(IReadOnlyList<string> words)
     {
         var at = CommandPosition.Skip(words);
-        if (at >= words.Count || !PythonProgramRegex().IsMatch(CommandPosition.ProgramName(words[at])) || LooksUp(words, at))
+        if (at >= words.Count || LooksUp(words, at))
             return PythonSource.None;
 
-        for (var i = at + 1; i < words.Count; i++)
+        IEnumerable<int> programs = IsPythonProgram(words[at]) ? [at] : RunPythonPrograms(words, at);
+        var source = programs.Select(program => PythonArgumentsSource(words, program)).DefaultIfEmpty().Max();
+        return source == PythonSource.NoOperand && words.Take(at).Any(word => CommandPosition.ProgramName(word) == "xargs")
+            ? PythonSource.None
+            : source;
+    }
+
+    private static bool IsPythonProgram(string word) => PythonProgramRegex().IsMatch(CommandPosition.ProgramName(word));
+
+    // Where the Python call at words[program] takes its program from, by the words after it.
+    private static PythonSource PythonArgumentsSource(IReadOnlyList<string> words, int program)
+    {
+        for (var i = program + 1; i < words.Count; i++)
         {
             var word = words[i];
             if (word == "-")
@@ -688,7 +701,37 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
                 i++;
         }
 
-        return words.Take(at).Any(word => CommandPosition.ProgramName(word) == "xargs") ? PythonSource.None : PythonSource.NoOperand;
+        return PythonSource.NoOperand;
+    }
+
+    /// <summary>
+    /// The Python words a run subcommand may start, by one shape whatever the runner (uv run, poetry
+    /// run, conda run -n env, ...): the program's first operand is the word run, and Python is the
+    /// first operand after it, with options before each. An operand after an option may be that
+    /// option's value, so each run word that may be the first operand counts (<c>uv --directory run
+    /// run python -</c>), and so does each Python word that may be run's.
+    /// </summary>
+    private static IEnumerable<int> RunPythonPrograms(IReadOnlyList<string> words, int program) =>
+        LeadingOperands(words, program + 1).Where(i => words[i] == "run")
+            .SelectMany(run => LeadingOperands(words, run + 1)).Where(i => IsPythonProgram(words[i]));
+
+    // The operands from words[from] on that may be the first: each after an option, then the first
+    // after an operand or none (--name=value names its value).
+    private static IEnumerable<int> LeadingOperands(IReadOnlyList<string> words, int from)
+    {
+        var afterOption = false;
+        for (var i = from; i < words.Count; i++)
+        {
+            var option = words[i].Length > 1 && words[i][0] == '-';
+            if (!option)
+            {
+                yield return i;
+                if (!afterOption)
+                    yield break;
+            }
+
+            afterOption = option && !words[i].Contains('=');
+        }
     }
 
     // command -v or -V before the program only names it.

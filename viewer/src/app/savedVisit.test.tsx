@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import { afterEach, expect, it, vi } from 'vitest';
 import { makeGraph, makeIssue } from '../graph/testIssues';
@@ -117,5 +117,5 @@ it('Refresh stays disabled until the first fresh layout has landed', async () =>
   expect(screen.getByRole('button', { name: 'Refresh' }).hasAttribute('disabled')).toBe(true);
   await act(async () => { laid.resolve(input); await laid.promise; });
   expect(await screen.findByText('Issue fresh')).toBeTruthy();
-  expect(screen.getByRole('button', { name: 'Refresh' }).hasAttribute('disabled')).toBe(false);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh' }).hasAttribute('disabled')).toBe(false));
 });

@@ -853,7 +853,7 @@ describe('App refresh in place', () => {
     framesSettled();
     expect(transform()).toBe(viewport);
     expect(window.location.search).toBe(search);
-    expect(refreshButton().disabled).toBe(false);
+    await waitFor(() => expect(refreshButton().disabled).toBe(false));
     expect(screen.getByText('Project One: 5 tickets, 1 plates')).toBeTruthy();
   });
 
@@ -944,7 +944,7 @@ describe('App refresh in place', () => {
     // The refreshed map is on screen; a refit it asked for would land with these frames.
     framesSettled();
     expect(transform()).toBe(viewport);
-    expect(refreshButton().disabled).toBe(false);
+    await waitFor(() => expect(refreshButton().disabled).toBe(false));
     watch.disconnect();
     expect(placeholders).toEqual([]);
   });

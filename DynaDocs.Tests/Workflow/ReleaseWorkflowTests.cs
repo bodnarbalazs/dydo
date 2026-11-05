@@ -133,6 +133,8 @@ public sealed class ReleaseWorkflowTests
     [InlineData("--disable-warning=ExperimentalWarning --test-reporter=spec", "--disable-warning=ExperimentalWarning --test --test-reporter=spec")]
     [InlineData(" --test-reporter=tap --test-reporter-destination=${{ runner.temp }}/statechart-windows.tap", "")]
     [InlineData("run: ./.github/workflows/assert-node-tests-ran.ps1", "# run: ./.github/workflows/assert-node-tests-ran.ps1")]
+    [InlineData(" -MinimumTests 6", " -MinimumTests 2")]
+    [InlineData(" -MinimumTests 6", "")]
     [InlineData("      - name: " + StatechartGuardStep, "      - name: " + StatechartGuardStep + "\n        if: false")]
     [InlineData("      - name: " + StatechartGuardStep, "      - name: " + StatechartGuardStep + "\n        continue-on-error: true")]
     [InlineData("      - name: " + StatechartTestStep, "      - name: " + StatechartTestStep + "\n        continue-on-error: true")]
@@ -186,22 +188,6 @@ public sealed class ReleaseWorkflowTests
             Assert.Contains(check, script);
     }
 
-    [Fact]
-    public void NodeTestGuard_RejectsAMissingReportZeroTestsSkipsTodosAndFailures()
-    {
-        var guard = File.ReadAllText(RepositoryFile(".github", "workflows", "assert-node-tests-ran.ps1"));
-
-        foreach (var check in new[]
-        {
-            "if (-not (Test-Path -LiteralPath $Tap -PathType Leaf)) { throw",
-            "if ($missing) { throw",
-            "if ($counts.tests -eq 0) { throw",
-            "if ($counts.skipped -ne 0 -or $counts.todo -ne 0) { throw",
-            "if ($counts.pass -ne $counts.tests) { throw",
-        })
-            Assert.Contains(check, guard);
-    }
-
     private static void AssertStatechartWindowsJob(string job)
     {
         Assert.Equal("windows-latest", JobField(job, "runs-on"));
@@ -217,7 +203,7 @@ public sealed class ReleaseWorkflowTests
         Assert.Equal("skills/engineering/statechart/scripts", StepField(tests, "working-directory"));
         Assert.Equal(StatechartTestRun, StepField(tests, "run"));
         Assert.Equal("pwsh", StepField(guard, "shell"));
-        Assert.Equal($"./.github/workflows/assert-node-tests-ran.ps1 -Tap '{StatechartTap}'", StepField(guard, "run"));
+        Assert.Equal($"./.github/workflows/assert-node-tests-ran.ps1 -Tap '{StatechartTap}' -MinimumTests 6", StepField(guard, "run"));
         foreach (var step in new[] { tests, guard })
         {
             Assert.Null(StepField(step, "if"));
@@ -769,7 +755,7 @@ public sealed class ReleaseWorkflowTests
         return count;
     }
 
-    private static string RepositoryFile(params string[] parts)
+    internal static string RepositoryFile(params string[] parts)
     {
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
         {

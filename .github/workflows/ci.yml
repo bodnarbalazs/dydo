@@ -526,9 +526,10 @@ jobs:
           STATECHART_PELE: ${{ steps.statechart.outputs.pele }}
         run: node --disable-warning=ExperimentalWarning --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=${{ runner.temp }}/statechart-windows.tap test/windows.test.ts
 
+      # windows.test.ts holds 6 tests: 2 job-ownership cases and 4 real-TLC override cases (DYD-428).
       - name: Require every Windows statechart test to run
         shell: pwsh
-        run: ./.github/workflows/assert-node-tests-ran.ps1 -Tap '${{ runner.temp }}/statechart-windows.tap'
+        run: ./.github/workflows/assert-node-tests-ran.ps1 -Tap '${{ runner.temp }}/statechart-windows.tap' -MinimumTests 6
 
   viewer:
     runs-on: ubuntu-latest

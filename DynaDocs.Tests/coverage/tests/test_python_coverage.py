@@ -68,6 +68,144 @@ subject.only()
 """
 
 
+_ASSERTING_SUBJECT = 'def work(value=True):\n    """Docstring."""\n    assert value\n    return 1\n'
+
+
+def _children_driver(*flag_sets):
+    """An unmeasured (-S) command that runs one measured child per interpreter flag set."""
+    return "import subprocess, sys\n" + "".join(
+        f"subprocess.run([sys.executable, *{flags!r}, '-c', 'import subject; subject.work()'], check=True)\n"
+        for flags in flag_sets)
+
+
+_DAMAGE_CACHE = """\
+import json, os, pickle, subprocess, sys
+from pathlib import Path
+from python_runtime import _seal, _unsealed
+
+config_path = Path(os.environ["DYDO_PYTHON_COVERAGE_CONFIG"])
+config = json.loads(config_path.read_text(encoding="utf-8"))
+cache = Path(config["inventory"])
+case = sys.argv[1]
+if case == "no cache":
+    del config["inventory"]
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+elif case == "missing":
+    cache.unlink()
+elif case == "unreadable":
+    cache.unlink()
+    cache.mkdir()
+elif case == "corrupt":
+    cache.write_bytes(b"not a pickle")
+elif case == "truncated":
+    cache.write_bytes(cache.read_bytes()[:-10])
+elif case == "wrong structure":
+    payload = _unsealed(cache.read_bytes())
+    payload["sources"] = {path: (digest, inventory[:2])
+                          for path, (digest, inventory) in payload["sources"].items()}
+    cache.write_bytes(_seal(pickle.dumps(payload)))
+elif case == "foreign schema":
+    cache.write_bytes(_seal(pickle.dumps({"schema": "foreign"})))
+subprocess.run([sys.executable, "-c", "import subject; subject.work()"], check=True)
+"""
+
+
+_TWO_CALLABLES = ("def work(flag=True):\n    if flag:\n        return list(item for item in (1, 2) if item)\n"
+                  "    return []\n\n\ndef helper():\n    return 2\n")
+
+
+# Each case leaves a cache that is sealed and unpickles, but whose subject.py entry is internally
+# inconsistent: a key, index, owner or id that the writer can never produce.
+_INCONSISTENT_CACHE = """\
+import json, os, pickle, subprocess, sys
+from pathlib import Path
+from python_runtime import _seal, _unsealed
+
+config_path = Path(os.environ["DYDO_PYTHON_COVERAGE_CONFIG"])
+config = json.loads(config_path.read_text(encoding="utf-8"))
+cache = Path(config["inventory"])
+payload = _unsealed(cache.read_bytes())
+entries = {Path(path).name: inventory for path, (_, inventory) in payload["sources"].items()}
+rows, module, index = entries["subject.py"]
+work, helper = rows
+elsewhere = entries["other.py"][0][0]
+qualname, line, points = work["_key"]
+damage = {
+    "empty index": index.clear,
+    "index missing a callable key": lambda: index.pop(work["_key"]),
+    "index missing the module key": lambda: index.pop(module["_key"]),
+    "index key at a sibling row": lambda: index.update({work["_key"]: helper}),
+    "index key at another source's row": lambda: index.update({work["_key"]: elsewhere}),
+    "row key absent": lambda: work.update(_key=None),
+    "row key a list": lambda: work.update(_key=[qualname, line, points]),
+    "row key line not an int": lambda: work.update(_key=(qualname, str(line), points)),
+    "row key positions a list": lambda: work.update(_key=(qualname, line, list(points))),
+    "row key position short": lambda: work.update(_key=(qualname, line, tuple(p[:3] for p in points))),
+    "module key absent": lambda: module.update(_key=None),
+    "row id not a string": lambda: work.update(id=[]),
+    "row id of another form": lambda: work.update(id="work:9:0"),
+    "two rows with one id": lambda: helper.update(id=work["id"]),
+    "row listed twice": lambda: rows.append(work),
+    "body line keys integers": lambda: work.update(body_lines={int(line): 0 for line in work["body_lines"]}),
+    "body line missing": lambda: work["body_lines"].pop("2"),
+    "body line in another form": lambda: work["body_lines"].update({"02": 0}),
+    "body line no code implies": lambda: work["body_lines"].update({"9": 0}),
+}
+case = sys.argv[1]
+if case == "no cache":
+    del config["inventory"]
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+elif case == "byte damage that still unpickles":
+    body = pickle.dumps(payload)
+    work["end_column"] += 1
+    damaged = pickle.dumps(payload)
+    assert len(body) == len(damaged) and sum(a != b for a, b in zip(body, damaged)) == 1
+    cache.write_bytes(_seal(body)[:-len(body)] + damaged)
+else:
+    damage[case]()
+    cache.write_bytes(_seal(pickle.dumps(payload)))
+subprocess.run([sys.executable, "-c", "import subject; subject.work(); subject.helper()"], check=True)
+"""
+
+
+# The facade with a writer bug forced into its serializer: the sealed inventory differs from the one computed.
+_MISMATCHED_WRITER = """\
+import copy, pickle, sys, types
+tools, case = sys.argv.pop(1), sys.argv.pop(1)
+sys.path.insert(0, tools)
+import python_coverage, python_runtime
+
+
+def mismatched(payload):
+    payload = copy.deepcopy(payload)
+    (rows, _, _), = (inventory for _, inventory in payload["sources"].values())
+    work = rows[0]
+    {"body line dropped": lambda: work["body_lines"].pop("2"),
+     "body line added": lambda: work["body_lines"].update({"9": 0}),
+     "end column shifted": lambda: work.update(end_column=work["end_column"] + 1),
+     "end line a float": lambda: work.update(end_line=float(work["end_line"]))}[case]()
+    return pickle.dumps(payload)
+
+
+if case not in ("no cache", "faithful"):
+    python_runtime.pickle = types.SimpleNamespace(dumps=mismatched, loads=pickle.loads)
+raise SystemExit(python_coverage.main())
+"""
+
+
+_UNCACHED_OR_AS_WRITTEN = """\
+import json, os, subprocess, sys
+from pathlib import Path
+
+if sys.argv[1] == "no cache":
+    config_path = Path(os.environ["DYDO_PYTHON_COVERAGE_CONFIG"])
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    del config["inventory"]
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+subprocess.run([sys.executable, "-c", "import subject; subject.work(); subject.helper()"], check=True)
+"""
+
+
 class PythonCoverageTests(unittest.TestCase):
     def campaign(self, root, output, sources, command):
         tools = Path(__file__).resolve().parents[1]
@@ -154,6 +292,118 @@ class PythonCoverageTests(unittest.TestCase):
             substituted = rejoin()
             self.assertEqual(2, substituted.returncode, substituted.stdout)
             self.assertIn("Mismatched Python callable body inventory", substituted.stderr)
+
+    def test_a_source_edited_after_the_campaign_inventory_is_counted_from_its_own_text(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+            (root / "edit.py").write_text(
+                "import subprocess, sys\nfrom pathlib import Path\n"
+                "Path('subject.py').write_text("
+                "'def work():\\n    return 1 + 1\\ndef added():\\n    return 2\\n', encoding='utf-8')\n"
+                "subprocess.run([sys.executable, '-c', 'import subject; subject.work()'], check=True)\n",
+                encoding="utf-8")
+            output = root / "evidence"
+            counters = self.campaign(root, output, ["subject.py"], ["{python}", "-S", "edit.py"])
+            config = json.loads((output / "config.json").read_text(encoding="utf-8"))
+            self.assertTrue(Path(config["inventory"]).is_file())
+        self.assertEqual({"work:1:0": 1, "added:3:0": 0},
+                         {row["id"]: row["execution_count"] for row in counters["callables"]})
+
+    def test_children_under_different_compile_states_are_refused_never_lost(self):
+        for flags in (["-O"], ["-OO"]):
+            with self.subTest(flags=flags), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                (root / "subject.py").write_text(_ASSERTING_SUBJECT, encoding="utf-8")
+                (root / "driver.py").write_text(_children_driver([], flags), encoding="utf-8")
+                output = root / "evidence"
+                result = _facade(root, output, ["subject.py"], ["{python}", "-S", "driver.py"])
+                receipts = len(list(output.glob("counter-*.json")))
+                self.assertEqual((2, 2), (result.returncode, receipts), result.stdout + result.stderr)
+                self.assertIn("Python counter body inventory mismatch", result.stderr)
+
+    def test_children_sharing_another_compile_state_are_counted_from_it(self):
+        for flags in (["-O"], ["-OO"]):
+            with self.subTest(flags=flags), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                (root / "subject.py").write_text(_ASSERTING_SUBJECT, encoding="utf-8")
+                (root / "driver.py").write_text(_children_driver(flags, flags), encoding="utf-8")
+                counters = self.campaign(root, root / "evidence", ["subject.py"],
+                                         ["{python}", "-S", "driver.py"])
+                self.assertEqual([("work:1:0", 2, {"4": 2})],
+                                 [(row["id"], row["execution_count"], row["body_lines"])
+                                  for row in counters["callables"]])
+
+    def test_an_unusable_inventory_cache_is_measured_as_if_there_were_none(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text(_ASSERTING_SUBJECT, encoding="utf-8")
+            (root / "damage.py").write_text(_DAMAGE_CACHE, encoding="utf-8")
+
+            def measured(case):
+                return self.campaign(root, root / f"evidence-{case.replace(' ', '-')}", ["subject.py"],
+                                     ["{python}", "-S", "damage.py", case])
+
+            expected = measured("no cache")
+            self.assertEqual([("work:1:0", 1)],
+                             [(row["id"], row["execution_count"]) for row in expected["callables"]])
+            for case in ("missing", "unreadable", "corrupt", "truncated", "wrong structure", "foreign schema"):
+                with self.subTest(cache=case):
+                    self.assertEqual(expected, measured(case))
+
+    def test_an_inconsistent_inventory_cache_is_measured_as_if_there_were_none(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text(_TWO_CALLABLES, encoding="utf-8")
+            (root / "other.py").write_text("def elsewhere():\n    return 3\n", encoding="utf-8")
+            (root / "damage.py").write_text(_INCONSISTENT_CACHE, encoding="utf-8")
+
+            def measured(case):
+                return self.campaign(root, root / f"evidence-{len(list(root.iterdir()))}",
+                                     ["subject.py", "other.py"], ["{python}", "-S", "damage.py", case])
+
+            expected = measured("no cache")
+            self.assertEqual([("elsewhere:1:0", 0, 0, 0), ("helper:7:0", 1, 0, 0), ("work:1:0", 1, 1, 3)],
+                             [(row["id"], row["execution_count"], len(row["branches"]),
+                               len(row["physical_branches"])) for row in expected["callables"]])
+            for case in ("empty index", "index missing a callable key", "index missing the module key",
+                         "index key at a sibling row", "index key at another source's row", "row key absent",
+                         "row key a list", "row key line not an int", "row key positions a list",
+                         "row key position short", "module key absent", "row id not a string",
+                         "row id of another form", "two rows with one id", "row listed twice",
+                         "body line keys integers", "body line missing", "body line in another form",
+                         "body line no code implies", "byte damage that still unpickles"):
+                with self.subTest(cache=case):
+                    self.assertEqual(expected, measured(case))
+
+    def test_a_cache_that_does_not_read_back_as_its_inventory_is_never_written(self):
+        tools = Path(__file__).resolve().parents[1]
+        python = tools.parents[1] / STATIC_GATE_INTERPRETER
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text(_TWO_CALLABLES, encoding="utf-8")
+            (root / "driver.py").write_text(_UNCACHED_OR_AS_WRITTEN, encoding="utf-8")
+            (root / "writer.py").write_text(_MISMATCHED_WRITER, encoding="utf-8")
+
+            def measured(case):
+                output = root / f"evidence-{len(list(root.iterdir()))}"
+                result = subprocess.run([
+                    str(python), str(root / "writer.py"), str(tools), case, "--root", str(root),
+                    "--output", str(output), "--sources-json", json.dumps(["subject.py"]),
+                    "--command-json", json.dumps(["{python}", "-S", "driver.py", case]),
+                ], cwd=root, text=True, capture_output=True)
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                return ((output / "inventory.pickle").exists(),
+                        json.loads((output / "counters.json").read_text()))
+
+            _, expected = measured("no cache")
+            self.assertEqual([("helper:7:0", 1, 0, 0), ("work:1:0", 1, 1, 3)],
+                             [(row["id"], row["execution_count"], len(row["branches"]),
+                               len(row["physical_branches"])) for row in expected["callables"]])
+            self.assertEqual((True, expected), measured("faithful"))
+            for case in ("body line dropped", "body line added", "end column shifted", "end line a float"):
+                with self.subTest(writer=case):
+                    self.assertEqual((False, expected), measured(case))
 
     def test_counter_union_refuses_every_inconsistent_receipt(self):
         base = _counter_receipt([_counter_row()])

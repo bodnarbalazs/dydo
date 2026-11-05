@@ -34,6 +34,16 @@ def write_file(path, text):
     return path
 
 
+def subreaper_flag():
+    """This process's PR_GET_CHILD_SUBREAPER flag on Linux, else None."""
+    if sys.platform != "linux":
+        return None
+    import ctypes
+    flag = ctypes.c_int()
+    ctypes.CDLL(None).prctl(37, ctypes.byref(flag), 0, 0, 0)  # PR_GET_CHILD_SUBREAPER
+    return flag.value
+
+
 class RunnerEnvironmentTests(unittest.TestCase):
     def test_child_uses_unknown_shell_and_parent_environment_is_preserved(self):
         with patch.dict(os.environ, {"SHELL": "/bin/bash", "DYDO_AGENT": "example"}):
@@ -441,13 +451,16 @@ class AssuranceCampaignTests(unittest.TestCase):
                                                  worktree / "owner", output, {})
 
     def test_assurance_campaign_publishes_evidence_when_the_producer_is_absent(self):
-        with tempfile.TemporaryDirectory() as folder:
+        with tempfile.TemporaryDirectory() as folder, subprocess.Popen(
+                [sys.executable, "-c", "import sys; sys.stdin.read()"], stdin=subprocess.PIPE) as sentinel:
             worktree = Path(folder) / "worktree"
             worktree.mkdir()
             published = Path(folder) / "published"
+            flag = subreaper_flag()
 
             self.assertEqual(2, run_tests._run_assurance_campaign(worktree, [], str(published)))
 
+            self.assertEqual((flag, None), (subreaper_flag(), sentinel.poll()))
             manifest = json.loads((published / "identities.json").read_text(encoding="utf-8"))
             self.assertEqual([], manifest["artifacts"])
             self.assertTrue(manifest["campaign"]["cleanup_confirmed"])

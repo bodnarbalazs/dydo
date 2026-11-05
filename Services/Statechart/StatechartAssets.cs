@@ -8,13 +8,21 @@ using DynaDocs.Utils;
 internal sealed class StatechartAssets
 {
     private readonly Assembly _assembly = typeof(StatechartAssets).Assembly;
+    private readonly IReadOnlyDictionary<string, byte[]> _replaced;
     private readonly byte[] _manifest;
     public string Digest { get; }
     public string LockDigest { get; }
     public string Release { get; }
+    // The pinned tla2tools.jar every checker input must match, from this payload's dependency lock.
+    public string CheckerDigest { get; }
 
-    public StatechartAssets()
+    public StatechartAssets() : this(new Dictionary<string, byte[]>()) { }
+
+    // A test-built asset set: these resources replace the embedded ones and face the same checks, so a manifest must
+    // name its lock's digest and every file it lists.
+    internal StatechartAssets(IReadOnlyDictionary<string, byte[]> replaced)
     {
+        _replaced = replaced;
         _manifest = ReadResource("Statechart/manifest.json");
         Digest = Hash(_manifest);
         using var json = JsonDocument.Parse(_manifest);
@@ -27,6 +35,8 @@ internal sealed class StatechartAssets
         LockDigest = json.RootElement.GetProperty("dependencyLockSha256").GetString()!;
         if (Hash(ReadResource("Statechart/lock.json")) != LockDigest)
             throw new InvalidDataException("Embedded statechart dependency lock does not match its payload.");
+        using var dependencyLock = JsonDocument.Parse(DependencyLock());
+        CheckerDigest = dependencyLock.RootElement.GetProperty("tlc").GetProperty("sha256").GetString()!;
         ValidateEmbedded();
     }
 
@@ -154,6 +164,7 @@ internal sealed class StatechartAssets
 
     private byte[] ReadResource(string name)
     {
+        if (_replaced.TryGetValue(name, out var replaced)) return replaced;
         using var stream = _assembly.GetManifestResourceStream(name) ??
             throw new InvalidDataException("Missing installed statechart resource: " + name);
         using var output = new MemoryStream();

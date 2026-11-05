@@ -56,30 +56,33 @@ def _identity_producer(root):
     return command, producer
 
 
-def _subject_commands(root):
+def _subject_commands(root, tests=None):
     root = Path(root).resolve()
+    suite = ["dotnet", "test", "DynaDocs.sln", "-c", "Debug", "--no-build",
+             "-p:RunAnalyzers=false", "-p:UseSharedCompilation=false"]
+    if tests is not None:
+        # A platform campaign runs only the reviewed selection that reaches its native members.
+        return [[*suite, "--filter", tests, "--", "RunConfiguration.TreatNoTestsAsError=true"]]
     return [
-        ["dotnet", "test", "DynaDocs.sln", "-c", "Debug", "--no-build",
-         "-p:RunAnalyzers=false", "-p:UseSharedCompilation=false", "--",
-         "RunConfiguration.TreatNoTestsAsError=true"],
+        [*suite, "--", "RunConfiguration.TreatNoTestsAsError=true"],
         [sys.executable, str(root / "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py")],
     ]
 
 
-def run_subject(root):
+def run_subject(root, tests=None):
     root = Path(root).resolve()
     environment = os.environ.copy()
     environment[GATE_METRICS_PREBUILT_ENV] = str(
         root / "DynaDocs.Tests/coverage/metrics/bin/Debug/net10.0/GateMetrics.dll")
     status = 0
-    for command in _subject_commands(root):
+    for command in _subject_commands(root, tests):
         result = subprocess.run(command, cwd=root, env=environment)
         if not status and result.returncode:
             status = result.returncode
     return status
 
 
-def altcover_commands(root, output):
+def altcover_commands(root, output, tests=None):
     root, output = Path(root).resolve(), Path(output).resolve()
     inputs = [root / "bin/Debug/net10.0", root / "DynaDocs.Tests/bin/Debug/net10.0",
               root / "DynaDocs.Tests/coverage/metrics/bin/Debug/net10.0"]
@@ -93,7 +96,7 @@ def altcover_commands(root, output):
               f"--workingDirectory={root}", f"--executable={sys.executable}",
               f"--outputFile={output / 'coverage.opencover.xml'}", "--summary=N", "--",
               str(root / "DynaDocs.Tests/coverage/csharp_coverage.py"), "--_subject",
-              "--root", str(root)]
+              "--root", str(root), *(["--tests", tests] if tests is not None else [])]
     return prepare, runner
 
 
@@ -383,17 +386,19 @@ def _join_campaign(root, result_root, report, pre, producer):
             "findings": evaluate_policy(modules)}
 
 
-def run_campaign(root, result_root, extra_args=None):
+def _begin(root, result_root):
     root, result_root = Path(root).resolve(), Path(result_root).resolve()
-    if extra_args:
-        raise ValueError("Assurance coverage requires the ordinary unfiltered full suite")
     result_root.mkdir(parents=True, exist_ok=False)
     os.environ["DOTNET_CLI_USE_MSBUILD_SERVER"] = "0"
     os.environ["MSBUILDDISABLENODEREUSE"] = "1"
-    commands = []
+    return root, result_root
+
+
+def _build(root, result_root, commands):
+    """The campaign's builds and pre-instrumentation identities; None when a build fails."""
     producer_build, producer = _identity_producer(root)
     if not _run_campaign_builds(root, result_root, commands, producer_build):
-        return 2
+        return None
     producer_inputs = [path for path in producer.parent.iterdir() if path.is_file()]
     (result_root / "identity-producer.json").write_text(json.dumps({
         "schema": 1,
@@ -401,36 +406,80 @@ def run_campaign(root, result_root, extra_args=None):
     }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     assembly_paths = _candidate_assemblies(root)
     pre = _identity_classes(root, producer, assembly_paths)
-    originals = _stage_originals(root, result_root, assembly_paths)
+    return {"producer": producer, "paths": assembly_paths, "pre": pre}
+
+
+def _instrument(root, result_root, commands, built):
+    """Stages the originals and instruments in place; False when AltCover prepare fails."""
+    producer, assembly_paths, pre = built["producer"], built["paths"], built["pre"]
+    built["originals"] = _stage_originals(root, result_root, assembly_paths)
     (result_root / "identity-pre.json").write_text(json.dumps(pre, indent=2, sort_keys=True) + "\n")
-    pre_artifacts = snapshot_artifacts(root, _campaign_identity_paths(root, assembly_paths, pre))
+    built["pre_artifacts"] = snapshot_artifacts(root, _campaign_identity_paths(root, assembly_paths, pre))
     (result_root / "identity-pre-artifacts.json").write_text(
-        json.dumps(pre_artifacts, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    prepare, runner = altcover_commands(root, result_root)
-    row = _run_recorded("altcover-prepare", prepare, root, result_root, commands)
-    if row["exit"]:
-        return 2
+        json.dumps(built["pre_artifacts"], indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    prepare, _ = altcover_commands(root, result_root)
+    if _run_recorded("altcover-prepare", prepare, root, result_root, commands)["exit"]:
+        return False
     template = result_root / "template.opencover.xml"
     if not template.is_file():
         raise ValueError("AltCover prepare produced no template OpenCover report")
-    template_map = _template_original_map(template.read_text(encoding="utf-8-sig"), root, pre)
+    built["template"] = template
+    built["template_map"] = _template_original_map(template.read_text(encoding="utf-8-sig"), root, pre)
     (result_root / "template-original-map.json").write_text(
-        json.dumps(template_map, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    _validate_instrumented(root, result_root, producer, assembly_paths, pre, pre_artifacts)
+        json.dumps(built["template_map"], indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _validate_instrumented(root, result_root, producer, assembly_paths, pre, built["pre_artifacts"])
+    return True
+
+
+def _restore_and_join(root, result_root, built, report):
+    _restore_originals(root, built["originals"], built["paths"])
+    post = _validate_restored(root, built["producer"], built["paths"], built["pre"], built["pre_artifacts"])
+    (result_root / "identity-post.json").write_text(json.dumps(post, indent=2, sort_keys=True) + "\n")
+    joined = _join_campaign(root, result_root, report, built["pre"], built["producer"])
+    (result_root / "joined.json").write_text(json.dumps(joined, indent=2, sort_keys=True) + "\n")
+
+
+def _platform_tests(root, platform):
+    """The reviewed Windows test selection; Linux and an unscoped campaign run the full suite."""
+    if platform in (None, "linux"):
+        return None
+    from dotnet_platform import load_selection, windows_filter
+    return windows_filter(load_selection(root, platform))
+
+
+def run_campaign(root, result_root, extra_args=None, platform=None):
+    if extra_args:
+        raise ValueError("Assurance coverage requires the ordinary unfiltered full suite")
+    root, result_root = _begin(root, result_root)
+    commands = []
+    built = _build(root, result_root, commands)
+    if built is None:
+        return 2
+    tests = _platform_tests(root, platform)
+    if not _instrument(root, result_root, commands, built):
+        return 2
+    _, runner = altcover_commands(root, result_root, tests)
     row = _run_recorded("altcover-runner", runner, root, result_root, commands)
     if row["exit"]:
         return row["exit"]
     report = result_root / "coverage.opencover.xml"
     if not report.is_file():
         raise ValueError("AltCover runner produced no collected OpenCover report")
-    collected_map = _template_original_map(report.read_text(encoding="utf-8-sig"), root, pre)
-    if collected_map != template_map:
+    collected_map = _template_original_map(report.read_text(encoding="utf-8-sig"), root, built["pre"])
+    if collected_map != built["template_map"]:
         raise ValueError("Collected report changed template MethodDef namespace")
-    _restore_originals(root, originals, assembly_paths)
-    post = _validate_restored(root, producer, assembly_paths, pre, pre_artifacts)
-    (result_root / "identity-post.json").write_text(json.dumps(post, indent=2, sort_keys=True) + "\n")
-    joined = _join_campaign(root, result_root, report, pre, producer)
-    (result_root / "joined.json").write_text(json.dumps(joined, indent=2, sort_keys=True) + "\n")
+    _restore_and_join(root, result_root, built, report)
+    return 0
+
+
+def run_denominator(root, result_root):
+    """The candidate's complete zero-hit join: the campaign's builds and instrumentation, no suite."""
+    root, result_root = _begin(root, result_root)
+    commands = []
+    built = _build(root, result_root, commands)
+    if built is None or not _instrument(root, result_root, commands, built):
+        return 2
+    _restore_and_join(root, result_root, built, built["template"])
     return 0
 
 
@@ -440,16 +489,18 @@ def main():
     parser.add_argument("--root", required=True)
     parser.add_argument("--result-root")
     parser.add_argument("--extra-json", default="[]")
+    parser.add_argument("--tests", help=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
         if args._subject:
-            return run_subject(args.root)
+            return run_subject(args.root, args.tests)
         if args.result_root is None:
             return 2
         extra = json.loads(args.extra_json)
         if not isinstance(extra, list) or any(not isinstance(item, str) for item in extra):
             return 2
-        return run_campaign(args.root, args.result_root, extra)
+        from dotnet_platform import native_platform
+        return run_campaign(args.root, args.result_root, extra, native_platform())
     except REPORT_DEFECTS as error:
         print(f"{type(error).__name__}: {error}", file=sys.stderr)
         return 2

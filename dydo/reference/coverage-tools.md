@@ -37,6 +37,27 @@ reports also fail. Both jobs use the declared
 Python 3.14.4 and Node 26.13.0 pins. The existing cancellation matrix and other CI suites remain
 in place; release and publishing workflows are independent.
 
+.NET platform measurement is configured in `DynaDocs.Tests/coverage/dotnet-platforms.json`. Its
+`native` entries name Windows-native members by their Roslyn member name (`.ctor`, `get_Stage`,
+`RunWindowsAsync`) and pin each source's SHA-256 with line endings normalized to LF. Its
+`windows_tests` entry lists the fully qualified tests that reach those members and records why
+Windows runs only them. `dotnet_platform.py` partitions the native join by emitted-body owner and
+writes `platform_selection` beside the measured modules in `adapters/dotnet-coverage.json`. That
+receipt holds the source and selection hashes, the owner of every line, branch and callable, and
+on Windows the selected suite's pass count. A missing or drifted selection, a missing member, an
+undeclared test or an unsupported platform fails before the campaign starts. A skipped selected
+test fails the Windows gate. The raw `joined.json` keeps every native point.
+
+The union rebuilds the clean candidate's denominator on Linux with the campaign's own builds and
+AltCover instrumentation, without running a suite. Matching omissions therefore fail too. CI runs:
+
+```sh
+python DynaDocs.Tests/coverage/dotnet_platform.py --windows DynaDocs.Tests/coverage/results/coverage-platforms/windows/adapters/dotnet-coverage.json --output DynaDocs.Tests/coverage/results/coverage-platforms
+```
+
+Add `--linux <adapters/dotnet-coverage.json>` to check a local Linux gate on the same commit as
+well. Run it from a clean checkout with no earlier in-place AltCover output (`__Saved`) in `bin/`.
+
 `DynaDocs.Tests/coverage/gap_check.py` is the canonical project testing facade. Its adjacent
 `gap_check.json` is the schema 1 manifest that declares each stack's test, static, coverage and
 mutation adapters. `dydo/reference/gap-check.example.py` is a mechanically derived byte copy of that

@@ -326,6 +326,20 @@ publish the unfiltered native measurements. The dependent union gate requires tw
 on the same clean candidate and accounts for every line, branch and callable body. Neither a
 Linux-only result nor inherited-failure attribution establishes combined coverage success.
 
+## .NET platform coverage
+
+.NET coverage applies the same ownership to the statechart's Windows-native code.
+`DynaDocs.Tests/coverage/dotnet-platforms.json` names Windows-owned members per source and pins
+each source. A point belongs to the member whose emitted body owns it, so a lambda or field
+initializer goes with its member. A branch belongs to its origin line. Linux runs the full suite
+and measures every other point, including the neutral remainder of mixed files. Windows runs only
+the selection's named tests, which reach the named members, and must run all of them without a
+skip. Both gates apply 80% line / 60% branch / HCRAP 20 to their own portion. The hosted
+`dotnet-windows-coverage` job measures the PR head. The dependent `dotnet-coverage-union` job
+rebuilds that commit's complete zero-hit Linux denominator. It then checks that the Windows report
+holds exactly the Windows-owned points and agrees on every owner. With `--linux`, it checks a Linux
+gate report on the same commit as well. A failing Linux gate keeps its own exit as its verdict.
+
 ## Recorded gate correction: three dynamic Vulture uses
 
 DR 048 admits a gate only where a violation is certainly wrong at a threshold where no exception

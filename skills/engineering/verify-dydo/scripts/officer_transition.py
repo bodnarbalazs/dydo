@@ -98,10 +98,12 @@ OUTSIDE_BOUND = re.compile(r"[^\t\n\r\x20-\x7e]")
 # UTF-16 JSON reader cannot hold the same way.
 SPLIT_DIFFERS = re.compile(r"[\x1c-\x1f\ud800-\udfff]")
 # PowerShell's and cmd's reading (ShellReader, DYD-641, measured on pwsh 7.6.9) opens and closes a string at these as
-# at ' and ": outside the bound, yet they change where that reading splits, so each is a decision point there.
+# at ' and ": outside the bound, yet they change where that reading splits, so each is a decision point where that
+# reading consumes it as a quote boundary (`ShellReading.quotes`), and text anywhere else.
 SINGLE_QUOTES, DOUBLE_QUOTES = "'‘’‚‛", '"“”„'
 TYPOGRAPHIC_QUOTES = re.compile("[‘’‚‛“”„]")
-# What each text-wide decision point looks for (`bound_offender`); a word or a text never read counts any outside one.
+# What each decision point's text is searched for (`bound_offender`): a text the scanner splits, for SPLIT_DIFFERS; a
+# reading's quote boundaries, for a typographic quote; a word or a text never read, for any outside character.
 POINT_PATTERNS = {"split": SPLIT_DIFFERS, "quote": TYPOGRAPHIC_QUOTES}
 # Refined DECIDED: a decision point matters only in a line either engine could read as running dydo. Both reach a
 # dydo only through a word naming dydo (the program, dydo.dll, a dydo project) or dotnet (`dotnet run` with no
@@ -942,13 +944,17 @@ class ShellReading:
     split only on unquoted ; & | ( ) { } and line breaks. Quotes, here-strings and heredoc bodies are word text, a
     heredoc or <<< word is stdin, and a redirection target is dropped. The non-posix reading follows pwsh 7.6.9
     (DYD-641): a bare carriage return ends a line, ‘ ’ ‚ ‛ quote as ' does and “ ” „ as " does, and a caret is cmd's
-    escape and literal to pwsh; where the two read the line apart, the reading holds both and fails."""
+    escape and literal to pwsh; where the two read the line apart, the reading holds both and fails.
+
+    `quotes` keeps, in reading order, each quote character the reading consumes as a quote boundary: one that opens
+    or closes a quoted span (a doubled quote inside one included) and a here-string's opener and terminator, nested
+    readings' too. A quote in a comment, an escaped one, and one a quoted span of the other family holds are text."""
 
     def __init__(self, text, posix, start=0, nested=False, commands=None, substitutions=None, caret_escapes=False):
         self.text, self.posix, self.i, self.nested = text, posix, start, nested
         self.commands = [] if commands is None else commands  # shared with nested readers, as ShellReader's
         self.substitutions = [] if substitutions is None else substitutions
-        self.caret_escapes, self.caret_diverges = caret_escapes, False
+        self.caret_escapes, self.caret_diverges, self.quotes = caret_escapes, False, []
         self.own, self.heredocs, self.command = [], [], ShellCommand()
         self.word, self.word_start, self.depth = None, 0, 0
         self.redirect_next = self.here_string_next = self.failed = self.done = False
@@ -965,6 +971,7 @@ class ShellReading:
         literal.run()
         reader.commands += literal.commands
         reader.substitutions += literal.substitutions
+        reader.quotes += literal.quotes
         reader.failed = True
         return reader
 
@@ -1041,6 +1048,7 @@ class ShellReading:
         self.i += 2
 
     def single_quoted(self):
+        self.quotes.append(self.text[self.i])
         while True:
             found = [at for at in (self.text.find(quote, self.i + 1) for quote in self.single_quotes) if at >= 0]
             if not found:
@@ -1048,17 +1056,21 @@ class ShellReading:
                 return
             end = min(found)
             self.append(self.text[self.i + 1:end])
+            self.quotes.append(self.text[end])
             self.i = end + 1
             if self.posix or self.peek(0) not in self.single_quotes:
                 return
+            self.quotes.append(self.peek(0))
             self.append(self.peek(0))  # PowerShell's doubled quote inside single quotes
 
     def double_quoted(self):
         self.start_word()
+        self.quotes.append(self.text[self.i])
         at = self.i + 1
         while at < len(self.text) and not self.failed:
             c, following = self.text[at], self.char(at + 1)
             if c in self.double_quotes and not self.quoted_escape(c, following):
+                self.quotes.append(c)
                 self.i = at + 1
                 return
             at = self.quoted_char(at, c, following)
@@ -1070,6 +1082,8 @@ class ShellReading:
         if self.posix and c == "`":
             return self.backtick_substitution(at)
         if self.quoted_escape(c, following):
+            if c in self.double_quotes:  # PowerShell's doubled quote: a boundary read as an escape
+                self.quotes += [c, following]
             if following != "\n":
                 self.append(following)
             return at + 2
@@ -1089,6 +1103,7 @@ class ShellReading:
         inner.failed |= self.posix and any(raw == "case" for command in inner.own for raw in command.raws)
         self.failed |= inner.failed
         self.caret_diverges |= inner.caret_diverges
+        self.quotes += inner.quotes
         return inner.i + 1
 
     def group_word(self, start):
@@ -1142,11 +1157,13 @@ class ShellReading:
         """The terminator starts a line: a quote of the opener's family, then @."""
         expands, start = self.peek(1) in self.double_quotes, self.here_string_body_start()
         quotes = self.double_quotes if expands else self.single_quotes
+        self.quotes.append(self.peek(1))
         end = next((at for at in range(start - 1, len(self.text) - 2) if self.line_break_length(at) == 1
                     and self.text[at + 1] in quotes and self.text[at + 2] == "@"), -1)
         if end < 0:
             self.failed = True
             return
+        self.quotes.append(self.text[end + 1])
         body = self.text[start:end].rstrip("\r") if end > start else ""
         if expands:
             self.read_expansions(body)
@@ -1166,6 +1183,7 @@ class ShellReading:
                 at += 2 if self.posix and body[at] == "\\" else 1
         self.failed |= reader.failed
         self.caret_diverges |= reader.caret_diverges
+        self.quotes += reader.quotes
 
     def skip_comment(self):
         """A comment runs to the end of its line; pwsh 7.6.9 ends it at a carriage return too."""
@@ -1567,9 +1585,9 @@ class DydoScan:
     cmd /c, pwsh -Command, env -S, eval or Invoke-Expression, read again in that shell's dialect.
 
     `texts` keeps every word and stdin body read. `points` keeps where the two engines' readings could part, the
-    bound's decision points: each text it splits into words ("split"), each text it reads as PowerShell or cmd, where
-    a typographic quote opens or closes a string ("quote"), each word it compares ("word": `compared_words`) and
-    each text past its nesting limit, never read ("depth")."""
+    bound's decision points: each text it splits into words ("split"), the quote boundaries each reading consumes
+    (`ShellReading.quotes`: "quote"; typographic ones only where PowerShell or cmd reads), each word it compares
+    ("word": `compared_words`) and each text past its nesting limit, never read ("depth")."""
 
     def __init__(self, command, dialect):
         self.invocations, self.uncertain, self.texts, self.points = [], False, [], []
@@ -1582,9 +1600,8 @@ class DydoScan:
             return
         self.points.append(("split", text))
         for posix in READINGS[dialect]:
-            if not posix:
-                self.points.append(("quote", text))
             reading = ShellReading.read(text, posix)
+            self.points.append(("quote", "".join(reading.quotes)))
             self.uncertain |= reading.failed
             for substitution in reading.substitutions:
                 self.scan(substitution, depth + 1, POSIX)
@@ -1706,7 +1723,8 @@ def bound_offender(command):
     could read as running dydo (`reads_dydo`): the first such character's code point, its decision point and its
     offset in the line (None when only a decoded body holds it). None for any other line. The decision points
     (`DydoScan.points`): a character whose whitespace class differs (SPLIT_DIFFERS) in any text the scanner splits;
-    a typographic quote in any text it reads as PowerShell or cmd, where that reading quotes at one (DYD-641); a
+    a typographic quote PowerShell's or cmd's reading consumes as a quote boundary, opening or closing a quoted span
+    or a here-string (DYD-641), never one in a comment, escaped, or held by a quoted span of the other family; a
     character outside the bound in a word it compares (`compared_words`), recursively through every body it reads
     again, or in a text past its nesting limit; and, only where its scan is uncertain, one in the loose rule's text.
     An inert argument of a program the scanner does not interpret is no decision point. A line the reader cannot

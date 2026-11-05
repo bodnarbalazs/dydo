@@ -232,8 +232,45 @@ TYPOGRAPHIC_BODIES = (
 # The same quotes where bash alone reads them, as word text: inert, judged normally.
 TYPOGRAPHIC_POSIX = ("echo ‘a’; dydo mode set overnight on", "echo ‘a'; dydo mode show; ’b'",
                      "dydo mode show # “done”")
+FIX_11 = "fix11 brief: typographic quotes PowerShell or cmd reads as text or as a quote boundary"
+# The round-11 reviewer's inspection (verify.py), with U+0027 or U+2019 in its comment.
+ROUND_11_PROBE = 'iex "dydo mode show # tonight{}s work"'
+# Typographic quotes PowerShell's or cmd's reading keeps as text, each with its ASCII twin (the same body with U+0027
+# or U+0022 in its place): the round-11 reviewer's forms (decision-probes.json: a comment, a block comment, a string
+# of the other family, an inert argument), then an escape, a here-string body and the rest, with and without a setter.
+QUOTE_TEXT = {
+    ROUND_11_PROBE.format("’"): ROUND_11_PROBE.format("'"),
+    "iex 'announce admiral-fixture \"Verified by dydo mode show; tonight’s work is settled.\"'":
+        "iex 'announce admiral-fixture \"Verified by dydo mode show; tonight'\"'\"'s work is settled.\"'",
+    "iex \"grep dydo # tonight’s work\"": "iex \"grep dydo # tonight's work\"",
+    "iex 'echo \"dydo’s mode set examples\"'": "iex 'echo \"dydo'\"'\"'s mode set examples\"'",
+    "iex \"dydo mode show <# tonight’s work #>\"": "iex \"dydo mode show <# tonight's work #>\"",
+    "cmd /c \"dydo mode show # tonight’s work\"": "cmd /c \"dydo mode show # tonight's work\"",
+    "pwsh -Command \"echo dydo # it’s\"": "pwsh -Command \"echo dydo # it's\"",
+    "iex \"dydo mode show # it’s\ndydo mode set overnight on\"": "iex \"dydo mode show # it's\ndydo mode set overnight on\"",
+    "iex \"echo 'say “hi”'; dydo mode set overnight on\"": "iex \"echo 'say \\\"hi\\\"'; dydo mode set overnight on\"",
+    "iex 'echo \"it’s\"; dydo mode show'": "iex 'echo \"it'\"'\"'s\"; dydo mode show'",
+    "iex 'echo dydo`’s mode; dydo mode show'": "iex 'echo dydo`'\"'\"'s mode; dydo mode show'",
+    "iex 'echo \"a`”b\"; dydo mode show'": "iex 'echo \"a`\"b\"; dydo mode show'",
+    "iex \"echo @'\nit’s dydo mode set overnight on\n'@; dydo mode show\"":
+        "iex \"echo @'\nit's dydo mode set overnight on\n'@; dydo mode show\"",
+    "cmd /c \"echo 'a“b' & dydo mode show\"": "cmd /c \"echo 'a\\\"b' & dydo mode show\"",
+    "cmd /c \"echo 'a“b' & dydo mode set overnight on\"": "cmd /c \"echo 'a\\\"b' & dydo mode set overnight on\"",
+}
+# Typographic quotes that reading consumes as quote boundaries, pwsh and cmd, with the point and character the bound
+# names: a span's opener or closer, a doubled quote, a here-string's opener or terminator, one beside a comment's.
+# cmd's line is read as bash first, where `‘dydo` is the program word.
+QUOTE_BOUNDARY = {
+    "iex ‘dydo mode set overnight on’": ("quote", "U+2018"), "pwsh -Command ‘dydo mode show’": ("quote", "U+2018"),
+    "iex 'echo @“\ndydo mode set overnight on\n\"@; dydo mode show'": ("quote", "U+201C"),
+    "pwsh -Command \"@“\ndydo mode set overnight on\n”@\"": ("quote", "U+201C"),
+    "iex \"@'\ndydo mode set overnight on\n’@\"": ("quote", "U+2019"),
+    "iex \"echo 'it’’s'; dydo mode show\"": ("quote", "U+2019"), "iex 'echo “a”“b”; dydo mode show'": ("quote", "U+201C"),
+    "iex \"echo ‘a’ # it’s\ndydo mode show\"": ("quote", "U+2018"),
+    "cmd /c ‘dydo mode set overnight on’": ("word", "U+2018"), "cmd /c \"echo “dydo” & dydo mode show\"": ("quote", "U+201C"),
+}
 # The corpus's outside-bound forms with no decision point, judged normally.
-JUDGED = (*PROSE, *COMMENTED, *SAME_SPLIT, *INERT, *NO_DYDO_RECORDED, *TYPOGRAPHIC_POSIX)
+JUDGED = (*PROSE, *COMMENTED, *SAME_SPLIT, *INERT, *NO_DYDO_RECORDED, *TYPOGRAPHIC_POSIX, *QUOTE_TEXT)
 # Outside the corpus: an ASCII line whose decoded body holds the character, and a lone surrogate, which the live guard
 # cannot even read ("Failed to parse hook input"; artifacts/dyd435/fix9/live-forms.json).
 ENCODED_SET = "pwsh -EncodedCommand " + base64.b64encode("dydo mode ſet overnight on".encode("utf-16-le")).decode()
@@ -805,8 +842,8 @@ class EvaluatorTests(unittest.TestCase):
         """Narrowed trigger (round-10 FAIL disposition): a guarded command whose outside character sits where Python's
         and .NET's readings could part makes the run inconclusive, whatever the guard answered, in every case and
         direction. Every round-8 form is one. Exactly the corpus forms named here have none: their outside characters
-        are prose, a comment, a word past `mode set`, a space both engines split on (`SAME_SPLIT`), or a typographic
-        quote only bash reads (`TYPOGRAPHIC_POSIX`)."""
+        are prose, a comment, a word past `mode set`, a space both engines split on (`SAME_SPLIT`), a typographic
+        quote only bash reads (`TYPOGRAPHIC_POSIX`), or one PowerShell or cmd reads as text (`QUOTE_TEXT`)."""
         outside = [entry["command"] for entry in corpus() if entry["kind"] == "outside_bound"]
         judged = [command for command in outside if ot.bound_offender(command) is None]
         self.assertEqual(sorted({*JUDGED}), sorted(judged))
@@ -874,6 +911,83 @@ class EvaluatorTests(unittest.TestCase):
         for command, where in cases.items():
             with self.subTest(command=command):
                 self.assertEqual(where, ot.bound_offender(command))
+
+    @staticmethod
+    def reading(command):
+        scan = ot.DydoScan(command, ot.POSIX)
+        return ot.sets_mode(command), scan.uncertain, scan.invocations
+
+    @staticmethod
+    def judged(evaluation):
+        return evaluation["verdict"], failing(evaluation), evaluation["facts"]["outside_bound"]
+
+    def test_a_typographic_quote_powershell_or_cmd_reads_as_text_is_judged_as_its_ascii_twin_in_every_case(self):
+        """Round 11 (decision-probes.json): a typographic quote PowerShell's or cmd's reading keeps as text (in a
+        comment or block comment, held by a string of the other family, escaped, in a here-string body, an inert
+        argument) is no decision point. Each form reads as its ASCII twin, and a further guarded call of it is judged
+        as the twin's in every case and direction: a mode set fails the reminder check, an inspection passes."""
+        for command, twin in QUOTE_TEXT.items():
+            with self.subTest(command=command):
+                self.assertEqual((None, None), (ot.bound_offender(command), ot.bound_offender(twin)))
+                self.assertEqual(self.reading(twin), self.reading(command))
+        for name, direction, (command, twin) in itertools.product(ot.CASES, ot.DIRECTIONS, QUOTE_TEXT.items()):
+            with self.subTest(case=name, direction=direction, command=command):
+                evaluation, expected = (self.further(name, direction, form, passed()) for form in (command, twin))
+                self.assertEqual(self.judged(expected), self.judged(evaluation))
+                self.assert_judged(name, direction, command)
+
+    @staticmethod
+    def comment_run(name, direction, timing, mark):
+        """Round 11 (verify.py): the guarded inspection ROUND_11_PROBE inside the case's route, passed by the guard;
+        then the route's end or, premature (A and B), an announcement ahead of the first attempt."""
+        premature = timing == "premature" and name != "failed"
+        story = announced(opening(direction), name, ANNOUNCE) if premature else opening(direction)
+        story = ROUTES[name](direction, story=guarded(story, name, "probe", ROUND_11_PROBE.format(mark), passed()))
+        if premature:
+            story = story.call("r", "dydo mode show", show(direction)).say("Observed state recorded.")
+        else:
+            story = ENDS[name](story, direction)
+        return story.evaluate(CHECKS[name], direction)
+
+    def test_the_round_11_inert_comment_matrix_judges_both_twins_alike_in_all_twelve_combinations(self):
+        """Round 11 (inert-comment-matrix.json): U+2019 in the guarded inspection's comment judges as U+0027 does in
+        every case, direction and timing: it passes after the readback; premature, A and B fail the fresh readback
+        and C, which makes no announcement, passes. Nothing is outside the bound."""
+        for name, direction, timing in itertools.product(ot.CASES, ot.DIRECTIONS, ("after", "premature")):
+            with self.subTest(case=name, direction=direction, timing=timing):
+                twin, typographic = (self.comment_run(name, direction, timing, mark) for mark in ("'", "’"))
+                self.assertEqual(self.judged(twin), self.judged(typographic))
+                premature = timing == "premature" and name != "failed"
+                self.assertEqual(("fail", names(ANNOUNCED), []) if premature else ("pass", set(), []),
+                                 self.judged(typographic), typographic["checks"])
+
+    def test_a_typographic_quote_boundary_stays_inconclusive_in_powershell_and_cmd_in_every_case_and_direction(self):
+        """Where the reading consumes a typographic quote as a boundary (a span's opener or closer, a doubled quote,
+        a here-string's opener or terminator), it stays a decision point, beside a comment's quote too: each guarded
+        line, passed or hard-refused, is inconclusive in every case and direction."""
+        for command, point in QUOTE_BOUNDARY.items():
+            with self.subTest(command=command):
+                self.assertEqual(point, itemgetter("point", "code_point")(ot.bound_offender(command)))
+        answers = (("passed", passed()), ("hard-refused", blocked(DANGEROUS)))
+        for name, direction, (command, (_, code_point)), (answer, row) in itertools.product(
+                ot.CASES, ot.DIRECTIONS, QUOTE_BOUNDARY.items(), answers):
+            with self.subTest(case=name, direction=direction, command=command, answer=answer):
+                self.assert_inconclusive(self.further(name, direction, command, row), name, command, code_point)
+
+    def test_the_corpus_holds_the_round_11_quote_forms_and_their_twins_as_the_live_guard_answered(self):
+        """Each typographic form and its twin, recorded live: the form outside the bound with the guard's answer,
+        the twin in bound with its reading. The guard answers each form as its twin, and each boundary form as the
+        mirror reads it."""
+        entries = {entry["command"]: entry for entry in corpus() if entry["source"] == FIX_11}
+        self.assertEqual(sorted({*QUOTE_TEXT, *QUOTE_BOUNDARY, *QUOTE_TEXT.values()}), sorted(entries))
+        for command, twin in QUOTE_TEXT.items():
+            with self.subTest(command=command):
+                self.assertEqual(("outside_bound", None), (entries[command]["kind"], ot.outside_bound(twin)))
+                self.assertNotEqual("outside_bound", entries[twin]["kind"])
+                self.assertEqual(entries[twin]["mode_set"], entries[command]["guard"] == "reminder")
+        for command in QUOTE_BOUNDARY:
+            with self.subTest(command=command):
+                self.assertEqual(entries[command]["guard"] == "reminder", ot.sets_mode(command))
 
     def test_an_argv_envelope_counts_its_shell_and_option_words_against_the_bound(self):
         """A Codex argv envelope reads as its script alone, yet the guard compares the shell and its options to decide
@@ -1465,6 +1579,25 @@ class ShellReadingTests(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertFalse(ot.ShellReading.read(text, False).failed)
                 self.assertEqual(commands, read_commands(text))
+
+    def test_the_reading_keeps_each_quote_it_reads_as_a_boundary_and_no_other(self):
+        """`quotes`: the quote characters the reading consumes as boundaries, in order, nested readings' included: a
+        span's opener and closer, both quotes of a doubled one, a here-string's opener and terminator. A quote in a
+        comment, escaped, in a here-string body or held by a span of the other family is text. Where a caret reads
+        apart, the literal reading's boundaries count too. Bash's reading quotes only at ASCII."""
+        cases = {
+            "echo x # it’s": "", "echo x <# it’s #> y": "", "echo a`’s": "", 'echo "a`”b"': '""',
+            'echo "it’s"': '""', "echo 'say “hi”'": "''", "echo @'\nit’s\n'@": "''", "echo ‘a’": "‘’",
+            "echo 'it’’s'": "'’’'", "echo “a”“b”": "“”“”", "echo @‘\nx\n’@": "‘’", "echo @'\nx\n‘@": "'‘",
+            "echo $(echo ‘a’)": "‘’", 'echo @"\n$(echo ‘a’)\n"@': '""‘’', "echo @“\nx": "“", "echo ‘a": "‘",
+            "echo ^‘a’": "’‘’",
+        }
+        for text, quotes in cases.items():
+            with self.subTest(text=text):
+                self.assertEqual(quotes, "".join(ot.ShellReading.read(text, False).quotes))
+        for text, quotes in {"echo ‘a’ 'b' \"c\"": "''\"\"", "echo $('a')": "''"}.items():
+            with self.subTest(text=text, posix=True):
+                self.assertEqual(quotes, "".join(ot.ShellReading.read(text, True).quotes))
 
     def test_a_typographic_expanding_here_string_reads_its_substitution(self):
         for text in ("echo @“\n$(rm y)\n”@", 'echo @"\n$(rm y)\n“@; echo z'):

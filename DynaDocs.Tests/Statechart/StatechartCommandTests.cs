@@ -51,6 +51,26 @@ public class StatechartCommandTests
             Assert.Contains("deleted-after-authoritative-drain", File.ReadAllText(journal)));
     }
 
+    // With no runtime on PATH the Windows diagnosis still completes, naming each runtime missing instead of probing it.
+    [SkippableFact]
+    public async Task InstalledDoctorNamesMissingRuntimesWithoutProbingThem()
+    {
+        Skip.IfNot(OperatingSystem.IsWindows(), "statechart doctor is Windows-only.");
+        using var scope = new StatechartTestDirectory();
+        var result = await Run(scope.Path, "", "statechart", "doctor");
+        Assert.Equal("", result.Error);
+        Assert.Equal(2, result.Exit);
+        using var json = JsonDocument.Parse(result.Output);
+        Assert.False(json.RootElement.GetProperty("ready").GetBoolean());
+        foreach (var runtime in new[] { "node", "java" })
+        {
+            Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty(runtime).ValueKind);
+            Assert.Equal("missing", json.RootElement.GetProperty(runtime + "Version").GetString());
+        }
+        Assert.All(Directory.GetFiles(Path.Combine(scope.Path, "state"), "scratch-*.journal"), journal =>
+            Assert.Contains("deleted-after-authoritative-drain", File.ReadAllText(journal)));
+    }
+
     // Native diagnostics still need platform validation outside Windows, so doctor declines before touching anything.
     [SkippableFact]
     public async Task DoctorDeclinesOutsideWindowsBeforeExtractingOrProbing()

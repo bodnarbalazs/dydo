@@ -332,6 +332,12 @@ def committed_repository(root):
     return root
 
 
+def dotnet_repository(folder):
+    """A repository root carrying the reviewed .NET platform selection fixture."""
+    from test_dotnet_platform import write_dotnet_fixture
+    return write_dotnet_fixture(Path(folder) / "repo")
+
+
 def collector_row(answer, name):
     return answer["facts"]["collectors"][name]
 
@@ -1264,8 +1270,7 @@ class CoverageCampaignTests(unittest.TestCase):
 
     def test_dotnet_coverage_reports_an_incomplete_campaign_and_rejects_an_unknown_stack(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder) / "repo"
-            root.mkdir()
+            root = dotnet_repository(folder)
             inventory = write_file(root, "inventory.json", '{"sources": []}')
 
             answer = gate_adapter.collect_coverage(root, Path(folder), "dotnet", inventory)
@@ -1288,30 +1293,53 @@ class CoverageCampaignTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Unknown stack: elixir"):
                 gate_adapter.collect_coverage(root, Path(folder), "elixir", inventory)
 
-    def test_a_measured_csharp_campaign_publishes_its_findings_evidence_and_command(self):
-        with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
-            finding = {"gate": "line-coverage", "path": "Commands/SyncCommand.cs"}
-            joined = write_file(raw, "raw/joined.json",
-                                json.dumps({"modules": [], "findings": [finding]}))
+    def test_a_measured_csharp_campaign_publishes_its_platform_portion_evidence_and_command(self):
+        from test_dotnet_platform import joined_modules, write_evidence
+        for platform, measured, failing in (("linux", ["Lib/Mixed.cs", "Lib/Neutral.cs"], set()),
+                                            ("windows", ["Lib/Mixed.cs", "Lib/Native.cs"],
+                                             {"Lib/Mixed.cs", "Lib/Native.cs"})):
+            with self.subTest(platform=platform), tempfile.TemporaryDirectory() as folder:
+                root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
+                write_evidence(raw / "raw", joined_modules(linux=1, windows=0))
+                joined = raw / "raw/joined.json"
 
-            with mock.patch.dict(os.environ, {"APPDATA": str(root / "appdata")}, clear=False), \
-                    mock.patch.object(gate_adapter, "run_coverage_command", return_value=0):
-                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+                with mock.patch.dict(os.environ, {"APPDATA": str(root / "appdata")}, clear=False), \
+                        mock.patch("dotnet_platform.native_platform", return_value=platform), \
+                        mock.patch.object(gate_adapter, "run_coverage_command", return_value=0):
+                    answer = gate_adapter.collect_dotnet_coverage(root, raw)
 
-            self.assertEqual([finding], answer["findings"])
-            row = collector_row(answer, "csharp-coverage")
-            self.assertEqual(("fail", "raw-abc"), (row["status"], row["facts"]["raw"]))
-            self.assertEqual([{"path": "raw-abc/raw/joined.json",
-                               "sha256": hashlib.sha256(joined.read_bytes()).hexdigest()}],
-                             row["artifacts"])
-            campaign = answer["facts"]["commands"][0]
-            self.assertEqual(str(root), campaign["cwd"])
-            self.assertEqual(str(root / "appdata"), campaign["environment"]["APPDATA"])
+                self.assertEqual(failing, {row["path"] for row in answer["findings"]})
+                row = collector_row(answer, "csharp-coverage")
+                self.assertEqual(("fail" if failing else "pass", "raw-abc"), (row["status"], row["facts"]["raw"]))
+                self.assertEqual(measured, [module["path"] for module in row["facts"]["modules"]])
+                receipt = row["facts"]["platform_selection"]
+                self.assertEqual((platform, ["Lib/Mixed.cs", "Lib/Native.cs", "Lib/Neutral.cs"]),
+                                 (receipt["platform"], sorted(receipt["denominators"])))
+                self.assertEqual({"passed": 3, "total": 3} if platform == "windows" else None, receipt.get("tests"))
+                self.assertEqual([{"assembly": "dydo", "accounting": []}], row["facts"]["targets"])
+                self.assertEqual([{"path": "raw-abc/raw/joined.json",
+                                   "sha256": hashlib.sha256(joined.read_bytes()).hexdigest()}],
+                                 row["artifacts"])
+                campaign = answer["facts"]["commands"][0]
+                self.assertEqual(str(root), campaign["cwd"])
+                self.assertEqual(str(root / "appdata"), campaign["environment"]["APPDATA"])
+
+    def test_a_drifted_selection_or_undeclared_windows_test_stops_before_the_campaign(self):
+        for platform, damage in (("linux", "Lib/Mixed.cs"), ("windows", "DynaDocs.Tests/Lib/NativeTests.cs"),
+                                 (None, None)):
+            with self.subTest(platform=platform), tempfile.TemporaryDirectory() as folder:
+                root = dotnet_repository(folder)
+                if damage:
+                    (root / damage).write_text("namespace Lib;\n", encoding="utf-8")
+                with mock.patch("dotnet_platform.native_platform", return_value=platform), \
+                        mock.patch.object(gate_adapter, "run_coverage_command") as campaign, \
+                        self.assertRaises(ValueError):
+                    gate_adapter.collect_dotnet_coverage(root, Path(folder) / "run/raw-abc")
+                campaign.assert_not_called()
 
     def test_a_failed_csharp_suite_is_a_functional_finding_before_any_join(self):
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             raw.parent.mkdir()
 
             with mock.patch.object(gate_adapter, "run_coverage_command", return_value=1):
@@ -1324,7 +1352,7 @@ class CoverageCampaignTests(unittest.TestCase):
 
     def test_a_failed_csharp_suite_names_the_dotnet_tests_that_failed(self):
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             write_file(raw, "raw/altcover-runner.stdout",
                       "some AltCover visit-flush chatter\r\n"
                       "  Failed DynaDocs.Tests.A.B [12 ms]\r\n"
@@ -1343,7 +1371,7 @@ class CoverageCampaignTests(unittest.TestCase):
 
     def test_a_failed_python_subject_is_named_from_the_runner_stderr(self):
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             write_file(raw, "raw/altcover-runner.stdout",
                       "Passed!  - Failed:     0, Passed:  1707, Skipped:     0, Total:  1707, "
                       "Duration: 2 m 9 s - DynaDocs.Tests.dll (net10.0)\r\n")
@@ -1372,7 +1400,7 @@ class CoverageCampaignTests(unittest.TestCase):
 
     def test_more_failing_tests_than_the_cap_are_counted_and_truncated(self):
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             blocks = "".join(f"  Failed DynaDocs.Tests.Case.Test{i} [1 ms]\r\n" for i in range(137))
             write_file(raw, "raw/altcover-runner.stdout",
                       blocks + "Failed!  - Failed:   137, Passed:  1570, Skipped:     0, Total:  1707, "
@@ -1390,7 +1418,7 @@ class CoverageCampaignTests(unittest.TestCase):
     def test_an_unparseable_or_missing_stream_says_so_instead_of_implying_no_failures(self):
         for case in ("both-present-naming-nothing", "stderr-absent"):
             with self.subTest(case=case), tempfile.TemporaryDirectory() as folder:
-                root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+                root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
                 write_file(raw, "raw/altcover-runner.stdout", "some unrelated noise\r\n")
                 if case == "both-present-naming-nothing":
                     write_file(raw, "raw/altcover-runner.stderr", "some unrelated noise\r\n")
@@ -1409,7 +1437,7 @@ class CoverageCampaignTests(unittest.TestCase):
 
     def test_an_exit_2_campaign_names_a_timeout_from_identities_json(self):
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             write_file(raw, "identities.json",
                       json.dumps({"schema": 1,
                                  "campaign": {"failure_category": "timeout", "error_message": None}}))
@@ -1430,7 +1458,7 @@ class CoverageCampaignTests(unittest.TestCase):
         # value and error_message becomes str(error) -- the message never lands in the
         # category itself.
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             write_file(raw, "identities.json",
                       json.dumps({"schema": 1,
                                  "campaign": {"failure_category": "preflight",
@@ -1446,7 +1474,7 @@ class CoverageCampaignTests(unittest.TestCase):
 
     def test_an_exit_2_campaign_fails_closed_when_identities_json_is_missing(self):
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             raw.mkdir(parents=True)
 
             with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
@@ -1466,7 +1494,7 @@ class CoverageCampaignTests(unittest.TestCase):
              json.dumps({"schema": 1, "campaign": {"complete": False}})),
         ):
             with self.subTest(label=label), tempfile.TemporaryDirectory() as folder:
-                root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+                root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
                 write_file(raw, "identities.json", text)
 
                 with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):

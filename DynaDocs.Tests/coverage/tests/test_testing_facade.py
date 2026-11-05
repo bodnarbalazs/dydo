@@ -1914,6 +1914,50 @@ print('INTER_ITERATION_CASES=' + str(count))
         self.assertNotIn('not reaped', row['reason'])
         self.assertLess(elapsed, cleanup_seconds, output)
 
+    @unittest.skipUnless(hasattr(signal, 'pthread_sigmask'), 'SIGINT is held through pthread_sigmask, absent here')
+    def test_held_blocks_sigint_only_when_it_set_the_block_and_defers_an_interrupt_until_the_call_returns(self):
+        held = runpy.run_path(str(self.runner))['held']
+        sigint = signal.SIGINT
+
+        def interrupted(signum, frame):
+            raise KeyboardInterrupt
+
+        def raise_inside_call():
+            masks.append(signal.pthread_sigmask(signal.SIG_BLOCK, ()))
+            signal.raise_signal(sigint)
+            masks.append(signal.pthread_sigmask(signal.SIG_BLOCK, ()))
+            returned.append(True)
+            return 'result'
+
+        previous = signal.signal(sigint, interrupted)
+        original = signal.pthread_sigmask(signal.SIG_BLOCK, ())
+        try:
+            signal.pthread_sigmask(signal.SIG_UNBLOCK, (sigint,))
+            masks, returned = [], []
+            with self.assertRaises(KeyboardInterrupt):
+                held(raise_inside_call)
+            self.assertEqual([True], returned, 'the interrupt surfaced before the held call returned')
+            self.assertTrue(all(sigint in mask for mask in masks), 'SIGINT was not blocked during the call')
+            self.assertNotIn(sigint, signal.pthread_sigmask(signal.SIG_BLOCK, ()),
+                             'held left SIGINT blocked after it blocked it')
+            self.assertEqual('result', held(lambda: 'result'))
+            self.assertNotIn(sigint, signal.pthread_sigmask(signal.SIG_BLOCK, ()))
+
+            # The caller's own block is not the facade's to lift.
+            signal.pthread_sigmask(signal.SIG_BLOCK, (sigint,))
+            masks, returned = [], []
+            self.assertEqual('result', held(raise_inside_call))
+            self.assertEqual([True], returned)
+            self.assertIn(sigint, signal.pthread_sigmask(signal.SIG_BLOCK, ()),
+                          'held unblocked a SIGINT block it did not set')
+            self.assertEqual('again', held(lambda first, second: first + second, 'ag', 'ain'))
+            self.assertIn(sigint, signal.pthread_sigmask(signal.SIG_BLOCK, ()))
+        finally:
+            # The interrupt raised under the caller's block is still pending: deliver it to a handler that drops it.
+            signal.signal(sigint, lambda signum, frame: None)
+            signal.pthread_sigmask(signal.SIG_SETMASK, original)
+            signal.signal(sigint, previous)
+
     def test_absolute_row_deadline_cleans_cooperative_child_before_publication(self):
         data = manifest(stack('first'), stack('later'))
         root = self.fixture(data, execution_seconds=.15, cleanup_seconds=.25)

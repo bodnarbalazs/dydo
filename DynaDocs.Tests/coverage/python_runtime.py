@@ -125,22 +125,34 @@ class CallableWitness:
             self._index.update({(path, key): row for key, row in index.items()})
         self._paths = set(sources)
         self._errors = []
+        self._codes = {}
 
     def _row(self, code):
+        """A target code object's row, whether it is that row's own code, and its key's digest.
+
+        The key scans every position of the code object, so it is resolved once per code object, not
+        per event. Code objects compare equal across files and qualnames, so the entry is keyed on
+        identity and pins the code object: its id cannot be reused while the entry exists."""
         if code.co_filename not in self._paths:
-            return None
-        row = self._index.get((code.co_filename, _key(code)))
+            return None, False, None
+        entry = self._codes.get(id(code))
+        if entry is None:
+            key = _key(code)
+            row = self._index.get((code.co_filename, key))
+            entry = self._codes[id(code)] = (code, row, row is not None and row['_key'] == key,
+                                             hashlib.sha256(repr(key).encode('utf-8')).hexdigest())
+        _, row, own, digest = entry
         if row is None:
             self._errors.append(f'Unknown runtime callable: {code.co_filename}:{code.co_firstlineno}')
-        return row
+        return row, own, digest
 
     def _start(self, code, _offset):
-        row = self._row(code)
-        if row is not None and row['_key'] == _key(code):
+        row, own, _ = self._row(code)
+        if own:
             row['execution_count'] += 1
 
     def _line(self, code, line):
-        row = self._row(code)
+        row = self._row(code)[0]
         if row is not None:
             identity = str(line)
             if identity not in row['body_lines']:
@@ -149,15 +161,14 @@ class CallableWitness:
                 row['body_lines'][identity] += 1
 
     def _branch(self, code, origin, destination):
-        row = self._row(code)
+        row, own, digest = self._row(code)
         if row is not None:
-            if row['_key'] == _key(code):
+            if own:
                 edge = [origin, destination]
                 if edge not in row['branches']:
                     row['branches'].append(edge)
             else:
-                edge = {'code': hashlib.sha256(repr(_key(code)).encode('utf-8')).hexdigest(),
-                        'origin': origin, 'destination': destination}
+                edge = {'code': digest, 'origin': origin, 'destination': destination}
                 if edge not in row['physical_branches']:
                     row['physical_branches'].append(edge)
 

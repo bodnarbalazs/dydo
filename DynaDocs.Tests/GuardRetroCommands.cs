@@ -91,6 +91,59 @@ public static class GuardRetroCommands
     // GS-02, Claude Bash, same session: single-line sed -i with backticks in single quotes.
     public const string Gs02SedBacktickSingleLine = "sed -i 's#repository path `tools/ci_runner/host/README.md` points#repository path `infra/ci/README.md` points#' dydo/guides/ripple-e1-activation.md; git diff dydo/guides/ripple-e1-activation.md | grep '^[+-]' ; git add infra/ci/README.md infra/ci/lc1108-linux-preflight.sh infra/ci/lc1108-windows-preparation.sh dydo/guides/ripple-e1-activation.md; git status --short | head";
 
+    // DYD-422: single-quoted text a program on the line may run, a reading that may not be the
+    // shell's, or text in a comment or a body; the guard and the analyzer refuse every one as on master.
+    public static Xunit.TheoryData<string> Gs02SingleQuotedLiteralLines => new()
+    {
+        "bash -c 'echo x > $OUT'",
+        "sh -c 'printf x > $OUT'",
+        "zsh -c 'echo $(rm dydo/index.md)'",
+        "su -c 'echo x > $OUT'",
+        "script -c 'echo x > $OUT'",
+        "xargs sh -c 'echo x > $OUT'",
+        "xargs echo '$(rm dydo/index.md)'",
+        "find . -exec sh -c 'echo x > $OUT' \\;",
+        "find . -exec echo '$(rm dydo/index.md)' \\;",
+        "docker exec box sh -c 'echo x > $OUT'",
+        "kubectl exec pod -- sh -c 'echo x > $OUT'",
+        "tmux send-keys 'echo x > $OUT' Enter",
+        "watch echo '$(rm dydo/index.md)'",
+        "Invoke-Expression 'echo x > $OUT'",
+        "printf '%s' '$(rm dydo/index.md)' | sh",
+        "echo '$(rm dydo/index.md)' | tee notes.md | bash",
+        "printf '%s' '$(rm dydo/index.md)' > /dev/stdout | sh",
+        "echo '$(rm dydo/index.md)' | iex",
+        "sh <(printf '%s' '$(rm dydo/index.md)')",
+        "source <(echo '$(rm dydo/index.md)')",
+        "printf '%s' '$(rm dydo/index.md)' > >(sh)",
+        "{ printf '%s' '$(rm dydo/index.md)'; } | sh",
+        "{ echo '$(rm dydo/index.md)'; echo y; } | sh",
+        "(echo '$(rm dydo/index.md)') | sh",
+        "for f in a; do echo '$(rm dydo/index.md)'; done | sh",
+        "for f in a; do echo a; echo '$(rm dydo/index.md)'; done | sh",
+        "echo '$(rm dydo/index.md)' & sh",
+        "echo '$(rm dydo/index.md)' \\\n| sh",
+        "echo '$HOME' (iex 'rm dydo/index.md') > notes.md",
+        "sed -i 's/x/$TARGET/e' notes.md",
+        "sed -i '1e rm $TARGET' notes.md",
+        "sed -i 's/`x`/y/;e rm dydo/index.md' notes.md",
+        "sed -e 's/`x`/y/' -e '1e rm dydo/index.md' -i notes.md",
+        "sed -i -f run.sed 's/`x`/y/' notes.md",
+        "sed -i '1e rm dydo/index.md' 's/`x`/y/' notes.md",
+        "sed -i 's/`x`/y/w dydo/index.md' notes.md",
+        "awk '{system(\"rm $TARGET\")}' notes.md > out.md",
+        "echo $'\\'' $(echo x > $OUT) '$'\\'''",
+        "echo ^\"'$(echo x > $OUT)'^\"",
+        "echo hi # don't\necho $(rm dydo/index.md) 'ok'",
+        "cat <<EOF\necho don\\'t $(rm dydo/index.md) won\\'t\nEOF",
+        "cat > notes.md <<EOF\nprintf '%s' '$(rm dydo/index.md)'\nEOF",
+        "grep x <<< '$(rm dydo/index.md)'",
+        "printf '%s' 'a $b' > $OUT",
+        "echo 'x' > \"$OUT\"",
+        "printf '%s' 'x' > $(echo notes.md)",
+        "sed -i 's/`x`/y/' $FILE",
+    };
+
     // DYD-422 review (Codex seat 2, c49dd869): lines whose single-quoted text a state change or a
     // non-data command on the same command line makes code, each refused as on master (the
     // narrowed rule refuses most for their second command alone).

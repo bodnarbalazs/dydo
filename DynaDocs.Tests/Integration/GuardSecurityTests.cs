@@ -966,6 +966,7 @@ public class GuardSecurityTests : IntegrationTestBase
     [MemberData(nameof(GuardRetroCommands.Gs02NarrowedLines), MemberType = typeof(GuardRetroCommands))]
     [MemberData(nameof(GuardRetroCommands.Gs02ExpandingWordLines), MemberType = typeof(GuardRetroCommands))]
     [MemberData(nameof(GuardRetroCommands.Gs02PowerShellReadingLines), MemberType = typeof(GuardRetroCommands))]
+    [MemberData(nameof(GuardRetroCommands.Gs02BreakCharacterLines), MemberType = typeof(GuardRetroCommands))]
     public async Task Gs02_WriteThenRun_IsDeniedInEveryShell(string command)
     {
         await SetupClaimedAgent();
@@ -986,6 +987,7 @@ public class GuardSecurityTests : IntegrationTestBase
     // bash; relief needs PowerShell's reading too, so the text it runs is refused as on master.
     [Theory]
     [MemberData(nameof(GuardRetroCommands.Gs02PowerShellReadingLines), MemberType = typeof(GuardRetroCommands))]
+    [MemberData(nameof(GuardRetroCommands.Gs02BreakCharacterLines), MemberType = typeof(GuardRetroCommands))]
     public async Task Gs02_CodexPwshEnvelope_IsDenied(string script)
     {
         await SetupClaimedAgent();

@@ -32,6 +32,10 @@ as on master; relief for git-chained lines is deferred to a follow-up.
 - No text outside single quotes may be read otherwise by either shell: bash's `$'...'`, a lone `&`,
   a caret, `--%`, a typographic quote, or a word the shell may expand (`*`, `?`, `[`, `{`, `~`,
   PowerShell's `@`). Bash turns `?f` into an existing file named `-f`.
+- No break character outside single quotes either: a carriage return (pwsh ends a statement at a
+  bare one, so `echo 'x'<CR>iex '...'` runs `iex`), any other control character but tab and line
+  feed, NEL, or a Unicode line or paragraph separator. Inside single quotes both shells keep them
+  literal, so the multi-line `printf` still writes its destination.
 - Everything else is searched as before and refused as on master: a second command of any kind
   (`git`, `grep`, `head`, a pipe), `echo don\'t $(rm dydo/index.md) won\'t` for every caller, the
   same line in a `cat <<EOF` body, `eval 'echo x' '> $OUT'`, apostrophes in comments and expanding

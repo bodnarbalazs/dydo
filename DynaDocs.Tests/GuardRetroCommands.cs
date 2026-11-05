@@ -288,6 +288,26 @@ public static class GuardRetroCommands
         "printf ?v 'a[$(echo PWNED >&2)]' x",
     };
 
+    // DYD-422 review (narrow seat, 7442e97d): pwsh 7.6.9 ends a statement at a bare carriage return
+    // the readers took for a space, so iex ran the quoted text; every other control character,
+    // NEL and the Unicode line and paragraph separators outside single quotes are refused with it.
+    public static Xunit.TheoryData<string> Gs02BreakCharacterLines => new()
+    {
+        "echo 'x'\riex '$(touch PWNED)' > notes.md",
+        "echo 'x' \riex '$(touch PWNED)' > notes.md",
+        "printf 'x'\riex '$(touch PWNED)' > notes.md",
+        "echo x\rInvoke-Expression '$(touch PWNED)' > notes.md",
+        "echo 'x'\viex '$(touch PWNED)' > notes.md",
+        "echo 'x'\fiex '$(touch PWNED)' > notes.md",
+        "echo 'x'\0iex '$(touch PWNED)' > notes.md",
+        "echo 'x'\u001biex '$(touch PWNED)' > notes.md",
+        "echo 'x'\u007fiex '$(touch PWNED)' > notes.md",
+        "echo 'x'\u0085iex '$(touch PWNED)' > notes.md",
+        "echo 'x'\u009biex '$(touch PWNED)' > notes.md",
+        "echo 'x'\u2028iex '$(touch PWNED)' > notes.md",
+        "echo 'x'\u2029iex '$(touch PWNED)' > notes.md",
+    };
+
     // DYD-422 review (split seat D, 6404cce7): text only PowerShell runs, which a Codex pwsh argv
     // envelope hands to PowerShell even when the caller is read as bash; relief needs both readings.
     public static Xunit.TheoryData<string> Gs02PowerShellReadingLines => new()

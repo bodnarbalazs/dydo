@@ -1658,6 +1658,7 @@ public class BashCommandAnalyzerTests
     [MemberData(nameof(NarrowedLines))]
     [MemberData(nameof(ExpandingWordLines))]
     [MemberData(nameof(PowerShellReadingLines))]
+    [MemberData(nameof(BreakCharacterLines))]
     public void Analyze_SingleQuotedTextAProgramMayRun_IsABypass(string command)
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
@@ -1689,6 +1690,32 @@ public class BashCommandAnalyzerTests
 
     // DYD-422 review: text only PowerShell runs; relief needs PowerShell's reading for every caller.
     public static TheoryData<string> PowerShellReadingLines => GuardRetroCommands.Gs02PowerShellReadingLines;
+
+    // DYD-422 review: a break character outside single quotes, which pwsh may read as a new statement.
+    public static TheoryData<string> BreakCharacterLines => GuardRetroCommands.Gs02BreakCharacterLines;
+
+    // The narrow seat's exact forms, which write no path: the bypass stays in every dialect.
+    [Theory]
+    [InlineData("echo 'x'\riex '$(touch PWNED)'")]
+    [InlineData("printf 'x'\riex '$(touch PWNED)'")]
+    [InlineData("echo x\rInvoke-Expression '$(touch PWNED)'")]
+    public void Analyze_BreakCharacterOutsideTheQuote_IsABypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+    }
+
+    // Inside single quotes bash 5.3.9 and pwsh 7.6.9 keep a carriage return, NEL and the Unicode
+    // separators literal (measured), so a quote holding them stays literal data.
+    [Theory]
+    [InlineData("printf '%s' 'a\r$(touch PWNED)\rb' > notes.md")]
+    [InlineData("printf '%s' 'a\r\n$HOME\r\n' > notes.md")]
+    [InlineData("echo 'a\u0085$(touch PWNED)\u2028b\u2029' > notes.md")]
+    public void Analyze_BreakCharacterInsideTheQuote_StaysLiteralData(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.False(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+    }
 
     // Split seat B's probes that write no path keep master's bypass warning; sed with a ?f operand
     // and no single-quoted bypass text is no bypass, on master or now.

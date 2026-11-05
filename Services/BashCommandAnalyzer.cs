@@ -549,12 +549,21 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     // Text outside single quotes a shell may read otherwise, in either reading: bash's $'...', a lone
     // &, a caret (an escape only to cmd), PowerShell's stop-parsing token --%, a typographic quote
-    // anywhere, or a character that expands a word into others (a glob * ? [, a brace {, a tilde ~,
-    // PowerShell's @ splat), so an option, operand or target the guard reads may not be the one that runs.
+    // anywhere, a character that expands a word into others (a glob * ? [, a brace {, a tilde ~,
+    // PowerShell's @ splat), so an option, operand or target the guard reads may not be the one that
+    // runs, or a break character (<see cref="IsBreakCharacter"/>).
     private static bool MayReadOtherwise(string code, string outside) =>
         outside.Contains("$'", StringComparison.Ordinal) || LoneAmpersandRegex().IsMatch(outside)
         || outside.AsSpan().IndexOfAny("^*?[{~@") >= 0 || outside.Contains("--%", StringComparison.Ordinal)
-        || code.AsSpan().IndexOfAny(TypographicQuotes) >= 0;
+        || code.AsSpan().IndexOfAny(TypographicQuotes) >= 0 || outside.Any(IsBreakCharacter);
+
+    // A character a shell may read as a line or statement break, or the readers may not model: a
+    // carriage return (pwsh ends a statement at a bare one, where the readers see a space), any
+    // other control character but tab and line feed (C0, DEL, C1 and NEL among them), and every
+    // Unicode line or paragraph separator. Inside single quotes both shells keep them literal.
+    private static bool IsBreakCharacter(char c) => c is not ('\t' or '\n')
+        && (char.IsControl(c) || char.GetUnicodeCategory(c) is System.Globalization.UnicodeCategory.LineSeparator
+            or System.Globalization.UnicodeCategory.ParagraphSeparator);
 
     // The quote in a word of the command, when the command takes that word as data: any word of
     // printf or echo, and only the script of sed, whose other words are files it rewrites.

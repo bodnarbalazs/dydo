@@ -87,14 +87,14 @@ public sealed class ReleaseWorkflowTests
     }
 
     [Theory]
-    [InlineData("ci.yml", 3)]
-    [InlineData("release.yml", 3)]
-    public void Workflows_ProvisionPatchedRuntimeBeforeDotnetConsumers(string name, int expectedJobs)
+    [InlineData("ci.yml", "python-coverage dotnet-coverage dotnet-coverage-union build full-stack")]
+    [InlineData("release.yml", "build validation nuget")]
+    public void Workflows_ProvisionPatchedRuntimeBeforeDotnetConsumers(string name, string expectedJobs)
     {
         var workflow = File.ReadAllText(RepositoryFile(".github", "workflows", name));
-        var jobs = ActiveJobs(workflow).Values.Where(job => job.Contains("actions/setup-dotnet@", StringComparison.Ordinal)).ToArray();
-        Assert.Equal(expectedJobs, jobs.Length);
-        Assert.All(jobs, AssertPatchedRuntimeProvisioning);
+        var jobs = ActiveJobs(workflow).Where(job => job.Value.Contains("actions/setup-dotnet@", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(expectedJobs.Split(' '), jobs.Select(job => job.Key));
+        Assert.All(jobs.Select(job => job.Value), AssertPatchedRuntimeProvisioning);
     }
 
     [Fact]
@@ -236,10 +236,11 @@ public sealed class ReleaseWorkflowTests
             SwapSteps(workflow, "Setup pnpm", "Install Node assurance toolchain")));
     }
 
-    // DYD-553: both CI jobs that restore the coverage package, on each of their Linux and Windows
-    // legs, restore its pnpm lock frozen, with pnpm set up before Node.js caches its store.
+    // DYD-553: every CI job that restores the coverage package, on each of its Linux and Windows
+    // legs, restores its pnpm lock frozen, with pnpm set up before Node.js caches its store.
     [Theory]
     [InlineData("python-coverage")]
+    [InlineData("dotnet-coverage")]
     [InlineData("assurance-cancellation")]
     public void CiWorkflow_RestoresTheCoveragePackageFromItsPnpmLock(string name)
     {

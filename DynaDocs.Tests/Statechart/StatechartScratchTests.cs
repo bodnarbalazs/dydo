@@ -1,5 +1,6 @@
 namespace DynaDocs.Tests.Statechart;
 
+using System.ComponentModel;
 using DynaDocs.Services.Statechart;
 
 public class StatechartScratchTests
@@ -22,6 +23,31 @@ public class StatechartScratchTests
         Assert.Equal("keep", File.ReadAllText(Path.Combine(foreign.FullName, "sentinel")));
         Assert.Contains("deleted-after-authoritative-drain", File.ReadAllText(scratch.Journal));
         Assert.Throws<InvalidOperationException>(() => job.Attach(Environment.ProcessId));
+    }
+
+    // Each native directory primitive surfaces the kernel's refusal instead of reusing, guessing or deleting.
+    [SkippableFact]
+    public void NativeDirectoryPrimitivesRefuseExistingMissingPlainFileAndOccupiedTargets()
+    {
+        Skip.IfNot(OperatingSystem.IsWindows(), "Windows directory primitives run only on Windows.");
+        using var scope = new StatechartTestDirectory();
+        var directory = Path.Combine(scope.Path, "directory");
+        WindowsStatechartFiles.CreateExclusive(directory);
+        Assert.Equal(183, Assert.Throws<Win32Exception>(() => WindowsStatechartFiles.CreateExclusive(directory)).NativeErrorCode);
+        Assert.Equal(2, Assert.Throws<Win32Exception>(() => WindowsStatechartFiles.Open(Path.Combine(scope.Path, "missing"))).NativeErrorCode);
+        var file = Path.Combine(scope.Path, "file");
+        File.WriteAllText(file, "plain file");
+        using (var handle = WindowsStatechartFiles.Open(file))
+            Assert.Equal("Statechart scratch is not a plain directory.",
+                Assert.Throws<IOException>(() => WindowsStatechartFiles.Identity(handle)).Message);
+
+        File.WriteAllText(Path.Combine(directory, "occupant"), "keep");
+        using (var handle = WindowsStatechartFiles.Open(directory))
+        {
+            Assert.Matches("^[0-9a-f]{8}:[0-9a-f]{16}$", WindowsStatechartFiles.Identity(handle));
+            Assert.Equal(145, Assert.Throws<Win32Exception>(() => WindowsStatechartFiles.DeleteOnClose(handle)).NativeErrorCode);
+        }
+        Assert.Equal("keep", File.ReadAllText(Path.Combine(directory, "occupant")));
     }
 
     [Fact]

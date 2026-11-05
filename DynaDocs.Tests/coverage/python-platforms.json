@@ -2,8 +2,19 @@
   "schema": 1,
   "neutral": "linux",
   "native": {
+    "DynaDocs.Tests/coverage/held_directory.py": {
+      "sha256": "a2459a2d22d4ec634e3c15d4d7a470b462765f5163e06ce54a23541057cd13d3",
+      "windows": [
+        "_windows_open",
+        "_windows_parent",
+        "_windows_identity",
+        "_nt_create",
+        "_windows_directory",
+        "_windows_file"
+      ]
+    },
     "DynaDocs.Tests/coverage/run_tests.py": {
-      "sha256": "8222528ff4426d235278046322143eaedd74a8ee32c7309aa847a80477288528",
+      "sha256": "66ba26ce9f71c1698fa1bb4db68bb54f593e4de08615a4da239c88c18816f4c8",
       "windows": [
         "_join_kill_on_close_job",
         "_end_member",

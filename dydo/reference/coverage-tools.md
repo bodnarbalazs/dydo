@@ -276,6 +276,11 @@ The release workflow's Windows `validation` job downloads the TLC jar, the win-x
 from their pinned sources in `Resources/Statechart/dependency-lock.json`, refuses any that does not
 match its pinned hash, and names them to the `--force-run` step. The POSIX-only statechart tests
 still skip there by name, so the code only they reach counts as uncovered on Windows.
+That provisioning is the shared `.github/workflows/provision-statechart.ps1`, which the CI
+`statechart-windows` job also calls. On every pull request and every push to `master`, `main` or `feature/**` the job runs
+`skills/engineering/statechart/scripts/test/windows.test.ts` on `windows-latest`, and
+`.github/workflows/assert-node-tests-ran.ps1 -MinimumTests 6` fails it on a missing report, a skip
+or todo, a failure, or fewer than 6 tests.
 The runner also materializes the
 gitignored `.claude/skills` and `.agents/skills` host discovery directories into the snapshot, so
 the canonical-tree guard's link-resolution check is not vacuous there. The runner marks its

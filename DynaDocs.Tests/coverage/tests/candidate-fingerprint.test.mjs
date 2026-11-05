@@ -40,12 +40,13 @@ async function scene(t) {
   await chmod(join(bin, "dydo"), 0o755);
   await writeFile(join(bin, "dydo.cmd"), `@"${process.execPath}" "%~dp0dydo-stub.mjs" %*\r\n`);
   const log = join(root, "stub.ndjson");
-  const env = { ...withoutPath(process.env), PATH: bin, DYDO_STUB_LOG: log };
+  // Match PATHEXT spelling to the fixture's exact executable-path assertion.
+  const env = { ...withoutPath(process.env), PATH: bin, PATHEXT: ".cmd", DYDO_STUB_LOG: log };
   return { root, bin, checkout, env, log, readPath: join(checkout, "AGENTS.md") };
 }
 
 function withoutPath(env) {
-  return Object.fromEntries(Object.entries(env).filter(([key]) => key.toUpperCase() !== "PATH" && !key.startsWith("DYDO_STUB_")));
+  return Object.fromEntries(Object.entries(env).filter(([key]) => !["PATH", "PATHEXT"].includes(key.toUpperCase()) && !key.startsWith("DYDO_STUB_")));
 }
 
 // What Claude does on a Read once the hook is configured: the hook command, through a shell, in the checkout.

@@ -32,7 +32,8 @@ public class CliScenario
             TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(5));
     }
 
-    internal async Task<CliResult> RunProcessAsync(ProcessStartInfo start, TimeSpan timeout, TimeSpan cleanupTimeout)
+    internal async Task<CliResult> RunProcessAsync(ProcessStartInfo start, TimeSpan timeout, TimeSpan cleanupTimeout,
+        Func<string, string>? readStat = null)
     {
         Assert.True(_cleanupConfirmed, $"Previous child termination is unconfirmed; retained scratch directory: {DirectoryPath}");
         using var process = Process.Start(start)!;
@@ -49,9 +50,16 @@ public class CliScenario
         {
             try
             {
+                using var cleanup = new CancellationTokenSource(cleanupTimeout);
+                var descendants = new CliProcessTree(readStat ?? File.ReadAllText);
                 if (!process.HasExited)
+                {
+                    descendants.Capture(process.Id, cleanup.Token);
                     process.Kill(entireProcessTree: true);
-                await completion.WaitAsync(cleanupTimeout);
+                }
+                await completion.WaitAsync(cleanup.Token);
+                await descendants.WaitForTerminationAsync(cleanup.Token);
+                cleanup.Token.ThrowIfCancellationRequested();
                 _cleanupConfirmed = true;
             }
             catch (Exception error)

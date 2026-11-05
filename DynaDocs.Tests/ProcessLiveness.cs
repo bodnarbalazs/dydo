@@ -21,27 +21,38 @@ internal static class ProcessLiveness
     {
         // A missing proc mount must not make every PID look terminated.
         _ = readStat("/proc/self/stat");
+        var stat = ReadLinuxStat(pid, readStat);
+        return stat is null || IsTerminatedLinuxState(pid, stat.Value.State);
+    }
+
+    internal static (string State, int Parent, ulong Start)? ReadLinuxStat(int pid, Func<string, string> readStat)
+    {
         string stat;
         try
         {
             stat = readStat($"/proc/{pid}/stat");
         }
-        catch (FileNotFoundException) { return true; }
-        catch (DirectoryNotFoundException) { return true; }
+        catch (FileNotFoundException) { return null; }
+        catch (DirectoryNotFoundException) { return null; }
 
         var end = stat.LastIndexOf(')');
         if (!stat.StartsWith($"{pid} (", StringComparison.Ordinal) || end < 0)
             throw new InvalidDataException($"Invalid process stat for {pid}.");
         var fields = stat[(end + 1)..].Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (fields.Length < 20 || !ulong.TryParse(fields[19], out _))
+        if (fields.Length < 20 || !ulong.TryParse(fields[19], out var start) || !int.TryParse(fields[1], out var parent))
             throw new InvalidDataException($"Incomplete process stat for {pid}.");
 
+        return (fields[0], parent, start);
+    }
+
+    internal static bool IsTerminatedLinuxState(int pid, string state)
+    {
         // A zombie cannot run or hold pipes; only its adopting parent can reap it.
-        return fields[0] switch
+        return state switch
         {
             "Z" => true,
             "R" or "S" or "D" or "T" or "t" or "X" or "x" or "K" or "W" or "P" or "I" => false,
-            _ => throw new InvalidDataException($"Unknown process state for {pid}: {fields[0]}.")
+            _ => throw new InvalidDataException($"Unknown process state for {pid}: {state}.")
         };
     }
 

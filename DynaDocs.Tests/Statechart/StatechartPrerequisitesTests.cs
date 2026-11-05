@@ -26,8 +26,9 @@ public class StatechartPrerequisitesTests
         using var scope = new StatechartTestDirectory();
         Assert.Throws<IOException>(() => StatechartPrerequisites.Java(scope.Path, "./missing", Environment.GetEnvironmentVariable("PATH")));
         File.WriteAllText(Path.Combine(scope.Path, "fake.jar"), "changed");
-        Assert.Throws<IOException>(() => StatechartPrerequisites.Tlc(scope.Path, "fake.jar"));
-        Assert.Null(StatechartPrerequisites.Tlc(scope.Path, null));
+        var pinned = new StatechartAssets().CheckerDigest;
+        Assert.Throws<IOException>(() => StatechartPrerequisites.Tlc(scope.Path, "fake.jar", pinned));
+        Assert.Null(StatechartPrerequisites.Tlc(scope.Path, null, pinned));
     }
 
     [Fact]

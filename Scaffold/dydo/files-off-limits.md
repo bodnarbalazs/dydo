@@ -125,8 +125,13 @@ move, copy, permission change - is blocked; read them with `Read`, `cat` or `hea
 kinds of code whose file operations the command does not show are refused whatever they
 touch: inline interpreter code (`python -c`, `node -e`, `ruby -e`, `perl -e`, `php -r`) and
 a Python program on stdin (`python -`, or `python` with no script while a heredoc,
-here-string, pipe or `<` redirection feeds it). Any other interpreter reading a program from
-stdin (`node - <<'EOF'`, `cat x.js | node`) is not followed, like a script file, which runs
+here-string, pipe or `<` redirection feeds it), also when a runner's `run` subcommand
+starts it (`uv run python -`, `poetry run python3 -`, `cat x.py | uv run python`). Only
+one runner is followed: Python behind a runner with no `run` subcommand (`uvx python -`,
+`pyenv exec python -`) or behind a second runner that `run` starts (`uv run poetry run
+python -`) is not recognised. Any other
+interpreter reading a program from stdin (`node - <<'EOF'`, `cat x.js | node`) is not
+followed, like a script file, which runs
 with its own file operations unchecked, so the tier stops accidents, not a deliberate route
 around it. These are
 dydo's own system files: agents read them to orient themselves and never write them directly,

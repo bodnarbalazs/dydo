@@ -104,6 +104,8 @@ cites DR 061. A host rule is the host's own permission or sandbox refusal, with 
 wording. For example, row 5 failing with "Could not resolve to a Repository" means the row was
 **allowed**, which is a parity failure, not a pass.
 
+A run's verbatim row records are kept in [`evidence/`](evidence/) as `<run id>-rows.md`.
+
 ## Cleanup
 
 Probe branches are never deleted by an agent. When the matrix is recorded, the captain names

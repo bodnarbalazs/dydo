@@ -150,11 +150,11 @@ def collect(root, output, source_paths, command):
         if not path.is_relative_to(root) or not path.is_file():
             raise ValueError(f"Invalid Python target source: {relative}")
         sources.append(str(path))
-    inventory = output / "inventory.pickle"
-    inventory.write_bytes(inventory_cache(
-        {path: Path(path).read_text(encoding="utf-8-sig") for path in sources}))
-    config = {"schema": 1, "root": str(root), "output": str(output), "sources": sources,
-              "inventory": str(inventory)}
+    config = {"schema": 1, "root": str(root), "output": str(output), "sources": sources}
+    cache = inventory_cache({path: Path(path).read_text(encoding="utf-8-sig") for path in sources})
+    if cache is not None:  # None: it did not read back as computed, so every process computes fresh
+        (output / "inventory.pickle").write_bytes(cache)
+        config["inventory"] = str(output / "inventory.pickle")
     config_path = output / "config.json"
     config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
     startup = output / "startup"

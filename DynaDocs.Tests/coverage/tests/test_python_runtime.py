@@ -1,4 +1,5 @@
 """Lambda witnesses must not borrow execution from their containing statement."""
+import copy
 import json
 import os
 import pickle
@@ -119,6 +120,23 @@ _WRONG_STRUCTURES = {
     'row id of another form': lambda payload: _first_row(payload).update(id='work:9:0'),
     'module id of another form': lambda payload: _module(payload).update(id='<module>:2:0'),
     'row listed twice': lambda payload: _entry(payload)[2][0].append(_first_row(payload)),
+    'body line keys integers': lambda payload: _first_row(payload).update(
+        body_lines={int(line): 0 for line in _first_row(payload)['body_lines']}),
+    'body line missing': lambda payload: _first_row(payload)['body_lines'].pop('2'),
+    'body line in another form': lambda payload: _first_row(payload)['body_lines'].update({'02': 0}),
+    'body line no code implies': lambda payload: _first_row(payload)['body_lines'].update({'9': 0}),
+    'module body line missing': lambda payload: _module(payload)['body_lines'].pop('5'),
+}
+
+
+# Writer bugs a child's validator cannot see as well as ones it can: the sealed inventory is not the computed one.
+_WRITER_MISMATCHES = {
+    'body line dropped': lambda payload: _first_row(payload)['body_lines'].pop('2'),
+    'end column shifted': lambda payload: _first_row(payload).update(end_column=_first_row(payload)['end_column'] + 1),
+    'end line a float': lambda payload: _first_row(payload).update(end_line=float(_first_row(payload)['end_line'])),
+    'index owner moved': lambda payload: _index(payload).update(
+        {key: _module(payload) for key, owner in _index(payload).items()
+         if owner is _first_row(payload) and key != _first_row(payload)['_key']}),
 }
 
 
@@ -490,6 +508,20 @@ outer()
                 self.assertEqual([source], [call.args[0] for call in computed.call_args_list])
                 self.assertEqual(_inventory(CallableWitness({path: source})), _inventory(witness))
                 self.assertEqual(expected, _counted(witness, workload))
+
+    def test_a_cache_that_does_not_read_back_as_its_inventory_is_not_given(self):
+        path = str(Path('writer-subject.py').resolve())
+        source = 'def work(flag):\n    if flag:\n        return list(x for x in (1, 2) if x)\n    return []\n'
+        self.assertIsNotNone(inventory_cache({path: source}))
+        for name, mismatch in _WRITER_MISMATCHES.items():
+            def dumps(payload, mismatch=mismatch):
+                payload = copy.deepcopy(payload)
+                mismatch(payload)
+                return pickle.dumps(payload)
+
+            with self.subTest(writer=name), patch.object(
+                    python_runtime, 'pickle', types.SimpleNamespace(dumps=dumps, loads=pickle.loads)):
+                self.assertIsNone(inventory_cache({path: source}))
 
     def test_a_cached_inventory_counts_a_real_workload_exactly_as_a_fresh_one(self):
         runtime = python_runtime.__file__

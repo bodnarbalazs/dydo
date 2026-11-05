@@ -3,6 +3,7 @@ import ast
 import hashlib
 import inspect
 from itertools import chain
+from operator import itemgetter
 import pickle
 import sys
 import types
@@ -120,6 +121,7 @@ def _digest(source):
 
 _CACHE_SCHEMA = 'dydo-python-inventory/2'
 _SEAL_SIZE = hashlib.sha256().digest_size
+_START = itemgetter(0)
 _ROW_FIELDS = frozenset(('id', 'path', 'kind', 'line', 'column', 'end_line', 'end_column', 'body_lines',
                          'execution_count', 'branches', 'physical_branches', '_key'))
 
@@ -145,10 +147,28 @@ def _unsealed(cache):
         return None
 
 
+def _exact_form(inventory):
+    """The inventory as one type-exact text: its rows, its module, and each index key's owner by position."""
+    rows, module, index = inventory
+    owners = {id(owner): position for position, owner in enumerate([*rows, module])}
+    return repr((rows, module, [(key, owners[id(owner)]) for key, owner in index.items()]))
+
+
 def inventory_cache(sources):
-    """Every source's runtime inventory, valid only for this compile state and source text."""
-    return _seal(pickle.dumps({'schema': _CACHE_SCHEMA, 'state': _compile_state(), 'sources': {
-        path: (_digest(source), _runtime_inventory(source, path)) for path, source in sources.items()}}))
+    """Every source's runtime inventory, valid only for this compile state and source text, or None.
+
+    The sealed bytes are read back through a child's own path (seal, unpickle, validator) and given only
+    when they come back as exactly the inventory just computed, so no writer or format bug reaches a child.
+    A cache deliberately rewritten and resealed is a forgery and out of scope: whoever can write it can
+    also rewrite the campaign's sitecustomize.py."""
+    entries = {path: (_digest(source), _runtime_inventory(source, path)) for path, source in sources.items()}
+    cache = _seal(pickle.dumps({'schema': _CACHE_SCHEMA, 'state': _compile_state(), 'sources': entries}))
+    read = _cached_inventories(cache)
+
+    def read_back(path):
+        inventory = _cached_inventory(read.get(path), path, sources[path])
+        return inventory is not None and _exact_form(inventory) == _exact_form(entries[path][1])
+    return cache if read.keys() == entries.keys() and all(map(read_back, sources)) else None
 
 
 def _cached_inventories(cache):
@@ -196,6 +216,19 @@ def _own_ids(rows, module):
             and len(set(ids)) == len(ids))
 
 
+def _implied_body_lines(owners, index):
+    """Every owner's body-line keys are the decimal line starts of every position of the keys mapped to it,
+    plus at most the first lines of the nested code objects mapped to it (a class body adds its own)."""
+    starts = {id(owner): set() for owner in owners}
+    first_lines = {id(owner): set() for owner in owners}
+    for key, owner in index.items():
+        starts[id(owner)].update(map(_START, key[2]))
+        if key != owner['_key']:
+            first_lines[id(owner)].add(key[1])
+    return all(set(map(str, starts[id(owner)])) <= owner['body_lines'].keys()
+               <= set(map(str, starts[id(owner)] | first_lines[id(owner)])) for owner in owners)
+
+
 def _cached_inventory(entry, path, source):
     """The entry's inventory when it is for exactly this text and internally consistent, else None."""
     if type(entry) is not tuple or len(entry) != 2 or entry[0] != _digest(source):
@@ -209,7 +242,8 @@ def _cached_inventory(entry, path, source):
     owners = [*rows, module]
     consistent = (all(_fresh_row(row, path) for row in owners)
                   and _well_formed_keys([*(row['_key'] for row in owners), *index])
-                  and _owned_index(owners, index) and _own_ids(rows, module))
+                  and _owned_index(owners, index) and _own_ids(rows, module)
+                  and _implied_body_lines(owners, index))
     return inventory if consistent else None
 
 

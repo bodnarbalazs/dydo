@@ -146,6 +146,10 @@ damage = {
     "row id of another form": lambda: work.update(id="work:9:0"),
     "two rows with one id": lambda: helper.update(id=work["id"]),
     "row listed twice": lambda: rows.append(work),
+    "body line keys integers": lambda: work.update(body_lines={int(line): 0 for line in work["body_lines"]}),
+    "body line missing": lambda: work["body_lines"].pop("2"),
+    "body line in another form": lambda: work["body_lines"].update({"02": 0}),
+    "body line no code implies": lambda: work["body_lines"].update({"9": 0}),
 }
 case = sys.argv[1]
 if case == "no cache":
@@ -160,6 +164,44 @@ elif case == "byte damage that still unpickles":
 else:
     damage[case]()
     cache.write_bytes(_seal(pickle.dumps(payload)))
+subprocess.run([sys.executable, "-c", "import subject; subject.work(); subject.helper()"], check=True)
+"""
+
+
+# The facade with a writer bug forced into its serializer: the sealed inventory differs from the one computed.
+_MISMATCHED_WRITER = """\
+import copy, pickle, sys, types
+tools, case = sys.argv.pop(1), sys.argv.pop(1)
+sys.path.insert(0, tools)
+import python_coverage, python_runtime
+
+
+def mismatched(payload):
+    payload = copy.deepcopy(payload)
+    (rows, _, _), = (inventory for _, inventory in payload["sources"].values())
+    work = rows[0]
+    {"body line dropped": lambda: work["body_lines"].pop("2"),
+     "body line added": lambda: work["body_lines"].update({"9": 0}),
+     "end column shifted": lambda: work.update(end_column=work["end_column"] + 1),
+     "end line a float": lambda: work.update(end_line=float(work["end_line"]))}[case]()
+    return pickle.dumps(payload)
+
+
+if case not in ("no cache", "faithful"):
+    python_runtime.pickle = types.SimpleNamespace(dumps=mismatched, loads=pickle.loads)
+raise SystemExit(python_coverage.main())
+"""
+
+
+_UNCACHED_OR_AS_WRITTEN = """\
+import json, os, subprocess, sys
+from pathlib import Path
+
+if sys.argv[1] == "no cache":
+    config_path = Path(os.environ["DYDO_PYTHON_COVERAGE_CONFIG"])
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    del config["inventory"]
+    config_path.write_text(json.dumps(config), encoding="utf-8")
 subprocess.run([sys.executable, "-c", "import subject; subject.work(); subject.helper()"], check=True)
 """
 
@@ -329,9 +371,39 @@ class PythonCoverageTests(unittest.TestCase):
                          "row key a list", "row key line not an int", "row key positions a list",
                          "row key position short", "module key absent", "row id not a string",
                          "row id of another form", "two rows with one id", "row listed twice",
-                         "byte damage that still unpickles"):
+                         "body line keys integers", "body line missing", "body line in another form",
+                         "body line no code implies", "byte damage that still unpickles"):
                 with self.subTest(cache=case):
                     self.assertEqual(expected, measured(case))
+
+    def test_a_cache_that_does_not_read_back_as_its_inventory_is_never_written(self):
+        tools = Path(__file__).resolve().parents[1]
+        python = tools.parents[1] / STATIC_GATE_INTERPRETER
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text(_TWO_CALLABLES, encoding="utf-8")
+            (root / "driver.py").write_text(_UNCACHED_OR_AS_WRITTEN, encoding="utf-8")
+            (root / "writer.py").write_text(_MISMATCHED_WRITER, encoding="utf-8")
+
+            def measured(case):
+                output = root / f"evidence-{len(list(root.iterdir()))}"
+                result = subprocess.run([
+                    str(python), str(root / "writer.py"), str(tools), case, "--root", str(root),
+                    "--output", str(output), "--sources-json", json.dumps(["subject.py"]),
+                    "--command-json", json.dumps(["{python}", "-S", "driver.py", case]),
+                ], cwd=root, text=True, capture_output=True)
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                return ((output / "inventory.pickle").exists(),
+                        json.loads((output / "counters.json").read_text()))
+
+            _, expected = measured("no cache")
+            self.assertEqual([("helper:7:0", 1, 0, 0), ("work:1:0", 1, 1, 3)],
+                             [(row["id"], row["execution_count"], len(row["branches"]),
+                               len(row["physical_branches"])) for row in expected["callables"]])
+            self.assertEqual((True, expected), measured("faithful"))
+            for case in ("body line dropped", "body line added", "end column shifted", "end line a float"):
+                with self.subTest(writer=case):
+                    self.assertEqual((False, expected), measured(case))
 
     def test_counter_union_refuses_every_inconsistent_receipt(self):
         base = _counter_receipt([_counter_row()])

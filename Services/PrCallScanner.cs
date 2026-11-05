@@ -37,7 +37,15 @@ internal static partial class PrCallScanner
         new() { ['X'] = "method", ['H'] = "header", ['f'] = "field", ['F'] = "field", ['q'] = "jq", ['t'] = "template", ['p'] = "preview" },
         ["method", "header", "raw-field", "field", "hostname", "input", "jq", "template", "cache", "preview"]);
 
+    // What bash or PowerShell may expand in a word, quoted or not: $ and backtick substitutions and
+    // variables, ~, glob and brace characters, and PowerShell's ( ) group and @ splat. Over-matching
+    // a literal name only keeps the warning.
+    private static readonly char[] ExpansionCharacters = ['$', '`', '~', '*', '?', '[', '{', '}', '(', '@'];
+
     private sealed record Options(Dictionary<char, string> Short, HashSet<string> Long);
+
+    // An option's value and the index of the word it was read from (Words.Count when it is missing).
+    private readonly record struct Option(string Name, string Value, int Word);
 
     /// <summary>
     /// The PR calls <paramref name="command"/> makes when <paramref name="dialect"/> runs it.
@@ -72,7 +80,9 @@ internal static partial class PrCallScanner
     /// <paramref name="command"/> (DYD-639): its last <c>--body-file</c> or <c>-F</c>, as gh takes
     /// it, written as the call wrote it. Null when the call names none, when no reading of the call
     /// finishes, or when its readings disagree. A call inside a wrapper's string or a substitution
-    /// reads unfinished from its launch, so a check that needs the body keeps its warning.
+    /// reads unfinished from its launch, so a check that needs the body keeps its warning. Null too
+    /// when the operand's word, as written, holds anything its shell may expand
+    /// (<see cref="ExpansionCharacters"/>): the file gh opens is then unknown, so the guard fails closed.
     /// </summary>
     public static string? BodyFileAt(string command, int launch, ShellDialect dialect = ShellDialect.Unknown)
     {
@@ -80,14 +90,15 @@ internal static partial class PrCallScanner
         var files = Readings(dialect, line)
             .Select(posix => ShellReader.Read(line, posix))
             .Where(reading => !reading.Failed)
-            .Select(reading => BodyFileOf(reading.Source.Commands[0].Words))
+            .Select(reading => BodyFileOf(reading.Source.Commands[0]))
             .Distinct()
             .ToList();
         return files is [{ } file] ? file : null;
     }
 
-    private static string? BodyFileOf(IReadOnlyList<string> words)
+    private static string? BodyFileOf(ShellReader.Command command)
     {
+        var words = command.Words;
         var at = CommandPosition.Skip(words);
         if (at >= words.Count || CommandPosition.ProgramName(words[at]) != "gh")
             return null;
@@ -98,9 +109,25 @@ internal static partial class PrCallScanner
             return null;
 
         var parsed = Parse(rest[(sub + 1)..], PrOptions);
-        return parsed.Positionals.FirstOrDefault() is { } verb && verb.Equals("create", StringComparison.OrdinalIgnoreCase) && !parsed.Help
-            ? Values(parsed.Options, "body-file").LastOrDefault()
-            : null;
+        if (parsed.Positionals.FirstOrDefault() is not { } verb || !verb.Equals("create", StringComparison.OrdinalIgnoreCase) || parsed.Help)
+            return null;
+
+        var last = parsed.Options.FindLastIndex(o => o.Name == "body-file");
+        if (last < 0)
+            return null;
+        var file = parsed.Options[last];
+        var written = at + sub + 2 + file.Word;
+        return written >= words.Count || WrittenAround(command, written).IndexOfAny(ExpansionCharacters) >= 0 ? null : file.Value;
+    }
+
+    // A word as its command wrote it, with the character on either side. The reading's words drop
+    // or keep expansions unexpanded, and it ends a word at a brace or parenthesis bash would not
+    // split at, so the operand is checked as written, together with its neighbours.
+    private static string WrittenAround(ShellReader.Command command, int word)
+    {
+        var range = command.WordRanges[word];
+        var text = command.Source.Text;
+        return text[Math.Max(range.Start.Value - 1, 0)..Math.Min(range.End.Value + 1, text.Length)];
     }
 
     private static List<PrCall> Scan(string text, ShellDialect dialect, string? inheritedRepo, int depth)
@@ -294,9 +321,9 @@ internal static partial class PrCallScanner
 
     // Help is --help or -h as a flag of its own (gh 2.88.1 prints help for either and acts on
     // nothing), not a flag's value; after --, every word is an operand.
-    private static (List<(string Name, string Value)> Options, List<string> Positionals, bool Help) Parse(List<string> words, Options options)
+    private static (List<Option> Options, List<string> Positionals, bool Help) Parse(List<string> words, Options options)
     {
-        List<(string Name, string Value)> values = [];
+        List<Option> values = [];
         List<string> positionals = [];
         var help = false;
         for (var i = 0; i < words.Count; i++)
@@ -320,31 +347,34 @@ internal static partial class PrCallScanner
     }
 
     // --name=value or --name value, kept when name is one of options' long options.
-    private static void ReadLongOption(List<string> words, ref int i, Options options, List<(string Name, string Value)> values)
+    private static void ReadLongOption(List<string> words, ref int i, Options options, List<Option> values)
     {
         var word = words[i];
         var eq = word.IndexOf('=');
         var name = eq > 0 ? word[2..eq] : word[2..];
-        if (options.Long.Contains(name))
-            values.Add((name, eq > 0 ? word[(eq + 1)..] : Next(words, ref i)));
+        if (!options.Long.Contains(name))
+            return;
+        var value = eq > 0 ? word[(eq + 1)..] : Next(words, ref i);
+        values.Add(new Option(name, value, i));
     }
 
     // Short flags combine (-dH b); the first one taking a value takes the rest of the word or the next.
-    private static void ReadShortFlags(List<string> words, ref int i, Options options, List<(string Name, string Value)> values)
+    private static void ReadShortFlags(List<string> words, ref int i, Options options, List<Option> values)
     {
         var word = words[i];
         for (var j = 1; j < word.Length; j++)
         {
             if (!options.Short.TryGetValue(word[j], out var name))
                 continue;
-            values.Add((name, j + 1 < word.Length ? word[(j + 1)..].TrimStart('=') : Next(words, ref i)));
+            var value = j + 1 < word.Length ? word[(j + 1)..].TrimStart('=') : Next(words, ref i);
+            values.Add(new Option(name, value, i));
             return;
         }
     }
 
     private static string Next(List<string> words, ref int i) => ++i < words.Count ? words[i] : "";
 
-    private static IEnumerable<string> Values(List<(string Name, string Value)> options, string name) =>
+    private static IEnumerable<string> Values(List<Option> options, string name) =>
         options.Where(o => o.Name == name).Select(o => o.Value);
 
     // gh, or pwsh or powershell (the only programs that run -EncodedCommand), as a word anywhere,

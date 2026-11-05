@@ -37,6 +37,37 @@ reports also fail. Both jobs use the declared
 Python 3.14.4 and Node 26.13.0 pins. The existing cancellation matrix and other CI suites remain
 in place; release and publishing workflows are independent.
 
+.NET platform measurement is configured in `DynaDocs.Tests/coverage/dotnet-platforms.json`. Its
+`native` entries name Windows-native members by their Roslyn member name (`.ctor`, `get_Stage`,
+`RunWindowsAsync`) and pin each source's SHA-256 with line endings normalized to LF. Its
+`windows_tests` entry lists the fully qualified tests that reach those members and records why
+Windows runs only them. `dotnet_platform.py` partitions the native join by emitted-body owner and
+writes `platform_selection` beside the measured modules in `adapters/dotnet-coverage.json`. That
+receipt holds the source and selection hashes, the owner of every line, branch and callable, and
+on Windows the selected suite's pass count. A missing or drifted selection or an unsupported
+platform fails before the campaign starts. So does, on Windows only, a selected test that is not
+declared exactly once in its class (`discover_windows_tests`). A named member missing from the
+compiled source inventory fails after the campaign, when the join is scoped (`_members` in
+`scope`). A skipped selected test fails the Windows gate. The raw `joined.json` keeps every native
+point.
+
+The `dotnet-coverage` CI job runs the gate on `ubuntu-24.04` (the full suite) and on
+`windows-latest` (the selected tests), each on the PR head, and uploads `dotnet-coverage-linux`
+and `dotnet-coverage-windows`. The dependent `dotnet-coverage-union` job requires both legs to
+pass and runs:
+
+```sh
+python DynaDocs.Tests/coverage/dotnet_platform.py --linux DynaDocs.Tests/coverage/results/coverage-platforms/linux/adapters/dotnet-coverage.json --windows DynaDocs.Tests/coverage/results/coverage-platforms/windows/adapters/dotnet-coverage.json --output DynaDocs.Tests/coverage/results/coverage-platforms
+```
+
+Both reports are required. The union rejects a missing report, a failed, incomplete or dirty gate,
+reports from different commits, a Windows receipt without its selected-test count and a Linux
+receipt with one. It then rebuilds the clean candidate's zero-hit denominator on Linux, using the
+campaign's own builds and AltCover instrumentation without running a suite. Each report must hold
+exactly its platform's lines, branches and callables of that denominator, under the same source
+and selection hashes and owners, so matching omissions fail too. It writes `union.json`. Run it
+from a clean checkout with no earlier in-place AltCover output (`__Saved`) in `bin/`.
+
 `DynaDocs.Tests/coverage/gap_check.py` is the canonical project testing facade. Its adjacent
 `gap_check.json` is the schema 1 manifest that declares each stack's test, static, coverage and
 mutation adapters. `dydo/reference/gap-check.example.py` is a mechanically derived byte copy of that
@@ -134,7 +165,15 @@ viewer bundle is embedded in the CLI, not another .NET distribution.
 
 The C# coverage campaign uses the existing Linux subreaper containment and retains raw streams,
 subject exit and cleanup evidence. A live detached descendant makes the campaign incomplete even
-when the subject exited zero. Unconfirmed cleanup retains the isolated snapshot. Windows continues
+when the subject exited zero. Unconfirmed cleanup retains the isolated snapshot. When the runner
+cannot confirm its own descendant cleanup, on Linux or Windows, it keeps the snapshot and its marker,
+names both on stderr and exits 2 (incomplete), whatever the subject returned and even when
+interrupted. It writes nothing further into the assurance output. The adapter reports `native
+campaign incomplete`, never a functional failure. When `identities.json` records a complete
+campaign with confirmed cleanup and a subject status other than 2, only the runner's own cleanup
+can explain the exit 2, so the adapter names it as `runner_cleanup_unconfirmed`. Otherwise it
+reports the failure `identities.json` records, or that no diagnosis is available; the runner's
+stderr still names the retained snapshot and the error. Windows continues
 to use its native Job Object owner. Native Windows tests require the Windows CI runner; Linux skips
 are missing Windows proof, not passing Windows proof.
 

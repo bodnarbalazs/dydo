@@ -266,6 +266,14 @@ def _failing_subjects(evidence):
     return [], "no failing test named in altcover-runner.stdout or altcover-runner.stderr"
 
 
+def _runner_cleanup_unconfirmed(campaign):
+    """Whether run_tests.py's exit 2 can only be its own unconfirmed descendant cleanup: it exits
+    with a complete, confirmed campaign's subject status, so one other than 2 leaves no other cause."""
+    status = campaign.get("subject_status")
+    return (campaign.get("complete") is True and campaign.get("cleanup_confirmed") is True
+            and type(status) is int and status != 2)
+
+
 def _campaign_diagnosis(raw):
     """windows_job's diagnosis for an incomplete native campaign, honest about what it could not read."""
     path = Path(raw) / "identities.json"
@@ -276,6 +284,11 @@ def _campaign_diagnosis(raw):
     campaign = manifest.get("campaign") if isinstance(manifest, dict) else None
     if not isinstance(campaign, dict):
         return {"identitiesPath": str(path), "diagnosisUnavailable": "identities.json does not record a campaign"}
+    if _runner_cleanup_unconfirmed(campaign):
+        return {"identitiesPath": str(path), "failureCategory": "runner_cleanup_unconfirmed",
+                "errorMessage": (f"the campaign completed with subject status {campaign['subject_status']} "
+                                 "and confirmed cleanup, but run_tests.py exited 2: its own descendant "
+                                 "cleanup was unconfirmed, so it retained its test worktree (named on its stderr)")}
     category, message = campaign.get("failure_category"), campaign.get("error_message")
     if not isinstance(category, str) and not isinstance(message, str):
         return {"identitiesPath": str(path),
@@ -601,7 +614,27 @@ def collect_viewer_coverage(root, raw, inventory):
                             commands, artifacts)
 
 
+def _scoped_dotnet(root, evidence, platform, selection):
+    """The native join partitioned by the reviewed selection; the raw join keeps every point."""
+    from dotnet_platform import read_source_files, scope, selected_test_counts
+    from gate_policy import evaluate_policy
+    joined = json.loads((evidence / "joined.json").read_text(encoding="utf-8"))
+    modules, receipt = scope(root, joined["modules"], read_source_files(evidence), platform, selection)
+    if platform == "windows":
+        receipt["tests"] = selected_test_counts(
+            (evidence / "altcover-runner.stdout").read_text(encoding="utf-8", errors="replace"))
+    targets = [{key: value for key, value in target.items() if key != "modules"}
+               for target in joined["targets"]]
+    return {"schema": joined["schema"], "targets": targets, "modules": modules,
+            "platform_selection": receipt}, evaluate_policy(modules)
+
+
 def collect_dotnet_coverage(root, raw):
+    from dotnet_platform import discover_windows_tests, load_selection, native_platform
+    platform = native_platform()
+    selection = load_selection(root, platform)
+    if platform == "windows":
+        discover_windows_tests(root, selection)
     run, evidence = _report_root(raw), raw / "raw"
     script = root / "DynaDocs.Tests/coverage/run_tests.py"
     argv = [sys.executable, str(script), "--assurance-output", str(raw)]
@@ -625,8 +658,8 @@ def collect_dotnet_coverage(root, raw):
                                 [{"gate": "functional", "child_exit": child,
                                   "failingTests": names, "failingTestsSummary": summary}], [],
                                 commands, artifacts)
-    joined = json.loads((evidence / "joined.json").read_text(encoding="utf-8"))
-    return _coverage_report("csharp-coverage", {**facts, **joined}, joined["findings"], [],
+    joined, findings = _scoped_dotnet(root, evidence, platform, selection)
+    return _coverage_report("csharp-coverage", {**facts, **joined}, findings, [],
                             commands, artifacts)
 
 

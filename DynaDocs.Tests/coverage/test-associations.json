@@ -487,6 +487,12 @@
       ]
     },
     {
+      "module": "DynaDocs.Tests/HostCanaries/candidate-fingerprint.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/candidate-fingerprint.test.mjs"
+      ]
+    },
+    {
       "module": "DynaDocs.Tests/HostCanaries/path-containment.mjs",
       "tests": [
         "DynaDocs.Tests/coverage/tests/path-containment.test.mjs"

@@ -591,6 +591,19 @@ class PythonCoverageTests(unittest.TestCase):
                                  [(row["id"], row["execution_count"], row["body_lines"])
                                   for row in counters["callables"]])
 
+    def test_a_child_of_the_base_interpreter_is_measured_from_the_collecting_one(self):
+        # A venv's base interpreter has none of the venv's packages, coverage.py among them, of its own.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text(_ASSERTING_SUBJECT, encoding="utf-8")
+            (root / "driver.py").write_text(
+                "import subprocess, sys\n"
+                "subprocess.run([sys._base_executable, '-c', 'import subject; subject.work()'], check=True)\n",
+                encoding="utf-8")
+            counters = self.campaign(root, root / "evidence", ["subject.py"], ["{python}", "-S", "driver.py"])
+        self.assertEqual([("work:1:0", 1, {"3": 1, "4": 1})],
+                         [(row["id"], row["execution_count"], row["body_lines"]) for row in counters["callables"]])
+
     def test_an_unusable_inventory_cache_is_measured_as_if_there_were_none(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

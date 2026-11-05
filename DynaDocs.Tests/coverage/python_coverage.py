@@ -373,6 +373,7 @@ def _run_reported(argv, root, env, config, config_path):
 def collect(root, output, source_paths, command):
     """Run one ordinary command, then combine native data and flat process counters."""
     import coverage
+    import sysconfig
     from python_runtime import inventory_cache
     root, output = Path(root).resolve(), Path(output).resolve()
     if output.exists() or not source_paths or not command:
@@ -396,7 +397,10 @@ def collect(root, output, source_paths, command):
     config_path = output / "config.json"
     env["DYDO_PYTHON_COVERAGE_CONFIG"] = str(config_path)
     tools = Path(__file__).resolve().parent
-    env["PYTHONPATH"] = os.pathsep.join([str(startup), str(tools), env.get("PYTHONPATH", "")])
+    # The collecting interpreter's own packages, coverage.py among them, so that a process of the same build
+    # started outside its venv (`sys._base_executable`) measures with them; one that cannot, still fails.
+    packages = dict.fromkeys(sysconfig.get_paths()[scheme] for scheme in ("purelib", "platlib"))
+    env["PYTHONPATH"] = os.pathsep.join([str(startup), str(tools), *packages, env.get("PYTHONPATH", "")])
     argv = [sys.executable if item == "{python}" else item for item in command]
     returncode, failures = _run_reported(argv, root, env, config, config_path)
     if failures:

@@ -408,6 +408,12 @@
       ]
     },
     {
+      "module": "DynaDocs.Tests/coverage/held_directory.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_assurance_publication.py"
+      ]
+    },
+    {
       "module": "DynaDocs.Tests/coverage/inventory.py",
       "tests": [
         "DynaDocs.Tests/coverage/tests/test_inventory.py"
@@ -645,7 +651,8 @@
     {
       "module": "DynaDocs.Tests/coverage/run_tests.py",
       "tests": [
-        "DynaDocs.Tests/coverage/tests/test_runner.py"
+        "DynaDocs.Tests/coverage/tests/test_runner.py",
+        "DynaDocs.Tests/coverage/tests/test_assurance_publication.py"
       ]
     },
     {

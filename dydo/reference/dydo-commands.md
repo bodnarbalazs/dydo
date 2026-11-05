@@ -174,7 +174,9 @@ dydo guard --command "git status"
 ```
 
 `--host claude` marks the Claude Code hook `dydo init` writes; it is not a diagnostic argument, so
-the call still reads its payload from stdin. The Codex hook carries no marker.
+the call still reads its payload from stdin. The Codex hook carries no marker. An argument starting
+with `@`, such as a PowerShell here-string `--command "@'…'@"`, is text and gets a verdict; the guard
+never reads it as a response file.
 
 In hook mode (a PreToolUse payload on stdin, no arguments) exit `0` with empty stdout allows the
 action, and exit `0` with one `permissionDecision: "deny"` object on stdout blocks it; the reason

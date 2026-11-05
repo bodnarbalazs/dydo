@@ -558,12 +558,15 @@ public class PrCallScannerTests
     [InlineData("Posix", "gh pr create -F a?.md")]
     [InlineData("Posix", "gh pr create -F a[12].md")]
     [InlineData("Posix", "gh pr create -F a{1,2}.md")]
+    [InlineData("Posix", "gh pr create -F {a,b}.md")]
+    [InlineData("Posix", "gh pr create -F a}b.md")]
     [InlineData("PowerShell", "gh pr create -F \"a$suffix.md\"")]
     [InlineData("PowerShell", "gh pr create -F $body")]
     [InlineData("PowerShell", "gh pr create -F \"a$(Get-Suffix).md\"")]
     [InlineData("PowerShell", "gh pr create -F (Get-Body)")]
     [InlineData("PowerShell", "gh pr create -F @body")]
     [InlineData("Unknown", "gh pr create -F \"a.md$(printf .plain)\"")]
+    [InlineData("Posix", "gh pr create -F")]
     public void BodyFileWithAnExpansion_NamesNone(string dialect, string command)
     {
         Assert.Null(PrCallScanner.BodyFileAt(command, 0, Enum.Parse<ShellDialect>(dialect)));

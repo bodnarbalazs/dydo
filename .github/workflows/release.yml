@@ -179,10 +179,10 @@ jobs:
           cache-dependency-path: viewer/pnpm-lock.yaml
 
       - name: Create Python assurance environment
-        run: python -m venv dydo/_system/.local/static-gates/python
+        run: python -m venv .static-gates/python
 
       - name: Install Python assurance toolchain
-        run: dydo/_system/.local/static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+        run: .static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 
       - name: Restore AltCover
         run: dotnet tool restore --tool-manifest .config/dotnet-tools.json
@@ -198,7 +198,7 @@ jobs:
         run: pnpm -C viewer install --frozen-lockfile
 
       - name: Run isolated test adapter
-        run: dydo/_system/.local/static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/run_tests.py
+        run: .static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/run_tests.py
 
       - name: Build release with warnings as errors
         run: dotnet build DynaDocs.sln -c Release --warnaserror
@@ -207,7 +207,7 @@ jobs:
         run: dotnet run --project DynaDocs.csproj -c Release --no-build -- check
 
       - name: Run coverage gate
-        run: dydo/_system/.local/static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/gap_check.py --force-run
+        run: .static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/gap_check.py --force-run
 
       # The gate's per-row reports, command logs and campaign streams, so a failed row carries its detail.
       - name: Upload coverage evidence

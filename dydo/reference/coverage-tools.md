@@ -15,7 +15,7 @@ and the adopted policy.
 
 ## Provisioning
 
-`dydo/_system/.local/` is git-ignored and no gate installs anything, so every machine creates its own
+`.static-gates/` is git-ignored and no gate installs anything, so every machine creates its own
 measurement environment before any operation below can run. `.github/workflows/release.yml` runs
 these same steps before it invokes the facade. They are grouped here by toolchain rather than given
 in the workflow's order, because the three toolchains are independent of each other: the only step
@@ -24,8 +24,8 @@ that must precede another is creating the virtual environment its Python package
 ```powershell
 # the Python assurance toolchain; create the environment with CPython 3.14.4 itself,
 # the patch DynaDocs.Tests/coverage/.python-version declares
-python -m venv dydo/_system/.local/static-gates/python
-& dydo/_system/.local/static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+python -m venv .static-gates/python
+& .static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 # the Node assurance toolchain, from DynaDocs.Tests/coverage
 npm ci
 # the viewer's own toolchain, which the viewer rows call through its pnpm scripts
@@ -45,13 +45,29 @@ join failures; that historical evidence does not establish compatibility with a 
 On Linux, use the same locked packages with the POSIX venv path:
 
 ```bash
-python3 -m venv dydo/_system/.local/static-gates/python
-dydo/_system/.local/static-gates/python/bin/python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+python3.14 -m venv .static-gates/python
+.static-gates/python/bin/python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 npm --prefix DynaDocs.Tests/coverage ci
 pnpm -C viewer install --frozen-lockfile
 dotnet tool restore --tool-manifest .config/dotnet-tools.json
 dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
 ```
+
+The Python environment lives at the repository root, in `.static-gates/python`, outside
+`dydo/_system/**`. An agent provisions it without user action, and the guard still refuses every
+write into `dydo/_system/**`. This repository's `dydo.json` carries no install nudge, so the
+`pip install` passes outright here. In a project whose `dydo.json` carries the install nudge that
+`dydo init` writes by default, the POSIX `bin/python -m pip install` form meets it: the guard refuses
+the first try once and passes the identical retry when the user or the ticket being executed approved
+that install. That nudge's pattern does not match the Windows `Scripts/python.exe -m pip install` form.
+Instead of installing, a POSIX checkout may link a matching prepared environment, one created by
+CPython 3.14.4 from the same `requirements.lock`:
+
+```bash
+mkdir -p .static-gates && ln -s /absolute/path/to/prepared/.static-gates/python .static-gates/python
+```
+
+`DynaDocs.Tests/Integration/GuardStaticGateProvisioningTests.cs` holds the guard to this route.
 
 The SDK pin is 10.0.303. `DynaDocs.csproj` separately requires runtime 10.0.14 or
 later and resolves its AOT compiler at 10.0.14, the first patch fixing CVE-2026-111497.
@@ -103,11 +119,11 @@ rely on tar to create ZIP archives.
 ## Operations
 
 Run the facade with the pinned local interpreter. On Linux, set
-`py=dydo/_system/.local/static-gates/python/bin/python` and invoke `"$py"` in place of
+`py=.static-gates/python/bin/python` and invoke `"$py"` in place of
 PowerShell's `& $py` below:
 
 ```powershell
-$py = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+$py = ".static-gates/python/Scripts/python.exe"
 & $py DynaDocs.Tests/coverage/gap_check.py --help
 & $py DynaDocs.Tests/coverage/gap_check.py all
 & $py DynaDocs.Tests/coverage/gap_check.py test --stack dotnet -- --filter FullyQualifiedName~ParserTests
@@ -246,7 +262,7 @@ never a silent overwrite. The identical bytes remain at
 "tools": {
   "interpreters": {
     "caller": {"path": "<absolute>/python.exe", "sha256": "<hex>", "version": "3.14.4"},
-    "dependencyBearing": {"path": "dydo/_system/.local/static-gates/python/Scripts/python.exe",
+    "dependencyBearing": {"path": ".static-gates/python/Scripts/python.exe",
                           "sha256": "<hex>"}
   },
   "pins": {
@@ -524,7 +540,7 @@ checksum fails the join. The measured per-assembly document facts are retained i
 
 ## Toolchain provenance
 
-`dydo/_system/.local/` is git-ignored, so each machine provisions its own measurement environment
+`.static-gates/` is git-ignored, so each machine provisions its own measurement environment
 and no gate ever installs anything. Five tool declarations and one CI runtime declaration define
 what that environment must contain. Tool summaries republish the five tool declarations with their
 hashes in `tools.pins`; the Python inventory separately republishes the runtime declaration and hash:
@@ -533,7 +549,7 @@ hashes in `tools.pins`; the Python inventory separately republishes the runtime 
 |---|---|---|
 | `.config/dotnet-tools.json` | AltCover 9.0.102 | the tool manifest, by `dotnet tool restore --tool-manifest .config/dotnet-tools.json` |
 | `DynaDocs.Tests/coverage/.python-version` | exact CPython 3.14.4 for Release CI | `actions/setup-python@v5`, through `python-version-file` |
-| `DynaDocs.Tests/coverage/requirements.lock` | coverage.py 7.16.0, ruff 0.16.6, vulture 2.16, complexipy 8.0.0, radon 6.0.1 | a local CPython 3.14.4 environment at `dydo/_system/.local/static-gates/python/Scripts/python.exe` |
+| `DynaDocs.Tests/coverage/requirements.lock` | coverage.py 7.16.0, ruff 0.16.6, vulture 2.16, complexipy 8.0.0, radon 6.0.1 | a local CPython 3.14.4 environment at `.static-gates/python` (`Scripts/python.exe` on Windows, `bin/python` elsewhere) |
 | `DynaDocs.Tests/coverage/package.json`, resolved by `package-lock.json` | @typescript-eslint/parser, c8, dependency-cruiser, eslint, eslint-plugin-sonarjs, istanbul-lib-instrument, jscpd, knip | `node_modules` under `DynaDocs.Tests/coverage` |
 | `viewer/package.json`, resolved by `viewer/pnpm-lock.yaml` | the viewer's TypeScript, ESLint, vitest and Istanbul toolchain its scripts run | `viewer/node_modules`, by `pnpm -C viewer install --frozen-lockfile` |
 | `DynaDocs.Tests/coverage/metrics/packages.lock.json` | the Roslyn, SonarAnalyzer and Cecil closure of `GateMetrics.csproj` | that project's `obj/project.assets.json`, by `dotnet restore` |

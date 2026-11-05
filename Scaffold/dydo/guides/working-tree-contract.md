@@ -56,6 +56,9 @@ provide the ticket worktree; otherwise place it beside the repository at
 | Integrate an atomic ticket | `ticket-captain` | No Merge Sub-ticket: the PR into main carries its reviewer PASS, the captain confirms CI green and sets `Ready to Merge`, and the user clicks the merge. The captain then closes the ticket `Done` and cleans up. |
 | Land the Project | user | The landing Merge Ticket prepares main into feature and obtains acceptance PASS; the user clicks feature into main as a merge commit, never squash. |
 
+A conflicted merge's push to its feature branch passes the guard, while a push to the default
+branch is blocked: the default branch is the user's.
+
 ## Before the first edit
 
 Before the first edit of an `implement` or `fix` hop in a parent ticket or lane, its assigned writer

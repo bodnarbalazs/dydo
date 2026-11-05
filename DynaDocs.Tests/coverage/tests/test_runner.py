@@ -34,6 +34,31 @@ def write_file(path, text):
     return path
 
 
+def subreaper_flag():
+    """This process's PR_GET_CHILD_SUBREAPER flag on Linux, else None. A failed read raises, so it
+    can never pass for an unchanged 0."""
+    if sys.platform != "linux":
+        return None
+    import ctypes
+    flag = ctypes.c_int()
+    if ctypes.CDLL(None, use_errno=True).prctl(37, ctypes.byref(flag), 0, 0, 0):  # PR_GET_CHILD_SUBREAPER
+        code = ctypes.get_errno()
+        raise OSError(code, f"prctl(PR_GET_CHILD_SUBREAPER): {os.strerror(code)}")
+    return flag.value
+
+
+def campaign_in_child(worktree, published):
+    """_run_assurance_campaign's exit status from a child interpreter. On Linux the campaign makes
+    its caller a subreaper for good and ends every descendant of it, so it never runs in the test
+    process itself."""
+    owner = ("import sys; from pathlib import Path; "
+             "sys.path.insert(0, sys.argv[1]); import run_tests; "
+             "raise SystemExit(run_tests._run_assurance_campaign("
+             "Path(sys.argv[2]), [], sys.argv[3]))")
+    return subprocess.run([sys.executable, "-c", owner, str(Path(run_tests.__file__).parent),
+                           str(worktree), str(published)], capture_output=True, text=True).returncode
+
+
 class RunnerEnvironmentTests(unittest.TestCase):
     def test_child_uses_unknown_shell_and_parent_environment_is_preserved(self):
         with patch.dict(os.environ, {"SHELL": "/bin/bash", "DYDO_AGENT": "example"}):
@@ -441,13 +466,16 @@ class AssuranceCampaignTests(unittest.TestCase):
                                                  worktree / "owner", output, {})
 
     def test_assurance_campaign_publishes_evidence_when_the_producer_is_absent(self):
-        with tempfile.TemporaryDirectory() as folder:
+        with tempfile.TemporaryDirectory() as folder, subprocess.Popen(
+                [sys.executable, "-c", "import sys; sys.stdin.read()"], stdin=subprocess.PIPE) as sentinel:
             worktree = Path(folder) / "worktree"
             worktree.mkdir()
             published = Path(folder) / "published"
+            flag = subreaper_flag()
 
-            self.assertEqual(2, run_tests._run_assurance_campaign(worktree, [], str(published)))
+            self.assertEqual(2, campaign_in_child(worktree, published))
 
+            self.assertEqual((flag, None), (subreaper_flag(), sentinel.poll()))
             manifest = json.loads((published / "identities.json").read_text(encoding="utf-8"))
             self.assertEqual([], manifest["artifacts"])
             self.assertTrue(manifest["campaign"]["cleanup_confirmed"])
@@ -472,18 +500,12 @@ class LinuxCampaignTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             write_file(root / "DynaDocs.Tests/coverage/csharp_coverage.py", source)
-            owner = ("import sys; from pathlib import Path; "
-                     "sys.path.insert(0, sys.argv[1]); import run_tests; "
-                     "raise SystemExit(run_tests._run_assurance_campaign("
-                     "Path(sys.argv[2]), [], sys.argv[3]))")
-            completed = subprocess.run([sys.executable, "-c", owner,
-                                        str(Path(run_tests.__file__).parent), str(root),
-                                        str(root / "published")], capture_output=True, text=True)
             output = root / "published"
+            code = campaign_in_child(root, output)
             result = json.loads((output / "identities.json").read_text())["campaign"]
             streams = [(output / "owner" / name).read_text()
                        for name in ("stdout.log", "stderr.log")]
-            return completed.returncode, result, streams
+            return code, result, streams
 
     def test_linux_campaign_preserves_status_streams_and_clean_completion(self):
         for status in (0, 7):

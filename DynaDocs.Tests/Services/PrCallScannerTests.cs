@@ -327,4 +327,175 @@ public class PrCallScannerTests
     {
         Assert.Equal(2, PrCallScanner.Find("gh pr create --head a && git push; gh pr ready b").Count);
     }
+
+    // GS-06: gh prints a command's help for --help or -h (gh 2.88.1, new as create's alias) and acts on nothing.
+    [Theory]
+    [InlineData("gh version; gh pr create --help; gh pr ready --help")]
+    [InlineData("gh pr create --help")]
+    [InlineData("gh pr new -h")]
+    [InlineData("gh pr ready 12 -h")]
+    [InlineData("gh pr create --title x --help")]
+    [InlineData("gh pr create --help | Select-String draft")]
+    public void HelpForAPrVerb_IsNoCall(string command)
+    {
+        Assert.Empty(PrCallScanner.Find(command));
+    }
+
+    [Theory]
+    [InlineData("gh pr create --help; gh pr create --fill")]
+    [InlineData("gh pr create --title --help")]
+    [InlineData("gh pr create -t -h --fill")]
+    [InlineData("gh pr create --fill -- --help")]
+    [InlineData("gh pr ready -- -h")]
+    public void HelpOnlyAsAValueOrAfterTheEndOfFlags_StaysACall(string command)
+    {
+        Assert.NotEmpty(PrCallScanner.Find(command));
+    }
+
+    // DYD-406 round 2: these are inert input strings, never shell programs.
+    [Theory]
+    [InlineData("x=\"$(case a in a) echo y;; esac)\"; gh pr create --title t --body '## Independent review'")]
+    [InlineData("cat <<EOF\n$(case a in a) echo y;; esac)\nEOF\ngh pr create --title t --body '## Independent review'")]
+    [InlineData("echo \"$(case a in a) echo y;; esac)\" && gh pr ready")]
+    [InlineData("arch=\"$(case \"$(uname -m)\" in\n  x86_64) echo amd64;;\n  *) echo other;;\nesac)\"\ngh pr create --fill")]
+    [InlineData("x=\"$(echo y)\"; gh pr create --title t --body '## Independent review'")]
+    public void FailedReading_LaterPrCall_IsNotLost(string command)
+    {
+        Assert.NotEmpty(PrCallScanner.Find(command, ShellDialect.Posix));
+    }
+
+    [Theory]
+    [InlineData("gh pr create --help; gh pr ready -h")]
+    [InlineData("cat <<'EOF'\nx=\"$(case a in a) echo y;; esac)\"; gh pr ready\nEOF")]
+    [InlineData("echo '$(case a in a) gh pr ready;; esac)'")]
+    public void FailedReading_HelpAndLiteralControls_HaveNoCall(string command)
+    {
+        Assert.Empty(PrCallScanner.Find(command, ShellDialect.Posix));
+    }
+
+    [Theory]
+    [InlineData("Posix")]
+    [InlineData("Unknown")]
+    public void FailedReading_TruncatedTarget_IsNeverACurrentTreeCall(string dialect)
+    {
+        var calls = PrCallScanner.Find(
+            "gh pr create --title \"$(case a in a) echo t;; esac)\" --head topic --repo other/repo",
+            Enum.Parse<ShellDialect>(dialect));
+
+        Assert.NotEmpty(calls);
+        Assert.All(calls, call => Assert.True(call.Wrapper != null
+            || (call.Branch == "topic" && call.Repo == "other/repo")));
+    }
+
+    [Theory]
+    [InlineData("gh pr create --head topic", "Posix")]
+    [InlineData("gh pr ready topic --repo other/repo", "Unknown")]
+    [InlineData("GH_REPO=other/repo gh pr create", "Posix")]
+    [InlineData("gh api repos/other/repo/pulls -f head=topic", "Posix")]
+    [InlineData("gh api graphql -f query=createPullRequest", "Unknown")]
+    public void FailedReading_LaterTargetOrApiCall_IsRefusedUnread(string suffix, string dialect)
+    {
+        var calls = PrCallScanner.Find("x=\"$(case a in a) echo y;; esac)\"; " + suffix,
+            Enum.Parse<ShellDialect>(dialect), "inherited/repo");
+
+        Assert.Contains(calls, call => call.Wrapper != null);
+    }
+
+    [Theory]
+    [InlineData("gh pr create --title \"unfinished", "Posix")]
+    [InlineData("Write-Host \"$(gh pr create", "PowerShell")]
+    public void FailedReading_PartialCall_IsRefusedUnread(string command, string dialect)
+    {
+        var call = Assert.Single(PrCallScanner.Find(command, Enum.Parse<ShellDialect>(dialect)));
+
+        Assert.NotNull(call.Wrapper);
+    }
+
+    [Theory]
+    [InlineData(new object[] { new[] { "bash", "-lc", "x=\"$(case a in a) echo y;; esac)\"; gh pr ready" } })]
+    [InlineData(new object[] { new[] { "node", "-e", "x=\"$(case a in a) echo y;; esac)\"; gh pr ready" } })]
+    public void FailedReading_ArgvEnvelopeAndWrapper_AreRefusedUnread(string[] argv)
+    {
+        Assert.Contains(PrCallScanner.FindInArgv(argv), call => call.Wrapper != null);
+    }
+
+    // DYD-515: inert input strings, never shell programs. Each fails its reading after a child scope:
+    // the bare case word under bash, the unpaired apostrophe under PowerShell.
+    internal const string ArchIdiom = "arch=\"$(case \"$(uname -m)\" in\n  x86_64) echo amd64;;\n  *) echo other;;\nesac)\"\necho \"$arch\"";
+    internal const string EchoCase = "echo \"$(echo case)\"";
+    internal const string EscapedApostrophe = "v=$(date); echo it\\'s";
+    // Fails both readings, so neither reads the gh call after it.
+    internal const string FailsBothReadings = "v=$(date); echo it\\'s \"$(echo case)\"";
+
+    [Theory]
+    [InlineData(ArchIdiom, "Posix")]
+    [InlineData(ArchIdiom, "Unknown")]
+    [InlineData(EchoCase, "Posix")]
+    [InlineData(EchoCase, "Unknown")]
+    [InlineData(EscapedApostrophe, "Unknown")]
+    [InlineData(EscapedApostrophe, "PowerShell")]
+    [InlineData("bash -c '" + ArchIdiom + "'", "Unknown")]
+    [InlineData("bash -c '" + EchoCase + "'", "PowerShell")]
+    [InlineData("pwsh -Command 'v=$(date); echo it\\''s'", "PowerShell")]
+    public void FailedReading_WithoutAGhWord_HasNoCall(string command, string dialect)
+    {
+        Assert.Empty(PrCallScanner.Find(command, Enum.Parse<ShellDialect>(dialect)));
+    }
+
+    [Theory]
+    [InlineData(new object[] { new[] { "bash", "-lc", ArchIdiom } })]
+    [InlineData(new object[] { new[] { "bash", "-lc", EchoCase } })]
+    [InlineData(new object[] { new[] { "pwsh", "-Command", EscapedApostrophe } })]
+    [InlineData(new object[] { new[] { "node", "-e", ArchIdiom } })]
+    [InlineData(new object[] { new[] { "node", "-e", EchoCase } })]
+    [InlineData(new object[] { new[] { "node", "-e", EscapedApostrophe } })]
+    public void FailedReading_ArgvWithoutAGhWord_HasNoCall(string[] argv)
+    {
+        Assert.Empty(PrCallScanner.FindInArgv(argv));
+    }
+
+    // gh in any spelling, past the failure, inside a substitution or inside a wrapper's string.
+    [Theory]
+    [InlineData(ArchIdiom + "\n/usr/bin/gh pr create --fill", "Posix")]
+    [InlineData(EchoCase + " && GH.EXE pr ready", "Posix")]
+    [InlineData(EchoCase + " \"$(gh pr ready)\"", "Posix")]
+    [InlineData(FailsBothReadings + "; gh pr ready", "Unknown")]
+    [InlineData(EscapedApostrophe + "; C:\\tools\\gh.exe pr ready", "PowerShell")]
+    [InlineData("bash -c '" + ArchIdiom + "\ngh pr ready'", "Unknown")]
+    [InlineData("bash -c '" + EchoCase + "; Gh pr create --fill'", "PowerShell")]
+    public void FailedReading_LaterGhWord_IsRefusedUnread(string command, string dialect)
+    {
+        Assert.Contains(PrCallScanner.Find(command, Enum.Parse<ShellDialect>(dialect)), call => call.Wrapper != null);
+    }
+
+    [Theory]
+    [InlineData(new object[] { new[] { "bash", "-lc", EchoCase + "; gh pr ready" } })]
+    [InlineData(new object[] { new[] { "pwsh", "-Command", EscapedApostrophe + "; gh pr ready" } })]
+    [InlineData(new object[] { new[] { "node", "-e", FailsBothReadings + "; gh pr ready" } })]
+    public void FailedReading_ArgvWithALaterGhWord_IsRefusedUnread(string[] argv)
+    {
+        Assert.Contains(PrCallScanner.FindInArgv(argv), call => call.Wrapper != null);
+    }
+
+    // An encoded command hides gh without its word; only pwsh or powershell reads one (DYD-515).
+    internal const string EncodedGhPrReady = "ZwBoACAAcAByACAAcgBlAGEAZAB5AA==";
+
+    [Theory]
+    [InlineData(EchoCase + "; pwsh -EncodedCommand " + EncodedGhPrReady, "Posix")]
+    [InlineData(ArchIdiom + "\n/usr/bin/PWSH.EXE -enc " + EncodedGhPrReady, "Posix")]
+    [InlineData(EscapedApostrophe + "; powershell -ec " + EncodedGhPrReady, "PowerShell")]
+    [InlineData("bash -c '" + EchoCase + "; pwsh -enc " + EncodedGhPrReady + "'", "Posix")]
+    [InlineData("bash -c '" + EchoCase + "; powershell.exe -EncodedCommand " + EncodedGhPrReady + "'", "PowerShell")]
+    public void FailedReading_LaterEncodedCommand_IsRefusedUnread(string command, string dialect)
+    {
+        Assert.Contains(PrCallScanner.Find(command, Enum.Parse<ShellDialect>(dialect)), call => call.Wrapper != null);
+    }
+
+    [Theory]
+    [InlineData(new object[] { new[] { "bash", "-lc", EchoCase + "; pwsh -EncodedCommand " + EncodedGhPrReady } })]
+    [InlineData(new object[] { new[] { "pwsh", "-Command", EscapedApostrophe + "; pwsh -ec " + EncodedGhPrReady } })]
+    public void FailedReading_ArgvWithALaterEncodedCommand_IsRefusedUnread(string[] argv)
+    {
+        Assert.Contains(PrCallScanner.FindInArgv(argv), call => call.Wrapper != null);
+    }
 }

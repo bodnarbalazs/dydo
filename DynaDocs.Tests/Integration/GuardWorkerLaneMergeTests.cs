@@ -8,10 +8,10 @@ namespace DynaDocs.Tests.Integration;
 public class GuardWorkerLaneMergeTests : IntegrationTestBase
 {
     [Theory]
-    [InlineData("Bash", "dydo merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567")]
-    [InlineData("Bash", "dydo merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567 --dry-run")]
-    [InlineData("PowerShell", "dydo merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567")]
-    [InlineData("PowerShell", "dydo check; ./dydo.exe merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567 --dry-run")]
+    [InlineData("Bash", "dydo merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567 --match-base-commit fedcba9876543210fedcba9876543210fedcba98")]
+    [InlineData("Bash", "dydo merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567 --match-base-commit fedcba9876543210fedcba9876543210fedcba98 --dry-run")]
+    [InlineData("PowerShell", "dydo merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567 --match-base-commit fedcba9876543210fedcba9876543210fedcba98")]
+    [InlineData("PowerShell", "dydo check; ./dydo.exe merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567 --match-base-commit fedcba9876543210fedcba9876543210fedcba98 --dry-run")]
     public async Task Worker_DydoMerge_Allowed(string tool, string command)
     {
         await InitProjectAsync();

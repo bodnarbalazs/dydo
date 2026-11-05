@@ -10,7 +10,7 @@ date: 2026-10-29
 An agent merges a reviewed PR into a `feature/*` branch through `dydo merge`, whose refusals are code
 with no override flag. A merge into the default branch stays the user's click. Designed in
 [DYD-417](https://linear.app/bodnar-balazs/issue/DYD-417), ruled on by Balazs on 2026-10-29 and
-amended by the dydo admiral the same day.
+amended by the dydo admiral the same day and on 2026-11-04 (the target pin, see the Amendment).
 
 ## Context
 
@@ -42,14 +42,17 @@ server-side. Balazs ruled it unnecessary.
 ## Decision
 
 1. **One path.** Agents merge only into `feature/*` branches, and only through
-   `dydo merge <pr> --match-head-commit <sha40> [--dry-run]`. A merge into `master`, `main` or the
-   default branch is the user's click.
-2. **Refusals in code, no override.** The command takes no repository, base or override option; the
-   repository is the one the checkout's `origin` names. The base must match a fixed `feature/*`
-   pattern and git's branch-name rule, and is refused when it is GitHub's default branch, read fresh,
-   or the local `origin/HEAD` name. The PR head must equal the reviewed SHA, which is exactly what
-   merges. A closed PR is refused unless its SHA is already in its feature base (reconcile-first,
-   exit 0 `already integrated`). Draft and fork PRs are refused.
+   `dydo merge <pr> --match-head-commit <sha40> --match-base-commit <sha40> [--dry-run]`. A merge
+   into `master`, `main` or the default branch is the user's click.
+2. **Refusals in code, no override.** The command takes no repository, base-selection or override
+   option; `--match-base-commit` only adds a refusal. The repository is the one the checkout's
+   `origin` names, and the target is the PR's base. That base's tip, read from its branch ref and
+   never from the PR's `base.sha`, must equal the pin; the pin reaches a write only as the merge's
+   first parent and as the tip the base must still hold for the two-parent ref move. The base must match a fixed `feature/*` pattern and git's branch-name rule, and is
+   refused when it is GitHub's default branch, read fresh, or the local `origin/HEAD` name. The PR
+   head must equal the reviewed SHA, which is exactly what merges. A closed PR is refused unless its
+   SHA is already in its feature base (reconcile-first, exit 0 `already integrated`, comparing no
+   pin, since the run's own merge moved the tip). Draft and fork PRs are refused.
 3. **Merge commits only.** `POST /merges`, or an explicit two-parent commit where GitHub would
    fast-forward. No squash or rebase path exists.
 4. **The PASS comes from the PR body, bound to the SHA.** The `## Independent review` section must
@@ -72,11 +75,15 @@ server-side. Balazs ruled it unnecessary.
 6. **Crew may run it.** The Merge Sub-ticket's code-writer runs it, then a fresh merge reviewer
    judges its merge SHA. The guard allows `merge` in its worker lane: it cannot tell roles apart,
    and doctrine gives the merge to that crew. Decided by the admiral; reversible.
-7. **Planned guard hard blocks; delivery pending in
-   [DYD-425](https://linear.app/bodnar-balazs/issue/DYD-425).** The guard is to block these other
-   paths for agents: raw `gh pr merge` into any base, since it cannot read a PR's base offline;
-   `gh api` merge paths (`pulls/<n>/merge`, `merge-async`, `merges`) and GraphQL merge mutations;
-   `git push` to the default branch; and default-branch changes. These blocks are decided, not shipped.
+7. **Guard hard blocks on the other routes; shipped in
+   [DYD-425](https://linear.app/bodnar-balazs/issue/DYD-425).** The guard refuses these paths for
+   every caller, top-level or sub-agent: raw `gh pr merge` into any base, since it cannot read a PR's
+   base offline; `gh api` on `pulls/<n>/merge`, `merge-async` or `merges`, and GraphQL
+   `mergePullRequest`, `enablePullRequestAutoMerge` or `mergeBranch`; a `git push` that updates
+   `master`, `main` or the branch the local `origin/HEAD` names; and default-branch changes
+   (`gh repo edit --default-branch`, a `gh api` PATCH of the repository with `default_branch`). Each
+   refusal names `dydo merge`. The exact reading and its residuals are in
+   [Guard System](../../understand/guard-system.md#also-enforced).
 8. **Claude/Codex parity is a requirement; its gate is planned, delivery pending in
    [DYD-426](https://linear.app/bodnar-balazs/issue/DYD-426).** Both hosts must get the same
    privileges and the same allow or block outcome for the same command. `dydo init` and `--join`
@@ -84,30 +91,57 @@ server-side. Balazs ruled it unnecessary.
    `dydo` and `dydo.exe merge` for
    Codex. The planned gate must run the command matrix through a Codex session in PowerShell and
    a Claude session in bash, in the main checkout and in a fresh T3 worktree; any mismatch is a
-   blocker. The allow-rule delivery does not establish this parity. Merging on one host only is
-   not an outcome.
+   blocker. Neither the allow-rule delivery nor the shipped blocks of decision 7 establish this
+   parity. Merging on one host only is not an outcome.
 
 ## Consequences
 
 - Guards stop accidents, not rogue agents. Accepted residuals:
   - **A forged PR body.** Any agent with the gh token can edit it. Hardening would need a distinct
     reviewer identity, such as a GitHub App submitting an approving review.
-  - **Wrapped or opaque shell payloads** (`bash -c`, `eval`, a GraphQL body in a file) remain a
-    text-reading limitation of the planned DYD-425 guard blocks; those blocks are not yet shipped.
+  - **Wrapped or opaque shell payloads.** The shipped blocks read a wrapper's command string
+    (`bash -c`, `eval`, `pwsh -Command`, `cmd /c`, `env -S`, `ssh`, `watch`) and refuse it for the
+    route it holds. They remain a text-reading limitation: an `-EncodedCommand` or nesting past eight
+    wrappers is not decoded, a GraphQL query or API body read from a file or stdin
+    (`-F query=@file`, `--input`) is not read, and aliases, functions, scripts and unrecognised
+    programs are not followed. A bare `git push`, or one naming only its remote, is followed to the
+    current branch's upstream (`branch.<name>.merge`) and refused when that is the default branch; a
+    destination only a `remote.<name>.push` refspec or `push.default` sets is not followed.
   - **A workflow that registers late**, after every other check has finished green. A listed inert
     app registering a real suite before its runs exist is also ignored when its status is `queued`,
     `in_progress`, `pending`, `requested` or `waiting` and `latest_check_runs_count` is present as a
     valid integer zero; an unlisted app's unfinished suite refuses even with zero runs.
   - **The default-branch-switch race:** an admin switching the default branch to the feature branch
-    during a run. The command re-reads `default_branch` after merging and warns when it changed;
-    blocking agent default-branch changes is planned, delivery pending in DYD-425.
+    during a run. The command re-reads `default_branch` after merging and warns when it changed. The
+    guard refuses an agent's `gh repo edit --default-branch` and `gh api` PATCH with `default_branch`,
+    but it sees only agent tool calls: a switch outside them still passes. So does one by a path it
+    does not read: a body read from a file or stdin, an alias, function, script or unrecognised
+    program, anywhere; an `-EncodedCommand` or nesting past eight wrappers only outside a git tree,
+    since inside one the PR-ready check refuses them unread.
+  - **The `POST /merges` window.** GitHub cannot make that merge conditional on a tip. The command
+    re-reads the ref just before the call and checks the merge's first parent after it, so a branch
+    that moves inside that window still takes the merge: the command exits `2` naming both SHAs, and
+    the merge review judges its actual parents. The two-parent path has no window: it moves the
+    base atomically, only if it is still at the pin (GraphQL `updateRefs` with `beforeOid` the pin),
+    without force. An unforced `PATCH git/refs` would not do, since it accepts any fast-forward, and
+    a tip another merge moved into the SHA's history still fast-forwards to the merge commit.
 - The merge SHA is the candidate for the combined gates and the merge review. A conflicted merge
   stays the Merge code-writer's local merge.
-- The command's stdout line is the merge evidence. Git and the PR timeline are the record; there is
-  no local log.
+- The command's stdout line, which names the pinned tip, and the merge commit's `Target-Tip` trailer
+  are the merge evidence. Git and the PR timeline are the record; there is no local log.
 - A repository whose CI does not run on PRs into `feature/*` gets every merge refused until it does.
 - The stopgap `autoMode.allow` entry and the user-level `Bash(gh pr merge:*)` allow rule go only
   after the planned DYD-426 parity gate passes in LC; the user removes them. That gate remains pending.
+
+## Amendment - 2026-11-04: the target pin (DYD-523)
+
+The DYD-521 merge receipt trusted the PR's `baseRefOid`, a tip the feature branch had left hours
+before, so the reviewed target and the merged one differed
+([DYD-523](https://linear.app/bodnar-balazs/issue/DYD-523)). Balazs delegated the call to the
+admiral on 2026-11-04, who chose a required `--match-base-commit`: decisions 1 and 2 read as above,
+and the POST-path window joins the accepted residuals. The pin keeps decision 2's guarantee because
+it can only refuse; the target stays the PR's base, and the command's own output, not PR metadata,
+records the tip it merged onto.
 
 ## Related
 

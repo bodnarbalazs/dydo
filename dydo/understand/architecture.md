@@ -17,8 +17,10 @@ boundary and remains the sole owner of live project-management state.
 4. `dydo check`, `dydo fix`, `dydo index`, and `dydo graph` maintain the durable documentation graph.
 
 No step provisions, polls, or mirrors Linear. Agents reach Linear through its official MCP, UI,
-API, and integrations. The one exception inside dydo is `dydo map`, which reads a Project on demand
-and retains only disposable saved maps for comparison ([DR 052](../project/decisions/052-dydo-map-read-only-linear-view.md)).
+API, and integrations. The two exceptions inside dydo only read, on demand: `dydo map`, which
+retains only disposable saved maps for comparison ([DR 052](../project/decisions/052-dydo-map-read-only-linear-view.md)),
+and `dydo survey`, which prints a Project's lane findings and keeps nothing
+([DR 063](../project/decisions/063-dydo-survey-read-only-lane-digest.md)). Both read through one client.
 
 ## Component layout
 

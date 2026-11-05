@@ -1,0 +1,113 @@
+# TEMPORARY DYD-428 proof probe. Lives only on DYD-428-statechart-java-path; never merges.
+name: DYD-428 probe
+
+on:
+  push:
+    branches: [DYD-428-statechart-java-path]
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  windows-test:
+    name: ${{ matrix.leg }} (caller JAVA ${{ matrix.java }})
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - leg: RED pre-fix 53df22e0
+            java: unset
+            red: true
+          - leg: GREEN base
+            java: unset
+            red: false
+          - leg: GREEN base
+            java: absolute
+            red: false
+          - leg: GREEN base
+            java: bare
+            red: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Fetch pinned tla2tools.jar and verify sha256
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP 'tlc'
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          $jar = Join-Path $dir 'tla2tools.jar'
+          Invoke-WebRequest 'https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar' -OutFile $jar
+          $want = (Get-Content Resources/Statechart/dependency-lock.json -Raw | ConvertFrom-Json).tlc.sha256
+          $got = (Get-FileHash $jar -Algorithm SHA256).Hash.ToLower()
+          "TLA2TOOLS sha256 got=$got want=$want"
+          if ($got -ne $want -or $want -ne '936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88') { throw 'tla2tools.jar sha256 mismatch' }
+          "TLA2TOOLS=$jar" >> $env:GITHUB_ENV
+
+      - name: Use the pre-fix test (job-local, never committed)
+        if: matrix.red
+        run: |
+          git checkout 53df22e0 -- skills/engineering/statechart/scripts/test/windows.test.ts
+          $line = (Get-Content skills/engineering/statechart/scripts/test/windows.test.ts)[67]
+          "pre-fix line 68: $line"
+          if ($line -notmatch 'process\.env\.JAVA!') { throw 'pre-fix test not in place' }
+
+      - name: Run windows.test.ts
+        working-directory: skills/engineering/statechart/scripts
+        run: |
+          $mode = '${{ matrix.java }}'
+          if (Test-Path Env:JAVA) { throw "JAVA unexpectedly set by the runner: $env:JAVA" }
+          if ($mode -eq 'absolute') { $env:JAVA = Join-Path $env:JAVA_HOME 'bin\java.exe'; if (-not (Test-Path $env:JAVA)) { throw "missing $env:JAVA" } }
+          if ($mode -eq 'bare') { $env:JAVA = 'java' }
+          if ($mode -eq 'unset' -and (Test-Path Env:JAVA)) { throw 'JAVA must be unset' }
+          "caller JAVA mode=$mode value=$(if (Test-Path Env:JAVA) { $env:JAVA } else { '<unset>' })"
+          "java on PATH: $((Get-Command java).Source)"
+          & java -version 2>&1 | ForEach-Object { "$_" }
+          node --version
+          "TLA2TOOLS=$env:TLA2TOOLS"
+          $nodeArgs = @('--disable-warning=ExperimentalWarning', '--test', '--test-concurrency=1',
+            '--test-reporter=spec', '--test-reporter-destination=stdout',
+            '--test-reporter=tap', "--test-reporter-destination=$env:RUNNER_TEMP/result.tap")
+          if ('${{ matrix.red }}' -eq 'true') { $nodeArgs += '--test-name-pattern=TLC overrides' }
+          $out = & node @nodeArgs test/windows.test.ts 2>&1 | ForEach-Object { "$_" }
+          $code = $LASTEXITCODE
+          $out
+          "node --test exit=$code"
+          $tap = Get-Content "$env:RUNNER_TEMP/result.tap"
+          "---- TAP summary ----"
+          $tap | Where-Object { $_ -match '^# (tests|suites|pass|fail|cancelled|skipped|todo) ' }
+          $tap | Where-Object { $_ -match '^(not )?ok \d+ - ' }
+          if ('${{ matrix.red }}' -eq 'true') {
+            if ($code -eq 0) { throw 'RED: pre-fix test unexpectedly passed' }
+            $text = $tap -join "`n"
+            if ($text -notmatch 'ERR_INVALID_ARG_TYPE') { throw 'RED: no ERR_INVALID_ARG_TYPE' }
+            if ($text -notmatch 'The "to" argument must be of type string\. Received undefined') { throw 'RED: not the path.relative "to" argument error' }
+            if ($text -notmatch 'relative \(node:path') { throw 'RED: error not thrown from path.relative' }
+            if ($text -notmatch 'windows\.test\.ts:70') { throw 'RED: error not at pre-fix line 70 (before spawnSync of statechart)' }
+            if (Test-Path Env:JAVA) { throw 'RED: JAVA must be unset' }
+            'RED CONFIRMED: ERR_INVALID_ARG_TYPE from path.relative at windows.test.ts:70, before statechart starts'
+          } else {
+            if ($code -ne 0) { throw "GREEN: node --test exit $code" }
+            foreach ($want in '# tests 6', '# pass 6', '# fail 0', '# skipped 0') {
+              if (-not ($tap -contains $want)) { throw "GREEN: TAP summary lacks '$want'" }
+            }
+            foreach ($m in 'relative', 'absolute', 'bare', 'unset') {
+              $hit = $tap | Where-Object { $_ -match "^ok \d+ - Windows resolves $m TLC overrides from the caller and accepts empty output$" }
+              if (-not $hit) { throw "GREEN: mode $m not passing unskipped" }
+            }
+            'GREEN CONFIRMED: 4 TLC modes and 2 Job Object tests pass, 0 skipped'
+          }
+          exit 0

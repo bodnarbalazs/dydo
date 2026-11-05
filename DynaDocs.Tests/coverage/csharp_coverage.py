@@ -490,12 +490,15 @@ def main():
     parser.add_argument("--result-root")
     parser.add_argument("--extra-json", default="[]")
     parser.add_argument("--tests", help=argparse.SUPPRESS)
+    parser.add_argument("--denominator", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
         if args._subject:
             return run_subject(args.root, args.tests)
         if args.result_root is None:
             return 2
+        if args.denominator:
+            return run_denominator(args.root, args.result_root)
         extra = json.loads(args.extra_json)
         if not isinstance(extra, list) or any(not isinstance(item, str) for item in extra):
             return 2

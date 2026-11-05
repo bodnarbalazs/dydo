@@ -254,8 +254,10 @@ def _clean_checkout(root, commit):
 
 def rebuild_denominator(root, output):
     """This host's zero-hit join of the candidate: its own build, PDB identities and instrumentation."""
-    from csharp_coverage import run_denominator
-    if run_denominator(root, output) != 0:
+    campaign = Path(__file__).resolve().with_name('csharp_coverage.py')
+    command = [sys.executable, str(campaign), '--denominator', '--root', str(Path(root).resolve()),
+               '--result-root', str(Path(output).resolve())]
+    if subprocess.run(command, check=False).returncode != 0:
         raise ValueError(f'Candidate denominator rebuild failed; see {output}')
     joined = json.loads((Path(output) / 'joined.json').read_text(encoding='utf-8'))
     return joined['modules'], read_source_files(output)

@@ -373,6 +373,12 @@ class CSharpCoverageTests(unittest.TestCase):
                         patch("csharp_coverage.run_campaign", return_value=0) as campaign:
                     self.assertEqual(0, main())
                 campaign.assert_called_once_with(str(root), str(root / "fresh"), [], platform)
+            with patch.object(sys, "argv", [*arguments, "--denominator"]), \
+                    patch("csharp_coverage.run_campaign") as campaign, \
+                    patch("csharp_coverage.run_denominator", return_value=0) as denominator:
+                self.assertEqual(0, main())
+            denominator.assert_called_once_with(str(root), str(root / "fresh"))
+            campaign.assert_not_called()
 
     def test_the_denominator_is_the_campaigns_zero_hit_join_without_a_suite(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -403,19 +403,24 @@ class UnionTests(unittest.TestCase):
 class DenominatorTests(unittest.TestCase):
     def test_the_rebuilt_denominator_is_this_hosts_zero_hit_join_of_the_candidate(self):
         with tempfile.TemporaryDirectory() as folder:
-            output = Path(folder) / 'denominator'
+            root = Path(folder).resolve()
+            output = root / 'denominator'
 
-            def run(root, result_root):
-                write_evidence(result_root, joined_modules(0, 0))
-                return 0
-            with mock.patch('csharp_coverage.run_denominator', side_effect=run) as denominator:
-                modules, files = dotnet_platform.rebuild_denominator(Path(folder), output)
-            denominator.assert_called_once_with(Path(folder), output)
+            def run(command, check):
+                write_evidence(output, joined_modules(0, 0))
+                return subprocess.CompletedProcess(command, 0)
+            with mock.patch.object(dotnet_platform.subprocess, 'run', side_effect=run) as campaign:
+                modules, files = dotnet_platform.rebuild_denominator(root, output)
+            command = campaign.call_args.args[0]
+            self.assertEqual([sys.executable, '--denominator', '--root', str(root), '--result-root', str(output)],
+                             [command[0], *command[2:]])
+            self.assertEqual('csharp_coverage.py', Path(command[1]).name)
             self.assertEqual(joined_modules(0, 0), modules)
             self.assertEqual(source_files(), files)
-            with mock.patch('csharp_coverage.run_denominator', return_value=2), \
+            with mock.patch.object(dotnet_platform.subprocess, 'run',
+                                   return_value=subprocess.CompletedProcess([], 2)), \
                     self.assertRaisesRegex(ValueError, 'denominator rebuild failed'):
-                dotnet_platform.rebuild_denominator(Path(folder), output)
+                dotnet_platform.rebuild_denominator(root, output)
 
 
 if __name__ == '__main__':

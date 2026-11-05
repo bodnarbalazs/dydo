@@ -3,7 +3,6 @@ import json
 import hashlib
 import io
 import os
-import re
 import signal
 import subprocess
 import sys
@@ -17,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gate_run import STATIC_GATE_INTERPRETER
 import gate_adapter
 from gate_adapter import _target_paths, publish
+from typescript_join import parse_lcov
 
 TOOLS = Path(__file__).resolve().parents[1]
 STATIC_PYTHON = TOOLS.parents[1] / STATIC_GATE_INTERPRETER
@@ -1047,8 +1047,9 @@ class StatechartGateTests(unittest.TestCase):
                                    capture_output=True, text=True)
 
             self.assertEqual(0, child.returncode, child.stdout + child.stderr)
-            self.assertEqual(["test/helper.ts"],
-                             re.findall(r"(?m)^SF:(.*)$", (raw / "lcov.info").read_text(encoding="utf-8")))
+            # Read as the gate reads it: node names each source in the platform's own separators.
+            self.assertEqual([f"{STATECHART}/test/helper.ts"],
+                             list(parse_lcov((raw / "lcov.info").read_text(encoding="utf-8"), root, root / STATECHART)))
 
     def test_a_package_script_that_does_not_run_node_is_refused(self):
         with tempfile.TemporaryDirectory() as folder:

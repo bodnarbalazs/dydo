@@ -28,9 +28,16 @@ jobs:
         with:
           python-version-file: DynaDocs.Tests/coverage/.python-version
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
       - uses: actions/setup-node@v4
         with:
           node-version: '26.13.0'
+          cache: pnpm
+          cache-dependency-path: viewer/pnpm-lock.yaml
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -51,6 +58,14 @@ jobs:
 
       - name: Install locked coverage dependencies
         run: npm ci --prefix DynaDocs.Tests/coverage
+
+      # The statechart typecheck tests compile with the viewer's locked TypeScript and node types,
+      # and the package's own test files import its locked dependencies.
+      - name: Install viewer dependencies
+        run: pnpm -C viewer install --frozen-lockfile
+
+      - name: Install statechart test dependencies
+        run: pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile
 
       - name: Prepare native evidence directories
         shell: bash

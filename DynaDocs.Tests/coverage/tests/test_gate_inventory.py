@@ -308,7 +308,8 @@ class GateInventoryTests(unittest.TestCase):
             root = Path(folder)
             for path, text in files.items():
                 (root / _STATECHART / path).parent.mkdir(parents=True, exist_ok=True)
-                (root / _STATECHART / path).write_text(text, encoding='utf-8')
+                # LF on every platform, as skills/engineering/statechart/.gitattributes checks them out.
+                (root / _STATECHART / path).write_text(text, encoding='utf-8', newline='\n')
             if provenance is not None:
                 (root / _PROVENANCE).write_text(provenance, encoding='utf-8')
             paths = sorted(f'{_STATECHART}/{path}' for path in files)

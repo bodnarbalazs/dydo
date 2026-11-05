@@ -65,9 +65,13 @@ its pinned architecture plan and applicable feature-spec sections, on four axes 
   project has one; a surviving or uncovered mutant is a finding
 - At a gate - the ticket's final gates, a merge, the landing - the whole set below on that exact
   candidate, read from its gate record or run by you:
-  - The ticket's final-stage commands: declared own-feature Heavy, changed-product-stack coverage
-    producer/consumer and any mandatory integration/release suites; unresolved required failures
-    remain failures, including inherited ones
+  - The ticket's final-stage commands: declared own-feature Heavy, measuring every Heavy-only
+    source owed to it or failing; coverage producer/consumer at the scope Feature proof and gate
+    placement in `dydo/guides/testing-strategy.md` sets for that gate (ticket-scoped at final gates
+    and a Merge Sub-ticket, whole-stack at the landing and a default-branch sync, whole-stack per
+    ticket where the facade records no feature selection), a changed line it misses failing; any
+    mandatory integration/release suites; unresolved required failures remain failures, including
+    inherited ones
   - Coverage, HCRAP and the one-level static policy in the project's testing guide
   - Mutation on the changed files, no survivor; one example value changed per scenario, none left green
   - `dydo check` when the change touches documentation or validation surfaces

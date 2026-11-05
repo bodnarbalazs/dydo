@@ -6,10 +6,6 @@
       "tests": ["DynaDocs.Tests/Statechart/StatechartCheckerTests.cs"]
     },
     {
-      "module": "skills/engineering/statechart/scripts/checker.ts",
-      "tests": ["skills/engineering/statechart/scripts/test/checker.test.ts", "skills/engineering/statechart/scripts/test/tlc-bootstrap.test.ts"]
-    },
-    {
       "module": "skills/engineering/statechart/scripts/java/build.py",
       "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_java_build.py"]
     },
@@ -1555,6 +1551,18 @@
     {
       "module": "Services/Statechart/PosixStatechartOwner.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartRun.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartDescriptors.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartChild.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
     },
     {
       "module": "Services/Statechart/StatechartLifetime.cs",

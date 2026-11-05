@@ -26,12 +26,18 @@ Local changes:
   Native lifecycle tests retain real tool execution with absolute, relative, bare and
   unset `JAVA`, and controlled failure tests cover ownership and cleanup errors.
 - Windows tool launches and recurring test subprocesses request hidden consoles,
-  including Java discovery, real TLC, renderer installation and idle lifecycle fixtures.
+  including Java discovery, real TLC and idle lifecycle fixtures.
   Job ownership, handshakes, termination and cleanup remain intact.
-- Tests serialize files, use Node to launch npm's CLI on Windows, normalize plain
-  TLC line endings, and explicitly skip the upstream POSIX CLI/recording harness on
-  Windows. All original cases remain for POSIX. Native Gherkin acceptance and Windows
-  lifecycle tests are added, alongside the CRLF regression. Skips are not Windows proof.
+- Tests serialize files, normalize plain TLC line endings, and explicitly skip the
+  upstream POSIX CLI/recording harness on Windows. All original cases remain for POSIX.
+  Native Gherkin acceptance and Windows lifecycle tests are added, alongside the CRLF
+  regression. Skips are not Windows proof.
+- The renderer tests install nothing while they run. Upstream's `before` hook runs
+  `npm install` for Pele 1.9.0, Mermaid 11.16.0 and jsdom 26.1.0. Here Pele is the
+  managed module that `STATECHART_PELE` names. Mermaid and jsdom are dev dependencies,
+  locked with fast-check in `scripts/pnpm-lock.yaml` and restored by
+  `pnpm install --frozen-lockfile`, which runs no dependency build scripts. Without
+  either, the renderer cases skip by name. Their cases and assertions are upstream's.
 - dydo's native invocation enters through `native-entry.ts`. On Linux,
   `posix-lifetime.ts` checks inside the control channel and process group that dydo's
   native owner hands over; that owner performs scratch cleanup.

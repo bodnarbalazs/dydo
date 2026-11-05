@@ -2036,5 +2036,173 @@
   "command": "DẙDO mode set overnight on",
   "source": "fix8 brief: fold characters, typographic prose, routes without a literal dydo",
   "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "announce admiral-fixture \"dydo’s overnight mode is active\"",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "announce admiral-fixture \"Verified by dydo mode show; tonight’s work is settled.\"",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "announce admiral-fixture \"dotnet’s process finished\"",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo \"dydo’s mode set examples\"",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo “dydo mode set overnight on”",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "grep -n ‘dydo mode show’ notes.md",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "grep -n \"dydo mode set overnight on — tonight’s\" notes.md",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "eval \"echo it’s; dydo mode set overnight on\"",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "bash -c 'echo it’s; dydo mode set overnight on'",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "env -S \"dydo mode set overnight on # it’s\"",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode set overnight on “tonight”",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "cat <<EOF\ndydo mode set overnight on — it’s\nEOF",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo’ mode set overnight on",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "‘dydo’ mode set overnight on",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode set’ overnight on",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "dydo mode’ show",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "eval \"dydo mode ſet overnight on\"",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "bash -c 'dydo mode set² overnight on'",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "refused: BLOCKED: Don't use 'bash' to run dydo - it's already on your PATH. Just use: dydo mode set² overnight on"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "env’ dydo mode set overnight on",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "sudo -u’ x dydo mode set overnight on",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo “dydo mode set” | sh",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "grep \"dydo mode set # it’s",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo mode set; eval # it’s",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "echo dydo it\u001cs",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "cat notes.md | sh # it’s",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "d’ydo mode set overnight on",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "NOTE=“tonight” dydo mode set overnight on",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "reminder"
+ },
+ {
+  "kind": "outside_bound",
+  "command": "NOTE’=1 dydo mode set overnight on",
+  "source": "round-10 reviewer (prose_guard.py, prose_matrix.py) and fix9 brief controls",
+  "guard": "allow"
  }
 ]

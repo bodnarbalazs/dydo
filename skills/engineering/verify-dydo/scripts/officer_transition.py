@@ -88,15 +88,21 @@ MARKERS = "dydo/_system/.local"  # where the guard keeps its warn markers, insid
 LOOSE_MODE_SET = re.compile(r"\bdydo\b[\s\S]*?\bmode\b\W*\bset\b", re.IGNORECASE)
 LINE_CONTINUATION, SCAN_STRIP = re.compile(r"[\\`]\r?\n"), re.compile(r"[\"'\\`^]")
 # The classifier's bound (DYD-435 DECIDED): printable ASCII plus tab, LF and CR. Only there does the differential
-# corpus prove the mirror equals the candidate guard; any other character in a classified line makes a run
-# inconclusive, since Python's and .NET's Unicode word boundaries, classes and whitespace differ.
+# corpus prove the mirror equals the candidate guard. Outside it Python's and .NET's Unicode word boundaries,
+# classes, casing and whitespace differ, so such a character makes a run inconclusive where it sits at one of the
+# scanner's decision points (`bound_offender`).
 OUTSIDE_BOUND = re.compile(r"[^\t\n\r\x20-\x7e]")
-# Refined DECIDED: an outside-bound character matters only in a line either engine could read as running dydo.
-# Both reach a dydo only through a word naming dydo (the program, dydo.dll, a dydo project) or dotnet (`dotnet run`
-# with no project runs the current one), so `reads_dydo` looks for those words under a fold wider than either
-# engine: ASCII case, plus every code point whose Python lower(), upper(), casefold() or re.IGNORECASE match, or
-# whose .NET invariant, en-US or tr-TR casing, OrdinalIgnoreCase or Regex IgnoreCase match, yields one of their
-# letters. Computed over all of Unicode (artifacts/dyd435/fix8/fold-probe); each folds to its mapping's letters.
+# Where the two readers split text differently: Python's str.isspace and .NET's char.IsWhiteSpace part exactly on the
+# four ASCII information separators, computed over all of Unicode (artifacts/dyd435/fix8/fold-probe, fix9/split-probe);
+# `is_space` follows .NET, and the bound still counts them. A lone surrogate is a string Python holds and the guard's
+# UTF-16 JSON reader cannot hold the same way.
+SPLIT_DIFFERS = re.compile(r"[\x1c-\x1f\ud800-\udfff]")
+# Refined DECIDED: a decision point matters only in a line either engine could read as running dydo. Both reach a
+# dydo only through a word naming dydo (the program, dydo.dll, a dydo project) or dotnet (`dotnet run` with no
+# project runs the current one), so `reads_dydo` looks for those words under a fold wider than either engine: ASCII
+# case, plus every code point whose Python lower(), upper(), casefold() or re.IGNORECASE match, or whose .NET
+# invariant, en-US or tr-TR casing, OrdinalIgnoreCase or Regex IgnoreCase match, yields one of their letters.
+# Computed over all of Unicode (artifacts/dyd435/fix8/fold-probe); each folds to its mapping's letters.
 PROGRAM_WORDS = ("dydo", "dotnet")
 FOLD = {"\u0149": "n", "\u1e97": "t", "\u1e99": "y", "\ufb05": "st", "\ufb06": "st"}
 # CommandPosition.cs: what sits before a program, and the programs that run their remaining words, with the
@@ -369,8 +375,8 @@ def outside_bound(text):
 
 
 def hook_fields(payload):
-    """What the hook payload said about the call. Its command is the line the guard read; `sets_mode`,
-    `outside_bound` and `reads_dydo` are read from the whole line, before the report cut."""
+    """What the hook payload said about the call. Its command is the line the guard read; `sets_mode` and
+    `bound_offender` are read from the whole line, before the report cut."""
     if payload is None:
         return None
     try:
@@ -380,7 +386,7 @@ def hook_fields(payload):
         return {"unparsed": cut(payload)}
     return {"tool_name": hook.get("tool_name"), "tool_use_id": hook.get("tool_use_id"),
             "permission_mode": hook.get("permission_mode"), "command": cut(command), "sets_mode": sets_mode(command),
-            "outside_bound": outside_bound(command), "reads_dydo": reads_dydo(command)}
+            "bound_offender": bound_offender(command)}
 
 
 def record_dydo(fifo, command, arguments):
@@ -812,8 +818,8 @@ def placed(items, receipts):
     every shell call whose window holds it: a Codex hook id names an inner command, so its guard answer reaches
     the rollout call that ran it only through the window. `guarded` is the command the host's hook payload handed
     the real guard, the text the guard keys its warn marker by; `sets_mode` whether the guard reads it as a mode set.
-    `outside_bound` names each classified line that could read as running dydo (`reads_dydo`) with a character
-    outside the classifier's bound."""
+    `outside_bound` names each classified line with a character outside the classifier's bound at a decision point
+    (`bound_offender`)."""
     ends = {item["id"]: item["time"] for item in items if item["kind"] == "tool_result"}
     windows = [(item["time"], ends.get(item["id"], math.inf) + CLOCK_SLACK, item["id"])
                for item in items if item["kind"] == "tool_use" and item.get("name") in SHELL_TOOLS]
@@ -838,7 +844,7 @@ def attributed(row, found, calls):
     """The call that ran a receipt: its one candidate. Among several, the only one whose command the classifier reads
     as running it: a mode set for an executed setter, `dydo mode show` for a readback. Zero or several such, a
     receipt no reading names, or a candidate that is no shell line (Codex's rollout calls carry code) leave it
-    ambiguous. Also returns the bound offenders among the commands it read.
+    ambiguous. Also returns the bound offenders (`bound_offender`) among the commands it read.
 
     The limit: this reads commands, not execution. A candidate whose mode set never runs (`false && dydo mode set
     overnight on`) beside a parallel call whose script runs the setter is credited with that setter, and a synthetic
@@ -856,22 +862,22 @@ def attributed(row, found, calls):
     return (hits[0] if len(hits) == 1 else None), offenders
 
 
-def bound_offender(command):
-    """The first outside-bound character of a line either engine could read as running dydo; None for any other."""
-    return outside_bound(command) if reads_dydo(command) else None
-
-
 def guarded_outside(row):
-    """A guard receipt's command outside the bound where it could read as running dydo, as the recorder read the
-    whole line, or, for a receipt recorded before it kept one, as its command reads; a command the report cut may
-    have shortened counts as reading dydo."""
+    """A guard receipt's bound offender: as the recorder read the whole line; for a receipt recorded before it kept
+    one, as its command reads, unless the report cut may have shortened it. Then the older recorder's own fields
+    decide: its first outside character, unless it read no dydo, a reading wider than `bound_offender`."""
     if row["args"][:1] != ["guard"]:
         return []
     hook = row.get("hook") or {}
     command = hook.get("command") or ""
-    where = hook["outside_bound"] if "outside_bound" in hook else outside_bound(command)
-    dydo = hook["reads_dydo"] if "reads_dydo" in hook else len(command) >= REPORT_CUT or reads_dydo(command)
-    return [{"call": hook_call(row), **where}] if where and dydo else []
+    if "bound_offender" in hook:
+        where = hook["bound_offender"]
+    elif len(command) < REPORT_CUT:
+        where = bound_offender(command)
+    else:
+        where = (hook["outside_bound"] if "outside_bound" in hook else outside_bound(command)) \
+            if hook.get("reads_dydo", True) else None
+    return [{"call": hook_call(row), **where}] if where else []
 
 
 def guarded_mode_set(row):
@@ -1261,11 +1267,19 @@ def skip_runner_options(words, at, value_options, takes_operand):
 
 def env_split_string(rest):
     """The string env -S (--split-string) runs, with env's remaining words after it; None without -S."""
+    at = split_at(rest)
+    if at is None:
+        return None
+    split, after = split_option(rest, at)
+    return " ".join([split, *rest[after:]])
+
+
+def split_at(rest):
+    """The index of env's -S (--split-string) option word among its options; None without one."""
     at = 0
     while at < len(rest) and len(rest[at]) > 1 and rest[at][0] == "-" and rest[at] != "--":
-        split, after = split_option(rest, at)
-        if split is not None:
-            return " ".join([split, *rest[after:]])
+        if split_option(rest, at)[0] is not None:
+            return at
         at += 2 if rest[at] in RUNNERS["env"] else 1
     return None
 
@@ -1424,10 +1438,60 @@ def runs_dydo(options):
     return name.lower() in ("dydo", "dynadocs")
 
 
+def dotnet_target(rest):
+    """dotnet's deciding word: `--` after run, else the first word past exec and the options. Its index (past the end
+    when there is none) and whether the words after it are dydo's (`runs_dydo`, or the word is dydo.dll)."""
+    if rest[:1] == ["run"]:
+        at = rest.index("--") if "--" in rest else len(rest)
+        return at, at < len(rest) and runs_dydo(rest[:at])
+    at = 1 if rest[:1] == ["exec"] else 0
+    while at < len(rest) and rest[at].startswith("-"):
+        at += 2
+    return at, at < len(rest) and program_name(rest[at]) == "dydo.dll"
+
+
 def base64_bytes(encoded):
     """Convert.FromBase64String: whitespace ignored, whole quads, padding only at the end; None when malformed."""
     text = re.sub(r"[ \t\r\n]", "", encoded)
     return base64.b64decode(text) if len(text) % 4 == 0 and BASE64.fullmatch(text) else None
+
+
+def cmd_words(rest):
+    """The words cmd compares before its command string: each /switch it tests, and the /c or /k it finds."""
+    at = next((index for index, word in enumerate(rest) if cmd_switch_length(word) > 0), len(rest))
+    return [word for word in rest[:at] if word.startswith("/")] + [word[:cmd_switch_length(word)] for word in rest[at:at + 1]]
+
+
+def dotnet_words(rest):
+    """The words dotnet's reading compares: up to its deciding word, then the two the mode-set test reads as dydo's."""
+    at, dydo = dotnet_target(rest)
+    return rest[:at + (3 if dydo else 1)]
+
+
+def pwsh_words(rest):
+    """pwsh's options and mode word, and an encoded command's payload, which it decodes."""
+    mode, tail = read_pwsh(rest)
+    return rest[:len(rest) - len(tail)] + (tail[:1] if mode == "encoded" else [])
+
+
+def dash_words(rest):
+    """The option words a Start-Process reading tests: any word of two or more characters that starts with `-`."""
+    return [word for word in rest if len(word) > 1 and word[0] == "-"]
+
+
+# The words after each program the scanner compares (`compared_words`); a program it does not interpret compares none.
+COMPARED = {"dydo": lambda rest: rest[:2], "dotnet": dotnet_words, "cmd": cmd_words, "pwsh": pwsh_words,
+            "powershell": pwsh_words, "env": lambda rest: rest[:split_at(rest) or 0],
+            **dict.fromkeys(("eval", "iex", "invoke-expression"), lambda rest: [w for w in rest[:1] if w.startswith("-")]),
+            **dict.fromkeys(("start-process", "saps", "start"), dash_words),
+            **{shell: lambda rest: rest[:posix_shell_operands(rest)[1]] for shell in POSIX_SHELLS}}
+
+
+def compared_words(name, rest):
+    """The words after program `name` the scanner compares: dydo's first two (`mode set`), and the options, switches,
+    mode word and encoded payload of the programs it interprets, up to the command string it reads again. Every other
+    word is an inert argument: no comparison reads it, so neither engine's reading of it decides anything."""
+    return COMPARED.get(name, lambda _: [])(rest)
 
 
 # The programs whose command string the scanner reads again, and the dialect it reads it in.
@@ -1440,16 +1504,22 @@ class DydoScan:
     """DydoInvocationScanner.Find: the words after every dydo a command line runs, read as its shell reads it, and
     whether any reading could not finish. Only a word at command position is a program. A quoted word, here-string or
     heredoc is an argument, except where a shell runs it: $( ... ), backticks, and the command string of bash -c,
-    cmd /c, pwsh -Command, env -S, eval or Invoke-Expression, read again in that shell's dialect."""
+    cmd /c, pwsh -Command, env -S, eval or Invoke-Expression, read again in that shell's dialect.
+
+    `texts` keeps every word and stdin body read. `points` keeps where the two engines' readings could part, the
+    bound's decision points: each text it splits into words ("split"), each word it compares ("word":
+    `compared_words`) and each text past its nesting limit, never read ("depth")."""
 
     def __init__(self, command, dialect):
-        self.invocations, self.uncertain, self.texts = [], False, []  # texts: every word and stdin body read
+        self.invocations, self.uncertain, self.texts, self.points = [], False, [], []
         self.scan(command, 0, dialect)
 
     def scan(self, text, depth, dialect):
         if depth > MAX_DEPTH:
             self.uncertain = True
+            self.points.append(("depth", text))
             return
+        self.points.append(("split", text))
         for posix in READINGS[dialect]:
             reading = ShellReading.read(text, posix)
             self.uncertain |= reading.failed
@@ -1461,9 +1531,12 @@ class DydoScan:
 
     def analyse(self, words, stdin, depth):
         at = skip(words)
+        # Keywords, runners and their options, the program. An assignment compares only its ASCII `NAME=`.
+        self.points += [("word", word) for word in words[:at + 1] if not ASSIGNMENT.match(word)]
         if at >= len(words):
             return
         name, rest = program_name(words[at]), words[at + 1:]
+        self.points += [("word", word) for word in compared_words(name, rest)]
         if name == "dydo":
             self.invocations.append(rest)
         elif name == "dotnet":
@@ -1490,14 +1563,8 @@ class DydoScan:
             self.scan(body, depth + 1, dialect)
 
     def dotnet(self, rest):
-        if rest[:1] == ["run"]:
-            if "--" in rest and runs_dydo(rest[:rest.index("--")]):
-                self.invocations.append(rest[rest.index("--") + 1:])
-            return
-        at = 1 if rest[:1] == ["exec"] else 0
-        while at < len(rest) and rest[at].startswith("-"):
-            at += 2
-        if at < len(rest) and program_name(rest[at]) == "dydo.dll":
+        at, dydo = dotnet_target(rest)
+        if dydo:
             self.invocations.append(rest[at + 1:])
 
     def pwsh(self, rest, stdin, depth):
@@ -1543,7 +1610,12 @@ def sets_mode(command):
     # OrdinalIgnoreCase folds ASCII letters only here: the guard reads `mode ſet` as no mode set.
     if any(len(words) >= 2 and words[0].lower() == "mode" and words[1].lower() == "set" for words in invocations):
         return True
-    return uncertain and bool(LOOSE_MODE_SET.search(SCAN_STRIP.sub("", LINE_CONTINUATION.sub("", command))))
+    return uncertain and bool(LOOSE_MODE_SET.search(loose_text(command)))
+
+
+def loose_text(command):
+    """The text the guard's loose rule reads: NormaliseForDydoScan, line continuations and quote characters gone."""
+    return SCAN_STRIP.sub("", LINE_CONTINUATION.sub("", command))
 
 
 def folded(text):
@@ -1551,17 +1623,44 @@ def folded(text):
     return "".join(FOLD.get(c) or (c.lower() if c.isascii() else c) for c in text)
 
 
+def names_dydo(texts):
+    return any(word in folded(text) for text in texts for word in PROGRAM_WORDS)
+
+
 def reads_dydo(command):
-    """Whether either engine could read the line as running dydo, so a character outside the bound could change
-    what it reads: a folded dydo or dotnet in the text the loose rule reads, or in any word or stdin body the scanner
-    reads, nested and decoded ones included. That covers words the reader joins (`"dy$(:)do"`) and encoded commands.
-    The two engines split words on the same characters (`is_space`), so a word either assembles is in that list."""
-    texts = [SCAN_STRIP.sub("", LINE_CONTINUATION.sub("", command))]
+    """Whether either engine could read the line as running dydo: a folded dydo or dotnet in the text the loose rule
+    reads, or in any word or stdin body the scanner reads, nested and decoded ones included. That covers words the
+    reader joins (`"dy$(:)do"`) and encoded commands. No other line can be a mode set for either engine."""
     try:
-        texts += DydoScan(command, POSIX).texts
+        texts = DydoScan(command, POSIX).texts
     except RecursionError:  # a line it cannot finish reading may read as anything
         return True
-    return any(word in folded(text) for text in texts for word in PROGRAM_WORDS)
+    return names_dydo([loose_text(command), *texts])
+
+
+def bound_offender(command):
+    """Where a character outside the bound sits at a point the two engines could read differently, in a line either
+    could read as running dydo (`reads_dydo`): the first such character's code point, its decision point and its
+    offset in the line (None when only a decoded body holds it). None for any other line. The decision points
+    (`DydoScan.points`): a character whose whitespace class differs (SPLIT_DIFFERS) in any text the scanner splits;
+    a character outside the bound in a word it compares (`compared_words`), recursively through every body it reads
+    again, or in a text past its nesting limit; and, only where its scan is uncertain, one in the loose rule's text.
+    An inert argument of a program the scanner does not interpret is no decision point. A line the reader cannot
+    finish counts its first outside character."""
+    try:
+        scan = DydoScan(command, POSIX)
+    except RecursionError:
+        where = outside_bound(command)
+        return {**where, "point": "unread"} if where else None
+    loose = loose_text(command)
+    if not names_dydo([loose, *scan.texts]):
+        return None
+    for point, text in [*scan.points, *([("loose", loose)] if scan.uncertain else [])]:
+        found = (SPLIT_DIFFERS if point == "split" else OUTSIDE_BOUND).search(text)
+        if found:
+            at = command.find(found.group())
+            return {"at": at if at >= 0 else None, "code_point": f"U+{ord(found.group()):04X}", "point": point}
+    return None
 
 
 def reads_mode(command):
@@ -1659,8 +1758,8 @@ def ownership(receipts):
 
 
 def outside_the_bound(receipts):
-    """Each classified line that could read as running dydo with a character outside the bound: its receipt's index,
-    call, offset and code point."""
+    """Each classified line with a character outside the bound at a decision point (`bound_offender`): its receipt's
+    index, call, offset, code point and decision point."""
     return [{"index": i, **where} for i, r in receipts for where in r["outside_bound"]]
 
 
@@ -1743,7 +1842,7 @@ def evaluate(checks, direction, timeline, store_before, store_after, markers=())
 
 
 def verdict(f, rows):
-    """`inconclusive` when a line that could read as running dydo leaves the bound, whatever the checks say: never a
+    """`inconclusive` when a classified line leaves the bound at a decision point, whatever the checks say: never a
     pass, and no officer finding. Otherwise pass only when every check passes."""
     if f["outside_bound"]:
         return "inconclusive"

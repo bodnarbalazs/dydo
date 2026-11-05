@@ -5,7 +5,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from gate_inventory import assembly_path, assemble_inventory, dependency_cycles, test_project_role
+from gate_inventory import (assembly_path, assemble_inventory, dependency_cycles, test_project_role,
+                            typescript_stack)
 from gate_run import CommandLog, STATIC_GATE_INTERPRETER, result
 from inventory import build_file_rows, git_file_state, source_fingerprint
 
@@ -133,6 +134,9 @@ def classify_vulture(lines):
 
 
 class Collectors:
+    # The stack whose TypeScript the collectors judge; None judges all of it.
+    stack = None
+
     def __init__(self, root, output):
         self.root = Path(root).resolve()
         self.output = Path(output).resolve()
@@ -201,7 +205,10 @@ class Collectors:
     def sources(self, language):
         if self.inventory is None:
             raise ValueError('Source inventory unavailable')
-        return [row for row in self.inventory['sources'] if row['language'] == language]
+        return [row for row in self.inventory['sources'] if row['language'] == language and self.owns(row)]
+
+    def owns(self, row):
+        return row.get('language') != 'typescript' or self.stack in (None, typescript_stack(row['path']))
 
     def csharp_source(self):
         project = self.coverage / 'metrics/GateMetrics.csproj'
@@ -399,7 +406,7 @@ class Collectors:
 
     def typescript_unused_exports(self):
         from gate_knip import collect_knip
-        return collect_knip(self, 'typescript')
+        return collect_knip(self, self.stack or 'viewer')
 
     def pending(self, name, detail):
         return result(errors=[{'type': 'implementation-gap', 'collector': name, 'message': detail}])

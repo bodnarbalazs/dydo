@@ -49,8 +49,48 @@ _DERIVED_PRODUCER = 'DynaDocs.Tests/coverage/sync_testing_example.py'
 _DERIVED_TEST = 'DynaDocs.Tests/coverage/tests/test_sync_testing_example.py'
 _NATIVE_EVIDENCE = 'dydo/agents/workspace/dyd96-portable-wip/native-altcover-evidence'
 _TYPESCRIPT_ROOT = 'viewer/src/'
+STATECHART_ROOT = 'skills/engineering/statechart/scripts/'
+_STATECHART_TESTS = STATECHART_ROOT + 'test/'
+_PROVENANCE = 'skills/engineering/statechart/PROVENANCE.md'
+_UPSTREAM_SKILL = 'pstack/skills/statechart/'
+_UPSTREAM_BLOBS = re.compile(r'^```upstream-blobs\n(?P<body>.*?)^```$', re.MULTILINE | re.DOTALL)
+_UPSTREAM_PIN = re.compile(r'commit `(?P<commit>[0-9a-f]{40})`')
 TYPESCRIPT_OUTSIDE_ROOT = 'typescript-outside-viewer-src'
 _VITEST_IMPORT = re.compile(r'''\bfrom\s+['"]vitest['"]''')
+
+
+def typescript_stack(relative):
+    """The stack owning a TypeScript path: the statechart runtime's own, else the viewer's."""
+    return 'statechart' if relative.startswith(STATECHART_ROOT) else 'viewer'
+
+
+def git_blob(data):
+    return hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()
+
+
+def upstream_blobs(text):
+    """PROVENANCE's pin and its per-file upstream blob hashes, keyed by skill-relative path."""
+    pin, block = _UPSTREAM_PIN.search(text), _UPSTREAM_BLOBS.search(text)
+    if pin is None or block is None:
+        raise ValueError('PROVENANCE names no upstream pin or upstream-blobs block')
+    blobs = {}
+    for line in block['body'].splitlines():
+        match = re.fullmatch(r'(?P<blob>[0-9a-f]{40})  (?P<path>scripts/\S+)', line)
+        if match is None or match['path'] in blobs:
+            raise ValueError(f'Unreadable or duplicate upstream blob line: {line}')
+        blobs[match['path']] = match['blob']
+    return {'commit': pin['commit'], 'blobs': blobs}
+
+
+def _statechart_upstream(root, paths):
+    """The upstream record, when statechart TypeScript exists; unreadable, every file is measured."""
+    if not any(path.startswith(STATECHART_ROOT) and path.endswith(('.ts', '.tsx')) for path in paths):
+        return {'commit': None, 'blobs': {}}, None
+    try:
+        return upstream_blobs((Path(root) / _PROVENANCE).read_text(encoding='utf-8')), None
+    except (ValueError, OSError) as error:
+        return {'commit': None, 'blobs': {}}, {'path': _PROVENANCE, 'type': 'upstream-provenance-unreadable',
+                                              'message': str(error)}
 
 
 def _manifest_digests(text):
@@ -133,13 +173,23 @@ def _coverage_exemption(root, relative, paths, association_map):
                        'tests': association_map[relative]}}, None
 
 
-def _typescript_scope(relative):
-    """The viewer's application source is the TypeScript the gates measure; its Playwright specs,
-    fixtures and tool configs outside it are recorded, never silently dropped."""
+def _typescript_scope(relative, path, upstream):
+    """The viewer's application source and the statechart runtime's dydo-written or adapted files are
+    the TypeScript the gates measure. The viewer's Playwright specs, fixtures and tool configs, and the
+    statechart files still byte-identical to their pinned upstream blob, are recorded, never dropped."""
     if relative.startswith(_TYPESCRIPT_ROOT):
         return None
+    if not relative.startswith(STATECHART_ROOT):
+        return {'path': relative, 'reason': TYPESCRIPT_OUTSIDE_ROOT,
+                'origin': {'root': _TYPESCRIPT_ROOT, 'gap': 'dydo/guides/testing-strategy.md', 'issue': 'DYD-276'}}
+    local = 'scripts/' + relative.removeprefix(STATECHART_ROOT)
+    blob = upstream['blobs'].get(local)
+    if blob is None or blob != git_blob(path.read_bytes()):
+        return None
     return {'path': relative, 'reason': TYPESCRIPT_OUTSIDE_ROOT,
-            'origin': {'root': _TYPESCRIPT_ROOT, 'gap': 'dydo/guides/testing-strategy.md', 'issue': 'DYD-276'}}
+            'origin': {'root': STATECHART_ROOT, 'gap': 'dydo/guides/testing-strategy.md', 'issue': 'DYD-590',
+                       'upstream': {'record': _PROVENANCE, 'commit': upstream['commit'],
+                                    'path': _UPSTREAM_SKILL + local, 'blob': blob}}}
 
 
 def _discovered_test_files(paths, discovery):
@@ -156,9 +206,6 @@ def _source_row(root, relative, path, existing, projects, test_files, associatio
     language = language_of(path)
     if language is None:
         return None, None, []
-    scope = _typescript_scope(relative) if language == 'typescript' else None
-    if scope:
-        return None, scope, []
     exclusion, exclusion_error = _structural_exclusion(root, relative, existing, test_files)
     if exclusion:
         return None, exclusion, []
@@ -170,9 +217,12 @@ def _source_row(root, relative, path, existing, projects, test_files, associatio
     source = {'path': relative, 'sha256': digest, 'language': language, 'role': role,
               'projects': [owner['path'] for owner in owners], 'executable': executable,
               'testFiles': association_map.get(relative, [])}
-    if language == 'typescript' and role == 'target' and _VITEST_IMPORT.search(text):
+    if language == 'typescript' and role == 'target' and (
+            _VITEST_IMPORT.search(text) or relative.startswith(_STATECHART_TESTS)):
         # Only the runner can load a module importing it, so it is test harness, as a C# test
-        # project's helpers are; it cannot be named as another module's test file.
+        # project's helpers are; it cannot be named as another module's test file. Node's own test
+        # discovery counts every module in a test folder as a test file and leaves it out of coverage,
+        # so a statechart helper there that the package's test script does not run is harness too.
         source.update(role='test', nativeTest=False)
     exemption, exemption_error = _coverage_exemption(root, relative, existing, association_map)
     if exemption:
@@ -181,8 +231,13 @@ def _source_row(root, relative, path, existing, projects, test_files, associatio
 
 
 def _source_rows(root, existing, projects, test_files, association_map):
-    sources, excluded, errors = [], [], []
+    upstream, upstream_error = _statechart_upstream(root, existing)
+    sources, excluded, errors = [], [], [upstream_error] if upstream_error else []
     for relative, path in checked_paths(root, existing):
+        scope = _typescript_scope(relative, path, upstream) if language_of(path) == 'typescript' else None
+        if scope:
+            excluded.append(scope)
+            continue
         source, exclusion, row_errors = _source_row(
             root, relative, path, existing, projects, test_files, association_map)
         if source:

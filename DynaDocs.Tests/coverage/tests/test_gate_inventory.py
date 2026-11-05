@@ -17,6 +17,19 @@ _DRIVERS = {f'{_CANARIES}/run-host-canaries.mjs': (f'{_CANARIES}/path-containmen
                                                    f'{_CANARIES}/run-host-canaries-args.mjs'),
             f'{_CANARIES}/openai-sse-provider.mjs': (f'{_CANARIES}/openai-sse-provider-args.mjs',)}
 _EXEMPT_REASON = 'external-host-driver-as-embedded-source'
+_STATECHART = 'skills/engineering/statechart/scripts'
+_PROVENANCE = 'skills/engineering/statechart/PROVENANCE.md'
+_PIN = '1ba91fc25c0977741dd0e267849e6234b037ed0a'
+
+
+def _blob(text):
+    data = text.encode('utf-8')
+    return hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()
+
+
+def _provenance(upstream):
+    lines = ''.join(f'{_blob(text)}  scripts/{path}\n' for path, text in sorted(upstream.items()))
+    return f'# Statechart provenance\n\nSource: commit `{_PIN}`.\n\n```upstream-blobs\n{lines}```\n'
 
 
 def _git(root, *arguments):
@@ -288,6 +301,104 @@ class GateInventoryTests(unittest.TestCase):
                          [(row['path'], row['language'], row['role']) for row in report['sources']])
         self.assertEqual({(path, 'typescript-outside-viewer-src') for path in recorded},
                          {(row['path'], row['reason']) for row in report['excluded']})
+
+    def statechart_inventory(self, files, provenance):
+        """Statechart TypeScript beside a PROVENANCE record naming `provenance`'s upstream blobs."""
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for path, text in files.items():
+                (root / _STATECHART / path).parent.mkdir(parents=True, exist_ok=True)
+                (root / _STATECHART / path).write_text(text, encoding='utf-8')
+            if provenance is not None:
+                (root / _PROVENANCE).write_text(provenance, encoding='utf-8')
+            paths = sorted(f'{_STATECHART}/{path}' for path in files)
+            return assemble_inventory(root, paths, [], [{'id': f'{path}#node-test', 'file': path}
+                                                         for path in paths if path.endswith('.test.ts')])
+
+    def test_a_statechart_file_is_measured_exactly_when_it_differs_from_its_upstream_blob(self):
+        upstream = {'ir.ts': 'export const ir = 1;\n', 'run.ts': 'export const run = 1;\n',
+                    'test/cli.test.ts': "import { test } from 'node:test';\ntest('cli', () => {});\n"}
+        local = {**upstream, 'run.ts': 'export const run = 2;\n', 'checker.ts': 'export const checker = 1;\n'}
+
+        report = self.statechart_inventory(local, _provenance(upstream))
+
+        self.assertEqual([], report['errors'])
+        self.assertEqual([(f'{_STATECHART}/checker.ts', 'target'), (f'{_STATECHART}/run.ts', 'target')],
+                         [(row['path'], row['role']) for row in report['sources']])
+        self.assertEqual([(f'{_STATECHART}/ir.ts', 'typescript-outside-viewer-src'),
+                          (f'{_STATECHART}/test/cli.test.ts', 'typescript-outside-viewer-src')],
+                         sorted((row['path'], row['reason']) for row in report['excluded']))
+        self.assertEqual({'record': _PROVENANCE, 'commit': _PIN, 'path': 'pstack/skills/statechart/scripts/ir.ts',
+                          'blob': _blob(upstream['ir.ts'])},
+                         next(row for row in report['excluded'] if row['path'].endswith('ir.ts'))['origin']['upstream'])
+
+    def test_editing_an_upstream_statechart_file_makes_it_a_target(self):
+        upstream = {'ir.ts': 'export const ir = 1;\n',
+                    'test/cli.test.ts': "import { test } from 'node:test';\ntest('cli', () => {});\n"}
+        before = self.statechart_inventory(upstream, _provenance(upstream))
+        edited = {path: text + '// local\n' for path, text in upstream.items()}
+
+        after = self.statechart_inventory(edited, _provenance(upstream))
+
+        self.assertEqual([], before['sources'])
+        self.assertEqual([(f'{_STATECHART}/ir.ts', 'target'), (f'{_STATECHART}/test/cli.test.ts', 'test')],
+                         [(row['path'], row['role']) for row in after['sources']])
+        self.assertEqual([], after['excluded'])
+
+    def test_a_statechart_helper_in_its_test_folder_is_harness_no_association_can_name(self):
+        from associations import validate_associations
+        local = {'run.ts': 'export const run = 1;\n', 'test/tlc.ts': 'export const skip = false;\n',
+                 'test/run.test.ts': "import { test } from 'node:test';\ntest('run', () => {});\n"}
+
+        report = self.statechart_inventory(local, _provenance({}))
+
+        roles = {row['path'].removeprefix(f'{_STATECHART}/'): (row['role'], row.get('nativeTest', True))
+                 for row in report['sources']}
+        self.assertEqual({'run.ts': ('target', True), 'test/tlc.ts': ('test', False),
+                          'test/run.test.ts': ('test', True)}, roles)
+        manifest = {'schema': 1, 'modules': [{'module': f'{_STATECHART}/run.ts', 'tests': [f'{_STATECHART}/test/tlc.ts']}]}
+        with self.assertRaisesRegex(ValueError, 'non-test association'):
+            validate_associations(report['sources'], manifest)
+
+    def test_an_unreadable_upstream_record_measures_every_statechart_file_and_names_the_gap(self):
+        upstream = {'ir.ts': 'export const ir = 1;\n'}
+        for provenance in (None, 'commit `' + _PIN + '` but no blob block\n',
+                           _provenance(upstream).replace('  scripts/ir.ts', ' scripts/ir.ts')):
+            with self.subTest(provenance=provenance):
+                report = self.statechart_inventory(upstream, provenance)
+
+                self.assertEqual([f'{_STATECHART}/ir.ts'], [row['path'] for row in report['sources']])
+                self.assertEqual([(_PROVENANCE, 'upstream-provenance-unreadable')],
+                                 [(row['path'], row['type']) for row in report['errors']])
+
+    def test_the_committed_record_holds_this_repository_upstream_blobs(self):
+        from gate_inventory import upstream_blobs
+        repository = Path(__file__).resolve().parents[3]
+
+        record = upstream_blobs((repository / _PROVENANCE).read_text(encoding='utf-8'))
+
+        self.assertEqual(_PIN, record['commit'])
+        self.assertTrue(record['blobs'])
+        self.assertTrue(all(path.startswith('scripts/') and path.endswith('.ts') for path in record['blobs']))
+
+    def test_every_statechart_target_names_a_test_file_in_this_repository(self):
+        import gate_adapter
+        from associations import validate_associations
+        from inventory import git_file_state
+        repository = Path(__file__).resolve().parents[3]
+        manifest = json.loads((repository / 'DynaDocs.Tests/coverage/test-associations.json')
+                              .read_text(encoding='utf-8'))
+        paths = [path for path in git_file_state(repository)[0]
+                 if path.startswith(f'{_STATECHART}/') and path.endswith('.ts')]
+        modules = {'schema': 1, 'modules': [row for row in manifest['modules'] if row['module'] in paths]}
+
+        report = assemble_inventory(repository, paths, [], gate_adapter._ordinary_discovery(repository, paths),
+                                    associations=modules)
+
+        self.assertEqual([], report['errors'])
+        self.assertIn(f'{_STATECHART}/checker.ts', [row['path'] for row in report['sources'] if row['role'] == 'target'])
+        self.assertTrue(report['excluded'])
+        self.assertEqual([], validate_associations(report['sources'], modules))
 
     def test_a_viewer_module_importing_the_runner_is_harness_no_association_can_name(self):
         from associations import validate_associations

@@ -16,6 +16,7 @@ from inventory import git_file_state
 
 TOOLS = Path(__file__).resolve().parents[1]
 REPOSITORY = TOOLS.parents[1]
+STATECHART = "skills/engineering/statechart/scripts"
 DEEP_MODULE = "export const x = 1;\n" + "".join(
     f"if (x > {index}) {{ if (x > {index + 1}) {{ console.log({index}); }} }}\n" for index in range(8))
 
@@ -132,10 +133,10 @@ class TypeScriptCollectorTests(unittest.TestCase):
             return getattr(self.collector([]), method)()["findings"][0]
 
 
-class ViewerKnipTests(unittest.TestCase):
+class TypeScriptKnipTests(unittest.TestCase):
     def test_the_viewer_model_judges_the_whole_package_its_plugins_load(self):
         model = workspace_model(REPOSITORY, ["viewer/src/a.test.ts", "viewer/src/main.tsx", "viewer/vite.config.ts"],
-                                "typescript")
+                                "viewer")
 
         self.assertEqual({".": {"entry": [], "project": []},
                           "../../viewer": {"entry": ["src/a.test.ts", "src/main.tsx"],
@@ -143,18 +144,30 @@ class ViewerKnipTests(unittest.TestCase):
                          model["config"]["workspaces"])
         self.assertEqual(["DynaDocs.Tests/coverage", "viewer"], model["packages"])
 
-    def measure_real(self, paths):
+    def test_the_statechart_model_roots_its_tests_and_the_modules_it_runs_by_path(self):
+        model = workspace_model(REPOSITORY, [f"{STATECHART}/{name}" for name in (
+            "checker.ts", "native-entry.ts", "statechart.ts", "test/checker.test.ts", "test/java.ts", "test/tlc.ts",
+            "windows-cleanup.ts", "worker.ts")], "statechart")
+
+        self.assertEqual({"entry": ["native-entry.ts", "statechart.ts", "test/checker.test.ts", "test/java.ts",
+                                    "windows-cleanup.ts", "worker.ts"],
+                          "project": ["checker.ts", "native-entry.ts", "statechart.ts", "test/checker.test.ts",
+                                      "test/java.ts", "test/tlc.ts", "windows-cleanup.ts", "worker.ts"]},
+                         model["config"]["workspaces"]["../../skills/engineering/statechart/scripts"])
+        self.assertEqual(["DynaDocs.Tests/coverage", STATECHART], model["packages"])
+
+    def measure_real(self, paths, graph="viewer"):
         """The real TypeScript knip collector over these repository paths, inventoried as the gate does."""
         from gate_inventory import assemble_inventory
         import gate_adapter
         inventory = assemble_inventory(REPOSITORY, paths, [], gate_adapter._ordinary_discovery(REPOSITORY, paths))
         runner = Collectors.__new__(Collectors)
-        runner.root, runner.coverage = REPOSITORY, TOOLS
+        runner.root, runner.coverage, runner.stack = REPOSITORY, TOOLS, graph
         with tempfile.TemporaryDirectory() as folder:
             runner.output = Path(folder)
             runner.log = CommandLog(REPOSITORY, runner.output / "commands")
             runner.inventory = inventory
-            return inventory, collect_knip(runner, "typescript")
+            return inventory, collect_knip(runner, graph)
 
     def test_collector_measures_the_real_viewer_graph(self):
         inventory, answer = self.measure_real(
@@ -166,17 +179,29 @@ class ViewerKnipTests(unittest.TestCase):
                                  *(row["path"] for row in inventory["excluded"])]), judged)
         self.assertEqual(len(judged), answer["facts"]["native"][1]["counters"]["processed"])
 
-    def test_real_typescript_no_declared_package_owns_is_counted_unjudged_not_a_gap(self):
-        inventory, answer = self.measure_real(
+    def test_the_real_statechart_graph_judges_its_targets_and_holds_its_upstream_files(self):
+        package = [path for path in git_file_state(REPOSITORY)[0]
+                   if path.startswith(f"{STATECHART}/") and path.endswith((".ts", ".mjs"))]
+        inventory, answer = self.measure_real(package, "statechart")
+
+        model = answer["facts"]["model"]
+        targets = sorted(row["path"] for row in inventory["sources"] if row["language"] == "typescript")
+        upstream = sorted(row["path"] for row in inventory["excluded"])
+        views = sorted(row["path"] for row in inventory["sources"] if row["language"] == "javascript")
+        self.assertEqual([], answer["errors"])
+        self.assertTrue(targets and upstream and views)
+        self.assertEqual({"count": 0, "paths": []}, model["unjudged"])
+        self.assertEqual(sorted([*upstream, *views]), model["ignored"]["paths"])
+        self.assertEqual(sorted(package), sorted(row["path"] for row in model["sources"]))
+        self.assertEqual(len(package), answer["facts"]["native"][1]["counters"]["processed"])
+
+    def test_the_viewer_graph_leaves_the_statechart_package_to_its_own_stack(self):
+        _, answer = self.measure_real(
             [path for path in git_file_state(REPOSITORY)[0] if path.endswith((".ts", ".tsx"))])
 
         self.assertEqual([], answer["errors"])
-        unjudged = answer["facts"]["model"]["unjudged"]
-        self.assertEqual(sorted(row["path"] for row in inventory["excluded"] if not row["path"].startswith("viewer/")),
-                         unjudged["paths"])
-        self.assertEqual(len(unjudged["paths"]), unjudged["count"])
-        self.assertTrue(unjudged["paths"])
-        self.assertTrue(all(path.startswith("skills/engineering/statechart/scripts/") for path in unjudged["paths"]))
+        self.assertEqual({"count": 0, "paths": []}, answer["facts"]["model"]["unjudged"])
+        self.assertFalse(any(row["path"].startswith(f"{STATECHART}/") for row in answer["facts"]["model"]["sources"]))
 
 
 if __name__ == "__main__":

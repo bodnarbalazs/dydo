@@ -12,7 +12,7 @@
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/LICENSE" LogicalName="Statechart/payload/skills/engineering/statechart/LICENSE" />
     <StatechartPayload Include="skills/engineering/statechart/PROVENANCE.md">
-      <ExpectedHash>bd3200de91a42a36d8361418c51ab5343bd69b6c910090540d4876b357b8f97c</ExpectedHash>
+      <ExpectedHash>6628d7a8d36633f65ec4323bcec11d3bd446f50088d0fceec8dd67086032eca2</ExpectedHash>
       <ResourceName>Statechart/payload/skills/engineering/statechart/PROVENANCE.md</ResourceName>
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/PROVENANCE.md" LogicalName="Statechart/payload/skills/engineering/statechart/PROVENANCE.md" />
@@ -202,7 +202,7 @@
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/scripts/render.ts" LogicalName="Statechart/payload/skills/engineering/statechart/scripts/render.ts" />
     <StatechartPayload Include="skills/engineering/statechart/scripts/run.ts">
-      <ExpectedHash>10355c0fe04d1b378a04adad97756a41286e048976749ce557969935ee01a5fe</ExpectedHash>
+      <ExpectedHash>74b2ef81ced82373e2d6147f4d181da75ac81026bd4dd8b7af67e3d10d7a3365</ExpectedHash>
       <ResourceName>Statechart/payload/skills/engineering/statechart/scripts/run.ts</ResourceName>
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/scripts/run.ts" LogicalName="Statechart/payload/skills/engineering/statechart/scripts/run.ts" />
@@ -217,7 +217,7 @@
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/scripts/statechart.ps1" LogicalName="Statechart/payload/skills/engineering/statechart/scripts/statechart.ps1" />
     <StatechartPayload Include="skills/engineering/statechart/scripts/statechart.ts">
-      <ExpectedHash>3524650b2b38a90388e9344d4761ab025793cfdd94b68e6bdd6c99a3f172a345</ExpectedHash>
+      <ExpectedHash>7c914559ddc6faa545e6595a218940d21b6691c7a524c70fb84b57c03be0d7ba</ExpectedHash>
       <ResourceName>Statechart/payload/skills/engineering/statechart/scripts/statechart.ts</ResourceName>
     </StatechartPayload>
     <EmbeddedResource Include="skills/engineering/statechart/scripts/statechart.ts" LogicalName="Statechart/payload/skills/engineering/statechart/scripts/statechart.ts" />

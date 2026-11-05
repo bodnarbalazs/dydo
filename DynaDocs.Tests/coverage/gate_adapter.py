@@ -5,6 +5,7 @@ import json
 import os
 import platform
 import re
+import shlex
 import signal
 import sys
 import time
@@ -19,6 +20,7 @@ from gate_run import STATIC_GATE_INTERPRETER, checked_result, result
 CLEANUP_SECONDS = 30
 ROW_DEADLINE_ENV = "DYDO_ROW_DEADLINE"
 SUBJECT_NAME_CAP = 10
+STATECHART_PACKAGE = "skills/engineering/statechart/scripts"
 _DOTNET_FAILURE = re.compile(r"(?m)^\s*Failed\s+(?P<name>\S.*?)\s+\[[^\]\r\n]*\]\s*$")
 _UNITTEST_FAILURE = re.compile(r"(?m)^(?:FAIL|ERROR):\s+(?P<name>\S+)(?:\s+\((?P<case>[^)\r\n]+)\))?")
 SUPPLIED_ENVIRONMENT = ("APPDATA", "NUGET_PACKAGES", ROW_DEADLINE_ENV)
@@ -120,7 +122,7 @@ def _locked_pins(text):
 
 
 def _pnpm_pins(text):
-    """The viewer importer's resolved versions, read from pnpm's lock without a YAML parser."""
+    """A pnpm package's own importer's resolved versions, read from its lock without a YAML parser."""
     importer = text.split("\nimporters:\n", 1)[1].split("\npackages:\n", 1)[0]
     return dict(re.findall(r"(?m)^      '?([^'\s]+?)'?:\n        specifier: \S+\n        version: ([^\s(]+)",
                            importer))
@@ -160,7 +162,8 @@ def gate_tools(root):
                 ("javascript", f"{tools}/package.json", _package_pins),
                 ("dotnet", f"{tools}/metrics/packages.lock.json", _locked_pins),
                 ("altcover", ".config/dotnet-tools.json", _manifest_pins),
-                ("viewer", "viewer/pnpm-lock.yaml", _pnpm_pins))}}
+                ("viewer", "viewer/pnpm-lock.yaml", _pnpm_pins),
+                ("statechart", f"{STATECHART_PACKAGE}/pnpm-lock.yaml", _pnpm_pins))}}
 
 
 def _report_root(raw):
@@ -381,7 +384,7 @@ def _unittest_discovery(path, relative):
 
 
 def _node_discovery(path, relative):
-    if not re.search(r"\.test\.(?:c|m)?js$", relative):
+    if not re.search(r"\.test\.(?:(?:c|m)?js|ts)$", relative):
         return None
     text = path.read_text(encoding="utf-8-sig")
     if re.search(r"\btest\s*\(", text) and "node:test" in text:
@@ -448,6 +451,11 @@ def _stack_methods(collector, stack):
                         "typescript-dependencies": collector.typescript_dependencies,
                         "typescript-unused-exports": collector.typescript_unused_exports,
                         "clones": collector.typescript_clones})
+    elif stack == "statechart":
+        methods.update({"typescript-source": collector.typescript_source,
+                        "typescript-dependencies": collector.typescript_dependencies,
+                        "typescript-unused-exports": collector.typescript_unused_exports,
+                        "clones": collector.typescript_clones})
     else:
         raise ValueError(f"Unknown stack: {stack}")
     return methods
@@ -473,6 +481,7 @@ def collect_static(root, output, stack, initial_fingerprint=None):
     from gate_collect import Collectors
     from gate_run import collect_all
     collector = Collectors(root, output)
+    collector.stack = stack
     collector.discovery = _ordinary_discovery(root, collector.paths)
     artifacts = {}
     methods = _stack_methods(collector, stack)
@@ -486,11 +495,13 @@ def collect_static(root, output, stack, initial_fingerprint=None):
     return report
 
 
-def _target_paths(inventory, language):
+def _target_paths(inventory, language, stack=None):
+    from gate_inventory import typescript_stack
     payload = json.loads(Path(inventory).read_text(encoding="utf-8"))
     return [row["path"] for row in payload["sources"]
             if row["language"] == language and row["role"] != "test"
-            and not row.get("coverageExemption")]
+            and not row.get("coverageExemption")
+            and stack in (None, typescript_stack(row["path"]))]
 
 
 def _python_artifacts(raw, run):
@@ -594,10 +605,52 @@ def _walked_targets(root, raw, inventory, targets):
     return {row["path"]: row for row in walk["facts"].get("modules", [])}, walk["errors"], collector.log.rows
 
 
-def collect_viewer_coverage(root, raw, inventory):
-    from gate_collect import viewer_script
+def _node_test_suite(report):
+    """The suite verdict node's TAP reporter recorded: a failed or cancelled test, or none, fails."""
+    try:
+        text = Path(report).read_text(encoding="utf-8")
+    except OSError:
+        return None, [], None
+    counts = dict(re.findall(r"(?m)^# (tests|fail|cancelled|skipped) (\d+)$", text))
+    if set(counts) != {"tests", "fail", "cancelled", "skipped"}:
+        return None, [], None
+    names = re.findall(r"(?m)^\s*not ok \d+ - (.*?)(?: # (?:SKIP|TODO)\b.*)?$", text)
+    failed = int(counts["fail"]) + int(counts["cancelled"])
+    return (1 if failed or not int(counts["tests"]) else 0), names, int(counts["skipped"])
+
+
+def _typescript_coverage(root, raw, inventory, campaign):
+    """One TypeScript stack's recorded suite verdict, then its targets' LCOV joined to the walker."""
     from gate_policy import evaluate_policy
     from typescript_join import join
+    runner, facts = campaign["runner"], campaign["facts"]
+    commands, artifacts = campaign["commands"], campaign["artifacts"]
+    if facts["suite_exit"] is None:
+        return _coverage_report("typescript-coverage", facts, [], [
+            {"gate": "typescript-coverage", "message": f"{runner} recorded no readable suite result"}],
+            commands, artifacts)
+    if facts["suite_exit"]:
+        failing = campaign["failing"]
+        summary = f"{len(failing)} failing tests" if failing else "failed without a named test"
+        return _coverage_report("typescript-coverage", facts, [
+            {"gate": "functional", "child_exit": facts["suite_exit"], "failingTests": failing[:SUBJECT_NAME_CAP],
+             "failingTestsSummary": summary}], [], commands, artifacts)
+    targets = _target_paths(inventory, "typescript", campaign["stack"])
+    walked, errors, rows = _walked_targets(root, raw, inventory, set(targets))
+    commands.extend(_logged_commands(rows, _report_root(raw)))
+    if errors:
+        return _coverage_report("typescript-coverage", facts, [], errors, commands, artifacts)
+    modules = join(campaign["lcov"], root, campaign["base"], targets, walked)
+    findings = evaluate_policy(modules)
+    if facts["child_exit"] and not findings:
+        errors.append({"gate": "typescript-coverage", "child_exit": facts["child_exit"],
+                       "message": f"{runner} failed for a reason the gate did not measure"})
+    return _coverage_report("typescript-coverage", {**facts, "modules": modules}, findings, errors,
+                            commands, artifacts)
+
+
+def collect_viewer_coverage(root, raw, inventory):
+    from gate_collect import viewer_script
     run = _report_root(raw)
     raw.mkdir(parents=True)
     report, lcov = raw / "vitest.json", raw / "coverage" / "lcov.info"
@@ -606,31 +659,39 @@ def collect_viewer_coverage(root, raw, inventory):
                          "--reporter=default", "--reporter=json", f"--outputFile.json={report}")
     started = time.monotonic()
     child = run_coverage_command(argv, root)
-    commands = [_inherited_row("typescript-coverage", argv, root, child, started)]
     suite, failing = _vitest_suite(report)
-    facts = {"child_exit": child, "suite_exit": suite, "raw": _report_location(raw, run)}
-    artifacts = _raw_artifacts([report, lcov], run)
-    if suite is None:
-        return _coverage_report("typescript-coverage", facts, [], [
-            {"gate": "typescript-coverage", "message": "vitest recorded no readable suite result"}],
-            commands, artifacts)
-    if suite:
-        summary = f"{len(failing)} failing tests" if failing else "failed without a named test"
-        return _coverage_report("typescript-coverage", facts, [
-            {"gate": "functional", "child_exit": suite, "failingTests": failing[:SUBJECT_NAME_CAP],
-             "failingTestsSummary": summary}], [], commands, artifacts)
-    targets = _target_paths(inventory, "typescript")
-    walked, errors, rows = _walked_targets(root, raw, inventory, set(targets))
-    commands.extend(_logged_commands(rows, run))
-    if errors:
-        return _coverage_report("typescript-coverage", facts, [], errors, commands, artifacts)
-    modules = join(lcov, root, root / "viewer", targets, walked)
-    findings = evaluate_policy(modules)
-    if child and not findings:
-        errors.append({"gate": "typescript-coverage", "child_exit": child,
-                       "message": "vitest failed for a reason the gate did not measure"})
-    return _coverage_report("typescript-coverage", {**facts, "modules": modules}, findings, errors,
-                            commands, artifacts)
+    return _typescript_coverage(root, raw, inventory, {
+        "runner": "vitest", "stack": "viewer", "base": root / "viewer", "lcov": lcov, "failing": failing,
+        "facts": {"child_exit": child, "suite_exit": suite, "raw": _report_location(raw, run)},
+        "commands": [_inherited_row("typescript-coverage", argv, root, child, started)],
+        "artifacts": _raw_artifacts([report, lcov], run)})
+
+
+def _statechart_argv(root, raw):
+    """The package's own test script, run by node with its test coverage and two machine reporters."""
+    script = json.loads((root / STATECHART_PACKAGE / "package.json").read_text(encoding="utf-8"))["scripts"]["test"]
+    node, *arguments = shlex.split(script)
+    if node != "node":
+        raise ValueError(f"The statechart test script does not run node: {script}")
+    return ["node", "--experimental-test-coverage",
+            "--test-reporter=spec", "--test-reporter-destination=stdout",
+            "--test-reporter=tap", f"--test-reporter-destination={raw / 'suite.tap'}",
+            "--test-reporter=lcov", f"--test-reporter-destination={raw / 'lcov.info'}", *arguments]
+
+
+def collect_statechart_coverage(root, raw, inventory):
+    run, package = _report_root(raw), root / STATECHART_PACKAGE
+    raw.mkdir(parents=True)
+    report, lcov = raw / "suite.tap", raw / "lcov.info"
+    argv = _statechart_argv(root, raw)
+    started = time.monotonic()
+    child = run_coverage_command(argv, package)
+    suite, failing, skipped = _node_test_suite(report)
+    return _typescript_coverage(root, raw, inventory, {
+        "runner": "node --test", "stack": "statechart", "base": package, "lcov": lcov, "failing": failing,
+        "facts": {"child_exit": child, "suite_exit": suite, "skipped": skipped, "raw": _report_location(raw, run)},
+        "commands": [_inherited_row("typescript-coverage", argv, package, child, started)],
+        "artifacts": _raw_artifacts([report, lcov], run)})
 
 
 def collect_dotnet_coverage(root, raw):
@@ -674,6 +735,8 @@ def collect_coverage(root, output, stack, inventory):
         return collect_dotnet_coverage(root, raw)
     if stack == "viewer":
         return collect_viewer_coverage(root, raw, inventory)
+    if stack == "statechart":
+        return collect_statechart_coverage(root, raw, inventory)
     raise ValueError(f"Unknown stack: {stack}")
 
 
@@ -682,7 +745,7 @@ def main():
         signal.signal(signal.SIGBREAK, signal.default_int_handler)
     parser = argparse.ArgumentParser()
     parser.add_argument("--gate", choices=("static", "coverage"), required=True)
-    parser.add_argument("--stack", choices=("dotnet", "python", "node", "viewer"), required=True)
+    parser.add_argument("--stack", choices=("dotnet", "python", "node", "viewer", "statechart"), required=True)
     parser.add_argument("--root")
     parser.add_argument("--output")
     args = parser.parse_args()

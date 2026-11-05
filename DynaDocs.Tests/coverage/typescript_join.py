@@ -18,12 +18,17 @@ def _record_line(record, tag, value):
 
 
 def parse_lcov(text, root, base):
-    """Records keyed by the repository path of each SF; LCOV names sources relative to `base`."""
-    records, current = {}, None
+    """Records keyed by the repository path of each SF; LCOV names sources relative to `base`.
+    A source outside the repository, such as a managed tool a test loads, can be no target."""
+    records, current, root = {}, None, Path(root).resolve()
     for raw in text.splitlines():
         tag, _, value = raw.strip().partition(":")
         if tag == "SF":
-            path = (Path(base) / value).resolve().relative_to(Path(root).resolve()).as_posix()
+            source = (Path(base) / value).resolve()
+            if not source.is_relative_to(root):
+                current = None
+                continue
+            path = source.relative_to(root).as_posix()
             if path in records:
                 raise ValueError(f"Duplicate Istanbul LCOV record: {path}")
             current = records[path] = {"lines": {}, "branches": {}, "functions": {}, "calls": {}}

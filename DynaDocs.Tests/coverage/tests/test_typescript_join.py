@@ -49,6 +49,14 @@ class LcovParseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Duplicate Istanbul LCOV record"):
             parse_lcov(LCOV + LCOV, ROOT, BASE)
 
+    def test_a_source_outside_the_repository_is_no_record_and_leaves_the_next_intact(self):
+        foreign = "TN:\nSF:../../managed/pele.js\nDA:1,1\nBRDA:1,0,0,1\nend_of_record\n"
+
+        records = parse_lcov(foreign + LCOV, ROOT, BASE)
+
+        self.assertEqual(["viewer/src/app.ts"], list(records))
+        self.assertEqual({2: 1, 3: 1, 4: 0, 6: 1}, records["viewer/src/app.ts"]["lines"])
+
 
 class JoinModuleTests(unittest.TestCase):
     def record(self):

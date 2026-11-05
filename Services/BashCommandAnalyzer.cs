@@ -317,6 +317,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// </summary>
     private DataBodyCut? DataBody(string text)
     {
+        // Text with no body opener holds no body to cut, so it is not read (DYD-723).
+        if (!text.Contains("<<", StringComparison.Ordinal) && !text.Contains("@'", StringComparison.Ordinal)
+            && !text.Contains("@\"", StringComparison.Ordinal))
+            return null;
+
         // Keep the original code when a child's extent is unsupported; cutting its enclosing
         // data body would discard executable text beyond an apparent substitution terminator.
         if (ShellReader.Read(text, _shell != ShellDialect.PowerShell).Failed)
@@ -550,6 +555,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// </summary>
     private static HashSet<DataQuote> DataQuotes(string code, bool posix)
     {
+        // Text with no single quote of either reading holds none to empty, so it is not read (DYD-723).
+        if (code.AsSpan().IndexOfAny("'\u2018\u2019\u201A\u201B") < 0)
+            return [];
+
         var reading = ShellReader.Read(code, posix);
         var quotes = reading.Source.SingleQuotes;
         return reading.Commands is [var command] && IsOneDataCommand(reading, command)
@@ -638,19 +647,65 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // A short cluster's letters before a trailing bare i.
     private static string SedFlags(string option) => option.EndsWith('i') ? option[1..^1] : option[1..];
 
-    // Bypass detection patterns. The substitution and expansion searches run without backtracking:
-    // a backtracking search restarts at each unclosed $( or ${ and scans to the end, quadratic (DYD-723).
-    [GeneratedRegex(@"\$\([^)]+\)|`[^`]+`", RegexOptions.NonBacktracking)]
-    private static partial Regex CommandSubstitutionRegex();
+    // Bypass detection. The substitution and expansion searches are scans, not regexes: a regex search
+    // restarts at each unclosed $( or ${ and looks for its closer to the end, quadratic (DYD-723).
+    // Each scan finds the matches the regexes \$\([^)]+\)|`[^`]+` and \$[A-Za-z_]\w*|\$\{[^}]+\} find.
+
+    /// <summary>
+    /// The bodies of the <c>$( ... )</c> and backtick substitutions in the text, left to right: each
+    /// opener to the first closer after it, with something between them. Each closer is looked for
+    /// once, however many openers precede it.
+    /// </summary>
+    internal static IEnumerable<string> SubstitutionBodies(string text)
+    {
+        var (paren, tick) = (-1, -1);
+        for (var i = 0; i + 2 < text.Length; i++)
+        {
+            int body;
+            int end;
+            if (text[i] == '`')
+                (body, end) = (i + 1, NextAt(text, '`', i + 1, ref tick));
+            else if (text[i] == '$' && text[i + 1] == '(')
+                (body, end) = (i + 2, NextAt(text, ')', i + 2, ref paren));
+            else
+                continue;
+            if (end == text.Length || end == body)
+                continue;
+            yield return text[body..end];
+            i = end;
+        }
+    }
+
+    /// <summary>Whether the text expands a variable: a <c>$</c> before a name, or a <c>${ ... }</c> with something inside.</summary>
+    internal static bool ExpandsVariable(string text)
+    {
+        var brace = -1;
+        for (var i = 0; i + 1 < text.Length; i++)
+        {
+            if (text[i] != '$')
+                continue;
+            if (char.IsAsciiLetter(text[i + 1]) || text[i + 1] == '_')
+                return true;
+            if (text[i + 1] == '{' && NextAt(text, '}', i + 2, ref brace) is var end && end < text.Length && end > i + 2)
+                return true;
+        }
+        return false;
+    }
+
+    // The first c at or after from, or the text's length when there is none. found holds the answer
+    // to an earlier search from no later than from; it still holds when it lies at or after from.
+    private static int NextAt(string text, char c, int from, ref int found)
+    {
+        if (found < from)
+            found = text.IndexOf(c, from) is var at and >= 0 ? at : text.Length;
+        return found;
+    }
 
     [GeneratedRegex(@"base64\s+(-d|--decode)", RegexOptions.IgnoreCase)]
     private static partial Regex Base64DecodeRegex();
 
     [GeneratedRegex(@"xxd\s+-r|od\s+-A")]
     private static partial Regex HexDecodeRegex();
-
-    [GeneratedRegex(@"\$[A-Za-z_][A-Za-z0-9_]*|\$\{[^}]+\}", RegexOptions.NonBacktracking)]
-    private static partial Regex VariableExpansionRegex();
 
     [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(\./|/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex RecursiveDeleteRootRegex();
@@ -1594,17 +1649,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private void AnalyzeCommandSubstitutions(string command, BashAnalysisResult result)
     {
-        foreach (Match match in CommandSubstitutionRegex().Matches(command))
+        foreach (var inner in SubstitutionBodies(command))
         {
-            var raw = match.Value;
-            string inner;
-            if (raw.StartsWith("$(") && raw.EndsWith(")"))
-                inner = raw[2..^1];
-            else if (raw.StartsWith("`") && raw.EndsWith("`"))
-                inner = raw[1..^1];
-            else
-                continue;
-
             foreach (var subCmd in SplitCommand(inner))
                 AnalyzeSubCommand(subCmd.Trim(), result);
         }
@@ -1637,10 +1683,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // separates commands rather than sitting in quoted text, a body or literal data.
     private static readonly (Func<string, string, bool> Check, bool WithoutLiteralData, string Warning)[] BypassChecks =
     [
-        ((code, _) => CommandSubstitutionRegex().IsMatch(code), true, "Command contains command substitution - paths may be dynamic"),
+        ((code, _) => SubstitutionBodies(code).Any(), true, "Command contains command substitution - paths may be dynamic"),
         ((code, _) => Base64DecodeRegex().IsMatch(code), false, "Command contains base64 decode - potential obfuscation"),
         ((code, _) => HexDecodeRegex().IsMatch(code), false, "Command contains hex decode - potential obfuscation"),
-        ((code, _) => VariableExpansionRegex().IsMatch(code), true, "Command contains variable expansion - paths may be dynamic"),
+        ((code, _) => ExpandsVariable(code), true, "Command contains variable expansion - paths may be dynamic"),
         ((code, layout) => SeparatesCommandLines(layout) || code.Contains("$'\\n'") || code.Contains("%0a"), false, "Command contains embedded newlines"),
     ];
 

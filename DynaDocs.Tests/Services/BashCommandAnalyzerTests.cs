@@ -2304,9 +2304,12 @@ public class BashCommandAnalyzerTests
     #region DYD-723: nesting stays within the budget
 
     // Analysing any command of up to 100,000 characters allocates at most 256 MB on the calling
-    // thread and takes at most a second. Allocation is deterministic, so it carries the budget at
-    // full length; the time bound sits on the deep rows, which stay small under instrumentation.
+    // thread and takes at most a second, in Release and uninstrumented. Coverage instrumentation
+    // multiplies allocation by up to about 30, so here the budget holds at BudgetedLength; the
+    // capped Release probe recorded with DYD-723 holds it at 100,000. The time bound sits on the deep
+    // rows, which stay small under instrumentation.
     private const long AllocationBudget = 256L * 1024 * 1024;
+    private const int BudgetedLength = 10_000;
 
     // 22 levels: before DYD-723 each level doubled the PowerShell reading, here past 400 MB.
     [Theory]
@@ -2329,8 +2332,8 @@ public class BashCommandAnalyzerTests
         Assert.True(elapsed <= TimeSpan.FromSeconds(1), $"Took {elapsed}");
     }
 
-    // Before DYD-723 these exhausted the host's memory: run on the fix only. Doubling the input at
-    // most about doubles the allocation, and the full length stays within the budget.
+    // Before DYD-723 these exhausted the host's memory: run on the fix only. The budgeted length stays
+    // within the budget, and doubling the input to its full length at most about doubles the allocation.
     [Theory]
     [InlineData("Posix", "$(", "")]
     [InlineData("PowerShell", "$(", "")]
@@ -2346,10 +2349,11 @@ public class BashCommandAnalyzerTests
     [InlineData("Unknown", "$(@(a (\"$(`${'", "")]
     public void Analyze_LongNesting_AllocatesLinearlyWithinTheBudget(string dialect, string opener, string closer)
     {
+        var (budgeted, _) = Measure(dialect, Nesting(opener, closer, BudgetedLength));
         var (half, _) = Measure(dialect, Nesting(opener, closer, 50_000));
         var (full, _) = Measure(dialect, Nesting(opener, closer, 100_000));
 
-        Assert.True(full <= AllocationBudget, $"Allocated {full:N0} bytes");
+        Assert.True(budgeted <= AllocationBudget, $"Allocated {budgeted:N0} bytes at {BudgetedLength:N0} characters");
         Assert.True(full <= 2.5 * half, $"Allocated {full:N0} bytes at 100,000 characters, {half:N0} at 50,000");
     }
 
@@ -2382,6 +2386,27 @@ public class BashCommandAnalyzerTests
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
             Assert.False(new BashCommandAnalyzer(dialect).CheckDangerousPatterns(command).IsDangerous, $"{dialect}: {command}");
+    }
+
+    // The substitution and expansion scans answer as the regexes they replace did, on every string of
+    // up to five characters over their syntax and on longer random ones.
+    [Fact]
+    public void BypassScans_FindWhatTheirRegexesFound()
+    {
+        var substitution = new System.Text.RegularExpressions.Regex(@"\$\([^)]+\)|`[^`]+`");
+        var expansion = new System.Text.RegularExpressions.Regex(@"\$[A-Za-z_][A-Za-z0-9_]*|\$\{[^}]+\}");
+        var random = new Random(723);
+        const string alphabet = "$(){}`a_1";
+        const string wider = "$(){}` aZ_9\n'\"";
+        var texts = Enumerable.Range(0, 5).Aggregate(new List<string> { "" }, (all, length) =>
+                [.. all, .. all.Where(text => text.Length == length).SelectMany(text => alphabet.Select(c => text + c))])
+            .Concat(Enumerable.Range(0, 5000).Select(_ => new string([.. Enumerable.Range(0, random.Next(40)).Select(_ => wider[random.Next(wider.Length)])])));
+
+        foreach (var text in texts)
+        {
+            Assert.Equal(substitution.Matches(text).Select(match => match.Value[(match.Value[0] == '`' ? 1 : 2)..^1]), BashCommandAnalyzer.SubstitutionBodies(text));
+            Assert.True(expansion.IsMatch(text) == BashCommandAnalyzer.ExpandsVariable(text), text);
+        }
     }
 
     private static (long Allocated, TimeSpan Elapsed) Measure(string dialect, string command)

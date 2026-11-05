@@ -29,9 +29,13 @@ megabytes at most, and a command nested past the reading's bound is refused.
   every command reads as before. A command with no more than 32 `(` is not read for this check.
 - A PowerShell single-quoted string reads its doubled quotes in a loop. It recursed once per `''`,
   and 10,000 of them overflowed a 1 MB stack, the size of a Windows main thread's.
-- The command-substitution and variable-expansion bypass searches run without backtracking, and a
+- The command-substitution and variable-expansion bypass searches are scans, not regexes: each
+  looks for a closer once, however many openers precede it, and finds what the regexes found. A
   command's literal single-quoted data is emptied in one pass. Each was quadratic on a long run of
   unclosed `$(`, unclosed `${` or doubled `''`.
+- A command with no heredoc or here-string opener is not read to cut literal-data bodies, and one
+  with no single quote is not read for literal single-quoted data. Neither reading could change
+  the answer, and skipping them cuts a long command's allocation by more than half.
 - In bash's reading an unquoted `$(` was never a recursion, so `printf x` followed by any number of
   unclosed `$(` is read in full, linearly, and judged through Claude's Bash tool as before. Through
   the PowerShell tool and in an unknown shell it is refused at the bound.
@@ -42,8 +46,12 @@ No change in this entry renames a term mechanically, so it has no merge normalis
 
 Guards stop accidents, not rogue agents. The bound exists so the guard never takes the host down.
 
-- A wide command full of `(`, such as 20,000 `$(y)` in a row, is read once more for the bound, and
-  analysing it at 100,000 characters allocates about 220 MB, where it allocated about 140 MB.
+- A wide command full of `(`, such as 20,000 `$(y)` in a row, is read once more for the bound. With
+  the readings no longer made, analysing it at 100,000 characters allocates about 110 MB, where it
+  allocated about 140 MB.
+- The 256 MB and one-second bounds are Release, uninstrumented. Coverage instrumentation multiplies
+  allocation by up to about 30, so the test holds the absolute budget at 10,000 characters and the
+  growth ratio at 100,000.
 
 ## Files Changed
 

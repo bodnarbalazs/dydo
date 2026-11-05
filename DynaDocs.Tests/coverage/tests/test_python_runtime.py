@@ -225,6 +225,93 @@ outer()
                          [(edge['origin'], edge['destination']) for edge in row['physical_branches']])
         self.assertEqual(1, len({edge['code'] for edge in row['physical_branches']}))
 
+    def test_event_cost_does_not_repeat_the_code_objects_position_scan(self):
+        from unittest.mock import patch
+        import python_runtime
+        source = 'def work(flag):\n    if flag:\n        return 1\n    return 2\n'
+        path = str(Path('event-cost-subject.py').resolve())
+        witness = CallableWitness({path: source})
+        work = _nested_code(compile(source, path, 'exec'), 'work')
+        with patch.object(python_runtime, '_positions', wraps=python_runtime._positions) as scan:
+            for _ in range(50):
+                witness._start(work, 0)
+                witness._line(work, 2)
+                witness._branch(work, 0, 4)
+        # only `work`'s scans: under the coverage campaign this module is itself a target, and the
+        # campaign's witness scans the callbacks above once each through the same module global
+        self.assertEqual(1, sum(call.args[0] is work for call in scan.call_args_list))
+        row = witness.rows()[0]
+        self.assertEqual((50, 50), (row['execution_count'], row['body_lines']['2']))
+
+    def test_equal_code_objects_from_distinct_sources_keep_their_own_rows(self):
+        source = 'def work():\n    return 1\n'
+        first, second = str(Path('equal-first.py').resolve()), str(Path('equal-second.py').resolve())
+        witness = CallableWitness({first: source, second: source})
+        codes = [_nested_code(compile(source, path, 'exec'), 'work') for path in (first, second)]
+        self.assertEqual(codes[0], codes[1])
+        witness._start(codes[0], 0)
+        witness._start(codes[1], 0)
+        witness._start(codes[1], 0)
+        self.assertEqual([(first, 1), (second, 2)],
+                         [(row['path'], row['execution_count']) for row in witness.rows()])
+
+    def test_a_witnessed_code_object_keeps_its_id_from_any_later_code_object(self):
+        import weakref
+        source = 'def first():\n    return 1\ndef second():\n    return 2\n'
+        path = str(Path('reuse-subject.py').resolve())
+        witness = CallableWitness({path: source})
+        first = _nested_code(compile(source, path, 'exec'), 'first')
+        witnessed = weakref.ref(first)
+        witness._start(first, 0)
+        del first
+        # alive, its id cannot be handed to a later code object, which would then borrow its row
+        self.assertIsNotNone(witnessed())
+        witness._start(_nested_code(compile(source, path, 'exec'), 'second'), 0)
+        self.assertEqual([1, 1], [row['execution_count'] for row in witness.rows()])
+
+    def test_remembered_events_report_what_a_fresh_resolution_of_every_event_reports(self):
+        source = '''import itertools
+class Shape:
+    sides = [n for n in range(3)]
+    def area(self, scale):
+        total = 0
+        for side in self.sides:
+            if side % 2:
+                total += side * scale
+            else:
+                total -= 1
+        return total
+def make(count):
+    pick = lambda value: value if value > 1 else -value
+    return sum(pick(item) for item in range(count)), [Shape().area(n) for n in range(count)]
+async def unused():
+    return None
+for count in itertools.chain(range(4), (7,)):
+    make(count)
+'''
+        path = str(Path('equivalence-subject.py').resolve())
+
+        class Forgetful(dict):
+            def get(self, _key, default=None):
+                return default
+
+        reports = []
+        for remembered in (True, False):
+            witness = CallableWitness({path: source})
+            if not remembered:
+                witness._codes = Forgetful()
+            with witness:
+                exec(compile(source, path, 'exec'), {})
+                unknown = compile('def stray():\n    return 9\n', path, 'exec')
+                witness._start(unknown, 0)
+            with self.assertRaisesRegex(ValueError, 'Unknown runtime callable') as refusal:
+                witness.rows()
+            witness._errors.clear()
+            reports.append((witness.rows(), witness.module_rows(), str(refusal.exception)))
+        self.assertEqual(reports[1], reports[0])
+        self.assertTrue(any(row['physical_branches'] for row in reports[0][0]))
+        self.assertTrue(all(row['execution_count'] for row in reports[0][0][:3]))
+
     def test_failed_callback_registration_releases_the_monitor_id(self):
         from unittest.mock import patch
         witness = CallableWitness({str(Path('enter-subject.py').resolve()): 'f = lambda: 1'})

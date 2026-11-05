@@ -358,21 +358,39 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         var line = text[lineStart..hereString.Index] + $" {BodyMark} " + text[end..lineEnd];
         var powerShell = _shell == ShellDialect.PowerShell;
         bool[] readings = powerShell ? [false] : [false, true];
-        if (!StartsItsPiece(text, lineStart) || HeredocOperatorRegex().IsMatch(line)
+        if (PwshEndsSooner(hereString) || !StartsItsPiece(text, lineStart) || HeredocOperatorRegex().IsMatch(line)
             || (!powerShell && !BashReadsAsWords(hereString.Value))
             || !FeedsDataOnly(line, readings, hereString: true, text[resume..]))
             return null;
 
-        var code = text[..hereString.Index] + "''" + text[end..lineEnd];
-        return new DataBodyCut(new CodePiece(code, hereString.Groups[1].Value == "\"" ? text[..lineEnd] : code), resume);
+        // A CRLF is one line break, so the piece ends before both halves: a carriage return left in it
+        // would read as a bare one when the pieces are joined (DYD-641).
+        var pieceEnd = lineEnd < text.Length && text[lineEnd - 1] == '\r' ? lineEnd - 1 : lineEnd;
+        var code = text[..hereString.Index] + "''" + text[end..pieceEnd];
+        return new DataBodyCut(new CodePiece(code, hereString.Groups[1].Value == "\"" ? text[..pieceEnd] : code), resume);
     }
+
+    // pwsh 7.6.9 ends a here-string at the first line break, a bare carriage return among them, that a
+    // quote of the opener's family and @ follow (DYD-641); HereStringRegex takes a line feed and the
+    // opener's own quote only, so a body pwsh ends sooner holds code it runs.
+    private static bool PwshEndsSooner(Match hereString) =>
+        (hereString.Groups[1].Value == "'" ? PwshSingleTerminatorRegex() : PwshDoubleTerminatorRegex())
+            .IsMatch(hereString.ValueSpan[..^2]);
+
+    [GeneratedRegex(@"[\r\n]['\u2018\u2019\u201A\u201B]@")]
+    private static partial Regex PwshSingleTerminatorRegex();
+
+    [GeneratedRegex(@"[\r\n][""\u201C\u201D\u201E]@")]
+    private static partial Regex PwshDoubleTerminatorRegex();
 
     // Only blank and comment lines come before the body's line, so no group, quote or pipe is open there.
     private static bool StartsItsPiece(string text, int lineStart) => !CodeLines(text[..lineStart]).Any();
 
-    // The lines of text that hold code: neither blank nor a comment.
+    // The lines of text that hold code: neither blank nor a comment. A bare carriage return ends a
+    // line, as pwsh 7.6.9 ends a comment at one (DYD-641); to bash, which reads it as word text, the
+    // split can only add code, and a line a pipe starts goes on only in pwsh.
     private static IEnumerable<string> CodeLines(string text) =>
-        text.Split('\n').Select(line => line.Trim()).Where(line => line is [not '#', ..]);
+        text.Split('\n', '\r').Select(line => line.Trim()).Where(line => line is [not '#', ..]);
 
     /// <summary>
     /// Whether a body, at the mark in its command <paramref name="line"/>, feeds only data commands
@@ -430,6 +448,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return stretches.Length % 2 == 1 && stretches.Where((_, i) => i % 2 == 1).All(stretch => !BashStructureRegex().IsMatch(stretch));
     }
 
+    // A body's line starts after a line feed only: each reading of the line takes a bare carriage
+    // return as its shell does, and bash's must see a comment before one hide the opener (DYD-641).
     private static int LineStart(string text, int index) => index == 0 ? 0 : text.LastIndexOf('\n', index - 1) + 1;
 
     // A double-quoted string (backslash escapes skipped, lines spanned) or a single-quoted one, the
@@ -438,14 +458,15 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex QuotedTextRegex();
 
     // A piece's layout: each double-quoted string emptied, so a line break left in the piece separates
-    // commands. One spanning lines is emptied only where each reading of the piece holds it in a word:
-    // an apostrophe in a comment quotes nothing, so it hides no line break after it. Single-quoted text
-    // is kept, so a line break in it counts (DYD-421); literal data is emptied before (DYD-422).
+    // commands. One spanning lines, a bare carriage return among the breaks (DYD-641), is emptied only
+    // where each reading of the piece holds it in a word: an apostrophe in a comment quotes nothing, so
+    // it hides no line break after it. Single-quoted text is kept, so a line break in it counts
+    // (DYD-421); literal data is emptied before (DYD-422).
     private static string Layout(string code)
     {
         var read = new Lazy<(List<CommandLine> Lines, bool Uncertain)>(() => CommandLines(code, ShellDialect.Unknown));
         return QuotedTextRegex().Replace(code, quoted =>
-            quoted.Groups["single"].Success || (quoted.Value.Contains('\n') && !IsQuotedWord(code, quoted, read.Value))
+            quoted.Groups["single"].Success || (quoted.Value.AsSpan().IndexOfAny('\n', '\r') >= 0 && !IsQuotedWord(code, quoted, read.Value))
                 ? quoted.Value
                 : "\"\"");
     }
@@ -1614,11 +1635,12 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     // Whether more than one line of the layout holds a command. A blank or comment-only line, such as
     // the one a heredoc's trailing line break leaves, holds none unless the line before continues
-    // into it (a trailing \ or `), where its # no longer starts a comment.
+    // into it (a trailing \ or `), where its # no longer starts a comment. A bare carriage return
+    // ends a line too: pwsh 7.6.9 starts a statement after one (DYD-641).
     private static bool SeparatesCommandLines(string layout)
     {
-        var lines = layout.Split('\n');
-        return lines.Where((line, i) => line.TrimStart() is [not '#', ..] || (i > 0 && lines[i - 1].TrimEnd('\r') is [.., '\\' or '`']))
+        var lines = layout.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n', '\r');
+        return lines.Where((line, i) => line.TrimStart() is [not '#', ..] || (i > 0 && lines[i - 1] is [.., '\\' or '`']))
             .Skip(1).Any();
     }
 
@@ -1634,10 +1656,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         }
     }
 
-    private static int CheckCommandSeparator(string command, int i)
+    // To pwsh 7.6.9 a bare carriage return separates commands as a line feed does; bash reads it as word text (DYD-641).
+    private static int CheckCommandSeparator(string command, int i, bool posix)
     {
         var c = command[i];
-        if (c == ';' || c == '\n')
+        if (c == ';' || c == '\n' || (!posix && c == '\r' && (i + 1 == command.Length || command[i + 1] != '\n')))
             return 1;
         if (c == '&' && i + 1 < command.Length && command[i + 1] == '&')
             return 2;
@@ -1665,7 +1688,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // How many characters at i an unquoted separator or, with dropComments, a comment consumes;
     // 0 when neither starts there. A comment stops before its newline, so the newline still splits.
     private static int ConsumeUnquoted(string command, int i, StringBuilder current,
-        List<string> parts, bool dropComments)
+        List<string> parts, bool dropComments, bool posix)
     {
         if (dropComments && command[i] == '#' && (current.Length == 0 || char.IsWhiteSpace(current[^1])))
         {
@@ -1673,7 +1696,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             return (newline < 0 ? command.Length : newline) - i;
         }
 
-        var sepLen = CheckCommandSeparator(command, i);
+        var sepLen = CheckCommandSeparator(command, i, posix);
         if (sepLen > 0 && current.Length > 0)
         {
             parts.Add(current.ToString());
@@ -1685,9 +1708,17 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// <summary>
     /// Splits a command at unquoted separators. A backslash is literal inside single quotes. With
     /// <paramref name="dropComments"/>, an unquoted <c>#</c> that begins a word drops the rest of
-    /// its line, as a shell comment.
+    /// its line, as a shell comment. pwsh 7.6.9 also ends a command at a bare carriage return, where
+    /// bash goes on with the same command's arguments (DYD-641), so both readings' sub-commands are
+    /// returned: pwsh's, then each of bash's that pwsh's lack.
     /// </summary>
     internal static IEnumerable<string> SplitCommand(string command, bool dropComments = false)
+    {
+        var pwsh = SplitCommand(command, dropComments, posix: false);
+        return pwsh.Concat(SplitCommand(command, dropComments, posix: true).Where(part => !pwsh.Contains(part)));
+    }
+
+    private static List<string> SplitCommand(string command, bool dropComments, bool posix)
     {
         var parts = new List<string>();
         var current = new StringBuilder();
@@ -1718,7 +1749,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
             if (!inSingleQuote && !inDoubleQuote)
             {
-                var consumed = ConsumeUnquoted(command, i, current, parts, dropComments);
+                var consumed = ConsumeUnquoted(command, i, current, parts, dropComments, posix);
                 if (consumed > 0)
                 {
                     i += consumed - 1;

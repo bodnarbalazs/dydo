@@ -960,6 +960,131 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertStderrContains("bypass");
     }
 
+    // DYD-641: pwsh 7.6.9 ends a statement and a comment at a bare carriage return, and a here-string
+    // at a bare carriage return or a typographic quote before @ (measured in /tmp/dyd641-evidence);
+    // the text after each runs, so Claude's PowerShell tool, a Codex pwsh argv envelope and an
+    // unknown shell refuse it, and the protected canary keeps its bytes.
+    [Theory]
+    [InlineData("echo @'\nx\n’@; iex '$(echo x > $OUT)'\n'@ # '")]
+    [InlineData("echo @'\nx\r'@; iex '$(echo x > $OUT)'\n'@ # '")]
+    [InlineData("echo x\riex @'\n$(echo x > $OUT)\n'@")]
+    [InlineData("echo hello\rrm dydo/index.md")]
+    [InlineData("echo hello # note\rRemove-Item dydo/index.md")]
+    [InlineData("# x\riex (\n@'\n$(echo x > dydo/index.md)\n'@\n)")]
+    [InlineData("# x\riex `\n@'\n$(echo x > dydo/index.md)\n'@")]
+    [InlineData("echo a > notes.md # x\"\rRemove-Item dydo/index.md\r# y\"")]
+    public async Task Dyd641_StatementPwshRuns_IsDeniedWhereverPwshMayRunIt(string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        await AssertPwshToolsDenyAsync(command);
+        var unknown = await UnknownShellGuardAsync(command);
+
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains("bypass");
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // A line starting with @ reaches the CLI lane's argv parser as a response file, so the unknown
+    // shell's reading of this one is proved in the analyzer's tests.
+    [Fact]
+    public async Task Dyd641_PipeAfterABareCarriageReturn_IsDeniedWherePwshRunsIt()
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        await AssertPwshToolsDenyAsync("@'\n$(echo x > dydo/index.md)\n'@\n# c\r| iex");
+
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // bash 5.3.9 keeps a bare carriage return in a word, so the words after it are still the command's
+    // arguments: it deletes, truncates, edits or chmods the canary (measured in /tmp/dyd641-evidence/fix2).
+    // Claude's Bash tool and an unknown shell refuse it, as before DYD-641.
+    [Theory]
+    [InlineData("rm \r dydo/index.md")]
+    [InlineData("rm -- \r dydo/index.md")]
+    [InlineData("tee \r dydo/index.md")]
+    [InlineData("sed -i\r s/a/b/ dydo/index.md")]
+    [InlineData("truncate -s 0 \r dydo/index.md")]
+    [InlineData("chmod 000 \r dydo/index.md")]
+    [InlineData("echo $(rm \r dydo/index.md)")]
+    public async Task Dyd641_ArgumentsAfterABareCarriageReturn_AreDeniedWhereverBashMayRunThem(string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        bash.AssertPreToolUseDenied();
+        unknown.AssertExitCode(2);
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // A bash -c string is bash's whichever tool hands it on, so every lane refuses it.
+    [Fact]
+    public async Task Dyd641_BashCommandStringWithABareCarriageReturn_IsDeniedInEveryLane()
+    {
+        await SetupClaimedAgent();
+        const string command = "bash -c 'rm \r dydo/index.md'";
+
+        foreach (var json in new[] { ShellJson("Bash", command), ShellJson("PowerShell", command), CodexPwshJson(command) })
+            (await GuardWithStdinAsync(json)).AssertPreToolUseDenied();
+        (await UnknownShellGuardAsync(command)).AssertExitCode(2);
+    }
+
+    // Each carriage return here is half of a CRLF, so the line holds none of the three characters:
+    // the Windows-authored here-string write is allowed as before DYD-641 (pwsh 7.6.9 runs it harmlessly).
+    // A line starting with @ reaches the CLI lane's argv parser as a response file (DYD-675).
+    [Theory]
+    [InlineData("@'\r\nhello\r\n'@ | Set-Content notes.md\r\necho done")]
+    [InlineData("@'\r\na\r\n'@ | Set-Content notes.md\r\n@'\r\nb\r\n'@ | Add-Content notes.md")]
+    [InlineData("@'\nhello\n'@ | Set-Content notes.md\r\n")]
+    [InlineData("cat @'\r\nhello\r\n'@ > notes.md\r\n")]
+    public async Task Dyd641_CrlfAfterAHereStringWrite_IsAllowed(string command)
+    {
+        await SetupClaimedAgent();
+
+        foreach (var json in new[] { ShellJson("Bash", command), ShellJson("PowerShell", command), CodexPwshJson(command) })
+            (await GuardWithStdinAsync(json)).AssertPreToolUseAllowed();
+    }
+
+    [Fact]
+    public async Task Dyd641_CrlfAfterAHereStringWrite_IsAllowedInAnUnknownShell()
+    {
+        await SetupClaimedAgent();
+
+        (await UnknownShellGuardAsync("cat @'\r\nhello\r\n'@ > notes.md\r\n")).AssertExitCode(0);
+    }
+
+    // Claude's PowerShell tool and a Codex pwsh argv envelope both refuse the command as a bypass.
+    private async Task AssertPwshToolsDenyAsync(string command)
+    {
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        var envelope = await GuardWithStdinAsync(CodexPwshJson(command));
+
+        powerShell.AssertPreToolUseDenied();
+        powerShell.AssertStderrContains("bypass");
+        envelope.AssertPreToolUseDenied();
+        envelope.AssertStderrContains("bypass");
+    }
+
+    // A Codex shell call that runs the command through pwsh -Command.
+    private string CodexPwshJson(string command) =>
+        System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["session_id"] = TestSessionId,
+            ["turn_id"] = "t1",
+            ["tool_name"] = "shell_command",
+            ["cwd"] = TestDir,
+            ["tool_input"] = new Dictionary<string, object> { ["command"] = new[] { "pwsh", "-Command", command }, ["workdir"] = TestDir },
+        });
+
     // Split seat B's expanding-word probes that write no path: master warns, and so does every lane.
     [Theory]
     [MemberData(nameof(GuardRetroCommands.Gs02ExpandingWordWarningLines), MemberType = typeof(GuardRetroCommands))]

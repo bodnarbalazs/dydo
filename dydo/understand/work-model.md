@@ -76,7 +76,7 @@ its official MCP, UI, API, and integrations.
 No implementation begins without a contract another agent can review independently.
 
 - One atomic ticket can be its own reviewed contract. Cross-cutting architecture gets a reviewed
-  repository plan; shared multi-ticket behavior may use a [feature spec](../reference/feature-spec-convention.md).
+  repository plan; shared multi-ticket behavior may use a [feature spec](../reference/feature-spec-convention.md); a Project the admiral scaffolds always has one ([DR 053](../project/decisions/053-temporary-feature-specs.md)).
 - The plan carries one `linear-project` URL, and its Linear Project links back to the published plan.
 - An implementation ticket under a Project plan records the plan's exact governing commit before
   execution, including applicable feature-spec commit and sections; a review pins the ticket's

@@ -93,7 +93,8 @@ public static class StatechartCommand
         var node = StatechartPrerequisites.Find("node", Environment.GetEnvironmentVariable("PATH"));
         var java = StatechartPrerequisites.Java(Environment.CurrentDirectory,
             Environment.GetEnvironmentVariable("JAVA"), Environment.GetEnvironmentVariable("PATH"));
-        var tlc = StatechartPrerequisites.Tlc(Environment.CurrentDirectory, Environment.GetEnvironmentVariable("TLA2TOOLS"));
+        var tlc = StatechartPrerequisites.Tlc(Environment.CurrentDirectory, Environment.GetEnvironmentVariable("TLA2TOOLS"),
+            assets.CheckerDigest);
         var nodeVersion = await VersionAsync(node, "--version", lifetime);
         var javaVersion = await VersionAsync(java, "-version", lifetime);
         if (!await lifetime.CompleteAsync()) throw new IOException("Statechart readiness cleanup drain is uncertain; scratch retained.");

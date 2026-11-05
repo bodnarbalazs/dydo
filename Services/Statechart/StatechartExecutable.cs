@@ -4,9 +4,11 @@ using System.Diagnostics;
 
 internal static class StatechartExecutable
 {
+    private static readonly AsyncLocal<string?> Relaunch = new();
+
     public static ProcessStartInfo Current()
     {
-        var executable = Environment.ProcessPath ?? throw new IOException("Cannot locate installed dydo executable.");
+        var executable = Relaunch.Value ?? Environment.ProcessPath ?? throw new IOException("Cannot locate installed dydo executable.");
         var start = new ProcessStartInfo(executable);
         if (string.Equals(Path.GetFileNameWithoutExtension(executable), "dotnet", StringComparison.OrdinalIgnoreCase))
         {
@@ -17,4 +19,7 @@ internal static class StatechartExecutable
         }
         return start;
     }
+
+    // An in-process test runs inside a host that is not dydo; for its own async flow, private relaunches use this dydo build.
+    internal static void RelaunchThrough(string? executable) => Relaunch.Value = executable;
 }

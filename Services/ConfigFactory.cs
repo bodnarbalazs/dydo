@@ -93,6 +93,8 @@ public static class ConfigFactory
         // DR 045 §3: nothing reaches the user that an independent agent has not reviewed, and
         // the PR body is where that proof lands. Warn = block once, run again to proceed, so an
         // honest exception costs one retry; DR 042's rule escalates it to block if discipline erodes.
+        // The guard reads an in-tree --body-file or -F after the command text (DYD-639, PrBodyFile);
+        // dydo.json copies are matched by this pattern, so it never changes.
         new()
         {
             Pattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)",

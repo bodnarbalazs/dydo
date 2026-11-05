@@ -345,6 +345,172 @@ public class GuardPrReadyTests : IntegrationTestBase
         second.AssertPreToolUseAllowed();
     }
 
+    // DYD-639: a gh pr create taking its body from a file is checked as an inline body is when the
+    // guard may read the file, a regular file in the call directory's work tree; else it warns.
+    private const string ReviewedBody = "DYD-1\n\n## Independent review\n\nPASS - rubric/type: code\n";
+
+    private const string ReviewBlockWarning = "carries no review block";
+
+    [Theory]
+    [InlineData("gh pr create --title t --body-file dydo/agents/body.md")]
+    [InlineData("gh pr create --title t --body-file=dydo/agents/body.md")]
+    [InlineData("gh pr new --title t --body-file dydo/agents/body.md")]
+    public async Task PrCreate_InTreeBodyFileWithTheReviewBlock_DoesNotWarn(string command)
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+
+        (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("gh pr create --title t -F dydo/agents/body.md")]
+    [InlineData("gh pr create --title t -Fdydo/agents/body.md")]
+    public async Task PrCreate_ShortFormBodyFileWithTheReviewBlock_DoesNotWarn(string command)
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+
+        (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseAllowed();
+    }
+
+    [Fact]
+    public async Task PrCreate_BodyFileNamedFromTheCallDirectoryOrAbsolutely_DoesNotWarn()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+        var absolute = Path.Combine(TestDir, "dydo", "agents", "body.md");
+
+        (await GuardWithStdinAsync(Payload("gh pr create -F agents/body.md", toolCwd: DydoDir))).AssertPreToolUseAllowed();
+        (await GuardWithStdinAsync(Payload($"gh pr create -F '{absolute}'"))).AssertPreToolUseAllowed();
+    }
+
+    [Fact]
+    public async Task PrCreate_CodexArgvWithAnInTreeBodyFile_DoesNotWarn()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+
+        (await GuardWithStdinAsync(Payload(new[] { "gh", "pr", "create", "-F", "dydo/agents/body.md" }, codex: true)))
+            .AssertPreToolUseAllowed();
+    }
+
+    // A user's dydo.json copy of the review-block nudge keeps its pattern, so its body file is read
+    // too; a custom nudge on gh pr create reads the command alone.
+    [Theory]
+    [InlineData(@"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)", false)]
+    [InlineData(@"gh\s+pr\s+create\b(?![\s\S]*Independent review)", true)]
+    public async Task BlockNudgeOnPrCreate_WithAnInTreeBodyFile_ReadsItOnlyForTheReviewBlockPattern(string pattern, bool denied)
+    {
+        await InitPushedProject();
+        var config = JsonNode.Parse(ReadFile("dydo.json"))!.AsObject();
+        config["nudges"] = new JsonArray(new JsonObject { ["pattern"] = pattern, ["message"] = "Custom PR block.", ["severity"] = "block" });
+        WriteFile("dydo.json", config.ToJsonString());
+        // The tree check reads the local remote-tracking ref, so moving it stands in for a push.
+        Commit(TestDir, "nudge");
+        Git(TestDir, "update-ref", "refs/remotes/origin/feature", "HEAD");
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+
+        var result = await GuardWithStdinAsync(Payload("gh pr create -F dydo/agents/body.md"));
+
+        if (denied) Assert.StartsWith("BLOCKED: Custom PR block.", result.AssertPreToolUseDenied());
+        else result.AssertPreToolUseAllowed();
+    }
+
+    [Fact]
+    public async Task PrCreate_InTreeBodyFileWithoutTheReviewBlock_Warns()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", "DYD-1\n\n## Summary\n");
+
+        Assert.Empty(await Misses(denied: true, ["gh pr create --body-file dydo/agents/body.md"], ReviewBlockWarning));
+    }
+
+    [Fact]
+    public async Task PrCreate_BodyFileOutsideTheWorkTree_Warns()
+    {
+        await InitPushedProject();
+        using var outside = new OutsideDirectory();
+
+        Assert.Empty(await Misses(denied: true,
+            [$"gh pr create -F '{outside.Body}'", $"gh pr create -F ../{outside.Name}/body.md"], ReviewBlockWarning));
+    }
+
+    [SkippableTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PrCreate_InTreeLinkToAnOutsideBodyFile_Warns(bool linkedDirectory)
+    {
+        Skip.If(OperatingSystem.IsWindows() && !linkedDirectory, "Creating file symbolic links needs Windows developer mode.");
+        await InitPushedProject();
+        using var outside = new OutsideDirectory();
+        Directory.CreateDirectory(Path.Combine(DydoDir, "agents"));
+        string path;
+        if (linkedDirectory)
+        {
+            DirectoryLinks.Create(Path.Combine(DydoDir, "agents", "linked"), outside.Path);
+            path = "dydo/agents/linked/body.md";
+        }
+        else
+        {
+            File.CreateSymbolicLink(Path.Combine(DydoDir, "agents", "body.md"), outside.Body);
+            path = "dydo/agents/body.md";
+        }
+
+        Assert.Empty(await Misses(denied: true, [$"gh pr create -F {path}"], ReviewBlockWarning));
+    }
+
+    [Fact]
+    public async Task PrCreate_BodyFileTheGuardMayNotRead_Warns()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/_system/.local/body.md", ReviewedBody);
+
+        Assert.Empty(await Misses(denied: true,
+        [
+            "gh pr create -F dydo/agents/missing.md",
+            "gh pr create -F dydo",
+            "gh pr create -F -",
+            "gh pr create -F dydo/_system/.local/body.md",
+        ], ReviewBlockWarning));
+    }
+
+    [Fact]
+    public async Task PrCreate_BodyFileOverTheCap_Warns()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", ReviewedBody + new string('x', 256 * 1024));
+
+        Assert.Empty(await Misses(denied: true, ["gh pr create -F dydo/agents/body.md"], ReviewBlockWarning));
+    }
+
+    [Fact]
+    public async Task PrCreate_BodyFileOutsideGit_Warns()
+    {
+        await InitProjectAsync("none");
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+
+        Assert.Empty(await Misses(denied: true, ["gh pr create -F dydo/agents/body.md"], ReviewBlockWarning));
+    }
+
+    // A directory beside the test's tree, outside it, holding a body with the review block.
+    private sealed class OutsideDirectory : IDisposable
+    {
+        public string Name { get; } = "dydo-outside-" + Guid.NewGuid().ToString("N")[..8];
+
+        public string Path => System.IO.Path.Combine(System.IO.Path.GetTempPath(), Name);
+
+        public string Body => System.IO.Path.Combine(Path, "body.md");
+
+        public OutsideDirectory()
+        {
+            Directory.CreateDirectory(Path);
+            File.WriteAllText(Body, ReviewedBody);
+        }
+
+        public void Dispose() => Directory.Delete(Path, recursive: true);
+    }
+
     [Fact]
     public async Task OutsideGit_IsAllowed()
     {

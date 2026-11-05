@@ -498,4 +498,55 @@ public class PrCallScannerTests
     {
         Assert.Contains(PrCallScanner.FindInArgv(argv), call => call.Wrapper != null);
     }
+
+    // DYD-639: the body file a gh pr create or new call reads, its last --body-file or -F as gh takes it.
+    [Theory]
+    [InlineData("gh pr create --body-file a.md", "a.md")]
+    [InlineData("gh pr create --body-file=a.md", "a.md")]
+    [InlineData("gh pr create -F a.md", "a.md")]
+    [InlineData("gh pr create -Fa.md", "a.md")]
+    [InlineData("gh pr create -dFa.md", "a.md")]
+    [InlineData("gh pr new -F 'my body.md' --title t", "my body.md")]
+    [InlineData("gh pr create -F a.md --body-file b.md", "b.md")]
+    [InlineData("git status && GH_REPO=o/r gh -R o/r pr Create -F a.md", "a.md")]
+    [InlineData("/usr/bin/gh pr create -F -", "-")]
+    public void BodyFile_IsTheCallsLastBodyFile(string command, string file)
+    {
+        Assert.Equal([file], PrCallScanner.BodyFiles(command, ShellDialect.Posix));
+    }
+
+    [Theory]
+    [InlineData("gh pr create --fill")]
+    [InlineData("gh pr create --body 'see a.md'")]
+    [InlineData("gh pr ready -F a.md")]
+    [InlineData("gh pr create -F a.md --help")]
+    [InlineData("gh pr")]
+    [InlineData("gh api repos/o/r/pulls -F body=@a.md")]
+    [InlineData("gh issue create -F a.md")]
+    [InlineData("hub pr create -F a.md")]
+    [InlineData("echo 'gh pr create -F a.md'")]
+    [InlineData("bash -c 'gh pr create -F a.md'")]
+    [InlineData("gh pr create -F a.md 'unfinished")]
+    [InlineData("GH_REPO=o/r")]
+    public void CallReadingNoBodyFile_NamesNone(string command)
+    {
+        Assert.Empty(PrCallScanner.BodyFiles(command, ShellDialect.Posix));
+    }
+
+    [Fact]
+    public void BodyFiles_AreEveryCallsOnceInEveryReading()
+    {
+        Assert.Equal(["a.md", "b.md"], PrCallScanner.BodyFiles("gh pr create -F a.md; gh pr new -F b.md; gh pr create -F a.md"));
+        Assert.Equal(["a.md"], PrCallScanner.BodyFiles("gh pr create -F a.md", ShellDialect.PowerShell));
+    }
+
+    [Theory]
+    [InlineData(new[] { "gh", "pr", "create", "-F", "a.md" }, "a.md")]
+    [InlineData(new[] { "bash", "-lc", "gh pr create --body-file a.md" }, "a.md")]
+    [InlineData(new[] { "gh", "pr", "create", "--fill" }, null)]
+    [InlineData(new[] { "echo", "gh pr create -F a.md" }, null)]
+    public void BodyFilesInArgv_ReadTheArrayOrItsEnvelope(string[] argv, string? file)
+    {
+        Assert.Equal(file == null ? [] : [file], PrCallScanner.BodyFilesInArgv(argv));
+    }
 }

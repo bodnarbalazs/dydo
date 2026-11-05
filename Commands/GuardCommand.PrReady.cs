@@ -1,5 +1,7 @@
 namespace DynaDocs.Commands;
 
+using System.Security;
+using System.Text;
 using System.Text.RegularExpressions;
 using DynaDocs.Services;
 using DynaDocs.Utils;
@@ -135,4 +137,122 @@ public static partial class GuardCommand
     // scheme://[user@]host[:port]/path, or scp's [user@]host:path.
     [GeneratedRegex(@"^(?:[a-z][a-z0-9+.-]*://(?:[^@/]*@)?(?<host>[^/:]+)(?::\d+)?/|(?:[^@/:]+@)?(?<host>[^/:]+):(?!/))(?<path>.+)$", RegexOptions.IgnoreCase)]
     private static partial Regex RemoteUrlRegex();
+
+    /// <summary>Four times GitHub's 65,536-character PR body limit at one byte a character.</summary>
+    internal const int PrBodyFileMaxBytes = 256 * 1024;
+
+    private const int MaxPathLinks = 40;
+
+    private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    private static readonly char[] PathSeparators = [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar];
+
+    /// <summary>
+    /// The PR body text that the command's <c>gh pr create</c> and <c>gh pr new</c> calls read from
+    /// body files the guard may read (<see cref="ReadPrBodyFile"/>), named from the call directory.
+    /// The text is empty when there is none (DYD-639).
+    /// </summary>
+    private static string PrBodyFileText(string command, IReadOnlyList<string>? argv, string? cwd, ShellDialect shell,
+        GuardEnv env, IOffLimitsService offLimitsService)
+    {
+        var files = argv != null ? PrCallScanner.BodyFilesInArgv(argv) : PrCallScanner.BodyFiles(command, shell);
+        var directory = CallDirectory(cwd, env);
+        return string.Concat(files.Select(file => ReadPrBodyFile(file, directory, offLimitsService)));
+    }
+
+    /// <summary>
+    /// The text of the PR body file <paramref name="path"/>, named from <paramref name="directory"/>,
+    /// the call directory, or null when the guard may not read it. The guard may read a regular file
+    /// that sits, once every link on its path resolves, in the same git work tree as the call
+    /// directory. It must not be off-limits, must be at most <see cref="PrBodyFileMaxBytes"/>, and
+    /// must be valid UTF-8. Anything else, or any I/O error, reads as null, so the caller keeps its
+    /// warning. It stops accidents, not a deliberate bypass.
+    /// </summary>
+    internal static string? ReadPrBodyFile(string path, string directory, IOffLimitsService offLimits)
+    {
+        if (path is "" or "-")
+            return null;
+        try
+        {
+            // Windows takes .. by name before it opens a path; elsewhere .. follows the links before it.
+            var named = Path.Combine(directory, path);
+            if (RealPath(OperatingSystem.IsWindows() ? Path.GetFullPath(named) : named) is not { } file
+                || !InWorkTreeOf(file, directory)
+                || offLimits.IsPathOffLimits(Path.GetFullPath(named)) != null || offLimits.IsPathOffLimits(file) != null)
+                return null;
+            return BoundedText(file);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
+                                       or NotSupportedException or SecurityException)
+        {
+            return null;
+        }
+    }
+
+    // git names one work tree for the file's own directory and the call directory. Git resolves
+    // links and short names itself, and a .git directory is no work tree.
+    private static bool InWorkTreeOf(string file, string directory)
+    {
+        var tree = WorkTreeOf(directory);
+        return tree != null && Path.GetDirectoryName(file) is { } parent && Directory.Exists(parent)
+            && WorkTreeOf(parent) == tree;
+    }
+
+    private static string? WorkTreeOf(string directory)
+    {
+        var top = GitRunner.Run(directory, "rev-parse", "--show-toplevel");
+        return top.Ok ? Path.GetFullPath(top.Text.Trim()) : null;
+    }
+
+    // An empty size is no body. A FIFO or device reports one too, so it is never opened. The cap
+    // holds on the bytes read, so a file growing past it reads as over the cap.
+    private static string? BoundedText(string file)
+    {
+        var info = new FileInfo(file);
+        if (!info.Exists || info.Length == 0)
+            return null;
+
+        using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        var buffer = new byte[PrBodyFileMaxBytes + 1];
+        var read = stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false);
+        return read > PrBodyFileMaxBytes ? null : StrictUtf8.GetString(buffer, 0, read);
+    }
+
+    /// <summary>
+    /// The rooted <paramref name="path"/> with every link on it resolved and each <c>..</c> taken
+    /// after the links before it, as the OS opens it (realpath(3)); null past <see cref="MaxPathLinks"/> links.
+    /// </summary>
+    private static string? RealPath(string path)
+    {
+        var resolved = Path.GetPathRoot(path)!;
+        var pending = new Stack<string>(PathSegments(path[resolved.Length..]).Reverse());
+        var links = 0;
+        while (pending.TryPop(out var segment))
+        {
+            if (segment == "..")
+            {
+                resolved = Path.GetDirectoryName(resolved) ?? resolved;
+                continue;
+            }
+
+            var next = Path.Join(resolved, segment);
+            if (new FileInfo(next).LinkTarget is not { } target)
+            {
+                resolved = next;
+                continue;
+            }
+            if (++links > MaxPathLinks)
+                return null;
+
+            var targetRoot = Path.GetPathRoot(target)!;
+            if (targetRoot.Length > 0)
+                resolved = targetRoot;
+            foreach (var part in PathSegments(target[targetRoot.Length..]).Reverse())
+                pending.Push(part);
+        }
+        return resolved;
+    }
+
+    private static IEnumerable<string> PathSegments(string path) =>
+        path.Split(PathSeparators, StringSplitOptions.RemoveEmptyEntries).Where(segment => segment != ".");
 }

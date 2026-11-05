@@ -616,18 +616,19 @@ public static partial class GuardCommand
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(ctx.SessionId);
 
         var shell = ExecutingShellOf(ctx);
+        var prBody = new Lazy<string>(() => PrBodyFileText(command, ctx.CommandArgv, ctx.ToolCwd ?? ctx.Cwd, shell, env, offLimitsService));
 
         // dydo commands skip the cd-chain coaching (they are never a needless cd compound).
         var hardBlock = (isDydo && isWorker ? BlockIfWorkerDydoCommand(command) : null)
             ?? BlockIfDangerous(command, bashAnalyzer)
             ?? BlockIfMergeRoute(command, ctx.CommandArgv, ctx.ToolCwd ?? ctx.Cwd, shell, env)
-            ?? CheckBlockNudges(command, env, shell)
+            ?? CheckBlockNudges(command, env, shell, prBody)
             ?? CheckPrReady(command, ctx.CommandArgv, ctx.ToolCwd ?? ctx.Cwd, shell, env)
             ?? (isDydo ? null : BlockIfCdChain(command, bashAnalyzer))
             ?? AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer, env.Memory);
         if (hardBlock != null) return hardBlock.Value;
 
-        return CheckWarnNudges(command, env, IsModeSet(command, shell), shell) ?? ExitCodes.Success;
+        return CheckWarnNudges(command, env, IsModeSet(command, shell), shell, prBody) ?? ExitCodes.Success;
     }
 
     private static int? BlockIfWorkerDydoCommand(string command)
@@ -672,9 +673,10 @@ public static partial class GuardCommand
     /// <summary>
     /// The command nudges that are not warns: a notice prints and passes, a block refuses.
     /// </summary>
-    internal static int? CheckBlockNudges(string command, GuardEnv env, ShellDialect shell = ShellDialect.Unknown)
+    internal static int? CheckBlockNudges(string command, GuardEnv env, ShellDialect shell = ShellDialect.Unknown,
+        Lazy<string>? prBody = null)
     {
-        foreach (var (nudge, match) in MatchingCommandNudges(command, env, shell))
+        foreach (var (nudge, match) in MatchingCommandNudges(command, env, shell, prBody))
         {
             if (IsWarn(nudge)) continue;
 
@@ -687,11 +689,13 @@ public static partial class GuardCommand
 
     /// <summary>
     /// The command warn nudges, and the mode-set reminder when <paramref name="modeSet"/>, as one
-    /// once-only step (<see cref="EnforceWarns"/>).
+    /// once-only step (<see cref="EnforceWarns"/>). <paramref name="prBody"/> is the text of the
+    /// command's PR body files (<see cref="PrBodyFileText"/>).
     /// </summary>
-    internal static int? CheckWarnNudges(string command, GuardEnv env, bool modeSet = false, ShellDialect shell = ShellDialect.Unknown)
+    internal static int? CheckWarnNudges(string command, GuardEnv env, bool modeSet = false, ShellDialect shell = ShellDialect.Unknown,
+        Lazy<string>? prBody = null)
     {
-        var warns = MatchingCommandNudges(command, env, shell)
+        var warns = MatchingCommandNudges(command, env, shell, prBody)
             .Where(m => IsWarn(m.Nudge))
             .Select(m => new WarnStep(m.Nudge, m.Match, CommandWarnMarkerName(m.Nudge.Pattern, command),
                 "Run the same command again to proceed anyway."))
@@ -702,17 +706,28 @@ public static partial class GuardCommand
         return EnforceWarns(warns, env);
     }
 
+    // The shipped review-block nudge and every dydo.json copy of it, which keeps its pattern.
+    private static readonly string ReviewBlockPattern = ConfigFactory.DefaultNudges
+        .Single(n => n.Message.StartsWith("This PR carries no review block", StringComparison.Ordinal)).Pattern;
+
     // A nudge's pattern is matched on the raw text, and a match counts only where its launch word
     // counts under the bounded data-operand rules (DYD-406); captures come from that raw match.
-    private static IEnumerable<(NudgeConfig Nudge, Match Match)> MatchingCommandNudges(string command, GuardEnv env, ShellDialect shell)
+    private static IEnumerable<(NudgeConfig Nudge, Match Match)> MatchingCommandNudges(string command, GuardEnv env, ShellDialect shell,
+        Lazy<string>? prBody)
     {
         foreach (var nudge in MergeSystemNudges(env.Config?.Nudges))
         {
             if (nudge.IsCommandMatch && CompileNudgePattern(nudge.Pattern) is { } pattern
-                && FirstRunningMatch(pattern, command, shell) is { } match)
+                && FirstRunningMatch(pattern, command, shell) is { } match
+                && HoldsWithPrBody(nudge, pattern, command, match, prBody))
                 yield return (nudge, match);
         }
     }
+
+    // The review-block nudge reads the PR body files after the command text, as an inline body
+    // follows it (DYD-639). The files come after every launch, so its first running match decides.
+    private static bool HoldsWithPrBody(NudgeConfig nudge, Regex pattern, string command, Match match, Lazy<string>? prBody) =>
+        prBody == null || nudge.Pattern != ReviewBlockPattern || pattern.IsMatch(command + prBody.Value, match.Index);
 
     /// <summary>
     /// The first match of <paramref name="pattern"/> whose launch word, the text past any space or

@@ -22,6 +22,8 @@ internal static partial class PrCallScanner
 
     private static readonly HashSet<string> PrVerbs = new(StringComparer.OrdinalIgnoreCase) { "create", "new", "ready" };
 
+    private static readonly HashSet<string> BodyVerbs = new(StringComparer.OrdinalIgnoreCase) { "create", "new" };
+
     private static readonly Options RepoOptions = new(new() { ['R'] = "repo" }, ["repo"]);
 
     private static readonly Options PrOptions = new(
@@ -65,6 +67,51 @@ internal static partial class PrCallScanner
         return program != "gh" && argv.Skip(1).Any(word => Scan(word, ShellDialect.Unknown, null, 1).Count > 0)
             ? [new PrCall(null, Wrapper: program)]
             : [];
+    }
+
+    /// <summary>
+    /// The body files that the <c>gh pr create</c> and <c>gh pr new</c> calls in
+    /// <paramref name="command"/> read (DYD-639). Each call's body file is its last
+    /// <c>--body-file</c> or <c>-F</c>, as gh takes it, written as the call wrote it. Only direct
+    /// calls in readings that finish count. A wrapped call, a substitution or an unfinished line
+    /// names none, so a check that needs the body keeps its warning.
+    /// </summary>
+    public static List<string> BodyFiles(string command, ShellDialect dialect = ShellDialect.Unknown)
+    {
+        var line = GhPlaceholderRegex().Replace(command, ":$1");
+        return [.. Readings(dialect, line)
+            .Select(posix => ShellReader.Read(line, posix))
+            .Where(reading => !reading.Failed)
+            .SelectMany(reading => reading.Commands)
+            .Select(command => BodyFileOf(command.Words))
+            .OfType<string>()
+            .Distinct()];
+    }
+
+    /// <summary>The body files an argv array's call reads; Codex's shell envelope is read as its script.</summary>
+    public static List<string> BodyFilesInArgv(IReadOnlyList<string> argv)
+    {
+        if (CommandPosition.Envelope(argv) is { } envelope)
+            return BodyFiles(envelope.Text, envelope.Dialect);
+        return BodyFileOf(argv) is { } file ? [file] : [];
+    }
+
+    private static string? BodyFileOf(IReadOnlyList<string> words)
+    {
+        var at = CommandPosition.Skip(words);
+        if (at >= words.Count || CommandPosition.ProgramName(words[at]) != "gh")
+            return null;
+
+        var rest = words.Skip(at + 1).ToList();
+        var sub = GhSubcommand(rest, "pr", "api");
+        if (sub < 0 || !rest[sub].Equals("pr", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var parsed = Parse(rest[(sub + 1)..], PrOptions);
+        var verb = parsed.Positionals.FirstOrDefault();
+        return verb != null && BodyVerbs.Contains(verb) && !parsed.Help
+            ? Values(parsed.Options, "body-file").LastOrDefault()
+            : null;
     }
 
     private static List<PrCall> Scan(string text, ShellDialect dialect, string? inheritedRepo, int depth)

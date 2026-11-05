@@ -7,6 +7,9 @@ type: guide
 
 The shared workflow below is portable policy; execution still needs a project's real commands.
 This repository's current facade has no `--feature`, `--plan`, `--heavy` or Ripple support.
+Its per-ticket coverage therefore stays whole-stack, its recorded gap against ticket-scoped
+coverage: `gap_check.py gate coverage`, narrowed at most to whole stacks with `--stack`, measures
+each selected stack's whole suite.
 Map the required selection to existing project selectors/adapters and record the commands in the
 ticket; return missing support rather than inventing flags or claiming later machinery shipped.
 
@@ -26,14 +29,27 @@ the commands that implement selection; a cheap test is not automatically suffici
 |---|---|
 | While building | Surgical tests that decide the change's behavior. |
 | Each committed code hop | Affected-feature Light, including reached features and shared tests, plus applicable static assurance. |
-| Final candidate | Own-feature Heavy when the declared plan contains Heavy, including any reached Heavy behavior; changed-product-stack coverage producer and consumer once. Retain required static and mutation gates. |
+| Final candidate | Own-feature Heavy when the declared plan contains Heavy, including any reached Heavy behavior and every Heavy-only source owed to it; ticket-scoped coverage producer and consumer once, as below. Retain required static and mutation gates. |
 | Documentation-only hop | Bounded documentation, setup and reference checks its contract names; runtime tests only where the change actually reaches behavior. |
-| CI or explicit human request | Whole suites for broad observations. A coverage producer may itself execute a stack suite; reuse its suite verdict where supported instead of launching the same suite twice. |
+| CI or explicit human request | Whole suites for broad observations; hosted CI also requires whole-stack coverage. A coverage producer may itself execute a stack suite; reuse its suite verdict where supported instead of launching the same suite twice. |
+
+Coverage is scoped to the ticket. Its coverage producer runs the ticket's own Light feature
+selection: own and reached features, with their ancestors' shared tests. Where the facade supports
+it, that is the same instrumented run as the Light gate, so the suite runs once. The consumer judges
+the ticket's changed files under the unchanged thresholds; a changed line the selection does not
+reach fails the gate rather than being waved through. A changed Heavy-only source, one only the
+project's declared Heavy tests reach, takes the Heavy route: the Light coverage gate reports it as
+owed to Heavy, and the final candidate's Heavy stage measures it under the same thresholds or fails.
+No gate reports an owed source as pending with exit 0; DR 048 leaves no escape hatch. A facade
+without feature selection keeps whole-stack coverage per ticket and records that as its concrete
+gap; the ticket claims no selector the facade lacks.
 
 The ticket's Exact gates bind real project commands, reached features, levels, prerequisites and
 stage. Use a supported selector/adapter; missing selection or Heavy support is a concrete gap to
 return to the captain, not a flag to invent or proof to skip. Required integration, combined-merge
-and release gates remain at their boundaries. Existing active ticket gates remain binding until
+and release gates remain at their boundaries. Whole-stack coverage is required at the landing, at
+every sync of the default branch into a feature branch and in hosted CI, and it measures Heavy-only
+sources under the unchanged thresholds or fails. Existing active ticket gates remain binding until
 their owner explicitly reconciles the contract under governing authority, naming retained,
 replaced and still-required gates; new guidance never retrospectively cancels an owed run.
 
@@ -64,7 +80,9 @@ Pending work has no invented success or numeric exit: preserve the runner's actu
 
 Reuse evidence only for the exact candidate, selection and compatible environment when the gate
 allows it. Final Heavy and coverage each run once per final candidate; a changed final tree
-(including a fix or combined merge tree) requires fresh applicable final gates. New concerns and
+(including a fix or combined merge tree) requires fresh applicable final gates. A combined merge
+tree reruns the ticket-scoped coverage gate, not whole-stack coverage, unless it is the landing or a
+sync of the default branch. New concerns and
 distinct mandatory integration/release boundaries also require their specified reruns. Within one
 gate run, deduplicate execution where the producer's contract proves both verdicts. Independent
 review and the captain's own proof-recipe rerun remain required.

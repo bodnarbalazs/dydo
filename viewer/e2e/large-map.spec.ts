@@ -16,6 +16,14 @@ async function openLarge(page: Page, focus?: string) {
   await expect(page.locator('.react-flow__node-issue, .react-flow__node-plate')).toHaveCount(graph.issues.length);
 }
 
+/** How far, in screen pixels, a node's centre sits from the map's centre. */
+async function offCentre(page: Page, identifier: string) {
+  const pane = await page.locator('.react-flow').boundingBox();
+  const box = await node(page, identifier).boundingBox();
+  if (pane === null || box === null) throw new Error(`${identifier} or the map is not on screen`);
+  return Math.max(Math.abs(box.x + box.width / 2 - (pane.x + pane.width / 2)), Math.abs(box.y + box.height / 2 - (pane.y + pane.height / 2)));
+}
+
 function viewport(page: Page) {
   return page.locator('.react-flow__viewport').evaluate((element) => new DOMMatrixReadOnly(getComputedStyle(element).transform));
 }
@@ -113,6 +121,9 @@ test.describe('large Project map', () => {
     await expect(node(page, 'DYD-105')).toHaveCount(0);
     const plateId = issueId(graph, 'DYD-96');
     await expect(page.locator(`.react-flow__edge[data-id$="->${plateId}"], .react-flow__edge[data-id^="blocks:${plateId}->"]`).first()).toBeAttached();
+    // The toggle focuses its plate, and the map centres it where the collapsed layout put it: settled
+    // there, its Expand pill is on screen to click without scrolling the map's clipped wrapper.
+    await expect.poll(() => offCentre(page, 'DYD-96')).toBeLessThan(40);
     await plate.getByRole('button', { name: 'Expand DYD-96' }).click();
     await expect(node(page, 'DYD-105')).toHaveCount(1);
   });

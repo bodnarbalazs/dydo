@@ -38,14 +38,15 @@ every interface.
 ## Tests
 
 Rendering uses Pele 1.9.0 as specified in [render](render.md). Tests additionally use
-fast-check 4.5.3, and the renderer tests install Pele, Mermaid 11.16.0 and jsdom 26.1.0
-under `XDG_CACHE_HOME`; point it and npm's cache at task-local directories. The package
-test command is in `scripts/package.json`; it serializes test files with
-`--test-concurrency=1` on a shared host.
+fast-check 4.5.3, Mermaid 11.16.0 and jsdom 26.1.0, locked in `scripts/pnpm-lock.yaml`;
+restore them with `pnpm install --frozen-lockfile` in `scripts/`. The package test command is in
+`scripts/package.json`; it serializes test files with `--test-concurrency=1` on a shared
+host.
 
 A skipped test is missing proof, not a pass. Without `TLA2TOOLS` naming the pinned jar,
 the replay suite, checker and bootstrap tests and real-TLC acceptance skip. Native
-renderer and SVG acceptance need `STATECHART_PELE`, the installed Pele module entry.
+renderer and SVG acceptance and the renderer tests need `STATECHART_PELE`, the installed
+Pele module entry.
 `STATECHART_EVIDENCE_DIR` optionally retains acceptance inputs, raw TLC output,
 reports, charts and SVGs. `scripts/test/acceptance.feature` is wired by
 `acceptance.test.ts`.

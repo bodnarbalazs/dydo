@@ -735,6 +735,29 @@ describe('App navigation and fitting', () => {
     expect(scale()).toBeGreaterThan(1);
   });
 
+  /** Where a card's centre sits on screen, from the map's transform and the card's place on it. */
+  function onScreen(identifier: string) {
+    const [x, y, zoom] = (/translate\((.+)px, ?(.+)px\) scale\((.+)\)/.exec(document.querySelector<HTMLElement>('.react-flow__viewport')?.style.transform ?? '') ?? []).slice(1).map(Number);
+    const shown = card(identifier)?.closest<HTMLElement>('.react-flow__node');
+    const [left, top] = (/translate\((.+)px, ?(.+)px\)/.exec(shown?.style.transform ?? '') ?? []).slice(1).map(Number);
+    const half = (size: string | undefined) => Number.parseFloat(size ?? '') / 2;
+    return { x: x! + (left! + half(shown?.style.width)) * zoom!, y: y! + (top! + half(shown?.style.height)) * zoom! };
+  }
+
+  it('keeps a toggled plate centred where its new layout puts it', async () => {
+    await fitBy(() => open('?team=team-1&project=project-1&focus=P'));
+    await mapShown();
+    const centre = onScreen('T-P');
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse T-P' }));
+    await waitFor(() => expect(card('T-A')).toBeNull());
+    await waitFor(() => {
+      runFrames();
+      const plate = onScreen('T-P');
+      expect(plate.x).toBeCloseTo(centre.x);
+      expect(plate.y).toBeCloseTo(centre.y);
+    });
+  });
+
   it('fits the map again after Collapse all', async () => {
     await fitBy(() => open('?team=team-1&project=project-1'));
     await mapShown();

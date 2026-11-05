@@ -73,6 +73,24 @@ class KnipAccountingTests(unittest.TestCase):
                          workspace['project'])
         self.assertEqual(['openai-sse-provider.mjs', 'run-host-canaries.mjs'], workspace['entry'])
 
+    def test_a_source_no_declared_package_owns_is_an_accounted_measurement_error(self):
+        (self.root / 'viewer').mkdir()
+        (self.root / 'viewer/package.json').write_text('{}', encoding='utf-8')
+        model = workspace_model(self.root, ['skills/runtime/scripts/run.ts'], 'typescript')
+        self.assertEqual([{'path': 'skills/runtime/scripts/run.ts',
+                           'message': 'No declared package owns this maintained source'}], model['errors'])
+        self.assertEqual([], model['sources'])
+
+    def test_excluded_typescript_is_judged_in_its_package_or_counted_unjudged_without_one(self):
+        (self.root / 'viewer').mkdir()
+        (self.root / 'viewer/package.json').write_text('{}', encoding='utf-8')
+        unowned = ['skills/runtime/scripts/run.ts', 'skills/runtime/scripts/test/run.test.ts']
+        model = workspace_model(self.root, ['viewer/src/main.tsx'], 'typescript',
+                                ['viewer/e2e/journey.spec.ts', *unowned])
+        self.assertEqual([], model['errors'])
+        self.assertEqual(['viewer/e2e/journey.spec.ts', 'viewer/src/main.tsx'], [row['path'] for row in model['sources']])
+        self.assertEqual({'count': 2, 'paths': unowned}, model['unjudged'])
+
     def native(self):
         return [{'issues': [{'file': '../../npm/lib/example.js', 'exports': [{'name': 'dead', 'line': 3}],
                             'files': [], 'nsExports': [], 'duplicates': [], 'unresolved': []}]},
@@ -137,6 +155,19 @@ class KnipAccountingTests(unittest.TestCase):
         self.assertEqual([], model['config']['workspaces']['../..']['entry'])
         self.assertEqual([('stray.mjs', 'knip-files')],
                          [(row['path'], row['gate']) for row in self.native_report(model)['findings']])
+
+    def test_a_corpus_view_the_cli_loads_by_path_is_a_root_whose_unread_export_is_still_found(self):
+        view = 'skills/engineering/statechart/scripts/test/corpus/CounterView/view.mjs'
+        test = 'DynaDocs.Tests/coverage/tests/views.test.cjs'
+        importer = ("require('node:test')('view', async () => {\n"
+                    f"  const {{ state }} = await import('../../../{view}');\n  state(1);\n}});\n")
+        for path, text in ((view, 'export const state = v => v;\nexport const planted = () => 1;\n'), (test, importer)):
+            (self.root / path).parent.mkdir(parents=True, exist_ok=True)
+            (self.root / path).write_text(text, encoding='utf-8')
+        model = workspace_model(self.root, [test, view])
+        self.assertEqual([view], model['config']['workspaces']['../..']['entry'])
+        self.assertEqual([(view, 'knip-exports', 'planted')],
+                         [(row['path'], row['gate'], row['diagnostic']['name']) for row in self.native_report(model)['findings']])
 
     def test_an_absent_native_knip_installation_is_never_a_green_gate(self):
         runner = Collectors.__new__(Collectors)

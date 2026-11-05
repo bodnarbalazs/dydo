@@ -1,6 +1,5 @@
 """Private native stack adapter for the public gap-check facade."""
 import argparse
-import ast
 import json
 import os
 import platform
@@ -15,6 +14,7 @@ import subprocess
 from pathlib import Path
 
 from gate_run import STATIC_GATE_INTERPRETER, checked_result, result
+from gate_discovery import ordinary_discovery as _ordinary_discovery
 
 
 CLEANUP_SECONDS = 30
@@ -35,7 +35,7 @@ class MeasurementTimeout(ValueError):
 
 
 def run_coverage_command(argv, cwd):
-    from run_tests import contain_descendants, defer_interruption
+    from run_tests import contain_descendants, defer_interruption, reaping
     deadline_text = os.environ.get(ROW_DEADLINE_ENV)
     deadline = float(deadline_text) if deadline_text is not None else None
     execution_deadline = None if deadline is None else deadline - CLEANUP_SECONDS
@@ -44,13 +44,15 @@ def run_coverage_command(argv, cwd):
                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
                              start_new_session=sys.platform != "win32")
     try:
-        status = _wait_coverage_child(child, execution_deadline)
+        with reaping(containment, child):
+            status = _wait_coverage_child(child, execution_deadline)
     except (subprocess.TimeoutExpired, KeyboardInterrupt) as error:
         # Leave time inside the facade's cleanup window for forced descendant cleanup.
         remaining = CLEANUP_SECONDS if deadline is None else max(0, deadline - time.monotonic())
         cleanup_confirmed = False
         try:
-            with defer_interruption():
+            # Orphans adopted while the campaign stops are reaped as they exit, as during its run.
+            with defer_interruption(), reaping(containment, child):
                 cleanup_deadline = time.monotonic() + min(remaining, CLEANUP_SECONDS)
                 stopped = _stop_coverage_campaign(child, cleanup_deadline, containment)
                 if stopped == 2:
@@ -77,25 +79,8 @@ def _wait_coverage_child(child, deadline):
         try:
             return child.wait(timeout=min(.2, remaining))
         except subprocess.TimeoutExpired:
-            _reap_orphans(child.pid)
             if deadline is not None and remaining <= .2:
                 raise
-
-
-def _reap_orphans(campaign):
-    """As its descendants' subreaper on Linux, this process collects each orphan that has exited, as
-    init would, so a test watching a killed process group disappear sees it go. Popen keeps the
-    campaign's own status."""
-    if sys.platform != "linux":
-        return
-    while True:
-        try:
-            exited = os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG | os.WNOWAIT)
-        except ChildProcessError:
-            return
-        if exited is None or exited.si_pid == campaign:
-            return
-        os.waitpid(exited.si_pid, 0)
 
 
 def _stop_coverage_campaign(child, deadline, containment):
@@ -116,7 +101,8 @@ def _stop_coverage_campaign(child, deadline, containment):
                 pass
         _wait_coverage_child(child, min(deadline, time.monotonic() + 5))
     finally:
-        # A killed Linux owner can leave detached children adopted by this adapter.
+        # A killed Linux owner can leave detached children adopted by this adapter; the caller's
+        # reaping collects them once they are ended.
         end_descendants(containment, seconds=max(0, deadline - time.monotonic()))
     return child.returncode
 
@@ -387,49 +373,6 @@ def _inventory_artifact(root, run, candidate):
     return inventory, payload["errors"], _logged_commands(collector.log.rows, run)
 
 
-def _unittest_discovery(path, relative):
-    if not (relative.endswith(".py") and Path(relative).name.startswith("test_")):
-        return None
-    try:
-        tree = ast.parse(path.read_text(encoding="utf-8-sig"), relative)
-    except (SyntaxError, OSError):
-        return None
-    bases = (base for node in ast.walk(tree) if isinstance(node, ast.ClassDef) for base in node.bases)
-    if any(getattr(base, "attr", getattr(base, "id", "")) == "TestCase" for base in bases):
-        return {"id": relative + "#unittest", "file": relative}
-    return None
-
-
-def _node_discovery(path, relative):
-    if not re.search(r"\.test\.(?:(?:c|m)?js|ts)$", relative):
-        return None
-    text = path.read_text(encoding="utf-8-sig")
-    if re.search(r"\btest\s*\(", text) and "node:test" in text:
-        return {"id": relative + "#node-test", "file": relative}
-    return None
-
-
-def _vitest_discovery(path, relative):
-    if not (relative.startswith("viewer/src/") and re.search(r"\.test\.tsx?$", relative)):
-        return None
-    text = path.read_text(encoding="utf-8-sig")
-    if re.search(r"\b(?:test|it)\s*\(", text) and re.search(r"""\bfrom\s+['"]vitest['"]""", text):
-        return {"id": relative + "#vitest", "file": relative}
-    return None
-
-
-def _ordinary_discovery(root, paths):
-    rows = []
-    for relative in paths:
-        path = root / relative
-        if path.is_file():
-            row = (_unittest_discovery(path, relative) or _node_discovery(path, relative)
-                   or _vitest_discovery(path, relative))
-            if row:
-                rows.append(row)
-    return rows
-
-
 def _aggregate(orchestration):
     findings, errors = [], []
     for name, row in orchestration["collectors"].items():
@@ -531,8 +474,11 @@ def collect_python_coverage(root, raw, inventory):
     from python_coverage import collect as native_collect
     from python_join import collect as join
     from gate_policy import evaluate_policy
+    from python_platform import load_selection, scope
     run = _report_root(raw)
     sources = _target_paths(inventory, "python")
+    native_platform = {"linux": "linux", "win32": "windows"}.get(sys.platform)
+    selection = load_selection(root, sources, native_platform)
     argv = [sys.executable, "-m", "unittest", "discover", "-s",
             "DynaDocs.Tests/coverage/tests", "-p", "test_*.py"]
     started = time.monotonic()
@@ -543,8 +489,9 @@ def collect_python_coverage(root, raw, inventory):
         return _coverage_report("python-coverage", facts,
                                 [{"gate": "functional", "child_exit": child}], [],
                                 commands, _python_artifacts(raw, run))
-    modules = join(root, raw, sources)
-    return _coverage_report("python-coverage", {**facts, "modules": modules},
+    modules, selection = scope(root, join(root, raw, sources), native_platform, selection)
+    return _coverage_report("python-coverage", {**facts, "modules": modules,
+                                               "platform_selection": selection},
                             evaluate_policy(modules), [], commands,
                             _python_artifacts(raw, run))
 

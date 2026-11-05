@@ -14,7 +14,7 @@ import windows_job as jobs
 
 
 def supervise(kernel, job, process, readers, request, stack):
-    state = {"readers": readers, "held": {}}
+    state = {"readers": readers, "held": {}, "interrupted": {"requested": False}}
     failure = None
     error_message = None
     try:

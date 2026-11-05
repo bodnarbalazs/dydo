@@ -268,6 +268,8 @@ def python_repository(folder, suite=PYTHON_SUITE):
     write_file(root, "DynaDocs.Tests/coverage/tests/test_arithmetic.py", suite)
     write_file(root, "DynaDocs.Tests/coverage/test-associations.json",
                '{"schema": 1, "modules": []}')
+    write_file(root, "DynaDocs.Tests/coverage/python-platforms.json",
+               '{"schema": 1, "neutral": "linux", "native": {}}')
     return committed_repository(root)
 
 
@@ -1165,8 +1167,9 @@ class CoverageCampaignTests(unittest.TestCase):
 
             self.assertEqual(2, process.returncode, process.stderr)
             payload = json.loads((output / "adapters/python-coverage.json").read_text(encoding="utf-8"))
-            self.assertEqual([{"actual": 0.0, "gate": "line-coverage", "member": None,
-                               "path": "lib/arithmetic.py", "threshold": 80}], payload["findings"])
+            expected = [{"actual": 0.0, "gate": "line-coverage", "member": None,
+                         "path": "lib/arithmetic.py", "threshold": 80}] if sys.platform == 'linux' else []
+            self.assertEqual(expected, payload["findings"])
             self.assertEqual([{"message": "No evaluated C# projects"}], payload["gaps"])
             self.assertFalse(payload["measurementComplete"])
             self.assertEqual(str(STATIC_PYTHON),

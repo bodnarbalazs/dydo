@@ -176,6 +176,12 @@ public sealed class AssuranceAdoptionSteps
     {
         var directory = Directory.CreateTempSubdirectory("dydo-assurance-").FullName;
         _fixtures.Add(directory);
+        // Pin the facade root here: neither a stray marker nor a repository above may claim it.
+        using (var git = Process.Start("git", ["init", "--quiet", directory]))
+        {
+            git.WaitForExit();
+            Assert.Equal(0, git.ExitCode);
+        }
         File.Copy(Local(RepositoryRoot(), facade.Path), Local(directory, "gap_check.py"));
         File.WriteAllText(Local(directory, "gap_check.json"), Manifest().ToJsonString());
         var (exit, output) = Run(directory);

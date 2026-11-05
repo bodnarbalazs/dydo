@@ -192,6 +192,9 @@ def guard(run, command, arguments, expected, session):
                           "tool_input": {"command": command}})
     result = cli(run, "guard", arguments, payload)
     success(result)
+    if expected == "allow":
+        require(not result.stdout.strip(), "Expected empty stdout on guard allow")
+        return ""
     decision = json.loads(result.stdout)["hookSpecificOutput"]
     require(decision["permissionDecision"] == expected, f"Expected guard {expected}")
     return decision["permissionDecisionReason"]
@@ -210,15 +213,16 @@ def activation(run):
     """Synthetic hook protocol only: no mode command is ever executed."""
     for value in ("on", "off"):
         command = f"dydo mode set overnight {value}"
-        reason = guard(run, command, ["guard"], "deny", uuid.uuid4().hex)
-        require(f"own terminal: {command}" in reason, "Missing precise unsupported-host fallback")
-        session = uuid.uuid4().hex
-        hook = installed_hook(run)
-        guard(run, command, hook, "deny", session)
-        guard(run, command, hook, "ask", session)
+        for hook in (["guard"], installed_hook(run)):
+            session = uuid.uuid4().hex
+            reason = guard(run, command, hook, "deny", session)
+            require("chief of staff readying overnight mode or ending it; otherwise stop" in reason,
+                    "Missing chief-of-staff reminder")
+            guard(run, command, hook, "allow", session)
     write_json(run / "evidence/activation-limits.json",
                {"layer": "synthetic hook protocol", "mode_set_executed": False,
-                "host_approval_ui": "unverified", "state_readback": "requires injected seam tests"})
+                "role_authenticated": False, "human_approval_proven": False,
+                "state_readback": "requires injected seam tests"})
 
 
 def cleanup(run):

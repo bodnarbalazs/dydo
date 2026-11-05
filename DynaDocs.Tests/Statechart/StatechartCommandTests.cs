@@ -158,34 +158,9 @@ public class StatechartCommandTests
         Assert.False(Directory.Exists(Path.Combine(scope.Path, "state", "requests")));
     }
 
-    private static ProcessStartInfo Start(string root, string path, params string[] arguments)
-    {
-        var start = StatechartTestBinary.Start();
-        start.WorkingDirectory = root;
-        start.UseShellExecute = false;
-        start.CreateNoWindow = true;
-        start.RedirectStandardOutput = true;
-        start.RedirectStandardError = true;
-        foreach (var argument in arguments) start.ArgumentList.Add(argument);
-        foreach (var name in start.Environment.Keys.Where(name => name.StartsWith("DYDO_", StringComparison.Ordinal)).ToArray())
-            start.Environment.Remove(name);
-        start.Environment["DYDO_STATECHART_ASSET_ROOT"] = Path.Combine(root, "assets");
-        start.Environment["DYDO_STATECHART_DEPENDENCY_ROOT"] = Path.Combine(root, "dependencies");
-        start.Environment["DYDO_STATECHART_STATE_ROOT"] = Path.Combine(root, "state");
-        foreach (var name in new[] { "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY" }) start.Environment[name] = "http://127.0.0.1:9";
-        start.Environment["NO_PROXY"] = "";
-        start.Environment["PATH"] = path;
-        start.Environment.Remove("JAVA");
-        start.Environment.Remove("TLA2TOOLS");
-        return start;
-    }
+    private static ProcessStartInfo Start(string root, string path, params string[] arguments) =>
+        StatechartOfflineProcess.Start(root, path, arguments);
 
-    private static async Task<(int Exit, string Output, string Error)> Run(string root, string path, params string[] arguments)
-    {
-        using var child = Process.Start(Start(root, path, arguments))!;
-        var output = child.StandardOutput.ReadToEndAsync();
-        var errors = child.StandardError.ReadToEndAsync();
-        await child.WaitForExitAsync();
-        return (child.ExitCode, await output, await errors);
-    }
+    private static Task<(int Exit, string Output, string Error)> Run(string root, string path, params string[] arguments) =>
+        StatechartOfflineProcess.Run(Start(root, path, arguments));
 }

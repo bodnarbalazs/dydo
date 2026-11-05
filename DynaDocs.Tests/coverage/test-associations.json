@@ -2,6 +2,14 @@
   "schema": 1,
   "modules": [
     {
+      "module": "DynaDocs.Tests/coverage/gate_discovery.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_gate_adapter.py", "DynaDocs.Tests/coverage/tests/test_python_platform.py"]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/python_platform.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_python_platform.py"]
+    },
+    {
       "module": "Services/Statechart/StatechartChecker.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartCheckerTests.cs"]
     },
@@ -236,6 +244,26 @@
       "module": "Services/PrCallScanner.cs",
       "tests": [
         "DynaDocs.Tests/Services/PrCallScannerTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/GuardCommand.MergeRoutes.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/GuardMergeRouteTests.cs"
+      ]
+    },
+    {
+      "module": "Services/PrCallScanner.MergeRoutes.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/MergeRouteScannerTests.cs",
+        "DynaDocs.Tests/Integration/GuardMergeRouteTests.cs"
+      ]
+    },
+    {
+      "module": "Services/MergeRoute.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/MergeRouteScannerTests.cs",
+        "DynaDocs.Tests/Integration/GuardMergeRouteTests.cs"
       ]
     },
     {
@@ -536,6 +564,12 @@
       "module": "DynaDocs.Tests/coverage/node_tests.cjs",
       "tests": [
         "DynaDocs.Tests/coverage/tests/node_tests.test.cjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/HostCanaries/candidate-fingerprint.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/candidate-fingerprint.test.mjs"
       ]
     },
     {
@@ -995,6 +1029,13 @@
     {
       "module": "Services/ValidationService.cs",
       "tests": [
+        "DynaDocs.Tests/Services/ValidationServiceTests.cs"
+      ]
+    },
+    {
+      "module": "Services/ClaudeGuardWiring.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/ClaudeGuardWiringTests.cs",
         "DynaDocs.Tests/Services/ValidationServiceTests.cs"
       ]
     },
@@ -1633,7 +1674,11 @@
     },
     {
       "module": "Services/Statechart/PosixStatechartChannel.cs",
-      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixChannelTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartSocket.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixChannelTests.cs"]
     },
     {
       "module": "Services/Statechart/PosixStatechartFiles.cs",

@@ -339,6 +339,18 @@ A viewer module absent from the LCOV report passes only if the walker proves it 
 every top-level statement a type, an interface or a type-only import or export, as
 `viewer/src/api/types.ts` is. Any other absent module is a measurement gap.
 
+## Python platform coverage
+
+Python coverage has explicit platform ownership under
+[DR 048's platform measurement amendment](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md).
+`DynaDocs.Tests/coverage/python-platforms.json` assigns native
+callables to Windows; Linux measures every other target and every mixed module's neutral
+remainder. Source pins make selection drift a measurement error. Both hosted CI jobs run the
+whole Python suite, apply the same 80% line / 60% branch / HCRAP 20 policy to their portions, and
+publish the unfiltered native measurements. The dependent union gate requires two passing gates
+on the same clean candidate and accounts for every line, branch and callable body. Neither a
+Linux-only result nor inherited-failure attribution establishes combined coverage success.
+
 ## Recorded gate correction: three dynamic Vulture uses
 
 DR 048 admits a gate only where a violation is certainly wrong at a threshold where no exception

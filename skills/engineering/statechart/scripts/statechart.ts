@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawn } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -32,21 +32,6 @@ const stopped = new Promise<void>((resolve) => {
     });
 });
 
-let flags;
-let specFile;
-try {
-  const args = parseArgs({
-    allowPositionals: true,
-    options: { config: { type: "string" }, view: { type: "string" }, out: { type: "string" } },
-  });
-  flags = args.values;
-  [specFile] = args.positionals;
-  if (args.positionals.length !== 1) throw new Error("Give one SPEC.tla.");
-} catch (error) {
-  console.error(`${messageOf(error)}\n\n${USAGE}`);
-  process.exit(2);
-}
-
 const codeOf = (error: unknown) =>
   error instanceof Error && "code" in error ? error.code : undefined;
 
@@ -76,6 +61,29 @@ function destination(out: string) {
   return dest;
 }
 
+type Flags = { config?: string; view?: string; out?: string };
+
+function parseCommand(): { flags: Flags; specFile: string } {
+  try {
+    const args = parseArgs({
+      allowPositionals: true,
+      options: { config: { type: "string" }, view: { type: "string" }, out: { type: "string" } },
+    });
+    if (args.positionals.length !== 1) throw new Error("Give one SPEC.tla.");
+    return { flags: args.values, specFile: args.positionals[0] };
+  } catch (error) {
+    console.error(`${messageOf(error)}\n\n${USAGE}`);
+    process.exit(2);
+  }
+}
+
+type Run = {
+  stage: string;
+  tmp?: string;
+  janitor?: ReturnType<typeof startJanitor>;
+  closeGuard?: () => Promise<void>;
+};
+
 function startWorker(stage: string, spec: string, config: string, tmp: string, view?: string) {
   const runtime = process.versions.deno
     ? ["run", "--quiet", "--no-prompt", "--allow-read", "--allow-write", "--allow-run", "--allow-env"]
@@ -85,8 +93,8 @@ function startWorker(stage: string, spec: string, config: string, tmp: string, v
   ], {
     detached: true,
     windowsHide: true,
-    stdio: [process.platform === "win32" ? "pipe" : "ignore", "inherit", "inherit"],
-    env: { ...process.env, TMPDIR: tmp, ...(process.platform === "win32" ? { TEMP: tmp, TMP: tmp } : {}) },
+    stdio: [host.workerStdin, "inherit", "inherit"],
+    env: { ...process.env, ...host.temp(tmp) },
   });
 }
 
@@ -134,16 +142,53 @@ function startJanitor(worker: number, stage: string, tmp: string) {
   };
 }
 
-async function cleanupPosix(stage: string, tmp: string | undefined, janitor?: ReturnType<typeof startJanitor>) {
+async function superviseOnPosix(worker: ChildProcess, exited: Promise<number>, run: Run) {
+  // Retain a worker spawn error even when janitor setup fails before the first await.
+  const settled = exited.then(() => undefined, (error: unknown) => error);
+  try {
+    if (worker.pid === undefined) {
+      const error = await settled;
+      throw error ?? new Error("Statechart worker did not start.");
+    }
+    run.janitor = startJanitor(worker.pid, run.stage, run.tmp as string);
+    await Promise.race([stopped, exited, run.janitor.closed.then((error) => {
+      throw error ?? new Error("Statechart cleanup process closed before drain.");
+    })]);
+  } catch (error) {
+    const errors = [error];
+    try { if (worker.pid !== undefined) await killGroup(worker.pid); }
+    catch (cleanupError) { errors.push(cleanupError); }
+    const workerError = await settled;
+    if (workerError !== undefined && workerError !== error) errors.push(workerError);
+    throw new AggregateError(errors, errors.map(messageOf).join("\n"));
+  }
+  await killGroup(worker.pid);
+}
+
+async function cleanupOnPosix(run: Run, failure: unknown) {
   const errors: unknown[] = [];
-  for (const folder of [stage, tmp]) {
+  for (const folder of [run.stage, run.tmp]) {
     if (!folder) continue;
     try { fs.rmSync(folder, { recursive: true, force: true }); }
     catch (error) { errors.push(error); }
   }
-  try { await janitor?.drain(); }
+  try { await run.janitor?.drain(); }
   catch (error) { errors.push(error); }
-  return errors;
+  if (!errors.length) return;
+  if (failure !== undefined) errors.unshift(failure);
+  throw new AggregateError(errors, errors.map(messageOf).join("\n"));
+}
+
+async function superviseOnWindows(worker: ChildProcess, exited: Promise<number>, run: Run) {
+  run.closeGuard = await guardWorker(worker, run.stage, run.tmp as string);
+  await Promise.race([stopped, exited]);
+  if (stop) await run.closeGuard();
+}
+
+async function cleanupOnWindows(run: Run) {
+  if (run.closeGuard) await run.closeGuard();
+  fs.rmSync(run.stage, { recursive: true, force: true });
+  if (run.tmp) fs.rmSync(run.tmp, { recursive: true, force: true });
 }
 
 function showReport(dest: string, out: string) {
@@ -151,12 +196,44 @@ function showReport(dest: string, out: string) {
   console.log(`\nWrote ${out}`);
 }
 
+type Host = {
+  workerStdin: "ignore" | "pipe";
+  temp(tmp: string): NodeJS.ProcessEnv;
+  supervise(worker: ChildProcess, exited: Promise<number>, run: Run): Promise<void>;
+  cleanup(run: Run, failure: unknown): Promise<void>;
+  replaceEmpty(dest: string): void;
+  published(dest: string, out: string): void;
+  cleaned(dest: string, out: string): void;
+};
+
+// POSIX holds the worker's process group behind a janitor and shows the report once cleanup has
+// drained it. Windows holds it in a Job Object, and shows the report as soon as it is published.
+const posix: Host = {
+  workerStdin: "ignore",
+  temp: (tmp: string) => ({ TMPDIR: tmp }),
+  supervise: superviseOnPosix,
+  cleanup: cleanupOnPosix,
+  replaceEmpty: () => {},
+  published: () => {},
+  cleaned: showReport,
+};
+const windows: Host = {
+  workerStdin: "pipe",
+  temp: (tmp: string) => ({ TMPDIR: tmp, TEMP: tmp, TMP: tmp }),
+  supervise: superviseOnWindows,
+  cleanup: cleanupOnWindows,
+  // Windows cannot replace even an empty directory with rename. rmdir is
+  // deliberately non-recursive: a file arriving during the run is kept.
+  replaceEmpty: (dest: string) => { if (fs.existsSync(dest)) fs.rmdirSync(dest); },
+  published: showReport,
+  cleaned: () => {},
+};
+const host = process.platform === "win32" ? windows : posix;
+
 function publish(done: string, dest: string, out: string) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   try {
-    // Windows cannot replace even an empty directory with rename. rmdir is
-    // deliberately non-recursive: a file arriving during the run is kept.
-    if (process.platform === "win32" && fs.existsSync(dest)) fs.rmdirSync(dest);
+    host.replaceEmpty(dest);
     fs.renameSync(done, dest);
   } catch (error) {
     if (codeOf(error) !== "ENOTEMPTY" && codeOf(error) !== "EEXIST") throw error;
@@ -165,10 +242,26 @@ function publish(done: string, dest: string, out: string) {
       { cause: error },
     );
   }
-  if (process.platform === "win32") showReport(dest, out);
+  host.published(dest, out);
 }
 
-try {
+function outcomeOf(worker: ChildProcess, verdict: number, done: string, dest: string, out: string) {
+  if (stop) {
+    console.error(`${stop} stopped the check, so the command wrote nothing.`);
+    return { exitCode: 128 + os.constants.signals[stop], published: false };
+  }
+  if (worker.signalCode) {
+    console.error(`${worker.signalCode} killed the check, so the command wrote nothing.`);
+    return { exitCode: 2, published: false };
+  }
+  if ((verdict === 0 || verdict === 1) && fs.existsSync(done)) {
+    publish(done, dest, out);
+    return { exitCode: verdict, published: true };
+  }
+  return { exitCode: 2, published: false };
+}
+
+async function checkSpec(specFile: string, flags: Flags) {
   const configFile = flags.config ?? specFile.replace(/\.tla$/, ".cfg");
   if (!fs.existsSync(configFile))
     throw new Error(`Cannot find the TLC config ${configFile}. Pass --config FILE.`);
@@ -177,78 +270,33 @@ try {
 
   let base = path.dirname(dest);
   while (!fs.existsSync(base)) base = path.dirname(base);
-  const stage = fs.mkdtempSync(path.join(base, `.${path.basename(dest)}.statechart-`));
-  const done = path.join(stage, "done");
-  let tmp: string | undefined;
-  let janitor: ReturnType<typeof startJanitor> | undefined;
-  let closeGuard: (() => Promise<void>) | undefined;
+  const run: Run = { stage: fs.mkdtempSync(path.join(base, `.${path.basename(dest)}.statechart-`)) };
   let failure: unknown;
-  let published = false;
-  let exitCode: number;
+  let outcome: ReturnType<typeof outcomeOf>;
   try {
-    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-"));
-    const worker = startWorker(stage, specFile, configFile, tmp, flags.view);
+    run.tmp = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-"));
+    const worker = startWorker(run.stage, specFile, configFile, run.tmp, flags.view);
     const exited = new Promise<number>((resolve, reject) => {
       worker.on("error", reject);
       worker.on("exit", (code) => resolve(code ?? 2));
     });
-    if (process.platform === "win32") closeGuard = await guardWorker(worker, stage, tmp);
-    else {
-      // Retain a worker spawn error even when janitor setup fails before the first await.
-      const settled = exited.then(() => undefined, (error: unknown) => error);
-      try {
-        if (worker.pid === undefined) {
-          const error = await settled;
-          throw error ?? new Error("Statechart worker did not start.");
-        }
-        janitor = startJanitor(worker.pid, stage, tmp);
-        await Promise.race([stopped, exited, janitor.closed.then((error) => {
-          throw error ?? new Error("Statechart cleanup process closed before drain.");
-        })]);
-      } catch (error) {
-        const errors = [error];
-        try { if (worker.pid !== undefined) await killGroup(worker.pid); }
-        catch (cleanupError) { errors.push(cleanupError); }
-        const workerError = await settled;
-        if (workerError !== undefined && workerError !== error) errors.push(workerError);
-        throw new AggregateError(errors, errors.map(messageOf).join("\n"));
-      }
-    }
-    if (process.platform === "win32") await Promise.race([stopped, exited]);
-    if (closeGuard) {
-      if (stop) await closeGuard();
-    } else await killGroup(worker.pid as number);
+    await host.supervise(worker, exited, run);
     const verdict = await exited;
-    janitor?.check();
-    if (stop) {
-      console.error(`${stop} stopped the check, so the command wrote nothing.`);
-      exitCode = 128 + os.constants.signals[stop];
-    } else if (worker.signalCode) {
-      console.error(`${worker.signalCode} killed the check, so the command wrote nothing.`);
-      exitCode = 2;
-    } else if ((verdict === 0 || verdict === 1) && fs.existsSync(done)) {
-      publish(done, dest, out);
-      published = true;
-      exitCode = verdict;
-    } else exitCode = 2;
+    run.janitor?.check();
+    outcome = outcomeOf(worker, verdict, path.join(run.stage, "done"), dest, out);
   } catch (error) {
     failure = error;
     throw error;
   } finally {
-    if (process.platform === "win32") {
-      if (closeGuard) await closeGuard();
-      fs.rmSync(stage, { recursive: true, force: true });
-      if (tmp) fs.rmSync(tmp, { recursive: true, force: true });
-    } else {
-      const errors = await cleanupPosix(stage, tmp, janitor);
-      if (errors.length) {
-        if (failure !== undefined) errors.unshift(failure);
-        throw new AggregateError(errors, errors.map(messageOf).join("\n"));
-      }
-    }
+    await host.cleanup(run, failure);
   }
-  if (process.platform !== "win32" && published) showReport(dest, out);
-  process.exit(exitCode);
+  if (outcome.published) host.cleaned(dest, out);
+  return outcome.exitCode;
+}
+
+const command = parseCommand();
+try {
+  process.exit(await checkSpec(command.specFile, command.flags));
 } catch (error) {
   console.error(messageOf(error));
   process.exit(2);

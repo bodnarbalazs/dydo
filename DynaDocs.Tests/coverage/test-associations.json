@@ -22,8 +22,60 @@
       "tests": ["DynaDocs.Tests/Statechart/StatechartCheckerTests.cs"]
     },
     {
+      "module": "skills/engineering/statechart/scripts/checker.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/checker.test.ts", "skills/engineering/statechart/scripts/test/tlc-bootstrap.test.ts"]
+    },
+    {
       "module": "skills/engineering/statechart/scripts/java/build.py",
       "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_java_build.py"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/frontends/dot.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/messages.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/lifetime.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/native-gate.test.ts", "skills/engineering/statechart/scripts/test/native-entry.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/native-entry.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/native-entry.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/posix-lifetime.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/posix-lifetime.test.ts", "skills/engineering/statechart/scripts/test/native-entry.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/render.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/native-render.test.ts", "skills/engineering/statechart/scripts/test/native-entry.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/run.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/cli.test.ts", "skills/engineering/statechart/scripts/test/corpus.test.ts", "skills/engineering/statechart/scripts/test/adaptation.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/statechart.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/cli.test.ts", "skills/engineering/statechart/scripts/test/adaptation.test.ts", "skills/engineering/statechart/scripts/test/acceptance.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/java.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/corpus.test.ts", "skills/engineering/statechart/scripts/test/cli.test.ts", "skills/engineering/statechart/scripts/test/tlc-out.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/tlc.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/corpus.test.ts", "skills/engineering/statechart/scripts/test/cli.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/windows-cleanup.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/adaptation.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/windows.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/windows.test.ts", "skills/engineering/statechart/scripts/test/adaptation.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/worker.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/cli.test.ts"]
     },
     {
       "module": "skills/engineering/verify-dydo/scripts/owned_process.py",

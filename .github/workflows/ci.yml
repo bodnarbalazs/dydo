@@ -2,8 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, 'feature/**']
   pull_request:
+
+# A newer first-attempt push to the same feature branch cancels its superseded run. Every other
+# run, a master/main push, a pull request or a rerun (run_attempt > 1), has a group of its own, so
+# a rerun of a superseded run neither cancels the tip nor is cancelled by it. Group names are
+# case-insensitive; feature branches are lowercase feature/<project-slug>.
+concurrency:
+  group: ci-${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/') && github.run_attempt == 1 && github.ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   python-coverage:
@@ -59,6 +67,14 @@ jobs:
 
       - name: Install locked coverage dependencies
         run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
+
+      # The statechart typecheck tests compile with the viewer's locked TypeScript and node types,
+      # and the package's own test files import its locked dependencies.
+      - name: Install viewer dependencies
+        run: pnpm -C viewer install --frozen-lockfile
+
+      - name: Install statechart test dependencies
+        run: pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile
 
       - name: Prepare native evidence directories
         shell: bash

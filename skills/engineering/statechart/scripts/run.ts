@@ -78,6 +78,11 @@ type ChildResult = {
   error: ExecFileException | undefined;
 };
 
+const childStatus = (error: ExecFileException | null) => {
+  if (!error) return 0;
+  return typeof error.code === "number" ? error.code : null;
+};
+
 const runChild = (file: string, args: string[], options: { cwd: string; env: NodeJS.ProcessEnv }) =>
   new Promise<ChildResult>((resolve) => {
     execFile(
@@ -86,7 +91,7 @@ const runChild = (file: string, args: string[], options: { cwd: string; env: Nod
       { encoding: "utf8", maxBuffer: 1 << 30, ...options, windowsHide: true },
       (error, stdout, stderr) =>
         resolve({
-          status: error ? (typeof error.code === "number" ? error.code : null) : 0,
+          status: childStatus(error),
           stdout,
           stderr,
           error: typeof error?.code === "string" ? error : undefined,
@@ -272,6 +277,85 @@ function* only(marks: Iterable<Mark>, rules: Set<string>) {
   }
 }
 
+type Judging = {
+  verdicts: Map<string, Verdict>;
+  states: { distinct: number; initial: number; complete: boolean; cut: boolean };
+  specFile: string;
+};
+
+const decide = (judging: Judging, rule: Rule, outcome: Outcome, r?: FileResult) =>
+  judging.verdicts.set(ruleKey(rule), { rule, outcome, messages: r && messagesOf(r.output) });
+
+function splitProperties(judging: Judging, group: Rule[], r: FileResult, broke: Break) {
+  if (broke.kind === "temporal") {
+    judging.states.complete = true;
+    for (const rule of group) if (rule.kind !== "property") decide(judging, rule, "holds");
+  }
+  const pending: Rule[][] = [];
+  const rest: Rule[] = [];
+  for (const rule of group)
+    if (rule.kind === "property") pending.push([rule]);
+    else if (!judging.verdicts.has(ruleKey(rule))) rest.push(rule);
+  if (pending.length !== 1) return [rest, ...pending];
+  decide(judging, pending[0][0], "broken", r);
+  return undefined;
+}
+
+function settle(
+  judging: Judging,
+  group: Rule[],
+  r: FileResult,
+  { broke, distinct }: ReturnType<typeof readVerdict>,
+  bounded: boolean,
+): Rule[][] | undefined {
+  const rule = broke && brokenRule(group, broke);
+  if (rule) decide(judging, rule, "broken", r);
+  else if (bounded && distinct >= RERUN_STATES && (r.status === 0 || broke?.kind === "temporal")) {
+    judging.states.cut = true;
+    for (const each of group) decide(judging, each, "not checked");
+  } else if (r.status === 0) {
+    judging.states.complete = true;
+    for (const each of group) decide(judging, each, "holds");
+  } else if (broke && group.some((each) => each.kind === "property"))
+    return splitProperties(judging, group, r, broke);
+  else
+    throw new Error(
+      `TLC exited ${r.status} on ${judging.specFile}, but its output names no rule that broke:\n${tail(r)}`,
+    );
+  return undefined;
+}
+
+async function judge(
+  judging: Judging,
+  all: Rule[],
+  run: (name: string, group: Rule[], bounded: boolean) => Promise<FileResult>,
+) {
+  const groups = [all];
+  let first: FileResult | undefined;
+  let stop: Stop | undefined;
+  for (let k = 1; groups.length;) {
+    const group = groups[0].filter((rule) => !judging.verdicts.has(ruleKey(rule)));
+    if (first && !group.length) {
+      groups.shift();
+      continue;
+    }
+    const bounded = first !== undefined && !judging.states.complete;
+    const r = await run(`verdict-${k++}`, group, bounded);
+    first ??= r;
+    const found = readVerdict(messagesOf(r.output));
+    judging.states.distinct = Math.max(judging.states.distinct, found.distinct);
+    judging.states.initial = Math.max(judging.states.initial, found.initial);
+    if (exitClass(r.status) === 2) {
+      stop = stopOf(r);
+      break;
+    }
+    const split = settle(judging, group, r, found, bounded);
+    if (split) groups.splice(0, 1, ...split);
+  }
+  for (const rule of all) if (!judging.verdicts.has(ruleKey(rule))) decide(judging, rule, "not checked");
+  return { first: first!, stop, states: judging.states };
+}
+
 export async function check(specFile: string, configFile: string): Promise<CheckResult> {
   const cfg = readConfig({ file: configFile, text: fs.readFileSync(configFile, "utf8") });
   const checks = readChecks({ configFile, config: cfg });
@@ -318,74 +402,29 @@ export async function check(specFile: string, configFile: string): Promise<Check
     const rules = stateRules(spec);
     const all = [...rules];
     for (const name of spec.properties) all.push({ kind: "property", name });
-    const verdicts = new Map<string, Verdict>();
-    const decide = (rule: Rule, outcome: Outcome, r?: FileResult) =>
-      verdicts.set(ruleKey(rule), { rule, outcome, messages: r && messagesOf(r.output) });
-    const judge = async () => {
-      const groups = [all];
-      let first: FileResult | undefined;
-      let stop: Stop | undefined;
-      const states = { distinct: 0, initial: 0, complete: false, cut: false };
-      for (let k = 1; groups.length;) {
-        const group: Rule[] = [];
-        for (const rule of groups[0]) if (!verdicts.has(ruleKey(rule))) group.push(rule);
-        if (first && !group.length) {
-          groups.shift();
-          continue;
-        }
-        const name = `verdict-${k++}`;
-        const extra: string[] = [];
-        const invariants = names(group, "invariant");
-        const properties = names(group, "property");
-        if (invariants.length) extra.push(`INVARIANT ${invariants.join(" ")}`);
-        if (properties.length) extra.push(`PROPERTY ${properties.join(" ")}`);
-        const bounded = first !== undefined && !states.complete;
-        if (bounded) extra.push("CONSTRAINT ChartBound");
-        const r = await runJava(name, "dydo.statechart.LoopbackTlc", [
-          "-tool",
-          ...PINNED_FLAGS,
-          ...(names(group, "deadlock").length ? [] : ["-deadlock"]),
-          ...config(name, spec.written, extra),
-          bounded ? "ChartBound" : spec.module,
-        ]);
-        first ??= r;
-        const { broke, distinct, initial } = readVerdict(messagesOf(r.output));
-        states.distinct = Math.max(states.distinct, distinct);
-        states.initial = Math.max(states.initial, initial);
-        const rule = broke && brokenRule(group, broke);
-        const cut = bounded && distinct >= RERUN_STATES;
-        if (exitClass(r.status) === 2) {
-          stop = stopOf(r);
-          break;
-        } else if (rule) decide(rule, "broken", r);
-        else if (cut && (r.status === 0 || broke?.kind === "temporal")) {
-          states.cut = true;
-          for (const rule of group) decide(rule, "not checked");
-        } else if (r.status === 0) {
-          states.complete = true;
-          for (const rule of group) decide(rule, "holds");
-        } else if (broke && properties.length) {
-          if (broke.kind === "temporal") {
-            states.complete = true;
-            for (const rule of group) if (rule.kind !== "property") decide(rule, "holds");
-          }
-          const pending: Rule[][] = [];
-          const rest: Rule[] = [];
-          for (const rule of group)
-            if (rule.kind === "property") pending.push([rule]);
-            else if (!verdicts.has(ruleKey(rule))) rest.push(rule);
-          if (pending.length === 1) decide(pending[0][0], "broken", r);
-          else groups.splice(0, 1, rest, ...pending);
-        } else
-          throw new Error(
-            `TLC exited ${r.status} on ${specFile}, but its output names no rule that broke:\n${tail(r)}`,
-          );
-      }
-      for (const rule of all) if (!verdicts.has(ruleKey(rule))) decide(rule, "not checked");
-      return { first: first!, stop, states };
+    const judging: Judging = {
+      verdicts: new Map<string, Verdict>(),
+      states: { distinct: 0, initial: 0, complete: false, cut: false },
+      specFile,
+    };
+    const verdicts = judging.verdicts;
+    const runVerdict = (name: string, group: Rule[], bounded: boolean) => {
+      const extra: string[] = [];
+      const invariants = names(group, "invariant");
+      const properties = names(group, "property");
+      if (invariants.length) extra.push(`INVARIANT ${invariants.join(" ")}`);
+      if (properties.length) extra.push(`PROPERTY ${properties.join(" ")}`);
+      if (bounded) extra.push("CONSTRAINT ChartBound");
+      return runJava(name, "dydo.statechart.LoopbackTlc", [
+        "-tool",
+        ...PINNED_FLAGS,
+        ...(names(group, "deadlock").length ? [] : ["-deadlock"]),
+        ...config(name, spec.written, extra),
+        bounded ? "ChartBound" : spec.module,
+      ]);
     };
     fs.writeFileSync(path.join(dir, "ChartBound.tla"), boundRun(spec.module));
-    const judged = await judge();
+    const judged = await judge(judging, all, runVerdict);
     const exit = exitClass(judged.first.status);
     const failed = (r: FileResult) =>
       new Error(`TLC could not check ${specFile} (exit ${r.status}):\n${stopOf(r).message}`);
@@ -414,7 +453,7 @@ export async function check(specFile: string, configFile: string): Promise<Check
       messages: messagesOf(judged.first.output),
       rules: checked,
     };
-    if (judged.states.distinct <= CHART_STATES) {
+    const chart = async () => {
       const tag = `chart-${randomBytes(16).toString("hex")}`;
       fs.writeFileSync(path.join(dir, "ChartRun.tla"), chartRun(spec, tag));
       const drawn = await runJava("ChartRun", "dydo.statechart.LoopbackTlc", [
@@ -429,57 +468,39 @@ export async function check(specFile: string, configFile: string): Promise<Check
       ]);
       const file = path.join(dir, "graph.dot");
       if (!fs.existsSync(file)) throw failed(drawn);
-      if (readVerdict(messagesOf(drawn.output)).distinct <= CHART_STATES) {
-        const graph = parseDot(fileLines(file));
-        const find = finder(graph, spec.variables);
-        const drawing = drawn.status === 0 ? undefined : { status: drawn.status };
-        const broken = new Set<string>();
-        for (const { rule, outcome } of verdicts.values())
-          if (rule.kind === "invariant" && outcome === "broken") broken.add(rule.name);
-        const marks = only(readMarks(readMessages(fileLines(drawn.stdout)), tag), broken);
-        const past = mark(graph, marks, spec.variables, rules, find);
-        const excludes = hasSection(spec, "ACTION_CONSTRAINT");
-        for (const rule of rules) {
-          const { outcome, messages } = must(verdicts, ruleKey(rule));
-          if (
-            rule.kind === "deadlock" &&
-            outcome === "broken" &&
-            !drawing &&
-            !hasSection(spec, "CONSTRAINT", "ACTION_CONSTRAINT")
-          )
-            deadEnds(graph, rule);
-          if (outcome !== "broken" || !messages) continue;
-          const counterexample = readCounterexample(messages);
-          if (
-            !drawing ||
-            lasso(graph, { seq: counterexample, loop: undefined }, spec.variables, find)
-          )
-            addPast(graph, counterexample, spec.variables, rule, past, excludes, find);
-        }
-        const properties = propertiesWith((trace) => lasso(graph, trace, spec.variables, find));
-        return {
-          ...common,
-          graph,
-          paths: undefined,
-          properties,
-          drawing,
-        };
+      if (readVerdict(messagesOf(drawn.output)).distinct > CHART_STATES) return undefined;
+      const graph = parseDot(fileLines(file));
+      const find = finder(graph, spec.variables);
+      const drawing = drawn.status === 0 ? undefined : { status: drawn.status };
+      const broken = new Set<string>();
+      for (const { rule, outcome } of verdicts.values())
+        if (rule.kind === "invariant" && outcome === "broken") broken.add(rule.name);
+      const marks = only(readMarks(readMessages(fileLines(drawn.stdout)), tag), broken);
+      const past = mark(graph, marks, spec.variables, rules, find);
+      const excludes = hasSection(spec, "ACTION_CONSTRAINT");
+      const deadEndsDrawn = !drawing && !hasSection(spec, "CONSTRAINT", "ACTION_CONSTRAINT");
+      for (const rule of rules) {
+        const { outcome, messages } = must(verdicts, ruleKey(rule));
+        if (rule.kind === "deadlock" && outcome === "broken" && deadEndsDrawn) deadEnds(graph, rule);
+        if (outcome !== "broken" || !messages) continue;
+        const counterexample = readCounterexample(messages);
+        if (!drawing || lasso(graph, { seq: counterexample, loop: undefined }, spec.variables, find))
+          addPast(graph, counterexample, spec.variables, rule, past, excludes, find);
       }
-    }
-    const drawn = pathGraph(spec.variables);
-    const paths: Bug[] = [];
-    for (const rule of rules) {
-      const { outcome, messages } = must(verdicts, ruleKey(rule));
-      if (outcome === "broken" && messages)
-        paths.push(drawn.bug(rule, readCounterexample(messages)));
-    }
-    return {
-      ...common,
-      graph: drawn.graph,
-      paths,
-      properties: propertiesWith(drawn.lasso),
-      drawing: undefined,
+      const properties = propertiesWith((trace) => lasso(graph, trace, spec.variables, find));
+      return { graph, paths: undefined, properties, drawing };
     };
+    const bugPaths = () => {
+      const drawn = pathGraph(spec.variables);
+      const paths: Bug[] = [];
+      for (const rule of rules) {
+        const { outcome, messages } = must(verdicts, ruleKey(rule));
+        if (outcome === "broken" && messages) paths.push(drawn.bug(rule, readCounterexample(messages)));
+      }
+      return { graph: drawn.graph, paths, properties: propertiesWith(drawn.lasso), drawing: undefined };
+    };
+    const charted = judged.states.distinct <= CHART_STATES ? await chart() : undefined;
+    return { ...common, ...(charted ?? bugPaths()) };
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

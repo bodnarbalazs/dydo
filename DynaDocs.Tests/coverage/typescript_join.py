@@ -14,16 +14,21 @@ def _record_line(record, tag, value):
         record["functions"].setdefault(int(line), []).append(name)
     elif tag == "FNDA":
         hits, name = value.split(",", 1)
-        record["calls"][name] = int(hits)
+        record["calls"].setdefault(name, []).append(int(hits))
 
 
 def parse_lcov(text, root, base):
-    """Records keyed by the repository path of each SF; LCOV names sources relative to `base`."""
-    records, current = {}, None
+    """Records keyed by the repository path of each SF; LCOV names sources relative to `base`.
+    A source outside the repository, such as a managed tool a test loads, can be no target."""
+    records, current, root = {}, None, Path(root).resolve()
     for raw in text.splitlines():
         tag, _, value = raw.strip().partition(":")
         if tag == "SF":
-            path = (Path(base) / value).resolve().relative_to(Path(root).resolve()).as_posix()
+            source = (Path(base) / value).resolve()
+            if not source.is_relative_to(root):
+                current = None
+                continue
+            path = source.relative_to(root).as_posix()
             if path in records:
                 raise ValueError(f"Duplicate Istanbul LCOV record: {path}")
             current = records[path] = {"lines": {}, "branches": {}, "functions": {}, "calls": {}}
@@ -45,9 +50,15 @@ def _line_owners(methods, lines):
 
 
 def _call_count(method, record):
-    """Istanbul's own function counter, when exactly one function starts on the callable's line."""
+    """Istanbul's own function counter, when exactly one function starts on the callable's line.
+    Node's reporter can name two functions alike; their FNDA counters follow their FN lines' order."""
     names = record["functions"].get(method["line"], [])
-    return record["calls"].get(names[0], 0) if len(names) == 1 else None
+    if len(names) != 1:
+        return None
+    declared = [line for line, others in record["functions"].items() for other in others if other == names[0]]
+    counts = record["calls"].get(names[0], [])
+    position = declared.index(method["line"])
+    return counts[position] if position < len(counts) else 0
 
 
 def _measured(method, record, owners):

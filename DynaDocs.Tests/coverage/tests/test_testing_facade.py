@@ -1153,8 +1153,12 @@ class TestingFacadeTests(unittest.TestCase):
     def test_active_manifest(self):
         data = json.loads((ROOT / 'DynaDocs.Tests/coverage/gap_check.json').read_text())
         self.assertEqual('DynaDocs.Tests/coverage/results', data['artifactRoot'])
-        dotnet, python, node, viewer = data['stacks']
+        dotnet, python, node, viewer, statechart = data['stacks']
         self.assertEqual({'kind': 'current-python', 'argv': ['-u', 'DynaDocs.Tests/coverage/run_tests.py', '--']}, dotnet['capabilities']['test']['command'])
+        self.assertEqual({'kind': 'argv', 'argv': ['pnpm', '-C', 'skills/engineering/statechart/scripts', 'run', 'test']},
+                         statechart['capabilities']['test']['command'])
+        self.assertEqual(viewer['isolation'], statechart['isolation'])
+        self.assertEqual(viewer['capabilities']['mutation'], statechart['capabilities']['mutation'])
         self.assertEqual({'requirement': 'git-worktree-copy-working-changes', 'evidence': {'state': 'verified', 'kind': 'adapter', 'path': 'DynaDocs.Tests/coverage/run_tests.py'}}, dotnet['isolation'])
         self.assertEqual({'kind': 'current-python', 'argv': ['-m', 'unittest', 'discover', '-s', 'DynaDocs.Tests/coverage/tests', '-p', 'test_*.py']}, python['capabilities']['test']['command'])
         self.assertEqual(['node', 'DynaDocs.Tests/coverage/node_tests.cjs'], node['capabilities']['test']['command']['argv'])
@@ -1163,7 +1167,7 @@ class TestingFacadeTests(unittest.TestCase):
         self.assertEqual(unavailable('No mutation mechanism is adopted for TypeScript; the DYD-103 lane the other stacks cite is canceled'),
                          viewer['capabilities']['mutation'])
         for item in data['stacks']:
-            if item['name'] != 'viewer':
+            if item['name'] not in ('viewer', 'statechart'):
                 self.assertEqual(unavailable('Pending DYD-103'), item['capabilities']['mutation'])
             for capability in ['static', 'coverage']:
                 row = item['capabilities'][capability]
@@ -1173,8 +1177,8 @@ class TestingFacadeTests(unittest.TestCase):
                 self.assertEqual([{'path': f'DynaDocs.Tests/coverage/results/adapters/{item["name"]}-{capability}.json', 'required': True}], row['artifacts'])
                 if capability == 'coverage':
                     collector = {'dotnet': 'csharp-coverage', 'python': 'python-coverage', 'node': 'javascript-coverage',
-                                 'viewer': 'typescript-coverage'}[item['name']]
-                    verdict = 'suite_exit' if item['name'] == 'viewer' else 'child_exit'
+                                 'viewer': 'typescript-coverage', 'statechart': 'typescript-coverage'}[item['name']]
+                    verdict = 'suite_exit' if item['name'] in ('viewer', 'statechart') else 'child_exit'
                     self.assertEqual({'exit': ['collectors', collector, 'facts', verdict],
                                       'failure': ['collectors', collector, 'findings', {'gate': 'functional'}]}, row['suiteVerdict'])
 

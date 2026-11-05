@@ -814,6 +814,33 @@ public class GuardPrReadyTests : IntegrationTestBase
             ["git status --short; gh pr create -F dydo/agents/body.md 2>&1 | cat"], toolName: "PowerShell"));
     }
 
+    // Ruling 7: the guard reads the body file only for a lone gh pr create, so any other command on
+    // the line, a redirection or an expansion keeps the warning, though the file holds the block.
+    // With DIFF_OPTIONS=--output=dydo/agents/body.md exported, an earlier git diff writes the file.
+    [Fact]
+    public async Task PrCreate_BodyFileOnALineHoldingMoreThanTheCall_Warns()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+
+        Assert.Empty(await Misses(denied: true,
+        [
+            "dydo pr-ready --body dydo/agents/body.md && gh pr create --title t -F dydo/agents/body.md",
+            "git status && gh pr create -F dydo/agents/body.md",
+            "echo x; gh pr create -F dydo/agents/body.md",
+            "gh pr create -F dydo/agents/body.md 2>&1 | cat",
+            "gh pr create -F dydo/agents/body.md < /dev/null",
+            "gh pr create -F dydo/agents/body.md && echo done",
+            "gh pr create -F dydo/agents/body.md; true",
+            "gh pr create --title \"$TITLE\" -F dydo/agents/body.md",
+            "echo \"$(git diff $DIFF_OPTIONS)\" && gh pr create --title \"DYD-1 fix: thing\" -F dydo/agents/body.md",
+            "git diff \"$DIFF_OPTION\" && gh pr create --title t -F dydo/agents/body.md",
+        ], ReviewBlockWarning));
+        Assert.Empty(await Misses(denied: true,
+            ["git status; gh pr create -F dydo/agents/body.md", "gh pr create -F dydo/agents/body.md 2>&1 | cat"],
+            ReviewBlockWarning, toolName: "PowerShell"));
+    }
+
     // A directory beside the test's tree, outside it, holding a body with the review block.
     private sealed class OutsideDirectory : IDisposable
     {

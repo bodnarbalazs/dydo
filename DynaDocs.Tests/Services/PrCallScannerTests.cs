@@ -857,4 +857,27 @@ public class PrCallScannerTests
 
         Assert.Equal(file, PrCallScanner.BodyFileAt(command, launch, Enum.Parse<ShellDialect>(dialect)));
     }
+
+    // Ruling 7: the body file is read only when gh pr create is the line's one command. Anything
+    // joined before or after it, a redirection, an expansion or an assignment names no file.
+    [Theory]
+    [InlineData("Posix", "dydo pr-ready --body a.md && gh pr create --title t -F a.md")]
+    [InlineData("Posix", "git status && gh pr create -F a.md")]
+    [InlineData("Posix", "echo x; gh pr create -F a.md")]
+    [InlineData("Posix", "gh pr create -F a.md 2>&1 | cat")]
+    [InlineData("Posix", "gh pr create -F a.md < /dev/null")]
+    [InlineData("Posix", "gh pr create -F a.md && echo done")]
+    [InlineData("Posix", "gh pr create -F a.md; true")]
+    [InlineData("Posix", "gh pr create --title \"$TITLE\" -F a.md")]
+    [InlineData("Posix", "FOO=1 gh pr create -F a.md")]
+    [InlineData("Posix", "echo \"$(git diff $DIFF_OPTIONS)\" && gh pr create --title \"DYD-1 fix: thing\" -F dydo/agents/body.md")]
+    [InlineData("Posix", "git diff \"$DIFF_OPTION\" && gh pr create --title t -F dydo/agents/body.md")]
+    [InlineData("PowerShell", "git status; gh pr create -F a.md")]
+    [InlineData("PowerShell", "gh pr create -F a.md 2>&1 | cat")]
+    public void BodyFile_IsReadOnlyForALoneCall(string dialect, string command)
+    {
+        var launch = command.IndexOf("gh pr create", StringComparison.Ordinal);
+
+        Assert.Null(PrCallScanner.BodyFileAt(command, launch, Enum.Parse<ShellDialect>(dialect)));
+    }
 }

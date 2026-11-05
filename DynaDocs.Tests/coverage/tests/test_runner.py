@@ -795,10 +795,11 @@ class UnconfirmedCleanupExitTests(unittest.TestCase):
             self.assertNotIn("Traceback", stderr)
             self.assertFalse(output.exists(), "the runner created an output nothing published")
 
-    def assert_every_late_interrupt_exits_2(self, job, seam, assurance=False, repeated=False):
+    def assert_every_late_interrupt_exits_2(self, job, seam, assurance=False, repeated=False, platform=None):
         """One run per point a real SIGINT can land at, from the moment cleanup at `seam` proves
         unconfirmed until main() exits: each still exits 2 and names the retained worktree. With
-        `repeated`, a first SIGINT has already landed during that cleanup."""
+        `repeated`, a first SIGINT has already landed during that cleanup. A `platform` pins the
+        sys.platform main() reads, for a case only that platform's branch can reach."""
         point, delivered = 0, True
         while delivered:
             delivered, unconfirmed, lines = False, False, 0
@@ -823,12 +824,13 @@ class UnconfirmedCleanupExitTests(unittest.TestCase):
 
             with self.subTest(point=point), tempfile.TemporaryDirectory() as folder:
                 argv = ("--assurance-output", str(Path(folder) / "published")) if assurance else ()
+                pins = (patch.object(run_tests.sys, "platform", platform),) if platform else ()
                 previous = sys.gettrace()
                 sys.settrace(trace)
                 try:
                     outcome = self.exit_of_main(
                         folder, job, self.subject(0), patch.object(run_tests, seam, side_effect=cleanup),
-                        patch.object(run_tests, "_run_assurance_campaign", return_value=0), argv=argv)
+                        patch.object(run_tests, "_run_assurance_campaign", return_value=0), *pins, argv=argv)
                 except KeyboardInterrupt:
                     outcome = (130, "KeyboardInterrupt escaped main()", MagicMock())
                 finally:
@@ -839,13 +841,15 @@ class UnconfirmedCleanupExitTests(unittest.TestCase):
         self.assertGreater(point, 10, "the trace never reached the unconfirmed cleanup")
 
     def test_an_interrupt_after_unconfirmed_cleanup_cannot_mask_exit_2(self):
-        for platform, job, seam, assurance in (
-                ("linux", run_tests.SUBREAPER, "_end_reaped_descendants", False),
-                ("linux assurance", run_tests.SUBREAPER, "_end_reaped_descendants", True),
-                ("windows job", object(), "_end_job_members", False)):
+        for platform, job, seam, assurance, pin in (
+                ("linux", run_tests.SUBREAPER, "_end_reaped_descendants", False, None),
+                # On win32, main() leaves assurance cleanup to the native job owner (job None), so
+                # only its Linux branch reaches the run's own subreaper cleanup in assurance mode.
+                ("linux assurance", run_tests.SUBREAPER, "_end_reaped_descendants", True, "linux"),
+                ("windows job", object(), "_end_job_members", False, None)):
             for repeated in (False, True):
                 with self.subTest(platform=platform, repeated=repeated):
-                    self.assert_every_late_interrupt_exits_2(job, seam, assurance, repeated)
+                    self.assert_every_late_interrupt_exits_2(job, seam, assurance, repeated, pin)
 
     def tree(self, folder):
         """Every entry under `folder` by relative path: a file's bytes, or None for a directory."""

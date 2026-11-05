@@ -299,7 +299,9 @@ def committed_repository(root):
 
 # The real run_tests.py main() in assurance mode, with git, the campaign and the descendant scan
 # stubbed: real publication records a complete, confirmed campaign, then the runner's own cleanup
-# is unconfirmed.
+# is unconfirmed. main() is pinned to its Linux branch: on win32 it leaves assurance cleanup to the
+# native job owner (job None), so the run's own subreaper cleanup is reachable only on Linux. Every
+# Linux-only call on that path is stubbed, so the pin runs on any platform.
 UNCONFIRMED_CLEANUP_RUNNER = """\
 import sys
 from pathlib import Path
@@ -325,6 +327,7 @@ run_tests.copy_dirty_files = run_tests.materialize_skill_links = lambda worktree
 run_tests.contain_descendants = lambda: run_tests.SUBREAPER
 run_tests._run_assurance_campaign = published
 run_tests._end_reaped_descendants = unconfirmed
+run_tests.sys.platform = "linux"
 run_tests.main()
 """
 

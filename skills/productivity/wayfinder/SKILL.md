@@ -195,7 +195,7 @@ Charting starts from a Linear Project and a loose destination.
    **If this surfaces no fog** (the way to the destination is already clear, the whole journey small
    enough for one session), no map is needed.
 3. **Write the map:** Destination and Notes filled in, Resolutions so far empty, the fog sketched into
-   **Not yet specified**. For shared behavior or decisions needing one current anchor, choose an
+   **Not yet specified**. In a Project an admiral scaffolds, its scaffold recipe commits the Project's spec; this step covers feature specs inside it. For shared behavior or decisions needing one current anchor, choose an
    applicable reviewed architecture plan or feature spec, creating a spec where needed under
    `dydo/reference/feature-spec-convention.md`. Commit a new spec under the map holder's custody and
    make that commit reachable to recipients before relying on its Project-map link; otherwise record

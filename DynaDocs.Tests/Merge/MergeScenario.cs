@@ -72,6 +72,9 @@ internal sealed class MergeScenario : IDisposable
     /// <summary>The host <c>dydo merge</c> asked to talk to.</summary>
     public string? Host { get; private set; }
 
+    /// <summary>The pauses <c>dydo merge</c> asked for between rereads; no test waits for real.</summary>
+    public List<TimeSpan> Waits { get; } = [];
+
     public void Dispose() => LinkSafeDelete.DeleteTree(Root);
 
     public (int Exit, string Stdout, string Stderr) Merge(string? sha = Sha, bool dryRun = false, string? directory = null, string? pin = Tip) =>
@@ -79,7 +82,7 @@ internal sealed class MergeScenario : IDisposable
         {
             Host = host;
             return GitHub;
-        }));
+        }, Waits.Add));
 
     public static string Compare(string baseRef, string head) => $"{Repo}/compare/{baseRef}...{head}?per_page=1";
 

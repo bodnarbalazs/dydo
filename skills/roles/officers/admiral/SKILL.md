@@ -71,7 +71,8 @@ map and how the tickets move, integrate, and finish together.
 1. **Reconcile the board.** On each user wake, check-in tick or `done <key>: merged`, run
    [the check-in](resources/check-in.md); on any other captain return, carry out the authorized
    continuation or fallback through its captain, or record the specific hold, and update the
-   ledger. Never poll running delegates; assignment and AFK labels alone prove no activity.
+   ledger. On every wake, list all open PRs (`gh pr list --limit 1000`) and watch each ticket PR
+   not yet watched. Never poll running delegates; assignment and AFK labels alone prove no activity.
    Resume at the stage the record proves. Process an Inquisition's release through step 7 before
    generic pickable commissioning. Explicit human holds remain; independent authorized work
    proceeds. **Done:** the ledger matches the latest evidence, and every Merge whose turn came is known.

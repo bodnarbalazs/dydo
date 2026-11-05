@@ -32,7 +32,6 @@ running: <who>`, `admiral owes <decision or dispatch>`, `needs the user: <Questi
 ## Tick — the Admiral
 
 - [ ] Handle every delivered return and receipt first, by Method step 1.
-- [ ] List the repository's open PRs (`gh pr list`); watch each ticket PR you aren't watching yet.
 - [ ] You relay a new rule from the user: send it to every lane owner in the ledger, not only those
       you think it affects.
 - [ ] A survey is still running: consume it; dispatch no second one. A failed or lost survey is not running.

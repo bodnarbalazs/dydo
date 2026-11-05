@@ -264,8 +264,7 @@ public static partial class GuardCommand
 
     private static int Decide(GuardContext ctx, OffLimitsService offLimitsService, GuardEnv env)
     {
-        var bashAnalyzer = new BashCommandAnalyzer(ModeSetCallerOf(ctx).Shell,
-            ctx.ToolCwd ?? ctx.Cwd ?? (ctx.HasCliArgs ? Environment.CurrentDirectory : null));
+        var bashAnalyzer = new BashCommandAnalyzer(ModeSetCallerOf(ctx).Shell);
 
         RunDailyValidationIfDue();
 

@@ -1533,28 +1533,20 @@ public class BashCommandAnalyzerTests
         Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
     }
 
-    // The directory a hook call names, a repository's working tree; DYD-422 relief on a line that
-    // runs git needs one.
-    private const string RepoCwd = "/home/agent/repo";
-
     private static readonly ShellDialect[] BashReadings = [ShellDialect.Posix, ShellDialect.Unknown];
-    private static readonly ShellDialect[] PowerShellReadings = [ShellDialect.Unknown, ShellDialect.PowerShell];
 
-    // DYD-422: single-quoted text is literal data, so it makes no write unverifiable, where every
-    // reading holds it as an argument of sed (one s command), printf, echo or grep whose output
-    // reaches only data commands or a file. The write keeps its literal destination.
+    // DYD-422: single-quoted text is literal data, so it makes no write unverifiable, where the whole
+    // line is one sed (one s command), printf or echo and both bash's and PowerShell's readings hold
+    // it as that command's data. The write keeps its literal destination, in every dialect.
     [Theory]
-    [InlineData(GuardRetroCommands.Gs02SedBacktickCommit, "skills/roles/officers/issue-captain/SKILL.md")]
-    [InlineData(GuardRetroCommands.Gs02SedBacktickSingleLine, "dydo/guides/ripple-e1-activation.md")]
     [InlineData("sed -i 's/`x`/y/' f", "f")]
     [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md", "notes.md")]
     [InlineData("echo 'cost: $5 and `date`' > notes.md", "notes.md")]
-    [InlineData("printf '%s\\n' 'a $HOME' | grep '$HOME' > notes.md", "notes.md")]
     public void Analyze_SingleQuotedLiteralDataWrite_IsNoBypass(string command, string destination)
     {
-        foreach (var dialect in BashReadings)
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
         {
-            var result = new BashCommandAnalyzer(dialect, RepoCwd).Analyze(command);
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
 
             Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
             Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == destination);
@@ -1591,25 +1583,14 @@ public class BashCommandAnalyzerTests
     public void Analyze_FdRedirectionToAGitPath_KeepsTheBypass(string command)
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
-            Assert.True(new BashCommandAnalyzer(dialect, RepoCwd).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+            Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
     }
 
-    // A line that runs git keeps its relief while it writes no path git reads as code.
+    // Single-quoted text no reading certifies as literal data is searched as on master (DYD-421): the
+    // GS-02 sed writes chain git, so they are no single data command.
     [Theory]
-    [InlineData("printf '%s' '$(date)' > docs/.github-notes.md; git diff")]
-    [InlineData("sed -i 's/`x`/y/' docs/git/config.md && git add docs/git/config.md")]
-    public void Analyze_GitLineWritingNoGitPath_KeepsItsRelief(string command)
-    {
-        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
-        {
-            var result = new BashCommandAnalyzer(dialect, RepoCwd).Analyze(command);
-
-            Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
-        }
-    }
-
-    // Single-quoted text no reading certifies as literal data is searched as on master (DYD-421).
-    [Theory]
+    [InlineData(GuardRetroCommands.Gs02SedBacktickCommit, "Command contains command substitution - paths may be dynamic")]
+    [InlineData(GuardRetroCommands.Gs02SedBacktickSingleLine, "Command contains command substitution - paths may be dynamic")]
     [InlineData("Set-Content notes.md 'first line\n$HOME is literal'", "Command contains variable expansion - paths may be dynamic")]
     [InlineData("bash -c 'echo x' 'name $HOME'", "Command contains variable expansion - paths may be dynamic")]
     public void Analyze_SingleQuotedDataWrite_IsABypassAsOnMaster(string command, string warning)
@@ -1674,6 +1655,9 @@ public class BashCommandAnalyzerTests
     [MemberData(nameof(WriteThenRunLines))]
     [MemberData(nameof(OptionLines))]
     [MemberData(nameof(OptionValueLines))]
+    [MemberData(nameof(NarrowedLines))]
+    [MemberData(nameof(ExpandingWordLines))]
+    [MemberData(nameof(PowerShellReadingLines))]
     public void Analyze_SingleQuotedTextAProgramMayRun_IsABypass(string command)
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
@@ -1696,68 +1680,40 @@ public class BashCommandAnalyzerTests
     // DYD-422 review: an option that takes a value consumes the next word, -- included.
     public static TheoryData<string> OptionValueLines => GuardRetroCommands.Gs02OptionValueLines;
 
-    // git 2.53.0, observed in a scratch repository: git commit -a -m -- --edit takes -- as the
-    // message and still runs the editor, so -m consumes --; git diff --color -- --output=x writes
-    // nothing, since --color takes its optional value only through =. The first loses relief; the
-    // optional value followed by a path keeps it.
-    [Fact]
-    public void Analyze_GitMessageOptionConsumesDashDash_AsGit253Does()
+    // DYD-422 narrowing: relief is for one sed, printf or echo command alone; a second command of
+    // any kind (git, grep, head, a pipe) leaves the line searched as on master.
+    public static TheoryData<string> NarrowedLines => GuardRetroCommands.Gs02NarrowedLines;
+
+    // DYD-422 review: a word the shell may still expand is not the one the guard reads.
+    public static TheoryData<string> ExpandingWordLines => GuardRetroCommands.Gs02ExpandingWordLines;
+
+    // DYD-422 review: text only PowerShell runs; relief needs PowerShell's reading for every caller.
+    public static TheoryData<string> PowerShellReadingLines => GuardRetroCommands.Gs02PowerShellReadingLines;
+
+    // Split seat B's probes that write no path keep master's bypass warning; sed with a ?f operand
+    // and no single-quoted bypass text is no bypass, on master or now.
+    [Theory]
+    [MemberData(nameof(ExpandingWordWarningLines))]
+    public void Analyze_ExpandingWordWithoutAWrite_KeepsTheBypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+        Assert.False(_analyzer.Analyze("sed 's/a/b/' ?f run.sed notes.md").HasBypassAttempt);
+    }
+
+    public static TheoryData<string> ExpandingWordWarningLines => GuardRetroCommands.Gs02ExpandingWordWarningLines;
+
+    // sed's closed option list keeps its read-only spellings, in every dialect.
+    [Theory]
+    [InlineData("sed -Ei 's/`x`/y/' notes.md")]
+    [InlineData("sed -n -E 's/`x`/y/p' notes.md > out.md")]
+    [InlineData("sed -i -- 's/`x`/y/' notes.md")]
+    [InlineData("sed --in-place --posix 's/`x`/y/' notes.md")]
+    public void Analyze_ListedOptions_KeepTheRelief(string command)
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
         {
-            var analyzer = new BashCommandAnalyzer(dialect, RepoCwd);
-
-            Assert.True(analyzer.Analyze("printf '%s' '$(echo PWNED >&2)' > run.sh; git commit -a -m -- --edit").HasBypassAttempt, $"{dialect}");
-            Assert.False(analyzer.Analyze("printf '%s' '$(echo PWNED >&2)' > run.sh; git diff --color -- notes.md").HasBypassAttempt, $"{dialect}");
-        }
-    }
-
-    // A relative write resolves against the call's directory before the git-path rule: inside a
-    // .git folder, or as the .git folder, any relative write is git's own file. With no directory,
-    // a line that runs git gets no relief; one that runs no git keeps it.
-    [Theory]
-    [InlineData(GuardRetroCommands.Gs02SedConfigInsideTheGitDirectory, "/home/agent/repo/.git", true)]
-    [InlineData("sed -i 's/NOTHERE/$(echo PWNED >&2)/' ./config; git diff", "/home/agent/repo/.git", true)]
-    [InlineData("printf '%s' '$(echo PWNED >&2)' > hooks/pre-commit; git commit -m x", "/home/agent/repo/.git", true)]
-    [InlineData("printf '%s' '$(echo PWNED >&2)' > ../config; git diff", "/home/agent/repo/.git/hooks", true)]
-    [InlineData("printf '%s' '$(echo PWNED >&2)' > config; git diff", "C:\\Users\\agent\\repo\\.git", true)]
-    [InlineData("printf '%s' '$(echo PWNED >&2)' > config; git diff", "/home/agent/repo/.GIT", true)]
-    [InlineData("printf '%s' '$(echo PWNED >&2)' > git/config; git log", "/home/agent/.config", true)]
-    [InlineData(GuardRetroCommands.Gs02SedConfigInsideTheGitDirectory, null, true)]
-    [InlineData(GuardRetroCommands.Gs02SedBacktickSingleLine, null, true)]
-    [InlineData(GuardRetroCommands.Gs02SedConfigInsideTheGitDirectory, "/home/agent/repo", false)]
-    [InlineData("printf '%s' '$(echo PWNED >&2)' > /home/agent/notes.md; git diff", "/home/agent/repo/.git", false)]
-    [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md", null, false)]
-    [InlineData("printf '%s' '$(echo PWNED >&2)' > notes.md; git diff", "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\repo", false)]
-    public void Analyze_GitLineWrite_ResolvesAgainstTheCwd(string command, string? cwd, bool bypass)
-    {
-        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
-            Assert.Equal(bypass, new BashCommandAnalyzer(dialect, cwd).Analyze(command).HasBypassAttempt);
-    }
-
-    // The closed lists keep the read-only, output-shaping spellings the GS-02 writes and their
-    // neighbours use, in every dialect that reads them as data.
-    [Theory]
-    [InlineData("sed -Ei 's/`x`/y/' notes.md", "Posix,Unknown,PowerShell")]
-    [InlineData("sed -n -E 's/`x`/y/p' notes.md > out.md", "Posix,Unknown,PowerShell")]
-    [InlineData("sed -i -- 's/`x`/y/' notes.md", "Posix,Unknown,PowerShell")]
-    [InlineData("sed --in-place --posix 's/`x`/y/' notes.md", "Posix,Unknown,PowerShell")]
-    [InlineData("grep -n -i -e '$HOME' notes.md > out.md", "Posix,Unknown,PowerShell")]
-    [InlineData("grep --count --fixed-strings '$HOME' notes.md > out.md", "Posix,Unknown,PowerShell")]
-    [InlineData("head -n 5 notes.md && echo '$HOME' > out.md", "Posix,Unknown,PowerShell")]
-    [InlineData("git log -1 --format=%h && echo '$HOME' > out.md", "Posix,Unknown,PowerShell")]
-    [InlineData("git status --short && git diff --stat -- notes.md && echo '$HOME' > out.md", "Posix,Unknown,PowerShell")]
-    [InlineData("echo -n '$HOME' > out.md", "Posix")]
-    [InlineData("grep -C 2 -e '$HOME' notes.md > out.md", "Posix,Unknown,PowerShell")]
-    [InlineData("grep -e '$HOME' -- notes.md > out.md", "Posix,Unknown,PowerShell")]
-    [InlineData("grep --regexp '$HOME' --max-count=3 notes.md > out.md", "Posix,Unknown,PowerShell")]
-    [InlineData("head -n5 notes.md && head --lines 2 notes.md && echo '$HOME' > out.md", "Posix,Unknown,PowerShell")]
-    [InlineData("git commit -qm 'docs: note' && echo '$HOME' > out.md", "Posix,Unknown,PowerShell")]
-    public void Analyze_ListedOptions_KeepTheRelief(string command, string dialects)
-    {
-        foreach (var dialect in dialects.Split(',').Select(Enum.Parse<ShellDialect>))
-        {
-            var result = new BashCommandAnalyzer(dialect, RepoCwd).Analyze(command);
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
 
             Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
         }
@@ -1765,22 +1721,24 @@ public class BashCommandAnalyzerTests
 
     // PowerShell's stop-parsing token hands the rest of the line over unparsed, and its echo, the
     // Write-Output cmdlet, assigns a variable through -OutVariable or another common parameter.
+    // PowerShell's reading is required for every caller, so bash's echo -n loses relief too.
     [Theory]
     [InlineData("echo --% '$(echo x > $OUT)' > notes.md")]
     [InlineData("echo '$(echo x > $OUT)' -OutVariable a > notes.md")]
     [InlineData("echo '$(echo x > $OUT)' –ov a > notes.md")]
     [InlineData("echo -n '$(echo x > $OUT)' > notes.md")]
-    public void Analyze_StopParsingToken_IsABypassWherePowerShellMayRun(string command)
+    [InlineData("echo -n '$HOME' > out.md")]
+    public void Analyze_PowerShellParameterOrStopParsing_IsABypassInEveryDialect(string command)
     {
-        foreach (var dialect in PowerShellReadings)
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
             AssertBypassWithAChange(command, dialect);
     }
 
-    // Every reading must place the quote in the same word: bash reads a\ '$HOME' as one word,
-    // PowerShell as two. A bash call takes bash's reading alone; a PowerShell call needs both.
+    // Both readings must place the quote in the same word: bash reads a\ '$HOME' as one word,
+    // PowerShell as two, so no caller gets relief for it.
     [Theory]
     [InlineData("echo a\\ '$HOME' > notes.md", "Unknown", true)]
-    [InlineData("echo a\\ '$HOME' > notes.md", "Posix", false)]
+    [InlineData("echo a\\ '$HOME' > notes.md", "Posix", true)]
     [InlineData("echo a\\ '$HOME' > notes.md", "PowerShell", true)]
     [InlineData("echo 'cost: $5 and $HOME' > notes.md", "PowerShell", false)]
     public void Analyze_QuoteInEveryReadingsWord_DecidesTheBypass(string command, string dialect, bool bypass)
@@ -1806,20 +1764,20 @@ public class BashCommandAnalyzerTests
             AssertBypassWithAChange(command, dialect);
     }
 
-    // A typographic quote closes a PowerShell string only, so where PowerShell may run the line the
-    // text after it is code.
+    // A typographic quote closes a PowerShell string only, and PowerShell's reading is required for
+    // every caller, so the text after it is code in every dialect.
     [Theory]
     [InlineData("echo 'a’ $(echo x > $OUT) ’b'")]
     [InlineData("echo “a '$(echo x > $OUT)' b”")]
-    public void Analyze_TypographicQuote_IsABypassWherePowerShellMayRun(string command)
+    public void Analyze_TypographicQuote_IsABypassInEveryDialect(string command)
     {
-        foreach (var dialect in PowerShellReadings)
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
             AssertBypassWithAChange(command, dialect);
     }
 
     private static void AssertBypassWithAChange(string command, ShellDialect dialect)
     {
-        var result = new BashCommandAnalyzer(dialect, RepoCwd).Analyze(command);
+        var result = new BashCommandAnalyzer(dialect).Analyze(command);
 
         Assert.True(result.HasBypassAttempt, $"{dialect}: expected a bypass: {command}");
         Assert.Contains(result.Operations, op => op.Type is FileOperationType.Write or FileOperationType.Delete);

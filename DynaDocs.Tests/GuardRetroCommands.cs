@@ -92,7 +92,8 @@ public static class GuardRetroCommands
     public const string Gs02SedBacktickSingleLine = "sed -i 's#repository path `tools/ci_runner/host/README.md` points#repository path `infra/ci/README.md` points#' dydo/guides/ripple-e1-activation.md; git diff dydo/guides/ripple-e1-activation.md | grep '^[+-]' ; git add infra/ci/README.md infra/ci/lc1108-linux-preflight.sh infra/ci/lc1108-windows-preparation.sh dydo/guides/ripple-e1-activation.md; git status --short | head";
 
     // DYD-422 review (Codex seat 2, c49dd869): lines whose single-quoted text a state change or a
-    // non-data command on the same command line makes code, each refused as on master.
+    // non-data command on the same command line makes code, each refused as on master (the
+    // narrowed rule refuses most for their second command alone).
     public static Xunit.TheoryData<string> Gs02StateChangingLines => new()
     {
         "printf -v 'a[$(echo x > $OUT)]' '%s' x",
@@ -131,7 +132,7 @@ public static class GuardRetroCommands
 
     // DYD-422 review (Codex seat 3, 31b6c7a2): lines that write single-quoted text and then run it
     // through sed -f, a sed e command, grep --pre, or git configuration, attributes or hooks the same
-    // line writes, each refused as on master.
+    // line writes, each refused as on master; the second command alone now refuses each.
     public static Xunit.TheoryData<string> Gs02WriteThenRunLines => new()
     {
         "printf '%s' 'e echo $(echo PWNED >&2)' > run.sed; sed -f run.sed notes.md",
@@ -170,7 +171,7 @@ public static class GuardRetroCommands
     };
 
     // DYD-422 review (Codex seat 4, f1764904): a sed -i backup suffix renames a written file into
-    // .git, and any option off a state-free command's closed list, each refused as on master.
+    // .git, and options off sed's closed list or on grep, head and git, each refused as on master.
     public static Xunit.TheoryData<string> Gs02OptionLines => new()
     {
         "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed -i'.git/*' 's/NOTHERE/ok/' config; git diff",
@@ -209,7 +210,7 @@ public static class GuardRetroCommands
 
     // DYD-422 review (Codex seat 5, e2b8c674): an option that takes a value consumes the next word,
     // -- included, as the program parses it (git 2.53 reads git commit -m -- --edit as message --
-    // and then runs the editor), and a word after -- that looks like an option is not certain.
+    // and then runs the editor), each refused as on master; the second command alone now refuses each.
     public static Xunit.TheoryData<string> Gs02OptionValueLines => new()
     {
         "printf '%s' '$(echo PWNED >&2)' > patterns; grep -e -- --pre=sh notes.md",
@@ -227,9 +228,73 @@ public static class GuardRetroCommands
         "printf '%s' '$(echo PWNED >&2)' > run.sh; git diff --color -- --output=.git/config",
     };
 
-    // DYD-422 review (Codex seat 5): a relative write resolves against the call's directory, so a
-    // line that runs git inside a .git folder writes git's own files.
-    public const string Gs02SedConfigInsideTheGitDirectory = "sed -i 's/NOTHERE/$(echo PWNED >&2)/' config; git diff";
+    // DYD-422 narrowing (split seat C, 6404cce7, and the DECIDED after it): relief is for one
+    // sed, printf or echo command alone, so every line an earlier hop relieved with a second command
+    // (git, grep, head, a pipe), from any directory, is refused as on master. Seat C's route: from a
+    // linked worktree whose common directory is a bare ../proj.git, git status ran the fsmonitor.
+    public static Xunit.TheoryData<string> Gs02NarrowedLines => new()
+    {
+        Gs02SedBacktickCommit,
+        Gs02SedBacktickSingleLine,
+        "printf '[core]\\n\\tfsmonitor = echo $(echo PWNED-fsmonitor >&2)\\n' >> ../proj.git/config; git status",
+        "printf '[core]\\n\\tfsmonitor = echo $(echo PWNED >&2)\\n' >> /tmp/scratch/proj.git/config; git status",
+        "sed -i 's/NOTHERE/$(echo PWNED >&2)/' ../proj.git/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > ../proj.git/worktrees/w/config.worktree; git status",
+        "printf '%s' '$(echo PWNED >&2)' > ../proj.git/hooks/pre-commit; git commit -m x",
+        "sed -i 's/NOTHERE/$(echo PWNED >&2)/' config; git diff",
+        "sed -i 's/NOTHERE/$(echo PWNED >&2)/' ./config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > hooks/pre-commit; git commit -m x",
+        "printf '%s' '$(echo PWNED >&2)' > ../config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > git/config; git log",
+        "printf '%s' '$(echo PWNED >&2)' > /home/agent/notes.md; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git diff --color -- notes.md",
+        "printf '%s' '$(date)' > docs/.github-notes.md; git diff",
+        "sed -i 's/`x`/y/' docs/git/config.md && git add docs/git/config.md",
+        "printf '%s\\n' 'a $HOME' | grep '$HOME' > notes.md",
+        "grep -n -i -e '$HOME' notes.md > out.md",
+        "grep --count --fixed-strings '$HOME' notes.md > out.md",
+        "grep -C 2 -e '$HOME' notes.md > out.md",
+        "grep -e '$HOME' -- notes.md > out.md",
+        "grep --regexp '$HOME' --max-count=3 notes.md > out.md",
+        "head -n 5 notes.md && echo '$HOME' > out.md",
+        "head -n5 notes.md && head --lines 2 notes.md && echo '$HOME' > out.md",
+        "git log -1 --format=%h && echo '$HOME' > out.md",
+        "git status --short && git diff --stat -- notes.md && echo '$HOME' > out.md",
+        "git commit -qm 'docs: note' && echo '$HOME' > out.md",
+    };
+
+    // DYD-422 review (split seat B, 6404cce7): an option, operand or target the shell may still
+    // expand is not the word the guard reads; bash turns ?f into a file named -f, so sed runs a
+    // script file, and ?v into -v, so printf assigns through a subscript. Each line writes a path.
+    public static Xunit.TheoryData<string> Gs02ExpandingWordLines => new()
+    {
+        "printf '%s' 'e echo $(echo PWNED >&2)' > run.sed; printf x > -f; sed 's/a/b/' ?f run.sed notes.md",
+        "sed 's/a/$(echo PWNED >&2)/' ?f run.sed notes.md > out.md",
+        "printf ?v 'a[$(echo PWNED >&2)]' x > notes.md",
+        "sed -i 's/x/$(echo PWNED >&2)/' [n]otes.md",
+        "echo '$(echo PWNED >&2)' * > notes.md",
+        "echo '$(echo PWNED >&2)' {a,b} > notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > note?.md",
+        "printf '%s' '$(echo PWNED >&2)' > ~/notes.md",
+        "echo '$(echo PWNED >&2)' @a > notes.md",
+    };
+
+    // DYD-422 review (split seat B): the same expanding words on lines that write no path, which
+    // master only warns about; the bypass warning stays.
+    public static Xunit.TheoryData<string> Gs02ExpandingWordWarningLines => new()
+    {
+        "printf x > -v; printf ?v 'a[$(echo PWNED >&2)]' x",
+        "printf ?v 'a[$(echo PWNED >&2)]' x",
+    };
+
+    // DYD-422 review (split seat D, 6404cce7): text only PowerShell runs, which a Codex pwsh argv
+    // envelope hands to PowerShell even when the caller is read as bash; relief needs both readings.
+    public static Xunit.TheoryData<string> Gs02PowerShellReadingLines => new()
+    {
+        "echo \\'' $(echo PWNED) '\\' > notes.md",
+        "echo 'a’ $(echo PWNED) ‘b' > notes.md",
+    };
 
     // GS-02, Claude Bash: evidence appended through cat >> and a quoted heredoc holding backticks.
     public const string Gs02CatAppendEvidence =

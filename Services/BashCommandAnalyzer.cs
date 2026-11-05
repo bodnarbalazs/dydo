@@ -11,19 +11,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // The shell the analysed command runs in; Unknown reads it as either.
     private readonly ShellDialect _shell;
 
-    // The directory the command runs in, which a relative write target resolves against; null when
-    // unknown, so no line that runs git gets single-quote relief (DYD-422).
-    private readonly string? _cwd;
-
     public BashCommandAnalyzer() : this(ShellDialect.Unknown)
     {
     }
 
-    internal BashCommandAnalyzer(ShellDialect shell, string? cwd = null)
-    {
-        _shell = shell;
-        _cwd = cwd;
-    }
+    internal BashCommandAnalyzer(ShellDialect shell) => _shell = shell;
 
     private static readonly Dictionary<string, FileOperationType> ReadCommands = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -463,69 +455,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             .All(line => line.Commands.Any(command => command.Words.Any(Holds)));
     }
 
-    /// <summary>
-    /// The programs whose single-quoted arguments may be literal data (DYD-422): each prints or
-    /// filters the text it is given and runs none of it; sed only its script (<see cref="SedScriptIndex"/>).
-    /// </summary>
-    private static readonly HashSet<string> QuotedDataCommands = new(StringComparer.Ordinal)
-        { "sed", "printf", "echo", "grep" };
-
-    // The git subcommands the GS-02 writes run, directly after git: no option such as -c comes first.
-    private static readonly HashSet<string> StateFreeGitCommands = new(StringComparer.Ordinal)
-        { "diff", "add", "status", "commit", "log" };
-
-    /// <summary>
-    /// A state-free command's closed option allowlist (DYD-422): the short flag letters it may
-    /// cluster and the long option names it may take (the part before any <c>=</c>), and of those,
-    /// the ones that take a required value. A required value is the rest of its cluster, the text
-    /// after <c>=</c>, or else the next word, whatever it is, <c>--</c> included, as the program
-    /// parses it. Every other listed option takes no value or an optional one, which attaches only
-    /// through <c>=</c> or its cluster. An option outside the list, in any spelling, makes the line
-    /// not state-free. Each list holds only read-only, output-shaping options; none runs a program,
-    /// reads a script or writes a chosen file.
-    /// </summary>
-    private sealed record OptionSpec(string ShortFlags, HashSet<string> LongOptions, string ValueFlags, HashSet<string> ValueLongOptions);
-
-    // grep: matching and formatting flags only; e/f take a pattern or pattern-file (data, not code),
-    // A/B/C/m/d take counts and actions. --color takes an optional value. No --pre or --preprocessor,
-    // which run a program (ripgrep).
-    private static readonly OptionSpec GrepOptions = new("EFGPivnclLowxqsHharRefmABCdUz0123456789",
-        new(StringComparer.Ordinal)
-        {
-            "extended-regexp", "fixed-strings", "basic-regexp", "perl-regexp", "ignore-case", "invert-match",
-            "line-number", "count", "files-with-matches", "files-without-match", "only-matching", "word-regexp",
-            "line-regexp", "quiet", "silent", "no-messages", "with-filename", "no-filename", "recursive",
-            "dereference-recursive", "color", "colour", "file", "regexp", "max-count", "after-context",
-            "before-context", "context", "include", "exclude", "exclude-dir", "byte-offset", "null", "text",
-        },
-        "efmABCd",
-        new(StringComparer.Ordinal)
-        {
-            "file", "regexp", "max-count", "after-context", "before-context", "context", "include", "exclude", "exclude-dir",
-        });
-
-    // head: line and byte counts, each a required value, and the obsolete -NUM form.
-    private static readonly OptionSpec HeadOptions = new("ncqvz0123456789",
-        new(StringComparer.Ordinal) { "lines", "bytes", "quiet", "silent", "verbose", "zero-terminated" },
-        "nc", new(StringComparer.Ordinal) { "lines", "bytes" });
-
-    // git: only read-only, output-shaping options after an allowed subcommand. m takes the commit
-    // message (git 2.53 reads -m -- as the message --), digits the log count; --format, --pretty,
-    // --color, --abbrev, --find-renames and --porcelain take a value only through =, and -u only in
-    // its cluster. Never -c, -C, -p, -e, --output, --textconv, --ext-diff, --amend, --git-dir,
-    // --work-tree, --exec-path, --template or --config-env, which run code, change where git looks,
-    // or edit.
-    private static readonly OptionSpec GitOptions = new("qasvbum0123456789",
-        new(StringComparer.Ordinal)
-        {
-            "stat", "numstat", "shortstat", "name-only", "name-status", "short", "porcelain", "cached",
-            "staged", "oneline", "abbrev-commit", "abbrev", "no-color", "format", "pretty", "color",
-            "all", "dry-run", "verbose", "quiet", "no-renames", "find-renames", "summary", "no-patch",
-        },
-        "m", new(StringComparer.Ordinal));
-
     // sed: only read and in-place-substitute flags. -i and --in-place must be bare, with no backup
-    // suffix; a suffix renames the file elsewhere, which could install git configuration.
+    // suffix, which renames the file elsewhere.
     private const string SedShortFlags = "nErszu";
     private static readonly HashSet<string> SedLongOptions = new(StringComparer.Ordinal)
         { "posix", "regexp-extended", "separate", "null-data", "unbuffered", "quiet", "silent", "sandbox" };
@@ -546,22 +477,25 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"^s(?<d>[^\w\s\\])(?:(?!\k<d>)(?:\\.|[^\\]))*\k<d>(?:(?!\k<d>)(?:\\.|[^\\]))*\k<d>[gpiImM0-9]*\z", RegexOptions.Singleline)]
     private static partial Regex SedSubstitutionRegex();
 
+    // bash's echo reads leading -n, -e and -E clusters as flags and stops at the first other word.
+    [GeneratedRegex(@"^-[neE]+$")]
+    private static partial Regex EchoFlagsRegex();
+
     // A single-quoted argument one reading certifies as literal data: its quotes and the word holding
     // them, where that reading places them.
     private readonly record struct DataQuote(Range Quote, Range Word);
 
     /// <summary>
-    /// The piece's code with each single-quoted argument that is literal data emptied to '' (DYD-422):
-    /// bash's reading, and PowerShell's too wherever PowerShell may run the line, certify it in the
-    /// same word (<see cref="DataQuotes"/>). A PowerShell call still needs bash's reading, so text
-    /// only PowerShell pairs into one string, such as don\'t ... won\'t, stays searched as on master.
-    /// Anything else is kept and searched, failing closed.
+    /// The code with each single-quoted argument that is literal data emptied to '' (DYD-422): bash's
+    /// reading and PowerShell's both certify it in the same word (<see cref="DataQuotes"/>), whatever
+    /// shell the call declares, since a declared shell can still hand the text to the other (a Codex
+    /// pwsh envelope from a bash caller). Text only PowerShell pairs into one string, such as
+    /// don\'t ... won\'t, stays searched as on master. Anything else is kept and searched, failing closed.
     /// </summary>
-    private string WithoutLiteralData(string code)
+    private static string WithoutLiteralData(string code)
     {
-        var data = DataQuotes(code, posix: true, _cwd);
-        if (_shell != ShellDialect.Posix)
-            data.IntersectWith(DataQuotes(code, posix: false, _cwd));
+        var data = DataQuotes(code, posix: true);
+        data.IntersectWith(DataQuotes(code, posix: false));
         return Emptied(code, data.Select(quote => quote.Quote));
     }
 
@@ -575,201 +509,61 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     }
 
     /// <summary>
-    /// The single-quoted arguments one reading of a line holds as literal data: the reading runs
-    /// state-free commands only (<see cref="RunsStateFreeOnly"/>) and pairs no quote otherwise
-    /// (<see cref="PairsQuotesOtherwise"/>). Each is a quote in a word of a quoted-data command whose
-    /// output is piped only to data commands (<see cref="DataCommands"/>). A substitution outside
-    /// single quotes is never emptied, so it is still found; a quote inside one is its own scope's.
+    /// The single-quoted arguments one reading of a line holds as literal data: the whole line reads,
+    /// for certain, as one data command (<see cref="IsOneDataCommand"/>) and has no text a shell may
+    /// read otherwise (<see cref="MayReadOtherwise"/>). A substitution outside single quotes is never
+    /// emptied, so it is still found.
     /// </summary>
-    private static HashSet<DataQuote> DataQuotes(string code, bool posix, string? cwd)
+    private static HashSet<DataQuote> DataQuotes(string code, bool posix)
     {
         var reading = ShellReader.Read(code, posix);
         var quotes = reading.Source.SingleQuotes;
-        return RunsStateFreeOnly(reading, cwd) && !PairsQuotesOtherwise(code, Emptied(code, quotes), posix)
-            ? [.. quotes.Select(quote => DataQuoteIn(reading.Commands, quote)).OfType<DataQuote>()]
+        return reading.Commands is [var command] && IsOneDataCommand(reading, command)
+            && !MayReadOtherwise(code, Emptied(code, quotes))
+            ? [.. quotes.Select(quote => DataQuoteIn(command, quote)).OfType<DataQuote>()]
             : [];
     }
 
-    // The reading is certain, every command in it, each sequence member and pipeline stage, is
-    // state-free, with no substitution or PowerShell group word, group, continuation or process
-    // substitution, and the line writes nothing git reads as code if it runs git.
-    private static bool RunsStateFreeOnly(ShellReader.Reading reading, string? cwd) =>
-        !reading.Failed && reading.Source.Executions.Count == 0
-        && reading.Commands.All(command => !command.UncertainFeed && IsStateFree(command.Words, reading.Source.Posix))
-        && !WritesWhatGitReads(reading.Commands, cwd);
-
     /// <summary>
-    /// Whether the command is sed, printf, echo, grep, head, or git with a subcommand
-    /// <see cref="StateFreeGitCommands"/> names, and takes only options its closed allowlist names,
-    /// in any spelling (<see cref="TakesOnly"/>). None of them reads a file as code: a sed must only
-    /// substitute (<see cref="SedScriptIndex"/>). printf takes no options: -v assigns a variable, and
-    /// bash evaluates its subscript; nor a %n conversion. PowerShell's echo, the Write-Output cmdlet,
-    /// takes no parameter word, since -OutVariable and the other common parameters assign variables.
+    /// Whether the reading is certain and its one command, with no substitution, PowerShell group
+    /// word, group, continuation, pipe, background, heredoc or here-string, is sed that only
+    /// substitutes (<see cref="SedScriptIndex"/>), printf with no option and no %n conversion (-v
+    /// assigns a variable, and bash evaluates its subscript), or echo with only bash's leading -n,
+    /// -e and -E flags, or with no parameter word in PowerShell, where -OutVariable and the other
+    /// common parameters assign variables. Named exactly, with no path, case change or assignment word.
     /// </summary>
-    private static bool IsStateFree(List<string> words, bool posix) => words switch
-    {
-        ["git", var subcommand, .. var rest] => StateFreeGitCommands.Contains(subcommand) && TakesOnly(rest, GitOptions),
-        ["sed", ..] => SedScriptIndex(words) > 0,
-        ["grep", .. var rest] => TakesOnly(rest, GrepOptions),
-        ["head", .. var rest] => TakesOnly(rest, HeadOptions),
-        ["printf", .. var rest] => rest is not [['-', ..], ..] && !rest.Any(PrintfAssignmentRegex().IsMatch),
-        ["echo", .. var rest] => posix ? rest.TakeWhile(IsOption).All(EchoFlagsRegex().IsMatch) : !rest.Any(IsPowerShellParameter),
-        _ => false,
-    };
-
-    // bash's echo reads leading -n, -e and -E clusters as flags and stops at the first other word.
-    [GeneratedRegex(@"^-[neE]+$")]
-    private static partial Regex EchoFlagsRegex();
+    private static bool IsOneDataCommand(ShellReader.Reading reading, ShellReader.Command command) =>
+        !reading.Failed && reading.Source.Executions.Count == 0 && !command.UncertainFeed && !command.PipesOutput
+        && command.Stdin.Count == 0 && command.Bodies.Count == 0 && command.Words switch
+        {
+            ["sed", ..] => SedScriptIndex(command.Words) > 0,
+            ["printf", .. var rest] => rest is not [['-', ..], ..] && !rest.Any(PrintfAssignmentRegex().IsMatch),
+            ["echo", .. var rest] => reading.Source.Posix ? rest.TakeWhile(IsOption).All(EchoFlagsRegex().IsMatch) : !rest.Any(IsPowerShellParameter),
+            _ => false,
+        };
 
     private static bool IsOption(string word) => word is ['-', _, ..];
 
     // A PowerShell parameter word starts with a hyphen, an en dash, an em dash or a horizontal bar.
     private static bool IsPowerShellParameter(string word) => word is ['-' or '\u2013' or '\u2014' or '\u2015', ..];
 
-    /// <summary>
-    /// Whether every option word is on the closed list (<see cref="ValueNeeded"/>). An option that
-    /// needs a separate value consumes the next word; when that word is <c>--</c> or looks like an
-    /// option, the program may read it either way, so the line is not state-free. A bare
-    /// <c>--</c> ends the options, and a word after it that looks like an option is not certain
-    /// either. Operands and consumed values are data.
-    /// </summary>
-    private static bool TakesOnly(List<string> words, OptionSpec spec)
-    {
-        var ended = false;
-        for (var at = 0; at < words.Count; at++)
-        {
-            if (!IsOption(words[at]))
-                continue;
-            if (ended)
-                return false;
-            if (words[at] == "--")
-                ended = true;
-            else if (ValueNeeded(words[at], spec) is not { } needed
-                || (needed && (++at == words.Count || IsOption(words[at]))))
-                return false;
-        }
-        return true;
-    }
-
-    /// <summary>
-    /// Whether a listed option needs its value in the next word: a long option that requires a
-    /// value and has no <c>=</c>, or a cluster of listed short flags whose last letter requires a
-    /// value (an earlier value letter takes the rest of the cluster as its value). Null when the
-    /// option is not on the list.
-    /// </summary>
-    private static bool? ValueNeeded(string option, OptionSpec spec)
-    {
-        if (option.StartsWith("--", StringComparison.Ordinal))
-        {
-            var name = option[2..].Split('=')[0];
-            return spec.LongOptions.Contains(name) ? !option.Contains('=') && spec.ValueLongOptions.Contains(name) : null;
-        }
-
-        for (var at = 1; at < option.Length; at++)
-        {
-            if (!spec.ShortFlags.Contains(option[at]))
-                return null;
-            if (spec.ValueFlags.Contains(option[at]))
-                return at == option.Length - 1;
-        }
-        return false;
-    }
-
-    // A line that runs git writes, in any way, a path git reads as configuration, attributes or hooks,
-    // resolved against the call's directory; with that directory unknown, any write may be one.
-    private static bool WritesWhatGitReads(IReadOnlyList<ShellReader.Command> commands, string? cwd) =>
-        commands.Any(command => command.Words is ["git", ..])
-        && (cwd == null || commands.SelectMany(WriteTargets).Any(target => IsGitReadPath(target, cwd)));
-
-    // Each place a state-free command may write, its whole write set: its output redirection
-    // targets, and every word of a sed after its script, which a suffix-free sed -i rewrites in
-    // place. No other allowed option writes a file.
-    private static IEnumerable<string> WriteTargets(ShellReader.Command command) =>
-        command.RedirectTargets.Where(target => target.Operator.Contains('>'))
-            .Select(target => command.Source.Text[target.Range][target.Operator.Length..].Trim())
-            .Concat(command.Words is ["sed", ..] ? command.Words.Skip(SedScriptIndex(command.Words) + 1) : []);
-
-    /// <summary>
-    /// Whether git may read the write target as code: unquoted, with \ read both as a separator and
-    /// as an escape, and a relative target joined to the call's directory, the path has a .git
-    /// component, names a .gitattributes, .gitmodules, .gitconfig or .mailmap file, or lies in a
-    /// .config/git folder, with . and .. folded. So any relative write counts when the directory is
-    /// a .git folder or inside one. A target the shell may still expand ($, `, a glob or ~) may be
-    /// any of them.
-    /// </summary>
-    private static bool IsGitReadPath(string target, string cwd)
-    {
-        if (target.AsSpan().IndexOfAny("$`*?[{~") >= 0)
-            return true;
-        var unquoted = target.Replace("'", "").Replace("\"", "");
-        var directory = cwd.Replace('\\', '/');
-        return new[] { unquoted.Replace('\\', '/'), unquoted.Replace("\\", "") }
-            .Any(path => IsGitPath(path) || (!IsRooted(path) && IsGitPath(directory + "/" + path)));
-    }
-
-    // A path that does not resolve against the directory: /x, or a drive's C:/x.
-    private static bool IsRooted(string path) =>
-        path is ['/', ..] || (path is [var drive, ':', '/', ..] && char.IsAsciiLetter(drive));
-
-    private static readonly HashSet<string> GitReadFiles = new(StringComparer.OrdinalIgnoreCase)
-        { ".gitattributes", ".gitmodules", ".gitconfig", ".mailmap" };
-
-    // Case is ignored and Windows' trailing dots and spaces dropped; a .git component counts before
-    // and after folding, since .git/.. may lead elsewhere through a link.
-    private static bool IsGitPath(string path)
-    {
-        var segments = path.Split('/').Where(segment => segment is not ("" or ".")).ToList();
-        List<string> folded = [];
-        foreach (var segment in segments)
-        {
-            if (segment != "..")
-                folded.Add(segment.TrimEnd('.', ' '));
-            else if (folded.Count > 0)
-                folded.RemoveAt(folded.Count - 1);
-        }
-
-        bool IsGit(string segment) => segment.Equals(".git", StringComparison.OrdinalIgnoreCase);
-        return segments.Select(segment => segment.TrimEnd('.', ' ')).Any(IsGit) || folded.Any(IsGit)
-            || (folded.Count > 0 && GitReadFiles.Contains(folded[^1]))
-            || folded.Zip(folded.Skip(1)).Any(pair => pair.First.Equals(".config", StringComparison.OrdinalIgnoreCase)
-                && pair.Second.Equals("git", StringComparison.OrdinalIgnoreCase));
-    }
-
-    // Text outside single quotes where the shell may pair quotes or start commands otherwise:
-    // bash's $'...', a lone &, and where PowerShell may run the line a caret (an escape only to
-    // cmd), the stop-parsing token --% or a typographic quote anywhere.
-    private static bool PairsQuotesOtherwise(string code, string outside, bool posix) =>
+    // Text outside single quotes a shell may read otherwise, in either reading: bash's $'...', a lone
+    // &, a caret (an escape only to cmd), PowerShell's stop-parsing token --%, a typographic quote
+    // anywhere, or a character that expands a word into others (a glob * ? [, a brace {, a tilde ~,
+    // PowerShell's @ splat), so an option, operand or target the guard reads may not be the one that runs.
+    private static bool MayReadOtherwise(string code, string outside) =>
         outside.Contains("$'", StringComparison.Ordinal) || LoneAmpersandRegex().IsMatch(outside)
-        || (!posix && (outside.Contains('^') || outside.Contains("--%", StringComparison.Ordinal)
-            || code.AsSpan().IndexOfAny(TypographicQuotes) >= 0));
+        || outside.AsSpan().IndexOfAny("^*?[{~@") >= 0 || outside.Contains("--%", StringComparison.Ordinal)
+        || code.AsSpan().IndexOfAny(TypographicQuotes) >= 0;
 
-    // The quote in a word of the one command whose word holds it, when that command takes it as data.
-    private static DataQuote? DataQuoteIn(IReadOnlyList<ShellReader.Command> commands, Range quote)
+    // The quote in a word of the command, when the command takes that word as data: any word of
+    // printf or echo, and only the script of sed, whose other words are files it rewrites.
+    private static DataQuote? DataQuoteIn(ShellReader.Command command, Range quote)
     {
-        foreach (var command in commands)
-        {
-            var word = command.WordRanges.FindIndex(range => range.Start.Value <= quote.Start.Value && quote.End.Value <= range.End.Value);
-            if (word >= 0)
-                return IsDataArgument(command, word) ? new DataQuote(quote, command.WordRanges[word]) : null;
-        }
-        return null;
-    }
-
-    private static bool IsDataArgument(ShellReader.Command command, int word) =>
-        QuotedDataCommands.Contains(command.Words[0]) && PipesToDataOnly(command)
-        && (command.Words[0] != "sed" || SedScriptIndex(command.Words) == word);
-
-    // Each command the output is piped on to is a data command.
-    private static bool PipesToDataOnly(ShellReader.Command command)
-    {
-        var at = command;
-        while (at.PipesOutput)
-        {
-            if (at.Next is not { Words: [var program, ..] } next || !DataCommands.Contains(program))
-                return false;
-            at = next;
-        }
-        return true;
+        var word = command.WordRanges.FindIndex(range => range.Start.Value <= quote.Start.Value && quote.End.Value <= range.End.Value);
+        return word >= 0 && (command.Words[0] != "sed" || SedScriptIndex(command.Words) == word)
+            ? new DataQuote(quote, command.WordRanges[word])
+            : null;
     }
 
     /// <summary>
@@ -1663,7 +1457,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     // The command's code with its literal data emptied. A command with a heredoc or here-string body
     // is searched whole, so no piece's state change, such as an alias, reaches another piece's data.
-    private CodePiece Relieved(string code)
+    private static CodePiece Relieved(string code)
     {
         var relieved = WithoutLiteralData(code);
         return new CodePiece(relieved, relieved);

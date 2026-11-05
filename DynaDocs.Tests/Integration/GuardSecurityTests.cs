@@ -802,19 +802,13 @@ public class GuardSecurityTests : IntegrationTestBase
     // DYD-406: the 3.6.0 session retro's guard misreadings, through the hook
     // ================================================================
 
-    // A host names the call's directory in cwd; DYD-422 relief on a line that runs git needs one.
-    private static string ShellJson(string toolName, string command, string? cwd = null)
-    {
-        var payload = new Dictionary<string, object>
+    private static string ShellJson(string toolName, string command) =>
+        System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
         {
             ["session_id"] = TestSessionId,
             ["tool_name"] = toolName,
             ["tool_input"] = new Dictionary<string, string> { ["command"] = command },
-        };
-        if (cwd != null)
-            payload["cwd"] = cwd;
-        return System.Text.Json.JsonSerializer.Serialize(payload);
-    }
+        });
 
     // GS-02: literal data written to a literal destination is no bypass.
     [Theory]
@@ -835,21 +829,22 @@ public class GuardSecurityTests : IntegrationTestBase
     // The CLI lane reads its command as an unknown shell, both ways.
     private Task<CommandResult> UnknownShellGuardAsync(string command) => GuardWithStdinAsync("", "--command", command);
 
-    // DYD-422: single-quoted literal data written to a literal destination is no bypass, through
-    // Claude's Bash tool and in an unknown shell.
+    // DYD-422: one sed, printf or echo command writing single-quoted literal data to a literal
+    // destination is no bypass, through Claude's Bash and PowerShell tools and in an unknown shell.
     [Theory]
-    [InlineData(GuardRetroCommands.Gs02SedBacktickCommit)]
-    [InlineData(GuardRetroCommands.Gs02SedBacktickSingleLine)]
     [InlineData("sed -i 's/`x`/y/' f")]
     [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md")]
+    [InlineData("echo 'cost: $5 and `date`' > notes.md")]
     public async Task Gs02_SingleQuotedLiteralDataWrite_IsAllowed(string command)
     {
         await SetupClaimedAgent();
 
-        var bash = await GuardWithStdinAsync(ShellJson("Bash", command, TestDir));
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
         var unknown = await UnknownShellGuardAsync(command);
 
         bash.AssertPreToolUseAllowed();
+        powerShell.AssertPreToolUseAllowed();
         unknown.AssertSuccess();
     }
 
@@ -864,7 +859,7 @@ public class GuardSecurityTests : IntegrationTestBase
     {
         await SetupClaimedAgent();
 
-        var bash = await GuardWithStdinAsync(ShellJson("Bash", command, TestDir));
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
         var unknown = await UnknownShellGuardAsync(command);
 
         bash.AssertPreToolUseDenied();
@@ -951,7 +946,7 @@ public class GuardSecurityTests : IntegrationTestBase
         var canary = Path.Combine(DydoDir, "index.md");
         var before = File.ReadAllBytes(canary);
 
-        var bash = await GuardWithStdinAsync(ShellJson("Bash", command, TestDir));
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
         var unknown = await UnknownShellGuardAsync(command);
 
         bash.AssertPreToolUseDenied();
@@ -961,20 +956,22 @@ public class GuardSecurityTests : IntegrationTestBase
         Assert.Equal(before, File.ReadAllBytes(canary));
     }
 
-    // DYD-422 review: a line that writes single-quoted text and then runs it through sed -f, a sed e
-    // command, grep --pre, or git configuration, attributes or hooks it writes (a sed -i backup
-    // suffix included), or whose state-free command takes an option off its closed list, is
-    // refused through Claude's Bash and PowerShell tools and an unknown shell, as on master.
+    // DYD-422 review: every route the reviews found (a second command, a file the line writes and
+    // then runs, an option off sed's list, a word the shell may expand, text only PowerShell runs)
+    // is refused through Claude's Bash and PowerShell tools and an unknown shell, as on master.
     [Theory]
     [MemberData(nameof(GuardRetroCommands.Gs02WriteThenRunLines), MemberType = typeof(GuardRetroCommands))]
     [MemberData(nameof(GuardRetroCommands.Gs02OptionLines), MemberType = typeof(GuardRetroCommands))]
     [MemberData(nameof(GuardRetroCommands.Gs02OptionValueLines), MemberType = typeof(GuardRetroCommands))]
+    [MemberData(nameof(GuardRetroCommands.Gs02NarrowedLines), MemberType = typeof(GuardRetroCommands))]
+    [MemberData(nameof(GuardRetroCommands.Gs02ExpandingWordLines), MemberType = typeof(GuardRetroCommands))]
+    [MemberData(nameof(GuardRetroCommands.Gs02PowerShellReadingLines), MemberType = typeof(GuardRetroCommands))]
     public async Task Gs02_WriteThenRun_IsDeniedInEveryShell(string command)
     {
         await SetupClaimedAgent();
 
-        var bash = await GuardWithStdinAsync(ShellJson("Bash", command, TestDir));
-        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command, TestDir));
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
         var unknown = await UnknownShellGuardAsync(command);
 
         bash.AssertPreToolUseDenied();
@@ -985,57 +982,41 @@ public class GuardSecurityTests : IntegrationTestBase
         unknown.AssertStderrContains("bypass");
     }
 
-    // DYD-422 review: a relative write resolves against the call's directory, so inside a .git
-    // folder sed -i config writes git's configuration; every lane refuses it, the CLI lane from the
-    // process directory, and the canary keeps its bytes.
+    // Split seat D: a Codex pwsh argv envelope runs its script in PowerShell, from a caller read as
+    // bash; relief needs PowerShell's reading too, so the text it runs is refused as on master.
     [Theory]
-    [InlineData(GuardRetroCommands.Gs02SedConfigInsideTheGitDirectory)]
-    [InlineData("sed -i 's/NOTHERE/$(echo PWNED >&2)/' ./config; git diff")]
-    [InlineData("printf '%s' '$(echo PWNED >&2)' > hooks/pre-commit; git commit -m x")]
-    public async Task Gs02_GitLineInsideTheGitDirectory_IsDeniedInEveryShell(string command)
+    [MemberData(nameof(GuardRetroCommands.Gs02PowerShellReadingLines), MemberType = typeof(GuardRetroCommands))]
+    public async Task Gs02_CodexPwshEnvelope_IsDenied(string script)
     {
         await SetupClaimedAgent();
-        var gitDirectory = Directory.CreateDirectory(Path.Combine(TestDir, ".git")).FullName;
-
-        var bash = await GuardWithStdinAsync(ShellJson("Bash", command, gitDirectory));
-        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command, gitDirectory));
-        Environment.CurrentDirectory = gitDirectory;
-        CommandResult unknown;
-        try
+        var payload = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
         {
-            unknown = await UnknownShellGuardAsync(command);
-        }
-        finally
-        {
-            Environment.CurrentDirectory = TestDir;
-        }
+            ["session_id"] = TestSessionId,
+            ["turn_id"] = "t1",
+            ["tool_name"] = "shell_command",
+            ["cwd"] = TestDir,
+            ["tool_input"] = new Dictionary<string, object> { ["command"] = new[] { "pwsh", "-Command", script }, ["workdir"] = TestDir },
+        });
 
-        bash.AssertPreToolUseDenied();
-        bash.AssertStderrContains("bypass");
-        powerShell.AssertPreToolUseDenied();
-        powerShell.AssertStderrContains("bypass");
-        unknown.AssertExitCode(2);
-        unknown.AssertStderrContains("bypass");
+        var result = await GuardWithStdinAsync(payload);
+
+        result.AssertPreToolUseDenied();
+        result.AssertStderrContains("bypass");
     }
 
-    // A hook call that names no directory: a line that runs git gets no relief, any other keeps it.
+    // Split seat B's expanding-word probes that write no path: master warns, and so does every lane.
     [Theory]
-    [InlineData(GuardRetroCommands.Gs02SedBacktickSingleLine, false)]
-    [InlineData("sed -i 's/`x`/y/' f; git diff", false)]
-    [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md", true)]
-    public async Task Gs02_CallWithoutADirectory_KeepsReliefOnlyWithoutGit(string command, bool allowed)
+    [MemberData(nameof(GuardRetroCommands.Gs02ExpandingWordWarningLines), MemberType = typeof(GuardRetroCommands))]
+    public async Task Gs02_ExpandingWordWithoutAWrite_KeepsTheBypassWarning(string command)
     {
         await SetupClaimedAgent();
 
-        var result = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        var unknown = await UnknownShellGuardAsync(command);
 
-        if (allowed)
-            result.AssertPreToolUseAllowed();
-        else
-        {
-            result.AssertPreToolUseDenied();
-            result.AssertStderrContains("bypass");
-        }
+        foreach (var result in new[] { bash, powerShell, unknown })
+            result.AssertStderrContains("WARNING: Command contains command substitution - paths may be dynamic");
     }
 
     // The round-5 apostrophes pair only in PowerShell; bash's reading is required for every caller,
@@ -1053,8 +1034,8 @@ public class GuardSecurityTests : IntegrationTestBase
         var canary = Path.Combine(DydoDir, "index.md");
         var before = File.ReadAllBytes(canary);
 
-        var bash = await GuardWithStdinAsync(ShellJson("Bash", command, TestDir));
-        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command, TestDir));
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
         var unknown = await UnknownShellGuardAsync(command);
 
         bash.AssertPreToolUseDenied();
@@ -1086,7 +1067,7 @@ public class GuardSecurityTests : IntegrationTestBase
     {
         await SetupClaimedAgent();
 
-        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command, TestDir));
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
         var unknown = await UnknownShellGuardAsync(command);
 
         powerShell.AssertPreToolUseDenied();

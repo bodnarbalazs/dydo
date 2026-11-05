@@ -8,63 +8,37 @@ date: 2026-11-05
 
 ## Summary
 
-The guard no longer refuses an ordinary single-quoted data write as a bypass
-([DYD-422](https://linear.app/bodnar-balazs/issue/DYD-422), split from DYD-406 after the DYD-421
-tribunal). The GS-02 `sed -i` with backticks in its script, the same-session single-line
-``sed -i 's/`x`/y/' f`` and `printf '%s' 'first line<newline>$HOME is literal' > notes.md` now write
-their literal destinations, which are still path-checked.
+The guard no longer refuses a single `sed`, `printf` or `echo` command that writes single-quoted
+data as a bypass ([DYD-422](https://linear.app/bodnar-balazs/issue/DYD-422), split from DYD-406
+after the DYD-421 tribunal). ``sed -i 's/`x`/y/' f`` and
+`printf '%s' 'first line<newline>$HOME is literal' > notes.md` now write their literal
+destinations, which are still path-checked. The GS-02 `sed -i` writes that chain `git` stay refused
+as on master; relief for git-chained lines is deferred to a follow-up.
 
 ## Changed
 
-- Single-quoted text is not searched for a substitution, a variable or a line break only where no
-  shell or program on the line can run it
+- Single-quoted text is not searched for a substitution, a variable or a line break only when the
+  whole line is one `sed`, `printf` or `echo` command
   ([Guard System](../../../../understand/guard-system.md#layer-2-bash-command-analysis), bypass
-  detection). Bash's reading of the line, and PowerShell's too wherever PowerShell may run it (a
-  PowerShell tool call or an unknown shell), must close it as one single-quoted string in the same
-  word. That word must be an argument
-  of `sed` (one `s` command, no `e` or `w` flag, only the options on its closed list), `printf`, `echo`
-  or `grep`, whose output goes only to a file, the terminal or a pipe into `grep` or `echo`.
-- Every command in the command, in each reading, must be state-free: `sed`, `printf`, `echo`,
-  `grep`, `head`, or `git diff|add|status|commit|log`, named exactly. An alias, function or builtin
-  change (`alias`, `enable`, `Set-Alias`, `New-Alias`, `sal`, `nal`, `Set-Item alias:`), an
-  assignment, an unknown program or `git -c` anywhere takes the relief away. So do `printf -v` in any
-  spelling and `%n`, which assign variables (bash evaluates a `-v` name's subscript), and
-  PowerShell's `echo` with a parameter word such as `-OutVariable`. A command with a heredoc or
-  here-string body gets no single-quote relief.
-- Each state-free command takes only the options on its closed list, in every spelling (clusters,
-  attached values, `--opt=value`, options after operands); an abbreviation or any other option
-  takes the relief away. `sed`: `-n -E -r -s -z -u` and a bare `-i` or `--in-place`, `--posix`,
-  `--sandbox` and the like, but no backup suffix (`-i.bak`, `-i'.git/*'`, `--in-place=SUFFIX`),
-  `-e`, `-f`, `-l` or `--follow-symlinks`. `printf`: none. bash `echo`: `-n -e -E`. `grep`: matching
-  and formatting flags, `-f` (patterns) included, no `--pre`. `head`: counts. `git`: read-only
-  formatting options such as `--stat`, `--short`, `--format`, `-1`, `-qam`, but never `--ext-diff`,
-  `--textconv`, `-p`, `-e`, `--amend`, `--no-verify`, `--output`, `--git-dir`, `--work-tree`,
-  `--exec-path`, `--template`, `--config-env`, `-c` or `-C`.
-- An option that takes a required value (grep `-e -f -m -A -B -C -d` and their long names, head
-  `-n -c`, git `-m`) takes it from its cluster, after `=`, or else from the next word, as the
-  program parses it. A next word that is `--` or looks like an option takes the relief away:
-  git 2.53 reads `git commit -m -- --edit` as the message `--` and still runs the editor. Optional
-  values (`--color`, `--format`, `--pretty`, git `-u`) attach only through `=` or the cluster. A
-  word after a bare `--` that looks like an option also takes the relief away.
-- No command on the line may read a file the line writes as code. Every `sed` on it must only
-  substitute (one `s` script, listed options only). A line that runs `git` may write no path git
-  reads as configuration, attributes or hooks: a `.git` component, `.gitattributes`, `.gitmodules`,
-  `.gitconfig`, `.mailmap` or `.config/git/`, through any redirection or `sed -i` operand, the whole
-  write set of the listed options. Each relative target is first joined to the call's directory
-  (the hook's tool `cwd`/`workdir` or `cwd`; the process directory for the CLI `--command` lane), so
-  from inside a `.git` folder every relative write counts. A call with no directory gets no relief
-  on a line that runs git. These checks are case-blind, read `\` both ways, fold `.` and `..`, and
-  count a target the shell may expand. So `sed -f run.sed` after writing `run.sed`, `git diff` after
-  writing `.git/config`, and `sed -i ... config; git diff` run in `.git`, are refused as on master.
-- The line must read for certain: no substitution, group, compound command, continuation, lone `&`,
-  `$'...'`, or, where PowerShell may run it, a caret, `--%` or typographic quote.
-- Everything else is searched as before and refused as on master: `echo don\'t $(rm dydo/index.md)
-  won\'t` for every caller, a PowerShell tool call included, since bash's reading is always
-  required; the same line in a `cat <<EOF` body, `eval 'echo x' '> $OUT'`,
-  apostrophes in comments and expanding bodies, command strings and runners (`bash -c`, `eval`,
-  `iex`, `cmd /c`, `env -S`, `pwsh -Command`, `ssh`, `watch`, `su -c`, `script -c`, `xargs`,
-  `find -exec`, `docker`/`kubectl exec`, `tmux`), data piped or fed to a shell or another program,
-  `sed` with `e` or `w`, `awk`, and a variable or substituted destination.
+  detection). The line has no `;`, `&&`, `||`, `|`, `|&`, `&`, group, subshell, substitution,
+  process substitution, heredoc, here-string, continuation, compound command or assignment word.
+- Bash's reading and PowerShell's reading must both find that one command and hold the quote in the
+  same word, whatever shell the call declares; a Codex `pwsh -Command` envelope from a caller read
+  as bash runs its text in PowerShell.
+- `sed`: one `s` script with no `e` or `w` flag, and only its closed option list (`-n -E -r -s -z -u`,
+  a bare `-i` or `--in-place`, `--posix`, `--sandbox` and the like; no backup suffix, `-e`, `-f` or
+  `-l`). `printf`: no option and no `%n`. `echo`: no word PowerShell reads as a parameter, so bash's
+  `-n`, `-e` and `-E` take the relief away too.
+- No text outside single quotes may be read otherwise by either shell: bash's `$'...'`, a lone `&`,
+  a caret, `--%`, a typographic quote, or a word the shell may expand (`*`, `?`, `[`, `{`, `~`,
+  PowerShell's `@`). Bash turns `?f` into an existing file named `-f`.
+- Everything else is searched as before and refused as on master: a second command of any kind
+  (`git`, `grep`, `head`, a pipe), `echo don\'t $(rm dydo/index.md) won\'t` for every caller, the
+  same line in a `cat <<EOF` body, `eval 'echo x' '> $OUT'`, apostrophes in comments and expanding
+  bodies, command strings and runners (`bash -c`, `eval`, `iex`, `cmd /c`, `env -S`,
+  `pwsh -Command`, `ssh`, `watch`, `su -c`, `script -c`, `xargs`, `find -exec`,
+  `docker`/`kubectl exec`, `tmux`), `sed` with `e` or `w`, `awk`, and a variable or substituted
+  destination.
 - The relief changes the bypass search only. The file operations a substitution in literal data
   would make are still extracted and checked, and protected and off-limits paths are refused as
   before.
@@ -75,22 +49,18 @@ No change in this entry renames a term mechanically, so it has no merge normalis
 
 Guards stop accidents, not rogue agents.
 
-- The relief does not follow a file between calls: a git hook written on a line that runs no git
-  passes, and a later `git commit` runs it, as with a quoted-heredoc hook. On one line, both the hook
-  with `git commit` and `printf ... > run.sh && sh run.sh` are refused.
-- Pre-existing state, the same class as a pre-existing hook, is not read: a profile, alias or git
-  configuration set before the call, an `include` or `core.hooksPath` that names another file, or a
-  symlink that already leads to a git path; nor a bare-repository directory, whose name is not
-  `.git`, or a `GIT_DIR` set before the call. Only the call's own text and directory are.
-- An fd-numbered redirection (`1> .git/config`) takes the relief away, but master's path extraction
-  records no write for it, so the call passes with a warning, as on master.
+- Relief for git-chained lines, such as the GS-02 `sed -i ... && git diff --stat && git commit`, is
+  deferred to a follow-up; they are refused as on master.
+- The relief does not follow a file into a later call: `printf '%s' '$(...)' > .git/hooks/pre-commit`
+  passes, and a later `git commit` runs it, as with a quoted-heredoc hook.
+- Pre-existing state is not read: a file an earlier call left, such as one named `-f`, a profile,
+  an alias or git configuration set before the call.
 - A `sed` script's `r`, `R`, `w` or `W` command naming a file is not a path the guard extracts, with
   or without the relief; the relief takes only a single `s` command.
 
 ## Files Changed
 
-`Services/BashCommandAnalyzer.cs`, `Services/ShellReader.cs`, `Commands/GuardCommand.cs` (the
-analyzer gets the call's directory), `DynaDocs.Tests/GuardRetroCommands.cs`,
+`Services/BashCommandAnalyzer.cs`, `Services/ShellReader.cs`, `DynaDocs.Tests/GuardRetroCommands.cs`,
 `DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs`,
 `DynaDocs.Tests/Integration/GuardSecurityTests.cs`, `dydo/understand/guard-system.md`, and this entry.
 

@@ -2,6 +2,7 @@
 import ast
 import hashlib
 import inspect
+from itertools import chain
 import pickle
 import sys
 import types
@@ -117,7 +118,8 @@ def _digest(source):
     return hashlib.sha256(source.encode('utf-8')).hexdigest()
 
 
-_CACHE_SCHEMA = 'dydo-python-inventory/1'
+_CACHE_SCHEMA = 'dydo-python-inventory/2'
+_SEAL_SIZE = hashlib.sha256().digest_size
 _ROW_FIELDS = frozenset(('id', 'path', 'kind', 'line', 'column', 'end_line', 'end_column', 'body_lines',
                          'execution_count', 'branches', 'physical_branches', '_key'))
 
@@ -129,18 +131,29 @@ def _compile_state():
     return sys.version, sys.flags.optimize, debug_ranges
 
 
+def _seal(body):
+    """The cache bytes: the pickled body behind its SHA-256, so damaged bytes that still unpickle are a miss."""
+    return hashlib.sha256(body).digest() + body
+
+
+def _unsealed(cache):
+    """The payload of cache bytes whose body still matches its seal, else None."""
+    try:
+        seal, body = cache[:_SEAL_SIZE], cache[_SEAL_SIZE:]
+        return pickle.loads(body) if hashlib.sha256(body).digest() == seal else None
+    except Exception:  # noqa: BLE001 - absent, corrupt or truncated bytes are a miss, never a raise
+        return None
+
+
 def inventory_cache(sources):
     """Every source's runtime inventory, valid only for this compile state and source text."""
-    return pickle.dumps({'schema': _CACHE_SCHEMA, 'state': _compile_state(), 'sources': {
-        path: (_digest(source), _runtime_inventory(source, path)) for path, source in sources.items()}})
+    return _seal(pickle.dumps({'schema': _CACHE_SCHEMA, 'state': _compile_state(), 'sources': {
+        path: (_digest(source), _runtime_inventory(source, path)) for path, source in sources.items()}}))
 
 
 def _cached_inventories(cache):
     """The cache's entries when it was built under this process's compile state; anything else is a miss."""
-    try:
-        payload = pickle.loads(cache)
-    except Exception:  # noqa: BLE001 - absent, corrupt or truncated bytes are a miss, never a raise
-        return {}
+    payload = _unsealed(cache)
     if (type(payload) is not dict or payload.get('schema') != _CACHE_SCHEMA
             or payload.get('state') != _compile_state() or type(payload.get('sources')) is not dict):
         return {}
@@ -156,8 +169,35 @@ def _fresh_row(row, path):
             and all(type(hits) is int and hits == 0 for hits in row['body_lines'].values()))
 
 
+def _well_formed_keys(keys):
+    """Every key has exactly _key's shape: (str qualname, int first line, tuple of 4-int positions)."""
+    keys = {id(key): key for key in keys}.values()  # a row's key unpickles as the very object its index key is
+    if not all(type(key) is tuple and len(key) == 3 and type(key[0]) is str and type(key[1]) is int
+               and type(key[2]) is tuple for key in keys):
+        return False
+    points = list(chain.from_iterable(key[2] for key in keys))
+    return (set(map(type, points)) <= {tuple} and set(map(len, points)) <= {4}
+            and set(map(type, chain.from_iterable(points))) <= {int})
+
+
+def _owned_index(owners, index):
+    """Every owner is the index value of its own key, and the index points at no other row."""
+    identities = {id(row) for row in owners}
+    return (all(index.get(row['_key']) is row for row in owners)
+            and all(id(row) in identities for row in index.values()))
+
+
+def _own_ids(rows, module):
+    """Every id is the one _runtime_inventory gives its row, and no two rows share one."""
+    ids = [module['id'], *(row['id'] for row in rows)]
+    return (module['id'] == '<module>:1:0'
+            and all(type(row['line']) is int and type(row['column']) is int
+                    and row['id'] == f'{row["_key"][0]}:{row["line"]}:{row["column"]}' for row in rows)
+            and len(set(ids)) == len(ids))
+
+
 def _cached_inventory(entry, path, source):
-    """The entry's inventory when it is for exactly this text and shaped as a fresh one, else None."""
+    """The entry's inventory when it is for exactly this text and internally consistent, else None."""
     if type(entry) is not tuple or len(entry) != 2 or entry[0] != _digest(source):
         return None
     inventory = entry[1]
@@ -167,10 +207,10 @@ def _cached_inventory(entry, path, source):
     if type(rows) is not list or type(index) is not dict:
         return None
     owners = [*rows, module]
-    if not all(_fresh_row(row, path) for row in owners):
-        return None
-    identities = {id(row) for row in owners}
-    return inventory if all(id(row) in identities for row in index.values()) else None
+    consistent = (all(_fresh_row(row, path) for row in owners)
+                  and _well_formed_keys([*(row['_key'] for row in owners), *index])
+                  and _owned_index(owners, index) and _own_ids(rows, module))
+    return inventory if consistent else None
 
 
 class CallableWitness:

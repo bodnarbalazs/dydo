@@ -81,6 +81,7 @@ def _children_driver(*flag_sets):
 _DAMAGE_CACHE = """\
 import json, os, pickle, subprocess, sys
 from pathlib import Path
+from python_runtime import _seal, _unsealed
 
 config_path = Path(os.environ["DYDO_PYTHON_COVERAGE_CONFIG"])
 config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -99,13 +100,67 @@ elif case == "corrupt":
 elif case == "truncated":
     cache.write_bytes(cache.read_bytes()[:-10])
 elif case == "wrong structure":
-    payload = pickle.loads(cache.read_bytes())
+    payload = _unsealed(cache.read_bytes())
     payload["sources"] = {path: (digest, inventory[:2])
                           for path, (digest, inventory) in payload["sources"].items()}
-    cache.write_bytes(pickle.dumps(payload))
+    cache.write_bytes(_seal(pickle.dumps(payload)))
 elif case == "foreign schema":
-    cache.write_bytes(pickle.dumps({"schema": "foreign"}))
+    cache.write_bytes(_seal(pickle.dumps({"schema": "foreign"})))
 subprocess.run([sys.executable, "-c", "import subject; subject.work()"], check=True)
+"""
+
+
+_TWO_CALLABLES = ("def work(flag=True):\n    if flag:\n        return list(item for item in (1, 2) if item)\n"
+                  "    return []\n\n\ndef helper():\n    return 2\n")
+
+
+# Each case leaves a cache that is sealed and unpickles, but whose subject.py entry is internally
+# inconsistent: a key, index, owner or id that the writer can never produce.
+_INCONSISTENT_CACHE = """\
+import json, os, pickle, subprocess, sys
+from pathlib import Path
+from python_runtime import _seal, _unsealed
+
+config_path = Path(os.environ["DYDO_PYTHON_COVERAGE_CONFIG"])
+config = json.loads(config_path.read_text(encoding="utf-8"))
+cache = Path(config["inventory"])
+payload = _unsealed(cache.read_bytes())
+entries = {Path(path).name: inventory for path, (_, inventory) in payload["sources"].items()}
+rows, module, index = entries["subject.py"]
+work, helper = rows
+elsewhere = entries["other.py"][0][0]
+qualname, line, points = work["_key"]
+damage = {
+    "empty index": index.clear,
+    "index missing a callable key": lambda: index.pop(work["_key"]),
+    "index missing the module key": lambda: index.pop(module["_key"]),
+    "index key at a sibling row": lambda: index.update({work["_key"]: helper}),
+    "index key at another source's row": lambda: index.update({work["_key"]: elsewhere}),
+    "row key absent": lambda: work.update(_key=None),
+    "row key a list": lambda: work.update(_key=[qualname, line, points]),
+    "row key line not an int": lambda: work.update(_key=(qualname, str(line), points)),
+    "row key positions a list": lambda: work.update(_key=(qualname, line, list(points))),
+    "row key position short": lambda: work.update(_key=(qualname, line, tuple(p[:3] for p in points))),
+    "module key absent": lambda: module.update(_key=None),
+    "row id not a string": lambda: work.update(id=[]),
+    "row id of another form": lambda: work.update(id="work:9:0"),
+    "two rows with one id": lambda: helper.update(id=work["id"]),
+    "row listed twice": lambda: rows.append(work),
+}
+case = sys.argv[1]
+if case == "no cache":
+    del config["inventory"]
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+elif case == "byte damage that still unpickles":
+    body = pickle.dumps(payload)
+    work["end_column"] += 1
+    damaged = pickle.dumps(payload)
+    assert len(body) == len(damaged) and sum(a != b for a, b in zip(body, damaged)) == 1
+    cache.write_bytes(_seal(body)[:-len(body)] + damaged)
+else:
+    damage[case]()
+    cache.write_bytes(_seal(pickle.dumps(payload)))
+subprocess.run([sys.executable, "-c", "import subject; subject.work(); subject.helper()"], check=True)
 """
 
 
@@ -251,6 +306,30 @@ class PythonCoverageTests(unittest.TestCase):
             self.assertEqual([("work:1:0", 1)],
                              [(row["id"], row["execution_count"]) for row in expected["callables"]])
             for case in ("missing", "unreadable", "corrupt", "truncated", "wrong structure", "foreign schema"):
+                with self.subTest(cache=case):
+                    self.assertEqual(expected, measured(case))
+
+    def test_an_inconsistent_inventory_cache_is_measured_as_if_there_were_none(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text(_TWO_CALLABLES, encoding="utf-8")
+            (root / "other.py").write_text("def elsewhere():\n    return 3\n", encoding="utf-8")
+            (root / "damage.py").write_text(_INCONSISTENT_CACHE, encoding="utf-8")
+
+            def measured(case):
+                return self.campaign(root, root / f"evidence-{len(list(root.iterdir()))}",
+                                     ["subject.py", "other.py"], ["{python}", "-S", "damage.py", case])
+
+            expected = measured("no cache")
+            self.assertEqual([("elsewhere:1:0", 0, 0, 0), ("helper:7:0", 1, 0, 0), ("work:1:0", 1, 1, 3)],
+                             [(row["id"], row["execution_count"], len(row["branches"]),
+                               len(row["physical_branches"])) for row in expected["callables"]])
+            for case in ("empty index", "index missing a callable key", "index missing the module key",
+                         "index key at a sibling row", "index key at another source's row", "row key absent",
+                         "row key a list", "row key line not an int", "row key positions a list",
+                         "row key position short", "module key absent", "row id not a string",
+                         "row id of another form", "two rows with one id", "row listed twice",
+                         "byte damage that still unpickles"):
                 with self.subTest(cache=case):
                     self.assertEqual(expected, measured(case))
 

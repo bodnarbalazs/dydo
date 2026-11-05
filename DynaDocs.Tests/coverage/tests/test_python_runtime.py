@@ -38,9 +38,20 @@ def _differences(expected, actual):
 
 
 def _repickled(cache, damage):
-    payload = pickle.loads(cache)
+    """The cache with its payload damaged, sealed again so that only the damage itself can make it a miss."""
+    payload = python_runtime._unsealed(cache)
     damage(payload)
-    return pickle.dumps(payload)
+    return python_runtime._seal(pickle.dumps(payload))
+
+
+def _byte_damaged(cache):
+    """The cache with one byte of its sealed pickle changed so that it still loads: a row's end column."""
+    payload = python_runtime._unsealed(cache)
+    body = pickle.dumps(payload)
+    _first_row(payload)['end_column'] += 1
+    damaged = pickle.dumps(payload)
+    assert len(body) == len(damaged) and sum(a != b for a, b in zip(body, damaged)) == 1
+    return python_runtime._seal(body)[:-len(body)] + damaged
 
 
 def _entry(payload):
@@ -55,6 +66,18 @@ def _replace_entry(payload, entry):
 
 def _first_row(payload):
     return _entry(payload)[2][0][0]
+
+
+def _module(payload):
+    return _entry(payload)[2][1]
+
+
+def _index(payload):
+    return _entry(payload)[2][2]
+
+
+def _rekeyed(row, key):
+    row['_key'] = key(row['_key'])
 
 
 # Each damage leaves a pickle that loads; only its structure is wrong for this source.
@@ -77,20 +100,47 @@ _WRONG_STRUCTURES = {
         physical_branches=[{'code': 'x', 'origin': 0, 'destination': 2}]),
     'index outside the inventory': lambda payload: _entry(payload)[2][2].update(
         {key: dict(row) for key, row in _entry(payload)[2][2].items()}),
+    'empty index': lambda payload: _index(payload).clear(),
+    'index missing a callable key': lambda payload: _index(payload).pop(_first_row(payload)['_key']),
+    'index missing the module key': lambda payload: _index(payload).pop(_module(payload)['_key']),
+    'index key at another owner': lambda payload: _index(payload).update(
+        {_first_row(payload)['_key']: _module(payload)}),
+    'index key malformed': lambda payload: _index(payload).update({('work', '1', ()): _module(payload)}),
+    'row key absent': lambda payload: _first_row(payload).update(_key=None),
+    'row key a list': lambda payload: _rekeyed(_first_row(payload), list),
+    'row key line not an int': lambda payload: _rekeyed(
+        _first_row(payload), lambda key: (key[0], str(key[1]), key[2])),
+    'row key positions a list': lambda payload: _rekeyed(
+        _first_row(payload), lambda key: (*key[:2], list(key[2]))),
+    'row key position short': lambda payload: _rekeyed(
+        _first_row(payload), lambda key: (*key[:2], tuple(point[:3] for point in key[2]))),
+    'module key absent': lambda payload: _module(payload).update(_key=None),
+    'row id not a string': lambda payload: _first_row(payload).update(id=[]),
+    'row id of another form': lambda payload: _first_row(payload).update(id='work:9:0'),
+    'module id of another form': lambda payload: _module(payload).update(id='<module>:2:0'),
+    'row listed twice': lambda payload: _entry(payload)[2][0].append(_first_row(payload)),
 }
 
 
+def _relabelled(row, key):
+    """The row under another well-formed key and the id that key gives, so the cache stays consistent."""
+    row['_key'] = key
+    row['id'] = f'{key[0]}:{row["line"]}:{row["column"]}'
+
+
 def _monitored_as_physical(payload, path):
-    """Negative control: a cached row no longer recognises its own code object as its own."""
-    row = next(row for row in payload['sources'][path][1][0] if row['id'].startswith('_callable_inventory:'))
-    row['_key'] = ('elsewhere', *row['_key'][1:])
+    """Negative control: a consistent cached row no longer recognises its own code object as its own."""
+    rows, _, index = payload['sources'][path][1]
+    row = next(row for row in rows if row['id'].startswith('_callable_inventory:'))
+    _relabelled(row, ('elsewhere', *row['_key'][1:]))
+    index[row['_key']] = row
 
 
 def _physical_as_monitored(payload, path):
-    """Negative control: a cached row takes its nested generator's code object for its own."""
+    """Negative control: a consistent cached row takes its nested generator's code object for its own."""
     rows, _, index = payload['sources'][path][1]
     row = next(row for row in rows if row['id'].startswith('_physical_owner:'))
-    row['_key'] = next(key for key, owner in index.items() if owner is row and key != row['_key'])
+    _relabelled(row, next(key for key, owner in index.items() if owner is row and key != row['_key']))
 
 
 _COMPILE_STATE_CHILD = '''\
@@ -418,9 +468,12 @@ outer()
         source = ('def work(flag):\n    if flag:\n        return list(x for x in (1, 2) if x)\n'
                   '    return []\nwork(True)\nwork(False)\n')
         cache = inventory_cache({path: source})
+        seal = python_runtime._seal
         damaged = {
             'empty': b'', 'corrupt': b'not a pickle', 'truncated': cache[:-10],
-            'not a mapping': pickle.dumps(['sources']), 'foreign schema': pickle.dumps({'schema': 'foreign'}),
+            'byte damage that still unpickles': _byte_damaged(cache),
+            'not a mapping': seal(pickle.dumps(['sources'])),
+            'foreign schema': seal(pickle.dumps({'schema': 'foreign'})),
             **{name: _repickled(cache, damage) for name, damage in _WRONG_STRUCTURES.items()},
         }
 

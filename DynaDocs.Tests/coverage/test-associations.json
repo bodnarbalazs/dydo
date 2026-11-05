@@ -1542,7 +1542,11 @@
     },
     {
       "module": "Services/Statechart/PosixStatechartChannel.cs",
-      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixChannelTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartSocket.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixChannelTests.cs"]
     },
     {
       "module": "Services/Statechart/PosixStatechartFiles.cs",

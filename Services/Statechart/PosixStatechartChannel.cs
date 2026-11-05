@@ -18,8 +18,15 @@ internal sealed class PosixStatechartChannel : IDisposable
         _writer = new StreamWriter(pipe, new UTF8Encoding(false), 1024, leaveOpen: true) { NewLine = "\n" };
     }
 
-    public static PosixStatechartChannel Listen(string name) => new(new NamedPipeServerStream(Socket(name),
-        PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly), Socket(name));
+    public static PosixStatechartChannel Listen(string name) => Listen(name, Path.GetTempPath());
+
+    // The connector derives the same socket from the temp root it inherits.
+    public static PosixStatechartChannel Listen(string name, string temp)
+    {
+        var socket = PosixStatechartSocket.For(name, temp);
+        return new(new NamedPipeServerStream(socket, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly), socket);
+    }
 
     // The path only admits the first connection; a run that ends by exec never disposes the listener to remove it.
     public async Task AcceptAsync()
@@ -30,11 +37,12 @@ internal sealed class PosixStatechartChannel : IDisposable
 
     public static async Task<PosixStatechartChannel> ConnectAsync(string name)
     {
-        var pipe = new NamedPipeClientStream(".", Socket(name), PipeDirection.InOut, PipeOptions.Asynchronous);
+        var socket = PosixStatechartSocket.For(name, Path.GetTempPath());
+        var pipe = new NamedPipeClientStream(".", socket, PipeDirection.InOut, PipeOptions.Asynchronous);
         try
         {
             await pipe.ConnectAsync(30000);
-            return new PosixStatechartChannel(pipe, Socket(name));
+            return new PosixStatechartChannel(pipe, socket);
         }
         catch { pipe.Dispose(); throw; }
     }
@@ -49,9 +57,6 @@ internal sealed class PosixStatechartChannel : IDisposable
     }
 
     public int Export() => PosixStatechartDescriptors.Inherit(_pipe.SafePipeHandle.DangerousGetHandle());
-
-    // An absolute pipe name is the socket's own path; this one is where .NET puts a bare name.
-    private static string Socket(string name) => Path.Combine(Path.GetTempPath(), "CoreFxPipe_" + name);
 
     public void Dispose()
     {

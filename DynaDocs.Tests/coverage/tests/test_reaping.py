@@ -1,6 +1,9 @@
 """A contained driver, as the Linux subreaper of its run, reaps every orphan it adopts."""
+import contextlib
+import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -12,93 +15,245 @@ from unittest import mock
 
 TOOLS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(TOOLS))
+import gate_adapter
 import run_tests
 
 SELF_PID = 4242
 ORPHANS = 4
 # How long the subject waits for its driver to reap the orphans it left, before it reports them.
 REAP_WAIT_SECONDS = 5
+# Reaper passes a held wait lets run after its child exited, so one full pass saw that child.
+HELD_PASSES = 2
 
-# Leaves ORPHANS grandchildren that outlive their own parent and exit while the subject is still
-# running, so each is adopted by the driver and exits there. Pipes order every step: no sleep
-# decides an outcome. The subject then reports which exited orphans its driver has not reaped.
+# Leaves `orphans` grandchildren that outlive their own parent and exit while the subject is still
+# running, so each is adopted by the driver and exits there. With `leak`, it also leaves one more
+# that never exits and has left its process group, so only the driver's cleanup ends it. Without
+# a `ready` FIFO the subject releases its orphans at once and exits 7; with one, it reports ready
+# there and releases them when the driver interrupts it, then exits 130. Pipes order every step:
+# no sleep decides an outcome. The subject then reports which exited orphans its driver has not
+# reaped.
 SUBJECT = r'''
-import json, os, sys, time
+import json, os, signal, sys, time
 report, orphans, wait_seconds = sys.argv[1], int(sys.argv[2]), float(sys.argv[3])
-release_read, release_write = os.pipe()
-exited_read, exited_write = os.pipe()
-grandchildren = []
-for _ in range(orphans):
+leak, ready = sys.argv[4] == "leak", sys.argv[5]
+signal.alarm(60)  # no subject outlives a broken driver for long
+
+def orphaned(body):
+    """Run `body` in a grandchild whose own parent exits at once, and return its pid."""
     pid_read, pid_write = os.pipe()
     if os.fork() == 0:
+        os.close(pid_read)
         grandchild = os.fork()
         if grandchild == 0:
-            os.close(release_write)
-            os.read(release_read, 1)
+            os.close(pid_write)
+            body()
             os._exit(0)
         os.write(pid_write, str(grandchild).encode())
         os._exit(0)
     os.close(pid_write)
-    grandchildren.append(int(os.read(pid_read, 32)))
+    pid = int(os.read(pid_read, 32))
     os.close(pid_read)
     os.wait()
-os.close(release_write)
+    return pid
+
+def lingering():
+    os.setsid()
+    devnull = os.open(os.devnull, os.O_RDWR)
+    for stream in (0, 1, 2):
+        os.dup2(devnull, stream)
+    signal.alarm(60)
+    while True:
+        signal.pause()
+
+leaked = orphaned(lingering) if leak else None
+release_read, release_write = os.pipe()
+exited_read, exited_write = os.pipe()
+
+def awaiting_release():
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    os.close(release_write)
+    os.read(release_read, 1)
+
+grandchildren = [orphaned(awaiting_release) for _ in range(orphans)]
 os.close(exited_write)
-assert os.read(exited_read, 1) == b""  # every orphan has exited
-deadline = time.monotonic() + wait_seconds
-while time.monotonic() < deadline and any(os.path.exists(f"/proc/{pid}") for pid in grandchildren):
-    time.sleep(0.01)
-unreaped = [pid for pid in grandchildren if os.path.exists(f"/proc/{pid}")]
-with open(report, "w") as stream:
-    json.dump({"driver": os.getppid(), "unreaped": unreaped}, stream)
-raise SystemExit(7)
+
+def zombie_of_driver(pid):
+    try:
+        with open(f"/proc/{pid}/stat") as stream:
+            state, parent = stream.read().rsplit(") ", 1)[1].split()[:2]
+    except OSError:
+        return False
+    return state == "Z" and int(parent) == os.getppid()
+
+def finish(status):
+    os.close(release_write)
+    assert os.read(exited_read, 1) == b""  # every orphan has exited
+    deadline = time.monotonic() + wait_seconds
+    while time.monotonic() < deadline and any(map(zombie_of_driver, grandchildren)):
+        time.sleep(0.01)
+    with open(report, "w") as stream:
+        json.dump({"driver": os.getppid(), "leaked": leaked,
+                   "unreaped": [pid for pid in grandchildren if zombie_of_driver(pid)]}, stream)
+    raise SystemExit(status)
+
+if ready == "-":
+    finish(7)
+signal.signal(signal.SIGINT, lambda _signum, _frame: finish(130))
+with open(ready, "w") as stream:  # a FIFO: this blocks until the driver listens
+    stream.write("ready")
+while True:
+    signal.pause()
 '''
 
-# Runs one real driver path, with the real containment, as its own process, then lists the
-# zombie children the driver still holds once that path has returned.
-PROBE = r'''
-import json, os, sys
-from pathlib import Path
-sys.path.insert(0, sys.argv[1])
-import gate_adapter, run_tests
-entry, folder, orphans, wait_seconds = sys.argv[2], Path(sys.argv[3]), sys.argv[4], sys.argv[5]
-subject, report = folder / "subject.py", folder / "report.json"
-command = [sys.executable, str(subject), str(report), orphans, wait_seconds]
-if entry == "campaign":
-    status = run_tests._run_linux_campaign(command, folder, folder / "owner")["subject_status"]
-else:
-    status = gate_adapter.run_coverage_command(command, folder)
-zombies = [pid for pid, (parent, state) in run_tests._process_table().items()
-           if parent == os.getpid() and state == "Z"]
-observed = json.loads(report.read_text())
-print(json.dumps({"status": status, "driver": os.getpid(), "subject_driver": observed["driver"],
-                  "unreaped_during_run": observed["unreaped"], "zombies_after_return": zombies}))
-'''
+# Runs one real driver path, with the real containment, in a fresh process, so its subreaper state
+# never reaches this one.
+DRIVE = ("import sys; sys.path.insert(0, sys.argv[1]); import test_reaping; "
+         "test_reaping.drive(*sys.argv[2:])")
 
 
-def probe(entry, orphans=ORPHANS, wait_seconds=REAP_WAIT_SECONDS):
-    """Drive `entry` in a fresh process, so its subreaper state never reaches this one."""
+@contextmanager
+def held_status(command, passes=HELD_PASSES):
+    """Hold the first wait on `command`'s child until the reaper has run `passes` more times after
+    that child exited: a reaper that took its status would have done so by then, deterministically."""
+    real_reap, real_wait = run_tests.reap_adopted, subprocess.Popen.wait
+    reaped = threading.Condition()
+    count = 0
+
+    def counted_reap(job, owned=()):
+        nonlocal count
+        real_reap(job, owned=owned)
+        with reaped:
+            count += 1
+            reaped.notify_all()
+
+    def held_wait(child, timeout=None):
+        if child.args == command and child.returncode is None:
+            try:
+                os.waitid(os.P_PID, child.pid, os.WEXITED | os.WNOWAIT)  # exited, not collected
+            except ChildProcessError:
+                pass  # already taken: the wait below reports what Popen makes of that
+            with reaped:
+                target = count + passes
+                if not reaped.wait_for(lambda: count >= target, timeout=REAP_WAIT_SECONDS):
+                    raise AssertionError("no reaper ran while the wait was held")
+        return real_wait(child, timeout=timeout)
+
+    with mock.patch.object(run_tests, "reap_adopted", counted_reap), \
+            mock.patch.object(subprocess.Popen, "wait", held_wait):
+        yield
+
+
+def _campaign(command, folder):
+    return run_tests._run_linux_campaign(command, folder, folder / "owner")["subject_status"]
+
+
+def _adapter(command, folder):
+    return gate_adapter.run_coverage_command(command, folder)
+
+
+def _cancelled_adapter(command, folder):
+    """The adapter's row deadline passes once the subject is ready, so cancellation stops it."""
+    real_wait, waits = gate_adapter._wait_coverage_child, []
+
+    def deadline_passes_once_ready(child, deadline):
+        if waits:
+            return real_wait(child, deadline)
+        waits.append(child)
+        (folder / "ready").read_text(encoding="utf-8")  # returns once the subject is ready
+        raise subprocess.TimeoutExpired(child.args, 0)
+
+    with mock.patch.object(gate_adapter, "_wait_coverage_child", deadline_passes_once_ready):
+        try:
+            gate_adapter.run_coverage_command(command, folder)
+        except gate_adapter.MeasurementTimeout as error:
+            return type(error).__name__
+    raise AssertionError("the adapter was not cancelled")
+
+
+def _plain(command, folder):
+    """run_tests.main's plain dotnet run, with the worktree's git steps stubbed out."""
+    with mock.patch.object(run_tests, "prune_stale_test_worktrees"), \
+            mock.patch.object(run_tests, "is_registered_worktree", return_value=False), \
+            mock.patch.object(run_tests, "create_worktree", return_value=True), \
+            mock.patch.object(run_tests, "copy_dirty_files"), \
+            mock.patch.object(run_tests, "materialize_skill_links"), \
+            mock.patch.object(run_tests, "remove_worktree", side_effect=shutil.rmtree), \
+            mock.patch.object(run_tests, "test_command", return_value=command), \
+            mock.patch.object(sys, "argv", ["run_tests.py"]), \
+            contextlib.redirect_stdout(io.StringIO()):
+        try:
+            run_tests.main()
+        except SystemExit as exited:
+            return exited.code
+    raise AssertionError("run_tests.main did not exit")
+
+
+DRIVERS = {"campaign": _campaign, "adapter": _adapter, "cancel": _cancelled_adapter, "plain": _plain}
+
+
+def drive(entry, folder, orphans, leak):
+    """Run driver `entry` on the subject in `folder` and print what was left unreaped."""
+    folder = Path(folder)
+    report, ready = folder / "report.json", folder / "ready"
+    if entry == "cancel":
+        os.mkfifo(ready)
+    command = [sys.executable, str(folder / "subject.py"), str(report), orphans,
+               str(REAP_WAIT_SECONDS), leak, str(ready) if entry == "cancel" else "-"]
+    with contextlib.ExitStack() as stack:
+        if leak == "leak":
+            # No reaper pass runs, so only the reaps after cleanup can collect what cleanup killed.
+            stack.enter_context(mock.patch.object(run_tests, "REAP_INTERVAL_SECONDS", 3600))
+        elif entry != "cancel":
+            stack.enter_context(held_status(command))
+        status = DRIVERS[entry](command, folder)
+    zombies = [pid for pid, (parent, state) in run_tests._process_table().items()
+               if parent == os.getpid() and state == "Z"]
+    observed = json.loads(report.read_text(encoding="utf-8"))
+    print(json.dumps({"status": status, "driver": os.getpid(), "subject_driver": observed["driver"],
+                      "unreaped_during_run": observed["unreaped"], "leaked": observed["leaked"],
+                      "zombies_after_return": zombies,
+                      "live_after_return": run_tests._live_descendants(os.getpid())}))
+
+
+def probe(entry, orphans=ORPHANS, leak="none"):
+    """Drive `entry` in a fresh process and return what it observed."""
     with tempfile.TemporaryDirectory() as folder:
         (Path(folder) / "subject.py").write_text(SUBJECT, encoding="utf-8")
-        environment = {key: value for key, value in os.environ.items() if key != "DYDO_ROW_DEADLINE"}
-        completed = subprocess.run([sys.executable, "-c", PROBE, str(TOOLS), entry, folder,
-                                    str(orphans), str(wait_seconds)],
+        environment = {key: value for key, value in os.environ.items()
+                       if key != gate_adapter.ROW_DEADLINE_ENV}
+        completed = subprocess.run([sys.executable, "-c", DRIVE, str(Path(__file__).parent), entry,
+                                    folder, str(orphans), leak],
                                    capture_output=True, text=True, timeout=60, env=environment,
                                    check=False)
     if completed.returncode != 0:
         raise AssertionError(completed.stderr)
-    return json.loads(completed.stdout)
+    return json.loads(completed.stdout.splitlines()[-1])
 
 
 @unittest.skipUnless(sys.platform == "linux", "Linux subreaper containment")
 class AdoptedOrphanReapingTests(unittest.TestCase):
     def test_each_contained_driver_reaps_adopted_orphans_while_running_and_keeps_its_subject_status(self):
-        for entry in ("campaign", "adapter"):
+        for entry in ("campaign", "adapter", "plain"):
             with self.subTest(entry=entry):
                 observed = probe(entry)
                 self.assertEqual(observed["driver"], observed["subject_driver"], observed)
                 self.assertEqual(7, observed["status"], observed)
                 self.assertEqual([], observed["unreaped_during_run"], observed)
+                self.assertEqual([], observed["zombies_after_return"], observed)
+
+    def test_an_adapter_cancellation_reaps_adopted_orphans_while_it_stops_its_subject(self):
+        observed = probe("cancel")
+        self.assertEqual(observed["driver"], observed["subject_driver"], observed)
+        self.assertEqual("MeasurementTimeout", observed["status"], observed)
+        self.assertEqual([], observed["unreaped_during_run"], observed)
+        self.assertEqual([], observed["zombies_after_return"], observed)
+
+    def test_each_driver_reaps_the_leaked_descendant_its_cleanup_kills(self):
+        for entry in ("campaign", "plain", "cancel"):
+            with self.subTest(entry=entry):
+                observed = probe(entry, orphans=0, leak="leak")
+                self.assertIsInstance(observed["leaked"], int, observed)
+                self.assertEqual([], observed["live_after_return"], observed)
                 self.assertEqual([], observed["zombies_after_return"], observed)
 
     def test_the_reaper_never_takes_an_owned_childs_status_and_reaps_every_other_exited_child(self):
@@ -119,12 +274,32 @@ class AdoptedOrphanReapingTests(unittest.TestCase):
         with mock.patch.object(run_tests, "_children", return_value={1}):
             run_tests.reap_adopted(run_tests.SUBREAPER)
 
-    def test_a_contained_run_keeps_its_nonzero_status_while_the_reaper_is_active(self):
-        completed = run_tests.run_contained(run_tests.SUBREAPER,
-                                            [sys.executable, "-c", "raise SystemExit(7)"],
-                                            stdin=subprocess.DEVNULL)
+    def test_a_contained_run_keeps_its_status_while_reaper_passes_follow_its_exit(self):
+        command = [sys.executable, "-c", "raise SystemExit(7)"]
+        with held_status(command):
+            completed = run_tests.run_contained(run_tests.SUBREAPER, command, stdin=subprocess.DEVNULL)
         self.assertEqual(7, completed.returncode)
-        self.assertEqual([sys.executable, "-c", "raise SystemExit(7)"], completed.args)
+        self.assertEqual(command, completed.args)
+
+    def test_a_contained_run_that_cannot_start_its_reaper_still_waits_and_reaps_on_leaving(self):
+        command = [sys.executable, "-c", "raise SystemExit(7)"]
+        with mock.patch.object(run_tests.threading.Thread, "start",
+                               side_effect=RuntimeError("can't start new thread")), \
+                mock.patch.object(run_tests, "reap_adopted", wraps=run_tests.reap_adopted) as reap:
+            completed = run_tests.run_contained(run_tests.SUBREAPER, command, timeout=60,
+                                                stdin=subprocess.DEVNULL)
+        self.assertEqual(7, completed.returncode)
+        self.assertEqual(1, reap.call_count)
+
+    def test_an_adapter_that_cannot_start_its_reaper_still_waits_on_its_child(self):
+        with mock.patch.object(run_tests, "contain_descendants", return_value=run_tests.SUBREAPER), \
+                mock.patch.object(run_tests.threading.Thread, "start",
+                                  side_effect=RuntimeError("can't start new thread")), \
+                mock.patch.dict(os.environ, clear=False) as environment:
+            environment.pop(gate_adapter.ROW_DEADLINE_ENV, None)
+            status = gate_adapter.run_coverage_command([sys.executable, "-c", "raise SystemExit(7)"],
+                                                       Path.cwd())
+        self.assertEqual(7, status)
 
     def test_children_are_this_process_s_own_children(self):
         child = subprocess.Popen([sys.executable, "-c", "import sys; sys.stdin.read()"],
@@ -200,6 +375,30 @@ class ReapingSeamTests(unittest.TestCase):
                     pass
                 self.assertEqual({"child": 42, "stopped": True}, observed)
                 reap.assert_called_once_with(run_tests.SUBREAPER, owned=(42,))
+
+    def test_reaping_that_cannot_start_its_reaper_runs_the_body_and_reaps_on_leaving(self):
+        thread = mock.Mock()
+        thread.return_value.start.side_effect = RuntimeError("can't start new thread")
+        with mock.patch.object(run_tests.threading, "Thread", thread), \
+                mock.patch.object(run_tests, "reap_adopted") as reap:
+            with run_tests.reaping(run_tests.SUBREAPER, mock.Mock(pid=42)):
+                reap.assert_not_called()
+        thread.return_value.join.assert_not_called()
+        reap.assert_called_once_with(run_tests.SUBREAPER, owned=(42,))
+
+    def test_an_interrupt_during_the_reaper_join_retries_it_reaps_and_is_then_delivered(self):
+        steps = mock.Mock()
+        thread = steps.Thread
+        thread.return_value.join.side_effect = [KeyboardInterrupt, None]
+        with mock.patch.object(run_tests.threading, "Thread", thread), \
+                mock.patch.object(run_tests, "reap_adopted", steps.reap_adopted), \
+                self.assertRaises(KeyboardInterrupt):
+            with run_tests.reaping(run_tests.SUBREAPER, mock.Mock(pid=42)):
+                pass
+        self.assertEqual([mock.call.Thread().join(), mock.call.Thread().join(),
+                          mock.call.reap_adopted(run_tests.SUBREAPER, owned=(42,))],
+                         [step for step in steps.mock_calls
+                          if step[0] in ("Thread().join", "reap_adopted")])
 
     def test_reaping_without_a_subreaper_starts_no_reaper(self):
         with mock.patch.object(run_tests.threading, "Thread", side_effect=AssertionError("reaper")), \

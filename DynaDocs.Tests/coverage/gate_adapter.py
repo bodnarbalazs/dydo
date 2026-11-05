@@ -49,7 +49,8 @@ def run_coverage_command(argv, cwd):
         remaining = CLEANUP_SECONDS if deadline is None else max(0, deadline - time.monotonic())
         cleanup_confirmed = False
         try:
-            with defer_interruption():
+            # Orphans adopted while the campaign stops are reaped as they exit, as during its run.
+            with defer_interruption(), reaping(containment, child):
                 cleanup_deadline = time.monotonic() + min(remaining, CLEANUP_SECONDS)
                 stopped = _stop_coverage_campaign(child, cleanup_deadline, containment)
                 if stopped == 2:
@@ -81,7 +82,7 @@ def _wait_coverage_child(child, deadline):
 
 
 def _stop_coverage_campaign(child, deadline, containment):
-    from run_tests import end_descendants, reap_adopted
+    from run_tests import end_descendants
     try:
         if sys.platform == "win32":
             child.send_signal(signal.CTRL_BREAK_EVENT)
@@ -98,9 +99,9 @@ def _stop_coverage_campaign(child, deadline, containment):
                 pass
         _wait_coverage_child(child, min(deadline, time.monotonic() + 5))
     finally:
-        # A killed Linux owner can leave detached children adopted by this adapter.
+        # A killed Linux owner can leave detached children adopted by this adapter; the caller's
+        # reaping collects them once they are ended.
         end_descendants(containment, seconds=max(0, deadline - time.monotonic()))
-        reap_adopted(containment, owned=(child.pid,))
     return child.returncode
 
 

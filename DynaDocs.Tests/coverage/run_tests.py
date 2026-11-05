@@ -655,23 +655,46 @@ def _reap_until(stop, child):
         reap_adopted(SUBREAPER, owned=(child,))
 
 
+def _started(reaper):
+    """Start `reaper` and return it, or None when no thread can start, as near the pids limit."""
+    try:
+        reaper.start()
+    except RuntimeError:
+        return None
+    return reaper
+
+
+def _joined(reaper):
+    """Join `reaper`, retrying a join an interrupt cut short; True when one did."""
+    interrupted = False
+    while reaper is not None:
+        try:
+            reaper.join()
+            break
+        except KeyboardInterrupt:
+            interrupted = True
+    return interrupted
+
+
 @contextmanager
 def reaping(job, child):
     """While the body waits on the Popen `child` and on nothing else, reap the orphans the
     subreaper adopts every REAP_INTERVAL_SECONDS and once more on leaving. `child` stays its own
-    wait's to collect, so its exit status is never taken."""
+    wait's to collect, so its exit status is never taken. Without a reaper thread the body still
+    runs and the reap on leaving remains; an interrupt is delivered once the reaper has stopped."""
     if job != SUBREAPER:
         yield
         return
     stop = threading.Event()
-    reaper = threading.Thread(target=_reap_until, args=(stop, child.pid), daemon=True)
-    reaper.start()
+    reaper = _started(threading.Thread(target=_reap_until, args=(stop, child.pid), daemon=True))
     try:
         yield
     finally:
         stop.set()
-        reaper.join()
+        interrupted = _joined(reaper)
         reap_adopted(job, owned=(child.pid,))
+        if interrupted:
+            raise KeyboardInterrupt
 
 
 def run_contained(job, command, timeout=None, **options):

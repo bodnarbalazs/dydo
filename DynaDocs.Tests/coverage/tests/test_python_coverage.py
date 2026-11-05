@@ -267,14 +267,20 @@ if away.exists():
 """
 
 
-# A process measured through a real sitecustomize, with no campaign listening for its failure record,
-# whose measurement fails at startup on a config that does not exist, or at finish on a ghost callable.
+# A process measured through a real sitecustomize whose failure record cannot be sent: at startup it
+# finds no port in a config that does not exist; at finish, on a ghost callable, its connection to a
+# listener that never reads refuses every send.
 _UNRECORDABLE = """\
-import sys
+import socket, sys
 
 if sys.argv[1] == "finish":
     import subject
     exec(compile("def ghost():\\n    return 0\\nghost()\\n", subject.work.__code__.co_filename, "exec"))
+
+    def unsent(connection, data):
+        raise BrokenPipeError("the campaign stopped listening")
+
+    socket.socket.sendall = unsent
 print("ran", flush=True)
 """
 
@@ -317,6 +323,70 @@ with contextlib.suppress(OSError):
 
 _GHOST = ("import subject\nsubject.work()\n"
           "exec(compile('def ghost():\\n    return 0\\nghost()\\n', subject.work.__code__.co_filename, 'exec'))\n")
+
+
+# A measured child after another, whose reporting connection is hard to open and whose exit the driver
+# ignores. Its own sitecustomize, found ahead of the campaign's, sets up the case before starting
+# measurement as the campaign's does; its program leaves a marker once it runs.
+_UNCONNECTED_AND_IGNORED = """\
+import os, subprocess, sys
+from pathlib import Path
+
+subprocess.run([sys.executable, "-c", "import subject; subject.work()"], check=True)
+env = {**os.environ, "PYTHONPATH": os.pathsep.join([str(Path("injected").resolve()), os.environ["PYTHONPATH"]])}
+child = subprocess.Popen([sys.executable, "-c", "open('ran', 'x').close(); import subject; subject.work()"], env=env)
+Path("failed.pid").write_text(str(child.pid), encoding="utf-8")
+Path("failed.exit").write_text(str(child.wait()), encoding="utf-8")
+"""
+
+
+_START = "from python_coverage import startup_from_environment\nstartup_from_environment()\n"
+
+
+_CONNECT_FAILING_ONCE = """\
+import errno, socket
+connect = socket.socket.connect
+
+
+def fail_once(connection, address):
+    socket.socket.connect = connect
+    raise OSError(errno.EADDRNOTAVAIL, "no ephemeral port free yet")
+
+
+socket.socket.connect = fail_once
+"""
+
+
+_UNCONNECTED = {
+    # Only the reporting socket is left to allocate once every descriptor is in use.
+    "descriptors exhausted": """\
+import contextlib, os, resource, socket, python_coverage
+resource.setrlimit(resource.RLIMIT_NOFILE, (64, 64))
+held = []
+with contextlib.suppress(OSError):
+    while True:
+        held.append(os.open(os.devnull, os.O_RDONLY))
+try:
+    python_coverage.startup_from_environment()
+finally:  # a program that startup lets run may open files again
+    for descriptor in held:
+        os.close(descriptor)
+""",
+    # A port bound, so no other process takes it, but never listened on.
+    "connect refused throughout": """\
+import os, socket
+unheard = socket.socket()
+unheard.bind(("127.0.0.1", 0))
+os.environ["DYDO_PYTHON_COVERAGE_FAILURES"] = str(unheard.getsockname()[1])
+""" + _START,
+    "connect failing once": _CONNECT_FAILING_ONCE + _START,
+    "connect failing once, then startup failing": _CONNECT_FAILING_ONCE + """\
+import json, os
+from pathlib import Path
+config = Path(os.environ["DYDO_PYTHON_COVERAGE_CONFIG"])
+config.write_text(json.dumps({**json.loads(config.read_text(encoding="utf-8")), "schema": 2}), encoding="utf-8")
+""" + _START,
+}
 
 
 # A child of the command still running when the command returns: measured, or unmeasured and holding a
@@ -634,6 +704,43 @@ class PythonCoverageTests(unittest.TestCase):
                     self.skipTest("a process lowers its own descriptor limit through POSIX `resource` only")
                 self.assert_failed_by_name(_IGNORED_FAILURE, case, case.rsplit(" ", 1)[1])
 
+    def unconnected(self, case):
+        """The campaign of a command whose last child's connection, as `case` says, is hard to open; that
+        child's pid and exit; whether its program ran; the campaign's counters, if it wrote them."""
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+            (root / "driver.py").write_text(_UNCONNECTED_AND_IGNORED, encoding="utf-8")
+            (root / "injected").mkdir()
+            (root / "injected" / "sitecustomize.py").write_text(_UNCONNECTED[case], encoding="utf-8")
+            output = root / "evidence"
+            result = _facade(root, output, ["subject.py"], ["{python}", "-S", "driver.py"], timeout=60)
+            counters = output / "counters.json"
+            return (result, (root / "failed.pid").read_text(encoding="utf-8"),
+                    int((root / "failed.exit").read_text(encoding="utf-8")), (root / "ran").exists(),
+                    json.loads(counters.read_text(encoding="utf-8")) if counters.exists() else None)
+
+    def test_a_process_that_cannot_open_its_reporting_connection_ends_before_its_program_runs(self):
+        for case in ("descriptors exhausted", "connect refused throughout"):
+            with self.subTest(case=case):
+                if case.startswith("descriptors") and sys.platform == "win32":
+                    self.skipTest("a process lowers its own descriptor limit through POSIX `resource` only")
+                result, pid, exit_code, ran, _ = self.unconnected(case)
+                self.assertEqual((70, False), (exit_code, ran), result.stdout + result.stderr)
+                self.assertIn(f"Python measurement failed in process {pid} at startup", result.stderr)
+                self.assertIn("could not be recorded", result.stderr)
+
+    def test_a_connect_that_fails_at_first_is_retried_into_the_connection_its_process_reports_on(self):
+        with self.subTest(case="measured"):
+            result, _, exit_code, ran, counters = self.unconnected("connect failing once")
+            self.assertEqual((0, 0, True), (result.returncode, exit_code, ran), result.stdout + result.stderr)
+            self.assertEqual([("work:1:0", 2)],
+                             [(row["id"], row["execution_count"]) for row in counters["callables"]])
+        with self.subTest(case="then startup failing"):
+            result, pid, _, _, counters = self.unconnected("connect failing once, then startup failing")
+            self.assertEqual((2, None), (result.returncode, counters), result.stdout + result.stderr)
+            self.assertIn(f"Python measurement failed in process {pid} at startup", result.stderr)
+
     def outlived(self, case):
         """The campaign of a command whose child, as `case` says, outlives it; that child's pid; whether it counted."""
         with tempfile.TemporaryDirectory() as folder, socket.create_server(("127.0.0.1", 0)) as release:
@@ -689,7 +796,7 @@ class PythonCoverageTests(unittest.TestCase):
     def test_a_measurement_failure_that_cannot_be_recorded_fails_its_process(self):
         tools = Path(__file__).resolve().parents[1]
         python = tools.parents[1] / STATIC_GATE_INTERPRETER
-        with tempfile.TemporaryDirectory() as folder:
+        with tempfile.TemporaryDirectory() as folder, socket.create_server(("127.0.0.1", 0)) as unread:
             work = Path(folder).resolve()
             (work / "startup").mkdir()
             (work / "startup" / "sitecustomize.py").write_text(
@@ -705,17 +812,19 @@ class PythonCoverageTests(unittest.TestCase):
                    if key not in ("DYDO_PYTHON_COVERAGE_CONFIG", "DYDO_PYTHON_COVERAGE_FAILURES")}
             env["PYTHONPATH"] = os.pathsep.join([str(work / "startup"), str(tools)])
 
-            def run(case, config=None):
+            def run(case, campaign=None):
                 return subprocess.run(
                     [str(python), "unrecordable.py", case], cwd=work, text=True, capture_output=True,
-                    env=env if config is None else {**env, "DYDO_PYTHON_COVERAGE_CONFIG": str(config)})
+                    env={**env, **(campaign or {})})
 
             unmeasured = run("no campaign")
             self.assertEqual((0, "ran\n", ""), (unmeasured.returncode, unmeasured.stdout, unmeasured.stderr))
-            for case, config, ran in (("startup", work / "missing" / "config.json", ""),
-                                      ("finish", work / "campaign" / "config.json", "ran\n")):
+            for case, campaign, ran in (
+                    ("startup", {"DYDO_PYTHON_COVERAGE_CONFIG": str(work / "missing" / "config.json")}, ""),
+                    ("finish", {"DYDO_PYTHON_COVERAGE_CONFIG": str(work / "campaign" / "config.json"),
+                                "DYDO_PYTHON_COVERAGE_FAILURES": str(unread.getsockname()[1])}, "ran\n")):
                 with self.subTest(phase=case):
-                    failed = run(case, config)
+                    failed = run(case, campaign)
                     self.assertEqual((70, ran), (failed.returncode, failed.stdout), failed.stderr)
                     self.assertIn(f"at {case}", failed.stderr)
                     self.assertIn("could not be recorded", failed.stderr)

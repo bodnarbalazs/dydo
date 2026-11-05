@@ -16,6 +16,14 @@ _UNRECORDED_FAILURE_EXIT = 70  # EX_SOFTWARE
 # under a second on an idle host); five seconds leaves room for a loaded runner. Only a connection still
 # open makes `collect` wait, so a campaign whose processes have all exited pays nothing.
 _SETTLE_SECONDS = 5
+# How a process opens its reporting connection. `collect` listens on loopback for the whole command, so a
+# connect normally completes in well under a millisecond. It can fail for a moment: no ephemeral port free
+# yet (EADDRNOTAVAIL), or a full backlog refusing or resetting it (Windows) or dropping its SYN, which a
+# Linux client would resend only after a second, so each attempt stops after `_CONNECT_TIMEOUT_SECONDS`.
+# After each such failure the process waits the next backoff and connects anew; four attempts take 0.47 s
+# at most (4 x 0.1 s + 0.07 s), and a process that connects at once pays nothing more.
+_CONNECT_TIMEOUT_SECONDS = 0.1
+_CONNECT_BACKOFF_SECONDS = (0.01, 0.02, 0.04)
 
 
 def _identity(row):
@@ -105,41 +113,77 @@ def _record(text):
     return (json.dumps(text) + "\n").encode("ascii")
 
 
+def _failure(phase, error):
+    return (f"Python measurement failed in process {os.getpid()} at {phase} "
+            f"({sys.orig_argv}): {type(error).__name__}: {error}")
+
+
+def _exit_unrecorded(phase, error, unrecorded):
+    """End a process whose failed measurement no campaign can hear: `site` and `atexit` swallow the error,
+    so only a nonzero exit is left. Telling stderr is best effort; the exit needs no new resource."""
+    try:
+        print(f"{_failure(phase, error)}; it could not be recorded: {unrecorded}", file=sys.stderr, flush=True)
+        sys.stdout.flush()
+    finally:
+        os._exit(_UNRECORDED_FAILURE_EXIT)
+
+
+def _transient(error):
+    """A connect failure that can pass in moments; any other leaves the process without a connection."""
+    import errno
+    return isinstance(error, (ConnectionError, TimeoutError)) or error.errno == errno.EADDRNOTAVAIL
+
+
+def _connect_once(port):
+    import socket
+    connection = socket.socket()
+    try:
+        connection.settimeout(_CONNECT_TIMEOUT_SECONDS)
+        connection.connect(("127.0.0.1", port))
+    except OSError:
+        connection.close()
+        raise
+    connection.settimeout(None)
+    return connection
+
+
+def _connect(config_path):
+    """A connection to `collect` on the port in the environment or, for a process that lost that variable,
+    in its campaign config, retrying transient failures as `_CONNECT_BACKOFF_SECONDS` allows."""
+    import time
+    port = int(os.environ.get("DYDO_PYTHON_COVERAGE_FAILURES")
+               or json.loads(Path(config_path).read_text(encoding="utf-8"))["port"])
+    for backoff in _CONNECT_BACKOFF_SECONDS:
+        try:
+            return _connect_once(port)
+        except OSError as error:
+            if not _transient(error):
+                raise
+        time.sleep(backoff)
+    return _connect_once(port)
+
+
 class _Report:
-    """This process's reporting connection to its campaign's `collect`, opened before measurement can fail.
+    """This process's reporting connection to its campaign's `collect`, opened before its program runs.
 
     Its first record names the process. A failed measurement follows on the same connection, so sending it
-    takes no new descriptor, and closes it; a clean exit closes it with nothing more. The port comes from
-    the environment or, for a process that lost that variable, from its campaign config."""
+    takes no new descriptor, and closes it; a clean exit closes it with nothing more. A process that cannot
+    open the connection exits at startup, so no measured program runs without one."""
 
     def __init__(self, config_path):
-        import socket
-        self.connection, self.unreachable = socket.socket(), None
         try:
-            port = (os.environ.get("DYDO_PYTHON_COVERAGE_FAILURES")
-                    or json.loads(Path(config_path).read_text(encoding="utf-8"))["port"])
-            self.connection.connect(("127.0.0.1", int(port)))
+            self.connection = _connect(config_path)
             self.connection.sendall(_record(f"process {os.getpid()} {sys.orig_argv}"))
-        except Exception as error:  # noqa: BLE001 - it ends the process with the first failure it leaves unsent
-            self.unreachable = error
+        except Exception as error:  # noqa: BLE001 - `site` would run the program unmeasured
+            _exit_unrecorded("startup", error, "no reporting connection")
 
     def failed(self, phase, error):
-        """Send this process's failed measurement to `collect`, or end the process unmeasured.
-
-        `site` and `atexit` swallow the error, so a process no campaign can hear exits nonzero instead."""
-        message = (f"Python measurement failed in process {os.getpid()} at {phase} "
-                   f"({sys.orig_argv}): {type(error).__name__}: {error}")
+        """Send this process's failed measurement to `collect`, or end the process unmeasured."""
         try:
-            if self.unreachable is not None:
-                raise self.unreachable
-            self.connection.sendall(_record(message))
+            self.connection.sendall(_record(_failure(phase, error)))
             self.connection.close()
         except Exception as unrecorded:  # noqa: BLE001 - every unrecorded failure must end the process
-            try:
-                print(f"{message}; it could not be recorded: {unrecorded}", file=sys.stderr, flush=True)
-                sys.stdout.flush()
-            finally:
-                os._exit(_UNRECORDED_FAILURE_EXIT)
+            _exit_unrecorded(phase, error, unrecorded)
 
 
 def startup_from_environment():

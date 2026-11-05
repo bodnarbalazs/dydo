@@ -75,11 +75,15 @@ server-side. Balazs ruled it unnecessary.
 6. **Crew may run it.** The Merge Sub-ticket's code-writer runs it, then a fresh merge reviewer
    judges its merge SHA. The guard allows `merge` in its worker lane: it cannot tell roles apart,
    and doctrine gives the merge to that crew. Decided by the admiral; reversible.
-7. **Planned guard hard blocks; delivery pending in
-   [DYD-425](https://linear.app/bodnar-balazs/issue/DYD-425).** The guard is to block these other
-   paths for agents: raw `gh pr merge` into any base, since it cannot read a PR's base offline;
-   `gh api` merge paths (`pulls/<n>/merge`, `merge-async`, `merges`) and GraphQL merge mutations;
-   `git push` to the default branch; and default-branch changes. These blocks are decided, not shipped.
+7. **Guard hard blocks on the other routes; shipped in
+   [DYD-425](https://linear.app/bodnar-balazs/issue/DYD-425).** The guard refuses these paths for
+   every caller, top-level or sub-agent: raw `gh pr merge` into any base, since it cannot read a PR's
+   base offline; `gh api` on `pulls/<n>/merge`, `merge-async` or `merges`, and GraphQL
+   `mergePullRequest`, `enablePullRequestAutoMerge` or `mergeBranch`; a `git push` that updates
+   `master`, `main` or the branch the local `origin/HEAD` names; and default-branch changes
+   (`gh repo edit --default-branch`, a `gh api` PATCH of the repository with `default_branch`). Each
+   refusal names `dydo merge`. The exact reading and its residuals are in
+   [Guard System](../../understand/guard-system.md#also-enforced).
 8. **Claude/Codex parity is a requirement; its gate is planned, delivery pending in
    [DYD-426](https://linear.app/bodnar-balazs/issue/DYD-426).** Both hosts must get the same
    privileges and the same allow or block outcome for the same command. `dydo init` and `--join`
@@ -87,23 +91,29 @@ server-side. Balazs ruled it unnecessary.
    `dydo` and `dydo.exe merge` for
    Codex. The planned gate must run the command matrix through a Codex session in PowerShell and
    a Claude session in bash, in the main checkout and in a fresh T3 worktree; any mismatch is a
-   blocker. The allow-rule delivery does not establish this parity. Merging on one host only is
-   not an outcome.
+   blocker. Neither the allow-rule delivery nor the shipped blocks of decision 7 establish this
+   parity. Merging on one host only is not an outcome.
 
 ## Consequences
 
 - Guards stop accidents, not rogue agents. Accepted residuals:
   - **A forged PR body.** Any agent with the gh token can edit it. Hardening would need a distinct
     reviewer identity, such as a GitHub App submitting an approving review.
-  - **Wrapped or opaque shell payloads** (`bash -c`, `eval`, a GraphQL body in a file) remain a
-    text-reading limitation of the planned DYD-425 guard blocks; those blocks are not yet shipped.
+  - **Wrapped or opaque shell payloads.** The shipped blocks read a wrapper's command string
+    (`bash -c`, `eval`, `pwsh -Command`, `cmd /c`, `env -S`, `ssh`, `watch`) and refuse it for the
+    route it holds. They remain a text-reading limitation: an `-EncodedCommand` or nesting past eight
+    wrappers is not decoded, a GraphQL query or API body read from a file or stdin
+    (`-F query=@file`, `--input`) is not read, and aliases, functions, scripts and a push destination
+    only git config sets are not followed.
   - **A workflow that registers late**, after every other check has finished green. A listed inert
     app registering a real suite before its runs exist is also ignored when its status is `queued`,
     `in_progress`, `pending`, `requested` or `waiting` and `latest_check_runs_count` is present as a
     valid integer zero; an unlisted app's unfinished suite refuses even with zero runs.
   - **The default-branch-switch race:** an admin switching the default branch to the feature branch
-    during a run. The command re-reads `default_branch` after merging and warns when it changed;
-    blocking agent default-branch changes is planned, delivery pending in DYD-425.
+    during a run. The command re-reads `default_branch` after merging and warns when it changed. The
+    guard refuses an agent's `gh repo edit --default-branch` and `gh api` PATCH with `default_branch`,
+    but it sees only agent tool calls: a switch outside them, or by a path it does not read (the
+    residuals above), still passes.
   - **The `POST /merges` window.** GitHub cannot make that merge conditional on a tip. The command
     re-reads the ref just before the call and checks the merge's first parent after it, so a branch
     that moves inside that window still takes the merge: the command exits `2` naming both SHAs, and

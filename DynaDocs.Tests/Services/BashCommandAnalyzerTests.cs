@@ -399,6 +399,129 @@ public class BashCommandAnalyzerTests
             op.Type == FileOperationType.Write && op.Path == expectedPath);
     }
 
+    // DYD-640: every output redirection writes its target, with or without an fd number, in every
+    // dialect; bash reads word2>file as the word and a plain >file.
+    [Theory]
+    [InlineData("printf x 1> out.md")]
+    [InlineData("printf x 2>out.md")]
+    [InlineData("printf x 3> out.md")]
+    [InlineData("printf x 1>> out.md")]
+    [InlineData("printf x 2>>out.md")]
+    [InlineData("printf x 1>| out.md")]
+    [InlineData("printf x >| out.md")]
+    [InlineData("printf x &> out.md")]
+    [InlineData("printf x &>>out.md")]
+    [InlineData("printf x >&out.md")]
+    [InlineData("printf word2>out.md")]
+    [InlineData("printf x 2>&1 1> out.md")]
+    public void Analyze_EveryOutputRedirection_WritesItsTarget(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "out.md");
+        }
+    }
+
+    // An escaped > redirects nothing, so the | after it still pipes into the next command.
+    [Theory]
+    [InlineData("echo \\>| rm notes.md")]
+    [InlineData("echo `>| rm notes.md")]
+    public void Analyze_EscapedRedirectBeforeABar_StillPipes(string command)
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.PowerShell).Analyze(command);
+
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Delete && op.Path == "notes.md");
+    }
+
+    // fd duplication and close name a descriptor, not a file; a redirection the guard has read only since
+    // DYD-640 into a sink writes no file, so a stderr silencer beside a $ word refuses nothing.
+    [Theory]
+    [InlineData("printf x 2>&1")]
+    [InlineData("printf x 1>&2")]
+    [InlineData("printf x >&2")]
+    [InlineData("printf x 2>&-")]
+    [InlineData("printf x 3>&1-")]
+    [InlineData("echo \"$HOME\" 2>/dev/null")]
+    [InlineData("ls $(pwd) 2>/dev/null")]
+    [InlineData("echo $HOME 1>/dev/null")]
+    [InlineData("echo $HOME 2>>/dev/stderr")]
+    [InlineData("echo $HOME 1>/dev/stdout")]
+    [InlineData("echo $HOME 3>/dev/fd/2")]
+    [InlineData("echo $HOME >|/dev/null")]
+    [InlineData("echo $HOME >&/dev/null")]
+    [InlineData("echo $HOME word2>/dev/null")]
+    [InlineData("Get-ChildItem $HOME 2>$null")]
+    [InlineData("Get-ChildItem $HOME 2>$NULL")]
+    public void Analyze_FdDuplicationOrANewlyReadSink_WritesNoFile(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.DoesNotContain(result.Operations, op => op.Type == FileOperationType.Write);
+        }
+    }
+
+    // The redirections read before DYD-640 keep their reading: > /dev/null stays a write.
+    [Theory]
+    [InlineData("echo $HOME > /dev/null", "/dev/null")]
+    [InlineData("echo $HOME >> /dev/null", "/dev/null")]
+    [InlineData("echo $HOME &> /dev/null", "/dev/null")]
+    [InlineData("echo x 2> /dev/nullish", "/dev/nullish")]
+    [InlineData("echo x 2> /dev/fd/x", "/dev/fd/x")]
+    public void Analyze_PlainRedirectionToASinkOrAFdRedirectionToAFile_StaysAWrite(string command, string path)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == path);
+    }
+
+    // Redirection characters in quoted text are read as a redirection, as before DYD-640.
+    [Fact]
+    public void Analyze_RedirectionInQuotedText_StaysAWrite()
+    {
+        var result = _analyzer.Analyze("git commit -m \"x > notes.md\"");
+
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
+    }
+
+    // The redirection read stays linear in the command (DYD-610): one run eight times longer costs about
+    // eight short runs, and the write after the run is still read.
+    [Theory]
+    [InlineData("2>&1 ")]
+    [InlineData("2>")]
+    [InlineData("1>|")]
+    [InlineData("&>>")]
+    [InlineData("9")]
+    [InlineData(">     ")]
+    public void Analyze_LongRedirectionRun_GrowsLinearly(string unit)
+    {
+        const int growth = 8;
+        var shortRun = "printf x " + string.Concat(Enumerable.Repeat(unit, 256)) + " 1> out.md";
+        var longRun = "printf x " + string.Concat(Enumerable.Repeat(unit, 256 * growth)) + " 1> out.md";
+        var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
+
+        for (var round = 0; round < 7; round++)
+        {
+            shortBest = Min(shortBest, TimeAnalyses(shortRun, growth));
+            longBest = Min(longBest, TimeAnalyses(longRun, 1));
+        }
+
+        Assert.Contains(_analyzer.Analyze(longRun).Operations, op => op.Type == FileOperationType.Write && op.Path == "out.md");
+        var ratio = longBest / shortBest;
+        Assert.True(ratio < 2.5, $"one 8x run took {ratio:F2}x as long as eight short ones ({shortBest} vs {longBest})");
+    }
+
+    private TimeSpan TimeAnalyses(string command, int times)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        for (var i = 0; i < times; i++)
+            _analyzer.Analyze(command);
+        return stopwatch.Elapsed;
+    }
+
     [Theory]
     [InlineData("tee newfile.txt", "newfile.txt")]
     [InlineData("touch newfile.txt", "newfile.txt")]
@@ -1681,8 +1804,8 @@ public class BashCommandAnalyzerTests
         Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == ".git/hooks/pre-commit");
     }
 
-    // Every redirection the shell reads counts as a write, an fd-numbered one too, though path
-    // extraction, as on master, records no write for it.
+    // Every redirection the shell reads counts as a write, an fd-numbered one too, and path
+    // extraction records a write to its target (DYD-640).
     [Theory]
     [InlineData("printf '%s' '$(echo PWNED >&2)' 1> .git/config; git diff")]
     [InlineData("printf '%s' '$(echo PWNED >&2)' 2>.gitattributes; git add notes.md")]

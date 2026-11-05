@@ -1507,4 +1507,57 @@ public class GuardSecurityTests : IntegrationTestBase
 
         result.AssertPreToolUseAllowed();
     }
+
+    // ================================================================
+    // DYD-640: an fd-numbered redirection writes its target, checked like plain >
+    // ================================================================
+
+    [Theory]
+    [InlineData("printf x > dydo/index.md", "Path is protected")]
+    [InlineData("printf x 1> dydo/index.md", "Path is protected")]
+    [InlineData("printf x 2> dydo/index.md", "Path is protected")]
+    [InlineData("printf x 3> dydo/index.md", "Path is protected")]
+    [InlineData("printf x 1>> dydo/index.md", "Path is protected")]
+    [InlineData("printf x 1>| dydo/index.md", "Path is protected")]
+    [InlineData("printf x >| dydo/index.md", "Path is protected")]
+    [InlineData("printf x &> dydo/index.md", "Path is protected")]
+    [InlineData("printf x &>> dydo/index.md", "Path is protected")]
+    [InlineData("printf x >&dydo/index.md", "Path is protected")]
+    [InlineData("printf word2>dydo/index.md", "Path is protected")]
+    [InlineData("printf x 1> .env", "off-limits")]
+    [InlineData("printf x 2>> .env", "off-limits")]
+    public async Task Dyd640_OutputRedirectionToAGuardedPath_IsDenied(string command, string reason)
+    {
+        await SetupClaimedAgent();
+
+        foreach (var toolName in new[] { "Bash", "PowerShell" })
+        {
+            var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+            result.AssertPreToolUseDenied();
+            result.AssertStderrContains(reason);
+        }
+    }
+
+    // fd duplication or close, and an fd-numbered redirection into a sink, beside a $ word stay allowed.
+    [Theory]
+    [InlineData("Bash", "echo \"$HOME\" 2>/dev/null")]
+    [InlineData("Bash", "ls $(pwd) 2>/dev/null")]
+    [InlineData("Bash", "echo $HOME 1>/dev/null")]
+    [InlineData("Bash", "echo $HOME 2>/dev/stderr")]
+    [InlineData("Bash", "echo $HOME 1>/dev/stdout")]
+    [InlineData("Bash", "echo $HOME 3>/dev/fd/1")]
+    [InlineData("Bash", "echo $HOME 2>&1")]
+    [InlineData("Bash", "echo $HOME 1>&2")]
+    [InlineData("Bash", "echo $HOME >&2")]
+    [InlineData("Bash", "echo $HOME 2>&-")]
+    [InlineData("PowerShell", "Get-ChildItem $HOME 2>$null")]
+    public async Task Dyd640_FdDuplicationOrSinkBesideABypass_IsAllowed(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseAllowed();
+    }
 }

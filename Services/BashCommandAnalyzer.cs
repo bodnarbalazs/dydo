@@ -1500,8 +1500,14 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"^\s*(?:cd|Set-Location|sl|chdir|Push-Location|pushd)\s+(?:""([^""]+)""|'([^']+)'|(\S+))\s*(?:&&|;)\s*(.*)", RegexOptions.IgnoreCase)]
     private static partial Regex CdThenCommandRegex();
 
-    [GeneratedRegex(@"(?<!\d)(>{1,2})\s*([^\s|;&><]+)")]
+    // Every output redirection, with or without an fd number (DYD-640): > >> >| &> &>> N> N>> N>| and
+    // >&word. A word ending in a digit runs into the operator (word2>file); bash reads it as the word
+    // and a plain >file, and a write to the target either way.
+    [GeneratedRegex(@"(?<fd>[\d&]?)(?<op>>>?[|&]?)\s*(?<target>[^\s|;&><]+)")]
     private static partial Regex OutputRedirectRegex();
+
+    [GeneratedRegex(@"^(?:/dev/(?:null|stdout|stderr|fd/\d+)|(?i:\$null))$")]
+    private static partial Regex OutputSinkRegex();
 
     [GeneratedRegex(@"<\s*([^\s|;&><]+)")]
     private static partial Regex InputRedirectRegex();
@@ -1643,8 +1649,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             return 2;
         if (c == '|' && i + 1 < command.Length && command[i + 1] == '|')
             return 2;
+        // >| is the clobber redirection, not a pipe (DYD-640); an escaped \> or `> redirects nothing.
         if (c == '|')
-            return 1;
+            return i > 0 && command[i - 1] == '>' && (i == 1 || command[i - 2] is not ('\\' or '`')) ? 0 : 1;
         return 0;
     }
 
@@ -1961,20 +1968,27 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return null;
     }
 
+    // fd duplication or close (>&2, 2>&1, 3>&1-, 2>&-) names a descriptor, not a file. A redirection read
+    // only since DYD-640 (an fd number, >| or >&) into a sink writes no file either: as a write it would
+    // refuse a stderr silencer beside a $ word. > >> &> and &>> keep their reading, /dev/null included.
+    private static bool WritesNoFile(string fd, string op, string target) =>
+        (op[^1] == '&' && target.TrimEnd('-').All(char.IsAsciiDigit))
+        || ((fd is [>= '0' and <= '9'] || op[^1] is '|' or '&') && OutputSinkRegex().IsMatch(target));
+
     private static void AnalyzeRedirection(string command, BashAnalysisResult result)
     {
         var outputRedirects = OutputRedirectRegex().Matches(command);
         foreach (Match match in outputRedirects)
         {
-            var path = match.Groups[2].Value.Trim('"', '\'');
-            if (!string.IsNullOrEmpty(path) && !path.StartsWith("&") && LooksLikePath(path))
+            var path = match.Groups["target"].Value.Trim('"', '\'');
+            var (fd, op) = (match.Groups["fd"].Value, match.Groups["op"].Value);
+            if (LooksLikePath(path) && !WritesNoFile(fd, op, path))
             {
-                var redirectOp = match.Groups[1].Value;
                 result.Operations.Add(new FileOperation
                 {
                     Type = FileOperationType.Write,
                     Path = path,
-                    Command = redirectOp
+                    Command = fd + op
                 });
             }
         }

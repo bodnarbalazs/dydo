@@ -14,6 +14,10 @@
       "tests": ["DynaDocs.Tests/coverage/tests/test_dotnet_platform.py", "DynaDocs.Tests/coverage/tests/test_gate_adapter.py"]
     },
     {
+      "module": "DynaDocs.Tests/coverage/coverage_artifacts.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_coverage_artifacts.py"]
+    },
+    {
       "module": "Services/Statechart/StatechartChecker.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartCheckerTests.cs"]
     },

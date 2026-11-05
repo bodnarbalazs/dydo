@@ -1,26 +1,39 @@
 """Ordinary coverage.py collection includes child-only and never-called callables."""
+import contextlib
 import itertools
 import json
 import os
+import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gate_run import STATIC_GATE_INTERPRETER
+import python_coverage
 from python_coverage import combine_counters
 
 
-def _facade(root, output, sources, command):
+def _facade(root, output, sources, command, timeout=None):
     tools = Path(__file__).resolve().parents[1]
     python = tools.parents[1] / STATIC_GATE_INTERPRETER
     return subprocess.run([
         str(python), str(tools / "python_coverage.py"), "--root", str(root),
         "--output", str(output), "--sources-json", json.dumps(sources),
         "--command-json", json.dumps(command),
-    ], cwd=root, text=True, capture_output=True)
+    ], cwd=root, text=True, capture_output=True, timeout=timeout)
+
+
+def _release(listener):
+    """Let the one child waiting on `listener` exit, and return once it has."""
+    held, _ = listener.accept()
+    with held, contextlib.suppress(ConnectionResetError):  # Windows may reset what an exiting process left open
+        held.sendall(b"!")
+        held.recv(1)
 
 
 def _counter_row(**changes):
@@ -263,6 +276,82 @@ if sys.argv[1] == "finish":
     import subject
     exec(compile("def ghost():\\n    return 0\\nghost()\\n", subject.work.__code__.co_filename, "exec"))
 print("ran", flush=True)
+"""
+
+
+# Measured children around one whose measurement fails and whose exit the driver ignores: at finish with
+# every descriptor in use, or with the port variable dropped and the config kept, at startup on a source
+# it cannot read or at finish on a callable the inventory cannot name.
+_IGNORED_FAILURE = """\
+import os, subprocess, sys
+from pathlib import Path
+
+case = sys.argv[1]
+subprocess.run([sys.executable, "-c", "import subject; subject.work()"], check=True)
+env = dict(os.environ)
+if case.startswith("port variable dropped"):
+    del env["DYDO_PYTHON_COVERAGE_FAILURES"]
+if case.endswith("startup"):
+    Path("subject.py").rename("subject.away")
+script = {"descriptors exhausted at finish": ["exhaust.py"], "port variable dropped at startup": ["-c", "pass"],
+          "port variable dropped at finish": ["ghost.py"]}[case]
+child = subprocess.Popen([sys.executable, *script], env=env)
+Path("failed.pid").write_text(str(child.pid), encoding="utf-8")
+child.wait()
+if case.endswith("startup"):
+    Path("subject.away").rename("subject.py")
+"""
+
+
+_EXHAUST = """\
+import contextlib, os, resource, subject
+
+subject.work()
+resource.setrlimit(resource.RLIMIT_NOFILE, (64, 64))
+held = []
+with contextlib.suppress(OSError):
+    while True:
+        held.append(open(os.devnull))
+"""
+
+
+_GHOST = ("import subject\nsubject.work()\n"
+          "exec(compile('def ghost():\\n    return 0\\nghost()\\n', subject.work.__code__.co_filename, 'exec'))\n")
+
+
+# A child of the command still running when the command returns: measured, or unmeasured and holding a
+# record it never finished on a connection of its own to `collect`; or measured and killed by the command
+# first. It stays until the test releases it on a loopback port of the test's own, outside the campaign.
+_OUTLIVING = """\
+import os, socket, sys
+
+case, release = sys.argv[1], int(sys.argv[2])
+if case == "partial record held open":
+    record = socket.create_connection(("127.0.0.1", int(os.environ["DYDO_PYTHON_COVERAGE_FAILURES"])))
+    record.sendall(b'"Python measurement failed')
+held = socket.create_connection(("127.0.0.1", release))
+print("ready", flush=True)
+held.recv(1)
+"""
+
+
+_OUTLIVED = """\
+import subprocess, sys
+from pathlib import Path
+
+case = sys.argv[1]
+subprocess.run([sys.executable, "-c", "import subject; subject.work()"], check=True)
+flags = ["-S"] if case == "partial record held open" else []
+child = subprocess.Popen([sys.executable, *flags, str(Path("outliving.py").resolve()), *sys.argv[1:]],
+                         cwd=Path.cwd().parent, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                         stderr=subprocess.DEVNULL)
+Path("outliving.pid").write_text(str(child.pid), encoding="utf-8")
+assert child.stdout.readline().strip() == b"ready"
+if case == "killed":
+    child.kill()
+    child.wait()
+else:
+    Path("outliving.ready").touch()
 """
 
 
@@ -517,30 +606,84 @@ class PythonCoverageTests(unittest.TestCase):
                          [(row["id"], row["execution_count"]) for row in receipt["callables"]])
         self.assert_campaign_receipt_survived(observed)
 
-    def test_a_process_whose_measurement_fails_fails_the_campaign_by_name(self):
-        drivers = {"recordable": _FAILING_CHILD, "unrecordable and ignored": _UNRECORDABLE_AND_IGNORED}
-        for (case, driver), phase in itertools.product(drivers.items(), ("startup", "finish")):
-            with self.subTest(case=case, phase=phase), tempfile.TemporaryDirectory() as folder:
-                root = Path(folder)
-                (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
-                (root / "driver.py").write_text(driver, encoding="utf-8")
-                output = root / "evidence"
-                result = _facade(root, output, ["subject.py"], ["{python}", "-S", "driver.py", phase])
-                failed = (root / "failed.pid").read_text(encoding="utf-8")
-                self.assertEqual(2, result.returncode, result.stdout + result.stderr)
-                self.assertIn(f"Python measurement failed in process {failed} at {phase}", result.stderr)
-                self.assertFalse((output / "counters.json").exists())
-
-    def test_a_record_that_cannot_be_read_fails_the_campaign(self):
+    def assert_failed_by_name(self, driver, argument, phase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
-            unreadable = ("import os, socket\nwith socket.create_connection(('127.0.0.1', "
-                          "int(os.environ['DYDO_PYTHON_COVERAGE_FAILURES']))) as record:\n"
-                          "    record.sendall(b'\\xff')\nimport subject\nsubject.work()\n")
-            result = _facade(root, root / "evidence", ["subject.py"], ["{python}", "-c", unreadable])
+            (root / "driver.py").write_text(driver, encoding="utf-8")
+            (root / "exhaust.py").write_text(_EXHAUST, encoding="utf-8")
+            (root / "ghost.py").write_text(_GHOST, encoding="utf-8")
+            output = root / "evidence"
+            result = _facade(root, output, ["subject.py"], ["{python}", "-S", "driver.py", argument])
+            failed = (root / "failed.pid").read_text(encoding="utf-8")
             self.assertEqual(2, result.returncode, result.stdout + result.stderr)
-            self.assertIn("failure records stopped being read before the command ended", result.stderr)
+            self.assertIn(f"Python measurement failed in process {failed} at {phase}", result.stderr)
+            self.assertFalse((output / "counters.json").exists())
+
+    def test_a_process_whose_measurement_fails_fails_the_campaign_by_name(self):
+        drivers = {"recordable": _FAILING_CHILD, "unrecordable and ignored": _UNRECORDABLE_AND_IGNORED}
+        for (case, driver), phase in itertools.product(drivers.items(), ("startup", "finish")):
+            with self.subTest(case=case, phase=phase):
+                self.assert_failed_by_name(driver, phase, phase)
+
+    def test_a_failure_reaches_the_campaign_on_the_connection_its_process_held_from_startup(self):
+        for case in ("descriptors exhausted at finish", "port variable dropped at startup",
+                     "port variable dropped at finish"):
+            with self.subTest(case=case):
+                if case.startswith("descriptors") and sys.platform == "win32":
+                    self.skipTest("a process lowers its own descriptor limit through POSIX `resource` only")
+                self.assert_failed_by_name(_IGNORED_FAILURE, case, case.rsplit(" ", 1)[1])
+
+    def outlived(self, case):
+        """The campaign of a command whose child, as `case` says, outlives it; that child's pid; whether it counted."""
+        with tempfile.TemporaryDirectory() as folder, socket.create_server(("127.0.0.1", 0)) as release:
+            root = Path(folder)
+            (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+            (root / "outliving.py").write_text(_OUTLIVING, encoding="utf-8")
+            (root / "driver.py").write_text(_OUTLIVED, encoding="utf-8")
+            try:  # bounded, so a verdict waiting on the open connection fails instead of hanging
+                result = _facade(root, root / "evidence", ["subject.py"],
+                                 ["{python}", "-S", "driver.py", case, str(release.getsockname()[1])], timeout=60)
+            finally:
+                if (root / "outliving.ready").exists():
+                    _release(release)
+            return (result, (root / "outliving.pid").read_text(encoding="utf-8"),
+                    (root / "evidence" / "counters.json").exists())
+
+    def test_a_process_still_connected_when_the_command_ends_fails_the_campaign_in_bounded_time(self):
+        for case, shown in (("measured", "Python process {pid} .* was still connected"),
+                            ("partial record held open", "still connected .* incomplete record")):
+            with self.subTest(case=case):
+                result, pid, counted = self.outlived(case)
+                self.assertEqual((2, False), (result.returncode, counted), result.stdout + result.stderr)
+                self.assertRegex(result.stderr, shown.format(pid=pid))
+
+    def test_a_killed_process_does_not_fail_the_campaign(self):
+        result, _, counted = self.outlived("killed")
+        self.assertEqual((0, True), (result.returncode, counted), result.stdout + result.stderr)
+
+    def test_a_record_that_cannot_be_read_fails_the_campaign(self):
+        for record, shown in ((b"\xff\n", "sent an unreadable record"),
+                              (b"\xff", "closed its connection inside an incomplete record")):
+            with self.subTest(record=record), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+                unreadable = ("import os, socket\nwith socket.create_connection(('127.0.0.1', "
+                              "int(os.environ['DYDO_PYTHON_COVERAGE_FAILURES']))) as record:\n"
+                              f"    record.sendall({record!r})\nimport subject\nsubject.work()\n")
+                result = _facade(root, root / "evidence", ["subject.py"], ["{python}", "-c", unreadable])
+                self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+                self.assertIn(shown, result.stderr)
+                self.assertFalse((root / "evidence" / "counters.json").exists())
+
+    def test_a_reader_that_stops_early_fails_the_campaign(self):
+        with tempfile.TemporaryDirectory() as folder, mock.patch.object(threading, "excepthook"), \
+                mock.patch.object(python_coverage._Peer, "read", side_effect=RuntimeError("reader broke")):
+            root = Path(folder)
+            (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "stopped being read before the campaign settled"):
+                python_coverage.collect(root, root / "evidence", ["subject.py"],
+                                        ["{python}", "-c", "import subject; subject.work()"])
             self.assertFalse((root / "evidence" / "counters.json").exists())
 
     def test_a_measurement_failure_that_cannot_be_recorded_fails_its_process(self):

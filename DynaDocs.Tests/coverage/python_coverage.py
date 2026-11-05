@@ -11,6 +11,11 @@ from pathlib import Path
 
 _ACTIVE = None
 _UNRECORDED_FAILURE_EXIT = 70  # EX_SOFTWARE
+# Once the command has returned, how long `collect` waits for measured processes still connected to close.
+# A descendant nobody waited for may still be in its exit `finish` (coverage save and receipt write, well
+# under a second on an idle host); five seconds leaves room for a loaded runner. Only a connection still
+# open makes `collect` wait, so a campaign whose processes have all exited pays nothing.
+_SETTLE_SECONDS = 5
 
 
 def _identity(row):
@@ -95,24 +100,46 @@ def _inventory_cache(config):
         return None
 
 
-def _record_failure(port, phase, error):
-    """Record this process's failed measurement with its campaign's `collect`, or end the process unmeasured.
+def _record(text):
+    """One record on a reporting connection: a JSON string on a line of its own."""
+    return (json.dumps(text) + "\n").encode("ascii")
 
-    The record goes to the loopback port `collect` listens on while its command runs, so it reaches the
-    verdict whatever became of the output and whatever this process's parents do with its exit. `site`
-    and `atexit` swallow the error, so a process that cannot record it exits nonzero instead."""
-    message = (f"Python measurement failed in process {os.getpid()} at {phase} "
-               f"({sys.orig_argv}): {type(error).__name__}: {error}")
-    try:
+
+class _Report:
+    """This process's reporting connection to its campaign's `collect`, opened before measurement can fail.
+
+    Its first record names the process. A failed measurement follows on the same connection, so sending it
+    takes no new descriptor, and closes it; a clean exit closes it with nothing more. The port comes from
+    the environment or, for a process that lost that variable, from its campaign config."""
+
+    def __init__(self, config_path):
         import socket
-        with socket.create_connection(("127.0.0.1", int(port))) as connection:
-            connection.sendall(message.encode("utf-8"))
-    except Exception as unrecorded:  # noqa: BLE001 - every unrecorded failure must end the process
+        self.connection, self.unreachable = socket.socket(), None
         try:
-            print(f"{message}; it could not be recorded: {unrecorded}", file=sys.stderr, flush=True)
-            sys.stdout.flush()
-        finally:
-            os._exit(_UNRECORDED_FAILURE_EXIT)
+            port = (os.environ.get("DYDO_PYTHON_COVERAGE_FAILURES")
+                    or json.loads(Path(config_path).read_text(encoding="utf-8"))["port"])
+            self.connection.connect(("127.0.0.1", int(port)))
+            self.connection.sendall(_record(f"process {os.getpid()} {sys.orig_argv}"))
+        except Exception as error:  # noqa: BLE001 - it ends the process with the first failure it leaves unsent
+            self.unreachable = error
+
+    def failed(self, phase, error):
+        """Send this process's failed measurement to `collect`, or end the process unmeasured.
+
+        `site` and `atexit` swallow the error, so a process no campaign can hear exits nonzero instead."""
+        message = (f"Python measurement failed in process {os.getpid()} at {phase} "
+                   f"({sys.orig_argv}): {type(error).__name__}: {error}")
+        try:
+            if self.unreachable is not None:
+                raise self.unreachable
+            self.connection.sendall(_record(message))
+            self.connection.close()
+        except Exception as unrecorded:  # noqa: BLE001 - every unrecorded failure must end the process
+            try:
+                print(f"{message}; it could not be recorded: {unrecorded}", file=sys.stderr, flush=True)
+                sys.stdout.flush()
+            finally:
+                os._exit(_UNRECORDED_FAILURE_EXIT)
 
 
 def startup_from_environment():
@@ -120,15 +147,15 @@ def startup_from_environment():
     config_path = os.environ.get("DYDO_PYTHON_COVERAGE_CONFIG")
     if not config_path or _ACTIVE is not None:
         return _ACTIVE
-    port = os.environ.get("DYDO_PYTHON_COVERAGE_FAILURES")
+    report = _Report(config_path)
     try:
-        return _start(config_path, port)
+        return _start(config_path, report)
     except Exception as error:
-        _record_failure(port, "startup", error)
+        report.failed("startup", error)
         raise
 
 
-def _start(config_path, port):
+def _start(config_path, report):
     global _ACTIVE
     import coverage
     from python_runtime import CallableWitness
@@ -149,8 +176,9 @@ def _start(config_path, port):
         try:
             write_receipt()
         except Exception as error:
-            _record_failure(port, "finish", error)
+            report.failed("finish", error)
             raise
+        report.connection.close()
 
     def write_receipt():
         global _ACTIVE
@@ -173,40 +201,110 @@ def _start(config_path, port):
     return _ACTIVE
 
 
-def _received(listener):
-    """The whole of the next message sent to a loopback listener."""
-    connection, _ = listener.accept()
-    with connection, connection.makefile(encoding="utf-8") as stream:
-        return stream.read()
+class _Peer:
+    """One reporting connection as `collect` reads it: the process it named, and any record not yet complete."""
+
+    def __init__(self, connection):
+        self.connection, self.name, self.pending = connection, None, b""
+
+    def __str__(self):
+        return self.name or "campaign connection that named no process"
+
+    def read(self, failures):
+        """Take what the connection sent; False once it has closed."""
+        try:
+            data = self.connection.recv(65536)
+        except ConnectionError:  # a killed process may reset its connection rather than close it
+            data = b""
+        *records, self.pending = (self.pending + data).split(b"\n")
+        for record in records:
+            self._take(record, failures)
+        if not data and self.pending:
+            failures.append(f"Python {self} closed its connection inside an incomplete record")
+        return bool(data)
+
+    def _take(self, record, failures):
+        try:
+            text = json.loads(record)
+        except ValueError:
+            text = None
+        if not isinstance(text, str):
+            failures.append(f"Python {self} sent an unreadable record: {record!r}")
+        elif self.name is None:
+            self.name = text
+        else:
+            failures.append(text)
+
+    def lingering(self):
+        """The failure of a connection still open once the campaign has settled."""
+        return (f"Python {self} was still connected {_SETTLE_SECONDS} s after the campaign's command ended"
+                + (", inside an incomplete record" if self.pending else ""))
 
 
-def _run_recording_failures(argv, root, env):
-    """Run the campaign command and return its exit with the measurement failures its processes recorded.
+def _accept(listener, selector, peers):
+    import selectors
+    try:
+        connection, _ = listener.accept()
+    except ConnectionError:  # reset by a killed process before it could be accepted
+        return
+    peer = _Peer(connection)
+    peers.add(peer)
+    selector.register(connection, selectors.EVENT_READ, peer)
 
-    A reader takes records in connection order until its own end mark, sent once the command has
-    returned, so it reads every record a process sent before then."""
+
+def _serve(listener, woken, failures, served):
+    """Read every reporting connection until the command has ended and each has closed.
+
+    Once woken at the command's end it waits `_SETTLE_SECONDS` at most; a connection still open then is
+    a failure. No read waits on a peer: each follows the selector reporting data or a close."""
+    import selectors
+    import time
+    peers, deadline = set(), None
+    with selectors.DefaultSelector() as selector:
+        selector.register(listener, selectors.EVENT_READ)
+        selector.register(woken, selectors.EVENT_READ)
+        while deadline is None or (peers and time.monotonic() < deadline):
+            for key, _ in selector.select(None if deadline is None else deadline - time.monotonic()):
+                if key.fileobj is woken:
+                    selector.unregister(woken)
+                    deadline = time.monotonic() + _SETTLE_SECONDS
+                elif key.fileobj is listener:
+                    _accept(listener, selector, peers)
+                elif not key.data.read(failures):
+                    selector.unregister(key.fileobj)
+                    key.fileobj.close()
+                    peers.discard(key.data)
+    for peer in peers:
+        failures.append(peer.lingering())
+        peer.connection.close()
+    served.set()
+
+
+def _run_reported(argv, root, env, config, config_path):
+    """Run the campaign command while each measured process holds a reporting connection to `collect`.
+
+    The port reaches each process in the environment and is mirrored in the campaign config, so a process
+    that lost the variable still finds it. Returns the command's exit and every failure the connections
+    showed; a reader that stopped early fails the campaign instead."""
     import socket
     import threading
-    end, records, ended = uuid.uuid4().hex, [], threading.Event()
-    with socket.create_server(("127.0.0.1", 0)) as listener:
-        def read():
-            while (record := _received(listener)) != end:
-                records.append(record)
-            ended.set()
-
-        reader = threading.Thread(target=read, daemon=True)
+    failures, served = [], threading.Event()
+    listener = socket.create_server(("127.0.0.1", 0), backlog=socket.SOMAXCONN)
+    wake, woken = socket.socketpair()
+    with listener, wake, woken:
+        port = listener.getsockname()[1]
+        config_path.write_text(json.dumps({**config, "port": port}, indent=2), encoding="utf-8")
+        reader = threading.Thread(target=_serve, args=(listener, woken, failures, served), daemon=True)
         reader.start()
         try:
-            port = str(listener.getsockname()[1])
             returncode = subprocess.run(argv, cwd=root,
-                                        env={**env, "DYDO_PYTHON_COVERAGE_FAILURES": port}).returncode
+                                        env={**env, "DYDO_PYTHON_COVERAGE_FAILURES": str(port)}).returncode
         finally:
-            with socket.create_connection(listener.getsockname()) as closing:
-                closing.sendall(end.encode("utf-8"))
-            reader.join()
-    if not ended.is_set():
-        raise ValueError("Python measurement failure records stopped being read before the command ended")
-    return returncode, records
+            wake.sendall(b"\0")
+            reader.join(2 * _SETTLE_SECONDS)
+    if not served.is_set():
+        raise ValueError("Python measurement reports stopped being read before the campaign settled")
+    return returncode, failures
 
 
 def collect(root, output, source_paths, command):
@@ -228,19 +326,18 @@ def collect(root, output, source_paths, command):
     if cache is not None:  # None: it did not read back as computed, so every process computes fresh
         (output / "inventory.pickle").write_bytes(cache)
         config["inventory"] = str(output / "inventory.pickle")
-    config_path = output / "config.json"
-    config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
     startup = output / "startup"
     startup.mkdir()
     (startup / "sitecustomize.py").write_text(
         "from python_coverage import startup_from_environment\nstartup_from_environment()\n",
         encoding="utf-8")
     env = dict(os.environ)
+    config_path = output / "config.json"
     env["DYDO_PYTHON_COVERAGE_CONFIG"] = str(config_path)
     tools = Path(__file__).resolve().parent
     env["PYTHONPATH"] = os.pathsep.join([str(startup), str(tools), env.get("PYTHONPATH", "")])
     argv = [sys.executable if item == "{python}" else item for item in command]
-    returncode, failures = _run_recording_failures(argv, root, env)
+    returncode, failures = _run_reported(argv, root, env, config, config_path)
     if failures:
         raise ValueError("; ".join(failures))
     data = coverage.Coverage(data_file=str(output / ".coverage"), branch=True,

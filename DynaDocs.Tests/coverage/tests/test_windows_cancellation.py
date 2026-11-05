@@ -58,6 +58,63 @@ class CancellationProtocolTests(unittest.TestCase):
             self.assertEqual("2468", Path("owner-group-pid").read_text())
             self.assertEqual(512, launch.call_args.kwargs["creationflags"])
 
+    def test_signal_after_native_run_preserves_receipt_before_delivering_interruption(self):
+        import run_tests
+
+        def teardown(*_args):
+            signal.raise_signal(signal.SIGINT)
+            return {"cleanup_confirmed": True, "complete": True}
+
+        for signum in (None, signal.SIGINT, getattr(signal, "SIGBREAK", signal.SIGTERM)):
+            with self.subTest(signum=signum), tempfile.TemporaryDirectory() as folder, ExitStack() as stack:
+                root = Path(folder)
+                stack.enter_context(mock.patch.object(run_tests, "sys", platform="win32", executable=sys.executable))
+                stack.enter_context(mock.patch.object(signal, "SIGBREAK", getattr(signal, "SIGBREAK", signal.SIGTERM), create=True))
+                stack.enter_context(mock.patch.object(windows_job, "validate", return_value={}))
+                stack.enter_context(mock.patch.object(windows_job, "native_run", side_effect=teardown))
+                previous = {}
+                for number in (signal.SIGINT, signal.SIGBREAK):
+                    stack.callback(signal.signal, number, signal.signal(number, signal.default_int_handler))
+                    previous[number] = signal.getsignal(number)
+                returned = delivered = False
+
+                def trace(frame, event, _arg):
+                    nonlocal returned, delivered
+                    if frame.f_code is windows_job.run.__code__ and event == "return":
+                        returned = True
+                    if (returned and not delivered and signum is not None and event == "line"
+                            and frame.f_code is run_tests._run_assurance_campaign.__code__):
+                        delivered = True
+                        signal.raise_signal(signum)
+                    return trace
+
+                stack.callback(sys.settrace, sys.gettrace())
+                sys.settrace(trace)
+                interrupted = False
+                try:
+                    status = run_tests._run_assurance_campaign(root, [], str(root / "published"))
+                except KeyboardInterrupt:
+                    interrupted = True
+                    status = 130
+                finally:
+                    sys.settrace(None)
+                self.assertEqual(130, status)
+                self.assertTrue(returned)
+                self.assertEqual(signum is not None, delivered)
+                self.assertEqual(signum is not None, interrupted)
+                for number, handler in previous.items():
+                    self.assertIs(handler, signal.getsignal(number))
+                manifest = json.loads((root / "published/identities.json").read_text())
+                receipt = manifest["campaign"]
+                owner = json.loads((root / "published/owner/result.json").read_text())
+                self.assertEqual(owner, receipt)
+                self.assertTrue(receipt["owner_id"])
+                self.assertTrue(receipt["config_sha256"])
+                self.assertTrue(receipt["helper_sha256"])
+                self.assertTrue(receipt["cleanup_confirmed"])
+                self.assertFalse(receipt["complete"])
+                self.assertEqual("KeyboardInterrupt", receipt["failure_category"])
+
     def test_repeat_break_targets_the_launched_group_not_the_python_pid(self):
         # Model a venv redirector: Python PID 1780 belongs to launch group 2468.
         # Exercise the supervisor through its OS boundaries, including both teardown ACKs.
@@ -339,7 +396,8 @@ def windows_owner(mode):
     signal.signal(signal.SIGBREAK, signal.default_int_handler)
     Path("owner-pid").write_text(str(os.getpid()))
     if mode == "escalation":
-        # Emulate an owner stuck in native code that cannot observe cooperative requests.
+        # Hide requests from the native wait; the adapter kills the owner before
+        # _run's post-wait check can observe the real requested flag.
         original = windows_job.wait_campaign
 
         def ignore_break(kernel, job, pi, state, stack, seconds):

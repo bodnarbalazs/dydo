@@ -9,6 +9,7 @@ public sealed class ReleaseWorkflowTests
     private const string AssurancePythonExecutable = AssurancePython + "/Scripts/python.exe";
     private const string ViewerInstallStep = "Install viewer dependencies";
     private const string CoverageEvidenceStep = "Upload coverage evidence";
+    private const string CoverageRestore = "pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile";
 
     [Fact]
     public void CiWorkflow_RunsNativeCancellationOnSupportedLinuxAndWindowsWithPinnedPython()
@@ -225,6 +226,61 @@ public sealed class ReleaseWorkflowTests
             workflow.Replace("dotnet tool restore --tool-manifest .config/dotnet-tools.json", "dotnet tool restore", StringComparison.Ordinal)));
         Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
             SwapSteps(workflow, "Install Node assurance toolchain", "Run isolated test adapter")));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace(CoverageRestore, "npm ci --prefix DynaDocs.Tests/coverage", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            workflow.Replace(CoverageRestore, "pnpm -C DynaDocs.Tests/coverage install", StringComparison.Ordinal)));
+        Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertValidationAssuranceToolchains(
+            SwapSteps(workflow, "Setup pnpm", "Install Node assurance toolchain")));
+    }
+
+    // DYD-553: both CI jobs that restore the coverage package, on each of their Linux and Windows
+    // legs, restore its pnpm lock frozen, with pnpm set up before Node.js caches its store.
+    [Theory]
+    [InlineData("python-coverage")]
+    [InlineData("assurance-cancellation")]
+    public void CiWorkflow_RestoresTheCoveragePackageFromItsPnpmLock(string name)
+    {
+        var job = ActiveJobs(File.ReadAllText(RepositoryFile(".github", "workflows", "ci.yml")))[name];
+
+        AssertCoverageRestore(job);
+        foreach (var invalid in new[]
+        {
+            job.Replace(CoverageRestore, "npm ci --prefix DynaDocs.Tests/coverage", StringComparison.Ordinal),
+            job.Replace(CoverageRestore, "pnpm -C DynaDocs.Tests/coverage install", StringComparison.Ordinal),
+            job.Replace("version: 11", "version: 10", StringComparison.Ordinal),
+            job.Replace("cache: pnpm", "cache: npm", StringComparison.Ordinal),
+            job.Replace("cache-dependency-path: DynaDocs.Tests/coverage/pnpm-lock.yaml", "cache-dependency-path: DynaDocs.Tests/coverage/package-lock.json", StringComparison.Ordinal),
+            job.Replace(JobStep(job, "Setup pnpm") + "\n", "", StringComparison.Ordinal),
+            Swap(job, JobStep(job, "Setup pnpm"), JobStep(job, "Setup Node.js")),
+            Swap(job, JobStep(job, "Setup Node.js"), JobStep(job, "Install locked coverage dependencies")),
+        })
+            Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => AssertCoverageRestore(invalid));
+    }
+
+    [Theory]
+    [InlineData("ci.yml")]
+    [InlineData("release.yml")]
+    public void Workflows_NeverRestoreWithNpm(string workflow)
+    {
+        var text = ActiveText(File.ReadAllText(RepositoryFile(".github", "workflows", workflow)));
+
+        Assert.DoesNotContain("npm ci", text);
+        Assert.DoesNotContain("package-lock.json", text);
+    }
+
+    private static void AssertCoverageRestore(string job)
+    {
+        var setupPnpm = JobStep(job, "Setup pnpm");
+        var setupNode = JobStep(job, "Setup Node.js");
+        Assert.Equal("pnpm/action-setup@v4", StepField(setupPnpm, "uses"));
+        Assert.Equal("11", StepField(setupPnpm, "version"));
+        Assert.Equal("'26.13.0'", StepField(setupNode, "node-version"));
+        Assert.Equal("pnpm", StepField(setupNode, "cache"));
+        Assert.Equal("DynaDocs.Tests/coverage/pnpm-lock.yaml", StepField(setupNode, "cache-dependency-path"));
+        Assert.Equal(CoverageRestore, StepField(JobStep(job, "Install locked coverage dependencies"), "run"));
+        Assert.True(StepIndex(job, "Setup pnpm") < StepIndex(job, "Setup Node.js"), "Setup pnpm must precede Setup Node.js, whose pnpm cache needs it.");
+        Assert.True(StepIndex(job, "Setup Node.js") < StepIndex(job, "Install locked coverage dependencies"), "Setup Node.js must precede the coverage restore.");
     }
 
     [Fact]
@@ -324,8 +380,9 @@ public sealed class ReleaseWorkflowTests
         Assert.Equal($"{AssurancePythonExecutable} -m pip install -r DynaDocs.Tests/coverage/requirements.lock", StepField(JobStep(validation, "Install Python assurance toolchain"), "run"));
         Assert.Equal("dotnet tool restore --tool-manifest .config/dotnet-tools.json", StepField(JobStep(validation, "Restore AltCover"), "run"));
         Assert.Equal("dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode", StepField(JobStep(validation, "Restore coverage metrics"), "run"));
-        Assert.Equal("npm ci", StepField(JobStep(validation, "Install Node assurance toolchain"), "run"));
-        Assert.Equal("DynaDocs.Tests/coverage", StepField(JobStep(validation, "Install Node assurance toolchain"), "working-directory"));
+        Assert.Equal(CoverageRestore, StepField(JobStep(validation, "Install Node assurance toolchain"), "run"));
+        Assert.Null(StepField(JobStep(validation, "Install Node assurance toolchain"), "working-directory"));
+        Assert.True(StepIndex(validation, "Setup pnpm") < StepIndex(validation, "Install Node assurance toolchain"), "Setup pnpm must precede the coverage restore.");
         Assert.Equal($"{AssurancePythonExecutable} DynaDocs.Tests/coverage/run_tests.py", StepField(JobStep(validation, "Run isolated test adapter"), "run"));
         Assert.Equal($"{AssurancePythonExecutable} DynaDocs.Tests/coverage/gap_check.py --force-run", StepField(JobStep(validation, "Run coverage gate"), "run"));
         Assert.Equal("if ((dotnet --version) -ne '10.0.303') { throw 'Expected .NET SDK 10.0.303.' }", StepField(JobStep(validation, "Verify .NET SDK"), "run"));

@@ -3,6 +3,7 @@ import hashlib
 import importlib.metadata
 import inspect
 import json
+import os
 import platform
 import subprocess
 import sys
@@ -24,11 +25,59 @@ def _write(path, payload):
     path.write_text(json.dumps(payload), encoding='utf-8')
 
 
-def _javascript_tree(root, declared, locked, installed):
+def _key(text, indent):
+    return ' ' * indent + (f"'{text}':" if text.startswith('@') else f'{text}:')
+
+
+def _pnpm_lock(importer, packages, snapshots):
+    """A lockfile v9 in pnpm's own shape: quoted scoped keys, `{}` leaves, flow lists, sequence items."""
+    lines = ["lockfileVersion: '9.0'", '', 'settings:', '  autoInstallPeers: true', '', 'importers:', '',
+             '  .:', '    dependencies:']
+    for name, (specifier, version) in importer.items():
+        lines += [_key(name, 6), f'        specifier: {specifier}', f'        version: {version}']
+    lines += ['', 'packages:', '']
+    for key, fields in packages.items():
+        lines += [_key(key, 2), '    resolution: {integrity: sha512-x}', *(f'    {field}' for field in fields), '']
+    lines += ['snapshots:', '']
+    for key, fields in snapshots.items():
+        lines += [_key(key, 2)[:-1] + ': {}'] if not fields else [_key(key, 2), *(f'    {field}' for field in fields)]
+        lines.append('')
+    return '\n'.join(lines)
+
+
+def _link(target, link):
+    """A pnpm link: a symlink, or on Windows the junction pnpm makes."""
+    link.parent.mkdir(parents=True, exist_ok=True)
+    if sys.platform == 'win32':
+        import _winapi
+        _winapi.CreateJunction(str(target), str(link))
+    else:
+        os.symlink(target, link, target_is_directory=True)
+
+
+def _javascript_tree(root, declared, lock, store, links=()):
+    """A coverage folder: its manifest and pnpm lock, real package folders and the links between them."""
     _write(root / 'package.json', {'dependencies': declared})
-    _write(root / 'package-lock.json', {'packages': locked})
-    for relative, version in installed.items():
-        _write(root / relative / 'package.json', {'version': version})
+    root.joinpath('pnpm-lock.yaml').write_text(lock, encoding='utf-8')
+    for relative, (name, version) in store.items():
+        _write(root / relative / 'package.json', {'name': name, 'version': version})
+    for target, link in links:
+        _link(root / target, root / link)
+
+
+TOOL = 'node_modules/.pnpm/tool@1.0.0/node_modules/tool'
+SCOPED = 'node_modules/.pnpm/@scope+dep@3.0.0_peer@1.0.0/node_modules/@scope/dep'
+TOOL_LINK = (TOOL, 'node_modules/tool')
+
+
+def _tool_lock(**extra):
+    packages = {'tool@1.0.0': [], '@scope/dep@3.0.0': [],
+                'native@2.0.0': ['cpu: [arm64]', "os: ['!win32']"], 'wasm@1.0.0': [], **extra}
+    snapshots = {'tool@1.0.0': ['dependencies:', "  '@scope/dep': 3.0.0(peer@1.0.0)",
+                                'transitivePeerDependencies:', '  - supports-color'],
+                 '@scope/dep@3.0.0(peer@1.0.0)': [], 'native@2.0.0': ['optional: true'],
+                 'wasm@1.0.0': ['optional: true'], **{key: [] for key in extra}}
+    return _pnpm_lock({'tool': ('1.0.0', '1.0.0')}, packages, snapshots)
 
 
 def _dotnet_tree(root, dependencies, libraries):
@@ -113,37 +162,61 @@ class GateVersionTests(unittest.TestCase):
                 gate_versions.python_versions(self.root)
 
     def test_javascript_lock_requires_every_declared_exact_version(self):
-        _javascript_tree(self.root, {'tool': '1.0.0'},
-                         {'': {}, 'node_modules/tool': {'version': '2.0.0'}}, {})
-        with self.assertRaisesRegex(ValueError, "disagree"):
-            gate_versions.javascript_versions(self.root)
+        cases = {'specifier': {'tool': ('2.0.0', '1.0.0')}, 'resolved': {'tool': ('1.0.0', '2.0.0(peer@1.0.0)')},
+                 'absent': {}, 'undeclared': {'tool': ('1.0.0', '1.0.0'), 'extra': ('1.0.0', '1.0.0')}}
+        for label, importer in cases.items():
+            folder = self.root / label
+            _javascript_tree(folder, {'tool': '1.0.0'}, _pnpm_lock(importer, {}, {}), {})
+            with self.subTest(label), self.assertRaisesRegex(ValueError, 'disagree'):
+                gate_versions.javascript_versions(folder)
 
-    def test_installed_javascript_packages_are_measured_against_the_lock(self):
-        _javascript_tree(self.root, {'tool': '1.0.0'},
-                         {'': {}, 'node_modules/tool': {'version': '1.0.0'},
-                          'node_modules/native': {'version': '2.0.0', 'optional': True,
-                                                  'os': ['linux'], 'cpu': ['arm64']}},
-                         {'node_modules/tool': '1.0.0'})
+    def test_installed_javascript_packages_are_measured_against_the_pnpm_lock(self):
+        # The scoped package is linked from tool's own node_modules too: a link is not a package.
+        _javascript_tree(self.root, {'tool': '1.0.0'}, _tool_lock(),
+                         {TOOL: ('tool', '1.0.0'), SCOPED: ('@scope/dep', '3.0.0')},
+                         [TOOL_LINK, (SCOPED, 'node_modules/.pnpm/tool@1.0.0/node_modules/@scope/dep')])
 
         facts = gate_versions.javascript_versions(self.root)
 
-        self.assertEqual([{'path': 'node_modules/tool', 'version': '1.0.0',
-                           'manifest_sha256': hashlib.sha256(
-                               (self.root / 'node_modules/tool/package.json').read_bytes()).hexdigest()}],
+        digest = {path: hashlib.sha256((self.root / path / 'package.json').read_bytes()).hexdigest()
+                  for path in (TOOL, SCOPED)}
+        self.assertEqual([{'path': SCOPED, 'package': '@scope/dep@3.0.0', 'manifest_sha256': digest[SCOPED]},
+                          {'path': TOOL, 'package': 'tool@1.0.0', 'manifest_sha256': digest[TOOL]}],
                          facts['packages'])
-        self.assertEqual([{'path': 'node_modules/native', 'optional': True,
-                           'os': ['linux'], 'cpu': ['arm64']}], facts['uninstalled_optional'])
+        self.assertEqual([{'package': 'native@2.0.0', 'optional': True, 'os': ['!win32'], 'cpu': ['arm64']},
+                          {'package': 'wasm@1.0.0', 'optional': True, 'os': None, 'cpu': None}],
+                         facts['uninstalled_optional'])
+        self.assertEqual(hashlib.sha256((self.root / 'pnpm-lock.yaml').read_bytes()).hexdigest(),
+                         facts['lock_sha256'])
 
-    def test_absent_required_and_mismatched_javascript_packages_fail_closed(self):
-        declared = {'tool': '1.0.0'}
-        locked = {'': {}, 'node_modules/tool': {'version': '1.0.0'}}
-        cases = [({**locked, 'node_modules/gone': {'version': '1.0.0'}}, {'node_modules/tool': '1.0.0'},
-                  'Missing required'), (locked, {'node_modules/tool': '9.9.9'}, 'resolved version mismatch')]
-        for index, (lock, installed, message) in enumerate(cases):
-            folder = self.root / f'case-{index}'
-            _javascript_tree(folder, declared, lock, installed)
-            with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+    def test_absent_required_unlocked_and_mislinked_javascript_packages_fail_closed(self):
+        store = {TOOL: ('tool', '1.0.0'), SCOPED: ('@scope/dep', '3.0.0')}
+        stray = 'node_modules/.pnpm/stray@1.0.0/node_modules/stray'
+        wrong = 'node_modules/.pnpm/tool@9.9.9/node_modules/tool'
+        cases = [('gone', _tool_lock(**{'gone@1.0.0': []}), store, [TOOL_LINK],
+                  'Missing required locked JavaScript package: gone@1.0.0'),
+                 ('unlinked', _tool_lock(), store, [],
+                  'Missing required locked JavaScript package: node_modules/tool'),
+                 ('stray', _tool_lock(), {**store, stray: ('stray', '1.0.0')}, [TOOL_LINK],
+                  'resolved version mismatch: ' + stray),
+                 ('mislinked', _tool_lock(), {**store, wrong: ('tool', '9.9.9')}, [(wrong, 'node_modules/tool')],
+                  'resolved version mismatch: node_modules/tool')]
+        for label, lock, installed, links, message in cases:
+            folder = self.root / label
+            _javascript_tree(folder, {'tool': '1.0.0'}, lock, installed, links)
+            with self.subTest(label), self.assertRaisesRegex(ValueError, message):
                 gate_versions.javascript_versions(folder)
+
+    def test_repository_pnpm_lock_pins_exactly_the_declared_dependencies_and_no_npm_lock(self):
+        coverage = Path(__file__).resolve().parents[1]
+        lock = gate_versions.pnpm_lock(coverage / 'pnpm-lock.yaml')
+        declared = json.loads((coverage / 'package.json').read_text(encoding='utf-8'))['dependencies']
+
+        importer = lock['importers']['.']['dependencies']
+        self.assertEqual(declared, {name: pin['specifier'] for name, pin in importer.items()})
+        self.assertEqual(declared, {name: pin['version'].split('(', 1)[0] for name, pin in importer.items()})
+        self.assertEqual(set(lock['packages']), {key.split('(', 1)[0] for key in lock['snapshots']})
+        self.assertFalse((coverage / 'package-lock.json').exists())
 
     def test_restored_dotnet_closure_must_equal_the_locked_closure(self):
         locked = {'net10.0': {'Sonar.Analyzer': {'resolved': '1.2.3', 'contentHash': 'HASH'}}}

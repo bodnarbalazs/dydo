@@ -191,8 +191,7 @@ jobs:
         run: dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
 
       - name: Install Node assurance toolchain
-        run: npm ci
-        working-directory: DynaDocs.Tests/coverage
+        run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
 
       - name: Install viewer dependencies
         run: pnpm -C viewer install --frozen-lockfile

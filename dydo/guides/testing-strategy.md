@@ -306,7 +306,7 @@ or `viewer/node_modules` would fall outside `viewer/src/` the same way, and Git 
 The third gap is the statechart runtime's TypeScript under `skills/engineering/statechart/scripts/`,
 which is DYD-529. The same rule records it: the inventory lists each of its TypeScript files in
 `excluded` with the reason `typescript-outside-viewer-src`, and no association names one. The
-runtime's own `npm test` runs it, but no facade row measures it. No declared TypeScript package owns
+runtime's own `pnpm test` runs it, but no facade row measures it. No declared TypeScript package owns
 it, so knip has no graph to judge it either. The viewer's `typescript-unused-exports` collector
 lists it, with a count, as `unjudged` in its result.
 

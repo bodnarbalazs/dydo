@@ -36,28 +36,97 @@ def python_versions(coverage):
             'lock_sha256': file_hash(coverage / 'requirements.lock')}
 
 
+def _lock_entry(stripped):
+    """A lock line's key and inline value; a quoted key may hold any character."""
+    if stripped.startswith("'"):
+        end = stripped.index("'", 1)
+        return stripped[1:end], stripped[end + 2:].strip()
+    key, _, value = stripped.partition(':')
+    return key, value.strip()
+
+
+def pnpm_lock(path):
+    """A pnpm-lock.yaml's block mappings as nested dicts. Flow values stay text and sequence items
+    are dropped: the lock's own subset of YAML, read without a YAML dependency."""
+    root = {}
+    stack = [(-1, root)]
+    for line in Path(path).read_text(encoding='utf-8').splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith('- '):
+            continue
+        indent = len(line) - len(line.lstrip(' '))
+        while stack[-1][0] >= indent:
+            stack.pop()
+        key, value = _lock_entry(stripped)
+        node = {} if value in ('', '{}') else value.strip("'")
+        stack[-1][1][key] = node
+        if value == '':
+            stack.append((indent, node))
+    return root
+
+
+def _flow_list(text):
+    return [item.strip().strip("'") for item in text.strip('[]').split(',')] if text else None
+
+
+def _package_id(key):
+    """name@version of a lock package or snapshot key, without its peer suffix."""
+    return key.split('(', 1)[0]
+
+
+def _manifest_id(manifest):
+    installed = _json(manifest)
+    return installed['name'] + '@' + installed['version']
+
+
+def _declared_pins(tools, lock):
+    """Each declared dependency pins one exact version, and launches through its top-level link."""
+    declared = _json(tools / 'package.json')['dependencies']
+    importer = lock['importers']['.']['dependencies']
+    pins = {name: (pin['specifier'], _package_id(pin['version'])) for name, pin in importer.items()}
+    expected = {name: (version, version) for name, version in declared.items()}
+    differing = sorted(name for name in pins.keys() | expected.keys() if pins.get(name) != expected.get(name))
+    if differing:
+        raise ValueError('JavaScript dependency and lock pin disagree: ' + ', '.join(differing))
+    for name, version in declared.items():
+        manifest = tools / 'node_modules' / name / 'package.json'
+        if not manifest.is_file():
+            raise ValueError('Missing required locked JavaScript package: node_modules/' + name)
+        if _manifest_id(manifest) != name + '@' + version:
+            raise ValueError('JavaScript resolved version mismatch: node_modules/' + name)
+
+
+def _store_packages(tools):
+    """Each real package folder of pnpm's isolated store; a symlink or junction is a link, not a package."""
+    for entry in sorted((tools / 'node_modules/.pnpm').glob('*/node_modules/*')):
+        for package in (sorted(entry.iterdir()) if entry.name.startswith('@') else [entry]):
+            if not (package.is_symlink() or package.is_junction()) and (package / 'package.json').is_file():
+                yield package.relative_to(tools).as_posix(), package / 'package.json'
+
+
 def javascript_versions(coverage):
     tools = coverage
-    lock = _json(tools / 'package-lock.json')
-    declared = _json(tools / 'package.json')['dependencies']
-    for name, version in declared.items():
-        if lock['packages']['node_modules/' + name]['version'] != version:
-            raise ValueError('JavaScript dependency and lock pin disagree: ' + name)
-    rows, omitted = [], []
-    for relative, entry in lock['packages'].items():
-        if not relative:
+    lock = pnpm_lock(tools / 'pnpm-lock.yaml')
+    _declared_pins(tools, lock)
+    flags = {}
+    for key, snapshot in lock['snapshots'].items():
+        flags.setdefault(_package_id(key), []).append(snapshot.get('optional') == 'true')
+    rows, installed = [], set()
+    for relative, manifest in _store_packages(tools):
+        package = _manifest_id(manifest)
+        if package not in lock['packages']:
+            raise ValueError(f'JavaScript resolved version mismatch: {relative} holds {package}, which the lock does not')
+        installed.add(package)
+        rows.append({'path': relative, 'package': package, 'manifest_sha256': file_hash(manifest)})
+    omitted = []
+    for package, entry in lock['packages'].items():
+        if package in installed:
             continue
-        manifest = tools / relative / 'package.json'
-        if not manifest.is_file():
-            if not entry.get('optional'):
-                raise ValueError('Missing required locked JavaScript package: ' + relative)
-            omitted.append({'path': relative, 'optional': True, 'os': entry.get('os'), 'cpu': entry.get('cpu')})
-            continue
-        installed = _json(manifest)
-        if installed['version'] != entry['version']:
-            raise ValueError('JavaScript resolved version mismatch: ' + relative)
-        rows.append({'path': relative, 'version': installed['version'], 'manifest_sha256': file_hash(manifest)})
-    return {'packages': rows, 'uninstalled_optional': omitted, 'lock_sha256': file_hash(tools / 'package-lock.json')}
+        if not all(flags.get(package, [False])):
+            raise ValueError('Missing required locked JavaScript package: ' + package)
+        omitted.append({'package': package, 'optional': True,
+                        'os': _flow_list(entry.get('os')), 'cpu': _flow_list(entry.get('cpu'))})
+    return {'packages': rows, 'uninstalled_optional': omitted, 'lock_sha256': file_hash(tools / 'pnpm-lock.yaml')}
 
 
 def dotnet_versions(coverage):

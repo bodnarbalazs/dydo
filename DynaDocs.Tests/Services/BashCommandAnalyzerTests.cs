@@ -1831,16 +1831,65 @@ public class BashCommandAnalyzerTests
     }
 
     // The line a body's opener is on runs to its line feed, and each shell's reading of it takes a
-    // bare carriage return as that shell does. bash reads one as word text, so a comment before it
-    // hides the opener and bash runs the body's line; pwsh reads one as a break, so a pipe after the
-    // terminator feeds the body on (both measured).
+    // bare carriage return as that shell does (both measured). bash reads one as word text, so a
+    // comment before it hides the opener and bash runs the body's line.
     [Fact]
-    public void Analyze_BareCarriageReturnOnTheOpenersLine_IsReadByEachShell()
+    public void Analyze_CommentABareCarriageReturnEndsOnlyInPwsh_HidesTheOpenerFromBash()
     {
         foreach (var dialect in BashReadings)
             AssertBypassWithAChange("# x\r@'\n$(echo x > dydo/index.md)\n'@", dialect);
+    }
+
+    // pwsh reads a bare carriage return as a break, so a pipe after the terminator feeds the body on.
+    [Fact]
+    public void Analyze_PipeAfterABareCarriageReturnOnTheTerminatorsLine_FeedsTheBodyInPwsh()
+    {
         foreach (var dialect in PowerShellReadings)
             AssertBypassWithAChange("@'\n$(echo x > dydo/index.md)\n'@\r| iex", dialect);
+    }
+
+    // bash 5.3.9 reads a bare carriage return as word text, so the words after one are still the
+    // command's arguments: it deletes, truncates, edits or chmods the file (measured in
+    // /tmp/dyd641-evidence/fix2). Wherever bash may run the line, the change is extracted.
+    [Theory]
+    [InlineData("rm \r dydo/index.md", FileOperationType.Delete)]
+    [InlineData("rm -- \r dydo/index.md", FileOperationType.Delete)]
+    [InlineData("tee \r dydo/index.md", FileOperationType.Write)]
+    [InlineData("sed -i\r s/a/b/ dydo/index.md", FileOperationType.Write)]
+    [InlineData("truncate -s 0 \r dydo/index.md", FileOperationType.Write)]
+    [InlineData("chmod 000 \r dydo/index.md", FileOperationType.PermissionChange)]
+    [InlineData("echo $(rm \r dydo/index.md)", FileOperationType.Delete)]
+    public void Analyze_ArgumentsAfterABareCarriageReturn_AreTheCommandsWhereBashMayRunIt(string command, FileOperationType type)
+    {
+        foreach (var dialect in BashReadings)
+            Assert.Contains(new BashCommandAnalyzer(dialect).Analyze(command).Operations, op => op.Type == type && op.Path == "dydo/index.md");
+    }
+
+    // A bash -c string is bash's in every dialect, the call's own shell only hands it on.
+    [Fact]
+    public void Analyze_BashCommandStringWithABareCarriageReturn_IsReadAsBashReadsIt()
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.Contains(new BashCommandAnalyzer(dialect).Analyze("bash -c 'rm \r dydo/index.md'").Operations,
+                op => op.Type == FileOperationType.Delete && op.Path == "dydo/index.md");
+    }
+
+    // Each carriage return here is half of a CRLF, so the line holds none of the three characters and
+    // reads as before: a Windows-authored here-string write is literal data (pwsh 7.6.9 runs each harmlessly).
+    [Theory]
+    [InlineData("@'\r\nhello\r\n'@ | Set-Content notes.md\r\necho done")]
+    [InlineData("@'\r\na\r\n'@ | Set-Content notes.md\r\n@'\r\nb\r\n'@ | Add-Content notes.md")]
+    [InlineData("@'\nhello\n'@ | Set-Content notes.md\r\n")]
+    [InlineData("cat @'\r\nhello\r\n'@ > notes.md\r\n")]
+    public void Analyze_CrlfAfterAHereStringWrite_IsNoBypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
+            Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
+        }
     }
 
     [Theory]

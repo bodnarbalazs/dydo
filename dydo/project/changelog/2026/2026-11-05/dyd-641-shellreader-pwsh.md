@@ -22,10 +22,14 @@ DYD-422's local bans on these characters in the literal-data relief stay as defe
   comment, it ends a here-string's opener line and starts its terminator line, and after a backtick
   between words it continues the line. So `echo 'x'<CR>gh pr merge 5` is refused as a raw merge.
   Inside quotes it stays literal.
-- The embedded-newline check and file-operation extraction count a bare carriage return as a line
-  break in every dialect, so `echo hello<CR>rm dydo/index.md` is refused. The embedded-newline check
+- The embedded-newline check counts a bare carriage return as a line break in every dialect. It
   counts one inside a double-quoted span too, unless every reading holds the span in a word, so
   `echo a > notes.md # x"<CR>Remove-Item dydo/index.md<CR># y"` is refused.
+- File-operation extraction reads a bare carriage return both ways in every dialect: it takes the
+  commands pwsh ends at one, and the whole command as bash reads it, since bash keeps one in a word
+  and runs the words after it as the same command's arguments. So `echo hello<CR>rm dydo/index.md`
+  is refused for pwsh's `rm`, and `rm <CR> dydo/index.md`, `sed -i<CR> s/a/b/ dydo/index.md` and
+  `bash -c 'rm <CR> dydo/index.md'` for bash's, which deletes or edits the file.
 - `‘ ’ ‚ ‛` and `“ ” „` are PowerShell quotes. They open and close a string as `'` and `"` do, a
   doubled one is literal, and they work in here-string openers and terminators too. So
   `echo ‘a'; dydo mode set overnight on; ’b'` meets the mode-set warning.
@@ -38,8 +42,12 @@ DYD-422's local bans on these characters in the literal-data relief stay as defe
 - A caret is literal to pwsh and an escape to cmd. Where the two would read a line differently, the
   reading holds both commands and is uncertain. `echo a^;git push origin main` is refused as a push
   to the default branch, and a PR call on such a line is refused unread.
-- Lines that hold none of the three characters read as before. Bash's reading is unchanged and
-  keeps all three as word text.
+- Lines that hold none of the three characters read as before. A carriage return that a line feed
+  follows is half of one CRLF line break, so a CRLF-ended here-string write such as
+  `@'<CR><LF>hello<CR><LF>'@ | Set-Content notes.md<CR><LF>echo done` is allowed as before.
+- Bash's reading is unchanged and keeps all three as word text. Because the embedded-newline check
+  and file-operation extraction also take pwsh's reading of a bare carriage return whatever the
+  shell, a bash call holding one can be refused for what pwsh would run.
 
 No change in this entry renames a term mechanically, so it has no merge normalisations.
 

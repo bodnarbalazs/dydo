@@ -355,8 +355,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             || !FeedsDataOnly(line, readings, hereString: true, text[resume..]))
             return null;
 
-        var code = text[..hereString.Index] + "''" + text[end..lineEnd];
-        return new DataBodyCut(new CodePiece(code, hereString.Groups[1].Value == "\"" ? text[..lineEnd] : code), resume);
+        // A CRLF is one line break, so the piece ends before both halves: a carriage return left in it
+        // would read as a bare one when the pieces are joined (DYD-641).
+        var pieceEnd = lineEnd < text.Length && text[lineEnd - 1] == '\r' ? lineEnd - 1 : lineEnd;
+        var code = text[..hereString.Index] + "''" + text[end..pieceEnd];
+        return new DataBodyCut(new CodePiece(code, hereString.Groups[1].Value == "\"" ? text[..pieceEnd] : code), resume);
     }
 
     // pwsh 7.6.9 ends a here-string at the first line break, a bare carriage return among them, that a
@@ -1603,11 +1606,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         }
     }
 
-    // A bare carriage return separates commands as a line feed does: pwsh 7.6.9 starts a statement after one (DYD-641).
-    private static int CheckCommandSeparator(string command, int i)
+    // To pwsh 7.6.9 a bare carriage return separates commands as a line feed does; bash reads it as word text (DYD-641).
+    private static int CheckCommandSeparator(string command, int i, bool posix)
     {
         var c = command[i];
-        if (c == ';' || c == '\n' || (c == '\r' && (i + 1 == command.Length || command[i + 1] != '\n')))
+        if (c == ';' || c == '\n' || (!posix && c == '\r' && (i + 1 == command.Length || command[i + 1] != '\n')))
             return 1;
         if (c == '&' && i + 1 < command.Length && command[i + 1] == '&')
             return 2;
@@ -1635,7 +1638,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // How many characters at i an unquoted separator or, with dropComments, a comment consumes;
     // 0 when neither starts there. A comment stops before its newline, so the newline still splits.
     private static int ConsumeUnquoted(string command, int i, StringBuilder current,
-        List<string> parts, bool dropComments)
+        List<string> parts, bool dropComments, bool posix)
     {
         if (dropComments && command[i] == '#' && (current.Length == 0 || char.IsWhiteSpace(current[^1])))
         {
@@ -1643,7 +1646,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             return (newline < 0 ? command.Length : newline) - i;
         }
 
-        var sepLen = CheckCommandSeparator(command, i);
+        var sepLen = CheckCommandSeparator(command, i, posix);
         if (sepLen > 0 && current.Length > 0)
         {
             parts.Add(current.ToString());
@@ -1655,9 +1658,17 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// <summary>
     /// Splits a command at unquoted separators. A backslash is literal inside single quotes. With
     /// <paramref name="dropComments"/>, an unquoted <c>#</c> that begins a word drops the rest of
-    /// its line, as a shell comment.
+    /// its line, as a shell comment. pwsh 7.6.9 also ends a command at a bare carriage return, where
+    /// bash goes on with the same command's arguments (DYD-641), so both readings' sub-commands are
+    /// returned: pwsh's, then each of bash's that pwsh's lack.
     /// </summary>
     internal static IEnumerable<string> SplitCommand(string command, bool dropComments = false)
+    {
+        var pwsh = SplitCommand(command, dropComments, posix: false);
+        return pwsh.Concat(SplitCommand(command, dropComments, posix: true).Where(part => !pwsh.Contains(part)));
+    }
+
+    private static List<string> SplitCommand(string command, bool dropComments, bool posix)
     {
         var parts = new List<string>();
         var current = new StringBuilder();
@@ -1688,7 +1699,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
             if (!inSingleQuote && !inDoubleQuote)
             {
-                var consumed = ConsumeUnquoted(command, i, current, parts, dropComments);
+                var consumed = ConsumeUnquoted(command, i, current, parts, dropComments, posix);
                 if (consumed > 0)
                 {
                     i += consumed - 1;

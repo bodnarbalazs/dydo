@@ -113,6 +113,13 @@
       ]
     },
     {
+      "module": "Commands/CliParsing.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/GuardAtCommandTests.cs",
+        "DynaDocs.Tests/EndToEnd/GuardAtCommandProcessTests.cs"
+      ]
+    },
+    {
       "module": "Commands/CompleteCommand.cs",
       "tests": [
         "DynaDocs.Tests/Commands/CompleteCommandTests.cs"

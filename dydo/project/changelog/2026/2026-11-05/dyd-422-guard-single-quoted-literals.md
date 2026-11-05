@@ -19,14 +19,16 @@ their literal destinations, which are still path-checked.
 - Single-quoted text is not searched for a substitution, a variable or a line break only where no
   shell or program on the line can run it
   ([Guard System](../../../../understand/guard-system.md#layer-2-bash-command-analysis), bypass
-  detection). Every reading the shell may give the line, bash's and PowerShell's when the shell is
-  unknown, must close it as one single-quoted string in the same word. That word must be an argument
+  detection). Bash's reading of the line, and PowerShell's too wherever PowerShell may run it (a
+  PowerShell tool call or an unknown shell), must close it as one single-quoted string in the same
+  word. That word must be an argument
   of `sed` (one `s` command, no `e` or `w` flag, no option holding an `e` or an `f`), `printf`, `echo`
   or `grep`, whose output goes only to a file, the terminal or a data command. The line must read for
   certain as simple commands: no substitution, group, compound command, continuation, background
   job, `$'...'`, or, where PowerShell may run it, a caret or typographic quote.
 - Everything else is searched as before and refused as on master: `echo don\'t $(rm dydo/index.md)
-  won\'t` where bash may run it, the same line in a `cat <<EOF` body, `eval 'echo x' '> $OUT'`,
+  won\'t` for every caller, a PowerShell tool call included, since bash's reading is always
+  required; the same line in a `cat <<EOF` body, `eval 'echo x' '> $OUT'`,
   apostrophes in comments and expanding bodies, command strings and runners (`bash -c`, `eval`,
   `iex`, `cmd /c`, `env -S`, `pwsh -Command`, `ssh`, `watch`, `su -c`, `script -c`, `xargs`,
   `find -exec`, `docker`/`kubectl exec`, `tmux`), data piped or fed to a shell or another program,
@@ -41,8 +43,6 @@ No change in this entry renames a term mechanically, so it has no merge normalis
 
 Guards stop accidents, not rogue agents.
 
-- A PowerShell tool call is read by PowerShell alone, which pairs the round-5 apostrophes into one
-  literal string, so there `echo don\'t $(...) won\'t` is literal data and passes.
 - The relief does not follow a file it writes: `printf '%s' '$(...)' > run.sh && sh run.sh` passes,
   as a quoted-heredoc script then run does.
 - A `sed` script's `r`, `R`, `w` or `W` command naming a file is not a path the guard extracts, with

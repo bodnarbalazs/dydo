@@ -476,20 +476,16 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     /// <summary>
     /// The piece's code with each single-quoted argument that is literal data emptied to '' (DYD-422):
-    /// every reading the dialect allows certifies it in the same word (<see cref="DataQuotes"/>).
+    /// bash's reading, and PowerShell's too wherever PowerShell may run the line, certify it in the
+    /// same word (<see cref="DataQuotes"/>). A PowerShell call still needs bash's reading, so text
+    /// only PowerShell pairs into one string, such as don\'t ... won\'t, stays searched as on master.
     /// Anything else is kept and searched, failing closed.
     /// </summary>
     private string WithoutLiteralData(string code)
     {
-        bool[] readings = _shell switch
-        {
-            ShellDialect.Posix => [true],
-            ShellDialect.PowerShell => [false],
-            _ => [true, false],
-        };
-        var data = DataQuotes(code, readings[0]);
-        foreach (var posix in readings.Skip(1))
-            data.IntersectWith(DataQuotes(code, posix));
+        var data = DataQuotes(code, posix: true);
+        if (_shell != ShellDialect.Posix)
+            data.IntersectWith(DataQuotes(code, posix: false));
         return Emptied(code, data.Select(quote => quote.Quote));
     }
 

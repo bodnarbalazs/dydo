@@ -1648,10 +1648,11 @@ public class BashCommandAnalyzerTests
     }
 
     // Every reading must place the quote in the same word: bash reads a\ '$HOME' as one word,
-    // PowerShell as two. A known shell's own reading decides.
+    // PowerShell as two. A bash call takes bash's reading alone; a PowerShell call needs both.
     [Theory]
     [InlineData("echo a\\ '$HOME' > notes.md", "Unknown", true)]
     [InlineData("echo a\\ '$HOME' > notes.md", "Posix", false)]
+    [InlineData("echo a\\ '$HOME' > notes.md", "PowerShell", true)]
     [InlineData("echo 'cost: $5 and $HOME' > notes.md", "PowerShell", false)]
     public void Analyze_QuoteInEveryReadingsWord_DecidesTheBypass(string command, string dialect, bool bypass)
     {
@@ -1661,15 +1662,29 @@ public class BashCommandAnalyzerTests
         Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
     }
 
-    // The round-5 apostrophes pair only in PowerShell, and a typographic quote closes a PowerShell
-    // string only: both are code where the dialect may be bash, or PowerShell, respectively.
+    // The round-5 apostrophes pair only in PowerShell. Bash's reading is required in every dialect,
+    // so they stay code for a PowerShell call too, as on master, after a comment or a body as well.
     [Theory]
-    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t", false)]
-    [InlineData("echo 'a’ $(echo x > $OUT) ’b'", true)]
-    [InlineData("echo “a '$(echo x > $OUT)' b”", true)]
-    public void Analyze_QuoteOnlyOneShellPairs_IsABypassWhereThatShellMayRun(string command, bool powerShell)
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("echo don\\'t $(echo x > $OUT) won\\'t")]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t # it's")]
+    [InlineData("# don't\necho don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("cat > notes.md <<'EOF'\nplain words\nEOF\necho don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("cat <<EOF\necho don\\'t $(rm dydo/index.md) won\\'t\nEOF")]
+    public void Analyze_RoundFiveApostrophes_AreABypassInEveryDialect(string command)
     {
-        foreach (var dialect in powerShell ? PowerShellReadings : BashReadings)
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            AssertBypassWithAChange(command, dialect);
+    }
+
+    // A typographic quote closes a PowerShell string only, so where PowerShell may run the line the
+    // text after it is code.
+    [Theory]
+    [InlineData("echo 'a’ $(echo x > $OUT) ’b'")]
+    [InlineData("echo “a '$(echo x > $OUT)' b”")]
+    public void Analyze_TypographicQuote_IsABypassWherePowerShellMayRun(string command)
+    {
+        foreach (var dialect in PowerShellReadings)
             AssertBypassWithAChange(command, dialect);
     }
 

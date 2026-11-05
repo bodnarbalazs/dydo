@@ -954,6 +954,34 @@ public class GuardSecurityTests : IntegrationTestBase
         Assert.Equal(before, File.ReadAllBytes(canary));
     }
 
+    // The round-5 apostrophes pair only in PowerShell; bash's reading is required for every caller,
+    // so Claude's Bash and PowerShell tools and an unknown shell all refuse them, as on master.
+    [Theory]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("echo don\\'t $(echo x > $OUT) won\\'t")]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t # it's")]
+    [InlineData("# don't\necho don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("cat > notes.md <<'EOF'\nplain words\nEOF\necho don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("cat <<EOF\necho don\\'t $(rm dydo/index.md) won\\'t\nEOF")]
+    public async Task Gs02_RoundFiveApostrophes_AreDeniedInEveryShellAndTheCanaryUnchanged(string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        bash.AssertPreToolUseDenied();
+        bash.AssertStderrContains("bypass");
+        powerShell.AssertPreToolUseDenied();
+        powerShell.AssertStderrContains("bypass");
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains("bypass");
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
     // Where PowerShell may run the line: a typographic quote closes its string, a caret escapes
     // nothing, and a group word runs, so the text they expose is code.
     [Theory]

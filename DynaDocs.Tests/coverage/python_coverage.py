@@ -86,6 +86,14 @@ def combine_counters(receipts):
     return output
 
 
+def _inventory_cache(config):
+    """The campaign's prebuilt inventory, or None (a miss, counted fresh) when it cannot be read."""
+    try:
+        return Path(config["inventory"]).read_bytes()
+    except (KeyError, TypeError, ValueError, OSError):
+        return None
+
+
 def startup_from_environment():
     """Start once in the current process when the invocation config is inherited."""
     global _ACTIVE
@@ -98,7 +106,7 @@ def startup_from_environment():
     if config.get("schema") != 1 or coverage.__version__ != "7.16.0":
         raise RuntimeError("Python campaign requires schema 1 and coverage.py 7.16.0")
     sources = {path: Path(path).read_text(encoding="utf-8-sig") for path in config["sources"]}
-    cache = Path(config["inventory"]).read_bytes() if "inventory" in config else None
+    cache = _inventory_cache(config)
     collector = coverage.Coverage(data_file=str(Path(config["output"]) / ".coverage"),
                                   data_suffix=True, branch=True, source=[config["root"]],
                                   config_file=False)

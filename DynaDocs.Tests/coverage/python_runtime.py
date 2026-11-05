@@ -117,17 +117,60 @@ def _digest(source):
     return hashlib.sha256(source.encode('utf-8')).hexdigest()
 
 
+_CACHE_SCHEMA = 'dydo-python-inventory/1'
+_ROW_FIELDS = frozenset(('id', 'path', 'kind', 'line', 'column', 'end_line', 'end_column', 'body_lines',
+                         'execution_count', 'branches', 'physical_branches', '_key'))
+
+
+def _compile_state():
+    """Every interpreter setting that changes compile() output or co_positions(): the build,
+    the -O level, and debug ranges (-X no_debug_ranges / PYTHONNODEBUGRANGES drop every column)."""
+    debug_ranges = None not in next(compile('0', '<compile-state>', 'eval').co_positions())
+    return sys.version, sys.flags.optimize, debug_ranges
+
+
 def inventory_cache(sources):
-    """Every source's runtime inventory, valid only for this interpreter build and source text."""
-    return pickle.dumps({'interpreter': sys.version, 'sources': {
+    """Every source's runtime inventory, valid only for this compile state and source text."""
+    return pickle.dumps({'schema': _CACHE_SCHEMA, 'state': _compile_state(), 'sources': {
         path: (_digest(source), _runtime_inventory(source, path)) for path, source in sources.items()}})
 
 
 def _cached_inventories(cache):
-    if cache is None:
+    """The cache's entries when it was built under this process's compile state; anything else is a miss."""
+    try:
+        payload = pickle.loads(cache)
+    except Exception:  # noqa: BLE001 - absent, corrupt or truncated bytes are a miss, never a raise
         return {}
-    payload = pickle.loads(cache)
-    return payload['sources'] if payload['interpreter'] == sys.version else {}
+    if (type(payload) is not dict or payload.get('schema') != _CACHE_SCHEMA
+            or payload.get('state') != _compile_state() or type(payload.get('sources')) is not dict):
+        return {}
+    return payload['sources']
+
+
+def _fresh_row(row, path):
+    """A row for this path with every field and every counter at its uncounted start."""
+    return (type(row) is dict and row.keys() == _ROW_FIELDS and row['path'] == path
+            and [type(row[field]) for field in ('execution_count', 'body_lines', 'branches', 'physical_branches')]
+            == [int, dict, list, list]
+            and row['execution_count'] == 0 and row['branches'] == [] == row['physical_branches']
+            and all(type(hits) is int and hits == 0 for hits in row['body_lines'].values()))
+
+
+def _cached_inventory(entry, path, source):
+    """The entry's inventory when it is for exactly this text and shaped as a fresh one, else None."""
+    if type(entry) is not tuple or len(entry) != 2 or entry[0] != _digest(source):
+        return None
+    inventory = entry[1]
+    if type(inventory) is not tuple or len(inventory) != 3:
+        return None
+    rows, module, index = inventory
+    if type(rows) is not list or type(index) is not dict:
+        return None
+    owners = [*rows, module]
+    if not all(_fresh_row(row, path) for row in owners):
+        return None
+    identities = {id(row) for row in owners}
+    return inventory if all(id(row) in identities for row in index.values()) else None
 
 
 class CallableWitness:
@@ -138,8 +181,8 @@ class CallableWitness:
         self._rows, self._modules, self._index = [], [], {}
         cached = _cached_inventories(cache)
         for path, source in sources.items():
-            digest, inventory = cached.get(path, (None, None))
-            rows, module, index = inventory if digest == _digest(source) else _runtime_inventory(source, path)
+            rows, module, index = (_cached_inventory(cached.get(path), path, source)
+                                   or _runtime_inventory(source, path))
             self._rows.extend(rows)
             self._modules.append(module)
             self._index.update({(path, key): row for key, row in index.items()})

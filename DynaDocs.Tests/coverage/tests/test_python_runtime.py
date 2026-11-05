@@ -1,6 +1,10 @@
 """Lambda witnesses must not borrow execution from their containing statement."""
+import json
+import os
+import pickle
 import subprocess
 import sys
+import tempfile
 import types
 import unittest
 from pathlib import Path
@@ -20,6 +24,94 @@ def _inventory(witness):
     owners = {id(row): position for position, row in enumerate(witness._rows + witness._modules)}
     return (witness._rows, witness._modules,
             {key: owners[id(row)] for key, row in witness._index.items()})
+
+
+def _counted(witness, workload):
+    with witness:
+        workload()
+    return witness.rows() + witness.module_rows()
+
+
+def _differences(expected, actual):
+    return {(row['id'], field) for row, other in zip(expected, actual, strict=True)
+            for field in row if row[field] != other[field]}
+
+
+def _repickled(cache, damage):
+    payload = pickle.loads(cache)
+    damage(payload)
+    return pickle.dumps(payload)
+
+
+def _entry(payload):
+    (path, (digest, inventory)), = payload['sources'].items()
+    return path, digest, inventory
+
+
+def _replace_entry(payload, entry):
+    path, _, _ = _entry(payload)
+    payload['sources'][path] = entry
+
+
+def _first_row(payload):
+    return _entry(payload)[2][0][0]
+
+
+# Each damage leaves a pickle that loads; only its structure is wrong for this source.
+_WRONG_STRUCTURES = {
+    'sources not a mapping': lambda payload: payload.update(sources=list(payload['sources'].items())),
+    'entry not a pair': lambda payload: _replace_entry(payload, _entry(payload)[2]),
+    'inventory not a triple': lambda payload: _replace_entry(
+        payload, (_entry(payload)[1], _entry(payload)[2][:2])),
+    'rows not a list': lambda payload: _replace_entry(
+        payload, (_entry(payload)[1], (tuple(_entry(payload)[2][0]), *_entry(payload)[2][1:]))),
+    'module not a mapping': lambda payload: _replace_entry(
+        payload, (_entry(payload)[1], (_entry(payload)[2][0], 'module', _entry(payload)[2][2]))),
+    'row field missing': lambda payload: _first_row(payload).pop('branches'),
+    'row for another path': lambda payload: _first_row(payload).update(path='elsewhere.py'),
+    'execution counter not fresh': lambda payload: _first_row(payload).update(execution_count=5),
+    'body line counter not fresh': lambda payload: _first_row(payload)['body_lines'].update(
+        dict.fromkeys(_first_row(payload)['body_lines'], 1)),
+    'branch already recorded': lambda payload: _first_row(payload).update(branches=[[0, 2]]),
+    'physical branch already recorded': lambda payload: _first_row(payload).update(
+        physical_branches=[{'code': 'x', 'origin': 0, 'destination': 2}]),
+    'index outside the inventory': lambda payload: _entry(payload)[2][2].update(
+        {key: dict(row) for key, row in _entry(payload)[2][2].items()}),
+}
+
+
+def _monitored_as_physical(payload, path):
+    """Negative control: a cached row no longer recognises its own code object as its own."""
+    row = next(row for row in payload['sources'][path][1][0] if row['id'].startswith('_callable_inventory:'))
+    row['_key'] = ('elsewhere', *row['_key'][1:])
+
+
+def _physical_as_monitored(payload, path):
+    """Negative control: a cached row takes its nested generator's code object for its own."""
+    rows, _, index = payload['sources'][path][1]
+    row = next(row for row in rows if row['id'].startswith('_physical_owner:'))
+    row['_key'] = next(key for key, owner in index.items() if owner is row and key != row['_key'])
+
+
+_COMPILE_STATE_CHILD = '''\
+import json, sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from python_runtime import CallableWitness
+path, cache = sys.argv[2], Path(sys.argv[3]).read_bytes()
+source = Path(path).read_text(encoding='utf-8')
+
+
+def inventory(cache):
+    try:
+        witness = CallableWitness({path: source}, cache)
+    except ValueError as error:
+        return str(error)
+    return witness._rows + witness._modules
+
+
+print(json.dumps({'cached': inventory(cache), 'fresh': inventory(None)}))
+'''
 
 
 class PythonRuntimeTests(unittest.TestCase):
@@ -297,3 +389,79 @@ outer()
             exec(compile(edited, path, 'exec'), namespace)
             namespace['work']()
         self.assertEqual([1], [row['execution_count'] for row in stale.rows()])
+
+    def test_a_child_under_another_compile_state_counts_from_its_own_inventory(self):
+        source = ('def only(value=True):\n    """A docstring."""\n    assert value\n'
+                  '    return list(item for item in (1, 2) if item)\nonly()\n')
+        environment = {key: value for key, value in os.environ.items()
+                       if key not in ('PYTHONOPTIMIZE', 'PYTHONNODEBUGRANGES')}
+        with tempfile.TemporaryDirectory() as folder:
+            path, cache, child = (Path(folder) / name for name in ('subject.py', 'inventory.pickle', 'child.py'))
+            path.write_text(source, encoding='utf-8')
+            cache.write_bytes(inventory_cache({str(path): source}))
+            child.write_text(_COMPILE_STATE_CHILD, encoding='utf-8')
+            parent = json.loads(json.dumps(_inventory(CallableWitness({str(path): source}))[:2]))
+            parent = parent[0] + parent[1]
+            for flags, variables in (([], {}), (['-O'], {}), (['-OO'], {}), (['-X', 'no_debug_ranges'], {}),
+                                     ([], {'PYTHONOPTIMIZE': '1'}), ([], {'PYTHONNODEBUGRANGES': '1'})):
+                with self.subTest(flags=flags, variables=variables):
+                    result = subprocess.run(
+                        [sys.executable, '-S', *flags, str(child), str(Path(python_runtime.__file__).parent),
+                         str(path), str(cache)],
+                        env={**environment, **variables}, capture_output=True, text=True, check=True)
+                    observed = json.loads(result.stdout)
+                    self.assertEqual(observed['fresh'], observed['cached'])
+                    self.assertEqual(not flags and not variables, observed['fresh'] == parent)
+
+    def test_an_unusable_cache_is_a_miss_counted_from_a_fresh_inventory(self):
+        path = str(Path('unusable-cache-subject.py').resolve())
+        source = ('def work(flag):\n    if flag:\n        return list(x for x in (1, 2) if x)\n'
+                  '    return []\nwork(True)\nwork(False)\n')
+        cache = inventory_cache({path: source})
+        damaged = {
+            'empty': b'', 'corrupt': b'not a pickle', 'truncated': cache[:-10],
+            'not a mapping': pickle.dumps(['sources']), 'foreign schema': pickle.dumps({'schema': 'foreign'}),
+            **{name: _repickled(cache, damage) for name, damage in _WRONG_STRUCTURES.items()},
+        }
+
+        def workload():
+            exec(compile(source, path, 'exec'), {})
+
+        expected = _counted(CallableWitness({path: source}), workload)
+        self.assertTrue(all(expected[0][field] for field in ('execution_count', 'branches', 'physical_branches')))
+        fresh = python_runtime._runtime_inventory
+        for name, cache_bytes in damaged.items():
+            with self.subTest(cache=name):
+                with patch.object(python_runtime, '_runtime_inventory', side_effect=fresh) as computed:
+                    witness = CallableWitness({path: source}, cache_bytes)
+                self.assertEqual([source], [call.args[0] for call in computed.call_args_list])
+                self.assertEqual(_inventory(CallableWitness({path: source})), _inventory(witness))
+                self.assertEqual(expected, _counted(witness, workload))
+
+    def test_a_cached_inventory_counts_a_real_workload_exactly_as_a_fresh_one(self):
+        runtime = python_runtime.__file__
+        sources = {path: Path(path).read_text(encoding='utf-8-sig')
+                   for path in (runtime, sys.modules['positions'].__file__)}
+        targets = [Path(sys.modules['positions'].__file__)]
+
+        def workload():
+            for target in targets:
+                text = target.read_text(encoding='utf-8-sig')
+                callable_inventory(text, str(target))
+                module_inventory(text, str(target))
+
+        cache = inventory_cache(sources)
+        fresh = _counted(CallableWitness(sources), workload)
+        with patch.object(python_runtime, '_runtime_inventory') as computed:
+            witness = CallableWitness(sources, cache)
+        computed.assert_not_called()
+        self.assertEqual(set(), _differences(fresh, _counted(witness, workload)))
+        self.assertTrue(any(row['execution_count'] for row in fresh))
+        self.assertTrue(any(any(row['body_lines'].values()) for row in fresh))
+        self.assertTrue(any(row['branches'] for row in fresh))
+        self.assertTrue(any(row['physical_branches'] for row in fresh))
+        for field, control in (('branches', _monitored_as_physical), ('physical_branches', _physical_as_monitored)):
+            with self.subTest(negative_control=field):
+                tampered = _repickled(cache, lambda payload: control(payload, runtime))
+                observed = _counted(CallableWitness(sources, tampered), workload)
+                self.assertIn(field, {name for _, name in _differences(fresh, observed)})

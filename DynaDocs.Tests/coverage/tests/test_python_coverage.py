@@ -68,6 +68,47 @@ subject.only()
 """
 
 
+_ASSERTING_SUBJECT = 'def work(value=True):\n    """Docstring."""\n    assert value\n    return 1\n'
+
+
+def _children_driver(*flag_sets):
+    """An unmeasured (-S) command that runs one measured child per interpreter flag set."""
+    return "import subprocess, sys\n" + "".join(
+        f"subprocess.run([sys.executable, *{flags!r}, '-c', 'import subject; subject.work()'], check=True)\n"
+        for flags in flag_sets)
+
+
+_DAMAGE_CACHE = """\
+import json, os, pickle, subprocess, sys
+from pathlib import Path
+
+config_path = Path(os.environ["DYDO_PYTHON_COVERAGE_CONFIG"])
+config = json.loads(config_path.read_text(encoding="utf-8"))
+cache = Path(config["inventory"])
+case = sys.argv[1]
+if case == "no cache":
+    del config["inventory"]
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+elif case == "missing":
+    cache.unlink()
+elif case == "unreadable":
+    cache.unlink()
+    cache.mkdir()
+elif case == "corrupt":
+    cache.write_bytes(b"not a pickle")
+elif case == "truncated":
+    cache.write_bytes(cache.read_bytes()[:-10])
+elif case == "wrong structure":
+    payload = pickle.loads(cache.read_bytes())
+    payload["sources"] = {path: (digest, inventory[:2])
+                          for path, (digest, inventory) in payload["sources"].items()}
+    cache.write_bytes(pickle.dumps(payload))
+elif case == "foreign schema":
+    cache.write_bytes(pickle.dumps({"schema": "foreign"}))
+subprocess.run([sys.executable, "-c", "import subject; subject.work()"], check=True)
+"""
+
+
 class PythonCoverageTests(unittest.TestCase):
     def campaign(self, root, output, sources, command):
         tools = Path(__file__).resolve().parents[1]
@@ -171,6 +212,47 @@ class PythonCoverageTests(unittest.TestCase):
             self.assertTrue(Path(config["inventory"]).is_file())
         self.assertEqual({"work:1:0": 1, "added:3:0": 0},
                          {row["id"]: row["execution_count"] for row in counters["callables"]})
+
+    def test_children_under_different_compile_states_are_refused_never_lost(self):
+        for flags in (["-O"], ["-OO"]):
+            with self.subTest(flags=flags), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                (root / "subject.py").write_text(_ASSERTING_SUBJECT, encoding="utf-8")
+                (root / "driver.py").write_text(_children_driver([], flags), encoding="utf-8")
+                output = root / "evidence"
+                result = _facade(root, output, ["subject.py"], ["{python}", "-S", "driver.py"])
+                receipts = len(list(output.glob("counter-*.json")))
+                self.assertEqual((2, 2), (result.returncode, receipts), result.stdout + result.stderr)
+                self.assertIn("Python counter body inventory mismatch", result.stderr)
+
+    def test_children_sharing_another_compile_state_are_counted_from_it(self):
+        for flags in (["-O"], ["-OO"]):
+            with self.subTest(flags=flags), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                (root / "subject.py").write_text(_ASSERTING_SUBJECT, encoding="utf-8")
+                (root / "driver.py").write_text(_children_driver(flags, flags), encoding="utf-8")
+                counters = self.campaign(root, root / "evidence", ["subject.py"],
+                                         ["{python}", "-S", "driver.py"])
+                self.assertEqual([("work:1:0", 2, {"4": 2})],
+                                 [(row["id"], row["execution_count"], row["body_lines"])
+                                  for row in counters["callables"]])
+
+    def test_an_unusable_inventory_cache_is_measured_as_if_there_were_none(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text(_ASSERTING_SUBJECT, encoding="utf-8")
+            (root / "damage.py").write_text(_DAMAGE_CACHE, encoding="utf-8")
+
+            def measured(case):
+                return self.campaign(root, root / f"evidence-{case.replace(' ', '-')}", ["subject.py"],
+                                     ["{python}", "-S", "damage.py", case])
+
+            expected = measured("no cache")
+            self.assertEqual([("work:1:0", 1)],
+                             [(row["id"], row["execution_count"]) for row in expected["callables"]])
+            for case in ("missing", "unreadable", "corrupt", "truncated", "wrong structure", "foreign schema"):
+                with self.subTest(cache=case):
+                    self.assertEqual(expected, measured(case))
 
     def test_counter_union_refuses_every_inconsistent_receipt(self):
         base = _counter_receipt([_counter_row()])

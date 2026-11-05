@@ -22,11 +22,15 @@ tr-TR and az-Latn-AZ, never ran on the platform they were written for.
   runtime. It then restores locked packages and builds the solution with `--warnaserror`.
 - The job runs `DangerousPatternCultureTests`, `DangerousPatternOracleTests`,
   `DangerousPatternBudgetTests`, `BashCommandAnalyzerTests` and `GuardSecurityTests` without
-  instrumentation, with a TRX logger.
+  instrumentation, with a TRX logger. The job-level `GUARD_CLASSES` variable is the one list of
+  these classes: the test step builds its `FullyQualifiedName~<class>.` filter from it, and the
+  check step requires each class.
 - A following step reads the TRX even when `dotnet test` failed. It fails the job when the test
   step did not succeed, when the TRX is missing or has no results, when any of the five classes has
-  no results, when any result is not Passed, or when the TRX counters' total differs from their
-  passed count. A skipped test therefore fails the job.
+  no results, or when any result is not Passed. It also fails the job when the TRX has no
+  `ResultSummary/Counters`, when the counters' total differs from their passed count or from the
+  number of results, or when the number of test definitions differs from the number of results.
+  A skipped test or a truncated TRX therefore fails the job.
 - The job uploads the TRX as `guard-windows-attempt-<run_attempt>`, which neither coverage union's
   download pattern matches. Its job name doesn't match either union's leg names in the job record.
 - `dotnet-platforms.json`, the coverage selection, the union and the 80% line / 60% branch /
@@ -36,14 +40,15 @@ tr-TR and az-Latn-AZ, never ran on the platform they were written for.
 
 ## Proof
 
-- Locally on Linux, the job's restore and build commands exit 0 with no warnings, and its test
-  command passes 1573 of 1573 with none skipped in about 23 s: GuardSecurityTests 575,
-  BashCommandAnalyzerTests 937, DangerousPatternBudgetTests 32, DangerousPatternCultureTests 24,
-  DangerousPatternOracleTests 5.
-- The TRX step's script, taken from `ci.yml` and run under pwsh 7.6.9 the way Actions runs it,
-  passes that TRX. It fails when the test step failed or was skipped, and fails on doctored copies
-  with one NotExecuted result, with DangerousPatternOracleTests removed, with no results, and with
-  passed one short of total.
+- Locally on Linux, the job's restore and build commands exit 0 with no warnings. Its test step,
+  taken from `ci.yml` and run under pwsh 7.6.9 the way Actions runs it, builds a filter
+  byte-identical to the earlier literal and passes 1573 of 1573 with none skipped:
+  GuardSecurityTests 575, BashCommandAnalyzerTests 937, DangerousPatternBudgetTests 32,
+  DangerousPatternCultureTests 24, DangerousPatternOracleTests 5.
+- The TRX step's script, run the same way, passes that TRX. It fails when the test step failed or
+  was skipped. It fails on doctored copies with one NotExecuted result, with
+  DangerousPatternOracleTests removed, with no results, with passed one short of total, with the
+  counters removed, and with one result kept per class while the counters still claim 1573.
 - Windows can't run locally. Hosted CI on the PR head must show `guard-windows` green, a nonzero
   passed count with zero skips in its log, and the coverage jobs still green.
 

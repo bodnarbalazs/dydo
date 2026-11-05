@@ -430,6 +430,14 @@ jobs:
   guard-windows:
     runs-on: windows-latest
     timeout-minutes: 20
+    env:
+      # The one list of selected classes: the test step filters on it and the check step requires each.
+      GUARD_CLASSES: >-
+        DynaDocs.Tests.Services.DangerousPatternCultureTests
+        DynaDocs.Tests.Services.DangerousPatternOracleTests
+        DynaDocs.Tests.Services.DangerousPatternBudgetTests
+        DynaDocs.Tests.Services.BashCommandAnalyzerTests
+        DynaDocs.Tests.Integration.GuardSecurityTests
     steps:
       - name: Keep candidate bytes identical on both platforms
         run: git config --global core.autocrlf false
@@ -458,11 +466,14 @@ jobs:
       - name: Guard analyzer and hook tests
         id: guard-tests
         shell: pwsh
-        run: >-
-          dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-build
-          --filter "FullyQualifiedName~DynaDocs.Tests.Services.DangerousPatternCultureTests.|FullyQualifiedName~DynaDocs.Tests.Services.DangerousPatternOracleTests.|FullyQualifiedName~DynaDocs.Tests.Services.DangerousPatternBudgetTests.|FullyQualifiedName~DynaDocs.Tests.Services.BashCommandAnalyzerTests.|FullyQualifiedName~DynaDocs.Tests.Integration.GuardSecurityTests."
-          --logger "trx;LogFileName=guard-windows.trx"
-          --results-directory TestResults/guard-windows
+        run: |
+          # The trailing dot keeps a class from also selecting classes whose names extend it.
+          $filter = (-split $env:GUARD_CLASSES | ForEach-Object { "FullyQualifiedName~$_." }) -join '|'
+          Write-Host "Filter: $filter"
+          dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-build `
+            --filter $filter `
+            --logger 'trx;LogFileName=guard-windows.trx' `
+            --results-directory TestResults/guard-windows
 
       # A skip is missing proof: every selected class must run, and every result must pass.
       - name: Require every selected guard test to pass
@@ -472,12 +483,7 @@ jobs:
           TEST_OUTCOME: ${{ steps.guard-tests.outcome }}
           GUARD_TRX: TestResults/guard-windows/guard-windows.trx
         run: |
-          $classes = @(
-            'DynaDocs.Tests.Services.DangerousPatternCultureTests',
-            'DynaDocs.Tests.Services.DangerousPatternOracleTests',
-            'DynaDocs.Tests.Services.DangerousPatternBudgetTests',
-            'DynaDocs.Tests.Services.BashCommandAnalyzerTests',
-            'DynaDocs.Tests.Integration.GuardSecurityTests')
+          $classes = @(-split $env:GUARD_CLASSES)
           $problems = [System.Collections.Generic.List[string]]::new()
           if ($env:TEST_OUTCOME -ne 'success') { $problems.Add("dotnet test outcome is '$env:TEST_OUTCOME'") }
           if (-not (Test-Path -LiteralPath $env:GUARD_TRX)) {
@@ -486,8 +492,9 @@ jobs:
             $trx = [xml](Get-Content -Raw -LiteralPath $env:GUARD_TRX)
             $ns = [System.Xml.XmlNamespaceManager]::new($trx.NameTable)
             $ns.AddNamespace('t', 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010')
+            $definitions = @($trx.SelectNodes('//t:TestDefinitions/t:UnitTest', $ns))
             $classOf = @{}
-            foreach ($test in $trx.SelectNodes('//t:TestDefinitions/t:UnitTest', $ns)) {
+            foreach ($test in $definitions) {
               $classOf[$test.id] = $test.SelectSingleNode('t:TestMethod', $ns).className
             }
             $results = @($trx.SelectNodes('//t:Results/t:UnitTestResult', $ns))
@@ -500,10 +507,21 @@ jobs:
               Write-Host ("{0,5} {1}" -f $count, $class)
               if ($count -eq 0) { $problems.Add("$class produced zero results") }
             }
+            if ($definitions.Count -ne $results.Count) {
+              $problems.Add("The TRX defines $($definitions.Count) tests but has $($results.Count) results")
+            }
+            # The counters must exist and agree with the results read, so a truncated TRX cannot pass.
             $counters = $trx.SelectSingleNode('//t:ResultSummary/t:Counters', $ns)
-            Write-Host "TRX counters: total $($counters.total), passed $($counters.passed), failed $($counters.failed), notExecuted $($counters.notExecuted)"
-            if ($counters.total -ne $counters.passed) {
-              $problems.Add("TRX counters show total $($counters.total) but passed $($counters.passed)")
+            if ($null -eq $counters) {
+              $problems.Add('The TRX has no ResultSummary/Counters')
+            } else {
+              Write-Host "TRX counters: total $($counters.total), passed $($counters.passed), failed $($counters.failed), notExecuted $($counters.notExecuted)"
+              if ($counters.total -ne $counters.passed) {
+                $problems.Add("TRX counters show total $($counters.total) but passed $($counters.passed)")
+              }
+              if ($counters.total -ne "$($results.Count)") {
+                $problems.Add("TRX counters show total $($counters.total) but the TRX has $($results.Count) results")
+              }
             }
           }
           foreach ($problem in $problems) { Write-Host "::error::$problem" }

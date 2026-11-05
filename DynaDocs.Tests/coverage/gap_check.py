@@ -16,8 +16,17 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 
+interrupted = False
+
+
 def interrupt(_signum, _frame):
-    raise KeyboardInterrupt
+    """Raise the run's first interrupt. It decides the outcome, interrupted, so a further one is
+    dropped: it could only abort the adapter's stop, which CLEANUP_SECONDS and REAP_SECONDS already
+    bound, and the result's publication."""
+    global interrupted
+    if not interrupted:
+        interrupted = True
+        raise KeyboardInterrupt
 
 
 if sys.platform == "win32":
@@ -279,6 +288,34 @@ def artifact_snapshot(root, value):
     return snapshot
 
 
+def held(call, *args):
+    """Make one Popen call with SIGINT held. An interrupt raised inside POSIX Popen after it takes
+    its waitpid lock leaks the lock, and the facade can then never reap an exited adapter. Held, the
+    interrupt surfaces here once the call returns. Windows Popen reaps by handle and takes no lock.
+    The mask is the calling thread's: this holds only while the facade's main thread is the one
+    thread a process-directed SIGINT can reach, so the facade must start no thread that leaves it
+    unblocked."""
+    if not hasattr(signal, "pthread_sigmask") or signal.SIGINT in signal.pthread_sigmask(signal.SIG_BLOCK, ()):
+        return call(*args)
+    try:
+        signal.pthread_sigmask(signal.SIG_BLOCK, (signal.SIGINT,))
+        return call(*args)
+    finally:
+        signal.pthread_sigmask(signal.SIG_UNBLOCK, (signal.SIGINT,))
+
+
+def exit_confirmed(child, deadline):
+    """Wait in short held slices, so an interrupt surfaces between them, never inside the reap."""
+    while held(child.poll) is None:
+        if time.monotonic() >= deadline:
+            return False
+        try:
+            held(child.wait, min(0.2, max(0, deadline - time.monotonic())))
+        except subprocess.TimeoutExpired:
+            pass
+    return True
+
+
 def kill_child(child):
     if sys.platform == "win32":
         child.kill()
@@ -287,21 +324,23 @@ def kill_child(child):
             os.killpg(child.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
-    try:
-        child.wait(timeout=REAP_SECONDS)
-    except subprocess.TimeoutExpired:
-        pass  # Stuck in the kernel: the reap stays unconfirmed and returncode stays None.
+    # Stuck in the kernel: the reap stays unconfirmed and returncode stays None.
+    exit_confirmed(child, time.monotonic() + REAP_SECONDS)
 
 
 def stop_child(child, deadline):
+    if child.returncode is not None:
+        return  # Already reaped: its pid, and so its process group, may belong to another process.
     try:
         if sys.platform == "win32":
             child.send_signal(signal.CTRL_BREAK_EVENT)
         else:
             os.killpg(child.pid, signal.SIGINT)
-        child.wait(timeout=max(0, deadline - time.monotonic()))
-    except (OSError, subprocess.TimeoutExpired):
-        kill_child(child)
+        if exit_confirmed(child, deadline):
+            return
+    except OSError:
+        pass
+    kill_child(child)
 
 
 def stopped(reason, child):
@@ -310,16 +349,11 @@ def stopped(reason, child):
 
 def wait_for_child(child, capability, deadline):
     execution_deadline = deadline if capability != "test" else deadline - CLEANUP_SECONDS
-    while child.poll() is None and time.monotonic() < execution_deadline:
-        try:
-            child.wait(timeout=min(0.2, max(0, execution_deadline - time.monotonic())))
-        except subprocess.TimeoutExpired:
-            pass
+    exit_confirmed(child, execution_deadline)
     # The clock is read after the exit is observed, so an exit that races the deadline is deadline-exceeded.
     if time.monotonic() < execution_deadline:
         return True
-    if child.returncode is None:
-        stop_child(child, deadline)
+    stop_child(child, deadline)
     return False
 
 
@@ -601,6 +635,8 @@ def write_result(root, run, operation, selected, rows, candidate):
 
 
 def main(argv=None):
+    if signal.getsignal(signal.SIGINT) is signal.default_int_handler:
+        signal.signal(signal.SIGINT, interrupt)  # An inherited SIG_IGN or a caller's handler stays.
     args = list(sys.argv[1:] if argv is None else argv)
     path = Path(__file__).with_suffix(".json")
     # A sandbox's empty `.git` mount point names no repository: only a gitfile or a gitdir with HEAD does.

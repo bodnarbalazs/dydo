@@ -20,11 +20,17 @@ def capability(argv, artifact):
 
 
 class AssuranceAdoptionTests(unittest.TestCase):
-    def invoke(self, gate, exits):
+    def fixture(self):
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         root = Path(folder.name)
+        # Pin the facade root here: neither a stray marker nor a repository above may claim it.
+        subprocess.run(["git", "init", "--quiet", str(root)], check=True)
         shutil.copyfile(RUNNER, root / "gap_check.py")
+        return root
+
+    def invoke(self, gate, exits):
+        root = self.fixture()
         stacks = []
         for index, code in enumerate(exits):
             artifact = f"artifacts/{gate}-{index}.json"
@@ -89,10 +95,7 @@ class AssuranceAdoptionTests(unittest.TestCase):
     def test_cleaned_up_adapter_interruption_stops_later_rows(self):
         for gate in ("static", "coverage", "mutation"):
             with self.subTest(gate=gate):
-                folder = tempfile.TemporaryDirectory()
-                self.addCleanup(folder.cleanup)
-                root = Path(folder.name)
-                shutil.copyfile(RUNNER, root / "gap_check.py")
+                root = self.fixture()
                 scratch, marker = root / "owned-scratch", root / "later-marker"
                 first_artifact, second_artifact = f"artifacts/{gate}-0.json", f"artifacts/{gate}-1.json"
                 first = (

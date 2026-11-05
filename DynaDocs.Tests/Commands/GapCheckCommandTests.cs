@@ -215,8 +215,11 @@ public class GapCheckCommandTests : IAsyncLifetime, IDisposable
         var exitCode = await launch.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.Equal(2, exitCode);
-        await WaitForPidAbsent(int.Parse(File.ReadAllText(parentFile)));
-        await WaitForPidAbsent(int.Parse(File.ReadAllText(descendantFile)));
+        var parentPid = int.Parse(File.ReadAllText(parentFile));
+        await WaitForPidAbsent(parentPid);
+        if (OperatingSystem.IsLinux())
+            Assert.False(Directory.Exists($"/proc/{parentPid}"), "Direct child was not reaped.");
+        await ProcessLiveness.WaitForTerminationAsync(int.Parse(File.ReadAllText(descendantFile)));
     }
 
     private string Project(string name)

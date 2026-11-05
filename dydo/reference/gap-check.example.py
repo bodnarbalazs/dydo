@@ -590,7 +590,9 @@ def write_result(root, run, operation, selected, rows, candidate):
 def main(argv=None):
     args = list(sys.argv[1:] if argv is None else argv)
     path = Path(__file__).with_suffix(".json")
-    root = next((parent for parent in Path(__file__).resolve().parents if (parent / ".git").exists()), path.parent.resolve())
+    # A sandbox's empty `.git` mount point names no repository: only a gitfile or a gitdir with HEAD does.
+    root = next((parent for parent in Path(__file__).resolve().parents
+                 if (parent / ".git").is_file() or (parent / ".git/HEAD").is_file()), path.parent.resolve())
     rows = []
     try:
         parsed = request(args)

@@ -13,7 +13,7 @@ using DynaDocs.Services;
 public static partial class GuardCommand
 {
     /// <summary>The <c>--host</c> value in the Claude Code hook command dydo init writes.</summary>
-    internal const string ClaudeHost = "claude";
+    internal const string ClaudeHost = ClaudeGuardWiring.Host;
 
     // Codex's non-Bash shell tool names (issue 0295); its Bash calls are told apart by turn_id.
     private static readonly HashSet<string> CodexShellToolNames =

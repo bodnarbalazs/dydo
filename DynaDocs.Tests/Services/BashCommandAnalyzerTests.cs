@@ -1542,6 +1542,19 @@ public class BashCommandAnalyzerTests
         Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
     }
 
+    // The documented limit: Python behind a runner with no run subcommand, or behind a second
+    // runner a run subcommand starts, is not recognised.
+    [Theory]
+    [InlineData("uvx python -")]
+    [InlineData("pyenv exec python -")]
+    [InlineData("uv run poetry run python -")]
+    public void PythonBehindARunnerWithoutARunSubcommand_IsNotRecognised(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
     [Theory]
     [InlineData("python -")]
     [InlineData("python3 -u - <<'EOF'\nprint(1)\nEOF")]

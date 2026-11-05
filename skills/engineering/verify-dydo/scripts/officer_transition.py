@@ -832,7 +832,7 @@ def attributed(row, found, calls):
     ambiguous. Also returns the bound offenders among the commands it read."""
     if len(found) < 2:
         return first(found), []
-    reader = sets_mode if runs(row, "set") else reads_mode if runs(row, "show") else None
+    reader = first(read for verb, read in (("set", sets_mode), ("show", reads_mode)) if runs(row, verb))
     commands = [(ident, calls.get(ident) or {}) for ident in found]
     if reader is None or any(item.get("name") != "Bash" for _, item in commands):
         return None, []
@@ -1602,8 +1602,7 @@ def facts(timeline):
         "announcements": announcements, "contacts": contacts, "rejected_sink_calls": rejected,
         "report_after_readback": [i for i, _ in after],
         **ownership(receipts),
-        # Each classified line with a character outside the bound: its receipt's index, call, offset and code point.
-        "outside_bound": [{"index": i, **where} for i, r in receipts for where in r["outside_bound"]],
+        "outside_bound": outside_the_bound(receipts),
         # Unscored: how the agent worded it never decides a verdict.
         "wording_observed": [i for i, text in after if "incomplete" in text.lower()],
     }
@@ -1616,6 +1615,11 @@ def ownership(receipts):
     return {"uncorrelated_receipts": [i for i, r in receipts if not r["candidates"]],
             "ambiguous_receipts": [[i, r["candidates"]] for i, r in shared if r["call"] is None],
             "attributed_receipts": [[i, r["call"], r["candidates"]] for i, r in shared if r["call"] is not None]}
+
+
+def outside_the_bound(receipts):
+    """Each classified line with a character outside the bound: its receipt's index, call, offset and code point."""
+    return [{"index": i, **where} for i, r in receipts for where in r["outside_bound"]]
 
 
 def check(name, expected, observed, passed):

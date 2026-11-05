@@ -40,13 +40,22 @@ their literal destinations, which are still path-checked.
   formatting options such as `--stat`, `--short`, `--format`, `-1`, `-qam`, but never `--ext-diff`,
   `--textconv`, `-p`, `-e`, `--amend`, `--no-verify`, `--output`, `--git-dir`, `--work-tree`,
   `--exec-path`, `--template`, `--config-env`, `-c` or `-C`.
+- An option that takes a required value (grep `-e -f -m -A -B -C -d` and their long names, head
+  `-n -c`, git `-m`) takes it from its cluster, after `=`, or else from the next word, as the
+  program parses it. A next word that is `--` or looks like an option takes the relief away:
+  git 2.53 reads `git commit -m -- --edit` as the message `--` and still runs the editor. Optional
+  values (`--color`, `--format`, `--pretty`, git `-u`) attach only through `=` or the cluster. A
+  word after a bare `--` that looks like an option also takes the relief away.
 - No command on the line may read a file the line writes as code. Every `sed` on it must only
   substitute (one `s` script, listed options only). A line that runs `git` may write no path git
   reads as configuration, attributes or hooks: a `.git` component, `.gitattributes`, `.gitmodules`,
   `.gitconfig`, `.mailmap` or `.config/git/`, through any redirection or `sed -i` operand, the whole
-  write set of the listed options. These checks are case-blind, read `\` both ways, fold `.` and `..`, and count a target the
-  shell may expand. So `sed -f run.sed` after writing `run.sed`, and `git diff` after writing
-  `.git/config`, are refused as on master.
+  write set of the listed options. Each relative target is first joined to the call's directory
+  (the hook's tool `cwd`/`workdir` or `cwd`; the process directory for the CLI `--command` lane), so
+  from inside a `.git` folder every relative write counts. A call with no directory gets no relief
+  on a line that runs git. These checks are case-blind, read `\` both ways, fold `.` and `..`, and
+  count a target the shell may expand. So `sed -f run.sed` after writing `run.sed`, `git diff` after
+  writing `.git/config`, and `sed -i ... config; git diff` run in `.git`, are refused as on master.
 - The line must read for certain: no substitution, group, compound command, continuation, lone `&`,
   `$'...'`, or, where PowerShell may run it, a caret, `--%` or typographic quote.
 - Everything else is searched as before and refused as on master: `echo don\'t $(rm dydo/index.md)
@@ -71,7 +80,8 @@ Guards stop accidents, not rogue agents.
   with `git commit` and `printf ... > run.sh && sh run.sh` are refused.
 - Pre-existing state, the same class as a pre-existing hook, is not read: a profile, alias or git
   configuration set before the call, an `include` or `core.hooksPath` that names another file, or a
-  symlink that already leads to a git path. Only the call's own text is.
+  symlink that already leads to a git path; nor a bare-repository directory, whose name is not
+  `.git`, or a `GIT_DIR` set before the call. Only the call's own text and directory are.
 - An fd-numbered redirection (`1> .git/config`) takes the relief away, but master's path extraction
   records no write for it, so the call passes with a warning, as on master.
 - A `sed` script's `r`, `R`, `w` or `W` command naming a file is not a path the guard extracts, with
@@ -79,7 +89,8 @@ Guards stop accidents, not rogue agents.
 
 ## Files Changed
 
-`Services/BashCommandAnalyzer.cs`, `Services/ShellReader.cs`, `DynaDocs.Tests/GuardRetroCommands.cs`,
+`Services/BashCommandAnalyzer.cs`, `Services/ShellReader.cs`, `Commands/GuardCommand.cs` (the
+analyzer gets the call's directory), `DynaDocs.Tests/GuardRetroCommands.cs`,
 `DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs`,
 `DynaDocs.Tests/Integration/GuardSecurityTests.cs`, `dydo/understand/guard-system.md`, and this entry.
 

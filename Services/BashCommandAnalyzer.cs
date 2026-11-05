@@ -11,11 +11,19 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // The shell the analysed command runs in; Unknown reads it as either.
     private readonly ShellDialect _shell;
 
+    // The directory the command runs in, which a relative write target resolves against; null when
+    // unknown, so no line that runs git gets single-quote relief (DYD-422).
+    private readonly string? _cwd;
+
     public BashCommandAnalyzer() : this(ShellDialect.Unknown)
     {
     }
 
-    internal BashCommandAnalyzer(ShellDialect shell) => _shell = shell;
+    internal BashCommandAnalyzer(ShellDialect shell, string? cwd = null)
+    {
+        _shell = shell;
+        _cwd = cwd;
+    }
 
     private static readonly Dictionary<string, FileOperationType> ReadCommands = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -468,14 +476,19 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     /// <summary>
     /// A state-free command's closed option allowlist (DYD-422): the short flag letters it may
-    /// cluster, and the long option names it may take (the part before any <c>=</c>). An option
-    /// outside the list, in any spelling, makes the line not state-free. Each list holds only
-    /// read-only, output-shaping options; none runs a program, reads a script or writes a chosen file.
+    /// cluster and the long option names it may take (the part before any <c>=</c>), and of those,
+    /// the ones that take a required value. A required value is the rest of its cluster, the text
+    /// after <c>=</c>, or else the next word, whatever it is, <c>--</c> included, as the program
+    /// parses it. Every other listed option takes no value or an optional one, which attaches only
+    /// through <c>=</c> or its cluster. An option outside the list, in any spelling, makes the line
+    /// not state-free. Each list holds only read-only, output-shaping options; none runs a program,
+    /// reads a script or writes a chosen file.
     /// </summary>
-    private sealed record OptionSpec(string ShortFlags, HashSet<string> LongOptions);
+    private sealed record OptionSpec(string ShortFlags, HashSet<string> LongOptions, string ValueFlags, HashSet<string> ValueLongOptions);
 
     // grep: matching and formatting flags only; e/f take a pattern or pattern-file (data, not code),
-    // A/B/C/m/d take counts. No --pre or --preprocessor, which run a program (ripgrep).
+    // A/B/C/m/d take counts and actions. --color takes an optional value. No --pre or --preprocessor,
+    // which run a program (ripgrep).
     private static readonly OptionSpec GrepOptions = new("EFGPivnclLowxqsHharRefmABCdUz0123456789",
         new(StringComparer.Ordinal)
         {
@@ -484,23 +497,32 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             "line-regexp", "quiet", "silent", "no-messages", "with-filename", "no-filename", "recursive",
             "dereference-recursive", "color", "colour", "file", "regexp", "max-count", "after-context",
             "before-context", "context", "include", "exclude", "exclude-dir", "byte-offset", "null", "text",
+        },
+        "efmABCd",
+        new(StringComparer.Ordinal)
+        {
+            "file", "regexp", "max-count", "after-context", "before-context", "context", "include", "exclude", "exclude-dir",
         });
 
-    // head: line and byte counts, and the obsolete -NUM form.
+    // head: line and byte counts, each a required value, and the obsolete -NUM form.
     private static readonly OptionSpec HeadOptions = new("ncqvz0123456789",
-        new(StringComparer.Ordinal) { "lines", "bytes", "quiet", "silent", "verbose", "zero-terminated" });
+        new(StringComparer.Ordinal) { "lines", "bytes", "quiet", "silent", "verbose", "zero-terminated" },
+        "nc", new(StringComparer.Ordinal) { "lines", "bytes" });
 
     // git: only read-only, output-shaping options after an allowed subcommand. m takes the commit
-    // message, digits the log count. Never -c, -C, -p, -e, --output, --textconv, --ext-diff,
-    // --amend, --git-dir, --work-tree, --exec-path, --template or --config-env, which run code,
-    // change where git looks, or edit.
+    // message (git 2.53 reads -m -- as the message --), digits the log count; --format, --pretty,
+    // --color, --abbrev, --find-renames and --porcelain take a value only through =, and -u only in
+    // its cluster. Never -c, -C, -p, -e, --output, --textconv, --ext-diff, --amend, --git-dir,
+    // --work-tree, --exec-path, --template or --config-env, which run code, change where git looks,
+    // or edit.
     private static readonly OptionSpec GitOptions = new("qasvbum0123456789",
         new(StringComparer.Ordinal)
         {
             "stat", "numstat", "shortstat", "name-only", "name-status", "short", "porcelain", "cached",
             "staged", "oneline", "abbrev-commit", "abbrev", "no-color", "format", "pretty", "color",
             "all", "dry-run", "verbose", "quiet", "no-renames", "find-renames", "summary", "no-patch",
-        });
+        },
+        "m", new(StringComparer.Ordinal));
 
     // sed: only read and in-place-substitute flags. -i and --in-place must be bare, with no backup
     // suffix; a suffix renames the file elsewhere, which could install git configuration.
@@ -537,9 +559,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// </summary>
     private string WithoutLiteralData(string code)
     {
-        var data = DataQuotes(code, posix: true);
+        var data = DataQuotes(code, posix: true, _cwd);
         if (_shell != ShellDialect.Posix)
-            data.IntersectWith(DataQuotes(code, posix: false));
+            data.IntersectWith(DataQuotes(code, posix: false, _cwd));
         return Emptied(code, data.Select(quote => quote.Quote));
     }
 
@@ -559,11 +581,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// output is piped only to data commands (<see cref="DataCommands"/>). A substitution outside
     /// single quotes is never emptied, so it is still found; a quote inside one is its own scope's.
     /// </summary>
-    private static HashSet<DataQuote> DataQuotes(string code, bool posix)
+    private static HashSet<DataQuote> DataQuotes(string code, bool posix, string? cwd)
     {
         var reading = ShellReader.Read(code, posix);
         var quotes = reading.Source.SingleQuotes;
-        return RunsStateFreeOnly(reading) && !PairsQuotesOtherwise(code, Emptied(code, quotes), posix)
+        return RunsStateFreeOnly(reading, cwd) && !PairsQuotesOtherwise(code, Emptied(code, quotes), posix)
             ? [.. quotes.Select(quote => DataQuoteIn(reading.Commands, quote)).OfType<DataQuote>()]
             : [];
     }
@@ -571,10 +593,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // The reading is certain, every command in it, each sequence member and pipeline stage, is
     // state-free, with no substitution or PowerShell group word, group, continuation or process
     // substitution, and the line writes nothing git reads as code if it runs git.
-    private static bool RunsStateFreeOnly(ShellReader.Reading reading) =>
+    private static bool RunsStateFreeOnly(ShellReader.Reading reading, string? cwd) =>
         !reading.Failed && reading.Source.Executions.Count == 0
         && reading.Commands.All(command => !command.UncertainFeed && IsStateFree(command.Words, reading.Source.Posix))
-        && !WritesWhatGitReads(reading.Commands);
+        && !WritesWhatGitReads(reading.Commands, cwd);
 
     /// <summary>
     /// Whether the command is sed, printf, echo, grep, head, or git with a subcommand
@@ -605,19 +627,59 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static bool IsPowerShellParameter(string word) => word is ['-' or '\u2013' or '\u2014' or '\u2015', ..];
 
     /// <summary>
-    /// Whether every option word, up to a bare <c>--</c>, is on the closed list: a cluster of the
-    /// listed short flags (a value letter's attached value is read as more flags, so an unknown
-    /// letter in it fails closed), or a listed long option, with or without <c>=value</c>.
-    /// Operands and option values that stand as their own word are data.
+    /// Whether every option word is on the closed list (<see cref="ValueNeeded"/>). An option that
+    /// needs a separate value consumes the next word; when that word is <c>--</c> or looks like an
+    /// option, the program may read it either way, so the line is not state-free. A bare
+    /// <c>--</c> ends the options, and a word after it that looks like an option is not certain
+    /// either. Operands and consumed values are data.
     /// </summary>
-    private static bool TakesOnly(IEnumerable<string> words, OptionSpec spec) =>
-        words.TakeWhile(word => word != "--").Where(IsOption).All(option => option.StartsWith("--", StringComparison.Ordinal)
-            ? spec.LongOptions.Contains(option[2..].Split('=')[0])
-            : option[1..].All(spec.ShortFlags.Contains));
+    private static bool TakesOnly(List<string> words, OptionSpec spec)
+    {
+        var ended = false;
+        for (var at = 0; at < words.Count; at++)
+        {
+            if (!IsOption(words[at]))
+                continue;
+            if (ended)
+                return false;
+            if (words[at] == "--")
+                ended = true;
+            else if (ValueNeeded(words[at], spec) is not { } needed
+                || (needed && (++at == words.Count || IsOption(words[at]))))
+                return false;
+        }
+        return true;
+    }
 
-    // A line that runs git writes, in any way, a path git reads as configuration, attributes or hooks.
-    private static bool WritesWhatGitReads(IReadOnlyList<ShellReader.Command> commands) =>
-        commands.Any(command => command.Words is ["git", ..]) && commands.SelectMany(WriteTargets).Any(IsGitReadPath);
+    /// <summary>
+    /// Whether a listed option needs its value in the next word: a long option that requires a
+    /// value and has no <c>=</c>, or a cluster of listed short flags whose last letter requires a
+    /// value (an earlier value letter takes the rest of the cluster as its value). Null when the
+    /// option is not on the list.
+    /// </summary>
+    private static bool? ValueNeeded(string option, OptionSpec spec)
+    {
+        if (option.StartsWith("--", StringComparison.Ordinal))
+        {
+            var name = option[2..].Split('=')[0];
+            return spec.LongOptions.Contains(name) ? !option.Contains('=') && spec.ValueLongOptions.Contains(name) : null;
+        }
+
+        for (var at = 1; at < option.Length; at++)
+        {
+            if (!spec.ShortFlags.Contains(option[at]))
+                return null;
+            if (spec.ValueFlags.Contains(option[at]))
+                return at == option.Length - 1;
+        }
+        return false;
+    }
+
+    // A line that runs git writes, in any way, a path git reads as configuration, attributes or hooks,
+    // resolved against the call's directory; with that directory unknown, any write may be one.
+    private static bool WritesWhatGitReads(IReadOnlyList<ShellReader.Command> commands, string? cwd) =>
+        commands.Any(command => command.Words is ["git", ..])
+        && (cwd == null || commands.SelectMany(WriteTargets).Any(target => IsGitReadPath(target, cwd)));
 
     // Each place a state-free command may write, its whole write set: its output redirection
     // targets, and every word of a sed after its script, which a suffix-free sed -i rewrites in
@@ -629,17 +691,25 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     /// <summary>
     /// Whether git may read the write target as code: unquoted, with \ read both as a separator and
-    /// as an escape, it has a .git component, names a .gitattributes, .gitmodules, .gitconfig or
-    /// .mailmap file, or lies in a .config/git folder, with . and .. folded. A target the shell may
-    /// still expand ($, `, a glob or ~) may be any of them.
+    /// as an escape, and a relative target joined to the call's directory, the path has a .git
+    /// component, names a .gitattributes, .gitmodules, .gitconfig or .mailmap file, or lies in a
+    /// .config/git folder, with . and .. folded. So any relative write counts when the directory is
+    /// a .git folder or inside one. A target the shell may still expand ($, `, a glob or ~) may be
+    /// any of them.
     /// </summary>
-    private static bool IsGitReadPath(string target)
+    private static bool IsGitReadPath(string target, string cwd)
     {
         if (target.AsSpan().IndexOfAny("$`*?[{~") >= 0)
             return true;
         var unquoted = target.Replace("'", "").Replace("\"", "");
-        return IsGitPath(unquoted.Replace('\\', '/')) || IsGitPath(unquoted.Replace("\\", ""));
+        var directory = cwd.Replace('\\', '/');
+        return new[] { unquoted.Replace('\\', '/'), unquoted.Replace("\\", "") }
+            .Any(path => IsGitPath(path) || (!IsRooted(path) && IsGitPath(directory + "/" + path)));
     }
+
+    // A path that does not resolve against the directory: /x, or a drive's C:/x.
+    private static bool IsRooted(string path) =>
+        path is ['/', ..] || (path is [var drive, ':', '/', ..] && char.IsAsciiLetter(drive));
 
     private static readonly HashSet<string> GitReadFiles = new(StringComparer.OrdinalIgnoreCase)
         { ".gitattributes", ".gitmodules", ".gitconfig", ".mailmap" };

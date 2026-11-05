@@ -1533,6 +1533,10 @@ public class BashCommandAnalyzerTests
         Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
     }
 
+    // The directory a hook call names, a repository's working tree; DYD-422 relief on a line that
+    // runs git needs one.
+    private const string RepoCwd = "/home/agent/repo";
+
     private static readonly ShellDialect[] BashReadings = [ShellDialect.Posix, ShellDialect.Unknown];
     private static readonly ShellDialect[] PowerShellReadings = [ShellDialect.Unknown, ShellDialect.PowerShell];
 
@@ -1550,7 +1554,7 @@ public class BashCommandAnalyzerTests
     {
         foreach (var dialect in BashReadings)
         {
-            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+            var result = new BashCommandAnalyzer(dialect, RepoCwd).Analyze(command);
 
             Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
             Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == destination);
@@ -1587,7 +1591,7 @@ public class BashCommandAnalyzerTests
     public void Analyze_FdRedirectionToAGitPath_KeepsTheBypass(string command)
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
-            Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+            Assert.True(new BashCommandAnalyzer(dialect, RepoCwd).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
     }
 
     // A line that runs git keeps its relief while it writes no path git reads as code.
@@ -1598,7 +1602,7 @@ public class BashCommandAnalyzerTests
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
         {
-            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+            var result = new BashCommandAnalyzer(dialect, RepoCwd).Analyze(command);
 
             Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
         }
@@ -1669,6 +1673,7 @@ public class BashCommandAnalyzerTests
     [MemberData(nameof(StateChangingLines))]
     [MemberData(nameof(WriteThenRunLines))]
     [MemberData(nameof(OptionLines))]
+    [MemberData(nameof(OptionValueLines))]
     public void Analyze_SingleQuotedTextAProgramMayRun_IsABypass(string command)
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
@@ -1688,6 +1693,48 @@ public class BashCommandAnalyzerTests
     // spelling; a sed -i backup suffix, an abbreviation or an unlisted option takes the relief away.
     public static TheoryData<string> OptionLines => GuardRetroCommands.Gs02OptionLines;
 
+    // DYD-422 review: an option that takes a value consumes the next word, -- included.
+    public static TheoryData<string> OptionValueLines => GuardRetroCommands.Gs02OptionValueLines;
+
+    // git 2.53.0, observed in a scratch repository: git commit -a -m -- --edit takes -- as the
+    // message and still runs the editor, so -m consumes --; git diff --color -- --output=x writes
+    // nothing, since --color takes its optional value only through =. The first loses relief; the
+    // optional value followed by a path keeps it.
+    [Fact]
+    public void Analyze_GitMessageOptionConsumesDashDash_AsGit253Does()
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var analyzer = new BashCommandAnalyzer(dialect, RepoCwd);
+
+            Assert.True(analyzer.Analyze("printf '%s' '$(echo PWNED >&2)' > run.sh; git commit -a -m -- --edit").HasBypassAttempt, $"{dialect}");
+            Assert.False(analyzer.Analyze("printf '%s' '$(echo PWNED >&2)' > run.sh; git diff --color -- notes.md").HasBypassAttempt, $"{dialect}");
+        }
+    }
+
+    // A relative write resolves against the call's directory before the git-path rule: inside a
+    // .git folder, or as the .git folder, any relative write is git's own file. With no directory,
+    // a line that runs git gets no relief; one that runs no git keeps it.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs02SedConfigInsideTheGitDirectory, "/home/agent/repo/.git", true)]
+    [InlineData("sed -i 's/NOTHERE/$(echo PWNED >&2)/' ./config; git diff", "/home/agent/repo/.git", true)]
+    [InlineData("printf '%s' '$(echo PWNED >&2)' > hooks/pre-commit; git commit -m x", "/home/agent/repo/.git", true)]
+    [InlineData("printf '%s' '$(echo PWNED >&2)' > ../config; git diff", "/home/agent/repo/.git/hooks", true)]
+    [InlineData("printf '%s' '$(echo PWNED >&2)' > config; git diff", "C:\\Users\\agent\\repo\\.git", true)]
+    [InlineData("printf '%s' '$(echo PWNED >&2)' > config; git diff", "/home/agent/repo/.GIT", true)]
+    [InlineData("printf '%s' '$(echo PWNED >&2)' > git/config; git log", "/home/agent/.config", true)]
+    [InlineData(GuardRetroCommands.Gs02SedConfigInsideTheGitDirectory, null, true)]
+    [InlineData(GuardRetroCommands.Gs02SedBacktickSingleLine, null, true)]
+    [InlineData(GuardRetroCommands.Gs02SedConfigInsideTheGitDirectory, "/home/agent/repo", false)]
+    [InlineData("printf '%s' '$(echo PWNED >&2)' > /home/agent/notes.md; git diff", "/home/agent/repo/.git", false)]
+    [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md", null, false)]
+    [InlineData("printf '%s' '$(echo PWNED >&2)' > notes.md; git diff", "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\repo", false)]
+    public void Analyze_GitLineWrite_ResolvesAgainstTheCwd(string command, string? cwd, bool bypass)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.Equal(bypass, new BashCommandAnalyzer(dialect, cwd).Analyze(command).HasBypassAttempt);
+    }
+
     // The closed lists keep the read-only, output-shaping spellings the GS-02 writes and their
     // neighbours use, in every dialect that reads them as data.
     [Theory]
@@ -1701,11 +1748,16 @@ public class BashCommandAnalyzerTests
     [InlineData("git log -1 --format=%h && echo '$HOME' > out.md", "Posix,Unknown,PowerShell")]
     [InlineData("git status --short && git diff --stat -- notes.md && echo '$HOME' > out.md", "Posix,Unknown,PowerShell")]
     [InlineData("echo -n '$HOME' > out.md", "Posix")]
+    [InlineData("grep -C 2 -e '$HOME' notes.md > out.md", "Posix,Unknown,PowerShell")]
+    [InlineData("grep -e '$HOME' -- notes.md > out.md", "Posix,Unknown,PowerShell")]
+    [InlineData("grep --regexp '$HOME' --max-count=3 notes.md > out.md", "Posix,Unknown,PowerShell")]
+    [InlineData("head -n5 notes.md && head --lines 2 notes.md && echo '$HOME' > out.md", "Posix,Unknown,PowerShell")]
+    [InlineData("git commit -qm 'docs: note' && echo '$HOME' > out.md", "Posix,Unknown,PowerShell")]
     public void Analyze_ListedOptions_KeepTheRelief(string command, string dialects)
     {
         foreach (var dialect in dialects.Split(',').Select(Enum.Parse<ShellDialect>))
         {
-            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+            var result = new BashCommandAnalyzer(dialect, RepoCwd).Analyze(command);
 
             Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
         }
@@ -1767,7 +1819,7 @@ public class BashCommandAnalyzerTests
 
     private static void AssertBypassWithAChange(string command, ShellDialect dialect)
     {
-        var result = new BashCommandAnalyzer(dialect).Analyze(command);
+        var result = new BashCommandAnalyzer(dialect, RepoCwd).Analyze(command);
 
         Assert.True(result.HasBypassAttempt, $"{dialect}: expected a bypass: {command}");
         Assert.Contains(result.Operations, op => op.Type is FileOperationType.Write or FileOperationType.Delete);

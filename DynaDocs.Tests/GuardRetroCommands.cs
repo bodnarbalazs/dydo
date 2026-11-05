@@ -207,6 +207,30 @@ public static class GuardRetroCommands
         "printf '%s' '$(echo PWNED >&2)' > notes.md; git -C .. diff",
     };
 
+    // DYD-422 review (Codex seat 5, e2b8c674): an option that takes a value consumes the next word,
+    // -- included, as the program parses it (git 2.53 reads git commit -m -- --edit as message --
+    // and then runs the editor), and a word after -- that looks like an option is not certain.
+    public static Xunit.TheoryData<string> Gs02OptionValueLines => new()
+    {
+        "printf '%s' '$(echo PWNED >&2)' > patterns; grep -e -- --pre=sh notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > patterns; grep -f -- --pre=sh notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > patterns; grep --regexp -- --pre=sh notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > patterns; grep --file -- --pre=sh notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > patterns; grep -ie -- --pre=sh notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > patterns; grep -A -- --pre=sh notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; head -n -- --bogus notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > run.sh; git commit -m -- --edit",
+        "printf '%s' '$(echo PWNED >&2)' > run.sh; git commit -a -m -- --edit",
+        "printf '%s' '$(echo PWNED >&2)' > run.sh; git commit -qam -- --edit",
+        "printf '%s' '$(echo PWNED >&2)' > run.sh; git commit -m -- --template=run.sh",
+        "printf '%s' '$(echo PWNED >&2)' > run.sh; git log --format -- --output=.git/config",
+        "printf '%s' '$(echo PWNED >&2)' > run.sh; git diff --color -- --output=.git/config",
+    };
+
+    // DYD-422 review (Codex seat 5): a relative write resolves against the call's directory, so a
+    // line that runs git inside a .git folder writes git's own files.
+    public const string Gs02SedConfigInsideTheGitDirectory = "sed -i 's/NOTHERE/$(echo PWNED >&2)/' config; git diff";
+
     // GS-02, Claude Bash: evidence appended through cat >> and a quoted heredoc holding backticks.
     public const string Gs02CatAppendEvidence =
         "cat >> C:/Users/User/.t3/worktrees/LC/LC.worktrees/LC-749-typed-admission/dydo/agents/workspace/LC-749/fix13/evidence.md << 'EOF'\n" +

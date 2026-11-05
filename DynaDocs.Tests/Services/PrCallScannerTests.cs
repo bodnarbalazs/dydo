@@ -508,7 +508,7 @@ public class PrCallScannerTests
     [InlineData("gh pr create -dFa.md", "a.md")]
     [InlineData("gh pr create -F 'my body.md' --title t", "my body.md")]
     [InlineData("gh pr create -F a.md --body-file b.md", "b.md")]
-    [InlineData("gh pr Create -R {owner}/r -F a.md", "a.md")]
+    [InlineData("gh pr Create -R o/r -F a.md", "a.md")]
     [InlineData("gh pr create -F -", "-")]
     [InlineData("gh pr create -F a.md; gh pr create -F b.md", "a.md")]
     public void BodyFileAt_IsTheLaunchedCallsLastBodyFile(string command, string file)
@@ -537,6 +537,7 @@ public class PrCallScannerTests
     [InlineData("gh pr create -F a.md 'unfinished")]
     [InlineData("gh pr create -F a.md'")]
     [InlineData("GH_REPO=o/r")]
+    [InlineData("gh pr create -R {owner}/r -F a.md")]
     public void CallReadingNoBodyFile_NamesNone(string command)
     {
         Assert.Null(PrCallScanner.BodyFileAt(command, 0, ShellDialect.Posix));
@@ -586,10 +587,96 @@ public class PrCallScannerTests
     [Theory]
     [InlineData("Unknown", @"gh pr create -F a.md", "a.md")]
     [InlineData("PowerShell", @"gh pr create -F a\ b.md", @"a\")]
-    [InlineData("Posix", @"gh pr create -F a\ b.md", "a b.md")]
+    [InlineData("Posix", @"gh pr create -F a\ b.md", null)]
     [InlineData("Unknown", @"gh pr create -F a\ b.md", null)]
     public void BodyFileAt_HoldsOnlyWhereEveryReadingAgrees(string dialect, string command, string? file)
     {
         Assert.Equal(file, PrCallScanner.BodyFileAt(command, 0, Enum.Parse<ShellDialect>(dialect)));
+    }
+
+    // R3-B3, R3-S1: an operand is read only as written plainly, bare or wholly in one pair of quotes,
+    // of A-Z a-z 0-9 . _ - + / and, quoted, space, between blanks or separators. PowerShell also
+    // takes \ and a leading drive; bash keeps no backslash.
+    [Theory]
+    [InlineData("Posix", "gh pr create -F 'a b.md'", "a b.md")]
+    [InlineData("Posix", "gh pr create -F \"a+b_c-d.md\" --title t", "a+b_c-d.md")]
+    [InlineData("Posix", "gh pr create -dF'a b.md'", "a b.md")]
+    [InlineData("Posix", "gh pr create -F a.md\\", null)]
+    [InlineData("Posix", "gh pr create -F a\\\r\n.md", null)]
+    [InlineData("Posix", "gh pr create -F a.md\r\n", null)]
+    [InlineData("Posix", "gh pr create -F a.md\u00a0x", null)]
+    [InlineData("Posix", "gh pr create -F\u00a0a.md", null)]
+    [InlineData("Posix", "gh pr create -F 'a.md{repo}'", null)]
+    [InlineData("Posix", "gh pr create -F 'a.md'x", null)]
+    [InlineData("Posix", "gh pr create -F a'.md'", null)]
+    [InlineData("Posix", "gh pr create '-Fa.md'", null)]
+    [InlineData("Posix", "gh pr create -F 'a\\b.md'", null)]
+    [InlineData("Posix", "gh pr create -F a:b.md", null)]
+    [InlineData("Posix", "gh pr create -F=a.md", null)]
+    [InlineData("Posix", "gh pr create -F==a.md", null)]
+    [InlineData("Posix", "gh pr create --body-file==a.md", null)]
+    [InlineData("Posix", @"gh pr create -F C:\pr\body.md", null)]
+    [InlineData("PowerShell", @"gh pr create -F C:\pr\body.md", @"C:\pr\body.md")]
+    [InlineData("PowerShell", "gh pr create -F 'C:/pr/a b.md'", "C:/pr/a b.md")]
+    [InlineData("PowerShell", "gh pr create -F C:body.md", null)]
+    [InlineData("PowerShell", @"gh pr create -F pr\C:\body.md", null)]
+    [InlineData("Unknown", @"gh pr create -F 'C:\pr\body.md'", null)]
+    public void BodyFileAt_HoldsOnlyAPlainlyWrittenOperand(string dialect, string command, string? file)
+    {
+        Assert.Equal(file, PrCallScanner.BodyFileAt(command, 0, Enum.Parse<ShellDialect>(dialect)));
+    }
+
+    // R3-B1: a relative body file is read only when every command before the call, nested ones too,
+    // runs dydo, git, gh, echo, printf, true or test, and only blanks and ; & | join them.
+    [Theory]
+    [InlineData("Posix", "dydo pr-ready --body a.md && gh pr create --body-file a.md", "a.md")]
+    [InlineData("Posix", "git status --short && echo ok; printf x | true || test -f a.md && gh pr create -F a.md", "a.md")]
+    [InlineData("Posix", "/usr/bin/git status\ngit push; gh pr create -F a.md", "a.md")]
+    [InlineData("Posix", "echo \"$(git rev-parse HEAD)\"; gh pr create -F a.md", "a.md")]
+    [InlineData("Posix", "cd sub && gh pr create -F a.md", null)]
+    [InlineData("Posix", "git status && cd sub && gh pr create -F a.md", null)]
+    [InlineData("Posix", "pushd sub; gh pr create -F a.md", null)]
+    [InlineData("Posix", "popd; gh pr create -F a.md", null)]
+    [InlineData("Posix", "source env.sh; gh pr create -F a.md", null)]
+    [InlineData("Posix", ". env.sh; gh pr create -F a.md", null)]
+    [InlineData("Posix", "eval cd sub; gh pr create -F a.md", null)]
+    [InlineData("Posix", "exec 3<a.md; gh pr create -F a.md", null)]
+    [InlineData("Posix", "f() { true; }; f; gh pr create -F a.md", null)]
+    [InlineData("Posix", "(git status) && gh pr create -F a.md", null)]
+    [InlineData("Posix", "{ git status; } && gh pr create -F a.md", null)]
+    [InlineData("Posix", "git status > log.txt && gh pr create -F a.md", null)]
+    [InlineData("Posix", "# note\ngit status; gh pr create -F a.md", null)]
+    [InlineData("Posix", "GIT_DIR=x git status; gh pr create -F a.md", null)]
+    [InlineData("Posix", "echo \"$(cd sub)\"; gh pr create -F a.md", null)]
+    [InlineData("Posix", "echo ${ cd sub; }; gh pr create -F a.md", null)]
+    [InlineData("Posix", "echo ${| cd sub; }; gh pr create -F a.md", null)]
+    [InlineData("Posix", "gh pr create --title \"$(cd sub; pwd)\" -F a.md", null)]
+    [InlineData("PowerShell", "git status; gh pr create -F a.md", "a.md")]
+    [InlineData("PowerShell", "git status; Set-Location sub; gh pr create -F a.md", null)]
+    [InlineData("PowerShell", "sl sub; gh pr create -F a.md", null)]
+    [InlineData("PowerShell", "Push-Location sub; gh pr create -F a.md", null)]
+    [InlineData("PowerShell", "echo (Set-Location sub); gh pr create -F a.md", null)]
+    public void RelativeBodyFile_IsReadOnlyWhereNoEarlierCommandMayMoveTheDirectory(string dialect, string command, string? file)
+    {
+        var launch = command.LastIndexOf("gh pr create", StringComparison.Ordinal);
+
+        Assert.Equal(file, PrCallScanner.BodyFileAt(command, launch, Enum.Parse<ShellDialect>(dialect)));
+    }
+
+    // An absolute body file names one file wherever the call sits.
+    [Fact]
+    public void AbsoluteBodyFile_IsReadAfterAnyCommand()
+    {
+        var (dialect, file) = OperatingSystem.IsWindows() ? (ShellDialect.PowerShell, @"C:\pr\a.md") : (ShellDialect.Posix, "/pr/a.md");
+        var command = $"cd sub && gh pr create -F {file}";
+
+        Assert.Equal(file, PrCallScanner.BodyFileAt(command, command.IndexOf("gh", StringComparison.Ordinal), dialect));
+    }
+
+    // On Windows a path rooted at no drive is opened on the shell's current drive, so it is not read there.
+    [Fact]
+    public void BodyFileRootedAtNoDrive_IsReadOnlyWhereThatIsAbsolute()
+    {
+        Assert.Equal(OperatingSystem.IsWindows() ? null : "/pr/a.md", PrCallScanner.BodyFileAt("gh pr create -F /pr/a.md", 0, ShellDialect.Posix));
     }
 }

@@ -52,7 +52,6 @@ public sealed class GuardPrReadyBodyFileTests : IDisposable
         Write(Path.Combine(Tree, "docs", "pr.md"), "docs body");
 
         Assert.Equal("docs body", Read("pr.md", directory: Path.Combine(Tree, "docs")));
-        Assert.Equal(Body, Read("../body.md", directory: Path.Combine(Tree, "docs")));
     }
 
     [Theory]
@@ -64,6 +63,14 @@ public sealed class GuardPrReadyBodyFileTests : IDisposable
     [InlineData("dir")]
     [InlineData(".git/config")]
     [InlineData("../outside/body.md")]
+    [InlineData("dir/../body.md")]
+    [InlineData("missing/../body.md")]
+    [InlineData("body.md/../body.md")]
+    [InlineData("./body.md")]
+    [InlineData("dir//../body.md")]
+    [InlineData("dir/")]
+    [InlineData("body.md/")]
+    [InlineData("body.md/.")]
     public void PathTheGuardMayNotRead_IsNull(string path)
     {
         Assert.Null(Read(path));
@@ -123,19 +130,16 @@ public sealed class GuardPrReadyBodyFileTests : IDisposable
         Assert.Null(Read("in.md", offLimits: path => path.EndsWith("body.md", StringComparison.Ordinal)));
     }
 
-    // gh opens a/../body.md as the OS does: .. leaves the directory a links to, not a itself.
+    // A link is followed through plain names only: a . or .. in its target is refused, not emulated.
     [SkippableFact]
-    public void DotDotAfterALinkedDirectory_LeavesTheLinkTarget()
+    public void LinkWhoseTargetNamesADotOrDotDot_IsNull()
     {
-        Skip.If(OperatingSystem.IsWindows(), "Windows takes .. by name.");
-        Write(Path.Combine(Tree, "x", "body.md"), "physical");
-        Directory.CreateSymbolicLink(Path.Combine(Tree, "a"), Path.Combine(Tree, "x", "y"));
-        Directory.CreateDirectory(Path.Combine(Tree, "x", "y"));
-        Directory.CreateSymbolicLink(Path.Combine(Tree, "escape"), Path.Combine(Outside, "deeper"));
-        Directory.CreateDirectory(Path.Combine(Outside, "deeper"));
+        Skip.If(OperatingSystem.IsWindows(), "Creating file symbolic links needs Windows developer mode.");
+        File.CreateSymbolicLink(Path.Combine(Tree, "up.md"), "../tree/body.md");
+        File.CreateSymbolicLink(Path.Combine(Tree, "here.md"), "./body.md");
 
-        Assert.Equal("physical", Read("a/../body.md"));
-        Assert.Null(Read("escape/../body.md"));
+        Assert.Null(Read("up.md"));
+        Assert.Null(Read("here.md"));
     }
 
     [Fact]

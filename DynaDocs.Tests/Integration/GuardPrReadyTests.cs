@@ -76,12 +76,12 @@ public class GuardPrReadyTests : IntegrationTestBase
     // Runs each command once and returns every one whose decision is not the expected one, so a
     // replayed table reports all its misses at once.
     private async Task<List<string>> Misses(bool denied, IEnumerable<string> commands, string? reasonPart = null,
-        string toolName = "Bash")
+        string toolName = "Bash", string? toolCwd = null)
     {
         List<string> misses = [];
         foreach (var command in commands)
         {
-            var result = await GuardWithStdinAsync(Payload(command, toolName: toolName));
+            var result = await GuardWithStdinAsync(Payload(command, toolName: toolName, toolCwd: toolCwd));
             var wasDenied = !result.IsPreToolUseAllowed;
             if (wasDenied != denied || (denied && reasonPart != null && !result.Stderr.Contains(reasonPart)))
                 misses.Add($"{(wasDenied ? "denied" : "allowed")}: {command}\n    {result.Stderr.Trim().Replace("\n", "\n    ")}");
@@ -373,14 +373,44 @@ public class GuardPrReadyTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task PrCreate_BodyFileNamedFromTheCallDirectoryOrAbsolutely_DoesNotWarn()
+    public async Task PrCreate_BodyFileNamedFromTheCallDirectory_DoesNotWarn()
     {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+
+        (await GuardWithStdinAsync(Payload("gh pr create -F agents/body.md", toolCwd: DydoDir))).AssertPreToolUseAllowed();
+    }
+
+    // An absolute body file names one file wherever the call sits. A Windows path needs the
+    // PowerShell reading, which a Bash call there shares with bash's, which keeps no backslash.
+    [SkippableFact]
+    public async Task PrCreate_AbsoluteBodyFile_DoesNotWarnWhereverTheCallSits()
+    {
+        Skip.If(OperatingSystem.IsWindows(), "A Bash call on Windows is also read as bash, which takes no backslash.");
         await InitPushedProject();
         WriteFile("dydo/agents/body.md", ReviewedBody);
         var absolute = Path.Combine(TestDir, "dydo", "agents", "body.md");
 
-        (await GuardWithStdinAsync(Payload("gh pr create -F agents/body.md", toolCwd: DydoDir))).AssertPreToolUseAllowed();
-        (await GuardWithStdinAsync(Payload($"gh pr create -F '{absolute}'"))).AssertPreToolUseAllowed();
+        Assert.Empty(await Misses(denied: false,
+            [$"gh pr create -F '{absolute}'", $"git status --short && cd dydo && gh pr create -F {absolute}"]));
+    }
+
+    // The plain spellings stay read: quoted with a space, attached, and after commands that cannot
+    // move the shell's directory.
+    [Fact]
+    public async Task PrCreate_PlainlyWrittenBodyFile_DoesNotWarn()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+        WriteFile("dydo/agents/pr body.md", ReviewedBody);
+
+        Assert.Empty(await Misses(denied: false,
+        [
+            "gh pr create -F \"dydo/agents/pr body.md\"",
+            "gh pr create --body-file='dydo/agents/pr body.md'",
+            "dydo pr-ready --body dydo/agents/body.md && gh pr create --body-file dydo/agents/body.md",
+            "git status --short && echo ready; true && test -f dydo/agents/body.md && gh pr create -F dydo/agents/body.md",
+        ]));
     }
 
     [Fact]
@@ -559,6 +589,80 @@ public class GuardPrReadyTests : IntegrationTestBase
             "SUFFIX=.plain; gh pr create -F \"dydo/agents/reviewed.md$SUFFIX\"",
         ], ReviewBlockWarning));
         (await GuardWithStdinAsync(Payload("gh pr create -F \"dydo/agents/reviewed.md\""))).AssertPreToolUseAllowed();
+    }
+
+    // R3-B1: bash opens a relative body file from wherever the line has moved, so a relative operand
+    // is read only after commands that cannot move the shell's directory; here the reviewed body.md
+    // sits in the call directory and the unreviewed one in sub.
+    [Fact]
+    public async Task PrCreate_RelativeBodyFileAfterACommandThatMayMoveTheDirectory_Warns()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+        WriteFile("dydo/agents/sub/body.md", "DYD-1\n\n## Summary\n");
+        WriteFile("dydo/agents/env.sh", "cd sub\n");
+        var directory = Path.Combine(DydoDir, "agents");
+
+        Assert.Empty(await Misses(denied: true,
+        [
+            "git status --short && cd sub && gh pr create -F body.md",
+            "git status --short && pushd sub && gh pr create -F body.md",
+            "git status --short; source env.sh; gh pr create -F body.md",
+            "git status --short; . ./env.sh; gh pr create -F body.md",
+            "echo ${ cd sub; } && gh pr create -F body.md",
+            "(git status) && gh pr create -F body.md",
+            "{ git status; } && gh pr create -F body.md",
+        ], ReviewBlockWarning, toolCwd: directory));
+        Assert.Empty(await Misses(denied: true, ["git status; Set-Location sub; gh pr create -F body.md"],
+            ReviewBlockWarning, toolName: "PowerShell", toolCwd: directory));
+    }
+
+    // R3-B2: the guard reads only a path of plain names. It emulates no . or .. and takes no empty
+    // name or trailing separator, which the OS opens differently or not at all.
+    [Fact]
+    public async Task PrCreate_BodyFileOperandWithADotNameOrATrailingSeparator_Warns()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+        WriteFile("dydo/agents/plain.md", "DYD-1\n\n## Summary\n");
+
+        Assert.Empty(await Misses(denied: true,
+        [
+            "gh pr create -F dydo/agents/missing/../body.md",
+            "gh pr create -F dydo/agents/plain.md/../body.md",
+            "gh pr create -F dydo/agents/./body.md",
+            "gh pr create -F dydo/agents//body.md",
+            "gh pr create -F dydo/agents/body.md/",
+            "gh pr create -F dydo/agents/body.md/.",
+        ], ReviewBlockWarning));
+    }
+
+    // R3-B3: bash keeps a trailing backslash, an escaped carriage return and a bare one in the word,
+    // so an operand not written plainly keeps the warning.
+    [Fact]
+    public async Task PrCreate_BodyFileOperandBashReadsDifferently_Warns()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+
+        Assert.Empty(await Misses(denied: true,
+        [
+            "gh pr create -F dydo/agents/body.md\\",
+            "gh pr create -F dydo/agents/body\\\r\n.md",
+            "gh pr create -F dydo/agents/body.md\r\n",
+        ], ReviewBlockWarning));
+    }
+
+    // R3-S1: the operand is checked as written, before gh's {repo} placeholder is spelt :repo.
+    [SkippableFact]
+    public async Task PrCreate_BodyFileOperandWithAGhPlaceholder_Warns()
+    {
+        Skip.If(OperatingSystem.IsWindows(), "A Windows file name takes no colon.");
+        await InitPushedProject();
+        WriteFile("dydo/agents/reviewed.md:repo", ReviewedBody);
+        WriteFile("dydo/agents/reviewed.md{repo}", "DYD-1\n\n## Summary\n");
+
+        Assert.Empty(await Misses(denied: true, ["gh pr create -F 'dydo/agents/reviewed.md{repo}'"], ReviewBlockWarning));
     }
 
     // A directory beside the test's tree, outside it, holding a body with the review block.

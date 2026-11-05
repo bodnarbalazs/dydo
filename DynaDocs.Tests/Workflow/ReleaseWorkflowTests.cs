@@ -84,14 +84,14 @@ public sealed class ReleaseWorkflowTests
     }
 
     [Theory]
-    [InlineData("ci.yml", 2)]
-    [InlineData("release.yml", 3)]
-    public void Workflows_ProvisionPatchedRuntimeBeforeDotnetConsumers(string name, int expectedJobs)
+    [InlineData("ci.yml", "python-coverage dotnet-coverage dotnet-coverage-union build full-stack")]
+    [InlineData("release.yml", "build validation nuget")]
+    public void Workflows_ProvisionPatchedRuntimeBeforeDotnetConsumers(string name, string expectedJobs)
     {
         var workflow = File.ReadAllText(RepositoryFile(".github", "workflows", name));
-        var jobs = ActiveJobs(workflow).Values.Where(job => job.Contains("actions/setup-dotnet@", StringComparison.Ordinal)).ToArray();
-        Assert.Equal(expectedJobs, jobs.Length);
-        Assert.All(jobs, AssertPatchedRuntimeProvisioning);
+        var jobs = ActiveJobs(workflow).Where(job => job.Value.Contains("actions/setup-dotnet@", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(expectedJobs.Split(' '), jobs.Select(job => job.Key));
+        Assert.All(jobs.Select(job => job.Value), AssertPatchedRuntimeProvisioning);
     }
 
     [Fact]

@@ -1,4 +1,6 @@
 """Behavioral probes shared by unittest and exact Reqnroll scenario bindings."""
+import contextlib
+import io
 import json
 import os
 import queue
@@ -9,6 +11,7 @@ import sys
 import tempfile
 import threading
 import time
+import types
 import unittest
 from unittest import mock
 import runpy
@@ -93,6 +96,66 @@ def verdict_stack(name='first', collector=None, report=None, coverage_exit=0, de
             'exit': ['collectors', collector, 'facts', 'child_exit'],
             'failure': ['collectors', collector, 'findings', {'gate': 'functional'}]}
     return item
+
+
+class UnboundedWait(AssertionError):
+    """An untimed wait on a child that is never reaped: on a real host the facade would hang forever."""
+
+
+class FakeClock:
+    def __init__(self):
+        self.now = 0.0
+
+    def monotonic(self):
+        return self.now
+
+
+class FakeChild:
+    """A Popen stand-in on a FakeClock. It ignores the interrupt, exits by itself with 99 at
+    `exits_at` (never when None) and, once killed, is reaped only when `reapable`. The facade
+    resumes `stall` seconds late after launching it; `interrupt` raises one KeyboardInterrupt
+    from its first wait."""
+    pid = 4242
+
+    def __init__(self, clock, exits_at=None, reapable=True, stall=0, interrupt=False):
+        self.clock, self.exits_at, self.reapable, self.stall, self.interrupt = clock, exits_at, reapable, stall, interrupt
+        self.exit_code, self.returncode, self.signals = 99, None, []
+
+    def poll(self):
+        if self.returncode is None and self.exits_at is not None and self.clock.now >= self.exits_at:
+            self.returncode = self.exit_code
+        return self.returncode
+
+    def wait(self, timeout=None):
+        if self.interrupt:
+            self.interrupt = False
+            raise KeyboardInterrupt
+        if self.poll() is None:
+            if self.exits_at is not None and (timeout is None or self.clock.now + timeout >= self.exits_at):
+                self.clock.now = self.exits_at
+            elif timeout is None:
+                raise UnboundedWait('untimed wait on a killed child that is never reaped')
+            else:
+                self.clock.now += timeout
+                raise subprocess.TimeoutExpired('fake-child', timeout)
+        return self.poll()
+
+    def send_signal(self, sig):
+        self.signals.append(sig)
+
+    def kill(self):
+        self.signals.append('kill')
+        self.exit_code, self.exits_at = -9, self.clock.now if self.reapable else None
+
+
+def fake_killpg(children):
+    """os.killpg for FakeChild stand-ins: SIGKILL kills the latest child, any other signal is recorded."""
+    def killpg(_pid, sig):
+        if sig == signal.SIGKILL:
+            children[-1].kill()
+        else:
+            children[-1].send_signal(sig)
+    return killpg
 
 
 class TestingFacadeTests(unittest.TestCase):
@@ -1840,6 +1903,92 @@ print('INTER_ITERATION_CASES=' + str(count))
         self.assertFalse((root / 'later-test.txt').exists())
         self.assert_rows(payload, [('first', 'test', 'interrupted')])
         self.assertIn('deadline', payload['results'][0]['reason'])
+
+    def fake_rows(self, clock, *children):
+        """The runner's own execute_rows over the test rows of `first` and `later` with the
+        production deadlines on `clock`, launching `children` in turn instead of processes."""
+        namespace = runpy.run_path(str(self.runner))['execute_rows'].__globals__
+        launched = []
+
+        def launch(*_args, **_kwargs):
+            child = children[len(launched)]
+            launched.append(child)
+            clock.now += child.stall
+            return child
+        launcher = types.SimpleNamespace(Popen=launch, TimeoutExpired=subprocess.TimeoutExpired,
+                                         CREATE_NEW_PROCESS_GROUP=getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0))
+        temporary = tempfile.TemporaryDirectory(prefix='dydo-facade-')
+        self.addCleanup(temporary.cleanup)
+        with (mock.patch.dict(namespace, {'time': clock, 'subprocess': launcher}),
+              mock.patch.object(os, 'killpg', fake_killpg(launched), create=True),
+              contextlib.redirect_stdout(io.StringIO())):
+            rows = namespace['execute_rows']([stack('first'), stack('later')], ('test',),
+                                             Path(temporary.name).resolve(), None, [])
+        return [(row['stack'], row['state'], row['childExit']) for row in rows], rows, launched, namespace
+
+    def test_a_killed_child_that_is_never_reaped_releases_the_facade_within_the_reap_bound(self):
+        namespace = runpy.run_path(str(self.runner))['stop_child'].__globals__
+        for platform in ('linux', 'win32'):
+            with self.subTest(platform=platform):
+                clock, children = FakeClock(), []
+                children.append(FakeChild(clock, reapable=False))
+                with (mock.patch.dict(namespace, {'time': clock}), mock.patch.object(sys, 'platform', platform),
+                      mock.patch.object(signal, 'SIGKILL', getattr(signal, 'SIGKILL', 9), create=True),
+                      mock.patch.object(signal, 'CTRL_BREAK_EVENT', getattr(signal, 'CTRL_BREAK_EVENT', 1), create=True),
+                      mock.patch.object(os, 'killpg', fake_killpg(children), create=True)):
+                    namespace['stop_child'](children[0], 30)
+                self.assertEqual(['kill'], children[0].signals[1:])
+                self.assertIsNone(children[0].returncode)
+                self.assertLessEqual(clock.now, 30 + namespace['REAP_SECONDS'])
+
+    def test_a_deadline_row_whose_killed_child_is_never_reaped_stays_interrupted_without_a_child_exit(self):
+        clock = FakeClock()
+        rows, results, launched, namespace = self.fake_rows(clock, FakeChild(clock, reapable=False))
+        self.assertEqual([('first', 'interrupted', None)], rows)
+        self.assertEqual(1, len(launched))
+        self.assertIn('deadline', results[0]['reason'])
+        self.assertIn('not reaped', results[0]['reason'])
+        self.assertLessEqual(clock.now, 1830 + namespace['REAP_SECONDS'])
+
+    def test_an_interrupted_row_whose_killed_child_is_never_reaped_records_no_child_exit(self):
+        clock = FakeClock()
+        rows, results, launched, _ = self.fake_rows(clock, FakeChild(clock, reapable=False, interrupt=True))
+        self.assertEqual([('first', 'interrupted', None)], rows)
+        self.assertEqual(1, len(launched))
+        self.assertIn('interrupted', results[0]['reason'])
+        self.assertIn('not reaped', results[0]['reason'])
+
+    def test_a_child_exit_first_observed_after_the_execution_deadline_interrupts_the_row(self):
+        clock = FakeClock()
+        rows, results, launched, _ = self.fake_rows(clock, FakeChild(clock, exits_at=1, stall=1801), FakeChild(clock, exits_at=1))
+        self.assertEqual([('first', 'interrupted', 99)], rows)
+        self.assertEqual(1, len(launched))
+        self.assertEqual([], launched[0].signals)
+        self.assertIn('deadline', results[0]['reason'])
+
+    def test_a_child_exit_observed_before_the_execution_deadline_completes_the_row(self):
+        clock = FakeClock()
+        rows, _, launched, _ = self.fake_rows(clock, FakeChild(clock, exits_at=1799.9), FakeChild(clock, exits_at=1))
+        self.assertEqual([('first', 'failed', 99), ('later', 'failed', 99)], rows)
+        self.assertEqual([[], []], [child.signals for child in launched])
+
+    def test_an_exit_racing_the_execution_deadline_resolves_to_the_deadline(self):
+        # The facade observes the exit, then resumes past the deadline before it reads the clock:
+        # it cannot show that the exit came first, so the row is deadline-exceeded.
+        namespace = runpy.run_path(str(self.runner))['wait_for_child'].__globals__
+        clock = FakeClock()
+        child = FakeChild(clock, exits_at=0)
+        observe = child.poll
+
+        def late_poll():
+            code = observe()
+            clock.now = max(clock.now, 1800)
+            return code
+        child.poll = late_poll
+        with mock.patch.dict(namespace, {'time': clock}):
+            self.assertFalse(namespace['wait_for_child'](child, 'test', 1830))
+        self.assertEqual(99, child.returncode)
+        self.assertEqual([], child.signals)
 
 
 class PortableTestingFacadeTests(TestingFacadeTests):

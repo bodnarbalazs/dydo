@@ -2,6 +2,18 @@
   "schema": 1,
   "modules": [
     {
+      "module": "DynaDocs.Tests/coverage/gate_discovery.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_gate_adapter.py", "DynaDocs.Tests/coverage/tests/test_python_platform.py"]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/python_platform.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_python_platform.py"]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/dotnet_platform.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_dotnet_platform.py", "DynaDocs.Tests/coverage/tests/test_gate_adapter.py"]
+    },
+    {
       "module": "Services/Statechart/StatechartChecker.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartCheckerTests.cs"]
     },
@@ -1740,7 +1752,7 @@
     },
     {
       "module": "Services/Statechart/StatechartRunner.cs",
-      "tests": ["DynaDocs.Tests/Statechart/StatechartPublicFlowTests.cs", "DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPublicFlowTests.cs", "DynaDocs.Tests/Statechart/StatechartReadyTests.cs", "DynaDocs.Tests/Statechart/StatechartWindowsRunnerTests.cs"]
     },
     {
       "module": "Services/Statechart/StatechartNode.cs",

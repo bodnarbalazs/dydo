@@ -103,8 +103,10 @@ server-side. Balazs ruled it unnecessary.
     (`bash -c`, `eval`, `pwsh -Command`, `cmd /c`, `env -S`, `ssh`, `watch`) and refuse it for the
     route it holds. They remain a text-reading limitation: an `-EncodedCommand` or nesting past eight
     wrappers is not decoded, a GraphQL query or API body read from a file or stdin
-    (`-F query=@file`, `--input`) is not read, and aliases, functions, scripts and a push destination
-    only git config sets are not followed.
+    (`-F query=@file`, `--input`) is not read, and aliases, functions, scripts and unrecognised
+    programs are not followed. A bare `git push`, or one naming only its remote, is followed to the
+    current branch's upstream (`branch.<name>.merge`) and refused when that is the default branch; a
+    destination only a `remote.<name>.push` refspec or `push.default` sets is not followed.
   - **A workflow that registers late**, after every other check has finished green. A listed inert
     app registering a real suite before its runs exist is also ignored when its status is `queued`,
     `in_progress`, `pending`, `requested` or `waiting` and `latest_check_runs_count` is present as a
@@ -112,8 +114,10 @@ server-side. Balazs ruled it unnecessary.
   - **The default-branch-switch race:** an admin switching the default branch to the feature branch
     during a run. The command re-reads `default_branch` after merging and warns when it changed. The
     guard refuses an agent's `gh repo edit --default-branch` and `gh api` PATCH with `default_branch`,
-    but it sees only agent tool calls: a switch outside them, or by a path it does not read (the
-    residuals above), still passes.
+    but it sees only agent tool calls: a switch outside them still passes. So does one by a path it
+    does not read: a body read from a file or stdin, an alias, function, script or unrecognised
+    program, anywhere; an `-EncodedCommand` or nesting past eight wrappers only outside a git tree,
+    since inside one the PR-ready check refuses them unread.
   - **The `POST /merges` window.** GitHub cannot make that merge conditional on a tip. The command
     re-reads the ref just before the call and checks the merge's first parent after it, so a branch
     that moves inside that window still takes the merge: the command exits `2` naming both SHAs, and

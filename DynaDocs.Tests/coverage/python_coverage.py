@@ -10,6 +10,7 @@ import uuid
 from pathlib import Path
 
 _ACTIVE = None
+_UNRECORDED_FAILURE_EXIT = 70  # EX_SOFTWARE
 
 
 def _identity(row):
@@ -94,12 +95,39 @@ def _inventory_cache(config):
         return None
 
 
+def _record_failure(config_path, phase, error):
+    """Leave the campaign a record of this process's failed measurement, or end the process unmeasured.
+
+    The record lies beside the config, which `collect` writes into its output, since the config itself
+    may be what failed. `site` and `atexit` swallow the error, so a process that cannot record it
+    exits nonzero instead."""
+    message = (f"Python measurement failed in process {os.getpid()} at {phase} "
+               f"({sys.orig_argv}): {type(error).__name__}: {error}")
+    try:
+        record = Path(config_path).parent / f"failure-{os.getpid()}-{uuid.uuid4().hex}.txt"
+        record.write_text(message, encoding="utf-8")
+    except Exception as unrecorded:  # noqa: BLE001 - every unrecorded failure must end the process
+        try:
+            print(f"{message}; it could not be recorded: {unrecorded}", file=sys.stderr, flush=True)
+            sys.stdout.flush()
+        finally:
+            os._exit(_UNRECORDED_FAILURE_EXIT)
+
+
 def startup_from_environment():
     """Start once in the current process when the invocation config is inherited."""
-    global _ACTIVE
     config_path = os.environ.get("DYDO_PYTHON_COVERAGE_CONFIG")
     if not config_path or _ACTIVE is not None:
         return _ACTIVE
+    try:
+        return _start(config_path)
+    except Exception as error:
+        _record_failure(config_path, "startup", error)
+        raise
+
+
+def _start(config_path):
+    global _ACTIVE
     import coverage
     from python_runtime import CallableWitness
     config = json.loads(Path(config_path).read_text(encoding="utf-8"))
@@ -116,6 +144,13 @@ def startup_from_environment():
     _ACTIVE = collector, witness
 
     def finish():
+        try:
+            write_receipt()
+        except Exception as error:
+            _record_failure(config_path, "finish", error)
+            raise
+
+    def write_receipt():
         global _ACTIVE
         if _ACTIVE is None:
             return
@@ -168,6 +203,9 @@ def collect(root, output, source_paths, command):
     env["PYTHONPATH"] = os.pathsep.join([str(startup), str(tools), env.get("PYTHONPATH", "")])
     argv = [sys.executable if item == "{python}" else item for item in command]
     result = subprocess.run(argv, cwd=root, env=env)
+    failures = [path.read_text(encoding="utf-8") for path in sorted(output.glob("failure-*.txt"))]
+    if failures:
+        raise ValueError("; ".join(failures))
     data = coverage.Coverage(data_file=str(output / ".coverage"), branch=True,
                              source=[str(root)], config_file=False)
     data.combine(data_paths=[str(output)], strict=True, keep=True)

@@ -1,5 +1,6 @@
 """Ordinary coverage.py collection includes child-only and never-called callables."""
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -203,6 +204,38 @@ if sys.argv[1] == "no cache":
     del config["inventory"]
     config_path.write_text(json.dumps(config), encoding="utf-8")
 subprocess.run([sys.executable, "-c", "import subject; subject.work(); subject.helper()"], check=True)
+"""
+
+
+# Measured children around one that fails measurement: at startup on a config of another schema, or
+# at finish on a callable the inventory cannot name. Either way the failing child itself exits 0.
+_FAILING_CHILD = """\
+import os, subprocess, sys
+from pathlib import Path
+
+good = "import subject; subject.work()"
+ghost = good + "; exec(compile('def ghost():\\\\n    return 0\\\\nghost()\\\\n', subject.work.__code__.co_filename, 'exec'))"
+subprocess.run([sys.executable, "-c", good], check=True)
+if sys.argv[1] == "startup":
+    Path(os.environ["DYDO_PYTHON_COVERAGE_CONFIG"]).write_text('{"schema": 2}', encoding="utf-8")
+child = subprocess.Popen([sys.executable, "-c", good if sys.argv[1] == "startup" else ghost])
+Path("failed.pid").write_text(str(child.pid), encoding="utf-8")
+assert child.wait() == 0
+"""
+
+
+# A process measured through a real sitecustomize whose failure record has nowhere to go: its config's
+# directory never existed (startup), or became a file before exit (finish).
+_UNRECORDABLE = """\
+import shutil, sys
+from pathlib import Path
+
+if sys.argv[1] == "finish":
+    import subject
+    exec(compile("def ghost():\\n    return 0\\nghost()\\n", subject.work.__code__.co_filename, "exec"))
+    shutil.rmtree("campaign")
+    Path("campaign").write_text("", encoding="utf-8")
+print("ran", flush=True)
 """
 
 
@@ -456,6 +489,53 @@ class PythonCoverageTests(unittest.TestCase):
         self.assertEqual([("only:1:0", 1)],
                          [(row["id"], row["execution_count"]) for row in receipt["callables"]])
         self.assert_campaign_receipt_survived(observed)
+
+    def test_a_process_whose_measurement_fails_fails_the_campaign_by_name(self):
+        for phase in ("startup", "finish"):
+            with self.subTest(phase=phase), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+                (root / "driver.py").write_text(_FAILING_CHILD, encoding="utf-8")
+                output = root / "evidence"
+                result = _facade(root, output, ["subject.py"], ["{python}", "-S", "driver.py", phase])
+                failed = (root / "failed.pid").read_text(encoding="utf-8")
+                self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+                self.assertIn(f"Python measurement failed in process {failed} at {phase}", result.stderr)
+                self.assertFalse((output / "counters.json").exists())
+
+    def test_a_measurement_failure_that_cannot_be_recorded_fails_its_process(self):
+        tools = Path(__file__).resolve().parents[1]
+        python = tools.parents[1] / STATIC_GATE_INTERPRETER
+        with tempfile.TemporaryDirectory() as folder:
+            work = Path(folder).resolve()
+            (work / "startup").mkdir()
+            (work / "startup" / "sitecustomize.py").write_text(
+                "from python_coverage import startup_from_environment\nstartup_from_environment()\n",
+                encoding="utf-8")
+            (work / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+            (work / "unrecordable.py").write_text(_UNRECORDABLE, encoding="utf-8")
+            (work / "campaign").mkdir()
+            (work / "campaign" / "config.json").write_text(json.dumps({
+                "schema": 1, "root": str(work), "output": str(work / "campaign"),
+                "sources": [str(work / "subject.py")]}), encoding="utf-8")
+            env = {key: value for key, value in os.environ.items()
+                   if key != "DYDO_PYTHON_COVERAGE_CONFIG"}
+            env["PYTHONPATH"] = os.pathsep.join([str(work / "startup"), str(tools)])
+
+            def run(case, config=None):
+                return subprocess.run(
+                    [str(python), "unrecordable.py", case], cwd=work, text=True, capture_output=True,
+                    env=env if config is None else {**env, "DYDO_PYTHON_COVERAGE_CONFIG": str(config)})
+
+            unmeasured = run("no campaign")
+            self.assertEqual((0, "ran\n", ""), (unmeasured.returncode, unmeasured.stdout, unmeasured.stderr))
+            for case, config, ran in (("startup", work / "missing" / "config.json", ""),
+                                      ("finish", work / "campaign" / "config.json", "ran\n")):
+                with self.subTest(phase=case):
+                    failed = run(case, config)
+                    self.assertEqual((70, ran), (failed.returncode, failed.stdout), failed.stderr)
+                    self.assertIn(f"at {case}", failed.stderr)
+                    self.assertIn("could not be recorded", failed.stderr)
 
     def test_campaign_refuses_an_empty_selection_or_a_source_outside_the_root(self):
         with tempfile.TemporaryDirectory() as folder:

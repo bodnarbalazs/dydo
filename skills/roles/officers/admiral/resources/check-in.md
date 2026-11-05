@@ -32,6 +32,9 @@ running: <who>`, `admiral owes <decision or dispatch>`, `needs the user: <Questi
 ## Tick — the Admiral
 
 - [ ] Handle every delivered return and receipt first, by Method step 1.
+- [ ] List the repository's open PRs (`gh pr list`); watch each ticket PR you aren't watching yet.
+- [ ] You relay a new rule from the user: send it to every lane owner in the ledger, not only those
+      you think it affects.
 - [ ] A survey is still running: consume it; dispatch no second one. A failed or lost survey is not running.
 - [ ] Otherwise dispatch one fresh surveyor on the smallest adequate model with the fixed dispatch below.
 - [ ] Carry out every action it returns, in its order.
@@ -53,6 +56,9 @@ messages; edit nothing; start no work, subagents or schedules. Return through th
       captain; `question-no-priority` → `prioritize`.
 - [ ] For each ledger lane, read its owner's thread (`t3_thread_read`) and its ticket's record: last
       hop SHA, PR state, and the crew the captain dispatched and whether each returned.
+- [ ] A captain's thread shows a finished result the ledger doesn't reflect: return it as
+      `handle <captain> return — <its result line, UTC time>`. Reading it marked it delivered, so
+      the admiral sees it only through you.
 - [ ] Flag a lane as stalled when its owner or crew ended with work left and no return delivered, or
       when nothing happened since the ledger's time while the owner neither runs, waits on its crew,
       nor waits on its recorded prerequisite.
@@ -66,7 +72,7 @@ Return one of:
 - `ATTENTION`: one line per action, most urgent first:
   `<verb> <who> on <what> — <evidence link, UTC time>`. Verbs: `commission` a captain for a
   ticket, `contract` a Backlog ticket, `fill` a free slot, `resume` a captain from its hop SHA,
-  `message` a captain's thread with the question, `rewire`, `prioritize`, `fix ledger`, `ask the user`.
+  `message` a captain's thread with the question, `handle` a captain's return you saw, `rewire`, `prioritize`, `fix ledger`, `ask the user`.
 - `INCOMPLETE`: what could not be read; keep the verified actions.
 
 ## Fixed dispatch

@@ -2,8 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, 'feature/**']
   pull_request:
+
+# A newer first-attempt push to the same feature branch cancels its superseded run. Every other
+# run, a master/main push, a pull request or a rerun (run_attempt > 1), has a group of its own, so
+# a rerun of a superseded run neither cancels the tip nor is cancelled by it. Group names are
+# case-insensitive; feature branches are lowercase feature/<project-slug>.
+concurrency:
+  group: ci-${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/') && github.run_attempt == 1 && github.ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   python-coverage:

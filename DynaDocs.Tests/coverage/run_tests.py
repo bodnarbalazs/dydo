@@ -59,6 +59,9 @@ SUBREAPER = "subreaper"
 PROC_ROOT = Path("/proc")
 # How often a contained wait reaps the orphans the subreaper adopted meanwhile.
 REAP_INTERVAL_SECONDS = 0.2
+# Held by each reap pass and by each list-and-kill pass of descendant cleanup: a pid cleanup lists
+# stays reserved, its exited process a zombie, until its kill is sent, never freed for reuse.
+_REAP_LOCK = threading.Lock()
 
 
 def isolated_environment():
@@ -601,12 +604,13 @@ def _end_reaped_descendants(seconds=DESCENDANT_EXIT_SECONDS):
     this process still finds the ones whose own parent, the interrupted dotnet, is already gone."""
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
-        live = _live_descendants(os.getpid())
+        with _REAP_LOCK:
+            live = _live_descendants(os.getpid())
+            for pid in live:
+                _kill(pid)
         if not live:
             return
-        for pid in live:
-            _kill(pid)
-        time.sleep(0.05)
+        time.sleep(0.05)  # unlocked, so orphans are reaped as they exit
     raise TimeoutError("Linux descendant cleanup could not be confirmed")
 
 
@@ -643,11 +647,12 @@ def reap_adopted(job, owned=()):
     its exit status, so call this only where no other wait is in flight."""
     if job != SUBREAPER:
         return
-    for pid in _children().difference(owned):
-        try:
-            os.waitid(os.P_PID, pid, os.WEXITED | os.WNOHANG)
-        except ChildProcessError:
-            pass  # reaped since the listing
+    with _REAP_LOCK:
+        for pid in _children().difference(owned):
+            try:
+                os.waitid(os.P_PID, pid, os.WEXITED | os.WNOHANG)
+            except ChildProcessError:
+                pass  # reaped since the listing
 
 
 def _reap_until(stop, child):

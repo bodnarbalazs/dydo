@@ -274,6 +274,56 @@ class AdoptedOrphanReapingTests(unittest.TestCase):
         with mock.patch.object(run_tests, "_children", return_value={1}):
             run_tests.reap_adopted(run_tests.SUBREAPER)
 
+    def test_a_descendant_cleanup_listed_keeps_its_pid_until_its_kill_is_sent(self):
+        # Cleanup lists `listed`, which then exits; a reap pass racing the kill must wait, or the
+        # freed pid could be reused and the kill would reach an unrelated process.
+        listed = subprocess.Popen([sys.executable, "-c", "import sys; sys.stdin.read()"],
+                                  stdin=subprocess.PIPE)
+        progressed, observed = threading.Event(), {}
+
+        class ContendedLock:
+            """The reap lock, announcing a pass that must wait for it."""
+            def __init__(self):
+                self.lock = threading.Lock()
+
+            def __enter__(self):
+                if not self.lock.acquire(blocking=False):
+                    progressed.set()
+                    self.lock.acquire()
+
+            def __exit__(self, *_):
+                self.lock.release()
+
+        def reap_pass():
+            try:
+                run_tests.reap_adopted(run_tests.SUBREAPER)
+            finally:
+                progressed.set()
+
+        reaper = threading.Thread(target=reap_pass)
+
+        def kill(pid):
+            listed.stdin.close()
+            os.waitid(os.P_PID, pid, os.WEXITED | os.WNOWAIT)  # exited, not yet collected
+            reaper.start()
+            self.assertTrue(progressed.wait(30), "the reap pass neither ran nor waited")
+            observed["at_kill"] = run_tests._stat_fields(str(pid))
+
+        try:
+            with mock.patch.object(run_tests, "_REAP_LOCK", ContendedLock()), \
+                    mock.patch.object(run_tests, "_live_descendants", side_effect=[[listed.pid], []]), \
+                    mock.patch.object(run_tests, "_kill", side_effect=kill), \
+                    mock.patch.object(run_tests, "_children", return_value={listed.pid}):
+                run_tests.end_descendants(run_tests.SUBREAPER)
+                reaper.join(30)
+        finally:
+            if not listed.stdin.closed:
+                listed.stdin.close()
+        self.assertEqual((os.getpid(), "Z"), observed["at_kill"])
+        self.assertFalse(reaper.is_alive())
+        self.assertIsNone(run_tests._stat_fields(str(listed.pid)), "reaping resumes after the kill")
+        listed.wait()
+
     def test_a_contained_run_keeps_its_status_while_reaper_passes_follow_its_exit(self):
         command = [sys.executable, "-c", "raise SystemExit(7)"]
         with held_status(command):

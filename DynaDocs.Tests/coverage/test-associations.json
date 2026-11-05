@@ -1016,6 +1016,49 @@
       ]
     },
     {
+      "module": "Commands/SurveyCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Survey/SurveyCommandTests.cs",
+        "DynaDocs.Tests/Survey/SurveySteps.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/LinearProjectRead.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Survey/Ledger.cs",
+      "tests": [
+        "DynaDocs.Tests/Survey/LedgerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Survey/LedgerRow.cs",
+      "tests": [
+        "DynaDocs.Tests/Survey/LedgerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Survey/ProjectReference.cs",
+      "tests": [
+        "DynaDocs.Tests/Survey/ProjectReferenceTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Survey/SurveyFinding.cs",
+      "tests": [
+        "DynaDocs.Tests/Survey/SurveyRulesTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Survey/SurveyRules.cs",
+      "tests": [
+        "DynaDocs.Tests/Survey/SurveyRulesTests.cs"
+      ]
+    },
+    {
       "module": "Serialization/MapJsonContext.cs",
       "tests": [
         "DynaDocs.Tests/Map/MapServerTests.cs",

@@ -62,6 +62,13 @@ test('Refresh swaps in the new graph in place and cascades what changed, then fi
 });
 
 test('a second Refresh waits for the first to land, keeping the map, its viewport and its marks', async ({ page }) => {
+  // The old map's exit hold is a page timer, so a paused clock keeps the new map from landing, and Refresh
+  // busy, until the test resumes it. Unheld, the window is ~300 ms, shorter than a late poll of the notice.
+  await page.clock.install();
+  const asked: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/graph') asked.push(request.url());
+  });
   await openA(page);
   await page.evaluate(() => {
     const seen: string[] = [];
@@ -72,15 +79,20 @@ test('a second Refresh waits for the first to land, keeping the map, its viewpor
     }).observe(document.body, { childList: true, subtree: true });
   });
   const shown = await viewport(page);
+  // Pausing needs a moment still ahead of the page's clock; nothing is pending on the settled map.
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
 
   await refresh(page).click();
   await expect(notice(page)).toHaveText('5 changed · 2 new · 2 removed · 2 links added · 1 link removed');
   // The answer is in; the old map still shows while the new one lays out, and Refresh stays busy.
   await expect(refresh(page)).toBeDisabled();
   await page.keyboard.press('r');
+  await expect(node(page, 'DYD-9001')).toHaveClass(/refresh-removed/);
+  await page.clock.resume();
   for (const identifier of CHANGED) await expect(node(page, identifier)).toHaveClass(/refresh-changed/);
   await expect(refresh(page)).toBeEnabled();
   await expect(notice(page)).toHaveText('5 changed · 2 new · 2 removed · 2 links added · 1 link removed');
+  expect(asked).toHaveLength(2);
   expect(await viewport(page)).toBe(shown);
   expect(await page.evaluate(() => (window as unknown as { placeholdersSeen: string[] }).placeholdersSeen)).toEqual([]);
 });

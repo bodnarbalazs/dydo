@@ -16,8 +16,17 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 
+interrupted = False
+
+
 def interrupt(_signum, _frame):
-    raise KeyboardInterrupt
+    """Raise the run's first interrupt. It decides the outcome, interrupted, so a further one is
+    dropped: it could only abort the adapter's stop, which CLEANUP_SECONDS and REAP_SECONDS already
+    bound, and the result's publication."""
+    global interrupted
+    if not interrupted:
+        interrupted = True
+        raise KeyboardInterrupt
 
 
 if sys.platform == "win32":
@@ -282,7 +291,10 @@ def artifact_snapshot(root, value):
 def held(call, *args):
     """Make one Popen call with SIGINT held. An interrupt raised inside POSIX Popen after it takes
     its waitpid lock leaks the lock, and the facade can then never reap an exited adapter. Held, the
-    interrupt surfaces here once the call returns. Windows Popen reaps by handle and takes no lock."""
+    interrupt surfaces here once the call returns. Windows Popen reaps by handle and takes no lock.
+    The mask is the calling thread's: this holds only while the facade's main thread is the one
+    thread a process-directed SIGINT can reach, so the facade must start no thread that leaves it
+    unblocked."""
     if not hasattr(signal, "pthread_sigmask") or signal.SIGINT in signal.pthread_sigmask(signal.SIG_BLOCK, ()):
         return call(*args)
     try:
@@ -623,6 +635,8 @@ def write_result(root, run, operation, selected, rows, candidate):
 
 
 def main(argv=None):
+    if signal.getsignal(signal.SIGINT) is signal.default_int_handler:
+        signal.signal(signal.SIGINT, interrupt)  # An inherited SIG_IGN or a caller's handler stays.
     args = list(sys.argv[1:] if argv is None else argv)
     path = Path(__file__).with_suffix(".json")
     # A sandbox's empty `.git` mount point names no repository: only a gitfile or a gitdir with HEAD does.

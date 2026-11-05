@@ -810,25 +810,27 @@ def _campaign_identities(worktree, result_root):
 
 def _publish_assurance(worktree, result_root, owner_output, assurance_output, owner_result):
     from csharp_coverage import snapshot_artifacts
+    from held_directory import create
     output = Path(assurance_output)
     if not output.is_absolute() or output.exists():
         raise ValueError("--assurance-output requires a new absolute owned directory")
-    output.mkdir(parents=True)
-    if result_root.is_dir():
-        shutil.copytree(result_root, output / "raw")
-    if owner_output.is_dir():
-        shutil.copytree(owner_output, output / "owner")
-    artifacts = _campaign_identities(worktree, result_root) if result_root.is_dir() else []
-    missing = []
-    if owner_result.get("failure_category") == "KeyboardInterrupt":
-        missing = [path.relative_to(worktree).as_posix() for path in artifacts if not path.is_file()]
-        artifacts = [path for path in artifacts if path.is_file()]
-    identities = snapshot_artifacts(worktree, artifacts)
-    manifest = {"schema": 1, "campaign": owner_result, "artifacts": identities}
-    if missing:
-        manifest["missing_artifacts"] = missing
-    (output / "identities.json").write_text(
-        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    # Another process may replace the output path at any moment: every write goes through the
+    # directory this run created and holds.
+    with create(output) as published:
+        if result_root.is_dir():
+            published.copy_tree(result_root, "raw")
+        if owner_output.is_dir():
+            published.copy_tree(owner_output, "owner")
+        artifacts = _campaign_identities(worktree, result_root) if result_root.is_dir() else []
+        missing = []
+        if owner_result.get("failure_category") == "KeyboardInterrupt":
+            missing = [path.relative_to(worktree).as_posix() for path in artifacts if not path.is_file()]
+            artifacts = [path for path in artifacts if path.is_file()]
+        identities = snapshot_artifacts(worktree, artifacts)
+        manifest = {"schema": 1, "campaign": owner_result, "artifacts": identities}
+        if missing:
+            manifest["missing_artifacts"] = missing
+        published.write_text("identities.json", json.dumps(manifest, indent=2, sort_keys=True) + "\n")
 
 
 def _run_linux_campaign(command, worktree, output):

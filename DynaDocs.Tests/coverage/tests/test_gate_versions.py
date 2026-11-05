@@ -5,6 +5,7 @@ import inspect
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import tempfile
@@ -78,6 +79,27 @@ def _tool_lock(**extra):
                  '@scope/dep@3.0.0(peer@1.0.0)': [], 'native@2.0.0': ['optional: true'],
                  'wasm@1.0.0': ['optional: true'], **{key: [] for key in extra}}
     return _pnpm_lock({'tool': ('1.0.0', '1.0.0')}, packages, snapshots)
+
+
+LEAF_PACKAGES = (('tool', '1.0.0'), ('other', '1.0.0'), ('leaf', '1.0.0'), ('leaf', '2.0.0'))
+
+
+def _store(name, version):
+    return f'node_modules/.pnpm/{name}@{version}/node_modules/{name}'
+
+
+def _sibling(owner, dependency):
+    """The link a store package's folder holds beside it for one of its dependencies."""
+    return f'node_modules/.pnpm/{owner}@1.0.0/node_modules/{dependency}'
+
+
+def _leaf_lock(tool_needs_leaf=True):
+    """The reviewer's fixture: tool pins leaf 1.0.0 and other pins leaf 2.0.0."""
+    tool = ['dependencies:', '  leaf: 1.0.0'] if tool_needs_leaf else []
+    return _pnpm_lock({'tool': ('1.0.0', '1.0.0'), 'other': ('1.0.0', '1.0.0')},
+                      {f'{name}@{version}': [] for name, version in LEAF_PACKAGES},
+                      {'tool@1.0.0': tool, 'other@1.0.0': ['dependencies:', '  leaf: 2.0.0'],
+                       'leaf@1.0.0': [], 'leaf@2.0.0': []})
 
 
 def _dotnet_tree(root, dependencies, libraries):
@@ -207,6 +229,122 @@ class GateVersionTests(unittest.TestCase):
             with self.subTest(label), self.assertRaisesRegex(ValueError, message):
                 gate_versions.javascript_versions(folder)
 
+    def _leaf_tree(self, label, leaf_links, lock=None):
+        """Two tools pinning different versions of one leaf, as in a pnpm store; `leaf_links` maps
+        each tool to the leaf version its sibling link resolves to, None for no link."""
+        folder = self.root / label
+        store = {_store(name, version): (name, version) for name, version in LEAF_PACKAGES}
+        links = [(_store('tool', '1.0.0'), 'node_modules/tool'), (_store('other', '1.0.0'), 'node_modules/other')]
+        links += [(_store('leaf', version), _sibling(tool, 'leaf'))
+                  for tool, version in leaf_links.items() if version]
+        _javascript_tree(folder, {'tool': '1.0.0', 'other': '1.0.0'}, lock or _leaf_lock(), store, links)
+        return folder
+
+    def test_store_links_resolving_to_the_locked_versions_are_accepted(self):
+        folder = self._leaf_tree('correct', {'tool': '1.0.0', 'other': '2.0.0'})
+
+        facts = gate_versions.javascript_versions(folder)
+
+        self.assertEqual(['leaf@1.0.0', 'leaf@2.0.0', 'other@1.0.0', 'tool@1.0.0'],
+                         sorted(row['package'] for row in facts['packages']))
+
+    def test_wrong_missing_and_unexpected_store_links_fail_closed(self):
+        tool = _sibling('tool', 'leaf')
+        cases = [('wrong-version', {'tool': '2.0.0', 'other': '2.0.0'}, _leaf_lock(),
+                  f'link mismatch: {tool} resolves to leaf@2.0.0, the lock pins leaf@1.0.0'),
+                 ('missing', {'tool': None, 'other': '2.0.0'}, _leaf_lock(),
+                  f'link missing: {tool} must resolve to leaf@1.0.0'),
+                 ('unexpected', {'tool': '1.0.0', 'other': '2.0.0'}, _leaf_lock(tool_needs_leaf=False),
+                  f'link unexpected: {tool} resolves to leaf@1.0.0, which the lock does not list for tool@1.0.0')]
+        for label, leaf_links, lock, message in cases:
+            folder = self._leaf_tree(label, leaf_links, lock)
+            with self.subTest(label), self.assertRaisesRegex(ValueError, 'JavaScript dependency ' + re.escape(message)):
+                gate_versions.javascript_versions(folder)
+
+    def test_a_link_into_the_wrong_peer_variant_fails_closed(self):
+        # The importer pins leaf with peer 1.0.0, other pins it with peer 2.0.0: one version, two folders.
+        lock = _pnpm_lock({'leaf': ('1.0.0', '1.0.0(peer@1.0.0)'), 'other': ('1.0.0', '1.0.0')},
+                          {'other@1.0.0': [], 'leaf@1.0.0': [], 'peer@1.0.0': [], 'peer@2.0.0': []},
+                          {'other@1.0.0': ['dependencies:', '  leaf: 1.0.0(peer@2.0.0)'],
+                           'leaf@1.0.0(peer@1.0.0)': ['dependencies:', '  peer: 1.0.0'],
+                           'leaf@1.0.0(peer@2.0.0)': ['dependencies:', '  peer: 2.0.0'],
+                           'peer@1.0.0': [], 'peer@2.0.0': []})
+        variant = {peer: f'node_modules/.pnpm/leaf@1.0.0_peer@{peer}/node_modules/leaf' for peer in ('1.0.0', '2.0.0')}
+        store = {_store('other', '1.0.0'): ('other', '1.0.0'), _store('peer', '1.0.0'): ('peer', '1.0.0'),
+                 _store('peer', '2.0.0'): ('peer', '2.0.0'), **{path: ('leaf', '1.0.0') for path in variant.values()}}
+        fixed = [(_store('other', '1.0.0'), 'node_modules/other'),
+                 *((_store('peer', peer), path.removesuffix('leaf') + 'peer') for peer, path in variant.items())]
+        for label, top, nested in (('right', '1.0.0', '2.0.0'), ('swapped', '2.0.0', '1.0.0')):
+            folder = self.root / label
+            links = [*fixed, (variant[top], 'node_modules/leaf'), (variant[nested], _sibling('other', 'leaf'))]
+            _javascript_tree(folder, {'leaf': '1.0.0', 'other': '1.0.0'}, lock, store, links)
+            if label == 'right':
+                self.assertEqual(5, len(gate_versions.javascript_versions(folder)['packages']))
+                continue
+            with self.assertRaisesRegex(ValueError, 'peer variant the lock does not pin: ' + re.escape(
+                    _sibling('other', 'leaf') + ', node_modules/leaf') + '$'):
+                gate_versions.javascript_versions(folder)
+
+    def test_a_link_into_a_peer_variant_the_store_lacks_fails_closed(self):
+        # leaf's x@2.0.0 variant has no folder: its one folder links peer's x@1.0.0 variant, which
+        # matches either leaf snapshot by version, yet the importer pins the x@2.0.0 one.
+        pinned = '1.0.0(peer@1.0.0(x@2.0.0))'
+        lock = _pnpm_lock({'leaf': ('1.0.0', pinned)},
+                          {'leaf@1.0.0': [], 'peer@1.0.0': [], 'x@1.0.0': [], 'x@2.0.0': []},
+                          {**{f'leaf@1.0.0(peer@1.0.0(x@{x}))': ['dependencies:', f'  peer: 1.0.0(x@{x})']
+                              for x in ('1.0.0', '2.0.0')},
+                           **{f'peer@1.0.0(x@{x})': ['dependencies:', f'  x: {x}'] for x in ('1.0.0', '2.0.0')},
+                           'x@1.0.0': [], 'x@2.0.0': []})
+        leaf = 'node_modules/.pnpm/leaf@1.0.0_peer@1.0.0_x@1.0.0_/node_modules'
+        peer = {x: f'node_modules/.pnpm/peer@1.0.0_x@{x}/node_modules' for x in ('1.0.0', '2.0.0')}
+        store = {leaf + '/leaf': ('leaf', '1.0.0'), **{peer[x] + '/peer': ('peer', '1.0.0') for x in peer},
+                 **{_store('x', x): ('x', x) for x in peer}}
+        links = [(leaf + '/leaf', 'node_modules/leaf'), (peer['1.0.0'] + '/peer', leaf + '/peer'),
+                 *((_store('x', x), peer[x] + '/x') for x in peer)]
+        _javascript_tree(self.root, {'leaf': '1.0.0'}, lock, store, links)
+
+        with self.assertRaisesRegex(ValueError, 'peer variant the lock does not pin: node_modules/leaf$'):
+            gate_versions.javascript_versions(self.root)
+
+    def test_a_store_folder_holding_other_than_one_package_fails_closed(self):
+        lock = _pnpm_lock({'tool': ('1.0.0', '1.0.0')}, {'tool@1.0.0': []}, {'tool@1.0.0': []})
+        tool = {_store('tool', '1.0.0'): ('tool', '1.0.0')}
+        twin = 'node_modules/.pnpm/tool@1.0.0/node_modules/twin'
+        for label, store, folder_name in (('two', {**tool, twin: ('twin', '1.0.0')}, 'tool@1.0.0'),
+                                          ('none', tool, 'empty@1.0.0')):
+            folder = self.root / label
+            _javascript_tree(folder, {'tool': '1.0.0'}, lock, store, [(_store('tool', '1.0.0'), 'node_modules/tool')])
+            (folder / 'node_modules/.pnpm' / folder_name / 'node_modules').mkdir(parents=True, exist_ok=True)
+            with self.subTest(label), self.assertRaisesRegex(ValueError, re.escape(
+                    f'must hold exactly one package: node_modules/.pnpm/{folder_name}/node_modules')):
+                gate_versions.javascript_versions(folder)
+
+    def test_an_installed_optional_dependency_is_linked_and_a_skipped_one_is_not_required(self):
+        lock = _pnpm_lock({'tool': ('1.0.0', '1.0.0')}, {'tool@1.0.0': [], 'native@1.0.0': [], 'skipped@1.0.0': []},
+                          {'tool@1.0.0': ['optionalDependencies:', '  native: 1.0.0', '  skipped: 1.0.0'],
+                           'native@1.0.0': ['optional: true'], 'skipped@1.0.0': ['optional: true']})
+        store = {_store('tool', '1.0.0'): ('tool', '1.0.0'), _store('native', '1.0.0'): ('native', '1.0.0')}
+        native = (_store('native', '1.0.0'), _sibling('tool', 'native'))
+        for label, links, failure in (('linked', [native], None),
+                                      ('unlinked', [], 'link missing: ' + _sibling('tool', 'native'))):
+            folder = self.root / label
+            _javascript_tree(folder, {'tool': '1.0.0'}, lock, store, [(_store('tool', '1.0.0'), 'node_modules/tool'), *links])
+            if failure is None:
+                self.assertEqual(['skipped@1.0.0'],
+                                 [row['package'] for row in gate_versions.javascript_versions(folder)['uninstalled_optional']])
+                continue
+            with self.subTest(label), self.assertRaisesRegex(ValueError, re.escape(failure)):
+                gate_versions.javascript_versions(folder)
+
+    def test_a_store_link_leading_outside_the_store_fails_closed(self):
+        folder = self._leaf_tree('outside', {'other': '2.0.0'})
+        _write(folder / 'elsewhere/leaf/package.json', {'name': 'leaf', 'version': '1.0.0'})
+        _link(folder / 'elsewhere/leaf', folder / _sibling('tool', 'leaf'))
+
+        with self.assertRaisesRegex(ValueError, re.escape(
+                f'link mismatch: {_sibling("tool", "leaf")} resolves to nothing in the store, the lock pins leaf@1.0.0')):
+            gate_versions.javascript_versions(folder)
+
     def test_repository_pnpm_lock_pins_exactly_the_declared_dependencies_and_no_npm_lock(self):
         coverage = Path(__file__).resolve().parents[1]
         lock = gate_versions.pnpm_lock(coverage / 'pnpm-lock.yaml')
@@ -217,6 +355,14 @@ class GateVersionTests(unittest.TestCase):
         self.assertEqual(declared, {name: pin['version'].split('(', 1)[0] for name, pin in importer.items()})
         self.assertEqual(set(lock['packages']), {key.split('(', 1)[0] for key in lock['snapshots']})
         self.assertFalse((coverage / 'package-lock.json').exists())
+        self.assertEqual(declared, gate_versions.importer_pins((coverage / 'pnpm-lock.yaml').read_text(encoding='utf-8')))
+
+    def test_importer_pins_span_every_dependency_section_without_peer_suffixes(self):
+        text = '\n'.join(["lockfileVersion: '9.0'", 'importers:', '  .:', '    dependencies:', "      '@scope/a':",
+                          '        specifier: ^1.0.0', '        version: 1.2.0(peer@3.0.0)', '    devDependencies:',
+                          '      b:', '        specifier: 2.0.0', '        version: 2.0.0', 'packages:', '  b@2.0.0: {}'])
+
+        self.assertEqual({'@scope/a': '1.2.0', 'b': '2.0.0'}, gate_versions.importer_pins(text))
 
     def test_restored_dotnet_closure_must_equal_the_locked_closure(self):
         locked = {'net10.0': {'Sonar.Analyzer': {'resolved': '1.2.3', 'contentHash': 'HASH'}}}

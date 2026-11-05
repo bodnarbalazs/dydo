@@ -14,7 +14,7 @@ using DynaDocs.Utils;
 public sealed class PnpmNudgeTests : IDisposable
 {
     private const string RetryHint = "Run the same command again to proceed anyway.";
-    private static readonly ShellDialect[] Dialects = [ShellDialect.Unknown, ShellDialect.Posix];
+    private static readonly ShellDialect[] Dialects = [ShellDialect.Unknown, ShellDialect.Posix, ShellDialect.PowerShell];
     private readonly string _root = Path.Combine(Path.GetTempPath(), "dydo-pnpm-nudge-" + Guid.NewGuid().ToString("N")[..8]);
 
     public PnpmNudgeTests() => Directory.CreateDirectory(Path.Combine(_root, "dydo"));
@@ -48,17 +48,38 @@ public sealed class PnpmNudgeTests : IDisposable
     [InlineData("git status && npm install left-pad", "Use pnpm, not npm. Try: pnpm install left-pad")]
     [InlineData("cd viewer\nnpm install", "Use pnpm, not npm. Try: pnpm install")]
     [InlineData("npx tsc --noEmit", "Use pnpm, not npx. Try: pnpm exec tsc --noEmit")]
-    [InlineData("cd viewer; npx vitest run", "Use pnpm, not npx. Try: pnpm exec vitest run")]
+    // A `cd x; …` chain is refused by the guard's cd-chain block before any warn, so a chained npx
+    // row uses another separator.
+    [InlineData("git status; npx vitest run", "Use pnpm, not npx. Try: pnpm exec vitest run")]
     public void FirstAttempt_WarnsWithThePnpmEquivalent_AndTheExactRetryPasses(string command, string message)
     {
         var env = Load(withInstallNudge: false);
 
-        var (first, firstStderr) = Run(command, env);
-        var (retry, retryStderr) = Run(command, env);
+        foreach (var shell in Dialects)
+        {
+            var (first, firstStderr) = Run(command, env, shell);
+            var (retry, retryStderr) = Run(command, env, shell);
+
+            Assert.True(first == ExitCodes.ToolError, $"{shell}: the first attempt must warn");
+            Assert.Contains($"BLOCKED: {message}\n", Normalized(firstStderr));
+            Assert.Contains(RetryHint, firstStderr);
+            Assert.True(retry == null && retryStderr.Length == 0, $"{shell}: the exact retry must pass: {retryStderr}");
+            Assert.Empty(Markers(env));
+        }
+    }
+
+    [Theory]
+    [InlineData("Get-ChildItem; npm install left-pad", "Use pnpm, not npm. Try: pnpm install left-pad")]
+    [InlineData("Set-Location viewer\nnpx tsc --noEmit", "Use pnpm, not npx. Try: pnpm exec tsc --noEmit")]
+    public void PowerShell_FirstAttemptWarns_AndTheExactRetryPasses(string command, string message)
+    {
+        var env = Load(withInstallNudge: false);
+
+        var (first, firstStderr) = Run(command, env, ShellDialect.PowerShell);
+        var (retry, retryStderr) = Run(command, env, ShellDialect.PowerShell);
 
         Assert.Equal(ExitCodes.ToolError, first);
         Assert.Contains($"BLOCKED: {message}\n", Normalized(firstStderr));
-        Assert.Contains(RetryHint, firstStderr);
         Assert.Null(retry);
         Assert.Empty(retryStderr);
         Assert.Empty(Markers(env));
@@ -80,15 +101,19 @@ public sealed class PnpmNudgeTests : IDisposable
     [InlineData("npx dydo check")]
     [InlineData("npx --yes dydo check")]
     [InlineData("git status && npx dydo whoami")]
+    [InlineData("Get-ChildItem; npx dydo whoami")]
     public void NpxDydo_StillBlocksOnEveryAttempt_AndArmsNoPnpmMarker(string command)
     {
         var env = Load(withInstallNudge: false);
 
-        foreach (var attempt in new[] { Run(command, env), Run(command, env) })
+        foreach (var shell in Dialects)
         {
-            Assert.Equal(ExitCodes.ToolError, attempt.Result);
-            Assert.Contains("BLOCKED: Don't use npx to run dydo", attempt.Stderr);
-            Assert.DoesNotContain("Use pnpm", attempt.Stderr);
+            foreach (var attempt in new[] { Run(command, env, shell), Run(command, env, shell) })
+            {
+                Assert.True(attempt.Result == ExitCodes.ToolError, $"{shell}: npx dydo must block");
+                Assert.Contains("BLOCKED: Don't use npx to run dydo", attempt.Stderr);
+                Assert.DoesNotContain("Use pnpm", attempt.Stderr);
+            }
         }
         Assert.Empty(Markers(env));
     }
@@ -123,9 +148,23 @@ public sealed class PnpmNudgeTests : IDisposable
         {
             var (result, stderr) = Run(command, env, shell);
 
-            Assert.Null(result);
-            Assert.Empty(stderr);
+            Assert.True(result == null && stderr.Length == 0, $"{shell}: {stderr}");
         }
+        Assert.Empty(Markers(env));
+    }
+
+    [Theory]
+    [InlineData("Write-Output 'npm install left-pad'")]
+    [InlineData("Get-ChildItem # then; npm install left-pad")]
+    [InlineData("pnpm -C viewer install --frozen-lockfile; pnpm exec tsc")]
+    public void PowerShell_NonMatches_StaySilent_AndArmNoMarker(string command)
+    {
+        var env = Load(withInstallNudge: false);
+
+        var (result, stderr) = Run(command, env, ShellDialect.PowerShell);
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
         Assert.Empty(Markers(env));
     }
 

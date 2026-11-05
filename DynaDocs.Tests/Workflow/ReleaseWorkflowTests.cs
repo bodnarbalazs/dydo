@@ -10,6 +10,8 @@ public sealed class ReleaseWorkflowTests
     private const string ViewerInstallStep = "Install viewer dependencies";
     private const string CoverageEvidenceStep = "Upload coverage evidence";
     private const string CoverageRestore = "pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile";
+    private const string ValidationCacheLocks = "\n            DynaDocs.Tests/coverage/pnpm-lock.yaml\n            viewer/pnpm-lock.yaml";
+    private const string ValidationCacheKey = "cache-dependency-path: |" + ValidationCacheLocks;
 
     [Fact]
     public void CiWorkflow_RunsNativeCancellationOnSupportedLinuxAndWindowsWithPinnedPython()
@@ -295,7 +297,9 @@ public sealed class ReleaseWorkflowTests
         AssertViewerToolchainRejected(validation.Replace("version: 11", "version: 10", StringComparison.Ordinal));
         AssertViewerToolchainRejected(validation.Replace("uses: pnpm/action-setup@v4", "uses: pnpm/action-setup@v3", StringComparison.Ordinal));
         AssertViewerToolchainRejected(validation.Replace("cache: pnpm", "cache: npm", StringComparison.Ordinal));
-        AssertViewerToolchainRejected(validation.Replace("cache-dependency-path: viewer/pnpm-lock.yaml", "cache-dependency-path: pnpm-lock.yaml", StringComparison.Ordinal));
+        foreach (var oneLock in new[] { "viewer/pnpm-lock.yaml", "DynaDocs.Tests/coverage/pnpm-lock.yaml" })
+            AssertViewerToolchainRejected(validation.Replace(ValidationCacheKey, "cache-dependency-path: " + oneLock, StringComparison.Ordinal));
+        AssertViewerToolchainRejected(validation.Replace(ValidationCacheLocks, "\n            viewer/pnpm-lock.yaml\n            pnpm-lock.yaml", StringComparison.Ordinal));
         AssertViewerToolchainRejected(validation.Replace("pnpm -C viewer install --frozen-lockfile", "pnpm -C viewer install", StringComparison.Ordinal));
         AssertViewerToolchainRejected(Swap(validation, JobStep(validation, "Setup pnpm"), JobStep(validation, "Setup Node.js")));
         AssertViewerToolchainRejected(Swap(validation, JobStep(validation, ViewerInstallStep), JobStep(validation, "Run coverage gate")));
@@ -402,7 +406,8 @@ public sealed class ReleaseWorkflowTests
         Assert.Equal("pnpm/action-setup@v4", StepField(setupPnpm, "uses"));
         Assert.Equal("11", StepField(setupPnpm, "version"));
         Assert.Equal("pnpm", StepField(setupNode, "cache"));
-        Assert.Equal("viewer/pnpm-lock.yaml", StepField(setupNode, "cache-dependency-path"));
+        // The job restores both pnpm locks, so the store cache is keyed on both.
+        Assert.Contains(ValidationCacheKey + "\n", setupNode + "\n", StringComparison.Ordinal);
         Assert.Equal("pnpm -C viewer install --frozen-lockfile", StepField(JobStep(validation, ViewerInstallStep), "run"));
 
         Assert.True(StepIndex(validation, "Setup pnpm") < StepIndex(validation, "Setup Node.js"), "Setup pnpm must precede Setup Node.js, whose pnpm cache needs it.");

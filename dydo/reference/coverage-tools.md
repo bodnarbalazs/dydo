@@ -300,7 +300,7 @@ never a silent overwrite. The identical bytes remain at
   "pins": {
     "python": {"path": "DynaDocs.Tests/coverage/requirements.lock", "sha256": "<hex>",
                "resolved": {"coverage": "7.16.0", "ruff": "0.16.6", "vulture": "2.16"}},
-    "javascript": {"path": "DynaDocs.Tests/coverage/package.json", "sha256": "<hex>",
+    "javascript": {"path": "DynaDocs.Tests/coverage/pnpm-lock.yaml", "sha256": "<hex>",
                    "resolved": {"c8": "12.0.0", "jscpd": "5.1.2"}},
     "dotnet": {"path": "DynaDocs.Tests/coverage/metrics/packages.lock.json", "sha256": "<hex>",
                "resolved": {"Microsoft.CodeAnalysis.CSharp": "<version>"}},
@@ -600,8 +600,14 @@ digests. Node v26.13.0 and .NET SDK 10.0.303 remain exact runtime requirements.
 For JavaScript the collector reads and hashes the coverage `pnpm-lock.yaml`. Each declared
 dependency must equal its importer's specifier and resolved version, and launch through its
 top-level `node_modules/<name>` link. Each real package folder under
-`node_modules/.pnpm/*/node_modules` must be a locked `name@version`; a symlink or junction there is
-a link, not a package. A locked package the store lacks must be optional in every snapshot.
+`node_modules/.pnpm/*/node_modules` must be a locked `name@version`, one per store folder; a
+symlink or junction there is a link, not a package. A locked package the store lacks must be
+optional in every snapshot. The links beside each store package must resolve to exactly its lock
+snapshot's `dependencies`, plus the `optionalDependencies` that are installed, at their locked
+versions: a missing, wrong-version or unexpected link fails closed, and an optional dependency the
+platform skipped needs no link. Links also resolve to the peer variant their snapshot key pins,
+the importer's top-level links included, because two folders may hold one version under different
+peers.
 
 ---
 

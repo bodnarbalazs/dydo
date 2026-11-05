@@ -1,12 +1,16 @@
 """Resolved tool pins are measured inputs, independent of policy outcomes."""
 import importlib.metadata
 import json
+import os
 import platform
 import re
 import sys
 from pathlib import Path
 
 from gate_run import file_hash, result
+
+STORE = 'node_modules/.pnpm'
+IMPORTER = '.'
 
 
 def _json(path):
@@ -45,12 +49,12 @@ def _lock_entry(stripped):
     return key, value.strip()
 
 
-def pnpm_lock(path):
+def read_pnpm_lock(text):
     """A pnpm-lock.yaml's block mappings as nested dicts. Flow values stay text and sequence items
     are dropped: the lock's own subset of YAML, read without a YAML dependency."""
     root = {}
     stack = [(-1, root)]
-    for line in Path(path).read_text(encoding='utf-8').splitlines():
+    for line in text.splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith('- '):
             continue
@@ -63,6 +67,16 @@ def pnpm_lock(path):
         if value == '':
             stack.append((indent, node))
     return root
+
+
+def pnpm_lock(path):
+    return read_pnpm_lock(Path(path).read_text(encoding='utf-8'))
+
+
+def importer_pins(text):
+    """The root importer's direct dependencies, each at its resolved version without peer suffix."""
+    importer = read_pnpm_lock(text)['importers']['.']
+    return {name: _package_id(pin['version']) for section in importer.values() for name, pin in section.items()}
 
 
 def _flow_list(text):
@@ -96,12 +110,123 @@ def _declared_pins(tools, lock):
             raise ValueError('JavaScript resolved version mismatch: node_modules/' + name)
 
 
-def _store_packages(tools):
-    """Each real package folder of pnpm's isolated store; a symlink or junction is a link, not a package."""
-    for entry in sorted((tools / 'node_modules/.pnpm').glob('*/node_modules/*')):
-        for package in (sorted(entry.iterdir()) if entry.name.startswith('@') else [entry]):
-            if not (package.is_symlink() or package.is_junction()) and (package / 'package.json').is_file():
-                yield package.relative_to(tools).as_posix(), package / 'package.json'
+def _is_link(path):
+    """A pnpm link: a symlink, or on Windows the junction pnpm makes."""
+    return path.is_symlink() or path.is_junction()
+
+
+def _folder_entries(modules):
+    """A store folder's node_modules entries by package name; a scope folder holds its packages."""
+    for entry in sorted(modules.iterdir()):
+        if entry.name.startswith('@') and not _is_link(entry):
+            yield from ((entry.name + '/' + package.name, package) for package in sorted(entry.iterdir()))
+        elif not entry.name.startswith('.'):
+            yield entry.name, entry
+
+
+def _store(tools):
+    """pnpm's isolated store by folder: the one real package each holds, and the links beside it."""
+    folders = {}
+    for modules in sorted((tools / STORE).glob('*/node_modules')):
+        base = modules.relative_to(tools).as_posix()
+        entries = list(_folder_entries(modules))
+        packages = [path for _, path in entries if not _is_link(path) and (path / 'package.json').is_file()]
+        if len(packages) != 1:
+            raise ValueError(f'JavaScript store folder must hold exactly one package: {base}')
+        manifest = packages[0] / 'package.json'
+        folders[modules.parent.name] = {
+            'base': base, 'path': packages[0].relative_to(tools).as_posix(), 'manifest': manifest,
+            'package': _manifest_id(manifest), 'real': os.path.realpath(packages[0]),
+            'links': {name: path for name, path in entries if _is_link(path)}}
+    return folders
+
+
+def _resolve_links(by_path, links):
+    """The store folder each link resolves to; None when it resolves to no store package."""
+    return {name: by_path.get(os.path.realpath(path)) for name, path in links.items()}
+
+
+def _expected_links(snapshot, installed):
+    """The snapshot keys a lock snapshot links: its dependencies, and the optional ones installed."""
+    pinned = dict(snapshot.get('dependencies', {}))
+    pinned.update((name, version) for name, version in snapshot.get('optionalDependencies', {}).items()
+                  if _package_id(name + '@' + version) in installed)
+    return {name: name + '@' + version for name, version in pinned.items()}
+
+
+def _link_faults(node, wanted, owner):
+    """Each way one folder's links differ, by locked version, from one snapshot's dependencies."""
+    faults = []
+    for name in sorted(node['found'].keys() | wanted.keys()):
+        path, pin = node['base'] + '/' + name, wanted.get(name)
+        if name not in node['found']:
+            faults.append(f'link missing: {path} must resolve to {_package_id(pin)}')
+            continue
+        found = node['found'][name] or 'nothing in the store'
+        if pin is None:
+            faults.append(f'link unexpected: {path} resolves to {found}, which the lock does not list for {owner}')
+        elif found != _package_id(pin):
+            faults.append(f'link mismatch: {path} resolves to {found}, the lock pins {_package_id(pin)}')
+    return faults
+
+
+def _version_labels(node, expected):
+    """The snapshots of a folder's package whose dependencies its links match by locked version."""
+    candidates = [key for key in expected if _package_id(key) == node['package']] or [node['package']]
+    faults = {key: _link_faults(node, expected.get(key, {}), node['package']) for key in candidates}
+    matching = [key for key, found in faults.items() if not found]
+    if not matching:
+        raise ValueError('JavaScript dependency ' + min(faults.values(), key=len)[0])
+    return matching
+
+
+def _unpinned(node, wanted, labels):
+    """A folder's links whose target holds no variant of the snapshot key pinned for them."""
+    return [node['base'] + '/' + name for name, key in wanted.items()
+            if key not in labels.get(node['targets'].get(name), ())]
+
+
+def _narrow(nodes, expected, labels):
+    """Keep for each folder only the snapshots every one of its links can still satisfy."""
+    while True:
+        narrowed = {name: [key for key in keys if not _unpinned(nodes[name], expected[key], labels)]
+                    for name, keys in labels.items()}
+        if narrowed == labels:
+            return labels
+        labels = narrowed
+
+
+def _unpinned_paths(nodes, expected, labels, failing, against):
+    return sorted({path for name in failing for key in labels[name]
+                   for path in _unpinned(nodes[name], expected[key], against)})
+
+
+def _verify_links(tools, lock, folders):
+    """Every store folder's sibling links resolve to exactly the folders holding the snapshots its
+    lock snapshot pins, peer variants included; the importer's top-level links likewise."""
+    installed = {folder['package'] for folder in folders.values()}
+    expected = {key: _expected_links(snapshot, installed) for key, snapshot in lock['snapshots'].items()}
+    by_path = {folder['real']: name for name, folder in folders.items()}
+    nodes, labels = {}, {}
+    for name, folder in folders.items():
+        targets = _resolve_links(by_path, folder['links'])
+        nodes[name] = {**folder, 'targets': targets,
+                       'found': {link: target and folders[target]['package'] for link, target in targets.items()}}
+        labels[name] = _version_labels(nodes[name], expected)
+    importer = lock['importers']['.']['dependencies']
+    expected[IMPORTER] = {name: name + '@' + pin['version'] for name, pin in importer.items()}
+    nodes[IMPORTER] = {'base': 'node_modules', 'targets': _resolve_links(
+        by_path, {name: tools / 'node_modules' / name for name in importer})}
+    labels[IMPORTER] = [IMPORTER]
+    final = _narrow(nodes, expected, labels)
+    failing = [name for name, keys in final.items() if not keys]
+    if failing:
+        # Name the links that miss by their target's own locked variant; a cycle may need the
+        # narrowed labels to show any.
+        paths = (_unpinned_paths(nodes, expected, labels, failing, labels)
+                 or _unpinned_paths(nodes, expected, labels, failing, final))
+        raise ValueError('JavaScript dependency links resolve to a peer variant the lock does not pin: '
+                         + ', '.join(paths))
 
 
 def javascript_versions(coverage):
@@ -111,13 +236,15 @@ def javascript_versions(coverage):
     flags = {}
     for key, snapshot in lock['snapshots'].items():
         flags.setdefault(_package_id(key), []).append(snapshot.get('optional') == 'true')
-    rows, installed = [], set()
-    for relative, manifest in _store_packages(tools):
-        package = _manifest_id(manifest)
-        if package not in lock['packages']:
-            raise ValueError(f'JavaScript resolved version mismatch: {relative} holds {package}, which the lock does not')
-        installed.add(package)
-        rows.append({'path': relative, 'package': package, 'manifest_sha256': file_hash(manifest)})
+    folders = _store(tools)
+    rows = []
+    for folder in folders.values():
+        if folder['package'] not in lock['packages']:
+            raise ValueError(f"JavaScript resolved version mismatch: {folder['path']} holds {folder['package']}, "
+                             'which the lock does not')
+        rows.append({'path': folder['path'], 'package': folder['package'],
+                     'manifest_sha256': file_hash(folder['manifest'])})
+    installed = {folder['package'] for folder in folders.values()}
     omitted = []
     for package, entry in lock['packages'].items():
         if package in installed:
@@ -126,6 +253,7 @@ def javascript_versions(coverage):
             raise ValueError('Missing required locked JavaScript package: ' + package)
         omitted.append({'package': package, 'optional': True,
                         'os': _flow_list(entry.get('os')), 'cpu': _flow_list(entry.get('cpu'))})
+    _verify_links(tools, lock, folders)
     return {'packages': rows, 'uninstalled_optional': omitted, 'lock_sha256': file_hash(tools / 'pnpm-lock.yaml')}
 
 

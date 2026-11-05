@@ -486,8 +486,11 @@ class PublishedProvenanceTests(unittest.TestCase):
         locks = json.loads((TOOLS / "metrics/packages.lock.json").read_text(encoding="utf-8"))
         self.assertEqual(locks["dependencies"]["net10.0"]["SonarAnalyzer.CSharp"]["resolved"],
                          pins["dotnet"]["resolved"]["SonarAnalyzer.CSharp"])
-        self.assertEqual(json.loads((TOOLS / "package.json").read_text(encoding="utf-8"))
-                         ["dependencies"]["c8"], pins["javascript"]["resolved"]["c8"])
+        self.assertEqual(json.loads((TOOLS / "package.json").read_text(encoding="utf-8"))["dependencies"],
+                         pins["javascript"]["resolved"])
+        self.assertEqual("DynaDocs.Tests/coverage/pnpm-lock.yaml", pins["javascript"]["path"])
+        self.assertEqual(hashlib.sha256((TOOLS / "pnpm-lock.yaml").read_bytes()).hexdigest(),
+                         pins["javascript"]["sha256"])
         self.assertIn("coverage==" + pins["python"]["resolved"]["coverage"],
                       (TOOLS / "requirements.lock").read_text(encoding="utf-8"))
         self.assertEqual(json.loads((root / ".config/dotnet-tools.json").read_text(encoding="utf-8"))

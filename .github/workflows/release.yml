@@ -176,7 +176,9 @@ jobs:
         with:
           node-version: '26.13.0'
           cache: pnpm
-          cache-dependency-path: viewer/pnpm-lock.yaml
+          cache-dependency-path: |
+            DynaDocs.Tests/coverage/pnpm-lock.yaml
+            viewer/pnpm-lock.yaml
 
       - name: Create Python assurance environment
         run: python -m venv .static-gates/python

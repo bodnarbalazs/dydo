@@ -132,15 +132,19 @@ internal sealed class PosixStatechartProcess
         var error = await process.StandardError.ReadToEndAsync(cancellationToken);
         await process.WaitForExitAsync(cancellationToken);
         if (process.ExitCode != 0) throw new IOException("Statechart group inspection failed: " + error);
-        return output.Split('\n', StringSplitOptions.RemoveEmptyEntries).Any(IsLiveMember);
+        return ListsLiveMember(output, Id);
     }
 
-    private bool IsLiveMember(string line)
+    internal static bool ListsLiveMember(string listing, int group) =>
+        listing.Split('\n', StringSplitOptions.RemoveEmptyEntries).Any(line => IsLiveMember(line, group));
+
+    // procps prints the pgid unsigned. A task the kernel releases mid-scan reads pgid -1, listed as 4294967295: no member.
+    private static bool IsLiveMember(string line, int group)
     {
         var fields = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-        if (fields.Length != 2 || !int.TryParse(fields[0], out var group))
+        if (fields.Length != 2 || !uint.TryParse(fields[0], out var listed))
             throw new InvalidDataException("Cannot interpret statechart group inspection.");
-        return group == Id && !fields[1].StartsWith('Z');
+        return listed == group && !fields[1].StartsWith('Z');
     }
 
     private void RequireChild()

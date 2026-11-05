@@ -202,9 +202,11 @@ placement under §2, without widening the September coverage exemption or changi
 
 ## Amendment 2026-11-05 — platform-scoped .NET measurement
 
-Balazs ratified this amendment on 2026-11-05 (DYD-649): the two-report hosted union, an
-`ubuntu-24.04` full suite plus a `windows-latest` run of the selected tests, as DYD-558 implements
-it in PR 268.
+Balazs ratified this amendment on 2026-11-05
+([DYD-649](https://linear.app/bodnar-balazs/issue/DYD-649)): the two-report hosted union, an
+`ubuntu-24.04` full suite plus a `windows-latest` run of the selected tests, as
+[DYD-558](https://linear.app/bodnar-balazs/issue/DYD-558) implements it in
+[PR 268](https://github.com/BalazsOrg/dydo/pull/268).
 
 This applies the 2026-11-04 principle to .NET: a project measures on Windows only when it ships
 code that executes natively there. dydo ships the Windows statechart runtime: Job Object ownership,

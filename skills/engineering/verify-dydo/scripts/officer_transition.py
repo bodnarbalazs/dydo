@@ -755,11 +755,16 @@ def facts(timeline, direction):
         "terminal_command": terminal,
         "incomplete": {"readback_differs": value is not None and value != direction,
                        "no_sink_write": not announcements, "terminal_command_after_readback": bool(terminal)},
-        "uncorrelated_receipts": [i for i, r in receipts if not r["candidates"]],
-        "ambiguous_receipts": [[i, r["candidates"]] for i, r in receipts if len(r["candidates"]) > 1],
+        **ownership(receipts),
         # Unscored: how the agent worded it never decides a verdict.
         "wording_observed": [i for i, text in after if "incomplete" in text.lower()],
     }
+
+
+def ownership(receipts):
+    """Receipts no agent call could own, and those more than one could: reported, never resolved."""
+    return {"uncorrelated_receipts": [i for i, r in receipts if not r["candidates"]],
+            "ambiguous_receipts": [[i, r["candidates"]] for i, r in receipts if len(r["candidates"]) > 1]}
 
 
 def check(name, expected, observed, passed):

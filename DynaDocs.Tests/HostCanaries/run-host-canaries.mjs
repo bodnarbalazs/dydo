@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
+import { candidateFingerprint, prewarmClaudeGuard } from "./candidate-fingerprint.mjs";
 import { isInside, samePath } from "./path-containment.mjs";
 import { parseArgs } from "./run-host-canaries-args.mjs";
 
@@ -27,6 +28,7 @@ let hostsRoot;
 let scratchRootCreated = false;
 let candidatePrepared = false;
 let expectedSkills = [];
+let trackedSkillCount;
 let candidateFingerprintBefore;
 let rejectedAncestorPaths = [];
 const manifest = { issue: "DYD-91 - Make one canonical skill tree easy to install for Claude, Codex, and OpenCode", startedAt: new Date().toISOString(), commands: [], assertions: [], environment: {}, artifacts: {} };
@@ -87,7 +89,11 @@ async function prepareCandidate() {
   await mkdir(hostsRoot, { recursive: true });
   manifest.scratchLifecycle.push({ action: "create-run", path: runRoot, result: "created" });
   await archiveCommit(sha, checkout);
-  await verifyMaterializedTree(sha, checkout);
+  const sourcePaths = await verifyMaterializedTree(sha, checkout);
+  // Counted from the source commit's tree, independently of the filesystem walk that loads the inventory.
+  trackedSkillCount = sourcePaths.filter(path => /^skills\/(?:.+\/)?SKILL\.md$/.test(path)).length;
+  manifest.trackedSkillCount = trackedSkillCount;
+  assert(trackedSkillCount > 0, "the source commit tracks no skills/**/SKILL.md");
   await run("git", ["init", "--quiet"], { cwd: checkout });
   await run("git", ["config", "core.autocrlf", "false"], { cwd: checkout });
   await run("git", ["config", "core.eol", "lf"], { cwd: checkout });
@@ -108,7 +114,8 @@ async function prepareCandidate() {
   const isolatedStatus = await run("git", ["-C", candidate, "status", "--porcelain=v1"]);
   assert(isolatedStatus.stdout.trim() === "", "setup changed the source candidate");
   expectedSkills = await loadExpectedSkills(checkout);
-  assert(expectedSkills.length === 29, `candidate exposed ${expectedSkills.length} canonical skills instead of 29`);
+  assert(expectedSkills.length === trackedSkillCount, `candidate exposed ${expectedSkills.length} canonical skills instead of the ${trackedSkillCount} tracked skills/**/SKILL.md`);
+  if (!options.only || options.only === "claude") await prewarmClaudeGuardHook();
   candidateFingerprintBefore = await candidateFingerprint(checkout);
   manifest.candidateFingerprint = { before: candidateFingerprintBefore };
   manifest.environment.candidate = { physicalPath: checkout, sourceSha: sha, sourceTreeSha: sourceTree, evidenceCommitSha: evidenceCommit, evidenceTreeSha: evidenceTree };
@@ -239,6 +246,7 @@ async function verifyMaterializedTree(sha, root) {
   }
   await writeArtifact("materialized-tree.json", JSON.stringify({ sourceSha: sha, sourceTreeSha: manifest.sourceTreeSha, entries: verified }, null, 2));
   pass("The materialized filesystem exactly matches the source candidate Git tree before setup");
+  return sourcePaths;
 }
 
 async function filesystemLeaves(root, prefix = "") {
@@ -305,30 +313,26 @@ function skillPath(name) {
   return skill.path;
 }
 
-async function candidateFingerprint(root) {
-  const entries = [];
-  async function visit(directory, prefix = "") {
-    for (const entry of (await readdir(directory, { withFileTypes: true })).sort((left, right) => ordinal(left.name, right.name))) {
-      if (!prefix && entry.name === ".git") continue;
-      const path = join(directory, entry.name);
-      const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
-      const info = await lstat(path);
-      if (info.isSymbolicLink()) entries.push({ path: relativePath, type: "link", target: await readlink(path) });
-      else if (info.isDirectory()) {
-        entries.push({ path: relativePath, type: "directory" });
-        await visit(path, relativePath);
-      } else if (info.isFile()) entries.push({ path: relativePath, type: "regular-file", sha256: await sha256(path) });
-      else entries.push({ path: relativePath, type: "other" });
-    }
-  }
-  await visit(root);
-  return objectSha256(entries);
+// The candidate's Claude hook runs `dydo guard`, whose first call of the day writes its validation
+// marker into the checkout. Running it once here puts that write before the "before" fingerprint, so
+// the Claude sessions' own hook Reads change nothing and any other write still fails the run.
+async function prewarmClaudeGuardHook() {
+  const prewarm = await prewarmClaudeGuard({ checkout, env: claudeEnv(), readPath: join(checkout, "AGENTS.md") });
+  manifest.environment.claudeGuardPrewarm = prewarm;
+  await writeArtifact("claude-guard-prewarm.json", JSON.stringify(prewarm, null, 2));
+  assert(prewarm.dydo.versionExitCode === 0, `dydo --version exited ${prewarm.dydo.versionExitCode} for ${prewarm.dydo.path}`);
+  assert(prewarm.exitCode === 0, `Claude guard pre-warm exited ${prewarm.exitCode}: ${redact(prewarm.stderr)}`);
+  pass(`Claude guard hook pre-warmed with ${prewarm.dydo.path} (${prewarm.dydo.version}) before the candidate fingerprint`);
+}
+
+function claudeEnv() {
+  return { ...process.env, CLAUDE_CONFIG_DIR: join(hostsRoot, "claude-config") };
 }
 
 async function runClaudeCanary() {
-  const claudeConfig = join(hostsRoot, "claude-config");
+  const env = claudeEnv();
+  const claudeConfig = env.CLAUDE_CONFIG_DIR;
   await mkdir(claudeConfig, { recursive: true });
-  const env = { ...process.env, CLAUDE_CONFIG_DIR: claudeConfig };
   const claudeInstructionsPath = join(checkout, "AGENTS.md");
   const claudeInstructions = await readFile(claudeInstructionsPath, "utf8");
   await writeArtifact("candidate-claude-AGENTS.md", claudeInstructions);
@@ -369,7 +373,7 @@ async function assertClaudeInit(events, label) {
   const skills = Array.isArray(init.skills) ? init.skills : [];
   const names = skills.map(skill => typeof skill === "string" ? skill : skill?.name).filter(Boolean).sort(ordinal);
   const expectedNames = expectedSkills.map(skill => skill.name).sort(ordinal);
-  assert(JSON.stringify(names) === JSON.stringify(expectedNames), `Claude ${label} init skills were not exactly the 29 candidate skills`);
+  assert(JSON.stringify(names) === JSON.stringify(expectedNames), `Claude ${label} init skills were not exactly the ${trackedSkillCount} candidate skills`);
   const reportedPaths = [];
   walk(skills, value => { if (typeof value === "string" && isAbsolute(value)) reportedPaths.push(value); });
   for (const path of reportedPaths) {
@@ -1010,7 +1014,6 @@ function assert(condition, message) { if (!condition) throw new Error(message); 
 function redact(value) { return value.replaceAll(candidate, "<candidate>").replaceAll(evidence, "<evidence>").replaceAll(scratchRoot, "<scratch-root>"); }
 function count(value, needle) { return value.split(needle).length - 1; }
 function ordinal(left, right) { if (left < right) return -1; if (left > right) return 1; return 0; }
-function objectSha256(value) { return createHash("sha256").update(JSON.stringify(value)).digest("hex"); }
 function parseJsonLines(value) { return value.split(/\r?\n/).filter(Boolean).flatMap(line => { try { return [JSON.parse(line)]; } catch { return []; } }); }
 function parseNdjson(value, label) { const lines = value.split(/\r?\n/).filter(Boolean); const parsed = lines.map(line => JSON.parse(line)); assert(parsed.length > 0, `${label} was empty`); return parsed; }
 function findString(value, predicate) { if (typeof value === "string") return predicate(value) ? value : undefined; if (Array.isArray(value)) { for (const item of value) { const found = findString(item, predicate); if (found) return found; } } else if (value && typeof value === "object") { for (const item of Object.values(value)) { const found = findString(item, predicate); if (found) return found; } } }

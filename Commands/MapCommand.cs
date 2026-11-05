@@ -10,7 +10,7 @@ public static class MapCommand
     private const string LinearEndpoint = "https://api.linear.app/graphql";
 
     internal const string MissingKeyHelp = """
-        LINEAR_API_KEY is not set, so dydo map cannot read Linear.
+        LINEAR_API_KEY is not set, so dydo cannot read Linear.
         Create a personal API key in Linear under Settings > Account > Security & access >
         Personal API keys (https://linear.app/settings/account/security), then replace <your key> below.
 
@@ -25,7 +25,7 @@ public static class MapCommand
         To keep it across restarts, also add that export line to your shell startup file:
         Bash: ~/.bashrc; ensure your login startup file (e.g. ~/.bash_profile) sources it.
         Zsh: ~/.zshrc (or $ZDOTDIR/.zshrc if ZDOTDIR is set).
-        New interactive shells will load it; run dydo map from a configured shell.
+        New interactive shells will load it; run dydo from a configured shell.
 
         """;
 

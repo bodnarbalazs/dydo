@@ -1,16 +1,25 @@
 """Lambda witnesses must not borrow execution from their containing statement."""
+import subprocess
 import sys
 import types
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from python_runtime import CallableWitness, callable_inventory, module_inventory
+import python_runtime
+from python_runtime import CallableWitness, callable_inventory, inventory_cache, module_inventory
 
 
 def _nested_code(code, name):
     return next(value for value in code.co_consts
                 if isinstance(value, types.CodeType) and value.co_name == name)
+
+
+def _inventory(witness):
+    owners = {id(row): position for position, row in enumerate(witness._rows + witness._modules)}
+    return (witness._rows, witness._modules,
+            {key: owners[id(row)] for key, row in witness._index.items()})
 
 
 class PythonRuntimeTests(unittest.TestCase):
@@ -255,3 +264,36 @@ outer()
         self.assertEqual(2, len(rows))
         self.assertTrue(all(row['body_lines'] == {'1' if index == 0 else '2': 0}
                             for index, row in enumerate(rows)))
+
+    def test_cached_inventory_equals_the_fresh_inventory_for_every_tracked_source(self):
+        root = Path(__file__).resolve().parents[3]
+        listing = subprocess.run(['git', 'ls-files', '-z', '--', '*.py'], cwd=root,
+                                 capture_output=True, text=True, check=True).stdout.split('\0')
+        sources = {str(root / path): (root / path).read_text(encoding='utf-8-sig')
+                   for path in listing if path}
+        self.assertIn(str(root / 'DynaDocs.Tests/coverage/python_runtime.py'), sources)
+        cache = inventory_cache(sources)
+        with patch.object(python_runtime, '_runtime_inventory') as computed:
+            cached = CallableWitness(sources, cache)
+        computed.assert_not_called()
+        self.assertEqual(_inventory(CallableWitness(sources)), _inventory(cached))
+
+    def test_a_stale_or_foreign_cache_entry_is_recomputed_never_counted(self):
+        path = str(Path('cache-subject.py').resolve())
+        original, edited = 'def work():\n    return 1\n', 'def work():\n    return 1 + 1\n'
+        cache = inventory_cache({path: original})
+        with patch.object(sys, 'version', 'another 3.14 build'):
+            foreign = inventory_cache({path: original})
+        fresh = python_runtime._runtime_inventory
+        with patch.object(python_runtime, '_runtime_inventory', side_effect=fresh) as computed:
+            CallableWitness({path: original}, cache)
+            stale = CallableWitness({path: edited}, cache)
+            moved = CallableWitness({path: original}, foreign)
+        self.assertEqual([edited, original], [call.args[0] for call in computed.call_args_list])
+        self.assertEqual(_inventory(CallableWitness({path: edited})), _inventory(stale))
+        self.assertEqual(_inventory(CallableWitness({path: original})), _inventory(moved))
+        with stale:
+            namespace = {}
+            exec(compile(edited, path, 'exec'), namespace)
+            namespace['work']()
+        self.assertEqual([1], [row['execution_count'] for row in stale.rows()])

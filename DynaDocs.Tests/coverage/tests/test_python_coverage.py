@@ -155,6 +155,23 @@ class PythonCoverageTests(unittest.TestCase):
             self.assertEqual(2, substituted.returncode, substituted.stdout)
             self.assertIn("Mismatched Python callable body inventory", substituted.stderr)
 
+    def test_a_source_edited_after_the_campaign_inventory_is_counted_from_its_own_text(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+            (root / "edit.py").write_text(
+                "import subprocess, sys\nfrom pathlib import Path\n"
+                "Path('subject.py').write_text("
+                "'def work():\\n    return 1 + 1\\ndef added():\\n    return 2\\n', encoding='utf-8')\n"
+                "subprocess.run([sys.executable, '-c', 'import subject; subject.work()'], check=True)\n",
+                encoding="utf-8")
+            output = root / "evidence"
+            counters = self.campaign(root, output, ["subject.py"], ["{python}", "-S", "edit.py"])
+            config = json.loads((output / "config.json").read_text(encoding="utf-8"))
+            self.assertTrue(Path(config["inventory"]).is_file())
+        self.assertEqual({"work:1:0": 1, "added:3:0": 0},
+                         {row["id"]: row["execution_count"] for row in counters["callables"]})
+
     def test_counter_union_refuses_every_inconsistent_receipt(self):
         base = _counter_receipt([_counter_row()])
         for message, receipts in (

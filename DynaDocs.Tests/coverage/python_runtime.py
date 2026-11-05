@@ -2,6 +2,7 @@
 import ast
 import hashlib
 import inspect
+import pickle
 import sys
 import types
 
@@ -112,14 +113,33 @@ def module_inventory(source, path):
     return _runtime_inventory(source, path)[1]
 
 
+def _digest(source):
+    return hashlib.sha256(source.encode('utf-8')).hexdigest()
+
+
+def inventory_cache(sources):
+    """Every source's runtime inventory, valid only for this interpreter build and source text."""
+    return pickle.dumps({'interpreter': sys.version, 'sources': {
+        path: (_digest(source), _runtime_inventory(source, path)) for path, source in sources.items()}})
+
+
+def _cached_inventories(cache):
+    if cache is None:
+        return {}
+    payload = pickle.loads(cache)
+    return payload['sources'] if payload['interpreter'] == sys.version else {}
+
+
 class CallableWitness:
-    def __init__(self, sources):
+    def __init__(self, sources, cache=None):
         if sys.implementation.name != 'cpython' or sys.version_info[:2] != (3, 14):
             raise ValueError('Callable measurement requires pinned CPython 3.14 monitoring semantics')
         self.tool_id = None
         self._rows, self._modules, self._index = [], [], {}
+        cached = _cached_inventories(cache)
         for path, source in sources.items():
-            rows, module, index = _runtime_inventory(source, path)
+            digest, inventory = cached.get(path, (None, None))
+            rows, module, index = inventory if digest == _digest(source) else _runtime_inventory(source, path)
             self._rows.extend(rows)
             self._modules.append(module)
             self._index.update({(path, key): row for key, row in index.items()})

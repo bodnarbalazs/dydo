@@ -139,6 +139,9 @@ jobs:
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -149,7 +152,7 @@ jobs:
       - name: Install locked union analysis dependencies
         run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 
-      # Every attempt's leg artifacts; the selection below takes each leg's latest attempt.
+      # Every attempt's leg artifacts; the selection below takes each leg's latest execution.
       - uses: actions/download-artifact@v4
         with:
           pattern: python-coverage-*-attempt-*
@@ -166,10 +169,25 @@ jobs:
           echo "$PLATFORM_RESULT" > DynaDocs.Tests/coverage/results/coverage-platforms/native-job-result.txt
           test "$PLATFORM_RESULT" = success
 
-      - name: Select each leg's latest-attempt artifact
+      # A rerun copies each leg it does not rerun into the new attempt, keeping the leg's original start time.
+      - name: Record each leg's latest execution from the run's job record
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_API: repos/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api --paginate "$RUN_API/attempts/${{ github.run_attempt }}/jobs?per_page=100" --jq '.jobs[]' > DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          for attempt in $(seq ${{ github.run_attempt }}); do
+            gh api "$RUN_API/attempts/$attempt" --jq '{run_attempt, run_started_at}'
+          done > DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
+
+      - name: Select each leg's latest-execution artifact
         run: >-
           python DynaDocs.Tests/coverage/coverage_artifacts.py select --stack python
           --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --expected-commit ${{ github.sha }}
+          --jobs DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          --attempts DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
           --staging DynaDocs.Tests/coverage/results/coverage-legs
           --linux DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-linux
           --windows DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-windows
@@ -316,6 +334,9 @@ jobs:
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -345,7 +366,7 @@ jobs:
           dotnet restore --locked-mode
           dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
 
-      # Every attempt's leg artifacts; the selection below takes each leg's latest attempt.
+      # Every attempt's leg artifacts; the selection below takes each leg's latest execution.
       - uses: actions/download-artifact@v4
         with:
           pattern: dotnet-coverage-*-attempt-*
@@ -362,10 +383,25 @@ jobs:
           echo "$PLATFORM_RESULT" > DynaDocs.Tests/coverage/results/coverage-platforms/native-job-result.txt
           test "$PLATFORM_RESULT" = success
 
-      - name: Select each leg's latest-attempt artifact
+      # A rerun copies each leg it does not rerun into the new attempt, keeping the leg's original start time.
+      - name: Record each leg's latest execution from the run's job record
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_API: repos/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api --paginate "$RUN_API/attempts/${{ github.run_attempt }}/jobs?per_page=100" --jq '.jobs[]' > DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          for attempt in $(seq ${{ github.run_attempt }}); do
+            gh api "$RUN_API/attempts/$attempt" --jq '{run_attempt, run_started_at}'
+          done > DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
+
+      - name: Select each leg's latest-execution artifact
         run: >-
           python DynaDocs.Tests/coverage/coverage_artifacts.py select --stack dotnet
           --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --expected-commit ${{ github.event.pull_request.head.sha || github.sha }}
+          --jobs DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          --attempts DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
           --staging DynaDocs.Tests/coverage/results/coverage-legs
           --linux DynaDocs.Tests/coverage/results/coverage-platforms/linux
           --windows DynaDocs.Tests/coverage/results/coverage-platforms/windows

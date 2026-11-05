@@ -86,8 +86,11 @@ test('a second Refresh waits for the first to land, keeping the map, its viewpor
     }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled'] });
   });
   const shown = await viewport(page);
-  // Pausing needs a moment still ahead of the page's clock; nothing is pending on the settled map.
-  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
+  // Pause where the page's wall clock already stands: fixed, it cannot run past the target however long the host
+  // stalls, so the pause jumps no time and fires no timer early. Only Date stands still; timers and frames run on ticks.
+  const now = new Date();
+  await page.clock.setFixedTime(now);
+  await page.clock.pauseAt(now);
 
   await refresh(page).click();
   await expect(notice(page)).toHaveText('5 changed · 2 new · 2 removed · 2 links added · 1 link removed');

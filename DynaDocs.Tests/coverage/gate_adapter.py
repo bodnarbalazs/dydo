@@ -1,6 +1,5 @@
 """Private native stack adapter for the public gap-check facade."""
 import argparse
-import ast
 import json
 import os
 import platform
@@ -14,6 +13,7 @@ import subprocess
 from pathlib import Path
 
 from gate_run import STATIC_GATE_INTERPRETER, checked_result, result
+from gate_discovery import ordinary_discovery as _ordinary_discovery
 
 
 CLEANUP_SECONDS = 30
@@ -33,7 +33,7 @@ class MeasurementTimeout(ValueError):
 
 
 def run_coverage_command(argv, cwd):
-    from run_tests import contain_descendants, defer_interruption
+    from run_tests import contain_descendants, defer_interruption, reaping
     deadline_text = os.environ.get(ROW_DEADLINE_ENV)
     deadline = float(deadline_text) if deadline_text is not None else None
     execution_deadline = None if deadline is None else deadline - CLEANUP_SECONDS
@@ -42,13 +42,15 @@ def run_coverage_command(argv, cwd):
                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
                              start_new_session=sys.platform != "win32")
     try:
-        status = _wait_coverage_child(child, execution_deadline)
+        with reaping(containment, child):
+            status = _wait_coverage_child(child, execution_deadline)
     except (subprocess.TimeoutExpired, KeyboardInterrupt) as error:
         # Leave time inside the facade's cleanup window for forced descendant cleanup.
         remaining = CLEANUP_SECONDS if deadline is None else max(0, deadline - time.monotonic())
         cleanup_confirmed = False
         try:
-            with defer_interruption():
+            # Orphans adopted while the campaign stops are reaped as they exit, as during its run.
+            with defer_interruption(), reaping(containment, child):
                 cleanup_deadline = time.monotonic() + min(remaining, CLEANUP_SECONDS)
                 stopped = _stop_coverage_campaign(child, cleanup_deadline, containment)
                 if stopped == 2:
@@ -80,13 +82,17 @@ def _wait_coverage_child(child, deadline):
 
 
 def _stop_coverage_campaign(child, deadline, containment):
-    from run_tests import end_descendants
+    from run_tests import end_descendants, pin_descendants
+    pinned = []
     try:
         if sys.platform == "win32":
             child.send_signal(signal.CTRL_BREAK_EVENT)
         else:
             os.killpg(child.pid, signal.SIGINT)
-        _wait_coverage_child(child, time.monotonic() + max(0, deadline - time.monotonic()) / 3)
+        grace = time.monotonic() + max(0, deadline - time.monotonic()) / 3
+        # The owner's grace pays for the first descendant listing; what it pins dies after the grace.
+        pinned = pin_descendants(containment)
+        _wait_coverage_child(child, grace)
     except (OSError, subprocess.TimeoutExpired):
         if sys.platform == "win32":
             child.kill()
@@ -97,8 +103,9 @@ def _stop_coverage_campaign(child, deadline, containment):
                 pass
         _wait_coverage_child(child, min(deadline, time.monotonic() + 5))
     finally:
-        # A killed Linux owner can leave detached children adopted by this adapter.
-        end_descendants(containment, seconds=max(0, deadline - time.monotonic()))
+        # A killed Linux owner can leave detached children adopted by this adapter; the caller's
+        # reaping collects them once they are ended.
+        end_descendants(containment, seconds=max(0, deadline - time.monotonic()), pinned=pinned)
     return child.returncode
 
 
@@ -259,6 +266,14 @@ def _failing_subjects(evidence):
     return [], "no failing test named in altcover-runner.stdout or altcover-runner.stderr"
 
 
+def _runner_cleanup_unconfirmed(campaign):
+    """Whether run_tests.py's exit 2 can only be its own unconfirmed descendant cleanup: it exits
+    with a complete, confirmed campaign's subject status, so one other than 2 leaves no other cause."""
+    status = campaign.get("subject_status")
+    return (campaign.get("complete") is True and campaign.get("cleanup_confirmed") is True
+            and type(status) is int and status != 2)
+
+
 def _campaign_diagnosis(raw):
     """windows_job's diagnosis for an incomplete native campaign, honest about what it could not read."""
     path = Path(raw) / "identities.json"
@@ -269,6 +284,11 @@ def _campaign_diagnosis(raw):
     campaign = manifest.get("campaign") if isinstance(manifest, dict) else None
     if not isinstance(campaign, dict):
         return {"identitiesPath": str(path), "diagnosisUnavailable": "identities.json does not record a campaign"}
+    if _runner_cleanup_unconfirmed(campaign):
+        return {"identitiesPath": str(path), "failureCategory": "runner_cleanup_unconfirmed",
+                "errorMessage": (f"the campaign completed with subject status {campaign['subject_status']} "
+                                 "and confirmed cleanup, but run_tests.py exited 2: its own descendant "
+                                 "cleanup was unconfirmed, so it retained its test worktree (named on its stderr)")}
     category, message = campaign.get("failure_category"), campaign.get("error_message")
     if not isinstance(category, str) and not isinstance(message, str):
         return {"identitiesPath": str(path),
@@ -367,49 +387,6 @@ def _inventory_artifact(root, run, candidate):
     return inventory, payload["errors"], _logged_commands(collector.log.rows, run)
 
 
-def _unittest_discovery(path, relative):
-    if not (relative.endswith(".py") and Path(relative).name.startswith("test_")):
-        return None
-    try:
-        tree = ast.parse(path.read_text(encoding="utf-8-sig"), relative)
-    except (SyntaxError, OSError):
-        return None
-    bases = (base for node in ast.walk(tree) if isinstance(node, ast.ClassDef) for base in node.bases)
-    if any(getattr(base, "attr", getattr(base, "id", "")) == "TestCase" for base in bases):
-        return {"id": relative + "#unittest", "file": relative}
-    return None
-
-
-def _node_discovery(path, relative):
-    if not re.search(r"\.test\.(?:c|m)?js$", relative):
-        return None
-    text = path.read_text(encoding="utf-8-sig")
-    if re.search(r"\btest\s*\(", text) and "node:test" in text:
-        return {"id": relative + "#node-test", "file": relative}
-    return None
-
-
-def _vitest_discovery(path, relative):
-    if not (relative.startswith("viewer/src/") and re.search(r"\.test\.tsx?$", relative)):
-        return None
-    text = path.read_text(encoding="utf-8-sig")
-    if re.search(r"\b(?:test|it)\s*\(", text) and re.search(r"""\bfrom\s+['"]vitest['"]""", text):
-        return {"id": relative + "#vitest", "file": relative}
-    return None
-
-
-def _ordinary_discovery(root, paths):
-    rows = []
-    for relative in paths:
-        path = root / relative
-        if path.is_file():
-            row = (_unittest_discovery(path, relative) or _node_discovery(path, relative)
-                   or _vitest_discovery(path, relative))
-            if row:
-                rows.append(row)
-    return rows
-
-
 def _aggregate(orchestration):
     findings, errors = [], []
     for name, row in orchestration["collectors"].items():
@@ -502,8 +479,11 @@ def collect_python_coverage(root, raw, inventory):
     from python_coverage import collect as native_collect
     from python_join import collect as join
     from gate_policy import evaluate_policy
+    from python_platform import load_selection, scope
     run = _report_root(raw)
     sources = _target_paths(inventory, "python")
+    native_platform = {"linux": "linux", "win32": "windows"}.get(sys.platform)
+    selection = load_selection(root, sources, native_platform)
     argv = [sys.executable, "-m", "unittest", "discover", "-s",
             "DynaDocs.Tests/coverage/tests", "-p", "test_*.py"]
     started = time.monotonic()
@@ -514,8 +494,9 @@ def collect_python_coverage(root, raw, inventory):
         return _coverage_report("python-coverage", facts,
                                 [{"gate": "functional", "child_exit": child}], [],
                                 commands, _python_artifacts(raw, run))
-    modules = join(root, raw, sources)
-    return _coverage_report("python-coverage", {**facts, "modules": modules},
+    modules, selection = scope(root, join(root, raw, sources), native_platform, selection)
+    return _coverage_report("python-coverage", {**facts, "modules": modules,
+                                               "platform_selection": selection},
                             evaluate_policy(modules), [], commands,
                             _python_artifacts(raw, run))
 
@@ -633,7 +614,27 @@ def collect_viewer_coverage(root, raw, inventory):
                             commands, artifacts)
 
 
+def _scoped_dotnet(root, evidence, platform, selection):
+    """The native join partitioned by the reviewed selection; the raw join keeps every point."""
+    from dotnet_platform import read_source_files, scope, selected_test_counts
+    from gate_policy import evaluate_policy
+    joined = json.loads((evidence / "joined.json").read_text(encoding="utf-8"))
+    modules, receipt = scope(root, joined["modules"], read_source_files(evidence), platform, selection)
+    if platform == "windows":
+        receipt["tests"] = selected_test_counts(
+            (evidence / "altcover-runner.stdout").read_text(encoding="utf-8", errors="replace"))
+    targets = [{key: value for key, value in target.items() if key != "modules"}
+               for target in joined["targets"]]
+    return {"schema": joined["schema"], "targets": targets, "modules": modules,
+            "platform_selection": receipt}, evaluate_policy(modules)
+
+
 def collect_dotnet_coverage(root, raw):
+    from dotnet_platform import discover_windows_tests, load_selection, native_platform
+    platform = native_platform()
+    selection = load_selection(root, platform)
+    if platform == "windows":
+        discover_windows_tests(root, selection)
     run, evidence = _report_root(raw), raw / "raw"
     script = root / "DynaDocs.Tests/coverage/run_tests.py"
     argv = [sys.executable, str(script), "--assurance-output", str(raw)]
@@ -657,8 +658,8 @@ def collect_dotnet_coverage(root, raw):
                                 [{"gate": "functional", "child_exit": child,
                                   "failingTests": names, "failingTestsSummary": summary}], [],
                                 commands, artifacts)
-    joined = json.loads((evidence / "joined.json").read_text(encoding="utf-8"))
-    return _coverage_report("csharp-coverage", {**facts, **joined}, joined["findings"], [],
+    joined, findings = _scoped_dotnet(root, evidence, platform, selection)
+    return _coverage_report("csharp-coverage", {**facts, **joined}, findings, [],
                             commands, artifacts)
 
 

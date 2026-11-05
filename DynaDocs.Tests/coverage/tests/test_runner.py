@@ -10,9 +10,9 @@ import unittest
 import tempfile
 import subprocess
 from datetime import datetime, timedelta, timezone
-from contextlib import redirect_stderr
+from contextlib import ExitStack, redirect_stderr, redirect_stdout
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import run_tests
@@ -538,22 +538,26 @@ class LinuxCampaignTests(unittest.TestCase):
             self.assertEqual("TimeoutError", result["failure_category"])
 
 
+def isolated_run_tests(folder):
+    """Patch run_tests() down to: real candidate allocation under `folder`, a fake git worktree
+    add/remove, and no real dotnet/skill/dirty-copy work -- so only cleanup ordering is tested.
+    """
+    return (
+        patch.object(run_tests, "prune_stale_test_worktrees"),
+        patch.object(run_tests.tempfile, "gettempdir", return_value=folder),
+        patch.object(run_tests.uuid, "uuid4", return_value=type("U", (), {"hex": "cafefeed"})()),
+        patch.object(run_tests, "is_registered_worktree", return_value=False),
+        patch.object(run_tests, "create_worktree", return_value=True),
+        patch.object(run_tests, "copy_dirty_files"),
+        patch.object(run_tests, "materialize_skill_links"),
+    )
+
+
 class WorktreeCleanupTests(unittest.TestCase):
     """The runner registers a marker before running anything, and cleans up on every exit path."""
 
     def _isolate_run_tests(self, folder):
-        """Patch run_tests() down to: real candidate allocation under `folder`, a fake git worktree
-        add/remove, and no real dotnet/skill/dirty-copy work -- so only cleanup ordering is tested.
-        """
-        return (
-            patch.object(run_tests, "prune_stale_test_worktrees"),
-            patch.object(run_tests.tempfile, "gettempdir", return_value=folder),
-            patch.object(run_tests.uuid, "uuid4", return_value=type("U", (), {"hex": "cafefeed"})()),
-            patch.object(run_tests, "is_registered_worktree", return_value=False),
-            patch.object(run_tests, "create_worktree", return_value=True),
-            patch.object(run_tests, "copy_dirty_files"),
-            patch.object(run_tests, "materialize_skill_links"),
-        )
+        return isolated_run_tests(folder)
 
     def test_cleanup_runs_when_the_test_subprocess_exits_nonzero(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -568,18 +572,6 @@ class WorktreeCleanupTests(unittest.TestCase):
             self.assertEqual(1, rc)
             remove.assert_called_once()
             self.assertEqual(Path(folder) / "dydo-test-cafefeed", remove.call_args.args[0])
-
-    def test_unconfirmed_cleanup_retains_the_snapshot(self):
-        with tempfile.TemporaryDirectory() as folder:
-            patches = self._isolate_run_tests(folder)
-            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], \
-                 patch.object(run_tests, "end_descendants", side_effect=TimeoutError("still live")), \
-                 patch.object(run_tests, "remove_worktree") as remove, \
-                 patch.object(subprocess, "run", return_value=subprocess.CompletedProcess([], 0)):
-                with self.assertRaisesRegex(TimeoutError, "still live"):
-                    run_tests.run_tests(job=run_tests.SUBREAPER)
-            remove.assert_not_called()
-            self.assertTrue((Path(folder) / "dydo-test-cafefeed").is_dir())
 
     def test_main_preserves_direct_and_leading_separator_filter_forms(self):
         for prefix in ([], ["--"]):
@@ -682,12 +674,254 @@ class WorktreeCleanupTests(unittest.TestCase):
         self.assertTrue(unlock_call[1], "the unlock call must pass capture=True")
 
 
+class UnconfirmedCleanupExitTests(unittest.TestCase):
+    """The runner's own descendant cleanup decides its exit. Unconfirmed, the run exits 2
+    (incomplete) whatever the subject returned or an interrupt asked, keeps its worktree and marker,
+    and names both on stderr; confirmed, 0, 1 and 130 stand."""
+
+    def exit_of_main(self, folder, job, *patches, argv=()):
+        """main()'s exit code, its stderr and the remove_worktree mock, with run_tests() isolated
+        under `folder`, contain_descendants returning `job`, and `patches` applied."""
+        stderr = io.StringIO()
+        with ExitStack() as stack:
+            # An unconfirmed cleanup keeps interrupts deferred until its process exits; this one doesn't.
+            for signum in (signal.SIGINT, *([signal.SIGBREAK] if hasattr(signal, "SIGBREAK") else [])):
+                stack.callback(signal.signal, signum, signal.getsignal(signum))
+            for each in (*isolated_run_tests(folder), *patches,
+                         patch.object(sys, "argv", ["run_tests.py", *argv]),
+                         patch.object(run_tests, "contain_descendants", return_value=job),
+                         redirect_stdout(io.StringIO()), redirect_stderr(stderr)):
+                stack.enter_context(each)
+            remove = stack.enter_context(patch.object(run_tests, "remove_worktree"))
+            with self.assertRaises(SystemExit) as exited:
+                run_tests.main()
+        return exited.exception.code, stderr.getvalue(), remove
+
+    def subject(self, status=None, error=None):
+        if error is not None:
+            return patch.object(run_tests, "run_contained", side_effect=error)
+        return patch.object(run_tests, "run_contained", return_value=subprocess.CompletedProcess([], status))
+
+    def unconfirmed(self, effect=None):
+        return patch.object(run_tests, "end_descendants", side_effect=effect or TimeoutError("still live"))
+
+    def assert_retained(self, folder, outcome, error):
+        code, stderr, remove = outcome
+        worktree = Path(folder) / "dydo-test-cafefeed"
+        self.assertEqual(2, code, stderr)
+        remove.assert_not_called()
+        self.assertTrue((worktree / run_tests.MARKER_NAME).is_file())
+        self.assertIn(str(worktree), stderr)
+        self.assertIn(error, stderr)
+        self.assertNotIn("Traceback", stderr)
+
+    def test_unconfirmed_linux_cleanup_exits_2_over_any_subject_status_and_keeps_the_worktree(self):
+        for status in (0, 1):
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as folder:
+                proc = Path(folder) / "proc"
+                fake_process_table(proc)  # its descendants never exit
+                now = [0.0]
+
+                def sleep(_seconds):
+                    now[0] += 1.0
+
+                outcome = self.exit_of_main(
+                    folder, run_tests.SUBREAPER, self.subject(status),
+                    patch.object(run_tests, "PROC_ROOT", proc),
+                    patch.object(run_tests.os, "getpid", return_value=SELF_PID),
+                    patch.object(run_tests.os, "kill"),
+                    patch.object(run_tests.signal, "SIGKILL", SIGKILL, create=True),
+                    patch.object(run_tests.time, "monotonic", side_effect=lambda: now[0]),
+                    patch.object(run_tests.time, "sleep", side_effect=sleep))
+
+                self.assert_retained(folder, outcome, "Linux descendant cleanup could not be confirmed")
+                self.assertGreaterEqual(now[0], run_tests.DESCENDANT_EXIT_SECONDS)
+
+    def test_unconfirmed_windows_cleanup_exits_2_through_the_job_member_seam(self):
+        job = object()
+        members = MagicMock(side_effect=TimeoutError("Windows descendant cleanup could not be confirmed"))
+        with tempfile.TemporaryDirectory() as folder:
+            outcome = self.exit_of_main(folder, job, self.subject(0),
+                                        patch.object(run_tests, "_end_job_members", members))
+
+            self.assert_retained(folder, outcome, "Windows descendant cleanup could not be confirmed")
+        members.assert_called_once_with(job, run_tests.DESCENDANT_EXIT_SECONDS)
+
+    def test_an_interrupted_run_whose_cleanup_is_unconfirmed_exits_2_not_130(self):
+        with tempfile.TemporaryDirectory() as folder:
+            outcome = self.exit_of_main(folder, None, self.subject(error=KeyboardInterrupt),
+                                        self.unconfirmed())
+
+            self.assert_retained(folder, outcome, "still live")
+
+    def test_an_interrupt_deferred_during_unconfirmed_cleanup_cannot_mask_exit_2(self):
+        def interrupted_then_unconfirmed(_job):
+            signal.raise_signal(signal.SIGINT)  # deferred until cleanup has finished
+            raise TimeoutError("still live")
+
+        with tempfile.TemporaryDirectory() as folder:
+            outcome = self.exit_of_main(folder, None, self.subject(0),
+                                        self.unconfirmed(interrupted_then_unconfirmed))
+
+            self.assert_retained(folder, outcome, "still live")
+
+    def test_confirmed_cleanup_keeps_pass_0_functional_failure_1_and_interrupt_130(self):
+        def interrupted_then_confirmed(_job):
+            signal.raise_signal(signal.SIGINT)  # deferred until cleanup has finished
+
+        cases = (("pass", (self.subject(0),), 0), ("functional failure", (self.subject(1),), 1),
+                 ("interrupted subject", (self.subject(error=KeyboardInterrupt),), 130),
+                 ("interrupted cleanup", (self.subject(0), patch.object(
+                     run_tests, "end_descendants", side_effect=interrupted_then_confirmed)), 130))
+        for case, patches, expected in cases:
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as folder:
+                code, stderr, remove = self.exit_of_main(folder, None, *patches)
+
+                self.assertEqual(expected, code, stderr)
+                remove.assert_called_once_with(Path(folder) / "dydo-test-cafefeed")
+
+    def test_unconfirmed_cleanup_before_any_worktree_exits_2_says_none_was_kept_and_creates_no_output(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder) / "published"
+            code, stderr, remove = self.exit_of_main(
+                folder, None, self.unconfirmed(),
+                # The candidate path is taken, so no worktree is allocated.
+                patch.object(run_tests, "is_registered_worktree", return_value=True),
+                argv=("--assurance-output", str(output)))
+
+            self.assertEqual(2, code, stderr)
+            remove.assert_not_called()
+            self.assertIn("no test worktree was created", stderr)
+            self.assertNotIn("Traceback", stderr)
+            self.assertFalse(output.exists(), "the runner created an output nothing published")
+
+    def assert_every_late_interrupt_exits_2(self, job, seam, assurance=False, repeated=False, platform=None):
+        """One run per point a real SIGINT can land at, from the moment cleanup at `seam` proves
+        unconfirmed until main() exits: each still exits 2 and names the retained worktree. With
+        `repeated`, a first SIGINT has already landed during that cleanup. A `platform` pins the
+        sys.platform main() reads, for a case only that platform's branch can reach."""
+        point, delivered = 0, True
+        while delivered:
+            delivered, unconfirmed, lines = False, False, 0
+
+            def cleanup(*_args):
+                nonlocal unconfirmed
+                if repeated:
+                    signal.raise_signal(signal.SIGINT)
+                unconfirmed = True
+                raise TimeoutError("still live")
+
+            def trace(frame, event, _arg):
+                nonlocal delivered, lines
+                if frame.f_code.co_filename != run_tests.__file__:
+                    return None
+                if event == "line" and unconfirmed and not delivered:
+                    lines += 1
+                    if lines > point:
+                        delivered = True
+                        signal.raise_signal(signal.SIGINT)
+                return trace
+
+            with self.subTest(point=point), tempfile.TemporaryDirectory() as folder:
+                argv = ("--assurance-output", str(Path(folder) / "published")) if assurance else ()
+                pins = (patch.object(run_tests.sys, "platform", platform),) if platform else ()
+                previous = sys.gettrace()
+                sys.settrace(trace)
+                try:
+                    outcome = self.exit_of_main(
+                        folder, job, self.subject(0), patch.object(run_tests, seam, side_effect=cleanup),
+                        patch.object(run_tests, "_run_assurance_campaign", return_value=0), *pins, argv=argv)
+                except KeyboardInterrupt:
+                    outcome = (130, "KeyboardInterrupt escaped main()", MagicMock())
+                finally:
+                    sys.settrace(previous)
+                if delivered:
+                    self.assert_retained(folder, outcome, "still live")
+            point += 1
+        self.assertGreater(point, 10, "the trace never reached the unconfirmed cleanup")
+
+    def test_an_interrupt_after_unconfirmed_cleanup_cannot_mask_exit_2(self):
+        for platform, job, seam, assurance, pin in (
+                ("linux", run_tests.SUBREAPER, "_end_reaped_descendants", False, None),
+                # On win32, main() leaves assurance cleanup to the native job owner (job None), so
+                # only its Linux branch reaches the run's own subreaper cleanup in assurance mode.
+                ("linux assurance", run_tests.SUBREAPER, "_end_reaped_descendants", True, "linux"),
+                ("windows job", object(), "_end_job_members", False, None)):
+            for repeated in (False, True):
+                with self.subTest(platform=platform, repeated=repeated):
+                    self.assert_every_late_interrupt_exits_2(job, seam, assurance, repeated, pin)
+
+    def tree(self, folder):
+        """Every entry under `folder` by relative path: a file's bytes, or None for a directory."""
+        return {path.relative_to(folder).as_posix(): None if path.is_dir() else path.read_bytes()
+                for path in Path(folder).rglob("*")}
+
+    def publish(self, worktree, destination):
+        write_file(worktree / "owner/result.json", '{"complete": true}\n')
+        run_tests._publish_assurance(worktree, worktree / "results", worktree / "owner", destination,
+                                     {"complete": True, "cleanup_confirmed": True, "subject_status": 0})
+
+    def test_unconfirmed_assurance_cleanup_adds_no_entry_to_what_publication_wrote(self):
+        published = {}
+
+        def campaign(worktree, _extra_args, destination):
+            self.publish(worktree, destination)
+            published.update(self.tree(destination))
+            return 0
+
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder) / "published"
+            outcome = self.exit_of_main(
+                folder, None, self.unconfirmed(),
+                patch.object(run_tests, "_run_assurance_campaign", side_effect=campaign),
+                argv=("--assurance-output", str(output)))
+
+            self.assert_retained(folder, outcome, "still live")
+            self.assertEqual({"identities.json", "owner", "owner/result.json"}, set(published))
+            self.assertEqual(published, self.tree(output))
+
+    def test_unconfirmed_assurance_cleanup_touches_no_output_it_did_not_publish(self):
+        def competing(worktree, _extra_args, destination):
+            write_file(Path(destination) / "foreign.txt", "belongs to a competing run")
+            self.publish(worktree, destination)  # refuses an output that already exists
+
+        def replaced(worktree, _extra_args, destination):
+            self.publish(worktree, destination)
+            Path(destination).rename(Path(destination).with_name("ours"))
+            write_file(Path(destination) / "foreign.txt", "belongs to a competing run")
+            return 0
+
+        for case, campaign in (("competing output", competing),
+                               ("output replaced after publication", replaced)):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as folder:
+                before = {}
+
+                def snapshot(*args):
+                    try:
+                        return campaign(*args)
+                    finally:
+                        before.update(self.tree(folder))
+
+                outcome = self.exit_of_main(
+                    folder, None, self.unconfirmed(),
+                    patch.object(run_tests, "_run_assurance_campaign", side_effect=snapshot),
+                    argv=("--assurance-output", str(Path(folder) / "published")))
+
+                self.assert_retained(folder, outcome, "still live")
+                self.assertEqual(before, self.tree(folder))
+                self.assertEqual(b"belongs to a competing run",
+                                 (Path(folder) / "published/foreign.txt").read_bytes())
+
+
 SELF_PID = 100
 SIGKILL = getattr(signal, "SIGKILL", 9)
 
 
-def write_stat(proc, pid, command, state, parent):
-    write_file(proc / str(pid) / "stat", f"{pid} ({command}) {state} {parent} {pid} {pid} 0 -1 4194304\n")
+def write_stat(proc, pid, command, state, parent, start=None):
+    """A stat line as /proc writes it, started at `start` clock ticks after boot (default 7000 + pid)."""
+    start = 7000 + pid if start is None else start
+    write_file(proc / str(pid) / "stat", f"{pid} ({command}) {state} {parent} {pid} {pid} 0 -1 4194304 "
+                                         f"0 0 0 0 0 0 0 0 20 0 1 0 {start} 0\n")
 
 
 def fake_process_table(proc):
@@ -730,9 +964,10 @@ class LinuxDescendantCleanupTests(unittest.TestCase):
                 table = run_tests._process_table()
                 live = run_tests._live_descendants(SELF_PID)
 
-        self.assertEqual({SELF_PID: (1, "S"), 101: (SELF_PID, "S"), 102: (101, "R"),
-                          103: (SELF_PID, "Z"), 104: (SELF_PID, "S"), 200: (1, "S")}, table)
-        self.assertCountEqual([101, 102, 104], live)
+        self.assertEqual({SELF_PID: (1, "S", 7100), 101: (SELF_PID, "S", 7101), 102: (101, "R", 7102),
+                          103: (SELF_PID, "Z", 7103), 104: (SELF_PID, "S", 7104), 200: (1, "S", 7200)},
+                         table)
+        self.assertEqual({101: 7101, 102: 7102, 104: 7104}, live)
 
     def test_reaped_descendants_are_killed_once_and_the_wait_ends_when_none_is_live(self):
         kills = []
@@ -756,7 +991,7 @@ class LinuxDescendantCleanupTests(unittest.TestCase):
                 remaining = run_tests._live_descendants(SELF_PID)
 
         self.assertCountEqual([(101, SIGKILL), (102, SIGKILL), (104, SIGKILL)], kills)
-        self.assertEqual([], remaining)
+        self.assertEqual({}, remaining)
         self.assertLess(now[0], run_tests.DESCENDANT_EXIT_SECONDS)
 
     def test_the_kill_loop_gives_up_at_the_deadline_when_a_descendant_never_exits(self):
@@ -783,11 +1018,175 @@ class LinuxDescendantCleanupTests(unittest.TestCase):
             run_tests.end_descendants(None)
             self.assertFalse(reaped.called or members.called)
             run_tests.end_descendants(run_tests.SUBREAPER)
-            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS)
+            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS, ())
             members.assert_not_called()
             run_tests.end_descendants(42, seconds=3)
             members.assert_called_once_with(42, 3)
-            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS)
+            reaped.assert_called_once_with(run_tests.DESCENDANT_EXIT_SECONDS, ())
+            run_tests.end_descendants(run_tests.SUBREAPER, seconds=2, pinned=[7])
+            reaped.assert_called_with(2, [7])
+
+    def test_the_first_listing_pins_each_live_descendant_it_can_and_skips_one_gone_since(self):
+        def pidfd_open(pid):
+            if pid == 104:
+                raise ProcessLookupError(pid)  # it exited and was collected after the listing
+            return 1000 + pid
+
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            with patch.object(run_tests, "PROC_ROOT", proc), \
+                 patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
+                 patch.object(run_tests.os, "pidfd_open", side_effect=pidfd_open, create=True) as opened:
+                self.assertEqual([], run_tests.pin_descendants(None))
+                self.assertEqual([], run_tests.pin_descendants(42))
+                opened.assert_not_called()
+                pinned = run_tests.pin_descendants(run_tests.SUBREAPER)
+
+        self.assertCountEqual([1101, 1102], pinned)
+
+    def test_a_first_listing_that_cannot_list_or_read_proc_pins_nothing(self):
+        with tempfile.TemporaryDirectory() as folder:
+            unreadable = Path(folder)
+            write_file(unreadable / "101" / "stat", "101 no command name\n")
+            for proc in (Path(folder) / "missing", unreadable):
+                with self.subTest(proc=proc.name), patch.object(run_tests, "PROC_ROOT", proc), \
+                        patch.object(run_tests.os, "pidfd_open", create=True) as opened:
+                    self.assertEqual([], run_tests.pin_descendants(run_tests.SUBREAPER))
+                    opened.assert_not_called()
+
+    def _pinned_kills(self, proc, kills):
+        """A pidfd kill of fake handle 1000 + pid: it leaves that pid a zombie, or finds it gone."""
+        def send(handle, sig):
+            kills.append((handle, sig))
+            pid = handle - 1000
+            if pid == 104:
+                raise ProcessLookupError(pid)  # it exited after its pin
+            write_stat(proc, pid, "killed", "Z", 101 if pid == 102 else SELF_PID)
+        return patch.object(run_tests.signal, "pidfd_send_signal", side_effect=send, create=True)
+
+    def test_pinned_descendants_die_first_so_the_first_listing_confirms_and_each_pin_is_closed(self):
+        kills, closed = [], []
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            shutil.rmtree(proc / "104")
+            now, monotonic, sleep = self._clock(step=0.05)
+            with patch.object(run_tests, "PROC_ROOT", proc), monotonic, sleep, \
+                 patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
+                 patch.object(run_tests.os, "kill", side_effect=AssertionError("listed again")), \
+                 patch.object(run_tests.os, "close", side_effect=closed.append), \
+                 patch.object(run_tests, "_process_table", wraps=run_tests._process_table) as listed, \
+                 patch.object(run_tests.signal, "SIGKILL", SIGKILL, create=True), \
+                 self._pinned_kills(proc, kills):
+                run_tests.end_descendants(run_tests.SUBREAPER, seconds=1, pinned=[1101, 1102, 1104])
+
+        self.assertEqual([(1101, SIGKILL), (1102, SIGKILL), (1104, SIGKILL)], kills)
+        self.assertEqual(1, listed.call_count)
+        self.assertEqual(0.0, now[0])
+        self.assertEqual([1101, 1102, 1104], closed)
+
+    def test_an_expired_cleanup_kills_no_pin_closes_each_and_still_raises(self):
+        kills, closed = [], []
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            _now, monotonic, sleep = self._clock(step=0.05)
+            with patch.object(run_tests, "PROC_ROOT", proc), monotonic, sleep, \
+                 patch.object(run_tests.os, "close", side_effect=closed.append), \
+                 self._pinned_kills(proc, kills):
+                with self.assertRaisesRegex(TimeoutError, "cleanup could not be confirmed"):
+                    run_tests.end_descendants(run_tests.SUBREAPER, seconds=0, pinned=[1101, 1102])
+
+        self.assertEqual([], kills)
+        self.assertEqual([1101, 1102], closed)
+
+    def test_pins_killed_but_never_observed_dead_before_the_deadline_still_raise(self):
+        # Every pinned descendant really dies, but the kills use up the budget: without a listing
+        # after them that shows none live, cleanup is unconfirmed.
+        kills, closed = self._slow_pinned_kills([1101, 1104])
+        self.assertEqual([(1101, SIGKILL), (1104, SIGKILL)], kills)
+        self.assertEqual([1101, 1104], closed)
+
+    def test_no_pinned_kill_is_sent_once_the_deadline_has_passed(self):
+        # Kills at 0.0 and 0.6 of a 1-second budget; at 1.2 the third pin is closed unsignalled.
+        kills, closed = self._slow_pinned_kills([1101, 1102, 1104])
+        self.assertEqual([(1101, SIGKILL), (1102, SIGKILL)], kills)
+        self.assertEqual([1101, 1102, 1104], closed)
+
+    def _slow_pinned_kills(self, pinned):
+        """End `pinned` within 1 second while each pidfd kill takes 0.6; it must raise unconfirmed
+        without listing. Returns the kills sent and the pins closed."""
+        kills, closed = [], []
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+            now, monotonic, sleep = self._clock(step=0.05)
+
+            def slow_kill(handle, sig):
+                kills.append((handle, sig))
+                write_stat(proc, handle - 1000, "killed", "Z", SELF_PID)
+                now[0] += 0.6  # each kill takes 0.6 of the 1-second budget
+
+            with patch.object(run_tests, "PROC_ROOT", proc), monotonic, sleep, \
+                 patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
+                 patch.object(run_tests.os, "close", side_effect=closed.append), \
+                 patch.object(run_tests.signal, "pidfd_send_signal", side_effect=slow_kill, create=True), \
+                 patch.object(run_tests.signal, "SIGKILL", SIGKILL, create=True), \
+                 patch.object(run_tests, "_process_table", wraps=run_tests._process_table) as listed:
+                with self.assertRaisesRegex(TimeoutError, "cleanup could not be confirmed"):
+                    run_tests.end_descendants(run_tests.SUBREAPER, seconds=1, pinned=pinned)
+
+        self.assertEqual(0, listed.call_count)
+        return kills, closed
+
+    def test_a_pin_whose_pid_no_longer_names_the_listed_process_is_closed_and_never_killed(self):
+        # Before their pidfds open, 104's live parent collects it and its pid goes to a foreign
+        # process, and 102 is collected outright: only 101 is still what the listing saw.
+        kills, closed = [], []
+        with tempfile.TemporaryDirectory() as folder:
+            proc = Path(folder)
+            fake_process_table(proc)
+
+            def pidfd_open(pid):
+                if pid == 104:
+                    write_stat(proc, 104, "foreign", "S", 1, start=9999)
+                if pid == 102:
+                    (proc / "102" / "stat").unlink()
+                return 1000 + pid
+
+            _now, monotonic, sleep = self._clock(step=0.05)
+            with patch.object(run_tests, "PROC_ROOT", proc), monotonic, sleep, \
+                 patch.object(run_tests.os, "getpid", return_value=SELF_PID), \
+                 patch.object(run_tests.os, "pidfd_open", side_effect=pidfd_open, create=True), \
+                 patch.object(run_tests.os, "close", side_effect=closed.append), \
+                 patch.object(run_tests.os, "kill", side_effect=AssertionError("listed again")), \
+                 patch.object(run_tests.signal, "SIGKILL", SIGKILL, create=True), \
+                 self._pinned_kills(proc, kills):
+                pinned = run_tests.pin_descendants(run_tests.SUBREAPER)
+                run_tests.end_descendants(run_tests.SUBREAPER, seconds=1, pinned=pinned)
+
+        self.assertEqual([1101], pinned)
+        self.assertEqual([(1101, SIGKILL)], kills)
+        self.assertCountEqual([1101, 1102, 1104], closed)
+
+    def test_an_interrupted_pinning_closes_each_pidfd_it_opened_and_reraises(self):
+        # 101 is pinned, then the interrupt lands while 102's pidfd is open but not yet checked.
+        closed = []
+
+        def stat_fields(pid):
+            if pid == "102":
+                raise KeyboardInterrupt
+            return SELF_PID, "S", 7101
+
+        with patch.object(run_tests, "_live_descendants", return_value={101: 7101, 102: 7102}), \
+             patch.object(run_tests.os, "pidfd_open", side_effect=lambda pid: 1000 + pid, create=True), \
+             patch.object(run_tests.os, "close", side_effect=closed.append), \
+             patch.object(run_tests, "_stat_fields", side_effect=stat_fields):
+            with self.assertRaises(KeyboardInterrupt):
+                run_tests.pin_descendants(run_tests.SUBREAPER)
+
+        self.assertCountEqual([1101, 1102], closed)
 
 
 class StaleWorktreeAgeOverrideTests(unittest.TestCase):

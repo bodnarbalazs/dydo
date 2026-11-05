@@ -10,7 +10,6 @@ import platform
 import signal
 import subprocess
 import sys
-import threading
 import time
 import uuid
 
@@ -369,7 +368,7 @@ def finish(kernel, job, pi, readers, held, deadline):
 def wait_campaign(kernel, job, pi, state, stack, seconds):
     deadline = time.monotonic() + seconds
     while True:
-        if state["interrupted"].is_set():
+        if state["interrupted"]["requested"]:
             raise KeyboardInterrupt
         for reader in state["readers"]:
             poll_pipe(kernel, reader)
@@ -456,10 +455,12 @@ def preflight():
 
 
 def run(value, environment=None, execution_seconds_maximum=EXECUTION_SECONDS_MAXIMUM):
-    interrupted = threading.Event()
+    interrupted = {"requested": False}
 
     def remember_interrupt(_signum, _frame):
-        interrupted.set()
+        # Python dispatches handlers on this thread, including during another handler.
+        # Event.set() can deadlock on its own non-reentrant Condition lock.
+        interrupted["requested"] = True
 
     # Keep signal handlers non-throwing through native handle release and receipt writing.
     with ExitStack() as stack:
@@ -494,7 +495,7 @@ def _run(value, environment, execution_seconds_maximum, interrupted):
         result["error_message"] = str(error)
         if output is not None:
             result["failure_category"] = "native_failure"
-    if interrupted.is_set():
+    if interrupted["requested"]:
         result.update(complete=False, failure_category="KeyboardInterrupt")
     result["elapsed_seconds"] = time.monotonic() - started
     if output is not None:

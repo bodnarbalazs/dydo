@@ -3,8 +3,13 @@ namespace DynaDocs.Services.Statechart;
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 
-internal sealed class StatechartFlow(StatechartHome home, StatechartAssets assets, string rid)
+// The run replaces this process with the checking runtime on POSIX, so tests that drive the flow in-process substitute it.
+internal sealed class StatechartFlow(StatechartHome home, StatechartAssets assets, string rid,
+    Func<StatechartRequest, StatechartDependencies, string, StatechartHome, TextWriter, CancellationToken, StatechartContinuation?, Task<int>>? run = null)
 {
+    private readonly Func<StatechartRequest, StatechartDependencies, string, StatechartHome, TextWriter, CancellationToken,
+        StatechartContinuation?, Task<int>> _run = run ?? StatechartRunner.RunAsync;
+
     public async Task<int> StartAsync(string[] arguments, string caller, TextWriter output, CancellationToken token)
     {
         RequirePlatform();
@@ -12,7 +17,7 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
         var request = StatechartRequest.Capture(arguments, caller, assets, rid);
         var payload = await assets.ExtractAsync(home.Assets, token);
         var managed = new StatechartManaged(home, assets, rid);
-        var dependencies = await StatechartResolver.ResolveAsync(request, managed, home, token);
+        var dependencies = await StatechartResolver.ResolveAsync(request, managed, home, assets.CheckerDigest, token);
         if (StatechartManaged.Missing(dependencies).Length != 0)
         {
             var store = new StatechartRequests(home, assets, rid);
@@ -21,7 +26,7 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
             return 3;
         }
         await ReadyAsync(managed, dependencies, payload, token);
-        return await StatechartRunner.RunAsync(request, dependencies, payload, home, output, token);
+        return await _run(request, dependencies, payload, home, output, token, null);
     }
 
     public async Task<int> ResumeAsync(string path, TextWriter output, CancellationToken token)
@@ -37,13 +42,12 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
             StatechartRequest.Validate(request, assets, rid);
             var payload = await assets.ExtractAsync(home.Assets, token);
             var managed = new StatechartManaged(home, assets, rid);
-            var dependencies = await StatechartResolver.ResolveAsync(request, managed, home, token);
+            var dependencies = await StatechartResolver.ResolveAsync(request, managed, home, assets.CheckerDigest, token);
             if (StatechartManaged.Missing(dependencies).Length != 0)
                 dependencies = await managed.InstallAsync(dependencies, payload, token);
             else await ReadyAsync(managed, dependencies, payload, token);
             StatechartRequest.Validate(request, assets, rid);
-            var status = await StatechartRunner.RunAsync(request, dependencies, payload, home, output, token,
-                new StatechartContinuation(path, executionLock));
+            var status = await _run(request, dependencies, payload, home, output, token, new StatechartContinuation(path, executionLock));
             if (status is 0 or 1) store.Complete(path, request, status);
             return status;
         }
@@ -58,7 +62,7 @@ internal sealed class StatechartFlow(StatechartHome home, StatechartAssets asset
     private async Task ReadyAsync(StatechartManaged managed, StatechartDependencies dependencies, string payload, CancellationToken token)
     {
         if (!await managed.RestampAsync(dependencies, payload, token))
-            await StatechartReady.VerifyAsync(dependencies, payload, home, full: false, token);
+            await StatechartReady.VerifyAsync(dependencies, payload, home, assets.CheckerDigest, full: false, token);
     }
 
     private JsonObject Plan(StatechartRequest request, string path, StatechartDependencies dependencies, StatechartManaged managed)

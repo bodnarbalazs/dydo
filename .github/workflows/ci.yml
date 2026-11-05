@@ -6,6 +6,339 @@ on:
   pull_request:
 
 jobs:
+  python-coverage:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux
+            python: .static-gates/python/bin/python
+          - os: windows-latest
+            platform: windows
+            python: .static-gates/python/Scripts/python.exe
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
+        with:
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
+
+      - name: Prepare pinned Python assurance environment
+        run: python -m venv .static-gates/python
+
+      - name: Install locked Python dependencies
+        run: ${{ matrix.python }} -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Install locked coverage dependencies
+        run: npm ci --prefix DynaDocs.Tests/coverage
+
+      - name: Prepare native evidence directories
+        shell: bash
+        run: mkdir -p DynaDocs.Tests/coverage/results/native-jobs DynaDocs.Tests/coverage/results/native-lifetime
+
+      - name: Preflight candidate, pins, dependencies and nonzero discovery
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_REF_SHA: ${{ github.sha }}
+        run: |
+          "${{ matrix.python }}" - <<'PY'
+          import json, os, platform, subprocess, sys, unittest
+          from pathlib import Path
+          tools = Path('DynaDocs.Tests/coverage')
+          sys.path.insert(0, str(tools.resolve()))
+          from gate_versions import javascript_versions, python_versions
+          candidate = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          tree = subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip()
+          assert not subprocess.check_output(['git', 'status', '--porcelain']), 'Dirty PR candidate'
+          versions = python_versions(tools)
+          assert platform.python_version() == versions['declared_runtime']
+          assert subprocess.check_output(['node', '--version'], text=True).strip() == 'v26.13.0'
+          javascript_versions(tools)
+          loader = unittest.TestLoader()
+          suite = loader.discover(str(tools / 'tests'), pattern='test_*.py')
+          assert not loader.errors, loader.errors
+          def cases(suite):
+              for item in suite:
+                  if isinstance(item, unittest.TestSuite):
+                      yield from cases(item)
+                  else:
+                      yield item
+          ids = [case.id() for case in cases(suite)]
+          counts = {name: sum(value.startswith(name + '.') for value in ids) for name in
+                    ('test_windows_job', 'test_windows_cancellation', 'test_control_dydo_lifetime')}
+          assert ids and all(counts.values()), counts
+          receipt = {'candidate': candidate, 'checkout_tree': tree, 'pr_head_sha': os.environ['PR_HEAD_SHA'],
+                     'merge_ref_sha': os.environ['MERGE_REF_SHA'], 'python': versions,
+                     'tests': len(ids), 'native_tests': counts}
+          (tools / 'results/preflight.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
+          print(json.dumps(receipt))
+          PY
+
+      - name: Full Python suite and platform coverage gate
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          DYDO_NATIVE_TEST_EVIDENCE: DynaDocs.Tests/coverage/results/native-jobs
+          DYDO_LIFETIME_EVIDENCE: DynaDocs.Tests/coverage/results/native-lifetime
+          DYDO_CANCELLATION_EVIDENCE: DynaDocs.Tests/coverage/results/windows-cancellation
+        run: ${{ matrix.python }} DynaDocs.Tests/coverage/gap_check.py gate coverage --stack python
+
+      - name: Canonical Python static gate
+        if: ${{ !cancelled() && matrix.platform == 'linux' }}
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: ${{ matrix.python }} DynaDocs.Tests/coverage/gap_check.py gate static --stack python
+
+      - name: Upload platform coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage-${{ matrix.platform }}
+          path: DynaDocs.Tests/coverage/results
+          if-no-files-found: error
+
+  python-coverage-union:
+    needs: python-coverage
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - name: Install locked union analysis dependencies
+        run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: python-coverage-*
+          path: DynaDocs.Tests/coverage/results/coverage-platforms
+
+      - name: Require both native jobs to pass
+        if: always()
+        shell: bash
+        env:
+          PLATFORM_RESULT: ${{ needs.python-coverage.result }}
+        run: |
+          mkdir -p DynaDocs.Tests/coverage/results/coverage-platforms
+          echo "$PLATFORM_RESULT" > DynaDocs.Tests/coverage/results/coverage-platforms/native-job-result.txt
+          test "$PLATFORM_RESULT" = success
+
+      - name: Verify complete same-candidate platform union
+        run: >-
+          python DynaDocs.Tests/coverage/python_platform.py
+          --linux DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-linux/adapters/python-coverage.json
+          --windows DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-windows/adapters/python-coverage.json
+          --output DynaDocs.Tests/coverage/results/coverage-platforms/union.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: python-coverage-union
+          path: DynaDocs.Tests/coverage/results/coverage-platforms
+          if-no-files-found: error
+
+  # Linux runs the full suite over every point outside dotnet-platforms.json; Windows runs only the
+  # selected tests over the Windows-native members it names. Both measure the PR head, and the union
+  # requires both reports.
+  dotnet-coverage:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux
+            python: .static-gates/python/bin/python
+          - os: windows-latest
+            platform: windows
+            python: .static-gates/python/Scripts/python.exe
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - name: Keep candidate bytes identical on both platforms
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
+        with:
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
+
+      - name: Prepare pinned Python assurance environment
+        run: python -m venv .static-gates/python
+
+      - name: Install locked Python dependencies
+        run: ${{ matrix.python }} -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Install locked coverage dependencies
+        run: npm ci --prefix DynaDocs.Tests/coverage
+
+      - name: Restore locked .NET tools and packages
+        run: |
+          dotnet tool restore
+          dotnet restore --locked-mode
+          dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
+
+      - name: Preflight candidate, selection pins and nonzero test discovery
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_REF_SHA: ${{ github.sha }}
+          DOTNET_PLATFORM: ${{ matrix.platform }}
+        run: |
+          mkdir -p DynaDocs.Tests/coverage/results
+          "${{ matrix.python }}" - <<'PY'
+          import json, os, platform, subprocess, sys
+          from pathlib import Path
+          tools = Path('DynaDocs.Tests/coverage')
+          sys.path.insert(0, str(tools.resolve()))
+          from dotnet_platform import discover_windows_tests, load_selection, native_platform
+          from gate_versions import python_versions
+          candidate = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert not subprocess.check_output(['git', 'status', '--porcelain']), 'Dirty candidate'
+          assert candidate == (os.environ['PR_HEAD_SHA'] or os.environ['MERGE_REF_SHA']), candidate
+          versions = python_versions(tools)
+          assert platform.python_version() == versions['declared_runtime']
+          assert subprocess.check_output(['dotnet', '--version'], text=True).strip() == '10.0.303'
+          native = native_platform()
+          assert native == os.environ['DOTNET_PLATFORM'], native
+          selection = load_selection(Path('.'), native)
+          tests = discover_windows_tests(Path('.'), selection) if native == 'windows' else 'full suite'
+          assert tests, 'No Windows test selected'
+          receipt = {'candidate': candidate, 'pr_head_sha': os.environ['PR_HEAD_SHA'],
+                     'merge_ref_sha': os.environ['MERGE_REF_SHA'], 'python': versions, 'platform': native,
+                     'native': sorted(selection['native']), 'tests': tests}
+          (tools / 'results/preflight.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - name: Platform .NET coverage gate
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: ${{ matrix.python }} DynaDocs.Tests/coverage/gap_check.py gate coverage --stack dotnet
+
+      - name: Upload platform .NET coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-coverage-${{ matrix.platform }}
+          path: DynaDocs.Tests/coverage/results
+          if-no-files-found: error
+
+  dotnet-coverage-union:
+    needs: dotnet-coverage
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
+        with:
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
+
+      - name: Install locked union analysis dependencies
+        run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Restore locked .NET tools and packages
+        run: |
+          dotnet tool restore
+          dotnet restore --locked-mode
+          dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dotnet-coverage-linux
+          path: DynaDocs.Tests/coverage/results/coverage-platforms/linux
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dotnet-coverage-windows
+          path: DynaDocs.Tests/coverage/results/coverage-platforms/windows
+
+      - name: Require both native jobs to pass
+        if: always()
+        shell: bash
+        env:
+          PLATFORM_RESULT: ${{ needs.dotnet-coverage.result }}
+        run: |
+          mkdir -p DynaDocs.Tests/coverage/results/coverage-platforms
+          echo "$PLATFORM_RESULT" > DynaDocs.Tests/coverage/results/coverage-platforms/native-job-result.txt
+          test "$PLATFORM_RESULT" = success
+
+      # Rebuilds this candidate's complete zero-hit denominator and checks each platform's portion against it.
+      - name: Verify the complete same-candidate platform partition
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: >-
+          python DynaDocs.Tests/coverage/dotnet_platform.py
+          --linux DynaDocs.Tests/coverage/results/coverage-platforms/linux/adapters/dotnet-coverage.json
+          --windows DynaDocs.Tests/coverage/results/coverage-platforms/windows/adapters/dotnet-coverage.json
+          --output DynaDocs.Tests/coverage/results/coverage-platforms
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dotnet-coverage-union
+          path: DynaDocs.Tests/coverage/results/coverage-platforms
+          if-no-files-found: error
+
   assurance-cancellation:
     strategy:
       fail-fast: false

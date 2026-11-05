@@ -599,7 +599,7 @@ public static class InitCommand
     // The Claude Code hook alone carries the host marker: it is the guard's only proof that the
     // host can answer an ask (the mode-set rerun). The Codex hook stays unmarked, so it is denied.
     private const string GuardHookCommand = "dydo guard";
-    private const string ClaudeGuardHookCommand = GuardHookCommand + " --host " + GuardCommand.ClaudeHost;
+    private const string ClaudeGuardHookCommand = ClaudeGuardWiring.HookCommand;
 
     // dydo installs no Stop hook, and `dydo guard --stop` is not a guard option, so a Stop entry
     // running it would fail every turn end.
@@ -728,7 +728,7 @@ public static class InitCommand
         + "    pattern = [[\"dydo\", \"dydo.exe\"], \"merge\"],\n"
         + "    decision = \"allow\",\n"
         + "    justification = \"dydo merge merges a reviewed PR into a feature/* branch only; master, main and the default branch are refused in code\",\n"
-        + "    match = [\"dydo merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567\", \"dydo.exe merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567\"],\n"
+        + "    match = [\"dydo merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567 --match-base-commit fedcba9876543210fedcba9876543210fedcba98\", \"dydo.exe merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567 --match-base-commit fedcba9876543210fedcba9876543210fedcba98\"],\n"
         + "    not_match = [\"dydo init codex\"],\n"
         + ")\n";
 

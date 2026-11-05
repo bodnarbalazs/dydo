@@ -80,9 +80,11 @@ the blob (`git cat-file -p :<path>`), not the file on disk.
 
 ## Linear boundary mistakes
 
-dydo has no Linear poller or mirror; its only Linear client is the read-only `dydo map`, whose
-disposable saved maps can be deleted from the OS user's local application data `dydo/map` folder
-([DR 052](../project/decisions/052-dydo-map-read-only-linear-view.md)). Use the official Linear MCP,
+dydo has no Linear poller or mirror; its only Linear readers are the read-only `dydo map`
+([DR 052](../project/decisions/052-dydo-map-read-only-linear-view.md)) and `dydo survey`
+([DR 063](../project/decisions/063-dydo-survey-read-only-lane-digest.md)). Only `dydo map` keeps
+anything: disposable saved maps, which can be deleted from the OS user's local application data
+`dydo/map` folder. Use the official Linear MCP,
 UI, API, or integrations for live work, including FutureFeatures. Git holds knowledge, proof and
 [temporary feature specs](../reference/feature-spec-convention.md).
 

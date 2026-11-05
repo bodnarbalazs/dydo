@@ -10,9 +10,14 @@ PACKAGE_ROOTS = {'.': '../..', 'DynaDocs.Tests/coverage': '.', 'DynaDocs.Tests/H
                  'npm': '../../npm'}
 EXTENSIONS = {'.js', '.mjs', '.cjs'}
 ISSUES = ('files', 'exports', 'nsExports', 'duplicates', 'unresolved')
+# The statechart CLI loads a corpus view by path (--view FILE), as the corpus harness does for each
+# corpus folder that has one, so a view is a root of the graph as a host entry is.
+CORPUS_VIEWS = {f'skills/engineering/statechart/scripts/test/corpus/{name}/view.mjs' for name in (
+    'CounterView', 'Login', 'LoginGuarded', 'LoginParallel', 'MediaPlayer', 'MediaPlayerFixed',
+    'MediaPlayerProps', 'TwoPhase', 'TwoPhaseFixed')}
 HOST_ENTRIES = {'js_metrics.cjs', 'js_runtime.cjs', 'js_loader.mjs', 'test_discovery.cjs',
                 'knip_reporter.mjs', 'install.js', 'bin/dydo', 'bin/dydo.cjs',
-                'run-host-canaries.mjs', 'openai-sse-provider.mjs', 'setup-skills.mjs'}
+                'run-host-canaries.mjs', 'openai-sse-provider.mjs', 'setup-skills.mjs', *CORPUS_VIEWS}
 # Knip always adds its working directory as a workspace, so the viewer's graph declares this
 # package too, with nothing in it; index.html loads the viewer's one host entry.
 LANGUAGES = {'javascript': {'packages': PACKAGE_ROOTS, 'extensions': EXTENSIONS, 'entries': HOST_ENTRIES},
@@ -20,25 +25,34 @@ LANGUAGES = {'javascript': {'packages': PACKAGE_ROOTS, 'extensions': EXTENSIONS,
                             'extensions': {'.ts', '.tsx'}, 'entries': {'src/main.tsx'}}}
 
 
+def _package_of(root, absolute, packages):
+    owners = [folder for folder in packages if absolute.is_relative_to(root / folder)]
+    return max(owners, key=len) if owners else None
+
+
 def source_owner(root, path, packages=PACKAGE_ROOTS):
     absolute = (root / path).resolve()
     if absolute.relative_to(root).as_posix() != path:
         raise ValueError('Noncanonical native source path')
-    owners = [folder for folder in packages if absolute.is_relative_to(root / folder)]
-    owner = max(owners, key=len)
+    owner = _package_of(root, absolute, packages)
+    if owner is None:
+        raise ValueError('No declared package owns this maintained source')
     return owner, absolute.relative_to(root / owner).as_posix()
 
 
-def workspace_model(root, paths, language='javascript'):
+def workspace_model(root, paths, language='javascript', excluded=()):
+    """Every path is judged in the package that owns it. An excluded path is a recorded exclusion that
+    a package's plugins may still load: judged when a declared package owns it, else listed unjudged."""
     root = Path(root).resolve()
     spec = LANGUAGES[language]
     packages = spec['packages']
     config = {'workspaces': {key: {'entry': [], 'project': []} for key in packages.values()}}
+    unjudged = sorted(path for path in excluded if _package_of(root, (root / path).resolve(), packages) is None)
     sources, errors, seen = [], [], set()
     for folder in packages:
         if not (root / folder / 'package.json').is_file():
             errors.append({'path': folder, 'message': 'Missing actual package manifest'})
-    for path in sorted(paths):
+    for path in sorted([*paths, *(path for path in excluded if path not in unjudged)]):
         try:
             if path in seen:
                 raise ValueError('Duplicate maintained source identity')
@@ -54,7 +68,8 @@ def workspace_model(root, paths, language='javascript'):
                 raise ValueError('Unsupported maintained JavaScript extension; native imports are not measured')
         except ValueError as error:
             errors.append({'path': path, 'message': str(error)})
-    return {'config': config, 'packages': sorted(packages), 'sources': sources, 'errors': errors}
+    return {'config': config, 'packages': sorted(packages), 'sources': sources, 'errors': errors,
+            'unjudged': {'count': len(unjudged), 'paths': unjudged}}
 
 
 def native_measurement(root, model, row):
@@ -108,15 +123,16 @@ def normalize_report(root, model, rows):
 
 def _judged_paths(runner, language):
     paths = [row['path'] for row in runner.sources(language)]
-    if language == 'typescript':
-        # Knip's plugins load the viewer's whole package, its specs and configs included, and an
-        # unused verdict needs that whole graph; so those files are judged here too.
-        paths += [row['path'] for row in runner.inventory['excluded'] if row['reason'] == TYPESCRIPT_OUTSIDE_ROOT]
-    return paths
+    if language != 'typescript':
+        return paths, []
+    # Knip's plugins load the viewer's whole package, its specs and configs included, and an unused
+    # verdict needs that whole graph; so excluded TypeScript a declared package owns is judged too.
+    return paths, [row['path'] for row in runner.inventory['excluded'] if row['reason'] == TYPESCRIPT_OUTSIDE_ROOT]
 
 
 def collect_knip(runner, language='javascript'):
-    model = workspace_model(runner.root, _judged_paths(runner, language), language)
+    paths, excluded = _judged_paths(runner, language)
+    model = workspace_model(runner.root, paths, language, excluded)
     config = runner.output / 'knip.json'
     config.write_text(json.dumps(model['config'], indent=2), encoding='utf-8')
     row = runner.log.run('knip', ['node', runner.coverage / 'node_modules/knip/bin/knip.js',

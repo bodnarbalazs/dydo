@@ -27,6 +27,7 @@ CAPS = ("test", "static", "coverage", "mutation")
 EXITS = {"passed": 0, "failed": 1, "unavailable": 2, "invalid": 2, "interrupted": 130}
 EXECUTION_SECONDS_MAXIMUM = 1800
 CLEANUP_SECONDS = 30
+REAP_SECONDS = 1
 ROW_DEADLINE_ENV = "DYDO_ROW_DEADLINE"
 HELP = """Usage: gap_check.py [--force-run] [operation] [options] [-- native arguments]
 
@@ -278,6 +279,20 @@ def artifact_snapshot(root, value):
     return snapshot
 
 
+def kill_child(child):
+    if sys.platform == "win32":
+        child.kill()
+    else:
+        try:
+            os.killpg(child.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    try:
+        child.wait(timeout=REAP_SECONDS)
+    except subprocess.TimeoutExpired:
+        pass  # Stuck in the kernel: the reap stays unconfirmed and returncode stays None.
+
+
 def stop_child(child, deadline):
     try:
         if sys.platform == "win32":
@@ -286,28 +301,26 @@ def stop_child(child, deadline):
             os.killpg(child.pid, signal.SIGINT)
         child.wait(timeout=max(0, deadline - time.monotonic()))
     except (OSError, subprocess.TimeoutExpired):
-        if sys.platform == "win32":
-            child.kill()
-        else:
-            try:
-                os.killpg(child.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-        child.wait()
+        kill_child(child)
+
+
+def stopped(reason, child):
+    return reason if child.returncode is not None else f"{reason}; the killed adapter was not reaped within {REAP_SECONDS} s"
 
 
 def wait_for_child(child, capability, deadline):
     execution_deadline = deadline if capability != "test" else deadline - CLEANUP_SECONDS
-    while child.poll() is None:
-        remaining = execution_deadline - time.monotonic()
-        if remaining <= 0:
-            stop_child(child, deadline)
-            return False
+    while child.poll() is None and time.monotonic() < execution_deadline:
         try:
-            child.wait(timeout=min(0.2, remaining))
+            child.wait(timeout=min(0.2, max(0, execution_deadline - time.monotonic())))
         except subprocess.TimeoutExpired:
             pass
-    return True
+    # The clock is read after the exit is observed, so an exit that races the deadline is deadline-exceeded.
+    if time.monotonic() < execution_deadline:
+        return True
+    if child.returncode is None:
+        stop_child(child, deadline)
+    return False
 
 
 def artifact_error(root, capability, artifacts, before):
@@ -346,7 +359,7 @@ def run_row(stack, capability, root, since, forwarded, deadline):
         if not wait_for_child(child, capability, deadline):
             return result(stack, capability, "interrupted", argv=argv, environment=environment,
                           childExit=child.returncode, artifacts=artifacts,
-                          reason="row deadline exceeded after adapter cleanup")
+                          reason=stopped("row deadline exceeded after adapter cleanup", child))
         error = artifact_error(root, capability, artifacts, before)
         if error:
             return result(stack, capability, "invalid", argv=argv, environment=environment,
@@ -356,7 +369,7 @@ def run_row(stack, capability, root, since, forwarded, deadline):
         if child is None:
             return result(stack, capability, "interrupted", argv=argv, environment=environment, artifacts=artifacts, reason="interrupted before adapter launch")
         stop_child(child, time.monotonic() + CLEANUP_SECONDS)
-        return result(stack, capability, "interrupted", argv=argv, environment=environment, childExit=child.returncode, artifacts=artifacts, reason="adapter interrupted after cleanup window")
+        return result(stack, capability, "interrupted", argv=argv, environment=environment, childExit=child.returncode, artifacts=artifacts, reason=stopped("adapter interrupted after cleanup window", child))
     except (OSError, ContractError) as error:
         return result(stack, capability, "invalid", argv=argv, environment=environment, artifacts=artifacts, childExit=child.returncode if child else None, reason=f"adapter or artifact error: {error}")
 
@@ -590,7 +603,9 @@ def write_result(root, run, operation, selected, rows, candidate):
 def main(argv=None):
     args = list(sys.argv[1:] if argv is None else argv)
     path = Path(__file__).with_suffix(".json")
-    root = next((parent for parent in Path(__file__).resolve().parents if (parent / ".git").exists()), path.parent.resolve())
+    # A sandbox's empty `.git` mount point names no repository: only a gitfile or a gitdir with HEAD does.
+    root = next((parent for parent in Path(__file__).resolve().parents
+                 if (parent / ".git").is_file() or (parent / ".git/HEAD").is_file()), path.parent.resolve())
     rows = []
     try:
         parsed = request(args)

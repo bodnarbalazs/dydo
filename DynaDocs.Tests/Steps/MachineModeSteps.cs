@@ -15,7 +15,9 @@ public sealed class MachineModeSteps : IntegrationTestBase
     private string _permissionMode = "default";
     private string? _agentId;
     private CommandResult _result = new(-1, "", "");
-    private readonly List<CommandResult> _tries = [];
+    private bool _directGuard;
+    private string? _initialModeBytes;
+    private string? _initialValue;
 
     private ModeState State => new(Path.Combine(TestDir, "machine"));
 
@@ -28,6 +30,22 @@ public sealed class MachineModeSteps : IntegrationTestBase
 
     [Given("a fresh machine mode")]
     public void FreshMachineMode() => Assert.False(Directory.Exists(Path.Combine(TestDir, "machine")));
+
+    [Given("the owned overnight mode starts as {string}")]
+    public async Task OwnedModeStarts(string value)
+    {
+        (await RunAsync(ModeCommand.Create(State), "set", "overnight", value)).AssertSuccess();
+        _initialModeBytes = ReadFile("machine/mode.json");
+        _initialValue = value;
+    }
+
+    [Then("the owned mode state is unchanged")]
+    public async Task OwnedModeUnchanged()
+    {
+        Assert.NotNull(_initialModeBytes);
+        Assert.Equal(_initialModeBytes, ReadFile("machine/mode.json"));
+        await Shows("overnight", _initialValue!);
+    }
 
     [When("I run dydo mode show")]
     public async Task Show() => _result = await RunAsync(ModeCommand.Create(State), "show");
@@ -67,12 +85,15 @@ public sealed class MachineModeSteps : IntegrationTestBase
             "Claude Code" => (true, "Bash", new[] { "--host", "claude" }),
             "Claude Code without the init marker" => (true, "Bash", Array.Empty<string>()),
             "Codex" => (false, "shell_command", Array.Empty<string>()),
+            "T3" => (false, "exec", Array.Empty<string>()),
+            "direct guard" => (false, "Bash", Array.Empty<string>()),
             "Codex launched from a Claude Code shell" => (true, "Bash", Array.Empty<string>()),
             "unknown" => (false, "Bash", Array.Empty<string>()),
             _ => throw new ArgumentException($"Unknown host in scenario: {host}")
         };
         Environment.SetEnvironmentVariable("CLAUDECODE", claudeCodeShell ? "1" : null);
         _permissionMode = permissionMode;
+        _directGuard = host == "direct guard";
         (await InitProjectAsync("none")).AssertSuccess();
     }
 
@@ -84,7 +105,9 @@ public sealed class MachineModeSteps : IntegrationTestBase
     }
 
     [When("the agent runs {string}")]
-    public async Task AgentRuns(string command) => _result = await GuardWithStdinAsync(Hook(command), _hookArgs);
+    public async Task AgentRuns(string command) => _result = _directGuard
+        ? await RunAsync(GuardCommand.Create(), "--command", command)
+        : await GuardWithStdinAsync(Hook(command), _hookArgs);
 
     [When(@"^the agent runs the command: (.+)$")]
     public Task AgentRunsCommand(string command) => AgentRuns(command);
@@ -97,49 +120,19 @@ public sealed class MachineModeSteps : IntegrationTestBase
         await AgentRuns(command);
     }
 
-    [When("the agent runs {string} three times")]
-    public async Task AgentRunsThreeTimes(string command)
-    {
-        for (var attempt = 1; attempt <= 3; attempt++)
-        {
-            await AgentRuns(command);
-            _tries.Add(_result);
-        }
-    }
-
     [Then("the guard blocks it and tells the chief of staff to run it again")]
     public void AssertFirstTryBlocked()
     {
-        var reason = _result.AssertPreToolUseDenied();
+        if (_directGuard)
+            _result.AssertExitCode(2);
+        var reason = _directGuard ? _result.Stderr : _result.AssertPreToolUseDenied();
         Assert.StartsWith("BLOCKED: dydo mode set changes the mode of every agent on this machine.", reason);
-        Assert.Contains("Chief of staff: run the same command again", reason);
+        Assert.Contains("chief of staff readying overnight mode or ending it; otherwise stop", reason);
+        Assert.Contains("Run the same command again", reason);
     }
 
     [Then("the guard allows it")]
     public void Allows() => _result.AssertPreToolUseAllowed();
-
-    [Then("the guard asks the user about {string}")]
-    public void Asks(string command)
-    {
-        Assert.Equal(0, _result.ExitCode);
-        using var json = JsonDocument.Parse(_result.Stdout.Trim());
-        var output = json.RootElement.GetProperty("hookSpecificOutput");
-        Assert.Equal("PreToolUse", output.GetProperty("hookEventName").GetString());
-        Assert.Equal("ask", output.GetProperty("permissionDecision").GetString());
-        Assert.Contains($"`{command}`", output.GetProperty("permissionDecisionReason").GetString());
-    }
-
-    [Then("the guard denies every try and asks the user to run {string} in their own terminal")]
-    public void DeniesEveryTryForTerminal(string command)
-    {
-        Assert.Equal(3, _tries.Count);
-        foreach (var attempt in _tries)
-        {
-            var reason = attempt.AssertPreToolUseDenied();
-            Assert.StartsWith("BLOCKED: This host cannot ask the user to approve dydo mode set", reason);
-            Assert.EndsWith($"Ask the user to run it in their own terminal: {command}", reason);
-        }
-    }
 
     private string Hook(string command)
     {

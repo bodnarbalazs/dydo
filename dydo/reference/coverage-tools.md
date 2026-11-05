@@ -5,6 +5,69 @@ type: reference
 
 # Coverage and Assurance Tools
 
+Python platform measurement is configured in `DynaDocs.Tests/coverage/python-platforms.json`.
+Its explicit neutral rule assigns all ordinary inventory targets to Linux. Its three mixed-source
+entries name Windows-native callables and pin the normalized source bytes; every unnamed point
+in those modules stays Linux-owned. Review those entries whenever their source changes. No
+threshold or exclusion changes: the policy remains 80% line, 60% branch and HCRAP 20, applied
+to each platform's portion of a module. See
+[DR 048's platform measurement amendment](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md)
+for the decision and its proof conditions.
+
+Run the ordinary `gap_check.py gate coverage --stack python` on Linux and Windows against the
+same candidate. Each invocation still runs the entire native unittest suite. The collector keeps
+the full coverage.py report and counters, then `python_platform.py` partitions the denominator
+and emits `platform_selection` beside the measured modules in `adapters/python-coverage.json`.
+The receipt includes all source hashes, the reviewed selection hash and ownership of every
+line, branch, callable and callable body point. Missing selection, unsupported platforms and
+source/callable drift fail before the suite starts.
+
+CI always runs the union job and explicitly fails if either native job failed. After both pass,
+it downloads their artifacts under the ignored results directory and verifies the complete union
+from the same clean checkout, using the pinned Python runtime and requirements.lock closure:
+
+```sh
+python DynaDocs.Tests/coverage/python_platform.py --linux DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-linux/adapters/python-coverage.json --windows DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-windows/adapters/python-coverage.json --output DynaDocs.Tests/coverage/results/coverage-platforms/union.json
+```
+
+The union rejects dirty or different candidates, failed or incomplete gates, source/selection
+differences and missing module, branch, line or callable-body points. It rebuilds the expected
+inventory and owners from the candidate sources and selection, so matching omissions in both
+reports also fail. Both jobs use the declared
+Python 3.14.4 and Node 26.13.0 pins. The existing cancellation matrix and other CI suites remain
+in place; release and publishing workflows are independent.
+
+.NET platform measurement is configured in `DynaDocs.Tests/coverage/dotnet-platforms.json`. Its
+`native` entries name Windows-native members by their Roslyn member name (`.ctor`, `get_Stage`,
+`RunWindowsAsync`) and pin each source's SHA-256 with line endings normalized to LF. Its
+`windows_tests` entry lists the fully qualified tests that reach those members and records why
+Windows runs only them. `dotnet_platform.py` partitions the native join by emitted-body owner and
+writes `platform_selection` beside the measured modules in `adapters/dotnet-coverage.json`. That
+receipt holds the source and selection hashes, the owner of every line, branch and callable, and
+on Windows the selected suite's pass count. A missing or drifted selection or an unsupported
+platform fails before the campaign starts. So does, on Windows only, a selected test that is not
+declared exactly once in its class (`discover_windows_tests`). A named member missing from the
+compiled source inventory fails after the campaign, when the join is scoped (`_members` in
+`scope`). A skipped selected test fails the Windows gate. The raw `joined.json` keeps every native
+point.
+
+The `dotnet-coverage` CI job runs the gate on `ubuntu-24.04` (the full suite) and on
+`windows-latest` (the selected tests), each on the PR head, and uploads `dotnet-coverage-linux`
+and `dotnet-coverage-windows`. The dependent `dotnet-coverage-union` job requires both legs to
+pass and runs:
+
+```sh
+python DynaDocs.Tests/coverage/dotnet_platform.py --linux DynaDocs.Tests/coverage/results/coverage-platforms/linux/adapters/dotnet-coverage.json --windows DynaDocs.Tests/coverage/results/coverage-platforms/windows/adapters/dotnet-coverage.json --output DynaDocs.Tests/coverage/results/coverage-platforms
+```
+
+Both reports are required. The union rejects a missing report, a failed, incomplete or dirty gate,
+reports from different commits, a Windows receipt without its selected-test count and a Linux
+receipt with one. It then rebuilds the clean candidate's zero-hit denominator on Linux, using the
+campaign's own builds and AltCover instrumentation without running a suite. Each report must hold
+exactly its platform's lines, branches and callables of that denominator, under the same source
+and selection hashes and owners, so matching omissions fail too. It writes `union.json`. Run it
+from a clean checkout with no earlier in-place AltCover output (`__Saved`) in `bin/`.
+
 `DynaDocs.Tests/coverage/gap_check.py` is the canonical project testing facade. Its adjacent
 `gap_check.json` is the schema 1 manifest that declares each stack's test, static, coverage and
 mutation adapters. `dydo/reference/gap-check.example.py` is a mechanically derived byte copy of that
@@ -15,7 +78,7 @@ and the adopted policy.
 
 ## Provisioning
 
-`dydo/_system/.local/` is git-ignored and no gate installs anything, so every machine creates its own
+`.static-gates/` is git-ignored and no gate installs anything, so every machine creates its own
 measurement environment before any operation below can run. `.github/workflows/release.yml` runs
 these same steps before it invokes the facade. They are grouped here by toolchain rather than given
 in the workflow's order, because the three toolchains are independent of each other: the only step
@@ -24,8 +87,8 @@ that must precede another is creating the virtual environment its Python package
 ```powershell
 # the Python assurance toolchain; create the environment with CPython 3.14.4 itself,
 # the patch DynaDocs.Tests/coverage/.python-version declares
-python -m venv dydo/_system/.local/static-gates/python
-& dydo/_system/.local/static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+python -m venv .static-gates/python
+& .static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 # the Node assurance toolchain, from DynaDocs.Tests/coverage
 npm ci
 # the viewer's own toolchain, which the viewer rows call through its pnpm scripts
@@ -45,13 +108,29 @@ join failures; that historical evidence does not establish compatibility with a 
 On Linux, use the same locked packages with the POSIX venv path:
 
 ```bash
-python3 -m venv dydo/_system/.local/static-gates/python
-dydo/_system/.local/static-gates/python/bin/python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+python3.14 -m venv .static-gates/python
+.static-gates/python/bin/python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 npm --prefix DynaDocs.Tests/coverage ci
 pnpm -C viewer install --frozen-lockfile
 dotnet tool restore --tool-manifest .config/dotnet-tools.json
 dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
 ```
+
+The Python environment lives at the repository root, in `.static-gates/python`, outside
+`dydo/_system/**`. An agent provisions it without user action, and the guard still refuses every
+write into `dydo/_system/**`. This repository's `dydo.json` carries no install nudge, so the
+`pip install` passes outright here. In a project whose `dydo.json` carries the install nudge that
+`dydo init` writes by default, the POSIX `bin/python -m pip install` form meets it: the guard refuses
+the first try once and passes the identical retry when the user or the ticket being executed approved
+that install. That nudge's pattern does not match the Windows `Scripts/python.exe -m pip install` form.
+Instead of installing, a POSIX checkout may link a matching prepared environment, one created by
+CPython 3.14.4 from the same `requirements.lock`:
+
+```bash
+mkdir -p .static-gates && ln -s /absolute/path/to/prepared/.static-gates/python .static-gates/python
+```
+
+`DynaDocs.Tests/Integration/GuardStaticGateProvisioningTests.cs` holds the guard to this route.
 
 The SDK pin is 10.0.303. `DynaDocs.csproj` separately requires runtime 10.0.14 or
 later and resolves its AOT compiler at 10.0.14, the first patch fixing CVE-2026-111497.
@@ -86,7 +165,15 @@ viewer bundle is embedded in the CLI, not another .NET distribution.
 
 The C# coverage campaign uses the existing Linux subreaper containment and retains raw streams,
 subject exit and cleanup evidence. A live detached descendant makes the campaign incomplete even
-when the subject exited zero. Unconfirmed cleanup retains the isolated snapshot. Windows continues
+when the subject exited zero. Unconfirmed cleanup retains the isolated snapshot. When the runner
+cannot confirm its own descendant cleanup, on Linux or Windows, it keeps the snapshot and its marker,
+names both on stderr and exits 2 (incomplete), whatever the subject returned and even when
+interrupted. It writes nothing further into the assurance output. The adapter reports `native
+campaign incomplete`, never a functional failure. When `identities.json` records a complete
+campaign with confirmed cleanup and a subject status other than 2, only the runner's own cleanup
+can explain the exit 2, so the adapter names it as `runner_cleanup_unconfirmed`. Otherwise it
+reports the failure `identities.json` records, or that no diagnosis is available; the runner's
+stderr still names the retained snapshot and the error. Windows continues
 to use its native Job Object owner. Native Windows tests require the Windows CI runner; Linux skips
 are missing Windows proof, not passing Windows proof.
 
@@ -103,11 +190,11 @@ rely on tar to create ZIP archives.
 ## Operations
 
 Run the facade with the pinned local interpreter. On Linux, set
-`py=dydo/_system/.local/static-gates/python/bin/python` and invoke `"$py"` in place of
+`py=.static-gates/python/bin/python` and invoke `"$py"` in place of
 PowerShell's `& $py` below:
 
 ```powershell
-$py = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+$py = ".static-gates/python/Scripts/python.exe"
 & $py DynaDocs.Tests/coverage/gap_check.py --help
 & $py DynaDocs.Tests/coverage/gap_check.py all
 & $py DynaDocs.Tests/coverage/gap_check.py test --stack dotnet -- --filter FullyQualifiedName~ParserTests
@@ -246,7 +333,7 @@ never a silent overwrite. The identical bytes remain at
 "tools": {
   "interpreters": {
     "caller": {"path": "<absolute>/python.exe", "sha256": "<hex>", "version": "3.14.4"},
-    "dependencyBearing": {"path": "dydo/_system/.local/static-gates/python/Scripts/python.exe",
+    "dependencyBearing": {"path": ".static-gates/python/Scripts/python.exe",
                           "sha256": "<hex>"}
   },
   "pins": {
@@ -524,7 +611,7 @@ checksum fails the join. The measured per-assembly document facts are retained i
 
 ## Toolchain provenance
 
-`dydo/_system/.local/` is git-ignored, so each machine provisions its own measurement environment
+`.static-gates/` is git-ignored, so each machine provisions its own measurement environment
 and no gate ever installs anything. Five tool declarations and one CI runtime declaration define
 what that environment must contain. Tool summaries republish the five tool declarations with their
 hashes in `tools.pins`; the Python inventory separately republishes the runtime declaration and hash:
@@ -533,7 +620,7 @@ hashes in `tools.pins`; the Python inventory separately republishes the runtime 
 |---|---|---|
 | `.config/dotnet-tools.json` | AltCover 9.0.102 | the tool manifest, by `dotnet tool restore --tool-manifest .config/dotnet-tools.json` |
 | `DynaDocs.Tests/coverage/.python-version` | exact CPython 3.14.4 for Release CI | `actions/setup-python@v5`, through `python-version-file` |
-| `DynaDocs.Tests/coverage/requirements.lock` | coverage.py 7.16.0, ruff 0.16.6, vulture 2.16, complexipy 8.0.0, radon 6.0.1 | a local CPython 3.14.4 environment at `dydo/_system/.local/static-gates/python/Scripts/python.exe` |
+| `DynaDocs.Tests/coverage/requirements.lock` | coverage.py 7.16.0, ruff 0.16.6, vulture 2.16, complexipy 8.0.0, radon 6.0.1 | a local CPython 3.14.4 environment at `.static-gates/python` (`Scripts/python.exe` on Windows, `bin/python` elsewhere) |
 | `DynaDocs.Tests/coverage/package.json`, resolved by `package-lock.json` | @typescript-eslint/parser, c8, dependency-cruiser, eslint, eslint-plugin-sonarjs, istanbul-lib-instrument, jscpd, knip | `node_modules` under `DynaDocs.Tests/coverage` |
 | `viewer/package.json`, resolved by `viewer/pnpm-lock.yaml` | the viewer's TypeScript, ESLint, vitest and Istanbul toolchain its scripts run | `viewer/node_modules`, by `pnpm -C viewer install --frozen-lockfile` |
 | `DynaDocs.Tests/coverage/metrics/packages.lock.json` | the Roslyn, SonarAnalyzer and Cecil closure of `GateMetrics.csproj` | that project's `obj/project.assets.json`, by `dotnet restore` |

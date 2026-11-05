@@ -1343,4 +1343,892 @@ public class BashCommandAnalyzerTests
     }
 
     #endregion
+
+    #region Guard retro regressions (DYD-406)
+
+    // GS-04: the word pass in a Python body, a quoted grep verdict or a PR body runs no password store.
+    // The last three are the shapes DYD-294 reported: a PR-body heredoc, a quoted --body and a grep.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs04PreflightDeclarations)]
+    [InlineData(GuardRetroCommands.Gs04LightLanesDeclarations)]
+    [InlineData(GuardRetroCommands.Gs04ReviewVerdictGrep)]
+    [InlineData("cat > /tmp/lc129-body.md <<'EOF'\n## Review\nPASS —\nEvery gate passes.\nEOF")]
+    [InlineData("gh pr create --title x --body \"Keeps the vectors password-blind.\npass blind\"")]
+    [InlineData("gh pr view 43 --json body | grep -n -iE \"^PASS|PASS -\"")]
+    public void PasswordStoreRule_PassOutsideACommand_IsNotPasswordStoreAccess(string command)
+    {
+        var (_, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.NotEqual("Password store access", reason);
+    }
+
+    [Theory]
+    [InlineData("gopass show x")]
+    [InlineData("echo ok; gopass show prod/aws")]
+    [InlineData("gopass -c github")]
+    [InlineData("bash <<'EOF'\npass show x\nEOF")]
+    [InlineData("bash -c \"echo ok; pass show x\"")]
+    [InlineData("@'\npass show x\n'@ | pwsh -Command -")]
+    [InlineData("echo \"x\npass show y")]
+    public void PasswordStoreRule_PassACommandLineRuns_IsBlocked(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, $"Expected dangerous: {command}");
+        Assert.Equal("Password store access", reason);
+    }
+
+    // GS-05: a Python program read from stdin hides its file operations exactly as python -c does.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs05ProtectedRewrite)]
+    [InlineData(GuardRetroCommands.Gs05ProtectedRewrap)]
+    [InlineData(GuardRetroCommands.Gs04PreflightDeclarations)]
+    [InlineData("py -3 - <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("python3 -u - <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("@'\nprint(1)\n'@ | python -")]
+    [InlineData("python <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("python3 <<< 'print(1)'")]
+    [InlineData("echo \"print(1)\" | python3")]
+    [InlineData("cat prog.py | python -u")]
+    [InlineData("python -X dev - <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("bash -c \"python - <<'EOF'\nprint(1)\nEOF\"")]
+    [InlineData("echo 'python - <<EOF' | bash")]
+    [InlineData("pwsh -EncodedCommand ZQBjAGgAbwA= # then python -")]
+    [InlineData("python3 < prog.py")]
+    [InlineData("cat prog.py | sudo python3")]
+    [InlineData("cat prog.py |& python3")]
+    [InlineData("x=$(cat prog.py | python3)")]
+    [InlineData("bash -c \"cat prog.py | python3\"")]
+    [InlineData("bash <<'EOF'\ncat prog.py | python3\nEOF")]
+    [InlineData("pythonw -")]
+    public void PythonProgramOnStdin_IsRefusedLikeInlineCode(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, $"Expected dangerous: {command}");
+        Assert.Contains("stdin", reason);
+        Assert.Contains("file tools", reason);
+    }
+
+    [Theory]
+    [InlineData("python script.py")]
+    [InlineData("python3 -u tools/run.py --stack dotnet")]
+    [InlineData("py -3 tools/gen.py")]
+    [InlineData("python -m pytest -q")]
+    [InlineData("python --version")]
+    [InlineData("python -V")]
+    [InlineData("python script.py < input.json")]
+    [InlineData("python tools/gen.py - out.txt")]
+    [InlineData("python -W ignore tools/gen.py")]
+    [InlineData("python -Im json.tool data.json")]
+    [InlineData("py --list")]
+    [InlineData("echo \"python - <<EOF\" > notes.md")]
+    [InlineData("grep -n 'python -' notes.md")]
+    public void PythonScriptFile_StaysAllowed(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    // A Python call with no script reads its program from stdin only when something feeds it: a
+    // lookup only names it, xargs supplies its operands, and a bare python with nothing fed prompts.
+    [Theory]
+    [InlineData("command -v python3")]
+    [InlineData("command -V python3")]
+    [InlineData("command -v python3 || command -v python")]
+    [InlineData("ls *.py | xargs python3")]
+    [InlineData("python")]
+    [InlineData("python3 -q; echo done")]
+    [InlineData("echo \"cat x | python3\" > notes.md")]
+    public void PythonWithNothingFedToIt_IsNoProgramOnStdin(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    // A comment feeds nothing: a < or | in it is text, not a redirection or a pipe.
+    [Theory]
+    [InlineData("python # <stdin>")]
+    [InlineData("python # input < program.py")]
+    [InlineData("python # input | python")]
+    public void PythonWithAFeedOnlyInAComment_IsNoProgramOnStdin(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    // A real feed stays refused with a comment after it, and through a group or a substitution the
+    // pipe leads into, double-quoted or not.
+    [Theory]
+    [InlineData("python < program.py # input")]
+    [InlineData("printf 'print(1)' | python # input")]
+    [InlineData("echo \"$(printf 'print(1)' | python3)\"")]
+    [InlineData("echo $(printf 'print(1)' | python3)")]
+    [InlineData("echo \"`printf 'print(1)' | python3`\"")]
+    [InlineData("printf 'print(1)' | (python3)")]
+    [InlineData("printf 'print(1)' | { python3; }")]
+    [InlineData("printf 'print(1)' | ( ( python3 ) )")]
+    [InlineData("echo \"$(python3 < prog.py)\"")]
+    public void PythonFedThroughACommentGroupOrSubstitution_IsRefused(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, $"Expected dangerous: {command}");
+        Assert.Contains("stdin", reason);
+    }
+
+    [Theory]
+    [InlineData("echo \"$(python3 tools/gen.py)\"")]
+    [InlineData("printf 'x' | (python3 tools/gen.py)")]
+    [InlineData("echo \"$(printf 'x' | grep python3)\"")]
+    public void PythonScriptFileInAGroupOrSubstitution_StaysAllowed(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    // DYD-509: Python a runner's run subcommand starts reads stdin as Python at command position
+    // does, with the runner's and run's options between, as the inline -c refusal already reaches.
+    [Theory]
+    [InlineData("uv run python - <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("poetry run python3 -")]
+    [InlineData("printf 'print(1)' | uv run python")]
+    [InlineData("uv run python < x.py")]
+    [InlineData("cat x.py | pdm run python3 -u")]
+    [InlineData("uv run --with requests python -")]
+    [InlineData("uv run -- python -")]
+    [InlineData("uv --directory tools run python -")]
+    [InlineData("conda run -n env python3 -u - <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("uv run -p python3.12 python -")]
+    [InlineData("sudo uv run python -")]
+    [InlineData("bash -c \"cat x.py | uv run python\"")]
+    // An option's value named run is no subcommand: the run after it still starts Python.
+    [InlineData("uv --directory run run python -")]
+    [InlineData("uv --project run run python -")]
+    [InlineData("poetry --directory run run python3 -")]
+    [InlineData("uv --directory run run python < input.txt")]
+    [InlineData("printf 'print(1)' | uv --directory run run python")]
+    public void PythonARunSubcommandStartsOnStdin_IsRefused(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, $"Expected dangerous: {command}");
+        Assert.Contains("stdin", reason);
+        Assert.Contains("file tools", reason);
+    }
+
+    // A run subcommand's script, module or other program, a mention of the words, and a lookup,
+    // a process search or an install that names python run no program from stdin.
+    [Theory]
+    [InlineData("uv run python script.py")]
+    [InlineData("poetry run pytest")]
+    [InlineData("uv run python -m pytest")]
+    [InlineData("ps aux | grep python")]
+    [InlineData("pgrep -f python")]
+    [InlineData("which python3")]
+    [InlineData("pip install python-dateutil")]
+    [InlineData("uv pip install requests")]
+    [InlineData("git commit -m \"Refuse uv run python - on stdin\"")]
+    [InlineData("cat > notes.md <<'EOF'\nuv run python - reads stdin\nEOF")]
+    [InlineData("command -v python3")]
+    [InlineData("ls *.py | xargs python3")]
+    [InlineData("ls *.py | xargs uv run python")]
+    [InlineData("uv run tools/gen.py python -")]
+    [InlineData("echo uv run python -")]
+    [InlineData("printf 'x' | uv run python tools/gen.py")]
+    [InlineData("gh run list")]
+    [InlineData("uv --directory run run python tools/x.py")]
+    [InlineData("uv --directory run run python -m pytest")]
+    [InlineData("uv run --with=requests tools/gen.py python -")]
+    public void RunSubcommandWithoutAPythonStdinProgram_StaysAllowed(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    // A known, documented over-refusal: the shape names no tool, so a python word another tool's
+    // run receives while something feeds it reads as Python on stdin.
+    [Fact]
+    public void PythonWordAnotherToolsRunReceivesWhileFed_IsRefused()
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns("echo x | cargo run -- python");
+
+        Assert.True(dangerous);
+        Assert.Contains("stdin", reason);
+    }
+
+    // The documented limit: Python behind a runner with no run subcommand, or behind a second
+    // runner a run subcommand starts, is not recognised.
+    [Theory]
+    [InlineData("uvx python -")]
+    [InlineData("pyenv exec python -")]
+    [InlineData("uv run poetry run python -")]
+    public void PythonBehindARunnerWithoutARunSubcommand_IsNotRecognised(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    [Theory]
+    [InlineData("python -")]
+    [InlineData("python3 -u - <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("cat x.py | python3")]
+    public void DirectPythonOnStdin_KeepsItsRefusal(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, $"Expected dangerous: {command}");
+        Assert.Equal("Python program on stdin bypasses file operation analysis, as python -c does. "
+            + "Change files with the file tools or write a script file; a change to a protected file goes to the user.", reason);
+    }
+
+    [Fact]
+    public void InlinePythonARunSubcommandStarts_StaysRefused()
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns("uv run python -c 'print(1)'");
+
+        Assert.True(dangerous);
+        Assert.Equal("Inline interpreter execution bypasses file operation analysis. Write a script file instead.", reason);
+    }
+
+    // GS-01: a PowerShell assignment from a literal Get-Content is a read of that path, not an
+    // unknown command writing it.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs01SlicedRead, "dydo/project/plans/ripple-selection.md")]
+    [InlineData(GuardRetroCommands.Gs01SelectStringRead, "dydo/reference/linear-workspace-standard.md")]
+    [InlineData("$p = Get-Content notes.md; $p[0..5]", "notes.md")]
+    [InlineData("$p =Get-Content notes.md | Select-String TODO", "notes.md")]
+    public void Analyze_ReadAssignment_IsAReadOfItsPath(string command, string path)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Read && op.Path == path);
+        Assert.DoesNotContain(result.Operations, op => op.Type != FileOperationType.Read);
+    }
+
+    [Theory]
+    [InlineData("$x = Remove-Item notes.md", "notes.md")]
+    [InlineData("$x = Set-Content notes.md hi", "notes.md")]
+    [InlineData("$p = Get-Content a.md; Set-Content b.md $p", "b.md")]
+    [InlineData("$CMD notes.md", "notes.md")]
+    public void Analyze_AssignmentOfAMutation_StaysAWrite(string command, string path)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt);
+        Assert.Contains(result.Operations, op => op.Type != FileOperationType.Read && op.Path == path);
+    }
+
+    // GS-02: literal data - a quoted heredoc or a single-quoted here-string - is not expansion or
+    // code, so it does not make the write it feeds unverifiable.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs02CatSlotScript)]
+    [InlineData(GuardRetroCommands.Gs02CatAppendEvidence)]
+    [InlineData("cat > notes.md <<'EOF'\ncost: $5 and `date`\nEOF")]
+    [InlineData("cat > notes.md <<\"EOF\"\n$HOME\nEOF")]
+    public void Analyze_LiteralDataWrite_IsNoBypass(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+    }
+
+    private static readonly ShellDialect[] BashReadings = [ShellDialect.Posix, ShellDialect.Unknown];
+
+    // DYD-422: single-quoted text is literal data, so it makes no write unverifiable, where the whole
+    // line is one sed (one s command), printf or echo and both bash's and PowerShell's readings hold
+    // it as that command's data. The write keeps its literal destination, in every dialect.
+    [Theory]
+    [InlineData("sed -i 's/`x`/y/' f", "f")]
+    [InlineData("printf '%s' 'first line\n$HOME is literal' > notes.md", "notes.md")]
+    [InlineData("echo 'cost: $5 and `date`' > notes.md", "notes.md")]
+    public void Analyze_SingleQuotedLiteralDataWrite_IsNoBypass(string command, string destination)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
+            Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == destination);
+        }
+    }
+
+    // Literal data is still path-checked: the change a substitution in it would make is analysed as on master.
+    [Fact]
+    public void Analyze_SingleQuotedLiteralData_KeepsTheChangeASubstitutionWouldMake()
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.Posix).Analyze("sed -i 's#`rm dydo/index.md`#y#' notes.md");
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Delete && op.Path == "dydo/index.md");
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
+    }
+
+    // The documented residual: literal data is not followed into a file a later call runs, such as
+    // a git hook written on a line that runs no git; a quoted-heredoc hook is not followed either.
+    [Fact]
+    public void Analyze_LiteralDataWrittenToAGitHookWithoutGit_IsNotFollowed()
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.Posix).Analyze("printf '%s' '$(date)' > .git/hooks/pre-commit");
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == ".git/hooks/pre-commit");
+    }
+
+    // Every redirection the shell reads counts as a write, an fd-numbered one too, though path
+    // extraction, as on master, records no write for it.
+    [Theory]
+    [InlineData("printf '%s' '$(echo PWNED >&2)' 1> .git/config; git diff")]
+    [InlineData("printf '%s' '$(echo PWNED >&2)' 2>.gitattributes; git add notes.md")]
+    public void Analyze_FdRedirectionToAGitPath_KeepsTheBypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+    }
+
+    // Single-quoted text no reading certifies as literal data is searched as on master (DYD-421): the
+    // GS-02 sed writes chain git, so they are no single data command.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs02SedBacktickCommit, "Command contains command substitution - paths may be dynamic")]
+    [InlineData(GuardRetroCommands.Gs02SedBacktickSingleLine, "Command contains command substitution - paths may be dynamic")]
+    [InlineData("Set-Content notes.md 'first line\n$HOME is literal'", "Command contains variable expansion - paths may be dynamic")]
+    [InlineData("bash -c 'echo x' 'name $HOME'", "Command contains variable expansion - paths may be dynamic")]
+    public void Analyze_SingleQuotedDataWrite_IsABypassAsOnMaster(string command, string warning)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt, $"Expected a bypass: {command}");
+        Assert.Contains(warning, result.Warnings);
+    }
+
+    // DYD-422: no relief where a program on the line may run the text, a reading may not be the
+    // shell's, or the text sits in a comment or a body; the bypass and the change stay, as on master.
+    [Theory]
+    [InlineData("bash -c 'echo x > $OUT'")]
+    [InlineData("sh -c 'printf x > $OUT'")]
+    [InlineData("zsh -c 'echo $(rm dydo/index.md)'")]
+    [InlineData("su -c 'echo x > $OUT'")]
+    [InlineData("script -c 'echo x > $OUT'")]
+    [InlineData("xargs sh -c 'echo x > $OUT'")]
+    [InlineData("xargs echo '$(rm dydo/index.md)'")]
+    [InlineData("find . -exec sh -c 'echo x > $OUT' \\;")]
+    [InlineData("find . -exec echo '$(rm dydo/index.md)' \\;")]
+    [InlineData("docker exec box sh -c 'echo x > $OUT'")]
+    [InlineData("kubectl exec pod -- sh -c 'echo x > $OUT'")]
+    [InlineData("tmux send-keys 'echo x > $OUT' Enter")]
+    [InlineData("watch echo '$(rm dydo/index.md)'")]
+    [InlineData("Invoke-Expression 'echo x > $OUT'")]
+    [InlineData("printf '%s' '$(rm dydo/index.md)' | sh")]
+    [InlineData("echo '$(rm dydo/index.md)' | tee notes.md | bash")]
+    [InlineData("printf '%s' '$(rm dydo/index.md)' > /dev/stdout | sh")]
+    [InlineData("echo '$(rm dydo/index.md)' | iex")]
+    [InlineData("sh <(printf '%s' '$(rm dydo/index.md)')")]
+    [InlineData("source <(echo '$(rm dydo/index.md)')")]
+    [InlineData("printf '%s' '$(rm dydo/index.md)' > >(sh)")]
+    [InlineData("{ printf '%s' '$(rm dydo/index.md)'; } | sh")]
+    [InlineData("{ echo '$(rm dydo/index.md)'; echo y; } | sh")]
+    [InlineData("(echo '$(rm dydo/index.md)') | sh")]
+    [InlineData("for f in a; do echo '$(rm dydo/index.md)'; done | sh")]
+    [InlineData("for f in a; do echo a; echo '$(rm dydo/index.md)'; done | sh")]
+    [InlineData("echo '$(rm dydo/index.md)' & sh")]
+    [InlineData("echo '$(rm dydo/index.md)' \\\n| sh")]
+    [InlineData("echo '$HOME' (iex 'rm dydo/index.md') > notes.md")]
+    [InlineData("sed -i 's/x/$TARGET/e' notes.md")]
+    [InlineData("sed -i '1e rm $TARGET' notes.md")]
+    [InlineData("sed -i 's/`x`/y/;e rm dydo/index.md' notes.md")]
+    [InlineData("sed -e 's/`x`/y/' -e '1e rm dydo/index.md' -i notes.md")]
+    [InlineData("sed -i -f run.sed 's/`x`/y/' notes.md")]
+    [InlineData("sed -i '1e rm dydo/index.md' 's/`x`/y/' notes.md")]
+    [InlineData("sed -i 's/`x`/y/w dydo/index.md' notes.md")]
+    [InlineData("awk '{system(\"rm $TARGET\")}' notes.md > out.md")]
+    [InlineData("echo $'\\'' $(echo x > $OUT) '$'\\'''")]
+    [InlineData("echo ^\"'$(echo x > $OUT)'^\"")]
+    [InlineData("echo hi # don't\necho $(rm dydo/index.md) 'ok'")]
+    [InlineData("cat <<EOF\necho don\\'t $(rm dydo/index.md) won\\'t\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nprintf '%s' '$(rm dydo/index.md)'\nEOF")]
+    [InlineData("grep x <<< '$(rm dydo/index.md)'")]
+    [InlineData("printf '%s' 'a $b' > $OUT")]
+    [InlineData("echo 'x' > \"$OUT\"")]
+    [InlineData("printf '%s' 'x' > $(echo notes.md)")]
+    [InlineData("sed -i 's/`x`/y/' $FILE")]
+    [MemberData(nameof(StateChangingLines))]
+    [MemberData(nameof(WriteThenRunLines))]
+    [MemberData(nameof(OptionLines))]
+    [MemberData(nameof(OptionValueLines))]
+    [MemberData(nameof(NarrowedLines))]
+    [MemberData(nameof(ExpandingWordLines))]
+    [MemberData(nameof(PowerShellReadingLines))]
+    [MemberData(nameof(BreakCharacterLines))]
+    public void Analyze_SingleQuotedTextAProgramMayRun_IsABypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            AssertBypassWithAChange(command, dialect);
+    }
+
+    // DYD-422 review: a line with literal data runs only state-free commands. printf -v or %n assigns
+    // a variable (bash evaluates a -v name's subscript); an alias, builtin, assignment or unknown
+    // command anywhere, in any piece, may change what runs; a non-data command may consume the output.
+    public static TheoryData<string> StateChangingLines => GuardRetroCommands.Gs02StateChangingLines;
+
+    // DYD-422 review: no command on a line with literal data reads a file the line writes as code:
+    // every sed only substitutes, grep takes no --pre, and a line that runs git writes no git path.
+    public static TheoryData<string> WriteThenRunLines => GuardRetroCommands.Gs02WriteThenRunLines;
+
+    // DYD-422 review: each state-free command takes only the options on its closed list, in any
+    // spelling; a sed -i backup suffix, an abbreviation or an unlisted option takes the relief away.
+    public static TheoryData<string> OptionLines => GuardRetroCommands.Gs02OptionLines;
+
+    // DYD-422 review: an option that takes a value consumes the next word, -- included.
+    public static TheoryData<string> OptionValueLines => GuardRetroCommands.Gs02OptionValueLines;
+
+    // DYD-422 narrowing: relief is for one sed, printf or echo command alone; a second command of
+    // any kind (git, grep, head, a pipe) leaves the line searched as on master.
+    public static TheoryData<string> NarrowedLines => GuardRetroCommands.Gs02NarrowedLines;
+
+    // DYD-422 review: a word the shell may still expand is not the one the guard reads.
+    public static TheoryData<string> ExpandingWordLines => GuardRetroCommands.Gs02ExpandingWordLines;
+
+    // DYD-422 review: text only PowerShell runs; relief needs PowerShell's reading for every caller.
+    public static TheoryData<string> PowerShellReadingLines => GuardRetroCommands.Gs02PowerShellReadingLines;
+
+    // DYD-422 review: a break character outside single quotes, which pwsh may read as a new statement.
+    public static TheoryData<string> BreakCharacterLines => GuardRetroCommands.Gs02BreakCharacterLines;
+
+    // The narrow seat's exact forms, which write no path: the bypass stays in every dialect.
+    [Theory]
+    [InlineData("echo 'x'\riex '$(touch PWNED)'")]
+    [InlineData("printf 'x'\riex '$(touch PWNED)'")]
+    [InlineData("echo x\rInvoke-Expression '$(touch PWNED)'")]
+    public void Analyze_BreakCharacterOutsideTheQuote_IsABypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+    }
+
+    // Inside single quotes bash 5.3.9 and pwsh 7.6.9 keep a carriage return, NEL and the Unicode
+    // separators literal (measured), so a quote holding them stays literal data.
+    [Theory]
+    [InlineData("printf '%s' 'a\r$(touch PWNED)\rb' > notes.md")]
+    [InlineData("printf '%s' 'a\r\n$HOME\r\n' > notes.md")]
+    [InlineData("echo 'a\u0085$(touch PWNED)\u2028b\u2029' > notes.md")]
+    public void Analyze_BreakCharacterInsideTheQuote_StaysLiteralData(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.False(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+    }
+
+    // Split seat B's probes that write no path keep master's bypass warning; sed with a ?f operand
+    // and no single-quoted bypass text is no bypass, on master or now.
+    [Theory]
+    [MemberData(nameof(ExpandingWordWarningLines))]
+    public void Analyze_ExpandingWordWithoutAWrite_KeepsTheBypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
+        Assert.False(_analyzer.Analyze("sed 's/a/b/' ?f run.sed notes.md").HasBypassAttempt);
+    }
+
+    public static TheoryData<string> ExpandingWordWarningLines => GuardRetroCommands.Gs02ExpandingWordWarningLines;
+
+    // sed's closed option list keeps its read-only spellings, in every dialect.
+    [Theory]
+    [InlineData("sed -Ei 's/`x`/y/' notes.md")]
+    [InlineData("sed -n -E 's/`x`/y/p' notes.md > out.md")]
+    [InlineData("sed -i -- 's/`x`/y/' notes.md")]
+    [InlineData("sed --in-place --posix 's/`x`/y/' notes.md")]
+    public void Analyze_ListedOptions_KeepTheRelief(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
+        }
+    }
+
+    // PowerShell's stop-parsing token hands the rest of the line over unparsed, and its echo, the
+    // Write-Output cmdlet, assigns a variable through -OutVariable or another common parameter.
+    // PowerShell's reading is required for every caller, so bash's echo -n loses relief too.
+    [Theory]
+    [InlineData("echo --% '$(echo x > $OUT)' > notes.md")]
+    [InlineData("echo '$(echo x > $OUT)' -OutVariable a > notes.md")]
+    [InlineData("echo '$(echo x > $OUT)' –ov a > notes.md")]
+    [InlineData("echo -n '$(echo x > $OUT)' > notes.md")]
+    [InlineData("echo -n '$HOME' > out.md")]
+    public void Analyze_PowerShellParameterOrStopParsing_IsABypassInEveryDialect(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            AssertBypassWithAChange(command, dialect);
+    }
+
+    // Both readings must place the quote in the same word: bash reads a\ '$HOME' as one word,
+    // PowerShell as two, so no caller gets relief for it.
+    [Theory]
+    [InlineData("echo a\\ '$HOME' > notes.md", "Unknown", true)]
+    [InlineData("echo a\\ '$HOME' > notes.md", "Posix", true)]
+    [InlineData("echo a\\ '$HOME' > notes.md", "PowerShell", true)]
+    [InlineData("echo 'cost: $5 and $HOME' > notes.md", "PowerShell", false)]
+    public void Analyze_QuoteInEveryReadingsWord_DecidesTheBypass(string command, string dialect, bool bypass)
+    {
+        var result = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect)).Analyze(command);
+
+        Assert.Equal(bypass, result.HasBypassAttempt);
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
+    }
+
+    // The round-5 apostrophes pair only in PowerShell. Bash's reading is required in every dialect,
+    // so they stay code for a PowerShell call too, as on master, after a comment or a body as well.
+    [Theory]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("echo don\\'t $(echo x > $OUT) won\\'t")]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t # it's")]
+    [InlineData("# don't\necho don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("cat > notes.md <<'EOF'\nplain words\nEOF\necho don\\'t $(rm dydo/index.md) won\\'t")]
+    [InlineData("cat <<EOF\necho don\\'t $(rm dydo/index.md) won\\'t\nEOF")]
+    public void Analyze_RoundFiveApostrophes_AreABypassInEveryDialect(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            AssertBypassWithAChange(command, dialect);
+    }
+
+    // A typographic quote closes a PowerShell string only, and PowerShell's reading is required for
+    // every caller, so the text after it is code in every dialect.
+    [Theory]
+    [InlineData("echo 'a’ $(echo x > $OUT) ’b'")]
+    [InlineData("echo “a '$(echo x > $OUT)' b”")]
+    public void Analyze_TypographicQuote_IsABypassInEveryDialect(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            AssertBypassWithAChange(command, dialect);
+    }
+
+    private static void AssertBypassWithAChange(string command, ShellDialect dialect)
+    {
+        var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+        Assert.True(result.HasBypassAttempt, $"{dialect}: expected a bypass: {command}");
+        Assert.Contains(result.Operations, op => op.Type is FileOperationType.Write or FileOperationType.Delete);
+    }
+
+    // DYD-421 DECIDED: apostrophes around a substitution, on a command line or in an expanding
+    // heredoc body, hide nothing: it is a bypass, and the change inside it is analysed, as on master.
+    [Theory]
+    [InlineData("echo don\\'t $(rm dydo/index.md) won\\'t", FileOperationType.Delete)]
+    [InlineData("cat > notes.md <<EOF\nDon't $(rm dydo/index.md) it's\nEOF", FileOperationType.Delete)]
+    [InlineData("cat > notes.md <<EOF\nDon't $(echo y > dydo/index.md) it's\nEOF", FileOperationType.Write)]
+    [InlineData("cat > notes.md <<EOF\nthe user's file: $(cat dydo/index.md > /dev/null; rm dydo/index.md) isn't kept\nEOF", FileOperationType.Delete)]
+    public void Analyze_SubstitutionBetweenApostrophes_IsABypassWhoseChangeIsSeen(string command, FileOperationType type)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains("Command contains command substitution - paths may be dynamic", result.Warnings);
+        Assert.Contains(result.Operations, op => op.Type == type && op.Path == "dydo/index.md");
+    }
+
+    [Theory]
+    [InlineData("cat > notes.md <<EOF\nDon't run $(date) or it's late\nEOF", "Command contains command substitution - paths may be dynamic")]
+    [InlineData("cat > notes.md <<EOF\nDon't touch $HOME, it's mine\nEOF", "Command contains variable expansion - paths may be dynamic")]
+    public void Analyze_ExpansionBetweenApostrophesInAnExpandingBody_IsABypass(string command, string warning)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains(warning, result.Warnings);
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
+    }
+
+    // The GS-02 here-strings are PowerShell's, read as the guard reads a PowerShell tool call: their
+    // prose apostrophes would be quotes to bash, so the dialect decides.
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs02SetContentEvidence)]
+    [InlineData(GuardRetroCommands.Gs02SetContentVerdict)]
+    [InlineData("@'\nIt's ready.\n'@ | Set-Content notes.md")]
+    [InlineData("Write-Output @'\nplain $HOME\n'@ | Out-File notes.md")]
+    public void Analyze_PowerShellLiteralHereStringWrite_IsNoBypass(string command)
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.PowerShell).Analyze(command);
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+    }
+
+    [Theory]
+    [InlineData("'@tail -f app.log", true)]
+    [InlineData("'@suffix", true)]
+    [InlineData("'@-suffix", true)]
+    [InlineData("'@", false)]
+    [InlineData("'@ tail -f app.log", false)]
+    [InlineData("'@\targument", false)]
+    [InlineData("'@; Write-Output ready", false)]
+    [InlineData("'@| Out-File notes.md", false)]
+    public void Gs02_HereStringBoundary_PreservesMalformedNewlineWarning(string terminator, bool warns)
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.PowerShell)
+            .Analyze("Write-Output @'\ntext\n" + terminator);
+
+        Assert.Equal(warns, result.Warnings.Contains("Command contains embedded newlines"));
+    }
+
+    [Theory]
+    [InlineData("cat > $OUT <<'EOF'\nplain words\nEOF")]
+    [InlineData("cat > notes.md <<EOF\n$(rm -rf build)\nEOF")]
+    [InlineData("cat > notes.md <<EOF\nprice: $PRICE\nEOF")]
+    [InlineData("cat > notes.md <<'EOF'\nplain words\nEOF\nrm $TARGET")]
+    [InlineData("bash <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' | sh\necho x > $OUT\nEOF")]
+    [InlineData("bash -c 'echo x > $OUT'")]
+    [InlineData("Set-Content -LiteralPath $p -Value @'\nplain words\n'@")]
+    [InlineData("@\"\n$(Remove-Item build -Recurse)\n\"@ | Set-Content notes.md")]
+    [InlineData("echo hello\nrm secret.txt")]
+    [InlineData("bash -c 'cd build\necho x > $OUT'")]
+    [InlineData("echo hi # don't\necho x > $OUT\necho 'ok'")]
+    [InlineData("cat > notes.md <<EOF\nit's $PRICE\nyou're welcome\nEOF")]
+    public void Analyze_ExpansionNextToLiteralData_IsStillABypass(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt);
+        Assert.Contains(result.Operations, op => op.Type != FileOperationType.Read);
+    }
+
+    // eval, iex, cmd /c, env -S, pwsh -Command, ssh and watch join every later word into the code
+    // they run, so a single-quoted word anywhere among them is code; so is one a shell reads from a
+    // pipe the line does not show.
+    [Theory]
+    [InlineData("eval 'echo x' '> $OUT'")]
+    [InlineData("eval echo 'x > $OUT'")]
+    [InlineData("iex 'echo x' '> $OUT'")]
+    [InlineData("env -S 'echo x' '> $OUT'")]
+    [InlineData("pwsh -Command 'echo x' '> $OUT'")]
+    [InlineData("cmd /c echo 'x > $OUT'")]
+    [InlineData("ssh host 'echo x' '> $OUT'")]
+    [InlineData("ssh host echo 'x > $OUT'")]
+    [InlineData("watch -n 1 'echo x > $OUT'")]
+    [InlineData("printf 'echo x > $OUT' | bash")]
+    public void Analyze_SingleQuotedWordACommandRuns_IsCode(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt, $"Expected a bypass: {command}");
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "$OUT");
+    }
+
+    [Fact]
+    public void Analyze_SubstitutionInAnExpandingBody_IsAnalysed()
+    {
+        var result = _analyzer.Analyze("cat > notes.md <<EOF\n$(rm -rf build)\nEOF");
+
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Delete && op.Path == "build");
+    }
+
+    // Unsupported case headers retain the baseline's uncertain writes, without parsing arms.
+    [Theory]
+    [InlineData("case x in x) rm dydo/files-off-limits.md;; esac", "dydo/files-off-limits.md", FileOperationType.Write)]
+    [InlineData("case x in x) echo changed > dydo/index.md;; esac", "dydo/index.md", FileOperationType.Write)]
+    [InlineData("case x in x|y) echo ready; rm dydo/files-off-limits.md;; esac", "dydo/files-off-limits.md", FileOperationType.Delete)]
+    [InlineData("case x in x|y) echo changed > dydo/index.md;; esac", "dydo/index.md", FileOperationType.Write)]
+    [InlineData("case x in x) echo yes;; esac; rm dydo/files-off-limits.md; echo done", "dydo/files-off-limits.md", FileOperationType.Delete)]
+    [InlineData("case x in x) echo yes;; esac; echo changed > dydo/index.md; echo done", "dydo/index.md", FileOperationType.Write)]
+    public void CaseArm_ProtectedMutationInExpandingBody_IsRetained(string child, string path, FileOperationType type)
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.Posix).Analyze("cat <<EOF\n$(" + child + ")\nEOF");
+
+        Assert.True(result.HasBypassAttempt);
+        Assert.Contains("Command contains command substitution - paths may be dynamic", result.Warnings);
+        Assert.Contains(result.Operations, op => op.Type == type && op.Path == path);
+    }
+
+    [Theory]
+    [InlineData("cat > notes.md <<'EOF'\n$(case x in x) rm dydo/files-off-limits.md;; esac)\nEOF")]
+    [InlineData("cat > notes.md <<EOF\ncase x in x) rm dydo/files-off-limits.md;; esac\nEOF")]
+    public void CaseArm_LiteralBody_PreservesFileOperationRelief(string command)
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.Posix).Analyze(command);
+
+        Assert.False(result.HasBypassAttempt);
+        Assert.DoesNotContain(result.Operations, op => op.Path == "dydo/files-off-limits.md");
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
+    }
+
+    [Fact]
+    public void Analyze_LiteralBodyLines_AreNotCommands()
+    {
+        var result = _analyzer.Analyze("cat > notes.md <<'EOF'\nrm dydo/index.md\nEOF\ncat dydo/guides/x.md");
+
+        Assert.DoesNotContain(result.Operations, op => op.Path == "dydo/index.md");
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Read && op.Path == "dydo/guides/x.md");
+    }
+
+    // A runner named in a comment or an argument, or one the body is not fed to, runs no body.
+    [Theory]
+    [InlineData("cat > helper.sh <<'EOF' # bash script\necho hello\nEOF")]
+    [InlineData("grep -c bash <<'EOF'\nline one\nline two\nEOF")]
+    [InlineData("cat > run.sh <<'EOF' && bash run.sh\necho hello\nEOF")]
+    [InlineData("cat > helper.sh <<'EOF' # bash script\necho \"$HOME\"\nEOF")]
+    [InlineData("cat > /tmp/python <<'EOF'\n$HOME\nEOF")]
+    [InlineData("cat > notes.md <<'EOF' | grep bash\n$HOME\nEOF")]
+    [InlineData("Set-Content -LiteralPath notes.md -Value @'\n$HOME\n'@ # bash example")]
+    public void Analyze_RunnerNotRunningTheBody_LeavesItLiteral(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+    }
+
+    [Theory]
+    [InlineData("bash <<'EOF' # bash script\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' | bash # bash script\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' | sudo bash\necho x > $OUT\nEOF")]
+    [InlineData("@'\necho x > $OUT\n'@ | pwsh -Command - # runs it")]
+    [InlineData("iex @'\necho x > $OUT\n'@")]
+    public void Analyze_RunnerFedTheBody_RunsItAsCode(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt, $"Expected a bypass: {command}");
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "$OUT");
+    }
+
+    // A blank or comment-only line separates no commands, so the trailing line breaks after a heredoc are layout.
+    [Theory]
+    [InlineData("cat > notes.md <<'EOF'\nplain\nEOF\n\n")]
+    [InlineData("cat > notes.md <<'EOF'\r\nplain\r\nEOF\r\n\r\n")]
+    [InlineData("cat > notes.md <<'EOF'\nplain\nEOF\n\n# written\n")]
+    [InlineData("cat > notes.md <<'EOF'\n$HOME\nEOF\n\n")]
+    public void Analyze_LiteralWriteFollowedByBlankOrCommentLines_IsNoBypass(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+    }
+
+    [Theory]
+    [InlineData("cat > notes.md <<'EOF'\nplain\nEOF\n\nrm secret.txt")]
+    [InlineData("cat > notes.md <<'EOF'\nplain\nEOF\n# then\nrm secret.txt")]
+    [InlineData("rm secret.txt\\\n#x")]
+    public void Analyze_CommandOnALaterLine_IsStillAnEmbeddedNewline(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains("Command contains embedded newlines", result.Warnings);
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Delete && op.Path.StartsWith("secret.txt"));
+    }
+
+
+    // Round 4 (DYD-406): a body is literal data only when data commands alone read it (cat, tee,
+    // grep, echo, Write-Output, Set-Content, Add-Content, Out-File), named as such, on a line of
+    // simple commands; every other consumer, quoted or under a path, keeps it code.
+    [Theory]
+    [InlineData("\"C:/Program Files/Git/bin/bash.exe\" <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData("\"bash\" <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData("'bash' <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData(". /dev/stdin <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData("fish <<'EOF'\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' | \"C:/Program Files/Git/bin/bash.exe\"\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' | . /dev/stdin\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' |\necho x > $OUT\nEOF\nbash")]
+    [InlineData("cat <<'EOF' \\\n| bash\necho x > $OUT\nEOF")]
+    [InlineData("{\ncat <<'EOF'\necho x > $OUT\nEOF\n} | bash")]
+    [InlineData("(\ncat <<'EOF'\necho x > $OUT\nEOF\n) | bash")]
+    [InlineData("while read l; do cat <<'EOF'\necho x > $OUT\nEOF\ndone < /dev/null | bash")]
+    [InlineData("if true; then cat <<'EOF'\necho x > $OUT\nEOF\nfi | bash")]
+    [InlineData("cat <<'EOF' > >(bash)\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' | tee >(bash)\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF' & bash\necho x > $OUT\nEOF")]
+    [InlineData("cat <<'EOF'x\nplain\nEOFx\necho x > $OUT\nEOF")]
+    [InlineData("@'\necho x > $OUT\n'@ | & \"C:\\Program Files\\Git\\bin\\bash.exe\"")]
+    [InlineData("@'\necho x > $OUT\n'@ | & 'C:\\Program Files\\Git\\bin\\bash.exe'")]
+    [InlineData("@'\necho x > $OUT\n'@ | wsl bash")]
+    [InlineData("@'\necho x > $OUT\n'@\n| iex")]
+    [InlineData("@'\necho x > $OUT\n'@ |\niex")]
+    [InlineData("& {\n@'\necho x > $OUT\n'@\n} | iex")]
+    public void Analyze_BodyFedToAnythingButADataCommand_StaysCode(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt, $"Expected a bypass: {command}");
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "$OUT");
+    }
+
+    // A command after the terminator is read from the original text: no quote or comment of the
+    // opener line reaches into it, an opener inside quoted text opens no body, and bash, which may
+    // run the line, reads a here-string's apostrophes as quotes.
+    [Theory]
+    [InlineData("@'\nx'; rm dydo/index.md; echo '\n'@ | Set-Content notes.md")]
+    [InlineData("cat > notes.md <<'EOF' # don't expand\nplain\nEOF\nrm dydo/index.md")]
+    [InlineData("cat > notes.md <<'END-OF-FILE'\nplain\nEND-OF-FILE\nrm dydo/index.md")]
+    [InlineData("echo \"\ncat <<'EOF'\n\"; rm dydo/index.md; echo \"\nEOF\n\"")]
+    public void Analyze_CommandAfterALiteralBody_IsReadFromTheOriginalText(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Delete && op.Path == "dydo/index.md");
+    }
+
+    // An apostrophe in a comment quotes nothing, so the line break after it still separates commands.
+    [Theory]
+    [InlineData("echo hi # don't\nrm 'dydo/index.md'; echo x > notes.md")]
+    [InlineData("cat > notes.md # don't\nrm 'dydo/index.md'")]
+    public void Analyze_ApostropheInAComment_HidesNoLineBreak(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains("Command contains embedded newlines", result.Warnings);
+    }
+
+    // Ordinary quoted delimiters, a comment on the opener line, data commands piped on, commands
+    // before the body's command, and literal writes one after another.
+    [Theory]
+    [InlineData("cat > notes.md <<'END-OF-FILE'\nplain $HOME\nEND-OF-FILE")]
+    [InlineData("cat > notes.md <<\"END_OF_FILE\"\nplain $HOME\nEND_OF_FILE")]
+    [InlineData("cat > notes.md <<-'END-OF-FILE'\n\tplain $HOME\n\tEND-OF-FILE")]
+    [InlineData("cat > notes.md <<'EOF' # don't expand\nplain $HOME\nEOF")]
+    [InlineData("cat <<'EOF' | grep -v x | tee notes.md\nplain $HOME\nEOF")]
+    [InlineData("mkdir -p docs && cat > docs/a.md <<'EOF'\nplain $HOME\nEOF")]
+    [InlineData("cat > a.md <<'A'\none $HOME\nA\ncat > b.md <<'B'\ntwo\nB")]
+    public void Analyze_LiteralBodyOnlyDataCommandsRead_IsNoBypass(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.False(result.HasBypassAttempt, string.Join("; ", result.Warnings));
+    }
+
+    [Theory]
+    [InlineData("cat > $OUT <<'END-OF-FILE'\nplain\nEND-OF-FILE")]
+    [InlineData("cat > notes.md <<END-OF-FILE\n$(rm -rf build)\nEND-OF-FILE")]
+    public void Analyze_HyphenatedDelimiter_KeepsTheDynamicChecks(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.True(result.HasBypassAttempt, $"Expected a bypass: {command}");
+    }
+
+    // GS-03 (review round 6): a runner's command, and the command string ssh or watch runs, is at command position.
+    [Theory]
+    [InlineData("stdbuf -oL tail -f app.log", true)]
+    [InlineData("stdbuf -o L tail -f app.log", true)]
+    [InlineData("stdbuf --output=L tail -f app.log", true)]
+    [InlineData("ionice -c 3 tail -f app.log", true)]
+    [InlineData("setsid tail -f app.log", true)]
+    [InlineData("unbuffer tail -f app.log", true)]
+    [InlineData("caffeinate -t 60 tail -f app.log", true)]
+    [InlineData("wsl -d Ubuntu tail -f app.log", true)]
+    [InlineData("wsl bash -c 'tail -f app.log'", true)]
+    [InlineData("ssh host 'tail -f app.log'", true)]
+    [InlineData("ssh -p 22 host tail -f app.log", true)]
+    [InlineData("ssh host -t tail -f app.log", true)]
+    [InlineData("watch -n 1 'tail -f app.log'", true)]
+    [InlineData("echo stdbuf -oL tail -f app.log", true)]
+    [InlineData("grep 'ssh host tail -f' notes.md", true)]
+    [InlineData("ssh tail -f app.log", true)]
+    public void RunsAt_RunnersAndRemoteCommands(string command, bool runs)
+    {
+        Assert.Equal(runs, BashCommandAnalyzer.RunsAt(command, command.IndexOf("tail", StringComparison.Ordinal), ShellDialect.Posix));
+    }
+
+    #endregion
 }

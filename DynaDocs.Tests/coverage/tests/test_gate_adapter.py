@@ -28,6 +28,7 @@ from pathlib import Path
 sys.path.insert(0, sys.argv[1])
 import run_tests
 tools, mode = Path(sys.argv[1]), sys.argv[2]
+preamble = sys.argv[3] if len(sys.argv) > 3 else ''
 containment = run_tests.contain_descendants()
 with tempfile.TemporaryDirectory() as folder:
     root = Path(folder)
@@ -52,7 +53,7 @@ with tempfile.TemporaryDirectory() as folder:
     if mode != 'owner':
         adapter = root / 'adapter.py'
         adapter.write_text("import sys; sys.path.insert(0,"+repr(str(tools))+"); import gate_adapter; "
-            + ("gate_adapter.CLEANUP_SECONDS = 3; " if mode == 'escalation' else '') +
+            + ("gate_adapter.CLEANUP_SECONDS = 3; " if mode == 'escalation' else '') + preamble +
             "raise SystemExit(gate_adapter.run_coverage_command("+repr(command)+", '.'))")
         command = [sys.executable, str(adapter)]
     if mode == 'facade':
@@ -77,7 +78,8 @@ with tempfile.TemporaryDirectory() as folder:
             fields = run_tests._stat_fields(str(pid))
             return fields[1] if fields else 'absent'
         answer = {'exit':child.returncode, 'states':[state(pid) for pid in pids],
-                  'stdout':stdout.decode(), 'stderr':stderr.decode(), 'foreign_alive':foreign.poll() is None}
+                  'stdout':stdout.decode(), 'stderr':stderr.decode(), 'foreign_alive':foreign.poll() is None,
+                  'listing_delayed':(root / 'listing-delayed').exists()}
         receipt = root / 'published/identities.json'
         answer['campaign'] = json.loads(receipt.read_text())['campaign'] if receipt.exists() else None
         if mode == 'facade':
@@ -89,6 +91,18 @@ with tempfile.TemporaryDirectory() as folder:
         child.wait(timeout=5)
         foreign.wait(timeout=5)
 '''
+
+# An adapter preamble: the first process-table listing the adapter makes, its cleanup's first
+# descendant listing, takes 2.1 of the escalation's 3 cleanup seconds, as on a loaded host (DYD-605).
+SLOW_FIRST_LISTING = "exec(" + repr(
+    "import pathlib, time, run_tests\n"
+    "listing = run_tests._process_table\n"
+    "def slow_first_listing():\n"
+    "    run_tests._process_table = listing\n"
+    "    pathlib.Path('listing-delayed').touch()\n"
+    "    time.sleep(2.1)\n"
+    "    return listing()\n"
+    "run_tests._process_table = slow_first_listing\n") + "); "
 
 
 @unittest.skipUnless(sys.platform == "linux", "Native Linux campaign cancellation")
@@ -112,6 +126,66 @@ class CoverageCancellationTests(unittest.TestCase):
                 if entry == "facade":
                     self.assertEqual(130, observed["facade"]["aggregateExit"])
                     self.assertEqual(130, observed["facade"]["results"][0]["childExit"])
+
+    def test_an_escalation_whose_first_descendant_listing_is_slow_still_confirms_cleanup_in_budget(self):
+        probe = subprocess.run([sys.executable, "-c", CANCELLATION_PROBE, str(TOOLS), "escalation",
+                                SLOW_FIRST_LISTING], capture_output=True, text=True, timeout=25)
+        self.assertEqual(0, probe.returncode, probe.stderr)
+        observed = json.loads(probe.stdout)
+        self.assertTrue(observed["listing_delayed"], observed)
+        self.assertEqual(130, observed["exit"], observed)
+        self.assertTrue(all(state in ("absent", "Z") for state in observed["states"]), observed)
+        self.assertTrue(observed["foreign_alive"], observed)
+        self.assertIsNone(observed["campaign"], observed)
+
+
+@unittest.skipIf(sys.platform == "win32", "POSIX process-group escalation")
+class EscalationOrderTests(unittest.TestCase):
+    """The owner's grace runs from its interrupt and pays for the first descendant listing: no kill
+    comes before the grace ends, and what that listing pinned reaches the cleanup."""
+
+    def _stop(self, pin):
+        import run_tests
+        events, clock = [], [0.0]
+
+        def wait(_child, deadline):
+            events.append(("wait", clock[0], deadline))
+            if sum(event[0] == "wait" for event in events) == 1:
+                raise subprocess.TimeoutExpired("owner", 0)  # the owner ignores its interrupt
+            return -9
+
+        def slow_listing(job):
+            events.append(("pin", clock[0]))
+            clock[0] += 2.1
+            return pin(job)
+
+        with mock.patch.object(gate_adapter.time, "monotonic", side_effect=lambda: clock[0]), \
+                mock.patch.object(gate_adapter, "_wait_coverage_child", side_effect=wait), \
+                mock.patch.object(gate_adapter.os, "killpg",
+                                  side_effect=lambda _pid, sig: events.append(("killpg", clock[0], sig))), \
+                mock.patch.object(run_tests, "pin_descendants", side_effect=slow_listing), \
+                mock.patch.object(run_tests, "end_descendants",
+                                  side_effect=lambda _job, seconds, pinned: events.append(
+                                      ("end", clock[0], round(seconds, 6), pinned))):
+            self.assertEqual(-9, gate_adapter._stop_coverage_campaign(
+                mock.Mock(pid=4321, returncode=-9), 3.0, run_tests.SUBREAPER))
+        return events
+
+    def test_the_grace_runs_from_the_interrupt_and_its_listing_s_pins_die_after_it(self):
+        self.assertEqual([("killpg", 0.0, signal.SIGINT), ("pin", 0.0), ("wait", 2.1, 1.0),
+                          ("killpg", 2.1, signal.SIGKILL), ("wait", 2.1, 3.0), ("end", 2.1, 0.9, [7, 8])],
+                         self._stop(lambda _job: [7, 8]))
+
+    def test_a_first_listing_that_fails_pins_nothing_and_still_waits_out_the_grace(self):
+        import run_tests
+        real_pin = run_tests.pin_descendants
+        for failure in (OSError("proc unreadable"), ValueError("malformed stat")):
+            with self.subTest(failure=type(failure).__name__), \
+                    mock.patch.object(run_tests, "_process_table", side_effect=failure):
+                self.assertEqual([("killpg", 0.0, signal.SIGINT), ("pin", 0.0), ("wait", 2.1, 1.0),
+                                  ("killpg", 2.1, signal.SIGKILL), ("wait", 2.1, 3.0),
+                                  ("end", 2.1, 0.9, [])],
+                                 self._stop(real_pin))
 
 PYTHON_TARGET = "def add(left, right):\n    return left + right\n"
 PYTHON_SUITE = ("import unittest\n\n\n"
@@ -223,6 +297,47 @@ def committed_repository(root):
     return root
 
 
+def dotnet_repository(folder):
+    """A repository root carrying the reviewed .NET platform selection fixture."""
+    from test_dotnet_platform import write_dotnet_fixture
+    return write_dotnet_fixture(Path(folder) / "repo")
+
+
+# The real run_tests.py main() in assurance mode, with git, the campaign and the descendant scan
+# stubbed: real publication records a complete, confirmed campaign, then the runner's own cleanup
+# is unconfirmed. main() is pinned to its Linux branch: on win32 it leaves assurance cleanup to the
+# native job owner (job None), so the run's own subreaper cleanup is reachable only on Linux. Every
+# Linux-only call on that path is stubbed, so the pin runs on any platform.
+UNCONFIRMED_CLEANUP_RUNNER = """\
+import sys
+from pathlib import Path
+sys.path.insert(0, {tools!r})
+import run_tests
+
+
+def published(worktree, extra_args, output):
+    campaign = {{"complete": True, "cleanup_confirmed": True, "subject_status": 0}}
+    run_tests._publish_assurance(worktree, worktree / "results", worktree / "owner", output, campaign)
+    return 0
+
+
+def unconfirmed(seconds, pinned):
+    raise TimeoutError("Linux descendant cleanup could not be confirmed")
+
+
+run_tests.tempfile.tempdir = {temp!r}
+run_tests.prune_stale_test_worktrees = lambda: []
+run_tests.is_registered_worktree = lambda path: False
+run_tests.create_worktree = lambda path: True
+run_tests.copy_dirty_files = run_tests.materialize_skill_links = lambda worktree: None
+run_tests.contain_descendants = lambda: run_tests.SUBREAPER
+run_tests._run_assurance_campaign = published
+run_tests._end_reaped_descendants = unconfirmed
+run_tests.sys.platform = "linux"
+run_tests.main()
+"""
+
+
 def collector_row(answer, name):
     return answer["facts"]["collectors"][name]
 
@@ -233,6 +348,8 @@ def python_repository(folder, suite=PYTHON_SUITE):
     write_file(root, "DynaDocs.Tests/coverage/tests/test_arithmetic.py", suite)
     write_file(root, "DynaDocs.Tests/coverage/test-associations.json",
                '{"schema": 1, "modules": []}')
+    write_file(root, "DynaDocs.Tests/coverage/python-platforms.json",
+               '{"schema": 1, "neutral": "linux", "native": {}}')
     return committed_repository(root)
 
 
@@ -475,7 +592,7 @@ class PublishedProvenanceTests(unittest.TestCase):
         self.assertEqual(sys.executable, interpreters["caller"]["path"])
         self.assertEqual(hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
                          interpreters["caller"]["sha256"])
-        self.assertEqual(("dydo/_system/.local/static-gates/python/" +
+        self.assertEqual((".static-gates/python/" +
                   ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")),
                          interpreters["dependencyBearing"]["path"])
         self.assertEqual(hashlib.sha256(STATIC_PYTHON.read_bytes()).hexdigest(),
@@ -971,8 +1088,9 @@ class CoverageCampaignTests(unittest.TestCase):
 
             self.assertEqual(2, process.returncode, process.stderr)
             payload = json.loads((output / "adapters/python-coverage.json").read_text(encoding="utf-8"))
-            self.assertEqual([{"actual": 0.0, "gate": "line-coverage", "member": None,
-                               "path": "lib/arithmetic.py", "threshold": 80}], payload["findings"])
+            expected = [{"actual": 0.0, "gate": "line-coverage", "member": None,
+                         "path": "lib/arithmetic.py", "threshold": 80}] if sys.platform == 'linux' else []
+            self.assertEqual(expected, payload["findings"])
             self.assertEqual([{"message": "No evaluated C# projects"}], payload["gaps"])
             self.assertFalse(payload["measurementComplete"])
             self.assertEqual(str(STATIC_PYTHON),
@@ -992,8 +1110,7 @@ class CoverageCampaignTests(unittest.TestCase):
 
     def test_dotnet_coverage_reports_an_incomplete_campaign_and_rejects_an_unknown_stack(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder) / "repo"
-            root.mkdir()
+            root = dotnet_repository(folder)
             inventory = write_file(root, "inventory.json", '{"sources": []}')
 
             answer = gate_adapter.collect_coverage(root, Path(folder), "dotnet", inventory)
@@ -1016,30 +1133,53 @@ class CoverageCampaignTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Unknown stack: elixir"):
                 gate_adapter.collect_coverage(root, Path(folder), "elixir", inventory)
 
-    def test_a_measured_csharp_campaign_publishes_its_findings_evidence_and_command(self):
-        with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
-            finding = {"gate": "line-coverage", "path": "Commands/SyncCommand.cs"}
-            joined = write_file(raw, "raw/joined.json",
-                                json.dumps({"modules": [], "findings": [finding]}))
+    def test_a_measured_csharp_campaign_publishes_its_platform_portion_evidence_and_command(self):
+        from test_dotnet_platform import joined_modules, write_evidence
+        for platform, measured, failing in (("linux", ["Lib/Mixed.cs", "Lib/Neutral.cs"], set()),
+                                            ("windows", ["Lib/Mixed.cs", "Lib/Native.cs"],
+                                             {"Lib/Mixed.cs", "Lib/Native.cs"})):
+            with self.subTest(platform=platform), tempfile.TemporaryDirectory() as folder:
+                root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
+                write_evidence(raw / "raw", joined_modules(linux=1, windows=0))
+                joined = raw / "raw/joined.json"
 
-            with mock.patch.dict(os.environ, {"APPDATA": str(root / "appdata")}, clear=False), \
-                    mock.patch.object(gate_adapter, "run_coverage_command", return_value=0):
-                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+                with mock.patch.dict(os.environ, {"APPDATA": str(root / "appdata")}, clear=False), \
+                        mock.patch("dotnet_platform.native_platform", return_value=platform), \
+                        mock.patch.object(gate_adapter, "run_coverage_command", return_value=0):
+                    answer = gate_adapter.collect_dotnet_coverage(root, raw)
 
-            self.assertEqual([finding], answer["findings"])
-            row = collector_row(answer, "csharp-coverage")
-            self.assertEqual(("fail", "raw-abc"), (row["status"], row["facts"]["raw"]))
-            self.assertEqual([{"path": "raw-abc/raw/joined.json",
-                               "sha256": hashlib.sha256(joined.read_bytes()).hexdigest()}],
-                             row["artifacts"])
-            campaign = answer["facts"]["commands"][0]
-            self.assertEqual(str(root), campaign["cwd"])
-            self.assertEqual(str(root / "appdata"), campaign["environment"]["APPDATA"])
+                self.assertEqual(failing, {row["path"] for row in answer["findings"]})
+                row = collector_row(answer, "csharp-coverage")
+                self.assertEqual(("fail" if failing else "pass", "raw-abc"), (row["status"], row["facts"]["raw"]))
+                self.assertEqual(measured, [module["path"] for module in row["facts"]["modules"]])
+                receipt = row["facts"]["platform_selection"]
+                self.assertEqual((platform, ["Lib/Mixed.cs", "Lib/Native.cs", "Lib/Neutral.cs"]),
+                                 (receipt["platform"], sorted(receipt["denominators"])))
+                self.assertEqual({"passed": 3, "total": 3} if platform == "windows" else None, receipt.get("tests"))
+                self.assertEqual([{"assembly": "dydo", "accounting": []}], row["facts"]["targets"])
+                self.assertEqual([{"path": "raw-abc/raw/joined.json",
+                                   "sha256": hashlib.sha256(joined.read_bytes()).hexdigest()}],
+                                 row["artifacts"])
+                campaign = answer["facts"]["commands"][0]
+                self.assertEqual(str(root), campaign["cwd"])
+                self.assertEqual(str(root / "appdata"), campaign["environment"]["APPDATA"])
+
+    def test_a_drifted_selection_or_undeclared_windows_test_stops_before_the_campaign(self):
+        for platform, damage in (("linux", "Lib/Mixed.cs"), ("windows", "DynaDocs.Tests/Lib/NativeTests.cs"),
+                                 (None, None)):
+            with self.subTest(platform=platform), tempfile.TemporaryDirectory() as folder:
+                root = dotnet_repository(folder)
+                if damage:
+                    (root / damage).write_text("namespace Lib;\n", encoding="utf-8")
+                with mock.patch("dotnet_platform.native_platform", return_value=platform), \
+                        mock.patch.object(gate_adapter, "run_coverage_command") as campaign, \
+                        self.assertRaises(ValueError):
+                    gate_adapter.collect_dotnet_coverage(root, Path(folder) / "run/raw-abc")
+                campaign.assert_not_called()
 
     def test_a_failed_csharp_suite_is_a_functional_finding_before_any_join(self):
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             raw.parent.mkdir()
 
             with mock.patch.object(gate_adapter, "run_coverage_command", return_value=1):
@@ -1052,7 +1192,7 @@ class CoverageCampaignTests(unittest.TestCase):
 
     def test_a_failed_csharp_suite_names_the_dotnet_tests_that_failed(self):
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             write_file(raw, "raw/altcover-runner.stdout",
                       "some AltCover visit-flush chatter\r\n"
                       "  Failed DynaDocs.Tests.A.B [12 ms]\r\n"
@@ -1071,7 +1211,7 @@ class CoverageCampaignTests(unittest.TestCase):
 
     def test_a_failed_python_subject_is_named_from_the_runner_stderr(self):
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             write_file(raw, "raw/altcover-runner.stdout",
                       "Passed!  - Failed:     0, Passed:  1707, Skipped:     0, Total:  1707, "
                       "Duration: 2 m 9 s - DynaDocs.Tests.dll (net10.0)\r\n")
@@ -1100,7 +1240,7 @@ class CoverageCampaignTests(unittest.TestCase):
 
     def test_more_failing_tests_than_the_cap_are_counted_and_truncated(self):
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             blocks = "".join(f"  Failed DynaDocs.Tests.Case.Test{i} [1 ms]\r\n" for i in range(137))
             write_file(raw, "raw/altcover-runner.stdout",
                       blocks + "Failed!  - Failed:   137, Passed:  1570, Skipped:     0, Total:  1707, "
@@ -1118,7 +1258,7 @@ class CoverageCampaignTests(unittest.TestCase):
     def test_an_unparseable_or_missing_stream_says_so_instead_of_implying_no_failures(self):
         for case in ("both-present-naming-nothing", "stderr-absent"):
             with self.subTest(case=case), tempfile.TemporaryDirectory() as folder:
-                root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+                root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
                 write_file(raw, "raw/altcover-runner.stdout", "some unrelated noise\r\n")
                 if case == "both-present-naming-nothing":
                     write_file(raw, "raw/altcover-runner.stderr", "some unrelated noise\r\n")
@@ -1137,7 +1277,7 @@ class CoverageCampaignTests(unittest.TestCase):
 
     def test_an_exit_2_campaign_names_a_timeout_from_identities_json(self):
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             write_file(raw, "identities.json",
                       json.dumps({"schema": 1,
                                  "campaign": {"failure_category": "timeout", "error_message": None}}))
@@ -1158,7 +1298,7 @@ class CoverageCampaignTests(unittest.TestCase):
         # value and error_message becomes str(error) -- the message never lands in the
         # category itself.
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             write_file(raw, "identities.json",
                       json.dumps({"schema": 1,
                                  "campaign": {"failure_category": "preflight",
@@ -1174,7 +1314,7 @@ class CoverageCampaignTests(unittest.TestCase):
 
     def test_an_exit_2_campaign_fails_closed_when_identities_json_is_missing(self):
         with tempfile.TemporaryDirectory() as folder:
-            root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
             raw.mkdir(parents=True)
 
             with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
@@ -1194,7 +1334,7 @@ class CoverageCampaignTests(unittest.TestCase):
              json.dumps({"schema": 1, "campaign": {"complete": False}})),
         ):
             with self.subTest(label=label), tempfile.TemporaryDirectory() as folder:
-                root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
+                root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
                 write_file(raw, "identities.json", text)
 
                 with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
@@ -1205,6 +1345,79 @@ class CoverageCampaignTests(unittest.TestCase):
                 self.assertEqual(str(raw / "identities.json"), error["identitiesPath"])
                 self.assertNotIn("failureCategory", error)
                 self.assertNotIn("errorMessage", error)
+
+    def exit_2_diagnosis(self, campaign):
+        """collect_dotnet_coverage's incomplete-campaign error for a runner exit of 2, with
+        identities.json recording `campaign`."""
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
+            write_file(raw, "identities.json", json.dumps({"schema": 1, "campaign": campaign}))
+
+            with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
+                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+        self.assertEqual(("error", []), (answer["status"], answer["findings"]))
+        error = answer["errors"][0]
+        self.assertEqual("native campaign incomplete", error["message"])
+        self.assertEqual(str(raw / "identities.json"), error["identitiesPath"])
+        return error
+
+    def test_an_exit_2_runner_over_a_complete_confirmed_campaign_names_its_own_unconfirmed_cleanup(self):
+        for status in (0, 1):
+            with self.subTest(subject_status=status):
+                error = self.exit_2_diagnosis({"complete": True, "cleanup_confirmed": True,
+                                               "subject_status": status, "failure_category": None})
+
+                self.assertNotIn("diagnosisUnavailable", error)
+                self.assertEqual("runner_cleanup_unconfirmed", error["failureCategory"])
+                self.assertEqual(f"the campaign completed with subject status {status} and confirmed "
+                                 "cleanup, but run_tests.py exited 2: its own descendant cleanup was "
+                                 "unconfirmed, so it retained its test worktree (named on its stderr)",
+                                 error["errorMessage"])
+
+    def test_an_exit_2_runner_cleanup_is_not_inferred_where_the_campaign_leaves_another_cause(self):
+        confirmed = {"complete": True, "cleanup_confirmed": True, "subject_status": 0}
+        for label, change in (("incomplete campaign", {"complete": False}),
+                              ("unconfirmed campaign cleanup", {"cleanup_confirmed": False}),
+                              ("subject status not an int", {"subject_status": "0"}),
+                              ("subject status a bool", {"subject_status": False}),
+                              ("subject status absent", {"subject_status": None}),
+                              # The runner passes the subject's own 2 through as its exit.
+                              ("subject status 2", {"subject_status": 2})):
+            with self.subTest(label=label):
+                error = self.exit_2_diagnosis({**confirmed, **change})
+
+                self.assertNotIn("failureCategory", error)
+                self.assertNotIn("errorMessage", error)
+                self.assertEqual("identities.json campaign names no failure_category or error_message",
+                                 error["diagnosisUnavailable"])
+        with self.subTest(label="incomplete campaign naming its category"):
+            error = self.exit_2_diagnosis({**confirmed, "complete": False,
+                                           "failure_category": "descendant_leak",
+                                           "error_message": "Campaign left live descendants"})
+
+            self.assertEqual(("descendant_leak", "Campaign left live descendants"),
+                             (error["failureCategory"], error["errorMessage"]))
+
+    def test_a_runner_whose_cleanup_is_unconfirmed_is_an_incomplete_campaign_not_a_functional_failure(self):
+        """The real runner's main(), in its own process, after a subject that passed: only its
+        Linux descendant cleanup, at the _end_reaped_descendants seam, is unconfirmed."""
+        with tempfile.TemporaryDirectory() as folder:
+            root, raw, temp = dotnet_repository(folder), Path(folder) / "run/raw-abc", Path(folder) / "temp"
+            temp.mkdir()
+            write_file(root, "DynaDocs.Tests/coverage/run_tests.py",
+                       UNCONFIRMED_CLEANUP_RUNNER.format(tools=str(TOOLS), temp=str(temp)))
+
+            with mock.patch("run_tests.contain_descendants", return_value=None):
+                answer = gate_adapter.collect_dotnet_coverage(root, raw)
+
+            self.assertEqual(2, collector_row(answer, "csharp-coverage")["facts"]["child_exit"])
+            self.assertEqual(("error", []), (answer["status"], answer["findings"]))
+            self.assertEqual("runner_cleanup_unconfirmed", answer["errors"][0]["failureCategory"])
+            self.assertEqual(["identities.json"], sorted(path.name for path in raw.iterdir()))
+            retained = list(temp.glob("dydo-test-*"))
+            self.assertEqual(1, len(retained), retained)
+            self.assertTrue((retained[0] / ".dydo-test-worktree.json").is_file())
 
     def test_node_coverage_passes_when_the_native_c8_campaign_covers_every_target(self):
         with tempfile.TemporaryDirectory() as folder:

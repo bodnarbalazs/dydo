@@ -119,12 +119,18 @@ measures the caller's own package identities. The assurance environment uses CPy
 Node 26.13.0 and .NET SDK 10.0.303. Framework-dependent dydo and its test children
 also require shared runtime Microsoft.NETCore.App 10.0.14 or later, matching the
 patched AOT/runtime minimum in `DynaDocs.csproj`. Package restore alone does not
-provision that shared runtime. On Linux, use
-`py=dydo/_system/.local/static-gates/python/bin/python` and invoke `"$py"` instead of
-PowerShell's `& $py` below:
+provision that shared runtime. The pinned interpreter lives in the repo-root, gitignored
+`.static-gates/python`, which an agent provisions without user action: on Linux,
+`python3.14 -m venv .static-gates/python` then
+`.static-gates/python/bin/python -m pip install -r DynaDocs.Tests/coverage/requirements.lock`;
+on Windows, `python -m venv .static-gates/python` then
+`& .static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock`.
+[Provisioning](../reference/coverage-tools.md#provisioning) lists the other toolchains and the
+prepared-environment link. On Linux, use `py=.static-gates/python/bin/python` and invoke `"$py"`
+instead of PowerShell's `& $py` below:
 
 ```powershell
-$py = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+$py = ".static-gates/python/Scripts/python.exe"
 & $py DynaDocs.Tests/coverage/gap_check.py all
 & $py DynaDocs.Tests/coverage/gap_check.py gate static
 & $py DynaDocs.Tests/coverage/gap_check.py gate coverage
@@ -279,7 +285,7 @@ Amendment 2026-09-17, `DynaDocs.Tests/HostCanaries/run-host-canaries.mjs` and
 every static gate and in the association manifest, and their inventory row carries
 `coverageExemption` only while their extracted modules and the drivers themselves stay associated.
 
-Two gaps are recorded rather than dropped or weakened. The first is mutation: on `dotnet`, `python`
+Three gaps are recorded rather than dropped or weakened. The first is mutation: on `dotnet`, `python`
 and `node` it is DYD-103; on `viewer` no TypeScript mutation mechanism is adopted, and no ticket
 currently tracks that gap. The
 JavaScript coverage row carries a second fail-closed rule that currently reports nothing: a
@@ -297,9 +303,49 @@ whole package and an unused verdict needs that graph. What they lack is the gap_
 clone and cycle gates and the association gate. TypeScript under `viewer/dist`, `viewer/coverage`
 or `viewer/node_modules` would fall outside `viewer/src/` the same way, and Git ignores all three.
 
+The third gap is the statechart runtime's TypeScript under `skills/engineering/statechart/scripts/`,
+which is DYD-529. The same rule records it: the inventory lists each of its TypeScript files in
+`excluded` with the reason `typescript-outside-viewer-src`, and no association names one. The
+runtime's own `npm test` runs it, but no facade row measures it. No declared TypeScript package owns
+it, so knip has no graph to judge it either. The viewer's `typescript-unused-exports` collector
+lists it, with a count, as `unjudged` in its result.
+
 A viewer module absent from the LCOV report passes only if the walker proves it declarative, with
 every top-level statement a type, an interface or a type-only import or export, as
 `viewer/src/api/types.ts` is. Any other absent module is a measurement gap.
+
+## Python platform coverage
+
+Python coverage has explicit platform ownership under
+[DR 048's platform measurement amendment](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md).
+`DynaDocs.Tests/coverage/python-platforms.json` assigns native
+callables to Windows; Linux measures every other target and every mixed module's neutral
+remainder. Source pins make selection drift a measurement error. Both hosted CI jobs run the
+whole Python suite, apply the same 80% line / 60% branch / HCRAP 20 policy to their portions, and
+publish the unfiltered native measurements. The dependent union gate requires two passing gates
+on the same clean candidate and accounts for every line, branch and callable body. Neither a
+Linux-only result nor inherited-failure attribution establishes combined coverage success.
+
+## .NET platform coverage
+
+.NET coverage applies the same ownership to the statechart's Windows-native code.
+`DynaDocs.Tests/coverage/dotnet-platforms.json` names Windows-owned members per source and pins
+each source. A point belongs to the member whose emitted body owns it, so a lambda or field
+initializer goes with its member. A branch belongs to its origin line. Linux runs the full suite
+and measures every other point, including the neutral remainder of mixed files. Windows runs only
+the selection's named tests, which reach the named members, and must run all of them without a
+skip. Both gates apply 80% line / 60% branch / HCRAP 20 to their own portion. The hosted
+`dotnet-coverage` job runs both gates on the PR head, Linux on `ubuntu-24.04` and Windows on
+`windows-latest`. The dependent `dotnet-coverage-union` job requires both reports and both
+passing gates on the same clean commit. It rebuilds that commit's complete zero-hit Linux
+denominator and checks that each report holds exactly its own platform's points and agrees on
+every owner. Neither report alone establishes .NET coverage success.
+
+Native error codes are read in the native call's own statement, as in
+`Check(Native(...), Marshal.GetLastPInvokeError())`. The gate instruments with AltCover `--eager`,
+and each visit flushes its trace through a P/Invoke that replaces the thread's last error. Visits
+fall at statement and branch boundaries, so a read in a later statement sees the visit's error,
+not the native call's.
 
 ## Recorded gate correction: three dynamic Vulture uses
 

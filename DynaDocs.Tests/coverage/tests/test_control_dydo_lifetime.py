@@ -11,11 +11,37 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "skills/engineering/verify-dydo/scripts"))
 import control_dydo as control
 import owned_process
+
+
+class OwnedProcessSupervisionTests(unittest.TestCase):
+    def test_finished_native_job_is_successful_with_the_shared_wait_contract(self):
+        def query(_job, kind, pointer, _size, _length):
+            if kind == 1:
+                pointer._obj.active = 0
+                pointer._obj.total = 1
+            return True
+
+        def exit_code(_process, pointer):
+            pointer._obj.value = 7
+            return True
+
+        kernel = SimpleNamespace(ResumeThread=lambda _thread: 1,
+                                 QueryInformationJobObject=query,
+                                 WaitForSingleObject=lambda _handle, _milliseconds: 0,
+                                 GetExitCodeProcess=exit_code,
+                                 TerminateJobObject=lambda _job, _code: self.fail('completed job was terminated'))
+        with contextlib.ExitStack() as stack:
+            result = owned_process.supervise(kernel, 1, SimpleNamespace(thread=2, process=3), [],
+                                             {'execution_seconds': 1, 'teardown_seconds': 1}, stack)
+        self.assertIsNone(result['failure_category'])
+        self.assertTrue(result['cleanup_confirmed'])
+        self.assertEqual(7, result['subject_status'])
 
 
 @unittest.skipUnless(os.name == "nt" and sys.version_info[:2] == (3, 14), "Windows CPython 3.14 owner")

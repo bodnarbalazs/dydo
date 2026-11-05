@@ -64,9 +64,11 @@ the inbox; an admiral wakes on a captain's return, the user's word or its schedu
 | Release tags and changelog | Git |
 | FutureFeatures and their promotion state | Linear |
 
-dydo has no Linear poller, webhook receiver, or Markdown mirror. Its only Linear client is
-`dydo map`, a read-only view that uses the user's `LINEAR_API_KEY` and keeps disposable saved maps
-([DR 052](../project/decisions/052-dydo-map-read-only-linear-view.md)). Agents reach Linear through
+dydo has no Linear poller, webhook receiver, or Markdown mirror. Its one Linear client is read-only
+and serves two commands that use the user's `LINEAR_API_KEY`: `dydo map`, a view that keeps
+disposable saved maps ([DR 052](../project/decisions/052-dydo-map-read-only-linear-view.md)), and
+`dydo survey`, a lane digest that keeps nothing
+([DR 063](../project/decisions/063-dydo-survey-read-only-lane-digest.md)). Agents reach Linear through
 its official MCP, UI, API, and integrations.
 
 ## Reviewed intent

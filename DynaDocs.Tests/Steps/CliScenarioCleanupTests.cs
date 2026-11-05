@@ -12,8 +12,7 @@ public class CliScenarioCleanupTests(CliProcessProbe probe) : IClassFixture<CliP
         if (!OperatingSystem.IsLinux())
             return;
         var scenario = new CliScenario();
-        var observed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var released = 0;
+        var terminationReads = 0;
         var hold = 0;
         string? captured = null;
         string ReadStat(string path)
@@ -21,10 +20,13 @@ public class CliScenarioCleanupTests(CliProcessProbe probe) : IClassFixture<CliP
             var pidPath = Path.Combine(scenario.DirectoryPath, "hold.pid");
             if (hold == 0 && File.Exists(pidPath))
                 hold = int.Parse(File.ReadAllText(pidPath));
-            if (path != $"/proc/{hold}/stat" || Volatile.Read(ref released) != 0)
+            if (path != $"/proc/{hold}/stat")
                 return File.ReadAllText(path);
             if (captured is null)
                 return captured = File.ReadAllText(path);
+            terminationReads++;
+            if (finishesTermination && terminationReads > 1)
+                return File.ReadAllText(path);
 
             // Hold the same identity at the observed EOF/reap-before-final-exit interleaving.
             // The real tree is killed; only the proc observation is controlled.
@@ -35,7 +37,6 @@ public class CliScenarioCleanupTests(CliProcessProbe probe) : IClassFixture<CliP
             fields[17] = "1";
             fields[20] = "0";
             fields[21] = "0";
-            observed.TrySetResult();
             return captured[..(end + 1)] + " " + string.Join(' ', fields);
         }
 
@@ -43,19 +44,13 @@ public class CliScenarioCleanupTests(CliProcessProbe probe) : IClassFixture<CliP
             TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(1), ReadStat);
         try
         {
-            Assert.Same(observed.Task, await Task.WhenAny(run, observed.Task));
-            Assert.False(run.IsCompleted);
-            var parent = int.Parse(File.ReadAllText(Path.Combine(scenario.DirectoryPath, "tree.pid")));
-            Assert.False(Directory.Exists($"/proc/{parent}"), "Direct parent must already be reaped.");
             if (finishesTermination)
             {
-                Volatile.Write(ref released, 1);
                 var error = await Assert.ThrowsAsync<TimeoutException>(() => run);
+                Assert.True(terminationReads >= 2, "Cleanup must observe the exiting identity before confirming its final termination.");
                 Assert.Contains("parent ready", error.Message);
                 Assert.Contains("parent stderr", error.Message);
                 Assert.True(ProcessLiveness.HasTerminated(hold));
-                scenario.Cleanup();
-                Assert.False(Directory.Exists(scenario.DirectoryPath));
             }
             else
             {
@@ -65,10 +60,17 @@ public class CliScenarioCleanupTests(CliProcessProbe probe) : IClassFixture<CliP
                 Assert.ThrowsAny<XunitException>(scenario.Cleanup);
                 Assert.True(Directory.Exists(scenario.DirectoryPath));
             }
+            Assert.True(terminationReads > 0, "EOF and direct-parent reap alone cannot confirm descendant termination.");
+            var parent = int.Parse(File.ReadAllText(Path.Combine(scenario.DirectoryPath, "tree.pid")));
+            Assert.False(Directory.Exists($"/proc/{parent}"), "Direct parent must already be reaped.");
+            if (finishesTermination)
+            {
+                scenario.Cleanup();
+                Assert.False(Directory.Exists(scenario.DirectoryPath));
+            }
         }
         finally
         {
-            Volatile.Write(ref released, 1);
             try { await run; }
             catch (TimeoutException) { }
             catch (InvalidOperationException) { }

@@ -95,17 +95,18 @@ def _inventory_cache(config):
         return None
 
 
-def _record_failure(config_path, phase, error):
-    """Leave the campaign a record of this process's failed measurement, or end the process unmeasured.
+def _record_failure(port, phase, error):
+    """Record this process's failed measurement with its campaign's `collect`, or end the process unmeasured.
 
-    The record lies beside the config, which `collect` writes into its output, since the config itself
-    may be what failed. `site` and `atexit` swallow the error, so a process that cannot record it
-    exits nonzero instead."""
+    The record goes to the loopback port `collect` listens on while its command runs, so it reaches the
+    verdict whatever became of the output and whatever this process's parents do with its exit. `site`
+    and `atexit` swallow the error, so a process that cannot record it exits nonzero instead."""
     message = (f"Python measurement failed in process {os.getpid()} at {phase} "
                f"({sys.orig_argv}): {type(error).__name__}: {error}")
     try:
-        record = Path(config_path).parent / f"failure-{os.getpid()}-{uuid.uuid4().hex}.txt"
-        record.write_text(message, encoding="utf-8")
+        import socket
+        with socket.create_connection(("127.0.0.1", int(port))) as connection:
+            connection.sendall(message.encode("utf-8"))
     except Exception as unrecorded:  # noqa: BLE001 - every unrecorded failure must end the process
         try:
             print(f"{message}; it could not be recorded: {unrecorded}", file=sys.stderr, flush=True)
@@ -119,14 +120,15 @@ def startup_from_environment():
     config_path = os.environ.get("DYDO_PYTHON_COVERAGE_CONFIG")
     if not config_path or _ACTIVE is not None:
         return _ACTIVE
+    port = os.environ.get("DYDO_PYTHON_COVERAGE_FAILURES")
     try:
-        return _start(config_path)
+        return _start(config_path, port)
     except Exception as error:
-        _record_failure(config_path, "startup", error)
+        _record_failure(port, "startup", error)
         raise
 
 
-def _start(config_path):
+def _start(config_path, port):
     global _ACTIVE
     import coverage
     from python_runtime import CallableWitness
@@ -147,7 +149,7 @@ def _start(config_path):
         try:
             write_receipt()
         except Exception as error:
-            _record_failure(config_path, "finish", error)
+            _record_failure(port, "finish", error)
             raise
 
     def write_receipt():
@@ -169,6 +171,42 @@ def _start(config_path):
 
     atexit.register(finish)
     return _ACTIVE
+
+
+def _received(listener):
+    """The whole of the next message sent to a loopback listener."""
+    connection, _ = listener.accept()
+    with connection, connection.makefile(encoding="utf-8") as stream:
+        return stream.read()
+
+
+def _run_recording_failures(argv, root, env):
+    """Run the campaign command and return its exit with the measurement failures its processes recorded.
+
+    A reader takes records in connection order until its own end mark, sent once the command has
+    returned, so it reads every record a process sent before then."""
+    import socket
+    import threading
+    end, records, ended = uuid.uuid4().hex, [], threading.Event()
+    with socket.create_server(("127.0.0.1", 0)) as listener:
+        def read():
+            while (record := _received(listener)) != end:
+                records.append(record)
+            ended.set()
+
+        reader = threading.Thread(target=read, daemon=True)
+        reader.start()
+        try:
+            port = str(listener.getsockname()[1])
+            returncode = subprocess.run(argv, cwd=root,
+                                        env={**env, "DYDO_PYTHON_COVERAGE_FAILURES": port}).returncode
+        finally:
+            with socket.create_connection(listener.getsockname()) as closing:
+                closing.sendall(end.encode("utf-8"))
+            reader.join()
+    if not ended.is_set():
+        raise ValueError("Python measurement failure records stopped being read before the command ended")
+    return returncode, records
 
 
 def collect(root, output, source_paths, command):
@@ -202,8 +240,7 @@ def collect(root, output, source_paths, command):
     tools = Path(__file__).resolve().parent
     env["PYTHONPATH"] = os.pathsep.join([str(startup), str(tools), env.get("PYTHONPATH", "")])
     argv = [sys.executable if item == "{python}" else item for item in command]
-    result = subprocess.run(argv, cwd=root, env=env)
-    failures = [path.read_text(encoding="utf-8") for path in sorted(output.glob("failure-*.txt"))]
+    returncode, failures = _run_recording_failures(argv, root, env)
     if failures:
         raise ValueError("; ".join(failures))
     data = coverage.Coverage(data_file=str(output / ".coverage"), branch=True,
@@ -215,7 +252,7 @@ def collect(root, output, source_paths, command):
     combined = combine_counters(receipts)
     (output / "counters.json").write_text(
         json.dumps(combined, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return result.returncode
+    return returncode
 
 
 def main():

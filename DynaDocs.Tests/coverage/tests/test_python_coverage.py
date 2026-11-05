@@ -1,4 +1,5 @@
 """Ordinary coverage.py collection includes child-only and never-called callables."""
+import itertools
 import json
 import os
 import subprocess
@@ -36,6 +37,7 @@ _COLD_BOOTSTRAP = """\
 import importlib.util
 import json
 import os
+import socket
 import sys
 from pathlib import Path
 
@@ -48,6 +50,9 @@ spec = importlib.util.spec_from_file_location("cold_bootstrap", tools / "python_
 bootstrap = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bootstrap)
 
+# The deliberate refusal below is no measurement failure of an inherited campaign.
+refusals = socket.create_server(("127.0.0.1", 0))
+os.environ["DYDO_PYTHON_COVERAGE_FAILURES"] = str(refusals.getsockname()[1])
 os.environ["DYDO_PYTHON_COVERAGE_CONFIG"] = str(work / "unpinned.json")
 refusal = ""
 try:
@@ -224,17 +229,39 @@ assert child.wait() == 0
 """
 
 
-# A process measured through a real sitecustomize whose failure record has nowhere to go: its config's
-# directory never existed (startup), or became a file before exit (finish).
-_UNRECORDABLE = """\
-import shutil, sys
+# The same, but no file can be written beside the failing child's config and the driver ignores that
+# child's exit: at startup its config lies in a directory that does not exist; at finish a file stands in
+# for the campaign's output from just before it exits until the driver, exiting 0 itself, restores it.
+_UNRECORDABLE_AND_IGNORED = """\
+import os, subprocess, sys
 from pathlib import Path
+
+evidence = Path(os.environ["DYDO_PYTHON_COVERAGE_CONFIG"]).parent
+away = evidence.with_name("away")
+good = "import subject; subject.work()"
+subprocess.run([sys.executable, "-c", good], check=True)
+if sys.argv[1] == "startup":
+    gone = {**os.environ, "DYDO_PYTHON_COVERAGE_CONFIG": str(evidence / "gone" / "config.json")}
+    child = subprocess.Popen([sys.executable, "-c", good], env=gone)
+else:
+    hide = f"import os; os.rename({str(evidence)!r}, {str(away)!r}); open({str(evidence)!r}, 'x').close()"
+    child = subprocess.Popen([sys.executable, "-c", f"{good}; {hide}"])
+Path("failed.pid").write_text(str(child.pid), encoding="utf-8")
+child.wait()
+if away.exists():
+    evidence.unlink()
+    away.rename(evidence)
+"""
+
+
+# A process measured through a real sitecustomize, with no campaign listening for its failure record,
+# whose measurement fails at startup on a config that does not exist, or at finish on a ghost callable.
+_UNRECORDABLE = """\
+import sys
 
 if sys.argv[1] == "finish":
     import subject
     exec(compile("def ghost():\\n    return 0\\nghost()\\n", subject.work.__code__.co_filename, "exec"))
-    shutil.rmtree("campaign")
-    Path("campaign").write_text("", encoding="utf-8")
 print("ran", flush=True)
 """
 
@@ -491,17 +518,30 @@ class PythonCoverageTests(unittest.TestCase):
         self.assert_campaign_receipt_survived(observed)
 
     def test_a_process_whose_measurement_fails_fails_the_campaign_by_name(self):
-        for phase in ("startup", "finish"):
-            with self.subTest(phase=phase), tempfile.TemporaryDirectory() as folder:
+        drivers = {"recordable": _FAILING_CHILD, "unrecordable and ignored": _UNRECORDABLE_AND_IGNORED}
+        for (case, driver), phase in itertools.product(drivers.items(), ("startup", "finish")):
+            with self.subTest(case=case, phase=phase), tempfile.TemporaryDirectory() as folder:
                 root = Path(folder)
                 (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
-                (root / "driver.py").write_text(_FAILING_CHILD, encoding="utf-8")
+                (root / "driver.py").write_text(driver, encoding="utf-8")
                 output = root / "evidence"
                 result = _facade(root, output, ["subject.py"], ["{python}", "-S", "driver.py", phase])
                 failed = (root / "failed.pid").read_text(encoding="utf-8")
                 self.assertEqual(2, result.returncode, result.stdout + result.stderr)
                 self.assertIn(f"Python measurement failed in process {failed} at {phase}", result.stderr)
                 self.assertFalse((output / "counters.json").exists())
+
+    def test_a_record_that_cannot_be_read_fails_the_campaign(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+            unreadable = ("import os, socket\nwith socket.create_connection(('127.0.0.1', "
+                          "int(os.environ['DYDO_PYTHON_COVERAGE_FAILURES']))) as record:\n"
+                          "    record.sendall(b'\\xff')\nimport subject\nsubject.work()\n")
+            result = _facade(root, root / "evidence", ["subject.py"], ["{python}", "-c", unreadable])
+            self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+            self.assertIn("failure records stopped being read before the command ended", result.stderr)
+            self.assertFalse((root / "evidence" / "counters.json").exists())
 
     def test_a_measurement_failure_that_cannot_be_recorded_fails_its_process(self):
         tools = Path(__file__).resolve().parents[1]
@@ -519,7 +559,7 @@ class PythonCoverageTests(unittest.TestCase):
                 "schema": 1, "root": str(work), "output": str(work / "campaign"),
                 "sources": [str(work / "subject.py")]}), encoding="utf-8")
             env = {key: value for key, value in os.environ.items()
-                   if key != "DYDO_PYTHON_COVERAGE_CONFIG"}
+                   if key not in ("DYDO_PYTHON_COVERAGE_CONFIG", "DYDO_PYTHON_COVERAGE_FAILURES")}
             env["PYTHONPATH"] = os.pathsep.join([str(work / "startup"), str(tools)])
 
             def run(case, config=None):

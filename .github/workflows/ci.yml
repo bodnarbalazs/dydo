@@ -68,6 +68,14 @@ jobs:
       - name: Install locked coverage dependencies
         run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
 
+      # The statechart typecheck tests compile with the viewer's locked TypeScript and node types,
+      # and the package's own test files import its locked dependencies.
+      - name: Install viewer dependencies
+        run: pnpm -C viewer install --frozen-lockfile
+
+      - name: Install statechart test dependencies
+        run: pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile
+
       - name: Prepare native evidence directories
         shell: bash
         run: mkdir -p DynaDocs.Tests/coverage/results/native-jobs DynaDocs.Tests/coverage/results/native-lifetime

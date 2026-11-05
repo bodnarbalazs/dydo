@@ -979,6 +979,13 @@
       ]
     },
     {
+      "module": "Services/ClaudeGuardWiring.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/ClaudeGuardWiringTests.cs",
+        "DynaDocs.Tests/Services/ValidationServiceTests.cs"
+      ]
+    },
+    {
       "module": "Utils/ConfigFileLocator.cs",
       "tests": [
         "DynaDocs.Tests/Services/ConfigServiceTests.cs",

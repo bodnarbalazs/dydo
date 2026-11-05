@@ -13,7 +13,6 @@ public class HookInputTests
         Assert.Null(input.SessionId);
         Assert.Null(input.TranscriptPath);
         Assert.Null(input.Cwd);
-        Assert.Null(input.PermissionMode);
         Assert.Null(input.HookEventName);
         Assert.Null(input.ToolName);
         Assert.Null(input.ToolInput);
@@ -29,7 +28,6 @@ public class HookInputTests
             SessionId = "session-1",
             TranscriptPath = "/transcripts/1.json",
             Cwd = "/home/user",
-            PermissionMode = "default",
             HookEventName = "PreToolUse",
             ToolName = "edit",
             ToolInput = toolInput,
@@ -39,7 +37,6 @@ public class HookInputTests
         Assert.Equal("session-1", input.SessionId);
         Assert.Equal("/transcripts/1.json", input.TranscriptPath);
         Assert.Equal("/home/user", input.Cwd);
-        Assert.Equal("default", input.PermissionMode);
         Assert.Equal("PreToolUse", input.HookEventName);
         Assert.Equal("edit", input.ToolName);
         Assert.Same(toolInput, input.ToolInput);
@@ -68,7 +65,6 @@ public class HookInputTests
         Assert.Equal("s1", input.SessionId);
         Assert.Equal("/t.json", input.TranscriptPath);
         Assert.Equal("/cwd", input.Cwd);
-        Assert.Equal("plan", input.PermissionMode);
         Assert.Equal("PreToolUse", input.HookEventName);
         Assert.Equal("write", input.ToolName);
         Assert.NotNull(input.ToolInput);

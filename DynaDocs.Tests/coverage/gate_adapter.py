@@ -33,7 +33,7 @@ class MeasurementTimeout(ValueError):
 
 
 def run_coverage_command(argv, cwd):
-    from run_tests import contain_descendants, defer_interruption
+    from run_tests import contain_descendants, defer_interruption, reaping
     deadline_text = os.environ.get(ROW_DEADLINE_ENV)
     deadline = float(deadline_text) if deadline_text is not None else None
     execution_deadline = None if deadline is None else deadline - CLEANUP_SECONDS
@@ -42,13 +42,15 @@ def run_coverage_command(argv, cwd):
                              creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
                              start_new_session=sys.platform != "win32")
     try:
-        status = _wait_coverage_child(child, execution_deadline)
+        with reaping(containment, child):
+            status = _wait_coverage_child(child, execution_deadline)
     except (subprocess.TimeoutExpired, KeyboardInterrupt) as error:
         # Leave time inside the facade's cleanup window for forced descendant cleanup.
         remaining = CLEANUP_SECONDS if deadline is None else max(0, deadline - time.monotonic())
         cleanup_confirmed = False
         try:
-            with defer_interruption():
+            # Orphans adopted while the campaign stops are reaped as they exit, as during its run.
+            with defer_interruption(), reaping(containment, child):
                 cleanup_deadline = time.monotonic() + min(remaining, CLEANUP_SECONDS)
                 stopped = _stop_coverage_campaign(child, cleanup_deadline, containment)
                 if stopped == 2:
@@ -97,7 +99,8 @@ def _stop_coverage_campaign(child, deadline, containment):
                 pass
         _wait_coverage_child(child, min(deadline, time.monotonic() + 5))
     finally:
-        # A killed Linux owner can leave detached children adopted by this adapter.
+        # A killed Linux owner can leave detached children adopted by this adapter; the caller's
+        # reaping collects them once they are ended.
         end_descendants(containment, seconds=max(0, deadline - time.monotonic()))
     return child.returncode
 

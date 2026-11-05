@@ -308,7 +308,8 @@
     {
       "module": "DynaDocs.Tests/coverage/gap_check.py",
       "tests": [
-        "DynaDocs.Tests/coverage/tests/test_testing_facade.py"
+        "DynaDocs.Tests/coverage/tests/test_testing_facade.py",
+        "DynaDocs.Tests/coverage/tests/test_memory_cap.py"
       ]
     },
     {
@@ -612,7 +613,8 @@
       "module": "DynaDocs.Tests/coverage/run_tests.py",
       "tests": [
         "DynaDocs.Tests/coverage/tests/test_runner.py",
-        "DynaDocs.Tests/coverage/tests/test_assurance_publication.py"
+        "DynaDocs.Tests/coverage/tests/test_assurance_publication.py",
+        "DynaDocs.Tests/coverage/tests/test_memory_cap.py"
       ]
     },
     {

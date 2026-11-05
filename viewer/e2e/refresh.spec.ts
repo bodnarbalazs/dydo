@@ -55,6 +55,7 @@ test('Refresh swaps in the new graph in place and cascades what changed, then fi
   await expect(page.getByRole('checkbox', { name: 'Show related' })).toBeChecked();
   await expect(page.locator('.edge-related').first()).toBeAttached();
 
+  await expect(refresh(page)).toBeEnabled();
   await page.keyboard.press('r');
   await expect(notice(page)).toHaveText('No changes');
   await expect(page.locator('.react-flow__node[class*="refresh-"]')).toHaveCount(0);
@@ -62,27 +63,49 @@ test('Refresh swaps in the new graph in place and cascades what changed, then fi
 });
 
 test('a second Refresh waits for the first to land, keeping the map, its viewport and its marks', async ({ page }) => {
+  // The old map's exit hold is a page timer, so a paused clock keeps the new map from landing, and Refresh
+  // busy, until the test resumes it. Unheld, the window is ~300 ms, shorter than a late poll of the notice.
+  await page.clock.install();
+  const asked: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/graph') asked.push(request.url());
+  });
   await openA(page);
   await page.evaluate(() => {
     const seen: string[] = [];
-    Object.assign(window, { placeholdersSeen: seen });
+    // Once Refresh is busy, every moment it is free again while the old map is still drawn.
+    const freedEarly: boolean[] = [];
+    let busy = false;
+    Object.assign(window, { placeholdersSeen: seen, freedEarly });
     new MutationObserver(() => {
       const shown = document.querySelector('.placeholder');
       if (shown !== null) seen.push(shown.textContent ?? '');
-    }).observe(document.body, { childList: true, subtree: true });
+      const disabled = document.querySelector<HTMLButtonElement>('.refresh-button')?.disabled === true;
+      busy ||= disabled;
+      if (busy && !disabled && document.querySelector('[data-identifier="DYD-9001"]') !== null) freedEarly.push(true);
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled'] });
   });
   const shown = await viewport(page);
+  // Pause where the page's wall clock already stands: fixed, it cannot run past the target however long the host
+  // stalls, so the pause jumps no time and fires no timer early. Only Date stands still; timers and frames run on ticks.
+  const now = new Date();
+  await page.clock.setFixedTime(now);
+  await page.clock.pauseAt(now);
 
   await refresh(page).click();
   await expect(notice(page)).toHaveText('5 changed · 2 new · 2 removed · 2 links added · 1 link removed');
   // The answer is in; the old map still shows while the new one lays out, and Refresh stays busy.
   await expect(refresh(page)).toBeDisabled();
   await page.keyboard.press('r');
+  await expect(node(page, 'DYD-9001')).toHaveClass(/refresh-removed/);
+  await page.clock.resume();
   for (const identifier of CHANGED) await expect(node(page, identifier)).toHaveClass(/refresh-changed/);
   await expect(refresh(page)).toBeEnabled();
   await expect(notice(page)).toHaveText('5 changed · 2 new · 2 removed · 2 links added · 1 link removed');
+  expect(asked).toHaveLength(2);
   expect(await viewport(page)).toBe(shown);
   expect(await page.evaluate(() => (window as unknown as { placeholdersSeen: string[] }).placeholdersSeen)).toEqual([]);
+  expect(await page.evaluate(() => (window as unknown as { freedEarly: boolean[] }).freedEarly)).toEqual([]);
 });
 
 test('each refresh cross-fades the cards it changed from their old look, the same cards again too', async ({ page }) => {

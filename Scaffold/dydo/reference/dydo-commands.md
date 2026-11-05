@@ -480,7 +480,7 @@ PR title, and the trailers `Dydo-Merge: dydo <version>`, `Reviewed-Candidate: <s
 refused for a Merge code-writer to resolve locally.
 
 Output on stdout, the captain's merge receipt:
-`merged PR #<n> (<sha12>) into <base> at <pin12> as <merge12>; PR marked merged: yes|no|unverified`,
+`merged PR #<n> (<sha12>) into <base> at <pin12> as <merge12>; PR marked merged: yes|pending|unverified`,
 or `already integrated (no new merge commit): PR #<n> (<sha12>) is in <base>`, or for a dry run
 `would merge <sha12> into <base> at <pin12> (PR #<n>)`. A `warning:` line follows when the default branch changed
 during the run. There is no local log; git and the PR timeline are the record.
@@ -493,7 +493,8 @@ answer such as a `403`, `422` or ruleset rejection, with GitHub's message. A mer
 another tip, when the branch moved between the re-read and GitHub's merge, also exits `2`: its
 `error:` line names the merge, its first parent and the pin, and says the merge landed and its actual
 parents need merge review. A merge that succeeded exits `0` even when the PR could not be reread
-(`unverified`).
+(`unverified`) or GitHub had not yet marked it merged (`pending`: the command rereads a few times over
+about four seconds, and never prints `no` after a successful merge).
 
 `dydo init` and `--join` write narrow allow rules for both hosts (see [dydo init](#dydo-init)),
 and the guard lets a sub-agent run it: a Merge Sub-ticket's code-writer runs it. The guard hard blocks

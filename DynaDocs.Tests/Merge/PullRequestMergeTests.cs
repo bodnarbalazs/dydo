@@ -429,26 +429,97 @@ public sealed class PullRequestMergeTests : IDisposable
 
     #region Report: post-verify and the default branch
 
-    [Fact]
-    public void PrStillOpenOnTheReread_ReportsMarkedMergedNo()
+    // GitHub marks a PR merged asynchronously, so the first reread after a good write can still say merged:false (DYD-535).
+    private const string Receipt = "merged PR #7 (0123456789ab) into feature/x at 111111111111 as 333333333333; PR marked merged: ";
+
+    private static int Rereads(MergeScenario s) => s.GitHub.Calls.Count(call => call.Method == "GET" && call.Path == Pulls) - 1;
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PrNotYetMarkedMergedOnTheFirstReread_ReportsYesOnceGitHubCatchesUp(bool twoParent)
     {
-        _s.GitHub.On("GET", Pulls, Reply(200, _s.PullJson));
+        if (twoParent)
+            FastForwardEligible();
+        _s.GitHub.On("GET", Pulls, Reply(200, _s.PullJson), Reply(200, _s.PullJson), Reply(200, MergedPull()));
 
-        var (exit, stdout, _) = _s.Merge();
+        var (exit, stdout, stderr) = _s.Merge();
 
-        Assert.Equal(0, exit);
-        Assert.EndsWith("PR marked merged: no", Lines(stdout)[^1]);
+        Assert.True(exit == 0, stderr);
+        Assert.Contains(Receipt + "yes", Lines(stdout));
+        Assert.Equal(2, Rereads(_s));
+        Assert.Single(_s.Waits);
     }
 
-    [Fact]
-    public void AFailedRereadAfter201_StillExitsZeroUnverified()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PrNeverMarkedMerged_ReportsPendingAfterABoundedWaitAndExitsZero(bool twoParent)
     {
+        if (twoParent)
+            FastForwardEligible();
+        _s.GitHub.On("GET", Pulls, Reply(200, _s.PullJson));
+
+        var (exit, stdout, stderr) = _s.Merge();
+
+        Assert.True(exit == 0, stderr);
+        Assert.Contains(Receipt + "pending", Lines(stdout));
+        Assert.DoesNotContain("PR marked merged: no", stdout);
+        Assert.Equal(4, Rereads(_s));
+        Assert.Equal(3, _s.Waits.Count);
+        Assert.InRange(_s.Waits.Sum(wait => wait.TotalSeconds), 1, 10);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AFailedRereadAfterTheWrite_StillExitsZeroUnverified(bool twoParent)
+    {
+        if (twoParent)
+            FastForwardEligible();
         _s.GitHub.On("GET", Pulls, Reply(200, _s.PullJson), Reply(0));
 
         var (exit, stdout, _) = _s.Merge();
 
         Assert.Equal(0, exit);
-        Assert.Contains("merged PR #7 (0123456789ab) into feature/x at 111111111111 as 333333333333; PR marked merged: unverified", Lines(stdout));
+        Assert.Contains(Receipt + "unverified", Lines(stdout));
+        Assert.Equal(1, Rereads(_s));
+    }
+
+    [Fact]
+    public void AFailedRereadAfterNotYetMerged_ReportsUnverifiedWithoutFurtherRereads()
+    {
+        _s.GitHub.On("GET", Pulls, Reply(200, _s.PullJson), Reply(200, _s.PullJson), Reply(502, """{ "message": "Bad Gateway" }"""));
+
+        var (exit, stdout, _) = _s.Merge();
+
+        Assert.Equal(0, exit);
+        Assert.Contains(Receipt + "unverified", Lines(stdout));
+        Assert.Equal(2, Rereads(_s));
+    }
+
+    [Fact]
+    public void ARereadAlreadyMarkedMerged_ReportsYesWithoutWaiting()
+    {
+        var (exit, stdout, _) = _s.Merge();
+
+        Assert.Equal(0, exit);
+        Assert.Contains(Receipt + "yes", Lines(stdout));
+        Assert.Equal(1, Rereads(_s));
+        Assert.Empty(_s.Waits);
+    }
+
+    [Fact]
+    public void ADryRunAndAnAlreadyIntegrated204_NeverPoll()
+    {
+        _s.GitHub.On("GET", Pulls, Reply(200, _s.PullJson));
+        _s.GitHub.On("POST", Merges, Reply(204));
+
+        _s.Merge(dryRun: true);
+        _s.Merge();
+
+        Assert.Equal(2, _s.GitHub.Calls.Count(call => call.Path == Pulls));
+        Assert.Empty(_s.Waits);
     }
 
     [Fact]

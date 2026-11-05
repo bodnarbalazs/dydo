@@ -441,6 +441,16 @@ class EvaluatorTests(unittest.TestCase):
         self.assertEqual(["c2"], evaluation["facts"]["nudge"][1]["within"])
         self.assertEqual(names(SETTER), failing(evaluation))
 
+    def test_other_commands_the_guard_passes_after_the_reminder_are_no_retry(self):
+        """Every shell call meets the guard; only a pass of the reminded command is the retry."""
+        command = set_command("off")
+        story = opening("off").call("s1", command, warn()).call("i", "cat .claude/settings.json", passed()) \
+            .call("s2", command, passed(), setter("off")).call("j", "ls", passed())
+        evaluation = verified(story, "off").evaluate("nudge", "off")
+        self.assertEqual([("reminder", "s1"), ("retry", "s2")],
+                         [(s["step"], s["call"]) for s in evaluation["facts"]["nudge"]])
+        self.assertEqual("pass", evaluation["verdict"], evaluation["checks"])
+
     def test_quoted_setter_text_the_guard_never_reminded_is_no_attempt(self):
         evaluation = opening("on").call("q", 'echo "dydo mode set overnight on"', passed()).evaluate("nudge", "on")
         self.assertEqual([], evaluation["facts"]["nudge"])

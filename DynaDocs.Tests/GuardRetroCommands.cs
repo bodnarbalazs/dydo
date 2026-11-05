@@ -91,6 +91,231 @@ public static class GuardRetroCommands
     // GS-02, Claude Bash, same session: single-line sed -i with backticks in single quotes.
     public const string Gs02SedBacktickSingleLine = "sed -i 's#repository path `tools/ci_runner/host/README.md` points#repository path `infra/ci/README.md` points#' dydo/guides/ripple-e1-activation.md; git diff dydo/guides/ripple-e1-activation.md | grep '^[+-]' ; git add infra/ci/README.md infra/ci/lc1108-linux-preflight.sh infra/ci/lc1108-windows-preparation.sh dydo/guides/ripple-e1-activation.md; git status --short | head";
 
+    // DYD-422 review (Codex seat 2, c49dd869): lines whose single-quoted text a state change or a
+    // non-data command on the same command line makes code, each refused as on master (the
+    // narrowed rule refuses most for their second command alone).
+    public static Xunit.TheoryData<string> Gs02StateChangingLines => new()
+    {
+        "printf -v 'a[$(echo x > $OUT)]' '%s' x",
+        "printf -v'a[$(echo x > $OUT)]' '%s' x",
+        "printf -v 'a[`echo x > $OUT`]' '%s' x",
+        "printf -v 'a[0+$(echo x > $OUT)]' '%s' x",
+        "\\printf -v 'a[$(echo x > $OUT)]' '%s' x",
+        "printf -v PS4 '$(echo x > $OUT)'; set -x; echo x > notes.md",
+        "printf -v PS0 '$(echo x > $OUT)'; set -x; echo x > notes.md",
+        "printf -v PS1 '$(echo x > $OUT)'; set -x; echo x > notes.md",
+        "printf -v PROMPT_COMMAND '$(echo x > $OUT)'; set -x; echo x > notes.md",
+        "printf -v 'BASH_CMDS[x]' '$(echo x > $OUT)'",
+        "printf '%n' PS4; echo '$(echo x > $OUT)' > notes.md",
+        "alias echo=eval; echo 'echo x > $OUT'",
+        "shopt -s expand_aliases\nalias echo=eval\necho 'echo x > $OUT'",
+        "enable -n printf; printf '$(echo x > $OUT)' > notes.md",
+        "cat > x.md <<'EOF'; shopt -s expand_aliases; alias echo=eval\nplain\nEOF\necho 'echo x > $OUT'",
+        "X=1 echo '$(echo x > $OUT)' > notes.md",
+        "Set-Alias echo Invoke-Expression; echo 'echo x > $OUT'",
+        "New-Alias printf Invoke-Expression; printf 'echo x > $OUT'",
+        "sal echo iex; echo 'echo x > $OUT'",
+        "nal echo iex; echo 'echo x > $OUT'",
+        "Set-Item alias:echo Invoke-Expression; echo 'echo x > $OUT'",
+        "New-Item -Path function:echo -Value 'iex $args[0]'; echo 'echo x > $OUT'",
+        "$x = 1; echo '$(echo x > $OUT)' > notes.md",
+        "Echo '$(echo x > $OUT)' > notes.md",
+        "& echo '$(echo x > $OUT)' > notes.md",
+        "echo '$(echo x > $OUT)' > /dev/stdout; sh < /dev/stdout",
+        "echo '$(echo x > $OUT)' ; sh > notes.md",
+        "printf '$(echo x > $OUT)' && sh > notes.md",
+        "grep '$(echo x > $OUT)' || sh > notes.md",
+        "echo '$(echo x > $OUT)' | cat > notes.md",
+        "printf '%s' '$(date)' > run.sh && sh run.sh",
+        "git -c alias.x='!sh' x; echo '$(echo x > $OUT)' > notes.md",
+    };
+
+    // DYD-422 review (Codex seat 3, 31b6c7a2): lines that write single-quoted text and then run it
+    // through sed -f, a sed e command, grep --pre, or git configuration, attributes or hooks the same
+    // line writes, each refused as on master; the second command alone now refuses each.
+    public static Xunit.TheoryData<string> Gs02WriteThenRunLines => new()
+    {
+        "printf '%s' 'e echo $(echo PWNED >&2)' > run.sed; sed -f run.sed notes.md",
+        "printf '%s' 'e echo $(echo PWNED >&2)' > run.sed; sed --file=run.sed notes.md",
+        "printf '%s' 'e echo $(echo PWNED >&2)' > run.sed; sed -frun.sed notes.md",
+        "printf '%s' 'e echo $(echo PWNED >&2)' > run.sed; sed -nf run.sed notes.md",
+        "printf '%s' 's/x/$(echo PWNED >&2)/e' > run.sed; sed -f run.sed notes.md",
+        "printf '%s' 'e echo PWNED > $OUT' > run.sed; sed -f run.sed notes.md",
+        "echo '$(echo PWNED >&2)' > run.sed; sed -e 'e sh run.sed' notes.md",
+        "echo '$(echo PWNED >&2)' > run.sed; sed --expression='e sh run.sed' notes.md",
+        "echo '$(echo PWNED >&2)' > run.sed; sed 'e sh run.sed' notes.md",
+        "echo '$(echo PWNED >&2)' > run.sed; sed 's/x/y/;e sh run.sed' notes.md",
+        "echo '$(echo PWNED >&2)' > run.sed; sed '1r run.sed' notes.md",
+        "printf '%s' 'echo $(echo PWNED >&2)' > run.sh; grep --pre=sh run.sh notes.md",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > .git/config; git diff",
+        "printf '[core]\\n pager = echo $(echo PWNED >&2)\\n' > .git/config; git log",
+        "printf '[core]\\n editor = echo $(echo PWNED >&2)\\n' > .git/config; git commit",
+        "printf '[filter \"run\"]\\n clean = echo $(echo PWNED >&2)\\n' > .git/config; git add notes.md",
+        "printf '[diff \"run\"]\\n textconv = echo $(echo PWNED >&2)\\n' > .git/config; git diff --textconv",
+        "printf '%s' '* diff=$(echo PWNED >&2)' > .gitattributes; git diff",
+        "sed -i 's/x/$(echo PWNED >&2)/' .git/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .git/hooks/pre-commit && git commit -m x",
+        "printf '%s' '$(echo PWNED >&2)' >> .git/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > '.git'/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > sub/../.git/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > ./.GIT/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .g\\it/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .git\\config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .git./config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .gi?/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > ~/.gitconfig; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .config/git/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > .gitmodules; git status",
+        "printf '%s' '$(echo PWNED >&2)' > .mailmap; git log",
+        "git diff --output=notes.md; echo '$(echo PWNED >&2)' > notes.md",
+    };
+
+    // DYD-422 review (Codex seat 4, f1764904): a sed -i backup suffix renames a written file into
+    // .git, and options off sed's closed list or on grep, head and git, each refused as on master.
+    public static Xunit.TheoryData<string> Gs02OptionLines => new()
+    {
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed -i'.git/*' 's/NOTHERE/ok/' config; git diff",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed -i.git/* 's/NOTHERE/ok/' config; git diff",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed --in-place=.git/* 's/NOTHERE/ok/' config; git diff",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed -i.git/x 's/NOTHERE/ok/' config; git diff",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed --in-place=../.git/config 's/NOTHERE/ok/' config; git diff",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed -i'../.git/*' 's/NOTHERE/ok/' config; git diff",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed 's/NOTHERE/ok/' -i.git/x config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; sed -ibak 's/x/y/' notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; sed -ni.bak 's/x/y/' notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; sed -is 's/x/y/' notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; sed --in=.git/x 's/x/y/' notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; sed --follow-symlinks -i 's/x/y/' notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; sed -l 5 's/x/y/' notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; grep --exclude-from=list x notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; grep --pre sh x notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; head --bogus notes.md",
+        "printf -- '%s' '$(echo PWNED >&2)' > notes.md",
+        "echo -x '$(echo PWNED >&2)' > notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git diff --ext-diff",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git diff --textconv",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git add -p",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git add --patch",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git commit -e -m x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git commit --edit -m x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git commit --amend -m x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git commit --no-verify -m x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git commit --template=x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git log --exec-path=x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git log --git-dir=x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git status --work-tree=x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git log --config-env=x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git -C .. diff",
+    };
+
+    // DYD-422 review (Codex seat 5, e2b8c674): an option that takes a value consumes the next word,
+    // -- included, as the program parses it (git 2.53 reads git commit -m -- --edit as message --
+    // and then runs the editor), each refused as on master; the second command alone now refuses each.
+    public static Xunit.TheoryData<string> Gs02OptionValueLines => new()
+    {
+        "printf '%s' '$(echo PWNED >&2)' > patterns; grep -e -- --pre=sh notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > patterns; grep -f -- --pre=sh notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > patterns; grep --regexp -- --pre=sh notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > patterns; grep --file -- --pre=sh notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > patterns; grep -ie -- --pre=sh notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > patterns; grep -A -- --pre=sh notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; head -n -- --bogus notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > run.sh; git commit -m -- --edit",
+        "printf '%s' '$(echo PWNED >&2)' > run.sh; git commit -a -m -- --edit",
+        "printf '%s' '$(echo PWNED >&2)' > run.sh; git commit -qam -- --edit",
+        "printf '%s' '$(echo PWNED >&2)' > run.sh; git commit -m -- --template=run.sh",
+        "printf '%s' '$(echo PWNED >&2)' > run.sh; git log --format -- --output=.git/config",
+        "printf '%s' '$(echo PWNED >&2)' > run.sh; git diff --color -- --output=.git/config",
+    };
+
+    // DYD-422 narrowing (split seat C, 6404cce7, and the DECIDED after it): relief is for one
+    // sed, printf or echo command alone, so every line an earlier hop relieved with a second command
+    // (git, grep, head, a pipe), from any directory, is refused as on master. Seat C's route: from a
+    // linked worktree whose common directory is a bare ../proj.git, git status ran the fsmonitor.
+    public static Xunit.TheoryData<string> Gs02NarrowedLines => new()
+    {
+        Gs02SedBacktickCommit,
+        Gs02SedBacktickSingleLine,
+        "printf '[core]\\n\\tfsmonitor = echo $(echo PWNED-fsmonitor >&2)\\n' >> ../proj.git/config; git status",
+        "printf '[core]\\n\\tfsmonitor = echo $(echo PWNED >&2)\\n' >> /tmp/scratch/proj.git/config; git status",
+        "sed -i 's/NOTHERE/$(echo PWNED >&2)/' ../proj.git/config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > ../proj.git/worktrees/w/config.worktree; git status",
+        "printf '%s' '$(echo PWNED >&2)' > ../proj.git/hooks/pre-commit; git commit -m x",
+        "sed -i 's/NOTHERE/$(echo PWNED >&2)/' config; git diff",
+        "sed -i 's/NOTHERE/$(echo PWNED >&2)/' ./config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > hooks/pre-commit; git commit -m x",
+        "printf '%s' '$(echo PWNED >&2)' > ../config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > git/config; git log",
+        "printf '%s' '$(echo PWNED >&2)' > /home/agent/notes.md; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git diff --color -- notes.md",
+        "printf '%s' '$(date)' > docs/.github-notes.md; git diff",
+        "sed -i 's/`x`/y/' docs/git/config.md && git add docs/git/config.md",
+        "printf '%s\\n' 'a $HOME' | grep '$HOME' > notes.md",
+        "grep -n -i -e '$HOME' notes.md > out.md",
+        "grep --count --fixed-strings '$HOME' notes.md > out.md",
+        "grep -C 2 -e '$HOME' notes.md > out.md",
+        "grep -e '$HOME' -- notes.md > out.md",
+        "grep --regexp '$HOME' --max-count=3 notes.md > out.md",
+        "head -n 5 notes.md && echo '$HOME' > out.md",
+        "head -n5 notes.md && head --lines 2 notes.md && echo '$HOME' > out.md",
+        "git log -1 --format=%h && echo '$HOME' > out.md",
+        "git status --short && git diff --stat -- notes.md && echo '$HOME' > out.md",
+        "git commit -qm 'docs: note' && echo '$HOME' > out.md",
+    };
+
+    // DYD-422 review (split seat B, 6404cce7): an option, operand or target the shell may still
+    // expand is not the word the guard reads; bash turns ?f into a file named -f, so sed runs a
+    // script file, and ?v into -v, so printf assigns through a subscript. Each line writes a path.
+    public static Xunit.TheoryData<string> Gs02ExpandingWordLines => new()
+    {
+        "printf '%s' 'e echo $(echo PWNED >&2)' > run.sed; printf x > -f; sed 's/a/b/' ?f run.sed notes.md",
+        "sed 's/a/$(echo PWNED >&2)/' ?f run.sed notes.md > out.md",
+        "printf ?v 'a[$(echo PWNED >&2)]' x > notes.md",
+        "sed -i 's/x/$(echo PWNED >&2)/' [n]otes.md",
+        "echo '$(echo PWNED >&2)' * > notes.md",
+        "echo '$(echo PWNED >&2)' {a,b} > notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > note?.md",
+        "printf '%s' '$(echo PWNED >&2)' > ~/notes.md",
+        "echo '$(echo PWNED >&2)' @a > notes.md",
+    };
+
+    // DYD-422 review (split seat B): the same expanding words on lines that write no path, which
+    // master only warns about; the bypass warning stays.
+    public static Xunit.TheoryData<string> Gs02ExpandingWordWarningLines => new()
+    {
+        "printf x > -v; printf ?v 'a[$(echo PWNED >&2)]' x",
+        "printf ?v 'a[$(echo PWNED >&2)]' x",
+    };
+
+    // DYD-422 review (narrow seat, 7442e97d): pwsh 7.6.9 ends a statement at a bare carriage return
+    // the readers took for a space, so iex ran the quoted text; every other control character,
+    // NEL and the Unicode line and paragraph separators outside single quotes are refused with it.
+    public static Xunit.TheoryData<string> Gs02BreakCharacterLines => new()
+    {
+        "echo 'x'\riex '$(touch PWNED)' > notes.md",
+        "echo 'x' \riex '$(touch PWNED)' > notes.md",
+        "printf 'x'\riex '$(touch PWNED)' > notes.md",
+        "echo x\rInvoke-Expression '$(touch PWNED)' > notes.md",
+        "echo 'x'\viex '$(touch PWNED)' > notes.md",
+        "echo 'x'\fiex '$(touch PWNED)' > notes.md",
+        "echo 'x'\0iex '$(touch PWNED)' > notes.md",
+        "echo 'x'\u001biex '$(touch PWNED)' > notes.md",
+        "echo 'x'\u007fiex '$(touch PWNED)' > notes.md",
+        "echo 'x'\u0085iex '$(touch PWNED)' > notes.md",
+        "echo 'x'\u009biex '$(touch PWNED)' > notes.md",
+        "echo 'x'\u2028iex '$(touch PWNED)' > notes.md",
+        "echo 'x'\u2029iex '$(touch PWNED)' > notes.md",
+    };
+
+    // DYD-422 review (split seat D, 6404cce7): text only PowerShell runs, which a Codex pwsh argv
+    // envelope hands to PowerShell even when the caller is read as bash; relief needs both readings.
+    public static Xunit.TheoryData<string> Gs02PowerShellReadingLines => new()
+    {
+        "echo \\'' $(echo PWNED) '\\' > notes.md",
+        "echo 'a’ $(echo PWNED) ‘b' > notes.md",
+    };
+
     // GS-02, Claude Bash: evidence appended through cat >> and a quoted heredoc holding backticks.
     public const string Gs02CatAppendEvidence =
         "cat >> C:/Users/User/.t3/worktrees/LC/LC.worktrees/LC-749-typed-admission/dydo/agents/workspace/LC-749/fix13/evidence.md << 'EOF'\n" +

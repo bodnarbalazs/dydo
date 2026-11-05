@@ -26,6 +26,8 @@ internal sealed class ShellReader
         public List<Command> Commands { get; } = [];
         public List<Scope> Children { get; } = [];
         public List<Range> Comments { get; } = [];
+        // Each '...' this reading opened and closed outside quotes, its quotes included.
+        public List<Range> SingleQuotes { get; } = [];
         public List<Host> Executions { get; } = [];
         public Body? DerivedBody { get; init; }
 
@@ -288,6 +290,7 @@ internal sealed class ShellReader
             return;
         }
 
+        _scope.SingleQuotes.Add(_i..(end + 1));
         AppendSlice(_i + 1, end - _i - 1);
         _i = end + 1;
         if (_posix || Peek(0) != '\'')

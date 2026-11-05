@@ -133,6 +133,24 @@ public class ValidateCommandTests : IDisposable
         Assert.Contains("Nudge [0] has invalid match 'path'. Must be 'command' or 'new-file'.", stderr);
     }
 
+    [Fact]
+    public void Validate_ClaudeRecordedWithoutGuard_WarnsWithFixAndExitsZero()
+    {
+        SetupValidProjectNoWarnings();
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
+            """{"version":1,"structure":{"root":"dydo"},"integrations":{"claude":true}}""");
+
+        var exitCode = -1;
+        var (stdout, stderr) = CaptureOutput(() => exitCode = DynaDocs.Commands.ValidateCommand.Create().Parse("").Invoke());
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal("", stdout);
+        Assert.Equal(
+            "Warnings (1):\n  .claude/settings.json: Claude agents run without the dydo guard: the file is missing. " +
+            "Run 'dydo init claude --join'.\n",
+            stderr.ReplaceLineEndings("\n"));
+    }
+
     private static (string stdout, string stderr) CaptureOutput(Func<int> action)
     {
         var (_, stdout, stderr) = ConsoleCapture.All(action);

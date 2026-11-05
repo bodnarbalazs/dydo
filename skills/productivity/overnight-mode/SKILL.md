@@ -19,16 +19,16 @@ Project, set at muster. Night orders expire at the morning brief and win where t
 The already-invoked chief of staff uses its own resources below. Resolve each resource inside the
 installed `chief-of-staff` skill folder; read it directly without invoking another officer role.
 
-1. While the user is present, complete the [approval preflight](resources/approval-preflight.md)
-   for both startup and shutdown. Resolve the supported approval route or exact terminal fallback
-   before proceeding; capability discovery is not a mode change or an approval-UI test.
+1. While the user is present, complete the [transition preflight](resources/transition-preflight.md)
+   for both startup and shutdown. Record the current mode and prepare the warning/retry and
+   independent readback steps before proceeding.
 2. Complete `chief-of-staff`'s `resources/muster.md`. Use `grilling` for
    decisions and `wizard` for terminal steps only. Proceed once every included admiral confirms
    its agreed work is runnable and every gap has the user's explicit disposition.
-3. Use the preflight's route for `dydo mode set overnight on`. After actual execution, independently
-   run `dydo mode show` and require `overnight: on`. On denial, failure or missing readback, report
-   activation incomplete with the current observed state and exact human action; keep the user
-   present and do not announce activation or say goodnight.
+3. Follow the preflight's warning/retry for `dydo mode set overnight on`. After actual execution,
+   independently run `dydo mode show` and require `overnight: on`. On refusal, failure or missing
+   readback, report activation incomplete with the observed state (unknown if unreadable) and exact
+   recovery action; keep the user present and do not announce activation or say goodnight.
 4. Create the 30-minute watch schedule, returning to this thread. Preserve the complete schedule
    ID exactly as returned by the host, including any prefix, for deletion at shutdown.
    If scheduling fails, report mode on with watch unavailable and resolve it while the user is present.
@@ -72,15 +72,16 @@ in the watch, rebuild from Linear and sweep everyone by Method step 5, Sweep the
 
 When the user says he's back, in the chief of staff's conversation:
 
-1. Complete the [approval preflight](resources/approval-preflight.md) for shutdown while the user
-   is present; recheck if host or permission mode changed overnight.
+1. Complete the [transition preflight](resources/transition-preflight.md) for shutdown while the user
+   is present; record the current mode before changing it.
 2. Delete the watch schedule using the complete preserved ID. List schedules and confirm that exact
    ID is absent before claiming the watch stopped; report a deletion or verification gap.
 3. Settle any pending survey through its host lifecycle so no tick remains in flight.
-4. Use the preflight's route for `dydo mode set overnight off`. After actual execution, independently
-   run `dydo mode show` and require `overnight: off`, then announce the end to every included admiral.
-   On denial, failure or missing readback, report shutdown incomplete with the current observed
-   state and exact human action. A deleted schedule does not prove mode is off.
+4. Follow the preflight's warning/retry for `dydo mode set overnight off`. After actual execution,
+   independently run `dydo mode show` and require `overnight: off`, then announce the end to every
+   included admiral. On refusal, failure or missing readback, report shutdown incomplete with the
+   observed state (unknown if unreadable) and exact recovery action. A deleted schedule does not
+   prove mode is off.
 5. Fill `chief-of-staff`'s `resources/morning-brief.md` in the conversation, writing nothing to the
    repo. Use `wizard` for terminal unblockers only.
 

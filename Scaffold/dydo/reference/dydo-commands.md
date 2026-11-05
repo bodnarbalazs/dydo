@@ -176,8 +176,7 @@ dydo guard --command "git status"
 the call still reads its payload from stdin. The Codex hook carries no marker.
 
 In hook mode (a PreToolUse payload on stdin, no arguments) exit `0` with empty stdout allows the
-action, and exit `0` with one `permissionDecision: "deny"` object on stdout blocks it (the one
-`"ask"` is the [mode-set](#dydo-mode) rerun); the reason
+action, and exit `0` with one `permissionDecision: "deny"` object on stdout blocks it; the reason
 carries the `BLOCKED:` text, which still goes to stderr too. A block is not exit `2` because Codex on
 Windows runs hooks through PowerShell, which turns exit `2` into exit `1`, and Codex then lets the tool
 run. In diagnostic mode (the CLI-argument examples above) exit `0`
@@ -320,7 +319,11 @@ reads the same values. One flag ships: `overnight`, `on` or `off`, default `off`
 unknown flag or value with exit `2` and changes nothing; on success it prints every flag as `show` does.
 
 `dydo mode set` from an agent meets a built-in warn nudge that `dydo.json` cannot remove or weaken. The
-first try is blocked with a reminder that only the chief of staff sets the mode. The guard reads the
+first try stops with the reminder: run this only if you are the chief of staff readying overnight
+mode or ending it; otherwise stop. On every host and direct guard invocation, the same command's
+retry passes the warning. Its marker uses the existing command-warn key: pattern hash and full
+command with whitespace runs normalized. A different command, including the opposite transition,
+gets its own warning. Hard blocks run before warnings and preserve their markers. The guard reads the
 command as the shell that runs it would, quotes, escapes, here-strings, heredocs and line
 continuations included, and splits it only on separators outside quotes. Claude Code's `Bash` tool runs
 bash and its `PowerShell` tool PowerShell; Codex, whose payload carries a `turn_id`, runs PowerShell on
@@ -335,15 +338,12 @@ as does an `@(...)` array or `(...)` group as the argument list. A PowerShell `<
 of any other program are text, so a commit message, a PR body or a here-string that mentions
 `dydo mode set`, even after a `;` inside the quotes, does not meet it. A command the guard cannot read,
 such as one with an unbalanced quote or one piping text into a shell, meets it whenever it contains
-dydo, mode and set in that order. On the rerun the guard answers `permissionDecision: "ask"` only when the hook command carries
-the `--host claude` marker `dydo init` writes into the Claude Code hook and the permission mode is
-`default`, `acceptEdits`, `plan` or `auto`, so the user approves or rejects it. The environment is not
-the signal: `CLAUDECODE=1` is inherited by a Codex session started from a Claude Code shell. Everywhere
-else, Codex, `bypassPermissions`, `dontAsk`, an unknown host or a Claude Code hook written before the
-marker existed, it denies, and the user runs the command in their own terminal, where no guard runs.
-To get the prompt on an older install, run `dydo init claude --join` to rewrite the Claude Code hook.
-The guard stops a stray agent setting the mode by accident, not a deliberate bypass such as an agent
-forging the hook marker or writing the mode file directly.
+dydo, mode and set in that order. The reminder applies equally to Claude, Codex, T3 and unknown
+hosts, independent of permission mode or hook marker. It prevents accidents, without authenticating
+the chief-of-staff role or proving human approval. After actual execution of either transition,
+independently run `dydo mode show` and verify the intended value before announcing activation or
+shutdown. A setter exit, intent, warning retry or schedule is insufficient. On failure or mismatched
+readback, report the transition incomplete and the observed state; report unknown if unreadable.
 
 ---
 
@@ -560,6 +560,18 @@ severity, audience, and `match` (absent, `command`, or `new-file`).
 dydo validate
 dydo validate --root <dir>
 ```
+
+When `dydo.json` records `integrations.claude: true`, validate also checks that the committed
+`.claude/settings.json` runs the guard: some `PreToolUse` hook's `command` is exactly
+`dydo guard --host claude`, the one [`dydo init`](#dydo-init) writes, whatever its matcher. A guard
+only in `.claude/settings.local.json`, or a bare `dydo guard`, does not count. When the file is
+missing, cannot be read, does not run the guard, or is not valid settings JSON, validate prints one
+warning against `.claude/settings.json`: Claude agents run without the dydo guard. The fix is
+`dydo init claude --join`. Make an unreadable file readable first. Fix the JSON first when the file
+is not valid JSON, is not an object, or has a `hooks` that is not an object or a
+`hooks.PreToolUse` that is not an array, because `dydo init claude --join` refuses such a file.
+The warning alone leaves the exit code `0`. The guard's daily validation prints the same warning
+and still allows the tool call.
 
 This validates dydo's local configuration. It does not validate or provision Linear.
 

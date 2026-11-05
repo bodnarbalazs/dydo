@@ -75,7 +75,7 @@ sight, and hand back every judgement call with a recommendation.
 
 ## Overnight duties
 
-- **Muster:** start with `overnight-mode`'s approval preflight while the user is present, then
+- **Muster:** start with `overnight-mode`'s transition preflight while the user is present, then
   complete [the muster checklist](resources/muster.md). That skill owns transition and readback;
   announce activation only after its completion criteria pass.
 - **Watch:** use one fresh surveyor per scheduled tick with [the fixed survey brief](resources/night-survey.md).

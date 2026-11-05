@@ -54,7 +54,7 @@ deps=~/.local/share/dydo/statechart/deps
 m=$(echo "$deps"/*/linux-x64)
 export JAVA=$m/java/content/jdk-21.0.8+9-jre/bin/java TLA2TOOLS=$m/tlc/tla2tools.jar
 export STATECHART_PELE=$m/pele/content/package/dist/pele.js STATECHART_TEST_DEPENDENCY_ROOT=$deps
-py=dydo/_system/.local/static-gates/python/bin/python
+py=.static-gates/python/bin/python
 node setup-skills.mjs
 (cd skills/engineering/statechart/scripts && pnpm install --frozen-lockfile && pnpm test)
 node --test DynaDocs.Tests/coverage/tests/setup-skills.test.cjs DynaDocs.Tests/coverage/tests/statechart-corpus-views.test.cjs npm/test/statechart.test.cjs

@@ -9,8 +9,9 @@ internal static class PosixStatechartDescriptors
     {
         if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS()) throw new PlatformNotSupportedException();
         var fd = handle.ToInt32();
-        var flags = Fcntl(fd, 1, 0); // F_GETFD
-        if (flags < 0 || Fcntl(fd, 2, flags & ~1) != 0) throw new Win32Exception(); // F_SETFD, ~FD_CLOEXEC
+        var (flags, error) = (Fcntl(fd, 1, 0), Marshal.GetLastPInvokeError()); // F_GETFD
+        if (flags < 0) throw new Win32Exception(error);
+        PosixStatechartNative.Check(Fcntl(fd, 2, flags & ~1), Marshal.GetLastPInvokeError()); // F_SETFD, ~FD_CLOEXEC
         return fd;
     }
 

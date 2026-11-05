@@ -32,21 +32,23 @@ internal sealed class PosixStatechartProcess
         RequirePosix();
         using var argv = new PosixStatechartArguments(new[] { file }.Concat(arguments));
         using var env = new PosixStatechartArguments(environment);
-        PosixStatechartNative.Exec(file, argv.Pointer, env.Pointer);
-        return new Win32Exception(Marshal.GetLastPInvokeError(), "Statechart exec handoff failed.");
+        var (_, error) = (PosixStatechartNative.Exec(file, argv.Pointer, env.Pointer), Marshal.GetLastPInvokeError());
+        return new Win32Exception(error, "Statechart exec handoff failed.");
     }
 
     public static void BecomeGroupLeader()
     {
         RequirePosix();
-        if (PosixStatechartNative.SetGroup(0, 0) != 0) throw new Win32Exception();
+        PosixStatechartNative.Check(PosixStatechartNative.SetGroup(0, 0), Marshal.GetLastPInvokeError());
     }
 
     public static void JoinGroup(int group)
     {
         RequirePosix();
-        if (group <= 0 || PosixStatechartNative.SetGroup(0, group) != 0)
-            throw new Win32Exception(Marshal.GetLastPInvokeError(), "Cannot join owned statechart group.");
+        // A non-positive group never reaches setpgid; it reports whatever errno stands, as it always has.
+        var (result, error) = group <= 0 ? (-1, Marshal.GetLastPInvokeError())
+            : (PosixStatechartNative.SetGroup(0, group), Marshal.GetLastPInvokeError());
+        if (result != 0) throw new Win32Exception(error, "Cannot join owned statechart group.");
     }
 
     public static void RequireGroup(int pid, int group)
@@ -59,7 +61,7 @@ internal sealed class PosixStatechartProcess
     public static void StopCurrentGroup()
     {
         RequirePosix();
-        if (PosixStatechartNative.Kill(0, 9) != 0) throw new Win32Exception();
+        PosixStatechartNative.Check(PosixStatechartNative.Kill(0, 9), Marshal.GetLastPInvokeError());
     }
 
     public void ConfirmGroup(int acknowledgment)
@@ -78,8 +80,8 @@ internal sealed class PosixStatechartProcess
         {
             // siginfo_t is opaque here. Only waitid's return is consumed; no guessed field offsets.
             var options = 4 | (OperatingSystem.IsMacOS() ? 0x20 : 0x1000000); // WEXITED | WNOWAIT
-            if (PosixStatechartNative.WaitId(1, (uint)Id, information, options) != 0)
-                throw new Win32Exception();
+            PosixStatechartNative.Check(PosixStatechartNative.WaitId(1, (uint)Id, information, options),
+                Marshal.GetLastPInvokeError());
         }
         finally
         {
@@ -91,8 +93,8 @@ internal sealed class PosixStatechartProcess
     {
         RequireChild();
         var target = _groupReady ? -Id : Id;
-        if (PosixStatechartNative.Kill(target, 9) != 0 && Marshal.GetLastPInvokeError() != 3)
-            throw new Win32Exception();
+        var (result, error) = (PosixStatechartNative.Kill(target, 9), Marshal.GetLastPInvokeError());
+        if (result != 0 && error != 3) throw new Win32Exception(error); // ESRCH: already gone
     }
 
     // Returns once the group is empty; a group still live at the deadline cancels instead.
@@ -111,7 +113,8 @@ internal sealed class PosixStatechartProcess
         RequireChild();
         if (_groupReady && !_drained)
             throw new InvalidOperationException("Cannot release statechart group identity before drain.");
-        if (PosixStatechartNative.WaitPid(Id, out var status, 0) != Id) throw new Win32Exception();
+        var (reaped, error) = (PosixStatechartNative.WaitPid(Id, out var status, 0), Marshal.GetLastPInvokeError());
+        if (reaped != Id) throw new Win32Exception(error);
         _reaped = true;
         return status;
     }

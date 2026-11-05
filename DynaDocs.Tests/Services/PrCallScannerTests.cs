@@ -491,6 +491,19 @@ public class PrCallScannerTests
         Assert.Contains(PrCallScanner.Find(command, Enum.Parse<ShellDialect>(dialect)), call => call.Wrapper != null);
     }
 
+    // DYD-641: pwsh 7.6.9 ends a statement and a comment at a bare carriage return, closes a string
+    // at a typographic quote, and keeps a caret literal, so the PR call after each runs.
+    [Theory]
+    [InlineData("echo 'x'\rgh pr create --fill")]
+    [InlineData("echo x # note\rgh pr create --fill")]
+    [InlineData("echo ‘a'; gh pr create --fill; ’b'")]
+    [InlineData("echo \"a”; gh pr create --fill; “b\"")]
+    [InlineData("echo a^;gh pr create --fill")]
+    public void PowerShellReading_FindsThePrCallPwshRuns(string command)
+    {
+        Assert.NotEmpty(PrCallScanner.Find(command, ShellDialect.PowerShell));
+    }
+
     [Theory]
     [InlineData(new object[] { new[] { "bash", "-lc", EchoCase + "; pwsh -EncodedCommand " + EncodedGhPrReady } })]
     [InlineData(new object[] { new[] { "pwsh", "-Command", EscapedApostrophe + "; pwsh -ec " + EncodedGhPrReady } })]

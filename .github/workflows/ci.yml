@@ -33,11 +33,12 @@ jobs:
         with:
           version: 11
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '26.13.0'
           cache: pnpm
-          cache-dependency-path: viewer/pnpm-lock.yaml
+          cache-dependency-path: DynaDocs.Tests/coverage/pnpm-lock.yaml
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -57,7 +58,7 @@ jobs:
         run: ${{ matrix.python }} -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 
       - name: Install locked coverage dependencies
-        run: npm ci --prefix DynaDocs.Tests/coverage
+        run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
 
       # The statechart typecheck tests compile with the viewer's locked TypeScript and node types,
       # and the package's own test files import its locked dependencies.
@@ -206,9 +207,17 @@ jobs:
         with:
           python-version-file: DynaDocs.Tests/coverage/.python-version
 
-      - uses: actions/setup-node@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '26.13.0'
+          cache: pnpm
+          cache-dependency-path: DynaDocs.Tests/coverage/pnpm-lock.yaml
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -228,7 +237,7 @@ jobs:
         run: ${{ matrix.python }} -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 
       - name: Install locked coverage dependencies
-        run: npm ci --prefix DynaDocs.Tests/coverage
+        run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
 
       - name: Restore locked .NET tools and packages
         run: |
@@ -370,16 +379,23 @@ jobs:
         with:
           python-version-file: DynaDocs.Tests/coverage/.python-version
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '26.13.0'
+          cache: pnpm
+          cache-dependency-path: DynaDocs.Tests/coverage/pnpm-lock.yaml
 
       - name: Install locked assurance dependencies
         run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 
       - name: Install locked coverage dependencies
-        run: npm ci --prefix DynaDocs.Tests/coverage
+        run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
 
       - name: Native cancellation regression
         env:

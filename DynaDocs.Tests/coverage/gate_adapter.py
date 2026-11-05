@@ -15,6 +15,7 @@ from pathlib import Path
 
 from gate_run import STATIC_GATE_INTERPRETER, checked_result, result
 from gate_discovery import ordinary_discovery as _ordinary_discovery
+from gate_versions import importer_pins
 
 
 CLEANUP_SECONDS = 30
@@ -119,20 +120,9 @@ def _requirement_pins(text):
     return dict(re.findall(r"(?m)^([A-Za-z0-9_.-]+)==(\S+)$", text))
 
 
-def _package_pins(text):
-    return json.loads(text)["dependencies"]
-
-
 def _locked_pins(text):
     return {name: row["resolved"]
             for name, row in json.loads(text)["dependencies"]["net10.0"].items()}
-
-
-def _pnpm_pins(text):
-    """A pnpm package's own importer's resolved versions, read from its lock without a YAML parser."""
-    importer = text.split("\nimporters:\n", 1)[1].split("\npackages:\n", 1)[0]
-    return dict(re.findall(r"(?m)^      '?([^'\s]+?)'?:\n        specifier: \S+\n        version: ([^\s(]+)",
-                           importer))
 
 
 def _manifest_pins(text):
@@ -166,11 +156,11 @@ def gate_tools(root):
                                                             STATIC_GATE_INTERPRETER)},
             "pins": {name: _pinned_lock(root, relative, extract) for name, relative, extract in (
                 ("python", f"{tools}/requirements.lock", _requirement_pins),
-                ("javascript", f"{tools}/package.json", _package_pins),
+                ("javascript", f"{tools}/pnpm-lock.yaml", importer_pins),
                 ("dotnet", f"{tools}/metrics/packages.lock.json", _locked_pins),
                 ("altcover", ".config/dotnet-tools.json", _manifest_pins),
-                ("viewer", "viewer/pnpm-lock.yaml", _pnpm_pins),
-                ("statechart", f"{STATECHART_PACKAGE}/pnpm-lock.yaml", _pnpm_pins))}}
+                ("viewer", "viewer/pnpm-lock.yaml", importer_pins),
+                ("statechart", f"{STATECHART_PACKAGE}/pnpm-lock.yaml", importer_pins))}}
 
 
 def _report_root(raw):

@@ -89,8 +89,8 @@ that must precede another is creating the virtual environment its Python package
 # the patch DynaDocs.Tests/coverage/.python-version declares
 python -m venv .static-gates/python
 & .static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
-# the Node assurance toolchain, from DynaDocs.Tests/coverage
-npm ci
+# the Node assurance toolchain, from DynaDocs.Tests/coverage's pnpm lock
+pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
 # the viewer's own toolchain, which the viewer rows call through its pnpm scripts
 pnpm -C viewer install --frozen-lockfile
 # the statechart runtime's locked test dependencies, for the statechart rows
@@ -112,7 +112,7 @@ On Linux, use the same locked packages with the POSIX venv path:
 ```bash
 python3.14 -m venv .static-gates/python
 .static-gates/python/bin/python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
-npm --prefix DynaDocs.Tests/coverage ci
+pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
 pnpm -C viewer install --frozen-lockfile
 pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile
 dotnet tool restore --tool-manifest .config/dotnet-tools.json
@@ -352,7 +352,7 @@ never a silent overwrite. The identical bytes remain at
   "pins": {
     "python": {"path": "DynaDocs.Tests/coverage/requirements.lock", "sha256": "<hex>",
                "resolved": {"coverage": "7.16.0", "ruff": "0.16.6", "vulture": "2.16"}},
-    "javascript": {"path": "DynaDocs.Tests/coverage/package.json", "sha256": "<hex>",
+    "javascript": {"path": "DynaDocs.Tests/coverage/pnpm-lock.yaml", "sha256": "<hex>",
                    "resolved": {"c8": "12.0.0", "jscpd": "5.1.2"}},
     "dotnet": {"path": "DynaDocs.Tests/coverage/metrics/packages.lock.json", "sha256": "<hex>",
                "resolved": {"Microsoft.CodeAnalysis.CSharp": "<version>"}},
@@ -512,7 +512,7 @@ Each row above is the stack's single suite execution under `--force-run`: the de
 row is derived from it and launches nothing of its own. The C# campaign is Windows-only, so a Linux
 host derives no verdict for `dotnet` and keeps that stack's separate test execution. The Python and
 JavaScript collectors need `DynaDocs.Tests/coverage/requirements.lock` and
-`DynaDocs.Tests/coverage`'s npm lock installed, or they cannot launch a suite at all. The TypeScript
+`DynaDocs.Tests/coverage`'s pnpm lock installed, or they cannot launch a suite at all. The TypeScript
 collectors also need `viewer/node_modules` from `pnpm -C viewer install --frozen-lockfile` and the
 statechart package's from `pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile`;
 the statechart static row needs both, since its typecheck compiles with the viewer's TypeScript.
@@ -658,7 +658,7 @@ hashes in `tools.pins`; the Python inventory separately republishes the runtime 
 | `.config/dotnet-tools.json` | AltCover 9.0.102 | the tool manifest, by `dotnet tool restore --tool-manifest .config/dotnet-tools.json` |
 | `DynaDocs.Tests/coverage/.python-version` | exact CPython 3.14.4 for Release CI | `actions/setup-python@v5`, through `python-version-file` |
 | `DynaDocs.Tests/coverage/requirements.lock` | coverage.py 7.16.0, ruff 0.16.6, vulture 2.16, complexipy 8.0.0, radon 6.0.1 | a local CPython 3.14.4 environment at `.static-gates/python` (`Scripts/python.exe` on Windows, `bin/python` elsewhere) |
-| `DynaDocs.Tests/coverage/package.json`, resolved by `package-lock.json` | @typescript-eslint/parser, c8, dependency-cruiser, eslint, eslint-plugin-sonarjs, istanbul-lib-instrument, jscpd, knip | `node_modules` under `DynaDocs.Tests/coverage` |
+| `DynaDocs.Tests/coverage/package.json`, resolved by `DynaDocs.Tests/coverage/pnpm-lock.yaml` | @typescript-eslint/parser, c8, dependency-cruiser, eslint, eslint-plugin-sonarjs, istanbul-lib-instrument, jscpd, knip | `node_modules` under `DynaDocs.Tests/coverage`, in pnpm's isolated layout, by `pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile`; its `pnpm-workspace.yaml` holds the viewer's `minimumReleaseAge` |
 | `viewer/package.json`, resolved by `viewer/pnpm-lock.yaml` | the viewer's TypeScript, ESLint, vitest and Istanbul toolchain its scripts run | `viewer/node_modules`, by `pnpm -C viewer install --frozen-lockfile` |
 | `DynaDocs.Tests/coverage/metrics/packages.lock.json` | the Roslyn, SonarAnalyzer and Cecil closure of `GateMetrics.csproj` | that project's `obj/project.assets.json`, by `dotnet restore` |
 
@@ -672,6 +672,18 @@ as Provisioning above records. Python evidence records the declared pin and its 
 observed implementation and patch, and the requirements-lock hash. The Windows job preflight and
 each accepted run likewise record the exact observed version plus the executable and base-executable
 digests. Node v26.13.0 and .NET SDK 10.0.303 remain exact runtime requirements.
+
+For JavaScript the collector reads and hashes the coverage `pnpm-lock.yaml`. Each declared
+dependency must equal its importer's specifier and resolved version, and launch through its
+top-level `node_modules/<name>` link. Each real package folder under
+`node_modules/.pnpm/*/node_modules` must be a locked `name@version`, one per store folder; a
+symlink or junction there is a link, not a package. A locked package the store lacks must be
+optional in every snapshot. The links beside each store package must resolve to exactly its lock
+snapshot's `dependencies`, plus the `optionalDependencies` that are installed, at their locked
+versions: a missing, wrong-version or unexpected link fails closed, and an optional dependency the
+platform skipped needs no link. Links also resolve to the peer variant their snapshot key pins,
+the importer's top-level links included, because two folders may hold one version under different
+peers.
 
 ---
 

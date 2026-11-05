@@ -77,4 +77,4 @@ rootCommand.Subcommands.Add(versionCommand);
 
 rootCommand.Subcommands.Add(HelpCommand.Create());
 
-return await rootCommand.Parse(args).InvokeAsync();
+return await CliParsing.Parse(rootCommand, args).InvokeAsync();

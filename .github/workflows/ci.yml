@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, DYD-694-union-rerun-artifact]
   pull_request:
 
 jobs:
@@ -27,6 +27,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - name: DYD-694 rerun demonstration switch
+        if: github.ref == 'refs/heads/DYD-694-union-rerun-artifact' && github.run_attempt == 1 && matrix.platform == 'windows'
+        shell: bash
+        run: |
+          mkdir -p DynaDocs.Tests/coverage/results
+          echo 'DYD-694 attempt-1 demonstration: failed leg without adapters/python-coverage.json' > DynaDocs.Tests/coverage/results/dyd-694-demonstration.txt
+          exit 1
 
       - uses: actions/setup-node@v4
         with:
@@ -209,6 +217,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - name: DYD-694 rerun demonstration switch
+        if: github.ref == 'refs/heads/DYD-694-union-rerun-artifact' && github.run_attempt == 1 && matrix.platform == 'windows'
+        shell: bash
+        run: |
+          mkdir -p DynaDocs.Tests/coverage/results
+          echo 'DYD-694 attempt-1 demonstration: failed leg without adapters/dotnet-coverage.json' > DynaDocs.Tests/coverage/results/dyd-694-demonstration.txt
+          exit 1
 
       - uses: actions/setup-node@v4
         with:

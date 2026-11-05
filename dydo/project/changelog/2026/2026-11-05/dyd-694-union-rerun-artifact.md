@@ -70,6 +70,17 @@ fails silently.
   13426743730 and `dotnet-coverage-windows-attempt-2` 13428337650, and skipped
   `dotnet-coverage-windows-attempt-1` 13427265924. Its attempt-2 job record is the fixture
   `HOSTED_RERUN`.
+- Hosted run 42070066159 on PR #281 (head `da92b64d`, the switch on top of this selection) did the
+  same through the `pull_request` event. Attempt 1's Windows legs and both unions failed. After
+  `gh run rerun --failed`, both unions passed in attempt 2. Each union's own attempt-2 job record
+  listed the copied Linux legs with `run_attempt: 2` and `started_at` 16:59:07Z, before attempt 2's
+  `run_started_at` of 17:15:11Z, and the rerun Windows legs as starting after it. The python union
+  expected merge commit `98342b78` and consumed `python-coverage-linux-attempt-1` 13437162743 and
+  `python-coverage-windows-attempt-2` 13436649801. It skipped `python-coverage-windows-attempt-1`
+  13436285695, and its pattern did not match attempt 1's `python-coverage-union` 13435419857. The
+  dotnet union expected head `da92b64d` and consumed `dotnet-coverage-linux-attempt-1` 13437236154
+  and `dotnet-coverage-windows-attempt-2` 13435818734. It skipped `dotnet-coverage-windows-attempt-1`
+  13436390428, which has the larger ID.
 
 ## Files Changed
 

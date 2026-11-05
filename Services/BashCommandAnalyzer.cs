@@ -163,6 +163,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private const RegexOptions LinearIgnoreCase = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking;
 
     private const int DangerousPatternTimeoutMs = 250;
+    private const string TooComplex = "Command too complex to verify safely";
 
     // A command word ends at whitespace, the end, a quote or backtick closing a -c string or substitution, or a separator.
     private const string CommandEndContext = @"\s|$|['""`);&|]";
@@ -528,13 +529,17 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return Emptied(code, data.Select(quote => quote.Quote));
     }
 
-    // The text with each quote replaced by ''.
+    // The text with each quote replaced by '', in one pass: the quotes one reading holds never overlap.
     private static string Emptied(string text, IEnumerable<Range> quotes)
     {
-        var emptied = new StringBuilder(text);
-        foreach (var quote in quotes.OrderByDescending(quote => quote.Start.Value))
-            emptied.Remove(quote.Start.Value, quote.End.Value - quote.Start.Value).Insert(quote.Start.Value, "''");
-        return emptied.ToString();
+        var emptied = new StringBuilder(text.Length);
+        var at = 0;
+        foreach (var quote in quotes.OrderBy(quote => quote.Start.Value))
+        {
+            emptied.Append(text, at, quote.Start.Value - at).Append("''");
+            at = quote.End.Value;
+        }
+        return emptied.Append(text, at, text.Length - at).ToString();
     }
 
     /// <summary>
@@ -633,8 +638,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // A short cluster's letters before a trailing bare i.
     private static string SedFlags(string option) => option.EndsWith('i') ? option[1..^1] : option[1..];
 
-    // Bypass detection patterns
-    [GeneratedRegex(@"\$\([^)]+\)|`[^`]+`")]
+    // Bypass detection patterns. The substitution and expansion searches run without backtracking:
+    // a backtracking search restarts at each unclosed $( or ${ and scans to the end, quadratic (DYD-723).
+    [GeneratedRegex(@"\$\([^)]+\)|`[^`]+`", RegexOptions.NonBacktracking)]
     private static partial Regex CommandSubstitutionRegex();
 
     [GeneratedRegex(@"base64\s+(-d|--decode)", RegexOptions.IgnoreCase)]
@@ -643,7 +649,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"xxd\s+-r|od\s+-A")]
     private static partial Regex HexDecodeRegex();
 
-    [GeneratedRegex(@"\$[A-Za-z_][A-Za-z0-9_]*|\$\{[^}]+\}")]
+    [GeneratedRegex(@"\$[A-Za-z_][A-Za-z0-9_]*|\$\{[^}]+\}", RegexOptions.NonBacktracking)]
     private static partial Regex VariableExpansionRegex();
 
     [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(\./|/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)", RegexOptions.None, DangerousPatternTimeoutMs)]
@@ -923,8 +929,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private const int MaxCommandLineDepth = 8;
 
-    /// <summary>One reading of one command line: its text and its commands.</summary>
-    private sealed record CommandLine(string Text, List<ReadCommand> Commands);
+    /// <summary>One reading of one command line: its text, its commands, and whether it nests too deep to read.</summary>
+    private sealed record CommandLine(string Text, List<ReadCommand> Commands, bool TooDeep);
 
     /// <summary>
     /// One command as its shell reads it: its words, and whether something feeds its stdin, a heredoc
@@ -974,7 +980,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         foreach (var posix in readings)
         {
             var reading = ShellReader.Read(text, posix);
-            lines.Add(new CommandLine(text, [.. reading.Commands.Select(Unmark)]));
+            lines.Add(new CommandLine(text, [.. reading.Commands.Select(Unmark)], reading.TooDeep));
             uncertain |= reading.Failed;
             foreach (var substitution in reading.Substitutions)
                 uncertain |= ReadCommandLines(substitution, ShellDialect.Posix, depth + 1, lines);
@@ -1606,6 +1612,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     public (bool IsDangerous, string? Reason) CheckDangerousPatterns(string command)
     {
+        // Past ShellReader.MaxNesting no reading is complete, so nothing it says can be verified. Each
+        // level opens at a ( of its own, so a command with no more of them than that is never read here (DYD-723).
+        if (command.AsSpan().Count('(') > ShellReader.MaxNesting && CommandLines(command, _shell).Lines.Any(line => line.TooDeep))
+            return (true, TooComplex);
+
         try
         {
             foreach (var (isMatch, reason) in DangerousPatterns)
@@ -1616,7 +1627,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         }
         catch (RegexMatchTimeoutException)
         {
-            return (true, "Command too complex to verify safely");
+            return (true, TooComplex);
         }
         return (false, null);
     }

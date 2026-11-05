@@ -1632,4 +1632,53 @@ public class GuardSecurityTests : IntegrationTestBase
 
         result.AssertPreToolUseAllowed();
     }
+
+    // DYD-723: a command nested past the guard's reading bound is refused as too complex to verify,
+    // through Claude's Bash and PowerShell tools and in an unknown shell.
+    [Theory]
+    [InlineData("Bash")]
+    [InlineData("PowerShell")]
+    [InlineData("")]
+    public async Task DeepNesting_IsRefusedAsTooComplex(string toolName)
+    {
+        await SetupClaimedAgent();
+
+        var result = await NestingGuardAsync(toolName, 40);
+
+        AssertRefused(toolName, result);
+        result.AssertStderrContains("Command too complex to verify safely");
+    }
+
+    // 100,000 characters of it are refused as promptly, since reading stops at the bound. Before
+    // DYD-723 the reading recursed once per level and overflowed the stack: run on the fix only.
+    [Theory]
+    [InlineData("Bash")]
+    [InlineData("PowerShell")]
+    [InlineData("")]
+    public async Task LongDeepNesting_IsRefusedPromptly(string toolName)
+    {
+        await SetupClaimedAgent();
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        var result = await NestingGuardAsync(toolName, 33_333);
+
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Took {stopwatch.Elapsed}");
+        AssertRefused(toolName, result);
+        result.AssertStderrContains("Command too complex to verify safely");
+    }
+
+    // A hook call is refused with a deny decision, the CLI lane with exit 2.
+    private static void AssertRefused(string toolName, CommandResult result)
+    {
+        if (toolName == "")
+            result.AssertExitCode(2);
+        else
+            result.AssertPreToolUseDenied();
+    }
+
+    private Task<CommandResult> NestingGuardAsync(string toolName, int levels)
+    {
+        var command = "echo " + string.Concat(Enumerable.Repeat("\"$(", levels)) + "x" + string.Concat(Enumerable.Repeat(")\"", levels));
+        return toolName == "" ? UnknownShellGuardAsync(command) : GuardWithStdinAsync(ShellJson(toolName, command));
+    }
 }

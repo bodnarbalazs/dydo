@@ -2300,4 +2300,109 @@ public class BashCommandAnalyzerTests
     }
 
     #endregion
+
+    #region DYD-723: nesting stays within the budget
+
+    // Analysing any command of up to 100,000 characters allocates at most 256 MB on the calling
+    // thread and takes at most a second. Allocation is deterministic, so it carries the budget at
+    // full length; the time bound sits on the deep rows, which stay small under instrumentation.
+    private const long AllocationBudget = 256L * 1024 * 1024;
+
+    // 22 levels: before DYD-723 each level doubled the PowerShell reading, here past 400 MB.
+    [Theory]
+    [InlineData("Posix", "$(", "")]
+    [InlineData("PowerShell", "$(", "")]
+    [InlineData("Unknown", "$(", "")]
+    [InlineData("Posix", "$(", ")")]
+    [InlineData("PowerShell", "$(", ")")]
+    [InlineData("Unknown", "$(", ")")]
+    [InlineData("Posix", "a (", ")")]
+    [InlineData("PowerShell", "a (", ")")]
+    [InlineData("Unknown", "a (", ")")]
+    public void Analyze_DeepNesting_StaysWithinTheBudget(string dialect, string opener, string closer)
+    {
+        var command = "printf x " + Repeat(opener, 22) + "y" + Repeat(closer, 22);
+
+        var (allocated, elapsed) = Measure(dialect, command);
+
+        Assert.True(allocated <= AllocationBudget, $"Allocated {allocated:N0} bytes");
+        Assert.True(elapsed <= TimeSpan.FromSeconds(1), $"Took {elapsed}");
+    }
+
+    // Before DYD-723 these exhausted the host's memory: run on the fix only. Doubling the input at
+    // most about doubles the allocation, and the full length stays within the budget.
+    [Theory]
+    [InlineData("Posix", "$(", "")]
+    [InlineData("PowerShell", "$(", "")]
+    [InlineData("Unknown", "$(", "")]
+    [InlineData("Posix", "@(", ")")]
+    [InlineData("PowerShell", "@(", ")")]
+    [InlineData("Unknown", "@(", ")")]
+    [InlineData("Posix", "\"$(", ")\"")]
+    [InlineData("PowerShell", "\"$(", ")\"")]
+    [InlineData("Unknown", "\"$(", ")\"")]
+    [InlineData("Posix", "$(@(a (\"$(`${'", "")]
+    [InlineData("PowerShell", "$(@(a (\"$(`${'", "")]
+    [InlineData("Unknown", "$(@(a (\"$(`${'", "")]
+    public void Analyze_LongNesting_AllocatesLinearlyWithinTheBudget(string dialect, string opener, string closer)
+    {
+        var (half, _) = Measure(dialect, Nesting(opener, closer, 50_000));
+        var (full, _) = Measure(dialect, Nesting(opener, closer, 100_000));
+
+        Assert.True(full <= AllocationBudget, $"Allocated {full:N0} bytes");
+        Assert.True(full <= 2.5 * half, $"Allocated {full:N0} bytes at 100,000 characters, {half:N0} at 50,000");
+    }
+
+    // Past the nesting bound no reading is complete, so the command is refused as too complex to
+    // verify, in every dialect, a command string a shell runs included. At the bound, and with many
+    // ( that do not nest, the command reads as before.
+    [Theory]
+    [InlineData("Posix", "echo ", 32, false)]
+    [InlineData("PowerShell", "echo ", 32, false)]
+    [InlineData("Unknown", "echo ", 32, false)]
+    [InlineData("Posix", "echo ", 33, true)]
+    [InlineData("PowerShell", "echo ", 33, true)]
+    [InlineData("Unknown", "echo ", 33, true)]
+    [InlineData("Posix", "bash -c 'echo ", 40, true)]
+    [InlineData("Unknown", "bash -c 'echo ", 40, true)]
+    public void CheckDangerousPatterns_NestingPastTheBound_IsTooComplex(string dialect, string head, int levels, bool refused)
+    {
+        var command = head + Repeat("\"$(", levels) + "x" + Repeat(")\"", levels) + (head.Contains('\'') ? "'" : "");
+
+        var (dangerous, reason) = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect)).CheckDangerousPatterns(command);
+
+        Assert.Equal(refused, dangerous);
+        Assert.Equal(refused ? "Command too complex to verify safely" : null, reason);
+    }
+
+    [Theory]
+    [InlineData("echo '((((((((((((((((((((((((((((((((((((((((")]
+    [InlineData("echo (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)")]
+    public void CheckDangerousPatterns_ManyParenthesesThatDoNotNest_AreNotTooComplex(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.False(new BashCommandAnalyzer(dialect).CheckDangerousPatterns(command).IsDangerous, $"{dialect}: {command}");
+    }
+
+    private static (long Allocated, TimeSpan Elapsed) Measure(string dialect, string command)
+    {
+        var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
+        analyzer.Analyze("echo ready");
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        analyzer.Analyze(command);
+        stopwatch.Stop();
+        return (GC.GetAllocatedBytesForCurrentThread() - before, stopwatch.Elapsed);
+    }
+
+    // The opener repeated, then y and the closer as often, to about length characters.
+    private static string Nesting(string opener, string closer, int length)
+    {
+        var levels = (length - 10) / (opener.Length + closer.Length);
+        return "printf x " + Repeat(opener, levels) + "y" + Repeat(closer, levels);
+    }
+
+    private static string Repeat(string unit, int count) => string.Concat(Enumerable.Repeat(unit, count));
+
+    #endregion
 }

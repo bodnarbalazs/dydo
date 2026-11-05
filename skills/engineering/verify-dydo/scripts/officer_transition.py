@@ -874,9 +874,10 @@ def guarded_outside(row):
         where = hook["bound_offender"]
     elif len(command) < REPORT_CUT:
         where = bound_offender(command)
+    elif not hook.get("reads_dydo", True):
+        where = None
     else:
-        where = (hook["outside_bound"] if "outside_bound" in hook else outside_bound(command)) \
-            if hook.get("reads_dydo", True) else None
+        where = hook["outside_bound"] if "outside_bound" in hook else outside_bound(command)
     return [{"call": hook_call(row), **where}] if where else []
 
 

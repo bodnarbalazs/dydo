@@ -4,6 +4,7 @@ import base64
 import concurrent.futures
 import contextlib
 import io
+import itertools
 import json
 import os
 from operator import itemgetter
@@ -787,6 +788,8 @@ class EvaluatorTests(unittest.TestCase):
         direction. Every round-8 form is one. Exactly the corpus forms named here have none: their outside characters
         are prose, a comment, a word past `mode set`, or a space both engines split on (`SAME_SPLIT`)."""
         outside = [entry["command"] for entry in corpus() if entry["kind"] == "outside_bound"]
+        self.assertEqual(sorted({*INERT, *AT_POINT, *NO_DYDO_RECORDED}),
+                         sorted(entry["command"] for entry in corpus() if entry["source"] == ROUND_10))
         judged = [command for command in outside if ot.bound_offender(command) is None]
         self.assertEqual(sorted({*PROSE, *COMMENTED, *SAME_SPLIT, *INERT, *NO_DYDO_RECORDED}), sorted(judged))
         forms = [command for command in outside if command not in judged]
@@ -849,19 +852,19 @@ class EvaluatorTests(unittest.TestCase):
         typographic, plain = VERIFIED.format("’"), VERIFIED.format("'")
         self.assertEqual((None, False, True), (ot.bound_offender(typographic), ot.sets_mode(typographic),
                                                ot.reads_dydo(typographic)))
-        for name in ot.CASES:
-            for direction in ot.DIRECTIONS:
-                for timing in ("after", "premature"):
-                    for recorded in (True, False):
-                        with self.subTest(case=name, direction=direction, timing=timing, recorded=recorded):
-                            twin = self.announcement_run(name, direction, plain, timing, recorded)
-                            evaluation = self.announcement_run(name, direction, typographic, timing, recorded)
-                            expected = "pass" if timing == "after" and name != "failed" else "fail"
-                            self.assertEqual((expected, []), (evaluation["verdict"], evaluation["facts"]["outside_bound"]),
-                                             evaluation["checks"])
-                            self.assertEqual((twin["verdict"], failing(twin)), (evaluation["verdict"], failing(evaluation)))
-                            if timing == "after" and name == "failed":
-                                self.assertEqual(names(REPORTED), failing(evaluation))
+        after = {"nudge": ("pass", set()), "codex": ("pass", set()), "failed": ("fail", names(REPORTED))}
+        for name, direction, timing, recorded in itertools.product(ot.CASES, ot.DIRECTIONS, ("after", "premature"),
+                                                                   (True, False)):
+            with self.subTest(case=name, direction=direction, timing=timing, recorded=recorded):
+                twin = self.announcement_run(name, direction, plain, timing, recorded)
+                evaluation = self.announcement_run(name, direction, typographic, timing, recorded)
+                observed = (evaluation["verdict"], failing(evaluation))
+                self.assertEqual([], evaluation["facts"]["outside_bound"])
+                self.assertEqual((twin["verdict"], failing(twin)), observed)
+                if timing == "after":
+                    self.assertEqual(after[name], observed, evaluation["checks"])
+                else:
+                    self.assertEqual("fail", evaluation["verdict"], evaluation["checks"])
 
     def test_the_codex_on_28_announcement_is_judged_normally_in_every_case_and_direction(self):
         """Refined DECIDED (captain's campaign-e33435ef codex-on @28): the officer's announcement carries U+2019 at

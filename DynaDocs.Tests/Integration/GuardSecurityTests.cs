@@ -51,7 +51,7 @@ public class GuardSecurityTests : IntegrationTestBase
     }
 
     [Theory]
-    [InlineData("git push --force-with-lease origin main")]
+    [InlineData("git push --force-with-lease origin feature/x")]
     [InlineData("gh auth status")]
     [InlineData("op --version")]
     [InlineData("dd if=/dev/zero of=/dev/null")]
@@ -62,7 +62,7 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("ls Safari.app")]
     [InlineData("sudo -u me git status")]
     [InlineData("nohup rm file.txt")]
-    [InlineData("bash -c 'git push --force-with-lease origin main'")]
+    [InlineData("bash -c 'git push --force-with-lease origin feature/x'")]
     [InlineData("(dd if=x of=/dev/null)")]
     public async Task OndrejDenylist_HookAllowsBenignCommand(string command)
     {

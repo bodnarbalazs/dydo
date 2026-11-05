@@ -32,7 +32,7 @@ public static partial class GuardCommand
         if (calls.Count == 0)
             return null;
 
-        var directory = Path.GetFullPath(cwd ?? env.ProjectRoot ?? Environment.CurrentDirectory);
+        var directory = CallDirectory(cwd, env);
         var directoryProblems = PrReadyCheck.TreeProblems(directory);
         if (directoryProblems == null)
             return null;

@@ -4,6 +4,8 @@ using System.Diagnostics;
 
 internal static class ProcessLiveness
 {
+    private const int Esrch = 3;
+
     internal static bool HasTerminated(int pid)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pid);
@@ -34,6 +36,8 @@ internal static class ProcessLiveness
         }
         catch (FileNotFoundException) { return null; }
         catch (DirectoryNotFoundException) { return null; }
+        // A process reaped after the open makes the read fail with ESRCH; .NET carries errno in HResult on Unix.
+        catch (IOException e) when (e.HResult == Esrch) { return null; }
 
         var end = stat.LastIndexOf(')');
         if (!stat.StartsWith($"{pid} (", StringComparison.Ordinal) || end < 0)

@@ -224,8 +224,9 @@ jobs:
           if-no-files-found: error
 
   # Linux runs the full suite over every point outside dotnet-platforms.json; Windows runs only the
-  # selected tests over the Windows-native members it names. Both measure the PR head, and the union
-  # requires both reports.
+  # selected tests over the Windows-native members it names. Both measure the candidate commit (the PR
+  # head on a pull request, the pushed commit on a push), and the union requires both reports. The
+  # guard's tests run on Windows in guard-windows, outside this measurement.
   dotnet-coverage:
     strategy:
       fail-fast: false
@@ -438,6 +439,117 @@ jobs:
         with:
           name: dotnet-coverage-union
           path: DynaDocs.Tests/coverage/results/coverage-platforms
+          if-no-files-found: error
+
+  # The guard serves Windows hosts, and its culture and path behaviour is platform-specific. This job
+  # runs the guard's analyzer and hook tests natively on Windows, uninstrumented and outside the
+  # dotnet-coverage measurement, and fails on any result that is not a pass.
+  guard-windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      # The one list of selected classes: the test step filters on it and the check step requires each.
+      GUARD_CLASSES: >-
+        DynaDocs.Tests.Services.DangerousPatternCultureTests
+        DynaDocs.Tests.Services.DangerousPatternOracleTests
+        DynaDocs.Tests.Services.DangerousPatternBudgetTests
+        DynaDocs.Tests.Services.BashCommandAnalyzerTests
+        DynaDocs.Tests.Integration.GuardSecurityTests
+    steps:
+      - name: Keep candidate bytes identical on both platforms
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
+        with:
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
+
+      - name: Restore locked packages
+        run: dotnet restore DynaDocs.sln --locked-mode
+
+      - name: Build
+        run: dotnet build DynaDocs.sln --no-restore --warnaserror
+
+      - name: Guard analyzer and hook tests
+        id: guard-tests
+        shell: pwsh
+        run: |
+          # The trailing dot keeps a class from also selecting classes whose names extend it.
+          $filter = (-split $env:GUARD_CLASSES | ForEach-Object { "FullyQualifiedName~$_." }) -join '|'
+          Write-Host "Filter: $filter"
+          dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-build `
+            --filter $filter `
+            --logger 'trx;LogFileName=guard-windows.trx' `
+            --results-directory TestResults/guard-windows
+
+      # A skip is missing proof: every selected class must run, and every result must pass.
+      - name: Require every selected guard test to pass
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        env:
+          TEST_OUTCOME: ${{ steps.guard-tests.outcome }}
+          GUARD_TRX: TestResults/guard-windows/guard-windows.trx
+        run: |
+          $classes = @(-split $env:GUARD_CLASSES)
+          $problems = [System.Collections.Generic.List[string]]::new()
+          if ($env:TEST_OUTCOME -ne 'success') { $problems.Add("dotnet test outcome is '$env:TEST_OUTCOME'") }
+          if (-not (Test-Path -LiteralPath $env:GUARD_TRX)) {
+            $problems.Add("No test results at $env:GUARD_TRX")
+          } else {
+            $trx = [xml](Get-Content -Raw -LiteralPath $env:GUARD_TRX)
+            $ns = [System.Xml.XmlNamespaceManager]::new($trx.NameTable)
+            $ns.AddNamespace('t', 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010')
+            $definitions = @($trx.SelectNodes('//t:TestDefinitions/t:UnitTest', $ns))
+            $classOf = @{}
+            foreach ($test in $definitions) {
+              $classOf[$test.id] = $test.SelectSingleNode('t:TestMethod', $ns).className
+            }
+            $results = @($trx.SelectNodes('//t:Results/t:UnitTestResult', $ns))
+            if ($results.Count -eq 0) { $problems.Add('The selection produced zero results') }
+            foreach ($result in $results | Where-Object outcome -ne 'Passed') {
+              $problems.Add("$($result.testName) is $($result.outcome), not Passed")
+            }
+            foreach ($class in $classes) {
+              $count = @($results | Where-Object { $classOf[$_.testId] -eq $class }).Count
+              Write-Host ("{0,5} {1}" -f $count, $class)
+              if ($count -eq 0) { $problems.Add("$class produced zero results") }
+            }
+            if ($definitions.Count -ne $results.Count) {
+              $problems.Add("The TRX defines $($definitions.Count) tests but has $($results.Count) results")
+            }
+            # The counters must exist and agree with the results read, so a truncated TRX cannot pass.
+            $counters = $trx.SelectSingleNode('//t:ResultSummary/t:Counters', $ns)
+            if ($null -eq $counters) {
+              $problems.Add('The TRX has no ResultSummary/Counters')
+            } else {
+              Write-Host "TRX counters: total $($counters.total), passed $($counters.passed), failed $($counters.failed), notExecuted $($counters.notExecuted)"
+              if ($counters.total -ne $counters.passed) {
+                $problems.Add("TRX counters show total $($counters.total) but passed $($counters.passed)")
+              }
+              if ($counters.total -ne "$($results.Count)") {
+                $problems.Add("TRX counters show total $($counters.total) but the TRX has $($results.Count) results")
+              }
+            }
+          }
+          foreach ($problem in $problems) { Write-Host "::error::$problem" }
+          if ($problems.Count -gt 0) { exit 1 }
+
+      - name: Upload guard test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guard-windows-attempt-${{ github.run_attempt }}
+          path: TestResults/guard-windows
           if-no-files-found: error
 
   assurance-cancellation:

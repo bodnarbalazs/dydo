@@ -35,7 +35,7 @@ internal sealed class WindowsStatechartLifetime : StatechartLifetime
         }
     }
 
-    public static async Task<WindowsStatechartLifetime> StartAsync(ProcessStartInfo start,
+    public static async Task<StatechartLifetime> StartAsync(ProcessStartInfo start,
         string parent, string state, string temp)
     {
         var owner = new WindowsStatechartLifetime(start, parent, state, temp);

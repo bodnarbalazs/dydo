@@ -196,6 +196,7 @@ dydo has no OpenCode init mode.
 | `dydo clean [<worktree>...] [--all]` | Remove linked worktrees, archiving their uncommitted work first (`--dry-run` previews) |
 | `dydo pr-ready [path] [--body <file>]` | Check a tree is committed and pushed before a PR opens (`--body` also checks the PR body) |
 | `dydo map [--no-browser]` | Serve a read-only map of a Linear Project on localhost (needs `LINEAR_API_KEY`) |
+| `dydo survey <project>` | Print a read-only digest of a Linear Project's lanes (needs `LINEAR_API_KEY`) |
 | `dydo completions <shell>` | Print a completion script for `bash`, `zsh`, or `powershell` |
 | `dydo version` | Print the version |
 | `dydo help` | Print the command summary |

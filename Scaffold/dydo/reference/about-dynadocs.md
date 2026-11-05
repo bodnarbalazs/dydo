@@ -103,9 +103,10 @@ management, including FutureFeatures.
    then its last Milestone's Walkthrough inspects it; each earlier Milestone had its own. An empty
    landing Walkthrough closes the Project; findings reopen the lap in the same Project.
 
-No dydo command writes, polls, provisions, or mirrors Linear. The one command that reads it is
-`dydo map`, an on-demand view of one Project that uses the user's `LINEAR_API_KEY` and keeps one
-disposable saved map per opened Project for comparison on revisit. Agents use
+No dydo command writes, polls, provisions, or mirrors Linear. Two commands read it, on demand and
+with the user's `LINEAR_API_KEY`: `dydo map`, a view of one Project that keeps one disposable saved
+map per opened Project for comparison on revisit, and `dydo survey`, a plain-text digest of one
+Project's lanes that keeps nothing. Agents use
 Linear's official MCP, UI, API, and integrations for live work.
 
 ## Installation

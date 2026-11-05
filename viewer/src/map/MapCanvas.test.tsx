@@ -38,10 +38,10 @@ function StoreProbe() {
   return null;
 }
 
-function canvas(focus: string | null, fitKey: number, shown: MapFlow = flow, cascade: Cascade | null = null) {
+function canvas(focus: string | null, fitKey: number, shown: MapFlow = flow, cascade: Cascade | null = null, centreKey = 0) {
   return (
     <ReactFlowProvider>
-      <MapCanvas flow={shown} focus={focus} fitKey={fitKey} cascade={cascade} onDrawn={vi.fn()} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} />
+      <MapCanvas flow={shown} focus={focus} fitKey={fitKey} centreKey={centreKey} cascade={cascade} onDrawn={vi.fn()} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} />
       <StoreProbe />
     </ReactFlowProvider>
   );
@@ -75,6 +75,15 @@ describe('MapCanvas viewport', () => {
     expect(fitView.mock.calls).toEqual([[{ nodes: [{ id: 'B' }], maxZoom: 1, minZoom: 0.6, duration: 300 }]]);
     view.rerender(canvas('B', 0, relaidOut()));
     view.rerender(canvas('gone', 0, relaidOut()));
+    expect(fitView).toHaveBeenCalledOnce();
+  });
+
+  it('centres the unchanged focus again on the layout that asks for it', () => {
+    const view = render(canvas('A', 0));
+    fitView.mockClear();
+    view.rerender(canvas('A', 0, relaidOut(), null, 1));
+    expect(fitView.mock.calls).toEqual([[{ nodes: [{ id: 'A' }], maxZoom: 1, minZoom: 0.6, duration: 300 }]]);
+    view.rerender(canvas('A', 0, relaidOut(), null, 1));
     expect(fitView).toHaveBeenCalledOnce();
   });
 
@@ -194,7 +203,7 @@ describe('saved canvas readiness', () => {
     let finish!: (value: boolean) => void;
     fitView.mockImplementation(() => new Promise<boolean>((done) => { finish = done; }));
     const ready = vi.fn();
-    render(<StrictMode><ReactFlowProvider><MapCanvas flow={flow} focus={null} fitKey={0} cascade={null} onReady={ready} onDrawn={vi.fn()} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} /></ReactFlowProvider></StrictMode>);
+    render(<StrictMode><ReactFlowProvider><MapCanvas flow={flow} focus={null} fitKey={0} centreKey={0} cascade={null} onReady={ready} onDrawn={vi.fn()} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} /></ReactFlowProvider></StrictMode>);
     await act(() => vi.advanceTimersByTimeAsync(10000));
     expect(ready).not.toHaveBeenCalled();
     await act(async () => { finish(true); await Promise.resolve(); });
@@ -208,7 +217,7 @@ describe('saved canvas readiness', () => {
     let finish!: (value: boolean) => void;
     fitView.mockImplementation(() => new Promise<boolean>((done) => { finish = done; }));
     const ready = vi.fn();
-    const view = render(<ReactFlowProvider><MapCanvas flow={flow} focus={null} fitKey={0} cascade={null} onReady={ready} onDrawn={vi.fn()} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} /></ReactFlowProvider>);
+    const view = render(<ReactFlowProvider><MapCanvas flow={flow} focus={null} fitKey={0} centreKey={0} cascade={null} onReady={ready} onDrawn={vi.fn()} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} /></ReactFlowProvider>);
     view.unmount(); finish(true);
     await act(() => vi.advanceTimersByTimeAsync(3000));
     expect(ready).not.toHaveBeenCalled();
@@ -218,7 +227,7 @@ describe('saved canvas readiness', () => {
     vi.useFakeTimers();
     const ready = vi.fn();
     fitView.mockImplementation(() => new Promise<boolean>(() => undefined));
-    render(<StrictMode><ReactFlowProvider><MapCanvas flow={{ nodes: [], edges: [] }} focus={null} fitKey={0} cascade={null} onReady={ready} onDrawn={vi.fn()} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} /></ReactFlowProvider></StrictMode>);
+    render(<StrictMode><ReactFlowProvider><MapCanvas flow={{ nodes: [], edges: [] }} focus={null} fitKey={0} centreKey={0} cascade={null} onReady={ready} onDrawn={vi.fn()} onFocus={vi.fn()} onOpenExternal={vi.fn()} onTogglePlate={vi.fn()} /></ReactFlowProvider></StrictMode>);
     expect(ready).not.toHaveBeenCalled();
     await act(() => vi.advanceTimersByTimeAsync(16));
     expect(ready).not.toHaveBeenCalled();

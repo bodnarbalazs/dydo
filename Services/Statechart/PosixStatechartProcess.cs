@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 internal sealed class PosixStatechartProcess
 {
     public int Id { get; }
+    public bool Confirmed => _groupReady;
     private bool _groupReady;
     private bool _drained;
     private bool _reaped;
@@ -25,13 +26,14 @@ internal sealed class PosixStatechartProcess
         return new PosixStatechartProcess(pid);
     }
 
-    public static void Handoff(string file, IEnumerable<string> arguments, IEnumerable<string> environment)
+    // Replaces this process; it returns only when exec failed, with the error for the caller to throw.
+    public static Win32Exception Handoff(string file, IEnumerable<string> arguments, IEnumerable<string> environment)
     {
         RequirePosix();
         using var argv = new PosixStatechartArguments(new[] { file }.Concat(arguments));
         using var env = new PosixStatechartArguments(environment);
         PosixStatechartNative.Exec(file, argv.Pointer, env.Pointer);
-        throw new Win32Exception(Marshal.GetLastPInvokeError(), "Statechart exec handoff failed.");
+        return new Win32Exception(Marshal.GetLastPInvokeError(), "Statechart exec handoff failed.");
     }
 
     public static void BecomeGroupLeader()
@@ -93,21 +95,15 @@ internal sealed class PosixStatechartProcess
             throw new Win32Exception();
     }
 
-    public async Task<bool> WaitForEmptyAsync(TimeSpan timeout, CancellationToken cancellationToken = default)
+    // Returns once the group is empty; a group still live at the deadline cancels instead.
+    public async Task WaitForEmptyAsync(TimeSpan timeout, CancellationToken cancellationToken = default)
     {
         RequireChild();
         if (!_groupReady) throw new InvalidOperationException("Statechart group is not registered.");
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(timeout);
-        while (true)
-        {
-            if (!await HasLiveMembersAsync(deadline.Token))
-            {
-                _drained = true;
-                return true;
-            }
-            await Task.Delay(10, deadline.Token);
-        }
+        while (await HasLiveMembersAsync(deadline.Token)) await Task.Delay(10, deadline.Token);
+        _drained = true;
     }
 
     public int Reap()

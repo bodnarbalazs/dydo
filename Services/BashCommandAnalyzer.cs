@@ -1501,12 +1501,17 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex CdThenCommandRegex();
 
     // Every output redirection, with or without an fd number (DYD-640): > >> >| &> &>> N> N>> N>| and
-    // >&word. A word ending in a digit runs into the operator (word2>file); bash reads it as the word
-    // and a plain >file, and a write to the target either way.
-    [GeneratedRegex(@"(?<fd>[\d&]?)(?<op>>>?[|&]?)\s*(?<target>[^\s|;&><]+)")]
+    // >&word. The fd is a whole word of digits; a word ending in digits runs into the operator
+    // (word2>file), which bash reads as the word and a plain >file, a write to the target either way.
+    // The atomic digit run is tried only where a word starts, so a long run is scanned once.
+    [GeneratedRegex(@"(?<fd>(?<![^\s;&|()`])(?>[0-9]+)|&)?(?<op>>>?[|&]?)\s*(?<target>[^\s|;&><]+)")]
     private static partial Regex OutputRedirectRegex();
 
-    [GeneratedRegex(@"^(?:/dev/(?:null|stdout|stderr|fd/\d+)|(?i:\$null))$")]
+    // The target after a backslash-newline continuation (or several) that follows the operator.
+    [GeneratedRegex(@"\G(?:\r?\n[ \t]*\\)*\r?\n[ \t]*(?<target>[^\s|;&><]+)")]
+    private static partial Regex ContinuedTargetRegex();
+
+    [GeneratedRegex(@"^/dev/(?:null|stdout|stderr|tty|fd/[0-9]+)$")]
     private static partial Regex OutputSinkRegex();
 
     [GeneratedRegex(@"<\s*([^\s|;&><]+)")]
@@ -1554,7 +1559,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         CheckBypassAttempts(pieces, searched, string.Join("; ", searched.Select(piece => Layout(piece.Code))), result);
 
         foreach (var subCmd in pieces.SelectMany(piece => SplitCommand(piece.Code)))
-            AnalyzeSubCommand(subCmd.Trim(), result);
+            AnalyzeSubCommand(subCmd.Trim(), result, _shell == ShellDialect.PowerShell);
 
         // Analyze contents of command substitutions so hidden operations are detected, in literal
         // data too: it relieves the bypass only, never a path check (DYD-422).
@@ -1585,7 +1590,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
                 continue;
 
             foreach (var subCmd in SplitCommand(inner))
-                AnalyzeSubCommand(subCmd.Trim(), result);
+                AnalyzeSubCommand(subCmd.Trim(), result, _shell == ShellDialect.PowerShell);
         }
     }
 
@@ -1651,8 +1656,19 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             return 2;
         // >| is the clobber redirection, not a pipe (DYD-640); an escaped \> or `> redirects nothing.
         if (c == '|')
-            return i > 0 && command[i - 1] == '>' && (i == 1 || command[i - 2] is not ('\\' or '`')) ? 0 : 1;
+            return i > 0 && command[i - 1] == '>' && !IsEscaped(command, i - 1) ? 0 : 1;
         return 0;
+    }
+
+    // Whether the character at i is escaped: an odd run of one escape character (\ or `) before it.
+    private static bool IsEscaped(string command, int i)
+    {
+        if (i == 0 || command[i - 1] is not ('\\' or '`'))
+            return false;
+        var start = i - 1;
+        while (start > 0 && command[start - 1] == command[i - 1])
+            start--;
+        return (i - start) % 2 == 1;
     }
 
     private static bool AppendQuote(char c, StringBuilder current,
@@ -1745,14 +1761,15 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static readonly HashSet<string> ShellInterpreters =
         new(StringComparer.OrdinalIgnoreCase) { "bash", "sh", "zsh" };
 
-    private void AnalyzeSubCommand(string command, BashAnalysisResult result)
+    // powerShell: the command runs in PowerShell, as a bash -c script never does.
+    private void AnalyzeSubCommand(string command, BashAnalysisResult result, bool powerShell)
     {
         if (string.IsNullOrWhiteSpace(command))
             return;
 
         if (ReadAssignmentSource(command) is { } source)
         {
-            AnalyzeSubCommand(source, result);
+            AnalyzeSubCommand(source, result, powerShell);
             return;
         }
 
@@ -1769,7 +1786,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         AnalyzeAwkCommand(cmdName, tokens, result);
 
         // Redirection operators apply to all commands
-        AnalyzeRedirection(command, result);
+        AnalyzeRedirection(command, result, powerShell);
 
         if (AllCommands.TryGetValue(cmdName, out var opType))
             AddPathOperations(result, tokens.Skip(1), opType, cmdName);
@@ -1809,8 +1826,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
         var innerCommand = tokens[cArgIndex + 1];
         foreach (var subCmd in SplitCommand(innerCommand))
-            AnalyzeSubCommand(subCmd.Trim(), result);
-        AnalyzeRedirection(innerCommand, result);
+            AnalyzeSubCommand(subCmd.Trim(), result, powerShell: false);
+        AnalyzeRedirection(innerCommand, result, powerShell: false);
         return true;
     }
 
@@ -1968,27 +1985,40 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return null;
     }
 
-    // fd duplication or close (>&2, 2>&1, 3>&1-, 2>&-) names a descriptor, not a file. A redirection read
-    // only since DYD-640 (an fd number, >| or >&) into a sink writes no file either: as a write it would
-    // refuse a stderr silencer beside a $ word. > >> &> and &>> keep their reading, /dev/null included.
-    private static bool WritesNoFile(string fd, string op, string target) =>
-        (op[^1] == '&' && target.TrimEnd('-').All(char.IsAsciiDigit))
-        || ((fd is [>= '0' and <= '9'] || op[^1] is '|' or '&') && OutputSinkRegex().IsMatch(target));
+    // fd duplication or close (>&2, 2>&1, 3>&1-, 2>&-, >&$fd) names a descriptor, not a file. A
+    // redirection read only since DYD-640 (a digit before the operator, >| or >&) into a sink writes no
+    // file either: as a write it would refuse a stderr silencer beside a $ word. PowerShell's sink is its
+    // unquoted $null. > >> &> and &>> keep their reading, /dev/null included.
+    private static bool WritesNoFile(bool newlyRead, string op, string target, bool powerShell)
+    {
+        var word = ShellEndedWord(target);
+        return (op[^1] == '&' && (word.TrimEnd('-').All(char.IsAsciiDigit) || (word.StartsWith('$') && !word.Contains('/'))))
+            || (newlyRead && (OutputSinkRegex().IsMatch(word)
+                || (powerShell && target[0] is not ('"' or '\'') && word.Equals("$null", StringComparison.OrdinalIgnoreCase))));
+    }
 
-    private static void AnalyzeRedirection(string command, BashAnalysisResult result)
+    // The word a redirection target names where the shell ends it: its quotes dropped, and a ) ` or }
+    // that closes the substitution, subshell or group around the redirection left outside it.
+    private static string ShellEndedWord(string target) =>
+        target.TrimStart('"', '\'').TrimEnd(')', '`', '}', '"', '\'');
+
+    private static void AnalyzeRedirection(string command, BashAnalysisResult result, bool powerShell)
     {
         var outputRedirects = OutputRedirectRegex().Matches(command);
         foreach (Match match in outputRedirects)
         {
-            var path = match.Groups["target"].Value.Trim('"', '\'');
-            var (fd, op) = (match.Groups["fd"].Value, match.Groups["op"].Value);
-            if (LooksLikePath(path) && !WritesNoFile(fd, op, path))
+            var (fd, op, target) = (match.Groups["fd"].Value, match.Groups["op"], match.Groups["target"].Value);
+            var newlyRead = op.Value[^1] is '|' or '&' || (op.Index > 0 && char.IsAsciiDigit(command[op.Index - 1]));
+            if (newlyRead && target == "\\" && ContinuedTargetRegex().Match(command, match.Index + match.Length) is { Success: true } continued)
+                target = continued.Groups["target"].Value;
+            var path = target.Trim('"', '\'');
+            if (LooksLikePath(path) && !WritesNoFile(newlyRead, op.Value, target, powerShell))
             {
                 result.Operations.Add(new FileOperation
                 {
                     Type = FileOperationType.Write,
                     Path = path,
-                    Command = fd + op
+                    Command = fd + op.Value
                 });
             }
         }

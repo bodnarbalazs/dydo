@@ -20,15 +20,26 @@ refused like `printf x > dydo/index.md`, through Claude's Bash and PowerShell to
   ([Guard System](../../../../understand/guard-system.md#layer-2-bash-command-analysis), file
   operation extraction). `>`, `>>`, `N>>`, `&>` and `&>>` already did.
 - `>|` is the clobber redirection, not a pipe: `printf x >| notes.md` stays one command. An escaped
-  `\>|` or `` `>| `` still pipes.
-- fd duplication and close (`2>&1`, `1>&2`, `>&2`, `2>&-`, `3>&1-`) write no file.
+  `\>|` or `` `>| `` still pipes; `\\>|`, whose backslash is itself escaped, is a clobber.
+- fd duplication and close (`2>&1`, `1>&2`, `>&2`, `2>&-`, `3>&1-`, and `>&$fd` onto a variable
+  descriptor) write no file.
 - A redirection the guard reads only now (an fd number, `>|` or `>&`) into `/dev/null`,
-  `/dev/stdout`, `/dev/stderr`, `/dev/fd/N` or PowerShell's `$null` writes no file. So
-  `echo "$HOME" 2>/dev/null`, `ls $(pwd) 2>/dev/null` and `Get-ChildItem $HOME 2>$null` stay
-  allowed with their bypass warning. `> /dev/null`, `>> /dev/null` and `&> /dev/null` beside a `$`
-  word are refused as before.
+  `/dev/stdout`, `/dev/stderr`, `/dev/tty` or `/dev/fd/N` writes no file, nor, in PowerShell only,
+  into its unquoted `$null`. A `)`, `` ` `` or `}` that closes the substitution, subshell or group
+  around the redirection is not part of its target, and a backslash-newline continuation after the
+  operator is read through to the target on the next line. So `echo "$HOME" 2>/dev/null`,
+  `ls $(pwd) 2>/dev/null`, `out=$(git status 2>&1)`, `` x=`ls 2>&1` ``, `(echo $HOME >&2)`,
+  `if [ -n "$(git status --porcelain 2>/dev/null)" ]; then ...`, a continued `2>\` then
+  `/dev/null`, and PowerShell's `Get-ChildItem $HOME 2>$null` stay allowed with their bypass
+  warning, while `x=$(printf y 2>dydo/index.md)` and a continued `2>\` then `dydo/index.md` are
+  refused. `> /dev/null`, `>> /dev/null` and `&> /dev/null` beside a `$` word are refused as before.
+- `$null` outside PowerShell is a shell variable naming a file, and a quoted `'$null'` or `"$null"`
+  is no PowerShell variable, so each stays a write: `null=dydo/index.md; printf x 1>>$null` is
+  refused, and so is bash's `echo $HOME 2>$null`, a write through a variable beside a `$` word.
 - `N>> /dev/null` beside a `$` word, which the old reading refused by matching only its second `>`,
   is now allowed like `N> /dev/null`.
+- The refusal names the redirection as written: the whole fd (`Write via 10>`), and a plain `>` for
+  `word2>file`.
 
 No change in this entry renames a term mechanically, so it has no merge normalisations.
 
@@ -38,6 +49,12 @@ Guards stop accidents, not rogue agents.
 
 - Redirection characters inside quoted text are read as redirections, as before for `>` and `>>`,
   and now for the fd-numbered forms too.
+- A write target closed by a `( )` subshell's `)`, such as `(printf y >dydo/index.md)`, keeps the
+  `)` in its path, for `>` as before and for the newly read forms alike, so the path names no
+  guarded file. A target inside `$(...)` or backticks is read again from the inner
+  command and checked.
+- A plain `>` or `>>` followed by a backslash-newline continuation still reads the backslash as its
+  target, as before; only the newly read forms read through to the next line.
 
 ## Files Changed
 

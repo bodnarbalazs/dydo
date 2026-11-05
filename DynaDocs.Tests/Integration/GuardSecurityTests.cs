@@ -1560,4 +1560,67 @@ public class GuardSecurityTests : IntegrationTestBase
 
         result.AssertPreToolUseAllowed();
     }
+
+    // DYD-640 review B1, B3 and nits 2-3: a duplication or sink closed by a substitution, subshell or
+    // group, continued onto the next line, into /dev/tty or onto a $ descriptor stays allowed.
+    [Theory]
+    [InlineData("out=$(git status 2>&1)")]
+    [InlineData("out=$(git status 2>&1) || true")]
+    [InlineData("echo \"$(make 2>&1)\"")]
+    [InlineData("x=`ls 2>&1`")]
+    [InlineData("echo $(echo hi >&2)")]
+    [InlineData("(echo $HOME >&2)")]
+    [InlineData("x=$(git rev-parse HEAD 2>/dev/null)")]
+    [InlineData("x=\"$(git rev-parse HEAD 2>/dev/null)\"")]
+    [InlineData("v=$(command -v jq 2>/dev/null) || true")]
+    [InlineData("if [ -n \"$(git status --porcelain 2>/dev/null)\" ]; then echo dirty; fi")]
+    [InlineData("echo $HOME 2>/dev/null}")]
+    [InlineData("echo \"$HOME\" 2>\\\n/dev/null")]
+    [InlineData("echo $HOME 2>/dev/tty")]
+    [InlineData("echo $HOME >&$fd")]
+    public async Task Dyd640_SinkInsideASubstitutionOrContinued_IsAllowed(string command)
+    {
+        await SetupClaimedAgent();
+
+        foreach (var toolName in new[] { "Bash", "PowerShell" })
+        {
+            var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+            result.AssertPreToolUseAllowed();
+        }
+    }
+
+    // A guarded target inside a substitution or after a continuation is still refused.
+    [Theory]
+    [InlineData("x=$(printf y 2>dydo/index.md)")]
+    [InlineData("x=\"$(printf y 1>dydo/index.md)\"")]
+    [InlineData("x=`printf y 2>>dydo/index.md`")]
+    [InlineData("{ printf y >&dydo/index.md; }")]
+    [InlineData("printf y 2>\\\ndydo/index.md")]
+    public async Task Dyd640_GuardedTargetInsideASubstitutionOrContinued_IsDenied(string command)
+    {
+        await SetupClaimedAgent();
+
+        foreach (var toolName in new[] { "Bash", "PowerShell" })
+        {
+            var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+            result.AssertPreToolUseDenied();
+        }
+    }
+
+    // DYD-640 review B2: $null is a sink only as PowerShell's own unquoted variable.
+    [Theory]
+    [InlineData("Bash", "null=dydo/index.md; printf x 1>>$null")]
+    [InlineData("Bash", "echo $HOME 2>$null")]
+    [InlineData("PowerShell", "Get-ChildItem $HOME 2>>'$null'")]
+    [InlineData("PowerShell", "Get-ChildItem $HOME 2>\"$null\"")]
+    public async Task Dyd640_NullOutsidePowerShellOrQuoted_IsDenied(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+    }
 }

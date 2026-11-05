@@ -452,8 +452,11 @@ public class BashCommandAnalyzerTests
     [InlineData("echo $HOME >|/dev/null")]
     [InlineData("echo $HOME >&/dev/null")]
     [InlineData("echo $HOME word2>/dev/null")]
-    [InlineData("Get-ChildItem $HOME 2>$null")]
-    [InlineData("Get-ChildItem $HOME 2>$NULL")]
+    [InlineData("echo $HOME 2>/dev/tty")]
+    [InlineData("echo $HOME >&$fd")]
+    [InlineData("echo $HOME >&\"$fd\"")]
+    [InlineData("echo \"$HOME\" 2>\\\n/dev/null")]
+    [InlineData("echo \"$HOME\" 2> \\\n  \\\n  /dev/null")]
     public void Analyze_FdDuplicationOrANewlyReadSink_WritesNoFile(string command)
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
@@ -462,6 +465,104 @@ public class BashCommandAnalyzerTests
 
             Assert.DoesNotContain(result.Operations, op => op.Type == FileOperationType.Write);
         }
+    }
+
+    // A ) ` or } that closes the substitution, subshell or group around a duplication or sink is not
+    // part of its target (DYD-640 review B1).
+    [Theory]
+    [InlineData("out=$(git status 2>&1)")]
+    [InlineData("out=$(git status 2>&1) || true")]
+    [InlineData("echo \"$(make 2>&1)\"")]
+    [InlineData("x=`ls 2>&1`")]
+    [InlineData("echo $(echo hi >&2)")]
+    [InlineData("(echo $HOME >&2)")]
+    [InlineData("x=$(git rev-parse HEAD 2>/dev/null)")]
+    [InlineData("x=\"$(git rev-parse HEAD 2>/dev/null)\"")]
+    [InlineData("v=$(command -v jq 2>/dev/null) || true")]
+    [InlineData("if [ -n \"$(git status --porcelain 2>/dev/null)\" ]; then echo dirty; fi")]
+    [InlineData("echo $HOME 2>/dev/null}")]
+    [InlineData("x=$(git status 2>\"/dev/null\")")]
+    public void Analyze_DuplicationOrSinkClosedBySubstitutionOrGroup_WritesNoFile(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.DoesNotContain(result.Operations, op => op.Type == FileOperationType.Write);
+        }
+    }
+
+    // A guarded target inside a substitution, subshell or group is still read as a write to it.
+    [Theory]
+    [InlineData("x=$(printf y 2>dydo/index.md)")]
+    [InlineData("x=\"$(printf y 1>dydo/index.md)\"")]
+    [InlineData("x=`printf y 2>>dydo/index.md`")]
+    [InlineData("{ printf y >&dydo/index.md; }")]
+    [InlineData("printf y 2>\\\ndydo/index.md")]
+    public void Analyze_FdRedirectionToAGuardedPathInsideASubstitutionOrContinued_WritesIt(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "dydo/index.md");
+        }
+    }
+
+    // PowerShell's sink is its own unquoted $null variable (DYD-640 review B2).
+    [Theory]
+    [InlineData("Get-ChildItem $HOME 2>$null")]
+    [InlineData("Get-ChildItem $HOME 2>$NULL")]
+    [InlineData("Get-ChildItem $HOME 2>>$null")]
+    [InlineData("Write-Output $(Get-ChildItem $HOME 2>$null)")]
+    public void Analyze_PowerShellNullSink_WritesNoFile(string command)
+    {
+        var result = new BashCommandAnalyzer(ShellDialect.PowerShell).Analyze(command);
+
+        Assert.DoesNotContain(result.Operations, op => op.Type == FileOperationType.Write);
+    }
+
+    // Outside PowerShell $null is a variable naming a file, and a quoted '$null' or "$null" is no
+    // PowerShell variable reference, so each stays a write.
+    [Theory]
+    [InlineData("Posix", "null=dydo/index.md; printf x 1>>$null")]
+    [InlineData("Unknown", "printf x 2>$null")]
+    [InlineData("Posix", "printf x 2>$NULL")]
+    [InlineData("PowerShell", "Get-ChildItem $HOME 2>>'$null'")]
+    [InlineData("PowerShell", "Get-ChildItem $HOME 2>\"$null\"")]
+    [InlineData("Posix", "printf x 2>'$null'")]
+    public void Analyze_NullOutsidePowerShellOrQuoted_StaysAWrite(string dialect, string command)
+    {
+        var result = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect)).Analyze(command);
+
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write
+            && op.Path.Equals("$null", StringComparison.OrdinalIgnoreCase));
+    }
+
+    // The refusal names the redirection as written: the whole fd, and no fd for a word ending in digits.
+    [Theory]
+    [InlineData("printf x 10> out.md", "10>")]
+    [InlineData("printf x 12>>out.md", "12>>")]
+    [InlineData("printf x 2>&1 1> out.md", "1>")]
+    [InlineData("printf word2>out.md", ">")]
+    [InlineData("printf x &>> out.md", "&>>")]
+    [InlineData("printf x >| out.md", ">|")]
+    public void Analyze_OutputRedirection_LabelsItsOperator(string command, string label)
+    {
+        var result = _analyzer.Analyze(command);
+
+        var write = Assert.Single(result.Operations, op => op.Type == FileOperationType.Write);
+        Assert.Equal(("out.md", label), (write.Path, write.Command));
+    }
+
+    // An escaped backslash escapes nothing after it, so \\>| is a clobber redirection, not a pipe.
+    [Fact]
+    public void Analyze_EscapedBackslashBeforeAClobber_Redirects()
+    {
+        var result = _analyzer.Analyze("echo \\\\>| rm notes.md");
+
+        Assert.DoesNotContain(result.Operations, op => op.Type == FileOperationType.Delete);
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "rm");
     }
 
     // The redirections read before DYD-640 keep their reading: > /dev/null stays a write.
@@ -496,6 +597,13 @@ public class BashCommandAnalyzerTests
     [InlineData("&>>")]
     [InlineData("9")]
     [InlineData(">     ")]
+    [InlineData("12>")]
+    [InlineData("a9")]
+    [InlineData("2>\\\n")]
+    [InlineData("2>\\\n\\")]
+    [InlineData("\\\\>|")]
+    [InlineData("$(x 2>&1)")]
+    [InlineData("2>/dev/null)")]
     public void Analyze_LongRedirectionRun_GrowsLinearly(string unit)
     {
         const int growth = 8;

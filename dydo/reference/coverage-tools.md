@@ -137,9 +137,12 @@ subject exit and cleanup evidence. A live detached descendant makes the campaign
 when the subject exited zero. Unconfirmed cleanup retains the isolated snapshot. When the runner
 cannot confirm its own descendant cleanup, on Linux or Windows, it keeps the snapshot and its marker,
 names both on stderr and exits 2 (incomplete), whatever the subject returned and even when
-interrupted. In assurance mode it records that cleanup in `runner-cleanup.json` beside
-`identities.json`, which it never rewrites. The adapter reports this as `native campaign incomplete`
-with `runnerCleanup`, not as a functional failure. Windows continues
+interrupted. It writes nothing further into the assurance output. The adapter reports `native
+campaign incomplete`, never a functional failure. When `identities.json` records a complete
+campaign with confirmed cleanup and a subject status other than 2, only the runner's own cleanup
+can explain the exit 2, so the adapter names it as `runner_cleanup_unconfirmed`. Otherwise it
+reports the failure `identities.json` records, or that no diagnosis is available; the runner's
+stderr still names the retained snapshot and the error. Windows continues
 to use its native Job Object owner. Native Windows tests require the Windows CI runner; Linux skips
 are missing Windows proof, not passing Windows proof.
 

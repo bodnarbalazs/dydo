@@ -298,18 +298,18 @@ def committed_repository(root):
 
 
 # The real run_tests.py main() in assurance mode, with git, the campaign and the descendant scan
-# stubbed: the campaign publishes a complete receipt, then the runner's own cleanup is unconfirmed.
+# stubbed: real publication records a complete, confirmed campaign, then the runner's own cleanup
+# is unconfirmed.
 UNCONFIRMED_CLEANUP_RUNNER = """\
-import json, sys
+import sys
 from pathlib import Path
 sys.path.insert(0, {tools!r})
 import run_tests
 
 
 def published(worktree, extra_args, output):
-    run_tests._acquire_output(output)
     campaign = {{"complete": True, "cleanup_confirmed": True, "subject_status": 0}}
-    (Path(output) / "identities.json").write_text(json.dumps({{"schema": 1, "campaign": campaign}}))
+    run_tests._publish_assurance(worktree, worktree / "results", worktree / "owner", output, campaign)
     return 0
 
 
@@ -1315,44 +1315,58 @@ class CoverageCampaignTests(unittest.TestCase):
                 self.assertNotIn("failureCategory", error)
                 self.assertNotIn("errorMessage", error)
 
-    def test_an_exit_2_campaign_names_unconfirmed_runner_cleanup_from_its_receipt(self):
+    def exit_2_diagnosis(self, campaign):
+        """collect_dotnet_coverage's incomplete-campaign error for a runner exit of 2, with
+        identities.json recording `campaign`."""
         with tempfile.TemporaryDirectory() as folder:
             root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
-            write_file(raw, "identities.json",
-                       json.dumps({"schema": 1, "campaign": {"complete": True, "cleanup_confirmed": True,
-                                                             "subject_status": 0}}))
-            receipt = write_file(raw, "runner-cleanup.json",
-                                 json.dumps({"schema": 1, "cleanup_confirmed": False,
-                                             "error_category": "TimeoutError",
-                                             "error_message": "Linux descendant cleanup could not be confirmed",
-                                             "retained_worktree": "/tmp/dydo-test-cafefeed"}))
+            write_file(raw, "identities.json", json.dumps({"schema": 1, "campaign": campaign}))
 
             with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
                 answer = gate_adapter.collect_dotnet_coverage(root, raw)
 
-            self.assertEqual(("error", []), (answer["status"], answer["findings"]))
-            error = answer["errors"][0]
-            self.assertEqual("native campaign incomplete", error["message"])
-            self.assertNotIn("diagnosisUnavailable", error)
-            self.assertEqual({"path": str(receipt), "errorCategory": "TimeoutError",
-                              "errorMessage": "Linux descendant cleanup could not be confirmed",
-                              "retainedWorktree": "/tmp/dydo-test-cafefeed"}, error["runnerCleanup"])
-            self.assertEqual(["raw-abc/identities.json", "raw-abc/runner-cleanup.json"],
-                             [row["path"] for row in collector_row(answer, "csharp-coverage")["artifacts"]])
+        self.assertEqual(("error", []), (answer["status"], answer["findings"]))
+        error = answer["errors"][0]
+        self.assertEqual("native campaign incomplete", error["message"])
+        self.assertEqual(str(raw / "identities.json"), error["identitiesPath"])
+        return error
 
-    def test_a_runner_cleanup_receipt_that_names_no_error_leaves_the_identities_diagnosis(self):
-        for label, text in (("not json", "{"), ("not an object", "[]"),
-                            ("no error message", json.dumps({"schema": 1, "cleanup_confirmed": False}))):
-            with self.subTest(label=label), tempfile.TemporaryDirectory() as folder:
-                root, raw = Path(folder) / "repo", Path(folder) / "run/raw-abc"
-                write_file(raw, "runner-cleanup.json", text)
+    def test_an_exit_2_runner_over_a_complete_confirmed_campaign_names_its_own_unconfirmed_cleanup(self):
+        for status in (0, 1):
+            with self.subTest(subject_status=status):
+                error = self.exit_2_diagnosis({"complete": True, "cleanup_confirmed": True,
+                                               "subject_status": status, "failure_category": None})
 
-                with mock.patch.object(gate_adapter, "run_coverage_command", return_value=2):
-                    answer = gate_adapter.collect_dotnet_coverage(root, raw)
+                self.assertNotIn("diagnosisUnavailable", error)
+                self.assertEqual("runner_cleanup_unconfirmed", error["failureCategory"])
+                self.assertEqual(f"the campaign completed with subject status {status} and confirmed "
+                                 "cleanup, but run_tests.py exited 2: its own descendant cleanup was "
+                                 "unconfirmed, so it retained its test worktree (named on its stderr)",
+                                 error["errorMessage"])
 
-                error = answer["errors"][0]
-                self.assertNotIn("runnerCleanup", error)
-                self.assertEqual("identities.json is missing or unreadable", error["diagnosisUnavailable"])
+    def test_an_exit_2_runner_cleanup_is_not_inferred_where_the_campaign_leaves_another_cause(self):
+        confirmed = {"complete": True, "cleanup_confirmed": True, "subject_status": 0}
+        for label, change in (("incomplete campaign", {"complete": False}),
+                              ("unconfirmed campaign cleanup", {"cleanup_confirmed": False}),
+                              ("subject status not an int", {"subject_status": "0"}),
+                              ("subject status a bool", {"subject_status": False}),
+                              ("subject status absent", {"subject_status": None}),
+                              # The runner passes the subject's own 2 through as its exit.
+                              ("subject status 2", {"subject_status": 2})):
+            with self.subTest(label=label):
+                error = self.exit_2_diagnosis({**confirmed, **change})
+
+                self.assertNotIn("failureCategory", error)
+                self.assertNotIn("errorMessage", error)
+                self.assertEqual("identities.json campaign names no failure_category or error_message",
+                                 error["diagnosisUnavailable"])
+        with self.subTest(label="incomplete campaign naming its category"):
+            error = self.exit_2_diagnosis({**confirmed, "complete": False,
+                                           "failure_category": "descendant_leak",
+                                           "error_message": "Campaign left live descendants"})
+
+            self.assertEqual(("descendant_leak", "Campaign left live descendants"),
+                             (error["failureCategory"], error["errorMessage"]))
 
     def test_a_runner_whose_cleanup_is_unconfirmed_is_an_incomplete_campaign_not_a_functional_failure(self):
         """The real runner's main(), in its own process, after a subject that passed: only its
@@ -1368,11 +1382,11 @@ class CoverageCampaignTests(unittest.TestCase):
 
             self.assertEqual(2, collector_row(answer, "csharp-coverage")["facts"]["child_exit"])
             self.assertEqual(("error", []), (answer["status"], answer["findings"]))
-            cleanup = answer["errors"][0]["runnerCleanup"]
-            self.assertEqual("Linux descendant cleanup could not be confirmed", cleanup["errorMessage"])
-            retained = Path(cleanup["retainedWorktree"])
-            self.assertEqual(temp, retained.parent)
-            self.assertTrue((retained / ".dydo-test-worktree.json").is_file())
+            self.assertEqual("runner_cleanup_unconfirmed", answer["errors"][0]["failureCategory"])
+            self.assertEqual(["identities.json"], sorted(path.name for path in raw.iterdir()))
+            retained = list(temp.glob("dydo-test-*"))
+            self.assertEqual(1, len(retained), retained)
+            self.assertTrue((retained[0] / ".dydo-test-worktree.json").is_file())
 
     def test_node_coverage_passes_when_the_native_c8_campaign_covers_every_target(self):
         with tempfile.TemporaryDirectory() as folder:

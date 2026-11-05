@@ -780,7 +780,7 @@ class UnconfirmedCleanupExitTests(unittest.TestCase):
                 self.assertEqual(expected, code, stderr)
                 remove.assert_called_once_with(Path(folder) / "dydo-test-cafefeed")
 
-    def test_unconfirmed_cleanup_before_any_worktree_exits_2_and_says_none_was_kept(self):
+    def test_unconfirmed_cleanup_before_any_worktree_exits_2_says_none_was_kept_and_creates_no_output(self):
         with tempfile.TemporaryDirectory() as folder:
             output = Path(folder) / "published"
             code, stderr, remove = self.exit_of_main(
@@ -793,48 +793,7 @@ class UnconfirmedCleanupExitTests(unittest.TestCase):
             remove.assert_not_called()
             self.assertIn("no test worktree was created", stderr)
             self.assertNotIn("Traceback", stderr)
-            receipt = json.loads((output / "runner-cleanup.json").read_text(encoding="utf-8"))
-            self.assertIsNone(receipt["retained_worktree"])
-
-    def test_unconfirmed_assurance_cleanup_writes_its_receipt_and_leaves_identities_untouched(self):
-        identities = b'{"schema": 1, "campaign": {"complete": true, "subject_status": 0}}\n'
-
-        def published(_worktree, _extra_args, assurance_output):
-            run_tests._acquire_output(assurance_output).joinpath("identities.json").write_bytes(identities)
-            return 0
-
-        with tempfile.TemporaryDirectory() as folder:
-            output = Path(folder) / "published"
-            outcome = self.exit_of_main(
-                folder, None, self.unconfirmed(),
-                patch.object(run_tests, "_run_assurance_campaign", side_effect=published),
-                argv=("--assurance-output", str(output)))
-
-            self.assert_retained(folder, outcome, "still live")
-            self.assertEqual(identities, (output / "identities.json").read_bytes())
-            self.assertEqual({"schema": 1, "cleanup_confirmed": False, "error_category": "TimeoutError",
-                              "error_message": "still live",
-                              "retained_worktree": str(Path(folder) / "dydo-test-cafefeed")},
-                             json.loads((output / "runner-cleanup.json").read_text(encoding="utf-8")))
-
-    def test_unconfirmed_cleanup_exits_2_where_no_receipt_belongs_or_none_can_be_written(self):
-        for case in ("foreign output", "unwritable output"):
-            with self.subTest(case=case), tempfile.TemporaryDirectory() as folder:
-                if case == "foreign output":
-                    output = Path(folder) / "published"
-                    write_file(output / "foreign.txt", "not the runner's")
-                else:
-                    output = write_file(Path(folder) / "blocker", "a file, not a directory") / "published"
-                outcome = self.exit_of_main(
-                    folder, None, self.unconfirmed(),
-                    patch.object(run_tests, "_run_assurance_campaign", return_value=2),
-                    argv=("--assurance-output", str(output)))
-
-                self.assert_retained(folder, outcome, "still live")
-                if case == "foreign output":
-                    self.assertEqual(["foreign.txt"], [path.name for path in output.iterdir()])
-                else:
-                    self.assertIn("runner-cleanup.json could not be written", outcome[1])
+            self.assertFalse(output.exists(), "the runner created an output nothing published")
 
     def assert_every_late_interrupt_exits_2(self, job, seam, assurance=False, repeated=False):
         """One run per point a real SIGINT can land at, from the moment cleanup at `seam` proves
@@ -888,96 +847,66 @@ class UnconfirmedCleanupExitTests(unittest.TestCase):
                 with self.subTest(platform=platform, repeated=repeated):
                     self.assert_every_late_interrupt_exits_2(job, seam, assurance, repeated)
 
-    def directory_entries(self, folder):
-        """Each entry in `folder` by name: a link's target, else a file's bytes."""
-        return {path.name: os.readlink(path) if path.is_symlink() else path.read_bytes()
-                for path in Path(folder).iterdir()}
-
-    def require_symlinks(self, folder):
-        try:
-            os.symlink("absent", Path(folder) / "link-probe")
-        except OSError as error:  # Windows grants symlinks only to some accounts
-            self.skipTest(f"symlinks unavailable: {error}")
-        os.unlink(Path(folder) / "link-probe")
-
-    def link_receipt_to_identities(self, output):
-        os.symlink("identities.json", output / run_tests.RUNNER_CLEANUP_NAME)
+    def tree(self, folder):
+        """Every entry under `folder` by relative path: a file's bytes, or None for a directory."""
+        return {path.relative_to(folder).as_posix(): None if path.is_dir() else path.read_bytes()
+                for path in Path(folder).rglob("*")}
 
     def publish(self, worktree, destination):
+        write_file(worktree / "owner/result.json", '{"complete": true}\n')
         run_tests._publish_assurance(worktree, worktree / "results", worktree / "owner", destination,
                                      {"complete": True, "cleanup_confirmed": True, "subject_status": 0})
 
-    def test_a_receipt_goes_only_into_the_output_this_run_created(self):
-        identities = b'{"schema": 1, "campaign": {"complete": true}}\n'
+    def test_unconfirmed_assurance_cleanup_adds_no_entry_to_what_publication_wrote(self):
+        published = {}
 
-        def foreign_output(output, linked):
-            output.mkdir()
-            write_file(output / "foreign.txt", "belongs to a competing run")
-            (output / "identities.json").write_bytes(identities)
-            if linked:
-                self.link_receipt_to_identities(output)
+        def campaign(worktree, _extra_args, destination):
+            self.publish(worktree, destination)
+            published.update(self.tree(destination))
+            return 0
 
-        def competing(linked):
-            def campaign(worktree, _extra_args, destination):
-                foreign_output(Path(destination), linked)  # created while the subject ran
-                self.publish(worktree, destination)  # refuses it: ValueError
-            return campaign
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder) / "published"
+            outcome = self.exit_of_main(
+                folder, None, self.unconfirmed(),
+                patch.object(run_tests, "_run_assurance_campaign", side_effect=campaign),
+                argv=("--assurance-output", str(output)))
+
+            self.assert_retained(folder, outcome, "still live")
+            self.assertEqual({"identities.json", "owner", "owner/result.json"}, set(published))
+            self.assertEqual(published, self.tree(output))
+
+    def test_unconfirmed_assurance_cleanup_touches_no_output_it_did_not_publish(self):
+        def competing(worktree, _extra_args, destination):
+            write_file(Path(destination) / "foreign.txt", "belongs to a competing run")
+            self.publish(worktree, destination)  # refuses an output that already exists
 
         def replaced(worktree, _extra_args, destination):
             self.publish(worktree, destination)
             Path(destination).rename(Path(destination).with_name("ours"))
-            foreign_output(Path(destination), False)
+            write_file(Path(destination) / "foreign.txt", "belongs to a competing run")
             return 0
 
-        for case, campaign in (("competing output", competing(False)),
-                               ("competing output with a receipt link", competing(True)),
+        for case, campaign in (("competing output", competing),
                                ("output replaced after publication", replaced)):
             with self.subTest(case=case), tempfile.TemporaryDirectory() as folder:
-                if "link" in case:
-                    self.require_symlinks(folder)
-                output = Path(folder) / "published"
-                foreign = {}
+                before = {}
 
                 def snapshot(*args):
                     try:
                         return campaign(*args)
                     finally:
-                        foreign.update(self.directory_entries(output))
+                        before.update(self.tree(folder))
 
                 outcome = self.exit_of_main(
                     folder, None, self.unconfirmed(),
                     patch.object(run_tests, "_run_assurance_campaign", side_effect=snapshot),
-                    argv=("--assurance-output", str(output)))
+                    argv=("--assurance-output", str(Path(folder) / "published")))
 
                 self.assert_retained(folder, outcome, "still live")
-                self.assertEqual(foreign, self.directory_entries(output))
-                self.assertEqual(identities, (output / "identities.json").read_bytes())
-                self.assertIn("runner-cleanup.json could not be written", outcome[1])
-
-    def test_a_receipt_never_replaces_or_follows_an_entry_already_in_its_output(self):
-        def published_then_linked(worktree, _extra_args, destination):
-            self.publish(worktree, destination)
-            self.link_receipt_to_identities(Path(destination))
-            return 0
-
-        with tempfile.TemporaryDirectory() as folder:
-            self.require_symlinks(folder)
-            output = Path(folder) / "published"
-            published = {}
-
-            def snapshot(*args):
-                status = published_then_linked(*args)
-                published.update(self.directory_entries(output))
-                return status
-
-            outcome = self.exit_of_main(
-                folder, None, self.unconfirmed(),
-                patch.object(run_tests, "_run_assurance_campaign", side_effect=snapshot),
-                argv=("--assurance-output", str(output)))
-
-            self.assert_retained(folder, outcome, "still live")
-            self.assertEqual(published, self.directory_entries(output))
-            self.assertIn("runner-cleanup.json could not be written", outcome[1])
+                self.assertEqual(before, self.tree(folder))
+                self.assertEqual(b"belongs to a competing run",
+                                 (Path(folder) / "published/foreign.txt").read_bytes())
 
 
 SELF_PID = 100

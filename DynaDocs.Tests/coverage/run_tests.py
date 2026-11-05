@@ -33,8 +33,6 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 # read ROOT, not a temporary worktree, and this file lives only inside the snapshot.
 MARKER_NAME = ".dydo-test-worktree.json"
 MARKER_SCHEMA = 1
-# Written beside identities.json when the runner's own descendant cleanup is unconfirmed.
-RUNNER_CLEANUP_NAME = "runner-cleanup.json"
 
 # A caller overrides this by setting the DYDO_TEST_WORKTREE_STALE_SECONDS environment variable
 # before invoking run_tests.py (isolated_environment strips DYDO_-prefixed variables only from the
@@ -810,26 +808,12 @@ def _campaign_identities(worktree, result_root):
     return [*sources, *binaries, *reports]
 
 
-# Each assurance output this process created, with the identity it was created with. The runner
-# writes into no other. A process makes one run, so no entry is ever cleared.
-_ACQUIRED_OUTPUTS = {}
-
-
-def _acquire_output(assurance_output):
-    """Create the assurance output for this process alone, refusing a relative path or one
-    anything already holds."""
+def _publish_assurance(worktree, result_root, owner_output, assurance_output, owner_result):
+    from csharp_coverage import snapshot_artifacts
     output = Path(assurance_output)
     if not output.is_absolute() or output.exists():
         raise ValueError("--assurance-output requires a new absolute owned directory")
     output.mkdir(parents=True)
-    created = output.lstat()
-    _ACQUIRED_OUTPUTS[output] = (created.st_dev, created.st_ino)
-    return output
-
-
-def _publish_assurance(worktree, result_root, owner_output, assurance_output, owner_result):
-    from csharp_coverage import snapshot_artifacts
-    output = _acquire_output(assurance_output)
     if result_root.is_dir():
         shutil.copytree(result_root, output / "raw")
     if owner_output.is_dir():
@@ -915,44 +899,18 @@ class CleanupUnconfirmed(Exception):
         self.worktree, self.error = worktree, error
 
 
-def _record_unconfirmed_cleanup(assurance_output, unconfirmed):
-    """Record an unconfirmed cleanup for the gate adapter in a new receipt beside identities.json,
-    only in the assurance output this process created, acquiring it if nothing was published:
-    never into another directory, and never over or through an entry already there."""
-    if not assurance_output:
-        return
-    receipt = Path(assurance_output) / RUNNER_CLEANUP_NAME
-    record = {"schema": 1, "cleanup_confirmed": False,
-              "error_category": type(unconfirmed.error).__name__,
-              "error_message": str(unconfirmed.error),
-              "retained_worktree": str(unconfirmed.worktree) if unconfirmed.worktree else None}
-    try:
-        if receipt.parent not in _ACQUIRED_OUTPUTS:
-            _acquire_output(assurance_output)
-        current = receipt.parent.lstat()
-        if (current.st_dev, current.st_ino) != _ACQUIRED_OUTPUTS[receipt.parent]:
-            raise ValueError("the output was replaced after this run created it")
-        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
-        with os.fdopen(os.open(receipt, flags, 0o644), "wb") as written:
-            written.write((json.dumps(record, indent=2, sort_keys=True) + "\n").encode("utf-8"))
-    except (OSError, ValueError) as error:
-        print(f"{RUNNER_CLEANUP_NAME} could not be written at {receipt}: {error}", file=sys.stderr)
-
-
-def _end_run(job, worktree, assurance_output):
+def _end_run(job, worktree):
     """End the run's other processes, then remove `worktree` once that is confirmed. An interrupt
     that lands during cleanup is delivered once cleanup has finished. An unconfirmed cleanup keeps
-    the worktree and its marker, is recorded for `assurance_output`, and raises CleanupUnconfirmed
-    with interrupts still deferred, so none can replace the exit 2 it decides."""
+    the worktree and its marker and raises CleanupUnconfirmed with interrupts still deferred, so
+    none can replace the exit 2 it decides."""
     with defer_interruption() as hold:
         try:
             end_descendants(job)
             reap_adopted(job)
         except OSError as error:
             hold()
-            unconfirmed = CleanupUnconfirmed(worktree, error)
-            _record_unconfirmed_cleanup(assurance_output, unconfirmed)
-            raise unconfirmed from error
+            raise CleanupUnconfirmed(worktree, error) from error
         if worktree and (worktree.exists() or is_registered_worktree(worktree)):
             print("  Cleaning up worktree...")
             remove_worktree(worktree)
@@ -1001,7 +959,7 @@ def run_tests(extra_args=None, assurance_output=None, job=None):
 
         return result.returncode
     finally:
-        _end_run(job, worktree, assurance_output)
+        _end_run(job, worktree)
 
 
 def main():

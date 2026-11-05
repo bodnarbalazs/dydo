@@ -3,7 +3,7 @@
   "neutral": "linux",
   "native": {
     "DynaDocs.Tests/coverage/run_tests.py": {
-      "sha256": "9e0aa5370af162de2bdc4056a90d29a32120a5537caa42d906e9f9a20ce419fd",
+      "sha256": "4ef929e7d2e32afe42b176b805ad9d756e572c03a6cb3afd0678a8968284b144",
       "windows": [
         "_join_kill_on_close_job",
         "_end_member",

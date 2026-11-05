@@ -189,7 +189,7 @@ Because the guard runs on every matched tool call, it carries throttled maintena
 Any coding tool can integrate through two input modes:
 
 - **Stdin JSON** (preferred for hooks) - the payload shown above; `file_path` for file tools, `command` for bash, `path` for search tools. Exit 0 with empty stdout allows; exit 0 with the deny decision on stdout blocks.
-- **CLI arguments** (for testing) - `--action {edit|write|delete|read}`, `--path <path>`, `--command <command>`. Exit 0 allows; exit 2 blocks with the message on stderr.
+- **CLI arguments** (for testing) - `--action {edit|write|delete|read}`, `--path <path>`, `--command <command>`. Exit 0 allows; exit 2 blocks with the message on stderr. An argument starting with `@`, such as a PowerShell here-string `--command "@'…'@"`, is text and gets a verdict; the guard never reads it as a response file.
 
 ---
 

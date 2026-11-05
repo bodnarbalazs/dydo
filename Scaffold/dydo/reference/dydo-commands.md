@@ -498,8 +498,11 @@ about four seconds, and never prints `no` after a successful merge).
 
 `dydo init` and `--join` write narrow allow rules for both hosts (see [dydo init](#dydo-init)),
 and the guard lets a sub-agent run it: a Merge Sub-ticket's code-writer runs it. The guard hard blocks
-for alternative merge paths are planned, pending in DYD-425. The Claude bash/Codex PowerShell parity
-gate is planned, pending in DYD-426; writing these rules does not prove host parity.
+the other merge routes for every caller: raw `gh pr merge`, `gh api` and GraphQL merge calls, a
+`git push` to the default branch and default-branch changes
+([dydo guard](#dydo-guard)); each refusal names `dydo merge`.
+The Claude bash/Codex PowerShell parity gate is planned, pending in DYD-426; writing these rules or
+shipping the blocks does not prove host parity.
 
 ---
 

@@ -15,6 +15,7 @@ using DynaDocs.Utils;
 /// 1. Off-limits patterns (files-off-limits.md) - block every operation
 /// 1b. Protected patterns (files-off-limits.md) - block writes and deletes, allow reads
 /// 2. Dangerous shell-command patterns - always blocked
+/// 2b. Merge routes around dydo merge (GuardCommand.MergeRoutes.cs) - always blocked
 /// 3. Shell command analysis - extracts file operations and checks each
 ///
 /// Input modes:
@@ -619,6 +620,7 @@ public static partial class GuardCommand
         // dydo commands skip the cd-chain coaching (they are never a needless cd compound).
         var hardBlock = (isDydo && isWorker ? BlockIfWorkerDydoCommand(command) : null)
             ?? BlockIfDangerous(command, bashAnalyzer)
+            ?? BlockIfMergeRoute(command, ctx.CommandArgv, ctx.ToolCwd ?? ctx.Cwd, shell, env)
             ?? CheckBlockNudges(command, env, shell)
             ?? CheckPrReady(command, ctx.CommandArgv, ctx.ToolCwd ?? ctx.Cwd, shell, env)
             ?? (isDydo ? null : BlockIfCdChain(command, bashAnalyzer))

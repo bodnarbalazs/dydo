@@ -256,6 +256,14 @@ def _failing_subjects(evidence):
     return [], "no failing test named in altcover-runner.stdout or altcover-runner.stderr"
 
 
+def _runner_cleanup_unconfirmed(campaign):
+    """Whether run_tests.py's exit 2 can only be its own unconfirmed descendant cleanup: it exits
+    with a complete, confirmed campaign's subject status, so one other than 2 leaves no other cause."""
+    status = campaign.get("subject_status")
+    return (campaign.get("complete") is True and campaign.get("cleanup_confirmed") is True
+            and type(status) is int and status != 2)
+
+
 def _campaign_diagnosis(raw):
     """windows_job's diagnosis for an incomplete native campaign, honest about what it could not read."""
     path = Path(raw) / "identities.json"
@@ -266,6 +274,11 @@ def _campaign_diagnosis(raw):
     campaign = manifest.get("campaign") if isinstance(manifest, dict) else None
     if not isinstance(campaign, dict):
         return {"identitiesPath": str(path), "diagnosisUnavailable": "identities.json does not record a campaign"}
+    if _runner_cleanup_unconfirmed(campaign):
+        return {"identitiesPath": str(path), "failureCategory": "runner_cleanup_unconfirmed",
+                "errorMessage": (f"the campaign completed with subject status {campaign['subject_status']} "
+                                 "and confirmed cleanup, but run_tests.py exited 2: its own descendant "
+                                 "cleanup was unconfirmed, so it retained its test worktree (named on its stderr)")}
     category, message = campaign.get("failure_category"), campaign.get("error_message")
     if not isinstance(category, str) and not isinstance(message, str):
         return {"identitiesPath": str(path),

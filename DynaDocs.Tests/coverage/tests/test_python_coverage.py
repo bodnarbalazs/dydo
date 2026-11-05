@@ -225,6 +225,18 @@ subprocess.run([sys.executable, "-c", "import subject; subject.work(); subject.h
 """
 
 
+def _measured_as_itself(root, startup):
+    """Give the one measured child whose failure a test names a sitecustomize of its own in `root/own-pid`: it
+    writes the pid that child runs as to `root/failed.pid`, then runs `startup`.
+
+    A measured process names itself by that pid, and `Popen.pid` is not always it: on Windows a venv's
+    python.exe is a redirector that runs the base interpreter as a child process of its own."""
+    (root / "own-pid").mkdir()
+    (root / "own-pid" / "sitecustomize.py").write_text(
+        f"import os\nwith open({str(root / 'failed.pid')!r}, 'x', encoding='utf-8') as own:\n"
+        f"    own.write(str(os.getpid()))\n{startup}", encoding="utf-8")
+
+
 # Measured children around one that fails measurement: at startup on a config of another schema, or
 # at finish on a callable the inventory cannot name. Either way the failing child itself exits 0.
 _FAILING_CHILD = """\
@@ -236,8 +248,8 @@ ghost = good + "; exec(compile('def ghost():\\\\n    return 0\\\\nghost()\\\\n',
 subprocess.run([sys.executable, "-c", good], check=True)
 if sys.argv[1] == "startup":
     Path(os.environ["DYDO_PYTHON_COVERAGE_CONFIG"]).write_text('{"schema": 2}', encoding="utf-8")
-child = subprocess.Popen([sys.executable, "-c", good if sys.argv[1] == "startup" else ghost])
-Path("failed.pid").write_text(str(child.pid), encoding="utf-8")
+own_pid = {**os.environ, "PYTHONPATH": os.pathsep.join([str(Path("own-pid").resolve()), os.environ["PYTHONPATH"]])}
+child = subprocess.Popen([sys.executable, "-c", good if sys.argv[1] == "startup" else ghost], env=own_pid)
 assert child.wait() == 0
 """
 
@@ -253,13 +265,13 @@ evidence = Path(os.environ["DYDO_PYTHON_COVERAGE_CONFIG"]).parent
 away = evidence.with_name("away")
 good = "import subject; subject.work()"
 subprocess.run([sys.executable, "-c", good], check=True)
+own_pid = {**os.environ, "PYTHONPATH": os.pathsep.join([str(Path("own-pid").resolve()), os.environ["PYTHONPATH"]])}
 if sys.argv[1] == "startup":
-    gone = {**os.environ, "DYDO_PYTHON_COVERAGE_CONFIG": str(evidence / "gone" / "config.json")}
+    gone = {**own_pid, "DYDO_PYTHON_COVERAGE_CONFIG": str(evidence / "gone" / "config.json")}
     child = subprocess.Popen([sys.executable, "-c", good], env=gone)
 else:
     hide = f"import os; os.rename({str(evidence)!r}, {str(away)!r}); open({str(evidence)!r}, 'x').close()"
-    child = subprocess.Popen([sys.executable, "-c", f"{good}; {hide}"])
-Path("failed.pid").write_text(str(child.pid), encoding="utf-8")
+    child = subprocess.Popen([sys.executable, "-c", f"{good}; {hide}"], env=own_pid)
 child.wait()
 if away.exists():
     evidence.unlink()
@@ -294,7 +306,7 @@ from pathlib import Path
 
 case = sys.argv[1]
 subprocess.run([sys.executable, "-c", "import subject; subject.work()"], check=True)
-env = dict(os.environ)
+env = {**os.environ, "PYTHONPATH": os.pathsep.join([str(Path("own-pid").resolve()), os.environ["PYTHONPATH"]])}
 if case.startswith("port variable dropped"):
     del env["DYDO_PYTHON_COVERAGE_FAILURES"]
 if case.endswith("startup"):
@@ -302,7 +314,6 @@ if case.endswith("startup"):
 script = {"descriptors exhausted at finish": ["exhaust.py"], "port variable dropped at startup": ["-c", "pass"],
           "port variable dropped at finish": ["ghost.py"]}[case]
 child = subprocess.Popen([sys.executable, *script], env=env)
-Path("failed.pid").write_text(str(child.pid), encoding="utf-8")
 child.wait()
 if case.endswith("startup"):
     Path("subject.away").rename("subject.py")
@@ -333,23 +344,23 @@ import os, subprocess, sys
 from pathlib import Path
 
 subprocess.run([sys.executable, "-c", "import subject; subject.work()"], check=True)
-env = {**os.environ, "PYTHONPATH": os.pathsep.join([str(Path("injected").resolve()), os.environ["PYTHONPATH"]])}
+env = {**os.environ, "PYTHONPATH": os.pathsep.join([str(Path("own-pid").resolve()), os.environ["PYTHONPATH"]])}
 child = subprocess.Popen([sys.executable, "-c", "open('ran', 'x').close(); import subject; subject.work()"], env=env)
-Path("failed.pid").write_text(str(child.pid), encoding="utf-8")
 Path("failed.exit").write_text(str(child.wait()), encoding="utf-8")
 """
 
 
-# A measured child after another, started through the campaign's own sitecustomize, whose exit the driver
-# ignores and whose `python_coverage` cannot be imported: one earlier on its path raises, or none is on it.
-# Without a campaign config, the raising one stays on its path.
+# A measured child after another, whose exit the driver ignores, started through the campaign's sitecustomize
+# as its test copied it, in place of the campaign's own, and whose `python_coverage` cannot be imported: one
+# earlier on its path raises, or none is on it. Without a campaign config, the raising one stays on its path.
 _UNIMPORTABLE_AND_IGNORED = """\
 import json, os, subprocess, sys
 from pathlib import Path
 
 case = sys.argv[1]
 subprocess.run([sys.executable, "-c", "import subject; subject.work()"], check=True)
-startup, tools, *rest = os.environ["PYTHONPATH"].split(os.pathsep)
+_, tools, *rest = os.environ["PYTHONPATH"].split(os.pathsep)
+startup = str(Path("own-pid").resolve())
 env = {**os.environ, "PYTHONPATH": os.pathsep.join([startup, str(Path("poisoned").resolve()), tools, *rest])}
 if case == "python_coverage missing":
     env["PYTHONPATH"] = startup
@@ -358,7 +369,7 @@ if case == "no campaign config":
 child = subprocess.Popen([sys.executable, "-c", "open('ran', 'x').close(); import subject; subject.work()"],
                          env=env, stderr=subprocess.PIPE, text=True)
 _, stderr = child.communicate()
-Path("child.json").write_text(json.dumps({"pid": child.pid, "exit": child.returncode, "stderr": stderr}))
+Path("child.json").write_text(json.dumps({"exit": child.returncode, "stderr": stderr}))
 """
 
 
@@ -413,7 +424,8 @@ config.write_text(json.dumps({**json.loads(config.read_text(encoding="utf-8")), 
 
 # A child of the command still running when the command returns: measured, or unmeasured and holding a
 # record it never finished on a connection of its own to `collect`; or measured and killed by the command
-# first. It stays until the test releases it on a loopback port of the test's own, outside the campaign.
+# first. Ready, it tells the command the pid it runs as, then stays until the test releases it on a loopback
+# port of the test's own, outside the campaign.
 _OUTLIVING = """\
 import os, socket, sys
 
@@ -422,7 +434,7 @@ if case == "partial record held open":
     record = socket.create_connection(("127.0.0.1", int(os.environ["DYDO_PYTHON_COVERAGE_FAILURES"])))
     record.sendall(b'"Python measurement failed')
 held = socket.create_connection(("127.0.0.1", release))
-print("ready", flush=True)
+print("ready", os.getpid(), flush=True)
 held.recv(1)
 """
 
@@ -437,8 +449,9 @@ flags = ["-S"] if case == "partial record held open" else []
 child = subprocess.Popen([sys.executable, *flags, str(Path("outliving.py").resolve()), *sys.argv[1:]],
                          cwd=Path.cwd().parent, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                          stderr=subprocess.DEVNULL)
-Path("outliving.pid").write_text(str(child.pid), encoding="utf-8")
-assert child.stdout.readline().strip() == b"ready"
+ready, pid = child.stdout.readline().split()
+assert ready == b"ready"
+Path("outliving.pid").write_bytes(pid)
 if case == "killed":
     child.kill()
     child.wait()
@@ -705,6 +718,7 @@ class PythonCoverageTests(unittest.TestCase):
             (root / "driver.py").write_text(driver, encoding="utf-8")
             (root / "exhaust.py").write_text(_EXHAUST, encoding="utf-8")
             (root / "ghost.py").write_text(_GHOST, encoding="utf-8")
+            _measured_as_itself(root, python_coverage._SITECUSTOMIZE)
             output = root / "evidence"
             result = _facade(root, output, ["subject.py"], ["{python}", "-S", "driver.py", argument])
             failed = (root / "failed.pid").read_text(encoding="utf-8")
@@ -733,8 +747,7 @@ class PythonCoverageTests(unittest.TestCase):
             root = Path(folder)
             (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
             (root / "driver.py").write_text(_UNCONNECTED_AND_IGNORED, encoding="utf-8")
-            (root / "injected").mkdir()
-            (root / "injected" / "sitecustomize.py").write_text(_UNCONNECTED[case], encoding="utf-8")
+            _measured_as_itself(root, _UNCONNECTED[case])
             output = root / "evidence"
             result = _facade(root, output, ["subject.py"], ["{python}", "-S", "driver.py"], timeout=60)
             counters = output / "counters.json"
@@ -761,10 +774,12 @@ class PythonCoverageTests(unittest.TestCase):
             (root / "poisoned").mkdir()
             (root / "poisoned" / "python_coverage.py").write_text(
                 'raise RuntimeError("this python_coverage cannot be imported")\n', encoding="utf-8")
+            _measured_as_itself(root, python_coverage._SITECUSTOMIZE)
             result = _facade(root, root / "evidence", ["subject.py"], ["{python}", "-S", "driver.py", case],
                              timeout=60)
             self.assertTrue((root / "child.json").exists(), result.stdout + result.stderr)
-            return json.loads((root / "child.json").read_text(encoding="utf-8")), (root / "ran").exists()
+            child = json.loads((root / "child.json").read_text(encoding="utf-8"))
+            return {**child, "pid": (root / "failed.pid").read_text(encoding="utf-8")}, (root / "ran").exists()
 
     def test_a_process_that_cannot_import_its_measurement_ends_before_its_program_runs(self):
         for case in ("python_coverage poisoned", "python_coverage missing"):

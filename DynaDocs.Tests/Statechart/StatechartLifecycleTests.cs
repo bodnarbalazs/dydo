@@ -11,6 +11,32 @@ public class StatechartLifecycleTests
         return StatechartTestBinary.Start();
     }
 
+    // The cleanup helper's protocol and scratch handling are portable; only its native owner, the Job Object, is Windows-only.
+    private static Process Cleanup(string nonce, string root)
+    {
+        var start = StatechartTestBinary.Start();
+        start.ArgumentList.Add("__statechart-cleanup");
+        foreach (var argument in new[] { nonce, root, root, root }) start.ArgumentList.Add(argument);
+        start.UseShellExecute = false;
+        start.CreateNoWindow = true;
+        start.RedirectStandardInput = true;
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
+        return Process.Start(start)!;
+    }
+
+    // Reserves and registers through a helper, returning the scratch it created.
+    private static async Task<(string Stage, string Temp)> Register(Process helper, string nonce)
+    {
+        Assert.Equal("ready:1:" + nonce, await StatechartCleanup.Read(helper.StandardOutput));
+        await StatechartCleanup.Say(helper.StandardInput, "reserve:" + nonce);
+        var created = (await StatechartCleanup.Read(helper.StandardOutput))!.Split(':');
+        Assert.Equal("created", created[0]);
+        await StatechartCleanup.Say(helper.StandardInput, "register:" + nonce);
+        Assert.Equal("registered:" + nonce, await StatechartCleanup.Read(helper.StandardOutput));
+        return (StatechartCleanup.Decode(created[1]), StatechartCleanup.Decode(created[2]));
+    }
+
     [SkippableFact]
     public async Task IndependentCleanupDeletesRegisteredScratchOnlyAfterNativeOwnerSealsAndDrains()
     {
@@ -39,21 +65,14 @@ public class StatechartLifecycleTests
             Assert.Contains("drain uncertain", File.ReadAllText(file)));
     }
 
-    [SkippableTheory]
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task InterruptionBeforeOrDuringRegistrationNeverDeletesAmbiguousDirectories(bool reserve)
     {
         using var scope = new StatechartTestDirectory();
         var nonce = Guid.NewGuid().ToString("N");
-        var start = Binary();
-        start.ArgumentList.Add("__statechart-cleanup");
-        foreach (var argument in new[] { nonce, scope.Path, scope.Path, scope.Path }) start.ArgumentList.Add(argument);
-        start.UseShellExecute = false;
-        start.CreateNoWindow = true;
-        start.RedirectStandardInput = true;
-        start.RedirectStandardOutput = true;
-        using var helper = Process.Start(start)!;
+        using var helper = Cleanup(nonce, scope.Path);
         Assert.Equal("ready:1:" + nonce, await StatechartCleanup.Read(helper.StandardOutput));
         if (reserve)
         {
@@ -64,5 +83,124 @@ public class StatechartLifecycleTests
         await helper.WaitForExitAsync();
         Assert.Equal(2, helper.ExitCode);
         Assert.Equal(reserve ? 2 : 0, Directory.GetDirectories(scope.Path).Length);
+        Assert.All(Directory.GetFiles(scope.Path, "scratch-*.journal"), file =>
+            Assert.Contains("owner loss before registration; drain uncertain", File.ReadAllText(file)));
+    }
+
+    [Fact]
+    public async Task TheDrainedFrameAloneLetsTheHelperDeleteRegisteredScratch()
+    {
+        using var scope = new StatechartTestDirectory();
+        var nonce = Guid.NewGuid().ToString("N");
+        using var helper = Cleanup(nonce, scope.Path);
+        var (stage, temp) = await Register(helper, nonce);
+        File.WriteAllText(Path.Combine(stage, "owned-file"), "checking");
+        Directory.CreateDirectory(Path.Combine(temp, "owned-directory"));
+        await StatechartCleanup.Say(helper.StandardInput, "drained:" + nonce);
+        Assert.Equal("cleaned:" + nonce, await StatechartCleanup.Read(helper.StandardOutput));
+        await helper.WaitForExitAsync();
+        Assert.Equal(0, helper.ExitCode);
+        Assert.False(Directory.Exists(stage));
+        Assert.False(Directory.Exists(temp));
+        Assert.Equal(2, Directory.GetFiles(scope.Path, "scratch-*.journal").Length);
+        Assert.All(Directory.GetFiles(scope.Path, "scratch-*.journal"), file =>
+            Assert.EndsWith("registered\ndeleted-after-authoritative-drain\n", File.ReadAllText(file)));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task WithoutDrainProvenanceTheHelperRetainsRegisteredScratch(bool forged)
+    {
+        using var scope = new StatechartTestDirectory();
+        var nonce = Guid.NewGuid().ToString("N");
+        using var helper = Cleanup(nonce, scope.Path);
+        var (stage, temp) = await Register(helper, nonce);
+        if (forged) await StatechartCleanup.Say(helper.StandardInput, "drained:" + Guid.NewGuid().ToString("N"));
+        helper.StandardInput.Close();
+        await helper.WaitForExitAsync();
+        Assert.Equal(2, helper.ExitCode);
+        Assert.True(Directory.Exists(stage));
+        Assert.True(Directory.Exists(temp));
+        Assert.All(Directory.GetFiles(scope.Path, "scratch-*.journal"), file =>
+            Assert.Contains("owner loss or invalid drain provenance; drain uncertain", File.ReadAllText(file)));
+    }
+
+    [Fact]
+    public async Task AReplacedScratchPathIsRetainedEvenAfterTheDrain()
+    {
+        using var scope = new StatechartTestDirectory();
+        var nonce = Guid.NewGuid().ToString("N");
+        using var helper = Cleanup(nonce, scope.Path);
+        var (stage, _) = await Register(helper, nonce);
+        Directory.Move(stage, stage + "-registered");
+        Directory.CreateDirectory(stage);
+        File.WriteAllText(Path.Combine(stage, "foreign"), "keep");
+        await StatechartCleanup.Say(helper.StandardInput, "drained:" + nonce);
+        Assert.Null(await StatechartCleanup.Read(helper.StandardOutput));
+        await helper.WaitForExitAsync();
+        Assert.Equal(2, helper.ExitCode);
+        Assert.Equal("keep", File.ReadAllText(Path.Combine(stage, "foreign")));
+        Assert.True(Directory.Exists(stage + "-registered"));
+        Assert.Contains(Directory.GetFiles(scope.Path, "scratch-*.journal"), file =>
+            File.ReadAllText(file).Contains("retained: directory path identity changed; foreign replacement retained"));
+    }
+
+    [Fact]
+    public async Task AHelperWithoutAValidChannelNonceReservesNothing()
+    {
+        using var scope = new StatechartTestDirectory();
+        using var helper = Cleanup("not-a-nonce", scope.Path);
+        var errors = helper.StandardError.ReadToEndAsync();
+        Assert.Null(await StatechartCleanup.Read(helper.StandardOutput));
+        await helper.WaitForExitAsync();
+        Assert.Equal(2, helper.ExitCode);
+        Assert.Contains("Invalid statechart cleanup channel.", await errors);
+        Assert.Empty(Directory.EnumerateFileSystemEntries(scope.Path));
+    }
+
+    // Only the POSIX lifetime routes a launch through its owned group; without native gating the target starts as given.
+    [Fact]
+    public void ALifetimeWithoutNativeGatingStartsTheTargetAsGiven()
+    {
+        var target = new ProcessStartInfo("/runtime", ["--version"]);
+        Assert.Same(target, new UngatedLifetime().Gate(target));
+    }
+
+    private sealed class UngatedLifetime : StatechartLifetime
+    {
+        public override string Stage => throw new NotSupportedException();
+        public override string Temp => throw new NotSupportedException();
+        public override Task RegisterAsync() => throw new NotSupportedException();
+        public override void Attach(int pid) => throw new NotSupportedException();
+        public override Task<bool> DrainAsync() => throw new NotSupportedException();
+        public override Task<bool> CompleteAsync() => throw new NotSupportedException();
+        public override Task WaitAsync(Process checking, CancellationToken token) => throw new NotSupportedException();
+        public override ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("created:c3RhZ2U=")]
+    [InlineData("reserved:c3RhZ2U=:dGVtcA==")]
+    [InlineData("created:c3RhZ2U=:dGVtcA==:extra")]
+    public void OnlyACreatedFrameNamingStageAndTempReservesScratch(string? frame)
+    {
+        Assert.Equal(("/stage", "/temp"), StatechartCleanup.Created(
+            $"created:{StatechartCleanup.Encode("/stage")}:{StatechartCleanup.Encode("/temp")}", "unused"));
+        Assert.Equal("no reservation", Assert.Throws<InvalidDataException>(() => StatechartCleanup.Created(frame, "no reservation")).Message);
+    }
+
+    [Fact]
+    public async Task ControlFramesEndAtLineFeedsStayBoundedAndStopAtEof()
+    {
+        using var frames = new StringReader("first\r\nsecond\nunterminated");
+        Assert.Equal("first", await StatechartCleanup.Read(frames));
+        Assert.Equal("second", await StatechartCleanup.Read(frames));
+        Assert.Null(await StatechartCleanup.Read(frames));
+        using var largest = new StringReader(new string('x', 16384) + "\n");
+        Assert.Equal(16384, (await StatechartCleanup.Read(largest))!.Length);
+        using var oversize = new StringReader(new string('x', 16385) + "\n");
+        await Assert.ThrowsAsync<InvalidDataException>(() => StatechartCleanup.Read(oversize));
     }
 }

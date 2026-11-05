@@ -41,15 +41,17 @@ internal sealed class PosixStatechartAnchor : IAsyncDisposable
         }
     }
 
+    // Stops what this anchor owns: its confirmed group, or only the spawned child when no group was confirmed.
     public async Task<bool> DrainAsync()
     {
         if (_stopped) return _drained;
         _stopped = true;
         _child.Stop();
         await Exited.WaitAsync(TimeSpan.FromSeconds(5));
-        try { _drained = await _child.WaitForEmptyAsync(TimeSpan.FromSeconds(5)); }
+        try { if (_child.Confirmed) await _child.WaitForEmptyAsync(TimeSpan.FromSeconds(5)); }
         catch (OperationCanceledException) { return false; }
-        if (_drained) _child.Reap();
+        _child.Reap();
+        _drained = _child.Confirmed;
         return _drained;
     }
 

@@ -5,19 +5,20 @@ using System.Text.Json;
 
 internal sealed class StatechartChecker
 {
-    internal const string Digest = "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88";
     private readonly string _source;
     private readonly string _jar;
+    private readonly string _digest;
 
-    private StatechartChecker(string source, string jar) { _source = source; _jar = jar; }
+    private StatechartChecker(string source, string jar, string digest) { _source = source; _jar = jar; _digest = digest; }
 
-    internal static string Input(string path)
+    // The digest is the payload lock's pinned tla2tools.jar identity.
+    internal static string Input(string path, string digest)
     {
         var full = Path.GetFullPath(path);
         RejectCompanion(full);
         var resolved = Resolve(full, 0);
         RejectCompanion(resolved);
-        RequireDigest(resolved);
+        RequireDigest(resolved, digest);
         return resolved;
     }
 
@@ -50,16 +51,16 @@ internal sealed class StatechartChecker
             throw new IOException("Unsupported unpinned dependency CommunityModules.jar beside checker input: " + jar);
     }
 
-    private static void RequireDigest(string jar)
+    private static void RequireDigest(string jar, string digest)
     {
         if (!File.Exists(jar) || (File.GetAttributes(jar) & (FileAttributes.Directory | FileAttributes.ReparsePoint)) != 0 ||
-            Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(jar))) != Digest)
+            Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(jar))) != digest)
             throw new IOException("Statechart requires the pinned TLC1.7.4 jar: " + jar);
     }
 
-    internal static StatechartChecker Prepare(string source, string owned)
+    internal static StatechartChecker Prepare(string source, string owned, string digest)
     {
-        var input = Input(source);
+        var input = Input(source, digest);
         StatechartPaths.RequirePlainDirectory(owned);
         var directory = Path.Combine(owned, "checker");
         if (OperatingSystem.IsWindows()) WindowsStatechartFiles.CreateExclusive(directory);
@@ -67,19 +68,19 @@ internal sealed class StatechartChecker
         var jar = Path.Combine(directory, "tla2tools.jar");
         using (var output = new FileStream(jar, FileMode.CreateNew, FileAccess.Write, FileShare.None))
         using (var original = File.OpenRead(input)) original.CopyTo(output);
-        var checker = new StatechartChecker(source, jar);
+        var checker = new StatechartChecker(source, jar, digest);
         checker.Verify();
         return checker;
     }
 
     internal string Verify()
     {
-        Input(_source);
+        Input(_source, _digest);
         var directory = Path.GetDirectoryName(_jar)!;
         StatechartPaths.RequirePlainDirectory(directory);
         if (!Directory.EnumerateFileSystemEntries(directory).SequenceEqual([_jar]))
             throw new IOException("Isolated checker directory must contain only tla2tools.jar: " + directory);
-        RequireDigest(_jar);
+        RequireDigest(_jar, _digest);
         return _jar;
     }
 

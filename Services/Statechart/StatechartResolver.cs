@@ -3,14 +3,14 @@ namespace DynaDocs.Services.Statechart;
 internal static class StatechartResolver
 {
     public static async Task<StatechartDependencies> ResolveAsync(StatechartRequest request, StatechartManaged managed,
-        StatechartHome home, CancellationToken token)
+        StatechartHome home, string checkerDigest, CancellationToken token)
     {
         var retained = managed.Read();
         var path = Environment.GetEnvironmentVariable("PATH");
         var node = retained.Node ?? StatechartPrerequisites.Find("node", path);
         var java = request.Java is not null ? StatechartPrerequisites.Java(request.Caller, request.Java, path) :
             retained.Java ?? StatechartPrerequisites.Java(request.Caller, null, path) ?? IdeJava();
-        var tlc = request.Tlc is not null ? StatechartPrerequisites.Tlc(request.Caller, request.Tlc) : retained.Tlc;
+        var tlc = request.Tlc is not null ? StatechartPrerequisites.Tlc(request.Caller, request.Tlc, checkerDigest) : retained.Tlc;
         StatechartPaths.EnsureDirectory(home.State);
         await using var owner = await StatechartLifetime.CreateAsync(StatechartExecutable.Current(),
             home.State, home.State, Path.TrimEndingDirectorySeparator(Path.GetTempPath()));

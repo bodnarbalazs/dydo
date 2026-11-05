@@ -1,6 +1,5 @@
 namespace DynaDocs.Services.Survey;
 
-using System.Text.RegularExpressions;
 using DynaDocs.Services.Map;
 using DynaDocs.Services.Map.Contract;
 
@@ -8,9 +7,9 @@ using DynaDocs.Services.Map.Contract;
 /// The survey's finding rules over one Project read. Closed means a <c>completed</c>, <c>canceled</c> or
 /// <c>duplicate</c> state; every other state type, backlog and triage included, is open. A blocker is a
 /// <c>blocks</c> relation in the graph, so a linked issue's blockers outside the Project are not seen.
-/// A ledger row is judged on the identifiers it names that are in the graph, and on the text it shows.
+/// A ledger row is judged on the identifiers it names that are in the graph, and on its <c>State</c> cell.
 /// </summary>
-internal static partial class SurveyRules
+internal static class SurveyRules
 {
     private static readonly HashSet<string> ClosedTypes = ["completed", "canceled", "duplicate"];
 
@@ -75,7 +74,7 @@ internal static partial class SurveyRules
         [
             .. open.Where(issue => !Laned(issue))
                 .Select(issue => Finding("unlaned", issue, "open, and no ledger row names it or its parent")),
-            .. ledger.Where(row => !ReadsAsDone().IsMatch(row.Text))
+            .. ledger.Where(row => !ReadsAsDone(row))
                 .Select(row => row.Keys.Where(byKey.ContainsKey).Select(key => byKey[key]).ToList())
                 .Where(issues => issues.Count > 0 && issues.All(IsClosed))
                 .Select(issues => Finding("stale-row", issues[0], "the row names only closed issues: "
@@ -94,8 +93,6 @@ internal static partial class SurveyRules
 
     private static int KeyNumber(string key) => int.TryParse(key[(key.LastIndexOf('-') + 1)..], out var number) ? number : 0;
 
-    // "not done", "isn't merged", "hasn't been merged" and "never landed" do not read as done.
-    [GeneratedRegex(@"(?<!(?:\bnot|\bnever|n['’]t)\s+(?:(?:yet|been)\s+)*)\b(done|merged|closed|completed|canceled|cancelled|shipped|landed)\b",
-        RegexOptions.IgnoreCase)]
-    private static partial Regex ReadsAsDone();
+    // Only a table row's State cell says done; prose and list items never do, so a word in them cannot hide a row.
+    private static bool ReadsAsDone(LedgerRow row) => string.Equals(row.State, "done", StringComparison.OrdinalIgnoreCase);
 }

@@ -49,8 +49,8 @@ public class LedgerTests
         Assert.Equal(
             [["DYD-504", "DYD-519"], ["DYD-2"], ["DYD-3"], ["DYD-4"], ["DYD-5"], ["DYD-6"]],
             rows.Select(row => row.Keys));
-        Assert.Equal("Toolchain | DYD-504 (+ DYD-519 merge) | fixing", rows[0].Text);
-        Assert.Equal("DYD-3 star item", rows[2].Text);
+        Assert.Equal("fixing", rows[0].State);
+        Assert.Null(rows[2].State);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class LedgerTests
             """)!;
 
         Assert.Equal([["DYD-1"], ["DYD-2"]], rows.Select(row => row.Keys));
-        Assert.Equal("Core | DYD-1 | running", rows[0].Text);
+        Assert.Equal(["running", "waiting"], rows.Select(row => row.State));
     }
 
     [Fact]
@@ -110,11 +110,10 @@ public class LedgerTests
             """)!;
 
         Assert.Equal([["DYD-1", "DYD-2", "DYD-3"], ["DYD-4"]], rows.Select(row => row.Keys));
-        Assert.Equal("DYD-1 lane, continued by DYD-2 lazily continued by DYD-3", rows[0].Text);
     }
 
     [Fact]
-    public void ARowsText_IsWhatItShows_WithoutLinkTargetsOrBareUrls()
+    public void ALinkTarget_NamesItsKey_ThoughTheLinkTextDoesNot()
     {
         var rows = Ledger.Parse("""
             ## Ledger
@@ -122,19 +121,63 @@ public class LedgerTests
             - [the core lane](https://linear.app/x/issue/DYD-7/core) and DYD-8
             """)!;
 
-        Assert.Equal("DYD-1 waits, see and", rows[0].Text);
-        Assert.Equal("the core lane and DYD-8", rows[1].Text);
+        Assert.Equal(["DYD-1"], rows[0].Keys);
         Assert.Equal(["DYD-7", "DYD-8"], rows[1].Keys);
     }
 
     [Fact]
-    public void ARowsText_KeepsEmphasisCodeAndEntities_DropsHtmlTags_AndRowsInAQuoteCount()
+    public void KeysInEmphasisAndCode_Count_AndRowsInAQuoteCount()
     {
         var rows = Ledger.Parse(
             "## Ledger\n- **DYD-1** _waits_ on `DYD-2` &amp; <span>review</span>\\\n  more\n> - DYD-3 quoted lane\n")!;
 
-        Assert.Equal("DYD-1 waits on DYD-2 & review more", rows[0].Text);
         Assert.Equal(["DYD-1", "DYD-2"], rows[0].Keys);
         Assert.Equal(["DYD-3"], rows[1].Keys);
+    }
+
+    [Fact]
+    public void AListItem_KeepsTheKeysInItsNestedQuote()
+    {
+        var rows = Ledger.Parse("## Ledger\n- DYD-1 lane\n\n  > DYD-3 waiting, see DYD-4\n- DYD-5 next\n")!;
+
+        Assert.Equal([["DYD-1", "DYD-3", "DYD-4"], ["DYD-5"]], rows.Select(row => row.Keys));
+    }
+
+    [Theory]
+    [InlineData("## Ledger\n- DYD-1 lane\n  - DYD-2 nested item\n")]
+    [InlineData("## Ledger\n- DYD-1 lane\n\n  Ticket | State\n  --- | ---\n  DYD-2 | waiting\n")]
+    [InlineData("## Ledger\n- DYD-1 lane\n\n  > - DYD-2 item in a quote\n")]
+    public void AListItem_sNestedItemsAndTableRows_AreRowsOfTheirOwn(string content)
+    {
+        Assert.Equal([["DYD-1"], ["DYD-2"]], Ledger.Parse(content)!.Select(row => row.Keys));
+    }
+
+    [Theory]
+    [InlineData("## Ledger\n- DYD-1 lane\n  ```\n  - DYD-2 closed\n  ```\n")]
+    [InlineData("## Ledger\n- DYD-1 lane\n\n      DYD-2 done\n")]
+    [InlineData("## Ledger\n- DYD-1 lane\n\n  > ```\n  > DYD-2 in quoted code\n  > ```\n")]
+    public void AListItem_sCode_NamesNoKey(string content)
+    {
+        Assert.Equal([["DYD-1"]], Ledger.Parse(content)!.Select(row => row.Keys));
+    }
+
+    [Fact]
+    public void AStateCell_IsTheCellUnderTheStateHeader_AsItShows_Trimmed()
+    {
+        var rows = Ledger.Parse("""
+            ## Ledger
+            | Tickets | Note | STATE |
+            | -- | -- | -- |
+            | DYD-1 | moving | `done` |
+            | DYD-2 | done | **Done** &amp; |
+            | DYD-3 | short row |
+            | DYD-4 | x | [done](https://example.com/waiting) |
+            - DYD-5 a list item, done
+            | Tickets | Status |
+            | -- | -- |
+            | DYD-6 | done |
+            """)!;
+
+        Assert.Equal(["done", "Done &", "", "done", null, null], rows.Select(row => row.State));
     }
 }

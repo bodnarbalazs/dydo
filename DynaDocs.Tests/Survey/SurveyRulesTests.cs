@@ -133,30 +133,88 @@ public class SurveyRulesTests
     public void StaleRow_NamesOnlyClosedIssues_AndDoesNotReadAsDone()
     {
         var findings = Survey(
-            [Issue(1, "completed"), Issue(2, "canceled"), Issue(3, "completed"), Issue(4, "completed"), Issue(5, "started", "Ada")],
+            [Issue(1, "completed"), Issue(2, "canceled"), Issue(3, "completed"), Issue(4, "completed"), Issue(5, "started", "Ada"),
+                Issue(6, "completed")],
             content: """
                 ## Lane ledger
                 | Lane | Tickets | State |
                 | -- | -- | -- |
                 | Lane | DYD-1, DYD-2 | waiting on review |
+                | Shipped | DYD-6 | done |
                 - DYD-3 lane: Done
                 - DYD-4 and DYD-5, still running
                 """);
 
         Assert.Equal(
-            ["stale-row DYD-1 Issue 1 — the row names only closed issues: DYD-1 Done, DYD-2 Canceled"],
+            ["stale-row DYD-1 Issue 1 — the row names only closed issues: DYD-1 Done, DYD-2 Canceled",
+                "stale-row DYD-3 Issue 3 — the row names only closed issues: DYD-3 Done"],
             Lines(findings).Where(line => line.StartsWith("stale-row", StringComparison.Ordinal)));
     }
 
     [Theory]
-    [InlineData("merged")]
-    [InlineData("Closed")]
-    [InlineData("completed")]
-    [InlineData("canceled")]
-    [InlineData("cancelled")]
-    public void StaleRow_ARowThatReadsAsDone_IsNotStale(string word)
+    [InlineData("done")]
+    [InlineData("Done")]
+    [InlineData("`done`")]
+    [InlineData("  DONE  ")]
+    public void StaleRow_ATableRowWhoseStateCellIsDone_IsNotStale(string state)
     {
-        var findings = Survey([Issue(1, "completed")], content: $"## Lane ledger\n- DYD-1 lane: {word}\n");
+        var findings = Survey([Issue(1, "completed")],
+            content: $"## Lane ledger\n| Lane | Tickets | State |\n| -- | -- | -- |\n| Core | DYD-1 | {state} |\n");
+
+        Assert.Empty(Kinds(findings, "stale-row"));
+    }
+
+    [Theory]
+    [InlineData("moving")]
+    [InlineData("not fully done")]
+    [InlineData("waiting to be merged")]
+    [InlineData("done?")]
+    [InlineData("")]
+    public void StaleRow_AStateCellOtherThanDone_IsStale(string state)
+    {
+        var findings = Survey([Issue(1, "completed")],
+            content: $"## Lane ledger\n| Lane | Tickets | State |\n| -- | -- | -- |\n| Core | DYD-1 | {state} |\n");
+
+        Assert.Equal(["DYD-1"], Kinds(findings, "stale-row"));
+    }
+
+    [Theory]
+    [InlineData("done")]
+    [InlineData("lane: Done")]
+    [InlineData("merged and closed")]
+    [InlineData("State: done")]
+    public void StaleRow_AListItemNamingOnlyClosedIssues_IsStale_WhateverItSays(string words)
+    {
+        var findings = Survey([Issue(1, "completed")], content: $"## Lane ledger\n- DYD-1 {words}\n");
+
+        Assert.Equal(["DYD-1"], Kinds(findings, "stale-row"));
+    }
+
+    [Fact]
+    public void StaleRow_ATableWithNoStateColumn_IsStale()
+    {
+        var findings = Survey([Issue(1, "completed")],
+            content: "## Lane ledger\n| Lane | Tickets | Status |\n| -- | -- | -- |\n| Core | DYD-1 | done |\n");
+
+        Assert.Equal(["DYD-1"], Kinds(findings, "stale-row"));
+    }
+
+    [Theory]
+    [InlineData("| Lane | Tickets | State |\n| -- | -- | -- |\n| done | DYD-1 done | waiting |")]
+    [InlineData("| State | Note | Tickets |\n| -- | -- | -- |\n| moving | done | DYD-1 |")]
+    [InlineData("| Lane | Tickets | State |\n| -- | -- | -- |\n| Core | DYD-1, done |")]
+    public void StaleRow_ADoneWordInAnotherColumn_DoesNotHideTheRow(string table)
+    {
+        var findings = Survey([Issue(1, "completed")], content: $"## Lane ledger\n{table}\n");
+
+        Assert.Equal(["DYD-1"], Kinds(findings, "stale-row"));
+    }
+
+    [Fact]
+    public void StaleRow_TheStateColumnIsFoundByItsHeader_WhereverItSits()
+    {
+        var findings = Survey([Issue(1, "completed")],
+            content: "## Lane ledger\n| State | Tickets |\n| -- | -- |\n| done | DYD-1 |\n");
 
         Assert.Empty(Kinds(findings, "stale-row"));
     }

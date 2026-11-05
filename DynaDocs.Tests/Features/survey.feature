@@ -13,7 +13,7 @@ Feature: Survey a Project's lanes
       | -- | -- | -- |
       | Core | [DYD-1](https://linear.app/x/issue/DYD-1/core) → DYD-2 | running |
       | Old | DYD-3 | waiting on review |
-      | Shipped | DYD-4 | merged |
+      | Shipped | DYD-4 | done |
       - DYD-6 started lane
       - DYD-7 and DYD-11 question lane
       - DYD-12 and DYD-13 backlog lane

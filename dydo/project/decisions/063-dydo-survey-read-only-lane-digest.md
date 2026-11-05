@@ -59,9 +59,11 @@ every boundary text. A second reading command needs its own decision.
    past an issue's tenth is not seen.
 3. **The ledger.** The ledger is the body section under the first `##` heading containing "ledger"
    (any case), up to the next `##` heading, read as markdown. A ledger row is a table row, with or
-   without edge pipes, or a list item with its continuation lines; a table's separator row is none.
-   Fenced code holds no rows and no headings. The issues a row names are every issue identifier in
-   it, bare or inside a Linear link. Paragraph text in the section names nothing.
+   without edge pipes, or a list item with its continuation lines and the prose under it, quotes
+   included; a table's separator row is none. A list item's nested list items and table rows are rows
+   of their own. Code holds no rows, no identifiers and no headings. The issues a row names are every
+   issue identifier in it, bare or inside a Linear link. Paragraph text in the section names nothing.
+   A table row's `State` cell is its cell in the column under a `State` header.
 4. **The findings.** Closed means a `completed`, `canceled` or `duplicate` state; everything else,
    backlog and triage included, is open. Each finding is one line, `<kind> <KEY> <title> — <reason>`,
    sorted by kind and then key:
@@ -74,8 +76,10 @@ every boundary text. A second reading command needs its own decision.
    - `stale-row`: a ledger row whose named issues in the read graph are all closed, while the row
      doesn't read as done. Only identifiers in the graph count, so a token such as `UTF-8` or an issue
      elsewhere neither saves nor judges a row; a row naming none is not judged. A row reads as done
-     when the text it shows, without link targets or URLs, says done, merged, closed, completed,
-     canceled, cancelled, shipped or landed, not negated as in "not merged" or "never landed".
+     only when it is a table row whose `State` cell is `done`, trimmed, in any case, backticks
+     allowed. A list item, or a row of a table with no `State` column, never reads as done. The
+     ledger's own structure decides, not its prose: a word match can always be fooled, as "not fully
+     done" or "waiting to be merged" showed at review round 2.
    - `started-unassigned`: a started-type Project issue with no assignee.
    - `question-no-priority`: an open Project issue labelled `Question` with no priority.
    - `uncontracted`: an unassigned Project issue in a `backlog`-type state with no open blocker, with

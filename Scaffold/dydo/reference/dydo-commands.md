@@ -276,8 +276,9 @@ issue's priority, and the Project body.
 
 The ledger is the body section under the first `##` heading containing "ledger", in any case, up to
 the next `##` heading, read as markdown. Its rows are table rows, with or without edge pipes, and
-list items with their continuation lines; fenced code holds no rows and no headings. A row names
-every issue identifier in it, bare or inside a Linear link. Closed means a `completed`, `canceled` or
+list items with their continuation lines and the prose under them, quotes included; a nested list
+item or table row is a row of its own, and code holds no rows, no identifiers and no headings. A row
+names every issue identifier in it, bare or inside a Linear link. Closed means a `completed`, `canceled` or
 `duplicate` state; every other state, backlog and triage included, is open.
 
 The first line is `dydo survey <Project name> <UTC ISO time>: <n> findings`. Each finding follows on
@@ -288,7 +289,7 @@ its own line, `<kind> <KEY> <title> — <reason>`, sorted by kind and then key:
 | `no-ledger` | The body has no ledger section; its key is `-`. Every open issue is then `unlaned`. |
 | `pickable` | An unstarted, unassigned Project issue with no open blocker, as the map draws it, and not already `unblocked`. |
 | `question-no-priority` | An open Project issue labelled `Question` with no priority. |
-| `stale-row` | A ledger row whose named issues in the read graph are all closed, and whose shown text, without link targets or URLs, doesn't say done, merged, closed, completed, canceled, cancelled, shipped or landed. A negated word, such as "not merged", doesn't count. |
+| `stale-row` | A ledger row whose named issues in the read graph are all closed, unless it is a table row whose `State` cell, the column under a `State` header, is `done` (trimmed, any case, backticks allowed). A list item, or a row of a table with no `State` column, is always stale then. |
 | `started-unassigned` | A started Project issue with no assignee. |
 | `unblocked` | An open, unassigned issue in the Project or linked from it, with at least one `blocks` relation into it and every blocker closed. For a linked issue, only the blockers in the Project's graph are seen. |
 | `uncontracted` | An unassigned Backlog Project issue with no open blocker, waiting to be contracted to `Todo`. |

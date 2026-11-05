@@ -956,10 +956,12 @@ public class GuardSecurityTests : IntegrationTestBase
     }
 
     // DYD-422 review: a line that writes single-quoted text and then runs it through sed -f, a sed e
-    // command, grep --pre, or git configuration, attributes or hooks it writes, is refused through
-    // Claude's Bash and PowerShell tools and an unknown shell, as on master.
+    // command, grep --pre, or git configuration, attributes or hooks it writes (a sed -i backup
+    // suffix included), or whose state-free command takes an option off its closed list, is
+    // refused through Claude's Bash and PowerShell tools and an unknown shell, as on master.
     [Theory]
     [MemberData(nameof(GuardRetroCommands.Gs02WriteThenRunLines), MemberType = typeof(GuardRetroCommands))]
+    [MemberData(nameof(GuardRetroCommands.Gs02OptionLines), MemberType = typeof(GuardRetroCommands))]
     public async Task Gs02_WriteThenRun_IsDeniedInEveryShell(string command)
     {
         await SetupClaimedAgent();

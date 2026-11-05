@@ -1668,6 +1668,7 @@ public class BashCommandAnalyzerTests
     [InlineData("sed -i 's/`x`/y/' $FILE")]
     [MemberData(nameof(StateChangingLines))]
     [MemberData(nameof(WriteThenRunLines))]
+    [MemberData(nameof(OptionLines))]
     public void Analyze_SingleQuotedTextAProgramMayRun_IsABypass(string command)
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
@@ -1682,6 +1683,33 @@ public class BashCommandAnalyzerTests
     // DYD-422 review: no command on a line with literal data reads a file the line writes as code:
     // every sed only substitutes, grep takes no --pre, and a line that runs git writes no git path.
     public static TheoryData<string> WriteThenRunLines => GuardRetroCommands.Gs02WriteThenRunLines;
+
+    // DYD-422 review: each state-free command takes only the options on its closed list, in any
+    // spelling; a sed -i backup suffix, an abbreviation or an unlisted option takes the relief away.
+    public static TheoryData<string> OptionLines => GuardRetroCommands.Gs02OptionLines;
+
+    // The closed lists keep the read-only, output-shaping spellings the GS-02 writes and their
+    // neighbours use, in every dialect that reads them as data.
+    [Theory]
+    [InlineData("sed -Ei 's/`x`/y/' notes.md", "Posix,Unknown,PowerShell")]
+    [InlineData("sed -n -E 's/`x`/y/p' notes.md > out.md", "Posix,Unknown,PowerShell")]
+    [InlineData("sed -i -- 's/`x`/y/' notes.md", "Posix,Unknown,PowerShell")]
+    [InlineData("sed --in-place --posix 's/`x`/y/' notes.md", "Posix,Unknown,PowerShell")]
+    [InlineData("grep -n -i -e '$HOME' notes.md > out.md", "Posix,Unknown,PowerShell")]
+    [InlineData("grep --count --fixed-strings '$HOME' notes.md > out.md", "Posix,Unknown,PowerShell")]
+    [InlineData("head -n 5 notes.md && echo '$HOME' > out.md", "Posix,Unknown,PowerShell")]
+    [InlineData("git log -1 --format=%h && echo '$HOME' > out.md", "Posix,Unknown,PowerShell")]
+    [InlineData("git status --short && git diff --stat -- notes.md && echo '$HOME' > out.md", "Posix,Unknown,PowerShell")]
+    [InlineData("echo -n '$HOME' > out.md", "Posix")]
+    public void Analyze_ListedOptions_KeepTheRelief(string command, string dialects)
+    {
+        foreach (var dialect in dialects.Split(',').Select(Enum.Parse<ShellDialect>))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
+        }
+    }
 
     // PowerShell's stop-parsing token hands the rest of the line over unparsed, and its echo, the
     // Write-Output cmdlet, assigns a variable through -OutVariable or another common parameter.

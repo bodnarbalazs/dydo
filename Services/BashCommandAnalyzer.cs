@@ -462,18 +462,51 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static readonly HashSet<string> QuotedDataCommands = new(StringComparer.Ordinal)
         { "sed", "printf", "echo", "grep" };
 
-    /// <summary>
-    /// The only commands a line with literal data may run (DYD-422): each reads its arguments,
-    /// files and stdin as text and changes no alias, function, builtin, variable, trap, option or
-    /// sourced file, so none changes what another command on the line runs. Named exactly, with
-    /// no path, assignment or case change; printf only as <see cref="IsStateFree"/> says.
-    /// </summary>
-    private static readonly HashSet<string> StateFreeCommands = new(StringComparer.Ordinal)
-        { "sed", "printf", "echo", "grep", "head" };
-
     // The git subcommands the GS-02 writes run, directly after git: no option such as -c comes first.
     private static readonly HashSet<string> StateFreeGitCommands = new(StringComparer.Ordinal)
         { "diff", "add", "status", "commit", "log" };
+
+    /// <summary>
+    /// A state-free command's closed option allowlist (DYD-422): the short flag letters it may
+    /// cluster, and the long option names it may take (the part before any <c>=</c>). An option
+    /// outside the list, in any spelling, makes the line not state-free. Each list holds only
+    /// read-only, output-shaping options; none runs a program, reads a script or writes a chosen file.
+    /// </summary>
+    private sealed record OptionSpec(string ShortFlags, HashSet<string> LongOptions);
+
+    // grep: matching and formatting flags only; e/f take a pattern or pattern-file (data, not code),
+    // A/B/C/m/d take counts. No --pre or --preprocessor, which run a program (ripgrep).
+    private static readonly OptionSpec GrepOptions = new("EFGPivnclLowxqsHharRefmABCdUz0123456789",
+        new(StringComparer.Ordinal)
+        {
+            "extended-regexp", "fixed-strings", "basic-regexp", "perl-regexp", "ignore-case", "invert-match",
+            "line-number", "count", "files-with-matches", "files-without-match", "only-matching", "word-regexp",
+            "line-regexp", "quiet", "silent", "no-messages", "with-filename", "no-filename", "recursive",
+            "dereference-recursive", "color", "colour", "file", "regexp", "max-count", "after-context",
+            "before-context", "context", "include", "exclude", "exclude-dir", "byte-offset", "null", "text",
+        });
+
+    // head: line and byte counts, and the obsolete -NUM form.
+    private static readonly OptionSpec HeadOptions = new("ncqvz0123456789",
+        new(StringComparer.Ordinal) { "lines", "bytes", "quiet", "silent", "verbose", "zero-terminated" });
+
+    // git: only read-only, output-shaping options after an allowed subcommand. m takes the commit
+    // message, digits the log count. Never -c, -C, -p, -e, --output, --textconv, --ext-diff,
+    // --amend, --git-dir, --work-tree, --exec-path, --template or --config-env, which run code,
+    // change where git looks, or edit.
+    private static readonly OptionSpec GitOptions = new("qasvbum0123456789",
+        new(StringComparer.Ordinal)
+        {
+            "stat", "numstat", "shortstat", "name-only", "name-status", "short", "porcelain", "cached",
+            "staged", "oneline", "abbrev-commit", "abbrev", "no-color", "format", "pretty", "color",
+            "all", "dry-run", "verbose", "quiet", "no-renames", "find-renames", "summary", "no-patch",
+        });
+
+    // sed: only read and in-place-substitute flags. -i and --in-place must be bare, with no backup
+    // suffix; a suffix renames the file elsewhere, which could install git configuration.
+    private const string SedShortFlags = "nErszu";
+    private static readonly HashSet<string> SedLongOptions = new(StringComparer.Ordinal)
+        { "posix", "regexp-extended", "separate", "null-data", "unbuffered", "quiet", "silent", "sandbox" };
 
     // A printf %n conversion, which assigns the variable its argument names.
     [GeneratedRegex(@"%[^A-Za-z%]*n")]
@@ -544,31 +577,51 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         && !WritesWhatGitReads(reading.Commands);
 
     /// <summary>
-    /// Whether the command is one <see cref="StateFreeCommands"/> names, or git with a subcommand
-    /// <see cref="StateFreeGitCommands"/> names. None of them reads a file as code: a sed must only
-    /// substitute (<see cref="SedScriptIndex"/>), so no sed runs a script file or an e command; a
-    /// grep takes no --pre program, and a git writes no --output file. A printf with -v in any
-    /// spelling, or a %n conversion, assigns a variable, and bash evaluates a -v name's subscript,
-    /// so it is not state-free. Nor is PowerShell's echo, the Write-Output cmdlet, with a parameter
-    /// word, since -OutVariable and the other common parameters assign variables.
+    /// Whether the command is sed, printf, echo, grep, head, or git with a subcommand
+    /// <see cref="StateFreeGitCommands"/> names, and takes only options its closed allowlist names,
+    /// in any spelling (<see cref="TakesOnly"/>). None of them reads a file as code: a sed must only
+    /// substitute (<see cref="SedScriptIndex"/>). printf takes no options: -v assigns a variable, and
+    /// bash evaluates its subscript; nor a %n conversion. PowerShell's echo, the Write-Output cmdlet,
+    /// takes no parameter word, since -OutVariable and the other common parameters assign variables.
     /// </summary>
     private static bool IsStateFree(List<string> words, bool posix) => words switch
     {
-        ["git", var subcommand, ..] => StateFreeGitCommands.Contains(subcommand) && !words.Any(word => word.StartsWith("--output", StringComparison.Ordinal)),
+        ["git", var subcommand, .. var rest] => StateFreeGitCommands.Contains(subcommand) && TakesOnly(rest, GitOptions),
         ["sed", ..] => SedScriptIndex(words) > 0,
-        ["grep", ..] => !words.Any(word => word.StartsWith("--pre", StringComparison.Ordinal)),
-        ["printf", ..] => !words.Any(word => word.StartsWith("-v", StringComparison.Ordinal) || PrintfAssignmentRegex().IsMatch(word)),
-        ["echo", .. var arguments] when !posix => !arguments.Any(word => word is ['-' or '\u2013' or '\u2014' or '\u2015', ..]),
-        [var program, ..] => StateFreeCommands.Contains(program),
+        ["grep", .. var rest] => TakesOnly(rest, GrepOptions),
+        ["head", .. var rest] => TakesOnly(rest, HeadOptions),
+        ["printf", .. var rest] => rest is not [['-', ..], ..] && !rest.Any(PrintfAssignmentRegex().IsMatch),
+        ["echo", .. var rest] => posix ? rest.TakeWhile(IsOption).All(EchoFlagsRegex().IsMatch) : !rest.Any(IsPowerShellParameter),
         _ => false,
     };
+
+    // bash's echo reads leading -n, -e and -E clusters as flags and stops at the first other word.
+    [GeneratedRegex(@"^-[neE]+$")]
+    private static partial Regex EchoFlagsRegex();
+
+    private static bool IsOption(string word) => word is ['-', _, ..];
+
+    // A PowerShell parameter word starts with a hyphen, an en dash, an em dash or a horizontal bar.
+    private static bool IsPowerShellParameter(string word) => word is ['-' or '\u2013' or '\u2014' or '\u2015', ..];
+
+    /// <summary>
+    /// Whether every option word, up to a bare <c>--</c>, is on the closed list: a cluster of the
+    /// listed short flags (a value letter's attached value is read as more flags, so an unknown
+    /// letter in it fails closed), or a listed long option, with or without <c>=value</c>.
+    /// Operands and option values that stand as their own word are data.
+    /// </summary>
+    private static bool TakesOnly(IEnumerable<string> words, OptionSpec spec) =>
+        words.TakeWhile(word => word != "--").Where(IsOption).All(option => option.StartsWith("--", StringComparison.Ordinal)
+            ? spec.LongOptions.Contains(option[2..].Split('=')[0])
+            : option[1..].All(spec.ShortFlags.Contains));
 
     // A line that runs git writes, in any way, a path git reads as configuration, attributes or hooks.
     private static bool WritesWhatGitReads(IReadOnlyList<ShellReader.Command> commands) =>
         commands.Any(command => command.Words is ["git", ..]) && commands.SelectMany(WriteTargets).Any(IsGitReadPath);
 
-    // Each place a command may write: its output redirection targets, and every word of a sed after
-    // its script, since sed -i rewrites them.
+    // Each place a state-free command may write, its whole write set: its output redirection
+    // targets, and every word of a sed after its script, which a suffix-free sed -i rewrites in
+    // place. No other allowed option writes a file.
     private static IEnumerable<string> WriteTargets(ShellReader.Command command) =>
         command.RedirectTargets.Where(target => target.Operator.Contains('>'))
             .Select(target => command.Source.Text[target.Range][target.Operator.Length..].Trim())
@@ -650,20 +703,33 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     }
 
     /// <summary>
-    /// The index of a sed's one script when the sed only substitutes, or -1: no option names a
-    /// script or a script file (each of -e, -f, --expression and --file holds an e or an f), and the
-    /// first word after the options is one s command (<see cref="SedSubstitutionRegex"/>), so no e,
-    /// w, r, R or W command or flag runs or writes a file.
+    /// The index of a sed's one script when the sed only substitutes, or -1: every option, before
+    /// and after the script, is on sed's closed list (<see cref="IsSedOption"/>), so none names a
+    /// script, a script file or a backup suffix, and the first word after the options is one s
+    /// command (<see cref="SedSubstitutionRegex"/>), so no e, w, r, R or W command or flag runs or
+    /// writes a file.
     /// </summary>
     private static int SedScriptIndex(List<string> words)
     {
-        var script = words.FindIndex(1, word => !word.StartsWith('-'));
-        return script > 0
-            && words.Skip(1).Where(word => word.StartsWith('-')).All(option => option.IndexOfAny(['e', 'f']) < 0)
+        var script = words.FindIndex(1, word => !IsOption(word) || word == "--");
+        if (script > 0 && words[script] == "--")
+            script++;
+        return script > 0 && script < words.Count
+            && words.Skip(1).Where(word => IsOption(word) && word != "--").All(IsSedOption)
             && SedSubstitutionRegex().IsMatch(words[script])
             ? script
             : -1;
     }
+
+    // A cluster of the listed flags, which may end in a bare i, or an exact listed long option or a
+    // bare --in-place. sed reads anything after an i as its backup suffix, so -i.bak, -is and -ifoo
+    // are not; nor are --in-place=, -e, -f, -l, an abbreviation or any other option.
+    private static bool IsSedOption(string option) => option.StartsWith("--", StringComparison.Ordinal)
+        ? option == "--in-place" || SedLongOptions.Contains(option[2..])
+        : SedFlags(option).All(SedShortFlags.Contains);
+
+    // A short cluster's letters before a trailing bare i.
+    private static string SedFlags(string option) => option.EndsWith('i') ? option[1..^1] : option[1..];
 
     // Bypass detection patterns
     [GeneratedRegex(@"\$\([^)]+\)|`[^`]+`")]

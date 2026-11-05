@@ -169,6 +169,44 @@ public static class GuardRetroCommands
         "git diff --output=notes.md; echo '$(echo PWNED >&2)' > notes.md",
     };
 
+    // DYD-422 review (Codex seat 4, f1764904): a sed -i backup suffix renames a written file into
+    // .git, and any option off a state-free command's closed list, each refused as on master.
+    public static Xunit.TheoryData<string> Gs02OptionLines => new()
+    {
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed -i'.git/*' 's/NOTHERE/ok/' config; git diff",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed -i.git/* 's/NOTHERE/ok/' config; git diff",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed --in-place=.git/* 's/NOTHERE/ok/' config; git diff",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed -i.git/x 's/NOTHERE/ok/' config; git diff",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed --in-place=../.git/config 's/NOTHERE/ok/' config; git diff",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed -i'../.git/*' 's/NOTHERE/ok/' config; git diff",
+        "printf '[diff]\\n external = echo $(echo PWNED >&2)\\n' > config; sed 's/NOTHERE/ok/' -i.git/x config; git diff",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; sed -ibak 's/x/y/' notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; sed -ni.bak 's/x/y/' notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; sed -is 's/x/y/' notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; sed --in=.git/x 's/x/y/' notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; sed --follow-symlinks -i 's/x/y/' notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; sed -l 5 's/x/y/' notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; grep --exclude-from=list x notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; grep --pre sh x notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; head --bogus notes.md",
+        "printf -- '%s' '$(echo PWNED >&2)' > notes.md",
+        "echo -x '$(echo PWNED >&2)' > notes.md",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git diff --ext-diff",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git diff --textconv",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git add -p",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git add --patch",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git commit -e -m x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git commit --edit -m x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git commit --amend -m x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git commit --no-verify -m x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git commit --template=x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git log --exec-path=x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git log --git-dir=x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git status --work-tree=x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git log --config-env=x",
+        "printf '%s' '$(echo PWNED >&2)' > notes.md; git -C .. diff",
+    };
+
     // GS-02, Claude Bash: evidence appended through cat >> and a quoted heredoc holding backticks.
     public const string Gs02CatAppendEvidence =
         "cat >> C:/Users/User/.t3/worktrees/LC/LC.worktrees/LC-749-typed-admission/dydo/agents/workspace/LC-749/fix13/evidence.md << 'EOF'\n" +

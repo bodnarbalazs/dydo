@@ -213,6 +213,29 @@ public class MergeRouteScannerTests
         Assert.All(dataWords, argv => Assert.Empty(PrCallScanner.FindMergeRoutes(string.Join(' ', argv.Select(w => $"'{w}'")))));
     }
 
+    // DYD-641: pwsh 7.6.9 ends a statement and a comment at a bare carriage return, closes a string
+    // at a typographic quote, and keeps a caret literal, so the route after each is taken.
+    [Theory]
+    [InlineData("echo 'x'\rgh pr merge 5")]
+    [InlineData("echo x # note\rgh pr merge 5")]
+    [InlineData("echo ‘a'; gh pr merge 5; ’b'")]
+    [InlineData("echo \"a”; gh pr merge 5; “b\"")]
+    [InlineData("echo a^;gh pr merge 5")]
+    public void PowerShellReading_FindsTheMergePwshRuns(string command)
+    {
+        Assert.Contains(PrCallScanner.FindMergeRoutes(command, ShellDialect.PowerShell), route => route.Kind == MergeRouteKind.Merge);
+    }
+
+    [Theory]
+    [InlineData("echo 'x'\rgit push origin main")]
+    [InlineData("echo ‘a'; git push origin main; ’b'")]
+    [InlineData("echo a^;git push origin main")]
+    public void PowerShellReading_FindsThePushPwshRuns(string command)
+    {
+        Assert.Contains(PrCallScanner.FindMergeRoutes(command, ShellDialect.PowerShell),
+            route => route.Kind == MergeRouteKind.Push && route.Destination == "main");
+    }
+
     // The PR check's bare-argv rule (admiral ruling 2026-10-27) is its own and stays: there another
     // program's word that reads as a PR call is still refused as a wrapper's.
     [Fact]

@@ -157,6 +157,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // context, and a trailing end context, instead; for IsMatch that is equivalent.
     private const string LinearCommandStart = "(?:" + CommandContext + ")" + CommandPath;
 
+    // The generator emits no code for NonBacktracking, only a Regex built when the rule is first used,
+    // which would fold case by the culture of that moment: Turkish and Azeri pair I with ı and i with İ,
+    // so `ri` would miss RI. Generated matchers fold case invariantly; these rules must too.
+    private const RegexOptions LinearIgnoreCase = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking;
+
     private const int DangerousPatternTimeoutMs = 250;
 
     // A command word ends at whitespace, the end, a quote or backtick closing a -c string or substitution, or a separator.
@@ -640,7 +645,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     // The device name is (?!null(?:\s|$|['";&|)`]))[^\s'";&|]+ spelled out without the lookahead: one name
     // character other than n, or n, nu, nul or null going on to anything but null's ending (DYD-610).
-    [GeneratedRegex(LinearCommandStart + @"dd\s+[^;&|\r\n]*\bof\s*=\s*['""]?/dev/(?:[^\s'"";&|n]|n(?:$|[^u]|u(?:$|[^l]|l(?:$|[^l]|l[^\s'"";&|)`]))))", RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"dd\s+[^;&|\r\n]*\bof\s*=\s*['""]?/dev/(?:[^\s'"";&|n]|n(?:$|[^u]|u(?:$|[^l]|l(?:$|[^l]|l[^\s'"";&|)`]))))", LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex DdDiskWriteRegex();
 
     // Kept unanchored on purpose: known disk targets block anywhere in the command text.
@@ -692,10 +697,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@">\s*/etc/passwd|echo.*>>\s*/etc/passwd", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex PasswdModifyRegex();
 
-    [GeneratedRegex(LinearCommandStart + @"rm\s+(?:(?:-[a-zA-Z]+|--[a-z-]+)\s+)*(?:['"" ]?/(?:Users(?:/[^/\s'"";&|]+)?/?|\*|)|['"" ]?(?:~|\$HOME|\$\{HOME\})(?:/\*)?/?|[^;&|]*--no-preserve-root)(?:['""\s]|$|[;&|])", RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"rm\s+(?:(?:-[a-zA-Z]+|--[a-z-]+)\s+)*(?:['"" ]?/(?:Users(?:/[^/\s'"";&|]+)?/?|\*|)|['"" ]?(?:~|\$HOME|\$\{HOME\})(?:/\*)?/?|[^;&|]*--no-preserve-root)(?:['""\s]|$|[;&|])", LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejRmRegex();
 
-    [GeneratedRegex(LinearCommandStart + @"(?:mkfs(?:\.[a-z0-9]+)?" + LinearCommandEnd + @"|diskutil\s+(?:erase\w*|partitionDisk|zeroDisk|secureErase|apfs\s+(?:delete|erase)\w*)" + LinearCommandEnd + @")|>\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d+)", RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"(?:mkfs(?:\.[a-z0-9]+)?" + LinearCommandEnd + @"|diskutil\s+(?:erase\w*|partitionDisk|zeroDisk|secureErase|apfs\s+(?:delete|erase)\w*)" + LinearCommandEnd + @")|>\s*/dev/(?:r?disk\d*|sd[a-z]|nvme\d+)", LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejDiskRegex();
 
     // Every sudo inside a chain of option arguments is also a command start, and each backtracking restart
@@ -703,33 +708,33 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(LinearCommandStart + @"sudo(?:\s+-[a-zA-Z-]*(?:=[^\s;&|]*|\s+[^-\s;&|][^\s;&|]*)?)*\s+rm(?:" + CommandEndContext + ")", RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejSudoRmRegex();
 
-    [GeneratedRegex(LinearCommandStart + @"(?:curl|wget)\s+[^;&|]*\|\s*(?:sudo\s+)?(?:ba|z|da)?sh" + LinearCommandEnd, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"(?:curl|wget)\s+[^;&|]*\|\s*(?:sudo\s+)?(?:ba|z|da)?sh" + LinearCommandEnd, LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejCurlPipeRegex();
 
     // After push, its end context and the rest of the command were (?=end)[^;&|\r\n]*\s...: a first character
     // the rest takes is one of the end characters it can hold, or the rest is empty and its \s ends push (DYD-610).
-    [GeneratedRegex(LinearCommandStart + @"git\s+push(?:(?:[^\S\r\n]|['""`)])[^;&|\r\n]*)?(?:\s(?:-f|--force|--delete|-d)" + LinearCommandEnd + @"|\s\+[a-z0-9._/-]|\s:[a-z0-9._/-])", RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"git\s+push(?:(?:[^\S\r\n]|['""`)])[^;&|\r\n]*)?(?:\s(?:-f|--force|--delete|-d)" + LinearCommandEnd + @"|\s\+[a-z0-9._/-]|\s:[a-z0-9._/-])", LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejGitPushRegex();
 
-    [GeneratedRegex(LinearCommandStart + @"git\s+(?:reflog\s+expire\b[^;&|\r\n]*--expire(?:-unreachable)?(?:=|\s+)now\b|gc\b[^;&|\r\n]*--prune(?:=|\s+)(?:now|all)\b)", RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"git\s+(?:reflog\s+expire\b[^;&|\r\n]*--expire(?:-unreachable)?(?:=|\s+)now\b|gc\b[^;&|\r\n]*--prune(?:=|\s+)(?:now|all)\b)", LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejGitRecoveryRegex();
 
-    [GeneratedRegex(LinearCommandStart + @"(?:chmod\s+[^;&|\r\n]*\b777\s['""]?/['""]?(?:\s|$|[;&|])|chown\s+-R\b[^;&|\r\n]*\s['""]?/['""]?(?:\s|$|[;&|]))", RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"(?:chmod\s+[^;&|\r\n]*\b777\s['""]?/['""]?(?:\s|$|[;&|])|chown\s+-R\b[^;&|\r\n]*\s['""]?/['""]?(?:\s|$|[;&|]))", LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejSystemPermissionsRegex();
 
-    [GeneratedRegex(LinearCommandStart + @"gh\s+(?:(?:repo|release|secret|ssh-key|gpg-key)\s+delete)" + LinearCommandEnd, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"gh\s+(?:(?:repo|release|secret|ssh-key|gpg-key)\s+delete)" + LinearCommandEnd, LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejGhDeleteRegex();
 
-    [GeneratedRegex(LinearCommandStart + @"gh\s+api\b[^;&|\r\n]*(?:-X|--method)(?:=|\s+)DELETE" + LinearCommandEnd, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"gh\s+api\b[^;&|\r\n]*(?:-X|--method)(?:=|\s+)DELETE" + LinearCommandEnd, LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejGhApiDeleteRegex();
 
-    [GeneratedRegex(LinearCommandStart + @"gh\s+repo\s+edit\b[^;&|\r\n]*--visibility(?:=|\s+)public" + LinearCommandEnd, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"gh\s+repo\s+edit\b[^;&|\r\n]*--visibility(?:=|\s+)public" + LinearCommandEnd, LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejGhVisibilityRegex();
 
-    [GeneratedRegex(LinearCommandStart + @"gh\s+auth\s+token" + LinearCommandEnd, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"gh\s+auth\s+token" + LinearCommandEnd, LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejGhTokenRegex();
 
-    [GeneratedRegex(LinearCommandStart + @"(?:bw|bws|lpass|keepassxc-cli|rbw|nordpass)" + LinearCommandEnd, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"(?:bw|bws|lpass|keepassxc-cli|rbw|nordpass)" + LinearCommandEnd, LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejPasswordCliRegex();
 
     // Deliberate difference from upstream DYD-188: the original `pass\s+\S` also matches prose
@@ -1395,10 +1400,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"\A\s*(?:-and\s+\$_\.Name\s+-notmatch\s+'bash'\s*)?\}", RegexOptions.IgnoreCase)]
     private static partial Regex ProcessFilterSuffixRegex();
 
-    [GeneratedRegex(LinearCommandStart + @"op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)" + LinearCommandEnd, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)" + LinearCommandEnd, LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejOpRegex();
 
-    [GeneratedRegex(LinearCommandStart + @"security\s+(?:(?:-[a-z]+|--[a-z-]+)\s+)*(?:find-generic-password|find-internet-password|dump-keychain)" + LinearCommandEnd, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"security\s+(?:(?:-[a-z]+|--[a-z-]+)\s+)*(?:find-generic-password|find-internet-password|dump-keychain)" + LinearCommandEnd, LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejKeychainRegex();
 
     [GeneratedRegex(@"--export-secret-(?:key|keys|subkey|subkeys)(?=\s|=|$)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
@@ -1407,7 +1412,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"(?:~|\$HOME|\$\{HOME\}|/Users/[^/\s'""]+)/\.password-store(?:/|(?=\s|$|['"";&|]))", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex OndrejPasswordStorePathRegex();
 
-    [GeneratedRegex(LinearCommandStart + @"(?:open\s+-a\s+['""]?(?:1Password|Bitwarden|NordPass|KeePass)|brew\s+(?:uninstall|remove|rm)\b[^;&|\r\n]*\s['""]?(?:1password|bitwarden(?:-cli)?|nordpass|keepassxc|lastpass))(?:\s|$|['""/;&|])|(?:^|[/\s'""])(?:1Password|Bitwarden|NordPass|KeePassXC)\.app(?:\s|$|['""/;&|])", RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"(?:open\s+-a\s+['""]?(?:1Password|Bitwarden|NordPass|KeePass)|brew\s+(?:uninstall|remove|rm)\b[^;&|\r\n]*\s['""]?(?:1password|bitwarden(?:-cli)?|nordpass|keepassxc|lastpass))(?:\s|$|['""/;&|])|(?:^|[/\s'""])(?:1Password|Bitwarden|NordPass|KeePassXC)\.app(?:\s|$|['""/;&|])", LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejPasswordAppRegex();
 
     private const string WorktreeRemovalReason =
@@ -1419,7 +1424,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     // git worktree remove with a force flag (-f, git's repeated -ff, --force), after any git -C/-c
     // options, quoted or not. Plain remove refuses a dirty tree, so it stays allowed.
-    [GeneratedRegex(LinearCommandStart + @"git(?:\s+-[cC]\s+" + GitOptionValue + @")*\s+worktree\s+remove\b[^;&|\r\n]*\s(?:-f+|--force)" + LinearCommandEnd, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(LinearCommandStart + @"git(?:\s+-[cC]\s+" + GitOptionValue + @")*\s+worktree\s+remove\b[^;&|\r\n]*\s(?:-f+|--force)" + LinearCommandEnd, LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex ForcedWorktreeRemoveRegex();
 
     // A worktree path argument: an optional prefix ending in a separator, then a worktrees folder, one
@@ -1445,18 +1450,18 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // argument are two matches from the whitespace after it, each before the next separator (DYD-610).
     private const string RecursiveDeleteWord = CommandPath + @"(?:rm|rmdir|rd|del|erase|ri|Remove-Item)\s";
 
-    [GeneratedRegex(@"(?:^|[\s;&|(){}`!\\])" + RecursiveDeleteWord, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(@"(?:^|[\s;&|(){}`!\\])" + RecursiveDeleteWord, LinearIgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex RecursiveDeleteWordRegex();
 
     // The quote-opening contexts are searched apart: ssh's can span delete words the search above must
     // still find one by one.
-    [GeneratedRegex(@"(?:\s-[a-zA-Z]*c\s*['""]|\bssh\s[^;&|'""]*['""])" + RecursiveDeleteWord, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(@"(?:\s-[a-zA-Z]*c\s*['""]|\bssh\s[^;&|'""]*['""])" + RecursiveDeleteWord, LinearIgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex QuotedRecursiveDeleteWordRegex();
 
-    [GeneratedRegex(@"\A[^;&|\r\n]*\s(?:-[dfiIvrR]*[rR][dfiIvrR]*|--recursive|-rec(?:u(?:r(?:s(?:e)?)?)?)?|/s)(?:[\s:]|$)", RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(@"\A[^;&|\r\n]*\s(?:-[dfiIvrR]*[rR][dfiIvrR]*|--recursive|-rec(?:u(?:r(?:s(?:e)?)?)?)?|/s)(?:[\s:]|$)", LinearIgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex RecursiveFlagRegex();
 
-    [GeneratedRegex(@"\A[^;&|\r\n]*(?:" + BareWorktreeArgument + "|" + DoubleQuotedWorktreeArgument + "|" + SingleQuotedWorktreeArgument + ")", RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, DangerousPatternTimeoutMs)]
+    [GeneratedRegex(@"\A[^;&|\r\n]*(?:" + BareWorktreeArgument + "|" + DoubleQuotedWorktreeArgument + "|" + SingleQuotedWorktreeArgument + ")", LinearIgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex WorktreeArgumentRegex();
 
     internal static bool IsRecursiveWorktreeDelete(string command) =>

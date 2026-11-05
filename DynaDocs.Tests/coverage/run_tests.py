@@ -19,6 +19,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import uuid
 from contextlib import contextmanager
@@ -56,6 +57,11 @@ PR_SET_CHILD_SUBREAPER = 36
 SUBREAPER = "subreaper"
 # Where Linux lists its processes; tests replace it with a fake table.
 PROC_ROOT = Path("/proc")
+# How often a contained wait reaps the orphans the subreaper adopted meanwhile.
+REAP_INTERVAL_SECONDS = 0.2
+# Held by each reap pass and by each list-and-kill pass of descendant cleanup: a pid cleanup lists
+# stays reserved, its exited process a zombie, until its kill is sent, never freed for reuse.
+_REAP_LOCK = threading.Lock()
 
 
 def isolated_environment():
@@ -598,12 +604,13 @@ def _end_reaped_descendants(seconds=DESCENDANT_EXIT_SECONDS):
     this process still finds the ones whose own parent, the interrupted dotnet, is already gone."""
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
-        live = _live_descendants(os.getpid())
+        with _REAP_LOCK:
+            live = _live_descendants(os.getpid())
+            for pid in live:
+                _kill(pid)
         if not live:
             return
-        for pid in live:
-            _kill(pid)
-        time.sleep(0.05)
+        time.sleep(0.05)  # unlocked, so orphans are reaped as they exit
     raise TimeoutError("Linux descendant cleanup could not be confirmed")
 
 
@@ -620,6 +627,97 @@ def _end_job_members(job, seconds=DESCENDANT_EXIT_SECONDS):
         for pid in others:
             _end_member(kernel, job, pid, deadline)
     raise TimeoutError("Windows descendant cleanup could not be confirmed")
+
+
+def _children():
+    """This process's children, adopted orphans included, from each thread's /proc children list;
+    the whole process table stands in when the kernel keeps no such list."""
+    pid = os.getpid()
+    tasks = PROC_ROOT / str(pid) / "task"
+    try:
+        return {int(child) for task in os.listdir(tasks)
+                for child in (tasks / task / "children").read_text(encoding="utf-8").split()}
+    except OSError:
+        return {child for child, (parent, _) in _process_table().items() if parent == pid}
+
+
+def reap_adopted(job, owned=()):
+    """Reap every exited child of this subreaper except `owned`, so no orphan it adopted stays a
+    zombie. `owned` names every child this process still waits on itself: one it leaves out loses
+    its exit status, so call this only where no other wait is in flight."""
+    if job != SUBREAPER:
+        return
+    with _REAP_LOCK:
+        for pid in _children().difference(owned):
+            try:
+                os.waitid(os.P_PID, pid, os.WEXITED | os.WNOHANG)
+            except ChildProcessError:
+                pass  # reaped since the listing
+
+
+def _reap_until(stop, child):
+    while not stop.wait(REAP_INTERVAL_SECONDS):
+        reap_adopted(SUBREAPER, owned=(child,))
+
+
+def _started(reaper):
+    """Start `reaper` and return it, or None when no thread can start, as near the pids limit."""
+    try:
+        reaper.start()
+    except RuntimeError:
+        return None
+    return reaper
+
+
+def _joined(reaper):
+    """Join `reaper`, retrying a join an interrupt cut short; True when one did."""
+    interrupted = False
+    while reaper is not None:
+        try:
+            reaper.join()
+            break
+        except KeyboardInterrupt:
+            interrupted = True
+    return interrupted
+
+
+@contextmanager
+def reaping(job, child):
+    """While the body waits on the Popen `child` and on nothing else, reap the orphans the
+    subreaper adopts every REAP_INTERVAL_SECONDS and once more on leaving. `child` stays its own
+    wait's to collect, so its exit status is never taken. Without a reaper thread the body still
+    runs and the reap on leaving remains; an interrupt is delivered once the reaper has stopped."""
+    if job != SUBREAPER:
+        yield
+        return
+    stop = threading.Event()
+    reaper = _started(threading.Thread(target=_reap_until, args=(stop, child.pid), daemon=True))
+    try:
+        yield
+    finally:
+        stop.set()
+        interrupted = _joined(reaper)
+        reap_adopted(job, owned=(child.pid,))
+        if interrupted:
+            raise KeyboardInterrupt
+
+
+def run_contained(job, command, timeout=None, **options):
+    """subprocess.run of a command whose output is not captured, reaping the orphans the
+    subreaper adopts while it waits. Without a subreaper there is nothing to adopt."""
+    if job != SUBREAPER:
+        return subprocess.run(command, timeout=timeout, check=False, **options)
+    with subprocess.Popen(command, **options) as child, reaping(job, child):
+        try:
+            child.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            child.kill()
+            child.wait()
+            raise
+        except BaseException:
+            child.kill()
+            raise
+    return subprocess.CompletedProcess(command, child.returncode)
 
 
 def _campaign_identities(worktree, result_root):
@@ -672,9 +770,9 @@ def _run_linux_campaign(command, worktree, output):
         output.mkdir(parents=True, exist_ok=False)
         with (output / "stdout.log").open("wb") as stdout, (output / "stderr.log").open("wb") as stderr:
             try:
-                child = subprocess.run(command, cwd=worktree, stdin=subprocess.DEVNULL,
-                                       stdout=stdout, stderr=stderr, timeout=1800,
-                                       env={**isolated_environment(), **ISOLATED_BUILD_ENVIRONMENT})
+                child = run_contained(job, command, cwd=worktree, stdin=subprocess.DEVNULL,
+                                      stdout=stdout, stderr=stderr, timeout=1800,
+                                      env={**isolated_environment(), **ISOLATED_BUILD_ENVIRONMENT})
                 result.update(subject_status=child.returncode, failure_category=None,
                               complete=not _live_descendants(os.getpid()))
                 if not result["complete"]:
@@ -683,6 +781,7 @@ def _run_linux_campaign(command, worktree, output):
             finally:
                 with defer_interruption():
                     end_descendants(job)
+                    reap_adopted(job)
                     result["cleanup_confirmed"] = True
     except (OSError, ValueError, subprocess.TimeoutExpired, KeyboardInterrupt) as error:
         result.update(complete=False, failure_category=type(error).__name__, error_message=str(error))
@@ -702,11 +801,12 @@ def _run_assurance_campaign(worktree, extra_args, assurance_output):
                "--extra-json", json.dumps(list(extra_args or []))]
     if sys.platform == "linux":
         owner_result = _run_linux_campaign(command, worktree, owner_output)
-    else:
-        owner_result = run(request(command, worktree, owner_output,
-                                   execution_seconds=1800, teardown_seconds=10),
-                           isolated_environment())
     with defer_interruption():
+        if sys.platform != "linux":
+            # The native owner restores these deferred handlers before publication.
+            owner_result = run(request(command, worktree, owner_output,
+                                       execution_seconds=1800, teardown_seconds=10),
+                               isolated_environment())
         _publish_assurance(worktree, result_root, owner_output, assurance_output, owner_result)
     if owner_result.get("failure_category") == "KeyboardInterrupt" and owner_result.get("cleanup_confirmed"):
         return 130
@@ -753,13 +853,14 @@ def run_tests(extra_args=None, assurance_output=None, job=None):
         print(f"  Running: {' '.join(cmd)}")
         # Tests that install Console.In must not inherit an attached host console: .NET's
         # Console.KeyAvailable probes the process handle instead of the installed reader.
-        result = subprocess.run(cmd, cwd=worktree, env=env, stdin=subprocess.DEVNULL)
+        result = run_contained(job, cmd, cwd=worktree, env=env, stdin=subprocess.DEVNULL)
 
         return result.returncode
     finally:
         # An interrupt that lands during cleanup is delivered once cleanup has finished.
         with defer_interruption():
             end_descendants(job)
+            reap_adopted(job)
             if worktree and (worktree.exists() or is_registered_worktree(worktree)):
                 print("  Cleaning up worktree...")
                 remove_worktree(worktree)

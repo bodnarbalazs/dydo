@@ -6,7 +6,7 @@ description: Verify DynaDocs CLI and guard journeys in owned disposable projects
 # Verify DynaDocs
 
 Use the [feature map](resources/features/README.md). This driver covers the CLI; the viewer,
-real approval UI and pending release prerequisites need their own proof.
+live officer workflows and pending release prerequisites need their own proof.
 
 ## Launch
 
@@ -76,7 +76,8 @@ python skills/engineering/verify-dydo/scripts/control_dydo.py drive --run RUN --
 
 Only these named journeys exist. There is no arbitrary shell/CLI passthrough. Dangerous commands
 and mode setters appear only in guard stdin payloads. The installed Claude marker is read from
-the fixture's real init output; synthetic events test the protocol, never a user's approval UI.
+the fixture's real init output; synthetic events prove the host-independent warning/retry protocol,
+never role authentication, human approval or the live officer workflow.
 
 ## Evidence
 

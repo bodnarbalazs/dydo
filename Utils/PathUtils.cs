@@ -67,11 +67,15 @@ public static partial class PathUtils
     /// for '//server/share' is the share. Used to defeat traversal evasion
     /// ('.../memory/../../secret') before any path-based guard check.
     /// </summary>
-    public static string CollapseRelativeSegments(string path)
+    public static string CollapseRelativeSegments(string path) =>
+        CollapseRelativeSegments(path, OperatingSystem.IsWindows());
+
+    // The host's path reading as a parameter, so every host can test both readings.
+    internal static string CollapseRelativeSegments(string path, bool windows)
     {
         var p = path.Replace('\\', '/');
 
-        var prefix = RootPrefix(p);
+        var prefix = RootPrefix(p, windows);
         p = p[prefix.Length..];
 
         var rooted = p.StartsWith('/') || prefix.StartsWith("//", StringComparison.Ordinal);
@@ -102,11 +106,11 @@ public static partial class PathUtils
     /// segment: a drive ('C:'); on Windows also a UNC share ('//server/share') or a device root
     /// ('//?/C:', '//?/UNC/server/share', '//.'). Elsewhere a leading '//' reads as '/'.
     /// </summary>
-    private static string RootPrefix(string p)
+    private static string RootPrefix(string p, bool windows)
     {
         if (IsDrive(p))
             return p[..2];
-        if (!OperatingSystem.IsWindows() || p.Length < 3 || !p.StartsWith("//", StringComparison.Ordinal) || p[2] == '/')
+        if (!windows || p.Length < 3 || !p.StartsWith("//", StringComparison.Ordinal) || p[2] == '/')
             return "";
 
         var isDevice = p.Length >= 4 && (p[2] is '?' or '.') && p[3] == '/';

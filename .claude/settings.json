@@ -1,0 +1,19 @@
+{
+  "env": {
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "3"
+  },
+  "autoMemoryEnabled": false,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|Read|Bash|Glob|Grep|Agent|EnterPlanMode|ExitPlanMode|PowerShell|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "dydo guard --host claude"
+          }
+        ]
+      }
+    ]
+  }
+}

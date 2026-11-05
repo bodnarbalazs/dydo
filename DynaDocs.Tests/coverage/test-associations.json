@@ -2,12 +2,16 @@
   "schema": 1,
   "modules": [
     {
-      "module": "Services/Statechart/StatechartChecker.cs",
-      "tests": ["DynaDocs.Tests/Statechart/StatechartCheckerTests.cs"]
+      "module": "DynaDocs.Tests/coverage/gate_discovery.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_gate_adapter.py", "DynaDocs.Tests/coverage/tests/test_python_platform.py"]
     },
     {
-      "module": "skills/engineering/statechart/scripts/checker.ts",
-      "tests": ["skills/engineering/statechart/scripts/test/checker.test.ts", "skills/engineering/statechart/scripts/test/tlc-bootstrap.test.ts"]
+      "module": "DynaDocs.Tests/coverage/python_platform.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_python_platform.py"]
+    },
+    {
+      "module": "Services/Statechart/StatechartChecker.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartCheckerTests.cs"]
     },
     {
       "module": "skills/engineering/statechart/scripts/java/build.py",
@@ -188,6 +192,26 @@
       "module": "Services/PrCallScanner.cs",
       "tests": [
         "DynaDocs.Tests/Services/PrCallScannerTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/GuardCommand.MergeRoutes.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/GuardMergeRouteTests.cs"
+      ]
+    },
+    {
+      "module": "Services/PrCallScanner.MergeRoutes.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/MergeRouteScannerTests.cs",
+        "DynaDocs.Tests/Integration/GuardMergeRouteTests.cs"
+      ]
+    },
+    {
+      "module": "Services/MergeRoute.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/MergeRouteScannerTests.cs",
+        "DynaDocs.Tests/Integration/GuardMergeRouteTests.cs"
       ]
     },
     {
@@ -488,6 +512,12 @@
       "module": "DynaDocs.Tests/coverage/node_tests.cjs",
       "tests": [
         "DynaDocs.Tests/coverage/tests/node_tests.test.cjs"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/HostCanaries/candidate-fingerprint.mjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/candidate-fingerprint.test.mjs"
       ]
     },
     {
@@ -951,6 +981,13 @@
       ]
     },
     {
+      "module": "Services/ClaudeGuardWiring.cs",
+      "tests": [
+        "DynaDocs.Tests/Integration/ClaudeGuardWiringTests.cs",
+        "DynaDocs.Tests/Services/ValidationServiceTests.cs"
+      ]
+    },
+    {
       "module": "Utils/ConfigFileLocator.cs",
       "tests": [
         "DynaDocs.Tests/Services/ConfigServiceTests.cs",
@@ -1017,6 +1054,49 @@
       "module": "Commands/MapCommand.cs",
       "tests": [
         "DynaDocs.Tests/Map/MapCommandTests.cs"
+      ]
+    },
+    {
+      "module": "Commands/SurveyCommand.cs",
+      "tests": [
+        "DynaDocs.Tests/Survey/SurveyCommandTests.cs",
+        "DynaDocs.Tests/Survey/SurveySteps.cs"
+      ]
+    },
+    {
+      "module": "Services/Map/LinearProjectRead.cs",
+      "tests": [
+        "DynaDocs.Tests/Map/LinearReaderTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Survey/Ledger.cs",
+      "tests": [
+        "DynaDocs.Tests/Survey/LedgerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Survey/LedgerRow.cs",
+      "tests": [
+        "DynaDocs.Tests/Survey/LedgerTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Survey/ProjectReference.cs",
+      "tests": [
+        "DynaDocs.Tests/Survey/ProjectReferenceTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Survey/SurveyFinding.cs",
+      "tests": [
+        "DynaDocs.Tests/Survey/SurveyRulesTests.cs"
+      ]
+    },
+    {
+      "module": "Services/Survey/SurveyRules.cs",
+      "tests": [
+        "DynaDocs.Tests/Survey/SurveyRulesTests.cs"
       ]
     },
     {
@@ -1542,7 +1622,11 @@
     },
     {
       "module": "Services/Statechart/PosixStatechartChannel.cs",
-      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixChannelTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartSocket.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixChannelTests.cs"]
     },
     {
       "module": "Services/Statechart/PosixStatechartFiles.cs",
@@ -1555,6 +1639,18 @@
     {
       "module": "Services/Statechart/PosixStatechartOwner.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartRun.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartDescriptors.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+    },
+    {
+      "module": "Services/Statechart/PosixStatechartChild.cs",
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
     },
     {
       "module": "Services/Statechart/StatechartLifetime.cs",

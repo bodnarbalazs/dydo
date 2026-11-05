@@ -70,6 +70,7 @@ init mode.
 | `dydo clean` | Remove linked worktrees, archiving their uncommitted work first. |
 | `dydo pr-ready` | Check a tree is committed and pushed before a PR opens. |
 | `dydo map` | Serve a read-only map of a Linear Project on localhost. |
+| `dydo survey` | Print a read-only digest of a Linear Project's lanes. |
 | `dydo completions`, `version`, `help` | Shell and utility commands. |
 
 See the full [command reference](https://github.com/bodnarbalazs/dydo/blob/master/dydo/reference/dydo-commands.md).

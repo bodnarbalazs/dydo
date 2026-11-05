@@ -1,4 +1,4 @@
-import { Background, BackgroundVariant, Controls, MiniMap, Panel, ReactFlow, useReactFlow, type NodeMouseHandler } from '@xyflow/react';
+import { Background, BackgroundVariant, Controls, MiniMap, Panel, ReactFlow, useReactFlow, useStore, type NodeMouseHandler } from '@xyflow/react';
 import { useEffect, useMemo, useRef } from 'react';
 import type { Issue } from '../api/types';
 import type { MapFlow, MapFlowNode } from '../layout/toFlow';
@@ -16,15 +16,19 @@ interface MapCanvasProps {
   focus: string | null;
   /** Changes whenever the whole map should be fitted again, e.g. a new graph or Collapse all. */
   fitKey: number;
+  /** Changes whenever the focus should be centred again on the layout it comes with, e.g. after a plate toggle moved it. */
+  centreKey: number;
   /** The latest refresh's marks, or null when nothing is animating. */
   cascade: Cascade | null;
   onReady?: () => void;
+  /** Called once the canvas draws this flow's nodes, an effect after they are handed down. */
+  onDrawn: () => void;
   onFocus: (id: string) => void;
   onOpenExternal: (issue: Issue) => void;
   onTogglePlate: (id: string) => void;
 }
 
-export function MapCanvas({ flow, focus, fitKey, cascade, onReady, onFocus, onOpenExternal, onTogglePlate }: MapCanvasProps) {
+export function MapCanvas({ flow, focus, fitKey, centreKey, cascade, onReady, onDrawn, onFocus, onOpenExternal, onTogglePlate }: MapCanvasProps) {
   const nodes = useMemo(
     () => flow.nodes.map((node) => ({ ...node, selected: node.id === focus, ...marked(cascade?.nodes.get(node.id)) })),
     [flow.nodes, focus, cascade],
@@ -57,7 +61,8 @@ export function MapCanvas({ flow, focus, fitKey, cascade, onReady, onFocus, onOp
           className={cascade?.glide === true ? 'refresh-glide' : undefined}
           style={TIMING_PROPERTIES}
         >
-          <Viewport nodes={nodes} focus={focus} fitKey={fitKey} onReady={onReady} />
+          <Viewport nodes={nodes} focus={focus} fitKey={fitKey} centreKey={centreKey} onReady={onReady} />
+          <Drawn nodes={nodes} onDrawn={onDrawn} />
           {/* Graph paper: a faint line every 24 px under a stronger one every five cells. */}
           <Background id="minor" variant={BackgroundVariant.Lines} gap={24} color="var(--grid-minor)" />
           <Background id="major" variant={BackgroundVariant.Lines} gap={120} color="var(--grid-major)" />
@@ -83,11 +88,28 @@ function marked(mark: NodeMark | EdgeMark | undefined): { className?: string; st
   return { className: `refresh-${mark.kind}`, ...delay };
 }
 
-/** Fits the map on a new layout request and centres the focused node whenever focus moves. */
-function Viewport({ nodes, focus, fitKey, onReady }: { nodes: MapFlowNode[]; focus: string | null; fitKey: number; onReady: (() => void) | undefined }) {
+/** React Flow takes the nodes it is handed into its store, and draws them, only in an effect after that render. */
+function Drawn({ nodes, onDrawn }: { nodes: MapFlowNode[]; onDrawn: () => void }) {
+  const drawn = useStore((state) => state.nodes);
+  useEffect(() => {
+    if (drawn === nodes) onDrawn();
+  }, [drawn, nodes, onDrawn]);
+  return null;
+}
+
+interface ViewportProps {
+  nodes: MapFlowNode[];
+  focus: string | null;
+  fitKey: number;
+  centreKey: number;
+  onReady: (() => void) | undefined;
+}
+
+/** Fits the map on a new layout request and centres the focused node whenever focus moves or a layout asks again. */
+function Viewport({ nodes, focus, fitKey, centreKey, onReady }: ViewportProps) {
   const { fitView } = useReactFlow();
   const fitted = useRef<{ key: number; ready: Promise<boolean> } | null>(null);
-  const centred = useRef<string | null>(null);
+  const centred = useRef<{ id: string | null; key: number } | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -97,11 +119,11 @@ function Viewport({ nodes, focus, fitKey, onReady }: { nodes: MapFlowNode[]; foc
       // React Flow defers an empty fit indefinitely; only populated layouts need fitting.
       fitted.current = null;
     } else if (fitted.current?.key !== fitKey) {
-      centred.current = target;
+      centred.current = { id: target, key: centreKey };
       const fit = target === null ? fitView({ padding: 0.04 }) : fitView({ nodes: [{ id: target }], maxZoom: 1, duration: 0 });
       fitted.current = { key: fitKey, ready: fit };
-    } else if (target !== null && centred.current !== target) {
-      centred.current = target;
+    } else if (target !== null && (centred.current?.id !== target || centred.current.key !== centreKey)) {
+      centred.current = { id: target, key: centreKey };
       void fitView({ nodes: [{ id: target }], maxZoom: 1, minZoom: 0.6, duration: 300 });
     }
     void (fitted.current?.ready ?? Promise.resolve(false)).then(() => {
@@ -110,6 +132,6 @@ function Viewport({ nodes, focus, fitKey, onReady }: { nodes: MapFlowNode[]; foc
       });
     });
     return () => { live = false; cancelAnimationFrame(frame); };
-  }, [nodes, focus, fitKey, fitView, onReady]);
+  }, [nodes, focus, fitKey, centreKey, fitView, onReady]);
   return null;
 }

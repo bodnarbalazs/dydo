@@ -3,6 +3,7 @@ namespace DynaDocs.Tests.Statechart;
 using DynaDocs.Services.Statechart;
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 public class StatechartManagedTests
@@ -220,6 +221,73 @@ public class StatechartManagedTests
         Assert.Equal(executable ? [] : ["java"], managed.Inspect().Damaged);
         Assert.Equal(mode, File.GetUnixFileMode(java));
     }
+
+    // Stand-in archives arrive from loopback under a test-built lock and face the real fetch, integrity check, extraction,
+    // readiness and placement; a later release finds them stale and re-stamps them by a full proof without reinstalling.
+    [SkippableFact]
+    [UnsupportedOSPlatform("windows")]
+    public async Task AnApprovedInstallFetchesVerifiesProvesAndPlacesEveryLockedComponent()
+    {
+        Skip.IfNot(OperatingSystem.IsLinux(), "POSIX ownership runs on Linux.");
+        StatechartExecutable.RelaunchThrough(StatechartTestBinary.Start().FileName);
+        using var scope = new StatechartTestDirectory();
+        var log = Path.Combine(scope.Path, "java.log");
+        var served = StatechartStandIns.Components(log, StatechartStandIns.CleanRun);
+        await StatechartStandIns.Serve(served, async root =>
+        {
+            var assets = StatechartStandIns.Assets(StatechartStandIns.Lock(root, served, StatechartStandIns.Sha256(served["/tlc/tla2tools.jar"])));
+            var home = new StatechartHome(Path.Combine(scope.Path, "assets"), Path.Combine(scope.Path, "dependencies"), Path.Combine(scope.Path, "state"));
+            var managed = new StatechartManaged(home, assets, RuntimeInformation.RuntimeIdentifier);
+            var payload = await assets.ExtractAsync(home.Assets, CancellationToken.None);
+            var installed = await managed.InstallAsync(new(null, null, null, null), payload, CancellationToken.None);
+            Assert.Empty(StatechartManaged.Missing(installed));
+            Assert.Equal(installed, managed.Read());
+            Assert.All(new[] { installed.Node!, installed.Java!, installed.Tlc!, installed.Renderer! },
+                path => Assert.StartsWith(managed.Root + Path.DirectorySeparatorChar, path));
+            Assert.Equal(served["/tlc/tla2tools.jar"], File.ReadAllBytes(installed.Tlc!));
+            Assert.All(Receipts(managed.Root), receipt =>
+            {
+                Assert.Equal(assets.Release, receipt["release"]!.GetValue<string>());
+                Assert.True(receipt["readiness"]!["sanyAndTlc"]!.GetValue<bool>());
+            });
+            Assert.Empty(Directory.GetDirectories(Path.GetDirectoryName(managed.Root)!, ".install-*"));
+            foreach (var receipt in Directory.GetFiles(managed.Root, ".ready.json", SearchOption.AllDirectories))
+            {
+                var identity = JsonNode.Parse(File.ReadAllText(receipt))!.AsObject();
+                identity["release"] = "0.0.1";
+                File.WriteAllText(receipt, identity.ToJsonString());
+            }
+            var later = new StatechartManaged(home, assets, RuntimeInformation.RuntimeIdentifier);
+            Assert.Equal(["node", "java", "tlc", "pele"], later.Inspect().Stale);
+            Assert.True(await later.RestampAsync(later.Read(), payload, CancellationToken.None));
+            Assert.All(Receipts(managed.Root), receipt => Assert.Equal(assets.Release, receipt["release"]!.GetValue<string>()));
+            Assert.False(await later.RestampAsync(later.Read(), payload, CancellationToken.None));
+            Assert.Equal(installed, later.Read());
+        });
+        Assert.Equal(2, File.ReadAllLines(log).Count(call => call.Contains("dydo.statechart.LoopbackTlc", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task AServedArchiveThatDiffersFromItsLockIsRejectedAndNothingIsPlaced()
+    {
+        using var scope = new StatechartTestDirectory();
+        var served = StatechartStandIns.Components(Path.Combine(scope.Path, "java.log"), StatechartStandIns.CleanRun);
+        await StatechartStandIns.Serve(served, async root =>
+        {
+            var assets = StatechartStandIns.Assets(StatechartStandIns.Lock(root, served, StatechartStandIns.Sha256(served["/tlc/tla2tools.jar"])));
+            served["/node/node.tar.gz"] = StatechartStandIns.TarGz(("node-v26.13.0-linux/bin/node", "#!/bin/sh\necho substituted\n"));
+            var home = new StatechartHome(Path.Combine(scope.Path, "assets"), Path.Combine(scope.Path, "dependencies"), Path.Combine(scope.Path, "state"));
+            var managed = new StatechartManaged(home, assets, RuntimeInformation.RuntimeIdentifier);
+            var error = await Assert.ThrowsAsync<IOException>(() =>
+                managed.InstallAsync(new(null, null, null, null), Path.Combine(scope.Path, "unused-payload"), CancellationToken.None));
+            Assert.Equal("Locked statechart dependency integrity mismatch: node", error.Message);
+            Assert.Equal([".statechart-store"], Directory.GetFileSystemEntries(managed.Root).Select(Path.GetFileName));
+            Assert.Empty(Directory.GetDirectories(Path.GetDirectoryName(managed.Root)!, ".install-*"));
+        });
+    }
+
+    private static JsonObject[] Receipts(string root) => Directory.GetFiles(root, ".ready.json", SearchOption.AllDirectories)
+        .Select(receipt => JsonNode.Parse(File.ReadAllText(receipt))!.AsObject()).ToArray();
 
     // A verified linux-x64 java component with a synthetic lock row.
     [UnsupportedOSPlatform("windows")]

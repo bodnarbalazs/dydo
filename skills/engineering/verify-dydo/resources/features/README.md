@@ -15,5 +15,6 @@ never host-bound agent checkouts. RUN/evidence survives cleanup. Use
 limitations. One successful journey is an initial demonstration, not full 3.6.0 release coverage.
 
 The CLI needs no login. Viewer/Linear journeys need separately commissioned fixtures and service
-access; they are not covered here. Host approval requires an actual host and user: synthetic hook
-JSON cannot prove it. The public CLI has no machine-state isolation option.
+access; they are not covered here. The mode-set warning prevents accidents and authenticates no
+role or human approval. Synthetic hook JSON cannot prove the live officer workflow. The public
+CLI has no machine-state isolation option.

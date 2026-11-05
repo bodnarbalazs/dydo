@@ -1491,6 +1491,112 @@ public class BashCommandAnalyzerTests
         Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
     }
 
+    // DYD-509: Python a runner's run subcommand starts reads stdin as Python at command position
+    // does, with the runner's and run's options between, as the inline -c refusal already reaches.
+    [Theory]
+    [InlineData("uv run python - <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("poetry run python3 -")]
+    [InlineData("printf 'print(1)' | uv run python")]
+    [InlineData("uv run python < x.py")]
+    [InlineData("cat x.py | pdm run python3 -u")]
+    [InlineData("uv run --with requests python -")]
+    [InlineData("uv run -- python -")]
+    [InlineData("uv --directory tools run python -")]
+    [InlineData("conda run -n env python3 -u - <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("uv run -p python3.12 python -")]
+    [InlineData("sudo uv run python -")]
+    [InlineData("bash -c \"cat x.py | uv run python\"")]
+    // An option's value named run is no subcommand: the run after it still starts Python.
+    [InlineData("uv --directory run run python -")]
+    [InlineData("uv --project run run python -")]
+    [InlineData("poetry --directory run run python3 -")]
+    [InlineData("uv --directory run run python < input.txt")]
+    [InlineData("printf 'print(1)' | uv --directory run run python")]
+    public void PythonARunSubcommandStartsOnStdin_IsRefused(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, $"Expected dangerous: {command}");
+        Assert.Contains("stdin", reason);
+        Assert.Contains("file tools", reason);
+    }
+
+    // A run subcommand's script, module or other program, a mention of the words, and a lookup,
+    // a process search or an install that names python run no program from stdin.
+    [Theory]
+    [InlineData("uv run python script.py")]
+    [InlineData("poetry run pytest")]
+    [InlineData("uv run python -m pytest")]
+    [InlineData("ps aux | grep python")]
+    [InlineData("pgrep -f python")]
+    [InlineData("which python3")]
+    [InlineData("pip install python-dateutil")]
+    [InlineData("uv pip install requests")]
+    [InlineData("git commit -m \"Refuse uv run python - on stdin\"")]
+    [InlineData("cat > notes.md <<'EOF'\nuv run python - reads stdin\nEOF")]
+    [InlineData("command -v python3")]
+    [InlineData("ls *.py | xargs python3")]
+    [InlineData("ls *.py | xargs uv run python")]
+    [InlineData("uv run tools/gen.py python -")]
+    [InlineData("echo uv run python -")]
+    [InlineData("printf 'x' | uv run python tools/gen.py")]
+    [InlineData("gh run list")]
+    [InlineData("uv --directory run run python tools/x.py")]
+    [InlineData("uv --directory run run python -m pytest")]
+    [InlineData("uv run --with=requests tools/gen.py python -")]
+    public void RunSubcommandWithoutAPythonStdinProgram_StaysAllowed(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    // A known, documented over-refusal: the shape names no tool, so a python word another tool's
+    // run receives while something feeds it reads as Python on stdin.
+    [Fact]
+    public void PythonWordAnotherToolsRunReceivesWhileFed_IsRefused()
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns("echo x | cargo run -- python");
+
+        Assert.True(dangerous);
+        Assert.Contains("stdin", reason);
+    }
+
+    // The documented limit: Python behind a runner with no run subcommand, or behind a second
+    // runner a run subcommand starts, is not recognised.
+    [Theory]
+    [InlineData("uvx python -")]
+    [InlineData("pyenv exec python -")]
+    [InlineData("uv run poetry run python -")]
+    public void PythonBehindARunnerWithoutARunSubcommand_IsNotRecognised(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.False(dangerous, $"Unexpected dangerous command: {command}: {reason}");
+    }
+
+    [Theory]
+    [InlineData("python -")]
+    [InlineData("python3 -u - <<'EOF'\nprint(1)\nEOF")]
+    [InlineData("cat x.py | python3")]
+    public void DirectPythonOnStdin_KeepsItsRefusal(string command)
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, $"Expected dangerous: {command}");
+        Assert.Equal("Python program on stdin bypasses file operation analysis, as python -c does. "
+            + "Change files with the file tools or write a script file; a change to a protected file goes to the user.", reason);
+    }
+
+    [Fact]
+    public void InlinePythonARunSubcommandStarts_StaysRefused()
+    {
+        var (dangerous, reason) = _analyzer.CheckDangerousPatterns("uv run python -c 'print(1)'");
+
+        Assert.True(dangerous);
+        Assert.Equal("Inline interpreter execution bypasses file operation analysis. Write a script file instead.", reason);
+    }
+
     // GS-01: a PowerShell assignment from a literal Get-Content is a read of that path, not an
     // unknown command writing it.
     [Theory]

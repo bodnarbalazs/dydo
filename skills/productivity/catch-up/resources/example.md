@@ -125,4 +125,6 @@ A TeasePlayer catch-up asked you to approve "option B" for "creator-code admissi
 
 🤖 **A fresh reviewer judges the rewrite against your shape; the captain then returns it to the admiral.**
 
+❗ **The merge waits on a CI fix that the release captain owns.**
+
 💬 **Later: you read the example in a walkthrough and give your verdict on the wording.** Your approval is the last step before the skill is done. (DYD-442)

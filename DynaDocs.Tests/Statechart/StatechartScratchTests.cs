@@ -27,7 +27,6 @@ public class StatechartScratchTests
     [Fact]
     public void UncertainDrainRetainsRegisteredScratchAndDurableReason()
     {
-        if (!OperatingSystem.IsWindows()) return;
         using var scope = new StatechartTestDirectory();
         using var scratch = StatechartScratch.Reserve(scope.Path, scope.Path);
         scratch.Register();
@@ -41,7 +40,6 @@ public class StatechartScratchTests
     [InlineData(true)]
     public void ReplacedOrUnregisteredScratchIsRetained(bool replace)
     {
-        if (!OperatingSystem.IsWindows()) return;
         using var scope = new StatechartTestDirectory();
         using var scratch = StatechartScratch.Reserve(scope.Path, scope.Path);
         if (replace)
@@ -53,5 +51,6 @@ public class StatechartScratchTests
         }
         Assert.False(scratch.CleanupAfterDrain());
         Assert.True(Directory.Exists(scratch.Path));
+        Assert.Contains("retained: unregistered: no deletion authority", File.ReadAllText(scratch.Journal));
     }
 }

@@ -67,44 +67,7 @@ public static class StatechartCommand
         {
             if (!OperatingSystem.IsWindows())
                 throw new PlatformNotSupportedException("Native statechart diagnostics on this host still require platform validation; use the supported statechart skill entry.");
-            var assets = new StatechartAssets();
-            var home = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            var root = Path.Combine(home, "dydo", "statechart");
-            var cache = StatechartPaths.Root("DYDO_STATECHART_ASSET_ROOT", Path.Combine(root, "assets"));
-            var state = StatechartPaths.Root("DYDO_STATECHART_STATE_ROOT", Path.Combine(root, "state"));
-            StatechartPaths.EnsureDirectory(state);
-            var payload = await assets.ExtractAsync(cache, CancellationToken.None);
-            await using var lifetime = await WindowsStatechartLifetime.StartAsync(StatechartExecutable.Current(),
-                state, state, Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar));
-            await lifetime.RegisterAsync();
-            var node = StatechartPrerequisites.Find("node", Environment.GetEnvironmentVariable("PATH"));
-            var java = StatechartPrerequisites.Java(Environment.CurrentDirectory,
-                Environment.GetEnvironmentVariable("JAVA"), Environment.GetEnvironmentVariable("PATH"));
-            var tlc = StatechartPrerequisites.Tlc(Environment.CurrentDirectory, Environment.GetEnvironmentVariable("TLA2TOOLS"));
-            var nodeVersion = node is null ? "missing" : await StatechartProbe.CaptureAsync(node, "--version", lifetime);
-            var javaVersion = java is null ? "missing" : await StatechartProbe.CaptureAsync(java, "-version", lifetime);
-            if (!await lifetime.CompleteAsync()) throw new IOException("Statechart readiness cleanup drain is uncertain; scratch retained.");
-            using var buffer = new MemoryStream();
-            using (var json = new Utf8JsonWriter(buffer))
-            {
-                json.WriteStartObject();
-                json.WriteNumber("schema", 1);
-                json.WriteString("state", "diagnostic");
-                json.WriteBoolean("ready", false);
-                json.WriteString("payload", payload);
-                json.WriteString("payloadDigest", assets.Digest);
-                json.WriteString("lockDigest", assets.LockDigest);
-                json.WriteString("node", node);
-                json.WriteString("nodeVersion", nodeVersion);
-                json.WriteBoolean("nodeCompatible", StatechartPrerequisites.Compatible("node", nodeVersion));
-                json.WriteString("java", java);
-                json.WriteString("javaVersion", javaVersion);
-                json.WriteBoolean("javaCompatible", StatechartPrerequisites.Compatible("java", javaVersion));
-                json.WriteString("tlc", tlc);
-                json.WriteString("renderer", "managed renderer readiness receipt required");
-                json.WriteEndObject();
-            }
-            await output.WriteLineAsync(System.Text.Encoding.UTF8.GetString(buffer.ToArray()));
+            await DiagnoseAsync(output);
             return 2;
         }
         catch (Exception error) when (error is IOException or InvalidDataException or InvalidOperationException or System.ComponentModel.Win32Exception or PlatformNotSupportedException)
@@ -112,5 +75,59 @@ public static class StatechartCommand
             await output.WriteLineAsync("Statechart diagnostics: " + error.Message);
             return 2;
         }
+    }
+
+    // Probes local candidates under a Job Object lifetime, so the diagnosis itself runs only on Windows.
+    private static async Task DiagnoseAsync(TextWriter output)
+    {
+        var assets = new StatechartAssets();
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var root = Path.Combine(home, "dydo", "statechart");
+        var cache = StatechartPaths.Root("DYDO_STATECHART_ASSET_ROOT", Path.Combine(root, "assets"));
+        var state = StatechartPaths.Root("DYDO_STATECHART_STATE_ROOT", Path.Combine(root, "state"));
+        StatechartPaths.EnsureDirectory(state);
+        var payload = await assets.ExtractAsync(cache, CancellationToken.None);
+        await using var lifetime = await WindowsStatechartLifetime.StartAsync(StatechartExecutable.Current(),
+            state, state, Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar));
+        await lifetime.RegisterAsync();
+        var node = StatechartPrerequisites.Find("node", Environment.GetEnvironmentVariable("PATH"));
+        var java = StatechartPrerequisites.Java(Environment.CurrentDirectory,
+            Environment.GetEnvironmentVariable("JAVA"), Environment.GetEnvironmentVariable("PATH"));
+        var tlc = StatechartPrerequisites.Tlc(Environment.CurrentDirectory, Environment.GetEnvironmentVariable("TLA2TOOLS"),
+            assets.CheckerDigest);
+        var nodeVersion = await VersionAsync(node, "--version", lifetime);
+        var javaVersion = await VersionAsync(java, "-version", lifetime);
+        if (!await lifetime.CompleteAsync()) throw new IOException("Statechart readiness cleanup drain is uncertain; scratch retained.");
+        await output.WriteLineAsync(Report(assets, payload, node, nodeVersion, java, javaVersion, tlc));
+    }
+
+    private static async Task<string> VersionAsync(string? runtime, string flag, StatechartLifetime lifetime) => runtime is null
+        ? "missing" : await StatechartProbe.CaptureAsync(runtime, [flag], lifetime, Environment.CurrentDirectory, CancellationToken.None);
+
+    // The offline diagnosis never claims chart readiness: only a managed renderer receipt can.
+    internal static string Report(StatechartAssets assets, string payload, string? node, string nodeVersion,
+        string? java, string javaVersion, string? tlc)
+    {
+        using var buffer = new MemoryStream();
+        using (var json = new Utf8JsonWriter(buffer))
+        {
+            json.WriteStartObject();
+            json.WriteNumber("schema", 1);
+            json.WriteString("state", "diagnostic");
+            json.WriteBoolean("ready", false);
+            json.WriteString("payload", payload);
+            json.WriteString("payloadDigest", assets.Digest);
+            json.WriteString("lockDigest", assets.LockDigest);
+            json.WriteString("node", node);
+            json.WriteString("nodeVersion", nodeVersion);
+            json.WriteBoolean("nodeCompatible", StatechartPrerequisites.Compatible("node", nodeVersion));
+            json.WriteString("java", java);
+            json.WriteString("javaVersion", javaVersion);
+            json.WriteBoolean("javaCompatible", StatechartPrerequisites.Compatible("java", javaVersion));
+            json.WriteString("tlc", tlc);
+            json.WriteString("renderer", "managed renderer readiness receipt required");
+            json.WriteEndObject();
+        }
+        return System.Text.Encoding.UTF8.GetString(buffer.ToArray());
     }
 }

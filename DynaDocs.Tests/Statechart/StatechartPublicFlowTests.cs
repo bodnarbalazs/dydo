@@ -3,6 +3,7 @@ namespace DynaDocs.Tests.Statechart;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DynaDocs.Services.Statechart;
 using System.Runtime.Versioning;
 
@@ -140,34 +141,267 @@ public class StatechartPublicFlowTests
         Assert.Equal("complete", File.ReadAllText(Path.Combine(done, "report.md")));
     }
 
+    [Theory]
+    [InlineData(1, 1, false, 1)]
+    [InlineData(0, 0, false, 0)]
+    [InlineData(1, 0, true, 0)]
+    [InlineData(1, 0, false, 2)]
+    [InlineData(7, 7, false, 2)]
+    public async Task OnlyACompleteVerdictTheCheckerExitAgreesWithIsPublished(int verdict, int status, bool renderError, int expected)
+    {
+        using var scope = new StatechartTestDirectory();
+        var done = Directory.CreateDirectory(Path.Combine(scope.Path, "stage", "done")).FullName;
+        File.WriteAllText(Path.Combine(scope.Path, "stage", "verdict.json"), "{\"verdict\":" + verdict + "}");
+        File.WriteAllText(Path.Combine(done, "report.md"), "Bound breaks");
+        if (renderError) File.WriteAllText(Path.Combine(done, "render-error.json"), "{}");
+        var destination = Path.Combine(scope.Path, "caller", "chart");
+        using var output = new StringWriter();
+        Assert.Equal(expected, await StatechartRunner.PublishAsync(Path.Combine(scope.Path, "stage"), status, destination, output,
+            CancellationToken.None));
+        Assert.Equal(expected != 2, File.Exists(Path.Combine(destination, "report.md")));
+        Assert.Equal(expected == 2 ? "" : $"Bound breaks{Environment.NewLine}Wrote {destination}{Environment.NewLine}", output.ToString());
+    }
+
+    [Fact]
+    public void PublicationReplacesOnlyAnEmptyPlainDestination()
+    {
+        using var scope = new StatechartTestDirectory();
+        var done = Directory.CreateDirectory(Path.Combine(scope.Path, "done")).FullName;
+        File.WriteAllText(Path.Combine(done, "report.md"), "complete");
+        var destination = Directory.CreateDirectory(Path.Combine(scope.Path, "output")).FullName;
+        StatechartRunner.Publish(done, destination);
+        Assert.Equal("complete", File.ReadAllText(Path.Combine(destination, "report.md")));
+        Assert.False(Directory.Exists(done));
+    }
+
+    [Theory]
+    [InlineData("verdict.json")]
+    [InlineData("done/report.md")]
+    public async Task AnIncompleteStageIsNeverPublished(string missing)
+    {
+        using var scope = new StatechartTestDirectory();
+        Directory.CreateDirectory(Path.Combine(scope.Path, "done"));
+        File.WriteAllText(Path.Combine(scope.Path, "verdict.json"), "{\"verdict\":1}");
+        File.WriteAllText(Path.Combine(scope.Path, "done", "report.md"), "Bound breaks");
+        File.Delete(Path.Combine(scope.Path, missing));
+        var destination = Path.Combine(scope.Path, "chart");
+        Assert.Equal(2, await StatechartRunner.PublishAsync(scope.Path, 1, destination, TextWriter.Null, CancellationToken.None));
+        Assert.False(Directory.Exists(destination));
+    }
+
+    [Fact]
+    public async Task ACancelledRunPublishesNothing()
+    {
+        using var scope = new StatechartTestDirectory();
+        Directory.CreateDirectory(Path.Combine(scope.Path, "done"));
+        File.WriteAllText(Path.Combine(scope.Path, "verdict.json"), "{\"verdict\":0}");
+        File.WriteAllText(Path.Combine(scope.Path, "done", "report.md"), "No error");
+        var destination = Path.Combine(scope.Path, "chart");
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            StatechartRunner.PublishAsync(scope.Path, 0, destination, TextWriter.Null, new CancellationToken(canceled: true)));
+        Assert.False(Directory.Exists(destination));
+    }
+
+    [SkippableTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PublicationRetainsAForeignFileOrDanglingLinkAtTheDestination(bool link)
+    {
+        Skip.If(link && OperatingSystem.IsWindows(), "Creating symbolic links needs Windows developer mode.");
+        using var scope = new StatechartTestDirectory();
+        var done = Directory.CreateDirectory(Path.Combine(scope.Path, "done")).FullName;
+        File.WriteAllText(Path.Combine(done, "report.md"), "complete");
+        var destination = Path.Combine(scope.Path, "output");
+        if (link) File.CreateSymbolicLink(destination, Path.Combine(scope.Path, "missing"));
+        else File.WriteAllText(destination, "foreign");
+        Assert.Throws<IOException>(() => StatechartRunner.Publish(done, destination));
+        Assert.Equal("complete", File.ReadAllText(Path.Combine(done, "report.md")));
+        Assert.Equal(link, new FileInfo(destination).LinkTarget is not null);
+        if (!link) Assert.Equal("foreign", File.ReadAllText(destination));
+    }
+
+    // Fake runtimes answer the version probes, so discovery runs its real owned probes without Node or Java.
+    [SkippableTheory]
+    [UnsupportedOSPlatform("windows")]
+    [InlineData("v26.13.0", "21.0.1", "tlc,pele")]
+    [InlineData("v22.17.0", "1.8.0_402", "node,java,tlc,pele")]
+    public async Task DiscoveredRuntimesLeaveThePlanOnlyWhenTheirProbedVersionIsSupported(string node, string java, string missing)
+    {
+        Skip.If(OperatingSystem.IsWindows(), "POSIX modes decide whether a runtime can start.");
+        using var scope = new StatechartTestDirectory();
+        Model(scope.Path);
+        File.WriteAllText(Path.Combine(scope.Path, "view.mjs"), "export default {};\n");
+        var result = await Invoke(scope.Path, ["statechart", "spaced model.tla", "--view", "view.mjs"], path: Runtimes(scope.Path, node, java));
+        Assert.Equal(3, result.Exit);
+        Assert.Equal("", result.Error);
+        using var plan = JsonDocument.Parse(result.Output);
+        Assert.Equal(missing, string.Join(",", plan.RootElement.GetProperty("missing").EnumerateArray()
+            .Select(item => item.GetProperty("name").GetString())));
+        Assert.Equal(Path.Combine(scope.Path, "view.mjs"), plan.RootElement.GetProperty("view").GetString());
+        Assert.All(Directory.GetFiles(Path.Combine(scope.Path, "state"), "scratch-*.journal"), journal =>
+            Assert.Contains("deleted-after-authoritative-drain", File.ReadAllText(journal)));
+    }
+
+    [SkippableFact]
+    [UnsupportedOSPlatform("windows")]
+    public async Task AnExplicitJavaOlderThanElevenIsAnErrorWithoutAPlan()
+    {
+        Skip.If(OperatingSystem.IsWindows(), "POSIX modes decide whether a runtime can start.");
+        using var scope = new StatechartTestDirectory();
+        Model(scope.Path);
+        var bin = Runtimes(scope.Path, "v26.13.0", "1.8.0_402");
+        var result = await Invoke(scope.Path, ["statechart", "spaced model.tla"], java: Path.Combine(bin, "java"), path: bin);
+        Assert.Equal(2, result.Exit);
+        Assert.Equal("Statechart: Explicit JAVA must execute Java11 or later.", result.Error.Trim());
+        Assert.Equal("", result.Output);
+        Assert.False(Directory.Exists(Path.Combine(scope.Path, "state", "requests")));
+    }
+
+    [Fact]
+    public async Task ResumingACompletedRequestReturnsItsRecordedVerdictWithoutPreparingAgain()
+    {
+        using var scope = new StatechartTestDirectory();
+        Model(scope.Path);
+        var initial = await Invoke(scope.Path, ["statechart", "spaced model.tla", "--out", "chart"]);
+        Assert.Equal(3, initial.Exit);
+        using var plan = JsonDocument.Parse(initial.Output);
+        var path = plan.RootElement.GetProperty("request").GetString()!;
+        var store = new StatechartRequests(new StatechartHome(Path.Combine(scope.Path, "assets"), Path.Combine(scope.Path, "dependencies"),
+            Path.Combine(scope.Path, "state")), new StatechartAssets(), RuntimeInformation.RuntimeIdentifier);
+        var request = store.Load(path, validateInputs: false);
+        Directory.CreateDirectory(request.Output);
+        File.WriteAllText(Path.Combine(request.Output, "report.md"), "Bound breaks");
+        store.Complete(path, request, 1);
+        var resumed = await Invoke(scope.Path, ["statechart", "resume", "--request", path]);
+        Assert.Equal(1, resumed.Exit);
+        Assert.Equal(("", ""), (resumed.Output, resumed.Error));
+        Assert.False(Directory.Exists(Path.Combine(scope.Path, "dependencies")));
+        Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(path)!, "failure-*.json"));
+    }
+
+    // The approved continuation installs only through the network; offline, it fails without placing any component.
+    [Fact]
+    public async Task AnApprovedResumeWithoutNetworkKeepsTheRequestAndInstallsNothing()
+    {
+        using var scope = new StatechartTestDirectory();
+        Model(scope.Path);
+        var initial = await Invoke(scope.Path, ["statechart", "spaced model.tla"]);
+        Assert.Equal(3, initial.Exit);
+        using var plan = JsonDocument.Parse(initial.Output);
+        var path = plan.RootElement.GetProperty("request").GetString()!;
+        var resumed = await Invoke(scope.Path, ["statechart", "resume", "--request", path]);
+        Assert.Equal(2, resumed.Exit);
+        Assert.StartsWith("Statechart: ", resumed.Error);
+        Assert.True(File.Exists(path));
+        Assert.Single(Directory.GetFiles(Path.GetDirectoryName(path)!, "failure-*.json"));
+        var store = Path.Combine(scope.Path, "dependencies", new StatechartAssets().LockDigest);
+        Assert.Empty(Directory.GetDirectories(store, ".install-*"));
+        Assert.Empty(Directory.GetDirectories(Path.Combine(store, RuntimeInformation.RuntimeIdentifier)));
+    }
+
+    // A framework-dependent dydo runs under the dotnet host; its relaunches name that host and the same assembly.
+    [SkippableFact]
+    public async Task AFrameworkDependentLaunchContinuesThroughTheSameHostAndAssembly()
+    {
+        var assembly = Path.ChangeExtension(StatechartTestBinary.Start().FileName, ".dll");
+        Skip.IfNot(File.Exists(assembly), "The selected dydo build has no framework-dependent assembly.");
+        var host = Path.GetFileNameWithoutExtension(Environment.ProcessPath) == "dotnet"
+            ? Environment.ProcessPath : Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
+        Skip.If(host is null, "No dotnet host is known to this test process.");
+        using var scope = new StatechartTestDirectory();
+        Model(scope.Path);
+        var launcher = new ProcessStartInfo(host!);
+        launcher.ArgumentList.Add(assembly);
+        var result = await Invoke(scope.Path, ["statechart", "spaced model.tla"], launcher: launcher);
+        Assert.True(result.Exit == 3, result.Error);
+        using var plan = JsonDocument.Parse(result.Output);
+        var continuation = plan.RootElement.GetProperty("installAndContinue").EnumerateArray().Select(item => item.GetString()!).ToArray();
+        Assert.Equal("dotnet", Path.GetFileNameWithoutExtension(continuation[0]));
+        Assert.Equal([assembly, "statechart", "resume", "--request", plan.RootElement.GetProperty("request").GetString()!], continuation[1..]);
+    }
+
+    // The flow in-process under a test-built lock: stand-in components arrive from loopback and face every real check. Only
+    // the run is substituted, because the real one replaces the calling process with the checking runtime.
+    [SkippableFact]
+    [UnsupportedOSPlatform("windows")]
+    public async Task AnApprovedResumeInstallsProvesAndContinuesThenLaterRunsReuseOrRestampTheStore()
+    {
+        Skip.IfNot(OperatingSystem.IsLinux(), "POSIX ownership runs on Linux.");
+        StatechartExecutable.RelaunchThrough(StatechartTestBinary.Start().FileName);
+        using var scope = new StatechartTestDirectory();
+        var caller = Directory.CreateDirectory(Path.Combine(scope.Path, "caller")).FullName;
+        Model(caller);
+        var log = Path.Combine(scope.Path, "java.log");
+        var served = StatechartStandIns.Components(log, StatechartStandIns.CleanRun);
+        var runs = new List<(string Output, string? Continuation, StatechartDependencies Dependencies)>();
+        var status = 1;
+        Task<int> Run(StatechartRequest request, StatechartDependencies dependencies, string payload, StatechartHome home,
+            TextWriter output, CancellationToken token, StatechartContinuation? continuation)
+        {
+            runs.Add((request.Output, continuation?.Path, dependencies));
+            Directory.CreateDirectory(request.Output);
+            File.WriteAllText(Path.Combine(request.Output, "report.md"), "Bound breaks");
+            return Task.FromResult(status);
+        }
+        await StatechartStandIns.WithoutCallerRuntimes(() => StatechartStandIns.Serve(served, async root =>
+        {
+            var assets = StatechartStandIns.Assets(StatechartStandIns.Lock(root, served, StatechartStandIns.Sha256(served["/tlc/tla2tools.jar"])));
+            var rid = RuntimeInformation.RuntimeIdentifier;
+            var home = new StatechartHome(Path.Combine(scope.Path, "assets"), Path.Combine(scope.Path, "dependencies"), Path.Combine(scope.Path, "state"));
+            var flow = new StatechartFlow(home, assets, rid, Run);
+            using var plan = new StringWriter();
+            Assert.Equal(3, await flow.StartAsync(["spaced model.tla", "--out", "first"], caller, plan, CancellationToken.None));
+            var path = JsonNode.Parse(plan.ToString())!["request"]!.GetValue<string>();
+            Assert.Equal(1, await flow.ResumeAsync(path, TextWriter.Null, CancellationToken.None));
+            var store = new StatechartRequests(home, assets, rid);
+            Assert.Equal(1, store.Completed(path, store.Load(path, validateInputs: false)));
+            Assert.Equal((Path.Combine(caller, "first"), path), (runs[0].Output, runs[0].Continuation));
+            var managed = new StatechartManaged(home, assets, rid);
+            Assert.Equal(managed.Read(), runs[0].Dependencies);
+
+            status = 0;
+            Assert.Equal(0, await flow.StartAsync(["spaced model.tla", "--out", "second"], caller, TextWriter.Null, CancellationToken.None));
+            Assert.Null(runs[1].Continuation);
+            foreach (var receipt in Directory.GetFiles(managed.Root, ".ready.json", SearchOption.AllDirectories))
+            {
+                var identity = JsonNode.Parse(File.ReadAllText(receipt))!.AsObject();
+                identity["release"] = "0.0.1";
+                File.WriteAllText(receipt, identity.ToJsonString());
+            }
+            Assert.Equal(0, await flow.StartAsync(["spaced model.tla", "--out", "third"], caller, TextWriter.Null, CancellationToken.None));
+            Assert.Empty(new StatechartManaged(home, assets, rid).Inspect().Stale);
+
+            var request = StatechartRequest.Capture(["spaced model.tla", "--out", "fourth"], caller, assets, rid);
+            var saved = store.Save(request);
+            status = 2;
+            Assert.Equal(2, await flow.ResumeAsync(saved, TextWriter.Null, CancellationToken.None));
+            Assert.Null(store.Completed(saved, request));
+            Assert.Equal((Path.Combine(caller, "fourth"), saved), (runs[3].Output, runs[3].Continuation));
+        }));
+        Assert.Equal(4, runs.Count);
+        // Full proofs at install and re-stamp; the other runs' quick checks probe only the version.
+        Assert.Equal(2, File.ReadAllLines(log).Count(call => call.Contains("dydo.statechart.LoopbackTlc", StringComparison.Ordinal)));
+    }
+
+    [UnsupportedOSPlatform("windows")]
+    private static string Runtimes(string root, string node, string java)
+    {
+        var bin = Directory.CreateDirectory(Path.Combine(root, "bin")).FullName;
+        foreach (var (name, script) in new[] { ("node", $"echo {node}"), ("java", $"echo 'openjdk version \"{java}\"' >&2") })
+        {
+            File.WriteAllText(Path.Combine(bin, name), "#!/bin/sh\n" + script + "\n");
+            File.SetUnixFileMode(Path.Combine(bin, name), UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        }
+        return bin;
+    }
+
     private static void Model(string root)
     {
         File.WriteAllText(Path.Combine(root, "spaced model.tla"), "---- MODULE Model ----\nVARIABLE x\nInit == x = 0\nNext == x' = x\n====\n");
         File.WriteAllText(Path.Combine(root, "spaced model.cfg"), "INIT Init\nNEXT Next\nCHECK_DEADLOCK FALSE\n");
     }
 
-    private static async Task<(int Exit, string Output, string Error)> Invoke(string root, string[] arguments, string? java = null)
-    {
-        var start = StatechartTestBinary.Start();
-        start.WorkingDirectory = root;
-        start.UseShellExecute = false;
-        start.CreateNoWindow = true;
-        start.RedirectStandardOutput = true;
-        start.RedirectStandardError = true;
-        foreach (var argument in arguments) start.ArgumentList.Add(argument);
-        foreach (var name in start.Environment.Keys.Where(name => name.StartsWith("DYDO_", StringComparison.Ordinal)).ToArray())
-            start.Environment.Remove(name);
-        start.Environment["DYDO_STATECHART_ASSET_ROOT"] = Path.Combine(root, "assets");
-        start.Environment["DYDO_STATECHART_DEPENDENCY_ROOT"] = Path.Combine(root, "dependencies");
-        start.Environment["DYDO_STATECHART_STATE_ROOT"] = Path.Combine(root, "state");
-        start.Environment["PATH"] = "";
-        start.Environment.Remove("TLA2TOOLS");
-        if (java is null) start.Environment.Remove("JAVA");
-        else start.Environment["JAVA"] = java;
-        using var child = Process.Start(start)!;
-        var output = child.StandardOutput.ReadToEndAsync();
-        var errors = child.StandardError.ReadToEndAsync();
-        await child.WaitForExitAsync();
-        return (child.ExitCode, await output, await errors);
-    }
+    private static Task<(int Exit, string Output, string Error)> Invoke(string root, string[] arguments, string? java = null,
+        string path = "", ProcessStartInfo? launcher = null) =>
+        StatechartOfflineProcess.Run(StatechartOfflineProcess.Start(root, path, arguments, java, launcher));
 }

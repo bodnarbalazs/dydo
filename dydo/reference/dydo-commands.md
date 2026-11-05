@@ -8,7 +8,7 @@ type: reference
 Complete reference for dydo's local setup, documentation, guard, worktree cleanup, validation, testing, and utility
 commands.
 Live work is managed in Linear through its official surfaces; no dydo command creates, updates,
-polls, or mirrors a Linear object; `dydo map` reads Linear on demand and keeps disposable saved maps. FutureFeatures live in Linear and are promoted by the user; historical repository records remain
+polls, or mirrors a Linear object; `dydo map` and `dydo survey` read Linear on demand, and only `dydo map` keeps disposable saved maps. FutureFeatures live in Linear and are promoted by the user; historical repository records remain
 durable evidence rather than a second work board.
 
 Commands find the project by walking up to the nearest `dydo.json`; `dydo validate` is the exception
@@ -177,8 +177,7 @@ dydo guard --command "git status"
 the call still reads its payload from stdin. The Codex hook carries no marker.
 
 In hook mode (a PreToolUse payload on stdin, no arguments) exit `0` with empty stdout allows the
-action, and exit `0` with one `permissionDecision: "deny"` object on stdout blocks it (the one
-`"ask"` is the [mode-set](#dydo-mode) rerun); the reason
+action, and exit `0` with one `permissionDecision: "deny"` object on stdout blocks it; the reason
 carries the `BLOCKED:` text, which still goes to stderr too. See [Guard System](../understand/guard-system.md)
 for why a block is not exit `2`. In diagnostic mode (the CLI-argument examples above) exit `0`
 allows and exit `2` blocks with `BLOCKED:` on stderr. **Off-limits** paths block
@@ -194,7 +193,7 @@ of [dydo pr-ready](#dydo-pr-ready).
 
 ---
 
-## Linear Command
+## Linear Commands
 
 ### dydo map
 
@@ -258,6 +257,50 @@ without it serves a page at `/` saying the viewer was not built, and `dydo map -
 `DYDO_LINEAR_ENDPOINT` replaces the Linear GraphQL URL. It is a test seam for pointing dydo map at a
 fake Linear, not a user setting.
 
+### dydo survey
+
+Print a read-only digest of one Linear Project's lanes.
+
+```bash
+dydo survey 4e6aa9da-f325-4b53-a318-deba4b1b4d26                          # by Project UUID
+dydo survey 25acbbb9a90b                                                  # by slugId
+dydo survey https://linear.app/<workspace>/project/<name>-25acbbb9a90b    # by Project URL
+```
+
+`dydo survey` reads one Project once, with the user's `LINEAR_API_KEY`, and prints plain text. It
+writes nothing, keeps nothing, and never polls: the caller decides when to run it
+([DR 063](../project/decisions/063-dydo-survey-read-only-lane-digest.md)). Without a key it prints
+the same key help as [dydo map](#dydo-map) and exits `2` before any request. It reads the Project's
+non-archived issues, the issues linked from them, their `blocks` and `related` relations, each
+issue's priority, and the Project body.
+
+The ledger is the body section under the first `##` heading containing "ledger", in any case, up to
+the next `##` heading, read as markdown. Its rows are table rows, with or without edge pipes, and
+list items with their continuation lines and the prose under them, quotes included; a nested list
+item or table row is a row of its own, and code holds no rows, no identifiers and no headings. A row
+names every issue identifier in it, bare or inside a Linear link. Closed means a `completed`, `canceled` or
+`duplicate` state; every other state, backlog and triage included, is open.
+
+The first line is `dydo survey <Project name> <UTC ISO time>: <n> findings`. Each finding follows on
+its own line, `<kind> <KEY> <title> — <reason>`, sorted by kind and then key:
+
+| Kind | Finding |
+|---|---|
+| `no-ledger` | The body has no ledger section; its key is `-`. Every open issue is then `unlaned`. |
+| `pickable` | An unstarted, unassigned Project issue with no open blocker, as the map draws it, and not already `unblocked`. |
+| `question-no-priority` | An open Project issue labelled `Question` with no priority. |
+| `stale-row` | A ledger row whose named issues in the read graph are all closed, unless it is a table row whose `State` cell, the column under a `State` header, is `done` (trimmed, any case, backticks allowed). A list item, or a row of a table with no `State` column, is always stale then. |
+| `started-unassigned` | A started Project issue with no assignee. |
+| `unblocked` | An open, unassigned issue in the Project or linked from it, with at least one `blocks` relation into it and every blocker closed. For a linked issue, only the blockers in the Project's graph are seen. |
+| `uncontracted` | An unassigned Backlog Project issue with no open blocker, waiting to be contracted to `Todo`. |
+| `unlaned` | An open Project issue that no ledger row names, nor its parent's. |
+
+A successful read exits `0`, findings or not. An argument that is not one Project UUID, slugId or
+Linear Project URL, and an unknown Project, are usage errors with exit `2`; the message names what
+Linear lacked. An API or network
+failure exits `2` with a message naming it. `DYDO_LINEAR_ENDPOINT` is the same test seam as for
+`dydo map`.
+
 ---
 
 ## Mode Command
@@ -277,7 +320,11 @@ reads the same values. One flag ships: `overnight`, `on` or `off`, default `off`
 unknown flag or value with exit `2` and changes nothing; on success it prints every flag as `show` does.
 
 `dydo mode set` from an agent meets a built-in warn nudge that `dydo.json` cannot remove or weaken. The
-first try is blocked with a reminder that only the chief of staff sets the mode. The guard reads the
+first try stops with the reminder: run this only if you are the chief of staff readying overnight
+mode or ending it; otherwise stop. On every host and direct guard invocation, the same command's
+retry passes the warning. Its marker uses the existing command-warn key: pattern hash and full
+command with whitespace runs normalized. A different command, including the opposite transition,
+gets its own warning. Hard blocks run before warnings and preserve their markers. The guard reads the
 command as the shell that runs it would, quotes, escapes, here-strings, heredocs and line
 continuations included, and splits it only on separators outside quotes. Claude Code's `Bash` tool runs
 bash and its `PowerShell` tool PowerShell; Codex, whose payload carries a `turn_id`, runs PowerShell on
@@ -292,15 +339,12 @@ as does an `@(...)` array or `(...)` group as the argument list. A PowerShell `<
 of any other program are text, so a commit message, a PR body or a here-string that mentions
 `dydo mode set`, even after a `;` inside the quotes, does not meet it. A command the guard cannot read,
 such as one with an unbalanced quote or one piping text into a shell, meets it whenever it contains
-dydo, mode and set in that order. On the rerun the guard answers `permissionDecision: "ask"` only when the hook command carries
-the `--host claude` marker `dydo init` writes into the Claude Code hook and the permission mode is
-`default`, `acceptEdits`, `plan` or `auto`, so the user approves or rejects it. The environment is not
-the signal: `CLAUDECODE=1` is inherited by a Codex session started from a Claude Code shell. Everywhere
-else, Codex, `bypassPermissions`, `dontAsk`, an unknown host or a Claude Code hook written before the
-marker existed, it denies, and the user runs the command in their own terminal, where no guard runs.
-To get the prompt on an older install, run `dydo init claude --join` to rewrite the Claude Code hook.
-The guard stops a stray agent setting the mode by accident, not a deliberate bypass such as an agent
-forging the hook marker or writing the mode file directly.
+dydo, mode and set in that order. The reminder applies equally to Claude, Codex, T3 and unknown
+hosts, independent of permission mode or hook marker. It prevents accidents, without authenticating
+the chief-of-staff role or proving human approval. After actual execution of either transition,
+independently run `dydo mode show` and verify the intended value before announcing activation or
+shutdown. A setter exit, intent, warning retry or schedule is insufficient. On failure or mismatched
+readback, report the transition incomplete and the observed state; report unknown if unreadable.
 
 ---
 
@@ -499,8 +543,11 @@ about four seconds, and never prints `no` after a successful merge).
 
 `dydo init` and `--join` write narrow allow rules for both hosts (see [dydo init](#dydo-init)),
 and the guard lets a sub-agent run it: a Merge Sub-ticket's code-writer runs it. The guard hard blocks
-for alternative merge paths are planned, pending in DYD-425. The Claude bash/Codex PowerShell parity
-gate is planned, pending in DYD-426; writing these rules does not prove host parity.
+the other merge routes for every caller: raw `gh pr merge`, `gh api` and GraphQL merge calls, a
+`git push` to the default branch and default-branch changes
+([merge-route blocks](../understand/guard-system.md#also-enforced)); each refusal names `dydo merge`.
+The Claude bash/Codex PowerShell parity gate is planned, pending in DYD-426; writing these rules or
+shipping the blocks does not prove host parity.
 
 ---
 
@@ -515,6 +562,18 @@ severity, audience, and `match` (absent, `command`, or `new-file`).
 dydo validate
 dydo validate --root <dir>
 ```
+
+When `dydo.json` records `integrations.claude: true`, validate also checks that the committed
+`.claude/settings.json` runs the guard: some `PreToolUse` hook's `command` is exactly
+`dydo guard --host claude`, the one [`dydo init`](#dydo-init) writes, whatever its matcher. A guard
+only in `.claude/settings.local.json`, or a bare `dydo guard`, does not count. When the file is
+missing, cannot be read, does not run the guard, or is not valid settings JSON, validate prints one
+warning against `.claude/settings.json`: Claude agents run without the dydo guard. The fix is
+`dydo init claude --join`. Make an unreadable file readable first. Fix the JSON first when the file
+is not valid JSON, is not an object, or has a `hooks` that is not an object or a
+`hooks.PreToolUse` that is not an array, because `dydo init claude --join` refuses such a file.
+The warning alone leaves the exit code `0`. The guard's daily validation prints the same warning
+and still allows the tool call.
 
 This validates dydo's local configuration. It does not validate or provision Linear.
 

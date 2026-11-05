@@ -57,11 +57,8 @@ internal sealed class WindowsStatechartLifetime : StatechartLifetime
     {
         if (_registered || Stage.Length != 0) throw new InvalidOperationException("Already reserved.");
         await StatechartCleanup.Say(_cleanup.StandardInput, "reserve:" + _nonce);
-        var created = (await StatechartCleanup.Read(_cleanup.StandardOutput))?.Split(':');
-        if (created is not ["created", var stage, var temp])
-            throw new InvalidDataException("Cleanup did not reserve statechart scratch.");
-        _stage = StatechartCleanup.Decode(stage);
-        _temp = StatechartCleanup.Decode(temp);
+        (_stage, _temp) = StatechartCleanup.Created(await StatechartCleanup.Read(_cleanup.StandardOutput),
+            "Cleanup did not reserve statechart scratch.");
         await StatechartCleanup.Say(_cleanup.StandardInput, "register:" + _nonce);
         await Expect("registered:" + _nonce);
         _registered = true;

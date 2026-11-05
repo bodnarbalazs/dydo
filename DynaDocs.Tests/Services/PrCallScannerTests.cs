@@ -705,4 +705,58 @@ public class PrCallScannerTests
     {
         Assert.Equal(OperatingSystem.IsWindows() ? null : "/pr/a.md", PrCallScanner.BodyFileAt("gh pr create -F /pr/a.md", 0, ShellDialect.Posix));
     }
+
+    // Addendum 5: gh takes the last body file it is given, so a word of the same call that the shell
+    // may expand into more arguments, such as $EXTRA holding "-F b.md", may name another file. bash
+    // splits an unquoted expansion and expands a glob, brace or tilde; "$@" and an array's [@] or [*]
+    // expand in double quotes too. PowerShell passes an array variable, a splat, a group or a comma
+    // list as many arguments, and --% hands on the rest of the line unread.
+    [Theory]
+    [InlineData("Posix", "gh pr create -F a.md $EXTRA")]
+    [InlineData("Posix", "gh pr create $EXTRA -F a.md")]
+    [InlineData("Posix", "gh pr create -F a.md ${EXTRA}")]
+    [InlineData("Posix", "gh pr create -F a.md --title=$TITLE")]
+    [InlineData("Posix", "gh pr create -F a.md $(printf -- '-F b.md')")]
+    [InlineData("Posix", "gh pr create -F a.md `printf -- '-F b.md'`")]
+    [InlineData("Posix", "gh pr create -F a.md \"$@\"")]
+    [InlineData("Posix", "gh pr create -F a.md \"${@}\"")]
+    [InlineData("Posix", "gh pr create -F a.md \"${EXTRA[@]}\"")]
+    [InlineData("Posix", "gh pr create -F a.md \"${EXTRA[*]}\"")]
+    [InlineData("Posix", "gh pr create -F a.md \"${!EXTRA@}\"")]
+    [InlineData("Posix", "gh pr create -F a.md -? b.md")]
+    [InlineData("Posix", "gh pr create -F a.md [-]F b.md")]
+    [InlineData("Posix", "gh pr create -F a.md *")]
+    [InlineData("Posix", "gh pr create -F a.md {-F,b.md}")]
+    [InlineData("Posix", "gh pr create -F a.md ~")]
+    [InlineData("Posix", "gh pr create -F a.md --title x\\\"$EXTRA\\\"")]
+    [InlineData("Posix", "gh pr create -F a.md >&2 $EXTRA")]
+    [InlineData("PowerShell", "gh pr create -F a.md $extra")]
+    [InlineData("PowerShell", "gh pr create -F a.md @extra")]
+    [InlineData("PowerShell", "gh pr create -F a.md \"$extra\"")]
+    [InlineData("PowerShell", "gh pr create -F a.md “$extra”")]
+    [InlineData("PowerShell", "gh pr create -F a.md (echo '-F' 'b.md')")]
+    [InlineData("PowerShell", "gh pr create -F a.md x,-F,b.md")]
+    [InlineData("PowerShell", "gh pr create -F a.md --% %EXTRA%")]
+    [InlineData("Unknown", "gh pr create -F a.md --title \"$TITLE\"")]
+    public void WordThatMayExpandIntoMoreArguments_NamesNone(string dialect, string command)
+    {
+        Assert.Null(PrCallScanner.BodyFileAt(command, 0, Enum.Parse<ShellDialect>(dialect)));
+    }
+
+    // Quoted text that cannot split stays read: bash's single quotes, and its double quotes around a
+    // plain scalar, a command substitution or literal glob, brace and tilde characters; PowerShell's
+    // single quotes, and double quotes holding no $ or @. A redirection adds no argument.
+    [Theory]
+    [InlineData("Posix", "gh pr create --title \"$TITLE\" -F a.md")]
+    [InlineData("Posix", "gh pr create --title \"$(git log -1 --format=\"%s\")\" -F a.md")]
+    [InlineData("Posix", "gh pr create --title 'Fix $HOME, * {a,b} ~ \"x' -F a.md")]
+    [InlineData("Posix", "gh pr create --title \"Why? [WIP] {a,b} * ~ it's\" -F a.md")]
+    [InlineData("Posix", "gh pr create -F a.md --title t 2>&1 | cat")]
+    [InlineData("PowerShell", "gh pr create --title 'Fix $x @y (z), {w} \"q' -F a.md")]
+    [InlineData("PowerShell", "gh pr create --title \"Fix (z), {w} it's\" -F a.md")]
+    [InlineData("Unknown", "gh pr create --title 'Fix: a [WIP] thing?' -F a.md")]
+    public void WordThatCannotAddArguments_LeavesTheBodyFileRead(string dialect, string command)
+    {
+        Assert.Equal("a.md", PrCallScanner.BodyFileAt(command, 0, Enum.Parse<ShellDialect>(dialect)));
+    }
 }

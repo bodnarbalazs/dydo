@@ -665,6 +665,56 @@ public class GuardPrReadyTests : IntegrationTestBase
         Assert.Empty(await Misses(denied: true, ["gh pr create -F 'dydo/agents/reviewed.md{repo}'"], ReviewBlockWarning));
     }
 
+    // Addendum 5: gh takes the last body file it is given. With EXTRA='-F dydo/agents/plain.md'
+    // exported, or a file named -F beside the call, bash hands gh the unreviewed plain.md last, so a
+    // word of the call that may expand into more arguments keeps the warning. So do PowerShell's
+    // array variable and splat.
+    [Fact]
+    public async Task PrCreate_WordThatMayExpandIntoMoreArguments_Warns()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/reviewed.md", ReviewedBody);
+        WriteFile("dydo/agents/plain.md", "DYD-1\n\n## Summary\n");
+
+        Assert.Empty(await Misses(denied: true,
+        [
+            "gh pr create -F dydo/agents/reviewed.md $EXTRA",
+            "gh pr create -F dydo/agents/reviewed.md `printf -- '-F dydo/agents/plain.md'`",
+            "gh pr create -F dydo/agents/reviewed.md \"$@\"",
+            "gh pr create -F dydo/agents/reviewed.md \"${EXTRA[@]}\"",
+            "gh pr create -F dydo/agents/reviewed.md -? dydo/agents/plain.md",
+            "gh pr create -F dydo/agents/reviewed.md {-F,dydo/agents/plain.md}",
+        ], ReviewBlockWarning));
+        Assert.Empty(await Misses(denied: true,
+            ["gh pr create -F dydo/agents/reviewed.md $extra", "gh pr create -F dydo/agents/reviewed.md @extra"],
+            ReviewBlockWarning, toolName: "PowerShell"));
+    }
+
+    // Quoted words that cannot split leave a reviewed body file read: literal titles in either shell.
+    [Fact]
+    public async Task PrCreate_LiteralWordsBesideTheBodyFile_DoNotWarn()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/reviewed.md", ReviewedBody);
+
+        Assert.Empty(await Misses(denied: false,
+            ["gh pr create --title 'Fix $HOME * {a,b}' -F dydo/agents/reviewed.md", "gh pr create --title \"Why? [WIP]\" -F dydo/agents/reviewed.md"]));
+        Assert.Empty(await Misses(denied: false,
+            ["gh pr create --title 'Fix $x @y' -F dydo/agents/reviewed.md"], toolName: "PowerShell"));
+    }
+
+    // bash keeps a double-quoted scalar one word. An unmarked Bash call on Windows is also read as
+    // PowerShell, where any $ outside single quotes keeps the warning.
+    [SkippableFact]
+    public async Task PrCreate_DoubleQuotedScalarBesideTheBodyFile_DoesNotWarnInBash()
+    {
+        Skip.If(OperatingSystem.IsWindows(), "An unmarked Bash call on Windows is also read as PowerShell.");
+        await InitPushedProject();
+        WriteFile("dydo/agents/reviewed.md", ReviewedBody);
+
+        (await GuardWithStdinAsync(Payload("gh pr create --title \"$TITLE\" -F dydo/agents/reviewed.md"))).AssertPreToolUseAllowed();
+    }
+
     // A directory beside the test's tree, outside it, holding a body with the review block.
     private sealed class OutsideDirectory : IDisposable
     {

@@ -6,6 +6,9 @@ const path = require('node:path');
 const { createRequire } = require('node:module');
 const { spawnSync } = require('node:child_process');
 const { parse } = createRequire(require.resolve('knip'))('yaml');
+const { pwshTestOptions } = require('../pwsh_prerequisite.cjs');
+
+const pwsh = pwshTestOptions();
 
 const root = path.resolve(__dirname, '../../..');
 const job = parse(fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8')).jobs['guard-windows'];
@@ -38,7 +41,7 @@ function execute(t, script, report, outcome = 'success') {
   return result;
 }
 
-test('Windows selects the exact directory-link regression alongside the six existing classes', t => {
+test('Windows selects the exact directory-link regression alongside the six existing classes', pwsh, t => {
   assert.equal(job['runs-on'], 'windows-latest');
   for (const item of [job, run, guard]) assert.equal(item['continue-on-error'], undefined);
   assert.equal(job.if, undefined);
@@ -64,7 +67,7 @@ function report(rows, total = rows.length) {
 }
 
 for (const fault of [null, 'missing', 'sibling', 'wrong-class', 'skipped', 'failed', 'missing-class', 'skipped-class', 'counters', 'test-outcome', 'no-trx']) {
-  test(`Windows TRX check ${fault ? `rejects ${fault}` : 'accepts every required test passing'}`, t => {
+  test(`Windows TRX check ${fault ? `rejects ${fault}` : 'accepts every required test passing'}`, pwsh, t => {
     const rows = classes.map(className => ({ className, name: 'ExistingTest' }));
     const exact = { className: bodyClass, name: method };
     if (fault !== 'missing') rows.push(exact);

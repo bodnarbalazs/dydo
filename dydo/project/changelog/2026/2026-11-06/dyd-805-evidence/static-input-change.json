@@ -1,0 +1,16 @@
+{
+  "artifacts": [],
+  "errors": [
+    {
+      "currentSourceFingerprint": "d82bc10f925237c7640fd9b59f91fbe3a2dbd51a3a42fc2edaa82e05a324a50b",
+      "initialSourceFingerprint": "70b0294257ab8c1fcc304a8d3ba495b513a9cd41287ab7cad7cb84ab578d8020",
+      "message": "Repository inputs changed during collection"
+    }
+  ],
+  "facts": {
+    "currentSourceFingerprint": "d82bc10f925237c7640fd9b59f91fbe3a2dbd51a3a42fc2edaa82e05a324a50b",
+    "initialSourceFingerprint": "70b0294257ab8c1fcc304a8d3ba495b513a9cd41287ab7cad7cb84ab578d8020"
+  },
+  "findings": [],
+  "status": "error"
+}

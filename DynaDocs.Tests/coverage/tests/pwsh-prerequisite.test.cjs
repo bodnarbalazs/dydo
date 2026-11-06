@@ -30,13 +30,13 @@ cp.spawnSync = (command, args, options) => command === process.env.PWSH
   return result;
 }
 
-test('local missing PowerShell explicitly skips only the 22 dependent cases', t => {
+test('local missing PowerShell explicitly skips only the 24 dependent cases', t => {
   const result = run(t);
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.match(result.stdout, /# pass 3\b/);
   assert.match(result.stdout, /# fail 0\b/);
-  assert.match(result.stdout, /# skipped 22\b/);
-  assert.equal((result.stdout.match(/# SKIP PowerShell prerequisite unavailable: pwsh was not found/g) || []).length, 22);
+  assert.match(result.stdout, /# skipped 24\b/);
+  assert.equal((result.stdout.match(/# SKIP PowerShell prerequisite unavailable: pwsh was not found/g) || []).length, 24);
 });
 
 test('CI rejects missing PowerShell instead of accepting skipped proof', t => {

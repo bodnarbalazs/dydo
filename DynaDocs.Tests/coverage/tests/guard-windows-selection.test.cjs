@@ -17,6 +17,7 @@ const guard = job.steps.find(step => step.name === 'Require every selected guard
 const bodyClass = 'DynaDocs.Tests.Commands.GuardPrReadyBodyFileTests';
 const method = 'LinkedDirectoryLeavingTheTree_IsNull';
 const required = `${bodyClass}.${method}`;
+const prReadyClass = 'DynaDocs.Tests.Integration.GuardPrReadyTests';
 const classes = [
   'DynaDocs.Tests.Services.DangerousPatternCultureTests',
   'DynaDocs.Tests.Services.DangerousPatternOracleTests',
@@ -24,6 +25,7 @@ const classes = [
   'DynaDocs.Tests.Services.BashCommandAnalyzerTests',
   'DynaDocs.Tests.Integration.GuardSecurityTests',
   'DynaDocs.Tests.Integration.GuardMergeRouteTests',
+  prReadyClass,
 ];
 
 function execute(t, script, report, outcome = 'success') {
@@ -41,7 +43,7 @@ function execute(t, script, report, outcome = 'success') {
   return result;
 }
 
-test('Windows selects the exact directory-link regression alongside the six existing classes', pwsh, t => {
+test('Windows selects the exact directory-link regression alongside the seven guard classes', pwsh, t => {
   assert.equal(job['runs-on'], 'windows-latest');
   for (const item of [job, run, guard]) assert.equal(item['continue-on-error'], undefined);
   assert.equal(job.if, undefined);
@@ -66,9 +68,11 @@ function report(rows, total = rows.length) {
   return `<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><TestDefinitions>${definitions}</TestDefinitions><Results>${results}</Results><ResultSummary><Counters total="${total}" passed="${passed}" /></ResultSummary></TestRun>`;
 }
 
-for (const fault of [null, 'missing', 'sibling', 'wrong-class', 'skipped', 'failed', 'missing-class', 'skipped-class', 'counters', 'test-outcome', 'no-trx']) {
+for (const fault of [null, 'missing', 'sibling', 'wrong-class', 'skipped', 'failed', 'missing-class', 'skipped-class', 'missing-pr-ready-class', 'skipped-pr-ready-class', 'counters', 'test-outcome', 'no-trx']) {
   test(`Windows TRX check ${fault ? `rejects ${fault}` : 'accepts every required test passing'}`, pwsh, t => {
     const rows = classes.map(className => ({ className, name: 'ExistingTest' }));
+    if (fault === 'missing-pr-ready-class') rows.splice(classes.indexOf(prReadyClass), 1);
+    if (fault === 'skipped-pr-ready-class') rows[classes.indexOf(prReadyClass)].outcome = 'NotExecuted';
     const exact = { className: bodyClass, name: method };
     if (fault !== 'missing') rows.push(exact);
     if (fault === 'sibling') { exact.name += '_Sibling'; exact.display = required; }

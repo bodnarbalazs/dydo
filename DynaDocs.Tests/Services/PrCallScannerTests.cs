@@ -524,6 +524,8 @@ public class PrCallScannerTests
     [InlineData("gh pr Create -R o/r -F a.md", "a.md")]
     [InlineData("gh pr create -F -", "-")]
     [InlineData("gh pr create -F \"dydo/agents/a b.md\"", "dydo/agents/a b.md")]
+    // DYD-639 nit 6, closed in DYD-736: --attach takes a value, so a -F word after it is that value.
+    [InlineData("gh pr create -F a.md --attach -Fr.png", "a.md")]
     public void BodyFileAt_IsTheLaunchedCallsLastBodyFile(string command, string file)
     {
         Assert.Equal(file, PrCallScanner.BodyFileAt(command, 0, ShellDialect.Posix));
@@ -543,6 +545,10 @@ public class PrCallScannerTests
     [InlineData("gh pr create -F a.md'")]
     [InlineData("GH_REPO=o/r")]
     [InlineData("gh pr create -R {owner}/r -F a.md")]
+    // Round 1 N3: a call behind an assignment or env names no body file at its launch (DYD-731 Option A).
+    [InlineData("FOO=1 gh pr create -F a.md")]
+    [InlineData("env gh pr create -F a.md")]
+    [InlineData("env -i FOO=1 gh pr create --body-file a.md")]
     public void CallReadingNoBodyFile_NamesNone(string command)
     {
         Assert.Null(PrCallScanner.BodyFileAt(command, 0, ShellDialect.Posix));

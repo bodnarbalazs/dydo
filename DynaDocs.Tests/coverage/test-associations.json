@@ -90,6 +90,12 @@
       ]
     },
     {
+      "module": "skills/engineering/verify-dydo/scripts/officer_transition.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_officer_transition.py"
+      ]
+    },
+    {
       "module": "Commands/GapCheckCommand.cs",
       "tests": [
         "DynaDocs.Tests/Commands/GapCheckCommandTests.cs"
@@ -271,6 +277,7 @@
       "module": "Services/PrCallScanner.MergeRoutes.cs",
       "tests": [
         "DynaDocs.Tests/Services/MergeRouteScannerTests.cs",
+        "DynaDocs.Tests/Services/PrCallScannerBackslashTreeTests.cs",
         "DynaDocs.Tests/Integration/GuardMergeRouteTests.cs"
       ]
     },

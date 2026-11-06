@@ -41,10 +41,29 @@ public static class ConfigFactory
     };
 
     /// <summary>
-    /// The review-block nudge's pattern. dydo.json copies of the nudge are matched by it, so it never
-    /// changes; the guard reads a lone <c>gh pr create</c>'s in-tree body file for it too (DYD-639).
+    /// The review-block nudge's pattern: a <c>gh pr create</c> at a command's start, behind any
+    /// leading <c>NAME=value</c> assignments and an optional <c>env</c> with its options and
+    /// assignments (DYD-736). dydo.json copies of the nudge are matched by it; the guard refreshes a
+    /// copy of <see cref="PreDyd736ReviewBlockPattern"/> to it, and reads a lone, unprefixed
+    /// <c>gh pr create</c>'s in-tree body file for it too (DYD-639, DYD-731 Option A).
     /// </summary>
-    public const string ReviewBlockPattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)";
+    public const string ReviewBlockPattern =
+        @"(?:^|[;&|]\s*)" + LeadingAssignments + @"(?:env\s+(?:" + EnvOptionTakingAValue + @"\s+[^\s;&|]+\s+|(?!"
+        + EnvOptionTakingAValue + @"\s)-[^\s;&|]*\s+)*" + LeadingAssignments + @")?gh\s+pr\s+create\b(?![\s\S]*Independent review)";
+
+    /// <summary>The review-block pattern dydo.json copies carried before DYD-736: a plain <c>gh</c> only.</summary>
+    public const string PreDyd736ReviewBlockPattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)";
+
+    // Shell assignments before a command: NAME=value. The value's pieces are quoted text, a $(...)
+    // one level deep, ${...}, backticks, an escaped character or a plain one. Each piece opens
+    // differently, so a value has one reading and no input backtracks far.
+    private const string LeadingAssignments =
+        @"(?:[A-Za-z_][A-Za-z0-9_]*=(?:'[^']*'|""(?:[^""\\]|\\[\s\S])*""|`[^`]*`|\$\((?:[^()]|\([^()]*\))*\)|\$\{[^}]*\}"
+        + @"|\\[\s\S]|\$(?![({])|[^\s;&|'""`\\$])*\s+)*";
+
+    // An env option word whose value is the next word: -u, -C, a short cluster ending in one, or
+    // --unset and --chdir. Every other option word stands alone, so each word has one reading.
+    private const string EnvOptionTakingAValue = @"(?:-[^\s;&|-]*(?-i:[uC])|--unset|--chdir)";
 
     public static readonly List<NudgeConfig> DefaultNudges =
     [

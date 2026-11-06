@@ -30,8 +30,10 @@ head, and those jobs failed with no defect in the PR. This happened three times 
   the python union's.
 - The `dotnet-coverage` preflight asserts that the candidate equals `MERGE_REF_SHA` (`github.sha`).
   It still records both `pr_head_sha` and `merge_ref_sha` in `preflight.json`.
-- DR 048 has a dated note on the .NET amendment. Ratification of the measurement change is pending
-  in [DYD-744](https://linear.app/bodnar-balazs/issue/DYD-744). `testing-strategy.md` and
+- Balazs ratified the measurement change on 2026-11-06
+  ([DYD-744](https://linear.app/bodnar-balazs/issue/DYD-744)): hosted pull-request runs measure the
+  merge result, and receipts keep the PR head SHA. DR 048's .NET amendment now says the gate runs on
+  the merge result, with a dated note citing that ratification. `testing-strategy.md` and
   `coverage-tools.md` now say the jobs measure the merge ref.
 
 ## Proof

@@ -235,7 +235,8 @@ pending [DYD-718](https://linear.app/bodnar-balazs/issue/DYD-718). Linux already
 suite would measure nothing more. Both platforms keep the full native join as raw evidence and
 apply the unchanged policy to their own portion.
 
-One hosted job, `dotnet-coverage`, runs the gate on the PR head on both platforms: `ubuntu-24.04`
+One hosted job, `dotnet-coverage`, runs the gate on both platforms on the run's own commit,
+`github.sha`, which on a pull request is the merge result, not the PR head: `ubuntu-24.04`
 with the full suite and `windows-latest` with the selected tests. A dependent union check,
 `dotnet-coverage-union`, requires both reports. It rejects a missing report, a failed, incomplete or
 dirty gate, reports from different commits, a Windows receipt without its selected-test count and a
@@ -247,13 +248,12 @@ the rebuilt candidate. Matching omissions, altered ownership and a different sel
 fail. Neither report alone establishes .NET coverage success. This amends measurement placement
 under §2. It does not widen the September coverage exemption or change any threshold.
 
-*Note 2026-11-06 ([DYD-717](https://linear.app/bodnar-balazs/issue/DYD-717)): hosted pull-request
-runs now measure the merge ref, not the PR head. Every `ci.yml` job checks out the run's own commit,
-`github.sha`, which is the merge ref on a pull request and the pushed commit on a push, so both
-`dotnet-coverage` legs, the union and `guard-windows` measure the tree whose `ci.yml` is running.
-The preflight receipts still record `pr_head_sha` and `merge_ref_sha`. Ratification of this change
-is pending in [DYD-744](https://linear.app/bodnar-balazs/issue/DYD-744). The amendment text above
-stands as ratified on 2026-11-05.*
+*Note 2026-11-06: Balazs ratified on 2026-11-06
+([DYD-744](https://linear.app/bodnar-balazs/issue/DYD-744)) that hosted pull-request runs measure
+the merge result, and receipts keep the PR head SHA. The 2026-11-05 text placed the gate on the PR
+head. [DYD-717](https://linear.app/bodnar-balazs/issue/DYD-717) implements the change: every
+`ci.yml` job checks out `github.sha`, and the preflight receipts record `pr_head_sha` and
+`merge_ref_sha`.*
 
 ## Consequences
 

@@ -186,12 +186,24 @@ public class BashCommandAnalyzerTests
     [Fact]
     public void CheckDangerousPatterns_MatchTimeout_FailsClosed()
     {
-        var command = string.Concat(Enumerable.Repeat("dd ", 100_000));
+        // The former dd input is now linear. Exercise the timeout handler deterministically,
+        // without depending on a slow matcher or the host's scheduling to exhaust its budget.
+        var patterns = ((Func<string, bool> IsMatch, string Reason)[])typeof(BashCommandAnalyzer)
+            .GetField("DangerousPatterns", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+            .GetValue(null)!;
+        var original = patterns[0];
+        try
+        {
+            patterns[0] = (_ => throw new System.Text.RegularExpressions.RegexMatchTimeoutException(), original.Reason);
+            var (dangerous, reason) = _analyzer.CheckDangerousPatterns("echo x");
 
-        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
-
-        Assert.True(dangerous);
-        Assert.Equal("Command too complex to verify safely", reason);
+            Assert.True(dangerous);
+            Assert.Equal("Command too complex to verify safely", reason);
+        }
+        finally
+        {
+            patterns[0] = original;
+        }
     }
 
     [Theory]
@@ -2470,6 +2482,20 @@ public class BashCommandAnalyzerTests
         ["distinct commands"] = length => string.Concat(Enumerable.Range(0, length / 8).Select(i => $": {i:D5};")),
         ["nested multiline quotes"] = length => "Write-Output " + Repeat("@(", 31)
             + Repeat("\"x\ny\" ", (length - 106) / 6) + Repeat(")", 31),
+        ["env chain"] = length => "" + Repeat("env ", length / 4) + "echo x",
+        ["python run chain"] = length => "uv " + Repeat("-x run ", length / 7) + "python script.py",
+        ["rm flags"] = length => "rm " + Repeat("-rrrrrrrrrrrrrrrrrr ", length / 20) + "x",
+        ["remove words"] = length => "" + Repeat("Remove-Item x ", length / 14) + "",
+        ["dd words"] = length => "" + Repeat("dd x ", length / 5) + "",
+        ["base64 words"] = length => "" + Repeat("base64 -d x ", length / 12) + "",
+        ["curl words"] = length => "" + Repeat("curl x ", length / 7) + "",
+        ["wget words"] = length => "" + Repeat("wget x ", length / 7) + "",
+        ["wget output"] = length => "" + Repeat("wget -O - x ", length / 12) + "",
+        ["iwr words"] = length => "" + Repeat("Invoke-WebRequest x ", length / 20) + "",
+        ["iwr short"] = length => "" + Repeat("iwr x ", length / 6) + "",
+        ["download words"] = length => "" + Repeat("DownloadString(x ", length / 17) + "",
+        ["history words"] = length => "" + Repeat("Remove-Item x ", length / 14) + "",
+        ["cat heredoc openers"] = length => Repeat("echo '$(cat <<E'\n", length / 17),
         ["heredocs"] = length => Repeat("cat <<E\na\nE\n", length / 12),
         ["quoted heredocs"] = length => Repeat("cat <<'E'\n'a'\nE\n", length / 16),
         ["here-strings"] = length => Repeat("echo @'\na\n'@\n", length / 13),
@@ -2530,6 +2556,46 @@ public class BashCommandAnalyzerTests
     [InlineData("Unknown", "distinct writes")]
     [InlineData("Unknown", "cmd chain")]
     public void Analyze_LongBodies_TakeTimeLinearly(string dialect, string shape) => AssertTimeGrowsLinearly(dialect, shape);
+
+    [Theory]
+    [InlineData("Posix")]
+    [InlineData("PowerShell")]
+    [InlineData("Unknown")]
+    public void Analyze_UnclosedCatHeredocs_TakesTimeLinearly(string dialect) =>
+        AssertTimeGrowsLinearly(dialect, "cat heredoc openers");
+
+    [Theory]
+    [InlineData("Posix", "env chain")]
+    [InlineData("PowerShell", "env chain")]
+    [InlineData("Unknown", "env chain")]
+    [InlineData("Posix", "python run chain")]
+    [InlineData("PowerShell", "python run chain")]
+    [InlineData("Unknown", "python run chain")]
+    public void Analyze_RepeatedRunnerWords_GrowsLinearly(string dialect, string shape) =>
+        AssertTimeGrowsLinearly(dialect, shape);
+
+    [Theory]
+    [InlineData("RecursiveDeleteRootRegex", "rm flags")]
+    [InlineData("RecursiveDeleteGlobRegex", "rm flags")]
+    [InlineData("PowerShellRecursiveDeleteRegex", "remove words")]
+    [InlineData("DdKnownDiskWriteRegex", "dd words")]
+    [InlineData("Base64DecodePipeExecRegex", "base64 words")]
+    [InlineData("CurlPipeShRegex", "curl words")]
+    [InlineData("WgetPipeShRegex", "wget words")]
+    [InlineData("WgetOutputPipeShRegex", "wget output")]
+    [InlineData("PowerShellIwrIexRegex", "iwr words")]
+    [InlineData("PowerShellIwrIexShortRegex", "iwr short")]
+    [InlineData("PowerShellDownloadStringRegex", "download words")]
+    [InlineData("PowerShellHistoryDeleteRegex", "history words")]
+    public void DangerousRules_RepeatedPrefixes_GrowLinearly(string name, string shape)
+    {
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static;
+        var type = typeof(BashCommandAnalyzer);
+        var pattern = (System.Text.RegularExpressions.Regex)(type.GetField(name, flags)?.GetValue(null)
+            ?? type.GetMethod(name, flags)!.Invoke(null, null))!;
+        Assert.Equal(TimeSpan.FromMilliseconds(250), pattern.MatchTimeout);
+        AssertTimeGrowsLinearly(text => Assert.DoesNotMatch(pattern, text), shape);
+    }
 
     private static void AssertTimeGrowsLinearly(string dialect, string shape)
     {

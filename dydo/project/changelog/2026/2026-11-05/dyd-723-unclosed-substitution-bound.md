@@ -1,4 +1,11 @@
 ---
+
+Fix hop 5 indexes cat-heredoc closers before stripping, replaces the remaining legacy
+denylist suffix searches with linear regex matching at the same 250 ms timeout, and visits
+overlapping Python runner operand ranges once. The Captain extended ownership to
+`Services/CommandPosition.cs`: `env` now passes the original word list and a start index
+instead of copying every remaining suffix. New analyzer regressions and compatibility
+oracles cover these paths; the DYD-610 oracle and inventory tests are unchanged.
 area: general
 type: changelog
 date: 2026-11-05

@@ -169,74 +169,42 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private const string CommandEndContext = @"\s|$|['""`);&|]";
     private const string LinearCommandEnd = "(?:" + CommandEndContext + ")";
 
-    private static readonly (Func<string, bool> IsMatch, string Reason)[] DangerousPatterns =
-    [
-        (RecursiveDeleteRootRegex().IsMatch, "Recursive delete of root or home directory"),
-        (RecursiveDeleteGlobRegex().IsMatch, "Recursive delete with dangerous glob pattern"),
 
-        (PowerShellRecursiveDeleteRegex().IsMatch, "PowerShell recursive delete of root directory"),
-
-        (ForkBombClassicRegex().IsMatch, "Fork bomb detected"),
-        (ForkBombAltRegex().IsMatch, "Fork bomb variant detected"),
-
-        (DirectDiskWriteRegex().IsMatch, "Direct disk write attempt"),
-        (DdDiskWriteRegex().IsMatch, "Direct disk write via dd"),
-        (DdKnownDiskWriteRegex().IsMatch, "Direct disk write via dd"),
-
-        (Base64DecodePipeExecRegex().IsMatch, "Base64 decode piped to interpreter"),
-
-        (CurlPipeShRegex().IsMatch, "Download and execute pattern (curl | sh)"),
-        (WgetPipeShRegex().IsMatch, "Download and execute pattern (wget | sh)"),
-        (WgetOutputPipeShRegex().IsMatch, "Download and execute pattern (wget -O | sh)"),
-
-        (PowerShellIwrIexRegex().IsMatch, "Download and execute pattern (PowerShell IWR | IEX)"),
-        (PowerShellIwrIexShortRegex().IsMatch, "Download and execute pattern (PowerShell iwr | iex)"),
-        (PowerShellDownloadStringRegex().IsMatch, "Download and execute pattern (DownloadString | IEX)"),
-
-        (EvalVariableRegex().IsMatch, "Eval of variable content"),
-
-        (HistoryClearRegex().IsMatch, "History clearing detected"),
-        (HistoryFileTruncateRegex().IsMatch, "History file truncation"),
-        (PowerShellHistoryDeleteRegex().IsMatch, "PowerShell history deletion"),
-
-        (SelinuxDisableRegex().IsMatch, "SELinux disable attempt"),
-        (FirewallFlushRegex().IsMatch, "Firewall flush attempt"),
-
-        (ShadowFileAccessRegex().IsMatch, "Shadow file access attempt"),
-        (PasswdModifyRegex().IsMatch, "Password file modification attempt"),
-
-        // David Ondrej's global command denylist, pinned in DYD-188.
-        (OndrejRmRegex().IsMatch, "Deletion of system or home directory"),
-        (OndrejDiskRegex().IsMatch, "Disk format or erase attempt"),
-        (OndrejSudoRmRegex().IsMatch, "Privileged delete attempt"),
-        (OndrejCurlPipeRegex().IsMatch, "Download and execute as shell"),
-        (OndrejGitPushRegex().IsMatch, "Force push or remote branch deletion. GitHub deletes a merged PR's branch itself; clean up locally from outside the tree with dydo clean --dry-run <worktree>, then dydo clean <worktree>, which removes the worktree, keeps unmerged branches and runs git fetch --prune; name any other remote branch for the user"),
-        (OndrejGitRecoveryRegex().IsMatch, "Git recovery history destruction"),
-        (OndrejSystemPermissionsRegex().IsMatch, "System permission or ownership change"),
-        (OndrejGhDeleteRegex().IsMatch, "Destructive GitHub operation"),
-        (OndrejGhApiDeleteRegex().IsMatch, "GitHub API delete operation"),
-        (OndrejGhVisibilityRegex().IsMatch, "GitHub repository visibility change"),
-        (OndrejGhTokenRegex().IsMatch, "GitHub authentication token access"),
-        (OndrejPasswordCliRegex().IsMatch, "Password manager access"),
-        (RunsPasswordStore, "Password store access"),
-        (OndrejOpRegex().IsMatch, "1Password secret access"),
-        (OndrejKeychainRegex().IsMatch, "Keychain password access"),
-        (OndrejGpgSecretRegex().IsMatch, "GPG secret key export"),
-        (OndrejPasswordStorePathRegex().IsMatch, "Password store path access"),
-        (OndrejPasswordAppRegex().IsMatch, "Password manager application access"),
-
-        // Raw worktree removal - dydo clean archives uncommitted work and never follows a link.
-        (ForcedWorktreeRemoveRegex().IsMatch, WorktreeRemovalReason),
-        (IsRecursiveWorktreeDelete, WorktreeRemovalReason),
-
-        (InlineInterpreterRegex().IsMatch, "Inline interpreter execution bypasses file operation analysis. Write a script file instead."),
-        (RunsPythonFromStdin, "Python program on stdin bypasses file operation analysis, as python -c does. "
-            + "Change files with the file tools or write a script file; a change to a protected file goes to the user."),
-    ];
 
     // Heredoc detection - strip $(cat <<'WORD'...WORD) to prevent false positives
     [GeneratedRegex(@"\$\(cat\s+<<-?'?""?(\w+)""?'?\s*\n[\s\S]*?\n\1\s*\)")]
     private static partial Regex CatHeredocRegex();
+
+    [GeneratedRegex(@"\$\(cat\s+<<-?'?""?(\w+)""?'?[^\S\n]*\n")]
+    private static partial Regex CatHeredocOpenerRegex();
+
+    [GeneratedRegex(@"\n(\w+)\s*\)")]
+    private static partial Regex CatHeredocCloserRegex();
+
+    // An unmatched opener must not search the remaining text again. A matching delimiter after
+    // the opener's first newline guarantees the original regex succeeds at that opener; keeping
+    // that regex preserves its greedy header, lazy body and exact replacement extent.
+    private static string StripCatHeredocs(string text)
+    {
+        Dictionary<string, int> closing = new(StringComparer.Ordinal);
+        foreach (Match closer in CatHeredocCloserRegex().Matches(text))
+            closing[closer.Groups[1].Value] = closer.Index;
+        if (closing.Count == 0)
+            return text;
+
+        var result = new StringBuilder(text.Length);
+        var start = 0;
+        for (var opener = CatHeredocOpenerRegex().Match(text); opener.Success;
+            opener = CatHeredocOpenerRegex().Match(text, Math.Max(start, opener.Index + opener.Length)))
+        {
+            if (closing.GetValueOrDefault(opener.Groups[1].Value, -1) < opener.Index + opener.Length)
+                continue;
+            var match = CatHeredocRegex().Match(text, opener.Index);
+            result.Append(text, start, match.Index - start).Append("HEREDOC_STRIPPED");
+            start = match.Index + match.Length;
+        }
+        return result.Append(text, start, text.Length - start).ToString();
+    }
 
     // Any heredoc (<<WORD, <<'WORD', <<"WORD", <<-WORD; a word of letters, digits, _ and -, such as
     // END-OF-FILE, ending where the shell's word ends): group 1 is the opener line, then the body and
@@ -885,14 +853,25 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"xxd\s+-r|od\s+-A")]
     private static partial Regex HexDecodeRegex();
 
-    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(\./|/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)", RegexOptions.None, DangerousPatternTimeoutMs)]
-    private static partial Regex RecursiveDeleteRootRegex();
+    private static readonly Regex RecursiveDeleteRootRegex = new(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(\./|/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)", RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+\*\s*($|;|&&|\|\||&|\|)", RegexOptions.None, DangerousPatternTimeoutMs)]
-    private static partial Regex RecursiveDeleteGlobRegex();
+    private static readonly Regex RecursiveDeleteGlobRegex = new(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+\*\s*($|;|&&|\|\||&|\|)", RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"Remove-Item\b(?=.*-Recurse\b)(?=.*-Force\b).*(\s[/~]|\s[A-Z]:\\)\s*($|;|&&|\|\|)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex PowerShellRecursiveDeleteRegex();
+    // The two lookaheads require Recurse and Force anywhere after Remove-Item on its line.
+    // Their witnesses and the target can occur in any of six orders. Only a final target may
+    // cross a newline: both flags must precede the first newline, as in the original lookaheads.
+    private const string RecurseWitness = @"-Recurse\b";
+    private const string ForceWitness = @"-Force\b";
+    private const string DeleteTarget = @"(?:\s[/~]|\s[A-Z]:\\)\s*(?:$|;|&&|\|\|)";
+    private const string SameLineDeleteTarget = @"(?:[^\S\n][/~]|[^\S\n][A-Z]:\\)[^\S\n]*(?:$|;|&&|\|\|)";
+
+    private static readonly Regex PowerShellRecursiveDeleteRegex = new(@"Remove-Item\b.*(?:"
+        + RecurseWitness + ".*" + ForceWitness + ".*" + DeleteTarget + "|"
+        + ForceWitness + ".*" + RecurseWitness + ".*" + DeleteTarget + "|"
+        + RecurseWitness + ".*" + SameLineDeleteTarget + ".*" + ForceWitness + "|"
+        + ForceWitness + ".*" + SameLineDeleteTarget + ".*" + RecurseWitness + "|"
+        + SameLineDeleteTarget + ".*(?:" + RecurseWitness + ".*" + ForceWitness + "|"
+        + ForceWitness + ".*" + RecurseWitness + "))", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
     [GeneratedRegex(@":\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex ForkBombClassicRegex();
@@ -909,29 +888,21 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     internal static partial Regex DdDiskWriteRegex();
 
     // Kept unanchored on purpose: known disk targets block anywhere in the command text.
-    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?:sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex DdKnownDiskWriteRegex();
+    private static readonly Regex DdKnownDiskWriteRegex = new(@"dd\s+.*of\s*=\s*/dev/(?:sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"base64\s+(-d|--decode)[^|]*\|\s*(python[23]?|bash|sh|zsh|perl|ruby|node|pwsh|powershell)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex Base64DecodePipeExecRegex();
+    private static readonly Regex Base64DecodePipeExecRegex = new(@"base64\s+(-d|--decode)[^|]*\|\s*(python[23]?|bash|sh|zsh|perl|ruby|node|pwsh|powershell)", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"curl\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex CurlPipeShRegex();
+    private static readonly Regex CurlPipeShRegex = new(@"curl\s+[^|]*\|\s*(ba)?sh", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"wget\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex WgetPipeShRegex();
+    private static readonly Regex WgetPipeShRegex = new(@"wget\s+[^|]*\|\s*(ba)?sh", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"wget\s+-O\s*-?\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex WgetOutputPipeShRegex();
+    private static readonly Regex WgetOutputPipeShRegex = new(@"wget\s+-O\s*-?\s+[^|]*\|\s*(ba)?sh", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"Invoke-WebRequest[^|]*\|\s*Invoke-Expression", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex PowerShellIwrIexRegex();
+    private static readonly Regex PowerShellIwrIexRegex = new(@"Invoke-WebRequest[^|]*\|\s*Invoke-Expression", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"iwr\s+[^|]*\|\s*iex", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex PowerShellIwrIexShortRegex();
+    private static readonly Regex PowerShellIwrIexShortRegex = new(@"iwr\s+[^|]*\|\s*iex", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"DownloadString\s*\([^)]+\)[^|]*\|\s*(iex|Invoke-Expression)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex PowerShellDownloadStringRegex();
+    private static readonly Regex PowerShellDownloadStringRegex = new(@"DownloadString\s*\([^)]+\)[^|]*\|\s*(iex|Invoke-Expression)", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
     [GeneratedRegex(@"eval\s+\$", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex EvalVariableRegex();
@@ -942,8 +913,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@">\s*~/\.bash_history|>\s*~/\.zsh_history", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex HistoryFileTruncateRegex();
 
-    [GeneratedRegex(@"Remove-Item.*ConsoleHost_history\.txt", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex PowerShellHistoryDeleteRegex();
+    private static readonly Regex PowerShellHistoryDeleteRegex = new(@"Remove-Item.*ConsoleHost_history\.txt", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
     [GeneratedRegex(@"setenforce\s+0", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex SelinuxDisableRegex();
@@ -1134,9 +1104,21 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// option's value, so each run word that may be the first operand counts (<c>uv --directory run
     /// run python -</c>), and so does each Python word that may be run's.
     /// </summary>
-    private static IEnumerable<int> RunPythonPrograms(IReadOnlyList<string> words, int program) =>
-        LeadingOperands(words, program + 1).Where(i => words[i] == "run")
-            .SelectMany(run => LeadingOperands(words, run + 1)).Where(i => IsPythonProgram(words[i]));
+    private static IEnumerable<int> RunPythonPrograms(IReadOnlyList<string> words, int program)
+    {
+        var through = program;
+        foreach (var run in LeadingOperands(words, program + 1).Where(i => words[i] == "run"))
+        {
+            if (run < through)
+                continue;
+            foreach (var operand in LeadingOperands(words, run + 1))
+            {
+                through = operand;
+                if (IsPythonProgram(words[operand]))
+                    yield return operand;
+            }
+        }
+    }
 
     // The operands from words[from] on that may be the first: each after an option, then the first
     // after an operand or none (--name=value names its value).
@@ -1792,6 +1774,71 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"<\s*([^\s|;&><]+)")]
     private static partial Regex InputRedirectRegex();
 
+    private static readonly (Func<string, bool> IsMatch, string Reason)[] DangerousPatterns =
+    [
+        (RecursiveDeleteRootRegex.IsMatch, "Recursive delete of root or home directory"),
+        (RecursiveDeleteGlobRegex.IsMatch, "Recursive delete with dangerous glob pattern"),
+
+        (PowerShellRecursiveDeleteRegex.IsMatch, "PowerShell recursive delete of root directory"),
+
+        (ForkBombClassicRegex().IsMatch, "Fork bomb detected"),
+        (ForkBombAltRegex().IsMatch, "Fork bomb variant detected"),
+
+        (DirectDiskWriteRegex().IsMatch, "Direct disk write attempt"),
+        (DdDiskWriteRegex().IsMatch, "Direct disk write via dd"),
+        (DdKnownDiskWriteRegex.IsMatch, "Direct disk write via dd"),
+
+        (Base64DecodePipeExecRegex.IsMatch, "Base64 decode piped to interpreter"),
+
+        (CurlPipeShRegex.IsMatch, "Download and execute pattern (curl | sh)"),
+        (WgetPipeShRegex.IsMatch, "Download and execute pattern (wget | sh)"),
+        (WgetOutputPipeShRegex.IsMatch, "Download and execute pattern (wget -O | sh)"),
+
+        (PowerShellIwrIexRegex.IsMatch, "Download and execute pattern (PowerShell IWR | IEX)"),
+        (PowerShellIwrIexShortRegex.IsMatch, "Download and execute pattern (PowerShell iwr | iex)"),
+        (PowerShellDownloadStringRegex.IsMatch, "Download and execute pattern (DownloadString | IEX)"),
+
+        (EvalVariableRegex().IsMatch, "Eval of variable content"),
+
+        (HistoryClearRegex().IsMatch, "History clearing detected"),
+        (HistoryFileTruncateRegex().IsMatch, "History file truncation"),
+        (PowerShellHistoryDeleteRegex.IsMatch, "PowerShell history deletion"),
+
+        (SelinuxDisableRegex().IsMatch, "SELinux disable attempt"),
+        (FirewallFlushRegex().IsMatch, "Firewall flush attempt"),
+
+        (ShadowFileAccessRegex().IsMatch, "Shadow file access attempt"),
+        (PasswdModifyRegex().IsMatch, "Password file modification attempt"),
+
+        // David Ondrej's global command denylist, pinned in DYD-188.
+        (OndrejRmRegex().IsMatch, "Deletion of system or home directory"),
+        (OndrejDiskRegex().IsMatch, "Disk format or erase attempt"),
+        (OndrejSudoRmRegex().IsMatch, "Privileged delete attempt"),
+        (OndrejCurlPipeRegex().IsMatch, "Download and execute as shell"),
+        (OndrejGitPushRegex().IsMatch, "Force push or remote branch deletion. GitHub deletes a merged PR's branch itself; clean up locally from outside the tree with dydo clean --dry-run <worktree>, then dydo clean <worktree>, which removes the worktree, keeps unmerged branches and runs git fetch --prune; name any other remote branch for the user"),
+        (OndrejGitRecoveryRegex().IsMatch, "Git recovery history destruction"),
+        (OndrejSystemPermissionsRegex().IsMatch, "System permission or ownership change"),
+        (OndrejGhDeleteRegex().IsMatch, "Destructive GitHub operation"),
+        (OndrejGhApiDeleteRegex().IsMatch, "GitHub API delete operation"),
+        (OndrejGhVisibilityRegex().IsMatch, "GitHub repository visibility change"),
+        (OndrejGhTokenRegex().IsMatch, "GitHub authentication token access"),
+        (OndrejPasswordCliRegex().IsMatch, "Password manager access"),
+        (RunsPasswordStore, "Password store access"),
+        (OndrejOpRegex().IsMatch, "1Password secret access"),
+        (OndrejKeychainRegex().IsMatch, "Keychain password access"),
+        (OndrejGpgSecretRegex().IsMatch, "GPG secret key export"),
+        (OndrejPasswordStorePathRegex().IsMatch, "Password store path access"),
+        (OndrejPasswordAppRegex().IsMatch, "Password manager application access"),
+
+        // Raw worktree removal - dydo clean archives uncommitted work and never follows a link.
+        (ForcedWorktreeRemoveRegex().IsMatch, WorktreeRemovalReason),
+        (IsRecursiveWorktreeDelete, WorktreeRemovalReason),
+
+        (InlineInterpreterRegex().IsMatch, "Inline interpreter execution bypasses file operation analysis. Write a script file instead."),
+        (RunsPythonFromStdin, "Python program on stdin bypasses file operation analysis, as python -c does. "
+            + "Change files with the file tools or write a script file; a change to a protected file goes to the user."),
+    ];
+
     public (bool IsMatch, string? CdPath, string? RestCommand) DetectNeedlessCd(string command)
     {
         if (string.IsNullOrWhiteSpace(command))
@@ -1824,7 +1871,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         }
 
         // Strip cat heredoc blocks - literal text, not shell code
-        var strippedCommand = CatHeredocRegex().Replace(command, "HEREDOC_STRIPPED");
+        var strippedCommand = StripCatHeredocs(command);
 
         // A literal body only data commands read is neither expansion nor code, so each piece of code
         // is read on its own and only its expanding text is searched for bypasses (DYD-406), without

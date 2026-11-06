@@ -45,9 +45,12 @@ the default officer: a ticket gets a captain whether or not the user has invoked
   sends out Codex agents names a cap: around 8 at once, toward 16 only while clean, fewer on
   `429 turn_rate_limit_exceeded` ("Codex is at capacity"); a capacity 429 means retry in a few
   minutes, never a blocker; never "maximise parallelism". Every crew brief that runs code names the
-  memory cap: `systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`,
-  a probe at 4G with a short timeout, a gate lock outside the cap; run your own the same way. A cap
-  hit is a finding, never a reason to raise the cap. Never `t3_thread_launch` or
+  memory cap: `[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`,
+  a probe at 4G with a short timeout, a gate lock outside the cap; run your own the same way.
+  Use your session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager
+  (on a T3 host, for example, `app-t3code-agents.slice`; a nearer session slice takes precedence).
+  Omit `--slice` where no agent slice exists. Use the bracketed env prefix for .NET commands, without the brackets.
+  A cap hit is a finding, never a reason to raise the cap. Never `t3_thread_launch` or
   `create_threads` for crew: top-level threads are the user's, only for HITL work or when the user
   asks. Needing the user while work runs, ask through the host's question tool; the Linear Question
   ticket stays the record. Full rule: working-tree contract.

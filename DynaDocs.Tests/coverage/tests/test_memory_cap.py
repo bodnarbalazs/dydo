@@ -112,6 +112,56 @@ class MemoryCapTests(unittest.TestCase):
 
     # Enforced
 
+    def test_enforced_scopes_and_probes_join_the_nearest_user_manager_slice(self):
+        for suffix, expected in (
+                ('app.slice/app-t3code.slice/app-t3code-agents.slice/app-t3code-agents-session.slice/run.scope',
+                 'app-t3code-agents-session.slice'),
+                ('background.slice/background-worker.slice/service.service/child.scope',
+                 'background-worker.slice')):
+            with self.subTest(suffix=suffix):
+                self.host.self_cgroup.write_text(f'0::/user.slice/user-1000.slice/user@1000.service/{suffix}\n')
+                (_, executed, _), _ = self.cap()
+                self.assertIn(f'--slice={expected}', executed)
+                self.assertIn(f'--slice={expected}', self.host.calls[-1])
+
+    def test_enforced_scopes_without_a_user_manager_slice_keep_the_default(self):
+        for relative in ('user.slice/user-1000.slice/user@1000.service/app.slice/run.scope',
+                         'user.slice/user-1000.slice/user@1000.service/run.scope',
+                         'system.slice/agent.service/private.slice/run.scope', ''):
+            with self.subTest(relative=relative):
+                self.host.self_cgroup.write_text(f'0::/{relative}\n')
+                (_, executed, _), _ = self.cap()
+                self.assertFalse(any(arg.startswith('--slice=') for arg in executed))
+
+    def test_enforced_record_names_the_slice_used(self):
+        leaf = 'user.slice/user-1000.slice/user@1000.service/app.slice/app-agents.slice/run.scope'
+        (self.directory / 'nested').mkdir()
+        self.host = FakeHost(self.directory / 'nested', leaf)
+        self.host.limit(leaf, GIB, 0)
+        cap, _ = self.cap({'DYDO_MEMORY_CAP_SCOPE': '1'})
+        self.assertIn('slice=app-agents.slice', cap.record['reason'])
+
+    def test_child_environment_defaults_disable_dotnet_servers_on_every_cap_path(self):
+        names = ('MSBUILDDISABLENODEREUSE', 'DOTNET_CLI_USE_MSBUILD_SERVER', 'UseSharedCompilation')
+        clean = {key: value for key, value in os.environ.items() if key not in names}
+        for mode in ('enforced', 'rerun', 'inherited', 'unavailable'):
+            with self.subTest(mode=mode), mock.patch.dict(os.environ, clean, clear=True):
+                self.host.limit(LEAF, GIB if mode in ('rerun', 'inherited') else 'max', 0)
+                self.cap({'DYDO_MEMORY_CAP_SCOPE': '1'} if mode == 'rerun' else None,
+                         platform='darwin' if mode == 'unavailable' else 'linux')
+                self.assertEqual(['1', '0', 'false'], [self.left.get(name) for name in names])
+
+    def test_child_environment_preserves_each_caller_dotnet_setting(self):
+        names = ('MSBUILDDISABLENODEREUSE', 'DOTNET_CLI_USE_MSBUILD_SERVER', 'UseSharedCompilation')
+        clean = {key: value for key, value in os.environ.items() if key not in names}
+        for name in names:
+            for value in ('caller-value', ''):
+                with self.subTest(name=name, value=value), mock.patch.dict(os.environ, clean, clear=True):
+                    self.cap({name: value})
+                    expected = dict(zip(names, ('1', '0', 'false')))
+                    expected[name] = value
+                    self.assertEqual(expected, {key: self.left.get(key) for key in names})
+
     def test_an_uncapped_linux_operation_reruns_once_under_a_capped_systemd_scope(self):
         argv = [sys.executable, '-u', 'run_gap_check.py', 'test', '--stack', 'x', '--', 'a$(b', '$HOME', '$$x']
         (path, executed, environment), stderr = self.cap(orig_argv=argv)
@@ -396,6 +446,20 @@ class MemoryCapTests(unittest.TestCase):
         self.assertEqual({'state', 'limit', 'mechanism', 'reason'}, set(cap))
         self.assertIn(cap['state'], ('enforced', 'inherited', 'unavailable'))
         self.assertTrue(cap['limit'] is None if cap['state'] == 'unavailable' else 0 < cap['limit'] <= 8 * GIB)
+
+    def test_dotnet_server_defaults_and_caller_values_reach_the_actual_child(self):
+        names = ('MSBUILDDISABLENODEREUSE', 'DOTNET_CLI_USE_MSBUILD_SERVER', 'UseSharedCompilation')
+        code = f"import json, os; open('environment.json', 'w').write(json.dumps([os.environ.get(n) for n in {names!r}]))"
+        repository = self.fixture(self.manifest(code))
+        clean = {key: value for key, value in os.environ.items() if key not in names}
+        for supplied, expected in (({}, ['1', '0', 'false']),
+                                   (dict(zip(names, ('0', '', 'true'))), ['0', '', 'true'])):
+            with self.subTest(supplied=supplied):
+                process = subprocess.run([sys.executable, str(repository / 'gap_check.py'), 'test', '--stack', 'hog'],
+                                         cwd=repository, env={**clean, **supplied}, capture_output=True, text=True,
+                                         encoding='utf-8', timeout=60)
+                self.assertEqual(0, process.returncode, process.stdout + process.stderr)
+                self.assertEqual(expected, json.loads((repository / 'environment.json').read_text()))
 
     def test_a_raised_dydo_memory_max_exits_2_before_any_child(self):
         repository = self.fixture(self.manifest("from pathlib import Path; Path('ran').write_text('x')"))

@@ -17,7 +17,10 @@ compiler servers disabled, creates an ordinary mock Git repository, and runs rea
 `CODEX_HOME` is redirected only for these owned CLI fixtures. Machine-mode storage is **not**
 redirected by that variable or by cwd; the driver never executes a mode setter.
 
-On a systemd host, run each drive and probe capped too: `systemd-run --user --scope -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 120 <cmd>`. A cap hit is a finding; never raise the cap.
+On a systemd host, run each drive and probe capped too: `[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 120 <cmd>`. A cap hit is a finding; never raise the cap.
+Use your session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager
+(on a T3 host, for example, `app-t3code-agents.slice`; a nearer session slice takes precedence).
+Omit `--slice` where no agent slice exists. Use the bracketed env prefix for .NET commands, without the brackets.
 
 All commands below must run inside the host's shared suite slot. On the commissioned Windows
 machine, wrap each argv using the LC checkout's existing runner (keep this parent alive):

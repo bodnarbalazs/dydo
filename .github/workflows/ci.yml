@@ -461,6 +461,7 @@ jobs:
         DynaDocs.Tests.Services.DangerousPatternBudgetTests
         DynaDocs.Tests.Services.BashCommandAnalyzerTests
         DynaDocs.Tests.Integration.GuardSecurityTests
+        DynaDocs.Tests.Integration.GuardMergeRouteTests
     steps:
       - name: Keep candidate bytes identical on both platforms
         run: git config --global core.autocrlf false

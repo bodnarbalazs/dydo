@@ -187,6 +187,54 @@ Native hosted Windows remains captain-owned and unproved by these Linux results.
 no production edits, push, PR or remote merge. Local product coverage remains inapplicable and
 mutation remains unavailable as recorded above.
 
+## Authorized Node fixture correction
+
+The follow-up on `530088c4007543ce545299a8005e3508a6072aaf` closes the integration
+blocker above. The independent expected class list now includes `GuardPrReadyTests`, matching
+the intentionally expanded CI selection; the title names seven guard classes. All original
+fault checks remain, with two additional cases rejecting missing or skipped PR-ready class results.
+The workflow, C# tests and production code retain their exact bytes.
+
+Fresh Node red/green, applicable Node static and documentation receipts are recorded in
+`dyd-805-evidence/node-fixture-receipt.json`, with compressed raw logs beside it. Historical
+failures above retain their original verdicts. The correction reuses the existing 2,515-passing
+Light and 287-passing class evidence from `merge-receipt.json` under the captain's explicit
+Node-only authorization. A diff against its tested commit `6ac09458abd0b56290237b2648469f294a18a7ad`
+must contain only this Node fixture and ticket evidence; the retained preflight records that check.
+The previous whole-stack static result remains historical; this hop runs the applicable Node gate.
+Native hosted Windows proof remains captain-owned. No C# tests are rerun for this fixture correction.
+
+| Fixture observation | Exit | Result | Raw evidence |
+| --- | --- | --- | --- |
+| Initial red and post-green revert | 1 each | 10 passed, 2 failed, zero skipped in each run | `node-fixture-red.log.gz`, `node-fixture-reverted.log.gz` |
+| Corrected fixture | 0 | 14 passed, zero failed or skipped | `node-fixture-green.log.gz` |
+| Node static | 0 | Node passed; child exit 0, aggregate 0 | `node-fixture-static.log.gz`, `node-fixture-static-result.json.gz` |
+
+These artifact names are relative to `dyd-805-evidence/`. Corrected fixture SHA-256:
+`7cf5e132a17a0bf5947f1cc355549c0cc826c2728a0692b2652c2ca2d60cc27b`.
+
+From the repository root, use this wrapper for the fresh checks (logs use the
+`/tmp/dyd805-node-fixture-` prefix):
+
+```bash
+node_fixture_gate() {
+  /var/tmp/dydo-gate-lock.sh systemd-run --user --scope --slice=app-t3code-agents.slice \
+    -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue timeout "$@"
+}
+export PATH=/tmp/dyd622-pwsh:/home/balazs/.local/share/fnm/aliases/default/bin:/home/balazs/.dotnet:/usr/local/bin:/usr/bin:/bin
+export MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false
+node_fixture_gate 180 node --test DynaDocs.Tests/coverage/tests/guard-windows-selection.test.cjs
+node_fixture_gate 600 .static-gates/python/bin/python DynaDocs.Tests/coverage/gap_check.py gate static --stack node
+node_fixture_gate 180 dotnet bin/Debug/net10.0/dydo.dll check
+```
+
+The red runs use the fixture bytes at `530088c4007543ce545299a8005e3508a6072aaf` with the
+same Node command. The second red temporarily restores those bytes after green, then restores
+the corrected file through an EXIT trap in `dyd-805-evidence/node-fixture-revert.sh`.
+Run that script with the same wrapper and a 180-second timeout; it deliberately exits 1.
+The preflight compares the restored file to its saved
+green copy. No dependencies are installed or process environments inspected.
+
 ## Related
 
 - [Guard system](../../../../understand/guard-system.md) - unreadable PR calls and body-file rules

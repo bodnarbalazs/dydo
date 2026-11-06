@@ -1710,9 +1710,9 @@ class RecordTests(unittest.TestCase):
         self.assertNotIn("resume", argv)
         self.assertIn('approval_policy="never"', argv)
         self.assertIn("sandbox_workspace_write.exclude_slash_tmp=true", argv)
-        self.assertEqual(['sandbox_workspace_write.writable_roots=["/scratch/x/xdg"]'],
+        self.assertEqual([f"sandbox_workspace_write.writable_roots={json.dumps([str(lab.path('xdg'))])}"],
                          [word for word in argv if "writable_roots" in word])
-        self.assertEqual(lab.env()["XDG_DATA_HOME"], "/scratch/x/xdg")
+        self.assertEqual(lab.env()["XDG_DATA_HOME"], str(lab.path("xdg")))
         self.assertEqual("-", argv[-1])
 
     def test_claude_argv_runs_one_session_in_the_cases_permission_mode(self):

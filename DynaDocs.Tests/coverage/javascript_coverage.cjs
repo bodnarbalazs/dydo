@@ -176,14 +176,83 @@ function campaign(root, output, targets, command) {
   return 0;
 }
 
+// TypeScript needs source-stable points for a platform union. Node strips types without moving
+// positions; Istanbul supplies the same zero-hit denominator to the loader and union verifier.
+function typescriptSource(source, filename) {
+  const { stripTypeScriptTypes } = require('node:module');
+  const { createInstrumenter } = require('istanbul-lib-instrument');
+  const instrumenter = createInstrumenter({ esModules: true, compact: false,
+    preserveComments: false, coverageVariable: '__dydo_ts_coverage__' });
+  // Ignore pragmas are never a coverage exemption (the static gate also reports them).
+  const stripped = stripTypeScriptTypes(source.replace(/(?:istanbul|c8|v8)(?=\s+ignore\b)/g,
+    value => ' '.repeat(value.length)), { mode: 'strip' });
+  const code = instrumenter.instrumentSync(stripped, filename);
+  return { code, coverage: instrumenter.lastFileCoverage() };
+}
+
+function typescriptDenominator(root, targets) {
+  const rows = {};
+  for (const relative of targets) {
+    const filename = path.resolve(root, relative);
+    rows[relative] = typescriptSource(fs.readFileSync(filename, 'utf8').replaceAll('\r\n', '\n'), filename).coverage;
+  }
+  return rows;
+}
+
+function typescriptHook() {
+  const { registerHooks } = require('node:module');
+  const { randomUUID } = require('node:crypto');
+  const { threadId } = require('node:worker_threads');
+  const config = JSON.parse(fs.readFileSync(process.env.DYDO_TYPESCRIPT_COVERAGE, 'utf8'));
+  const prepared = new Map(Object.entries(config.prepared));
+  registerHooks({ load(url, context, nextLoad) {
+    const code = url.startsWith('file:') && prepared.get(canonical(config.root, url));
+    if (!code) return nextLoad(url, context);
+    return { format: 'module', source: fs.readFileSync(code, 'utf8'), shortCircuit: true };
+  } });
+  process.on('exit', () => {
+    fs.writeFileSync(path.join(config.output, `${process.pid}-${threadId}-${randomUUID()}.json`),
+      JSON.stringify(globalThis.__dydo_ts_coverage__ || {}));
+  });
+}
+
+function typescriptCampaign(configFile, command) {
+  const config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+  fs.mkdirSync(config.output, { recursive: true });
+  const preparedRoot = path.join(path.dirname(config.output), 'instrumented');
+  fs.mkdirSync(preparedRoot);
+  config.prepared = {};
+  for (const [index, target] of config.targets.entries()) {
+    const filename = path.resolve(config.root, target);
+    const prepared = path.join(preparedRoot, `${index}.js`);
+    const source = fs.readFileSync(filename, 'utf8').replaceAll('\r\n', '\n');
+    fs.writeFileSync(prepared, typescriptSource(source, filename).code);
+    config.prepared[canonical(config.root, filename)] = prepared;
+  }
+  const preparedConfig = path.join(preparedRoot, 'config.json');
+  fs.writeFileSync(preparedConfig, JSON.stringify(config));
+  const env = { ...process.env, DYDO_TYPESCRIPT_COVERAGE: preparedConfig,
+    NODE_OPTIONS: `${process.env.NODE_OPTIONS || ''} --disable-warning=ExperimentalWarning --require ${JSON.stringify(__filename)}` };
+  const result = spawnSync(process.execPath, command, { cwd: config.cwd, stdio: 'inherit', env });
+  if (result.error) throw result.error;
+  return Number.isInteger(result.status) ? result.status : 130;
+}
+
 function main(args = process.argv.slice(2)) {
+  if (args[0] === '--typescript-run') return typescriptCampaign(args[1], args.slice(2));
+  if (args[0] === '--typescript-denominator') {
+    const config = JSON.parse(fs.readFileSync(args[1], 'utf8'));
+    process.stdout.write(JSON.stringify(typescriptDenominator(config.root, config.targets)));
+    return 0;
+  }
   const values = {};
   for (let index = 0; index < args.length; index += 2) values[args[index]] = args[index + 1];
   if (!values['--root'] || !values['--output'] || !values['--targets-json'] || !values['--command-json']) return 2;
   return campaign(values['--root'], values['--output'], JSON.parse(values['--targets-json']), JSON.parse(values['--command-json']));
 }
 
-module.exports = { canonicalRows, rawFunctions, join };
+module.exports = { canonicalRows, rawFunctions, join, typescriptSource, typescriptDenominator };
+if (process.env.DYDO_TYPESCRIPT_COVERAGE) typescriptHook();
 if (require.main === module) {
   try { process.exitCode = main(); } catch (error) { console.error(error.message); process.exitCode = 2; }
 }

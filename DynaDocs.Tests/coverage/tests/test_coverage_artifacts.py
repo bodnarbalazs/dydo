@@ -45,9 +45,14 @@ def job(stack, platform, started, conclusion='success', attempt=2):
 
 class JobRecordTests(unittest.TestCase):
     def test_hosted_rerun_record_names_the_attempt_each_leg_executed_in(self):
-        for stack in coverage_artifacts.STACKS:
+        for stack in ('python', 'dotnet'):
             with self.subTest(stack=stack):
                 self.assertEqual({'linux': 1, 'windows': 2}, leg_attempts(HOSTED_RERUN, STARTS, stack, 2))
+
+    def test_statechart_rerun_uses_each_native_legs_latest_execution(self):
+        jobs = [job('statechart', 'linux', '2026-11-05T15:01:07Z'),
+                job('statechart', 'windows', '2026-11-05T15:26:27Z')]
+        self.assertEqual({'linux': 1, 'windows': 2}, leg_attempts(jobs, STARTS, 'statechart', 2))
 
     def test_a_leg_rerun_in_the_latest_attempt_executed_there(self):
         jobs = [job('python', 'linux', '2026-11-05T15:26:23Z'), job('python', 'windows', '2026-11-05T15:40:00Z')]
@@ -355,11 +360,15 @@ LEGS = {'python': ('python-coverage', 'python-coverage-union', 'Upload platform 
                    'python-coverage-{platform}'),
         'dotnet': ('dotnet-coverage', 'dotnet-coverage-union', 'Upload platform .NET coverage evidence',
                    'Stamp platform .NET coverage artifact identity',
-                   'Verify the complete same-candidate platform partition', '{platform}')}
+                   'Verify the complete same-candidate platform partition', '{platform}'),
+        'statechart': ('statechart-coverage', 'statechart-coverage-union', 'Upload platform coverage evidence',
+                       'Stamp platform coverage artifact identity', 'Verify complete same-candidate platform union',
+                       'statechart-coverage-{platform}')}
 # One tree per run: the merge ref on a pull request, whose ci.yml is running, and the pushed commit on a push.
 RUN_COMMIT = '${{ github.sha }}'
 HEAD_REF = '${{ github.event.pull_request.head.sha || github.sha }}'
 CHECKOUT_JOBS = ('python-coverage', 'python-coverage-union', 'dotnet-coverage', 'dotnet-coverage-union',
+                 'statechart-coverage', 'statechart-coverage-union',
                  'guard-windows', 'assurance-cancellation', 'statechart-windows', 'viewer', 'build', 'full-stack')
 DOTNET_PREFLIGHT = 'Preflight candidate, selection pins and nonzero test discovery'
 RESULTS = 'DynaDocs.Tests/coverage/results'

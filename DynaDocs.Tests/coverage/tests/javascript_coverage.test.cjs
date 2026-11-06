@@ -6,6 +6,48 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { spawnSync } = require('node:child_process');
 
+test('TypeScript source counters retain branches, erased types, empty and never-entered callables', () => {
+  const { typescriptSource } = require('../javascript_coverage.cjs');
+  const source = 'type Value = number;\nexport function choose(flag: boolean) { if (flag) return 1; return 0; }\n'
+    + 'export const empty = () => {};\n';
+  const first = typescriptSource(source, '/repo/source.ts');
+  const second = typescriptSource(source, '/other/source.ts');
+  for (const key of ['statementMap', 'fnMap', 'branchMap']) assert.deepEqual(first.coverage[key], second.coverage[key]);
+  assert.equal(Object.keys(first.coverage.fnMap).length, 2);
+  assert.equal(Object.keys(first.coverage.branchMap).length, 1);
+  assert.ok(Object.values(first.coverage.s).every(value => value === 0));
+  assert.ok(Object.values(first.coverage.statementMap).every(span => span.start.line > 1));
+  const ignored = typescriptSource('/* istanbul ignore next */\nexport function kept() { return 1; }', '/repo/kept.ts');
+  assert.equal(Object.keys(ignored.coverage.fnMap).length, 1);
+});
+
+test('TypeScript campaign records child-only execution and the source denominator keeps unloaded modules', t => {
+  const { typescriptDenominator } = require('../javascript_coverage.cjs');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dydo-ts-coverage-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.writeFileSync(path.join(root, 'child.ts'), 'export function native(value: number) { return value + 1; }\nnative(1);\n');
+  fs.writeFileSync(path.join(root, 'unloaded.ts'), 'export function missing() { return 0; }\n');
+  fs.writeFileSync(path.join(root, 'test.cjs'),
+    "const {spawnSync}=require('node:child_process'); const r=spawnSync(process.execPath,['child.ts'],{encoding:'utf8'});"
+    + "if(r.status || r.stderr) throw Error(r.stderr || 'child failed');");
+  const output = path.join(root, 'reports');
+  const config = path.join(root, 'config.json');
+  const targets = ['child.ts', 'unloaded.ts'];
+  fs.writeFileSync(config, JSON.stringify({ root, cwd: root, output, targets }));
+  const run = spawnSync(process.execPath, [path.resolve(__dirname, '../javascript_coverage.cjs'),
+    '--typescript-run', config, 'test.cjs'], { encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stdout + run.stderr);
+  const reports = fs.readdirSync(output).map(file => JSON.parse(fs.readFileSync(path.join(output, file))));
+  const child = reports.flatMap(report => Object.values(report)).find(row => row.path.endsWith('child.ts'));
+  assert.ok(child);
+  assert.equal(child.f['0'], 1);
+  const source = typescriptDenominator(root, targets);
+  assert.equal(source['unloaded.ts'].f['0'], 0);
+  assert.deepEqual(child.statementMap, source['child.ts'].statementMap);
+  assert.deepEqual(child.fnMap, source['child.ts'].fnMap);
+  assert.deepEqual(child.branchMap, source['child.ts'].branchMap);
+});
+
 test('missing c8 is an unavailable measurement with exit 2', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dyd171-js-no-c8-'));
   const tools = path.join(root, 'tools');

@@ -96,14 +96,15 @@ def scope(root, modules, platform, selection=None):
     return measured, receipt
 
 
-def _report_facts(report, platform):
+def _report_facts(report, platform, stack='python', collector='python-coverage'):
     if (type(report['schema']) is not int or report['schema'] != 1
-            or report['stack'] != 'python' or report['gate'] != 'coverage'
+            or report['stack'] != stack or report['gate'] != 'coverage'
             or report['exitCode'] != 0 or report['measurementComplete'] is not True
             or report['findings'] or report['gaps'] or report['candidate']['dirty'] is not False
             or not report['candidate']['commit']):
-        raise ValueError('Platform union requires two clean passing Python coverage gates')
-    facts = report['collectors']['python-coverage']['facts']
+        name = 'Python' if stack == 'python' else stack
+        raise ValueError(f'Platform union requires two clean passing {name} coverage gates')
+    facts = report['collectors'][collector]['facts']
     receipt = facts['platform_selection']
     if type(receipt['schema']) is not int or receipt['schema'] != 1 or receipt['platform'] != platform:
         raise ValueError('Missing or wrong platform coverage receipt')

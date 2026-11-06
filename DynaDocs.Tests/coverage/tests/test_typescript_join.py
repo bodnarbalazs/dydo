@@ -1,12 +1,13 @@
 """Istanbul LCOV joins the TypeScript walker's callables into policy modules."""
 import sys
+import copy
 import tempfile
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gate_policy import evaluate_policy
-from typescript_join import join, join_module, parse_lcov
+from typescript_join import join, join_module, parse_lcov, join_istanbul, merge_istanbul
 
 ROOT = Path("/repo")
 BASE = ROOT / "viewer"
@@ -120,6 +121,51 @@ class JoinTests(unittest.TestCase):
         findings = {(row["path"], row["gate"]) for row in evaluate_policy(modules)}
         self.assertEqual({("viewer/src/unused.ts", "line-coverage"), ("viewer/src/unused.ts", "branch-coverage"),
                           ("viewer/src/unused.ts", "hcrap")}, findings)
+
+
+class SourceDerivedJoinTests(unittest.TestCase):
+    def coverage(self):
+        body = {'start': {'line': 1, 'column': 20}, 'end': {'line': 3, 'column': 1}}
+        return {'statementMap': {'0': {'start': {'line': 2, 'column': 2},
+                                       'end': {'line': 2, 'column': 11}}},
+                's': {'0': 1}, 'fnMap': {'0': {'loc': body}}, 'f': {'0': 0},
+                'branchMap': {'0': {'line': 2}}, 'b': {'0': [1, 0]}}
+
+    def test_body_counts_keep_an_unentered_callable_uncovered_on_a_hit_line(self):
+        coverage = self.coverage()
+        metric = {**method('unused:1:7', 1, 3, 0, 50), 'body': coverage['fnMap']['0']['loc']}
+        row = join_istanbul('source.ts', coverage, walked(metric))
+        self.assertEqual({'2': 1}, row['lines'])
+        self.assertEqual({'2': 0}, row['methods'][0]['body_lines'])
+        self.assertEqual(0, row['methods'][0]['covered'])
+        self.assertEqual({'2:0:0': 1, '2:0:1': 0}, row['branches'])
+
+    def test_empty_function_still_has_its_execution_counter_and_body_point(self):
+        coverage = self.coverage()
+        coverage['statementMap'], coverage['s'] = {}, {}
+        metric = {**method('empty:1:7', 1, 3, 0, 50), 'body': coverage['fnMap']['0']['loc']}
+        row = join_istanbul('source.ts', coverage, walked(metric))
+        self.assertEqual({'1': 0}, row['methods'][0]['body_lines'])
+        self.assertEqual({'1': 0}, row['lines'])
+
+    def test_merge_preserves_unloaded_source_and_rejects_denominator_or_counter_drift(self):
+        source = {'source.ts': self.coverage(), 'unloaded.ts': self.coverage()}
+        for value in source.values():
+            value['s']['0'] = 0
+            value['b']['0'] = [0, 0]
+        measured = self.coverage()
+        merged = merge_istanbul(source, [{str(ROOT / 'source.ts'): measured}], ROOT)
+        self.assertEqual(1, merged['source.ts']['s']['0'])
+        self.assertEqual(0, merged['unloaded.ts']['s']['0'])
+        self.assertEqual(0, source['source.ts']['s']['0'])
+        for defect in ('map', 'missing', 'branch', 'negative'):
+            report = copy.deepcopy(measured)
+            if defect == 'map': report['fnMap'] = {}
+            if defect == 'missing': report['s'] = {}
+            if defect == 'branch': report['b']['0'].pop()
+            if defect == 'negative': report['f']['0'] = -1
+            with self.subTest(defect=defect), self.assertRaises(ValueError):
+                merge_istanbul(source, [{str(ROOT / 'source.ts'): report}], ROOT)
 
 
 if __name__ == "__main__":

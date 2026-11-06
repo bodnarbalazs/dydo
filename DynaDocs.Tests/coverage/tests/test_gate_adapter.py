@@ -974,6 +974,19 @@ def fake_node_test(exit_code=0, tap=None, lcov=STATECHART_LCOV):
 
     def run(argv, cwd):
         calls.append((argv, cwd))
+        if '--typescript-run' in argv:
+            from statechart_platform import denominator
+            config = json.loads(Path(argv[argv.index('--typescript-run') + 1]).read_text())
+            output = Path(config['output'])
+            output.mkdir()
+            sources = denominator(Path(config['root']), config['targets'], output.parent / 'fixture-source')
+            reports = {}
+            for path, coverage in sources.items():
+                coverage['s'] = {key: 1 for key in coverage['s']}
+                coverage['f'] = {key: 1 for key in coverage['f']}
+                coverage['b'] = {key: [1, *[0] * (len(value) - 1)] for key, value in coverage['b'].items()}
+                reports[str(Path(config['root']) / path)] = coverage
+            (output / 'fixture.json').write_text(json.dumps(reports))
         destinations = [item.split("=", 1)[1] for item in argv if item.startswith("--test-reporter-destination=")]
         if tap is not None:
             Path(next(path for path in destinations if path.endswith("suite.tap"))).write_text(tap, encoding="utf-8")
@@ -984,6 +997,12 @@ def fake_node_test(exit_code=0, tap=None, lcov=STATECHART_LCOV):
 
 
 class StatechartGateTests(unittest.TestCase):
+    def setUp(self):
+        # These shared-collector fixtures exercise the Linux full-suite leg on either test host.
+        native = mock.patch('statechart_platform.native_platform', return_value='linux')
+        native.start()
+        self.addCleanup(native.stop)
+
     def test_node_discovery_accepts_typescript_test_files_that_use_node_test(self):
         sources = {f"{STATECHART}/test/a.test.ts": "import { test } from 'node:test';\ntest('a', () => {});\n",
                    f"{STATECHART}/test/b.test.ts": "test('b', () => {});\n",
@@ -1018,6 +1037,9 @@ class StatechartGateTests(unittest.TestCase):
         for relative, text in STATECHART_SOURCES.items():
             write_file(root, relative, text)
         write_file(root, "DynaDocs.Tests/coverage/js_metrics.cjs", WALKER_SHIM)
+        write_file(root, "DynaDocs.Tests/coverage/statechart-platforms.json", json.dumps({
+            'schema': 1, 'neutral': 'linux', 'native': {},
+            'windows_tests': {'reason': 'fixture', 'tests': ['test/run.test.ts'], 'names': ['runs']}}))
         git_repository(root)
         paths, deleted = git_file_state(root)
         payload = assemble_inventory(root, paths, [], gate_adapter._ordinary_discovery(root, paths), deleted)
@@ -1042,7 +1064,8 @@ class StatechartGateTests(unittest.TestCase):
             self.assertEqual((0, 1), (row["facts"]["suite_exit"], row["facts"]["skipped"]))
             argv, cwd = child.calls[0]
             self.assertEqual(root / STATECHART, cwd)
-            self.assertEqual(["node", "--experimental-test-coverage"], argv[:2])
+            self.assertEqual("node", argv[0])
+            self.assertIn("--typescript-run", argv)
             self.assertEqual(["--test", "--test-concurrency=1", "test/*.test.ts"], argv[-3:])
 
     def test_a_failing_statechart_suite_is_named_before_any_policy(self):

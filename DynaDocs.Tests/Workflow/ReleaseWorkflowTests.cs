@@ -158,6 +158,7 @@ public sealed class ReleaseWorkflowTests
     // Both Windows statechart consumers provision through one script, so their pins cannot drift apart.
     [Theory]
     [InlineData("ci.yml", "statechart-windows", StatechartTestStep)]
+    [InlineData("ci.yml", "statechart-coverage", "Statechart suite and platform coverage gate")]
     [InlineData("release.yml", "validation", "Run coverage gate")]
     public void Workflows_ProvisionStatechartPrerequisitesThroughTheSharedScript(string name, string jobName, string consumer)
     {
@@ -242,7 +243,7 @@ public sealed class ReleaseWorkflowTests
     }
 
     [Theory]
-    [InlineData("ci.yml", "python-coverage dotnet-coverage dotnet-coverage-union guard-windows build full-stack")]
+    [InlineData("ci.yml", "python-coverage statechart-coverage dotnet-coverage dotnet-coverage-union guard-windows build full-stack")]
     [InlineData("release.yml", "build validation nuget")]
     public void Workflows_ProvisionPatchedRuntimeBeforeDotnetConsumers(string name, string expectedJobs)
     {
@@ -395,6 +396,8 @@ public sealed class ReleaseWorkflowTests
     // legs, restores its pnpm lock frozen, with pnpm set up before Node.js caches its store.
     [Theory]
     [InlineData("python-coverage")]
+    [InlineData("statechart-coverage")]
+    [InlineData("statechart-coverage-union")]
     [InlineData("dotnet-coverage")]
     [InlineData("assurance-cancellation")]
     public void CiWorkflow_RestoresTheCoveragePackageFromItsPnpmLock(string name)

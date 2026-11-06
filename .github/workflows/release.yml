@@ -198,6 +198,16 @@ jobs:
       - name: Install viewer dependencies
         run: pnpm -C viewer install --frozen-lockfile
 
+      - name: Install statechart test dependencies
+        run: pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile
+
+      # The statechart stack's checker, replay and renderer tests need TLC, a JRE and Pele. Each comes
+      # from its pinned source in dydo's dependency lock and must match its pinned hash there.
+      - name: Provision statechart prerequisites
+        id: statechart
+        shell: pwsh
+        run: ./.github/workflows/provision-statechart.ps1
+
       - name: Run isolated test adapter
         run: .static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/run_tests.py
 
@@ -209,6 +219,10 @@ jobs:
 
       - name: Run coverage gate
         run: .static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/gap_check.py --force-run
+        env:
+          TLA2TOOLS: ${{ steps.statechart.outputs.tla2tools }}
+          JAVA: ${{ steps.statechart.outputs.java }}
+          STATECHART_PELE: ${{ steps.statechart.outputs.pele }}
 
       # The gate's per-row reports, command logs and campaign streams, so a failed row carries its detail.
       - name: Upload coverage evidence

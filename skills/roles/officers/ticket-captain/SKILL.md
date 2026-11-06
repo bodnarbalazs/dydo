@@ -44,7 +44,10 @@ the default officer: a ticket gets a captain whether or not the user has invoked
   your officer (the Admiral, or the user when none is invoked) to dispatch it. Every brief that
   sends out Codex agents names a cap: around 8 at once, toward 16 only while clean, fewer on
   `429 turn_rate_limit_exceeded` ("Codex is at capacity"); a capacity 429 means retry in a few
-  minutes, never a blocker; never "maximise parallelism". Never `t3_thread_launch` or
+  minutes, never a blocker; never "maximise parallelism". Every crew brief that runs code names the
+  memory cap: `systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`,
+  a probe at 4G with a short timeout, a gate lock outside the cap; run your own the same way. A cap
+  hit is a finding, never a reason to raise the cap. Never `t3_thread_launch` or
   `create_threads` for crew: top-level threads are the user's, only for HITL work or when the user
   asks. Needing the user while work runs, ask through the host's question tool; the Linear Question
   ticket stays the record. Full rule: working-tree contract.
@@ -71,7 +74,7 @@ the default officer: a ticket gets a captain whether or not the user has invoked
 
 1. **Claim.** Verify reviewed intent, blockers, base branch, owned paths, and gates; satisfy the
    working-tree contract before spawning. When the Project's map holder commissions Project setup, open the
-   feature branch from its named approved main SHA before creating the ticket branch. A move or
+   feature branch from its named approved main SHA, commit the spec draft its brief names, unchanged, as that branch's first commit and push it, before creating the ticket branch. A move or
    rename also owns every file it breaks: links, tests, notices. **Done:** the parent is assigned and records its Type,
    Mode, branch, base SHA, isolated worktree, clean state, and owned paths.
 2. **Contract.** Keep one compact acceptance contract on the parent and link its evidence instead of

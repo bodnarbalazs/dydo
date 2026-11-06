@@ -43,11 +43,19 @@ class LcovParseTests(unittest.TestCase):
         self.assertEqual({2: 1, 3: 1, 4: 0, 6: 1}, record["lines"])
         self.assertEqual({"2:0:0": 1, "2:0:1": 0}, record["branches"])
         self.assertEqual({1: ["outer"], 3: ["(anonymous_1)"], 6: ["idle"]}, record["functions"])
-        self.assertEqual(0, record["calls"]["idle"])
+        self.assertEqual({"outer": [1], "(anonymous_1)": [1], "idle": [0]}, record["calls"])
 
     def test_a_source_recorded_twice_is_refused(self):
         with self.assertRaisesRegex(ValueError, "Duplicate Istanbul LCOV record"):
             parse_lcov(LCOV + LCOV, ROOT, BASE)
+
+    def test_a_source_outside_the_repository_is_no_record_and_leaves_the_next_intact(self):
+        foreign = "TN:\nSF:../../managed/pele.js\nDA:1,1\nBRDA:1,0,0,1\nend_of_record\n"
+
+        records = parse_lcov(foreign + LCOV, ROOT, BASE)
+
+        self.assertEqual(["viewer/src/app.ts"], list(records))
+        self.assertEqual({2: 1, 3: 1, 4: 0, 6: 1}, records["viewer/src/app.ts"]["lines"])
 
 
 class JoinModuleTests(unittest.TestCase):
@@ -74,6 +82,17 @@ class JoinModuleTests(unittest.TestCase):
         record["functions"][1].append("twin")
         with self.assertRaisesRegex(ValueError, "No unambiguous Istanbul LCOV point"):
             join_module("viewer/src/app.ts", record, walked(method("outer:1:0", 1, 1, 0, 9)))
+
+    def test_two_functions_node_names_alike_each_keep_their_own_counter(self):
+        lcov = ("TN:\nSF:src/temp.ts\nFN:2,temp\nFN:6,temp\nFNDA:256,temp\nFNDA:0,temp\n"
+                "DA:2,256\nDA:3,256\nDA:6,1\nDA:7,0\nend_of_record\n")
+        record = parse_lcov(lcov, ROOT, BASE)["viewer/src/temp.ts"]
+
+        module = join_module("viewer/src/temp.ts", record,
+                             walked(method("temp:2:2", 2, 3, 10, 40), method("temp:6:2", 6, 7, 60, 90)))
+
+        rows = {row["id"]: (row["covered"], row["total"]) for row in module["methods"]}
+        self.assertEqual({"temp:2:2": (2, 2), "temp:6:2": (0, 2)}, rows)
 
     def test_top_level_statements_are_the_module_callable(self):
         scores = {"cc": 3, "cognitive": 2}

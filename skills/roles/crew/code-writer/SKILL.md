@@ -88,6 +88,7 @@ Account for every own/reached feature and shared test, preflight its selection, 
 hop's affected-feature Light and applicable static evidence. Attribute failures by Evidence and
 inherited failures; send unresolved attribution or missing support to the captain. Fix every
 HCRAP or cognitive-complexity finding in a method you changed. Mutation is the reviewer's.
+Run every test, gate and probe capped: `systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`, a probe at 4G with a short timeout. A cap hit is a finding; never raise the cap.
 
 ## Return
 

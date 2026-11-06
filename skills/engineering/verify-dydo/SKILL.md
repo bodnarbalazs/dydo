@@ -17,6 +17,8 @@ compiler servers disabled, creates an ordinary mock Git repository, and runs rea
 `CODEX_HOME` is redirected only for these owned CLI fixtures. Machine-mode storage is **not**
 redirected by that variable or by cwd; the driver never executes a mode setter.
 
+On a systemd host, run each drive and probe capped too: `systemd-run --user --scope -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 120 <cmd>`. A cap hit is a finding; never raise the cap.
+
 All commands below must run inside the host's shared suite slot. On the commissioned Windows
 machine, wrap each argv using the LC checkout's existing runner (keep this parent alive):
 

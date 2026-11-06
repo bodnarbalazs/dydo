@@ -9,7 +9,8 @@ Use a temporary feature spec when several tickets share behavior or decisions th
 anchor. Keep an atomic outcome in its ticket; use an existing reviewed architecture plan when it
 already supplies that anchor. The spec governs the change under delivery; the maintained
 `verify-<app>` feature map gives the user a route and proof. Executable scenarios own expected values
-when available; link them instead of copying their values.
+when available; link them instead of copying their values. A Project the admiral scaffolds always gets
+a spec, by the admiral's scaffold recipe (`skills/roles/officers/admiral/resources/scaffold-project.md`).
 
 ## Location and content
 

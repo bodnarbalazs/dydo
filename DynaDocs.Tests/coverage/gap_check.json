@@ -49,6 +49,18 @@
         "coverage": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "viewer", "--gate", "coverage"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/viewer-coverage.json", "required": true}], "suiteVerdict": {"exit": ["collectors", "typescript-coverage", "facts", "suite_exit"], "failure": ["collectors", "typescript-coverage", "findings", {"gate": "functional"}]}},
         "mutation": {"state": "unavailable", "reason": "No mutation mechanism is adopted for TypeScript; the DYD-103 lane the other stacks cite is canceled"}
       }
+    },
+    {
+      "name": "statechart",
+      "kind": "node-test",
+      "cwd": ".",
+      "isolation": {"requirement": "in-place", "evidence": {"state": "verified", "kind": "direct"}},
+      "capabilities": {
+        "test": {"state": "configured", "command": {"kind": "argv", "argv": ["pnpm", "-C", "skills/engineering/statechart/scripts", "run", "test"]}, "artifacts": []},
+        "static": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "statechart", "--gate", "static"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/statechart-static.json", "required": true}]},
+        "coverage": {"state": "configured", "command": {"kind": "current-python", "argv": ["DynaDocs.Tests/coverage/gate_adapter.py", "--stack", "statechart", "--gate", "coverage"]}, "artifacts": [{"path": "DynaDocs.Tests/coverage/results/adapters/statechart-coverage.json", "required": true}], "suiteVerdict": {"exit": ["collectors", "typescript-coverage", "facts", "suite_exit"], "failure": ["collectors", "typescript-coverage", "findings", {"gate": "functional"}]}},
+        "mutation": {"state": "unavailable", "reason": "No mutation mechanism is adopted for TypeScript; the DYD-103 lane the other stacks cite is canceled"}
+      }
     }
   ]
 }

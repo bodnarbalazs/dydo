@@ -66,6 +66,22 @@ The session's shared FIFO, concurrency limits and host restrictions take priorit
 local scheduling exemptions, including slot-free Light. Use the supported queue and let a healthy
 queued or quiet run continue. A Light label grants neither a bypass nor host access.
 
+Memory belongs to the whole host: one runaway run can exhaust it and end every session on the
+machine. Run each ad-hoc test, gate or probe under a hard cap with swap off:
+`systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`.
+Give a focused probe `MemoryMax=4G` and a short timeout. Keep any host gate lock outside the cap,
+as `<lock> systemd-run --user --scope … timeout 3600 <gate>`. Pass input that holds `$` through a
+script file, and never scale an input upward uncapped. The testing facade caps its own operations
+the same way, and `DYDO_MEMORY_MAX` may only lower its cap.
+
+A cap hit is a finding to diagnose; nobody raises the cap to get past it. When the facade
+survives, the hit is a `failed` row marked `memoryCapHit`. Otherwise the caller sees 137, or 143
+when systemd stops a scope under its default `OOMPolicy=stop`, and the `journalctl --user` OOM line
+confirms it. Behind `timeout`, a default-policy scope can even return 0; that race is why the
+command sets `OOMPolicy=continue`. Without systemd, as on Windows and macOS, no memory cap applies:
+the facade records its cap as `unavailable` with the reason, and only timeouts and row deadlines
+bound a run, so keep inputs small there.
+
 ## Evidence and inherited failures
 
 Each result names candidate/source identity, command and selection, environment/session, exit and

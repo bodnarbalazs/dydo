@@ -23,13 +23,16 @@ violation, and renaming its parent is refused with access denied. The stage stay
 authoritative drain, which deletes the stage and temp scratch and journals
 `deleted-after-authoritative-drain`.
 
-`StatechartTestDirectory` now owns the helpers the lifecycle tests start. Before it deletes its
-directory, it closes each helper's input and waits for it to exit, so a failing test cannot leave a
-helper holding its scratch or hide the failure behind a teardown error. The helper answers EOF by
-retaining its scratch and closing the handles before it exits. The fixture does not kill the helper,
-because a killed helper's handle was seen still open right after its exit. The wait is bounded: a
-helper that has not exited 30 seconds after EOF fails the teardown by its pid instead of hanging it,
-and the fixture still ends every other helper and deletes its directory.
+`StatechartTestDirectory` now owns the helpers the lifecycle tests start. Before attempting directory
+deletion, it closes each helper's input and waits for it to exit. The helper normally answers EOF by
+retaining its scratch and closing the handles before it exits. Only if that wait exceeds 30 seconds
+does the fixture kill the helper's process tree, then wait another bounded 30 seconds to confirm exit.
+An already-exited helper is treated as a race, not a kill failure. The timeout still fails teardown
+by the captured pid, reporting whether the helper was killed, had already exited, or could not be
+confirmed stopped. It preserves any kill error and states that scratch may still have been held when
+deletion was attempted: on Windows, a killed helper's handle was seen still open briefly after exit.
+Each helper is ended independently and directory deletion is still attempted; failures are rethrown
+afterwards.
 
 `OwnerEofRetainsRegisteredScratchWithDurableUncertaintyReason` now disposes its Windows lifetime in a
 `finally`, so a registration that throws still ends that helper before the directory is deleted.

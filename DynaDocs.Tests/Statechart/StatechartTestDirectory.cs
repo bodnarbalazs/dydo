@@ -3,11 +3,11 @@ namespace DynaDocs.Tests.Statechart;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 
-// A process it owns is ended before the directory is deleted, so a failed test cannot leave a helper holding
-// its scratch open and let the teardown error replace the test's own. The helper is ended by closing its input:
-// it answers EOF by closing its scratch handles before it exits, while on Windows a killed helper's handle was
-// seen still open after its exit. A helper that does not exit within the bound fails the teardown by its pid
-// rather than hanging it; every other helper is still ended and the directory still deleted.
+// Helpers normally answer EOF by closing their scratch handles before exiting. Only a timeout forces a
+// process-tree kill and a second bounded wait, so a failed assertion does not abandon a stalled helper.
+// A killed Windows helper's handle was seen still open briefly after exit, so a timeout reports its pid
+// and the uncertainty about scratch handles. Each helper is ended and directory deletion is attempted
+// independently; teardown failures are rethrown afterwards.
 internal sealed class StatechartTestDirectory : IDisposable
 {
     private static readonly TimeSpan ExitBound = TimeSpan.FromSeconds(30);
@@ -39,9 +39,26 @@ internal sealed class StatechartTestDirectory : IDisposable
         using (process)
         {
             process.StandardInput.Close();
+            if (process.WaitForExit(ExitBound)) return;
+
+            var pid = process.Id;
+            var outcome = "was killed";
+            Exception? killError = null;
+            try { process.Kill(entireProcessTree: true); }
+            catch (Exception) when (process.HasExited)
+            {
+                outcome = "exited before it could be killed";
+            }
+            catch (Exception error)
+            {
+                outcome = "could not be killed";
+                killError = error;
+            }
             if (!process.WaitForExit(ExitBound))
-                throw new TimeoutException(
-                    $"Statechart helper {process.Id} did not exit within {ExitBound.TotalSeconds:0} s of EOF; its scratch may still be held.");
+                outcome = "did not exit even after the kill attempt and a second bounded wait";
+            throw new TimeoutException(
+                $"Statechart helper {pid} {outcome} after not exiting within {ExitBound.TotalSeconds:0} s of EOF; " +
+                "its scratch may still have been held when deletion was attempted.", killError);
         }
     }
 }

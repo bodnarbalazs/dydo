@@ -147,7 +147,7 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    contract's mandatory combined and landing gates at their boundaries, with exact-candidate
    reuse only where permitted. Before offering, rerun each writer's proof recipe yourself; that
    rerun, posted on the record, is the proof of record. **Done:** push the branch, write the PR body with `pr` to `dydo/agents/workspace/pr-body-<KEY>.md`, listing the should-tickets filed and the nits recorded, run `dydo pr-ready --body <that file>` as its own command, then open the
-   PR with a lone `gh pr create --body-file <that file>`, nothing chained, piped or redirected, its PASS block on the record and in the body. Handle its existing checks and comments,
+   PR, its PASS block on the record and in the body, with a lone `gh pr create --body-file <that file>`, nothing chained, piped or redirected. Handle its existing checks and comments,
    then **watch** it: one watcher per PR, `watch_pull_request` in T3, elsewhere one long-running
    watcher (Monitor in Claude Code), never a sleep or polling loop. The PR's owning thread watches;
    in T3 that is the top-level officer, so a delegated captain links the PR, returns

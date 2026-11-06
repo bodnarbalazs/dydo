@@ -443,7 +443,7 @@ so uncommitted or unpushed work is not in it.
 ```bash
 dydo pr-ready                          # check the current directory's tree
 dydo pr-ready <path>                   # check another tree
-dydo pr-ready --body dydo/agents/workspace/pr-body-DYD-123.md   # also check a PR body
+dydo pr-ready --body dydo/agents/workspace/pr-body-<KEY>.md   # also check a PR body
 ```
 
 The tree must have no staged, unstaged or untracked files git does not ignore, and HEAD must have

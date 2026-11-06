@@ -18,7 +18,7 @@ def _unittest_discovery(path, relative):
 
 
 def _node_discovery(path, relative):
-    if not re.search(r"\.test\.(?:c|m)?js$", relative):
+    if not re.search(r"\.test\.(?:(?:c|m)?js|ts)$", relative):
         return None
     text = path.read_text(encoding="utf-8-sig")
     if re.search(r"\btest\s*\(", text) and "node:test" in text:

@@ -5,11 +5,15 @@ import json
 import re
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from gate_policy import evaluate_policy
 
 SELECTION = Path('DynaDocs.Tests/coverage/dotnet-platforms.json')
+# The selected run's per-test results, written beside the campaign's other evidence.
+WINDOWS_RESULTS = 'windows-tests.trx'
+_TRX = '{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}'
 PLATFORMS = ('linux', 'windows')
 SOURCE_FACTS = ('dydo', 'GateMetrics')
 _SUMMARY = re.compile(r'(?:Passed|Failed)!\s+-\s+Failed:\s+(\d+),\s+Passed:\s+(\d+),'
@@ -104,6 +108,56 @@ def selected_test_counts(stdout):
     if not total or failed or skipped:
         raise ValueError(f'Selected Windows tests must all run and pass: {rows[0]}')
     return {'passed': passed, 'total': total}
+
+
+def _method(test):
+    """A definition's one named method; no id, no method, two methods or a nameless one is ambiguous."""
+    if not test.get('id'):
+        raise ValueError(f"Windows test definition without its id: {test.get('name')}")
+    methods = test.findall(_TRX + 'TestMethod')
+    if len(methods) != 1 or not methods[0].get('className') or not methods[0].get('name'):
+        raise ValueError(f"Ambiguous Windows test definition: {test.get('id')}")
+    return f"{methods[0].get('className')}.{methods[0].get('name')}"
+
+
+def _ran(results, declared):
+    """Each result's method, by its definition; a theory's rows count under their method."""
+    root = ET.fromstring(results)
+    rows = list(root.iter(_TRX + 'UnitTestResult'))
+    for result in rows:
+        if not result.get('testId'):
+            raise ValueError(f"Windows test result without its testId: {result.get('testName')}")
+    methods = {}
+    for test in root.iter(_TRX + 'UnitTest'):
+        name = _method(test)
+        if methods.setdefault(test.get('id'), name) != name:
+            raise ValueError(f"Ambiguous Windows test definition: {test.get('id')}")
+    ran = []
+    for result in rows:
+        name = methods.get(result.get('testId'))
+        if name not in declared:
+            raise ValueError(f"Undeclared Windows test ran: {name or result.get('testName')}")
+        if result.get('outcome') != 'Passed':
+            raise ValueError(f"Windows test did not pass: {result.get('testName')} is {result.get('outcome')}")
+        ran.append(name)
+    return ran
+
+
+def selected_tests(evidence, selection):
+    """Every declared Windows test ran and passed, nothing else ran, and the summary counts the same cases."""
+    counts = selected_test_counts(
+        (Path(evidence) / 'altcover-runner.stdout').read_text(encoding='utf-8', errors='replace'))
+    declared = selection['windows_tests']['tests']
+    try:
+        ran = _ran((Path(evidence) / WINDOWS_RESULTS).read_bytes(), declared)
+    except (OSError, ET.ParseError) as error:
+        raise ValueError(f'Missing or unreadable Windows test results: {WINDOWS_RESULTS}') from error
+    missing = [name for name in declared if name not in ran]
+    if missing:
+        raise ValueError('Declared Windows tests did not run: ' + ', '.join(missing))
+    if len(ran) != counts['total']:
+        raise ValueError(f"Windows test results hold {len(ran)} cases but the summary {counts['total']}")
+    return {**counts, 'names': sorted(set(ran))}
 
 
 def _members(selection, source_files):

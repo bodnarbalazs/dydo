@@ -5,7 +5,8 @@ using System.Text.RegularExpressions;
 /// <summary>
 /// The routes around <c>dydo merge</c> a command line takes (DYD-425, DR 061 decision 7), read with
 /// the PR calls' rules: the same shell readings, command position, substitutions and data a command
-/// only reads. A route is <c>gh pr merge</c>; <c>gh api</c> on <c>pulls/N/merge</c>,
+/// only reads; a bash push's git -C tree is also taken as written, so a Windows path names its tree
+/// (DYD-739). A route is <c>gh pr merge</c>; <c>gh api</c> on <c>pulls/N/merge</c>,
 /// <c>pulls/N/merge-async</c> or <c>merges</c>, as path or URL, whatever the method; <c>gh api
 /// graphql</c> with a field naming mergePullRequest, enablePullRequestAutoMerge or mergeBranch;
 /// <c>gh repo edit --default-branch</c>, or a <c>gh api</c> PATCH of <c>repos/OWNER/REPO</c> with a
@@ -45,12 +46,21 @@ internal static partial class PrCallScanner
         var line = GhPlaceholderRegex().Replace(text, ":$1");
         return [.. Readings(dialect, line)
             .Select(posix => ShellReader.Read(line, posix))
-            .SelectMany(reading => reading.Commands.SelectMany(command => RoutesOf(command.Words, depth))
+            .SelectMany(reading => reading.Commands.SelectMany(command => RoutesOf(command.Words, depth, command))
                 .Concat(reading.Substitutions.SelectMany(substitution => ScanRoutes(substitution, ShellDialect.Posix, depth + 1))))
             .Distinct()];
     }
 
-    private static List<MergeRoute> RoutesOf(IReadOnlyList<string> words, int depth)
+    // Bash drops an unquoted backslash, so its word for git -C C:\Users\wt is C:Userswt, a tree that
+    // does not exist; the word as written names the tree the agent meant (DYD-739). Only a -C word of
+    // a push bash runs is taken as written, so an escaped quote or a continued line stays bash's.
+    private static string? WrittenWord(ShellReader.Command? command, int index)
+    {
+        var raw = command is { Source.Posix: true } ? command.RawWord(index) : "";
+        return raw.Contains('\\') && ShellReader.Read(raw, posix: false).Commands is [{ Words: [var word] }] ? word : null;
+    }
+
+    private static List<MergeRoute> RoutesOf(IReadOnlyList<string> words, int depth, ShellReader.Command? command = null)
     {
         var at = CommandPosition.Skip(words);
         if (at >= words.Count)
@@ -61,7 +71,7 @@ internal static partial class PrCallScanner
         if (program == "gh")
             return GhRoute(rest) is { } route ? [route] : [];
         if (program == "git")
-            return PushRoutes(rest);
+            return PushRoutes(rest, index => WrittenWord(command, at + 1 + index));
         return CommandPosition.ScriptOf(program, rest) is { Encoded: false } script && depth < MaxDepth
             ? ScanRoutes(script.Text, script.Dialect, depth + 1)
             : [];
@@ -88,7 +98,7 @@ internal static partial class PrCallScanner
         };
     }
 
-    private static MergeRoute? ApiRoute(string endpoint, List<(string Name, string Value)> options)
+    private static MergeRoute? ApiRoute(string endpoint, List<Option> options)
     {
         var fields = options.Where(o => o.Name is "field" or "raw-field").Select(o => o.Value).ToList();
         if (GraphQlEndpointRegex().IsMatch(endpoint))
@@ -105,15 +115,19 @@ internal static partial class PrCallScanner
     }
 
     // git's own options, then push: its first operand is the remote and the rest are refspecs. With
-    // none, a push updates the upstream; --all, --branches and --mirror update every branch; --tags alone none.
-    private static List<MergeRoute> PushRoutes(List<string> rest)
+    // none, a push updates the upstream; --all, --branches and --mirror update every branch; --tags alone
+    // none. Each -C tree is taken as bash reads it and as written, one route per distinct tree.
+    private static List<MergeRoute> PushRoutes(List<string> rest, Func<int, string?> written)
     {
-        string? directory = null;
+        string? directory = null, asWritten = null;
         var at = 0;
         for (; at < rest.Count && IsFlag(rest[at]); at += GitValueOptions.Contains(rest[at]) ? 2 : 1)
         {
             if (rest[at] == "-C" && at + 1 < rest.Count)
-                directory = directory == null ? rest[at + 1] : Path.Combine(directory, rest[at + 1]);
+            {
+                directory = Under(directory, rest[at + 1]);
+                asWritten = Under(asWritten, written(at + 1) ?? rest[at + 1]);
+            }
         }
         if (at >= rest.Count || rest[at] != "push")
             return [];
@@ -125,8 +139,11 @@ internal static partial class PrCallScanner
             destinations = ["*"];
         else if (flags.Contains("--tags") && operands.Count < 2)
             destinations = [];
-        return [.. destinations.Select(destination => new MergeRoute(MergeRouteKind.Push, form, destination, directory))];
+        return [.. new[] { directory, asWritten }.Distinct()
+            .SelectMany(tree => destinations.Select(destination => new MergeRoute(MergeRouteKind.Push, form, destination, tree)))];
     }
+
+    private static string Under(string? directory, string tree) => directory == null ? tree : Path.Combine(directory, tree);
 
     private static (List<string> Operands, HashSet<string> Flags) PushWords(List<string> words)
     {

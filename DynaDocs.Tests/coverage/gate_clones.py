@@ -97,7 +97,7 @@ def collect_clones(runner, languages=frozenset({'cs', 'python', 'javascript'})):
     """jscpd matches clones only within one format, so a stack's languages are measured apart;
     a source with no language belongs to no stack, so every stack reports it."""
     sources = [source for source in runner.inventory['sources']
-               if 'language' not in source or source['language'] in languages]
+               if ('language' not in source or source['language'] in languages) and runner.owns(source)]
     paths = [source['path'] for source in sources]
     batch = _native(runner, paths, 'all')
     findings = _findings(runner, batch['data']['duplicates'], paths)

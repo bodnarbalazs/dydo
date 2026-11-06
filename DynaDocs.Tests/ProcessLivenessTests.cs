@@ -94,6 +94,32 @@ public class ProcessLivenessTests
     }
 
     [Fact]
+    public void LinuxProcessReapedMidRead_IsTerminated()
+    {
+        Assert.True(ProcessLiveness.HasTerminatedOnLinux(42,
+            path => path == "/proc/self/stat" ? "mounted" : throw NoSuchProcess(path)));
+        Assert.Null(ProcessLiveness.ReadLinuxStat(42, path => throw NoSuchProcess(path)));
+    }
+
+    [Fact]
+    public void LinuxNoSuchProcessOnSelfStat_FailsClosed()
+    {
+        Assert.Throws<IOException>(() => ProcessLiveness.HasTerminatedOnLinux(42,
+            path => throw NoSuchProcess(path)));
+    }
+
+    [Fact]
+    public void LinuxOtherErrno_FailsClosed()
+    {
+        const int eio = 5;
+        Assert.Throws<IOException>(() => ProcessLiveness.HasTerminatedOnLinux(42,
+            path => path == "/proc/self/stat" ? "mounted" : throw new IOException("No such process", eio)));
+    }
+
+    // .NET carries errno in IOException.HResult on Unix: ESRCH is 3, whatever the message says.
+    private static IOException NoSuchProcess(string path) => new($"No such process : '{path}'", 3);
+
+    [Fact]
     public void LinuxMissingPid_IsTerminated()
     {
         Assert.True(ProcessLiveness.HasTerminatedOnLinux(42,

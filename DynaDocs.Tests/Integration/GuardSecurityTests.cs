@@ -12,6 +12,29 @@ using DynaDocs.Services;
 public class GuardSecurityTests : IntegrationTestBase
 {
     [Theory]
+    [InlineData("block")]
+    [InlineData("warn")]
+    [InlineData("notice")]
+    public async Task NudgeMatchTimeout_IsRefusedOnEveryAttempt(string severity)
+    {
+        await InitProjectAsync("none");
+        var path = Path.Combine(TestDir, ConfigService.ConfigFileName);
+        var config = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))!;
+        config["nudges"] = System.Text.Json.JsonSerializer.SerializeToNode(new[]
+        {
+            new NudgeConfig { Pattern = "^(a+)+$", Message = "Slow configured nudge", Severity = severity }
+        });
+        File.WriteAllText(path, config.ToJsonString());
+        var command = new string('a', 26) + "!";
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var result = await GuardWithStdinAsync(BashJson(command));
+            result.AssertPreToolUseDenied();
+            result.AssertStderrContains("Command too complex to verify safely");
+        }
+    }
+
+    [Theory]
     [InlineData("git push --force origin main")]
     [InlineData("gh auth token")]
     [InlineData("bw export --format json")]

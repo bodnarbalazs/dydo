@@ -2474,6 +2474,11 @@ public class BashCommandAnalyzerTests
     // searched to the end for its closer; long or wide nesting; and a chain of cmd, read 2^9 times.
     private static readonly Dictionary<string, Func<int, string>> LongShapes = new()
     {
+        ["nudge quoted data"] = length => Repeat("rg -n 'tail -f' docs;", length / 21),
+        ["nudge comments"] = length => Repeat("# tail -f\n", length / 10),
+        ["nudge bodies"] = length => Repeat("cat <<E\ntail -f\nE\n", length / 18),
+        ["nudge one body"] = length => "cat <<E\n" + Repeat("tail -f\n", length / 8) + "E\n",
+        ["mixed body openers"] = length => Repeat("cat @'\n<<E\n'@\n", length / 14) + "E\n",
         ["sed quotes"] = length => "sed 's/a/b/' " + Repeat("'' ", length / 3),
         ["echo quotes"] = length => "echo " + Repeat("'' ", length / 3),
         ["printf quotes"] = length => "printf " + Repeat("'a' ", length / 4),
@@ -2565,14 +2570,27 @@ public class BashCommandAnalyzerTests
         AssertTimeGrowsLinearly(dialect, "cat heredoc openers");
 
     [Theory]
+    [InlineData("Posix")]
+    [InlineData("PowerShell")]
+    [InlineData("Unknown")]
+    public void Analyze_MixedBodyOpeners_GrowsLinearly(string dialect) =>
+        AssertTimeGrowsLinearly(dialect, "mixed body openers");
+
+    [Theory]
     [InlineData("Posix", "env chain")]
     [InlineData("PowerShell", "env chain")]
     [InlineData("Unknown", "env chain")]
     [InlineData("Posix", "python run chain")]
     [InlineData("PowerShell", "python run chain")]
     [InlineData("Unknown", "python run chain")]
-    public void Analyze_RepeatedRunnerWords_GrowsLinearly(string dialect, string shape) =>
+    public void Analyze_RepeatedRunnerWords_GrowsLinearly(string dialect, string shape)
+    {
+        Measure(dialect, LongShapes[shape](100));
+        var shortBytes = Measure(dialect, LongShapes[shape](1_000)).Allocated;
+        var longBytes = Measure(dialect, LongShapes[shape](2_000)).Allocated;
+        Assert.True(longBytes <= shortBytes * 2.5, $"Allocated {shortBytes} then {longBytes}");
         AssertTimeGrowsLinearly(dialect, shape);
+    }
 
     [Theory]
     [InlineData("RecursiveDeleteRootRegex", "rm flags")]
@@ -2601,6 +2619,46 @@ public class BashCommandAnalyzerTests
     {
         var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
         AssertTimeGrowsLinearly(command => analyzer.Analyze(command), shape);
+    }
+
+    [Theory]
+    [InlineData("Posix", "nudge quoted data")]
+    [InlineData("PowerShell", "nudge quoted data")]
+    [InlineData("Unknown", "nudge quoted data")]
+    [InlineData("Posix", "nudge comments")]
+    [InlineData("PowerShell", "nudge comments")]
+    [InlineData("Unknown", "nudge comments")]
+    [InlineData("Posix", "nudge bodies")]
+    [InlineData("PowerShell", "nudge bodies")]
+    [InlineData("Unknown", "nudge bodies")]
+    [InlineData("Posix", "nudge one body")]
+    [InlineData("PowerShell", "nudge one body")]
+    [InlineData("Unknown", "nudge one body")]
+    public void FirstRunningMatch_ManyDataMatches_GrowsLinearly(string dialect, string shape)
+    {
+        var method = typeof(DynaDocs.Commands.GuardCommand).GetMethod("FirstRunningMatch",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+        var pattern = new System.Text.RegularExpressions.Regex("tail -f");
+        var shell = Enum.Parse<ShellDialect>(dialect);
+        void Check(string text)
+        {
+            var context = method.GetParameters()[2].ParameterType;
+            var argument = context.IsEnum ? (object)shell : Activator.CreateInstance(context, text, shell)!;
+            Assert.Null(method.Invoke(null, [pattern, text, argument]));
+        }
+        long Allocation(int length)
+        {
+            var text = LongShapes[shape](length);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            Check(text);
+            return GC.GetAllocatedBytesForCurrentThread() - before;
+        }
+        Allocation(100);
+        var shortBytes = Allocation(1_000);
+        var longBytes = Allocation(2_000);
+        Assert.True(longBytes <= shortBytes * 2.5, $"Allocated {shortBytes} then {longBytes}");
+        Assert.True(Allocation(BudgetedLength) <= 256L * 1024 * 1024);
+        AssertTimeGrowsLinearly(Check, shape);
     }
 
     // Isolate the two CPU terms: end-to-end allocation and other linear work can mask their ratio.

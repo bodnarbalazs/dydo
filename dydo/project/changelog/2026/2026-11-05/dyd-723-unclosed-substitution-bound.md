@@ -1,11 +1,4 @@
 ---
-
-Fix hop 5 indexes cat-heredoc closers before stripping, replaces the remaining legacy
-denylist suffix searches with linear regex matching at the same 250 ms timeout, and visits
-overlapping Python runner operand ranges once. The Captain extended ownership to
-`Services/CommandPosition.cs`: `env` now passes the original word list and a start index
-instead of copying every remaining suffix. New analyzer regressions and compatibility
-oracles cover these paths; the DYD-610 oracle and inventory tests are unchanged.
 area: general
 type: changelog
 date: 2026-11-05
@@ -14,6 +7,26 @@ date: 2026-11-05
 # dydo 3.6.0 - Reading a command is bounded in time and memory (unreleased)
 
 ## Summary
+
+Fix hop 5 indexes cat-heredoc closers before stripping, replaces the remaining legacy
+denylist suffix searches with linear regex matching at the same 250 ms timeout, and visits
+overlapping Python runner operand ranges once. The Captain extended ownership to
+`Services/CommandPosition.cs`: `env` now passes the original word list and a start index
+instead of copying every remaining suffix. New analyzer regressions and compatibility
+oracles cover these paths; the DYD-610 oracle and inventory tests are unchanged.
+
+The clean integration merge is `aa07f2709ff78c09c67b6794664b2d24c524047a`, bringing in
+feature tip `5cd105878f92f72f7d4217ab2940813bafc3e1fe` after checkpoint `b02e9873`.
+On that merged guard, all nudge matches share one reading and classification. Repeated
+quoted search operands no longer reparse the whole command for every excluded match.
+Mixed heredoc and here-string openers select the earliest candidate before scanning its body.
+
+Every command nudge regex now has a 250 ms timeout, and command nudge matching shares a
+250 ms cumulative budget across block, warn and PR-body checks. Exhaustion refuses with
+"Command too complex to verify safely", including on retry. Built-in patterns that support
+the linear regex engine use it without changing their definitions; lookaround patterns and
+configured patterns retain their original engine under the timeout. ConfigFactory definitions,
+messages, captures used in messages, and retry identities are unchanged.
 
 The guard could no longer finish reading a command nested a few dozen levels deep
 ([DYD-723](https://linear.app/bodnar-balazs/issue/DYD-723)). `printf x` followed by 64 unclosed `$(`
@@ -102,12 +115,20 @@ Guards stop accidents, not rogue agents. The bound exists so the guard never tak
 - On Linux, the analysis time-ratio tests measure calling-thread CPU to exclude
   shared-host scheduling noise. Their input sizes, seven rounds, warm-up and ratio threshold stay
   the same, and the one-second assertion still measures wall time. Other hosts retain wall timing.
+- Built-in lookaround patterns and configured nudge regexes can still take nonlinear time
+  below the matching budget. They now refuse promptly on timeout; this hop does not change
+  ConfigFactory definitions. More efficient dangerous-pattern matching can finish a negative
+  match where the old implementation timed out and refused.
 
 ## Files Changed
 
 `Services/ShellReader.cs`, `Services/BashCommandAnalyzer.cs`,
 `DynaDocs.Tests/Services/ShellReaderTests.cs`, `DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs`,
 `DynaDocs.Tests/Services/ThreadCpuTime.cs`, `DynaDocs.Tests/Integration/GuardSecurityTests.cs`, and this entry.
+Fix hop 5 also changes `Services/CommandPosition.cs`, `Commands/GuardCommand.cs`,
+`DynaDocs.Tests/Services/BashCommandAnalyzerScanTests.cs`, and
+`DynaDocs.Tests/Commands/GuardCommandTests.cs`. The feature merge imports its own changes;
+the implementation report lists those separately from this hop's authored files.
 
 ## Related
 

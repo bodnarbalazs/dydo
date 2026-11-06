@@ -8,6 +8,57 @@ public class BashCommandAnalyzerScanTests
 {
     private const BindingFlags PrivateStatic = BindingFlags.NonPublic | BindingFlags.Static;
 
+    [Fact]
+    public void SharedNudgeClassification_PreservesSinglePositionVerdicts()
+    {
+        var inputs = typeof(Commands.GuardCommandTests).GetMethods()
+            .SelectMany(method => method.GetCustomAttributesData())
+            .Where(attribute => attribute.AttributeType == typeof(InlineDataAttribute))
+            .SelectMany(attribute => (IEnumerable<CustomAttributeTypedArgument>)attribute.ConstructorArguments[0].Value!)
+            .Select(argument => argument.Value).OfType<string>()
+            .Where(text => text.Contains("tail", StringComparison.Ordinal)).Distinct().Order(StringComparer.Ordinal);
+        var proof = new System.Text.StringBuilder();
+        foreach (var text in inputs)
+        foreach (var dialect in Enum.GetValues<ShellDialect>())
+        {
+            var counts = (Func<int, bool>)typeof(BashCommandAnalyzer).GetMethod("NudgeClassifier", PrivateStatic)!
+                .Invoke(null, [text, dialect])!;
+            foreach (Match match in Regex.Matches(text, "tail"))
+                RecordNudge(proof, dialect, text, match.Index, counts(match.Index));
+        }
+        AssertNudgeProof(proof, "48b5b7b10b792a6b5fa932832a9341146ef35924c9c2465b97fac53cf0ff364c");
+    }
+
+    [Fact]
+    public void SharedNudgeClassification_PreservesNestedAndRepeatedContexts()
+    {
+        string[] bodies = ["rg -n 'tail -f' docs", "git grep -n -E 'tail -f' -- docs",
+            "# tail -f\necho x", "cat <<E\ntail -f\nE\n", "echo @'\ntail -f\n'@", "tail -f"];
+        string[] formats = ["{0}", "{0}; {0}", "echo @({0})", "Write-Output a ({0})", "echo \"$({0})\"",
+            "echo $({0})", "bash -c '{0}'", "eval '{0}'", "cat <<E\n$({0})\nE\n", "cat <<E | bash\n$({0})\nE\n"];
+        var proof = new System.Text.StringBuilder();
+        foreach (var body in bodies)
+        foreach (var format in formats)
+        foreach (var dialect in Enum.GetValues<ShellDialect>())
+        {
+            var text = format.Replace("{0}", body, StringComparison.Ordinal);
+            var counts = (Func<int, bool>)typeof(BashCommandAnalyzer).GetMethod("NudgeClassifier", PrivateStatic)!
+                .Invoke(null, [text, dialect])!;
+            foreach (Match match in Regex.Matches(text, "tail"))
+                RecordNudge(proof, dialect, text, match.Index, counts(match.Index));
+        }
+        AssertNudgeProof(proof, "6f7ba8da3aa6866eff2a54934b1b4c9a2db0b53071e32d16654c791fc995bcc8");
+    }
+
+    // Full verdict streams from b2b53a6c (unchanged at integration aa07f270): 579 fixture
+    // positions and 198 nested positions. The independent probe retains each input and decision.
+    private static void RecordNudge(System.Text.StringBuilder proof, ShellDialect dialect, string text, int index, bool counts) =>
+        proof.Append(dialect).Append('\0').Append(text).Append('\0').Append(index).Append('\0').Append(counts).Append('\n');
+
+    private static void AssertNudgeProof(System.Text.StringBuilder proof, string expected) =>
+        Assert.Equal(expected, Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(proof.ToString()))));
+
     public static IEnumerable<object[]> LegacyRules()
     {
         yield return ["RecursiveDeleteRootRegex", @"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(\./|/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)", false];

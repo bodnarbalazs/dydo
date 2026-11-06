@@ -949,6 +949,58 @@ public class GuardCommandTests : IDisposable
         WriteConfigWithNudges((pattern, message, severity));
     }
 
+    [Theory]
+    [InlineData("CheckBlockNudges")]
+    [InlineData("CheckWarnNudges")]
+    public void NudgeBudgetExhaustion_IsAlwaysAHardRefusal(string check)
+    {
+        WriteConfigWithNudges(("echo", "a warning", "warn"));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var type = typeof(GuardCommand).GetNestedType("NudgeMatching", BindingFlags.NonPublic)!;
+        var matching = Activator.CreateInstance(type, "echo x", ShellDialect.Unknown)!;
+        type.GetField("_elapsed", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .SetValue(matching, TimeSpan.FromMilliseconds(250));
+        var method = typeof(GuardCommand).GetMethod(check, BindingFlags.NonPublic | BindingFlags.Static)!;
+        object[] arguments = check == "CheckBlockNudges"
+            ? ["echo x", env, ShellDialect.Unknown, null!, matching]
+            : ["echo x", env, false, ShellDialect.Unknown, null!, matching];
+        var result = RunNudge(() => (int?)method.Invoke(null, arguments));
+        Assert.Equal(ExitCodes.ToolError, result.Result);
+        Assert.Contains("Command too complex to verify safely", result.Stderr);
+    }
+
+    [Fact]
+    public void NudgeMatchers_KeepTheTimeoutAndOriginalCaptures()
+    {
+        var compile = typeof(GuardCommand).GetMethod("CompileNudgePattern", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var patterns = ConfigFactory.DefaultNudges.Select(nudge => nudge.Pattern).Append("(a+)+$");
+        foreach (var pattern in patterns)
+        {
+            var original = new Regex(pattern, RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(250));
+            var changed = (Regex)compile.Invoke(null, [pattern])!;
+            Assert.Equal(TimeSpan.FromMilliseconds(250), changed.MatchTimeout);
+            foreach (var command in NudgeMatcherInputs())
+            {
+                var before = original.Match(command);
+                var after = changed.Match(command);
+                Assert.Equal((before.Success, before.Index, before.Length), (after.Success, after.Index, after.Length));
+                Assert.Equal(before.Groups.Cast<Group>().Select(group => group.Value), after.Groups.Cast<Group>().Select(group => group.Value));
+                Assert.Equal(before.Groups.Cast<Group>().SelectMany(group => group.Captures.Cast<Capture>()).Select(capture => (capture.Index, capture.Length, capture.Value)),
+                    after.Groups.Cast<Group>().SelectMany(group => group.Captures.Cast<Capture>()).Select(capture => (capture.Index, capture.Length, capture.Value)));
+            }
+        }
+    }
+
+    private static IEnumerable<string> NudgeMatcherInputs()
+    {
+        string[] programs = ["npx", "dotnet", "dotnet tool run", "dotnet run", "bash", "python", "pwsh",
+            "tail", "while true; do", "gh pr create", "npm install", "uv run"];
+        foreach (var program in programs)
+        foreach (var flags in new[] { "", "--foo ", "--foo --bar ", "-x ", "--filter p ", "-- ", "-f " })
+        foreach (var tail in new[] { "dydo check", "'dydo check'", "sleep 1", "x", "--with pkg", "Independent review" })
+            yield return program + " " + flags + tail;
+    }
+
     private void WriteConfigWithNudges(params (string Pattern, string Message, string Severity)[] nudges)
     {
         var nudgeJson = string.Join(",\n          ",
@@ -1325,9 +1377,10 @@ public class GuardCommandTests : IDisposable
     {
         const string pattern = @"tail\s+(?:-f|--follow)\s+(.*)";
         var dialect = Enum.Parse<ShellDialect>(shell);
-        var selected = (Match?)typeof(GuardCommand).GetMethod("FirstRunningMatch",
-            BindingFlags.NonPublic | BindingFlags.Static)!.Invoke(null,
-                [new Regex(pattern, RegexOptions.IgnoreCase), command, dialect]);
+        var selector = typeof(GuardCommand).GetMethod("FirstRunningMatch", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var context = selector.GetParameters()[2].ParameterType;
+        var argument = context.IsEnum ? (object)dialect : Activator.CreateInstance(context, command, dialect)!;
+        var selected = (Match?)selector.Invoke(null, [new Regex(pattern, RegexOptions.IgnoreCase), command, argument]);
         Assert.Equal(expectedIndex, selected?.Index ?? -1);
         Assert.Equal(expectedLength, selected?.Length ?? 0);
         Assert.Equal(capture, selected?.Groups[1].Value);

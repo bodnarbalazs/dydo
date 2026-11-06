@@ -286,12 +286,13 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return (untabbed, tabbed, single, @double);
     }
 
-    // The body regex's first match from start, a line start: where a search from start finds it.
-    private static Match FirstBody(Regex body, string text, List<int> openers, int start)
+    // Choose the first body before matching it. Eagerly matching both kinds rereads a long later
+    // body for every earlier body of the other kind, even though that later match is discarded.
+    private static int FirstOpener(List<int> openers, int start)
     {
         var at = openers.BinarySearch(start);
         at = at < 0 ? ~at : at;
-        return at < openers.Count ? body.Match(text, openers[at]) : Match.Empty;
+        return at < openers.Count ? openers[at] : int.MaxValue;
     }
 
     [GeneratedRegex(@"(?<!<)<<(?!<)")]
@@ -377,14 +378,15 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// </summary>
     private DataBodyCut? DataBody(string text, int start, ClosedBodyOpeners openers)
     {
-        var heredoc = FirstBody(HeredocBodyRegex(), text, openers.Heredocs, start);
-        var hereString = FirstBody(HereStringRegex(), text, openers.HereStrings, start);
+        var heredocAt = FirstOpener(openers.Heredocs, start);
+        var hereStringAt = FirstOpener(openers.HereStrings, start);
         DataBodyCut? cut = null;
         var read = false;
-        if (hereString.Success && (!heredoc.Success || hereString.Index < heredoc.Index))
-            cut = HereStringData(text, start, hereString);
-        else if (heredoc.Success)
+        if (hereStringAt < heredocAt)
+            cut = HereStringData(text, start, HereStringRegex().Match(text, hereStringAt));
+        else if (heredocAt != int.MaxValue)
         {
+            var heredoc = HeredocBodyRegex().Match(text, heredocAt);
             cut = HeredocData(text, start, heredoc);
             read = openers.ReadHeredocs.Contains((heredoc.Index, heredoc.Index + heredoc.Length));
         }
@@ -1282,185 +1284,282 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// </summary>
     internal static bool RunsAt(string command, int index, ShellDialect dialect)
     {
-        return HasLaunchMark(command) || CountsNudge(command.Insert(index, LaunchMark), dialect, 0, new NudgeFrame(BodyOutput.Data));
+        return NudgeClassifier(command, dialect)(index);
+    }
+
+    // A command's data positions are classified once, then every raw nudge match is a lookup.
+    // Positions retain their source coordinates through words, body normalization and command strings.
+    internal static Func<int, bool> NudgeClassifier(string text, ShellDialect dialect)
+    {
+        var data = new NudgeDataReading().Read(text, dialect, BodyOutput.Data, 0);
+        return index => index < 0 || index >= data.Length || !data[index];
+    }
+
+    private sealed class NudgeDataReading
+    {
+        private readonly Dictionary<ShellReader.Command, BodyOutput> _outputs = [];
+        private readonly Dictionary<ShellReader.Scope, bool> _compound = [];
+        private readonly Dictionary<ShellReader.Body, bool> _bodySurface = [];
+        private readonly Dictionary<ShellReader.Command, ShellDialect?> _stdin = [];
+        private readonly Dictionary<string, HashSet<Range>> _filters = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<(string Text, ShellDialect Dialect, BodyOutput Output, int Depth), bool[]> _read = [];
+
+        public bool[] Read(string text, ShellDialect dialect, BodyOutput output, int depth)
+        {
+            var key = (text, dialect, output, depth);
+            if (!_read.TryGetValue(key, out var data))
+            {
+                data = ReadData(text, dialect, output, depth);
+                _read.Add(key, data);
+            }
+            return data;
+        }
+
+        private bool[] ReadData(string text, ShellDialect dialect, BodyOutput output, int depth)
+        {
+            var data = new bool[text.Length + 1];
+            if (depth > MaxCommandLineDepth || HasLaunchMark(text))
+                return data;
+            bool[] readings = dialect switch
+            {
+                ShellDialect.Posix => [true],
+                ShellDialect.PowerShell => [false],
+                _ => [true, false],
+            };
+            var first = true;
+            foreach (var posix in readings)
+            {
+                var reading = ShellReader.Read(text, posix);
+                if (reading.Failed)
+                    return new bool[text.Length + 1];
+                var current = ScopeData(reading.Source, output, depth);
+                for (var i = 0; i < data.Length; i++)
+                    data[i] = first ? current[i] : data[i] && current[i];
+                first = false;
+            }
+            return data;
+        }
+
+        private bool[] ScopeData(ShellReader.Scope source, BodyOutput output, int depth)
+        {
+            var data = new bool[source.End - source.Start + 1];
+            foreach (var comment in source.Comments)
+                Fill(data, source.Start, comment.Start.Value + 1, comment.End.Value + 1, true);
+            foreach (var command in source.Commands)
+            {
+                Words(command, data, output, depth);
+                foreach (var body in command.Bodies)
+                    Body(body, data, output, depth);
+            }
+            foreach (var child in source.Children)
+            {
+                var inner = ScopeData(child, output, depth);
+                if (child.DerivedBody is { } body)
+                    Project(inner, child.Start, body.Origins, source, data);
+                else
+                    for (var i = 0; i < inner.Length; i++)
+                        if (inner[i]) data[child.Start - source.Start + i] = true;
+            }
+            Executions(source, data, output, depth);
+            return data;
+        }
+
+        private void Executions(ShellReader.Scope source, bool[] data, BodyOutput output, int depth)
+        {
+            foreach (var edge in source.Executions)
+            {
+                if (edge.Kind == ShellReader.ExecutionKind.Group && edge.Child is { } group)
+                    CountGroupWords(group, data, source.Start);
+                if (edge.Capture is not { } capture || !CompletedExecution(edge))
+                    continue;
+                var inner = Read(capture.Text, ShellDialect.Posix, CaptureOutput(edge, output), depth + 1);
+                Project(inner, 0, capture.Origins, source, data);
+            }
+        }
+
+        // GroupWord emits child words into an unquoted parent word too. That representation
+        // still counts; a child's quoted-data role cannot discharge its parent's occurrence.
+        private static void CountGroupWords(ShellReader.Scope group, bool[] data, int start)
+        {
+            foreach (var command in group.Commands)
+                foreach (var range in command.WordRanges)
+                    Fill(data, start, range.Start.Value, range.End.Value, false);
+            foreach (var child in group.Children.Where(child => ReferenceEquals(child.Text, group.Text)))
+                CountGroupWords(child, data, start);
+        }
+
+        private void Words(ShellReader.Command command, bool[] data, BodyOutput output, int depth)
+        {
+            var source = command.Source;
+            var literalPrefix = true;
+            for (var i = 0; i < command.Words.Count; i++)
+            {
+                var range = command.WordRanges[i];
+                var raw = command.RawWord(i);
+                if (LiteralNudgeQuoteRegex().IsMatch(raw)
+                    && ((literalPrefix && QuotedSearchPattern(command, i, raw[0]))
+                        || (!source.Posix && FilterWords(source.Text).Contains(range))))
+                    Fill(data, source.Start, range.Start.Value + 1, range.End.Value, true);
+                literalPrefix &= raw == command.Words[i];
+            }
+            Script(command, data, output, depth);
+        }
+
+        private HashSet<Range> FilterWords(string text)
+        {
+            if (!_filters.TryGetValue(text, out var words))
+            {
+                words = [.. ProcessFilterOperandPattern.Matches(text).Select(match => match.Groups["operand"])
+                    .Select(group => group.Index..(group.Index + group.Length))];
+                _filters.Add(text, words);
+            }
+            return words;
+        }
+
+        private void Script(ShellReader.Command command, bool[] data, BodyOutput output, int depth)
+        {
+            if (ProgramCall(command.Words) is not { } call
+                || CommandPosition.ScriptOf(call.Program, call.Arguments) is not { Encoded: false } script)
+                return;
+            var inner = Read(script.Text, script.Dialect, Output(command, output), depth + 1);
+            var exact = command.Words.FindIndex(word => ReferenceEquals(word, script.Text));
+            if (exact >= 0)
+            {
+                ProjectScriptWord(command, exact, inner, 0, data);
+                return;
+            }
+            var end = script.Text.Length;
+            for (var word = command.Words.Count - 1; word >= 0 && end > 0; word--)
+            {
+                var text = command.Words[word];
+                if (text.Length > end || !script.Text.AsSpan(0, end).EndsWith(text, StringComparison.Ordinal))
+                    break;
+                end -= text.Length;
+                ProjectScriptWord(command, word, inner, end, data);
+                if (end > 0 && script.Text[end - 1] == ' ') end--;
+            }
+        }
+
+        private static void ProjectScriptWord(ShellReader.Command command, int word, bool[] inner, int start, bool[] data)
+        {
+            if (!ScriptWordIsQuoted(command, word))
+                return;
+            for (var i = 0; i < command.Words[word].Length; i++)
+                if (inner[start + i] && command.WordOrigins[word].At(i) is { } origin
+                    && ReferenceEquals(origin.Source, command.Source))
+                    data[origin.Offset - command.Source.Start] = true;
+        }
+
+        private void Body(ShellReader.Body body, bool[] data, BodyOutput output, int depth)
+        {
+            if (!Surface(body))
+                return;
+            var owner = body.Owner;
+            if (body.Kind != ShellReader.BodyKind.HereString && StdinOf(owner) is { } dialect)
+                Project(Read(body.Text, dialect, Output(owner, output), depth + 1), 0, body.Origins, owner.Source, data);
+            else if (BodyIsData(body) && Output(owner, output) == BodyOutput.Data)
+                LiteralBody(body, data);
+            foreach (var edge in body.Expansions)
+                if (RawToken(edge) is { } token)
+                    Fill(data, owner.Source.Start, token.Start.Value + 1, token.End.Value, false);
+        }
+
+        private static void LiteralBody(ShellReader.Body body, bool[] data)
+        {
+            var source = body.Owner.Source;
+            var single = source.Posix && body.Kind == ShellReader.BodyKind.HereString
+                && source.Text[body.Whole.Start.Value + 1] == '\'';
+            var quoted = true;
+            for (var at = body.Content.Start.Value; at < body.Content.End.Value; at++)
+            {
+                if (quoted) data[at - source.Start] = true;
+                if (single && source.Text[at] == '\'') quoted = !quoted;
+            }
+        }
+
+        private bool Surface(ShellReader.Body body)
+        {
+            if (!_bodySurface.TryGetValue(body, out var valid))
+            {
+                valid = BodyPositionIsData(body, body.Content.Start.Value);
+                _bodySurface.Add(body, valid);
+            }
+            return valid;
+        }
+
+        private BodyOutput CaptureOutput(ShellReader.Host host, BodyOutput output)
+        {
+            if (RawToken(host) == null || !Surface(host.Body!))
+                return BodyOutput.Unknown;
+            if (StdinOf(host.Command) != null)
+                return BodyOutput.Executable;
+            return BodyIsData(host.Body!) ? Output(host.Command, output) : BodyOutput.Unknown;
+        }
+
+        private ShellDialect? StdinOf(ShellReader.Command command)
+        {
+            if (!_stdin.TryGetValue(command, out var dialect))
+            {
+                dialect = ProgramCall(command.Words) is { } call ? StdinShellDialect(call.Program, call.Arguments) : null;
+                _stdin.Add(command, dialect);
+            }
+            return dialect;
+        }
+
+        private BodyOutput Output(ShellReader.Command command, BodyOutput inherited)
+        {
+            if (_outputs.TryGetValue(command, out var known)) return known;
+            if (!_compound.TryGetValue(command.Source, out var compound))
+            {
+                compound = command.Source.Commands.Any(c => c.Words.Count > 0 && CompoundWords.Contains(c.Words[0]));
+                _compound.Add(command.Source, compound);
+            }
+            var chain = new List<ShellReader.Command>();
+            var current = command;
+            while (!_outputs.TryGetValue(current, out known))
+            {
+                chain.Add(current);
+                if (compound || current.UncertainFeed || current.HeaderExpansion
+                    || current.RedirectTargets.Any(r => !LiteralRedirect(current.Source, r)))
+                { known = BodyOutput.Unknown; break; }
+                if (!current.PipesOutput)
+                {
+                    known = current.Source.Host is { } host ? CaptureOutput(host, inherited) : inherited;
+                    break;
+                }
+                if (current.Next is not { } next) { known = BodyOutput.Unknown; break; }
+                if (next.Words is [var first, ..] && DataCommands.Contains(first)) { current = next; continue; }
+                known = ConsumerOutput(next);
+                break;
+            }
+            foreach (var item in chain) _outputs[item] = known;
+            return known;
+        }
+
+        private static BodyOutput ConsumerOutput(ShellReader.Command command) =>
+            ProgramCall(command.Words) is { } call
+            && (StdinShellDialect(call.Program, call.Arguments) != null || call.Program is "iex" or "invoke-expression")
+                ? BodyOutput.Executable : BodyOutput.Unknown;
+
+        private static void Project(bool[] inner, int start, ShellReader.TextOrigins origins, ShellReader.Scope source, bool[] data)
+        {
+            for (var i = 0; i < inner.Length; i++)
+                if (inner[i] && origins.At(start + i) is { } origin && ReferenceEquals(origin.Source, source))
+                    data[origin.Offset - source.Start] = true;
+        }
+
+        private static void Fill(bool[] data, int start, int from, int to, bool value)
+        {
+            Array.Fill(data, value, from - start, to - from);
+        }
     }
 
     private enum BodyOutput { Data, Executable, Unknown }
-    private enum Accounting { Absent, Accounted, Missing }
-    private sealed record NudgeFrame(BodyOutput Output, ShellReader.Position? Origin = null, NudgeFrame? Parent = null);
-
-    private static bool CountsNudge(string text, ShellDialect dialect, int depth, NudgeFrame frame)
-    {
-        if (depth > MaxCommandLineDepth || !HasLaunchMark(text) || text.IndexOf(LaunchMark, StringComparison.Ordinal)
-            != text.LastIndexOf(LaunchMark, StringComparison.Ordinal)
-            || !ValidFrame(frame))
-            return true;
-        bool[] readings = dialect switch
-        {
-            ShellDialect.Posix => [true],
-            ShellDialect.PowerShell => [false],
-            _ => [true, false],
-        };
-        foreach (var posix in readings)
-        {
-            var reading = ShellReader.Read(text, posix);
-            if (reading.Failed || AccountedFor(reading.Source) != Accounting.Accounted
-                || reading.Captures.Any(c => HasLaunchMark(c.Source.Text[c.Range])
-                    && CaptureCountsNudge(c, frame, depth))
-                || reading.Commands.Any(c => CommandCountsNudge(c, frame, depth)))
-                return true;
-        }
-        return false;
-    }
-
     private static bool HasLaunchMark(string text) => text.Contains(LaunchMark, StringComparison.Ordinal);
-
-    private static bool ValidFrame(NudgeFrame frame) => frame.Parent == null
-        ? frame.Origin == null && frame.Output == BodyOutput.Data
-        : frame.Origin is { } origin && MarkedAt(origin) && ValidFrame(frame.Parent)
-            && (frame.Parent.Output == BodyOutput.Data || frame.Output != BodyOutput.Data);
-
-    private static bool MarkedAt(ShellReader.Position position) =>
-        position.Source.Contains(position.Offset..(position.Offset + LaunchMark.Length))
-        && position.Source.Text[position.Offset] == LaunchMark[0];
-
-    private static int MarkedIndex(ShellReader.Scope source, Range range)
-    {
-        if (!source.Contains(range))
-            return -1;
-        var index = source.Text.IndexOf(LaunchMark, range.Start.Value, range.End.Value - range.Start.Value, StringComparison.Ordinal);
-        return index;
-    }
-
-    // Every marked representation must have its own emitted origin or completed execution edge.
-    // A comment/body elsewhere, or absence of a counted flat command, cannot discharge this source.
-    private static Accounting AccountedFor(ShellReader.Scope source, Dictionary<ShellReader.Scope, Accounting>? known = null)
-    {
-        known ??= [];
-        if (known.TryGetValue(source, out var previous))
-            return previous;
-        known[source] = Accounting.Missing; // An ancestry cycle cannot certify itself.
-        var result = AccountSource(source, known);
-        known[source] = result;
-        return result;
-    }
-
-    private static Accounting AccountSource(ShellReader.Scope source, Dictionary<ShellReader.Scope, Accounting> known)
-    {
-        var marker = MarkedIndex(source, source.Start..source.End);
-        if (marker < 0)
-            return Accounting.Absent;
-        var accounted = source.Comments.Any(r => MarkedIndex(source, r) == marker);
-        if (source.DerivedBody is { } derived)
-            accounted |= ReferenceEquals(derived.ExpansionSource, source)
-                && OriginMatches(derived.Origins, marker, derived.Owner.Source, derived.Content);
-        foreach (var command in source.Commands)
-        {
-            if (!CommandAccountsFor(command, marker, known, out var owns))
-                return Accounting.Missing;
-            accounted |= owns;
-        }
-        foreach (var edge in source.Executions.Where(e => MarkedIndex(source, e.Token) == marker))
-        {
-            if (!ExecutionAccountsFor(edge, known))
-                return Accounting.Missing;
-            accounted = true;
-        }
-        if (source.Children.Any(child => AccountedFor(child, known) == Accounting.Missing))
-            return Accounting.Missing;
-        return accounted ? Accounting.Accounted : Accounting.Missing;
-    }
-
-    private static bool CommandAccountsFor(ShellReader.Command command, int marker,
-        Dictionary<ShellReader.Scope, Accounting> known, out bool owns)
-    {
-        owns = command.Redirections.Any(HasLaunchMark);
-        for (var i = 0; i < command.Words.Count; i++)
-        {
-            if (MarkedIndex(command.Source, command.WordRanges[i]) != marker)
-                continue;
-            owns = true;
-            var normalized = command.Words[i].IndexOf(LaunchMark, StringComparison.Ordinal);
-            if (!OriginMatches(command.WordOrigins[i], normalized, command.Source, command.WordRanges[i])
-                && !command.Source.Executions.Any(e => ReferenceEquals(e.Command, command)
-                    && e.WordIndex == i && MarkedIndex(e.Source, e.Token) == marker && ExecutionAccountsFor(e, known)))
-                return false;
-        }
-        foreach (var body in command.Bodies.Where(b => MarkedIndex(command.Source, b.Content) == marker))
-        {
-            owns = true;
-            var normalized = body.Text.IndexOf(LaunchMark, StringComparison.Ordinal);
-            if (!OriginMatches(body.Origins, normalized, command.Source, body.Content)
-                && !body.Expansions.Any(e => RawToken(e) is { } r && MarkedIndex(command.Source, r) == marker
-                    && ExecutionAccountsFor(e, known)))
-                return false;
-        }
-        return true;
-    }
-
-    private static bool OriginMatches(ShellReader.TextOrigins origins, int index, ShellReader.Scope source, Range range) =>
-        index >= 0 && origins.At(index) is { } origin && ReferenceEquals(origin.Source, source)
-        && origin.Offset == MarkedIndex(source, range) && MarkedAt(origin);
-
-    private static bool ExecutionAccountsFor(ShellReader.Host edge, Dictionary<ShellReader.Scope, Accounting>? known = null)
-    {
-        if (!CompletedExecution(edge))
-            return false;
-        if (edge.Child is { } child)
-            return AccountedFor(child, known) == Accounting.Accounted;
-        var capture = edge.Capture!;
-        return OriginMatches(capture.Origins, capture.Text.IndexOf(LaunchMark, StringComparison.Ordinal),
-            capture.Source, capture.Range);
-    }
-
-    private static bool CaptureCountsNudge(ShellReader.Capture capture, NudgeFrame frame, int depth)
-    {
-        var marker = capture.Text.IndexOf(LaunchMark, StringComparison.Ordinal);
-        if (!ExecutionAccountsFor(capture.Host) || capture.Origins.At(marker) is not { } origin)
-            return true;
-        return CountsNudge(capture.Text, ShellDialect.Posix, depth + 1,
-            new NudgeFrame(CapturedOutput(capture.Host, frame.Output), origin, frame));
-    }
-
-    private static bool CommandCountsNudge(ShellReader.Command command, NudgeFrame frame, int depth)
-    {
-        if (command.Redirections.Any(HasLaunchMark))
-            return true;
-        var scriptWord = -1;
-        if (CommandPosition.ScriptOf(command, LaunchMark) is { } script
-            && HasLaunchMark(script.Text))
-        {
-            if (script.Encoded || script.Origin is not { } origin || !ReferenceEquals(origin.Command, command)
-                || origin.Offset != script.Text.IndexOf(LaunchMark, StringComparison.Ordinal)
-                || !MarkedScriptWordIsQuoted(command, origin.Word)
-                || CountsNudge(script.Text, script.Dialect, depth + 1,
-                    new NudgeFrame(OutputOf(command, frame.Output), origin.Source, frame)))
-                return true;
-            scriptWord = origin.Word;
-        }
-
-        for (var i = 0; i < command.Words.Count; i++)
-        {
-            if (i != scriptWord && WordCountsNudge(command, i, frame, depth))
-                return true;
-        }
-        return command.Bodies.Where(b => b.WordIndex < 0
-                && (HasLaunchMark(b.Text) || MarkedIndex(command.Source, b.Content) >= 0))
-            .Any(body => BodyCountsNudge(body, frame, depth));
-    }
-
-    private static bool WordCountsNudge(ShellReader.Command command, int index, NudgeFrame frame, int depth)
-    {
-        var raw = MarkedIndex(command.Source, command.WordRanges[index]);
-        if (!HasLaunchMark(command.Words[index]))
-            return raw >= 0 && !command.Source.Executions.Any(e => ReferenceEquals(e.Command, command)
-                && e.WordIndex == index && MarkedIndex(e.Source, e.Token) == raw && ExecutionAccountsFor(e));
-        return raw < 0 || !QuotedNudgeData(command, index, frame, depth);
-    }
 
     // Re-reading an executable string must not turn an originally unquoted match into data.
     // Unsupported concatenated strings stay counted even if the shell could eventually quote them.
-    private static bool MarkedScriptWordIsQuoted(ShellReader.Command command, int word)
+    private static bool ScriptWordIsQuoted(ShellReader.Command command, int word)
     {
         var pattern = command.Source.Posix ? PosixScriptWordRegex() : PowerShellScriptWordRegex();
         return pattern.IsMatch(command.RawWord(word));
@@ -1471,26 +1570,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     [GeneratedRegex("\\A(?:'(?:''|[^'])*'|\"(?:`[\\s\\S]|\"\"|[^\"`])*\")\\z")]
     private static partial Regex PowerShellScriptWordRegex();
-
-    private static bool BodyCountsNudge(ShellReader.Body body, NudgeFrame frame, int depth)
-    {
-        var owner = body.Owner;
-        var marker = MarkedIndex(owner.Source, body.Content);
-        if (marker < 0 || !BodyPositionIsData(body, marker))
-            return true;
-        var delegated = body.Expansions.Where(e => RawToken(e) is { } token
-            && MarkedIndex(owner.Source, token) == marker).ToArray();
-        if (delegated.Length != 0)
-            return delegated.Length != 1 || !ExecutionAccountsFor(delegated[0]);
-        var normalized = body.Text.IndexOf(LaunchMark, StringComparison.Ordinal);
-        if (!OriginMatches(body.Origins, normalized, owner.Source, body.Content))
-            return true;
-        if (body.Kind != ShellReader.BodyKind.HereString && ProgramCall(owner.Words) is { } shell
-            && StdinShellDialect(shell.Program, shell.Arguments) is { } dialect)
-            return CountsNudge(body.Text, dialect, depth + 1,
-                new NudgeFrame(OutputOf(owner, frame.Output), body.Origins.At(normalized), frame));
-        return !BodyIsData(body) || OutputOf(owner, frame.Output) != BodyOutput.Data;
-    }
 
     private static bool BodyIsData(ShellReader.Body body) =>
         (body.Owner.Words is [var first, ..] && DataCommands.Contains(first))
@@ -1506,7 +1585,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             return PosixScriptWordRegex().IsMatch(raw);
         if (body.Kind != ShellReader.BodyKind.HereString)
             return true;
-        if (!body.Owner.WordRanges[body.WordIndex].Equals(body.Whole))
+        if (body.WordIndex < 0 || body.WordIndex >= body.Owner.WordRanges.Count
+            || !body.Owner.WordRanges[body.WordIndex].Equals(body.Whole))
             return false;
         if (!body.Owner.Source.Posix)
             return true;
@@ -1572,67 +1652,18 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             ? body.Origins.RangeIn(body.Owner.Source, edge.Token) : null;
     }
 
-    private static BodyOutput CapturedOutput(ShellReader.Host host, BodyOutput output, HashSet<ShellReader.Host>? ancestors = null)
-    {
-        ancestors ??= [];
-        if (!ancestors.Add(host) || RawToken(host) is not { } token
-            || !BodyPositionIsData(host.Body!, token.Start.Value))
-            return BodyOutput.Unknown;
-        if (ProgramCall(host.Command.Words) is { } shell && StdinShellDialect(shell.Program, shell.Arguments) != null)
-            return BodyOutput.Executable;
-        return BodyIsData(host.Body!) ? OutputOf(host.Command, output, ancestors) : BodyOutput.Unknown;
-    }
-
-    private static BodyOutput OutputOf(ShellReader.Command command, BodyOutput output, HashSet<ShellReader.Host>? ancestors = null)
-    {
-        // Next links commands in this reader's scope; inspect its compound syntax once per pipe.
-        var hasCompound = command.Source.Commands.Any(c => c.Words.Count > 0 && CompoundWords.Contains(c.Words[0]));
-        while (true)
-        {
-            if (hasCompound || command.UncertainFeed || command.HeaderExpansion
-                || command.RedirectTargets.Any(r => !LiteralRedirect(command.Source, r)))
-                return BodyOutput.Unknown;
-            if (!command.PipesOutput)
-                break;
-            if (command.Next is not { } next)
-                return BodyOutput.Unknown;
-            command = next;
-            if (command.Words is [var first, ..] && DataCommands.Contains(first))
-                continue;
-            return ProgramCall(command.Words) is { } call
-                && (StdinShellDialect(call.Program, call.Arguments) != null || call.Program is "iex" or "invoke-expression")
-                ? BodyOutput.Executable : BodyOutput.Unknown;
-        }
-        return command.Source.Host is { } host ? CapturedOutput(host, output, ancestors) : output;
-    }
-
     private static bool LiteralRedirect(ShellReader.Scope source, ShellReader.RedirectTarget target) =>
         source.Contains(target.Range) && (target.Operator is "<" or ">" or ">>" or "0<" or "1>" or "1>>")
+        && target.Range.End.Value - target.Range.Start.Value >= target.Operator.Length
         && LiteralRedirectWordRegex().IsMatch(source.Text[target.Range][target.Operator.Length..]);
 
     [GeneratedRegex("\\A\\s*(?:'[^']*'|\"[^\"$`]*\"|[^\\s$`'\"()<>;&|]+)\\z")]
     private static partial Regex LiteralRedirectWordRegex();
 
-    // Q1-Q4 of the captain's finite GS-03 inventory. Prefixes identify operands, never whole argv.
-    private static bool QuotedNudgeData(ShellReader.Command command, int index, NudgeFrame frame, int depth)
-    {
-        var text = command.Source.Text;
-        var posix = command.Source.Posix;
-        var range = command.WordRanges[index];
-        var raw = text[range];
-        if (command.Bodies.SingleOrDefault(b => b.WordIndex == index) is { } body)
-            return !BodyCountsNudge(body, frame, depth);
-        if (!LiteralNudgeQuoteRegex().IsMatch(raw))
-            return false;
-        var literalPrefix = Enumerable.Range(0, index).All(i => text[command.WordRanges[i]] == command.Words[i]);
-        if (literalPrefix && QuotedSearchPattern(command, index, raw[0]))
-            return true;
-        return !posix && ProcessFilterPrefixRegex().IsMatch(text[..range.Start.Value])
-            && ProcessFilterSuffixRegex().IsMatch(text[range.End.Value..]);
-    }
-
     private static bool QuotedSearchPattern(ShellReader.Command command, int index, char quote)
     {
+        if (index is not (2 or 4 or 5))
+            return false;
         var prefix = command.Words.Take(index).ToArray();
         var tail = command.Words.Skip(index + 1).ToArray();
         return prefix switch
@@ -1662,11 +1693,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex("\\A(?:'[^']*'|\"[^\"$`]*\")\\z")]
     private static partial Regex LiteralNudgeQuoteRegex();
 
-    [GeneratedRegex(@"(?:\A|[;\r\n])\s*Get-CimInstance\s+Win32_Process\s*\|\s*Where-Object\s*\{\s*(?:\$_\.CreationDate\s+-gt\s+\$cut\s+-or\s+)?(?:\$_\.CommandLine|\(\[string\]\$_\.CommandLine\))\s+-match\s+\z", RegexOptions.IgnoreCase)]
-    private static partial Regex ProcessFilterPrefixRegex();
-
-    [GeneratedRegex(@"\A\s*(?:-and\s+\$_\.Name\s+-notmatch\s+'bash'\s*)?\}", RegexOptions.IgnoreCase)]
-    private static partial Regex ProcessFilterSuffixRegex();
+    private static readonly Regex ProcessFilterOperandPattern = new(@"(?:\A|[;\r\n])\s*Get-CimInstance\s+Win32_Process\s*\|\s*Where-Object\s*\{\s*(?:\$_\.CreationDate\s+-gt\s+\$cut\s+-or\s+)?(?:\$_\.CommandLine|\(\[string\]\$_\.CommandLine\))\s+-match\s+(?<operand>'[^']*'|""[^""$`]*"")\s*(?:-and\s+\$_\.Name\s+-notmatch\s+'bash'\s*)?\}", LinearIgnoreCase);
 
     [GeneratedRegex(LinearCommandStart + @"op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)" + LinearCommandEnd, LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejOpRegex();

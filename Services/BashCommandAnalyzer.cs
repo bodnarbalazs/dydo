@@ -262,15 +262,16 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"\G[\w-]+(?=[\s;&|<>()])")]
     private static partial Regex DashDelimiterRegex();
 
-    // The positions, in order, where HeredocBodyRegex and HereStringRegex match: each opener a later line closes.
-    private sealed record ClosedBodyOpeners(List<int> Heredocs, List<int> HereStrings);
+    // The positions, in order, where HeredocBodyRegex and HereStringRegex match: each opener a later
+    // line closes; and each heredoc the command's own reading read, from its << to after its last line.
+    private sealed record ClosedBodyOpeners(List<int> Heredocs, List<int> HereStrings, HashSet<(int Opener, int End)> ReadHeredocs);
 
     /// <summary>
     /// Where a heredoc or here-string of the text can match: each opener a line after it closes.
     /// Searching from an opener that nothing closes reads to the end of the text, once per such
     /// opener, quadratic in quoted text full of them (DYD-723); the body regexes run only from these.
     /// </summary>
-    private static ClosedBodyOpeners ClosedOpeners(string text)
+    private static ClosedBodyOpeners ClosedOpeners(string text, ShellReader.Reading reading)
     {
         var closing = ClosingLines(text);
         List<int> heredocs = [];
@@ -291,7 +292,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             if ((opener.Groups[1].Value == "'" ? closing.Single : closing.Double) >= opener.Index + opener.Length)
                 hereStrings.Add(opener.Index);
         }
-        return new ClosedBodyOpeners(heredocs, hereStrings);
+        return new ClosedBodyOpeners(heredocs, hereStrings, [.. reading.Commands.SelectMany(command => command.Bodies)
+            .Where(body => body.Kind == ShellReader.BodyKind.Heredoc).Select(body => (body.Whole.Start.Value, body.Whole.End.Value))]);
     }
 
     // Where each line of the text could close a body, the last line that does: a heredoc's delimiter
@@ -377,9 +379,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         // Text with no body opener holds no body to cut, so it is not read (DYD-723). Keep the
         // original code when a child's extent is unsupported; cutting its enclosing data body would
         // discard executable text beyond an apparent substitution terminator.
-        if (HasBodyOpener(command) && !ShellReader.Read(command, _shell != ShellDialect.PowerShell).Failed)
+        if (HasBodyOpener(command) && ShellReader.Read(command, _shell != ShellDialect.PowerShell) is { Failed: false } reading)
         {
-            var openers = ClosedOpeners(command);
+            var openers = ClosedOpeners(command, reading);
             while (DataBody(command, start, openers) is { } cut)
             {
                 pieces.Add(cut.Piece);
@@ -401,18 +403,24 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// command it feeds is a data command (<see cref="FeedsDataOnly"/>), and the text up to the line
     /// after it reads, so the piece after it starts as a shell left it. Otherwise null, failing closed.
     /// Each search and reading stays within the cut, so cutting every body costs the text's length
-    /// once, not once per body (DYD-723).
+    /// once, not once per body (DYD-723). A heredoc the whole command's reading read to the same line
+    /// reads there as it does alone: its line reads (<see cref="FeedsDataOnly"/>), only blank and
+    /// comment lines come before it, and its body is the one that reading read, so it is not read again.
     /// </summary>
     private DataBodyCut? DataBody(string text, int start, ClosedBodyOpeners openers)
     {
         var heredoc = FirstBody(HeredocBodyRegex(), text, openers.Heredocs, start);
         var hereString = FirstBody(HereStringRegex(), text, openers.HereStrings, start);
         DataBodyCut? cut = null;
+        var read = false;
         if (hereString.Success && (!heredoc.Success || hereString.Index < heredoc.Index))
             cut = HereStringData(text, start, hereString);
         else if (heredoc.Success)
+        {
             cut = HeredocData(text, start, heredoc);
-        return cut != null && !ShellReader.Read(text[start..cut.Resume], _shell != ShellDialect.PowerShell).Failed ? cut : null;
+            read = openers.ReadHeredocs.Contains((heredoc.Index, heredoc.Index + heredoc.Length));
+        }
+        return cut != null && (read || !ShellReader.Read(text[start..cut.Resume], _shell != ShellDialect.PowerShell).Failed) ? cut : null;
     }
 
     // A heredoc is bash's: bash reads its opener line, and PowerShell too when it may run the command.
@@ -1121,16 +1129,16 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// <summary>
     /// The lines one reading of a command's lines holds so far, and what it may still read: each line
     /// once, by its text, dialect and level, however many readings run it, and in all about the
-    /// command read both ways and a line as long at each level below it. cmd reads its command string
-    /// both ways, so each level of cmd doubled the readings and a chain of them was read 2^9 times;
-    /// each is read once now, but a long chain of cmd, or of text the two ways read apart, still
-    /// reads more each level and stops at the budget (DYD-723).
+    /// command read both ways and a line as long at each level below it, with room for a short chain
+    /// of cmd. cmd reads its command string both ways, so each level of cmd doubled the readings and a
+    /// chain of them was read 2^9 times; each is read once now, but a long chain of cmd, or of text the
+    /// two ways read apart, still reads more each level and stops at the budget (DYD-723).
     /// </summary>
     private sealed class CommandLineReading(int length)
     {
         public List<CommandLine> Lines { get; } = [];
         public HashSet<(string Text, ShellDialect Dialect, int Depth)> Read { get; } = [];
-        public long Budget { get; set; } = (MaxCommandLineDepth + 2L) * length + 65_536;
+        public long Budget { get; set; } = (MaxCommandLineDepth + 2L) * length + 4_096;
     }
 
     private static bool ReadCommandLines(string text, ShellDialect dialect, int depth, CommandLineReading lines)

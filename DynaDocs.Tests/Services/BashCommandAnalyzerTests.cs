@@ -2532,14 +2532,19 @@ public class BashCommandAnalyzerTests
         Assert.True(!ReleaseUninstrumented || longBest <= TimeSpan.FromSeconds(1), $"Took {longBest} at 100,000 characters");
     }
 
-    // Allocation grows with the input, and the budgeted length stays within the budget.
+    // Allocation grows with the input, and the budgeted length stays within the budget. Coverage
+    // instrumentation charges the first analyses of a process with its own growing records, so a
+    // short input of the shape runs first, and the budgeted length is measured in two rounds, the
+    // smaller counting; uninstrumented, every round allocates alike.
     [Theory]
     [InlineData("Posix", "heredocs")]
     [InlineData("Unknown", "heredocs")]
     [InlineData("Unknown", "cmd chain")]
     public void Analyze_LongBodies_AllocateLinearlyWithinTheBudget(string dialect, string shape)
     {
-        var (budgeted, _) = Measure(dialect, LongShapes[shape](BudgetedLength));
+        Measure(dialect, LongShapes[shape](1_000));
+        var budgeted = Math.Min(Measure(dialect, LongShapes[shape](BudgetedLength)).Allocated,
+            Measure(dialect, LongShapes[shape](BudgetedLength)).Allocated);
         Assert.True(budgeted <= AllocationBudget, $"Allocated {budgeted:N0} bytes at {BudgetedLength:N0} characters");
 
         var (half, _) = Measure(dialect, LongShapes[shape](50_000));

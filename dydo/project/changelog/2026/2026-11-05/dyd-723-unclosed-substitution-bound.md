@@ -55,8 +55,9 @@ megabytes at most, and a command nested past the reading's bound is refused.
 - Cutting heredoc and here-string bodies reads each piece once. Each cut read, split and copied the
   whole rest of the command, so 4,000 heredocs took eight seconds and allocated 22 GB. The rest
   must still read, as before: the command is read whole once, and each cut's own text from its
-  start to the line after its body. Where a piece read alone fails but the whole rest would read,
-  the cutting stops there and the rest stays code.
+  start to the line after its body, unless that whole reading read the heredoc to the same line.
+  Where a piece read alone fails but the whole rest would read, the cutting stops there and the
+  rest stays code.
 - The heredoc and here-string searches start only at an opener a later line closes. One that
   nothing closes, such as `<<E` in quoted text, was searched to the end of the command, once per
   opener: 16,000 of them took 1.6 seconds. The search finds what it found.

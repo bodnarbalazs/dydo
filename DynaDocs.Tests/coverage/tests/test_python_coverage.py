@@ -270,6 +270,32 @@ assert child.wait() == 0
 """
 
 
+# Both children run the subject, but the second raises while writing its receipt. Python's atexit
+# ignores even BaseException here and exits 0; only the held reporting connection can fail the campaign.
+_INTERRUPTED_FINISH = """\
+import os, subprocess, sys
+from pathlib import Path
+
+subprocess.run([sys.executable, "-c", "import subject; subject.work()"], check=True)
+program = '''import builtins, sys
+from pathlib import Path
+import subject
+subject.work()
+original = Path.write_text
+
+def interrupted_receipt(path, *args, **kwargs):
+    if path.name.startswith("counter-"):
+        raise getattr(builtins, sys.argv[1])("receipt interrupted")
+    return original(path, *args, **kwargs)
+
+Path.write_text = interrupted_receipt
+'''
+own_pid = {**os.environ, "PYTHONPATH": os.pathsep.join([str(Path("own-pid").resolve()), os.environ["PYTHONPATH"]])}
+child = subprocess.run([sys.executable, "-c", program, sys.argv[1]], env=own_pid)
+assert child.returncode == 0
+"""
+
+
 # The same, but no file can be written beside the failing child's config and the driver ignores that
 # child's exit: at startup its config lies in a directory that does not exist; at finish a file stands in
 # for the campaign's output from just before it exits until the driver, exiting 0 itself, restores it.
@@ -774,6 +800,15 @@ class PythonCoverageTests(unittest.TestCase):
         for (case, driver), phase in itertools.product(drivers.items(), ("startup", "finish")):
             with self.subTest(case=case, phase=phase):
                 self.assert_failed_by_name(driver, phase, phase)
+
+    def test_keyboard_interrupt_at_finish_fails_the_campaign_by_name(self):
+        self.assert_failed_by_name(_INTERRUPTED_FINISH, "KeyboardInterrupt", "finish")
+
+    def test_system_exit_at_finish_fails_the_campaign_by_name(self):
+        self.assert_failed_by_name(_INTERRUPTED_FINISH, "SystemExit", "finish")
+
+    def test_runtime_error_at_finish_fails_the_campaign_by_name(self):
+        self.assert_failed_by_name(_INTERRUPTED_FINISH, "RuntimeError", "finish")
 
     def test_a_failure_reaches_the_campaign_on_the_connection_its_process_held_from_startup(self):
         for case in ("descriptors exhausted at finish", "port variable dropped at startup",

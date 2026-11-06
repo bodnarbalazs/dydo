@@ -27,7 +27,8 @@ _CONNECT_BACKOFF_SECONDS = (0.01, 0.02, 0.04)
 # Every measured process's startup. Without a campaign config it imports nothing. With one, a
 # `python_coverage` that cannot be imported ends the process before its program runs, where `site` would
 # run it unmeasured; `os` and `sys` are loaded already, so that exit takes nothing new. An exception that
-# escapes `startup_from_environment` has already reached `collect`, and `site` swallows nothing broader.
+# escapes `startup_from_environment` has already reached `collect` if `site` would swallow it; broader
+# BaseExceptions abort interpreter startup before the program runs.
 _SITECUSTOMIZE = """\
 import os
 import sys
@@ -223,7 +224,7 @@ def _start(config_path, report):
     config = json.loads(Path(config_path).read_text(encoding="utf-8"))
     # A process of the collecting build started outside its venv (`sys._base_executable`) has no coverage.py of
     # its own. It finds the collector's in `packages`, searched after its own path and only for this import,
-    # so its program finds every other module where it would unmeasured, or not at all.
+    # restoring search-path precedence for unrelated packages. Instrumentation dependencies stay imported.
     packages = config.get("packages", [])
     sys.path += packages
     try:
@@ -246,7 +247,7 @@ def _start(config_path, report):
     def finish():
         try:
             write_receipt()
-        except Exception as error:
+        except BaseException as error:
             report.failed("finish", error)
             raise
         report.connection.close()

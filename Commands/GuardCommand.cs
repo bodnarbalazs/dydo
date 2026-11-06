@@ -712,8 +712,8 @@ public static partial class GuardCommand
 
     // A nudge's pattern is matched on the raw text, and a match counts only where its launch word
     // counts under the bounded data-operand rules (DYD-406); captures come from that raw match.
-    // The review-block nudge, shipped or a dydo.json copy keeping its pattern, also reads the body
-    // file of a gh pr create that is the line's only command (DYD-639).
+    // The review-block nudge, shipped or a dydo.json copy (a pre-DYD-736 one refreshed by
+    // MergeSystemNudges), also reads the body file of a gh pr create that is the line's only command (DYD-639).
     private static IEnumerable<(NudgeConfig Nudge, Match Match)> MatchingCommandNudges(string command, GuardEnv env, ShellDialect shell,
         Func<int, string?>? prBodyAt)
     {
@@ -732,7 +732,9 @@ public static partial class GuardCommand
 
     // The first running match that its call's own body file does not clear. A call's body file is
     // its body as an inline one is, after its launch words: the pattern re-read on those words and
-    // that body alone decides, so no other call's text clears it (DYD-639).
+    // that body alone decides, so no other call's text clears it (DYD-639). A call behind an
+    // assignment or env is no lone call, so its file is never read: the prefix can redirect what gh
+    // opens (DYD-731 Option A, DYD-736).
     private static Match? FirstUnclearedMatch(Regex pattern, string command, ShellDialect shell, Func<int, string?> bodyAt) =>
         RunningMatches(pattern, command, shell)
             .FirstOrDefault(running => bodyAt(running.Launch) is not { } body
@@ -875,6 +877,7 @@ public static partial class GuardCommand
     internal static List<NudgeConfig> MergeSystemNudges(List<NudgeConfig>? configNudges)
     {
         var nudges = configNudges?.ToList() ?? [];
+        RefreshPreDyd736ReviewBlockCopies(nudges);
 
         for (int i = nudges.Count - 1; i >= 0; i--)
         {
@@ -914,6 +917,47 @@ public static partial class GuardCommand
 
         return nudges;
     }
+
+    /// <summary>
+    /// A dydo.json copy of the review-block nudge keeps the pattern it was written with, and the
+    /// pre-DYD-736 one misses a <c>gh pr create</c> behind assignments or <c>env</c>. The guard gives
+    /// such a copy the current pattern and keeps its message, severity and audience. Beside a current
+    /// copy only the stricter of the two stays, the current one on a tie.
+    /// </summary>
+    private static void RefreshPreDyd736ReviewBlockCopies(List<NudgeConfig> nudges)
+    {
+        for (var i = nudges.Count - 1; i >= 0; i--)
+        {
+            var old = nudges[i];
+            if (!old.IsCommandMatch || old.Pattern != ConfigFactory.PreDyd736ReviewBlockPattern)
+                continue;
+            var refreshed = new NudgeConfig
+            {
+                Pattern = ConfigFactory.ReviewBlockPattern,
+                Message = old.Message,
+                Severity = old.Severity,
+                Audience = old.Audience,
+                Match = old.Match
+            };
+            var current = nudges.FindIndex(n => n.IsCommandMatch && n.Pattern == ConfigFactory.ReviewBlockPattern);
+            if (current < 0)
+            {
+                nudges[i] = refreshed;
+                continue;
+            }
+            if (Strictness(old) > Strictness(nudges[current]))
+                nudges[current] = refreshed;
+            nudges.RemoveAt(i);
+        }
+    }
+
+    // A severity other than notice or warn enforces as a block (EnforceNudge).
+    private static int Strictness(NudgeConfig nudge) => nudge.Severity?.ToLowerInvariant() switch
+    {
+        "notice" => 0,
+        "warn" => 1,
+        _ => 2
+    };
 
     private static int? AnalyzeAndCheckBashOperations(
         string command, OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,

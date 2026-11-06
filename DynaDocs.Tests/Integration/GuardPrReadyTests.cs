@@ -418,9 +418,11 @@ public class GuardPrReadyTests : IntegrationTestBase
             .AssertPreToolUseAllowed();
     }
 
-    // A user's dydo.json copy of the review-block nudge keeps its pattern, so its body file is read
-    // too; a custom nudge on gh pr create reads the command alone.
+    // A user's dydo.json copy of the review-block nudge, the current pattern or the pre-DYD-736 one
+    // the guard refreshes, has its body file read too; a custom nudge on gh pr create reads the
+    // command alone.
     [Theory]
+    [InlineData(ConfigFactory.ReviewBlockPattern, false)]
     [InlineData(@"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)", false)]
     [InlineData(@"gh\s+pr\s+create\b(?![\s\S]*Independent review)", true)]
     public async Task BlockNudgeOnPrCreate_WithAnInTreeBodyFile_ReadsItOnlyForTheReviewBlockPattern(string pattern, bool denied)
@@ -438,6 +440,43 @@ public class GuardPrReadyTests : IntegrationTestBase
 
         if (denied) Assert.StartsWith("BLOCKED: Custom PR block.", result.AssertPreToolUseDenied());
         else result.AssertPreToolUseAllowed();
+    }
+
+    // DYD-736 with DYD-731 Option A: a prefixed call warns although its in-tree body file holds the
+    // block, because an assignment can redirect what gh opens; the lone call with the same file
+    // passes. Both hold for the shipped nudge and for a dydo.json's pre-DYD-736 copy of it.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PrCreate_BehindAssignmentsOrEnv_NeverReadsItsBodyFile(bool preDyd736Copy)
+    {
+        await InitPushedProject();
+        if (preDyd736Copy)
+        {
+            var config = JsonNode.Parse(ReadFile("dydo.json"))!.AsObject();
+            var shipped = ConfigFactory.DefaultNudges.Single(n => n.Pattern == ConfigFactory.ReviewBlockPattern);
+            config["nudges"] = new JsonArray(new JsonObject
+            {
+                ["pattern"] = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)",
+                ["message"] = shipped.Message,
+                ["severity"] = shipped.Severity,
+            });
+            WriteFile("dydo.json", config.ToJsonString());
+            // The tree check reads the local remote-tracking ref, so moving it stands in for a push.
+            Commit(TestDir, "nudge");
+            Git(TestDir, "update-ref", "refs/remotes/origin/feature", "HEAD");
+        }
+        WriteFile("dydo/agents/body.md", ReviewedBody);
+
+        Assert.Empty(await Misses(denied: true,
+        [
+            "FOO=1 gh pr create -F dydo/agents/body.md",
+            "GH_PROMPT_DISABLED=1 GH_REPO=acme/lc gh pr create --body-file dydo/agents/body.md",
+            "env gh pr create -F dydo/agents/body.md",
+            "env -i gh pr create -F dydo/agents/body.md",
+            "env -u GH_TOKEN -- FOO=1 gh pr create -F dydo/agents/body.md",
+        ], ReviewBlockWarning));
+        Assert.Empty(await Misses(denied: false, ["gh pr create -F dydo/agents/body.md"]));
     }
 
     [Fact]

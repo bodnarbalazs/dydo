@@ -524,6 +524,8 @@ public class PrCallScannerTests
     [InlineData("gh pr Create -R o/r -F a.md", "a.md")]
     [InlineData("gh pr create -F -", "-")]
     [InlineData("gh pr create -F \"dydo/agents/a b.md\"", "dydo/agents/a b.md")]
+    // DYD-639 nit 6, closed in DYD-736: --attach takes a value, so a -F word after it is that value.
+    [InlineData("gh pr create -F a.md --attach -Fr.png", "a.md")]
     public void BodyFileAt_IsTheLaunchedCallsLastBodyFile(string command, string file)
     {
         Assert.Equal(file, PrCallScanner.BodyFileAt(command, 0, ShellDialect.Posix));

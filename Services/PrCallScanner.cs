@@ -31,7 +31,7 @@ internal static partial class PrCallScanner
             ['r'] = "reviewer", ['m'] = "milestone", ['p'] = "project", ['T'] = "template", ['H'] = "head", ['R'] = "repo",
         },
         ["title", "body", "base", "body-file", "label", "assignee", "reviewer", "milestone", "project", "template",
-         "head", "repo", "recover"]);
+         "head", "repo", "recover", "attach"]);
 
     private static readonly Options ApiOptions = new(
         new() { ['X'] = "method", ['H'] = "header", ['f'] = "field", ['F'] = "field", ['q'] = "jq", ['t'] = "template", ['p'] = "preview" },

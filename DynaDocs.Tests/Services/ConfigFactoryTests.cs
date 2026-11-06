@@ -164,6 +164,17 @@ public class ConfigFactoryTests
         Assert.DoesNotMatch(regex, "gh pr create --body '## Independent review\nverdict: PASS'");
     }
 
+    // DYD-736: the current pattern reads past leading assignments and env; the pre-DYD-736 one did not.
+    [Theory]
+    [InlineData("FOO=1 gh pr create --fill")]
+    [InlineData("env gh pr create --fill")]
+    [InlineData("env -i -u GH_TOKEN -- GH_REPO=acme/lc gh pr create --fill")]
+    public void ReviewBlockPattern_PrefixedPrCreate_MatchesWhereThePreDyd736PatternDidNot(string command)
+    {
+        Assert.Matches(new Regex(ConfigFactory.ReviewBlockPattern, RegexOptions.IgnoreCase), command);
+        Assert.DoesNotMatch(new Regex(ConfigFactory.PreDyd736ReviewBlockPattern, RegexOptions.IgnoreCase), command);
+    }
+
 
 
     [Theory]

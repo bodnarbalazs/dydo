@@ -31,7 +31,7 @@ internal static partial class PrCallScanner
             ['r'] = "reviewer", ['m'] = "milestone", ['p'] = "project", ['T'] = "template", ['H'] = "head", ['R'] = "repo",
         },
         ["title", "body", "base", "body-file", "label", "assignee", "reviewer", "milestone", "project", "template",
-         "head", "repo", "recover"]);
+         "head", "repo", "recover", "attach"]);
 
     private static readonly Options ApiOptions = new(
         new() { ['X'] = "method", ['H'] = "header", ['f'] = "field", ['F'] = "field", ['q'] = "jq", ['t'] = "template", ['p'] = "preview" },
@@ -100,8 +100,10 @@ internal static partial class PrCallScanner
     /// <summary>
     /// Whether <paramref name="call"/>, the line's one command, is all the line runs (DYD-639 ruling
     /// 7): it starts at <paramref name="launch"/> with only blanks before it and after its last word,
-    /// so nothing is joined to it and no assignment leads it; it takes no redirection, heredoc or
-    /// here-string; and no word in the line may expand (<see cref="ExpandsNothing"/>).
+    /// so nothing is joined to it; it takes no redirection, heredoc or here-string; and no word in the
+    /// line may expand (<see cref="ExpandsNothing"/>). A launch may sit on a leading assignment or
+    /// <c>env</c> (DYD-736), so this check does not rule those out: <see cref="PlainOperand"/> does,
+    /// by reading a file only when the call's first word is <c>gh</c> (DYD-731 Option A).
     /// </summary>
     private static bool IsLone(ShellReader.Command call, int launch, bool posix)
     {

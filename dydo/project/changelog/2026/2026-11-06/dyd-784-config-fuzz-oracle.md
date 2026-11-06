@@ -128,6 +128,48 @@ process, and no revert result had been retained. The restored fix and the earlie
 13/13 result, sealed-byte proof and successful payload target were intact. Only
 the unproved remainder was requeued; its scripts now write their results to disk.
 
+## Preparatory integration hop - pinned feature tip 002bc9df
+
+The ticket branch integrates feature tip
+`002bc9dfa3851b9f0692728b7a403c33a05e5542` with first parent
+`4c0245293c01913407408e5b3b3689fc2c5f0e2d`. Both local tracking ref and live
+`git ls-remote origin refs/heads/feature/dydo-3-6-0` matched that pin before the
+merge. The automatic merge tree was `263384ae3afc18923d934bd7b450b96d81ca270e`.
+The only final non-documentation overlap is `.github/workflows/ci.yml`.
+
+DYD-717 requires every checkout to explicitly name `${{ github.sha }}`. The
+automatic merge left the new oracle job using checkout's default. Incoming
+`test_coverage_artifacts.WorkflowTests` reproduced the mismatch: seven passed,
+one failed with `'${{ github.sha }}' != None : statechart-config-oracle`, exit 1.
+The integration adds the explicit ref to that job, preserving the installed-JDK
+pin, TLC hash check, oracle command and fail-on-skip guard. No production logic,
+threshold or allowance changes are added by this resolution.
+
+The incoming changes also update the statechart acceptance projection scenario
+and verification skill assets. Dependency manifests, locks and setup script are
+unchanged; existing provisioned installs are retained and skill projections are
+refreshed. Payload validation and embedded asset tests accompany whole-statechart
+coverage/static. New recipes and evidence live in `dyd-784-merge-evidence/`;
+the earlier two evidence directories remain historical and untouched.
+
+Run from the repository root, choosing a new empty scratch directory per repeat.
+The preflight records all tracked source hashes. Keep repository inputs frozen
+until both scripts exit; logs are written outside the repository during collection.
+Only existing tooling and verified cache contents are used.
+
+```bash
+out=$(mktemp -d /tmp/dyd784-merge-proof.XXXXXX)
+evidence=dydo/project/changelog/2026/2026-11-06/dyd-784-merge-evidence
+/var/tmp/dydo-gate-lock.sh systemd-run --user --scope --slice=app-t3code-agents.slice -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 180 bash "$evidence/preflight.sh.txt" "$out"
+/var/tmp/dydo-gate-lock.sh systemd-run --user --scope --slice=app-t3code-agents.slice -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 1800 bash "$evidence/gates.sh.txt" "$out"
+```
+
+This is preparatory integration, not reviewed landing. Hosted execution of the real
+4000-config seed-1 oracle remains mandatory, followed by captain proof and a fresh
+Astra/Sol review pair. Mutation remains unavailable under the existing manifest.
+The merge commit is frozen before gates; an append-only evidence commit records
+the observed results afterward without rewriting either parent or earlier hops.
+
 ## Historical writer proof - candidate 83356f3
 
 Source base: `107a0394f1257228527c984511ea51bb723262ae`, branch

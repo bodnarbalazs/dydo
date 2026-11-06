@@ -90,6 +90,12 @@
       ]
     },
     {
+      "module": "skills/engineering/verify-dydo/scripts/officer_transition.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_officer_transition.py"
+      ]
+    },
+    {
       "module": "Commands/GapCheckCommand.cs",
       "tests": [
         "DynaDocs.Tests/Commands/GapCheckCommandTests.cs"

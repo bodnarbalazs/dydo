@@ -376,8 +376,9 @@ Linux-only result nor inherited-failure attribution establishes combined coverag
 each source. A point belongs to the member whose emitted body owns it, so a lambda or field
 initializer goes with its member. A branch belongs to its origin line. Linux runs the full suite
 and measures every other point, including the neutral remainder of mixed files. Windows runs only
-the selection's named tests, which reach the named members, and must run all of them without a
-skip. Both gates apply 80% line / 60% branch / HCRAP 20 to their own portion. The hosted
+the selection's named tests, which reach the named members, and judges them by per-test results.
+A declared test without an executed result, a result that is not Passed, or a result outside the
+selection fails the gate; theory rows count under their method. Both gates apply 80% line / 60% branch / HCRAP 20 to their own portion. The hosted
 `dotnet-coverage` job runs both gates on the PR head, Linux on `ubuntu-24.04` and Windows on
 `windows-latest`. The dependent `dotnet-coverage-union` job requires both reports and both
 passing gates on the same clean commit. It rebuilds that commit's complete zero-hit Linux

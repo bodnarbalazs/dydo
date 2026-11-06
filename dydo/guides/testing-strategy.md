@@ -408,9 +408,9 @@ coverage success.
 
 The Windows coverage leg runs only the statechart's selected tests, so the guard's tests run on
 Windows in a separate job. The hosted `guard-windows` job builds the candidate commit on
-`windows-latest`, the PR head on a pull request and the pushed commit on a push, and runs
-`DangerousPatternCultureTests`, `DangerousPatternOracleTests`, `DangerousPatternBudgetTests`,
-`BashCommandAnalyzerTests` and `GuardSecurityTests` without instrumentation. It fails when `dotnet test` fails, when the selection yields no results, when a
+`windows-latest`, the PR head on a pull request and the pushed commit on a push, and runs the
+classes in that job's `GUARD_CLASSES` in `.github/workflows/ci.yml`, the one list of selected
+classes, without instrumentation. It fails when `dotnet test` fails, when the selection yields no results, when a
 class yields none, or when any result is not Passed, so a skip fails it. It adds no points to
 either coverage report.
 

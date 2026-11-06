@@ -600,6 +600,49 @@ jobs:
           path: DynaDocs.Tests/coverage/results/windows-cancellation
           if-no-files-found: warn
 
+  # The statechart runtime's Windows paths (its job object, TLC and JAVA resolved from the caller and
+  # through PATH) run only on Windows. Their tests skip anywhere else, and they skip on Windows
+  # without TLC, so this leg provisions the release's pinned prerequisites and fails on any skip.
+  statechart-windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+          cache: pnpm
+          cache-dependency-path: skills/engineering/statechart/scripts/pnpm-lock.yaml
+
+      - name: Install statechart test dependencies
+        run: pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile
+
+      - name: Provision statechart prerequisites
+        id: statechart
+        shell: pwsh
+        run: ./.github/workflows/provision-statechart.ps1
+
+      # Run the file directly, not under --test, which reports a file with no tests as one passing test.
+      - name: Windows statechart tests
+        working-directory: skills/engineering/statechart/scripts
+        env:
+          TLA2TOOLS: ${{ steps.statechart.outputs.tla2tools }}
+          JAVA: ${{ steps.statechart.outputs.java }}
+          STATECHART_PELE: ${{ steps.statechart.outputs.pele }}
+        run: node --disable-warning=ExperimentalWarning --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=${{ runner.temp }}/statechart-windows.tap test/windows.test.ts
+
+      # windows.test.ts holds 6 tests: 2 job-ownership cases and 4 real-TLC override cases (DYD-428).
+      - name: Require every Windows statechart test to run
+        shell: pwsh
+        run: ./.github/workflows/assert-node-tests-ran.ps1 -Tap '${{ runner.temp }}/statechart-windows.tap' -MinimumTests 6
+
   viewer:
     runs-on: ubuntu-latest
 

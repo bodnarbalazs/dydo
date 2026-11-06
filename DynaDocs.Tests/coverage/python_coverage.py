@@ -26,9 +26,9 @@ _CONNECT_TIMEOUT_SECONDS = 0.1
 _CONNECT_BACKOFF_SECONDS = (0.01, 0.02, 0.04)
 # Every measured process's startup. Without a campaign config it imports nothing. With one, a
 # `python_coverage` that cannot be imported ends the process before its program runs, where `site` would
-# run it unmeasured; `os` and `sys` are loaded already, so that exit takes nothing new. An exception that
-# escapes `startup_from_environment` has already reached `collect`; a process without a reporting
-# connection exits before the program runs, even on a BaseException.
+# run it unmeasured; `os` and `sys` are loaded already, so that exit takes nothing new. An Exception that
+# escapes `startup_from_environment` has already reached `collect`; other BaseExceptions abort interpreter
+# startup before the program runs, as does failing to open or name the reporting connection.
 _SITECUSTOMIZE = """\
 import os
 import sys
@@ -198,17 +198,22 @@ class _Report:
             _exit_unrecorded("startup", error, "no reporting connection")
 
     def failed(self, phase, error):
-        """Send this process's failed measurement to `collect`, or end the process unmeasured."""
-        try:
+        """Keep the connection until the failure is sent or the socket itself fails."""
+        interrupted = None
+        while True:
             try:
                 self.connection.sendall(_record(_failure(phase, error)))
-            except BaseException:
-                # Retry the full frame: zero bytes must not look like a clean close. A partial frame
+                break
+            except OSError as unrecorded:
+                _exit_unrecorded(phase, error, unrecorded)
+            except BaseException as interruption:
+                # Never silently close after an interruption, however many recur. A partial frame
                 # followed by a full one is unreadable, which also fails the campaign closed.
-                self.connection.sendall(_record(_failure(phase, error)))
-            self.connection.close()
-        except BaseException as unrecorded:
-            _exit_unrecorded(phase, error, unrecorded)
+                if interrupted is None:
+                    interrupted = interruption
+        self.connection.close()
+        if interrupted is not None:
+            raise interrupted
 
 
 def startup_from_environment():
@@ -219,7 +224,8 @@ def startup_from_environment():
     report = _Report(config_path)
     try:
         return _start(config_path, report)
-    except BaseException as error:
+    except Exception as error:
+        # site swallows Exception and runs the program; other BaseExceptions already abort startup.
         report.failed("startup", error)
         raise
 

@@ -296,24 +296,26 @@ assert child.returncode == 0
 """
 
 
-# Interrupt only the failure record, once, at a deterministic byte boundary. The driver's exit is
+# Interrupt only the failure record at a deterministic byte boundary. The driver's exit is
 # independent of the failed child's: a nonzero child exit alone cannot protect the campaign.
 _INTERRUPTED_REPORT = """\
 import builtins, socket, sys
 from pathlib import Path
 
-phase, position, interruption = sys.argv[1:]
+phase, position, interruption = sys.argv[1:4]
+remaining = int(sys.argv[4]) if len(sys.argv) > 4 else 1
 sendall = socket.socket.sendall
 
 def interrupted_send(connection, data):
-    if b"Python measurement failed" not in data:
+    global remaining
+    if b"Python measurement failed" not in data or not remaining:
         return sendall(connection, data)
-    socket.socket.sendall = sendall
+    remaining -= 1
     if position == "partial":
         sendall(connection, data[:13])
     elif position == "full":
         sendall(connection, data)
-    raise getattr(builtins, interruption)("failure report interrupted")
+    raise getattr(builtins, interruption)(f"failure report interrupted ({remaining} left)")
 
 socket.socket.sendall = interrupted_send
 write_text = Path.write_text
@@ -863,47 +865,84 @@ class PythonCoverageTests(unittest.TestCase):
     def test_an_interrupted_failure_report_fails_the_campaign_even_when_the_child_exit_is_ignored(self):
         for phase, position, interruption in itertools.product(
                 ("startup", "finish"), ("before", "partial", "full"), ("KeyboardInterrupt", "SystemExit")):
-            with self.subTest(phase=phase, position=position, interruption=interruption), \
-                    tempfile.TemporaryDirectory() as folder:
-                root = Path(folder)
-                output = root / "evidence"
-                (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
-                (root / "driver.py").write_text(_IGNORED_REPORT_INTERRUPTION, encoding="utf-8")
-                _measured_as_itself(root, output, _INTERRUPTED_REPORT + _START)
-                result = _facade(root, output, ["subject.py"],
-                                 ["{python}", "-S", "driver.py", phase, position, interruption])
-                self.assertTrue((root / "failed.exit").exists(), result.stderr)
-                if phase == "finish":
-                    self.assertTrue((root / "ran").exists(), result.stderr)
-                self.assertEqual(2, result.returncode, result.stdout + result.stderr)
-                failed = (root / "failed.pid").read_text(encoding="utf-8")
-                self.assertIn(f"process {failed}", result.stderr)
-                self.assertFalse((output / "counters.json").exists())
-                self.assertFalse((output / "coverage.json").exists())
+            with self.subTest(phase=phase, position=position, interruption=interruption):
+                self.assert_interrupted_report(phase, position, interruption, 1)
 
-    def test_startup_interruptions_are_reported_or_end_before_the_program_runs(self):
-        for seam, interruption in itertools.product(("connect", "sendall", "_start"),
+    def test_repeated_failure_report_interruptions_cannot_silently_close_the_connection(self):
+        for phase, count, interruption in itertools.product(
+                ("startup", "finish"), (2, 5), ("KeyboardInterrupt", "SystemExit", "GeneratorExit", "RuntimeError")):
+            with self.subTest(phase=phase, count=count, interruption=interruption):
+                self.assert_interrupted_report(phase, "before", interruption, count)
+
+    def test_repeated_interruptions_after_partial_failure_frames_fail_closed(self):
+        for interruption in ("KeyboardInterrupt", "SystemExit"):
+            with self.subTest(interruption=interruption):
+                self.assert_interrupted_report("finish", "partial", interruption, 5)
+
+    def test_a_socket_error_after_a_partial_failure_record_exits_70_and_fails_collect(self):
+        self.assert_interrupted_report("finish", "partial", "OSError", 1)
+
+    def assert_interrupted_report(self, phase, position, interruption, count):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            output = root / "evidence"
+            (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+            (root / "driver.py").write_text(_IGNORED_REPORT_INTERRUPTION, encoding="utf-8")
+            _measured_as_itself(root, output, _INTERRUPTED_REPORT + _START)
+            result = _facade(root, output, ["subject.py"],
+                             ["{python}", "-S", "driver.py", phase, position, interruption, str(count)], timeout=15)
+            self.assertTrue((root / "failed.exit").exists(), result.stderr)
+            if phase == "finish":
+                self.assertTrue((root / "ran").exists(), result.stderr)
+            self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+            failed = (root / "failed.pid").read_text(encoding="utf-8")
+            self.assertIn(f"process {failed}", result.stderr)
+            self.assertIn(f"at {phase}", result.stderr)
+            if interruption == "OSError":
+                self.assertEqual("70", (root / "failed.exit").read_text(encoding="utf-8"))
+                self.assertIn("incomplete record", result.stderr)
+            else:
+                self.assertIn(f"{interruption}: failure report interrupted ({count - 1} left)", result.stderr)
+            self.assertFalse((output / "counters.json").exists())
+            self.assertFalse((output / "coverage.json").exists())
+
+    def test_connection_startup_interruptions_end_before_the_program_runs(self):
+        for seam, interruption in itertools.product(("connect", "sendall"),
                                                     ("KeyboardInterrupt", "SystemExit")):
-            with self.subTest(seam=seam, interruption=interruption), tempfile.TemporaryDirectory() as folder:
-                root = Path(folder)
-                output = root / "evidence"
-                (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
-                (root / "driver.py").write_text(_UNCONNECTED_AND_IGNORED, encoding="utf-8")
-                owner = "python_coverage" if seam == "_start" else "socket.socket"
-                setup = ("import socket, python_coverage\n"
-                         f"def interrupted(*args):\n    raise {interruption}('startup interrupted')\n"
-                         f"{owner}.{seam} = interrupted\n")
-                _measured_as_itself(root, output, setup + _START)
-                result = _facade(root, output, ["subject.py"], ["{python}", "-S", "driver.py"])
-                self.assertFalse((root / "ran").exists(), result.stderr)
-                failed = (root / "failed.pid").read_text(encoding="utf-8")
+            with self.subTest(seam=seam, interruption=interruption):
+                self.assert_startup_interruption(seam, interruption)
+
+    def test_interrupting_measurement_startup_never_runs_the_program_or_fails_collect(self):
+        for interruption in ("KeyboardInterrupt", "SystemExit"):
+            with self.subTest(interruption=interruption):
+                self.assert_startup_interruption("_start", interruption)
+
+    def assert_startup_interruption(self, seam, interruption):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            output = root / "evidence"
+            (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+            (root / "driver.py").write_text(_UNCONNECTED_AND_IGNORED, encoding="utf-8")
+            owner = "python_coverage" if seam == "_start" else "socket.socket"
+            setup = ("import socket, python_coverage\n"
+                     f"def interrupted(*args):\n    raise {interruption}('startup interrupted')\n"
+                     f"{owner}.{seam} = interrupted\n")
+            _measured_as_itself(root, output, setup + _START)
+            result = _facade(root, output, ["subject.py"], ["{python}", "-S", "driver.py"], timeout=15)
+            self.assertFalse((root / "ran").exists(), result.stderr)
+            failed = (root / "failed.pid").read_text(encoding="utf-8")
+            child_exit = (root / "failed.exit").read_text(encoding="utf-8")
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertNotEqual("0", child_exit)
+            if seam == "_start":
+                self.assertNotIn("Python measurement failed", result.stderr)
+                self.assertIn(f"{interruption}: startup interrupted", result.stderr)
+            else:
                 self.assertIn(f"Python measurement failed in process {failed} at startup", result.stderr)
-                if seam == "_start":
-                    self.assertEqual(2, result.returncode, result.stderr)
-                    self.assertFalse((output / "counters.json").exists())
-                    self.assertFalse((output / "coverage.json").exists())
-                else:
-                    self.assertEqual("70", (root / "failed.exit").read_text(encoding="utf-8"))
+                self.assertEqual("70", child_exit)
+            counters = json.loads((output / "counters.json").read_text(encoding="utf-8"))
+            self.assertEqual([1], [row["execution_count"] for row in counters["callables"]])
+            self.assertTrue((output / "coverage.json").exists())
 
     def test_a_failure_reaches_the_campaign_on_the_connection_its_process_held_from_startup(self):
         for case in ("descriptors exhausted at finish", "port variable dropped at startup",

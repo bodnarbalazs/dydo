@@ -528,8 +528,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     // A double-quoted string (backslash escapes skipped, lines spanned) or a single-quoted one, the
     // first that starts.
-    [GeneratedRegex(@"""(?:[^""\\]|\\.)*""|(?<single>'[^']*')")]
-    private static partial Regex QuotedTextRegex();
+    private static readonly Regex QuotedTextRegex = new(@"""(?:[^""\\]|\\.)*""|(?<single>'[^']*')", RegexOptions.NonBacktracking);
 
     // A piece's layout: each double-quoted string emptied, so a line break left in the piece separates
     // commands. One spanning lines, a bare carriage return among the breaks (DYD-641), is emptied only
@@ -544,7 +543,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             return read.Uncertain ? null : read.Lines.Where(line => line.Text == code)
                 .Select(line => new WordSubstrings(line.Commands.SelectMany(command => command.Words))).ToList();
         });
-        return QuotedTextRegex().Replace(code, quoted =>
+        return QuotedTextRegex.Replace(code, quoted =>
             quoted.Groups["single"].Success || (quoted.Value.AsSpan().IndexOfAny('\n', '\r') >= 0 && !IsQuotedWord(quoted, words.Value))
                 ? quoted.Value
                 : "\"\"");
@@ -1602,7 +1601,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         if (!source.Contains(body.Whole) || !source.Contains(body.Content)
             || position < body.Content.Start.Value || position >= body.Content.End.Value)
             return null;
-        var surface = new StringBuilder();
+        // Heredocs need only provenance validation. Their Whole ranges overlap when one
+        // command declares many bodies; copying those ranges would revisit every prefix.
+        var surface = body.Kind == ShellReader.BodyKind.Heredoc ? null : new StringBuilder();
         var cursor = body.Whole.Start.Value;
         var projected = position - cursor;
         foreach (var edge in body.Expansions)
@@ -1611,16 +1612,16 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
                 || token.Start.Value < cursor || token.Start.Value < body.Content.Start.Value
                 || token.End.Value > body.Content.End.Value)
                 return null;
-            surface.Append(source.Text, cursor, token.Start.Value - cursor);
+            surface?.Append(source.Text, cursor, token.Start.Value - cursor);
             if (position >= token.Start.Value && position < token.End.Value)
-                projected = surface.Length;
+                projected = surface?.Length ?? 0;
             else if (position >= token.End.Value)
                 projected -= token.End.Value - token.Start.Value - 1;
-            surface.Append('x');
+            surface?.Append('x');
             cursor = token.End.Value;
         }
-        surface.Append(source.Text, cursor, body.Whole.End.Value - cursor);
-        return (surface.ToString(), projected);
+        surface?.Append(source.Text, cursor, body.Whole.End.Value - cursor);
+        return (surface?.ToString() ?? "", projected);
     }
 
     private static bool CompletedExecution(ShellReader.Host edge)

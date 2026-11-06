@@ -2474,6 +2474,7 @@ public class BashCommandAnalyzerTests
     // searched to the end for its closer; long or wide nesting; and a chain of cmd, read 2^9 times.
     private static readonly Dictionary<string, Func<int, string>> LongShapes = new()
     {
+        ["escaped quote openers"] = length => "echo " + Repeat("\\\"", length / 2),
         ["nudge quoted data"] = length => Repeat("rg -n 'tail -f' docs;", length / 21),
         ["nudge comments"] = length => Repeat("# tail -f\n", length / 10),
         ["nudge bodies"] = length => Repeat("cat <<E\ntail -f\nE\n", length / 18),
@@ -2575,6 +2576,29 @@ public class BashCommandAnalyzerTests
     [InlineData("Unknown")]
     public void Analyze_MixedBodyOpeners_GrowsLinearly(string dialect) =>
         AssertTimeGrowsLinearly(dialect, "mixed body openers");
+
+    [Theory]
+    [InlineData("Posix")]
+    [InlineData("PowerShell")]
+    [InlineData("Unknown")]
+    public void Analyze_EscapedQuoteOpeners_GrowsLinearly(string dialect)
+    {
+        var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
+        Action<string> analyze = text => analyzer.Analyze(text);
+        var shape = LongShapes["escaped quote openers"];
+        var (shortInput, longInput) = (shape(10_000), shape(20_000));
+        analyze(shortInput);
+        analyze(longInput);
+        var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
+        for (var round = 0; round < 7; round++)
+        {
+            shortBest = Min(shortBest, TimeAnalyses(analyze, shortInput, 1).Cpu);
+            longBest = Min(longBest, TimeAnalyses(analyze, longInput, 1).Cpu);
+        }
+        // Stop the old suffix search at a small witness before exercising the full budget.
+        Assert.True(longBest / shortBest < 2.5, $"Doubling escaped quotes took {longBest / shortBest:F2}x");
+        AssertTimeGrowsLinearly(analyze, "escaped quote openers");
+    }
 
     [Theory]
     [InlineData("Posix", "env chain")]

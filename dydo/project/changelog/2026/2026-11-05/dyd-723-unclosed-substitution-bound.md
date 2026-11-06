@@ -20,6 +20,10 @@ feature tip `5cd105878f92f72f7d4217ab2940813bafc3e1fe` after checkpoint `b02e987
 On that merged guard, all nudge matches share one reading and classification. Repeated
 quoted search operands no longer reparse the whole command for every excluded match.
 Mixed heredoc and here-string openers select the earliest candidate before scanning its body.
+Heredoc provenance validation does not copy overlapping source ranges when one command
+declares many bodies; the inherited long-body regression covers that case.
+Quoted-text stripping uses the same pattern with linear matching: an escaped quote can no
+longer restart an unmatched search through every subsequent escaped quote.
 
 Every command nudge regex now has a 250 ms timeout, and command nudge matching shares a
 250 ms cumulative budget across block, warn and PR-body checks. Exhaustion refuses with

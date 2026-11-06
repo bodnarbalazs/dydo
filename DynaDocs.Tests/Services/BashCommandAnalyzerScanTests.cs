@@ -9,6 +9,19 @@ public class BashCommandAnalyzerScanTests
     private const BindingFlags PrivateStatic = BindingFlags.NonPublic | BindingFlags.Static;
 
     [Fact]
+    public void QuotedText_KeepsMatchesCapturesAndReplacementExtents()
+    {
+        var original = new Regex(@"""(?:[^""\\]|\\.)*""|(?<single>'[^']*')");
+        var changed = (Regex)typeof(BashCommandAnalyzer).GetField("QuotedTextRegex", PrivateStatic)!.GetValue(null)!;
+        foreach (var text in CatInputs().Concat(RuleInputs()))
+        {
+            Assert.Equal(original.Matches(text).Select(match => (match.Index, match.Length, match.Value, match.Groups["single"].Success)),
+                changed.Matches(text).Select(match => (match.Index, match.Length, match.Value, match.Groups["single"].Success)));
+            Assert.Equal(original.Replace(text, "x"), changed.Replace(text, "x"));
+        }
+    }
+
+    [Fact]
     public void SharedNudgeClassification_PreservesSinglePositionVerdicts()
     {
         var inputs = typeof(Commands.GuardCommandTests).GetMethods()

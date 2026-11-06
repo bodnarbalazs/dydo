@@ -2468,6 +2468,8 @@ public class BashCommandAnalyzerTests
         ["echo words"] = length => "echo " + Repeat("a ", length / 2),
         ["multiline quotes"] = length => string.Concat(Enumerable.Range(0, length / 15).Select(i => $"echo \"{i:D5}\nx\";")),
         ["distinct commands"] = length => string.Concat(Enumerable.Range(0, length / 8).Select(i => $": {i:D5};")),
+        ["nested multiline quotes"] = length => "Write-Output " + Repeat("@(", 31)
+            + Repeat("\"x\ny\" ", (length - 106) / 6) + Repeat(")", 31),
         ["heredocs"] = length => Repeat("cat <<E\na\nE\n", length / 12),
         ["heredoc openers"] = length => "echo \"" + Repeat("<<E x\n", length / 6) + "\"",
         ["here-string openers"] = length => "echo \"" + Repeat("@'\n", length / 3) + "\"",
@@ -2505,6 +2507,9 @@ public class BashCommandAnalyzerTests
     [InlineData("Unknown", "$( wide")]
     [InlineData("Unknown", "\"$( closed")]
     [InlineData("Unknown", "mixed open")]
+    [InlineData("Posix", "nested multiline quotes")]
+    [InlineData("PowerShell", "nested multiline quotes")]
+    [InlineData("Unknown", "nested multiline quotes")]
     public void Analyze_LongNesting_TakesTimeLinearly(string dialect, string shape) => AssertTimeGrowsLinearly(dialect, shape);
 
     // Before DYD-723 the long input of these took a minute (heredocs) or read the line 2^9 times (cmd):
@@ -2521,8 +2526,11 @@ public class BashCommandAnalyzerTests
         const int growth = 8;
         var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
         var (shortInput, longInput) = (LongShapes[shape](100_000 / growth), LongShapes[shape](100_000));
-        analyzer.Analyze(shortInput);
-        analyzer.Analyze(longInput);
+        for (var warm = 0; warm < 3; warm++)
+        {
+            analyzer.Analyze(shortInput);
+            analyzer.Analyze(longInput);
+        }
         var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
 
         for (var round = 0; round < 7; round++)
@@ -2575,6 +2583,9 @@ public class BashCommandAnalyzerTests
     [InlineData("Posix", "multiline quotes")]
     [InlineData("PowerShell", "multiline quotes")]
     [InlineData("Unknown", "multiline quotes")]
+    [InlineData("Posix", "nested multiline quotes")]
+    [InlineData("PowerShell", "nested multiline quotes")]
+    [InlineData("Unknown", "nested multiline quotes")]
     public void Analyze_LongBodies_AllocateLinearlyWithinTheBudget(string dialect, string shape)
     {
         Measure(dialect, LongShapes[shape](1_000));
@@ -2585,6 +2596,7 @@ public class BashCommandAnalyzerTests
         var (half, _) = Measure(dialect, LongShapes[shape](50_000));
         var (full, _) = Measure(dialect, LongShapes[shape](100_000));
         Assert.True(full <= 2.5 * half, $"Allocated {full:N0} bytes at 100,000 characters, {half:N0} at 50,000");
+        Assert.True(!ReleaseUninstrumented || full <= AllocationBudget, $"Allocated {full:N0} bytes at 100,000 characters");
     }
 
     [Theory]
@@ -2647,6 +2659,10 @@ public class BashCommandAnalyzerTests
 
     private static TimeSpan TimeAnalyses(BashCommandAnalyzer analyzer, string command, int times)
     {
+        // Compare both sizes from a collected heap. Otherwise a short batch occasionally avoids
+        // every promoted collection while the long batch inherits garbage from earlier samples.
+        // Collections triggered by the analyses themselves remain inside the measured interval.
+        GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         for (var i = 0; i < times; i++)
             analyzer.Analyze(command);

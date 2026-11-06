@@ -57,7 +57,8 @@ megabytes at most, and a command nested past the reading's bound is refused.
   output keeps both readings' order and duplicates within each reading.
 - Checking multiline quotes against parsed words builds a substring index once per reading. Each
   quote searched all words before, allocating about 2 GB for 90,000 characters of distinct quoted
-  echo commands. Substring matches and their treatment of escaped quotes stay the same.
+  echo commands. Longer words are indexed first, so a group's child words already present in its
+  text are not stored again. Substring matches and their treatment of escaped quotes stay the same.
 - Nudge provenance checks index completed execution and child memberships once per reading. A long
   pipeline is walked iteratively, with its compound syntax checked once, instead of recursively
   searching every command again for each pipe. Origin lookups skip earlier runs with binary search,

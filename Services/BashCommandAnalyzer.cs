@@ -608,8 +608,12 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
         public WordSubstrings(IEnumerable<string> words)
         {
-            foreach (var word in words)
+            // A group word already contains its children's words. Index longer words first so
+            // nested readings do not store the same text once per enclosing group again.
+            foreach (var word in words.Distinct(StringComparer.Ordinal).OrderByDescending(word => word.Length))
             {
+                if (Contains(word))
+                    continue;
                 foreach (var character in word)
                     Append(character);
                 Append(-1);

@@ -384,6 +384,14 @@ passing gates on the same clean commit. It rebuilds that commit's complete zero-
 denominator and checks that each report holds exactly its own platform's points and agrees on
 every owner. Neither report alone establishes .NET coverage success.
 
+The Windows coverage leg runs only the statechart's selected tests, so the guard's tests run on
+Windows in a separate job. The hosted `guard-windows` job builds the candidate commit on
+`windows-latest`, the PR head on a pull request and the pushed commit on a push, and runs
+`DangerousPatternCultureTests`, `DangerousPatternOracleTests`, `DangerousPatternBudgetTests`,
+`BashCommandAnalyzerTests` and `GuardSecurityTests` without instrumentation. It fails when `dotnet test` fails, when the selection yields no results, when a
+class yields none, or when any result is not Passed, so a skip fails it. It adds no points to
+either coverage report.
+
 Native error codes are read in the native call's own statement, as in
 `Check(Native(...), Marshal.GetLastPInvokeError())`. The gate instruments with AltCover `--eager`,
 and each visit flushes its trace through a P/Invoke that replaces the thread's last error. Visits

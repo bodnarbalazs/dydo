@@ -763,7 +763,7 @@ class WindowsMemoryJob:
     def delivered_hits(self):
         message, key, overlapped = c.c_uint32(), c.c_size_t(), c.c_void_p()
         while self.kernel.GetQueuedCompletionStatus(self.port, c.byref(message), c.byref(key), c.byref(overlapped), 0):
-            if message.value == 9 and key.value == self.job:  # JOB_OBJECT_MSG_JOB_MEMORY_LIMIT.
+            if message.value == 10 and key.value == self.job:  # JOB_OBJECT_MSG_JOB_MEMORY_LIMIT.
                 self.hits += 1
         error = c.get_last_error()
         if error != 258:  # WAIT_TIMEOUT is the normal end of a nonblocking drain.
@@ -784,7 +784,9 @@ class MemoryCap:
 
     def job_unavailable(self, error):
         if self.record["state"] != "unavailable":
-            self.record.update(uncapped(f"windows job object: {error}").record)
+            reason = f"windows job object: {error}"
+            print(f"memory cap unavailable: {reason}; this operation continues", file=sys.stderr, flush=True)
+            self.record.update(MemoryCap("unavailable", reason=reason).record)
 
     def kills(self):
         if self.job:

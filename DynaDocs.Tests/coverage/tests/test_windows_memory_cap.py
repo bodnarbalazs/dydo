@@ -136,7 +136,7 @@ class WindowsMemoryCapTests(unittest.TestCase):
         for state in ('passed', 'failed', 'invalid', 'interrupted'):
             with self.subTest(state=state):
                 before = cap.kills()
-                self.messages = [(9, 101)]  # JOB_OBJECT_MSG_JOB_MEMORY_LIMIT.
+                self.messages = [(10, 101)]  # JOB_OBJECT_MSG_JOB_MEMORY_LIMIT.
                 row = self.row(cap, before, state)
                 self.assertEqual(('failed', 1, True), (row['state'], row['resultExit'], row['memoryCapHit']))
                 self.assertEqual('memory cap hit (MemoryMax=256M): a finding; do not raise the cap', row['reason'])
@@ -146,16 +146,27 @@ class WindowsMemoryCapTests(unittest.TestCase):
 
     def test_stale_and_unrelated_messages_and_peak_never_imply_a_hit(self):
         cap = self.cap()
-        self.messages = [(9, 101)]
+        self.messages = [(10, 101)]
         before = cap.kills()  # Discard notifications already present before the row.
         for state in ('passed', 'failed'):
             with self.subTest(state=state):
-                self.messages = [(8, 101), (10, 101), (9, 999)]
+                self.messages = [(8, 101), (9, 101), (10, 999)]
                 self.peak = 256 * MIB
                 row = self.row(cap, before, state)
                 self.assertEqual(state, row['state'])
                 self.assertNotIn('memoryCapHit', row)
                 self.assertEqual(256 * MIB, row['peakJobMemory'])
+
+    def test_process_memory_and_other_non_job_memory_messages_never_imply_a_hit(self):
+        cap = self.cap()
+        # 9 is JOB_OBJECT_MSG_PROCESS_MEMORY_LIMIT; only 10 reports the job limit.
+        for message in (*range(10), 11, 12, 13, 0xffffffff):
+            with self.subTest(message=message):
+                before = cap.kills()
+                self.messages = [(message, 101)]
+                row = self.row(cap, before)
+                self.assertEqual(('passed', 0), (row['state'], row['resultExit']))
+                self.assertNotIn('memoryCapHit', row)
 
     def test_derived_and_unavailable_rows_keep_reporting_and_peak_diagnostics(self):
         cap = self.cap()
@@ -196,7 +207,11 @@ class WindowsMemoryCapTests(unittest.TestCase):
                 self.assertEqual('unavailable', cap.record['state'])
                 self.assertEqual('failed', row['state'])
                 self.assertNotIn('memoryCapHit', row)
-                self.assertEqual(1, self.stderr.getvalue().count('memory cap unavailable'))
+                self.assertEqual('windows job object: Windows error 6', cap.record['reason'])
+                self.assertEqual('memory cap unavailable: windows job object: Windows error 6; '
+                                 'this operation continues\n', self.stderr.getvalue())
+                self.kernel.AssignProcessToJobObject.assert_called_with(101, -1)
+                self.kernel.CloseHandle.assert_not_called()
                 self.error = 258
 
     def test_a_raised_cap_is_rejected_before_any_windows_api_call(self):

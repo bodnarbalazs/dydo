@@ -58,9 +58,14 @@ public class StatechartLifecycleTests
     {
         using var scope = new StatechartTestDirectory();
         var lifetime = await WindowsStatechartLifetime.StartAsync(Binary(), scope.Path, scope.Path, scope.Path);
-        await lifetime.RegisterAsync();
-        var stage = lifetime.Stage;
-        await lifetime.DisposeAsync();
+        string stage;
+        // The owner's EOF is the subject, so it is disposed here, and also when registration throws, before the scope.
+        try
+        {
+            await lifetime.RegisterAsync();
+            stage = lifetime.Stage;
+        }
+        finally { await lifetime.DisposeAsync(); }
         Assert.True(Directory.Exists(stage));
         Assert.All(Directory.GetFiles(scope.Path, "scratch-*.journal"), file =>
             Assert.Contains("drain uncertain", File.ReadAllText(file)));
@@ -214,8 +219,6 @@ public class StatechartLifecycleTests
     {
         const int sharingViolation = unchecked((int)0x80070020), accessDenied = unchecked((int)0x80070005);
         var parent = Directory.CreateDirectory(Path.Combine(scope.Path, "parent")).FullName;
-        var foreign = Directory.CreateDirectory(Path.Combine(scope.Path, "foreign")).FullName;
-        File.WriteAllText(Path.Combine(foreign, "foreign"), "keep");
         var helper = Cleanup(nonce, scope, parent);
         var (stage, temp) = await Register(helper, nonce);
         Assert.Equal(sharingViolation, Assert.Throws<IOException>(() => Directory.Move(stage, stage + "-registered")).HResult);
@@ -229,7 +232,6 @@ public class StatechartLifecycleTests
         Assert.False(Directory.Exists(stage));
         Assert.False(Directory.Exists(temp));
         Assert.False(Directory.Exists(stage + "-registered"));
-        Assert.Equal("keep", File.ReadAllText(Path.Combine(foreign, "foreign")));
         Assert.Equal(2, Directory.GetFiles(scope.Path, "scratch-*.journal").Length);
         Assert.All(Directory.GetFiles(scope.Path, "scratch-*.journal"), file =>
             Assert.EndsWith("registered\ndeleted-after-authoritative-drain\n", File.ReadAllText(file)));

@@ -1,0 +1,8 @@
+Running as unit: run-p2810997-i48905046.scope; invocation ID: 1804bc3ec8a141abbb0dbcad273408e6
+Exception: /home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/.github/workflows/assert-node-tests-ran.ps1:20
+Line |
+  20 |  … s.todo -ne 0) { throw "A test skipped instead of running: $summary" }
+     |                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | A test skipped instead of running: tests=1 pass=0 fail=0 cancelled=0
+     | skipped=1 todo=0
+guard exit=1 (expected 1 for the real oracle skipped by the pinned JRE)

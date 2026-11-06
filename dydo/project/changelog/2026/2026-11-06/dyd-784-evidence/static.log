@@ -1,0 +1,4 @@
+Running as unit: run-p3180116-i49280862.scope; invocation ID: 241459a5192d4bfb8d0660a9a31195d1
+statechart static: PASSED (child exit 0)
+Aggregate: 0
+Result: /home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/DynaDocs.Tests/coverage/results/run-1793934398826-608a1e9a/result.json

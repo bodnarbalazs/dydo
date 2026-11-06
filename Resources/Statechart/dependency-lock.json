@@ -98,6 +98,13 @@
       }
     }
   ],
+  "configOracleJdk": {
+    "version": "Temurin JDK 21.0.8+9 HotSpot",
+    "rid": "linux-x64",
+    "name": "OpenJDK21U-jdk_x64_linux_hotspot_21.0.8_9.tar.gz",
+    "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.8_9.tar.gz",
+    "sha256": "f2dc5418092c43003db8f9005c4a286e1c0104fea96ccdd49e8ebd037cac9219"
+  },
   "tlc": {
     "version": "1.7.4",
     "url": "https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar",

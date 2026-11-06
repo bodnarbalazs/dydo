@@ -49,7 +49,11 @@ Local changes:
   beside it is rejected as an unpinned dependency, and each run copies only the verified
   jar into owned scratch. Replay tests therefore need the real jar in `TLA2TOOLS` and
   skip without it. The config-fuzz oracle runs in Java's source-file mode and skips on
-  a Java without a compiler, such as the managed JRE.
+  a Java without a compiler, such as the managed JRE. CI's `statechart-config-oracle`
+  job runs the unchanged seed-1, 4000-config comparison with the dependency lock's
+  separate, hash-checked Temurin JDK 21.0.8+9 (the existing Java build-toolchain pin).
+  Its TAP guard fails on skips or missing execution; the JDK is only provisioned on
+  the hosted Linux runner, not as a managed runtime dependency.
 - Original Balazs Bodnar MIT Java sources under `scripts/java/` route TLC through a
   loopback RMI socket bootstrap; SANY stays direct. TLC calls require the sealed helper
   and never fall back to raw TLC, whose listener would otherwise bind every interface;

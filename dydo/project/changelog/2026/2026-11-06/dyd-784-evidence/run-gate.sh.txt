@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -eu
+export JAVA=/home/balazs/.local/share/dydo/statechart/deps/3ad231072bddc04588d0f2cf1b61a3e62fc38b4ff400ccea5c3b5d41409575ab/linux-x64/java/content/jdk-21.0.8+9-jre/bin/java
+export TLA2TOOLS=/home/balazs/.local/share/dydo/statechart/deps/3ad231072bddc04588d0f2cf1b61a3e62fc38b4ff400ccea5c3b5d41409575ab/linux-x64/tlc/tla2tools.jar
+export STATECHART_PELE=/home/balazs/.local/share/dydo/statechart/deps/3ad231072bddc04588d0f2cf1b61a3e62fc38b4ff400ccea5c3b5d41409575ab/linux-x64/pele/content/package/dist/pele.js
+export MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false PYTHONDONTWRITEBYTECODE=1
+exec /tmp/dyd507-524-venv/bin/python DynaDocs.Tests/coverage/gap_check.py gate "$1" --stack statechart

@@ -462,6 +462,9 @@ jobs:
         DynaDocs.Tests.Services.BashCommandAnalyzerTests
         DynaDocs.Tests.Integration.GuardSecurityTests
         DynaDocs.Tests.Integration.GuardMergeRouteTests
+      # Select this regression alone: its siblings include intentional Windows skips.
+      GUARD_TESTS: >-
+        DynaDocs.Tests.Commands.GuardPrReadyBodyFileTests.LinkedDirectoryLeavingTheTree_IsNull
     steps:
       - name: Keep candidate bytes identical on both platforms
         run: git config --global core.autocrlf false
@@ -492,14 +495,16 @@ jobs:
         shell: pwsh
         run: |
           # The trailing dot keeps a class from also selecting classes whose names extend it.
-          $filter = (-split $env:GUARD_CLASSES | ForEach-Object { "FullyQualifiedName~$_." }) -join '|'
+          $filters = @(-split $env:GUARD_CLASSES | ForEach-Object { "FullyQualifiedName~$_." })
+          $filters += @(-split $env:GUARD_TESTS | ForEach-Object { "FullyQualifiedName=$_" })
+          $filter = $filters -join '|'
           Write-Host "Filter: $filter"
           dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-build `
             --filter $filter `
             --logger 'trx;LogFileName=guard-windows.trx' `
             --results-directory TestResults/guard-windows
 
-      # A skip is missing proof: every selected class must run, and every result must pass.
+      # A skip is missing proof: every selected class and exact test must run, and every result must pass.
       - name: Require every selected guard test to pass
         if: ${{ !cancelled() }}
         shell: pwsh
@@ -508,6 +513,7 @@ jobs:
           GUARD_TRX: TestResults/guard-windows/guard-windows.trx
         run: |
           $classes = @(-split $env:GUARD_CLASSES)
+          $methods = @(-split $env:GUARD_TESTS)
           $problems = [System.Collections.Generic.List[string]]::new()
           if ($env:TEST_OUTCOME -ne 'success') { $problems.Add("dotnet test outcome is '$env:TEST_OUTCOME'") }
           if (-not (Test-Path -LiteralPath $env:GUARD_TRX)) {
@@ -518,8 +524,11 @@ jobs:
             $ns.AddNamespace('t', 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010')
             $definitions = @($trx.SelectNodes('//t:TestDefinitions/t:UnitTest', $ns))
             $classOf = @{}
+            $methodOf = @{}
             foreach ($test in $definitions) {
-              $classOf[$test.id] = $test.SelectSingleNode('t:TestMethod', $ns).className
+              $method = $test.SelectSingleNode('t:TestMethod', $ns)
+              $classOf[$test.id] = $method.className
+              $methodOf[$test.id] = "$($method.className).$($method.name)"
             }
             $results = @($trx.SelectNodes('//t:Results/t:UnitTestResult', $ns))
             if ($results.Count -eq 0) { $problems.Add('The selection produced zero results') }
@@ -530,6 +539,11 @@ jobs:
               $count = @($results | Where-Object { $classOf[$_.testId] -eq $class }).Count
               Write-Host ("{0,5} {1}" -f $count, $class)
               if ($count -eq 0) { $problems.Add("$class produced zero results") }
+            }
+            foreach ($method in $methods) {
+              $count = @($results | Where-Object { $methodOf[$_.testId] -eq $method }).Count
+              Write-Host ("{0,5} {1}" -f $count, $method)
+              if ($count -eq 0) { $problems.Add("$method produced zero results") }
             }
             if ($definitions.Count -ne $results.Count) {
               $problems.Add("The TRX defines $($definitions.Count) tests but has $($results.Count) results")

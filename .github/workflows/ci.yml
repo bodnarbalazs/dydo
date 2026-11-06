@@ -630,11 +630,12 @@ jobs:
       # Direct execution makes a file with no tests produce no TAP report, not a passing file-test.
       - name: Compare 4000 seed-1 configs with TLC
         id: oracle
+        shell: pwsh
         working-directory: skills/engineering/statechart/scripts
         env:
           TLA2TOOLS: ${{ steps.statechart.outputs.tla2tools }}
           JAVA: ${{ steps.statechart.outputs.java }}
-        run: node --disable-warning=ExperimentalWarning --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=${{ runner.temp }}/statechart-config-oracle.tap test/config-fuzz.test.ts
+        run: node --disable-warning=ExperimentalWarning --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap '--test-reporter-destination=${{ runner.temp }}/statechart-config-oracle.tap' test/config-fuzz.test.ts
 
       - name: Require the config oracle to run and pass
         id: require-oracle

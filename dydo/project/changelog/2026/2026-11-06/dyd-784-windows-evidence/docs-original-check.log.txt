@@ -1,0 +1,5 @@
+Checking /home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/dydo/project/changelog/2026/2026-11-06/dyd-784-config-fuzz-oracle.md...
+
+Found 0 errors, 0 warnings in 1 files.
+
+All checks passed.

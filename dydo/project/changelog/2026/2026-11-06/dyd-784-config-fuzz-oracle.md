@@ -20,6 +20,15 @@ empty file, or test failure fails the job. Its TAP report is retained as a CI ar
 The test's seed, case count, comparisons and allowances are unchanged. Managed
 runtime selection still chooses the JRE; release publishing remains tag-only.
 
+## Windows regression fix
+
+The [Windows diagnosis and proof](dyd-784-windows-python-diagnosis.md) records the
+ten DYD-784 fixture skips that failed the nested Node zero-skip assertion on
+tested merge `2816d179`. The fix runs those fixtures on both platforms using
+PowerShell. Local red/revert/green, workflow, full Node, payload, asset and
+mandatory statechart coverage/static checks passed. Native Windows and the
+changed oracle workflow still require a fresh hosted run after review.
+
 ## Fix hop - runner pin and sealed inputs
 
 This hop addresses both blockers against

@@ -6,6 +6,7 @@ const path = require('node:path');
 const { createRequire } = require('node:module');
 const { spawnSync } = require('node:child_process');
 const { createHash } = require('node:crypto');
+const { pathToFileURL } = require('node:url');
 const { parse } = createRequire(require.resolve('knip'))('yaml');
 
 const root = path.resolve(__dirname, '../../..');
@@ -24,6 +25,8 @@ function oracleSteps() {
     assert.equal(step['continue-on-error'], undefined);
   }
   assert.ok(job.steps.indexOf(steps[0]) < job.steps.indexOf(steps[1]));
+  assert.equal(steps[0].shell, 'pwsh');
+  assert.equal(steps[1].shell, 'pwsh');
   const provision = job.steps.find(step => step.id === 'statechart');
   assert.ok(provision && !provision.if && !provision['continue-on-error']);
   assert.ok(job.steps.indexOf(provision) < job.steps.indexOf(steps[0]));
@@ -48,18 +51,19 @@ for (const [name, source, expected] of [
   ['empty', '', 1],
   ['failed', "import { test } from 'node:test'; test('oracle', () => { throw Error('mismatch'); });", 1],
 ]) {
-  test(`the CI commands ${expected ? 'reject' : 'accept'} a ${name} oracle`, { skip: process.platform !== 'linux' }, t => {
+  test(`the CI commands ${expected ? 'reject' : 'accept'} a ${name} oracle`, t => {
     const [run, guard] = oracleSteps();
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dydo-config-oracle-ci-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dydo config oracle ci-'));
     t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
     const cwd = path.join(dir, run['working-directory']);
     fs.mkdirSync(path.join(cwd, 'test'), { recursive: true });
     fs.writeFileSync(path.join(cwd, 'test/config-fuzz.test.ts'), source);
-    const script = path.join(dir, 'run.sh');
-    fs.writeFileSync(script, run.run.replaceAll('${{ runner.temp }}', dir));
+    const script = path.join(dir, 'run.ps1');
+    // Match GitHub's pwsh wrapper: propagate the native command's exit code.
+    fs.writeFileSync(script, run.run.replaceAll('${{ runner.temp }}', dir) + '\nexit $LASTEXITCODE\n');
     const env = { ...process.env };
     delete env.NODE_TEST_CONTEXT; // A nested test runner otherwise suppresses the requested reporters.
-    const result = spawnSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', script],
+    const result = spawnSync(process.env.PWSH || 'pwsh', ['-NoProfile', '-NonInteractive', '-File', script],
       { cwd, env, encoding: 'utf8' });
     assert.ifError(result.error);
     if (name === 'failed') {
@@ -88,29 +92,20 @@ for (const [file, expected] of [
   });
 }
 
-// Only the external JDK executable and TLC download are fixtures. A JDK download is forbidden.
+// Only the external JDK responses and TLC download are fixtures. A JDK download is forbidden.
 for (const fault of [null, 'version', 'compiler', 'missing', 'java-exit', 'tlc']) {
   test(`installed runner JDK ${fault ? `rejects ${fault}` : 'publishes verified paths without downloading Java'}`,
-    { skip: process.platform !== 'linux' }, t => {
-      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dydo-oracle-provision-'));
+    t => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dydo oracle provision-'));
       t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
       fs.mkdirSync(path.join(dir, 'Resources/Statechart'), { recursive: true });
       const java = path.join(dir, 'installed-jdk/bin/java');
       fs.mkdirSync(path.dirname(java), { recursive: true });
       const version = fault === 'version' ? '21.0.12+7' : '21.0.13+9';
-      if (fault !== 'missing') fs.writeFileSync(java, `#!/bin/sh
-case "$1" in
-  --version) echo 'openjdk ${version.split('+')[0]} LTS'
-    echo 'OpenJDK Runtime Environment Temurin-${version} (build ${version}-LTS)' ;;
-  --list-modules) echo 'java.base@21.0.13'
-    ${fault === 'compiler' ? ':' : "echo 'jdk.compiler@21.0.13'"} ;;
-  *) exit 99 ;;
-esac
-exit ${fault === 'java-exit' ? 1 : 0}
-`, { mode: 0o755 });
+      if (fault !== 'missing') fs.writeFileSync(java, 'fixture JDK path');
       const jar = path.join(dir, 'tlc.jar');
       fs.writeFileSync(jar, 'fixture TLC');
-      const tlc = { url: new URL(`file://${jar}`).href,
+      const tlc = { url: pathToFileURL(jar).href,
         sha256: createHash('sha256').update(fs.readFileSync(jar)).digest('hex') };
       if (fault === 'tlc') tlc.sha256 = '0'.repeat(64);
       fs.writeFileSync(path.join(dir, 'Resources/Statechart/dependency-lock.json'), JSON.stringify({ tlc }));
@@ -118,6 +113,18 @@ exit ${fault === 'java-exit' ? 1 : 0}
       assert.equal(provision.run, './.github/workflows/provision-statechart-oracle.ps1');
       const script = path.join(dir, 'provision.ps1');
       fs.writeFileSync(script, `$ErrorActionPreference = 'Stop'
+# Intercept only the fixture's absolute Java command, on either host platform.
+Set-Item -LiteralPath 'Function:global:${java}' -Value {
+  param($Argument)
+  switch ($Argument) {
+    '--version' { 'openjdk ${version.split('+')[0]} LTS'
+      'OpenJDK Runtime Environment Temurin-${version} (build ${version}-LTS)' }
+    '--list-modules' { 'java.base@21.0.13'
+      ${fault === 'compiler' ? '' : "'jdk.compiler@21.0.13'"} }
+    default { throw "Unexpected Java argument: $Argument" }
+  }
+  $global:LASTEXITCODE = ${fault === 'java-exit' ? 1 : 0}
+}
 function Invoke-WebRequest($Uri, $OutFile) {
   if ($Uri -ne '${tlc.url}') { throw 'Only the locked TLC download is authorized.' }
   Copy-Item ([Uri]$Uri).LocalPath $OutFile
@@ -136,7 +143,7 @@ function Invoke-WebRequest($Uri, $OutFile) {
         assert.equal(fs.existsSync(output), false);
       } else {
         assert.equal(result.status, 0, result.stdout + result.stderr);
-        const paths = Object.fromEntries(fs.readFileSync(output, 'utf8').trim().split('\n').map(line => line.split('=')));
+        const paths = Object.fromEntries(fs.readFileSync(output, 'utf8').trim().split(/\r?\n/).map(line => line.split('=')));
         assert.equal(paths.java, java);
         assert.equal(fs.readFileSync(paths.tla2tools, 'utf8'), 'fixture TLC');
       }

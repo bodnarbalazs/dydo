@@ -20,8 +20,8 @@ head, and those jobs failed with no defect in the PR. This happened three times 
 
 - Every `actions/checkout` step sets `ref: ${{ github.sha }}`: on a pull request the merge ref
   whose `ci.yml` is running, on a push the pushed commit. Jobs that used the default checkout
-  (`python-coverage`, `python-coverage-union`, `assurance-cancellation`, `viewer`, `build`,
-  `full-stack`) already got this commit and now name it explicitly. No job checks out
+  (`python-coverage`, `python-coverage-union`, `assurance-cancellation`, `statechart-windows`,
+  `viewer`, `build`, `full-stack`) already got this commit and now name it explicitly. No job checks out
   `github.event.pull_request.head.sha`.
 - Hosted pull-request runs of `dotnet-coverage`, `dotnet-coverage-union` and `guard-windows` now
   measure the merge ref, the tree that would land, not the PR head. Push runs are unchanged.
@@ -43,7 +43,7 @@ head, and those jobs failed with no defect in the PR. This happened three times 
   `test_each_legs_checkout_is_the_unions_expected_candidate` and
   `test_dotnet_preflight_asserts_the_run_commit_and_records_both_shas` fail on base `5d3275c2`, at
   the default and head checkout refs and the head-accepting preflight, and pass with this change.
-- `test_a_job_checking_out_another_ref_is_rejected` mutates each of the nine checkout jobs to the
+- `test_a_job_checking_out_another_ref_is_rejected` mutates each of the ten checkout jobs to the
   head ref, the head-only ref and the default ref, and adds a `git checkout` step to
   `guard-windows`; `test_a_leg_and_union_that_disagree_are_rejected` and
   `test_a_dotnet_preflight_that_accepts_the_head_or_drops_a_sha_is_rejected` mutate the legs, unions

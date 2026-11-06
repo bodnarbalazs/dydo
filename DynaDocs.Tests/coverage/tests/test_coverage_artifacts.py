@@ -360,7 +360,7 @@ LEGS = {'python': ('python-coverage', 'python-coverage-union', 'Upload platform 
 RUN_COMMIT = '${{ github.sha }}'
 HEAD_REF = '${{ github.event.pull_request.head.sha || github.sha }}'
 CHECKOUT_JOBS = ('python-coverage', 'python-coverage-union', 'dotnet-coverage', 'dotnet-coverage-union',
-                 'guard-windows', 'assurance-cancellation', 'viewer', 'build', 'full-stack')
+                 'guard-windows', 'assurance-cancellation', 'statechart-windows', 'viewer', 'build', 'full-stack')
 DOTNET_PREFLIGHT = 'Preflight candidate, selection pins and nonzero test discovery'
 RESULTS = 'DynaDocs.Tests/coverage/results'
 PLATFORMS_DIR = f'{RESULTS}/coverage-platforms'

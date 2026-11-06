@@ -1,0 +1,15 @@
+import pathlib
+import subprocess
+
+paths = [pathlib.Path('.github/workflows/ci.yml'), pathlib.Path('DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs')]
+saved = {path: path.read_bytes() for path in paths}
+try:
+    for path in paths:
+        path.write_bytes(subprocess.check_output(['git', 'show', 'b1ec72e005b326088d885efe6c16b6cd4c9ba3d2:' + str(path)]))
+    result = subprocess.run(['bash', '/tmp/dyd784-windows-diagnosis-b1ec72/registration-check.sh', 'reverted-red'])
+    assert result.returncode == 1, result.returncode
+finally:
+    for path, source in saved.items():
+        path.write_bytes(source)
+result = subprocess.run(['bash', '/tmp/dyd784-windows-diagnosis-b1ec72/registration-check.sh', 'restored-green'])
+raise SystemExit(result.returncode)

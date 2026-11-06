@@ -1,0 +1,38 @@
+    // Disposable DYD-805 diagnostic. Removed after evidence capture.
+    [Fact]
+    public async Task Dyd805_WindowsExpansionProbe()
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/reviewed.md", ReviewedBody);
+        WriteFile("dydo/agents/reviewed.md.plain", "DYD-1\n\n## Summary\n");
+        WriteFile("dydo/agents/reviewed.md$SUFFIX", ReviewedBody);
+        Assert.Equal(ShellDialect.Unknown, GuardCommand.ExecutingShell("Bash", null, false, true, null));
+        Assert.Equal(ShellDialect.PowerShell, GuardCommand.ExecutingShell("PowerShell", null, false, true, null));
+        var records = new List<object>();
+        var misses = new List<string>();
+        foreach (var lane in new[] { "PowerShell", "UnknownCli", "Bash" })
+        {
+            var markerDir = GuardCommand.GuardEnv.Load(TestDir).MarkerDir;
+            if (Directory.Exists(markerDir)) Directory.Delete(markerDir, true);
+            foreach (var command in new[]
+            {
+                "gh pr create -F \"dydo/agents/reviewed.md$(printf .plain)\"",
+                "gh pr create -F \"dydo/agents/reviewed.md`printf .plain`\"",
+                "SUFFIX=.plain; gh pr create -F \"dydo/agents/reviewed.md$SUFFIX\"",
+                "gh pr create -F \"dydo/agents/reviewed.md\"",
+            })
+            {
+                for (var attempt = 1; attempt <= 2; attempt++)
+                {
+                    var result = lane == "UnknownCli"
+                        ? await GuardWithStdinAsync("{}", "--command", command)
+                        : await GuardWithStdinAsync(Payload(command, toolName: lane));
+                    records.Add(new { lane, command, attempt, result.ExitCode, result.Stdout, result.Stderr });
+                    if (attempt == 1 && command.Contains("`printf") && !result.Stderr.Contains(ReviewBlockWarning))
+                        misses.Add(lane + ": " + result.Stderr);
+                }
+            }
+        }
+        File.WriteAllText("/tmp/dyd805-probe.json", JsonSerializer.Serialize(records, new JsonSerializerOptions { WriteIndented = true }));
+        Assert.Empty(misses);
+    }

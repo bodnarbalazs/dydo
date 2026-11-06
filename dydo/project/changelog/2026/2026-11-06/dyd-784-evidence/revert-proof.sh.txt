@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -eu
+cp .github/workflows/ci.yml /tmp/dyd784-ci-fixed.yml
+trap 'cp /tmp/dyd784-ci-fixed.yml .github/workflows/ci.yml' EXIT
+git show 107a0394f1257228527c984511ea51bb723262ae:.github/workflows/ci.yml > .github/workflows/ci.yml
+set +e
+node --test --test-name-pattern='CI runs the oracle' DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs
+rc=$?
+set -e
+echo "reverted workflow regression exit=$rc (expected 1)"
+test "$rc" -eq 1

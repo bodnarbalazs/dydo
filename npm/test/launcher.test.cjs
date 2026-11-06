@@ -34,6 +34,7 @@ function installNodeFixture() {
   const binaryPath = paths.getBinaryPath(platform.getPlatformInfo());
   fs.mkdirSync(path.dirname(binaryPath), { recursive: true });
   fs.copyFileSync(process.execPath, binaryPath);
+  return binaryPath;
 }
 
 function reloadCanonicalLauncher() {
@@ -160,14 +161,40 @@ test('preserves Node 22 synchronous spawn failure for an invalid Windows executa
 });
 
 for (const status of [0, 23, 77]) {
-  test(`forwards representative arguments and streams from a native exit ${status}`, () => {
+  test(`forwards representative arguments and streams from a native exit ${status}`, async (t) => {
     prepareFixture();
-    installNodeFixture();
+    const binaryPath = installNodeFixture();
     const expectedArgs = ['--flag', 'two words', '', 'x"y', 'a&b', 'C:\\path with spaces\\file', 'é', '--'];
     const script = `process.stdout.write('OUT:${status}\\n'); process.stderr.write('ERR:${status}\\n'); process.stdout.write(JSON.stringify(process.argv.slice(2))); process.exit(Number(process.argv[1]));`;
 
-    const result = runLauncher('-e', script, '--', String(status), ...expectedArgs);
+    const result = { status: null, stdout: '', stderr: '' };
+    const fixtureLauncher = path.join(fixtureRoot, 'bin', 'dydo.cjs');
+    const originalArgv = process.argv;
+    t.after(() => { process.argv = originalArgv; });
+    process.argv = [process.execPath, fixtureLauncher, '-e', script, '--', String(status), ...expectedArgs];
+    t.mock.method(process, 'exit', code => { result.status = code; });
+    const spawn = childProcess.spawn;
+    let closed;
+    t.mock.method(childProcess, 'spawn', (command, args, options) => {
+      assert.equal(command, binaryPath);
+      assert.deepEqual(options, { stdio: 'inherit', windowsHide: false });
+      // Own the native child here: an intermediate launcher exits before its child closes.
+      const child = spawn(command, args, { ...options, stdio: ['ignore', 'pipe', 'pipe'] });
+      closed = new Promise(resolve => child.once('close', resolve));
+      t.after(async () => {
+        child.kill();
+        await closed;
+      });
+      child.stdout.setEncoding('utf8').on('data', data => { result.stdout += data; });
+      child.stderr.setEncoding('utf8').on('data', data => { result.stderr += data; });
+      return child;
+    });
 
+    delete require.cache[fixtureLauncher];
+    require(fixtureLauncher);
+    await closed;
+
+    assert.equal(process.exit.mock.callCount(), 1);
     assert.equal(result.status, status);
     assert.equal(result.stdout, `OUT:${status}\n${JSON.stringify(expectedArgs)}`);
     assert.equal(result.stderr, `ERR:${status}\n`);

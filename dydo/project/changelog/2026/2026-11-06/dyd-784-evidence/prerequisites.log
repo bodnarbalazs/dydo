@@ -1,0 +1,13 @@
+Running as unit: run-p2777529-i48911185.scope; invocation ID: 9947166412a54163aa5dd6e6389f0596
+openjdk version "21.0.8" 2025-07-15 LTS
+OpenJDK Runtime Environment Temurin-21.0.8+9 (build 21.0.8+9-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.8+9 (build 21.0.8+9-LTS, mixed mode, sharing)
+v26.13.0
+968c283e104059dae86ea1d670672a80170f27a39529d815843ec9c1f0fa2a03  /home/balazs/.local/share/dydo/statechart/deps/3ad231072bddc04588d0f2cf1b61a3e62fc38b4ff400ccea5c3b5d41409575ab/linux-x64/java/OpenJDK21U-jre_x64_linux_hotspot_21.0.8_9.tar.gz
+936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88  /home/balazs/.local/share/dydo/statechart/deps/3ad231072bddc04588d0f2cf1b61a3e62fc38b4ff400ccea5c3b5d41409575ab/linux-x64/tlc/tla2tools.jar
+sha512-KUmBt7P5JduVKQaP6FKfXiRgH3LBVIKsmdgPJZU7jD3ye6F+Z8fbms+OjivE7rWY09Qx+5X65VKe/9ywKFJ9Sw==  /home/balazs/.local/share/dydo/statechart/deps/3ad231072bddc04588d0f2cf1b61a3e62fc38b4ff400ccea5c3b5d41409575ab/linux-x64/pele/pele-1.9.0.tgz
+111 extracted files match OpenJDK21U-jre_x64_linux_hotspot_21.0.8_9.tar.gz
+418 extracted files match pele-1.9.0.tgz
+Pinned JRE has no jdk.compiler: local oracle skip is expected, not execution proof.
+{"declared_runtime": "3.14.4", "implementation": "CPython", "lock_sha256": "506bcdeea3488c3bd01e13fd81dcd2313b38e65ffbd5cab1d739c8e0d21156ec", "packages": [{"name": "colorama", "version": "0.4.6"}, {"name": "complexipy", "version": "8.0.0"}, {"name": "coverage", "version": "7.16.0"}, {"name": "mando", "version": "0.7.1"}, {"name": "radon", "version": "6.0.1"}, {"name": "ruff", "version": "0.16.6"}, {"name": "six", "version": "1.17.0"}, {"name": "vulture", "version": "2.16"}], "runtime": "3.14.4", "runtime_pin_sha256": "bb90877c5ee8c4703cfd03421e92ef2a17a10b67ecc822524baeea4c8da3dc9f"}
+Verified 228 locked JavaScript packages

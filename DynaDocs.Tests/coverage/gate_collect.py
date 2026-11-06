@@ -5,7 +5,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from gate_inventory import assembly_path, assemble_inventory, dependency_cycles, test_project_role
+from gate_inventory import (STATECHART_ROOT, assembly_path, assemble_inventory, dependency_cycles,
+                            test_project_role, typescript_stack)
 from gate_run import CommandLog, STATIC_GATE_INTERPRETER, result
 from inventory import build_file_rows, git_file_state, source_fingerprint
 
@@ -24,6 +25,8 @@ _METRIC_KINDS = {'javascript': lambda path: 'module' if path.endswith('.mjs') el
                  'typescript': lambda path: 'tsx' if path.endswith('.tsx') else 'typescript'}
 _TSC_DIAGNOSTIC = re.compile(r'(?m)^(?P<path>[^\s(][^(\r\n]*)\((?P<line>\d+),(?P<column>\d+)\): '
                              r'(?P<severity>error|warning) (?P<code>TS\d+): (?P<message>.*)$')
+# The diagnostics noUnusedLocals and noUnusedParameters report.
+_UNUSED_BINDINGS = {'TS6133', 'TS6138', 'TS6192', 'TS6196', 'TS6198', 'TS6199', 'TS6205'}
 
 
 def viewer_script(script, *arguments):
@@ -133,6 +136,9 @@ def classify_vulture(lines):
 
 
 class Collectors:
+    # The stack whose TypeScript the collectors judge; None judges all of it.
+    stack = None
+
     def __init__(self, root, output):
         self.root = Path(root).resolve()
         self.output = Path(output).resolve()
@@ -201,7 +207,10 @@ class Collectors:
     def sources(self, language):
         if self.inventory is None:
             raise ValueError('Source inventory unavailable')
-        return [row for row in self.inventory['sources'] if row['language'] == language]
+        return [row for row in self.inventory['sources'] if row['language'] == language and self.owns(row)]
+
+    def owns(self, row):
+        return row.get('language') != 'typescript' or self.stack in (None, typescript_stack(row['path']))
 
     def csharp_source(self):
         project = self.coverage / 'metrics/GateMetrics.csproj'
@@ -342,6 +351,26 @@ class Collectors:
             {'message': 'Viewer typecheck failed without a compiler diagnostic', 'command': row}]
         return result({'command': row}, findings, errors)
 
+    def statechart_typecheck(self):
+        """The package's own strict tsconfig, compiled by the viewer's locked TypeScript and node types.
+        A byte-identical upstream file stays in the program, so a type error anywhere is a finding, but
+        its own unused bindings are not judged, as knip holds it without judging it."""
+        tools = self.root / 'viewer/node_modules'
+        row = self.log.run('statechart-typecheck', ['node', tools / 'typescript/bin/tsc', '-p',
+                                                    STATECHART_ROOT + 'tsconfig.json', '--typeRoots',
+                                                    tools / '@types', '--pretty', 'false'])
+        output = Path(row['stdout']).read_text(encoding='utf-8')
+        upstream = {source['path'] for source in self.inventory['excluded'] if 'upstream' in source.get('origin', {})}
+        findings, held = [], []
+        for match in _TSC_DIAGNOSTIC.finditer(output):
+            diagnostic = {'gate': 'typescript-build', **match.groupdict(), 'path': match['path'].strip()}
+            unjudged = diagnostic['path'] in upstream and diagnostic['code'] in _UNUSED_BINDINGS
+            (held if unjudged else findings).append(diagnostic)
+        accounted = len(findings) + len(held) == len(re.findall(r'(?m)^(?!\s).*?\b(?:error|warning) TS\d+: ', output))
+        errors = [] if accounted and (row['exit_code'] == 0 or findings or held) else [
+            {'message': 'Statechart typecheck failed without an accounted compiler diagnostic', 'command': row}]
+        return result({'command': row, 'upstreamUnusedBindings': held}, findings, errors)
+
     def viewer_lint(self):
         report = self.output / 'eslint.json'
         # An inline disable comment is an escape hatch DR 048 refuses, so the lint ignores them.
@@ -399,7 +428,7 @@ class Collectors:
 
     def typescript_unused_exports(self):
         from gate_knip import collect_knip
-        return collect_knip(self, 'typescript')
+        return collect_knip(self, self.stack or 'viewer')
 
     def pending(self, name, detail):
         return result(errors=[{'type': 'implementation-gap', 'collector': name, 'message': detail}])

@@ -964,7 +964,9 @@ def run_tests(extra_args=None, assurance_output=None, job=None):
         _end_run(job, worktree)
 
 
-def main():
+def main(cap=None):
+    """`cap`, the run's gap_check.MemoryCap, turns an OOM kill it records during the run into a
+    failure with its finding."""
     if sys.platform == "win32":
         signal.signal(signal.SIGBREAK, signal.default_int_handler)
     parser = argparse.ArgumentParser(description="Run dotnet test in a git worktree")
@@ -982,6 +984,7 @@ def main():
     print("\n--- Running tests (worktree-isolated) ---")
     # The assurance campaign owns its processes in its own job and confirms their cleanup.
     job = None if args.assurance_output and sys.platform == "win32" else contain_descendants()
+    before = cap.kills() if cap else None
     try:
         rc = run_tests(extra_args=extra or None, assurance_output=args.assurance_output, job=job)
     except KeyboardInterrupt:
@@ -989,6 +992,10 @@ def main():
     except CleanupUnconfirmed as unconfirmed:
         print(f"\n  {unconfirmed}", file=sys.stderr)
         rc = 2
+    finding = cap.finding(before) if cap else None
+    if finding:
+        print(f"\n  {finding}", file=sys.stderr)
+        rc = 1
 
     if rc != 0:
         print(f"\n  Tests failed (exit code {rc})")
@@ -998,5 +1005,16 @@ def main():
     sys.exit(rc)
 
 
+def capped_main():
+    """A direct run takes the facade's memory cap first; under the facade it inherits the facade's."""
+    from gap_check import ContractError, memory_cap
+    try:
+        cap = memory_cap()
+    except ContractError as error:
+        print(error, file=sys.stderr)
+        sys.exit(2)
+    main(cap)
+
+
 if __name__ == "__main__":
-    main()
+    capped_main()

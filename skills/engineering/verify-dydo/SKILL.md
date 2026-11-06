@@ -17,6 +17,11 @@ compiler servers disabled, creates an ordinary mock Git repository, and runs rea
 `CODEX_HOME` is redirected only for these owned CLI fixtures. Machine-mode storage is **not**
 redirected by that variable or by cwd; the driver never executes a mode setter.
 
+On a systemd host, run each drive and probe capped too: `[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 120 <cmd>`. A cap hit is a finding; never raise the cap.
+Use your session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager
+(on a T3 host, for example, `app-t3code-agents.slice`; a nearer session slice takes precedence).
+Omit `--slice` where no agent slice exists. Use the bracketed env prefix for .NET commands, without the brackets.
+
 All commands below must run inside the host's shared suite slot. On the commissioned Windows
 machine, wrap each argv using the LC checkout's existing runner (keep this parent alive):
 
@@ -108,9 +113,26 @@ is absent. It is repeatable and works after a failed launch. Confirm RUN/evidenc
 the command logs and cleanup receipt. A busy run belongs to the live driver; do not remove its
 lock or another run's resources. There are no global processes, schedules or installations to undo.
 
+## Officer transition
+
+On Linux, a real headless officer runs muster `on` and morning brief `off` against a scratch mode
+store, taking DYD-433's warning/retry route itself; [machine-mode](resources/features/machine-mode.md)
+says what it observes. Each run spends real model budget once and is never retried:
+
+```text
+python3 skills/engineering/verify-dydo/scripts/officer_transition.py campaign --cases nudge codex failed
+python3 skills/engineering/verify-dydo/scripts/officer_transition.py evaluate --evidence artifacts/dyd435/<run>
+```
+
+`evaluate` rebuilds and re-judges each run from its retained raw sources without relaunching any
+agent; evidence written before the receipt channel has no `run.json` and is skipped, and runs of the
+pre-DYD-433 route are left unjudged.
+
 ## Helpers
 
 `scripts/control_dydo.py` is the executable helper; its entire interface is shown above.
+`scripts/officer_transition.py` is the officer-transition driver above; its unit tests are
+`DynaDocs.Tests/coverage/tests/test_officer_transition.py` and launch no agent.
 `scripts/owned_process.py` is its internal adapter over `DynaDocs.Tests/coverage/windows_job.py`;
 it supplies guard stdin and orderly interruption receipts using the existing job primitives,
 and has no standalone command interface. For boundary and real descendant-lifetime tests, run

@@ -16,7 +16,7 @@ records it without another interview.
 2. Write the Project title, short summary and intent description under those four headings. Link
    the records and source FutureFeature when present. Done when the Project carries the intent and
    its provenance, with unresolved points still identified as unresolved.
-3. Create the Project in `Backlog`, with no tickets. When shared behavior or decisions need one
+3. Create the Project in `Backlog`, with no tickets. A Project an admiral scaffolds gets its spec from the admiral's scaffold recipe instead; the rest of this step covers other specs. When shared behavior or decisions need one
    current anchor, read `dydo/reference/feature-spec-convention.md` from the repository root. Link an
    applicable reviewed architecture plan or feature spec; if neither supplies the anchor, prepare a
    feature spec from settled intent for the map holder's custody. The map holder commits a new spec

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -eu
+evidence=dydo/project/changelog/2026/2026-11-06/dyd-784-fix-evidence
+exec > "$evidence/proof-session.log" 2>&1
+trap 'echo "proof session exit=$?"' EXIT
+cap=(systemd-run --user --scope --slice=app-t3code-agents.slice -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 120)
+"${cap[@]}" bash "$evidence/revert-proof.sh.txt"
+echo 'revert wrapper exit=0 (both expected red exits were 1)'
+"${cap[@]}" env PWSH=/tmp/dyd622-pwsh/pwsh node --test DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs > "$evidence/green.log" 2>&1
+echo 'focused tests exit=0'
+"${cap[@]}" /tmp/dyd507-524-venv/bin/python "$evidence/sealed-inputs.py.txt" > "$evidence/sealed-inputs.log" 2>&1
+systemd-run --user --scope --slice=app-t3code-agents.slice -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 1800 bash "$evidence/final-gates.sh.txt"

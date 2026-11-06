@@ -229,13 +229,14 @@ fails when the join is scoped, after the campaign.
 
 Linux runs the full suite and measures every other point, including the neutral remainder of mixed
 sources. Windows runs only the selection's fourteen named tests, seventeen cases with their theory
-rows, which reach the Windows members. It passes only if that run is nonempty and none of its tests
-fails or is skipped. The ratified rule is stricter: every declared test must run. Enforcing that is
-pending [DYD-718](https://linear.app/bodnar-balazs/issue/DYD-718). Linux already measures every point Windows does not own, so a full Windows
-suite would measure nothing more. Both platforms keep the full native join as raw evidence and
+rows, which reach the Windows members. It passes only if every declared test runs, none fails or is
+skipped, and no result falls outside the selection. Each of the fourteen needs at least one executed
+result, with theory rows counting under their method. Linux already measures every point Windows
+does not own, so a full Windows suite would measure nothing more. Both platforms keep the full native join as raw evidence and
 apply the unchanged policy to their own portion.
 
-One hosted job, `dotnet-coverage`, runs the gate on the PR head on both platforms: `ubuntu-24.04`
+One hosted job, `dotnet-coverage`, runs the gate on both platforms on the run's own commit,
+`github.sha`, which on a pull request is the merge result, not the PR head: `ubuntu-24.04`
 with the full suite and `windows-latest` with the selected tests. A dependent union check,
 `dotnet-coverage-union`, requires both reports. It rejects a missing report, a failed, incomplete or
 dirty gate, reports from different commits, a Windows receipt without its selected-test count and a
@@ -246,6 +247,13 @@ platform's lines, branches and callables under those hashes and owners, with cal
 the rebuilt candidate. Matching omissions, altered ownership and a different selection therefore all
 fail. Neither report alone establishes .NET coverage success. This amends measurement placement
 under §2. It does not widen the September coverage exemption or change any threshold.
+
+*Note 2026-11-06: Balazs ratified on 2026-11-06
+([DYD-744](https://linear.app/bodnar-balazs/issue/DYD-744)) that hosted pull-request runs measure
+the merge result, and receipts keep the PR head SHA. The 2026-11-05 text placed the gate on the PR
+head. [DYD-717](https://linear.app/bodnar-balazs/issue/DYD-717) implements the change: every
+`ci.yml` job checks out `github.sha`, and the preflight receipts record `pr_head_sha` and
+`merge_ref_sha`.*
 
 ## Consequences
 

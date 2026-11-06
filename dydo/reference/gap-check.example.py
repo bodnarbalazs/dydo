@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import re
 import signal
 import shutil
 import subprocess
@@ -38,6 +39,14 @@ EXECUTION_SECONDS_MAXIMUM = 1800
 CLEANUP_SECONDS = 30
 REAP_SECONDS = 1
 ROW_DEADLINE_ENV = "DYDO_ROW_DEADLINE"
+MEMORY_MAX_ENV = "DYDO_MEMORY_MAX"
+MEMORY_MAX_DEFAULT = 8 * 1024 ** 3
+# Set only for the operation's own rerun under systemd-run, which removes it before any child starts.
+MEMORY_SCOPE_ENV = "DYDO_MEMORY_CAP_SCOPE"
+MEMORY_UNITS = {"": 1, "K": 1024, "M": 1024 ** 2, "G": 1024 ** 3, "T": 1024 ** 4}
+CGROUP_ROOT = Path("/sys/fs/cgroup")
+SELF_CGROUP = Path("/proc/self/cgroup")
+SYSTEMD_SECONDS = 30
 HELP = """Usage: gap_check.py [--force-run] [operation] [options] [-- native arguments]
 
 Project testing facade. It runs manifest argv vectors directly; it never invokes a shell.
@@ -56,6 +65,8 @@ Examples: test --stack dotnet -- --filter FullyQualifiedName~ParserTests
           gate mutation --since BASE --stack dotnet
  Exit 0 is pass, 1 measured failure, 2 invalid or unavailable work, and 130 interruption
 after adapter cleanup. Results record candidate identity, argv, cwd, isolation, evidence, and artifacts.
+Operations that run children are capped at 8G of memory with swap off where systemd allows;
+DYDO_MEMORY_MAX may only lower the cap. A row that hits it fails: a finding, never a reason to raise it.
 """
 
 
@@ -464,6 +475,9 @@ def diagnosis_text(finding):
 
 
 def suite_verdict(root, stack, coverage_row):
+    if coverage_row.get("memoryCapHit"):
+        return result(stack, "test", "failed", memoryCapHit=True,
+                      reason=f"test verdict derived from the coverage row: {coverage_row['reason']}")
     state = coverage_row["state"]
     if state == "interrupted":
         return result(stack, "test", "interrupted",
@@ -593,8 +607,180 @@ def print_row(current):
     print(f"{current['stack']} {current['capability']}: {current['state'].upper()}{child}{reason}", flush=True)
 
 
-def execute_rows(selected, capabilities, root, since, forwarded):
+def memory_size(value):
+    unit = next(unit for unit in ("T", "G", "M", "K", "") if value % MEMORY_UNITS[unit] == 0)
+    return f"{value // MEMORY_UNITS[unit]}{unit}"
+
+
+def memory_target():
+    """The cap in bytes: the default, or a lower DYDO_MEMORY_MAX in systemd size syntax."""
+    text = os.environ.get(MEMORY_MAX_ENV)
+    if text is None:
+        return MEMORY_MAX_DEFAULT
+    match = re.fullmatch(r"(\d+(?:\.\d+)?)([KMGT]?)", text)
+    limit = int(float(match[1]) * MEMORY_UNITS[match[2]]) if match else 0
+    if limit <= 0:
+        raise ContractError(f"{MEMORY_MAX_ENV} must be a positive systemd size such as 256M or 4G, not {text!r}")
+    if limit > MEMORY_MAX_DEFAULT:
+        raise ContractError(f"{MEMORY_MAX_ENV}={text} is above the {memory_size(MEMORY_MAX_DEFAULT)} default: "
+                            "a cap hit is a finding; raising the cap is not allowed")
+    return limit
+
+
+def cgroup_number(directory, name):
+    """A cgroup v2 byte count; None for `max` or an unreadable file."""
+    try:
+        return int((directory / name).read_text(encoding="ascii"))
+    except (OSError, UnicodeError, ValueError):
+        return None
+
+
+def oom_kills(directory):
+    try:
+        fields = dict(line.split(" ", 1) for line in (directory / "memory.events").read_text(encoding="ascii").splitlines())
+        return int(fields["oom_kill"])
+    except (OSError, UnicodeError, ValueError, KeyError):
+        return None
+
+
+def cgroup_ancestry():
+    """This process's cgroup v2 directory, then each ancestor below the root; empty without cgroup v2."""
+    try:
+        lines = SELF_CGROUP.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError):
+        return []
+    relative = next((line[3:].lstrip("/") for line in lines if line.startswith("0::/")), None)
+    if relative is None:
+        return []
+    leaf = CGROUP_ROOT / relative
+    return [leaf, *(parent for parent in leaf.parents if parent.is_relative_to(CGROUP_ROOT) and parent != CGROUP_ROOT)]
+
+
+def caller_slice(ancestry):
+    """Nearest slice below the user manager; system-manager slices cannot be joined with --user."""
+    manager = next((index for index, directory in enumerate(ancestry)
+                    if re.fullmatch(r"user@\d+\.service", directory.name)), 0)
+    return next((directory.name for directory in ancestry[:manager] if directory.name.endswith(".slice")), "app.slice")
+
+
+def oom_policy_continues(directory):
+    """Whether the unit owning `directory` keeps its scope alive after an OOM kill; unknown is stop."""
+    systemctl = shutil.which("systemctl")
+    if systemctl is None:
+        return False
+    try:
+        shown = subprocess.run([systemctl, "--user", "show", "-p", "OOMPolicy", "--value", directory.name],
+                               stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=SYSTEMD_SECONDS)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return shown.returncode == 0 and shown.stdout.strip() == "continue"
+
+
+class MemoryCap:
+    """The operation's memory cap: its result.json record, and the cgroup whose OOM kills it counts."""
+
+    def __init__(self, state, limit=None, mechanism=None, reason=None, cgroup=None):
+        self.record = {"state": state, "limit": limit, "mechanism": mechanism, "reason": reason}
+        self.cgroup = cgroup
+
+    def kills(self):
+        return oom_kills(self.cgroup) if self.cgroup else None
+
+    def finding(self, before):
+        """The cap-hit reason when the cgroup recorded an OOM kill since `before`, else None."""
+        after = self.kills()
+        if before is None or after is None or after <= before:
+            return None
+        return f"memory cap hit (MemoryMax={memory_size(self.record['limit'])}): a finding; do not raise the cap"
+
+    def judged(self, row, before):
+        """A row during which the cap killed a process fails: a finding, never a pass or an interruption."""
+        finding = self.finding(before)
+        if finding is None:
+            return row
+        print(f"{row['stack']} {row['capability']}: {finding}", file=sys.stderr, flush=True)
+        return {**row, "state": "failed", "resultExit": EXITS["failed"], "memoryCapHit": True, "reason": finding}
+
+
+def uncapped(reason):
+    print(f"memory cap unavailable: {reason}; this operation runs uncapped", file=sys.stderr, flush=True)
+    return MemoryCap("unavailable", reason=reason)
+
+
+def rerun_cap(ancestry):
+    """The rerun under systemd-run confirms its own scope; it never wraps a second time."""
+    leaf = ancestry[0] if ancestry else None
+    limit = cgroup_number(leaf, "memory.max") if leaf else None
+    if limit is None or cgroup_number(leaf, "memory.swap.max") != 0:
+        return uncapped("systemd-run started this operation, but its cgroup shows no memory cap")
+    return MemoryCap("enforced", limit, "systemd-run --user --scope",
+                     f"MemoryMax={memory_size(limit)} MemorySwapMax=0 OOMPolicy=continue "
+                     f"slice={caller_slice(ancestry)} on {leaf}", leaf)
+
+
+def enforce(limit, ancestry):
+    """Rerun this operation once, unchanged, inside a new capped scope; return only when that cannot start."""
+    systemd_run = shutil.which("systemd-run")
+    if systemd_run is None:
+        return uncapped("systemd-run is not on PATH")
+    slice_name = caller_slice(ancestry)
+    slice_option = [f"--slice={slice_name}"] if slice_name != "app.slice" else []
+    # OOMPolicy=continue keeps the facade alive to record a row's cap hit; expansion off keeps `$` literal.
+    wrap = [systemd_run, "--user", "--scope", *slice_option, "--quiet", "-p", f"MemoryMax={limit}", "-p", "MemorySwapMax=0",
+            "-p", "OOMPolicy=continue", "--expand-environment=no", "--"]
+    try:
+        probe = subprocess.run([*wrap, "true"], stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                               timeout=SYSTEMD_SECONDS)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return uncapped(f"systemd-run cannot start a capped scope: {error}")
+    if probe.returncode != 0:
+        detail = probe.stderr.strip().splitlines()[-1:] or ["no diagnostic"]
+        return uncapped(f"systemd-run cannot start a capped scope (exit {probe.returncode}): {detail[0]}")
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os.environ[MEMORY_SCOPE_ENV] = "1"
+    os.execv(systemd_run, [*wrap, sys.executable, *sys.orig_argv[1:]])
+
+
+def memory_cap():
+    """Cap this operation before it starts a child. Inside an outer scope that already caps it as
+    tightly, with swap off and OOMPolicy=continue, the cap is inherited; otherwise the operation
+    reruns under systemd-run in the caller's slice at the tighter of the target and any ancestor
+    limit. Concurrent runs share that slice's budget. Without systemd the run is uncapped,
+    recorded and warned once."""
+    names = {name.upper(): name for name in os.environ} if sys.platform == "win32" else {}
+    for name, value in (("MSBUILDDISABLENODEREUSE", "1"), ("DOTNET_CLI_USE_MSBUILD_SERVER", "0"),
+                        ("UseSharedCompilation", "false")):
+        os.environ.setdefault(names.get(name.upper(), name), value)
+    target = memory_target()
+    rerun = os.environ.pop(MEMORY_SCOPE_ENV, None)
+    if sys.platform != "linux":
+        return uncapped(f"{sys.platform} has no systemd memory cap; each row keeps its {EXECUTION_SECONDS_MAXIMUM} s deadline")
+    ancestry = cgroup_ancestry()
+    if rerun is not None:
+        return rerun_cap(ancestry)
+    limits = [(limit, directory) for directory in ancestry
+              if (limit := cgroup_number(directory, "memory.max")) is not None]
+    tightest, capping = min(limits, key=lambda item: item[0], default=(target, None))
+    if (capping and tightest <= target and cgroup_number(capping, "memory.swap.max") == 0
+            and oom_policy_continues(capping)):
+        return MemoryCap("inherited", tightest, "cgroup v2",
+                         f"an outer scope caps this run with swap off and OOMPolicy=continue: {capping}", capping)
+    return enforce(min(target, tightest), ancestry)
+
+
+def capped_row(stack, capability, root, since, forwarded, cap):
+    """Run one row, judged against the cap; also whether it was interrupted, which stops the run."""
+    deadline = time.monotonic() + EXECUTION_SECONDS_MAXIMUM + CLEANUP_SECONDS
+    before = cap.kills()
+    current = run_row(stack, capability, root, since, forwarded, deadline)
+    return cap.judged(current, before), current["state"] == "interrupted"
+
+
+def execute_rows(selected, capabilities, root, since, forwarded, cap=None):
+    cap = cap or MemoryCap("unavailable")
     rows = []
+    halted = False
     for stack in selected:
         deferred = None
         for capability in capabilities:
@@ -602,8 +788,7 @@ def execute_rows(selected, capabilities, root, since, forwarded):
                 deferred = len(rows)
                 rows.append(result(stack, "test", "interrupted", reason=INTERRUPTED_BEFORE_COVERAGE))
                 continue
-            deadline = time.monotonic() + EXECUTION_SECONDS_MAXIMUM + CLEANUP_SECONDS
-            current = run_row(stack, capability, root, since, forwarded, deadline)
+            current, halted = capped_row(stack, capability, root, since, forwarded, cap)
             rows.append(current)
             print_row(current)
             if deferred is not None and capability == "coverage":
@@ -611,20 +796,20 @@ def execute_rows(selected, capabilities, root, since, forwarded):
                 rows[deferred] = derived
                 deferred = None
                 print_row(derived)
-            if current["state"] == "interrupted":
+            if halted:
                 break
         if deferred is not None:
             print_row(rows[deferred])
-        if rows[-1]["state"] == "interrupted":
+        if halted:
             break
     return rows
 
 
-def write_result(root, run, operation, selected, rows, candidate):
+def write_result(root, run, operation, selected, rows, candidate, memory=None):
     if not run.resolve().is_relative_to(root):
         raise ContractError("result artifact escapes repository")
     exit_code = max((EXITS[row["state"]] for row in rows), default=0)
-    payload = {"schema": 1, "candidate": candidate,
+    payload = {"schema": 1, "candidate": candidate, "memoryCap": memory,
                "operation": operation, "selectedStacks": [x["name"] for x in selected], "results": rows, "aggregateExit": exit_code}
     path = run / "result.json"
     pending = run / "result.tmp"
@@ -653,10 +838,12 @@ def main(argv=None):
         selected = selected_stacks(data["stacks"], names)
         if name == "capabilities":
             return print_capabilities(selected, root)
+        cap = memory_cap()
         candidate = candidate_identity(root)
         run = prepare_result(destination)
-        rows = execute_rows(selected, capabilities, root, since, forwarded)
-        return write_result(root, run, {"name": name, **({"since": since} if since else {})}, selected, rows, candidate)
+        rows = execute_rows(selected, capabilities, root, since, forwarded, cap)
+        return write_result(root, run, {"name": name, **({"since": since} if since else {})}, selected, rows,
+                            candidate, cap.record)
     except (ContractError, OSError) as error:
         print(f"Invalid request or artifact destination: {error}", file=sys.stderr)
         return 130 if any(row["state"] == "interrupted" for row in rows) else 2

@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "candidate": {
+    "commit": "107a0394f1257228527c984511ea51bb723262ae",
+    "dirty": true
+  },
+  "memoryCap": {
+    "state": "inherited",
+    "limit": 8589934592,
+    "mechanism": "cgroup v2",
+    "reason": "an outer scope caps this run with swap off and OOMPolicy=continue: /sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-t3code.slice/app-t3code-agents.slice/run-p3180116-i49280862.scope"
+  },
+  "operation": {
+    "name": "gate static"
+  },
+  "selectedStacks": [
+    "statechart"
+  ],
+  "results": [
+    {
+      "stack": "statechart",
+      "capability": "static",
+      "state": "passed",
+      "argv": [
+        "/tmp/dyd507-524-venv/bin/python",
+        "DynaDocs.Tests/coverage/gate_adapter.py",
+        "--stack",
+        "statechart",
+        "--gate",
+        "static"
+      ],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "in-place",
+        "evidence": {
+          "state": "verified",
+          "kind": "direct"
+        }
+      },
+      "environment": {
+        "DYDO_ROW_DEADLINE": "146230.800053040"
+      },
+      "childExit": 0,
+      "resultExit": 0,
+      "artifacts": [
+        {
+          "path": "DynaDocs.Tests/coverage/results/adapters/statechart-static.json",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "aggregateExit": 0
+}

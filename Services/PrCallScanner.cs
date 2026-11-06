@@ -39,6 +39,9 @@ internal static partial class PrCallScanner
 
     private sealed record Options(Dictionary<char, string> Short, HashSet<string> Long);
 
+    // An option's value and the index of the word it was read from (Words.Count when it is missing).
+    private readonly record struct Option(string Name, string Value, int Word);
+
     /// <summary>
     /// The PR calls <paramref name="command"/> makes when <paramref name="dialect"/> runs it.
     /// <paramref name="inheritedRepo"/> is the GH_REPO the command inherits, if any.
@@ -65,6 +68,115 @@ internal static partial class PrCallScanner
         return program != "gh" && argv.Skip(1).Any(word => Scan(word, ShellDialect.Unknown, null, 1).Count > 0)
             ? [new PrCall(null, Wrapper: program)]
             : [];
+    }
+
+    /// <summary>
+    /// The body file of the <c>gh pr create</c> call launched at <paramref name="launch"/> in
+    /// <paramref name="command"/> (DYD-639): its last <c>--body-file</c> or <c>-F</c>, as gh takes it,
+    /// or null when the guard may not read it. The guard emulates no shell; it reads an allowlist.
+    /// Every reading of the whole line must finish, hold the call at <paramref name="launch"/> as its
+    /// one command (<see cref="IsLone"/>), and name the same operand written plainly
+    /// (<see cref="PlainOperand"/>). Then nothing else in the line can change that file before gh
+    /// opens it. Anything else reads as null, so a check that needs the body keeps its warning.
+    /// </summary>
+    public static string? BodyFileAt(string command, int launch, ShellDialect dialect = ShellDialect.Unknown)
+    {
+        var files = Readings(dialect, command)
+            .Select(posix => BodyFileIn(ShellReader.Read(command, posix), launch, posix))
+            .Distinct()
+            .ToList();
+        return files is [{ } file] ? file : null;
+    }
+
+    // On Windows a path rooted at no drive opens on the shell's current drive, so it is never read there.
+    private static string? BodyFileIn(ShellReader.Reading reading, int launch, bool posix)
+    {
+        if (reading.Failed || reading.Substitutions.Count > 0 || reading.Commands is not [var call]
+            || call.Source != reading.Source || !IsLone(call, launch, posix) || PlainOperand(call, posix) is not { } file)
+            return null;
+        return Path.IsPathFullyQualified(file) || !Path.IsPathRooted(file) ? file : null;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="call"/>, the line's one command, is all the line runs (DYD-639 ruling
+    /// 7): it starts at <paramref name="launch"/> with only blanks before it and after its last word,
+    /// so nothing is joined to it and no assignment leads it; it takes no redirection, heredoc or
+    /// here-string; and no word in the line may expand (<see cref="ExpandsNothing"/>).
+    /// </summary>
+    private static bool IsLone(ShellReader.Command call, int launch, bool posix)
+    {
+        var text = call.Source.Text;
+        return call.WordRanges is [var first, ..] && first.Start.Value == launch
+            && call.Redirections.Count == 0 && call.RedirectTargets.Count == 0 && call.Stdin.Count == 0 && call.Bodies.Count == 0
+            && BlanksRegex().IsMatch(text[..launch]) && BlanksRegex().IsMatch(text[call.WordRanges[^1].End.Value..])
+            && ExpandsNothing(call.Source, posix);
+    }
+
+    /// <summary>
+    /// Whether no word in the line may expand (DYD-639 ruling, points 5 and 7): into more arguments,
+    /// which could hand gh a later body file, or into commands. It reads the raw text with
+    /// single-quoted text masked, split at double quotes. bash expands an unquoted <c>$</c>, backtick,
+    /// glob, brace or tilde, and a <c>$</c> or backtick in double quotes. PowerShell passes a
+    /// variable, a splat, a group or a comma list as many arguments, runs a variable's methods, and
+    /// passes <c>--%</c> the rest unread, so no <c>$</c> or <c>@</c> may stand outside single quotes.
+    /// A backslash or backtick leaves the quoting unknown, so it counts too.
+    /// </summary>
+    private static bool ExpandsNothing(ShellReader.Scope source, bool posix)
+    {
+        var raw = source.Text.ToCharArray();
+        foreach (var quote in source.SingleQuotes)
+            Array.Fill(raw, '_', quote.Start.Value, Math.Min(quote.End.Value, raw.Length) - quote.Start.Value);
+
+        var pieces = new string(raw).Split((posix ? "\"" : "\"“”„").ToCharArray());
+        var (unquoted, quoted) = posix
+            ? (PosixUnquotedExpansionRegex(), PosixQuotedExpansionRegex())
+            : (PowerShellUnquotedExpansionRegex(), PowerShellQuotedExpansionRegex());
+        return pieces.Length % 2 == 1 && !pieces.Where((piece, i) => (i % 2 == 0 ? unquoted : quoted).IsMatch(piece)).Any();
+    }
+
+    private static string? PlainOperand(ShellReader.Command call, bool posix)
+    {
+        var words = call.Words;
+        if (CommandPosition.ProgramName(words[0]) != "gh")
+            return null;
+
+        var rest = words.Skip(1).ToList();
+        var sub = GhSubcommand(rest, "pr", "api");
+        if (sub < 0 || !rest[sub].Equals("pr", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var parsed = Parse(rest[(sub + 1)..], PrOptions);
+        if (parsed.Positionals.FirstOrDefault() is not { } verb || !verb.Equals("create", StringComparison.OrdinalIgnoreCase) || parsed.Help)
+            return null;
+
+        var last = parsed.Options.FindLastIndex(o => o.Name == "body-file");
+        if (last < 0)
+            return null;
+        var file = parsed.Options[last];
+        var at = sub + 2 + file.Word;
+        return at < words.Count && IsWrittenPlainly(call, at, file.Value, posix) ? file.Value : null;
+    }
+
+    /// <summary>
+    /// Whether the word at <paramref name="at"/>, which ends in the operand <paramref name="value"/>,
+    /// is written as its reading decodes it: the flag (<c>--body-file=</c>, or short flags with no
+    /// <c>=</c>, since gh drops one <c>=</c> after a short flag and the reader every one), then the
+    /// operand bare or wholly in one pair of quotes, of the reading's literal characters (<see cref="PosixLiteralRegex"/>,
+    /// <see cref="PowerShellLiteralRegex"/>). The reader splits a word at a brace, a parenthesis, a
+    /// carriage return or any Unicode space, where bash does not, so the word must also stand between
+    /// a blank and a blank or the line's end.
+    /// </summary>
+    private static bool IsWrittenPlainly(ShellReader.Command call, int at, string value, bool posix)
+    {
+        var flag = call.Words[at][..^value.Length];
+        var written = call.RawWord(at);
+        var operand = written.StartsWith(flag, StringComparison.Ordinal) ? written[flag.Length..] : null;
+        var (text, range) = (call.Source.Text, call.WordRanges[at]);
+        return (flag == "--body-file=" || !flag.Contains('='))
+            && (operand == value || operand == $"'{value}'" || operand == $"\"{value}\"")
+            && (posix ? PosixLiteralRegex() : PowerShellLiteralRegex()).IsMatch(value)
+            && text[range.Start.Value - 1] is ' ' or '\t'
+            && (range.End.Value == text.Length || text[range.End.Value] is ' ' or '\t' or '\n');
     }
 
     private static List<PrCall> Scan(string text, ShellDialect dialect, string? inheritedRepo, int depth)
@@ -258,9 +370,9 @@ internal static partial class PrCallScanner
 
     // Help is --help or -h as a flag of its own (gh 2.88.1 prints help for either and acts on
     // nothing), not a flag's value; after --, every word is an operand.
-    private static (List<(string Name, string Value)> Options, List<string> Positionals, bool Help) Parse(List<string> words, Options options)
+    private static (List<Option> Options, List<string> Positionals, bool Help) Parse(List<string> words, Options options)
     {
-        List<(string Name, string Value)> values = [];
+        List<Option> values = [];
         List<string> positionals = [];
         var help = false;
         for (var i = 0; i < words.Count; i++)
@@ -284,31 +396,34 @@ internal static partial class PrCallScanner
     }
 
     // --name=value or --name value, kept when name is one of options' long options.
-    private static void ReadLongOption(List<string> words, ref int i, Options options, List<(string Name, string Value)> values)
+    private static void ReadLongOption(List<string> words, ref int i, Options options, List<Option> values)
     {
         var word = words[i];
         var eq = word.IndexOf('=');
         var name = eq > 0 ? word[2..eq] : word[2..];
-        if (options.Long.Contains(name))
-            values.Add((name, eq > 0 ? word[(eq + 1)..] : Next(words, ref i)));
+        if (!options.Long.Contains(name))
+            return;
+        var value = eq > 0 ? word[(eq + 1)..] : Next(words, ref i);
+        values.Add(new Option(name, value, i));
     }
 
     // Short flags combine (-dH b); the first one taking a value takes the rest of the word or the next.
-    private static void ReadShortFlags(List<string> words, ref int i, Options options, List<(string Name, string Value)> values)
+    private static void ReadShortFlags(List<string> words, ref int i, Options options, List<Option> values)
     {
         var word = words[i];
         for (var j = 1; j < word.Length; j++)
         {
             if (!options.Short.TryGetValue(word[j], out var name))
                 continue;
-            values.Add((name, j + 1 < word.Length ? word[(j + 1)..].TrimStart('=') : Next(words, ref i)));
+            var value = j + 1 < word.Length ? word[(j + 1)..].TrimStart('=') : Next(words, ref i);
+            values.Add(new Option(name, value, i));
             return;
         }
     }
 
     private static string Next(List<string> words, ref int i) => ++i < words.Count ? words[i] : "";
 
-    private static IEnumerable<string> Values(List<(string Name, string Value)> options, string name) =>
+    private static IEnumerable<string> Values(List<Option> options, string name) =>
         options.Where(o => o.Name == name).Select(o => o.Value);
 
     // gh, or pwsh or powershell (the only programs that run -EncodedCommand), as a word anywhere,
@@ -318,6 +433,31 @@ internal static partial class PrCallScanner
 
     [GeneratedRegex(@"\{(owner|repo|branch)\}")]
     private static partial Regex GhPlaceholderRegex();
+
+    // A plainly written body file's characters (DYD-639 ruling): letters, digits, . _ - + / and,
+    // quoted, space. PowerShell also takes \ and a leading drive; in bash a backslash escapes.
+    [GeneratedRegex(@"^[A-Za-z0-9._+/ -]+\z")]
+    private static partial Regex PosixLiteralRegex();
+
+    [GeneratedRegex(@"^(?:[A-Za-z]:[\\/])?[A-Za-z0-9._+/\\ -]+\z")]
+    private static partial Regex PowerShellLiteralRegex();
+
+    // The blanks a lone call may stand between (DYD-639 ruling 7).
+    [GeneratedRegex(@"^[ \t\n]*\z")]
+    private static partial Regex BlanksRegex();
+
+    // What may add arguments or run commands, outside and inside double quotes (DYD-639 ruling, points 5 and 7).
+    [GeneratedRegex(@"[$`*?\[{}~()\\]")]
+    private static partial Regex PosixUnquotedExpansionRegex();
+
+    [GeneratedRegex(@"[$`\\]")]
+    private static partial Regex PosixQuotedExpansionRegex();
+
+    [GeneratedRegex(@"[$@`(){},%]")]
+    private static partial Regex PowerShellUnquotedExpansionRegex();
+
+    [GeneratedRegex(@"[$@`]")]
+    private static partial Regex PowerShellQuotedExpansionRegex();
 
     [GeneratedRegex(@"^(?:https?://(?<host>[^/]+)(?:/api/v3)?)?/?repos/(?<owner>[^/]+)/(?<repo>[^/?]+)/pulls/?(?:\?.*)?$", RegexOptions.IgnoreCase)]
     private static partial Regex RestPullsRegex();

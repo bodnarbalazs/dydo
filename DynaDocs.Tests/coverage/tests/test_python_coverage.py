@@ -299,7 +299,7 @@ assert child.returncode == 0
 # Interrupt only the failure record at a deterministic byte boundary. The driver's exit is
 # independent of the failed child's: a nonzero child exit alone cannot protect the campaign.
 _INTERRUPTED_REPORT = """\
-import builtins, socket, sys
+import builtins, errno, socket, sys
 from pathlib import Path
 
 phase, position, interruption = sys.argv[1:4]
@@ -315,6 +315,8 @@ def interrupted_send(connection, data):
         sendall(connection, data[:13])
     elif position == "full":
         sendall(connection, data)
+    if interruption == "OSError":
+        raise OSError(errno.EPIPE, "the reporting peer is gone")
     raise getattr(builtins, interruption)(f"failure report interrupted ({remaining} left)")
 
 socket.socket.sendall = interrupted_send
@@ -345,6 +347,37 @@ env = {**os.environ, "PYTHONPATH": os.pathsep.join([str(Path("own-pid").resolve(
 program = "import subject; subject.work(); open('ran', 'x').close()"
 child = subprocess.run([sys.executable, "-c", program, *sys.argv[1:]], env=env)
 Path("failed.exit").write_text(str(child.returncode), encoding="utf-8")
+"""
+
+
+_SOCKET_REPORT_FAILURE = """\
+import errno, socket, sys
+from pathlib import Path
+
+code, persistence = sys.argv[1:3]
+sendall = socket.socket.sendall
+attempts = 0
+
+def failed_send(connection, data):
+    global attempts
+    if b"Python measurement failed" in data or (persistence == "all" and attempts):
+        attempts += 1
+        Path("send-attempts").write_text(str(attempts), encoding="utf-8")
+        if persistence == "all" and attempts == 1:
+            print("reporting", flush=True)
+        if persistence in ("persistent", "all") or attempts == 1:
+            raise OSError(getattr(errno, code), "injected zero-byte socket error")
+    return sendall(connection, data)
+
+socket.socket.sendall = failed_send
+write_text = Path.write_text
+
+def failed_receipt(path, *args, **kwargs):
+    if path.name.startswith("counter-"):
+        raise RuntimeError("receipt write failed after the program ran")
+    return write_text(path, *args, **kwargs)
+
+Path.write_text = failed_receipt
 """
 
 
@@ -903,6 +936,76 @@ class PythonCoverageTests(unittest.TestCase):
                 self.assertIn("incomplete record", result.stderr)
             else:
                 self.assertIn(f"{interruption}: failure report interrupted ({count - 1} left)", result.stderr)
+            self.assertFalse((output / "counters.json").exists())
+            self.assertFalse((output / "coverage.json").exists())
+
+    def socket_report(self, code, persistence):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            output = root / "evidence"
+            (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+            (root / "driver.py").write_text(_IGNORED_REPORT_INTERRUPTION, encoding="utf-8")
+            _measured_as_itself(root, output, _SOCKET_REPORT_FAILURE + _START)
+            result = _facade(root, output, ["subject.py"],
+                             ["{python}", "-S", "driver.py", code, persistence], timeout=12)
+            self.assertTrue((root / "ran").exists(), result.stderr)
+            return (result, (root / "failed.pid").read_text(), (root / "failed.exit").read_text(),
+                    int((root / "send-attempts").read_text()),
+                    (output / "counters.json").exists(), (output / "coverage.json").exists())
+
+    def test_zero_byte_recoverable_report_errors_retry_even_when_the_parent_ignores_exit(self):
+        for code in ("ENOBUFS", "EAGAIN", "EWOULDBLOCK", "ENOMEM", "EINTR"):
+            with self.subTest(errno=code):
+                result, pid, child_exit, attempts, counters, coverage = self.socket_report(code, "once")
+                self.assertEqual((2, "0", False, False),
+                                 (result.returncode, child_exit, counters, coverage), result.stderr)
+                self.assertIn(f"Python measurement failed in process {pid} at finish", result.stderr)
+                self.assertEqual(2, attempts)
+
+    def test_persistent_recoverable_report_errors_fail_closed_after_the_retry_bound(self):
+        result, pid, _, attempts, counters, coverage = self.socket_report("ENOBUFS", "persistent")
+        self.assertEqual((2, False, False), (result.returncode, counters, coverage), result.stderr)
+        self.assertIn(f"process {pid}", result.stderr)
+        self.assertIn("reporting retries exhausted", result.stderr)
+        self.assertGreater(attempts, 1)
+
+    def test_epipe_during_a_failure_report_still_exits_70(self):
+        result, _, child_exit, attempts, _, _ = self.socket_report("EPIPE", "persistent")
+        self.assertEqual(("70", 1), (child_exit, attempts), result.stderr)
+        self.assertIn("could not be recorded", result.stderr)
+
+    def test_a_socket_that_cannot_send_even_the_fallback_stays_connected_until_collect_fails(self):
+        with tempfile.TemporaryDirectory() as folder, socket.create_server(("127.0.0.1", 0)) as exited:
+            exited.settimeout(12)
+            root = Path(folder)
+            output = root / "evidence"
+            (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+            driver = _IGNORED_REPORT_INTERRUPTION.replace(
+                'child = subprocess.run', 'child = subprocess.Popen').replace(
+                'env=env)', 'env=env, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)').replace(
+                'Path("failed.exit").write_text(str(child.returncode), encoding="utf-8")',
+                'assert child.stdout.readline() == b"reporting\\n"')
+            (root / "driver.py").write_text(driver, encoding="utf-8")
+            # A separate test socket observes the child's terminal exit, including on Windows where
+            # the venv launcher can own another process. It is opened before the report send fails.
+            observe = ("import os, socket\n"
+                       f"observer = socket.create_connection(('127.0.0.1', {exited.getsockname()[1]}))\n"
+                       "exit_process = os._exit\n"
+                       "def observed_exit(code):\n"
+                       "    observer.send(str(code).encode('ascii'))\n"
+                       "    exit_process(code)\n"
+                       "os._exit = observed_exit\n")
+            _measured_as_itself(root, output, observe + _SOCKET_REPORT_FAILURE + _START)
+            result = _facade(root, output, ["subject.py"],
+                             ["{python}", "-S", "driver.py", "ENOBUFS", "all"], timeout=12)
+            with exited.accept()[0] as observed:
+                observed.settimeout(3)
+                self.assertEqual(b"70", observed.recv(2))
+                self.assertEqual(b"", observed.recv(1))
+            pid = (root / "failed.pid").read_text()
+            self.assertTrue((root / "ran").exists(), result.stderr)
+            self.assertEqual(2, result.returncode, result.stderr)
+            self.assertRegex(result.stderr, f"process {pid} .* was still connected")
             self.assertFalse((output / "counters.json").exists())
             self.assertFalse((output / "coverage.json").exists())
 

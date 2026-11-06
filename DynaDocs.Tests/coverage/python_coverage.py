@@ -1,6 +1,7 @@
 """One ordinary coverage.py collector and callable witness per Python process."""
 import argparse
 import atexit
+import errno
 import hashlib
 import json
 import os
@@ -24,6 +25,17 @@ _SETTLE_SECONDS = 5
 # at most (4 x 0.1 s + 0.07 s), and a process that connects at once pays nothing more.
 _CONNECT_TIMEOUT_SECONDS = 0.1
 _CONNECT_BACKOFF_SECONDS = (0.01, 0.02, 0.04)
+# Loopback buffer/memory pressure or an interrupted/would-block send can clear quickly. Give the full
+# report 250 ms (well below the collector's settle), sleeping 10 ms between attempts rather than spinning.
+_REPORT_RETRY_SECONDS = 0.25
+_REPORT_BACKOFF_SECONDS = 0.01
+_REPORT_TRANSIENT = {getattr(errno, name) for name in (
+    "ENOBUFS", "ENOMEM", "EAGAIN", "EWOULDBLOCK", "EINTR", "WSAENOBUFS", "WSAEWOULDBLOCK", "WSAEINTR")
+    if hasattr(errno, name)}
+_REPORT_GONE = {getattr(errno, name) for name in (
+    "EPIPE", "ECONNRESET", "ECONNABORTED", "EBADF", "ENOTCONN", "ENOTSOCK", "ESHUTDOWN", "ETIMEDOUT",
+    "WSAECONNRESET", "WSAECONNABORTED", "WSAENOTCONN", "WSAENOTSOCK", "WSAESHUTDOWN", "WSAETIMEDOUT")
+    if hasattr(errno, name)}
 # Every measured process's startup. Without a campaign config it imports nothing. With one, a
 # `python_coverage` that cannot be imported ends the process before its program runs, where `site` would
 # run it unmeasured; `os` and `sys` are loaded already, so that exit takes nothing new. An Exception that
@@ -183,6 +195,32 @@ def _connect(config_path):
     return _connect_once(port)
 
 
+def _report_peer_gone(error):
+    return isinstance(error, ConnectionError) or error.errno in _REPORT_GONE
+
+
+def _report_exhausted(connection):
+    """Try a small failure frame; if even that cannot go, hold the peer for collect's settle verdict.
+
+    A parent waiting for this process also waits for the collector to close: abandoning the connection
+    would be indistinguishable from a killed child. No further sends are attempted on this path."""
+    import time
+    try:
+        connection.sendall(_record(f"Python process {os.getpid()}: reporting retries exhausted"))
+        return
+    except OSError as error:
+        if _report_peer_gone(error):
+            raise
+    while True:
+        try:
+            if not connection.recv(1):
+                raise BrokenPipeError("the collector closed the reporting connection")
+        except OSError as error:
+            if _report_peer_gone(error):
+                raise
+            time.sleep(_REPORT_BACKOFF_SECONDS)
+
+
 class _Report:
     """This process's reporting connection to its campaign's `collect`, opened before its program runs.
 
@@ -198,14 +236,27 @@ class _Report:
             _exit_unrecorded("startup", error, "no reporting connection")
 
     def failed(self, phase, error):
-        """Keep the connection until the failure is sent or the socket itself fails."""
+        """Keep the connection until failure is observable or its peer is gone.
+
+        Killed children, never-ran programs whose exits/output a parent ignores, and asynchronous signals
+        during reporting are the three honest limits; a transient socket error is not a killed child.
+        """
+        import time
+        deadline = time.monotonic() + _REPORT_RETRY_SECONDS
+        exhausted = False
         interrupted = None
         while True:
             try:
-                self.connection.sendall(_record(_failure(phase, error)))
+                if exhausted:
+                    _report_exhausted(self.connection)
+                else:
+                    self.connection.sendall(_record(_failure(phase, error)))
                 break
             except OSError as unrecorded:
-                _exit_unrecorded(phase, error, unrecorded)
+                if _report_peer_gone(unrecorded):
+                    _exit_unrecorded(phase, error, unrecorded)
+                exhausted = unrecorded.errno not in _REPORT_TRANSIENT or time.monotonic() >= deadline
+                time.sleep(_REPORT_BACKOFF_SECONDS)
             except BaseException as interruption:
                 # Never silently close after an interruption, however many recur. A partial frame
                 # followed by a full one is unreadable, which also fails the campaign closed.

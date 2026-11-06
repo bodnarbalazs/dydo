@@ -1576,7 +1576,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     {
         if (!CompletedExecution(edge) || edge.Body is not { } body
             || !ReferenceEquals(body.Owner, edge.Command) || !body.HasExpansion(edge)
-            || !edge.Command.Bodies.Contains(body) || edge.WordIndex != body.WordIndex)
+            || !edge.Command.HasBody(body) || edge.WordIndex != body.WordIndex)
             return null;
         if (ReferenceEquals(edge.Source, body.Owner.Source))
             return body.Kind == ShellReader.BodyKind.HereWord ? edge.Token : null;

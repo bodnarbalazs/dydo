@@ -182,6 +182,9 @@ internal sealed class ShellReader
         public List<string> Redirections { get; } = [];
         public List<string> Stdin { get; } = [];
         public List<Body> Bodies { get; } = [];
+        private HashSet<Body>? _bodies;
+        public bool HasBody(Body body) =>
+            (_bodies ??= new HashSet<Body>(Bodies, ReferenceEqualityComparer.Instance)).Contains(body);
         public List<RedirectTarget> RedirectTargets { get; } = [];
         public bool PipesOutput { get; set; }
         public bool UncertainFeed { get; set; }

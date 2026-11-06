@@ -2597,12 +2597,24 @@ public class BashCommandAnalyzerTests
     [InlineData("Posix", "crlf")]
     [InlineData("PowerShell", "crlf")]
     [InlineData("Unknown", "crlf")]
+    [InlineData("Posix", "bodies")]
+    [InlineData("PowerShell", "bodies")]
+    [InlineData("Unknown", "bodies")]
     public void RunsAt_LongDataBodies_GrowLinearly(string dialect, string shape)
     {
-        string Input(int length) => shape == "pipeline"
-            ? "cat <<E" + Repeat(" | cat", (length - 18) / 6) + "\ntail -f\nE\n"
-            : "cat <<E\n" + string.Concat(Enumerable.Range(0, (length - 18) / 15)
-                .Select(i => $"$(echo {i:D5})" + (shape == "crlf" ? "\r\n" : " "))) + "tail -f\nE\n";
+        string Input(int length)
+        {
+            var bodies = Enumerable.Range(0, (length - 18) / 32).ToArray();
+            return shape switch
+            {
+                "pipeline" => "cat <<E" + Repeat(" | cat", (length - 18) / 6) + "\ntail -f\nE\n",
+                "bodies" => "cat" + string.Concat(bodies.Select(i => $" <<E{i:D5}")) + " <<Z\n"
+                    + string.Concat(bodies.Select(i => $"x\nE{i:D5}\n"))
+                    + string.Concat(bodies.Select(i => $"$(echo {i:D5}) ")) + "tail -f\nZ\n",
+                _ => "cat <<E\n" + string.Concat(Enumerable.Range(0, (length - 18) / 15)
+                    .Select(i => $"$(echo {i:D5})" + (shape == "crlf" ? "\r\n" : " "))) + "tail -f\nE\n",
+            };
+        }
         var shell = Enum.Parse<ShellDialect>(dialect);
         TimeSpan Time(string text, int times)
         {

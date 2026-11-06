@@ -31,6 +31,8 @@ Every command nudge regex now has a 250 ms timeout, and command nudge matching s
 the linear regex engine use it without changing their definitions; lookaround patterns and
 configured patterns retain their original engine under the timeout. ConfigFactory definitions,
 messages, captures used in messages, and retry identities are unchanged.
+The hook also catches regex timeouts before its unexpected-error fallback, so the shared
+compiler's timeout cannot make a configured new-file nudge fall through to allowance.
 
 The guard could no longer finish reading a command nested a few dozen levels deep
 ([DYD-723](https://linear.app/bodnar-balazs/issue/DYD-723)). `printf x` followed by 64 unclosed `$(`

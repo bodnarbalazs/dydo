@@ -12,23 +12,29 @@ using DynaDocs.Services;
 public class GuardSecurityTests : IntegrationTestBase
 {
     [Theory]
-    [InlineData("block")]
-    [InlineData("warn")]
-    [InlineData("notice")]
-    public async Task NudgeMatchTimeout_IsRefusedOnEveryAttempt(string severity)
+    [InlineData("block", "command")]
+    [InlineData("warn", "command")]
+    [InlineData("notice", "command")]
+    [InlineData("warn", "new-file")]
+    public async Task NudgeMatchTimeout_IsRefusedOnEveryAttempt(string severity, string match)
     {
         await InitProjectAsync("none");
         var path = Path.Combine(TestDir, ConfigService.ConfigFileName);
         var config = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))!;
         config["nudges"] = System.Text.Json.JsonSerializer.SerializeToNode(new[]
         {
-            new NudgeConfig { Pattern = "^(a+)+$", Message = "Slow configured nudge", Severity = severity }
+            new NudgeConfig { Pattern = "^(a+)+$", Message = "Slow configured nudge", Severity = severity, Match = match }
         });
         File.WriteAllText(path, config.ToJsonString());
         var command = new string('a', 26) + "!";
+        var payload = match == "command" ? BashJson(command) : System.Text.Json.JsonSerializer.Serialize(new
+        {
+            session_id = TestSessionId, cwd = TestDir, tool_name = "Write",
+            tool_input = new { file_path = command, content = "x" }
+        });
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var result = await GuardWithStdinAsync(BashJson(command));
+            var result = await GuardWithStdinAsync(payload);
             result.AssertPreToolUseDenied();
             result.AssertStderrContains("Command too complex to verify safely");
         }

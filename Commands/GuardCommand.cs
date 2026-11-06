@@ -253,6 +253,10 @@ public static partial class GuardCommand
         {
             return Decide(ctx, offLimitsService, env);
         }
+        catch (RegexMatchTimeoutException)
+        {
+            return RefuseComplexNudge();
+        }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"WARNING: dydo guard internal error, allowing tool call: {ex.Message}");

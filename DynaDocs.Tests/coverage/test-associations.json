@@ -368,7 +368,8 @@
       "module": "DynaDocs.Tests/coverage/gap_check.py",
       "tests": [
         "DynaDocs.Tests/coverage/tests/test_testing_facade.py",
-        "DynaDocs.Tests/coverage/tests/test_memory_cap.py"
+        "DynaDocs.Tests/coverage/tests/test_memory_cap.py",
+        "DynaDocs.Tests/coverage/tests/test_windows_memory_cap.py"
       ]
     },
     {
@@ -588,6 +589,12 @@
       "tests": [
         "DynaDocs.Tests/coverage/tests/test_csharp_join.py",
         "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py"
+      ]
+    },
+    {
+      "module": "DynaDocs.Tests/coverage/pwsh_prerequisite.cjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/pwsh-prerequisite.test.cjs"
       ]
     },
     {

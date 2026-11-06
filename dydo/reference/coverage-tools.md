@@ -237,11 +237,11 @@ ignores `results/`, so every artifact named on this page is local evidence, neve
 
 Every operation that runs children (`all`, `test`, `gate` and `--force-run`, but not `--help` or
 `capabilities`) caps its own memory once, before it starts its first child. Rows run one at a
-time, so that one cap covers every child. The cap is 8G with swap off. `DYDO_MEMORY_MAX`, in
+time, so that one cap covers every child. The cap is 8G; Linux also disables swap. `DYDO_MEMORY_MAX`, in
 systemd size syntax such as `256M`, `1.5G` or a byte count, may lower it. A higher or malformed
 value exits 2 before any child runs; a raised one says "a cap hit is a finding; raising the cap is
 not allowed". `run_tests.py` imports the same cap from `gap_check.py` and applies it when it runs
-directly; under the facade it inherits the facade's.
+directly; on Linux it inherits the facade's, and on Windows it creates its own nested job.
 
 On Linux the facade reads its cgroup v2 ancestry from `/proc/self/cgroup` and `/sys/fs/cgroup`:
 
@@ -249,7 +249,7 @@ On Linux the facade reads its cgroup v2 ancestry from `/proc/self/cgroup` and `/
 |---|---|---|
 | `inherited` | the tightest ancestor `memory.max` is at or below the target, that ancestor has `memory.swap.max` 0, and `systemctl --user show -p OOMPolicy` reports `continue` for its unit | runs in place; a nested facade run inside a capped operation takes this path |
 | `enforced` | otherwise | probes `systemd-run … true`, then reruns the same command line once with `systemd-run --user --scope --slice=<caller slice> --quiet -p MemoryMax=<limit> -p MemorySwapMax=0 -p OOMPolicy=continue --expand-environment=no`; the limit is the lower of the target and the tightest ancestor `memory.max`, each run is capped at its own limit, and concurrent runs share the caller's slice budget |
-| `unavailable` | Windows or macOS, no `systemd-run` on `PATH`, a failed probe, or a rerun whose scope shows no cap | runs uncapped and prints one `memory cap unavailable: <reason>` line to stderr |
+| `unavailable` | no `systemd-run` on `PATH`, a failed probe, or a rerun whose scope shows no cap | runs uncapped and prints one `memory cap unavailable: <reason>` line to stderr |
 
 The enforced scope joins the caller's nearest ancestor `.slice` within the user manager, found
 in `/proc/self/cgroup`; `memoryCap.reason` names that slice. A caller directly in `app.slice`, or
@@ -257,7 +257,7 @@ without a user-manager slice, keeps the default `app.slice` placement. The inher
 in place. An outer scope's tighter limit still bounds each rerun, but only the shared slice budget
 bounds concurrent reruns together.
 
-For ad-hoc runs use
+For ad-hoc runs where systemd exists use
 `[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`.
 Use your session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager
 (on a T3 host, for example, `app-t3code-agents.slice`; a nearer session slice takes precedence).
@@ -273,11 +273,29 @@ through the shared cap, preventing .NET build and compiler servers from outlivin
 The rerun keeps the process, its stdio, exit code and signals, and argv bytes, `$(` included.
 `OOMPolicy=continue` lets the facade outlive a child that the kernel kills at the cap, so it can
 record the hit. An unknown `OOMPolicy` counts as `stop`, and such an outer scope gets a scope of its
-own. On Windows and macOS each row keeps its 1800-second deadline, and `run_tests.py` keeps its
-1800-second limit for the C# campaign. They have no memory cap.
+own. On every platform each row keeps its 1800-second deadline, and `run_tests.py` keeps its
+1800-second limit for the C# campaign.
+
+On Windows the facade always creates its own nested Job object and assigns itself before running
+children. `JOB_OBJECT_LIMIT_JOB_MEMORY` limits committed memory for the job, including descendants.
+The effective recorded limit is the lower of the target and the outer job's job-memory limit, if
+present. Windows applies nested limits. The facade stays in place and adds no kill-on-close flag;
+`run_tests.py`'s campaign job nests beneath it. Windows records `enforced`, never `inherited`, with
+mechanism `windows job object` and a reason naming the limit. A setup or query failure records
+`unavailable` with the Windows error, prints one warning, and lets the operation proceed.
+
+The facade associates a private completion port with its job. Only a delivered
+`JOB_OBJECT_MSG_JOB_MEMORY_LIMIT` during a row sets `memoryCapHit: true`, fails that row with exit 1,
+and prints the same finding text as Linux below. Delivery is **not guaranteed**: a missing message
+proves nothing. A missing report never turns a failed child into a pass. Each Windows row records
+`peakJobMemory`, the cumulative job peak (`PeakJobMemoryUsed`) sampled at row end, or `null` when
+unavailable. This is diagnosis only: neither a peak nor an exit code proves a hit. macOS remains
+`unavailable` with its reason and warning.
 
 `memoryCap` records `state`, `limit` in bytes (`null` when unavailable), `mechanism` and `reason`.
-Around each row the facade reads `oom_kill` from the capping cgroup's `memory.events`. When the
+On Linux and Windows it and every covered row also record `memoryCapHitReporting`: `exact` on Linux
+and `best-effort` on Windows.
+On Linux, around each row the facade reads `oom_kill` from the capping cgroup's `memory.events`. When the
 count rises, the row is a cap hit: `failed`, exit 1, `memoryCapHit: true`, with the reason
 `memory cap hit (MemoryMax=<cap>): a finding; do not raise the cap`, whatever the child returned.
 The same line goes to stderr. A test row derived from a cap-hit coverage row fails the same way. A

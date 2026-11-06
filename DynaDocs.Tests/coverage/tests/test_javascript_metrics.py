@@ -108,7 +108,11 @@ class JavaScriptMetricsTests(unittest.TestCase):
         if sys.platform == "win32":
             self.assertRegex(stdout, r"# skipped 0\b")
         else:
-            self.assertRegex(stdout, r"# skipped 1\b")
+            pwsh_skips = stdout.count("# SKIP PowerShell prerequisite unavailable: pwsh was not found")
+            if pwsh_skips:
+                self.assertFalse(os.environ.get("CI"), "CI must execute the PowerShell assertions")
+                self.assertEqual(24, pwsh_skips)
+            self.assertRegex(stdout, rf"# skipped {1 + pwsh_skips}\b")
             self.assertRegex(stdout, r"invalid Windows executable # SKIP")
         self.assertRegex(stdout, r"# todo 0\b")
         if not os.environ.get("DYDO_NATIVE_TEST_EVIDENCE"):

@@ -591,6 +591,12 @@
       ]
     },
     {
+      "module": "DynaDocs.Tests/coverage/pwsh_prerequisite.cjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/pwsh-prerequisite.test.cjs"
+      ]
+    },
+    {
       "module": "DynaDocs.Tests/coverage/node_tests.cjs",
       "tests": [
         "DynaDocs.Tests/coverage/tests/node_tests.test.cjs"

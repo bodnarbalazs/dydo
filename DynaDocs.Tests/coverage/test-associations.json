@@ -391,6 +391,7 @@
     {
       "module": "DynaDocs.Tests/coverage/gate_collect.py",
       "tests": [
+        "DynaDocs.Tests/coverage/tests/test_javascript_metrics.py",
         "DynaDocs.Tests/coverage/tests/test_orchestration.py",
         "DynaDocs.Tests/coverage/tests/test_typescript_collectors.py"
       ]

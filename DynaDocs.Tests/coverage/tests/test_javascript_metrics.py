@@ -79,6 +79,36 @@ class JavaScriptCollectorTests(unittest.TestCase):
         self.assertEqual("./absent.cjs", answer["errors"][0]["dependency"]["module"])
         self.assertIn("orphan.cjs", [row["source"] for row in answer["facts"]["native"]["modules"]])
 
+    def test_package_exports_resolve_the_real_parser_and_reject_missing_or_private_entries(self):
+        package = "@typescript-eslint/parser"
+        shutil.copytree(self.tooling / "node_modules" / package, self.repository / "node_modules" / package)
+        cases = (("javascript", "consumer.cjs", f"require('{package}');\n", "require('{}');\n"),
+                 ("typescript", "consumer.ts", f"import '{package}';\n", "import '{}';\n"))
+        for language, name, source, import_template in cases:
+            with self.subTest(language=language):
+                target = self.repository / name
+                target.write_text(source, encoding="utf-8")
+                runner = self.collector([name])
+                runner.inventory["sources"][0]["language"] = language
+                collect = (runner.javascript_dependencies if language == "javascript"
+                           else runner.typescript_dependencies)
+
+                answer = collect()
+
+                self.assertEqual("pass", answer["status"], answer["errors"])
+                module = next(row for row in answer["facts"]["native"]["modules"] if row["source"] == name)
+                dependency, = module["dependencies"]
+                self.assertEqual(package, dependency["module"])
+                self.assertEqual(f"node_modules/{package}/dist/index.js", dependency["resolved"])
+                self.assertFalse(dependency["couldNotResolve"])
+
+                missing = ("./absent.cjs", "absent-package", f"{package}/dist/index.js")
+                target.write_text(source + "".join(import_template.format(item) for item in missing), encoding="utf-8")
+                answer = collect()
+
+                self.assertEqual("error", answer["status"])
+                self.assertEqual(set(missing), {row["dependency"]["module"] for row in answer["errors"]})
+
 
 class JavaScriptMetricsTests(unittest.TestCase):
     def test_official_metrics_and_failure_contracts(self):

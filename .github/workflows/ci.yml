@@ -462,6 +462,7 @@ jobs:
         DynaDocs.Tests.Services.BashCommandAnalyzerTests
         DynaDocs.Tests.Integration.GuardSecurityTests
         DynaDocs.Tests.Integration.GuardMergeRouteTests
+        DynaDocs.Tests.Integration.GuardPrReadyTests
     steps:
       - name: Keep candidate bytes identical on both platforms
         run: git config --global core.autocrlf false
@@ -486,6 +487,13 @@ jobs:
 
       - name: Build
         run: dotnet build DynaDocs.sln --no-restore --warnaserror
+
+      - name: Enable file symbolic links for guard fixtures
+        shell: pwsh
+        run: |
+          $key = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock'
+          New-Item -Path $key -Force | Out-Null
+          New-ItemProperty -Path $key -Name AllowDevelopmentWithoutDevLicense -Value 1 -PropertyType DWord -Force | Out-Null
 
       - name: Guard analyzer and hook tests
         id: guard-tests

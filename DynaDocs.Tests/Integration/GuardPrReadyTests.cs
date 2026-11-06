@@ -381,17 +381,18 @@ public class GuardPrReadyTests : IntegrationTestBase
         (await GuardWithStdinAsync(Payload("gh pr create -F agents/body.md", toolCwd: DydoDir))).AssertPreToolUseAllowed();
     }
 
-    // An absolute body file is read as a relative one is, for a lone call only. A Windows path needs
-    // the PowerShell reading, which a Bash call there shares with bash's, which keeps no backslash.
-    [SkippableFact]
+    // A native Windows absolute path needs PowerShell's drive-colon and backslash allowance.
+    [Fact]
     public async Task PrCreate_AbsoluteBodyFile_DoesNotWarn()
     {
-        Skip.If(OperatingSystem.IsWindows(), "A Bash call on Windows is also read as bash, which takes no backslash.");
         await InitPushedProject();
         WriteFile("dydo/agents/body.md", ReviewedBody);
         var absolute = Path.Combine(TestDir, "dydo", "agents", "body.md");
+        var toolName = OperatingSystem.IsWindows() ? "PowerShell" : "Bash";
 
-        Assert.Empty(await Misses(denied: false, [$"gh pr create -F '{absolute}'", $"gh pr create -F {absolute}"]));
+        foreach (var command in new[] { $"gh pr create -F '{absolute}'", $"gh pr create -F {absolute}" })
+            (await GuardWithStdinAsync(Payload(command, toolName: toolName), "--host", "claude"))
+                .AssertPreToolUseAllowed();
     }
 
     // The plain spellings stay read: quoted with a space, and attached.
@@ -498,12 +499,11 @@ public class GuardPrReadyTests : IntegrationTestBase
             [$"gh pr create -F '{outside.Body}'", $"gh pr create -F ../{outside.Name}/body.md"], ReviewBlockWarning));
     }
 
-    [SkippableTheory]
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task PrCreate_InTreeLinkToAnOutsideBodyFile_Warns(bool linkedDirectory)
     {
-        Skip.If(OperatingSystem.IsWindows() && !linkedDirectory, "Creating file symbolic links needs Windows developer mode.");
         await InitPushedProject();
         using var outside = new OutsideDirectory();
         Directory.CreateDirectory(Path.Combine(DydoDir, "agents"));
@@ -519,6 +519,7 @@ public class GuardPrReadyTests : IntegrationTestBase
             path = "dydo/agents/body.md";
         }
 
+        Assert.Equal(ReviewedBody, ReadFile(path));
         Assert.Empty(await Misses(denied: true, [$"gh pr create -F {path}"], ReviewBlockWarning));
     }
 
@@ -618,13 +619,89 @@ public class GuardPrReadyTests : IntegrationTestBase
         // A file literally named as the unexpanded operand, which bash never opens.
         WriteFile("dydo/agents/reviewed.md$SUFFIX", ReviewedBody);
 
-        Assert.Empty(await Misses(denied: true,
-        [
+        foreach (var command in new[]
+        {
             "gh pr create -F \"dydo/agents/reviewed.md$(printf .plain)\"",
             "gh pr create -F \"dydo/agents/reviewed.md`printf .plain`\"",
             "SUFFIX=.plain; gh pr create -F \"dydo/agents/reviewed.md$SUFFIX\"",
-        ], ReviewBlockWarning));
-        (await GuardWithStdinAsync(Payload("gh pr create -F \"dydo/agents/reviewed.md\""))).AssertPreToolUseAllowed();
+        })
+        {
+            var payload = Payload(command);
+            AssertExpansionWarning(await GuardWithStdinAsync(payload, "--host", "claude"),
+                command.StartsWith("SUFFIX") ? "variable expansion" : "command substitution");
+            (await GuardWithStdinAsync(payload, "--host", "claude")).AssertPreToolUseAllowed();
+        }
+        (await GuardWithStdinAsync(Payload("gh pr create -F \"dydo/agents/reviewed.md\""), "--host", "claude"))
+            .AssertPreToolUseAllowed();
+    }
+
+    private static void AssertExpansionWarning(CommandResult result, string expansion)
+    {
+        var expected = $"WARNING: Command contains {expansion} - paths may be dynamic\n"
+            + "BLOCKED: This PR carries no review block. Add the independent review under an 'Independent review' heading and follow this project's shared Communication and evidence standard.\n"
+            + "  (Run the same command again to proceed anyway.)";
+        Assert.Equal(expected, result.AssertPreToolUseDenied().ReplaceLineEndings("\n"));
+    }
+
+    [Theory]
+    [InlineData("Bash")]
+    [InlineData("PowerShell")]
+    public async Task PrCreate_ValidExpansionsInDefaultAndPowerShellHooks_WarnThenAllow(string toolName)
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/reviewed.md", ReviewedBody);
+        WriteFile("dydo/agents/reviewed.md.plain", "DYD-1\n\n## Summary\n");
+        WriteFile("dydo/agents/reviewed.md$SUFFIX", ReviewedBody);
+
+        foreach (var command in new[]
+        {
+            "gh pr create -F \"dydo/agents/reviewed.md$(printf .plain)\"",
+            "SUFFIX=.plain; gh pr create -F \"dydo/agents/reviewed.md$SUFFIX\"",
+        })
+        {
+            var payload = Payload(command, toolName: toolName);
+            AssertExpansionWarning(await GuardWithStdinAsync(payload),
+                command.StartsWith("SUFFIX") ? "variable expansion" : "command substitution");
+            (await GuardWithStdinAsync(payload)).AssertPreToolUseAllowed();
+        }
+        (await GuardWithStdinAsync(Payload("gh pr create -F \"dydo/agents/reviewed.md\"", toolName: toolName)))
+            .AssertPreToolUseAllowed();
+    }
+
+    // The final backtick escapes the closing quote in PowerShell. Unknown must keep that reading,
+    // including on Linux, where the CLI selects Unknown.
+    [Theory]
+    [InlineData("PowerShell", false)]
+    [InlineData("Unknown", true)]
+    public async Task PrCreate_BacktickBeforeClosingQuote_IsHardDeniedOnEveryAttempt(string toolName, bool cli)
+    {
+        await InitPushedProject();
+        WriteFile("dydo/agents/reviewed.md", ReviewedBody);
+        const string command = "gh pr create -F \"dydo/agents/reviewed.md`printf .plain`\"";
+        const string literal = "gh pr create -F \"dydo/agents/reviewed.md\"";
+        const string expected = "BLOCKED: This command runs a PR call through unreadable shell syntax, which the PR check does not read.\n"
+            + "  Wrapped PR calls are refused unread: run gh directly so the PR check can see it.";
+        Assert.Equal(ShellDialect.Unknown, GuardCommand.ExecutingShell("Bash", null, false, true, null));
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var result = cli
+                ? await GuardWithStdinAsync("{}", "--command", command)
+                : await GuardWithStdinAsync(Payload(command, toolName: toolName));
+            if (cli)
+            {
+                Assert.Equal(2, result.ExitCode);
+                Assert.Empty(result.Stdout);
+            }
+            else Assert.Equal(expected, result.AssertPreToolUseDenied().ReplaceLineEndings("\n"));
+            Assert.Equal(expected + "\n", result.Stderr.ReplaceLineEndings("\n"));
+
+            var control = cli
+                ? await GuardWithStdinAsync("{}", "--command", literal)
+                : await GuardWithStdinAsync(Payload(literal, toolName: toolName));
+            control.AssertPreToolUseAllowed();
+            Assert.Empty(control.Stderr);
+        }
     }
 
     // R3-B1: bash opens a relative body file from wherever the line has moved, so a relative operand
@@ -689,16 +766,25 @@ public class GuardPrReadyTests : IntegrationTestBase
         ], ReviewBlockWarning));
     }
 
-    // R3-S1: the operand is checked as written, before gh's {repo} placeholder is spelt :repo.
-    [SkippableFact]
-    public async Task PrCreate_BodyFileOperandWithAGhPlaceholder_Warns()
+    // R3-S1: placeholders are not plain body-file names, even quoted and with a reviewed file.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PrCreate_BodyFileOperandWithAGhPlaceholder_Warns(bool reviewed)
     {
-        Skip.If(OperatingSystem.IsWindows(), "A Windows file name takes no colon.");
         await InitPushedProject();
-        WriteFile("dydo/agents/reviewed.md:repo", ReviewedBody);
-        WriteFile("dydo/agents/reviewed.md{repo}", "DYD-1\n\n## Summary\n");
+        const string plain = "DYD-1\n\n## Summary\n";
+        // Preserve the Unix colon decoy; Windows permits the literal braces but not a colon filename.
+        if (!OperatingSystem.IsWindows())
+            WriteFile("dydo/agents/reviewed.md:repo", ReviewedBody);
+        WriteFile("dydo/agents/reviewed.md{repo}", reviewed ? ReviewedBody : plain);
+        WriteFile("dydo/agents/reviewed.md", ReviewedBody);
 
-        Assert.Empty(await Misses(denied: true, ["gh pr create -F 'dydo/agents/reviewed.md{repo}'"], ReviewBlockWarning));
+        const string command = "gh pr create -F 'dydo/agents/reviewed.md{repo}'";
+        Assert.Equal(reviewed ? ReviewedBody : plain, ReadFile("dydo/agents/reviewed.md{repo}"));
+        Assert.Contains(ReviewBlockWarning, (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseDenied());
+        (await GuardWithStdinAsync(Payload(command))).AssertPreToolUseAllowed();
+        (await GuardWithStdinAsync(Payload("gh pr create -F 'dydo/agents/reviewed.md'"))).AssertPreToolUseAllowed();
     }
 
     // Addendum 5: gh takes the last body file it is given. With EXTRA='-F dydo/agents/plain.md'
@@ -796,21 +882,25 @@ public class GuardPrReadyTests : IntegrationTestBase
     }
 
     // Ruling 7: an absolute body file after any earlier command keeps the warning, as a relative one does.
-    [SkippableFact]
+    [Fact]
     public async Task PrCreate_AbsoluteBodyFileAfterAnEarlierCommand_Warns()
     {
-        Skip.If(OperatingSystem.IsWindows(), "A Bash call on Windows is also read as bash, which takes no backslash.");
         await InitPushedProject();
         WriteFile("dydo/agents/body.md", ReviewedBody);
         var absolute = Path.Combine(TestDir, "dydo", "agents", "body.md");
+        var toolName = OperatingSystem.IsWindows() ? "PowerShell" : "Bash";
 
-        Assert.Empty(await Misses(denied: true,
-        [
+        foreach (var command in new[]
+        {
             $"printf 'Summary only' > {absolute} && gh pr create -F {absolute}",
             $"git switch plain && gh pr create -F {absolute}",
             $"git status --short && cd dydo && gh pr create -F {absolute}",
             $"git status --short && gh pr create -F {absolute}",
-        ], ReviewBlockWarning));
+        })
+        {
+            var result = await GuardWithStdinAsync(Payload(command, toolName: toolName), "--host", "claude");
+            Assert.Contains(ReviewBlockWarning, result.AssertPreToolUseDenied());
+        }
     }
 
     // Nothing may run alongside gh, neither the line's next command once a lone & puts the call in
@@ -1475,22 +1565,35 @@ public class GuardPrReadyTests : IntegrationTestBase
         Assert.Contains("untracked files: two.txt", reason);
     }
 
-    // A6 on a case-sensitive filesystem: holders whose paths differ only in case are two trees.
-    [SkippableFact]
-    public async Task BranchHeldByWorktreesDifferingInCase_ChecksAndNamesBoth()
+    // Case-sensitive filesystems have two holders; insensitive ones alias the same holder.
+    [Fact]
+    public async Task BranchHeldByPathsDifferingInCase_ChecksEachDistinctWorktree()
     {
         await InitPushedProject(withWorktree: true);
         var upper = Path.Combine(TestDir, "WT");
-        Skip.If(Directory.Exists(upper), "this filesystem ignores case");
-        File.AppendAllText(Path.Combine(TestDir, ".gitignore"), "/WT/\n");
-        Git(TestDir, "worktree", "add", "--force", upper, "topic");
+        var aliasesSameTree = Directory.Exists(upper);
+        if (!aliasesSameTree)
+        {
+            File.AppendAllText(Path.Combine(TestDir, ".gitignore"), "/WT/\n");
+            Git(TestDir, "worktree", "add", "--force", upper, "topic");
+        }
         File.WriteAllText(Path.Combine(Worktree, "one.txt"), "1\n");
         File.WriteAllText(Path.Combine(upper, "two.txt"), "2\n");
+        Assert.Equal(aliasesSameTree, File.Exists(Path.Combine(upper, "one.txt")));
+        Assert.Equal(aliasesSameTree, File.Exists(Path.Combine(Worktree, "two.txt")));
 
         var reason = (await GuardWithStdinAsync(Payload("gh pr ready topic"))).AssertPreToolUseDenied();
 
         Assert.Contains("untracked files: one.txt", reason);
-        Assert.Contains("untracked files: two.txt", reason);
+        Assert.Contains(aliasesSameTree ? "untracked files: one.txt, two.txt" : "untracked files: two.txt", reason);
+        Assert.Equal(aliasesSameTree ? 1 : 2,
+            reason.Split('\n').Count(line => line.Contains("Checked: ")));
+        Assert.Contains($"Checked: {WorktreeAsGitListsIt}", reason);
+        if (!aliasesSameTree)
+        {
+            var upperAsGitListsIt = Path.GetFullPath(Git(upper, "rev-parse", "--show-toplevel").Text.Trim());
+            Assert.Contains($"Checked: {upperAsGitListsIt}", reason);
+        }
     }
 
     // A7: a refusal names every tree it checked, the clean ones marked clean.

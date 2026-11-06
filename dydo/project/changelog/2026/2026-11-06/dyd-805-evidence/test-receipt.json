@@ -1,0 +1,90 @@
+{
+  "focused": {
+    "exit": 0,
+    "counters": {
+      "total": "5",
+      "executed": "5",
+      "passed": "5",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    }
+  },
+  "class": {
+    "exit": 0,
+    "counters": {
+      "total": "257",
+      "executed": "257",
+      "passed": "257",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    }
+  },
+  "light": {
+    "exit": 0,
+    "counters": {
+      "total": "2515",
+      "executed": "2505",
+      "passed": "2505",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    }
+  },
+  "workflow": {
+    "exit": 0,
+    "counters": {
+      "total": "63",
+      "executed": "63",
+      "passed": "63",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    }
+  },
+  "source": {
+    "DynaDocs.Tests/Integration/GuardPrReadyTests.cs": "81250feeb23c7cedc20556b7fa54c2c0dba8fe737ebc2a9a3c5c981e4cf26cb9",
+    ".github/workflows/ci.yml": "946fac3966317f95fea703a8ed9ec9a8fa39ad19da1024ed3d7a047d9af3928b"
+  }
+}

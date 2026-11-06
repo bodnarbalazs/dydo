@@ -940,6 +940,13 @@ class TestingFacadeTests(unittest.TestCase):
         for row in payload['results']:
             fields = {'stack', 'capability', 'state', 'argv', 'cwd', 'isolation',
                       'environment', 'childExit', 'resultExit', 'artifacts'}
+            if sys.platform in ('linux', 'win32'):
+                fields.add('memoryCapHitReporting')
+                self.assertEqual('best-effort' if sys.platform == 'win32' else 'exact', row['memoryCapHitReporting'])
+            if sys.platform == 'win32':
+                fields.add('peakJobMemory')
+                if payload['memoryCap']['state'] == 'enforced':
+                    self.assertIsInstance(row['peakJobMemory'], int)
             self.assertEqual(fields, set(row) - {'reason'})
             self.assertIn(row['state'], ['passed', 'failed', 'unavailable', 'invalid', 'interrupted'])
             self.assertIn(row['resultExit'], [0, 1, 2, 130])

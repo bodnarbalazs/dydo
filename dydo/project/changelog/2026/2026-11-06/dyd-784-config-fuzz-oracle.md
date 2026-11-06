@@ -170,6 +170,48 @@ Astra/Sol review pair. Mutation remains unavailable under the existing manifest.
 The merge commit is frozen before gates; an append-only evidence commit records
 the observed results afterward without rewriting either parent or earlier hops.
 
+### Integration results
+
+Measured merge: `632959f4f53792c8bd743d3ff6ff9be4b6c73a10`, tree
+`9748bd9a9ae0d2784b8a6d69d423936cf61d5e11`, with the two parents recorded above.
+Both adapters report `dirty: false`, source fingerprint
+`a8e88cddd5feed2daa5d8527df9bb3c3b78c1c4c43a326da634f19216bc320fa`, and inventory
+SHA-256 `81ea1ec15f38a8434feb202d8179e15c3226239854330ed5efde14fdce11832c`.
+`source-sha256.txt.gz` records every tracked file's measured bytes; the gate wrapper
+verified all of them unchanged after both gates. The following evidence-only commit
+adds logs and these results; it does not change measured implementation or tests.
+
+- Preflight and focused proof: exit 0; incoming workflow checks 8/8, oracle checks
+  13/13, zero skips. `workflow-red.log.gz` retains the automatic merge's exit-1
+  failure before the explicit ref; `workflow-green.log.gz` and
+  `oracle-focused.log.gz` retain the resolved results.
+- Cache verification and sealed-input comparison passed. Setup found 41 canonical
+  skills and needed no projection changes. No install or download ran. Existing
+  tooling: Node 26.13.0, pnpm 12.16.1, .NET SDK 10.0.303 with runtime 10.0.14
+  available, Python 3.14.4, PowerShell 7.6.9, pinned Temurin JRE 21.0.8+9.
+- Payload validation: exit 0. Embedded assets: discovered and passed 10/10,
+  zero skips; native discovery, output and TRX retained.
+- Whole-statechart coverage: child and aggregate exit 0; 455 tests, 447 passed,
+  zero failures, eight skips (seven platform-specific and the local JRE oracle).
+  Coverage policy passed unchanged. Suite TAP, LCOV, adapter, aggregate receipt
+  and complete raw collection are retained.
+- Whole-statechart static: child and aggregate exit 0, complete measurement,
+  no findings or gaps. Adapter, aggregate receipt and complete raw collection retained.
+  Both gates record the inherited 8 GiB cgroup, swap disabled and `OOMPolicy=continue`.
+
+The exact recipe above ran with `out=/tmp/dyd784-merge-002bc9df`. The preflight
+systemd invocation was `8f96de2238a0418296669c9d6de3b8ec`; the combined gate
+invocation was `3d1386c461d24190bc59cf6347ef8167`. The automatic merge's failing
+workflow probe used the same 4 GiB settings and a 120-second timeout with
+`env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=DynaDocs.Tests/coverage/tests /tmp/dyd507-524-venv/bin/python -m unittest -v test_coverage_artifacts.WorkflowTests`.
+
+Read compressed files with `gzip -dc FILE.gz`; `coverage-raw.tar.gz` and
+`static-raw.tar.gz` preserve each adapter's complete run directory, including
+inventory and native command streams. `gate-summary.json` gives the shared source
+identity; `candidate.txt` gives the merge SHA, ordered parents and tree. The
+captain still owes its rerun, fresh review pair and hosted real-oracle pass before
+landing. No independent review PASS or hosted oracle pass is claimed here.
+
 ## Historical writer proof - candidate 83356f3
 
 Source base: `107a0394f1257228527c984511ea51bb723262ae`, branch

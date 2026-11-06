@@ -86,9 +86,8 @@ class StatechartPlatformTests(unittest.TestCase):
                 statechart_platform.scope(self.root, self.modules,
                                           'darwin' if defect == 'platform' else 'linux', selection)
 
-    def test_union_refuses_incomplete_points_callables_bodies_modules_and_unclean_gates(self):
-        for defect in ('line', 'branch', 'callable', 'body', 'module', 'duplicate-module',
-                       'source', 'counter', 'metrics', 'policy', 'dirty', 'candidate', 'gap'):
+    def test_union_refuses_incomplete_points_callables_bodies_and_modules(self):
+        for defect in ('line', 'branch', 'callable', 'body', 'module', 'duplicate-module'):
             pair = self.reports()
             report = pair[1]
             facts = report['collectors']['typescript-coverage']['facts']
@@ -99,6 +98,15 @@ class StatechartPlatformTests(unittest.TestCase):
             if defect == 'body': row['methods'][0]['body_lines'] = {}
             if defect == 'module': facts['modules'] = []
             if defect == 'duplicate-module': facts['modules'].append(copy.deepcopy(row))
+            with self.subTest(defect=defect), self.assertRaises(ValueError):
+                self.verify(pair)
+
+    def test_union_refuses_source_counter_metric_policy_and_receipt_defects(self):
+        for defect in ('source', 'counter', 'metrics', 'policy', 'dirty', 'candidate', 'gap'):
+            pair = self.reports()
+            report = pair[1]
+            facts = report['collectors']['typescript-coverage']['facts']
+            row = facts['modules'][0]
             if defect == 'source': facts['platform_selection']['sources']['mixed.ts'] = '0' * 64
             if defect == 'counter': row['methods'][0]['covered'] = 0
             if defect == 'metrics': row['methods'][0]['cc'] = 2

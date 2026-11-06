@@ -181,11 +181,17 @@ function campaign(root, output, targets, command) {
 function typescriptSource(source, filename) {
   const { stripTypeScriptTypes } = require('node:module');
   const { createInstrumenter } = require('istanbul-lib-instrument');
+  const { parse } = require('@typescript-eslint/parser');
   const instrumenter = createInstrumenter({ esModules: true, compact: false,
     preserveComments: false, coverageVariable: '__dydo_ts_coverage__' });
   // Ignore pragmas are never a coverage exemption (the static gate also reports them).
-  const stripped = stripTypeScriptTypes(source.replace(/(?:istanbul|c8|v8)(?=\s+ignore\b)/g,
-    value => ' '.repeat(value.length)), { mode: 'strip' });
+  let stripped = stripTypeScriptTypes(source, { mode: 'strip' });
+  const { comments } = parse(stripped, { sourceType: 'module', comment: true, range: true });
+  for (const { range: [start, end] } of comments.reverse()) {
+    const comment = stripped.slice(start, end).replace(/(?:istanbul|c8|v8)(?=\s+ignore\b)/g,
+      value => ' '.repeat(value.length));
+    stripped = stripped.slice(0, start) + comment + stripped.slice(end);
+  }
   const code = instrumenter.instrumentSync(stripped, filename);
   return { code, coverage: instrumenter.lastFileCoverage() };
 }

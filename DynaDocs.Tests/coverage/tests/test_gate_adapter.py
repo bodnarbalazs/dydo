@@ -968,6 +968,20 @@ def node_tap(failed=(), cancelled=0, tests=None):
                       f"# fail {len(failed)}", f"# cancelled {cancelled}", "# skipped 1", "# todo 0", ""])
 
 
+def write_typescript_fixture(config):
+    from statechart_platform import denominator
+    output = Path(config['output'])
+    output.mkdir()
+    sources = denominator(Path(config['root']), config['targets'], output.parent / 'fixture-source')
+    reports = {}
+    for path, coverage in sources.items():
+        coverage['s'] = dict.fromkeys(coverage['s'], 1)
+        coverage['f'] = dict.fromkeys(coverage['f'], 1)
+        coverage['b'] = {key: [1, *[0] * (len(value) - 1)] for key, value in coverage['b'].items()}
+        reports[str(Path(config['root']) / path)] = coverage
+    (output / 'fixture.json').write_text(json.dumps(reports))
+
+
 def fake_node_test(exit_code=0, tap=None, lcov=STATECHART_LCOV):
     """Stands in for `node --test`: writes the TAP and LCOV reports where the argv asks."""
     calls = []
@@ -975,18 +989,8 @@ def fake_node_test(exit_code=0, tap=None, lcov=STATECHART_LCOV):
     def run(argv, cwd):
         calls.append((argv, cwd))
         if '--typescript-run' in argv:
-            from statechart_platform import denominator
             config = json.loads(Path(argv[argv.index('--typescript-run') + 1]).read_text())
-            output = Path(config['output'])
-            output.mkdir()
-            sources = denominator(Path(config['root']), config['targets'], output.parent / 'fixture-source')
-            reports = {}
-            for path, coverage in sources.items():
-                coverage['s'] = {key: 1 for key in coverage['s']}
-                coverage['f'] = {key: 1 for key in coverage['f']}
-                coverage['b'] = {key: [1, *[0] * (len(value) - 1)] for key, value in coverage['b'].items()}
-                reports[str(Path(config['root']) / path)] = coverage
-            (output / 'fixture.json').write_text(json.dumps(reports))
+            write_typescript_fixture(config)
         destinations = [item.split("=", 1)[1] for item in argv if item.startswith("--test-reporter-destination=")]
         if tap is not None:
             Path(next(path for path in destinations if path.endswith("suite.tap"))).write_text(tap, encoding="utf-8")

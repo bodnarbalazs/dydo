@@ -5,6 +5,27 @@ const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { spawnSync } = require('node:child_process');
+const vm = require('node:vm');
+
+test('TypeScript instrumentation preserves pragma-like literals and neutralizes only comments', () => {
+  const { typescriptSource } = require('../javascript_coverage.cjs');
+  const source = '/* istanbul ignore file */\n'
+    + 'const plain: string = "istanbul ignore next";\n'
+    + 'const template = `c8 ignore next ${"v8 ignore next"}`;\n'
+    + 'const pattern = /istanbul ignore next/;\n'
+    + '// istanbul ignore next\n'
+    + 'function lineComment() { return plain; }\n'
+    + '/* istanbul ignore next */\n'
+    + 'function blockComment() { return template; }\n'
+    + 'result = [lineComment(), blockComment(), pattern.source];\n';
+  const compiled = typescriptSource(source, '/repo/literals.ts');
+  const context = {};
+  vm.runInNewContext(compiled.code, context);
+  assert.deepEqual(Array.from(context.result),
+    ['istanbul ignore next', 'c8 ignore next v8 ignore next', 'istanbul ignore next']);
+  assert.equal(Object.keys(compiled.coverage.fnMap).length, 2);
+  assert.deepEqual(Object.values(compiled.coverage.fnMap).map(row => row.loc.start.line), [6, 8]);
+});
 
 test('TypeScript source counters retain branches, erased types, empty and never-entered callables', () => {
   const { typescriptSource } = require('../javascript_coverage.cjs');

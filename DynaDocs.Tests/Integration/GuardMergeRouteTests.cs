@@ -197,6 +197,18 @@ public class GuardMergeRouteTests : IntegrationTestBase
         AssertNoMisses(await Misses(denied: false, Words("git push origin HEAD", "git push")));
     }
 
+    // DYD-739: a git -C tree written with a backslash, as a Windows path is. A bash reading drops the
+    // backslash and names a tree that does not exist; the tree as written is on main, so every envelope refuses.
+    [Fact]
+    public async Task PushOfHead_ThroughGitDashCIntoABackslashTreeOnMain_IsDenied()
+    {
+        await InitPushedProject();
+        var tree = Path.Combine(TestDir, @"w\t");
+        Git(TestDir, "worktree", "add", "-b", "main", tree);
+
+        AssertNoMisses(await Misses(denied: true, Words(@"git -C w\t push origin HEAD", $"git -C {tree} push"), reasonParts: ["main"]));
+    }
+
     // A Codex workdir is the call's directory, as for PR-ready.
     [Fact]
     public async Task PushOfHead_WithACodexWorkdirOnMain_IsDenied()

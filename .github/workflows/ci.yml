@@ -612,7 +612,7 @@ jobs:
         with:
           node-version: '26.13.0'
 
-      - name: Provision pinned config oracle JDK and TLC
+      - name: Validate runner JDK pin and provision locked TLC
         id: statechart
         shell: pwsh
         run: ./.github/workflows/provision-statechart-oracle.ps1

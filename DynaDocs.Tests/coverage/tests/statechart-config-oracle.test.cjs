@@ -78,54 +78,66 @@ for (const [name, source, expected] of [
   });
 }
 
-test('the CI JDK reuses the already-reviewed Java build toolchain pin', () => {
-  const { configOracleJdk } = JSON.parse(fs.readFileSync(path.join(root, 'Resources/Statechart/dependency-lock.json')));
-  const { jdk } = JSON.parse(fs.readFileSync(path.join(root, 'skills/engineering/statechart/scripts/java/build-lock.json')));
-  assert.equal(configOracleJdk.sha256, jdk.archiveSha256);
-  assert.equal(configOracleJdk.url, jdk.url);
-  assert.equal(configOracleJdk.rid, 'linux-x64');
-});
+// These are shipped inputs. CI-only prerequisites must not invalidate their sealed identities.
+for (const [file, expected] of [
+  ['Resources/Statechart/dependency-lock.json', '3ad231072bddc04588d0f2cf1b61a3e62fc38b4ff400ccea5c3b5d41409575ab'],
+  ['skills/engineering/statechart/PROVENANCE.md', '94bd4882414f1b3f116b5c04089f823147d45995d9895915a29662bb90d525f8'],
+]) {
+  test(`CI preserves sealed input ${file}`, () => {
+    assert.equal(createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex'), expected);
+  });
+}
 
-// Only the download boundary is replaced. The CI script must hash the fixture downloads,
-// unpack the real archive and publish usable output paths, or fail before publishing anything.
-for (const corrupt of [null, 'tlc', 'configOracleJdk']) {
-  test(`oracle provisioning ${corrupt ? `rejects changed ${corrupt} bytes` : 'publishes verified paths'}`,
+// Only the external JDK executable and TLC download are fixtures. A JDK download is forbidden.
+for (const fault of [null, 'version', 'compiler', 'missing', 'java-exit', 'tlc']) {
+  test(`installed runner JDK ${fault ? `rejects ${fault}` : 'publishes verified paths without downloading Java'}`,
     { skip: process.platform !== 'linux' }, t => {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dydo-oracle-provision-'));
       t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
       fs.mkdirSync(path.join(dir, 'Resources/Statechart'), { recursive: true });
-      const java = path.join(dir, 'jdk/bin');
-      fs.mkdirSync(java, { recursive: true });
-      fs.writeFileSync(path.join(java, 'java'), 'fixture java');
-      const archive = path.join(dir, 'jdk.tar.gz');
-      const packed = spawnSync('tar', ['-czf', archive, '-C', dir, 'jdk'], { encoding: 'utf8' });
-      assert.equal(packed.status, 0, packed.stderr);
+      const java = path.join(dir, 'installed-jdk/bin/java');
+      fs.mkdirSync(path.dirname(java), { recursive: true });
+      const version = fault === 'version' ? '21.0.12+7' : '21.0.13+9';
+      if (fault !== 'missing') fs.writeFileSync(java, `#!/bin/sh
+case "$1" in
+  --version) echo 'openjdk ${version.split('+')[0]} LTS'
+    echo 'OpenJDK Runtime Environment Temurin-${version} (build ${version}-LTS)' ;;
+  --list-modules) echo 'java.base@21.0.13'
+    ${fault === 'compiler' ? ':' : "echo 'jdk.compiler@21.0.13'"} ;;
+  *) exit 99 ;;
+esac
+exit ${fault === 'java-exit' ? 1 : 0}
+`, { mode: 0o755 });
       const jar = path.join(dir, 'tlc.jar');
       fs.writeFileSync(jar, 'fixture TLC');
-      const lock = {};
-      for (const [key, file] of [['tlc', jar], ['configOracleJdk', archive]]) {
-        lock[key] = { url: new URL(`file://${file}`).href, name: path.basename(file),
-          sha256: createHash('sha256').update(fs.readFileSync(file)).digest('hex') };
-      }
-      if (corrupt) lock[corrupt].sha256 = '0'.repeat(64);
-      fs.writeFileSync(path.join(dir, 'Resources/Statechart/dependency-lock.json'), JSON.stringify(lock));
+      const tlc = { url: new URL(`file://${jar}`).href,
+        sha256: createHash('sha256').update(fs.readFileSync(jar)).digest('hex') };
+      if (fault === 'tlc') tlc.sha256 = '0'.repeat(64);
+      fs.writeFileSync(path.join(dir, 'Resources/Statechart/dependency-lock.json'), JSON.stringify({ tlc }));
       const provision = workflow.jobs['statechart-config-oracle'].steps.find(step => step.id === 'statechart');
+      assert.equal(provision.run, './.github/workflows/provision-statechart-oracle.ps1');
       const script = path.join(dir, 'provision.ps1');
-      fs.writeFileSync(script, `function Invoke-WebRequest($Uri, $OutFile) { Copy-Item ([Uri]$Uri).LocalPath $OutFile }\n` +
-        `& '${root}/${provision.run.replace(/^\.\//, '')}'\n`);
+      fs.writeFileSync(script, `$ErrorActionPreference = 'Stop'
+function Invoke-WebRequest($Uri, $OutFile) {
+  if ($Uri -ne '${tlc.url}') { throw 'Only the locked TLC download is authorized.' }
+  Copy-Item ([Uri]$Uri).LocalPath $OutFile
+}
+& '${root}/${provision.run.replace(/^\.\//, '')}' -JavaHome '${path.dirname(path.dirname(java))}'
+`);
       const output = path.join(dir, 'output');
       const result = spawnSync(process.env.PWSH || 'pwsh', ['-NoProfile', '-NonInteractive', '-File', script],
         { cwd: dir, env: { ...process.env, RUNNER_TEMP: dir, GITHUB_OUTPUT: output }, encoding: 'utf8' });
       assert.ifError(result.error);
-      if (corrupt) {
+      if (fault) {
         assert.notEqual(result.status, 0, result.stdout + result.stderr);
-        assert.match(result.stderr, /does not match its pinned SHA-256/);
+        const errors = { version: /must be Temurin 21\.0\.13\+9/, compiler: /jdk.compiler/,
+          missing: /is missing/, 'java-exit': /version check failed/, tlc: /does not match its pinned SHA-256/ };
+        assert.match(result.stderr, errors[fault]);
         assert.equal(fs.existsSync(output), false);
-        assert.equal(fs.existsSync(path.join(dir, 'dydo-statechart-oracle/java')), false);
       } else {
         assert.equal(result.status, 0, result.stdout + result.stderr);
         const paths = Object.fromEntries(fs.readFileSync(output, 'utf8').trim().split('\n').map(line => line.split('=')));
-        assert.equal(fs.readFileSync(paths.java, 'utf8'), 'fixture java');
+        assert.equal(paths.java, java);
         assert.equal(fs.readFileSync(paths.tla2tools, 'utf8'), 'fixture TLC');
       }
     });

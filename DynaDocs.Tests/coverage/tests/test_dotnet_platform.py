@@ -24,7 +24,26 @@ SOURCES = {
 TEST_SOURCE = ('namespace DynaDocs.Tests.Lib;\n\npublic class NativeTests\n{\n'
                '    [Fact]\n    public void ProbeAnswers() { }\n}\n')
 WINDOWS_TEST = 'DynaDocs.Tests.Lib.NativeTests.ProbeAnswers'
+OTHER_TEST = 'DynaDocs.Tests.Lib.NativeTests.ProbeRefuses'
 SUMMARY = 'Passed!  - Failed:     0, Passed:     3, Skipped:     0, Total:     3, Duration: 1 s - x.dll\n'
+
+
+def results(*cases):
+    """A VSTest TRX as the xUnit adapter writes it: one definition and result per case, a theory's rows
+    sharing their method."""
+    tests, rows = [], []
+    for index, (name, outcome) in enumerate(cases):
+        owner, method = name.rsplit('.', 1)
+        tests.append(f'<UnitTest name="{name}(case: {index})" id="t{index}">'
+                     f'<TestMethod className="{owner}" name="{method}" /></UnitTest>')
+        rows.append(f'<UnitTestResult testId="t{index}" testName="{name}(case: {index})" outcome="{outcome}" />')
+    return ('﻿<?xml version="1.0" encoding="utf-8"?>'
+            '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">'
+            f'<Results>{"".join(rows)}</Results><TestDefinitions>{"".join(tests)}</TestDefinitions>'
+            '</TestRun>').encode('utf-8')
+
+
+PASSING = results(*[(WINDOWS_TEST, 'Passed')] * 3)
 
 
 def pin(text):
@@ -105,7 +124,7 @@ def joined_modules(linux=1, windows=1):
     ]
 
 
-def write_evidence(evidence, modules, stdout=SUMMARY):
+def write_evidence(evidence, modules, stdout=SUMMARY, trx=None):
     evidence = Path(evidence)
     evidence.mkdir(parents=True, exist_ok=True)
     (evidence / 'joined.json').write_text(json.dumps({
@@ -115,6 +134,8 @@ def write_evidence(evidence, modules, stdout=SUMMARY):
     (evidence / 'source-facts-dydo.json').write_text(json.dumps({'files': files}), encoding='utf-8')
     (evidence / 'source-facts-GateMetrics.json').write_text(json.dumps({'files': []}), encoding='utf-8')
     (evidence / 'altcover-runner.stdout').write_text(stdout, encoding='utf-8')
+    if trx is not None:
+        (evidence / dotnet_platform.WINDOWS_RESULTS).write_bytes(trx)
 
 
 class SelectionTests(unittest.TestCase):
@@ -200,6 +221,46 @@ class SelectionTests(unittest.TestCase):
                        SUMMARY.replace('Passed!  - Failed:     0', 'Failed!  - Failed:     1')):
             with self.assertRaises(ValueError):
                 dotnet_platform.selected_test_counts(stdout)
+
+    def verdict(self, trx, names=(WINDOWS_TEST,), stdout=SUMMARY):
+        evidence = self.root / 'evidence'
+        write_evidence(evidence, joined_modules(), stdout, trx)
+        chosen = {**selection(), 'windows_tests': {'reason': 'r', 'tests': list(names)}}
+        return dotnet_platform.selected_tests(evidence, chosen)
+
+    def test_theory_rows_count_under_their_method_and_the_receipt_names_the_tests_that_ran(self):
+        self.assertEqual({'passed': 3, 'total': 3, 'names': [WINDOWS_TEST]}, self.verdict(PASSING))
+        both = (WINDOWS_TEST, OTHER_TEST)
+        trx = results((WINDOWS_TEST, 'Passed'), (OTHER_TEST, 'Passed'), (WINDOWS_TEST, 'Passed'))
+        self.assertEqual({'passed': 3, 'total': 3, 'names': list(both)}, self.verdict(trx, both))
+
+    def test_a_declared_test_without_a_result_fails_although_the_summary_passes(self):
+        with self.assertRaisesRegex(ValueError, f'^Declared Windows tests did not run: {OTHER_TEST}$'):
+            self.verdict(PASSING, (WINDOWS_TEST, OTHER_TEST))
+
+    def test_a_result_outside_the_declared_tests_or_not_passed_fails(self):
+        rows = [(WINDOWS_TEST, 'Passed')] * 2
+        for trx, message in ((results(*rows, (OTHER_TEST, 'Passed')), f'Undeclared Windows test ran: {OTHER_TEST}$'),
+                             *((results(*rows, (WINDOWS_TEST, outcome)), rf'did not pass: .*\(case: 2\) is {outcome}$')
+                               for outcome in ('Failed', 'Skipped', 'NotExecuted'))):
+            with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                self.verdict(trx)
+
+    def test_missing_or_ambiguous_result_evidence_fails_closed(self):
+        unknown = PASSING.replace(b'testId="t2"', b'testId="t9"')
+        twin = results((WINDOWS_TEST, 'Passed'), (OTHER_TEST, 'Passed'), (WINDOWS_TEST, 'Passed'))
+        for trx, message in ((None, 'Missing or unreadable Windows test results: windows-tests.trx'),
+                             (PASSING[:-12], 'Missing or unreadable Windows test results'),
+                             (unknown, rf'Undeclared Windows test ran: {WINDOWS_TEST}\(case: 2\)$'),
+                             (twin.replace(b'"t1"', b'"t0"'), 'Ambiguous Windows test definition: t0'),
+                             (PASSING.replace(b'</TestDefinitions>', b'<UnitTest id="t3" /></TestDefinitions>')
+                              .replace(b'</Results>', b'<UnitTestResult testId="t3" outcome="Passed" /></Results>'),
+                              'Undeclared Windows test ran: None$'),
+                             (results(*[(WINDOWS_TEST, 'Passed')] * 2), 'hold 2 cases but the summary 3')):
+            with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                self.verdict(trx)
+        with self.assertRaisesRegex(ValueError, 'Missing or ambiguous selected test summary'):
+            self.verdict(PASSING, stdout='')
 
     def test_the_native_platform_names_only_linux_and_windows(self):
         for value, expected in (('linux', 'linux'), ('win32', 'windows'), ('darwin', None)):

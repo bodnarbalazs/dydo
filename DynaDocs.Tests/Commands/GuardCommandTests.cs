@@ -1054,6 +1054,10 @@ public class GuardCommandTests : IDisposable
             "env ", "env -i ", "env -u GH_TOKEN ", "env -- ", "env GH_TOKEN=x ",
             "env -i -u GH_TOKEN -- GH_REPO=acme/lc ", "env --unset=GH_TOKEN FOO=1 ", "FOO=1 env ",
             "git push && FOO=1 ", "git push; env -i ",
+            // Round 1 B1: values bash expands or escapes still lead a gh pr create.
+            "GH_TOKEN=$(printf token) ", "GH_TOKEN=$(cat token.txt | tr -d x) ", "TITLE=${BASE}-notes ", "TITLE=${NAME:-release notes} ",
+            "GH_REPO=$REPO ", "GH_TOKEN=`printf token` ", "TITLE=release\\ notes ", "TITLE=\"$(printf 'a b')\" ",
+            "env GH_TOKEN=$(printf token) ", "env -iu GH_TOKEN ",
         ];
         var data = new TheoryData<bool, string>();
         foreach (var copy in new[] { false, true })
@@ -1102,6 +1106,11 @@ public class GuardCommandTests : IDisposable
     [InlineData("cat > notes.md <<'EOF'\nthen; FOO=1 env gh pr create --fill\nEOF")]
     [InlineData("environment gh pr create --fill")]
     [InlineData("FOO=1 ghx pr create --fill")]
+    // Round 1 N2: an option taking a value consumes the next word, so gh is the variable unset.
+    [InlineData("env -u gh pr create --fill")]
+    [InlineData("env -C gh pr create --fill")]
+    [InlineData("env -iu gh pr create --fill")]
+    [InlineData("env --unset gh pr create --fill")]
     public void ReviewBlockNudge_PrefixedPrCreateThatDoesNotRun_StaysSilent(string command)
     {
         var env = LoadEnvWithTheReviewBlockNudge(preDyd736Copy: false);
@@ -1133,6 +1142,39 @@ public class GuardCommandTests : IDisposable
         var merged = GuardCommand.MergeSystemNudges([ConfigFactory.Copy(current), copy]);
 
         Assert.Single(merged, n => n.Pattern.Contains(@"pr\s+create"));
+    }
+
+    // Round 1 N1: when a dydo.json holds both copies, the stricter one survives on the current pattern.
+    [Theory]
+    [InlineData("block", "warn", "block", "Old copy.")]
+    [InlineData("warn", "notice", "warn", "Old copy.")]
+    [InlineData("notice", "warn", "warn", "Current copy.")]
+    [InlineData("warn", "warn", "warn", "Current copy.")]
+    public void MergeSystemNudges_PreDyd736CopyBesideTheCurrentOne_KeepsTheStricterCopy(
+        string oldSeverity, string currentSeverity, string severity, string message)
+    {
+        var current = new NudgeConfig { Pattern = ConfigFactory.ReviewBlockPattern, Message = "Current copy.", Severity = currentSeverity };
+        var copy = new NudgeConfig { Pattern = PreDyd736ReviewBlockPattern, Message = "Old copy.", Severity = oldSeverity };
+
+        var merged = GuardCommand.MergeSystemNudges([current, copy]);
+
+        var nudge = Assert.Single(merged, n => n.Pattern.Contains(@"pr\s+create"));
+        Assert.Equal(ConfigFactory.ReviewBlockPattern, nudge.Pattern);
+        Assert.Equal((message, severity), (nudge.Message, nudge.Severity));
+    }
+
+    [Fact]
+    public void ReviewBlockNudge_DydoJsonWithABlockingPreDyd736CopyBesideTheCurrentOne_Blocks()
+    {
+        WriteConfigWithNudges(
+            (ConfigFactory.ReviewBlockPattern, ReviewBlockNudge().Message, "warn"),
+            (PreDyd736ReviewBlockPattern, "Paste the review block.", "block"));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckBlockNudges("FOO=1 gh pr create --fill", env));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("BLOCKED: Paste the review block.", stderr);
     }
 
     #endregion

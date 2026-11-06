@@ -169,10 +169,28 @@ public class ConfigFactoryTests
     [InlineData("FOO=1 gh pr create --fill")]
     [InlineData("env gh pr create --fill")]
     [InlineData("env -i -u GH_TOKEN -- GH_REPO=acme/lc gh pr create --fill")]
+    [InlineData("GH_TOKEN=$(printf token) gh pr create --fill")]
+    [InlineData("TITLE=release\\ notes gh pr create --fill")]
     public void ReviewBlockPattern_PrefixedPrCreate_MatchesWhereThePreDyd736PatternDidNot(string command)
     {
         Assert.Matches(new Regex(ConfigFactory.ReviewBlockPattern, RegexOptions.IgnoreCase), command);
         Assert.DoesNotMatch(new Regex(ConfigFactory.PreDyd736ReviewBlockPattern, RegexOptions.IgnoreCase), command);
+    }
+
+    // Round 1 N2: each env option word has one reading, so a long chain of options taking a value
+    // is read in linear time, not by trying every split. The engine's match budget catches a regression.
+    [Theory]
+    [InlineData("env {0}x")]
+    [InlineData("env {0}gh pr create --fill")]
+    [InlineData("FOO=$(a {0}")]
+    public void ReviewBlockPattern_LongEnvOptionChain_IsReadWithinTheEngineBudget(string template)
+    {
+        var command = string.Format(template, string.Concat(Enumerable.Repeat("-u ", 400)));
+        var regex = new Regex(ConfigFactory.ReviewBlockPattern, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(2));
+
+        var exception = Record.Exception(() => regex.IsMatch(command));
+
+        Assert.Null(exception);
     }
 
 

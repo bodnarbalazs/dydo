@@ -921,8 +921,8 @@ public static partial class GuardCommand
     /// <summary>
     /// A dydo.json copy of the review-block nudge keeps the pattern it was written with, and the
     /// pre-DYD-736 one misses a <c>gh pr create</c> behind assignments or <c>env</c>. The guard gives
-    /// such a copy the current pattern and keeps its message, severity and audience; a copy that
-    /// would duplicate a current one is dropped.
+    /// such a copy the current pattern and keeps its message, severity and audience. Beside a current
+    /// copy only the stricter of the two stays, the current one on a tie.
     /// </summary>
     private static void RefreshPreDyd736ReviewBlockCopies(List<NudgeConfig> nudges)
     {
@@ -931,19 +931,33 @@ public static partial class GuardCommand
             var old = nudges[i];
             if (!old.IsCommandMatch || old.Pattern != ConfigFactory.PreDyd736ReviewBlockPattern)
                 continue;
-            if (nudges.Any(n => n.IsCommandMatch && n.Pattern == ConfigFactory.ReviewBlockPattern))
-                nudges.RemoveAt(i);
-            else
-                nudges[i] = new NudgeConfig
-                {
-                    Pattern = ConfigFactory.ReviewBlockPattern,
-                    Message = old.Message,
-                    Severity = old.Severity,
-                    Audience = old.Audience,
-                    Match = old.Match
-                };
+            var refreshed = new NudgeConfig
+            {
+                Pattern = ConfigFactory.ReviewBlockPattern,
+                Message = old.Message,
+                Severity = old.Severity,
+                Audience = old.Audience,
+                Match = old.Match
+            };
+            var current = nudges.FindIndex(n => n.IsCommandMatch && n.Pattern == ConfigFactory.ReviewBlockPattern);
+            if (current < 0)
+            {
+                nudges[i] = refreshed;
+                continue;
+            }
+            if (Strictness(old) > Strictness(nudges[current]))
+                nudges[current] = refreshed;
+            nudges.RemoveAt(i);
         }
     }
+
+    // A severity other than notice or warn enforces as a block (EnforceNudge).
+    private static int Strictness(NudgeConfig nudge) => nudge.Severity?.ToLowerInvariant() switch
+    {
+        "notice" => 0,
+        "warn" => 1,
+        _ => 2
+    };
 
     private static int? AnalyzeAndCheckBashOperations(
         string command, OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,

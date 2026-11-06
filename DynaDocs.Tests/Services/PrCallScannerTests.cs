@@ -545,6 +545,10 @@ public class PrCallScannerTests
     [InlineData("gh pr create -F a.md'")]
     [InlineData("GH_REPO=o/r")]
     [InlineData("gh pr create -R {owner}/r -F a.md")]
+    // Round 1 N3: a call behind an assignment or env names no body file at its launch (DYD-731 Option A).
+    [InlineData("FOO=1 gh pr create -F a.md")]
+    [InlineData("env gh pr create -F a.md")]
+    [InlineData("env -i FOO=1 gh pr create --body-file a.md")]
     public void CallReadingNoBodyFile_NamesNone(string command)
     {
         Assert.Null(PrCallScanner.BodyFileAt(command, 0, ShellDialect.Posix));

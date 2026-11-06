@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gate_run import STATIC_GATE_INTERPRETER
 from csharp_coverage import (ASSEMBLY_PROJECTS, GATE_METRICS_PREBUILT_ENV, _assembly_facts, _candidate_assemblies, _identity_classes, _identity_producer, _source_facts, _same_instrumented_map,
                              _altcover_aliases, _same_artifacts, _same_native_map, _same_restored_map,
-                             _platform_tests, _subject_commands, _template_original_map,
+                             _platform_tests, _run, _subject_commands, _template_original_map,
                              _validate_instrumented, _validate_restored, _write_commands,
                              altcover_commands, main, run_campaign, run_denominator, run_subject,
                              snapshot_artifacts)
@@ -222,6 +222,32 @@ class CSharpCoverageTests(unittest.TestCase):
         self.assertLessEqual(rows["_template_original_map"], 20)
         self.assertLessEqual(rows["run_campaign"], 20)
 
+    def test_native_output_survives_interruption_before_command_receipt(self):
+        native_run = subprocess.run
+
+        def interrupted(*args, **kwargs):
+            native_run(*args, **kwargs)
+            raise KeyboardInterrupt
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            command = [sys.executable, "-c", "import sys; print('progress'); print('diagnostic', file=sys.stderr)"]
+            with patch("csharp_coverage.subprocess.run", side_effect=interrupted), self.assertRaises(KeyboardInterrupt):
+                _run("subject", command, root, root)
+            self.assertEqual("progress\n", (root / "subject.stdout").read_text())
+            self.assertEqual("diagnostic\n", (root / "subject.stderr").read_text())
+
+    def test_native_output_receipt_preserves_failure_and_exact_bytes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            command = [sys.executable, "-c", "import sys; sys.stdout.buffer.write(b'progress\\r\\n'); "
+                       "sys.stderr.buffer.write(b'diagnostic\\xff'); sys.exit(7)"]
+            row = _run("subject", command, root, root)
+            self.assertEqual(7, row["exit"])
+            for stream, expected in (("stdout", b"progress\r\n"), ("stderr", b"diagnostic\xff")):
+                self.assertEqual(expected, (root / row[stream]).read_bytes())
+                self.assertEqual(hashlib.sha256(expected).hexdigest(), row[stream + "Sha256"])
+
     def test_runner_subject_keeps_full_suite_first_then_uses_prebuilt_metrics(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder).resolve()
@@ -229,6 +255,7 @@ class CSharpCoverageTests(unittest.TestCase):
             self.assertEqual("dotnet", commands[0][0])
             self.assertEqual(["test", "DynaDocs.sln"], commands[0][1:3])
             self.assertIn("--no-build", commands[0])
+            self.assertEqual("console;verbosity=normal", commands[0][commands[0].index("--logger") + 1])
             self.assertEqual(sys.executable, commands[1][0])
             self.assertEqual(root / "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py",
                              Path(commands[1][1]))

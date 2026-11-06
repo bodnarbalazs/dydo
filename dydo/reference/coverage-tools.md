@@ -228,9 +228,41 @@ paths in an argv row resolve from that stack's working directory without changin
 vector; bare executable names use the platform search rules.
 
 Every started operation writes `<artifactRoot>/run-<epoch-milliseconds>-<8 hex>/result.json` and
-prints its path. It records schema, candidate commit and dirty state, operation, selected stacks,
-ordered rows and aggregate exit. `DynaDocs.Tests/coverage/.gitignore` ignores `results/`, so every
-artifact named on this page is local evidence, never a committed file.
+prints its path. It records schema, candidate commit and dirty state, the operation's memory cap,
+operation, selected stacks, ordered rows and aggregate exit. `DynaDocs.Tests/coverage/.gitignore`
+ignores `results/`, so every artifact named on this page is local evidence, never a committed file.
+
+### Memory cap
+
+Every operation that runs children (`all`, `test`, `gate` and `--force-run`, but not `--help` or
+`capabilities`) caps its own memory once, before it starts its first child. Rows run one at a
+time, so that one cap covers every child. The cap is 8G with swap off. `DYDO_MEMORY_MAX`, in
+systemd size syntax such as `256M`, `1.5G` or a byte count, may lower it. A higher or malformed
+value exits 2 before any child runs; a raised one says "a cap hit is a finding; raising the cap is
+not allowed". `run_tests.py` imports the same cap from `gap_check.py` and applies it when it runs
+directly; under the facade it inherits the facade's.
+
+On Linux the facade reads its cgroup v2 ancestry from `/proc/self/cgroup` and `/sys/fs/cgroup`:
+
+| `memoryCap.state` | When | What the facade does |
+|---|---|---|
+| `inherited` | the tightest ancestor `memory.max` is at or below the target, that ancestor has `memory.swap.max` 0, and `systemctl --user show -p OOMPolicy` reports `continue` for its unit | runs in place; a nested facade run inside a capped operation takes this path |
+| `enforced` | otherwise | probes `systemd-run … true`, then reruns the same command line once with `systemd-run --user --scope --quiet -p MemoryMax=<limit> -p MemorySwapMax=0 -p OOMPolicy=continue --expand-environment=no`; the limit is the lower of the target and the tightest ancestor `memory.max`, so a tighter outer cap is never escaped |
+| `unavailable` | Windows or macOS, no `systemd-run` on `PATH`, a failed probe, or a rerun whose scope shows no cap | runs uncapped and prints one `memory cap unavailable: <reason>` line to stderr |
+
+The rerun keeps the process, its stdio, exit code and signals, and argv bytes, `$(` included.
+`OOMPolicy=continue` lets the facade outlive a child that the kernel kills at the cap, so it can
+record the hit. An unknown `OOMPolicy` counts as `stop`, and such an outer scope gets a scope of its
+own. On Windows and macOS each row keeps its 1800-second deadline, and `run_tests.py` keeps its
+1800-second limit for the C# campaign. They have no memory cap.
+
+`memoryCap` records `state`, `limit` in bytes (`null` when unavailable), `mechanism` and `reason`.
+Around each row the facade reads `oom_kill` from the capping cgroup's `memory.events`. When the
+count rises, the row is a cap hit: `failed`, exit 1, `memoryCapHit: true`, with the reason
+`memory cap hit (MemoryMax=<cap>): a finding; do not raise the cap`, whatever the child returned.
+The same line goes to stderr. A test row derived from a cap-hit coverage row fails the same way. A
+cap hit is a finding to diagnose, never a reason to raise the cap. When the kernel kills the facade
+itself, no result is written and the caller sees 137.
 
 `capabilities` applies the same stack, isolation, command and path validation without running
 children or creating result artifacts. It reports invalid entries alongside valid peers and returns
@@ -306,7 +338,7 @@ document stands in for a run.
 | State | Row exit | Cause |
 |---|---|---|
 | `passed` | 0 | the child exited 0 and every required artifact was created or refreshed |
-| `failed` | 1 | a measured failure: a nonzero test exit, or a gate child exit other than 0, 2 or 130 |
+| `failed` | 1 | a measured failure: a nonzero test exit, or a gate child exit other than 0, 2 or 130; or a [memory cap](#memory-cap) hit, marked `memoryCapHit: true` |
 | `unavailable` | 2 | the manifest declares the capability unavailable, with its reason |
 | `invalid` | 2 | malformed row, unusable destination, an unrefreshed required artifact, or a gate child exit of 2 (evidence-incomplete) |
 | `interrupted` | 130 | deadline or interrupt, after the adapter's own cleanup window |

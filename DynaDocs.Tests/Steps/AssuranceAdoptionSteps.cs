@@ -113,7 +113,7 @@ public sealed class AssuranceAdoptionSteps
         {
             Assert.Equal($"{facade}: 1", $"{facade}: {payload["schema"]}");
             Assert.Equal(
-                new[] { "aggregateExit", "candidate", "operation", "results", "schema", "selectedStacks" },
+                new[] { "aggregateExit", "candidate", "memoryCap", "operation", "results", "schema", "selectedStacks" },
                 Keys(payload));
             Assert.Equal(
                 new[] { "argv", "artifacts", "capability", "childExit", "cwd", "environment",

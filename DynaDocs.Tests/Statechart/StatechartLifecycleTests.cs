@@ -188,6 +188,11 @@ public class StatechartLifecycleTests
     {
         using var scope = new StatechartTestDirectory();
         var nonce = Guid.NewGuid().ToString("N");
+        if (OperatingSystem.IsWindows())
+        {
+            await ARegisteredScratchPathCannotBeReplacedOnWindows(scope, nonce);
+            return;
+        }
         var helper = Cleanup(nonce, scope);
         var (stage, _) = await Register(helper, nonce);
         Directory.Move(stage, stage + "-registered");
@@ -203,83 +208,32 @@ public class StatechartLifecycleTests
             File.ReadAllText(file).Contains("retained: directory path identity changed; foreign replacement retained"));
     }
 
-    // [DEBUG-740] Hosted-Windows probes separating the DYD-740 hypotheses; removed before the final commit.
-    [SkippableFact]
-    public async Task Debug740Probes()
+    // Windows refuses the replacement itself: the registered handle denies delete sharing, and a directory above an
+    // open handle cannot be renamed. So nothing foreign can take the path, and only the drain deletes the scratch.
+    private static async Task ARegisteredScratchPathCannotBeReplacedOnWindows(StatechartTestDirectory scope, string nonce)
     {
-        Skip.IfNot(OperatingSystem.IsWindows(), "[DEBUG-740] Windows probes.");
-        var seen = new List<string>();
-        using (var scope = new StatechartTestDirectory())
-        {
-            var nonce = Guid.NewGuid().ToString("N");
-            var helper = Cleanup(nonce, scope);
-            var (stage, temp) = await Register(helper, nonce);
-            seen.Add("A.move-stage: " + Debug740Attempt(() => Directory.Move(stage, stage + "-registered")));
-            seen.Add("A.delete-stage: " + Debug740Attempt(() => Directory.Delete(stage)));
-            seen.Add("A.move-temp: " + Debug740Attempt(() => Directory.Move(temp, temp + "-registered")));
-            await StatechartCleanup.Say(helper.StandardInput, "drained:" + nonce);
-            seen.Add("A.frame: " + (await StatechartCleanup.Read(helper.StandardOutput) ?? "<eof>"));
-            await helper.WaitForExitAsync();
-            seen.Add($"A.exit: {helper.ExitCode}; stage {Directory.Exists(stage)}; temp {Directory.Exists(temp)}; " +
-                $"moved {Directory.Exists(stage + "-registered")}; journals {Debug740Journals(scope.Path)}");
-        }
-        using (var scope = new StatechartTestDirectory())
-        {
-            var parent = Directory.CreateDirectory(Path.Combine(scope.Path, "p")).FullName;
-            var nonce = Guid.NewGuid().ToString("N");
-            var helper = Cleanup(nonce, scope, parent);
-            var (stage, _) = await Register(helper, nonce);
-            var moved = parent + "-moved";
-            var result = Debug740Attempt(() => Directory.Move(parent, moved));
-            seen.Add("B.move-parent: " + result);
-            if (result == "ok")
-            {
-                Directory.CreateDirectory(stage);
-                File.WriteAllText(Path.Combine(stage, "foreign"), "keep");
-            }
-            await StatechartCleanup.Say(helper.StandardInput, "drained:" + nonce);
-            seen.Add("B.frame: " + (await StatechartCleanup.Read(helper.StandardOutput) ?? "<eof>"));
-            await helper.WaitForExitAsync();
-            seen.Add($"B.exit: {helper.ExitCode}; foreign {File.Exists(Path.Combine(stage, "foreign"))}; " +
-                $"moved-stage {Directory.Exists(Path.Combine(moved, Path.GetFileName(stage)))}; journals {Debug740Journals(scope.Path)}");
-        }
-        using (var scope = new StatechartTestDirectory())
-        {
-            var nonce = Guid.NewGuid().ToString("N");
-            var helper = Cleanup(nonce, scope);
-            var (stage, _) = await Register(helper, nonce);
-            helper.StandardInput.Close();
-            await helper.WaitForExitAsync();
-            seen.Add($"C.exit: {helper.ExitCode}");
-            seen.Add("C.move-stage-after-exit: " + Debug740Attempt(() => Directory.Move(stage, stage + "-after")));
-        }
-        using (var scope = new StatechartTestDirectory())
-        {
-            var nonce = Guid.NewGuid().ToString("N");
-            var helper = Cleanup(nonce, scope);
-            var (stage, _) = await Register(helper, nonce);
-            helper.Kill();
-            await helper.WaitForExitAsync();
-            seen.Add("D.move-stage-after-kill: " + Debug740Attempt(() => Directory.Move(stage, stage + "-after")));
-        }
-        Assert.Fail("[DEBUG-740] " + string.Join(" | ", seen));
+        const int sharingViolation = unchecked((int)0x80070020), accessDenied = unchecked((int)0x80070005);
+        var parent = Directory.CreateDirectory(Path.Combine(scope.Path, "parent")).FullName;
+        var foreign = Directory.CreateDirectory(Path.Combine(scope.Path, "foreign")).FullName;
+        File.WriteAllText(Path.Combine(foreign, "foreign"), "keep");
+        var helper = Cleanup(nonce, scope, parent);
+        var (stage, temp) = await Register(helper, nonce);
+        Assert.Equal(sharingViolation, Assert.Throws<IOException>(() => Directory.Move(stage, stage + "-registered")).HResult);
+        Assert.Equal(sharingViolation, Assert.Throws<IOException>(() => Directory.Delete(stage)).HResult);
+        Assert.Equal(accessDenied, Assert.Throws<IOException>(() => Directory.Move(parent, parent + "-moved")).HResult);
+        Assert.True(Directory.Exists(stage));
+        await StatechartCleanup.Say(helper.StandardInput, "drained:" + nonce);
+        Assert.Equal("cleaned:" + nonce, await StatechartCleanup.Read(helper.StandardOutput));
+        await helper.WaitForExitAsync();
+        Assert.Equal(0, helper.ExitCode);
+        Assert.False(Directory.Exists(stage));
+        Assert.False(Directory.Exists(temp));
+        Assert.False(Directory.Exists(stage + "-registered"));
+        Assert.Equal("keep", File.ReadAllText(Path.Combine(foreign, "foreign")));
+        Assert.Equal(2, Directory.GetFiles(scope.Path, "scratch-*.journal").Length);
+        Assert.All(Directory.GetFiles(scope.Path, "scratch-*.journal"), file =>
+            Assert.EndsWith("registered\ndeleted-after-authoritative-drain\n", File.ReadAllText(file)));
     }
-
-    private static string Debug740Attempt(Action attempt)
-    {
-        try
-        {
-            attempt();
-            return "ok";
-        }
-        catch (Exception error)
-        {
-            return $"{error.GetType().Name} hr=0x{error.HResult:x8} {error.Message}";
-        }
-    }
-
-    private static string Debug740Journals(string root) => string.Join(" ; ",
-        Directory.GetFiles(root, "scratch-*.journal").Select(file => File.ReadAllText(file).ReplaceLineEndings("/")));
 
     [Fact]
     public async Task AHelperWithoutAValidChannelNonceReservesNothing()

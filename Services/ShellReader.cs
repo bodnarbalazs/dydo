@@ -16,7 +16,7 @@ using System.Text;
 /// <c>(...)</c> group in argument position, is read as commands and is also one word: the words of
 /// those commands joined by spaces, so <c>-ArgumentList @('mode', 'set')</c> keeps its value. A nested
 /// group's commands reach it once, through the nested group's own word. A reading nested deeper than
-/// <see cref="MaxNesting"/> substitutions and groups fails as <see cref="Reading.TooDeep"/>.
+/// <see cref="MaxNesting"/> substitutions, groups and ( fails as <see cref="Reading.TooDeep"/>.
 /// </summary>
 internal sealed class ShellReader
 {
@@ -317,6 +317,9 @@ internal sealed class ShellReader
             _last.UncertainFeed |= group || (c == '&' && Peek(1) != '&' && (_i == 0 || _text[_i - 1] != '&'));
         }
         _depth += c == '(' ? 1 : 0;
+        // A ( that opens a group is a level of nesting as a substitution is (DYD-723).
+        if (_nesting + _depth > MaxNesting)
+            _failed = _tooDeep = true;
         _groups += c is '(' or '{' ? 1 : 0;
         if (c == '}')
             _groups = Math.Max(0, _groups - 1);

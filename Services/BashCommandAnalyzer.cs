@@ -250,6 +250,80 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"@(['""])[ \t]*\r?\n[\s\S]*?^\1@", RegexOptions.Multiline)]
     private static partial Regex HereStringRegex();
 
+    // Where HeredocBodyRegex and HereStringRegex can start, up to the body: group 1 the dash, 2 the
+    // quote and 3 the delimiter of a heredoc; group 1 the quote of a here-string.
+    [GeneratedRegex(@"(?<!<)<<(-)?[ \t]*(['""]?)([\w-]+)\2(?=[\s;&|<>()])")]
+    private static partial Regex HeredocOpenerRegex();
+
+    [GeneratedRegex(@"@(['""])[ \t]*\r?\n")]
+    private static partial Regex HereStringOpenerRegex();
+
+    // The delimiter HeredocBodyRegex reads after << when it takes a dash after it as the delimiter's own.
+    [GeneratedRegex(@"\G[\w-]+(?=[\s;&|<>()])")]
+    private static partial Regex DashDelimiterRegex();
+
+    // The positions, in order, where HeredocBodyRegex and HereStringRegex match: each opener a later line closes.
+    private sealed record ClosedBodyOpeners(List<int> Heredocs, List<int> HereStrings);
+
+    /// <summary>
+    /// Where a heredoc or here-string of the text can match: each opener a line after it closes.
+    /// Searching from an opener that nothing closes reads to the end of the text, once per such
+    /// opener, quadratic in quoted text full of them (DYD-723); the body regexes run only from these.
+    /// </summary>
+    private static ClosedBodyOpeners ClosedOpeners(string text)
+    {
+        var closing = ClosingLines(text);
+        List<int> heredocs = [];
+        var lineEnd = -1;
+        for (var opener = HeredocOpenerRegex().Match(text); opener.Success; opener = opener.NextMatch())
+        {
+            var body = NextAt(text, '\n', opener.Index + opener.Length, ref lineEnd) + 1;
+            var dash = opener.Groups[1].Success;
+            if ((dash ? closing.Tabbed : closing.Untabbed).GetValueOrDefault(opener.Groups[3].Value, -1) >= body
+                || (dash && DashDelimiterRegex().Match(text, opener.Index + 2) is { Success: true } own
+                    && closing.Untabbed.GetValueOrDefault(own.Value, -1) >= body))
+                heredocs.Add(opener.Index);
+        }
+
+        List<int> hereStrings = [];
+        for (var opener = HereStringOpenerRegex().Match(text); opener.Success; opener = opener.NextMatch())
+        {
+            if ((opener.Groups[1].Value == "'" ? closing.Single : closing.Double) >= opener.Index + opener.Length)
+                hereStrings.Add(opener.Index);
+        }
+        return new ClosedBodyOpeners(heredocs, hereStrings);
+    }
+
+    // Where each line of the text could close a body, the last line that does: a heredoc's delimiter
+    // is the line less one trailing CR and its trailing blanks, less its leading tabs too after <<-;
+    // a here-string closes at a line that starts with its quote and @.
+    private static (Dictionary<string, int> Untabbed, Dictionary<string, int> Tabbed, int Single, int Double) ClosingLines(string text)
+    {
+        Dictionary<string, int> untabbed = new(StringComparer.Ordinal);
+        Dictionary<string, int> tabbed = new(StringComparer.Ordinal);
+        var (single, @double) = (-1, -1);
+        for (var at = 0; at <= text.Length;)
+        {
+            var end = text.IndexOf('\n', at) is var newline and >= 0 ? newline : text.Length;
+            var line = text.AsSpan(at, end - at);
+            single = line.StartsWith("'@", StringComparison.Ordinal) ? at : single;
+            @double = line.StartsWith("\"@", StringComparison.Ordinal) ? at : @double;
+            line = (line is [.., '\r'] ? line[..^1] : line).TrimEnd(" \t");
+            untabbed[line.ToString()] = at;
+            tabbed[line.TrimStart('\t').ToString()] = at;
+            at = end + 1;
+        }
+        return (untabbed, tabbed, single, @double);
+    }
+
+    // The body regex's first match from start, a line start: where a search from start finds it.
+    private static Match FirstBody(Regex body, string text, List<int> openers, int start)
+    {
+        var at = openers.BinarySearch(start);
+        at = at < 0 ? ~at : at;
+        return at < openers.Count ? body.Match(text, openers[at]) : Match.Empty;
+    }
+
     [GeneratedRegex(@"(?<!<)<<(?!<)")]
     private static partial Regex HeredocOperatorRegex();
 
@@ -299,60 +373,67 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private List<CodePiece> CodePieces(string command)
     {
         List<CodePiece> pieces = [];
-        var rest = command;
-        while (DataBody(rest) is { } cut)
+        var start = 0;
+        // Text with no body opener holds no body to cut, so it is not read (DYD-723). Keep the
+        // original code when a child's extent is unsupported; cutting its enclosing data body would
+        // discard executable text beyond an apparent substitution terminator.
+        if (HasBodyOpener(command) && !ShellReader.Read(command, _shell != ShellDialect.PowerShell).Failed)
         {
-            pieces.Add(cut.Piece);
-            rest = rest[cut.Resume..];
+            var openers = ClosedOpeners(command);
+            while (DataBody(command, start, openers) is { } cut)
+            {
+                pieces.Add(cut.Piece);
+                start = cut.Resume;
+            }
         }
 
+        var rest = command[start..];
         pieces.Add(new CodePiece(rest, rest));
         return pieces;
     }
 
+    private static bool HasBodyOpener(string text) => text.Contains("<<", StringComparison.Ordinal)
+        || text.Contains("@'", StringComparison.Ordinal) || text.Contains("@\"", StringComparison.Ordinal);
+
     /// <summary>
-    /// The first heredoc or here-string of <paramref name="text"/> cut out, when it is literal data:
-    /// its line is the first line of code, and every command it feeds is a data command
-    /// (<see cref="FeedsDataOnly"/>). Otherwise null, failing closed.
+    /// The first heredoc or here-string of <paramref name="text"/> from <paramref name="start"/>, a
+    /// line start, cut out when it is literal data: its line is the first line of code, every
+    /// command it feeds is a data command (<see cref="FeedsDataOnly"/>), and the text up to the line
+    /// after it reads, so the piece after it starts as a shell left it. Otherwise null, failing closed.
+    /// Each search and reading stays within the cut, so cutting every body costs the text's length
+    /// once, not once per body (DYD-723).
     /// </summary>
-    private DataBodyCut? DataBody(string text)
+    private DataBodyCut? DataBody(string text, int start, ClosedBodyOpeners openers)
     {
-        // Text with no body opener holds no body to cut, so it is not read (DYD-723).
-        if (!text.Contains("<<", StringComparison.Ordinal) && !text.Contains("@'", StringComparison.Ordinal)
-            && !text.Contains("@\"", StringComparison.Ordinal))
-            return null;
-
-        // Keep the original code when a child's extent is unsupported; cutting its enclosing
-        // data body would discard executable text beyond an apparent substitution terminator.
-        if (ShellReader.Read(text, _shell != ShellDialect.PowerShell).Failed)
-            return null;
-
-        var heredoc = HeredocBodyRegex().Match(text);
-        var hereString = HereStringRegex().Match(text);
+        var heredoc = FirstBody(HeredocBodyRegex(), text, openers.Heredocs, start);
+        var hereString = FirstBody(HereStringRegex(), text, openers.HereStrings, start);
+        DataBodyCut? cut = null;
         if (hereString.Success && (!heredoc.Success || hereString.Index < heredoc.Index))
-            return HereStringData(text, hereString);
-        return heredoc.Success ? HeredocData(text, heredoc) : null;
+            cut = HereStringData(text, start, hereString);
+        else if (heredoc.Success)
+            cut = HeredocData(text, start, heredoc);
+        return cut != null && !ShellReader.Read(text[start..cut.Resume], _shell != ShellDialect.PowerShell).Failed ? cut : null;
     }
 
     // A heredoc is bash's: bash reads its opener line, and PowerShell too when it may run the command.
-    private DataBodyCut? HeredocData(string text, Match heredoc)
+    private DataBodyCut? HeredocData(string text, int start, Match heredoc)
     {
         var lineStart = LineStart(text, heredoc.Index);
         var openerEnd = heredoc.Index + heredoc.Groups[1].Value.TrimEnd().Length;
         var end = heredoc.Index + heredoc.Length;
         var line = text[lineStart..heredoc.Index] + $" {BodyMark} " + text[heredoc.Index..openerEnd];
         bool[] readings = _shell == ShellDialect.Posix ? [true] : [true, false];
-        if (!StartsItsPiece(text, lineStart) || HeredocOperatorRegex().Count(line) != 1
-            || !FeedsDataOnly(line, readings, hereString: false, text[end..]))
+        if (!StartsItsPiece(text, start, lineStart) || HeredocOperatorRegex().Count(line) != 1
+            || !FeedsDataOnly(line, readings, hereString: false, text, end))
             return null;
 
-        var code = text[..openerEnd];
-        return new DataBodyCut(new CodePiece(code, heredoc.Groups[3].Length == 0 ? text[..end] : code), end);
+        var code = text[start..openerEnd];
+        return new DataBodyCut(new CodePiece(code, heredoc.Groups[3].Length == 0 ? text[start..end] : code), end);
     }
 
     // A here-string is PowerShell's: PowerShell reads its line, and bash too when it may run the
     // command, which then must read the here-string as words of that line (BashReadsAsWords).
-    private DataBodyCut? HereStringData(string text, Match hereString)
+    private DataBodyCut? HereStringData(string text, int start, Match hereString)
     {
         var lineStart = LineStart(text, hereString.Index);
         var end = hereString.Index + hereString.Length;
@@ -364,16 +445,16 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         var line = text[lineStart..hereString.Index] + $" {BodyMark} " + text[end..lineEnd];
         var powerShell = _shell == ShellDialect.PowerShell;
         bool[] readings = powerShell ? [false] : [false, true];
-        if (PwshEndsSooner(hereString) || !StartsItsPiece(text, lineStart) || HeredocOperatorRegex().IsMatch(line)
+        if (PwshEndsSooner(hereString) || !StartsItsPiece(text, start, lineStart) || HeredocOperatorRegex().IsMatch(line)
             || (!powerShell && !BashReadsAsWords(hereString.Value))
-            || !FeedsDataOnly(line, readings, hereString: true, text[resume..]))
+            || !FeedsDataOnly(line, readings, hereString: true, text, resume))
             return null;
 
         // A CRLF is one line break, so the piece ends before both halves: a carriage return left in it
         // would read as a bare one when the pieces are joined (DYD-641).
         var pieceEnd = lineEnd < text.Length && text[lineEnd - 1] == '\r' ? lineEnd - 1 : lineEnd;
-        var code = text[..hereString.Index] + "''" + text[end..pieceEnd];
-        return new DataBodyCut(new CodePiece(code, hereString.Groups[1].Value == "\"" ? text[..pieceEnd] : code), resume);
+        var code = text[start..hereString.Index] + "''" + text[end..pieceEnd];
+        return new DataBodyCut(new CodePiece(code, hereString.Groups[1].Value == "\"" ? text[start..pieceEnd] : code), resume);
     }
 
     // pwsh 7.6.9 ends a here-string at the first line break, a bare carriage return among them, that a
@@ -390,13 +471,22 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex PwshDoubleTerminatorRegex();
 
     // Only blank and comment lines come before the body's line, so no group, quote or pipe is open there.
-    private static bool StartsItsPiece(string text, int lineStart) => !CodeLines(text[..lineStart]).Any();
+    private static bool StartsItsPiece(string text, int start, int lineStart) => !CodeLines(text, start, lineStart).Any();
 
-    // The lines of text that hold code: neither blank nor a comment. A bare carriage return ends a
-    // line, as pwsh 7.6.9 ends a comment at one (DYD-641); to bash, which reads it as word text, the
-    // split can only add code, and a line a pipe starts goes on only in pwsh.
-    private static IEnumerable<string> CodeLines(string text) =>
-        text.Split('\n', '\r').Select(line => line.Trim()).Where(line => line is [not '#', ..]);
+    // The lines of text from start to end that hold code, in order: neither blank nor a comment. A
+    // bare carriage return ends a line, as pwsh 7.6.9 ends a comment at one (DYD-641); to bash, which
+    // reads it as word text, the split can only add code, and a line a pipe starts goes on only in
+    // pwsh. Each line is cut only when it is asked for.
+    private static IEnumerable<string> CodeLines(string text, int start, int end)
+    {
+        while (start < end)
+        {
+            var lineEnd = text.AsSpan(start, end - start).IndexOfAny('\n', '\r') is var at and >= 0 ? start + at : end;
+            if (text[start..lineEnd].Trim() is [not '#', ..] line)
+                yield return line;
+            start = lineEnd + 1;
+        }
+    }
 
     /// <summary>
     /// Whether a body, at the mark in its command <paramref name="line"/>, feeds only data commands
@@ -404,11 +494,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// <c>;</c>, <c>&amp;&amp;</c>, <c>||</c> and pipes, with no group, substitution or compound
     /// command; the command reading the body is a data command named as such (a here-string may
     /// also stand alone), and so is each command its output is piped on to. The line does not go
-    /// on past its break: no trailing \ or `, and no next line of code starting with a pipe.
+    /// on past its break: no trailing \ or `, and no next line of code, in text from after, starting with a pipe.
     /// </summary>
-    private static bool FeedsDataOnly(string line, bool[] readings, bool hereString, string after)
+    private static bool FeedsDataOnly(string line, bool[] readings, bool hereString, string text, int after)
     {
-        if (line.TrimEnd() is [.., '\\' or '`'] || CodeLines(after).FirstOrDefault() is ['|', ..])
+        if (line.TrimEnd() is [.., '\\' or '`'] || CodeLines(text, after, text.Length).FirstOrDefault() is ['|', ..])
             return false;
 
         var marked = PipeRegex().Replace(
@@ -563,7 +653,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         var quotes = reading.Source.SingleQuotes;
         return reading.Commands is [var command] && IsOneDataCommand(reading, command)
             && !MayReadOtherwise(code, Emptied(code, quotes))
-            ? [.. quotes.Select(quote => DataQuoteIn(command, quote)).OfType<DataQuote>()]
+            ? [.. DataQuotesIn(command, quotes)]
             : [];
     }
 
@@ -608,14 +698,21 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         && (char.IsControl(c) || char.GetUnicodeCategory(c) is System.Globalization.UnicodeCategory.LineSeparator
             or System.Globalization.UnicodeCategory.ParagraphSeparator);
 
-    // The quote in a word of the command, when the command takes that word as data: any word of
-    // printf or echo, and only the script of sed, whose other words are files it rewrites.
-    private static DataQuote? DataQuoteIn(ShellReader.Command command, Range quote)
+    // The quotes in words the command takes as data, each with its word: any word of printf or echo,
+    // and only the script of sed, whose other words are files it rewrites. Quotes and words come in
+    // reading order, so one walk pairs them (DYD-723); a quote out of order is left unpaired and kept.
+    private static IEnumerable<DataQuote> DataQuotesIn(ShellReader.Command command, IEnumerable<Range> quotes)
     {
-        var word = command.WordRanges.FindIndex(range => range.Start.Value <= quote.Start.Value && quote.End.Value <= range.End.Value);
-        return word >= 0 && (command.Words[0] != "sed" || SedScriptIndex(command.Words) == word)
-            ? new DataQuote(quote, command.WordRanges[word])
-            : null;
+        var script = command.Words[0] == "sed" ? SedScriptIndex(command.Words) : -1;
+        var word = 0;
+        foreach (var quote in quotes)
+        {
+            while (word < command.WordRanges.Count && command.WordRanges[word].End.Value < quote.End.Value)
+                word++;
+            if (word < command.WordRanges.Count && command.WordRanges[word].Start.Value <= quote.Start.Value
+                && (script < 0 || script == word))
+                yield return new DataQuote(quote, command.WordRanges[word]);
+        }
     }
 
     /// <summary>
@@ -1011,31 +1108,53 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// (<see cref="CommandPosition.ScriptOf"/>), the heredoc or here-string a shell given none reads,
     /// and a bash backtick substitution are command lines of their own. <c>Uncertain</c> when a
     /// reading cannot finish, a command string is encoded, a shell reads a pipe the line does not
-    /// show, or nesting passes the limit.
+    /// show, or nesting passes the limit. A line past the limit, or past the reading's budget, is too
+    /// deep and holds no commands (DYD-723).
     /// </summary>
     private static (List<CommandLine> Lines, bool Uncertain) CommandLines(string command, ShellDialect dialect)
     {
-        List<CommandLine> lines = [];
-        var uncertain = ReadCommandLines(command, dialect, 0, lines);
-        return (lines, uncertain);
+        var reading = new CommandLineReading(command.Length);
+        var uncertain = ReadCommandLines(command, dialect, 0, reading);
+        return (reading.Lines, uncertain);
     }
 
-    private static bool ReadCommandLines(string text, ShellDialect dialect, int depth, List<CommandLine> lines)
+    /// <summary>
+    /// The lines one reading of a command's lines holds so far, and what it may still read: each line
+    /// once, by its text, dialect and level, however many readings run it, and in all about the
+    /// command read both ways and a line as long at each level below it. cmd reads its command string
+    /// both ways, so each level of cmd doubled the readings and a chain of them was read 2^9 times;
+    /// each is read once now, but a long chain of cmd, or of text the two ways read apart, still
+    /// reads more each level and stops at the budget (DYD-723).
+    /// </summary>
+    private sealed class CommandLineReading(int length)
     {
-        if (depth > MaxCommandLineDepth)
-            return true;
+        public List<CommandLine> Lines { get; } = [];
+        public HashSet<(string Text, ShellDialect Dialect, int Depth)> Read { get; } = [];
+        public long Budget { get; set; } = (MaxCommandLineDepth + 2L) * length + 65_536;
+    }
 
-        var uncertain = false;
+    private static bool ReadCommandLines(string text, ShellDialect dialect, int depth, CommandLineReading lines)
+    {
+        if (!lines.Read.Add((text, dialect, depth)))
+            return false;
         bool[] readings = dialect switch
         {
             ShellDialect.Posix => [true],
             ShellDialect.PowerShell => [false],
             _ => [true, false],
         };
+        lines.Budget -= readings.Length * text.Length;
+        if (depth > MaxCommandLineDepth || lines.Budget < 0)
+        {
+            lines.Lines.Add(new CommandLine(text, [], TooDeep: true));
+            return true;
+        }
+
+        var uncertain = false;
         foreach (var posix in readings)
         {
             var reading = ShellReader.Read(text, posix);
-            lines.Add(new CommandLine(text, [.. reading.Commands.Select(Unmark)], reading.TooDeep));
+            lines.Lines.Add(new CommandLine(text, [.. reading.Commands.Select(Unmark)], reading.TooDeep));
             uncertain |= reading.Failed;
             foreach (var substitution in reading.Substitutions)
                 uncertain |= ReadCommandLines(substitution, ShellDialect.Posix, depth + 1, lines);
@@ -1047,7 +1166,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     }
 
     // The command lines one command runs: its command string, or the stdin bodies a shell reads.
-    private static bool ReadRunLines(ShellReader.Command command, int depth, List<CommandLine> lines)
+    private static bool ReadRunLines(ShellReader.Command command, int depth, CommandLineReading lines)
     {
         if (ProgramCall(command.Words) is not { } call)
             return false;
@@ -1658,9 +1777,10 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     public (bool IsDangerous, string? Reason) CheckDangerousPatterns(string command)
     {
-        // Past ShellReader.MaxNesting no reading is complete, so nothing it says can be verified. Each
-        // level opens at a ( of its own, so a command with no more of them than that is never read here (DYD-723).
-        if (command.AsSpan().Count('(') > ShellReader.MaxNesting && CommandLines(command, _shell).Lines.Any(line => line.TooDeep))
+        // A command line nested past a bound, in a reading (ShellReader.MaxNesting) or in the command
+        // lines it runs (MaxCommandLineDepth and the reading's budget), is not read to its end, so
+        // nothing it says can be verified (DYD-723).
+        if (CommandLines(command, _shell).Lines.Any(line => line.TooDeep))
             return (true, TooComplex);
 
         try

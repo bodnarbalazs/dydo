@@ -202,6 +202,23 @@ public class ShellReaderTests
         Assert.Equal(fails, ShellReader.Read(text, posix: false).Failed);
     }
 
+    // A ( that opens a group nests as a substitution does, so bash's unquoted $( and a group at a
+    // command's start fail past the bound too, and read at it (DYD-723).
+    [Theory]
+    [InlineData(true, "echo ", "$(", 32, false)]
+    [InlineData(true, "echo ", "$(", 33, true)]
+    [InlineData(true, "", "(", 32, false)]
+    [InlineData(true, "", "(", 33, true)]
+    [InlineData(false, "", "(", 32, false)]
+    [InlineData(false, "", "(", 33, true)]
+    public void GroupsPastTheBound_ReadTooDeep(bool posix, string head, string opener, int levels, bool tooDeep)
+    {
+        var reading = ShellReader.Read(head + Repeat(opener, levels) + "x" + Repeat(")", levels), posix);
+
+        Assert.Equal(tooDeep, reading.TooDeep);
+        Assert.Equal(tooDeep, reading.Failed);
+    }
+
     // pwsh reads '' in a single-quoted string as one quote and goes on. The reading recursed once per
     // pair, so 10,000 pairs overflowed a 1 MB stack, the size of a Windows main thread's (DYD-723).
     [Fact]

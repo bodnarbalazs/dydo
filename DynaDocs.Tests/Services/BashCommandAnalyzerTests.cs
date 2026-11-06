@@ -2409,6 +2409,177 @@ public class BashCommandAnalyzerTests
         }
     }
 
+    // bash reads an unquoted $( as $ and a group, and a group nests as a substitution does: past 32
+    // levels of them the command is refused, in every dialect. At the bound it reads as before.
+    [Theory]
+    [InlineData("Posix", 32, false)]
+    [InlineData("PowerShell", 32, false)]
+    [InlineData("Unknown", 32, false)]
+    [InlineData("Posix", 33, true)]
+    [InlineData("PowerShell", 33, true)]
+    [InlineData("Unknown", 33, true)]
+    public void CheckDangerousPatterns_UnquotedNestingPastTheBound_IsTooComplex(string dialect, int levels, bool refused)
+    {
+        AssertTooComplex(dialect, UnquotedNesting(levels), refused);
+    }
+
+    // A command string a shell runs is a command line of its own, read eight levels below the command.
+    // Past them the reading stops, so the command is refused, and so a substitution nested past the
+    // bound inside them is; before DYD-723 the reading stopped only as uncertain, and nine shells were
+    // allowed. Eight levels read as before.
+    [Theory]
+    [InlineData("Posix", 8, 16, false)]
+    [InlineData("PowerShell", 8, 16, false)]
+    [InlineData("Unknown", 8, 16, false)]
+    [InlineData("Posix", 9, 16, true)]
+    [InlineData("PowerShell", 9, 16, true)]
+    [InlineData("Unknown", 9, 16, true)]
+    [InlineData("Posix", 9, 40, true)]
+    [InlineData("PowerShell", 9, 40, true)]
+    [InlineData("Unknown", 9, 40, true)]
+    public void CheckDangerousPatterns_CommandStringsPastTheDepth_AreTooComplex(string dialect, int shells, int levels, bool refused)
+    {
+        AssertTooComplex(dialect, InShells(QuotedNesting(levels), shells), refused);
+    }
+
+    // cmd's command string is read both ways, so each level of a chain of cmd read its line twice as
+    // often as the level above, 2^9 times at the eighth. Each line is read once now, and reading a
+    // command's lines has a budget, about ten readings of the command: eight cmd of a short line read
+    // as before, and of a long one, read twice at every level, are refused as too complex.
+    [Theory]
+    [InlineData("Posix", 10, false)]
+    [InlineData("Unknown", 10, false)]
+    [InlineData("Posix", 20_000, true)]
+    [InlineData("Unknown", 20_000, true)]
+    public void CheckDangerousPatterns_CmdChainPastTheBudget_IsTooComplex(string dialect, int length, bool refused)
+    {
+        AssertTooComplex(dialect, Repeat("cmd /c ", 8) + "echo " + Repeat("x", length), refused);
+    }
+
+    // Long inputs of each shape whose analysis grew faster than its length (DYD-723): many quotes in a
+    // data command's words, each matched against every word, sed's script found again for each; many
+    // heredocs, each cut by reading the whole rest; many quoted heredoc or here-string openers, each
+    // searched to the end for its closer; long or wide nesting; and a chain of cmd, read 2^9 times.
+    private static readonly Dictionary<string, Func<int, string>> LongShapes = new()
+    {
+        ["sed quotes"] = length => "sed 's/a/b/' " + Repeat("'' ", length / 3),
+        ["echo quotes"] = length => "echo " + Repeat("'' ", length / 3),
+        ["printf quotes"] = length => "printf " + Repeat("'a' ", length / 4),
+        ["echo words"] = length => "echo " + Repeat("a ", length / 2),
+        ["heredocs"] = length => Repeat("cat <<E\na\nE\n", length / 12),
+        ["heredoc openers"] = length => "echo \"" + Repeat("<<E x\n", length / 6) + "\"",
+        ["here-string openers"] = length => "echo \"" + Repeat("@'\n", length / 3) + "\"",
+        ["$( open"] = length => Nesting("$(", "", length),
+        ["$( wide"] = length => "printf x " + Repeat("$(y) ", length / 5),
+        ["\"$( closed"] = length => Nesting("\"$(", ")\"", length),
+        ["mixed open"] = length => Nesting("$(@(a (\"$(`${'", "", length),
+        ["cmd chain"] = length => Repeat("cmd /c ", 8) + "echo " + Repeat("x", length) + "; pass show x",
+    };
+
+    // Time grows with the input. One sample analyses the input of 12,500 characters eight times and the
+    // one of 100,000 once, so a linear analysis spends about as long on each and a quadratic one about
+    // eight times as long on the long one; as in the wrapper-chain test above, the ratio decides, so
+    // coverage instrumentation cancels out, and up to seven interleaved rounds, stopping at the first
+    // that passes, damp noise. In Release, uninstrumented, 100,000 characters also take at most a
+    // second (captain's ruling, 2026-11-05); a Debug build or instrumentation runs many times slower,
+    // and there the ratio alone decides.
+    [Theory]
+    [InlineData("Posix", "sed quotes")]
+    [InlineData("PowerShell", "sed quotes")]
+    [InlineData("Unknown", "sed quotes")]
+    [InlineData("Unknown", "echo quotes")]
+    [InlineData("Unknown", "printf quotes")]
+    [InlineData("Unknown", "echo words")]
+    [InlineData("Unknown", "heredoc openers")]
+    [InlineData("Unknown", "here-string openers")]
+    public void Analyze_LongInput_TakesTimeLinearly(string dialect, string shape) => AssertTimeGrowsLinearly(dialect, shape);
+
+    // Before DYD-723 long nesting exhausted the host's memory: run on the fix only.
+    [Theory]
+    [InlineData("Posix", "$( open")]
+    [InlineData("Unknown", "$( wide")]
+    [InlineData("Unknown", "\"$( closed")]
+    [InlineData("Unknown", "mixed open")]
+    public void Analyze_LongNesting_TakesTimeLinearly(string dialect, string shape) => AssertTimeGrowsLinearly(dialect, shape);
+
+    // Before DYD-723 the long input of these took a minute (heredocs) or read the line 2^9 times (cmd):
+    // run on the fix only; their allocation test below fails before the fix at the budgeted length.
+    [Theory]
+    [InlineData("Posix", "heredocs")]
+    [InlineData("PowerShell", "heredocs")]
+    [InlineData("Unknown", "heredocs")]
+    [InlineData("Unknown", "cmd chain")]
+    public void Analyze_LongBodies_TakeTimeLinearly(string dialect, string shape) => AssertTimeGrowsLinearly(dialect, shape);
+
+    private static void AssertTimeGrowsLinearly(string dialect, string shape)
+    {
+        const int growth = 8;
+        var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
+        var (shortInput, longInput) = (LongShapes[shape](100_000 / growth), LongShapes[shape](100_000));
+        analyzer.Analyze(shortInput);
+        var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
+
+        for (var round = 0; round < 7; round++)
+        {
+            shortBest = Min(shortBest, TimeAnalyses(analyzer, shortInput, growth));
+            longBest = Min(longBest, TimeAnalyses(analyzer, longInput, 1));
+            if (longBest / shortBest < 2.5)
+                break;
+        }
+
+        var ratio = longBest / shortBest;
+        Assert.True(ratio < 2.5, $"one 8x input took {ratio:F2}x as long as eight short ones ({shortBest} vs {longBest})");
+        Assert.True(!ReleaseUninstrumented || longBest <= TimeSpan.FromSeconds(1), $"Took {longBest} at 100,000 characters");
+    }
+
+    // Allocation grows with the input, and the budgeted length stays within the budget.
+    [Theory]
+    [InlineData("Posix", "heredocs")]
+    [InlineData("Unknown", "heredocs")]
+    [InlineData("Unknown", "cmd chain")]
+    public void Analyze_LongBodies_AllocateLinearlyWithinTheBudget(string dialect, string shape)
+    {
+        var (budgeted, _) = Measure(dialect, LongShapes[shape](BudgetedLength));
+        Assert.True(budgeted <= AllocationBudget, $"Allocated {budgeted:N0} bytes at {BudgetedLength:N0} characters");
+
+        var (half, _) = Measure(dialect, LongShapes[shape](50_000));
+        var (full, _) = Measure(dialect, LongShapes[shape](100_000));
+        Assert.True(full <= 2.5 * half, $"Allocated {full:N0} bytes at 100,000 characters, {half:N0} at 50,000");
+    }
+
+    // The one-second bound is Release's, uninstrumented: the product is optimized, and AltCover, which
+    // instruments it for coverage, is no reference of it.
+    private static readonly bool ReleaseUninstrumented =
+        typeof(BashCommandAnalyzer).Assembly.GetCustomAttributes(typeof(System.Diagnostics.DebuggableAttribute), false)
+            .Cast<System.Diagnostics.DebuggableAttribute>().All(attribute => !attribute.IsJITOptimizerDisabled)
+        && !typeof(BashCommandAnalyzer).Assembly.GetReferencedAssemblies()
+            .Any(name => name.Name?.StartsWith("AltCover", StringComparison.Ordinal) == true);
+
+    private static TimeSpan TimeAnalyses(BashCommandAnalyzer analyzer, string command, int times)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        for (var i = 0; i < times; i++)
+            analyzer.Analyze(command);
+        return stopwatch.Elapsed;
+    }
+
+    private static void AssertTooComplex(string dialect, string command, bool refused)
+    {
+        var (dangerous, reason) = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect)).CheckDangerousPatterns(command);
+
+        Assert.Equal(refused, dangerous);
+        Assert.Equal(refused ? "Command too complex to verify safely" : null, reason);
+    }
+
+    // echo, then levels of the opener, x and as many closers.
+    private static string UnquotedNesting(int levels) => "echo " + Repeat("$(", levels) + "x" + Repeat(")", levels);
+
+    private static string QuotedNesting(int levels) => "echo " + Repeat("\"$(", levels) + "x" + Repeat(")\"", levels);
+
+    // The command as the command string of that many bash -c, each single-quoted as Python's shlex.quote does.
+    private static string InShells(string command, int shells) =>
+        Enumerable.Range(0, shells).Aggregate(command, (inner, _) => "bash -c '" + inner.Replace("'", "'\"'\"'") + "'");
+
     private static (long Allocated, TimeSpan Elapsed) Measure(string dialect, string command)
     {
         var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));

@@ -1667,6 +1667,44 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertStderrContains("Command too complex to verify safely");
     }
 
+    // The bound holds on every path a command runs (DYD-723). bash reads an unquoted $( as a group,
+    // which nests as a substitution does, and a command string a shell runs is read eight levels
+    // below the command. Past 32 groups, or past eight shells around a substitution nested past the
+    // bound, the command is refused in every lane; at 32 groups, and at eight shells around one
+    // nested 16 deep, it is allowed as before.
+    [Theory]
+    [InlineData("Bash", "$(", ")", 33, 0, true)]
+    [InlineData("PowerShell", "$(", ")", 33, 0, true)]
+    [InlineData("", "$(", ")", 33, 0, true)]
+    [InlineData("Bash", "$(", ")", 32, 0, false)]
+    [InlineData("PowerShell", "$(", ")", 32, 0, false)]
+    [InlineData("", "$(", ")", 32, 0, false)]
+    [InlineData("Bash", "\"$(", ")\"", 40, 9, true)]
+    [InlineData("PowerShell", "\"$(", ")\"", 40, 9, true)]
+    [InlineData("", "\"$(", ")\"", 40, 9, true)]
+    [InlineData("Bash", "\"$(", ")\"", 16, 8, false)]
+    [InlineData("PowerShell", "\"$(", ")\"", 16, 8, false)]
+    [InlineData("", "\"$(", ")\"", 16, 8, false)]
+    public async Task NestingOnEveryPath_PastTheBound_IsRefused(string toolName, string opener, string closer, int levels, int shells, bool refused)
+    {
+        await SetupClaimedAgent();
+        var command = "echo " + string.Concat(Enumerable.Repeat(opener, levels)) + "x" + string.Concat(Enumerable.Repeat(closer, levels));
+        for (var shell = 0; shell < shells; shell++)
+            command = "bash -c '" + command.Replace("'", "'\"'\"'") + "'";
+
+        var result = toolName == "" ? await UnknownShellGuardAsync(command) : await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        if (refused)
+        {
+            AssertRefused(toolName, result);
+            result.AssertStderrContains("Command too complex to verify safely");
+        }
+        else if (toolName == "")
+            result.AssertSuccess();
+        else
+            result.AssertPreToolUseAllowed();
+    }
+
     // A hook call is refused with a deny decision, the CLI lane with exit 2.
     private static void AssertRefused(string toolName, CommandResult result)
     {

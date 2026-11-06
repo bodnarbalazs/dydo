@@ -2487,7 +2487,7 @@ public class BashCommandAnalyzerTests
     // one of 100,000 once, so a linear analysis spends about as long on each and a quadratic one about
     // eight times as long on the long one; as in the wrapper-chain test above, the ratio decides, so
     // coverage instrumentation cancels out, and the best times of all seven interleaved rounds
-    // damp noise after warming both sizes. Linux uses calling-thread CPU minus GC pause for the
+    // damp noise after warming both sizes. Linux uses calling-thread CPU for the
     // ratio, so scheduling delays do not decide it. In Release, uninstrumented, 100,000 characters take at most a
     // second (captain's ruling, 2026-11-05); a Debug build or instrumentation runs many times slower,
     // and there the ratio alone decides.
@@ -2716,7 +2716,7 @@ public class BashCommandAnalyzerTests
     {
         // Compare both sizes from a collected heap. Otherwise a short batch occasionally avoids
         // every promoted collection while the long batch inherits garbage from earlier samples.
-        // Collections triggered by the analyses remain inside the absolute wall interval.
+        // Collections triggered by the analyses remain inside the measured intervals.
         GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var cpu = ThreadCpuTime.Now();

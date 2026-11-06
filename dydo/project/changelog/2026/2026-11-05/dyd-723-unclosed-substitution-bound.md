@@ -92,7 +92,7 @@ Guards stop accidents, not rogue agents. The bound exists so the guard never tak
 - The 256 MB and one-second bounds are Release, uninstrumented. Coverage instrumentation multiplies
   allocation by up to about 30, so the test holds the absolute budget at 10,000 characters and the
   growth ratios at 100,000; the one-second bound is asserted when the tests run in Release.
-- On Linux, the analysis time-ratio tests measure calling-thread CPU minus GC pause to exclude
+- On Linux, the analysis time-ratio tests measure calling-thread CPU to exclude
   shared-host scheduling noise. Their input sizes, seven rounds, warm-up and ratio threshold stay
   the same, and the one-second assertion still measures wall time. Other hosts retain wall timing.
 

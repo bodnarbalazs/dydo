@@ -609,6 +609,47 @@ jobs:
           path: DynaDocs.Tests/coverage/results/windows-cancellation
           if-no-files-found: warn
 
+  statechart-config-oracle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+
+      - name: Validate runner JDK pin and provision locked TLC
+        id: statechart
+        shell: pwsh
+        run: ./.github/workflows/provision-statechart-oracle.ps1
+
+      # Direct execution makes a file with no tests produce no TAP report, not a passing file-test.
+      - name: Compare 4000 seed-1 configs with TLC
+        id: oracle
+        shell: pwsh
+        working-directory: skills/engineering/statechart/scripts
+        env:
+          TLA2TOOLS: ${{ steps.statechart.outputs.tla2tools }}
+          JAVA: ${{ steps.statechart.outputs.java }}
+        run: node --disable-warning=ExperimentalWarning --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap '--test-reporter-destination=${{ runner.temp }}/statechart-config-oracle.tap' test/config-fuzz.test.ts
+
+      - name: Require the config oracle to run and pass
+        id: require-oracle
+        shell: pwsh
+        run: ./.github/workflows/assert-node-tests-ran.ps1 -Tap '${{ runner.temp }}/statechart-config-oracle.tap' -MinimumTests 1
+
+      - name: Retain config oracle result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: statechart-config-oracle-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/statechart-config-oracle.tap
+          if-no-files-found: error
+
   # The statechart runtime's Windows paths (its job object, TLC and JAVA resolved from the caller and
   # through PATH) run only on Windows. Their tests skip anywhere else, and they skip on Windows
   # without TLC, so this leg provisions the release's pinned prerequisites and fails on any skip.

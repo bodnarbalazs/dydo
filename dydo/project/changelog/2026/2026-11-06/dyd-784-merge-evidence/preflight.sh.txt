@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+out=$(realpath "$1")
+test -d "$out"
+exec > "$out/preflight.log" 2>&1
+trap 'echo "preflight exit=$?"' EXIT
+export PYTHONDONTWRITEBYTECODE=1 MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false
+git show -s --format='%H%n%P%n%T' HEAD
+git status --porcelain
+node --version
+pnpm --version
+dotnet --version
+dotnet --list-runtimes
+/tmp/dyd507-524-venv/bin/python --version
+/tmp/dyd622-pwsh/pwsh -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
+# No dependency inputs changed in this integration: preserve the provisioned installs.
+git diff --exit-code 4c0245293c01913407408e5b3b3689fc2c5f0e2d HEAD -- '**/package.json' '**/pnpm-lock.yaml' '**/packages.lock.json' '*.csproj' '.config/dotnet-tools.json' '**/requirements.lock' setup-skills.mjs
+node setup-skills.mjs > "$out/setup-skills.log" 2>&1
+/tmp/dyd507-524-venv/bin/python dydo/project/changelog/2026/2026-11-06/dyd-784-evidence/verify-cache.py.txt /home/balazs/.local/share/dydo/statechart/deps/3ad231072bddc04588d0f2cf1b61a3e62fc38b4ff400ccea5c3b5d41409575ab/linux-x64
+/tmp/dyd507-524-venv/bin/python dydo/project/changelog/2026/2026-11-06/dyd-784-fix-evidence/sealed-inputs.py.txt
+PYTHONPATH=DynaDocs.Tests/coverage/tests /tmp/dyd507-524-venv/bin/python -m unittest -v test_coverage_artifacts.WorkflowTests > "$out/workflow-green.log" 2>&1
+PWSH=/tmp/dyd622-pwsh/pwsh node --test DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs > "$out/oracle-focused.log" 2>&1
+git ls-files -z | xargs -0 sha256sum > "$out/source-sha256.txt"
+git show -s --format='%H%n%P%n%T' HEAD > "$out/candidate.txt"
+echo 'Workflow and oracle focused checks passed; tracked source hashes frozen.'

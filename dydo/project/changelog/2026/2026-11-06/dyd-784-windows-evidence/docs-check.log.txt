@@ -1,0 +1,6 @@
+Running as unit: run-p3243844-i53560665.scope; invocation ID: 9adc00b0927142288269cb6d4af6c4ba
+Checking /home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/dydo/project/changelog/2026/2026-11-06/dyd-784-windows-python-diagnosis.md...
+
+Found 0 errors, 0 warnings in 1 files.
+
+All checks passed.

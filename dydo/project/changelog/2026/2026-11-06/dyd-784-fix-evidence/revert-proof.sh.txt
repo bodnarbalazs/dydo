@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -eu
+exec > dydo/project/changelog/2026/2026-11-06/dyd-784-fix-evidence/reverted-red.log 2>&1
+scratch=$(mktemp -d /tmp/dyd784-revert-XXXXXX)
+paths=(.github/workflows/provision-statechart-oracle.ps1 Resources/Statechart/dependency-lock.json skills/engineering/statechart/PROVENANCE.md)
+restore() {
+  for i in 0 1 2; do cp "$scratch/$i" "${paths[$i]}"; done
+  rm -rf "$scratch"
+}
+for i in 0 1 2; do cp "${paths[$i]}" "$scratch/$i"; done
+trap restore EXIT
+for file in "${paths[@]}"; do git show "83356f358ec39bd873d96c8a9147d734c5f227e7:$file" > "$file"; done
+set +e
+PWSH=/tmp/dyd622-pwsh/pwsh node --test DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs
+rc=$?
+set -e
+echo "reverted focused suite exit=$rc (expected 1)"
+test "$rc" -eq 1
+set +e
+MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 dotnet msbuild DynaDocs.csproj -t:ValidateStatechartPayload -nr:false -p:UseSharedCompilation=false
+rc=$?
+set -e
+echo "reverted payload target exit=$rc (expected 1)"
+test "$rc" -eq 1

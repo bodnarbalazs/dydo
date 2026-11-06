@@ -1,0 +1,86 @@
+{
+  "base": "cbfe6f772835c574da9e0304cc237b19e2368d7b",
+  "tip": "5580564577e10e42dedbe429d2f0197894742777",
+  "status": "ahead",
+  "ahead_by": 18,
+  "behind_by": 0,
+  "commits": [
+    {
+      "sha": "e7d28efeefeff08aaf8d22415f64346204fa71b0",
+      "message": "DYD-658 implement: fail the Python campaign on any process's measurement failure\n\nA sitecustomize startup or atexit finish failure now leaves a failure-*.txt\nrecord beside the campaign config, naming the process's pid, phase and\ncommand line; collect raises on any record instead of combining the rest.\nA process that cannot write its record exits 70 rather than running on as\nif measured. Processes without DYDO_PYTHON_COVERAGE_CONFIG stay silent.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+    },
+    {
+      "sha": "6cdc54bd3e8b5b210e536cd4b34c2e8b099544e1",
+      "message": "DYD-658 fix: record measurement failures over collect's loopback port\n\nA process whose measurement fails at startup or finish now sends its record\nto a loopback port that collect listens on while the command runs\n(DYDO_PYTHON_COVERAGE_FAILURES), instead of writing failure-*.txt beside the\nconfig. The record no longer depends on the output being writable or on\nany parent passing a nonzero exit on. A reader thread takes the records in\nconnection order until collect's own end mark. If it stops early, the\ncampaign fails. A process that cannot send its record still exits 70.\n\nRegressions: end-to-end collect with an exit-ignoring driver whose failing\nchild cannot write beside its config, at startup and at finish (red on\ne7d28efe); a record the reader cannot decode fails the campaign.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+    },
+    {
+      "sha": "029d4ef4c2c97f9700aaef1f61a93b328b23de4c",
+      "message": "DYD-658 fix: hold one reporting connection per measured process from startup\n\nEach measured campaign process now opens its reporting connection to\ncollect at startup, names itself on it, and holds it until exit. The port\ncomes from DYDO_PYTHON_COVERAGE_FAILURES or, if that variable is gone,\nfrom the port mirrored in config.json. A failure at startup or finish goes\non the already-open connection, so descriptor exhaustion at finish no\nlonger loses it. collect reads newline-framed records with a selector and\nnever blocks on a peer. After the command returns it waits at most\n_SETTLE_SECONDS (5 s) for connections to close, then fails on any failure\nrecord, any unreadable or incomplete record, and any connection still\nopen. A connection that closes with no failure (a clean exit or a killed\nprocess) passes.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+    },
+    {
+      "sha": "859f6d0f08c9912d975972c19858c4f9ccf040d5",
+      "message": "DYD-658 fix: open the reporting connection inside the startup failure boundary\n\nSocket creation, port lookup and connect now run inside _Report's\nconstructor, so an error there never reaches site's continue-unmeasured\nhandler. A refused, reset or timed-out connect, or one short of an\nephemeral port, is retried: four attempts of at most 0.1 s each, with\n10/20/40 ms backoff, 0.47 s worst case. A process that still has no\nconnection, or cannot create its socket (EMFILE), exits 70 at startup\nbefore its program runs. No measured program runs without its\nconnection. The exit-70 path allocates no new descriptor.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+    },
+    {
+      "sha": "86dcebb5589a8b64637a47afca3742bd18137b65",
+      "message": "DYD-658 fix: exit 70 when the generated sitecustomize cannot import python_coverage\n\nThe sitecustomize that collect generates first checks\nDYDO_PYTHON_COVERAGE_CONFIG through os.environ. Without it, it imports\nnothing, so a process with no campaign config stays silent. With it, a\npython_coverage import that raises (or is missing) ends the process with\nos._exit(70) before its program runs. Before, site printed \"Error in\nsitecustomize\" and ran the program unmeasured. os and sys are already\nloaded, so the exit needs no new resource. The stderr line is best effort.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+    },
+    {
+      "sha": "23e83cc3a6db286ecebed51b6bf31d10aab6742d",
+      "message": "DYD-658 merge: feature/dydo-3-6-0 at 88f12b05\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+    },
+    {
+      "sha": "79121ca671612f2cbe9c4cf98865081c40c82bfb",
+      "message": "DYD-658 fix: tests take a failed process's pid from the process itself, not from Popen\n\nHosted python-coverage (windows-latest) failed 11 test_python_coverage cases (run 42120732020):\neach stderr carried the right record, naming the pid the measured process runs as, while the test\nexpected Popen.pid. A Windows venv's Scripts\\python.exe is a redirector that runs the base\ninterpreter as a child process of its own, so the two differ there.\n\nThe one measured child whose failure a test names now gets a sitecustomize of its own that writes\nos.getpid() to failed.pid before running the startup under test (the campaign's generated text, or\nthe case's own); the outliving child prints its pid on its ready line. Every assertion about the\ncampaign failing, naming the process, exiting 70 and not running the program is unchanged.\nProduction records already name the in-process pid and are unchanged.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+    },
+    {
+      "sha": "deec94de5098fd1ab19bf7391b917411ad9f372f",
+      "message": "DYD-658 fix: wrapped test children run the startup file collect generates, not a copy of it\n\nThe pid-witness sitecustomize records os.getpid(), then reads and runs <output>/startup/sitecustomize.py\nas collect wrote it; the connection-fault setups run that file too. A generated startup that loses its\nimport-failure guard, or starts no measurement, now turns the wrapped cases red.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+    },
+    {
+      "sha": "354caf8c6eef84dd8458fd027fc4442ed2ea9bde",
+      "message": "DYD-658 fix: collect puts its own site-packages on the campaign path, so base-interpreter children are measured\n\nA child started with sys._base_executable inherits the campaign env but not the venv's packages, so it could\nnot import coverage.py and failed the campaign (hosted Windows: test_control_dydo_lifetime, test_windows_job's\nnested owner). collect now adds the collecting interpreter's purelib and platlib, deduplicated, after startup\nand tools and before the inherited PYTHONPATH. A process that still cannot import coverage still fails.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+    },
+    {
+      "sha": "e3529a52e582d1f5d825326b6b367cb4de6b7381",
+      "message": "DYD-658 fix: a measured process searches the collector's packages last and only to import coverage.py, so no caller package is shadowed\n\n354caf8c put the collecting interpreter's purelib and platlib on the campaign PYTHONPATH, ahead of the\ninherited path and of every child's own site-packages. A caller's package of a name the collector also\nhas (six) was replaced by the collector's, and a command failing on the caller's version passed.\n\ncollect now leaves PYTHONPATH as before 354caf8c (startup, tools, inherited) and names those paths as\n`packages` in config.json. _start reads the config first, appends `packages` to the end of sys.path for\n`import coverage` only and removes them again. A child of the base interpreter is still measured with\nthe collector's coverage.py, but its program searches exactly the path it would unmeasured: a module\nit lacks stays missing. A process that still cannot measure, such as CPython 3.13, fails by name.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+    },
+    {
+      "sha": "80e93ea5dc08c541d2d10fdb9826c396a69504da",
+      "message": "DYD-658 fix: report interrupted finish on the held connection\n\nCatch BaseException during finish, report it through the existing connection,\nand re-raise. Cover KeyboardInterrupt, SystemExit and the RuntimeError control\nat receipt writing, and qualify import search-path transparency.\n\nCo-Authored-By: Codex gpt-6-astra <noreply@openai.com>"
+    },
+    {
+      "sha": "e5643a7f974ccf09e6f0462562aeaa4e57ca0040",
+      "message": "DYD-658 fix: retry interrupted measurement failure reports\n\nCo-Authored-By: Codex gpt-6-astra <noreply@openai.com>"
+    },
+    {
+      "sha": "0d5a5dbfee781df726e05000b942cc2c8685da36",
+      "message": "DYD-658 fix: preserve failure reports across interrupts and allow aborted startup\n\nCo-Authored-By: Codex gpt-6-astra <noreply@openai.com>"
+    },
+    {
+      "sha": "ab8153967e841ae40e91d881eec23e0b2c97aec2",
+      "message": "DYD-658 fix: retry recoverable failure-report socket errors\n\nCo-Authored-By: Codex gpt-6-astra <noreply@openai.com>"
+    },
+    {
+      "sha": "f7e8c22d5aa438205cc890bebaf3ca8852b718aa",
+      "message": "DYD-658 fix: cover failure-report retries in the measured process\n\nCo-Authored-By: Codex gpt-6-astra <noreply@openai.com>"
+    },
+    {
+      "sha": "0fcb84f8c905e90f19a050407660d863d4d6274b",
+      "message": "DYD-658 merge: feature/dydo-3-6-0 at d5bdb30b\n\nCo-Authored-By: Codex gpt-6-astra <noreply@openai.com>"
+    },
+    {
+      "sha": "ade1737418b58b32196e1b398d4ef1e7e844b024",
+      "message": "DYD-658 fix: drain the exit observer before child termination\n\nRead the side observer concurrently and acknowledge its half-close before\nos._exit, preserving the still-connected campaign failure assertions on\nWindows as well as Linux.\n\nCo-Authored-By: Codex gpt-6-astra <noreply@openai.com>"
+    },
+    {
+      "sha": "5580564577e10e42dedbe429d2f0197894742777",
+      "message": "Merge pull request #292 from BalazsOrg/DYD-658-sitecustomize-failures\n\nDYD-658: fail the Python coverage campaign on any process's measurement failure\n\nDydo-Merge: dydo 3.5.1\nReviewed-Candidate: ade1737418b58b32196e1b398d4ef1e7e844b024\nTarget-Tip: cbfe6f772835c574da9e0304cc237b19e2368d7b\nReview: PASS - rubric/type: code; contract DYD-658 description as of 2026-11-06T02:11:08.012Z; candidate ade1737418b58b32196e1b398d4ef1e7e844b024; base d5bdb30b26bc53005266b40f6c1f3d52ebe8db30; reviewer/model"
+    }
+  ],
+  "files": [
+    "DynaDocs.Tests/coverage/python_coverage.py",
+    "DynaDocs.Tests/coverage/tests/test_python_coverage.py",
+    "dydo/reference/coverage-tools.md"
+  ]
+}

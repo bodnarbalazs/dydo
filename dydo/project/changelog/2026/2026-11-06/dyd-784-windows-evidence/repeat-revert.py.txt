@@ -1,0 +1,33 @@
+"""Repeat only the platform-registration counterexample; native Windows remains CI's proof."""
+import pathlib
+import subprocess
+import sys
+
+out = pathlib.Path(sys.argv[1]).resolve()
+recipe = pathlib.Path(__file__).resolve().parent
+launcher = out / 'windows-registration.cjs'
+launcher.write_bytes((recipe / 'windows-registration.cjs.txt').read_bytes())
+
+def check(name, expected):
+    tap = out / (name + '.tap')
+    with tap.open('w') as stream:
+        node = subprocess.run(['node', '--test-reporter=tap', str(launcher)], stdout=stream, stderr=subprocess.STDOUT)
+    with (out / (name + '-guard.log')).open('w') as stream:
+        guard = subprocess.run(['/tmp/dyd622-pwsh/pwsh', '-NoProfile', '-NonInteractive', '-File',
+                                '.github/workflows/assert-node-tests-ran.ps1', '-Tap', str(tap), '-MinimumTests', '13'],
+                               stdout=stream, stderr=subprocess.STDOUT)
+    (out / (name + '-exits.txt')).write_text(f'node={node.returncode} guard={guard.returncode}\n')
+    assert node.returncode == 0 and guard.returncode == expected, (name, node.returncode, guard.returncode)
+
+paths = [pathlib.Path('.github/workflows/ci.yml'), pathlib.Path('DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs')]
+saved = {path: path.read_bytes() for path in paths}
+check('green-before-revert', 0)
+try:
+    for path in paths:
+        path.write_bytes(subprocess.check_output(['git', 'show', 'b1ec72e005b326088d885efe6c16b6cd4c9ba3d2:' + str(path)]))
+    check('reverted-red', 1)
+finally:
+    for path, source in saved.items():
+        path.write_bytes(source)
+check('restored-green', 0)
+print('Reverted guard exit 1; restored guard exit 0. Native Windows proof remains pending.')

@@ -1,0 +1,109 @@
+Running as unit: run-p2724833-i48850252.scope; invocation ID: 1dfcfdbfefec44e493f8875f9a001c55
+✖ CI runs the oracle and requires its result on every push/PR trigger (0.729612ms)
+✖ the CI commands accept a passed oracle (0.179512ms)
+✖ the CI commands reject a skipped oracle (0.06389ms)
+✖ the CI commands reject a empty oracle (0.059488ms)
+✖ the CI commands reject a failed oracle (0.088243ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 0
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 108.784919
+
+✖ failing tests:
+
+test at DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:29:1
+✖ CI runs the oracle and requires its result on every push/PR trigger (0.729612ms)
+  AssertionError [ERR_ASSERTION]: CI must run the config oracle in a required job
+      at oracleSteps (/home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:15:10)
+      at TestContext.<anonymous> (/home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:30:3)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:45:3
+✖ the CI commands accept a passed oracle (0.179512ms)
+  AssertionError [ERR_ASSERTION]: CI must run the config oracle in a required job
+      at oracleSteps (/home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:15:10)
+      at TestContext.<anonymous> (/home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:46:26)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:45:3
+✖ the CI commands reject a skipped oracle (0.06389ms)
+  AssertionError [ERR_ASSERTION]: CI must run the config oracle in a required job
+      at oracleSteps (/home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:15:10)
+      at TestContext.<anonymous> (/home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:46:26)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:45:3
+✖ the CI commands reject a empty oracle (0.059488ms)
+  AssertionError [ERR_ASSERTION]: CI must run the config oracle in a required job
+      at oracleSteps (/home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:15:10)
+      at TestContext.<anonymous> (/home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:46:26)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:45:3
+✖ the CI commands reject a failed oracle (0.088243ms)
+  AssertionError [ERR_ASSERTION]: CI must run the config oracle in a required job
+      at oracleSteps (/home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:15:10)
+      at TestContext.<anonymous> (/home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:46:26)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

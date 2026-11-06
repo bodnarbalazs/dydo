@@ -1,0 +1,11 @@
+// Exercise this test file's Windows registration decisions on Linux. Imported modules
+// and PowerShell still use the real host; this is not native Windows execution proof.
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const { createRequire } = require('node:module');
+const file = path.resolve('DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs');
+const fixtureProcess = Object.create(process);
+Object.defineProperty(fixtureProcess, 'platform', { value: 'win32' });
+vm.compileFunction(fs.readFileSync(file, 'utf8'), ['require', '__dirname', 'process'], { filename: file })(
+  createRequire(file), path.dirname(file), fixtureProcess);

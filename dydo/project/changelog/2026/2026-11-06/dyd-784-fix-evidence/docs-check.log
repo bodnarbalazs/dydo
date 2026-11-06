@@ -1,0 +1,8 @@
+Command: /var/tmp/dydo-gate-lock.sh systemd-run --user --scope --slice=app-t3code-agents.slice -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 120 env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 dotnet bin/Debug/net10.0/dydo.dll check dydo/project/changelog/2026/2026-11-06/dyd-784-config-fuzz-oracle.md
+Running as unit: run-p907379-i51211585.scope; invocation ID: b3933ff604fd40d698b740028ec62f4f
+Checking /home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/dydo/project/changelog/2026/2026-11-06/dyd-784-config-fuzz-oracle.md...
+
+Found 0 errors, 0 warnings in 1 files.
+
+All checks passed.
+exit=0

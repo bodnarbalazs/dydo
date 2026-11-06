@@ -1,0 +1,23 @@
+"""Decode the escaped unittest stdout without printing its giant source line."""
+import ast
+import pathlib
+import re
+import sys
+
+log, destination = map(pathlib.Path, sys.argv[1:])
+for line in log.read_text().splitlines():
+    if 'AssertionError:' not in line or 'not found in ' not in line:
+        continue
+    try:
+        tap = ast.literal_eval(line.split('not found in ', 1)[1])
+    except (ValueError, SyntaxError):
+        continue
+    if not isinstance(tap, str) or 'TAP version' not in tap:
+        continue
+    destination.write_text(tap)
+    selected = [row for row in tap.splitlines() if re.search(r'# SKIP(?: |$)', row)
+                or re.match(r'# (tests|pass|fail|skipped) ', row)]
+    print('\n'.join(selected))
+    break
+else:
+    raise SystemExit('No nested TAP assertion found')

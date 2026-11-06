@@ -247,6 +247,14 @@ the rebuilt candidate. Matching omissions, altered ownership and a different sel
 fail. Neither report alone establishes .NET coverage success. This amends measurement placement
 under §2. It does not widen the September coverage exemption or change any threshold.
 
+*Note 2026-11-06 ([DYD-717](https://linear.app/bodnar-balazs/issue/DYD-717)): hosted pull-request
+runs now measure the merge ref, not the PR head. Every `ci.yml` job checks out the run's own commit,
+`github.sha`, which is the merge ref on a pull request and the pushed commit on a push, so both
+`dotnet-coverage` legs, the union and `guard-windows` measure the tree whose `ci.yml` is running.
+The preflight receipts still record `pr_head_sha` and `merge_ref_sha`. Ratification of this change
+is pending in [DYD-744](https://linear.app/bodnar-balazs/issue/DYD-744). The amendment text above
+stands as ratified on 2026-11-05.*
+
 ## Consequences
 
 - `gap_check.py` in each project: one threshold set; HCRAP replaces classic CRAP; per-method

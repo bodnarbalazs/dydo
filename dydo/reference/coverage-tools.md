@@ -52,11 +52,12 @@ compiled source inventory fails after the campaign, when the join is scoped (`_m
 point.
 
 The `dotnet-coverage` CI job runs the gate on `ubuntu-24.04` (the full suite) and on
-`windows-latest` (the selected tests), each on the PR head, and uploads
+`windows-latest` (the selected tests), each on the run's own commit `github.sha` (the merge ref on
+a pull request, the pushed commit on a push), and uploads
 `dotnet-coverage-linux-attempt-<run_attempt>` and `dotnet-coverage-windows-attempt-<run_attempt>`.
 The dependent `dotnet-coverage-union` job requires both legs to pass. It then reads the run's job
 record for its own attempt, and `coverage_artifacts.py select` takes the artifact of the attempt in
-which each leg last ran. The identity and the report of that artifact must name the PR head. Then
+which each leg last ran. The identity and the report of that artifact must name that commit. Then
 the job runs:
 
 ```sh

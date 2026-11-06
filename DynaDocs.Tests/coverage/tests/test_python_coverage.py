@@ -97,6 +97,19 @@ def _children_driver(*flag_sets):
         for flags in flag_sets)
 
 
+# A child of the venv's base interpreter, measured, then the same child unmeasured; each writes the path its
+# program searches to a file of that name.
+_BASE_INTERPRETER_CHILDREN = """\
+import os, subprocess, sys
+
+program = "import subject, sys; subject.work(); print(sys.path)"
+unmeasured = {key: value for key, value in os.environ.items() if key != "DYDO_PYTHON_COVERAGE_CONFIG"}
+for name, env in (("measured", os.environ), ("unmeasured", unmeasured)):
+    with open(name, "w", encoding="utf-8") as searched:
+        subprocess.run([sys._base_executable, "-c", program], env=env, stdout=searched, check=True)
+"""
+
+
 _DAMAGE_CACHE = """\
 import json, os, pickle, subprocess, sys
 from pathlib import Path
@@ -596,13 +609,27 @@ class PythonCoverageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             (root / "subject.py").write_text(_ASSERTING_SUBJECT, encoding="utf-8")
-            (root / "driver.py").write_text(
-                "import subprocess, sys\n"
-                "subprocess.run([sys._base_executable, '-c', 'import subject; subject.work()'], check=True)\n",
-                encoding="utf-8")
+            (root / "driver.py").write_text(_BASE_INTERPRETER_CHILDREN, encoding="utf-8")
             counters = self.campaign(root, root / "evidence", ["subject.py"], ["{python}", "-S", "driver.py"])
+            measured, unmeasured = ((root / name).read_text(encoding="utf-8") for name in ("measured", "unmeasured"))
         self.assertEqual([("work:1:0", 1, {"3": 1, "4": 1})],
                          [(row["id"], row["execution_count"], row["body_lines"]) for row in counters["callables"]])
+        self.assertEqual(unmeasured, measured)
+
+    def test_a_package_on_the_callers_path_is_not_shadowed_by_the_collectors_so_its_command_still_fails(self):
+        # The collecting venv has a six of its own (requirements.lock); the caller's fails this command.
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "subject.py").write_text("def work():\n    return 1\n", encoding="utf-8")
+            (root / "caller").mkdir()
+            (root / "caller" / "six.py").write_text('raise SystemExit("the caller\'s six")\n', encoding="utf-8")
+            caller = os.pathsep.join([str(root / "caller"), os.environ.get("PYTHONPATH", "")])
+            with mock.patch.dict(os.environ, {"PYTHONPATH": caller}):
+                result = _facade(root, root / "evidence", ["subject.py"],
+                                 ["{python}", "-c", "import subject; subject.work(); import six"])
+            counters = json.loads((root / "evidence" / "counters.json").read_text(encoding="utf-8"))
+        self.assertEqual((1, "the caller's six\n"), (result.returncode, result.stderr))
+        self.assertEqual([("work:1:0", 1)], [(row["id"], row["execution_count"]) for row in counters["callables"]])
 
     def test_an_unusable_inventory_cache_is_measured_as_if_there_were_none(self):
         with tempfile.TemporaryDirectory() as folder:

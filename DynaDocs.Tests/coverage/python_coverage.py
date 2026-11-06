@@ -220,9 +220,17 @@ def startup_from_environment():
 
 def _start(config_path, report):
     global _ACTIVE
-    import coverage
-    from python_runtime import CallableWitness
     config = json.loads(Path(config_path).read_text(encoding="utf-8"))
+    # A process of the collecting build started outside its venv (`sys._base_executable`) has no coverage.py of
+    # its own. It finds the collector's in `packages`, searched after its own path and only for this import,
+    # so its program finds every other module where it would unmeasured, or not at all.
+    packages = config.get("packages", [])
+    sys.path += packages
+    try:
+        import coverage
+    finally:
+        del sys.path[len(sys.path) - len(packages):]
+    from python_runtime import CallableWitness
     if config.get("schema") != 1 or coverage.__version__ != "7.16.0":
         raise RuntimeError("Python campaign requires schema 1 and coverage.py 7.16.0")
     sources = {path: Path(path).read_text(encoding="utf-8-sig") for path in config["sources"]}
@@ -385,7 +393,8 @@ def collect(root, output, source_paths, command):
         if not path.is_relative_to(root) or not path.is_file():
             raise ValueError(f"Invalid Python target source: {relative}")
         sources.append(str(path))
-    config = {"schema": 1, "root": str(root), "output": str(output), "sources": sources}
+    packages = dict.fromkeys(sysconfig.get_paths()[scheme] for scheme in ("purelib", "platlib"))
+    config = {"schema": 1, "root": str(root), "output": str(output), "sources": sources, "packages": [*packages]}
     cache = inventory_cache({path: Path(path).read_text(encoding="utf-8-sig") for path in sources})
     if cache is not None:  # None: it did not read back as computed, so every process computes fresh
         (output / "inventory.pickle").write_bytes(cache)
@@ -397,10 +406,7 @@ def collect(root, output, source_paths, command):
     config_path = output / "config.json"
     env["DYDO_PYTHON_COVERAGE_CONFIG"] = str(config_path)
     tools = Path(__file__).resolve().parent
-    # The collecting interpreter's own packages, coverage.py among them, so that a process of the same build
-    # started outside its venv (`sys._base_executable`) measures with them; one that cannot, still fails.
-    packages = dict.fromkeys(sysconfig.get_paths()[scheme] for scheme in ("purelib", "platlib"))
-    env["PYTHONPATH"] = os.pathsep.join([str(startup), str(tools), *packages, env.get("PYTHONPATH", "")])
+    env["PYTHONPATH"] = os.pathsep.join([str(startup), str(tools), env.get("PYTHONPATH", "")])
     argv = [sys.executable if item == "{python}" else item for item in command]
     returncode, failures = _run_reported(argv, root, env, config, config_path)
     if failures:

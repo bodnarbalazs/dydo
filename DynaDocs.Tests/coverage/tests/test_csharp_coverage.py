@@ -348,20 +348,23 @@ class CSharpCoverageTests(unittest.TestCase):
             self.assertIsNone(_platform_tests(root, None))
             with self.assertRaisesRegex(ValueError, "Unsupported"):
                 _platform_tests(root, "darwin")
-            commands = _subject_commands(root, tests)
-            self.assertEqual(1, len(commands))
-            self.assertEqual(["--filter", tests, "--", "RunConfiguration.TreatNoTestsAsError=true"], commands[0][-4:])
+            results = str(root / "evidence/windows-tests.trx")
             _, runner = altcover_commands(root, root / "evidence", tests)
-            self.assertEqual(["--tests", tests], runner[-2:])
+            self.assertEqual(["--tests", tests, "--results", results], runner[-4:])
+            commands = _subject_commands(root, tests, results)
+            self.assertEqual(1, len(commands))
+            self.assertEqual(["--filter", tests, "--logger", "trx;LogFileName=windows-tests.trx",
+                              "--results-directory", str(root / "evidence"),
+                              "--", "RunConfiguration.TreatNoTestsAsError=true"], commands[0][-8:])
             with patch("csharp_coverage.subprocess.run",
                        return_value=subprocess.CompletedProcess([], 0)) as run:
-                self.assertEqual(0, run_subject(root, tests))
+                self.assertEqual(0, run_subject(root, tests, results))
             self.assertEqual(commands, [call.args[0] for call in run.call_args_list])
             with patch.object(sys, "argv", ["csharp_coverage.py", "--_subject", "--root", str(root),
-                                            "--tests", tests]), \
+                                            "--tests", tests, "--results", results]), \
                     patch("csharp_coverage.run_subject", return_value=0) as subject:
                 self.assertEqual(0, main())
-            subject.assert_called_once_with(str(root), tests)
+            subject.assert_called_once_with(str(root), tests, results)
 
     def test_the_campaign_command_measures_on_its_native_platform(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -1332,14 +1332,15 @@ class CoverageCampaignTests(unittest.TestCase):
                 gate_adapter.collect_coverage(root, Path(folder), "elixir", inventory)
 
     def test_a_measured_csharp_campaign_publishes_its_platform_portion_evidence_and_command(self):
-        from test_dotnet_platform import joined_modules, write_evidence
+        from test_dotnet_platform import PASSING, WINDOWS_TEST, joined_modules, write_evidence
         for platform, measured, failing in (("linux", ["Lib/Mixed.cs", "Lib/Neutral.cs"], set()),
                                             ("windows", ["Lib/Mixed.cs", "Lib/Native.cs"],
                                              {"Lib/Mixed.cs", "Lib/Native.cs"})):
             with self.subTest(platform=platform), tempfile.TemporaryDirectory() as folder:
                 root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
-                write_evidence(raw / "raw", joined_modules(linux=1, windows=0))
-                joined = raw / "raw/joined.json"
+                trx = PASSING if platform == "windows" else None
+                write_evidence(raw / "raw", joined_modules(linux=1, windows=0), trx=trx)
+                evidence = [raw / "raw/joined.json", *([raw / "raw/windows-tests.trx"] if trx else [])]
 
                 with mock.patch.dict(os.environ, {"APPDATA": str(root / "appdata")}, clear=False), \
                         mock.patch("dotnet_platform.native_platform", return_value=platform), \
@@ -1353,14 +1354,27 @@ class CoverageCampaignTests(unittest.TestCase):
                 receipt = row["facts"]["platform_selection"]
                 self.assertEqual((platform, ["Lib/Mixed.cs", "Lib/Native.cs", "Lib/Neutral.cs"]),
                                  (receipt["platform"], sorted(receipt["denominators"])))
-                self.assertEqual({"passed": 3, "total": 3} if platform == "windows" else None, receipt.get("tests"))
+                self.assertEqual({"passed": 3, "total": 3, "names": [WINDOWS_TEST]} if trx else None,
+                                 receipt.get("tests"))
                 self.assertEqual([{"assembly": "dydo", "accounting": []}], row["facts"]["targets"])
-                self.assertEqual([{"path": "raw-abc/raw/joined.json",
-                                   "sha256": hashlib.sha256(joined.read_bytes()).hexdigest()}],
+                self.assertEqual([{"path": "raw-abc/raw/" + path.name,
+                                   "sha256": hashlib.sha256(path.read_bytes()).hexdigest()} for path in evidence],
                                  row["artifacts"])
                 campaign = answer["facts"]["commands"][0]
                 self.assertEqual(str(root), campaign["cwd"])
                 self.assertEqual(str(root / "appdata"), campaign["environment"]["APPDATA"])
+
+    def test_a_passing_windows_summary_without_every_declared_result_fails_closed(self):
+        from test_dotnet_platform import WINDOWS_TEST, joined_modules, results, write_evidence
+        for trx, message in ((None, "Missing or unreadable Windows test results"),
+                             (results(), f"Declared Windows tests did not run: {WINDOWS_TEST}$")):
+            with self.subTest(message=message), tempfile.TemporaryDirectory() as folder:
+                root, raw = dotnet_repository(folder), Path(folder) / "run/raw-abc"
+                write_evidence(raw / "raw", joined_modules(linux=1, windows=1), trx=trx)
+                with mock.patch("dotnet_platform.native_platform", return_value="windows"), \
+                        mock.patch.object(gate_adapter, "run_coverage_command", return_value=0), \
+                        self.assertRaisesRegex(ValueError, message):
+                    gate_adapter.collect_dotnet_coverage(root, raw)
 
     def test_a_drifted_selection_or_undeclared_windows_test_stops_before_the_campaign(self):
         for platform, damage in (("linux", "Lib/Mixed.cs"), ("windows", "DynaDocs.Tests/Lib/NativeTests.cs"),

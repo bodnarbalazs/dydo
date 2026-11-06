@@ -5,7 +5,8 @@ using System.Text.RegularExpressions;
 /// <summary>
 /// The routes around <c>dydo merge</c> a command line takes (DYD-425, DR 061 decision 7), read with
 /// the PR calls' rules: the same shell readings, command position, substitutions and data a command
-/// only reads. A route is <c>gh pr merge</c>; <c>gh api</c> on <c>pulls/N/merge</c>,
+/// only reads; a bash line holding a backslash is also read as written, so a Windows path names its
+/// tree (DYD-739). A route is <c>gh pr merge</c>; <c>gh api</c> on <c>pulls/N/merge</c>,
 /// <c>pulls/N/merge-async</c> or <c>merges</c>, as path or URL, whatever the method; <c>gh api
 /// graphql</c> with a field naming mergePullRequest, enablePullRequestAutoMerge or mergeBranch;
 /// <c>gh repo edit --default-branch</c>, or a <c>gh api</c> PATCH of <c>repos/OWNER/REPO</c> with a
@@ -43,12 +44,18 @@ internal static partial class PrCallScanner
     private static List<MergeRoute> ScanRoutes(string text, ShellDialect dialect, int depth)
     {
         var line = GhPlaceholderRegex().Replace(text, ":$1");
-        return [.. Readings(dialect, line)
+        return [.. RouteReadings(dialect, line)
             .Select(posix => ShellReader.Read(line, posix))
             .SelectMany(reading => reading.Commands.SelectMany(command => RoutesOf(command.Words, depth))
                 .Concat(reading.Substitutions.SelectMany(substitution => ScanRoutes(substitution, ShellDialect.Posix, depth + 1))))
             .Distinct()];
     }
+
+    // Bash drops an unquoted backslash, so its reading of git -C C:\Users\wt names C:Userswt, a tree
+    // that does not exist; the line as written names the tree the agent meant (DYD-739). A bash line
+    // holding a backslash is also read as written, and its routes are both readings'.
+    private static bool[] RouteReadings(ShellDialect dialect, string line) =>
+        dialect == ShellDialect.Posix && line.Contains('\\') ? [true, false] : Readings(dialect, line);
 
     private static List<MergeRoute> RoutesOf(IReadOnlyList<string> words, int depth)
     {

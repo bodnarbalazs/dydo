@@ -271,6 +271,7 @@
       "module": "Services/PrCallScanner.MergeRoutes.cs",
       "tests": [
         "DynaDocs.Tests/Services/MergeRouteScannerTests.cs",
+        "DynaDocs.Tests/Services/PrCallScannerBackslashTreeTests.cs",
         "DynaDocs.Tests/Integration/GuardMergeRouteTests.cs"
       ]
     },

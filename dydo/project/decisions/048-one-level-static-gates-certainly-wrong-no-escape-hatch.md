@@ -235,7 +235,8 @@ result, with theory rows counting under their method. Linux already measures eve
 does not own, so a full Windows suite would measure nothing more. Both platforms keep the full native join as raw evidence and
 apply the unchanged policy to their own portion.
 
-One hosted job, `dotnet-coverage`, runs the gate on the PR head on both platforms: `ubuntu-24.04`
+One hosted job, `dotnet-coverage`, runs the gate on both platforms on the run's own commit,
+`github.sha`, which on a pull request is the merge result, not the PR head: `ubuntu-24.04`
 with the full suite and `windows-latest` with the selected tests. A dependent union check,
 `dotnet-coverage-union`, requires both reports. It rejects a missing report, a failed, incomplete or
 dirty gate, reports from different commits, a Windows receipt without its selected-test count and a
@@ -246,6 +247,13 @@ platform's lines, branches and callables under those hashes and owners, with cal
 the rebuilt candidate. Matching omissions, altered ownership and a different selection therefore all
 fail. Neither report alone establishes .NET coverage success. This amends measurement placement
 under §2. It does not widen the September coverage exemption or change any threshold.
+
+*Note 2026-11-06: Balazs ratified on 2026-11-06
+([DYD-744](https://linear.app/bodnar-balazs/issue/DYD-744)) that hosted pull-request runs measure
+the merge result, and receipts keep the PR head SHA. The 2026-11-05 text placed the gate on the PR
+head. [DYD-717](https://linear.app/bodnar-balazs/issue/DYD-717) implements the change: every
+`ci.yml` job checks out `github.sha`, and the preflight receipts record `pr_head_sha` and
+`merge_ref_sha`.*
 
 ## Consequences
 

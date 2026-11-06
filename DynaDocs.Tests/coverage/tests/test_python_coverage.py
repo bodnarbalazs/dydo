@@ -1,5 +1,6 @@
 """Ordinary coverage.py collection includes child-only and never-called callables."""
 import contextlib
+import errno
 import itertools
 import json
 import os
@@ -585,6 +586,127 @@ if case == "killed":
 else:
     Path("outliving.ready").touch()
 """
+
+
+class FailureReportTests(unittest.TestCase):
+    """Failed child measurements write no receipt; exercise reporting in the measured test process."""
+
+    def setUp(self):
+        self.report = object.__new__(python_coverage._Report)
+        self.connection = self.report.connection = mock.Mock(spec=socket.socket)
+        self.error = ValueError("measurement broke")
+        self.exit = SystemExit(70)
+        self.exit_unrecorded = self.enterContext(mock.patch.object(
+            python_coverage, "_exit_unrecorded", side_effect=self.exit))
+        self.clock = self.enterContext(mock.patch("time.monotonic", return_value=10.0))
+        self.sleep = self.enterContext(mock.patch("time.sleep"))
+        self.failure = (json.dumps(
+            f"Python measurement failed in process {os.getpid()} at finish "
+            f"({sys.orig_argv}): ValueError: measurement broke") + "\n").encode("ascii")
+        self.fallback = (json.dumps(
+            f"Python process {os.getpid()}: reporting retries exhausted") + "\n").encode("ascii")
+
+    def test_immediate_success_sends_the_failure_and_closes(self):
+        self.report.failed("finish", self.error)
+        self.connection.sendall.assert_called_once_with(self.failure)
+        self.connection.close.assert_called_once_with()
+        self.connection.recv.assert_not_called()
+        self.exit_unrecorded.assert_not_called()
+        self.sleep.assert_not_called()
+
+    def test_interruptions_retry_then_close_and_reraise_the_first(self):
+        first = KeyboardInterrupt("first interruption")
+        self.connection.sendall.side_effect = [first, SystemExit(9), None]
+        with self.assertRaises(KeyboardInterrupt) as raised:
+            self.report.failed("finish", self.error)
+        self.assertIs(first, raised.exception)
+        self.assertEqual([mock.call(self.failure)] * 3, self.connection.sendall.call_args_list)
+        self.connection.close.assert_called_once_with()
+        self.exit_unrecorded.assert_not_called()
+
+    def test_recoverable_errors_retry_the_full_record(self):
+        for code in (errno.ENOBUFS, errno.ENOMEM, errno.EAGAIN, errno.EWOULDBLOCK, errno.EINTR):
+            with self.subTest(errno=code):
+                self.connection.reset_mock()
+                self.connection.sendall.side_effect = [OSError(code, "retry"), None]
+                self.report.failed("finish", self.error)
+                self.assertEqual([mock.call(self.failure)] * 2, self.connection.sendall.call_args_list)
+                self.connection.close.assert_called_once_with()
+                self.connection.recv.assert_not_called()
+        self.exit_unrecorded.assert_not_called()
+
+    def test_deadline_exhaustion_sends_the_fallback_then_closes(self):
+        self.clock.side_effect = [10.0, 10.1, 10.25]
+        self.connection.sendall.side_effect = [OSError(errno.ENOBUFS, "retry")] * 2 + [None]
+        self.report.failed("finish", self.error)
+        self.assertEqual([mock.call(self.failure)] * 2 + [mock.call(self.fallback)],
+                         self.connection.sendall.call_args_list)
+        self.connection.close.assert_called_once_with()
+        self.assertEqual([mock.call(0.01)] * 2, self.sleep.call_args_list)
+        self.exit_unrecorded.assert_not_called()
+
+    def test_unclassified_error_uses_the_fallback_without_waiting_for_the_deadline(self):
+        self.connection.sendall.side_effect = [OSError(errno.EINVAL, "unclassified"), None]
+        self.report.failed("finish", self.error)
+        self.assertEqual([mock.call(self.failure), mock.call(self.fallback)],
+                         self.connection.sendall.call_args_list)
+        self.clock.assert_called_once_with()
+        self.connection.close.assert_called_once_with()
+        self.exit_unrecorded.assert_not_called()
+
+    def test_exhausted_fallback_success_does_not_wait_for_the_peer(self):
+        python_coverage._report_exhausted(self.connection)
+        self.connection.sendall.assert_called_once_with(self.fallback)
+        self.connection.recv.assert_not_called()
+        self.connection.close.assert_not_called()
+
+    def test_exhausted_fallback_holds_the_peer_until_eof(self):
+        self.connection.sendall.side_effect = OSError(errno.ENOBUFS, "retry")
+        self.connection.recv.side_effect = [b"x", b""]
+        with self.assertRaisesRegex(BrokenPipeError, "the collector closed the reporting connection"):
+            python_coverage._report_exhausted(self.connection)
+        self.connection.sendall.assert_called_once_with(self.fallback)
+        self.assertEqual([mock.call(1)] * 2, self.connection.recv.call_args_list)
+        self.connection.close.assert_not_called()
+        self.sleep.assert_not_called()
+
+    def test_exhausted_receive_retries_recoverable_errors_until_the_peer_is_gone(self):
+        gone = OSError(errno.EBADF, "gone")
+        self.connection.sendall.side_effect = OSError(errno.EAGAIN, "retry")
+        self.connection.recv.side_effect = [OSError(errno.EINTR, "retry"), gone]
+        with self.assertRaises(OSError) as raised:
+            python_coverage._report_exhausted(self.connection)
+        self.assertIs(gone, raised.exception)
+        self.connection.sendall.assert_called_once_with(self.fallback)
+        self.assertEqual([mock.call(1)] * 2, self.connection.recv.call_args_list)
+        self.sleep.assert_called_once_with(0.01)
+        self.connection.close.assert_not_called()
+
+    def test_a_gone_peer_at_every_stage_takes_the_unrecorded_exit(self):
+        for stage, gone in itertools.product(
+                ("full", "fallback", "receive"),
+                (OSError(errno.EBADF, "gone"), ConnectionResetError("gone without errno"))):
+            with self.subTest(stage=stage, error=repr(gone)):
+                self.connection.reset_mock()
+                self.exit_unrecorded.reset_mock()
+                sends = [OSError(errno.EINVAL, "unclassified"), gone]
+                if stage == "full":
+                    sends = [gone]
+                elif stage == "receive":
+                    sends[-1] = OSError(errno.EAGAIN, "retry")
+                self.connection.sendall.side_effect = sends
+                self.connection.recv.side_effect = [gone]
+                with self.assertRaises(SystemExit) as raised:
+                    self.report.failed("finish", self.error)
+                self.assertIs(self.exit, raised.exception)
+                self.exit_unrecorded.assert_called_once_with("finish", self.error, gone)
+                expected = [mock.call(self.failure)]
+                if stage != "full":
+                    expected.append(mock.call(self.fallback))
+                self.assertEqual(expected, self.connection.sendall.call_args_list)
+                self.assertEqual([mock.call(1)] if stage == "receive" else [],
+                                 self.connection.recv.call_args_list)
+                self.connection.close.assert_not_called()
 
 
 class PythonCoverageTests(unittest.TestCase):

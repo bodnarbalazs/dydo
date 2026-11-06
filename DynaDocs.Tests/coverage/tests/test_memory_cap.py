@@ -1,6 +1,7 @@
 """The facade's shared-host memory cap: enforced, inherited and unavailable, and the cap-hit row."""
 import contextlib
 import io
+import itertools
 import json
 import os
 import runpy
@@ -143,6 +144,7 @@ class MemoryCapTests(unittest.TestCase):
 
     def test_child_environment_defaults_disable_dotnet_servers_on_every_cap_path(self):
         names = ('MSBUILDDISABLENODEREUSE', 'DOTNET_CLI_USE_MSBUILD_SERVER', 'UseSharedCompilation')
+        names = tuple(name.upper() if sys.platform == 'win32' else name for name in names)
         clean = {key: value for key, value in os.environ.items() if key not in names}
         for mode in ('enforced', 'rerun', 'inherited', 'unavailable'):
             with self.subTest(mode=mode), mock.patch.dict(os.environ, clean, clear=True):
@@ -153,6 +155,7 @@ class MemoryCapTests(unittest.TestCase):
 
     def test_child_environment_preserves_each_caller_dotnet_setting(self):
         names = ('MSBUILDDISABLENODEREUSE', 'DOTNET_CLI_USE_MSBUILD_SERVER', 'UseSharedCompilation')
+        names = tuple(name.upper() if sys.platform == 'win32' else name for name in names)
         clean = {key: value for key, value in os.environ.items() if key not in names}
         for name in names:
             for value in ('caller-value', ''):
@@ -161,6 +164,25 @@ class MemoryCapTests(unittest.TestCase):
                     expected = dict(zip(names, ('1', '0', 'false')))
                     expected[name] = value
                     self.assertEqual(expected, {key: self.left.get(key) for key in names})
+
+    def test_windows_child_environment_preserves_caller_casing_and_defaults_exactly_once(self):
+        for name, default in (('MSBUILDDISABLENODEREUSE', '1'), ('DOTNET_CLI_USE_MSBUILD_SERVER', '0'),
+                              ('UseSharedCompilation', 'false')):
+            for key, value in itertools.product((name.upper(), name.lower(), name), (None, 'true', '')):
+                environment = {} if value is None else {key: value}
+                with self.subTest(key=key, value=value), mock.patch.object(os, 'environ', environment):
+                    self.cap(platform='win32')
+                    matches = [setting for variable, setting in self.left.items() if variable.upper() == name.upper()]
+                    self.assertEqual([default if value is None else value], matches)
+                    if value is not None:
+                        self.assertEqual(value, self.left[key])
+
+    def test_posix_child_environment_keeps_names_case_sensitive(self):
+        for platform in ('linux', 'darwin'):
+            with self.subTest(platform=platform), mock.patch.object(os, 'environ', {'USESHAREDCOMPILATION': 'true'}):
+                self.cap(platform=platform)
+                self.assertEqual('true', self.left['USESHAREDCOMPILATION'])
+                self.assertEqual('false', self.left['UseSharedCompilation'])
 
     def test_an_uncapped_linux_operation_reruns_once_under_a_capped_systemd_scope(self):
         argv = [sys.executable, '-u', 'run_gap_check.py', 'test', '--stack', 'x', '--', 'a$(b', '$HOME', '$$x']
@@ -449,6 +471,7 @@ class MemoryCapTests(unittest.TestCase):
 
     def test_dotnet_server_defaults_and_caller_values_reach_the_actual_child(self):
         names = ('MSBUILDDISABLENODEREUSE', 'DOTNET_CLI_USE_MSBUILD_SERVER', 'UseSharedCompilation')
+        names = tuple(name.upper() if sys.platform == 'win32' else name for name in names)
         code = f"import json, os; open('environment.json', 'w').write(json.dumps([os.environ.get(n) for n in {names!r}]))"
         repository = self.fixture(self.manifest(code))
         clean = {key: value for key, value in os.environ.items() if key not in names}

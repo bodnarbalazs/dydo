@@ -748,9 +748,10 @@ def memory_cap():
     reruns under systemd-run in the caller's slice at the tighter of the target and any ancestor
     limit. Concurrent runs share that slice's budget. Without systemd the run is uncapped,
     recorded and warned once."""
-    os.environ.setdefault("MSBUILDDISABLENODEREUSE", "1")
-    os.environ.setdefault("DOTNET_CLI_USE_MSBUILD_SERVER", "0")
-    os.environ.setdefault("UseSharedCompilation", "false")
+    names = {name.upper(): name for name in os.environ} if sys.platform == "win32" else {}
+    for name, value in (("MSBUILDDISABLENODEREUSE", "1"), ("DOTNET_CLI_USE_MSBUILD_SERVER", "0"),
+                        ("UseSharedCompilation", "false")):
+        os.environ.setdefault(names.get(name.upper(), name), value)
     target = memory_target()
     rerun = os.environ.pop(MEMORY_SCOPE_ENV, None)
     if sys.platform != "linux":

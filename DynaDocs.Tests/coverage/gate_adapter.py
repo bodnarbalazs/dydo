@@ -670,13 +670,12 @@ def collect_statechart_coverage(root, raw, inventory):
 
 def _scoped_dotnet(root, evidence, platform, selection):
     """The native join partitioned by the reviewed selection; the raw join keeps every point."""
-    from dotnet_platform import read_source_files, scope, selected_test_counts
+    from dotnet_platform import read_source_files, scope, selected_tests
     from gate_policy import evaluate_policy
     joined = json.loads((evidence / "joined.json").read_text(encoding="utf-8"))
     modules, receipt = scope(root, joined["modules"], read_source_files(evidence), platform, selection)
     if platform == "windows":
-        receipt["tests"] = selected_test_counts(
-            (evidence / "altcover-runner.stdout").read_text(encoding="utf-8", errors="replace"))
+        receipt["tests"] = selected_tests(evidence, selection)
     targets = [{key: value for key, value in target.items() if key != "modules"}
                for target in joined["targets"]]
     return {"schema": joined["schema"], "targets": targets, "modules": modules,
@@ -684,7 +683,7 @@ def _scoped_dotnet(root, evidence, platform, selection):
 
 
 def collect_dotnet_coverage(root, raw):
-    from dotnet_platform import discover_windows_tests, load_selection, native_platform
+    from dotnet_platform import WINDOWS_RESULTS, discover_windows_tests, load_selection, native_platform
     platform = native_platform()
     selection = load_selection(root, platform)
     if platform == "windows":
@@ -697,7 +696,8 @@ def collect_dotnet_coverage(root, raw):
     commands = [_inherited_row("csharp-campaign", argv, root, child, started),
                 *_campaign_commands(evidence, run)]
     artifacts = _raw_artifacts([evidence / "joined.json", evidence / "commands.json",
-                                evidence / "coverage.opencover.xml", raw / "identities.json"], run)
+                                evidence / "coverage.opencover.xml", evidence / WINDOWS_RESULTS,
+                                raw / "identities.json"], run)
     facts = {"child_exit": child, "raw": _report_location(raw, run)}
     if child not in (0, 1):
         finding = {"gate": "csharp-coverage", "message": "native campaign incomplete"}

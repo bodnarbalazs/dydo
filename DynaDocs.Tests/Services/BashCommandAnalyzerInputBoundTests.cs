@@ -6,6 +6,29 @@ using DynaDocs.Services;
 
 public class BashCommandAnalyzerInputBoundTests
 {
+    [Theory]
+    [InlineData("Posix", 0, false)]
+    [InlineData("Posix", 1_048_576, false)]
+    [InlineData("Posix", 1_048_577, true)]
+    [InlineData("PowerShell", 0, false)]
+    [InlineData("PowerShell", 1_048_576, false)]
+    [InlineData("PowerShell", 1_048_577, true)]
+    [InlineData("Unknown", 0, false)]
+    [InlineData("Unknown", 1_048_576, false)]
+    [InlineData("Unknown", 1_048_577, true)]
+    public void LengthBoundary_WhitespaceIsRefusedOnlyPastTheLimit(string dialect, int length, bool refused)
+    {
+        var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
+        var result = analyzer.Analyze(new string(' ', length));
+
+        Assert.Equal(refused, result.HasDangerousPattern);
+        Assert.Equal(refused
+            ? "Command too complex to verify safely: command length exceeds limit of 1048576 characters"
+            : null, result.DangerousPatternReason);
+        Assert.Empty(result.Operations);
+        Assert.False(result.HasBypassAttempt);
+    }
+
     [Fact]
     public void PythonFallback_HasTheDangerousPatternTimeout()
     {

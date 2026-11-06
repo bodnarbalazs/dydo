@@ -1881,7 +1881,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     public (bool IsMatch, string? CdPath, string? RestCommand) DetectNeedlessCd(string command)
     {
-        if (command.Length <= MaxCommandLength && string.IsNullOrWhiteSpace(command))
+        if (string.IsNullOrWhiteSpace(command))
             return (false, null, null);
 
         var match = CdThenCommandRegex().Match(command);
@@ -1899,7 +1899,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     {
         var result = new BashAnalysisResult();
 
-        if (string.IsNullOrWhiteSpace(command))
+        if (command is not { Length: > MaxCommandLength } && string.IsNullOrWhiteSpace(command))
             return result;
 
         var (isDangerous, reason) = CheckDangerousPatterns(command);

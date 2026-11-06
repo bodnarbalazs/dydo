@@ -109,10 +109,24 @@ const scenarios: Record<string, { steps: string[]; skip?: string | boolean; run:
   "Both hosts require user invocation": {
     steps: ["Given the canonical statechart skill", "When setup projects the skill into both discovery roots", "Then both projections resolve to the canonical skill", "And Claude and Codex disable implicit invocation"],
     run() {
-      for (const host of [".claude", ".agents"])
-        assert.equal(fs.realpathSync(path.join(root, host, "skills/statechart")), fs.realpathSync(skill));
-      assert.match(read(path.join(skill, "SKILL.md")), /^disable-model-invocation: true$/m);
-      assert.match(read(path.join(skill, "agents/openai.yaml")), /^  allow_implicit_invocation: false$/m);
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-projection-"));
+      try {
+        const canonical = path.join(dir, "skills/engineering/statechart");
+        fs.mkdirSync(path.join(canonical, "agents"), { recursive: true });
+        for (const file of ["SKILL.md", "agents/openai.yaml"])
+          fs.copyFileSync(path.join(skill, file), path.join(canonical, file));
+        const setup = spawnSync(process.execPath, [path.join(root, "setup-skills.mjs"), "--root", dir, "--skill", "statechart"], { encoding: "utf8", windowsHide: true });
+        assert.equal(setup.error, undefined);
+        assert.equal(setup.status, 0, setup.stderr || setup.stdout);
+        for (const host of [".claude", ".agents"]) {
+          const projection = path.join(dir, host, "skills/statechart");
+          assert.equal(fs.realpathSync(projection), fs.realpathSync(canonical));
+          assert.match(read(path.join(projection, "SKILL.md")), /^disable-model-invocation: true$/m);
+          assert.match(read(path.join(projection, "agents/openai.yaml")), /^  allow_implicit_invocation: false$/m);
+        }
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
     },
   },
 };

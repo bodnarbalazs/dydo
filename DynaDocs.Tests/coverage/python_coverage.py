@@ -27,8 +27,8 @@ _CONNECT_BACKOFF_SECONDS = (0.01, 0.02, 0.04)
 # Every measured process's startup. Without a campaign config it imports nothing. With one, a
 # `python_coverage` that cannot be imported ends the process before its program runs, where `site` would
 # run it unmeasured; `os` and `sys` are loaded already, so that exit takes nothing new. An exception that
-# escapes `startup_from_environment` has already reached `collect` if `site` would swallow it; broader
-# BaseExceptions abort interpreter startup before the program runs.
+# escapes `startup_from_environment` has already reached `collect`; a process without a reporting
+# connection exits before the program runs, even on a BaseException.
 _SITECUSTOMIZE = """\
 import os
 import sys
@@ -194,15 +194,20 @@ class _Report:
         try:
             self.connection = _connect(config_path)
             self.connection.sendall(_record(f"process {os.getpid()} {sys.orig_argv}"))
-        except Exception as error:  # noqa: BLE001 - `site` would run the program unmeasured
+        except BaseException as error:
             _exit_unrecorded("startup", error, "no reporting connection")
 
     def failed(self, phase, error):
         """Send this process's failed measurement to `collect`, or end the process unmeasured."""
         try:
-            self.connection.sendall(_record(_failure(phase, error)))
+            try:
+                self.connection.sendall(_record(_failure(phase, error)))
+            except BaseException:
+                # Retry the full frame: zero bytes must not look like a clean close. A partial frame
+                # followed by a full one is unreadable, which also fails the campaign closed.
+                self.connection.sendall(_record(_failure(phase, error)))
             self.connection.close()
-        except Exception as unrecorded:  # noqa: BLE001 - every unrecorded failure must end the process
+        except BaseException as unrecorded:
             _exit_unrecorded(phase, error, unrecorded)
 
 
@@ -214,7 +219,7 @@ def startup_from_environment():
     report = _Report(config_path)
     try:
         return _start(config_path, report)
-    except Exception as error:
+    except BaseException as error:
         report.failed("startup", error)
         raise
 

@@ -255,12 +255,44 @@ class SelectionTests(unittest.TestCase):
                              (twin.replace(b'"t1"', b'"t0"'), 'Ambiguous Windows test definition: t0'),
                              (PASSING.replace(b'</TestDefinitions>', b'<UnitTest id="t3" /></TestDefinitions>')
                               .replace(b'</Results>', b'<UnitTestResult testId="t3" outcome="Passed" /></Results>'),
-                              'Undeclared Windows test ran: None$'),
+                              'Ambiguous Windows test definition: t3$'),
                              (results(*[(WINDOWS_TEST, 'Passed')] * 2), 'hold 2 cases but the summary 3')):
             with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
                 self.verdict(trx)
         with self.assertRaisesRegex(ValueError, 'Missing or ambiguous selected test summary'):
             self.verdict(PASSING, stdout='')
+
+    def extra_definition(self, definition):
+        """A passing run plus one definition no result names."""
+        return PASSING.replace(b'</TestDefinitions>', definition.encode('utf-8') + b'</TestDefinitions>')
+
+    def test_a_definition_with_a_second_test_method_is_ambiguous(self):
+        second = f'<TestMethod className="{OTHER_TEST.rsplit(".", 1)[0]}" name="ProbeRefuses" /></UnitTest>'
+        trx = PASSING.replace(b' /></UnitTest>', b' />' + second.encode('utf-8'), 1)
+        with self.assertRaisesRegex(ValueError, 'Ambiguous Windows test definition: t0$'):
+            self.verdict(trx)
+
+    def test_a_definition_without_its_id_fails_closed(self):
+        method = f'<TestMethod className="{WINDOWS_TEST.rsplit(".", 1)[0]}" name="ProbeAnswers" />'
+        for identity in ('', ' id=""'):
+            with self.subTest(identity=identity), self.assertRaisesRegex(
+                    ValueError, 'Windows test definition without its id: orphan$'):
+                self.verdict(self.extra_definition(f'<UnitTest name="orphan"{identity}>{method}</UnitTest>'))
+
+    def test_a_result_without_its_test_id_fails_closed_although_an_id_less_definition_matches(self):
+        for definition, result in ((b'', b''), (b' id=""', b' testId=""')):
+            trx = PASSING.replace(b' id="t2"', definition).replace(b' testId="t2"', result)
+            with self.subTest(result=result), self.assertRaisesRegex(
+                    ValueError, rf'Windows test result without its testId: {WINDOWS_TEST}\(case: 2\)$'):
+                self.verdict(trx)
+
+    def test_a_test_method_without_its_class_or_name_is_ambiguous(self):
+        owner = WINDOWS_TEST.rsplit('.', 1)[0]
+        for method in ('<TestMethod name="ProbeAnswers" />', '<TestMethod className="" name="ProbeAnswers" />',
+                       f'<TestMethod className="{owner}" />', f'<TestMethod className="{owner}" name="" />'):
+            with self.subTest(method=method), self.assertRaisesRegex(
+                    ValueError, 'Ambiguous Windows test definition: t3$'):
+                self.verdict(self.extra_definition(f'<UnitTest name="extra" id="t3">{method}</UnitTest>'))
 
     def test_the_native_platform_names_only_linux_and_windows(self):
         for value, expected in (('linux', 'linux'), ('win32', 'windows'), ('darwin', None)):

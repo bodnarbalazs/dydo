@@ -231,8 +231,8 @@ Linux runs the full suite and measures every other point, including the neutral 
 sources. Windows runs only the selection's fourteen named tests, seventeen cases with their theory
 rows, which reach the Windows members. It passes only if every declared test runs, none fails or is
 skipped, and no result falls outside the selection. Each of the fourteen needs at least one executed
-result, with theory rows counting under their method. Linux already measures every point Windows does not own, so a full Windows
-suite would measure nothing more. Both platforms keep the full native join as raw evidence and
+result, with theory rows counting under their method. Linux already measures every point Windows
+does not own, so a full Windows suite would measure nothing more. Both platforms keep the full native join as raw evidence and
 apply the unchanged policy to their own portion.
 
 One hosted job, `dotnet-coverage`, runs the gate on the PR head on both platforms: `ubuntu-24.04`

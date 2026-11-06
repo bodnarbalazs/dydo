@@ -378,12 +378,13 @@ initializer goes with its member. A branch belongs to its origin line. Linux run
 and measures every other point, including the neutral remainder of mixed files. Windows runs only
 the selection's named tests, which reach the named members, and judges them by per-test results.
 A declared test without an executed result, a result that is not Passed, or a result outside the
-selection fails the gate; theory rows count under their method. Both gates apply 80% line / 60% branch / HCRAP 20 to their own portion. The hosted
-`dotnet-coverage` job runs both gates on the PR head, Linux on `ubuntu-24.04` and Windows on
-`windows-latest`. The dependent `dotnet-coverage-union` job requires both reports and both
-passing gates on the same clean commit. It rebuilds that commit's complete zero-hit Linux
-denominator and checks that each report holds exactly its own platform's points and agrees on
-every owner. Neither report alone establishes .NET coverage success.
+selection fails the gate; theory rows count under their method. Both gates apply 80% line / 60%
+branch / HCRAP 20 to their own portion. The hosted `dotnet-coverage` job runs both gates on the PR
+head, Linux on `ubuntu-24.04` and Windows on `windows-latest`. The dependent
+`dotnet-coverage-union` job requires both reports and both passing gates on the same clean commit.
+It rebuilds that commit's complete zero-hit Linux denominator and checks that each report holds
+exactly its own platform's points and agrees on every owner. Neither report alone establishes .NET
+coverage success.
 
 The Windows coverage leg runs only the statechart's selected tests, so the guard's tests run on
 Windows in a separate job. The hosted `guard-windows` job builds the candidate commit on

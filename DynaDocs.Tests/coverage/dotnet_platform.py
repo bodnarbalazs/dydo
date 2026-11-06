@@ -110,17 +110,30 @@ def selected_test_counts(stdout):
     return {'passed': passed, 'total': total}
 
 
+def _method(test):
+    """A definition's one named method; no id, no method, two methods or a nameless one is ambiguous."""
+    if not test.get('id'):
+        raise ValueError(f"Windows test definition without its id: {test.get('name')}")
+    methods = test.findall(_TRX + 'TestMethod')
+    if len(methods) != 1 or not methods[0].get('className') or not methods[0].get('name'):
+        raise ValueError(f"Ambiguous Windows test definition: {test.get('id')}")
+    return f"{methods[0].get('className')}.{methods[0].get('name')}"
+
+
 def _ran(results, declared):
     """Each result's method, by its definition; a theory's rows count under their method."""
     root = ET.fromstring(results)
+    rows = list(root.iter(_TRX + 'UnitTestResult'))
+    for result in rows:
+        if not result.get('testId'):
+            raise ValueError(f"Windows test result without its testId: {result.get('testName')}")
     methods = {}
     for test in root.iter(_TRX + 'UnitTest'):
-        method = test.find(_TRX + 'TestMethod')
-        name = None if method is None else f"{method.get('className')}.{method.get('name')}"
+        name = _method(test)
         if methods.setdefault(test.get('id'), name) != name:
             raise ValueError(f"Ambiguous Windows test definition: {test.get('id')}")
     ran = []
-    for result in root.iter(_TRX + 'UnitTestResult'):
+    for result in rows:
         name = methods.get(result.get('testId'))
         if name not in declared:
             raise ValueError(f"Undeclared Windows test ran: {name or result.get('testName')}")

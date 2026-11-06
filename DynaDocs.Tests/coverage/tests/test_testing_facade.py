@@ -33,6 +33,13 @@ def has_worktree_identity(listing, path):
                for line in listing.splitlines() if line.startswith(prefix))
 
 
+def first_adapter_line(lines):
+    """The first queued line, past the facade's one memory-cap warning: a host without systemd
+    (Windows, macOS, a runner with no user manager) prints that warning before any adapter output."""
+    line = lines.get(timeout=15)
+    return lines.get(timeout=15) if line.startswith('memory cap unavailable: ') else line
+
+
 def next_line(lines, matches, seconds):
     """The first queued line that matches, or None once `seconds` pass without one."""
     deadline = time.monotonic() + seconds
@@ -834,7 +841,7 @@ class TestingFacadeTests(unittest.TestCase):
                 output.append(line); lines.put(line)
         reader = threading.Thread(target=collect, daemon=True); reader.start()
         try:
-            self.assertEqual('WAITING_FOR_INTERRUPT', lines.get(timeout=15).strip())
+            self.assertEqual('WAITING_FOR_INTERRUPT', first_adapter_line(lines).strip())
             facade.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGINT)
             facade.wait(timeout=35); reader.join(timeout=5)
             self.assertEqual(130, facade.returncode, ''.join(output))
@@ -924,7 +931,7 @@ class TestingFacadeTests(unittest.TestCase):
     def test_exit_unavailable(self): self.exit_case(2)
 
     def assert_payload(self, payload, root):
-        self.assertEqual({'schema', 'candidate', 'operation', 'selectedStacks', 'results', 'aggregateExit'}, set(payload))
+        self.assertEqual({'schema', 'candidate', 'memoryCap', 'operation', 'selectedStacks', 'results', 'aggregateExit'}, set(payload))
         self.assertIs(type(payload['schema']), int)
         self.assertEqual(1, payload['schema'])
         self.assertEqual({'commit', 'dirty'}, set(payload['candidate']))
@@ -1838,7 +1845,7 @@ print('INTER_ITERATION_CASES=' + str(count))
                         output.append(line); lines.put(line)
                 reader = threading.Thread(target=collect, daemon=True); reader.start()
                 try:
-                    self.assertEqual('WAITING_FOR_INTERRUPT', lines.get(timeout=15).strip())
+                    self.assertEqual('WAITING_FOR_INTERRUPT', first_adapter_line(lines).strip())
                     interrupted_at = time.monotonic()
                     facade.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGINT)
                     facade.wait(timeout=35); reader.join(timeout=5)

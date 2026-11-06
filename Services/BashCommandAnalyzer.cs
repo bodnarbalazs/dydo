@@ -954,7 +954,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"cat\s+/etc/shadow|head\s+/etc/shadow|tail\s+/etc/shadow", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex ShadowFileAccessRegex();
 
-    [GeneratedRegex(@">\s*/etc/passwd|echo.*>>\s*/etc/passwd", RegexOptions.None, DangerousPatternTimeoutMs)]
+    // The old echo.*>> alternative only found writes this > alternative already matches, while
+    // restarting its suffix scan at every echo made a long command quadratic.
+    [GeneratedRegex(@">\s*/etc/passwd", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex PasswdModifyRegex();
 
     [GeneratedRegex(LinearCommandStart + @"rm\s+(?:(?:-[a-zA-Z]+|--[a-z-]+)\s+)*(?:['"" ]?/(?:Users(?:/[^/\s'"";&|]+)?/?|\*|)|['"" ]?(?:~|\$HOME|\$\{HOME\})(?:/\*)?/?|[^;&|]*--no-preserve-root)(?:['""\s]|$|[;&|])", LinearIgnoreCase, DangerousPatternTimeoutMs)]
@@ -1884,13 +1886,13 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // Each check reads the expanding text of each piece, a substitution or variable search without its
     // literal data (DYD-422); a line break counts only in the layout of the pieces, joined, where it
     // separates commands rather than sitting in quoted text, a body or literal data.
-    private static readonly (Func<string, string, bool> Check, bool WithoutLiteralData, string Warning)[] BypassChecks =
+    private static readonly (Func<string, bool, bool> Check, bool WithoutLiteralData, string Warning)[] BypassChecks =
     [
         ((code, _) => SubstitutionBodies(code).Any(), true, "Command contains command substitution - paths may be dynamic"),
         ((code, _) => Base64DecodeRegex().IsMatch(code), false, "Command contains base64 decode - potential obfuscation"),
         ((code, _) => HexDecodeRegex().IsMatch(code), false, "Command contains hex decode - potential obfuscation"),
         ((code, _) => ExpandsVariable(code), true, "Command contains variable expansion - paths may be dynamic"),
-        ((code, layout) => SeparatesCommandLines(layout) || code.Contains("$'\\n'") || code.Contains("%0a"), false, "Command contains embedded newlines"),
+        ((code, separates) => separates || code.Contains("$'\\n'") || code.Contains("%0a"), false, "Command contains embedded newlines"),
     ];
 
     // Whether more than one line of the layout holds a command. A blank or comment-only line, such as
@@ -1906,9 +1908,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private static void CheckBypassAttempts(List<CodePiece> pieces, List<CodePiece> searched, string layout, BashAnalysisResult result)
     {
+        // The joined layout is shared by every piece; scanning it per body was quadratic.
+        var separates = SeparatesCommandLines(layout);
         foreach (var (check, withoutLiteralData, warning) in BypassChecks)
         {
-            if ((withoutLiteralData ? searched : pieces).Any(piece => check(piece.Expanding, layout)))
+            if ((withoutLiteralData ? searched : pieces).Any(piece => check(piece.Expanding, separates)))
             {
                 result.Warnings.Add(warning);
                 result.HasBypassAttempt = true;

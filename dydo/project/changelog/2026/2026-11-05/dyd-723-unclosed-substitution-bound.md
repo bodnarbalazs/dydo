@@ -73,6 +73,10 @@ megabytes at most, and a command nested past the reading's bound is refused.
 - The heredoc and here-string searches start only at an opener a later line closes. One that
   nothing closes, such as `<<E` in quoted text, was searched to the end of the command, once per
   opener: 16,000 of them took 1.6 seconds. The search finds what it found.
+- The newline bypass check scans the joined layout once, instead of once per heredoc or
+  here-string piece. The password-file deny pattern drops its redundant `echo.*>>` alternative:
+  its final `>` already matches the retained alternative, but each `echo` restarted a scan of the
+  remaining command. Both checks keep the same verdicts while removing quadratic CPU work.
 
 No change in this entry renames a term mechanically, so it has no merge normalisations.
 
@@ -88,12 +92,15 @@ Guards stop accidents, not rogue agents. The bound exists so the guard never tak
 - The 256 MB and one-second bounds are Release, uninstrumented. Coverage instrumentation multiplies
   allocation by up to about 30, so the test holds the absolute budget at 10,000 characters and the
   growth ratios at 100,000; the one-second bound is asserted when the tests run in Release.
+- On Linux, the analysis time-ratio tests measure calling-thread CPU minus GC pause to exclude
+  shared-host scheduling noise. Their input sizes, seven rounds, warm-up and ratio threshold stay
+  the same, and the one-second assertion still measures wall time. Other hosts retain wall timing.
 
 ## Files Changed
 
 `Services/ShellReader.cs`, `Services/BashCommandAnalyzer.cs`,
 `DynaDocs.Tests/Services/ShellReaderTests.cs`, `DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs`,
-`DynaDocs.Tests/Integration/GuardSecurityTests.cs`, and this entry.
+`DynaDocs.Tests/Services/ThreadCpuTime.cs`, `DynaDocs.Tests/Integration/GuardSecurityTests.cs`, and this entry.
 
 ## Related
 

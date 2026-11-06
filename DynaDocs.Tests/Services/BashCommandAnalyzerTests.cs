@@ -2471,6 +2471,9 @@ public class BashCommandAnalyzerTests
         ["nested multiline quotes"] = length => "Write-Output " + Repeat("@(", 31)
             + Repeat("\"x\ny\" ", (length - 106) / 6) + Repeat(")", 31),
         ["heredocs"] = length => Repeat("cat <<E\na\nE\n", length / 12),
+        ["quoted heredocs"] = length => Repeat("cat <<'E'\n'a'\nE\n", length / 16),
+        ["here-strings"] = length => Repeat("echo @'\na\n'@\n", length / 13),
+        ["distinct writes"] = length => string.Concat(Enumerable.Range(0, length / 20).Select(i => $"echo x > f{i:D5}.txt;")),
         ["heredoc openers"] = length => "echo \"" + Repeat("<<E x\n", length / 6) + "\"",
         ["here-string openers"] = length => "echo \"" + Repeat("@'\n", length / 3) + "\"",
         ["$( open"] = length => Nesting("$(", "", length),
@@ -2484,7 +2487,8 @@ public class BashCommandAnalyzerTests
     // one of 100,000 once, so a linear analysis spends about as long on each and a quadratic one about
     // eight times as long on the long one; as in the wrapper-chain test above, the ratio decides, so
     // coverage instrumentation cancels out, and the best times of all seven interleaved rounds
-    // damp noise after warming both sizes. In Release, uninstrumented, 100,000 characters also take at most a
+    // damp noise after warming both sizes. Linux uses calling-thread CPU minus GC pause for the
+    // ratio, so scheduling delays do not decide it. In Release, uninstrumented, 100,000 characters take at most a
     // second (captain's ruling, 2026-11-05); a Debug build or instrumentation runs many times slower,
     // and there the ratio alone decides.
     [Theory]
@@ -2518,30 +2522,81 @@ public class BashCommandAnalyzerTests
     [InlineData("Posix", "heredocs")]
     [InlineData("PowerShell", "heredocs")]
     [InlineData("Unknown", "heredocs")]
+    [InlineData("Posix", "quoted heredocs")]
+    [InlineData("Unknown", "quoted heredocs")]
+    [InlineData("PowerShell", "here-strings")]
+    [InlineData("Unknown", "here-strings")]
+    [InlineData("Posix", "distinct writes")]
+    [InlineData("Unknown", "distinct writes")]
     [InlineData("Unknown", "cmd chain")]
     public void Analyze_LongBodies_TakeTimeLinearly(string dialect, string shape) => AssertTimeGrowsLinearly(dialect, shape);
 
     private static void AssertTimeGrowsLinearly(string dialect, string shape)
     {
-        const int growth = 8;
         var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
+        AssertTimeGrowsLinearly(command => analyzer.Analyze(command), shape);
+    }
+
+    // Isolate the two CPU terms: end-to-end allocation and other linear work can mask their ratio.
+    [Theory]
+    [InlineData("Posix", "heredocs")]
+    [InlineData("Unknown", "heredocs")]
+    [InlineData("Posix", "quoted heredocs")]
+    [InlineData("Unknown", "quoted heredocs")]
+    [InlineData("PowerShell", "here-strings")]
+    [InlineData("Unknown", "here-strings")]
+    public void CheckBypassAttempts_ManyBodies_TakesTimeLinearly(string dialect, string shape)
+    {
+        const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.NonPublic
+            | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance;
+        var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
+        var type = typeof(BashCommandAnalyzer);
+        var piecesMethod = type.GetMethod("CodePieces", flags)!;
+        var bypassMethod = type.GetMethod("CheckBypassAttempts", flags)!;
+        var inputs = new Dictionary<string, object[]>();
+        foreach (var length in new[] { 12_500, 100_000 })
+        {
+            var text = LongShapes[shape](length);
+            var pieces = piecesMethod.Invoke(analyzer, [text])!;
+            var code = ((System.Collections.IEnumerable)pieces).Cast<object>()
+                .Select(piece => (string)piece.GetType().GetProperty("Code")!.GetValue(piece)!);
+            inputs[text] = [pieces, pieces, string.Join("; ", code), new BashAnalysisResult()];
+        }
+        AssertTimeGrowsLinearly(text => bypassMethod.Invoke(null, inputs[text]), shape);
+    }
+
+    [Fact]
+    public void PasswdModify_DistinctWrites_TakesTimeLinearly()
+    {
+        var pattern = (System.Text.RegularExpressions.Regex)typeof(BashCommandAnalyzer)
+            .GetMethod("PasswdModifyRegex", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+            .Invoke(null, null)!;
+        AssertTimeGrowsLinearly(text => pattern.IsMatch(text), "distinct writes");
+    }
+
+    private static void AssertTimeGrowsLinearly(Action<string> analyze, string shape)
+    {
+        const int growth = 8;
         var (shortInput, longInput) = (LongShapes[shape](100_000 / growth), LongShapes[shape](100_000));
         for (var warm = 0; warm < 3; warm++)
         {
-            analyzer.Analyze(shortInput);
-            analyzer.Analyze(longInput);
+            analyze(shortInput);
+            analyze(longInput);
         }
         var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
+        var wallBest = TimeSpan.MaxValue;
 
         for (var round = 0; round < 7; round++)
         {
-            shortBest = Min(shortBest, TimeAnalyses(analyzer, shortInput, growth));
-            longBest = Min(longBest, TimeAnalyses(analyzer, longInput, 1));
+            shortBest = Min(shortBest, TimeAnalyses(analyze, shortInput, growth).Cpu);
+            var full = TimeAnalyses(analyze, longInput, 1);
+            longBest = Min(longBest, full.Cpu);
+            wallBest = Min(wallBest, full.Wall);
         }
 
         var ratio = longBest / shortBest;
         Assert.True(ratio < 2.5, $"one 8x input took {ratio:F2}x as long as eight short ones ({shortBest} vs {longBest})");
-        Assert.True(!ReleaseUninstrumented || longBest <= TimeSpan.FromSeconds(1), $"Took {longBest} at 100,000 characters");
+        Assert.True(!ReleaseUninstrumented || wallBest <= TimeSpan.FromSeconds(1), $"Took {wallBest} at 100,000 characters");
     }
 
     [Theory]
@@ -2657,16 +2712,17 @@ public class BashCommandAnalyzerTests
         && !typeof(BashCommandAnalyzer).Assembly.GetReferencedAssemblies()
             .Any(name => name.Name?.StartsWith("AltCover", StringComparison.Ordinal) == true);
 
-    private static TimeSpan TimeAnalyses(BashCommandAnalyzer analyzer, string command, int times)
+    private static (TimeSpan Cpu, TimeSpan Wall) TimeAnalyses(Action<string> analyze, string command, int times)
     {
         // Compare both sizes from a collected heap. Otherwise a short batch occasionally avoids
         // every promoted collection while the long batch inherits garbage from earlier samples.
-        // Collections triggered by the analyses themselves remain inside the measured interval.
+        // Collections triggered by the analyses remain inside the absolute wall interval.
         GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var cpu = ThreadCpuTime.Now();
         for (var i = 0; i < times; i++)
-            analyzer.Analyze(command);
-        return stopwatch.Elapsed;
+            analyze(command);
+        return (ThreadCpuTime.Now() - cpu, stopwatch.Elapsed);
     }
 
     private static void AssertTooComplex(string dialect, string command, bool refused)

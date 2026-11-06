@@ -1609,7 +1609,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
                 || command.RedirectTargets.Any(r => !LiteralRedirect(command.Source, r)))
                 return BodyOutput.Unknown;
             if (!command.PipesOutput)
-                return command.Source.Host is { } host ? CapturedOutput(host, output, ancestors) : output;
+                break;
             if (command.Next is not { } next)
                 return BodyOutput.Unknown;
             command = next;
@@ -1619,6 +1619,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
                 && (StdinShellDialect(call.Program, call.Arguments) != null || call.Program is "iex" or "invoke-expression")
                 ? BodyOutput.Executable : BodyOutput.Unknown;
         }
+        return command.Source.Host is { } host ? CapturedOutput(host, output, ancestors) : output;
     }
 
     private static bool LiteralRedirect(ShellReader.Scope source, ShellReader.RedirectTarget target) =>

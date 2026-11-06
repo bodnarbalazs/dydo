@@ -40,6 +40,12 @@ public static class ConfigFactory
         Severity = "warn"
     };
 
+    /// <summary>
+    /// The review-block nudge's pattern. dydo.json copies of the nudge are matched by it, so it never
+    /// changes; the guard reads a lone <c>gh pr create</c>'s in-tree body file for it too (DYD-639).
+    /// </summary>
+    public const string ReviewBlockPattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)";
+
     public static readonly List<NudgeConfig> DefaultNudges =
     [
         new()
@@ -95,7 +101,7 @@ public static class ConfigFactory
         // honest exception costs one retry; DR 042's rule escalates it to block if discipline erodes.
         new()
         {
-            Pattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)",
+            Pattern = ReviewBlockPattern,
             Message = "This PR carries no review block. Add the independent review under an 'Independent review' heading and follow this project's shared Communication and evidence standard.",
             Severity = "warn"
         },

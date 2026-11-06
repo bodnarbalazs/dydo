@@ -37,6 +37,8 @@ return. A question goes back to the captain with what you searched.
    started the next item under the limit or stopped over it.
 3. **Return.** Done when every work item is documented or listed as handed back.
 
+Run every probe, test and drive capped: `systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`, a probe at 4G with a short timeout. A cap hit is a finding; never raise the cap.
+
 ## Proof
 
 A finding counts once the repository proves it on the audit SHA:

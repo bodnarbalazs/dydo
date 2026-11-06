@@ -98,7 +98,7 @@ internal static partial class PrCallScanner
         };
     }
 
-    private static MergeRoute? ApiRoute(string endpoint, List<(string Name, string Value)> options)
+    private static MergeRoute? ApiRoute(string endpoint, List<Option> options)
     {
         var fields = options.Where(o => o.Name is "field" or "raw-field").Select(o => o.Value).ToList();
         if (GraphQlEndpointRegex().IsMatch(endpoint))

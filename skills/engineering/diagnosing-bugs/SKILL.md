@@ -35,6 +35,8 @@ instrumentation all just consume it. If you don't have one, no amount of staring
 
 Spend disproportionate effort here. **Be aggressive. Be creative. Refuse to give up.**
 
+Run every loop and probe capped: `systemd-run --user --scope -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 120 <cmd>`. A cap hit is a finding to diagnose; never raise the cap or grow inputs uncapped.
+
 ### Ways to construct one, in roughly this order
 
 1. **Failing test** at whatever seam reaches the bug: unit, integration, e2e.

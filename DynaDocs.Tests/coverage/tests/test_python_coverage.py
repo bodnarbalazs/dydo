@@ -1,4 +1,5 @@
 """Ordinary coverage.py collection includes child-only and never-called callables."""
+import concurrent.futures
 import contextlib
 import errno
 import itertools
@@ -1112,18 +1113,32 @@ class PythonCoverageTests(unittest.TestCase):
             # the venv launcher can own another process. It is opened before the report send fails.
             observe = ("import os, socket\n"
                        f"observer = socket.create_connection(('127.0.0.1', {exited.getsockname()[1]}))\n"
+                       "observer_sendall = observer.sendall\n"
                        "exit_process = os._exit\n"
                        "def observed_exit(code):\n"
-                       "    observer.send(str(code).encode('ascii'))\n"
+                       "    observer.settimeout(3)\n"
+                       "    observer_sendall(str(code).encode('ascii'))\n"
+                       "    observer.shutdown(socket.SHUT_WR)\n"
+                       "    observer.recv(1)\n"
                        "    exit_process(code)\n"
                        "os._exit = observed_exit\n")
             _measured_as_itself(root, output, observe + _SOCKET_REPORT_FAILURE + _START)
-            result = _facade(root, output, ["subject.py"],
-                             ["{python}", "-S", "driver.py", "ENOBUFS", "all"], timeout=12)
-            with exited.accept()[0] as observed:
-                observed.settimeout(3)
-                self.assertEqual(b"70", observed.recv(2))
-                self.assertEqual(b"", observed.recv(1))
+
+            def read_exit():
+                with exited.accept()[0] as observed:
+                    observed.settimeout(12)
+                    with observed.makefile("rb") as stream:
+                        return stream.read(2), stream.read(1)
+
+            # Drain the exit code and FIN before allowing os._exit to reset the socket on Windows.
+            # The peer's close acknowledges receipt; the child's wait for it is bounded to 3 seconds.
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as reader:
+                observed_exit = reader.submit(read_exit)
+                result = _facade(root, output, ["subject.py"],
+                                 ["{python}", "-S", "driver.py", "ENOBUFS", "all"], timeout=12)
+                code, eof = observed_exit.result(timeout=15)
+            self.assertEqual(b"70", code)
+            self.assertEqual(b"", eof)
             pid = (root / "failed.pid").read_text()
             self.assertTrue((root / "ran").exists(), result.stderr)
             self.assertEqual(2, result.returncode, result.stderr)

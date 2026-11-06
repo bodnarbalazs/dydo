@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -eu
+evidence=dydo/project/changelog/2026/2026-11-06/dyd-784-fix-evidence
+set +e
+bash dydo/project/changelog/2026/2026-11-06/dyd-784-evidence/run-gate.sh.txt static > /tmp/dyd784-fix/static.log 2>&1
+rc=$?
+set -e
+cp /tmp/dyd784-fix/static.log "$evidence/static.log"
+cp DynaDocs.Tests/coverage/results/adapters/statechart-static.json "$evidence/static-adapter.json"
+latest=$(ls -td DynaDocs.Tests/coverage/results/run-* | head -1)
+cp "$latest/result.json" "$evidence/static-result.json"
+echo "static repeat exit=$rc"
+exit "$rc"

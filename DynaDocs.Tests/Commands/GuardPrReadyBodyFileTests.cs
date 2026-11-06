@@ -118,9 +118,17 @@ public sealed class GuardPrReadyBodyFileTests : IDisposable
     [Fact]
     public void LinkedDirectoryLeavingTheTree_IsNull()
     {
-        DirectoryLinks.Create(Path.Combine(Tree, "linked"), Outside);
+        var link = Path.Combine(Tree, "linked");
+        DirectoryLinks.Create(link, Outside);
 
-        Assert.Null(Read("linked/body.md"));
+        try
+        {
+            Assert.Null(Read("linked/body.md"));
+        }
+        finally
+        {
+            Directory.Delete(link);
+        }
     }
 
     [SkippableFact]

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -eu
+export JAVA=/home/balazs/.local/share/dydo/statechart/deps/3ad231072bddc04588d0f2cf1b61a3e62fc38b4ff400ccea5c3b5d41409575ab/linux-x64/java/content/jdk-21.0.8+9-jre/bin/java
+export TLA2TOOLS=/home/balazs/.local/share/dydo/statechart/deps/3ad231072bddc04588d0f2cf1b61a3e62fc38b4ff400ccea5c3b5d41409575ab/linux-x64/tlc/tla2tools.jar
+node --disable-warning=ExperimentalWarning --test-reporter=tap --test-reporter-destination=dydo/project/changelog/2026/2026-11-06/dyd-784-fix-evidence/local-jre.tap skills/engineering/statechart/scripts/test/config-fuzz.test.ts
+set +e
+/tmp/dyd622-pwsh/pwsh -NoProfile -NonInteractive -File .github/workflows/assert-node-tests-ran.ps1 -Tap dydo/project/changelog/2026/2026-11-06/dyd-784-fix-evidence/local-jre.tap -MinimumTests 1
+rc=$?
+set -e
+echo "guard exit=$rc (expected 1 for the real oracle skipped by the pinned JRE)"
+test "$rc" -eq 1

@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "candidate": {
+    "commit": "b1ec72e005b326088d885efe6c16b6cd4c9ba3d2",
+    "dirty": true
+  },
+  "memoryCap": {
+    "state": "inherited",
+    "limit": 8589934592,
+    "mechanism": "cgroup v2",
+    "reason": "an outer scope caps this run with swap off and OOMPolicy=continue: /sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-t3code.slice/app-t3code-agents.slice/run-p2782499-i53090015.scope"
+  },
+  "operation": {
+    "name": "gate coverage"
+  },
+  "selectedStacks": [
+    "statechart"
+  ],
+  "results": [
+    {
+      "stack": "statechart",
+      "capability": "coverage",
+      "state": "passed",
+      "argv": [
+        "/tmp/dyd507-524-venv/bin/python",
+        "DynaDocs.Tests/coverage/gate_adapter.py",
+        "--stack",
+        "statechart",
+        "--gate",
+        "coverage"
+      ],
+      "cwd": ".",
+      "isolation": {
+        "requirement": "in-place",
+        "evidence": {
+          "state": "verified",
+          "kind": "direct"
+        }
+      },
+      "environment": {
+        "DYDO_ROW_DEADLINE": "152755.542424541"
+      },
+      "childExit": 0,
+      "resultExit": 0,
+      "artifacts": [
+        {
+          "path": "DynaDocs.Tests/coverage/results/adapters/statechart-coverage.json",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "aggregateExit": 0
+}

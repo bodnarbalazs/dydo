@@ -1,5 +1,6 @@
 """The facade's shared-host memory cap: enforced, inherited and unavailable, and the cap-hit row."""
 import contextlib
+import ctypes
 import io
 import itertools
 import json
@@ -106,8 +107,12 @@ class MemoryCapTests(unittest.TestCase):
                 self.left = dict(os.environ)
         return outcome, stderr.getvalue()
 
-    def assert_record(self, cap, state, limit):
-        self.assertEqual({'state', 'limit', 'mechanism', 'reason'}, set(cap.record))
+    def assert_record(self, cap, state, limit, reporting='exact'):
+        fields = {'state', 'limit', 'mechanism', 'reason'}
+        if reporting:
+            fields.add('memoryCapHitReporting')
+            self.assertEqual(reporting, cap.record['memoryCapHitReporting'])
+        self.assertEqual(fields, set(cap.record))
         self.assertEqual((state, limit), (cap.record['state'], cap.record['limit']))
         self.assertIsInstance(cap.record['reason'], str)
 
@@ -170,7 +175,8 @@ class MemoryCapTests(unittest.TestCase):
                               ('UseSharedCompilation', 'false')):
             for key, value in itertools.product((name.upper(), name.lower(), name), (None, 'true', '')):
                 environment = {} if value is None else {key: value}
-                with self.subTest(key=key, value=value), mock.patch.object(os, 'environ', environment):
+                with (self.subTest(key=key, value=value), mock.patch.object(os, 'environ', environment),
+                      mock.patch.object(ctypes, 'WinDLL', side_effect=OSError('fixture: no kernel32'), create=True)):
                     self.cap(platform='win32')
                     matches = [setting for variable, setting in self.left.items() if variable.upper() == name.upper()]
                     self.assertEqual([default if value is None else value], matches)
@@ -302,15 +308,13 @@ class MemoryCapTests(unittest.TestCase):
         self.assertIn('exit 1', cap.record['reason'])
         self.assertIn('Failed to connect', cap.record['reason'])
 
-    def test_windows_and_macos_record_the_cap_unavailable_with_a_platform_reason(self):
-        for platform in ('win32', 'darwin'):
-            with self.subTest(platform=platform):
-                cap, stderr = self.cap(platform=platform)
-                self.assert_record(cap, 'unavailable', None)
-                self.assertIn(platform, cap.record['reason'])
-                self.assertIn('1800 s', cap.record['reason'])
-                self.assertEqual(1, stderr.count('memory cap unavailable'))
-                self.assertEqual([], self.host.calls)
+    def test_macos_records_the_cap_unavailable_with_a_platform_reason(self):
+        cap, stderr = self.cap(platform='darwin')
+        self.assert_record(cap, 'unavailable', None, reporting=None)
+        self.assertIn('darwin', cap.record['reason'])
+        self.assertIn('1800 s', cap.record['reason'])
+        self.assertEqual(1, stderr.count('memory cap unavailable'))
+        self.assertEqual([], self.host.calls)
 
     # DYDO_MEMORY_MAX
 
@@ -437,6 +441,8 @@ class MemoryCapTests(unittest.TestCase):
     def test_the_cap_applies_to_child_running_operations_only(self):
         repository = self.fixture(self.manifest())
         record = {'state': 'unavailable', 'limit': None, 'mechanism': None, 'reason': 'fixture'}
+        if sys.platform in ('linux', 'win32'):
+            record['memoryCapHitReporting'] = 'best-effort' if sys.platform == 'win32' else 'exact'
         self.addCleanup(signal.signal, signal.SIGINT, signal.getsignal(signal.SIGINT))
         for args, applied in ((['all'], True), (['test', '--stack', 'hog'], True), (['gate', 'static'], True),
                               (['gate', 'coverage', '--stack', 'hog'], True), (['--force-run'], True),
@@ -465,7 +471,11 @@ class MemoryCapTests(unittest.TestCase):
         self.assertEqual(0, process.returncode, process.stdout + process.stderr)
         result = next(line[8:] for line in process.stdout.splitlines() if line.startswith('Result: '))
         cap = json.loads(Path(result).read_text(encoding='utf-8'))['memoryCap']
-        self.assertEqual({'state', 'limit', 'mechanism', 'reason'}, set(cap))
+        fields = {'state', 'limit', 'mechanism', 'reason'}
+        if sys.platform in ('linux', 'win32'):
+            fields.add('memoryCapHitReporting')
+            self.assertEqual('best-effort' if sys.platform == 'win32' else 'exact', cap['memoryCapHitReporting'])
+        self.assertEqual(fields, set(cap))
         self.assertIn(cap['state'], ('enforced', 'inherited', 'unavailable'))
         self.assertTrue(cap['limit'] is None if cap['state'] == 'unavailable' else 0 < cap['limit'] <= 8 * GIB)
 

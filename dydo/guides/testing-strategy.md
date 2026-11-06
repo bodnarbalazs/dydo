@@ -87,9 +87,21 @@ A cap hit is a finding to diagnose; nobody raises the cap to get past it. When t
 survives, the hit is a `failed` row marked `memoryCapHit`. Otherwise the caller sees 137, or 143
 when systemd stops a scope under its default `OOMPolicy=stop`, and the `journalctl --user` OOM line
 confirms it. Behind `timeout`, a default-policy scope can even return 0; that race is why the
-command sets `OOMPolicy=continue`. Without systemd, as on Windows and macOS, no memory cap applies:
-the facade records its cap as `unavailable` with the reason, and only timeouts and row deadlines
-bound a run, so keep inputs small there.
+command sets `OOMPolicy=continue`. This ad-hoc command applies only where systemd exists.
+On Windows the facade caps itself with `JOB_OBJECT_LIMIT_JOB_MEMORY` in its own nested Job object,
+without restarting or killing itself or adding kill-on-close. The effective limit is the lower of
+its target and the outer job's job-memory limit, when present; Windows enforces nested limits.
+Its cap is `enforced`, with mechanism `windows job object`. Setup or query failure records
+`unavailable` with the Windows error and one warning, and the operation proceeds.
+
+The operation's `memoryCap` and every covered row record `memoryCapHitReporting`: `exact` on
+Linux, `best-effort` on Windows. A delivered `JOB_OBJECT_MSG_JOB_MEMORY_LIMIT` on the facade's own
+completion port makes that Windows row `failed`, exit 1, with `memoryCapHit: true` and
+`memory cap hit (MemoryMax=<cap>): a finding; do not raise the cap`. Windows message delivery is
+not guaranteed: a missing message proves nothing and never changes a failed row into a pass.
+`peakJobMemory` records the job's cumulative `PeakJobMemoryUsed` at each row's end as diagnosis
+only; neither a peak nor a child exit code establishes a hit. macOS and Linux without usable
+systemd still record `unavailable` with a reason and warning; only deadlines bound those runs.
 
 ## Evidence and inherited failures
 

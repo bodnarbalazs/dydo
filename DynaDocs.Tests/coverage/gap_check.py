@@ -916,7 +916,7 @@ def execute_rows(selected, capabilities, root, since, forwarded, cap=None):
         for capability in capabilities:
             if capability == "test" and deferral_applies(stack, capabilities, root):
                 deferred = len(rows)
-                rows.append(result(stack, "test", "interrupted", reason=INTERRUPTED_BEFORE_COVERAGE))
+                rows.append(cap.annotated(result(stack, "test", "interrupted", reason=INTERRUPTED_BEFORE_COVERAGE)))
                 continue
             current, halted = capped_row(stack, capability, root, since, forwarded, cap)
             rows.append(current)
@@ -932,7 +932,7 @@ def execute_rows(selected, capabilities, root, since, forwarded, cap=None):
             print_row(rows[deferred])
         if halted:
             break
-    return [cap.annotated(row) for row in rows]
+    return rows
 
 
 def write_result(root, run, operation, selected, rows, candidate, memory=None):

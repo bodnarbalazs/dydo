@@ -55,6 +55,39 @@ public class PrCallScannerBackslashTreeTests
         Assert.Contains("my tree", Trees(routes));
     }
 
+    // A backslash outside a -C tree stays bash's (DYD-739 review): an escaped quote is text inside
+    // its quotes, and a backslash-newline joins two lines into one command, so no route is invented.
+    [Theory]
+    [InlineData("git commit -m \"Document \\\"git fetch && gh pr merge 12\\\" usage\"")]
+    [InlineData("git commit -m \"don't \\\"x; gh repo edit --default-branch y\\\"\"")]
+    [InlineData("printf \"example: \\\"; gh pr merge 5; \\\"\\n\"")]
+    [InlineData("echo \\\ngh pr merge 5")]
+    [InlineData("echo \\; git push origin main")]
+    public void BashLine_BackslashInTextOrAContinuation_TakesNoRoute(string line)
+    {
+        Assert.Empty(PrCallScanner.FindMergeRoutes(line, ShellDialect.Posix));
+        Assert.Empty(PrCallScanner.FindMergeRoutesInArgv(["bash", "-lc", line]));
+    }
+
+    [Fact]
+    public void BashLine_PushContinuedOnTheNextLine_TakesOnlyTheBashRoute()
+    {
+        const string line = "git push \\\n  -u origin work";
+        MergeRoute[] expected = [new(MergeRouteKind.Push, "git push -u origin work", "work")];
+
+        Assert.Equal(expected, PrCallScanner.FindMergeRoutes(line, ShellDialect.Posix));
+        Assert.Equal(expected, PrCallScanner.FindMergeRoutesInArgv(["bash", "-lc", line]));
+    }
+
+    // Only a push bash runs takes a tree as written: a -C push inside escaped quotes is echo's text.
+    [Fact]
+    public void BashLine_WindowsTreePushInsideEscapedQuotes_TakesNoRoute()
+    {
+        var routes = PrCallScanner.FindMergeRoutes($"echo \"\\\"; git -C {WindowsTree} push origin main; \\\"\"", ShellDialect.Posix);
+
+        Assert.Empty(routes);
+    }
+
     [Fact]
     public void PowerShellLine_WindowsTree_IsReadAsWritten()
     {

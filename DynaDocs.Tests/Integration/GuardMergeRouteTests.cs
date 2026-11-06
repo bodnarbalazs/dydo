@@ -209,6 +209,39 @@ public class GuardMergeRouteTests : IntegrationTestBase
         AssertNoMisses(await Misses(denied: true, Words(@"git -C w\t push origin HEAD", $"git -C {tree} push"), reasonParts: ["main"]));
     }
 
+    // DYD-739 review: a backslash outside a -C tree stays bash's. An escaped quote is text, and a
+    // backslash-newline joins one command, so these bash lines pass, on a branch whose upstream is main.
+    // An unmarked Bash call on Windows is read both ways (ExecutingShell), so there only Codex's bash envelope is bash's alone.
+    [Fact]
+    public async Task BashLine_BackslashInTextOrAContinuation_IsAllowed()
+    {
+        await InitPushedProject();
+        Git(TestDir, "push", "origin", "feature:main");
+        Git(TestDir, "checkout", "-b", "work");
+        Git(TestDir, "branch", "-u", "origin/main");
+        string[] lines =
+        [
+            "git commit -m \"Document \\\"git fetch && gh pr merge 12\\\" usage\"",
+            "git commit -m \"don't \\\"x; gh repo edit --default-branch y\\\"\"",
+            "git push \\\n  -u origin work",
+            "printf \"example: \\\"; gh pr merge 5; \\\"\\n\"",
+            "echo \\\ngh pr merge 5",
+        ];
+        string[] envelopes = OperatingSystem.IsWindows() ? ["codex-bash"] : ["claude-bash", "codex-bash"];
+
+        List<string> misses = [];
+        foreach (var line in lines)
+        foreach (var envelope in envelopes)
+        {
+            var json = JsonNode.Parse(Payload([], envelope))!;
+            json["tool_input"]!["command"] = envelope == "codex-bash" ? new JsonArray("bash", "-lc", line) : line;
+            var result = await GuardWithStdinAsync(json.ToJsonString());
+            if (!result.IsPreToolUseAllowed)
+                misses.Add($"{envelope} denied: {line}\n    {result.Stderr.Trim().Replace("\n", "\n    ")}");
+        }
+        AssertNoMisses(misses);
+    }
+
     // A Codex workdir is the call's directory, as for PR-ready.
     [Fact]
     public async Task PushOfHead_WithACodexWorkdirOnMain_IsDenied()

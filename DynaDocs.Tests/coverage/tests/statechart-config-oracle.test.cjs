@@ -8,6 +8,9 @@ const { spawnSync } = require('node:child_process');
 const { createHash } = require('node:crypto');
 const { pathToFileURL } = require('node:url');
 const { parse } = createRequire(require.resolve('knip'))('yaml');
+const { pwshTestOptions } = require('../pwsh_prerequisite.cjs');
+
+const pwsh = pwshTestOptions();
 
 const root = path.resolve(__dirname, '../../..');
 const workflow = parse(fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8'));
@@ -51,7 +54,7 @@ for (const [name, source, expected] of [
   ['empty', '', 1],
   ['failed', "import { test } from 'node:test'; test('oracle', () => { throw Error('mismatch'); });", 1],
 ]) {
-  test(`the CI commands ${expected ? 'reject' : 'accept'} a ${name} oracle`, t => {
+  test(`the CI commands ${expected ? 'reject' : 'accept'} a ${name} oracle`, pwsh, t => {
     const [run, guard] = oracleSteps();
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dydo config oracle ci-'));
     t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
@@ -95,7 +98,7 @@ for (const [file, expected] of [
 // Only the external JDK responses and TLC download are fixtures. A JDK download is forbidden.
 for (const fault of [null, 'version', 'compiler', 'missing', 'java-exit', 'tlc']) {
   test(`installed runner JDK ${fault ? `rejects ${fault}` : 'publishes verified paths without downloading Java'}`,
-    t => {
+    pwsh, t => {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dydo oracle provision-'));
       t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
       fs.mkdirSync(path.join(dir, 'Resources/Statechart'), { recursive: true });

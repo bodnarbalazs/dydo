@@ -1886,10 +1886,10 @@ public class BashCommandAnalyzerTests
     [Theory]
     [InlineData("rg -n 'x’; tail -f app.log; ‘y'")]
     [InlineData("echo ready # note\rtail -f app.log")]
-    public void RunsAt_CommandPwshRuns_Counts(string command)
+    public void NudgeClassifier_CommandPwshRuns_Counts(string command)
     {
         foreach (var dialect in PowerShellReadings)
-            Assert.True(BashCommandAnalyzer.RunsAt(command, command.IndexOf("tail", StringComparison.Ordinal), dialect), $"{dialect}: {command}");
+            Assert.True(BashCommandAnalyzer.NudgeClassifier(command, dialect)(command.IndexOf("tail", StringComparison.Ordinal)), $"{dialect}: {command}");
     }
 
     // Inside single quotes bash 5.3.9 and pwsh 7.6.9 keep a carriage return, NEL and the Unicode
@@ -2306,9 +2306,9 @@ public class BashCommandAnalyzerTests
     [InlineData("echo stdbuf -oL tail -f app.log", true)]
     [InlineData("grep 'ssh host tail -f' notes.md", true)]
     [InlineData("ssh tail -f app.log", true)]
-    public void RunsAt_RunnersAndRemoteCommands(string command, bool runs)
+    public void NudgeClassifier_RunnersAndRemoteCommands(string command, bool runs)
     {
-        Assert.Equal(runs, BashCommandAnalyzer.RunsAt(command, command.IndexOf("tail", StringComparison.Ordinal), ShellDialect.Posix));
+        Assert.Equal(runs, BashCommandAnalyzer.NudgeClassifier(command, ShellDialect.Posix)(command.IndexOf("tail", StringComparison.Ordinal)));
     }
 
     #endregion
@@ -2815,7 +2815,7 @@ public class BashCommandAnalyzerTests
     [InlineData("Posix", "bodies")]
     [InlineData("PowerShell", "bodies")]
     [InlineData("Unknown", "bodies")]
-    public void RunsAt_LongDataBodies_GrowLinearly(string dialect, string shape)
+    public void NudgeClassifier_LongDataBodies_GrowLinearly(string dialect, string shape)
     {
         string Input(int length)
         {
@@ -2836,7 +2836,7 @@ public class BashCommandAnalyzerTests
             var at = text.IndexOf("tail", StringComparison.Ordinal);
             var watch = System.Diagnostics.Stopwatch.StartNew();
             for (var i = 0; i < times; i++)
-                Assert.False(BashCommandAnalyzer.RunsAt(text, at, shell));
+                Assert.False(BashCommandAnalyzer.NudgeClassifier(text, shell)(at));
             return watch.Elapsed;
         }
         var (shortInput, longInput) = (Input(12_500), Input(100_000));

@@ -224,6 +224,12 @@ public static partial class GuardCommand
 
     private static int Evaluate(GuardContext ctx)
     {
+        if (ctx.BashCommand is { Length: > BashCommandAnalyzer.MaxCommandLength })
+        {
+            Console.Error.WriteLine($"BLOCKED: {BashCommandAnalyzer.CommandLengthReason}");
+            return ExitCodes.ToolError;
+        }
+
         if (!ctx.HasCliArgs && string.IsNullOrEmpty(ctx.SessionId))
         {
             Console.Error.WriteLine("BLOCKED: No session_id in hook input.");
@@ -767,7 +773,7 @@ public static partial class GuardCommand
 
     /// <summary>
     /// Each match of <paramref name="pattern"/> whose launch word, the text past any space or
-    /// separator the match opens with, sits where a command runs (<see cref="BashCommandAnalyzer.RunsAt"/>),
+    /// separator the match opens with, sits where a command runs (<see cref="BashCommandAnalyzer.NudgeClassifier"/>),
     /// excluding only recognized quoted data operands, comments and data bodies, with that launch
     /// word's index. Unquoted and ambiguous quoted operands count. Each later try starts past the
     /// last launch word.

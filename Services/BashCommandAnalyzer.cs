@@ -164,6 +164,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private const int DangerousPatternTimeoutMs = 250;
     private const string TooComplex = "Command too complex to verify safely";
+    internal const int MaxCommandLength = 1_048_576;
+    internal const string CommandLengthReason = TooComplex + ": command length exceeds limit of 1048576 characters";
 
     // A command word ends at whitespace, the end, a quote or backtick closing a -c string or substitution, or a separator.
     private const string CommandEndContext = @"\s|$|['""`);&|]";
@@ -1008,7 +1010,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex PythonWordRegex();
 
     // python -, the form a command line that cannot be read for certain is still refused for.
-    [GeneratedRegex(@"\bpy(?:thon[0-9.]*)?w?(?:\.exe)?(?:\s+-\S+)*\s+-(?=\s|$|[;&|)])", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\bpy(?:thon[0-9.]*)?w?(?:\.exe)?(?:\s+-\S+)*\s+-(?=\s|$|[;&|)])", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex PythonDashRegex();
 
     [GeneratedRegex(@"^py(?:thon[0-9.]*)?w?$")]
@@ -1281,11 +1283,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// only the recorded quoted search/filter roles, comments and data bodies are exempt.
     /// Known executable strings are read recursively, preserving code inside quoted arguments.
     /// </summary>
-    internal static bool RunsAt(string command, int index, ShellDialect dialect)
-    {
-        return NudgeClassifier(command, dialect)(index);
-    }
-
     // A command's data positions are classified once, then every raw nudge match is a lookup.
     // Positions retain their source coordinates through words, body normalization and command strings.
     internal static Func<int, bool> NudgeClassifier(string text, ShellDialect dialect)
@@ -1380,11 +1377,26 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         // still counts; a child's quoted-data role cannot discharge its parent's occurrence.
         private static void CountGroupWords(ShellReader.Scope group, bool[] data, int start)
         {
-            foreach (var command in group.Commands)
-                foreach (var range in command.WordRanges)
-                    Fill(data, start, range.Start.Value, range.End.Value, false);
-            foreach (var child in group.Children.Where(child => ReferenceEquals(child.Text, group.Text)))
-                CountGroupWords(child, data, start);
+            foreach (var range in GroupWordRanges(group))
+                Fill(data, start, range.Start.Value, range.End.Value, false);
+        }
+
+        // Source ranges include comments and delimiters that GroupWord never emits. Follow only
+        // emitted characters, projecting normalized body coordinates back to their source.
+        private static IEnumerable<Range> GroupWordRanges(ShellReader.Scope group)
+        {
+            foreach (var origins in group.Commands.SelectMany(command => command.WordOrigins))
+                foreach (var run in origins.SourceRanges())
+                    if (ReferenceEquals(run.Source.Text, group.Text)) yield return run.Range;
+            foreach (var child in group.Children)
+                foreach (var range in GroupWordRanges(child))
+                {
+                    if (child.DerivedBody is not { } body)
+                        yield return range;
+                    else
+                        foreach (var run in body.Origins.SourceRanges(range.Start.Value, range.End.Value))
+                            yield return run.Range;
+                }
         }
 
         private void Words(ShellReader.Command command, bool[] data, BodyOutput output, int depth)
@@ -1869,7 +1881,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     public (bool IsMatch, string? CdPath, string? RestCommand) DetectNeedlessCd(string command)
     {
-        if (string.IsNullOrWhiteSpace(command))
+        if (command.Length <= MaxCommandLength && string.IsNullOrWhiteSpace(command))
             return (false, null, null);
 
         var match = CdThenCommandRegex().Match(command);
@@ -1937,6 +1949,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     public (bool IsDangerous, string? Reason) CheckDangerousPatterns(string command)
     {
+        if (command.Length > MaxCommandLength)
+            return (true, CommandLengthReason);
+
         // A command line nested past a bound, in a reading (ShellReader.MaxNesting) or in the command
         // lines it runs (MaxCommandLineDepth and the reading's budget), is not read to its end, so
         // nothing it says can be verified (DYD-723).

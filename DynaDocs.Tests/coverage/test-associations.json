@@ -899,6 +899,7 @@
     {
       "module": "Services/BashCommandAnalyzer.cs",
       "tests": [
+        "DynaDocs.Tests/Services/BashCommandAnalyzerInputBoundTests.cs",
         "DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs",
         "DynaDocs.Tests/Services/DangerousPatternBudgetTests.cs",
         "DynaDocs.Tests/Services/DangerousPatternCultureTests.cs",

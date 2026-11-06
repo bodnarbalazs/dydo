@@ -8,6 +8,35 @@ date: 2026-11-05
 
 ## Summary
 
+Fix hop 6 caps command text at **1,048,576 UTF-16 characters**, before guard configuration
+or command analysis. Longer commands are always refused, including retries, with
+"Command too complex to verify safely: command length exceeds limit of 1048576 characters".
+The analyzer enforces the same ceiling. The Python-stdin fallback keeps its exact pattern
+and now has the dangerous-pattern 250 ms timeout; exhaustion follows the existing hard-refusal
+path. The ceiling supplements that timeout and the existing nesting and reading budgets.
+
+The measured legitimate maximum is 144,028 characters: `DangerousPatternBudgetTests`
+`LongLiteralData` repeats its 36-character GitHub command 4,000 times inside a 28-character
+literal-data wrapper. Its scaled historical evidence case is 117,867 characters (twenty
+5,891-character bodies, nineteen separators and that wrapper). Both DYD-610 cases and all
+their assertions remain unchanged. The ceiling gives the largest case 7.28 times headroom.
+The largest historical command fixture is `GuardRetroCommands.Gs02CatAppendEvidence`,
+6,039 characters; `Gs02SetContentEvidence` is 4,135. The largest command field in the
+downstream hook fixtures is 1,526 characters (`TestData/downstream-lc/codex-hooks.json`,
+`hooks.PreToolUse[1].hooks[0].command`); the officer-transition corpus maximum is 490.
+These measured strings use only BMP characters; the counts above are UTF-16 lengths.
+JSON envelope bytes, non-command documents/patterns, dependency/generated files and
+malformed-input stress generators are excluded as legitimate command-size evidence.
+The latter retain their original tests: all original 50k/100k performance rows remain below
+the ceiling. New benign boundary tests assert allowance at the limit and prompt refusal above
+it, without replacing or weakening the existing allocation, time or growth assertions.
+
+PowerShell group nudges now follow emitted character ranges instead of whole source-word
+ranges. Comments omitted from a nested group word stay exempt; emitted quoted operands still
+count. Normalized heredoc origins project back to their original coordinates. The obsolete
+test-only `RunsAt` wrapper is removed, with its behavioral assertions moved to the production
+`NudgeClassifier` seam. ConfigFactory, nudge captures, messages and retry keys are unchanged.
+
 Fix hop 5 indexes cat-heredoc closers before stripping, replaces the remaining legacy
 denylist suffix searches with linear regex matching at the same 250 ms timeout, and visits
 overlapping Python runner operand ranges once. The Captain extended ownership to
@@ -135,6 +164,8 @@ Fix hop 5 also changes `Services/CommandPosition.cs`, `Commands/GuardCommand.cs`
 `DynaDocs.Tests/Services/BashCommandAnalyzerScanTests.cs`, and
 `DynaDocs.Tests/Commands/GuardCommandTests.cs`. The feature merge imports its own changes;
 the implementation report lists those separately from this hop's authored files.
+Fix hop 6 adds `DynaDocs.Tests/Services/BashCommandAnalyzerInputBoundTests.cs` and its test
+association, and extends the existing guard integration tests.
 
 ## Related
 

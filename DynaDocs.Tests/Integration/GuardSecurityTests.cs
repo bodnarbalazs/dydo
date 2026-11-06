@@ -12,6 +12,96 @@ using DynaDocs.Services;
 public class GuardSecurityTests : IntegrationTestBase
 {
     [Theory]
+    [InlineData("Bash", "Posix")]
+    [InlineData("PowerShell", "PowerShell")]
+    [InlineData("", "Unknown")]
+    public async Task PythonFallbackTimeout_AnalyzerAndHookRefuseOnEveryAttempt(string toolName, string dialect)
+    {
+        await SetupClaimedAgent();
+        var patterns = ((Func<string, bool> IsMatch, string Reason)[])typeof(BashCommandAnalyzer)
+            .GetField("DangerousPatterns", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+            .GetValue(null)!;
+        var index = Array.FindIndex(patterns, pattern => pattern.IsMatch.Method.Name == "RunsPythonFromStdin");
+        Assert.True(index >= 0);
+        var original = patterns[index];
+        try
+        {
+            patterns[index] = (_ => throw new System.Text.RegularExpressions.RegexMatchTimeoutException(), original.Reason);
+            var analysis = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect)).Analyze("echo ready");
+            Assert.True(analysis.HasDangerousPattern);
+            Assert.Equal("Command too complex to verify safely", analysis.DangerousPatternReason);
+            Assert.Empty(analysis.Operations);
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                var result = toolName == "" ? await UnknownShellGuardAsync("echo ready")
+                    : await GuardWithStdinAsync(ShellJson(toolName, "echo ready"));
+                AssertRefused(toolName, result);
+                result.AssertStderrContains("Command too complex to verify safely");
+            }
+        }
+        finally
+        {
+            patterns[index] = original;
+        }
+    }
+
+    [Theory]
+    [InlineData("Bash")]
+    [InlineData("PowerShell")]
+    [InlineData("")]
+    public async Task LengthBoundary_BenignCommandIsRefusedOnEveryAttempt(string toolName)
+    {
+        await SetupClaimedAgent();
+        var command = "echo ready";
+        var allowed = toolName == "" ? await UnknownShellGuardAsync(command)
+            : await GuardWithStdinAsync(ShellJson(toolName, command));
+        if (toolName == "") allowed.AssertSuccess();
+        else allowed.AssertPreToolUseAllowed();
+        command = command.PadRight(1_048_576, 'x');
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var result = toolName == "" ? await UnknownShellGuardAsync(command + "x")
+                : await GuardWithStdinAsync(ShellJson(toolName, command + "x"));
+            AssertRefused(toolName, result);
+            result.AssertStderrContains("limit of 1048576 characters");
+        }
+    }
+
+    [Theory]
+    [InlineData("Write-Output @(Write-Output @(<# tail -f #> x))")]
+    [InlineData("Write-Output @(<# outer #> Write-Output @(<# tail -f #> x))")]
+    [InlineData("Write-Output @(Write-Output @(# tail -f\nx))")]
+    public async Task NestedGroupComment_DoesNotConsumePollingNudgeRetry(string command)
+    {
+        await SetupClaimedAgent();
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var result = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+            result.AssertPreToolUseAllowed();
+        }
+    }
+
+    [Theory]
+    [InlineData("Write-Output @(Write-Output @(rg 'tail -f' notes))", false)]
+    [InlineData("echo @(cat <<E\n$(rg -n 'tail -f' docs)\nE\n)", true)]
+    [InlineData("echo @(cat <<E\r\n$(rg -n 'tail -f' docs)\r\nE\r\n)", true)]
+    public async Task NestedGroupData_KeepsWarningOrderAndRetry(string command, bool hardBlock)
+    {
+        await SetupClaimedAgent();
+        var first = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        first.AssertPreToolUseDenied();
+        var reason = hardBlock ? "Command contains bypass patterns" : "Open-ended Bash poll-loop detected";
+        first.AssertStderrContains(reason);
+        var retry = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        if (hardBlock)
+        {
+            retry.AssertPreToolUseDenied();
+            retry.AssertStderrContains(reason);
+        }
+        else retry.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
     [InlineData("block", "command")]
     [InlineData("warn", "command")]
     [InlineData("notice", "command")]

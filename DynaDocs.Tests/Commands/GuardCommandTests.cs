@@ -1296,8 +1296,9 @@ public class GuardCommandTests : IDisposable
     [InlineData("P02-collision", "Posix", "cat <<'EOF'\n\u0001 tail -f app.log\nEOF", "C")]
     public void Gs03_ContextBody_Occurrences(string id, string shell, string command, string decisions)
     {
+        var counts = BashCommandAnalyzer.NudgeClassifier(command, Enum.Parse<ShellDialect>(shell));
         var actual = new string(Regex.Matches(command, @"tail\s+(?:-f|--follow)\b").Cast<Match>()
-            .Select(match => BashCommandAnalyzer.RunsAt(command, match.Index, Enum.Parse<ShellDialect>(shell)) ? 'C' : 'D')
+            .Select(match => counts(match.Index) ? 'C' : 'D')
             .ToArray());
         Assert.Equal(id + ":" + decisions, id + ":" + actual);
     }

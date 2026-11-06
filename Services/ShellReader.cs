@@ -91,6 +91,17 @@ internal sealed class ShellReader
                 : part.Origin with { Offset = part.Origin.Offset + offset - part.Offset };
         }
 
+        public IEnumerable<(Scope Source, Range Range)> SourceRanges(int start = 0, int end = int.MaxValue)
+        {
+            foreach (var run in Runs(0, start, end))
+            {
+                var from = Math.Max(start, run.Offset);
+                var to = Math.Min(end, run.Offset + run.Length);
+                var raw = run.Origin.Offset + from - run.Offset;
+                yield return (run.Origin.Source, raw..(raw + to - from));
+            }
+        }
+
         // Parts are appended in output order. Skip earlier runs when locating one execution in a
         // body with many origin runs (for example, one per CRLF line).
         private int FirstPart(int offset)

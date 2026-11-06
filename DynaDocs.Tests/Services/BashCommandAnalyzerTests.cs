@@ -2466,6 +2466,8 @@ public class BashCommandAnalyzerTests
         ["echo quotes"] = length => "echo " + Repeat("'' ", length / 3),
         ["printf quotes"] = length => "printf " + Repeat("'a' ", length / 4),
         ["echo words"] = length => "echo " + Repeat("a ", length / 2),
+        ["multiline quotes"] = length => string.Concat(Enumerable.Range(0, length / 15).Select(i => $"echo \"{i:D5}\nx\";")),
+        ["distinct commands"] = length => string.Concat(Enumerable.Range(0, length / 8).Select(i => $": {i:D5};")),
         ["heredocs"] = length => Repeat("cat <<E\na\nE\n", length / 12),
         ["heredoc openers"] = length => "echo \"" + Repeat("<<E x\n", length / 6) + "\"",
         ["here-string openers"] = length => "echo \"" + Repeat("@'\n", length / 3) + "\"",
@@ -2479,8 +2481,8 @@ public class BashCommandAnalyzerTests
     // Time grows with the input. One sample analyses the input of 12,500 characters eight times and the
     // one of 100,000 once, so a linear analysis spends about as long on each and a quadratic one about
     // eight times as long on the long one; as in the wrapper-chain test above, the ratio decides, so
-    // coverage instrumentation cancels out, and up to seven interleaved rounds, stopping at the first
-    // that passes, damp noise. In Release, uninstrumented, 100,000 characters also take at most a
+    // coverage instrumentation cancels out, and the best times of all seven interleaved rounds
+    // damp noise after warming both sizes. In Release, uninstrumented, 100,000 characters also take at most a
     // second (captain's ruling, 2026-11-05); a Debug build or instrumentation runs many times slower,
     // and there the ratio alone decides.
     [Theory]
@@ -2492,6 +2494,9 @@ public class BashCommandAnalyzerTests
     [InlineData("Unknown", "echo words")]
     [InlineData("Unknown", "heredoc openers")]
     [InlineData("Unknown", "here-string openers")]
+    [InlineData("Posix", "multiline quotes")]
+    [InlineData("PowerShell", "multiline quotes")]
+    [InlineData("Unknown", "multiline quotes")]
     public void Analyze_LongInput_TakesTimeLinearly(string dialect, string shape) => AssertTimeGrowsLinearly(dialect, shape);
 
     // Before DYD-723 long nesting exhausted the host's memory: run on the fix only.
@@ -2517,19 +2522,46 @@ public class BashCommandAnalyzerTests
         var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
         var (shortInput, longInput) = (LongShapes[shape](100_000 / growth), LongShapes[shape](100_000));
         analyzer.Analyze(shortInput);
+        analyzer.Analyze(longInput);
         var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
 
         for (var round = 0; round < 7; round++)
         {
             shortBest = Min(shortBest, TimeAnalyses(analyzer, shortInput, growth));
             longBest = Min(longBest, TimeAnalyses(analyzer, longInput, 1));
-            if (longBest / shortBest < 2.5)
-                break;
         }
 
         var ratio = longBest / shortBest;
         Assert.True(ratio < 2.5, $"one 8x input took {ratio:F2}x as long as eight short ones ({shortBest} vs {longBest})");
         Assert.True(!ReleaseUninstrumented || longBest <= TimeSpan.FromSeconds(1), $"Took {longBest} at 100,000 characters");
+    }
+
+    [Theory]
+    [InlineData("Posix")]
+    [InlineData("PowerShell")]
+    [InlineData("Unknown")]
+    public void Analyze_DistinctCommands_GrowLinearlyWithinTheBudget(string dialect)
+    {
+        AssertTimeGrowsLinearly(dialect, "distinct commands");
+        var commands = LongShapes["distinct commands"];
+
+        Measure(dialect, commands(1_000));
+        var budgeted = Math.Min(Measure(dialect, commands(BudgetedLength)).Allocated,
+            Measure(dialect, commands(BudgetedLength)).Allocated);
+        var (half, _) = Measure(dialect, commands(50_000));
+        var (full, _) = Measure(dialect, commands(100_000));
+        Assert.True(budgeted <= AllocationBudget, $"Allocated {budgeted:N0} bytes at {BudgetedLength:N0} characters");
+        Assert.True(full <= 2.5 * half, $"Allocated {full:N0} bytes at 100,000 characters, {half:N0} at 50,000");
+        Assert.True(!ReleaseUninstrumented || full <= AllocationBudget, $"Allocated {full:N0} bytes at 100,000 characters");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SplitCommand_PreservesOrderAndDuplicatesWithinEachReading(bool dropComments)
+    {
+        Assert.Equal(new[] { "A", "a", "A", "a", "A", "A\ra", "A\ra" },
+            BashCommandAnalyzer.SplitCommand("A\ra;A\ra;A", dropComments));
     }
 
     // Allocation grows with the input, and the budgeted length stays within the budget. Coverage
@@ -2540,6 +2572,9 @@ public class BashCommandAnalyzerTests
     [InlineData("Posix", "heredocs")]
     [InlineData("Unknown", "heredocs")]
     [InlineData("Unknown", "cmd chain")]
+    [InlineData("Posix", "multiline quotes")]
+    [InlineData("PowerShell", "multiline quotes")]
+    [InlineData("Unknown", "multiline quotes")]
     public void Analyze_LongBodies_AllocateLinearlyWithinTheBudget(string dialect, string shape)
     {
         Measure(dialect, LongShapes[shape](1_000));
@@ -2550,6 +2585,44 @@ public class BashCommandAnalyzerTests
         var (half, _) = Measure(dialect, LongShapes[shape](50_000));
         var (full, _) = Measure(dialect, LongShapes[shape](100_000));
         Assert.True(full <= 2.5 * half, $"Allocated {full:N0} bytes at 100,000 characters, {half:N0} at 50,000");
+    }
+
+    [Theory]
+    [InlineData("Posix", "substitutions")]
+    [InlineData("PowerShell", "substitutions")]
+    [InlineData("Unknown", "substitutions")]
+    [InlineData("Posix", "pipeline")]
+    [InlineData("PowerShell", "pipeline")]
+    [InlineData("Unknown", "pipeline")]
+    [InlineData("Posix", "crlf")]
+    [InlineData("PowerShell", "crlf")]
+    [InlineData("Unknown", "crlf")]
+    public void RunsAt_LongDataBodies_GrowLinearly(string dialect, string shape)
+    {
+        string Input(int length) => shape == "pipeline"
+            ? "cat <<E" + Repeat(" | cat", (length - 18) / 6) + "\ntail -f\nE\n"
+            : "cat <<E\n" + string.Concat(Enumerable.Range(0, (length - 18) / 15)
+                .Select(i => $"$(echo {i:D5})" + (shape == "crlf" ? "\r\n" : " "))) + "tail -f\nE\n";
+        var shell = Enum.Parse<ShellDialect>(dialect);
+        TimeSpan Time(string text, int times)
+        {
+            var at = text.IndexOf("tail", StringComparison.Ordinal);
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            for (var i = 0; i < times; i++)
+                Assert.False(BashCommandAnalyzer.RunsAt(text, at, shell));
+            return watch.Elapsed;
+        }
+        var (shortInput, longInput) = (Input(12_500), Input(100_000));
+        Time(shortInput, 1);
+        Time(longInput, 1);
+        var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
+        for (var round = 0; round < 7; round++)
+        {
+            shortBest = Min(shortBest, Time(shortInput, 8));
+            longBest = Min(longBest, Time(longInput, 1));
+        }
+        Assert.True(longBest / shortBest < 2.5, $"one 8x input took {longBest / shortBest:F2}x ({shortBest} vs {longBest})");
+        Assert.True(!ReleaseUninstrumented || longBest <= TimeSpan.FromSeconds(1), $"Took {longBest} at 100,000 characters");
     }
 
     // The one-second bound is Release's, uninstrumented: the product is optimized, and AltCover, which

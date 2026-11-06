@@ -568,9 +568,14 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // (DYD-421); literal data is emptied before (DYD-422).
     private static string Layout(string code)
     {
-        var read = new Lazy<(List<CommandLine> Lines, bool Uncertain)>(() => CommandLines(code, ShellDialect.Unknown));
+        var words = new Lazy<List<WordSubstrings>?>(() =>
+        {
+            var read = CommandLines(code, ShellDialect.Unknown);
+            return read.Uncertain ? null : read.Lines.Where(line => line.Text == code)
+                .Select(line => new WordSubstrings(line.Commands.SelectMany(command => command.Words))).ToList();
+        });
         return QuotedTextRegex().Replace(code, quoted =>
-            quoted.Groups["single"].Success || (quoted.Value.AsSpan().IndexOfAny('\n', '\r') >= 0 && !IsQuotedWord(code, quoted, read.Value))
+            quoted.Groups["single"].Success || (quoted.Value.AsSpan().IndexOfAny('\n', '\r') >= 0 && !IsQuotedWord(quoted, words.Value))
                 ? quoted.Value
                 : "\"\"");
     }
@@ -579,13 +584,77 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"\\([$`""\\])")]
     private static partial Regex DoubleQuotedEscapeRegex();
 
-    private static bool IsQuotedWord(string code, Match quoted, (List<CommandLine> Lines, bool Uncertain) read)
+    private static bool IsQuotedWord(Match quoted, List<WordSubstrings>? words)
     {
         var raw = quoted.Value[1..^1];
         var unescaped = DoubleQuotedEscapeRegex().Replace(raw, "$1");
-        bool Holds(string word) => word.Contains(raw, StringComparison.Ordinal) || word.Contains(unescaped, StringComparison.Ordinal);
-        return !read.Uncertain && read.Lines.Where(line => line.Text == code)
-            .All(line => line.Commands.Any(command => command.Words.Any(Holds)));
+        return words != null && words.All(index => index.Contains(raw) || index.Contains(unescaped));
+    }
+
+    // A suffix automaton indexes all word substrings in linear space and time. -1 separates words
+    // outside the UTF-16 alphabet, so a query cannot accidentally span two words. Layout used to
+    // search every word again for every multiline quote, quadratic even on ordinary echo commands.
+    private sealed class WordSubstrings
+    {
+        private sealed class State(int length)
+        {
+            public int Length { get; } = length;
+            public int Link { get; set; } = -1;
+            public Dictionary<int, int> Next { get; init; } = [];
+        }
+
+        private readonly List<State> _states = [new(0)];
+        private int _last;
+
+        public WordSubstrings(IEnumerable<string> words)
+        {
+            foreach (var word in words)
+            {
+                foreach (var character in word)
+                    Append(character);
+                Append(-1);
+            }
+        }
+
+        public bool Contains(string text)
+        {
+            var state = 0;
+            foreach (var character in text)
+                if (!_states[state].Next.TryGetValue(character, out state))
+                    return false;
+            return true;
+        }
+
+        private void Append(int character)
+        {
+            var current = _states.Count;
+            _states.Add(new State(_states[_last].Length + 1));
+            var previous = _last;
+            while (previous >= 0 && _states[previous].Next.TryAdd(character, current))
+                previous = _states[previous].Link;
+            _states[current].Link = previous < 0 ? 0 : Link(previous, character);
+            _last = current;
+        }
+
+        private int Link(int previous, int character)
+        {
+            var next = _states[previous].Next[character];
+            if (_states[previous].Length + 1 == _states[next].Length)
+                return next;
+            var clone = _states.Count;
+            _states.Add(new State(_states[previous].Length + 1)
+            {
+                Link = _states[next].Link,
+                Next = new Dictionary<int, int>(_states[next].Next),
+            });
+            while (previous >= 0 && _states[previous].Next.GetValueOrDefault(character, -1) == next)
+            {
+                _states[previous].Next[character] = clone;
+                previous = _states[previous].Link;
+            }
+            _states[next].Link = clone;
+            return clone;
+        }
     }
 
     // sed: only read and in-place-substitute flags. -i and --in-place must be bare, with no backup
@@ -1488,14 +1557,14 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private static bool CompletedExecution(ShellReader.Host edge)
     {
-        if (!edge.Complete || !edge.Source.Contains(edge.Token) || !edge.Source.Executions.Contains(edge)
+        if (!edge.Complete || !edge.Source.Contains(edge.Token) || !edge.Source.HasExecution(edge)
             || edge.Token.End.Value <= edge.Token.Start.Value)
             return false;
         if (edge.Child is { } child)
         {
             var opener = edge.Kind == ShellReader.ExecutionKind.Group && edge.Source.Text[edge.Token.Start.Value] == '(' ? 1 : 2;
             return edge.Kind != ShellReader.ExecutionKind.Backtick && edge.Capture == null && ReferenceEquals(child.Host, edge)
-                && edge.Source.Children.Contains(child) && child.Start == edge.Token.Start.Value + opener
+                && edge.Source.HasChild(child) && child.Start == edge.Token.Start.Value + opener
                 && child.End + 1 == edge.Token.End.Value;
         }
         return edge.Kind == ShellReader.ExecutionKind.Backtick && edge.Capture is { } capture && ReferenceEquals(capture.Host, edge)
@@ -1506,7 +1575,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static Range? RawToken(ShellReader.Host edge)
     {
         if (!CompletedExecution(edge) || edge.Body is not { } body
-            || !ReferenceEquals(body.Owner, edge.Command) || !body.Expansions.Contains(edge)
+            || !ReferenceEquals(body.Owner, edge.Command) || !body.HasExpansion(edge)
             || !edge.Command.Bodies.Contains(body) || edge.WordIndex != body.WordIndex)
             return null;
         if (ReferenceEquals(edge.Source, body.Owner.Source))
@@ -1528,23 +1597,24 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private static BodyOutput OutputOf(ShellReader.Command command, BodyOutput output, HashSet<ShellReader.Host>? ancestors = null)
     {
-        if (command.UncertainFeed || command.HeaderExpansion
-            || command.Source.Commands.Any(c => c.Words.Count > 0 && CompoundWords.Contains(c.Words[0]))
-            || command.RedirectTargets.Any(r => !LiteralRedirect(command.Source, r)))
-            return BodyOutput.Unknown;
-        if (command.PipesOutput)
-            return command.Next is { } next ? InputUse(next, output, ancestors) : BodyOutput.Unknown;
-        return command.Source.Host is { } host ? CapturedOutput(host, output, ancestors) : output;
-    }
-
-    private static BodyOutput InputUse(ShellReader.Command command, BodyOutput output, HashSet<ShellReader.Host>? ancestors)
-    {
-        if (command.Words is [var first, ..] && DataCommands.Contains(first))
-            return OutputOf(command, output, ancestors);
-        if (ProgramCall(command.Words) is { } call
-            && (StdinShellDialect(call.Program, call.Arguments) != null || call.Program is "iex" or "invoke-expression"))
-            return BodyOutput.Executable;
-        return BodyOutput.Unknown;
+        // Next links commands in this reader's scope; inspect its compound syntax once per pipe.
+        var hasCompound = command.Source.Commands.Any(c => c.Words.Count > 0 && CompoundWords.Contains(c.Words[0]));
+        while (true)
+        {
+            if (hasCompound || command.UncertainFeed || command.HeaderExpansion
+                || command.RedirectTargets.Any(r => !LiteralRedirect(command.Source, r)))
+                return BodyOutput.Unknown;
+            if (!command.PipesOutput)
+                return command.Source.Host is { } host ? CapturedOutput(host, output, ancestors) : output;
+            if (command.Next is not { } next)
+                return BodyOutput.Unknown;
+            command = next;
+            if (command.Words is [var first, ..] && DataCommands.Contains(first))
+                continue;
+            return ProgramCall(command.Words) is { } call
+                && (StdinShellDialect(call.Program, call.Arguments) != null || call.Program is "iex" or "invoke-expression")
+                ? BodyOutput.Executable : BodyOutput.Unknown;
+        }
     }
 
     private static bool LiteralRedirect(ShellReader.Scope source, ShellReader.RedirectTarget target) =>
@@ -1900,7 +1970,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     internal static IEnumerable<string> SplitCommand(string command, bool dropComments = false)
     {
         var pwsh = SplitCommand(command, dropComments, posix: false);
-        return pwsh.Concat(SplitCommand(command, dropComments, posix: true).Where(part => !pwsh.Contains(part)));
+        var pwshParts = new HashSet<string>(pwsh, StringComparer.Ordinal);
+        return pwsh.Concat(SplitCommand(command, dropComments, posix: true).Where(part => !pwshParts.Contains(part)));
     }
 
     private static List<string> SplitCommand(string command, bool dropComments, bool posix)

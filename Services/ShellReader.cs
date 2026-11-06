@@ -36,6 +36,12 @@ internal sealed class ShellReader
         public List<Host> Executions { get; } = [];
         public Body? DerivedBody { get; init; }
 
+        // Membership is queried only after the reading finishes. Keep the ordered lists for walks.
+        private HashSet<Host>? _executions;
+        private HashSet<Scope>? _children;
+        public bool HasExecution(Host host) => (_executions ??= Executions.ToHashSet()).Contains(host);
+        public bool HasChild(Scope child) => (_children ??= Children.ToHashSet()).Contains(child);
+
         public bool Contains(Range range) => !range.Start.IsFromEnd && !range.End.IsFromEnd
             && range.Start.Value >= Start && range.End.Value >= range.Start.Value && range.End.Value <= End;
     }
@@ -76,12 +82,30 @@ internal sealed class ShellReader
 
         public Position? At(int offset)
         {
-            foreach (var part in _parts)
-                if (offset >= part.Offset && offset < part.Offset + part.Length)
-                    return part.Appended is { } appended
-                        ? appended.At(offset - part.Offset)
-                        : part.Origin with { Offset = part.Origin.Offset + offset - part.Offset };
-            return null;
+            var at = FirstPart(offset);
+            if (at == _parts.Count || offset < _parts[at].Offset)
+                return null;
+            var part = _parts[at];
+            return part.Appended is { } appended
+                ? appended.At(offset - part.Offset)
+                : part.Origin with { Offset = part.Origin.Offset + offset - part.Offset };
+        }
+
+        // Parts are appended in output order. Skip earlier runs when locating one execution in a
+        // body with many origin runs (for example, one per CRLF line).
+        private int FirstPart(int offset)
+        {
+            var low = 0;
+            var high = _parts.Count;
+            while (low < high)
+            {
+                var middle = low + (high - low) / 2;
+                if (_parts[middle].Offset + _parts[middle].Length <= offset)
+                    low = middle + 1;
+                else
+                    high = middle;
+            }
+            return low;
         }
 
         public Range? RangeIn(Scope source, Range range)
@@ -93,7 +117,7 @@ internal sealed class ShellReader
                 return null;
             var covered = range.Start.Value;
             var previous = first.Offset;
-            foreach (var run in Runs(0).Where(r => r.Offset < range.End.Value && r.Offset + r.Length > covered))
+            foreach (var run in Runs(0, range.Start.Value, range.End.Value))
             {
                 var from = Math.Max(covered, run.Offset);
                 var raw = run.Origin.Offset + from - run.Offset;
@@ -106,14 +130,15 @@ internal sealed class ShellReader
         }
 
         // The runs of one source each, appended origins expanded in place, shifted by shift.
-        private IEnumerable<Part> Runs(int shift)
+        private IEnumerable<Part> Runs(int shift, int start, int end)
         {
-            foreach (var part in _parts)
+            for (var i = FirstPart(start - shift); i < _parts.Count && _parts[i].Offset + shift < end; i++)
             {
+                var part = _parts[i];
                 if (part.Appended is not { } appended)
                     yield return part with { Offset = part.Offset + shift };
                 else
-                    foreach (var run in appended.Runs(shift + part.Offset))
+                    foreach (var run in appended.Runs(shift + part.Offset, start, end))
                         yield return run;
             }
         }
@@ -139,6 +164,8 @@ internal sealed class ShellReader
         public TextOrigins Origins { get; init; } = new();
         public Scope? ExpansionSource { get; set; }
         public List<Host> Expansions { get; } = [];
+        private HashSet<Host>? _expansions;
+        public bool HasExpansion(Host host) => (_expansions ??= Expansions.ToHashSet()).Contains(host);
     }
     internal sealed record Capture(string Text, Scope Source, Range Range, Host Host)
     {

@@ -52,6 +52,17 @@ megabytes at most, and a command nested past the reading's bound is refused.
 - A data command's single quotes are paired with its words in one walk, and sed's script is found
   once. Each quote searched the words from the first, and for sed found the script again, so
   `sed 's/a/b/'` followed by 33,329 `''` took seven seconds.
+- Splitting a command indexes PowerShell's parts once to find which bash parts it lacks. Each bash
+  part searched the whole list, so doubling distinct commands quadrupled the matching work. The
+  output keeps both readings' order and duplicates within each reading.
+- Checking multiline quotes against parsed words builds a substring index once per reading. Each
+  quote searched all words before, allocating about 2 GB for 90,000 characters of distinct quoted
+  echo commands. Substring matches and their treatment of escaped quotes stay the same.
+- Nudge provenance checks index completed execution and child memberships once per reading. A long
+  pipeline is walked iteratively, with its compound syntax checked once, instead of recursively
+  searching every command again for each pipe. Origin lookups skip earlier runs with binary search,
+  so many substitutions in a CRLF heredoc do not rescan every preceding line. Quoted data keeps the
+  same exemptions.
 - Cutting heredoc and here-string bodies reads each piece once. Each cut read, split and copied the
   whole rest of the command, so 4,000 heredocs took eight seconds and allocated 22 GB. The rest
   must still read, as before: the command is read whole once, and each cut's own text from its

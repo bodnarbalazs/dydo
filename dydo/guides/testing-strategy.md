@@ -73,11 +73,15 @@ queued or quiet run continue. A Light label grants neither a bypass nor host acc
 
 Memory belongs to the whole host: one runaway run can exhaust it and end every session on the
 machine. Run each ad-hoc test, gate or probe under a hard cap with swap off:
-`systemd-run --user --scope -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`.
-Give a focused probe `MemoryMax=4G` and a short timeout. Keep any host gate lock outside the cap,
-as `<lock> systemd-run --user --scope … timeout 3600 <gate>`. Pass input that holds `$` through a
-script file, and never scale an input upward uncapped. The testing facade caps its own operations
-the same way, and `DYDO_MEMORY_MAX` may only lower its cap.
+`[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`.
+The bracketed env prefix applies to .NET commands; omit the brackets when using it. Use your
+session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager. On a
+T3 host, `app-t3code-agents.slice` is an example; a nearer session slice takes precedence. Leave
+out `--slice` where no agent slice exists. Each run has its own cap; concurrent runs share the
+caller's slice budget. Give a focused probe `MemoryMax=4G` and a short timeout. Keep any host gate
+lock before the command, outside the cap. Pass input that holds `$` through a script file, and
+never scale an input upward uncapped. The testing facade caps its own operations the same way,
+and `DYDO_MEMORY_MAX` may only lower its cap.
 
 A cap hit is a finding to diagnose; nobody raises the cap to get past it. When the facade
 survives, the hit is a `failed` row marked `memoryCapHit`. Otherwise the caller sees 137, or 143
@@ -407,9 +411,9 @@ coverage success.
 
 The Windows coverage leg runs only the statechart's selected tests, so the guard's tests run on
 Windows in a separate job. The hosted `guard-windows` job builds the candidate commit on
-`windows-latest`, the merge ref on a pull request and the pushed commit on a push, and runs
-`DangerousPatternCultureTests`, `DangerousPatternOracleTests`, `DangerousPatternBudgetTests`,
-`BashCommandAnalyzerTests` and `GuardSecurityTests` without instrumentation. It fails when `dotnet test` fails, when the selection yields no results, when a
+`windows-latest`, the merge ref on a pull request and the pushed commit on a push, and runs the
+classes in that job's `GUARD_CLASSES` in `.github/workflows/ci.yml`, the one list of selected
+classes, without instrumentation. It fails when `dotnet test` fails, when the selection yields no results, when a
 class yields none, or when any result is not Passed, so a skip fails it. It adds no points to
 either coverage report.
 

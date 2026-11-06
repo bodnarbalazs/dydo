@@ -35,7 +35,10 @@ instrumentation all just consume it. If you don't have one, no amount of staring
 
 Spend disproportionate effort here. **Be aggressive. Be creative. Refuse to give up.**
 
-Run every loop and probe capped: `systemd-run --user --scope -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 120 <cmd>`. A cap hit is a finding to diagnose; never raise the cap or grow inputs uncapped.
+Run every loop and probe capped: `[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 120 <cmd>`. A cap hit is a finding to diagnose; never raise the cap or grow inputs uncapped.
+Use your session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager
+(on a T3 host, for example, `app-t3code-agents.slice`; a nearer session slice takes precedence).
+Omit `--slice` where no agent slice exists. Use the bracketed env prefix for .NET commands, without the brackets.
 
 ### Ways to construct one, in roughly this order
 

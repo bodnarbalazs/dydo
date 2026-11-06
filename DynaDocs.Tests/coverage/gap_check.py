@@ -656,6 +656,13 @@ def cgroup_ancestry():
     return [leaf, *(parent for parent in leaf.parents if parent.is_relative_to(CGROUP_ROOT) and parent != CGROUP_ROOT)]
 
 
+def caller_slice(ancestry):
+    """Nearest slice below the user manager; system-manager slices cannot be joined with --user."""
+    manager = next((index for index, directory in enumerate(ancestry)
+                    if re.fullmatch(r"user@\d+\.service", directory.name)), 0)
+    return next((directory.name for directory in ancestry[:manager] if directory.name.endswith(".slice")), "app.slice")
+
+
 def oom_policy_continues(directory):
     """Whether the unit owning `directory` keeps its scope alive after an OOM kill; unknown is stop."""
     systemctl = shutil.which("systemctl")
@@ -707,16 +714,19 @@ def rerun_cap(ancestry):
     if limit is None or cgroup_number(leaf, "memory.swap.max") != 0:
         return uncapped("systemd-run started this operation, but its cgroup shows no memory cap")
     return MemoryCap("enforced", limit, "systemd-run --user --scope",
-                     f"MemoryMax={memory_size(limit)} MemorySwapMax=0 OOMPolicy=continue on {leaf}", leaf)
+                     f"MemoryMax={memory_size(limit)} MemorySwapMax=0 OOMPolicy=continue "
+                     f"slice={caller_slice(ancestry)} on {leaf}", leaf)
 
 
-def enforce(limit):
+def enforce(limit, ancestry):
     """Rerun this operation once, unchanged, inside a new capped scope; return only when that cannot start."""
     systemd_run = shutil.which("systemd-run")
     if systemd_run is None:
         return uncapped("systemd-run is not on PATH")
+    slice_name = caller_slice(ancestry)
+    slice_option = [f"--slice={slice_name}"] if slice_name != "app.slice" else []
     # OOMPolicy=continue keeps the facade alive to record a row's cap hit; expansion off keeps `$` literal.
-    wrap = [systemd_run, "--user", "--scope", "--quiet", "-p", f"MemoryMax={limit}", "-p", "MemorySwapMax=0",
+    wrap = [systemd_run, "--user", "--scope", *slice_option, "--quiet", "-p", f"MemoryMax={limit}", "-p", "MemorySwapMax=0",
             "-p", "OOMPolicy=continue", "--expand-environment=no", "--"]
     try:
         probe = subprocess.run([*wrap, "true"], stdin=subprocess.DEVNULL, capture_output=True, text=True,
@@ -735,8 +745,13 @@ def enforce(limit):
 def memory_cap():
     """Cap this operation before it starts a child. Inside an outer scope that already caps it as
     tightly, with swap off and OOMPolicy=continue, the cap is inherited; otherwise the operation
-    reruns under systemd-run at the tighter of the target and any ancestor limit, so it never escapes
-    a tighter outer cap. Without systemd the run is uncapped, recorded and warned once."""
+    reruns under systemd-run in the caller's slice at the tighter of the target and any ancestor
+    limit. Concurrent runs share that slice's budget. Without systemd the run is uncapped,
+    recorded and warned once."""
+    names = {name.upper(): name for name in os.environ} if sys.platform == "win32" else {}
+    for name, value in (("MSBUILDDISABLENODEREUSE", "1"), ("DOTNET_CLI_USE_MSBUILD_SERVER", "0"),
+                        ("UseSharedCompilation", "false")):
+        os.environ.setdefault(names.get(name.upper(), name), value)
     target = memory_target()
     rerun = os.environ.pop(MEMORY_SCOPE_ENV, None)
     if sys.platform != "linux":
@@ -751,7 +766,7 @@ def memory_cap():
             and oom_policy_continues(capping)):
         return MemoryCap("inherited", tightest, "cgroup v2",
                          f"an outer scope caps this run with swap off and OOMPolicy=continue: {capping}", capping)
-    return enforce(min(target, tightest))
+    return enforce(min(target, tightest), ancestry)
 
 
 def capped_row(stack, capability, root, since, forwarded, cap):

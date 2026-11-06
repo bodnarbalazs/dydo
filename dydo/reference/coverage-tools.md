@@ -248,8 +248,27 @@ On Linux the facade reads its cgroup v2 ancestry from `/proc/self/cgroup` and `/
 | `memoryCap.state` | When | What the facade does |
 |---|---|---|
 | `inherited` | the tightest ancestor `memory.max` is at or below the target, that ancestor has `memory.swap.max` 0, and `systemctl --user show -p OOMPolicy` reports `continue` for its unit | runs in place; a nested facade run inside a capped operation takes this path |
-| `enforced` | otherwise | probes `systemd-run … true`, then reruns the same command line once with `systemd-run --user --scope --quiet -p MemoryMax=<limit> -p MemorySwapMax=0 -p OOMPolicy=continue --expand-environment=no`; the limit is the lower of the target and the tightest ancestor `memory.max`, so a tighter outer cap is never escaped |
+| `enforced` | otherwise | probes `systemd-run … true`, then reruns the same command line once with `systemd-run --user --scope --slice=<caller slice> --quiet -p MemoryMax=<limit> -p MemorySwapMax=0 -p OOMPolicy=continue --expand-environment=no`; the limit is the lower of the target and the tightest ancestor `memory.max`, each run is capped at its own limit, and concurrent runs share the caller's slice budget |
 | `unavailable` | Windows or macOS, no `systemd-run` on `PATH`, a failed probe, or a rerun whose scope shows no cap | runs uncapped and prints one `memory cap unavailable: <reason>` line to stderr |
+
+The enforced scope joins the caller's nearest ancestor `.slice` within the user manager, found
+in `/proc/self/cgroup`; `memoryCap.reason` names that slice. A caller directly in `app.slice`, or
+without a user-manager slice, keeps the default `app.slice` placement. The inherited path stays
+in place. An outer scope's tighter limit still bounds each rerun, but only the shared slice budget
+bounds concurrent reruns together.
+
+For ad-hoc runs use
+`[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`.
+Use your session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager
+(on a T3 host, for example, `app-t3code-agents.slice`; a nearer session slice takes precedence).
+Leave out `--slice` where no agent slice exists. The bracketed env prefix applies to .NET commands;
+omit the brackets when using it. Probes use 4G and a short timeout. Keep any host gate lock outside
+the cap, before the command.
+
+The facade sets `MSBUILDDISABLENODEREUSE=1`, `DOTNET_CLI_USE_MSBUILD_SERVER=0` and
+`UseSharedCompilation=false` in its children's environment wherever the caller left them unset.
+Caller values, including empty strings, stay unchanged. Direct `run_tests.py` uses the same defaults
+through the shared cap, preventing .NET build and compiler servers from outliving the run by default.
 
 The rerun keeps the process, its stdio, exit code and signals, and argv bytes, `$(` included.
 `OOMPolicy=continue` lets the facade outlive a child that the kernel kills at the cap, so it can

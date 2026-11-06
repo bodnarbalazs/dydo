@@ -133,6 +133,60 @@ neither launched nor claimed it. Local product coverage is not required for this
 scope; hosted whole-stack coverage remains required. Mutation is unavailable under DYD-103 and
 is not claimed passing. The captain owns reviews, hosted proof, and merge validation.
 
+## Pre-review feature integration
+
+This local, unsquashed synchronization joins implementation
+`7175d7128d62ed4a16fec9b2cd81115c34a3ee5f` with fetched feature tip
+`4dfa8bb79a832d776e91539aae785fca3ed30c93`, already on `origin/feature/dydo-3-6-0`.
+The sole textual conflict was `.github/workflows/ci.yml`: the resolution keeps the whole
+`GuardPrReadyTests` class and file-symlink setup alongside DYD-806's exact
+`GuardPrReadyBodyFileTests.LinkedDirectoryLeavingTheTree_IsNull` selection. The feature's
+class/method discovery and all-results-Passed enforcement remain intact. All other feature paths
+merge unchanged. This is prerequisite integration before the first code review, without a source
+PASS or a remote merge.
+
+The feature's `guard-windows-selection.test.cjs` hard-codes six classes in its filter assertion
+and synthetic passing TRX. The required seventh class therefore conflicts with that fixture.
+The Node test is outside this hop's authorized edit scope and is preserved unchanged. Its two
+failures are an integration blocker for the captain: add `GuardPrReadyTests` to that fixture's
+expected class list and passing TRX rows in a separately authorized follow-up. The original
+diagnosis red remains applicable because neither side changes production guard/parser semantics.
+
+The combined gates ran on clean merge commit `6ac09458abd0b56290237b2648469f294a18a7ad`.
+The final merge hop amends only this record and retained evidence after those gates. Key test,
+CI and facade SHA-256 hashes are in `dyd-805-evidence/merge-receipt.json`; the complete tested
+Git tree in `dyd-805-evidence/merge-tree.txt.gz` pins all source inputs. The implementation test file retains
+the SHA-256 above; merged CI SHA-256 is
+`014997903f358b5031dafa913bfcec2fa4bf7aa56dfd190466744b31f7519aeb`.
+
+| Combined observation | Exit | Result | Raw evidence |
+| --- | --- | --- | --- |
+| Prerequisites | 0 | SDK 10.0.303, runtime 10.0.14, pwsh 7.6.9, Python 3.14.4, all three installed pnpm locks match; skill links current | `dyd-805-evidence/merge-preflight-r2.log.gz` |
+| Selection discovery | 0 | Nonzero selection, including 257 PR-ready and 30 body-file cases | `dyd-805-evidence/merge-discovery.log.gz` |
+| Both full classes | 0 | 287 passed, zero skipped | `dyd-805-evidence/merge-classes.log.gz`, `merge-classes.trx.gz` |
+| Exact affected Light | 0 | 2,515 passed, zero skipped; pwsh present throughout | `dyd-805-evidence/merge-light.log.gz`, `merge-light.trx.gz` |
+| Feature workflow selection test | 1 | 10 passed, 2 failed, zero skipped; expected class list and synthetic passing TRX omit the seventh class | `dyd-805-evidence/merge-node.log.gz` |
+| All-stack static | 0 | dotnet, python, node, viewer and statechart passed; inputs frozen throughout | `dyd-805-evidence/merge-static.log.gz`, `merge-static-result.json.gz`, per-stack static receipts |
+
+The first prerequisite attempt exited 127 because this hop's explicit PATH omitted the provisioned
+Node installation; `merge-preflight.log.gz` retains it. The corrected check and every subsequent
+gate include `/home/balazs/.local/share/fnm/aliases/default/bin` and `/tmp/dyd622-pwsh` on PATH.
+No dependencies were installed. Every run used the required host lock, bounded systemd scope in
+`app-t3code-agents.slice`, swap off, OOMPolicy continue and disabled .NET reuse. Admission waited
+for the shared slots. No process environments were read. No input changed during static collection.
+
+Replay from this worktree's root with
+`bash dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-replay.sh`; the retained script
+contains the exact bounded commands, class and Light filters, output paths and per-command exits.
+The Node failure is intentionally retained, not a passing claim. The prerequisite script is
+`dyd-805-evidence/merge-preflight.sh`; run it through the same wrapper with a 4G cap and 120-second
+timeout. Final documentation validation uses that wrapper with a 4G cap and 180-second timeout
+around `dotnet bin/Debug/net10.0/dydo.dll check`, retained as `merge-docs.log.gz`.
+
+Native hosted Windows remains captain-owned and unproved by these Linux results. This hop made
+no production edits, push, PR or remote merge. Local product coverage remains inapplicable and
+mutation remains unavailable as recorded above.
+
 ## Related
 
 - [Guard system](../../../../understand/guard-system.md) - unreadable PR calls and body-file rules

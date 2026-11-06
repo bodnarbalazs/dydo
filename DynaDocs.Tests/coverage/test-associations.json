@@ -90,6 +90,12 @@
       ]
     },
     {
+      "module": "skills/engineering/verify-dydo/scripts/officer_transition.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_officer_transition.py"
+      ]
+    },
+    {
       "module": "Commands/GapCheckCommand.cs",
       "tests": [
         "DynaDocs.Tests/Commands/GapCheckCommandTests.cs"
@@ -271,6 +277,7 @@
       "module": "Services/PrCallScanner.MergeRoutes.cs",
       "tests": [
         "DynaDocs.Tests/Services/MergeRouteScannerTests.cs",
+        "DynaDocs.Tests/Services/PrCallScannerBackslashTreeTests.cs",
         "DynaDocs.Tests/Integration/GuardMergeRouteTests.cs"
       ]
     },
@@ -360,7 +367,8 @@
     {
       "module": "DynaDocs.Tests/coverage/gap_check.py",
       "tests": [
-        "DynaDocs.Tests/coverage/tests/test_testing_facade.py"
+        "DynaDocs.Tests/coverage/tests/test_testing_facade.py",
+        "DynaDocs.Tests/coverage/tests/test_memory_cap.py"
       ]
     },
     {
@@ -664,7 +672,8 @@
       "module": "DynaDocs.Tests/coverage/run_tests.py",
       "tests": [
         "DynaDocs.Tests/coverage/tests/test_runner.py",
-        "DynaDocs.Tests/coverage/tests/test_assurance_publication.py"
+        "DynaDocs.Tests/coverage/tests/test_assurance_publication.py",
+        "DynaDocs.Tests/coverage/tests/test_memory_cap.py"
       ]
     },
     {

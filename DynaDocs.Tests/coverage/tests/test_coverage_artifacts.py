@@ -352,11 +352,16 @@ def _arguments(run):
 
 LEGS = {'python': ('python-coverage', 'python-coverage-union', 'Upload platform coverage evidence',
                    'Stamp platform coverage artifact identity', 'Verify complete same-candidate platform union',
-                   'python-coverage-{platform}', '${{ github.sha }}'),
+                   'python-coverage-{platform}'),
         'dotnet': ('dotnet-coverage', 'dotnet-coverage-union', 'Upload platform .NET coverage evidence',
                    'Stamp platform .NET coverage artifact identity',
-                   'Verify the complete same-candidate platform partition', '{platform}',
-                   '${{ github.event.pull_request.head.sha || github.sha }}')}
+                   'Verify the complete same-candidate platform partition', '{platform}')}
+# One tree per run: the merge ref on a pull request, whose ci.yml is running, and the pushed commit on a push.
+RUN_COMMIT = '${{ github.sha }}'
+HEAD_REF = '${{ github.event.pull_request.head.sha || github.sha }}'
+CHECKOUT_JOBS = ('python-coverage', 'python-coverage-union', 'dotnet-coverage', 'dotnet-coverage-union',
+                 'guard-windows', 'assurance-cancellation', 'statechart-windows', 'viewer', 'build', 'full-stack')
+DOTNET_PREFLIGHT = 'Preflight candidate, selection pins and nonzero test discovery'
 RESULTS = 'DynaDocs.Tests/coverage/results'
 PLATFORMS_DIR = f'{RESULTS}/coverage-platforms'
 RECORD = "Record each leg's latest execution from the run's job record"
@@ -364,7 +369,7 @@ SELECT = "Select each leg's latest-execution artifact"
 
 
 def assert_leg_uploads_stamped_attempt_artifact(test, workflow, stack):
-    leg_job, _, upload, stamp_step, _, _, _ = LEGS[stack]
+    leg_job, _, upload, stamp_step, _, _ = LEGS[stack]
     leg = _steps(_job(workflow, leg_job))
     uploads = _uses(leg, 'actions/upload-artifact@')
     test.assertEqual([_named(leg, upload)], uploads)
@@ -408,7 +413,7 @@ def assert_union_records_the_job_record(test, header, step):
 
 
 def assert_rerun_safe_coverage_artifacts(test, workflow, stack):
-    _, union_job, _, _, verify, folder, expected = LEGS[stack]
+    _, union_job, _, _, verify, folder = LEGS[stack]
     assert_leg_uploads_stamped_attempt_artifact(test, workflow, stack)
     union = _steps(_job(workflow, union_job))
     download = assert_union_downloads_every_attempt(test, union, stack)
@@ -420,7 +425,7 @@ def assert_rerun_safe_coverage_artifacts(test, workflow, stack):
     run = union[selection]['run']
     test.assertTrue(run.startswith('python DynaDocs.Tests/coverage/coverage_artifacts.py select '))
     test.assertIn(f'--run-id ${{{{ github.run_id }}}} --run-attempt ${{{{ github.run_attempt }}}} '
-                  f'--expected-commit {expected} --jobs', run)
+                  f'--expected-commit {RUN_COMMIT} --jobs', run)
     arguments = _arguments(run)
     test.assertEqual((stack, f'{RESULTS}/coverage-legs', f'{PLATFORMS_DIR}/artifact-selection.json',
                       f'{PLATFORMS_DIR}/run-jobs.jsonl', f'{PLATFORMS_DIR}/run-attempts.jsonl'),
@@ -430,6 +435,54 @@ def assert_rerun_safe_coverage_artifacts(test, workflow, stack):
         destination = f'{PLATFORMS_DIR}/{folder.format(platform=platform)}'
         test.assertEqual(destination, arguments[platform])
         test.assertEqual(f'{destination}/adapters/{stack}-coverage.json', verified[platform])
+
+
+def _jobs(workflow):
+    section = workflow.split('\njobs:\n', 1)[1]
+    return {name: _job(section, name) for name in re.findall(r'^  ([\w-]+):', section, re.M)}
+
+
+def assert_one_tree_per_run(test, workflow):
+    """Every checkout is the run's own commit, and no step moves the tree to another ref."""
+    checked = set()
+    for name, job in _jobs(workflow).items():
+        steps = _steps(job)
+        for index in _uses(steps, 'actions/checkout@'):
+            test.assertEqual(RUN_COMMIT, steps[index].get('with', {}).get('ref'), name)
+            checked.add(name)
+        for step in steps:
+            test.assertIsNone(re.search(r'\bgit\s+(checkout|switch|reset)\b', step.get('run', '')), name)
+    test.assertLessEqual(set(CHECKOUT_JOBS), checked)
+
+
+def assert_leg_and_union_measure_one_commit(test, workflow, stack):
+    leg_job, union_job = LEGS[stack][:2]
+    union = _steps(_job(workflow, union_job))
+    expected = re.search(r'--expected-commit (\$\{\{.*?\}\}|\S+)', union[_named(union, SELECT)]['run'])[1]
+    test.assertEqual(RUN_COMMIT, expected)
+    for job in (leg_job, union_job):
+        steps = _steps(_job(workflow, job))
+        checkouts = _uses(steps, 'actions/checkout@')
+        test.assertEqual(1, len(checkouts), job)
+        test.assertEqual(expected, steps[checkouts[0]].get('with', {}).get('ref'), job)
+
+
+def assert_dotnet_preflight_asserts_the_run_commit(test, workflow):
+    steps = _steps(_job(workflow, 'dotnet-coverage'))
+    preflight = steps[_named(steps, DOTNET_PREFLIGHT)]
+    test.assertEqual('${{ github.event.pull_request.head.sha }}', preflight['env']['PR_HEAD_SHA'])
+    test.assertEqual(RUN_COMMIT, preflight['env']['MERGE_REF_SHA'])
+    run = preflight['run']
+    test.assertIn("assert candidate == os.environ['MERGE_REF_SHA'], candidate", run)
+    test.assertEqual(1, run.count('assert candidate =='))
+    test.assertIn("'pr_head_sha': os.environ['PR_HEAD_SHA'], 'merge_ref_sha': os.environ['MERGE_REF_SHA']", run)
+
+
+def _with_job(workflow, name, edit):
+    job = _jobs(workflow)[name]
+    edited = edit(job)
+    assert edited != job, name
+    return workflow.replace(job, edited, 1)
 
 
 class WorkflowTests(unittest.TestCase):
@@ -442,16 +495,60 @@ class WorkflowTests(unittest.TestCase):
                 assert_rerun_safe_coverage_artifacts(self, self.workflow, stack)
 
     def test_each_legs_checkout_is_the_unions_expected_candidate(self):
-        for stack, ref in (('python', None), ('dotnet', '${{ github.event.pull_request.head.sha || github.sha }}')):
-            for job in (LEGS[stack][0], LEGS[stack][1]):
-                with self.subTest(job=job):
-                    steps = _steps(_job(self.workflow, job))
-                    checkouts = _uses(steps, 'actions/checkout@')
-                    self.assertEqual(1, len(checkouts))
-                    self.assertEqual(ref, steps[checkouts[0]].get('with', {}).get('ref'))
+        for stack in coverage_artifacts.STACKS:
+            with self.subTest(stack=stack):
+                assert_leg_and_union_measure_one_commit(self, self.workflow, stack)
+
+    def test_every_job_checks_out_the_runs_own_commit(self):
+        assert_one_tree_per_run(self, self.workflow)
+
+    def test_dotnet_preflight_asserts_the_run_commit_and_records_both_shas(self):
+        assert_dotnet_preflight_asserts_the_run_commit(self, self.workflow)
+
+    def test_a_job_checking_out_another_ref_is_rejected(self):
+        pinned = f'          ref: {RUN_COMMIT}\n'
+        mutations = {
+            'head': lambda job: job.replace(pinned, f'          ref: {HEAD_REF}\n'),
+            'head-only': lambda job: job.replace(pinned, '          ref: ${{ github.event.pull_request.head.sha }}\n'),
+            # The default ref: the checkout loses its ref, and its with: when nothing else is left in it.
+            'default': lambda job: re.sub(r'^        with:\n(?! {10})', '', job.replace(pinned, ''), flags=re.M)}
+        for name in CHECKOUT_JOBS:
+            for label, edit in mutations.items():
+                with self.subTest(job=name, mutation=label):
+                    invalid = _with_job(self.workflow, name, edit)
+                    with self.assertRaises(AssertionError):
+                        assert_one_tree_per_run(self, invalid)
+        moved = _with_job(self.workflow, 'guard-windows', lambda job: job.replace(
+            '      - name: Setup .NET\n',
+            '      - name: Move to the head\n        run: git checkout ${{ github.event.pull_request.head.sha }}\n\n'
+            '      - name: Setup .NET\n', 1))
+        with self.assertRaises(AssertionError):
+            assert_one_tree_per_run(self, moved)
+
+    def test_a_leg_and_union_that_disagree_are_rejected(self):
+        for stack in coverage_artifacts.STACKS:
+            leg_job, union_job = LEGS[stack][:2]
+            for name, original in ((leg_job, 'ref: '), (union_job, 'ref: '), (union_job, '--expected-commit ')):
+                with self.subTest(stack=stack, job=name, field=original):
+                    invalid = _with_job(self.workflow, name, lambda job: job.replace(
+                        original + RUN_COMMIT, original + HEAD_REF, 1))
+                    with self.assertRaises(AssertionError):
+                        assert_leg_and_union_measure_one_commit(self, invalid, stack)
+
+    def test_a_dotnet_preflight_that_accepts_the_head_or_drops_a_sha_is_rejected(self):
+        assertion = "assert candidate == os.environ['MERGE_REF_SHA'], candidate"
+        for original, replacement in (
+                (assertion,
+                 "assert candidate == (os.environ['PR_HEAD_SHA'] or os.environ['MERGE_REF_SHA']), candidate"),
+                (assertion, 'pass'),
+                ("'pr_head_sha': os.environ['PR_HEAD_SHA'],\n", '\n'),
+                (f'MERGE_REF_SHA: {RUN_COMMIT}\n', 'MERGE_REF_SHA: ${{ github.event.pull_request.head.sha }}\n')):
+            with self.subTest(original=original, replacement=replacement):
+                invalid = _with_job(self.workflow, 'dotnet-coverage', lambda job: job.replace(original, replacement, 1))
+                with self.assertRaises(AssertionError):
+                    assert_dotnet_preflight_asserts_the_run_commit(self, invalid)
 
     def test_stale_prone_or_unanchored_selection_is_rejected(self):
-        expected = '--expected-commit ${{ github.event.pull_request.head.sha || github.sha }}'
         for stack, original, replacement in (
                 ('python', 'pattern: python-coverage-*-attempt-*', 'pattern: python-coverage-*'),
                 ('python', '-attempt-${{ github.run_attempt }}\n', '\n'),
@@ -469,7 +566,8 @@ class WorkflowTests(unittest.TestCase):
                  '--run-attempt 1\n          --expected-commit'),
                 ('dotnet', f"      - name: {SELECT}\n", f"      - name: {SELECT}\n        if: always()\n"),
                 ('python', '--expected-commit ${{ github.sha }}', '--expected-commit 0000000'),
-                ('dotnet', expected, '--expected-commit ${{ github.sha }}'),
+                ('dotnet', f'--expected-commit {RUN_COMMIT}\n          --jobs',
+                 f'--expected-commit {HEAD_REF}\n          --jobs'),
                 ('dotnet', '/attempts/${{ github.run_attempt }}/jobs?', '/jobs?filter=all&'),
                 ('python', '    permissions:\n      actions: read\n      contents: read\n    steps:',
                  '    steps:'),

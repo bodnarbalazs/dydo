@@ -57,19 +57,25 @@ public class StatechartPosixErrnoTests
         Assert.Equal("Statechart exec handoff failed.", error.Message);
     }
 
+    // mkdir fails for a reason other than EEXIST, so the vetting statx fails too.
     [SkippableFact]
-    public void ASocketDirectoryUnderAMissingParentReportsNoEntry()
+    public void ASocketDirectoryUnderAMissingParentIsRefusedWithTheRemedyAndItsNoEntry()
     {
         Skip.IfNot(OperatingSystem.IsLinux(), LinuxOnly);
         using var scope = new StatechartTestDirectory();
         var directory = Path.Combine(scope.Path, "missing", "socket");
-        AssertErrno(NoEntry, () => PosixStatechartSocket.Private(directory, 0));
+        var error = Assert.Throws<IOException>(() => PosixStatechartSocket.Private(directory, 0));
+        Assert.Equal($"Statechart socket directory {directory} must be a directory owned by uid 0 with mode 0700 " +
+            "or stricter, and not a link. Remove it, or set TMPDIR to a shorter path.", error.Message);
+        AssertErrno(NoEntry, error.InnerException);
     }
 
-    private static void AssertErrno(int errno, Action call)
+    private static void AssertErrno(int errno, Action call) => AssertErrno(errno, Assert.Throws<Win32Exception>(call));
+
+    private static void AssertErrno(int errno, Exception? error)
     {
-        var error = Assert.Throws<Win32Exception>(call);
-        Assert.Equal(errno, error.NativeErrorCode);
-        Assert.Equal(new Win32Exception(errno).Message, error.Message);
+        var native = Assert.IsType<Win32Exception>(error);
+        Assert.Equal(errno, native.NativeErrorCode);
+        Assert.Equal(new Win32Exception(errno).Message, native.Message);
     }
 }

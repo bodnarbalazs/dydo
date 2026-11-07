@@ -450,8 +450,15 @@ The tree must have no staged, unstaged or untracked files git does not ignore, a
 an upstream and equal it. The upstream is read from the local remote-tracking ref; nothing is
 fetched. Keep the body file in `dydo/agents/workspace/`, which git ignores, so it is not an untracked file
 and the guard can read it from inside the tree. With `--body`, the body must name a ticket key (such as `DYD-123`) and hold a
-`## Independent review` section with the reviewer's `PASS - rubric/type: ...` block, fenced or not;
-the dash after `PASS` may be a hyphen, an en dash or an em dash.
+`## Independent review` section with a parsable reviewer block, fenced or not:
+`PASS - rubric/type: code; candidate <SHA>; base <SHA>`. The rubric must be `code`, `docs` or
+`merge`; both SHAs must contain 7–40 hexadecimal digits and may be backticked. Fields start
+after semicolons. `candidate: <SHA>` and `base: <SHA>` are also accepted, independently;
+the canonical forms without colons remain valid. The dash after `PASS` may be a hyphen,
+an en dash or an em dash. Prose-only PASS lines and missing or invalid fields are refused
+with the expected form. This uses the merge parser but checks grammar only: it does not
+resolve review SHAs, match the candidate to HEAD or check base ancestry. Merge still applies
+its own review, pin, ancestry and check policy.
 Each problem prints as one `not ready:` line on stderr and the exit is `1`; a path outside a git
 work tree is a problem too. When all hold, it prints one `ready:` line and exits `0`. The guard
 runs the tree checks on `gh pr create`, `gh pr new`, `gh pr ready` and their `gh api` forms
@@ -495,7 +502,8 @@ the base pin only adds a refusal. In order, it checks:
   A closed PR's reconcile compares no pin, since the run's own merge moved the tip.
 - **Review:** the PR body's `## Independent review` section, up to the next level-one or level-two
   heading, must hold a `PASS - rubric/type: <rubric>; ...` line whose `candidate` is the SHA: fenced
-  or not, a hyphen, en dash or em dash after `PASS`, the SHA possibly backticked. An abbreviated
+  or not, a hyphen, en dash or em dash after `PASS`, the SHA possibly backticked. The `candidate`
+  and `base` field names accept an optional colon before the whitespace and SHA. An abbreviated
   candidate of at least 7 hex digits counts only when GitHub resolves it to exactly the SHA. The
   rubric must be `code`, `docs` or `merge`, and a `FAIL` line for the same candidate refuses. When the
   PASS names a `base`, the target's tip must contain it; when it names none, a `note:` line says the

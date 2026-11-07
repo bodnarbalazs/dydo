@@ -262,6 +262,7 @@
       "module": "Services/PrReadyCheck.cs",
       "tests": [
         "DynaDocs.Tests/Integration/PrReadyCommandTests.cs",
+        "DynaDocs.Tests/Merge/ReviewPassGrammarSteps.cs",
         "DynaDocs.Tests/Integration/GuardPrReadyTests.cs"
       ]
     },
@@ -1664,7 +1665,8 @@
     {
       "module": "Services/Merge/IndependentReview.cs",
       "tests": [
-        "DynaDocs.Tests/Merge/IndependentReviewTests.cs"
+        "DynaDocs.Tests/Merge/IndependentReviewTests.cs",
+        "DynaDocs.Tests/Merge/ReviewPassGrammarSteps.cs"
       ]
     },
     {

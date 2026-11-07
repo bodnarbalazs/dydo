@@ -13,6 +13,33 @@ public sealed class IndependentReviewTests
 {
     private static ReviewVerdict Only(string body) => Assert.Single(IndependentReview.Parse(body));
 
+    [Theory]
+    [InlineData(" ", " ")]
+    [InlineData(": ", " ")]
+    [InlineData(" ", ": ")]
+    [InlineData(": ", ": ")]
+    public void CanonicalAndColonFields_ParseIdentically(string candidateSeparator, string baseSeparator)
+    {
+        var line = PassLine().Replace("candidate ", "candidate" + candidateSeparator)
+            .Replace("base ", "base" + baseSeparator);
+        var verdict = Only(Body(line));
+
+        Assert.Equal(Only(Body(PassLine())) with { Line = line }, verdict);
+        Assert.Equal(Sha, verdict.Candidate);
+        Assert.Equal(ReviewBase, verdict.Base);
+    }
+
+    [Fact]
+    public void ColonFields_MergeWithTheSamePinsAndBasePolicy()
+    {
+        using var s = new MergeScenario();
+        s.PullJson["body"] = Body(PassLine().Replace("candidate ", "candidate: ").Replace("base ", "base: "));
+
+        var (exit, _, stderr) = s.Merge();
+
+        Assert.True(exit == 0, stderr);
+    }
+
     [Fact]
     public void AnUnfencedLine_Counts()
     {

@@ -1,6 +1,7 @@
 namespace DynaDocs.Services;
 
 using System.Text.RegularExpressions;
+using DynaDocs.Services.Merge;
 using DynaDocs.Utils;
 
 /// <summary>
@@ -99,23 +100,16 @@ internal static partial class PrReadyCheck
         List<string> problems = [];
         if (!TicketKeyRegex().IsMatch(body))
             problems.Add("the body names no ticket key, such as DYD-123");
-        var review = ReviewSectionRegex().Match(body);
-        if (!review.Success)
+        if (!IndependentReview.HasSection(body))
             problems.Add("the body has no '## Independent review' section");
-        else if (!PassBlockRegex().IsMatch(review.Groups["section"].Value))
-            problems.Add("the '## Independent review' section holds no reviewer 'PASS - rubric/type: ...' block (a hyphen, en dash or em dash after PASS)");
+        else if (!IndependentReview.Parse(body).Any(verdict => verdict is
+                     { Pass: true, Rubric: "code" or "docs" or "merge", Candidate: not null, Base: not null }))
+            problems.Add("the '## Independent review' section holds no reviewer 'PASS - rubric/type: ...' block with usable fields; "
+                + "expected PASS - rubric/type: code; candidate <SHA>; base <SHA> "
+                + "(code, docs or merge; 7–40 hex digits per SHA; optional candidate:/base: colons; hyphen, en dash or em dash after PASS)");
         return problems;
     }
 
     [GeneratedRegex(@"\b[A-Z][A-Z0-9]*-\d+\b")]
     private static partial Regex TicketKeyRegex();
-
-    // The section runs to the next level-one or level-two heading.
-    [GeneratedRegex(@"^##[ \t]+Independent review[ \t]*\r?$(?<section>[\s\S]*?)(?=^#{1,2}[ \t]|\z)",
-        RegexOptions.Multiline | RegexOptions.IgnoreCase)]
-    private static partial Regex ReviewSectionRegex();
-
-    // The dash may be a hyphen, an en dash or an em dash; downstream PR bodies use all three.
-    [GeneratedRegex(@"^[ \t]*PASS[ \t]*[-–—][ \t]*rubric/type:", RegexOptions.Multiline)]
-    private static partial Regex PassBlockRegex();
 }

@@ -316,7 +316,8 @@ internal sealed class ShellReader
         {
             case var quote when SingleQuoteChars.Contains(quote): SingleQuoted(); return;
             case var quote when DoubleQuoteChars.Contains(quote): DoubleQuoted(); return;
-            case '`': _i = BacktickSubstitution(_i); StartWord(); return;
+            // The word starts at the backtick, not past it: past an unclosed one is the end (DYD-881).
+            case '`': StartWord(); _i = BacktickSubstitution(_i); return;
             case '@' when _word == null && HereStringBodyStart() > 0: HereString(); return;
             case '@' when !_posix && Peek(1) == '(': GroupWord(_i + 2); return;
             case '(' when !_posix && (_word != null || _command.Words.Count > 0): GroupWord(_i + 1); return;

@@ -84,15 +84,19 @@ server-side. Balazs ruled it unnecessary.
    (`gh repo edit --default-branch`, a `gh api` PATCH of the repository with `default_branch`). Each
    refusal names `dydo merge`. The exact reading and its residuals are in
    [Guard System](../../understand/guard-system.md#also-enforced).
-8. **Claude/Codex parity is a requirement; its gate is planned, delivery pending in
-   [DYD-426](https://linear.app/bodnar-balazs/issue/DYD-426).** Both hosts must get the same
-   privileges and the same allow or block outcome for the same command. `dydo init` and `--join`
-   write `Bash(dydo merge:*)` and `PowerShell(dydo merge:*)` for Claude and a `prefix_rule` for
-   `dydo` and `dydo.exe merge` for
-   Codex. The planned gate must run the command matrix through a Codex session in PowerShell and
-   a Claude session in bash, in the main checkout and in a fresh T3 worktree; any mismatch is a
-   blocker. Neither the allow-rule delivery nor the shipped blocks of decision 7 establish this
-   parity. Merging on one host only is not an outcome.
+8. **Claude/Codex parity is a requirement; its gate, delivered in
+   [DYD-426](https://linear.app/bodnar-balazs/issue/DYD-426), passed in the dydo repository.** Both
+   hosts must get the same privileges and the same allow or block outcome for the same command.
+   `dydo init` and `--join` write `Bash(dydo merge:*)` and `PowerShell(dydo merge:*)` for Claude
+   and a `prefix_rule` for `dydo` and `dydo.exe merge` for
+   Codex. The gate runs the command matrix through a Codex session and a Claude session, in the main
+   checkout and in a fresh T3 worktree; any mismatch is a blocker. It was planned with Codex in
+   PowerShell; Balazs moved it to Linux, both hosts in bash
+   ([DYD-572](https://linear.app/bodnar-balazs/issue/DYD-572)), and Windows PowerShell stays covered
+   by the DYD-425 guard tests and the Windows CI job. Run r1 on 2026-11-05 matched on every row: the
+   harness and the verbatim rows are in `DynaDocs.Tests/HostCanaries/merge-parity/`. Neither the
+   allow-rule delivery nor the shipped blocks of decision 7 establish this parity on their own.
+   Merging on one host only is not an outcome.
 
 ## Consequences
 
@@ -131,7 +135,8 @@ server-side. Balazs ruled it unnecessary.
   are the merge evidence. Git and the PR timeline are the record; there is no local log.
 - A repository whose CI does not run on PRs into `feature/*` gets every merge refused until it does.
 - The stopgap `autoMode.allow` entry and the user-level `Bash(gh pr merge:*)` allow rule go only
-  after the planned DYD-426 parity gate passes in LC; the user removes them. That gate remains pending.
+  after the DYD-426 parity gate passes in LC; the user removes them. The gate passed in the dydo
+  repository on 2026-11-05; its LC run is not recorded here.
 
 ## Amendment - 2026-11-04: the target pin (DYD-523)
 

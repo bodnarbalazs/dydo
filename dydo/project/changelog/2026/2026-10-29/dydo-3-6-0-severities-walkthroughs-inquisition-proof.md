@@ -27,9 +27,11 @@ A process and guard release built from a retro of ten days of dydo and LC agent 
   user's click.
 - **Statecharts.** The user-invoked `statechart` skill and `dydo statechart` command check a bounded
   TLA+ model with TLC and draw the result, installing their locked prerequisites on first use.
-- **Guard.** It stops refusing the ordinary commands the retro caught, reads PowerShell as pwsh
-  7.6.9 does, bounds how long and how much memory reading one command can take, and refuses a
-  Python program on stdin.
+- **Guard.** It stops refusing the ordinary commands the retro caught, reads a bare carriage
+  return, typographic quotes and a caret in PowerShell as pwsh 7.6.9 does, bounds how long and how
+  much memory reading one command can take, and refuses a Python program on stdin. A new default
+  nudge warns before an agent installs a library or tool, so the install waits for the user's
+  permission. Known gaps the 3.6.0 inquisition found are listed under Known guard gaps.
 - **Officers.** Under T3, officers dispatch captains, crew and reviewers with `delegate_task`. A
   captain watches its PR through CI and review bots. The admiral keeps a lane ledger with a
   20-minute check-in, and `dydo survey` prints a read-only digest of a Project's lanes.
@@ -98,6 +100,9 @@ upgrade the .NET runtime before the tool; see Upgrade steps.
 - The admiral keeps a `## Lane ledger` in the Project description, one row per lane with its owner,
   state and next action, and runs a check-in every 20 minutes through T3 `schedule_task`: a cheap
   surveyor reads the board and returns actions (DYD-520).
+- The admiral reconciles the board on every user wake, captain return or approved check, before it
+  yields: each pickable item is dispatched, or has a specific blocker, owner and clearance route
+  (DYD-477).
 - The admiral's `scaffold-project` recipe: every scaffolded Project gets a working spec under
   `dydo/reference/working-specs/`, committed first on its feature branch, and the first ticket is
   wired as a native Linear blocker of every other first lane before any commission (DYD-570,
@@ -178,8 +183,11 @@ upgrade the .NET runtime before the tool; see Upgrade steps.
     every other checkout is listed with what to run there once its branch carries the update.
   - The final report hands the user a commit message and PR text listing every file merged, kept,
     skipped or left to them. That text is the record the next update reads.
-  - Through the session's Linear connection, it compares the team's label groups, labels, statuses
-    and templates with the standard and creates a missing one only with the user's OK.
+  - Through the session's Linear connection, it compares the team's label groups, labels, ticket
+    statuses and templates, and the Project statuses the user reads back, with the standard. It
+    creates a missing label group or label only with the user's OK, and lists missing or misordered
+    ticket statuses, Project statuses and templates for the user to set up. Templates the
+    connection cannot read are listed for the user to check.
 - The `wizard` skill gives each stage an outcome the agent can check without a secret. Only where
   the user would otherwise paste output back, the script may log it, never a secret, to a temp file
   the agent reads and deletes (DYD-408).
@@ -205,6 +213,15 @@ upgrade the .NET runtime before the tool; see Upgrade steps.
 
 ### Guard
 
+- A new default `warn` nudge, the install nudge, fires when an agent installs or adds a library or
+  tool: `pnpm`, `npm`, `yarn` or `bun` `add` or `install <package>`, `npx -y`, `uv add`, `pip
+  install`, `pipx`, `dotnet add` or `dotnet tool install`, and `apt`, `brew`, `cargo` or `gem
+  install`, among others. Restoring locked dependencies (`pnpm install --frozen-lockfile`, `npm ci`,
+  `uv sync --frozen`, `dotnet restore`, a bare `pnpm install` or `npm install`) never triggers it.
+  The agent retries the same command only with the user's permission, given in the conversation or
+  in the approved plan or ticket that names the install; otherwise it stops and asks. It is
+  best-effort, not a lock. `dydo init` ships it, and `dydo adopt` adds it once to an existing project
+  at 3.6.0 (DYD-499, [Guard System](../../../../understand/guard-system.md#layer-3-nudges)).
 - A command nudge no longer fires on a comment or a literal heredoc or here-string body, or on four
   recorded quoted search patterns (`rg -n '...'`, `git grep -n -E '...'`, `grep -iE "..."` and a
   `Where-Object` `-match` operand on `$_.CommandLine`). Every other unquoted or unknown quoted match
@@ -215,10 +232,13 @@ upgrade the .NET runtime before the tool; see Upgrade steps.
   (DYD-736), and reads a lone `gh pr create`'s `--body-file` or `-F` file as that call's body, so a
   reviewed body file no longer warns (DYD-639). See
   [Guard System](../../../../understand/guard-system.md#layer-3-nudges).
-- The guard reads PowerShell as pwsh 7.6.9 does for a bare carriage return, typographic quotes and
-  a caret, in every rule that reads a line as its shell would
-  ([DYD-641](../2026-11-05/dyd-641-shellreader-pwsh.md)). A backtick before a CRLF continues the
-  line only between words, as pwsh does (DYD-665).
+- The guard's shared shell reader reads three characters in PowerShell as pwsh 7.6.9 does: a bare
+  carriage return, typographic quotes and a caret. The bypass checks, the literal-body relief, the
+  dangerous-pattern readings, the nudges, the dydo-command rules, the PR-ready check and the
+  merge-route blocks read a line through it
+  ([DYD-641](../2026-11-05/dyd-641-shellreader-pwsh.md)). File-operation extraction still ignores
+  typographic quotes (DYD-661, under Moved to 3.7.0). A backtick before a CRLF continues the line
+  only between words, as pwsh does (DYD-665).
 - `git push --force-with-lease origin main` is now refused as a push to the default branch
   ([DYD-425](../2026-11-04/dyd-425-guard-merge-blocks.md)).
 
@@ -266,9 +286,7 @@ These change dydo's own repository and CI, not what a project runs.
   DYD-788, DYD-811). The test runner refuses a filter placed after the runsettings
   separator (DYD-258), and the host canaries pre-warm the Claude guard hook
   ([DYD-545](../2026-11-05/dyd-545-canary-fingerprint.md)).
-- Viewer tests: refresh tests wait for the `refresh-removed` marker, Refresh stays busy until the
-  canvas draws the new map, and a toggled plate centres on the layout it lands (DYD-378, DYD-575,
-  DYD-561). Test-only.
+- The viewer's refresh tests wait for the `refresh-removed` marker (DYD-378).
 
 ## Fixed
 
@@ -291,9 +309,11 @@ These change dydo's own repository and CI, not what a project runs.
 - The PR-ready check no longer refuses a command with no gh word just because it could not finish
   reading it, such as `arch="$(case "$(uname -m)" in ...)"`
   ([DYD-515](../2026-11-05/dyd-515-pr-ready-without-gh.md)).
-- A long benign command is no longer refused as "Command too complex to verify safely" because a
-  dangerous-pattern rule ran past its 250 ms budget
-  ([DYD-610](../2026-11-05/dyd-610-guard-regex-budget.md)). Reading one command is now bounded in
+- A long benign command is no longer refused as "Command too complex to verify safely" because one
+  of the 17 command-shaped dangerous-pattern rules ran past its 250 ms budget; those rules now match
+  in time linear in the command ([DYD-610](../2026-11-05/dyd-610-guard-regex-budget.md)). Two other
+  rules can still run past it on long benign input and refuse it (DYD-679, under Moved to 3.7.0).
+  Reading one command is now bounded in
   time and memory: command text over 1,048,576 characters is always refused, and an unclosed `$(`
   no longer blows up
   ([DYD-723](../2026-11-05/dyd-723-unclosed-substitution-bound.md)).
@@ -304,6 +324,9 @@ These change dydo's own repository and CI, not what a project runs.
   ([DYD-739](../2026-11-06/dyd-739-windows-git-c-push.md)).
 - <!-- pending: DYD-640 --> A file-descriptor redirection such as `1>` or `2>` now extracts a
   write, so writing a protected file that way is refused instead of only warned.
+- <!-- pending: DYD-881 --> A malformed input no longer crashes the 3.6.0 shell reader. Before the
+  fix, the crash reached the guard's catch-all, which allowed the call; now the reader does not
+  throw and the call is refused.
 
 ### Guard refusals that were missing
 
@@ -342,6 +365,21 @@ These change dydo's own repository and CI, not what a project runs.
   ([DYD-678](../2026-11-05/dyd-678-posix-drain-releasing-task.md)). The skill's `.gitignore` covers
   the Java build's `__pycache__`, so a coverage run leaves the tree clean
   ([DYD-560](../2026-11-05/dyd-560-statechart-java-pycache-ignore.md)).
+- Two damaged installs now recover. A managed Node or Java whose executable lost its execute bit
+  counts as damaged, so the run returns the saved, approval-required repair plan instead of failing
+  with `Permission denied` every time (DYD-510). An asset extraction whose receipt names this
+  payload but whose content fails verification is extracted again, offline, from the bytes embedded
+  in dydo; a directory without this payload's receipt is still refused untouched, naming its path
+  and the remedy (DYD-511). The first is a dependency repair that waits for approval; the second
+  re-extracts dydo's own assets with no download.
+
+### Viewer
+
+- Refresh, and the `R` key, stay busy until the canvas has drawn the new map. Before, they came
+  free while the old map was still drawn, and a second refresh then compared the new map with
+  itself and reported no changes (DYD-575).
+- Expanding or collapsing a plate centres it on the layout the toggle produces, so it no longer
+  ends up off screen (DYD-561).
 
 ## Removed
 
@@ -377,6 +415,37 @@ These were in 3.6.0's scope and did not land by the freeze. They continue in the
     guards (DYD-569).
   - Sharpen the Python platform coverage tests against surviving mutants (DYD-542).
   - An optional confirmation popup for overnight mode transitions (DYD-543).
+
+## Known guard gaps
+
+The 3.6.0 inquisition (DYD-431) found these gaps in what the guard reads. 3.6.0 ships with them;
+each has a fix planned for 3.7.0, and none of those fixes is in this release. The guard stops
+accidents, not a determined agent. Balazs marked DYD-865, DYD-879 and DYD-882 as must-fix for
+3.7.0.
+
+- A git global option placed before `push`, or a combined short flag, can hide a force push or a
+  remote branch deletion (DYD-865).
+- Shell file operations are resolved against the guard's own directory instead of the hook's
+  working directory (Claude's `cwd`, Codex's `workdir`), so a relative delete of a protected file
+  can be allowed (DYD-882).
+- Gaps in 3.6.0's new merge-route protection, which earlier releases did not have at all, so
+  neither is a regression:
+  - A push run after a `cd` that comes mid-line or inside a subshell, into a worktree on `main`, is
+    allowed and updates `main` (DYD-879).
+  - A push whose destination names `main` in a shortened ref form updates `main` without a refusal
+    (DYD-880).
+- Protected-file deletes and writes the guard does not see:
+  - A delete inside compound shell syntax: conditionals, loops, subshells, brace groups, a
+    background `&` or PowerShell blocks (DYD-866).
+  - A delete behind a wrapper command (`env`, `command`, `timeout`, `nohup`, `xargs`) or through an
+    absolute path to `rm` (DYD-867).
+  - In-place `sed` over several files checks only the last file (DYD-868).
+  - `find` with a delete action is read as a read (DYD-869).
+  - A write through a PowerShell .NET file API call (DYD-870).
+  - `dd`'s output-file operand is not read as a path, so a protected file can be overwritten
+    (DYD-871).
+  - In PowerShell: renaming a protected file, a block comment before a delete, and `.\`-prefixed or
+    backslash paths on Linux pwsh (DYD-883).
 
 ## Upgrade steps
 
@@ -433,9 +502,12 @@ These were in 3.6.0's scope and did not land by the freeze. They continue in the
     ([DR 061](../../../decisions/061-agents-merge-only-into-feature-branches.md) decision 8). Then
     the user removes it; agents cannot edit their own permissions.
 11. Linear: the team needs a `Severity` label group with `blocker` (`#E5484D`), `should`
-    (`#FFB224`) and `nit` (`#8B8D98`). With a Linear connection in the session, `update-dydo` lists
-    every label, group, status and template the team lacks and offers to create each with your OK.
-    Without one, create the group by hand in the team's label settings.
+    (`#FFB224`) and `nit` (`#8B8D98`). With a Linear connection in the session, `update-dydo`
+    compares the team with the Linear Workspace Standard and lists each difference. It creates a
+    missing label group or label only with your OK. It lists missing or misordered ticket statuses,
+    Project statuses and templates for you to set up in Linear, and lists the standard's templates
+    for you to check when the connection cannot read them. Without a connection, create the group by
+    hand in the team's label settings.
 12. From the next Project you chart: place Linear Milestones, the walking skeleton first and the
     landing last, with one Walkthrough Ticket each, and wire the skeleton's as a native blocker of
     the next Milestone's tickets. Write Walkthrough tickets with `## Checkpoint` and `## Verdict`.
@@ -454,12 +526,13 @@ These were in 3.6.0's scope and did not land by the freeze. They continue in the
 
 ### Merge normalisations
 
-1. `ketchup` becomes `catch-up` (DYD-449). Matching rule: the whole word `ketchup` where it names
-   the dydo skill or its folder. Scope: `Scaffold/dydo/reference/dydo-glossary.md`,
-   `skills/productivity/README.md`, the `name:` line of `skills/productivity/catch-up/SKILL.md`,
-   and the path column of `THIRD-PARTY-NOTICES.md` and `npm/THIRD-PARTY-NOTICES.md`. Exceptions:
-   the upstream skill name `ketchup` in the notices' first column and the `pstack/ketchup`
-   attribution comment, which name Cursor's skill. The folder move itself is carried by the merge.
+1. `ketchup` becomes `catch-up`, and `Ketchup` becomes `Catch-up` (DYD-449). Matching rule: the
+   whole word `ketchup` or `Ketchup` where it names the dydo skill or its folder. Scope:
+   `Scaffold/dydo/reference/dydo-glossary.md`, `skills/productivity/README.md`, the `name:` line
+   and the `# Ketchup` H1 of `skills/productivity/catch-up/SKILL.md`, and the path column of
+   `THIRD-PARTY-NOTICES.md` and `npm/THIRD-PARTY-NOTICES.md`. Exceptions: the upstream skill name
+   `ketchup` in the notices' first column and the `pstack/ketchup` attribution comment, which name
+   Cursor's skill. The folder move itself is carried by the merge.
 
 ## Files Changed
 
@@ -472,6 +545,7 @@ By area; each linked entry above lists its own files.
   `CommandPosition.cs`, `ConfigFactory.cs`, `ClaudeGuardWiring.cs`, `ValidationService.cs`),
   `Services/ModeState.cs`, `Services/WorktreeCleaner.cs`, `Utils/PathUtils.cs`, `Program.cs`,
   `DynaDocs.csproj`, `ViewerPackaging.targets`, `.codex/rules/dydo.rules`.
+- Viewer: `viewer/src/app/App.tsx`, `viewer/src/map/MapCanvas.tsx`.
 - Skills: `skills/engineering/` (new `statechart` and `verify-dydo`; `maintain-verification-skill`,
   `create-verification-skill`, `pr`, `wizard`), `skills/productivity/` (`catch-up` replacing
   `ketchup`, `overnight-mode`, `to-project`, `to-ticket`, `update-dydo`, `walkthrough`,
@@ -482,7 +556,7 @@ By area; each linked entry above lists its own files.
   `dydo/understand/`, `THIRD-PARTY-NOTICES.md`, `npm/THIRD-PARTY-NOTICES.md`, this entry and its
   changelog hub.
 - Assurance: `DynaDocs.Tests/`, `.github/workflows/` (`ci.yml`, `release.yml`,
-  `guard-performance-proofs.yml` and the provisioning scripts), `viewer/`.
+  `guard-performance-proofs.yml` and the provisioning scripts), the viewer's tests and e2e specs.
 
 <!-- pending: version bump --> `DynaDocs.csproj`, `npm/package.json`,
 `.github/workflows/release.yml`, `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs`,

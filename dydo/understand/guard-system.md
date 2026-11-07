@@ -99,11 +99,12 @@ Bash commands get deeper treatment than direct tool calls:
 
 Bash's reading keeps all three as word text, as bash does. Because the embedded-newline check and file-operation extraction also take pwsh's reading of a bare carriage return whatever the shell, a bash call holding one can be refused for what pwsh would run.
 
+A backtick before a CRLF continues a PowerShell line only between words, as pwsh 7.6.9 does (DYD-665). Inside a word the reading keeps the carriage return and ends the statement at the line feed, so a command on the next line is read as its own command. A quoted argument that opened between words ends where its quote closes, so a backtick after it continues the line. In cmd's reading a caret before a CRLF, and in bash's a backslash before one, still continue the line.
+
 Residuals, since the guard stops accidents, not a bypass:
 
 - cmd's own handling of a bare carriage return is not modelled. There was no cmd host to measure it.
 - File-operation extraction does not know typographic quotes (DYD-661). In PowerShell, `echo 'a’; Remove-Item notes.md; ’b'` deletes `notes.md` (measured), but no delete is extracted, and a protected path in typographic quotes, such as `Remove-Item ‘dydo/index.md’`, is not matched.
-- Inside a word, the reading takes a backtick before a CRLF as a line continuation, but pwsh ends the statement at the line feed (DYD-665). So ``x`<CR><LF>gh pr merge 5`` is read as one word, and pwsh runs the merge.
 - The command string `iex` or `Invoke-Expression` runs is not searched for file operations (DYD-666), so `iex 'Remove-Item dydo/index.md'` is allowed.
 
 For command-nudge body relief, each expansion retains its own completed token, child execution and source origin. The parent is checked at the expansion's insertion site, with child code kept separate from parent quoting. Closing and reopening a Bash quote or appending an invalid PowerShell here-string suffix cannot acquire relief from a harmless inner body. Every selected representation must be accounted for, including normalized words, stdin, extracted scripts and captures; an unknown consumer or host remains unknown through recursive analysis. These checks do not change the separate file-operation and embedded-newline diagnostics above.

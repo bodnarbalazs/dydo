@@ -2323,10 +2323,10 @@ public class BashCommandAnalyzerTests
     private const long AllocationBudget = 256L * 1024 * 1024;
     private const int BudgetedLength = 10_000;
 
-    // Where each numerical proof runs (DYD-840). A Release proof repeats its measurements and runs
-    // only in the required dotnet-release-proof lane, in Release and uninstrumented, every case,
-    // warmup and round of it; coverage runs its witness instead, the proof's inputs read once each
-    // with its other assertions. A shared proof measures once and runs in both lanes.
+    // Where each numerical proof runs (DYD-840, DYD-859). A Release proof repeats its measurements and
+    // is dormant: only the opt-in release_proof.py run runs it, in Release and uninstrumented, every
+    // case, warmup and round of it; every other run and coverage run its witness instead, the proof's
+    // inputs read once each with its other assertions. A shared proof measures once and runs in both.
     // DynaDocs.Tests/coverage/release-proofs.json maps each proof to its witness.
     internal const string PerformanceProof = "PerformanceProof";
     internal const string ReleaseLane = "Release";
@@ -2545,7 +2545,7 @@ public class BashCommandAnalyzerTests
     // the best times of all seven interleaved rounds damp noise after warming both sizes. Linux uses
     // calling-thread CPU for the ratio, so scheduling delays do not decide it. In Release,
     // uninstrumented, 100,000 characters take at most a second (captain's ruling, 2026-11-05); in a
-    // Debug build, as the Windows guard job runs them, the ratio alone decides. These proofs run in the Release lane; each CoverageWitness reads the same inputs once under coverage.
+    // Debug build the ratio alone decides. These proofs are dormant Release proofs; each CoverageWitness reads the same inputs once under coverage.
     public static TheoryData<string, string> LongInputCases => new()
     {
         { "Posix", "sed quotes" },

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "decision": "DYD-840: repeated numerical performance proofs run in the required, capped, uninstrumented Release lane on every pull request and feature push; instrumented coverage runs each one's witness.",
+  "decision": "DYD-859, superseding DYD-840's per-run lane: the repeated numerical performance proofs are a dormant, opt-in suite. release_proof.py run and the manual guard-performance-proofs workflow run them, capped, in Release and uninstrumented, when a fundamental change to guard command reading, a suspected performance regression or a new reader architecture calls for them; no default or filtered test run, ordinary CI job or required check runs them. Instrumented coverage runs each one's witness.",
   "trait": "PerformanceProof",
   "releaseFilter": "PerformanceProof=Release|PerformanceProof=Shared",
   "coverageFilter": "PerformanceProof!=Release",

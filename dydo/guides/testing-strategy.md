@@ -439,6 +439,35 @@ and each visit flushes its trace through a P/Invoke that replaces the thread's l
 fall at statement and branch boundaries, so a read in a later statement sees the visit's error,
 not the native call's.
 
+## Dormant guard performance proofs
+
+The guard's repeated numerical performance proofs, the `PerformanceProof=Release` tests in
+`BashCommandAnalyzerTests`, are a dormant suite (DYD-859). They show that reading a command stays
+linear and within its time and memory budget on inputs up to 100,000 characters. Repeating that
+measurement on every run costs far more than it tells, so no ordinary run includes them:
+
+- `DynaDocs.Tests/DynaDocs.Tests.runsettings` filters them out of every `dotnet test` of the test
+  project, and VSTest joins that filter to any `--filter`, so a filtered run leaves them out too.
+  The `guard-windows` filter also names the exclusion.
+- No `ci.yml` job, required check or `dydo merge` expectation runs or needs them.
+- Instrumented coverage runs each one's cheap coverage witness, as `release-proofs.json` maps it,
+  and the `Shared` proofs, which measure once and are their own witnesses. The coverage selection,
+  thresholds and denominator are unchanged.
+
+Run the suite when a fundamental change to how the guard reads commands, a suspected performance
+regression or a new reader architecture calls for it. Run it under the full-gate lock and 8G cap:
+`.static-gates/python/bin/python DynaDocs.Tests/coverage/release_proof.py run`. It opts in with
+`-p:PerformanceProofs=true`, builds Release in the isolated worktree, runs
+`PerformanceProof=Release|PerformanceProof=Shared` uninstrumented, and judges the TRX against the
+map: all 120 mapped results present once and passed, from the Release build, the lane check
+included. Its receipt is `DynaDocs.Tests/coverage/results/release-proof/receipt.json`. On hosted
+Linux, dispatch `.github/workflows/guard-performance-proofs.yml`; `workflow_dispatch` is its only
+trigger, and GitHub offers it once the file is on the default branch.
+
+A failure there is a real regression signal: diagnose it. Don't rerun it until it passes, and
+don't relax a bound. DYD-723's passing runs on `3b08adaf` and on feature push `30c2884c` remain the suite's
+recorded evidence.
+
 ## Recorded gate correction: three dynamic Vulture uses
 
 DR 048 admits a gate only where a violation is certainly wrong at a threshold where no exception

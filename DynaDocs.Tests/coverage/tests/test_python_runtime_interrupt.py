@@ -111,27 +111,80 @@ except StopIteration:
 '''
 
 
+class NativeWitness(CallableWitness):
+    """Original event accounting, independent of instruction activation in the candidate."""
+    def _enable_instructions(self, code, _offset=0, _error=None):
+        pass
+
+    def _start(self, code, _offset):
+        row, own, _ = self._row(code)
+        if own:
+            row['execution_count'] += 1
+
+    def _line(self, code, line):
+        row = self._row(code)[0]
+        if row is not None:
+            row['body_lines'][str(line)] += 1
+
+    def __enter__(self):
+        super().__enter__()
+        monitor = sys.monitoring
+        monitor.register_callback(self.tool_id, monitor.events.BRANCH, self._branch)
+        monitor.set_events(self.tool_id, monitor.events.PY_START | monitor.events.LINE | monitor.events.BRANCH)
+        return self
+
+    def __exit__(self, kind, value, traceback):
+        sys.monitoring.register_callback(self.tool_id, sys.monitoring.events.BRANCH, None)
+        super().__exit__(kind, value, traceback)
+
+
 def measured(source, native):
     path = 'accounting-subject.py'
-    with CallableWitness({path: source}) as witness:
-        monitor = sys.monitoring
-        if native:
-            def start(code, _offset):
-                row, own, _ = witness._row(code)
-                if own:
-                    row['execution_count'] += 1
-            monitor.register_callback(witness.tool_id, monitor.events.PY_START, start)
-            monitor.register_callback(witness.tool_id, monitor.events.BRANCH, witness._branch)
-            monitor.set_events(witness.tool_id, monitor.events.PY_START | monitor.events.LINE | monitor.events.BRANCH)
-        try:
-            exec(compile(source, path, 'exec'), {})
-        finally:
-            if native:
-                monitor.register_callback(witness.tool_id, monitor.events.BRANCH, None)
+    witness_type = NativeWitness if native else CallableWitness
+    with witness_type({path: source}) as witness:
+        exec(compile(source, path, 'exec'), {})
     return witness.rows() + witness.module_rows()
 
 
 class PythonRuntimeInterruptTests(unittest.TestCase):
+    def test_already_running_frame_matches_native_accounting(self):
+        for separator in (' ', '\n        '):
+            source = f'def work(witness, value):\n    with witness:{separator}return 1 if value else 2\n'
+            namespace = {}
+            exec(compile(source, 'active-subject.py', 'exec'), namespace)
+            for value in (False, True):
+                with self.subTest(separator=separator, value=value):
+                    rows = []
+                    for witness_type in (NativeWitness, CallableWitness):
+                        witness = witness_type({'active-subject.py': source})
+                        self.assertEqual(1 if value else 2, namespace['work'](witness, value))
+                        rows.append(witness.rows())
+                    self.assertEqual(0, rows[0][0]['execution_count'])
+                    self.assertTrue(rows[0][0]['branches'])
+                    self.assertEqual(rows[0], rows[1])
+
+    def test_previously_suspended_frame_matches_native_accounting(self):
+        for thrown in (False, True):
+            source = ('def work(value):\n    try:\n        yield 0\n    except ValueError:\n'
+                      '        yield 1 if value else 2\n' if thrown else
+                      'def work(value):\n    yield 0; yield 1 if value else 2\n')
+            namespace = {}
+            exec(compile(source, 'resumed-subject.py', 'exec'), namespace)
+            for value in (False, True):
+                with self.subTest(thrown=thrown, value=value):
+                    rows = []
+                    for witness_type in (NativeWitness, CallableWitness):
+                        generator = namespace['work'](value)
+                        self.assertEqual(0, next(generator))
+                        with witness_type({'resumed-subject.py': source}) as witness:
+                            result = generator.throw(ValueError()) if thrown else next(generator)
+                            self.assertEqual(1 if value else 2, result)
+                        generator.close()
+                        rows.append(witness.rows())
+                    self.assertEqual(0, rows[0][0]['execution_count'])
+                    self.assertTrue(rows[0][0]['branches'])
+                    self.assertEqual(rows[0], rows[1])
+
     def test_nested_witness_keeps_other_monitors_branch_origins(self):
         # Two witnesses need both reserved IDs; the campaign measuring this test owns a third.
         script = '''import importlib.util, sys

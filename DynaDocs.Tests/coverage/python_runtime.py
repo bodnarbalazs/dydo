@@ -313,10 +313,20 @@ class CallableWitness:
         row, own, _ = self._row(code)
         if own:
             row['execution_count'] += 1
-        if row is not None and self.tool_id is not None:
+        self._enable_instructions(code)
+
+    def _enable_instructions(self, code, _offset=0, _error=None):
+        if code.co_filename in self._paths and self.tool_id is not None:
             monitor = sys.monitoring
             if not monitor.get_local_events(self.tool_id, code):
                 monitor.set_local_events(self.tool_id, code, monitor.events.INSTRUCTION)
+
+    def _enable_running_frames(self):
+        # A frame can enter measurement and branch on the same line, with no new LINE event.
+        for frame in sys._current_frames().values():
+            while frame is not None:
+                self._enable_instructions(frame.f_code)
+                frame = frame.f_back
 
     def _line(self, code, line):
         row = self._row(code)[0]
@@ -372,12 +382,15 @@ class CallableWitness:
         monitor.use_tool_id(self.tool_id, 'dydo-callable-witness')
         try:
             monitor.register_callback(self.tool_id, monitor.events.PY_START, self._start)
+            monitor.register_callback(self.tool_id, monitor.events.PY_RESUME, self._enable_instructions)
+            monitor.register_callback(self.tool_id, monitor.events.PY_THROW, self._enable_instructions)
             monitor.register_callback(self.tool_id, monitor.events.LINE, self._line)
             monitor.register_callback(self.tool_id, monitor.events.INSTRUCTION, self._instruction)
             monitor.register_callback(self.tool_id, monitor.events.EXCEPTION_HANDLED, self._exception)
             monitor.register_callback(self.tool_id, monitor.events.PY_UNWIND, self._exception)
-            monitor.set_events(self.tool_id, monitor.events.PY_START | monitor.events.LINE
-                               | monitor.events.EXCEPTION_HANDLED | monitor.events.PY_UNWIND)
+            self._enable_running_frames()
+            monitor.set_events(self.tool_id, monitor.events.PY_START | monitor.events.PY_RESUME | monitor.events.LINE
+                               | monitor.events.PY_THROW | monitor.events.EXCEPTION_HANDLED | monitor.events.PY_UNWIND)
         except BaseException:
             self.__exit__(None, None, None)
             raise
@@ -388,7 +401,8 @@ class CallableWitness:
         failure = None
         operations = [(monitor.set_events, (self.tool_id, 0)),
                       *((monitor.register_callback, (self.tool_id, event, None))
-                        for event in (monitor.events.PY_START, monitor.events.LINE, monitor.events.INSTRUCTION,
+                        for event in (monitor.events.PY_START, monitor.events.PY_RESUME, monitor.events.PY_THROW,
+                                      monitor.events.LINE, monitor.events.INSTRUCTION,
                                       monitor.events.EXCEPTION_HANDLED, monitor.events.PY_UNWIND)),
                       (monitor.free_tool_id, (self.tool_id,))]
         for operation, arguments in operations:

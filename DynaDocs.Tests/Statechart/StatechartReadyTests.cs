@@ -12,13 +12,12 @@ public class StatechartReadyTests
 {
     private static readonly string Relative = Path.Combine(new StatechartAssets().LockDigest, RuntimeInformation.RuntimeIdentifier);
 
-    // Runs on the verified fixture at its stable runtime path; only the other cases need a private copy. A fixture
-    // an earlier build verified is re-stamped on this run: its receipts change, its content never does.
+    // A fixture an earlier build verified is re-stamped on this run: its receipts change, its content never does.
     [SkippableFact]
     public async Task InstalledReadyInvocationRunsOfflineWithContentUnchangedAndReceiptsCurrent()
     {
         using var scope = new StatechartTestDirectory();
-        var fixture = Fixture();
+        var fixture = Fixture(scope.Path);
         var before = Content(fixture);
         var result = await RunReadyModel(scope.Path, fixture);
         Assert.Equal(1, result.Exit);
@@ -33,10 +32,32 @@ public class StatechartReadyTests
     }
 
     [SkippableFact]
+    public async Task ReadyFixtureReceiptsStayCurrentWhenAnotherBuildRestampsTheSource()
+    {
+        using var sourceScope = new StatechartTestDirectory();
+        var source = PrivateCopy(FixtureSource(), sourceScope.Path);
+        using var scope = new StatechartTestDirectory();
+        var fixture = Fixture(scope.Path, source);
+        var before = Files(source);
+        var result = await RunReadyModel(scope.Path, fixture);
+        Assert.True(result.Exit == 1, result.Error);
+        var after = Files(source);
+        foreach (var receipt in Directory.GetFiles(Path.Combine(source, Relative), ".ready.json", SearchOption.AllDirectories))
+        {
+            var identity = JsonNode.Parse(File.ReadAllText(receipt))!.AsObject();
+            identity["payload"] = "another-build-payload";
+            File.WriteAllText(receipt, identity.ToJsonString());
+        }
+        AssertCurrentReceipts(fixture);
+        Assert.Equal(before, after);
+        Assert.NotEqual(before, Files(source));
+    }
+
+    [SkippableFact]
     public async Task ChangedManagedBytesYieldARepairPlanAndStayInPlace()
     {
         using var scope = new StatechartTestDirectory();
-        var dependencies = PrivateCopy(Fixture(), scope.Path);
+        var dependencies = Fixture(scope.Path);
         var renderer = Path.Combine(dependencies, Relative, "pele", "content", "package", "dist", "pele.js");
         File.AppendAllText(renderer, "\nchanged managed content");
         var before = Files(dependencies);
@@ -56,7 +77,7 @@ public class StatechartReadyTests
     {
         Skip.If(OperatingSystem.IsWindows(), "POSIX modes decide whether a runtime can start.");
         using var scope = new StatechartTestDirectory();
-        var dependencies = PrivateCopy(Fixture(), scope.Path);
+        var dependencies = Fixture(scope.Path);
         var java = Directory.GetFiles(Path.Combine(dependencies, Relative, "java", "content"), "java", SearchOption.AllDirectories)
             .Single(path => Path.GetFileName(Path.GetDirectoryName(path)) == "bin");
         File.SetUnixFileMode(java, UnixFileMode.UserRead | UnixFileMode.UserWrite);
@@ -75,7 +96,7 @@ public class StatechartReadyTests
     public async Task DamagedAssetsAreExtractedAgainOfflineAndTheRunReachesItsVerdict()
     {
         using var scope = new StatechartTestDirectory();
-        var fixture = Fixture();
+        var fixture = Fixture(scope.Path);
         var first = await RunReadyModel(scope.Path, fixture);
         Assert.True(first.Exit == 1, first.Error);
         var assets = new StatechartAssets();
@@ -93,7 +114,7 @@ public class StatechartReadyTests
     public async Task AnUpdateThatKeepsTheLockReverifiesAndRestampsWithoutInstalling()
     {
         using var scope = new StatechartTestDirectory();
-        var dependencies = PrivateCopy(Fixture(), scope.Path);
+        var dependencies = Fixture(scope.Path);
         var receipts = Directory.GetFiles(Path.Combine(dependencies, Relative), ".ready.json", SearchOption.AllDirectories);
         Assert.Equal(4, receipts.Length);
         foreach (var receipt in receipts)
@@ -117,7 +138,7 @@ public class StatechartReadyTests
     public async Task ARestampWritesOnlyTheComponentsTheVerifiedSelectionRan()
     {
         using var scope = new StatechartTestDirectory();
-        var fixture = Fixture();
+        var fixture = FixtureSource();
         var dependencies = PrivateCopy(fixture, scope.Path);
         foreach (var receipt in Directory.GetFiles(Path.Combine(dependencies, Relative), ".ready.json", SearchOption.AllDirectories))
         {
@@ -140,7 +161,7 @@ public class StatechartReadyTests
     public async Task AnUnchangedSkillFromAnEarlierReleaseUpdatesThroughInstallSkillAndCharts()
     {
         using var scope = new StatechartTestDirectory();
-        var fixture = Fixture();
+        var fixture = Fixture(scope.Path);
         var project = Path.Combine(scope.Path, "project");
         Directory.CreateDirectory(project);
         var installed = await Run(scope.Path, fixture, ["statechart", "install-skill", "--root", project]);
@@ -411,12 +432,14 @@ public class StatechartReadyTests
         });
     }
 
-    private static string Fixture()
+    private static string Fixture(string scope, string? source = null) => PrivateCopy(source ?? FixtureSource(), scope);
+
+    private static string FixtureSource()
     {
         var fixture = Environment.GetEnvironmentVariable("STATECHART_TEST_DEPENDENCY_ROOT");
         Skip.If(fixture is null, "STATECHART_TEST_DEPENDENCY_ROOT must name a real verified managed installation (Node, Java, TLC, Pele).");
         Assert.True(Path.IsPathFullyQualified(fixture) && Directory.Exists(fixture),
-            "STATECHART_TEST_DEPENDENCY_ROOT must name the real task-local verified installation; no fake ready fixture.");
+            "STATECHART_TEST_DEPENDENCY_ROOT must name a real verified source installation; tests copy it before running.");
         return fixture;
     }
 

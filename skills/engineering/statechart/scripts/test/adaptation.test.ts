@@ -13,6 +13,45 @@ import { skip as noTlc } from "./tlc.ts";
 
 const replayJar = noTlc ? "" : pinnedTlc(path.resolve(process.env.TLA2TOOLS!));
 
+for (const input of ["go", "refused"]) {
+  test(`Worker ownership handshake ${input} cannot publish an unchecked result`, t => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-worker-handshake-"));
+    t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+    const bootstrap = "Object.defineProperty(process, 'platform', { value: 'win32' });";
+    const result = spawnSync(process.execPath, ["--import", `data:text/javascript,${encodeURIComponent(bootstrap)}`,
+      path.resolve(import.meta.dirname, "../worker.ts"), dir, "missing-spec", "missing-config",
+      path.join(dir, "missing-view.mjs")], { input, encoding: "utf8", windowsHide: true });
+    assert.equal(result.status, 2, result.stderr);
+    if (input === "refused") assert.equal(result.stderr, "");
+    else assert.match(result.stderr, /missing-view/);
+    assert.deepEqual(fs.readdirSync(dir), []);
+  });
+}
+
+test("Windows cleanup removes its stage when scratch creation fails before the worker starts", t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-early-cleanup-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const spec = path.join(dir, "Spec.tla");
+  fs.writeFileSync(spec, "---- MODULE Spec ----\n====\n");
+  fs.writeFileSync(path.join(dir, "Spec.cfg"), "");
+  const bootstrap = `import fs from 'node:fs';
+import path from 'node:path';
+import { syncBuiltinESMExports } from 'node:module';
+Object.defineProperty(process, 'platform', { value: 'win32' });
+const make = fs.mkdtempSync;
+fs.mkdtempSync = (prefix, ...args) => {
+  if (path.basename(String(prefix)) === 'statechart-') throw new Error('scratch creation refused');
+  return make(prefix, ...args);
+};
+syncBuiltinESMExports();`;
+  const result = spawnSync(process.execPath, ["--import", `data:text/javascript,${encodeURIComponent(bootstrap)}`,
+    path.resolve(import.meta.dirname, "../statechart.ts"), spec, "--out", path.join(dir, "out")],
+  { encoding: "utf8", windowsHide: true });
+  assert.equal(result.status, 2, result.stderr);
+  assert.equal(result.stderr, "scratch creation refused\n");
+  assert.deepEqual(fs.readdirSync(dir).sort(), ["Spec.cfg", "Spec.tla"]);
+});
+
 function child() {
   const events = new EventEmitter();
   const stdin = new PassThrough();

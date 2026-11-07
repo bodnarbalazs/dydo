@@ -18,7 +18,7 @@ import sys
 
 IDENTITY = 'artifact-identity.json'
 PLATFORMS = ('linux', 'windows')
-STACKS = ('python', 'dotnet')
+STACKS = ('python', 'dotnet', 'statechart')
 
 
 class SelectionError(ValueError):

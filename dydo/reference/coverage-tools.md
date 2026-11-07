@@ -344,9 +344,11 @@ tests with whatever managed prerequisites the caller's environment names (`TLA2T
 `STATECHART_PELE`); a test that lacks one skips by name, and its code then counts as uncovered.
 The release workflow's Windows `validation` job downloads the TLC jar, the win-x64 JRE and Pele
 from their pinned sources in `Resources/Statechart/dependency-lock.json`, refuses any that does not
-match its pinned hash, and names them to the `--force-run` step. The POSIX-only statechart tests
-still skip there by name, so the code only they reach counts as uncovered on Windows.
-That provisioning is the shared `.github/workflows/provision-statechart.ps1`, which the CI
+match its pinned hash, and names them to the `--force-run` step.
+Statechart coverage partitions points by callable: the Windows leg measures only
+the pinned native callables in `statechart-platforms.json`, and Linux measures every remainder.
+That provisioning is the shared `.github/workflows/provision-statechart.ps1`, which selects
+the locked linux-x64 JRE on Linux and win-x64 JRE on Windows, and which the CI
 `statechart-windows` job also calls. On every pull request and every push to `master`, `main` or `feature/**` the job runs
 `skills/engineering/statechart/scripts/test/windows.test.ts` on `windows-latest`, and
 `.github/workflows/assert-node-tests-ran.ps1 -MinimumTests 6` fails it on a missing report, a skip
@@ -545,6 +547,40 @@ exit 2.
 
 ---
 
+## Statechart platform measurement
+
+`DynaDocs.Tests/coverage/statechart-platforms.json` pins the source SHA-256 and exact walker
+callable identities owned by Windows. Its neutral leg is Linux. A declared callable includes
+its nested bodies; all remaining points stay on Linux, without splitting or excluding modules.
+Windows owns the CLI's native lifecycle callbacks and `windows.ts`'s job guard. Linux owns
+`posix-lifetime.ts`, the POSIX recording helper `test/java.ts`, and `windows-cleanup.ts`, whose
+top-level logic the adaptation suite exercises on Linux. Execution on the other platform does
+not change ownership.
+
+Linux runs the full package suite. Windows runs the map's `windows_tests.tests` files filtered
+to its exact `names`; every named case must appear once and pass, with no skip. The selection
+includes native job and TLC tests plus injected handshake and early cleanup failures.
+Both legs use the unchanged DR 048 module and method thresholds.
+
+Istanbul's pinned instrumenter derives the same statements, branches and function counters
+from source on both platforms, including zero-hit points in unloaded modules. Compilation
+finishes before the suite starts; the loader only reads prepared code, so instrumentation
+dependencies do not appear in the architecture tests' import traces. The existing
+TypeScript walker supplies callable identities and complexity. The report records source
+digests, the selection digest and every point's owner in `platform_selection`.
+`statechart_platform.py` rebuilds that denominator from a clean checkout, requires two passing
+reports for its commit, re-evaluates policy, and checks every module, point, callable, body and
+complexity fact. Matching receipts cannot hide a point removed from both reports.
+
+CI's `statechart-coverage` matrix runs on `ubuntu-24.04` and `windows-latest`; the
+`statechart-coverage-union` job uses `coverage_artifacts.py` to select each leg's latest executing
+attempt before verifying the union. The independent `statechart-windows`,
+`statechart-config-oracle` and `guard-windows` jobs retain their existing work.
+
+```sh
+python DynaDocs.Tests/coverage/statechart_platform.py --linux linux/adapters/statechart-coverage.json --windows windows/adapters/statechart-coverage.json --output union.json
+```
+
 ## Coverage collectors
 
 | Stack | Collector | Mechanism |
@@ -553,7 +589,7 @@ exit 2.
 | `node` | `javascript-coverage` | `node javascript_coverage.cjs` driving c8 12.0.0 with `--all --exclude-after-remap=false` over `node_tests.cjs`; Istanbul function and branch counters are joined to the ESLint callable inventory |
 | `dotnet` | `csharp-coverage` | `run_tests.py --assurance-output <dir>`: one isolated Git worktree copy of the working candidate, one AltCover campaign inside a Windows Job object, evidence published back outside the snapshot |
 | `viewer` | `typescript-coverage` | `pnpm -C viewer run coverage` with `--coverage.reporter=lcov`, `--coverage.reportsDirectory=<raw>/coverage` and a vitest JSON report added; `typescript_join.py` joins the Istanbul LCOV to the `typescript-source` walker's callables |
-| `statechart` | `typescript-coverage` | the package's own `test` script from its `package.json`, run by `node` from the package folder with `--experimental-test-coverage`, `--test-coverage-exclude=**/*.test.ts` and two more reporters: TAP to `<raw>/suite.tap` and LCOV to `<raw>/lcov.info`. Node's default coverage leaves out every file under a test folder; the explicit exclusion leaves out only the test files, so a helper beside them, such as `test/tlc.ts` or the `test/java.ts` stand-in, is measured. Node's coverage follows the processes the tests spawn, so the CLI, worker, native entry and stand-in each count. `typescript_join.py` joins that LCOV to the walker as for the viewer |
+| `statechart` | `typescript-coverage` | `javascript_coverage.cjs --typescript-run` runs the package test script with source-stable Istanbul counters after Node strips TypeScript types without moving positions. A preload hook instruments only inventory targets and follows spawned Node processes through `NODE_OPTIONS`. Per-process JSON reports live in `<raw>/istanbul`; TAP records the suite verdict. `typescript_join.py` joins statements, branches and callable bodies to the existing walker, then `statechart_platform.py` partitions them. Native Node LCOV is retained as diagnostic evidence, not the policy denominator |
 
 A maintained JavaScript file with no filename extension is recorded as a gap naming DYD-105, so the
 row fails closed rather than quietly measuring less than the inventory.
@@ -567,7 +603,7 @@ coverage-scoped: both files are still measured by every static collector above. 
 closed - an unextracted or unassociated driver produces the gap `host-driver-logic-untested` or
 `host-driver-unassociated` instead of the exemption, and the file returns to the coverage targets.
 
-The TypeScript join reads Istanbul LCOV per module: `DA` lines for the line floor, `BRDA` branches
+The viewer TypeScript join reads Istanbul LCOV per module: `DA` lines for the line floor, `BRDA` branches
 for the branch floor, and `FN`/`FNDA` function counters. Node's reporter can give two functions the
 same name; their `FNDA` counters follow their `FN` lines in order, so each pairs with its own line
 rather than the last counter of that name. Each `DA` line belongs to the innermost

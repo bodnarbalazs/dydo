@@ -7,6 +7,7 @@ import subprocess
 import unittest
 from pathlib import Path
 import sys
+from itertools import product
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import windows_job
@@ -78,6 +79,156 @@ class JavaScriptCollectorTests(unittest.TestCase):
         self.assertEqual(["left.cjs"], [row["path"] for row in answer["errors"]])
         self.assertEqual("./absent.cjs", answer["errors"][0]["dependency"]["module"])
         self.assertIn("orphan.cjs", [row["source"] for row in answer["facts"]["native"]["modules"]])
+
+    def test_package_exports_resolve_the_real_parser_and_reject_missing_or_private_entries(self):
+        package = "@typescript-eslint/parser"
+        shutil.copytree(self.tooling / "node_modules" / package, self.repository / "node_modules" / package)
+        cases = (("javascript", "consumer.cjs", f"require('{package}');\n", "require('{}');\n"),
+                 ("typescript", "consumer.ts", f"import '{package}';\n", "import '{}';\n"))
+        for language, name, source, import_template in cases:
+            with self.subTest(language=language):
+                target = self.repository / name
+                target.write_text(source, encoding="utf-8")
+                runner = self.collector([name])
+                runner.inventory["sources"][0]["language"] = language
+                collect = (runner.javascript_dependencies if language == "javascript"
+                           else runner.typescript_dependencies)
+
+                answer = collect()
+
+                self.assertEqual("pass", answer["status"], answer["errors"])
+                module = next(row for row in answer["facts"]["native"]["modules"] if row["source"] == name)
+                dependency, = module["dependencies"]
+                self.assertEqual(package, dependency["module"])
+                self.assertEqual(f"node_modules/{package}/dist/index.js", dependency["resolved"])
+                self.assertFalse(dependency["couldNotResolve"])
+
+                missing = ("./absent.cjs", "absent-package", f"{package}/dist/index.js")
+                target.write_text(source + "".join(import_template.format(item) for item in missing), encoding="utf-8")
+                answer = collect()
+
+                self.assertEqual("error", answer["status"])
+                self.assertEqual(set(missing), {row["dependency"]["module"] for row in answer["errors"]})
+
+
+class ConditionalDependencyTests(unittest.TestCase):
+    def setUp(self):
+        self.repository = Path(tempfile.mkdtemp(prefix="dyd622-conditional-"))
+        self.addCleanup(shutil.rmtree, self.repository, True)
+
+    def package(self, order, missing=None):
+        targets = {"import": "./import.mjs", "require": "./require.cjs"}
+        exports = {mode: targets[mode] for mode in order}
+        (self.repository / "package.json").write_text(json.dumps({"name": "dual", "exports": {".": exports}}))
+        for mode, source in (("import", "export const value = 1;\n"), ("require", "module.exports = 2;\n")):
+            target = self.repository / targets[mode]
+            target.write_text(source, encoding="utf-8")
+            if mode == missing:
+                target.unlink()
+
+    def collect(self, language, sources):
+        for name, source in sources.items():
+            (self.repository / name).write_text(source, encoding="utf-8")
+        runner = Collectors.__new__(Collectors)
+        runner.root, runner.coverage = self.repository, Path(__file__).resolve().parents[1]
+        runner.output = self.repository / "gate-output"
+        runner.log = CommandLog(self.repository, runner.output / "commands")
+        runner.inventory = {"sources": [{"path": name, "language": language} for name in sources]}
+        return getattr(runner, f"{language}_dependencies")()
+
+    def dependencies(self, answer, name):
+        module = next(row for row in answer["facts"]["native"]["modules"] if row["source"] == name)
+        return [(row["moduleSystem"], row["resolved"]) for row in module["dependencies"] if row["module"] == "dual"]
+
+    def test_each_import_form_selects_its_runtime_target_in_either_key_order(self):
+        forms = (("require('dual');", "cjs", "require.cjs"),
+                 ("import 'dual';", "es6", "import.mjs"),
+                 ("import('dual');", "es6", "import.mjs"),
+                 ("export * from 'dual';", "es6", "import.mjs"))
+        for language, order, (source, mode, target) in product(
+                ("javascript", "typescript"), (("import", "require"), ("require", "import")), forms):
+            with self.subTest(language=language, order=order, source=source):
+                self.package(order)
+                extension = "cjs" if mode == "cjs" else "mjs"
+                name = "consumer.ts" if language == "typescript" else f"consumer.{extension}"
+                answer = self.collect(language, {name: source})
+                self.assertEqual("pass", answer["status"], answer["errors"])
+                self.assertEqual([(mode, target)], self.dependencies(answer, name))
+
+    def test_mixed_forms_keep_both_runtime_edges_in_the_same_module(self):
+        for language, order in product(("javascript", "typescript"),
+                                       (("import", "require"), ("require", "import"))):
+            with self.subTest(language=language, order=order):
+                self.package(order)
+                sources = {"dynamic.cjs": "require('dual'); import('dual');",
+                           "static.mjs": "import {createRequire} from 'node:module'; "
+                                         "const require = createRequire(import.meta.url); require('dual'); import 'dual';"}
+                if language == "typescript":
+                    sources = {"dynamic.ts": "require('dual'); import('dual');",
+                               "static.ts": "import value = require('dual'); import 'dual';"}
+                answer = self.collect(language, sources)
+                self.assertEqual("pass", answer["status"], answer["errors"])
+                for name in sources:
+                    self.assertCountEqual([("cjs", "require.cjs"), ("es6", "import.mjs")],
+                                          self.dependencies(answer, name))
+
+    def test_missing_selected_targets_fail_even_when_the_other_mode_exists(self):
+        for language, order, missing in product(("javascript", "typescript"),
+                (("import", "require"), ("require", "import")), ("require", "import")):
+            with self.subTest(language=language, order=order, missing=missing):
+                self.package(order, missing)
+                name = "consumer.ts" if language == "typescript" else "consumer.cjs"
+                answer = self.collect(language, {name: "require('dual'); import('dual');"})
+                actual = subprocess.run(["node", name], cwd=self.repository, capture_output=True, text=True)
+                self.assertEqual(1, actual.returncode, actual.stderr)
+                self.assertEqual("error", answer["status"])
+                self.assertEqual(1, len(answer["errors"]), answer["errors"])
+                error, = answer["errors"]
+                self.assertEqual("dual", error["dependency"]["module"])
+                self.assertEqual("cjs" if missing == "require" else "es6", error["dependency"]["moduleSystem"])
+                self.assertTrue(error["dependency"]["couldNotResolve"])
+
+    def test_conditional_internal_cycles_survive_both_orders_and_mixed_modes(self):
+        for language, order, back_edge in product(("javascript", "typescript"),
+                (("import", "require"), ("require", "import")), ("require", "import")):
+            with self.subTest(language=language, order=order, back_edge=back_edge):
+                self.package(order)
+                name = "consumer.ts" if language == "typescript" else "consumer.cjs"
+                sources = {name: "require('dual');", "require.cjs": f"{back_edge}('./{name}');",
+                           "import.mjs": "export const value = 1;"}
+                answer = self.collect(language, sources)
+                self.assertEqual("fail", answer["status"], answer["errors"])
+                self.assertEqual([{"gate": "module-cycle", "members": sorted([name, "require.cjs"])}],
+                                 answer["findings"])
+                self.assertCountEqual([[name, "require.cjs"], ["require.cjs", name]], answer["facts"]["edges"])
+
+    def test_unsupported_module_forms_are_visible_measurement_errors(self):
+        cases = (("javascript", "amd", "consumer.js", "define(['./target.js'], () => {});"),
+                 ("typescript", "tsd", "consumer.ts", '/// <reference path="./target.js" />'))
+        for language, mode, name, source in cases:
+            with self.subTest(mode=mode):
+                answer = self.collect(language, {name: source, "target.js": "const value = 1;"})
+                self.assertEqual("error", answer["status"])
+                error, = answer["errors"]
+                self.assertIn("Unsupported", error["message"])
+                self.assertEqual(mode, error["dependency"]["moduleSystem"])
+                self.assertEqual([[name, "target.js"]], answer["facts"]["edges"])
+
+    def test_shared_runtime_conditions_match_the_pinned_node_runtime(self):
+        for condition in ("node", "node-addons", "module-sync", "default"):
+            with self.subTest(condition=condition):
+                self.package(("import", "require"))
+                (self.repository / "package.json").write_text(json.dumps({"name": "dual", "exports": {".": {
+                    condition: "./shared.cjs", "import": "./import.mjs", "require": "./require.cjs"}}}))
+                (self.repository / "shared.cjs").write_text("module.exports = 3;", encoding="utf-8")
+                answer = self.collect("javascript", {"consumer.cjs": "const value = require('dual'); "
+                    "import('dual').then(other => console.log(JSON.stringify([value, other.default])));"})
+                actual = subprocess.run(["node", "consumer.cjs"], cwd=self.repository, capture_output=True, text=True)
+                self.assertEqual(0, actual.returncode, actual.stderr)
+                self.assertEqual([3, 3], json.loads(actual.stdout))
+                self.assertEqual("pass", answer["status"], answer["errors"])
+                self.assertCountEqual([("cjs", "shared.cjs"), ("es6", "shared.cjs")],
+                                      self.dependencies(answer, "consumer.cjs"))
 
 
 class JavaScriptMetricsTests(unittest.TestCase):

@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "neutral": "linux",
+  "windows_tests": {
+    "reason": "Windows measures only the native CLI lifecycle and job guard callables. These files exercise their native and injected failure paths; Linux runs the complete suite over every remaining point.",
+    "names": [
+      "Windows cleanup removes its stage when scratch creation fails before the worker starts",
+      "Windows job owns descendants and scratch on normal parent exit",
+      "Windows job owns descendants and scratch on killed parent exit",
+      "Windows resolves relative TLC overrides from the caller and accepts empty output",
+      "Windows resolves absolute TLC overrides from the caller and accepts empty output",
+      "Windows resolves bare TLC overrides from the caller and accepts empty output",
+      "Windows resolves unset TLC overrides from the caller and accepts empty output",
+      "Windows ownership handshake: ready",
+      "Windows ownership handshake: bad-response",
+      "Windows ownership handshake: exit",
+      "Windows ownership handshake: error",
+      "Windows cleanup exit is reported to the caller",
+      "Windows cleanup error is reported to the caller",
+      "Windows janitor retains ownership until worker is gone",
+      "Windows janitor retains ownership until worker is alive",
+      "Windows janitor retains ownership until worker is denied"
+    ],
+    "tests": [
+      "test/windows.test.ts",
+      "test/adaptation.test.ts"
+    ]
+  },
+  "native": {
+    "skills/engineering/statechart/scripts/statechart.ts": {
+      "sha256": "7c914559ddc6faa545e6595a218940d21b6691c7a524c70fb84b57c03be0d7ba",
+      "windows": [
+        "superviseOnWindows:182:0",
+        "cleanupOnWindows:188:0",
+        "temp:222:2",
+        "replaceEmpty:227:2",
+        "cleaned:229:2"
+      ]
+    },
+    "skills/engineering/statechart/scripts/windows.ts": {
+      "sha256": "44066ef21999bb6cf6667fb747a94e2e75280d65aa89a48cfb822194a5112b90",
+      "windows": [
+        "guardWorker:6:7"
+      ]
+    }
+  }
+}

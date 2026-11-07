@@ -2,6 +2,10 @@
   "schema": 1,
   "modules": [
     {
+      "module": "DynaDocs.Tests/coverage/statechart_platform.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_platform.py", "DynaDocs.Tests/coverage/tests/test_gate_adapter.py"]
+    },
+    {
       "module": "DynaDocs.Tests/coverage/gate_discovery.py",
       "tests": ["DynaDocs.Tests/coverage/tests/test_gate_adapter.py", "DynaDocs.Tests/coverage/tests/test_python_platform.py"]
     },
@@ -368,7 +372,8 @@
       "module": "DynaDocs.Tests/coverage/gap_check.py",
       "tests": [
         "DynaDocs.Tests/coverage/tests/test_testing_facade.py",
-        "DynaDocs.Tests/coverage/tests/test_memory_cap.py"
+        "DynaDocs.Tests/coverage/tests/test_memory_cap.py",
+        "DynaDocs.Tests/coverage/tests/test_windows_memory_cap.py"
       ]
     },
     {
@@ -386,6 +391,7 @@
     {
       "module": "DynaDocs.Tests/coverage/gate_collect.py",
       "tests": [
+        "DynaDocs.Tests/coverage/tests/test_javascript_metrics.py",
         "DynaDocs.Tests/coverage/tests/test_orchestration.py",
         "DynaDocs.Tests/coverage/tests/test_typescript_collectors.py"
       ]

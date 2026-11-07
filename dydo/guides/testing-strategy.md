@@ -87,9 +87,21 @@ A cap hit is a finding to diagnose; nobody raises the cap to get past it. When t
 survives, the hit is a `failed` row marked `memoryCapHit`. Otherwise the caller sees 137, or 143
 when systemd stops a scope under its default `OOMPolicy=stop`, and the `journalctl --user` OOM line
 confirms it. Behind `timeout`, a default-policy scope can even return 0; that race is why the
-command sets `OOMPolicy=continue`. Without systemd, as on Windows and macOS, no memory cap applies:
-the facade records its cap as `unavailable` with the reason, and only timeouts and row deadlines
-bound a run, so keep inputs small there.
+command sets `OOMPolicy=continue`. This ad-hoc command applies only where systemd exists.
+On Windows the facade caps itself with `JOB_OBJECT_LIMIT_JOB_MEMORY` in its own nested Job object,
+without restarting or killing itself or adding kill-on-close. The effective limit is the lower of
+its target and the outer job's job-memory limit, when present; Windows enforces nested limits.
+Its cap is `enforced`, with mechanism `windows job object`. Setup or query failure records
+`unavailable` with the Windows error and one warning, and the operation proceeds.
+
+The operation's `memoryCap` and every covered row record `memoryCapHitReporting`: `exact` on
+Linux, `best-effort` on Windows. A delivered `JOB_OBJECT_MSG_JOB_MEMORY_LIMIT` on the facade's own
+completion port makes that Windows row `failed`, exit 1, with `memoryCapHit: true` and
+`memory cap hit (MemoryMax=<cap>): a finding; do not raise the cap`. Windows message delivery is
+not guaranteed: a missing message proves nothing and never changes a failed row into a pass.
+`peakJobMemory` records the job's cumulative `PeakJobMemoryUsed` at each row's end as diagnosis
+only; neither a peak nor a child exit code establishes a hit. macOS and Linux without usable
+systemd still record `unavailable` with a reason and warning; only deadlines bound those runs.
 
 ## Evidence and inherited failures
 
@@ -309,10 +321,14 @@ measured exactly when its bytes hash differently from its line, or it has no lin
 upstream file makes it a target with no list to update. Its test row runs the package's own
 `pnpm` test script after `pnpm install --frozen-lockfile`. The managed prerequisites reach it through
 the caller's environment, as `TLA2TOOLS`, `JAVA` and `STATECHART_PELE`; a test without one skips
-by name and leaves its code uncovered. The coverage row runs the same script under node's test
-coverage, which follows the CLI, worker and native-entry processes the tests spawn, and joins the
-LCOV to the walker for HCRAP. Node's default coverage leaves out a whole test folder, so the row
-leaves out only the test files, and a helper beside them is measured. The static row typechecks the
+by name and leaves its code uncovered. The coverage row runs the full package suite on Linux;
+Windows runs only the files and exact test names in `statechart-platforms.json`, requiring every
+selected case to appear once and pass without a skip. Source-stable Istanbul JSON counters follow
+the CLI, worker and native-entry processes the tests spawn and include zero-hit points in unloaded
+target modules. Joined to the walker's callables, they provide the policy and HCRAP denominator,
+partitioned by the map's native callable ownership: Windows measures its declared callables and
+Linux measures the remainder. Native Node LCOV is diagnostic output only. The row excludes test
+files, while a helper beside them remains measured. The static row typechecks the
 package's own tsconfig, strict with `noUnusedLocals` and `noUnusedParameters`, using the viewer's
 locked TypeScript, since the package declares no compiler, and reads each diagnostic as a finding.
 It also runs the walker, dependency-cruiser, jscpd and knip in the package's own workspace. Knip and

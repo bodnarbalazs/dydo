@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Run this project's declared tests and assurance gates without a shell."""
+import atexit
+import ctypes as c
 import hashlib
 import json
 import os
@@ -65,8 +67,8 @@ Examples: test --stack dotnet -- --filter FullyQualifiedName~ParserTests
           gate mutation --since BASE --stack dotnet
  Exit 0 is pass, 1 measured failure, 2 invalid or unavailable work, and 130 interruption
 after adapter cleanup. Results record candidate identity, argv, cwd, isolation, evidence, and artifacts.
-Operations that run children are capped at 8G of memory with swap off where systemd allows;
-DYDO_MEMORY_MAX may only lower the cap. A row that hits it fails: a finding, never a reason to raise it.
+Operations that run children are capped at 8G by a Windows job or, with swap off, Linux systemd;
+DYDO_MEMORY_MAX may only lower the cap. A reported hit fails the row; Windows reporting is best-effort.
 """
 
 
@@ -676,26 +678,149 @@ def oom_policy_continues(directory):
     return shown.returncode == 0 and shown.stdout.strip() == "continue"
 
 
-class MemoryCap:
-    """The operation's memory cap: its result.json record, and the cgroup whose OOM kills it counts."""
+class JobBasicLimits(c.Structure):
+    # Fixed-width Windows DWORDs also let the mocked API exercise the ABI on Unix.
+    _fields_ = [("process_time", c.c_int64), ("job_time", c.c_int64),
+                ("flags", c.c_uint32), ("min_ws", c.c_size_t), ("max_ws", c.c_size_t),
+                ("active_limit", c.c_uint32), ("affinity", c.c_size_t),
+                ("priority", c.c_uint32), ("scheduling", c.c_uint32)]
 
-    def __init__(self, state, limit=None, mechanism=None, reason=None, cgroup=None):
+
+class JobLimits(c.Structure):
+    _fields_ = [("basic", JobBasicLimits), ("io", c.c_uint64 * 6),
+                ("process_memory", c.c_size_t), ("job_memory", c.c_size_t),
+                ("peak_process", c.c_size_t), ("peak_job", c.c_size_t)]
+
+
+class JobPort(c.Structure):
+    _fields_ = [("key", c.c_void_p), ("port", c.c_void_p)]
+
+
+def job_api():
+    kernel = c.WinDLL("kernel32", use_last_error=True)
+    handle, dword, boolean = c.c_void_p, c.c_uint32, c.c_int32
+    specifications = {
+        "GetCurrentProcess": ([], handle),
+        "IsProcessInJob": ([handle, handle, c.POINTER(boolean)], boolean),
+        "CreateJobObjectW": ([handle, c.c_wchar_p], handle),
+        "SetInformationJobObject": ([handle, c.c_int, handle, dword], boolean),
+        "QueryInformationJobObject": ([handle, c.c_int, handle, dword, handle], boolean),
+        "AssignProcessToJobObject": ([handle, handle], boolean),
+        "CreateIoCompletionPort": ([handle, handle, c.c_size_t, dword], handle),
+        "GetQueuedCompletionStatus": ([handle, c.POINTER(dword), c.POINTER(c.c_size_t),
+                                        c.POINTER(handle), dword], boolean),
+        "CloseHandle": ([handle], boolean),
+    }
+    for name, (arguments, result_type) in specifications.items():
+        function = getattr(kernel, name)
+        function.argtypes, function.restype = arguments, result_type
+    return kernel
+
+
+def job_checked(value):
+    if not value:
+        raise c.WinError(c.get_last_error())
+    return value
+
+
+class WindowsMemoryJob:
+    """Own the nested cap and its port for this process's lifetime; never kill job members."""
+
+    def __init__(self, target):
+        self.kernel = job_api()
+        self.job = self.port = None
+        self.hits = 0
+        try:
+            process = self.kernel.GetCurrentProcess()
+            in_job = c.c_int32()
+            job_checked(self.kernel.IsProcessInJob(process, None, c.byref(in_job)))
+            outer = self.limits(None) if in_job.value else JobLimits()
+            self.limit = min(target, outer.job_memory) if outer.basic.flags & 0x200 else target
+            self.job = job_checked(self.kernel.CreateJobObjectW(None, None))
+            self.port = job_checked(self.kernel.CreateIoCompletionPort(c.c_void_p(-1), None, 0, 1))
+            association = JobPort(self.job, self.port)
+            job_checked(self.kernel.SetInformationJobObject(self.job, 7, c.byref(association), c.sizeof(association)))
+            limits = JobLimits()
+            limits.basic.flags, limits.job_memory = 0x200, self.limit  # JOB_OBJECT_LIMIT_JOB_MEMORY only.
+            job_checked(self.kernel.SetInformationJobObject(self.job, 9, c.byref(limits), c.sizeof(limits)))
+            job_checked(self.kernel.AssignProcessToJobObject(self.job, process))
+        except OSError:
+            self.close()
+            raise
+        atexit.register(self.close)
+
+    def close(self):
+        for handle in (self.job, self.port):
+            if handle:
+                self.kernel.CloseHandle(handle)
+        self.job = self.port = None
+
+    def limits(self, job):
+        limits = JobLimits()
+        job_checked(self.kernel.QueryInformationJobObject(job, 9, c.byref(limits), c.sizeof(limits), None))
+        return limits
+
+    def delivered_hits(self):
+        message, key, overlapped = c.c_uint32(), c.c_size_t(), c.c_void_p()
+        while self.kernel.GetQueuedCompletionStatus(self.port, c.byref(message), c.byref(key), c.byref(overlapped), 0):
+            if message.value == 10 and key.value == self.job:  # JOB_OBJECT_MSG_JOB_MEMORY_LIMIT.
+                self.hits += 1
+        error = c.get_last_error()
+        if error != 258:  # WAIT_TIMEOUT is the normal end of a nonblocking drain.
+            raise c.WinError(error)
+        return self.hits
+
+
+class MemoryCap:
+    """The operation's cap record and per-row evidence: Linux OOM kills or Windows messages."""
+
+    def __init__(self, state, limit=None, mechanism=None, reason=None, cgroup=None, job=None):
         self.record = {"state": state, "limit": limit, "mechanism": mechanism, "reason": reason}
+        reporting = {"linux": "exact", "win32": "best-effort"}.get(sys.platform)
+        if reporting:
+            self.record["memoryCapHitReporting"] = reporting
         self.cgroup = cgroup
+        self.job = job
+
+    def job_unavailable(self, error):
+        if self.record["state"] != "unavailable":
+            reason = f"windows job object: {error}"
+            print(f"memory cap unavailable: {reason}; this operation continues", file=sys.stderr, flush=True)
+            self.record.update(MemoryCap("unavailable", reason=reason).record)
 
     def kills(self):
+        if self.job:
+            try:
+                return self.job.delivered_hits() if self.record["state"] != "unavailable" else None
+            except OSError as error:
+                self.job_unavailable(error)
+                return None
         return oom_kills(self.cgroup) if self.cgroup else None
 
     def finding(self, before):
-        """The cap-hit reason when the cgroup recorded an OOM kill since `before`, else None."""
+        """A positive cap-hit observation since `before`; missing Windows messages prove nothing."""
         after = self.kills()
         if before is None or after is None or after <= before:
             return None
         return f"memory cap hit (MemoryMax={memory_size(self.record['limit'])}): a finding; do not raise the cap"
 
+    def annotated(self, row, source=None):
+        """Carry cap metadata on executed, deferred and derived rows alike."""
+        if "memoryCapHitReporting" in self.record:
+            row = {**row, "memoryCapHitReporting": self.record["memoryCapHitReporting"]}
+        if self.record.get("memoryCapHitReporting") == "best-effort":
+            row = {**row, "peakJobMemory": (source or row).get("peakJobMemory")}
+        return row
+
     def judged(self, row, before):
-        """A row during which the cap killed a process fails: a finding, never a pass or an interruption."""
+        """A reported hit wins over every row outcome. Peak memory is diagnostic only."""
         finding = self.finding(before)
+        row = self.annotated(row)
+        if self.job:
+            try:
+                row["peakJobMemory"] = self.job.limits(self.job.job).peak_job
+            except OSError as error:
+                self.job_unavailable(error)
         if finding is None:
             return row
         print(f"{row['stack']} {row['capability']}: {finding}", file=sys.stderr, flush=True)
@@ -746,14 +871,21 @@ def memory_cap():
     """Cap this operation before it starts a child. Inside an outer scope that already caps it as
     tightly, with swap off and OOMPolicy=continue, the cap is inherited; otherwise the operation
     reruns under systemd-run in the caller's slice at the tighter of the target and any ancestor
-    limit. Concurrent runs share that slice's budget. Without systemd the run is uncapped,
-    recorded and warned once."""
+    limit. Concurrent runs share that slice's budget. Windows always creates its own nested job.
+    Unavailable caps are recorded and warned once."""
     names = {name.upper(): name for name in os.environ} if sys.platform == "win32" else {}
     for name, value in (("MSBUILDDISABLENODEREUSE", "1"), ("DOTNET_CLI_USE_MSBUILD_SERVER", "0"),
                         ("UseSharedCompilation", "false")):
         os.environ.setdefault(names.get(name.upper(), name), value)
     target = memory_target()
     rerun = os.environ.pop(MEMORY_SCOPE_ENV, None)
+    if sys.platform == "win32":
+        try:
+            job = WindowsMemoryJob(target)
+        except OSError as error:
+            return uncapped(f"windows job object: {error}")
+        return MemoryCap("enforced", job.limit, "windows job object",
+                         f"JOB_OBJECT_LIMIT_JOB_MEMORY={memory_size(job.limit)} in the facade's nested job", job=job)
     if sys.platform != "linux":
         return uncapped(f"{sys.platform} has no systemd memory cap; each row keeps its {EXECUTION_SECONDS_MAXIMUM} s deadline")
     ancestry = cgroup_ancestry()
@@ -786,13 +918,13 @@ def execute_rows(selected, capabilities, root, since, forwarded, cap=None):
         for capability in capabilities:
             if capability == "test" and deferral_applies(stack, capabilities, root):
                 deferred = len(rows)
-                rows.append(result(stack, "test", "interrupted", reason=INTERRUPTED_BEFORE_COVERAGE))
+                rows.append(cap.annotated(result(stack, "test", "interrupted", reason=INTERRUPTED_BEFORE_COVERAGE)))
                 continue
             current, halted = capped_row(stack, capability, root, since, forwarded, cap)
             rows.append(current)
             print_row(current)
             if deferred is not None and capability == "coverage":
-                derived = suite_verdict(root, stack, current)
+                derived = cap.annotated(suite_verdict(root, stack, current), current)
                 rows[deferred] = derived
                 deferred = None
                 print_row(derived)

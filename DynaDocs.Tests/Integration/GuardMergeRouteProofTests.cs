@@ -12,6 +12,8 @@ public class GuardMergeRouteProofTests : IntegrationTestBase
 {
     private static readonly string[] Envelopes = ["claude-bash", "claude-powershell", "codex-bash", "codex-pwsh", "codex-argv"];
 
+    private string Worktree => Path.Combine(TestDir, "wt");
+
     private async Task InitPushedProject()
     {
         await InitProjectAsync("none");
@@ -58,6 +60,21 @@ public class GuardMergeRouteProofTests : IntegrationTestBase
         return misses;
     }
 
+    // Each raw line under each named envelope; a line that is not the expected decision is a miss.
+    private async Task<List<string>> LineMisses(bool denied, string[] envelopes, params string[] lines)
+    {
+        List<string> misses = [];
+        foreach (var line in lines)
+        foreach (var envelope in envelopes)
+        {
+            var result = await GuardWithStdinAsync(Payload([], envelope, line));
+            var wasDenied = !result.IsPreToolUseAllowed;
+            if (wasDenied != denied)
+                misses.Add($"{envelope} {(wasDenied ? "denied" : "allowed")}: {line}\n    {result.Stderr.Trim().Replace("\n", "\n    ")}");
+        }
+        return misses;
+    }
+
     private static void AssertNoMisses(List<string> misses) =>
         Assert.True(misses.Count == 0, $"{misses.Count} misses:\n{string.Join("\n", misses)}");
 
@@ -70,5 +87,20 @@ public class GuardMergeRouteProofTests : IntegrationTestBase
     {
         await InitPushedProject();
         AssertNoMisses(await Misses(denied: true, Words("git push origin HEAD:heads/main", "git push origin feature:heads/master")));
+    }
+
+    // The guard reads a push's tree from the call's directory or git -C, never from a cd earlier on the
+    // line. The leading-cd coaching block refuses only `cd x && ...` at the start, so a cd after another
+    // command or inside a subshell runs the push in wt, which is on main: `git push origin HEAD` there
+    // updates origin's main (proved in a scratch repo: "HEAD -> main").
+    [Fact]
+    public async Task PushAfterACdIntoATreeOnMain_IsDenied()
+    {
+        await InitPushedProject();
+        Git(TestDir, "worktree", "add", "-b", "main", Worktree);
+
+        AssertNoMisses(await LineMisses(denied: true, ["claude-bash", "codex-bash"],
+            "(cd wt && git push origin HEAD)",
+            "git status && cd wt && git push origin HEAD"));
     }
 }

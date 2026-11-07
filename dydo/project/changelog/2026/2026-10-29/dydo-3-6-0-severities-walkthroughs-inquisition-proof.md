@@ -4,35 +4,45 @@ type: changelog
 date: 2026-10-29
 ---
 
-# dydo 3.6.0 - Review severities, milestone walkthroughs, inquisition and proof
+# dydo 3.6.0 - Review severities, safe feature merges, statecharts and guard fixes
 
-<!-- Draft. Items marked `pending: DYD-xxx` describe work not yet on master; confirm each against
-its merged PR, then drop the marker, or drop the item if it misses the release. Before tagging:
-bump the version pins listed in .github/workflows/release.yml, point DynaDocs.csproj
-PackageReleaseNotes at this entry, and add the "Align runtime and npm versions" line under Changed. -->
+<!-- Release candidate, refreshed for the 2026-11-07 landing against feature/dydo-3-6-0. Items
+marked `pending: DYD-xxx` describe work still landing before the 17:30Z freeze; drop the marker
+once it is merged, or drop the item if it moves to 3.7.0. Before tagging: bump the version pins
+listed in .github/workflows/release.yml, point DynaDocs.csproj PackageReleaseNotes at this entry,
+and add the "Align runtime and npm versions" line under Changed. -->
 
 ## Summary
 
-Process release built from a retro of ten days of dydo and LC agent sessions. A reviewer now grades
-every finding `blocker`, `should` or `nit`, and only a blocker fails a review: a should becomes a
-ticket, a nit a line on the record, and none is dropped. A Project is cut into Linear Milestones,
-the first one a walking skeleton, and the user walks each Milestone as it lands instead of seeing
-the work only at the end. The inquisition is rebuilt: each round draws a fresh area map, runs Read,
-Break and Drive on every area, triages what it finds by severity, and repeats until a round finds
-no blocker and no should. A captain watches its PR through CI and review bots rather than reading
-the checks once. `update-dydo` recognises the merges of an earlier update and activates only the
-checkout it runs in. The `wizard` skill checks each stage's result without seeing a secret.
-<!-- pending: DYD-397 --> Under T3, an officer dispatches captains, crew and reviewers with
-`delegate_task`.
-<!-- pending: DYD-401 --> Proof gets one definition: the crew member hands up a recipe and the
-captain reruns it.
-<!-- pending: DYD-406 --> The guard stops refusing ordinary commands the retro caught it on, and
-refuses a Python program fed on stdin.
-<!-- pending: DYD-409 --> Severity becomes a Linear label group, and `update-dydo` compares the
-team's Linear setup with the standard.
-Existing projects take the v3.6.0 `update-dydo` skill before running it; see Upgrade steps.
+A process and guard release built from a retro of ten days of dydo and LC agent sessions
+(DYD-405).
+
+- **Reviews and Projects.** A reviewer grades every finding `blocker`, `should` or `nit`, and only
+  a blocker fails a review. A Project is cut into Linear Milestones, the first one a walking
+  skeleton, and the user walks each Milestone as it lands. The inquisition is rebuilt around an area
+  map and rounds that repeat until one finds no blocker and no should.
+- **Safe feature merges.** Agents merge a reviewed, green PR into a `feature/*` branch through
+  `dydo merge`, and the guard refuses every raw route around it: `gh pr merge`, the merge APIs, a
+  push to the default branch and a default-branch change. A merge into the default branch stays the
+  user's click.
+- **Statecharts.** The user-invoked `statechart` skill and `dydo statechart` command check a bounded
+  TLA+ model with TLC and draw the result, installing their locked prerequisites on first use.
+- **Guard.** It stops refusing the ordinary commands the retro caught, reads PowerShell as pwsh
+  7.6.9 does, bounds how long and how much memory reading one command can take, and refuses a
+  Python program on stdin.
+- **Officers.** Under T3, officers dispatch captains, crew and reviewers with `delegate_task`. A
+  captain watches its PR through CI and review bots. The admiral keeps a lane ledger with a
+  20-minute check-in, and `dydo survey` prints a read-only digest of a Project's lanes.
+
+The .NET tool now needs the Microsoft.NETCore.App runtime 10.0.14 or later: the earlier pin let
+NuGet resolve a vulnerable AOT compiler (NU1903, GHSA-p3jp-9v83-76w9). npm and the downloaded
+NativeAOT binaries embed the patched runtime. Mutation testing is **UNAVAILABLE** for this release
+(see Assurance below). Existing projects take the v3.6.0 `update-dydo` skill before running it, and
+upgrade the .NET runtime before the tool; see Upgrade steps.
 
 ## Added
+
+### Reviews, Milestones and the inquisition
 
 - Review severities ([DR 058](../../../decisions/058-review-severities-blocker-should-nit.md),
   DYD-398). The `reviewer` skill labels every finding:
@@ -41,259 +51,449 @@ Existing projects take the v3.6.0 `update-dydo` skill before running it; see Upg
   - `nit`: anything else, however serious it looks: another code path, a rare case, a small
     performance cost, extra compatibility, style.
 
-  A PASS may list its shoulds and nits under `Deferred`. The old rule "there is no PASS with notes"
-  is gone; in its place, every finding is answered (fixed, ticketed, recorded, or relabelled with
-  evidence) and never dropped. The review block forms in the Linear Workspace Standard carry
-  `severity:` on each finding and an optional `Deferred` list on a PASS.
-- The ticket captain sends only blockers to a fix hop. Each should becomes its own ticket (a Bug
-  by default, AFK, `Backlog`, in the source's Project, linked to the review), and it natively blocks
-  the Project's landing Merge Ticket. Each nit is one line on the ticket record, listed again at the
-  landing walkthrough. A fixing `code-writer` or `docs-writer` checks each label against the source
-  and records any relabel with evidence. A merged two-reviewer block fails only if either reviewer
-  found a blocker. The PR body's `## Independent review` gains a `**Deferred:**` line. The admiral
-  files a plan review's shoulds as `Backlog` tickets and lands a Project only once every should
-  ticket is `Done` or closed with a reason.
+  A PASS may list its shoulds and nits under `Deferred`. Every finding is answered (fixed,
+  ticketed, recorded, or relabelled with evidence) and none is dropped. The ticket captain sends
+  only blockers to a fix hop. Each should becomes its own ticket that natively blocks the Project's
+  landing Merge Ticket; each nit is one line on the ticket record, listed again at the landing
+  walkthrough. A merged two-reviewer block fails only if either reviewer found a blocker.
+- The Linear Workspace Standard adds a `Severity` label group with `blocker` (`#E5484D`), `should`
+  (`#FFB224`) and `nit` (`#8B8D98`). Only a ticket born from a finding carries one, and Priority
+  never carries severity. The landing check is a query: no open `blocker` or `should` ticket in the
+  Project unless the user deferred it (DYD-409, DYD-418, DYD-419, DYD-420).
 - Milestone walkthroughs ([DR 060](../../../decisions/060-milestone-walkthroughs-and-the-walking-skeleton.md),
-  DYD-399). When charting a Project, the map holder places a few Linear Milestones, each a chunk of
-  work where drift from the user's intent would show. The first is the walking skeleton, the rough
-  foundation the rest is built on; the landing is the last. Every delivery ticket belongs to one
-  Milestone, and `to-ticket` and `wayfinder` ask for it. When a Milestone's last ticket merges into
-  the feature branch, the admiral offers its Walkthrough Ticket. The user walks it with
-  `walkthrough` or skips it, and a skip means go on. Only the skeleton's Walkthrough Ticket blocks:
-  it is a native blocker of the next Milestone's tickets, so nothing is built on the skeleton before
-  the user has looked at it or skipped it. In overnight mode the admiral posts `DECIDED` on it and
-  carries on. `chief-of-staff` lists prepared Walkthrough Tickets in the user's queue, the
-  skeleton's first.
-- The `walkthrough` skill walks the whole product as it stands at a Milestone's SHA, or at main on
-  landing, newest changes first, with the parts that need the user's careful look marked. It lists
-  each deferred should and its ticket; at the landing it also lists every unaddressed nit and every
-  open inquisition nit ticket. The verdict or the skip goes on the Walkthrough Ticket.
+  DYD-399). The map holder places a few Linear Milestones, the walking skeleton first and the
+  landing last, and every delivery ticket belongs to one. When a Milestone's last ticket merges, the
+  admiral offers its Walkthrough Ticket; the user walks it with `walkthrough` or skips it. Only the
+  skeleton's Walkthrough Ticket blocks the next Milestone's tickets. The `walkthrough` skill walks
+  the product at a Milestone's SHA, newest changes first, and lists each deferred should and, at the
+  landing, every unaddressed nit.
 - Rebuilt inquisition ([DR 059](../../../decisions/059-inquisition-rebuilt-area-map-three-phases-rounds-until-clean.md),
-  DYD-400):
-  - Commissioning it, the admiral asks for a provider and model for each phase, the swarm width,
-    the Codex cap and the crew context limit (110k tokens by default). A project with a runnable
-    surface and no verification skill gets one first, through `create-verification-skill`.
-  - Each round, the captain draws an area map from the landing diff and the file layout, as a
-    table on the Inquisition ticket. One file can be an area; a seam between areas is its own area.
-  - One `inquisitor` per area per phase. Read and Drive change nothing; Break commits proof tests
-    on `proof/<KEY>-<area>-<n>`. Areas run in parallel up to the swarm width. The inquisitor's new
-    resources are `read.md`, `break.md`, `drive.md` and `context-size.md`. The last gives a Node
-    script that prints the agent's own context size on Claude Code and on Codex, so an agent past
-    its limit hands the rest of its area back.
-  - Findings go to `inquisition-register.md` on the audit branch `inquisition/<slug>`; the same bug
-    seen twice is one finding with two sightings. Blockers and shoulds become Bug tickets, the
-    round's nits one nit ticket, judgment calls a Question.
-  - A proven blocker or should can get its fix prepared mid-round on the Bug's own branch. The Bug
-    stays with the inquisition captain until the patch is attached, and the Bug's captain then
-    verifies and reviews that patch instead of rebuilding it.
-  - Above about 10 areas the map splits into group Sub-tickets, each with its own captain and its
-    own audit branch.
-  - Each round starts from zero. The next waits until every blocker and should fix is `Done`, and
-    the Project lands only after a round with no blocker and no should. Only the user can defer an
-    inquisition's should.
-  - The inquisition writes its own record at `dydo/project/inquisitions/<YYYY-MM-DD>-<slug>.md`
-    through a docs-writer and its Merge Sub-ticket, and closes once.
-- `maintain-verification-skill` takes a verification gap an inquisition found, sorts it as a
-  harness gap, doc drift or product gap, and drives the fix live before it ships (DYD-400).
+  DYD-400, DYD-447). Each round the captain draws an area map from the landing diff and runs one
+  `inquisitor` per area per phase: Read and Drive change nothing, Break commits proof tests on
+  `proof/<KEY>-<area>-<n>`. Findings go to `inquisition-register.md` on the audit branch; blockers
+  and shoulds become Bug tickets, the round's nits one nit ticket. A proven blocker or should can get
+  its fix prepared mid-round on the Bug's own branch. The next round waits until every blocker and
+  should fix is `Done`, and the Project lands only after a round with neither. The inquisitor gains
+  `read.md`, `break.md`, `drive.md` and `context-size.md`; the last gives a Node script that prints
+  the agent's own context size on Claude Code and Codex.
+- `maintain-verification-skill` gains a `## Proof` section, the one place dydo says what proof is:
+  evidence observed in this session, such as command output, a reproduction or a screenshot. The
+  crew member hands up a proof recipe, the captain reruns it before offering the PR, and that rerun
+  is the proof of record. `code-writer`, `reviewer`, `ticket-captain` and every new `verify-<app>`
+  skill point there (DYD-401, DYD-411). The skill also sorts a verification gap an inquisition found
+  as a harness gap, doc drift or product gap (DYD-400).
+
+### Officers and planning
+
+- Dispatch under T3 follows the child's lifetime
+  ([DR 057](../../../decisions/057-t3-dispatch-follows-child-lifetime.md), DYD-397). A native
+  subagent only when the dispatcher waits for it inside its own turn; `delegate_task` for every
+  other child that reports back, and for any agent of another vendor. A native child that hits T3's
+  `parent_not_active` refusal hands the dispatch up.
 - The ticket captain watches its PR instead of reading `gh pr checks` once (DYD-402). It handles
-  existing checks and comments first, then watches with `watch_pull_request` in T3, or one
-  long-running watcher elsewhere, never a sleep loop. In T3 the top-level officer owns the watch, so
-  a delegated captain returns `PR open <key>, checks pending: <url>, head <SHA>` and ends its turn.
-  A wake is news, not a merge: the captain acts only on checks and comments newer than the latest
-  push, grades each bot finding by severity, tells repository failures from infrastructure flakes,
-  and rechecks the gate itself before `Ready to Merge`. Adapted from tstack's `babysit-pr`
-  (MIT), credited in `THIRD-PARTY-NOTICES.md`.
-- <!-- pending: DYD-410 --> The admiral watches a delegated captain's PR on that pending return and
-  wakes the captain on news, in place of its own one-shot `gh pr checks`.
-- <!-- pending: DYD-401 --> `maintain-verification-skill` gains a `## Proof` section, the one place
-  dydo says what proof is: evidence you observed yourself in this session, such as command output,
-  a reproduction or a screenshot. Green mocked tests do not prove the user experience works. The
-  crew member hands up a proof recipe, the exact commands and the evidence each showed. The captain
-  reruns it before offering the PR, and that rerun is the proof of record; the admiral does not
-  repeat it. `code-writer`, `reviewer`, `ticket-captain` and every new `verify-<app>` skill point
-  there. The captain's Offer step gets a five-item merge gate. A reviewer with no Linear access gets
-  the contract pasted into its brief. Adapted from tstack's `full-send` (MIT).
-- <!-- pending: DYD-409 --> The Linear Workspace Standard adds a third label group, `Severity`,
-  with `blocker` (`#E5484D`), `should` (`#FFB224`) and `nit` (`#8B8D98`). Only a ticket born from a
-  finding carries one; Priority never carries severity. The landing check becomes a query: no open
-  `blocker` or `should` ticket in the Project unless the user deferred it. `update-dydo` reads the
-  team's label groups, labels, statuses and templates through the session's Linear connection,
-  lists every difference from the standard, and creates a missing one only with the user's OK.
+  existing checks and comments first, then watches with `watch_pull_request` in T3, never a sleep
+  loop. A delegated captain returns `PR open <key>, checks pending: <url>, head <SHA>` and ends its
+  turn; the admiral watches that PR and wakes the captain on news (DYD-410, DYD-412). Adapted from
+  tstack's `babysit-pr` (MIT).
+- The admiral keeps a `## Lane ledger` in the Project description, one row per lane with its owner,
+  state and next action, and runs a check-in every 20 minutes through T3 `schedule_task`: a cheap
+  surveyor reads the board and returns actions (DYD-520).
+- The admiral's `scaffold-project` recipe: every scaffolded Project gets a working spec under
+  `dydo/reference/working-specs/`, committed first on its feature branch, and the first ticket is
+  wired as a native Linear blocker of every other first lane before any commission (DYD-570,
+  DYD-724). `to-project`, `to-ticket` and `wayfinder` link one reachable shared anchor, a reviewed
+  plan or feature spec, before tickets rely on it, and keep live holds in Linear rather than in the
+  spec (DYD-443, DYD-444, DYD-445).
+- Overnight mode gains the chief of staff's `muster`, `night-survey` and `morning-brief`
+  resources, a survey-only night watch (DYD-427), and `overnight-mode`'s `transition-preflight`.
+  Before `dydo mode set overnight on` or `off` the chief of staff prepares the warning and
+  same-command retry, waits for the setter's result, and only then runs `dydo mode show` in a
+  separate tool call (DYD-433, DYD-673). An executing `dydo mode set` now warns once on every host
+  and the same command's retry passes.
+- The `catch-up` skill, renamed from `ketchup` (DYD-449), reports a project as an inverted pyramid
+  with a closed set of item cues, and scopes itself to the project the agent holds (DYD-439,
+  DYD-440, DYD-442, DYD-581).
+- `verify-dydo`, an executable verification skill that drives the DynaDocs CLI and guard in owned
+  disposable projects, with a feature map and real officer-transition evidence for overnight on and
+  off (DYD-430, DYD-435).
+
+### `dydo merge`
+
+- `dydo merge <pr> --match-head-commit <sha40> --match-base-commit <sha40> [--dry-run]`
+  ([DR 061](../../../decisions/061-agents-merge-only-into-feature-branches.md),
+  [CLI Commands](../../../../reference/dydo-commands.md#dydo-merge), DYD-417, DYD-424, DYD-523). It
+  merges exactly the reviewed SHA into the PR's base with a merge commit, and refuses, with no
+  override flag, unless:
+  - the PR is in the checkout's `origin` repository, open, not a draft and not from a fork;
+  - its base is a `feature/*` branch, not the default branch nor the local `origin/HEAD` name;
+  - its head is the pinned head SHA, and the base branch's tip, read from the branch ref, is the
+    pinned base SHA;
+  - the PR body's `## Independent review` holds a `code`, `docs` or `merge` PASS for that SHA and
+    no FAIL;
+  - every check on the SHA has finished green and every required check is present.
+
+  Refusals exit 1 with one `refused:` line and write nothing. After a good merge the report reads
+  `PR marked merged: yes`, `pending` or `unverified`, never `no` while GitHub catches up (DYD-535).
+  Details are in [Safe merge command](./dydo-3-6-0-safe-merge-command.md) and
+  [Merge target pin](../2026-11-04/dyd-523-merge-target-pin.md).
+- `dydo init` and `--join` write `Bash(dydo merge:*)` and `PowerShell(dydo merge:*)` into
+  `.claude/settings.local.json` and a `prefix_rule` for `dydo` and `dydo.exe merge` into
+  `.codex/rules/dydo.rules`. The guard's sub-agent lane allows `dydo merge`.
+- `dydo merge` and `dydo pr-ready --body` read the PASS line with one grammar:
+  `PASS - rubric/type: code; candidate <SHA>; base <SHA>`, with optional colons after `candidate`
+  and `base` and an optional base. `pr-ready` now refuses a prose-only PASS line with the expected
+  form (DYD-618, DYD-624).
+
+### Statechart
+
+- The user-invoked `statechart` skill, adopted from Cursor's pstack (MIT)
+  ([DR 062](../../../decisions/062-statechart-invocation-manages-prerequisites.md), DYD-415). It runs
+  TLC on a bounded TLA+ model and writes a Mermaid chart, shortest bug paths, a report and the raw
+  checker output; Pele renders charts to SVG. See [DYD-415](./dyd-415-statechart.md).
+- `dydo statechart SPEC.tla` checks a model on Windows and Linux. When Node, Java, TLC or Pele is
+  missing it saves the request and exits `3` with a locked plan; `dydo statechart resume --request`
+  installs the locked versions through the host's normal approval and continues the same chart.
+  `dydo statechart install-skill --root <project>` installs the matching skill, and
+  `dydo statechart doctor` checks readiness on Windows without downloading anything.
+
+### Other commands
+
+- `dydo survey <project>` prints a read-only digest of one Linear Project's lanes, read once with
+  the user's `LINEAR_API_KEY`: it writes nothing and never polls
+  ([DR 063](../../../decisions/063-dydo-survey-read-only-lane-digest.md), DYD-530).
+- `dydo validate` warns when a project records the Claude integration but its committed
+  `.claude/settings.json` does not run the dydo guard
+  ([DYD-501](../2026-11-05/dyd-501-claude-guard-wiring.md)).
 
 ## Changed
 
-- `update-dydo` (DYD-404):
-  - A file's base can now be proved by the record of an earlier update to tag T: the commit that
-    set `dydoVersion` to T and the commit message or PR text that lists the file as merged or kept.
-    A re-run no longer treats files the last update merged as having no base. A revision the
-    update wrote but whose record does not prove it, or a missing or contradictory record, leaves
-    the base unknown.
-  - A deletion an Upgrade step of a later release settles (it retires, moves or deletes the file)
-    is followed without asking and listed.
-  - `dydo init <host> --join` and `node setup-skills.mjs` run only in the update's own checkout.
-    Every other checkout is listed with what to run there once its branch carries the update.
-    `--join` writes the committed `.claude/settings.json`, so running it on a branch without the
-    update edited that branch.
-  - The reference install runs `cd <empty temp folder> && dydo init all` as one command, outside
-    any folder holding a `dydo.json`.
+### Process skills
+
+- `update-dydo` (DYD-404, DYD-409):
+  - A file's base can be proved by the record of an earlier update: the commit that set
+    `dydoVersion` and the commit message or PR text listing the file as merged or kept. A re-run no
+    longer treats files the last update merged as having no base.
+  - A deletion an Upgrade step of a later release settles is followed without asking and listed.
+  - `dydo init <host> --join` and `node setup-skills.mjs` run only in the update's own checkout;
+    every other checkout is listed with what to run there once its branch carries the update.
   - The final report hands the user a commit message and PR text listing every file merged, kept,
     skipped or left to them. That text is the record the next update reads.
-- The `wizard` skill gives each stage an outcome the agent can check without a secret, and checks
-  it after the user runs the stage. Only where the user would otherwise paste output back, the
-  script may log it, never a secret, to a temp file the agent reads and deletes (DYD-408).
-- `inquisitor` severities are `blocker`, `should` and `nit`, replacing `high`, `medium` and `low`
-  (DYD-400).
-- The Walkthrough ticket template replaces `## What landed` with `## Checkpoint` and adds
-  `## Verdict`. The Inquisition template has `## Scope`, `## Area map`, `## Findings` and
-  `## Record`. The glossary defines Severity, Milestone (no longer optional), walking skeleton,
-  Round, Area, Area map, Phase, Findings register, Sighting, Verification gap, Patch lane, Nit ticket
-  and Group Sub-ticket (DYD-398, DYD-399, DYD-400).
+  - Through the session's Linear connection, it compares the team's label groups, labels, statuses
+    and templates with the standard and creates a missing one only with the user's OK.
+- The `wizard` skill gives each stage an outcome the agent can check without a secret. Only where
+  the user would otherwise paste output back, the script may log it, never a secret, to a temp file
+  the agent reads and deletes (DYD-408).
+- The captain cleans the worktrees it or its crew made, with `dydo clean --dry-run <worktree>`
+  then `dydo clean <worktree>`, and leaves its own thread's worktree to T3. `dydo clean` now says
+  `skipped <path>: T3 owns worktrees under <root>; leave them to T3` (DYD-407).
+- The `pr` skill and the ticket captain write a PR body to the ignored
+  `dydo/agents/workspace/pr-body-<KEY>.md`, run `dydo pr-ready --body <file>` as its own command,
+  and open the PR with a lone `gh pr create --body-file <file>` (DYD-746).
+- The testing strategy is feature-first, replacing the full changed stack on every hop: each
+  committed hop runs the affected features' Light tests, and the final candidate runs own-feature
+  Heavy and ticket-scoped coverage once. A portable copy ships as
+  `Scaffold/dydo/guides/testing-strategy.md` (DYD-413). Reviewers check HCRAP against coverage evidence at the declared gate (DYD-441).
+- `inquisitor` severities are `blocker`, `should` and `nit`, replacing `high`, `medium` and `low`.
+  The Walkthrough template has `## Checkpoint` and `## Verdict` in place of `## What landed`; the
+  Inquisition template has `## Scope`, `## Area map`, `## Findings` and `## Record`. The glossary
+  defines Severity, Milestone, walking skeleton, Round, Area, Area map, Phase, Findings register,
+  Sighting, Verification gap, Patch lane, Nit ticket and Group Sub-ticket (DYD-398, DYD-399,
+  DYD-400).
 - `what-would-balazs-do` counts the user's walkthrough verdicts, findings and skips as his own
-  words (DYD-399).
-- <!-- pending: DYD-397 --> Dispatch under T3 follows the child's lifetime (DR 057, reversing the
-  3.5.0 rule that a same-vendor child is a native subagent). A native subagent only when the
-  dispatcher waits for it inside its own turn; `delegate_task` for every other child that reports
-  back, captains, crew and reviewers alike, and any agent of another vendor. A new top-level
-  thread only for work the user takes over, or when the user asks. A native child cannot call
-  `delegate_task`: on T3's `parent_not_active` refusal it hands the dispatch up. Every brief that
-  sends Codex agents names a cap, starting near 8 and backing off on a 429. An officer that needs
-  the user while work runs asks through the host's question tool; crew never ask the user
-  directly. <!-- link DR 057 once PR #198 lands: ../../../decisions/057-t3-dispatch-follows-child-lifetime.md -->
-- <!-- pending: DYD-407 --> The captain cleans the worktrees it or its crew made, with
-  `dydo clean --dry-run <worktree>` then `dydo clean <worktree>`, and leaves the worktree its own
-  thread runs in to T3. `dydo clean` now says `skipped <path>: T3 owns worktrees under <root>;
-  leave them to T3`; it used to advise archiving the thread, which does not remove the worktree.
-- <!-- pending: DYD-412 --> The shipped working-tree contract carries the pending-PR handoff: a
-  delegated captain returns `PR open <key>, checks pending: <url>, head <SHA>`, and its officer
-  watches the PR and wakes it.
+  words (DYD-399). The code-writer and admiral advance completed work and test a review's strongest
+  counterexample against a fix (DYD-438).
+
+### Guard
+
+- A command nudge no longer fires on a comment or a literal heredoc or here-string body, or on four
+  recorded quoted search patterns (`rg -n '...'`, `git grep -n -E '...'`, `grep -iE "..."` and a
+  `Where-Object` `-match` operand on `$_.CommandLine`). Every other unquoted or unknown quoted match
+  still counts (DYD-406, DYD-723).
+- A command warn's retry marker is keyed by the command, so only the same command, retried, passes;
+  a different command matching the same nudge is warned on its own (DYD-499).
+- The review-block nudge fires behind leading assignments and a bare `env` with its common options
+  (DYD-736), and reads a lone `gh pr create`'s `--body-file` or `-F` file as that call's body, so a
+  reviewed body file no longer warns (DYD-639). See
+  [Guard System](../../../../understand/guard-system.md#layer-3-nudges).
+- The guard reads PowerShell as pwsh 7.6.9 does for a bare carriage return, typographic quotes and
+  a caret, in every rule that reads a line as its shell would
+  ([DYD-641](../2026-11-05/dyd-641-shellreader-pwsh.md)). A backtick before a CRLF continues the
+  line only between words, as pwsh does (DYD-665).
+- `git push --force-with-lease origin main` is now refused as a push to the default branch
+  ([DYD-425](../2026-11-04/dyd-425-guard-merge-blocks.md)).
+
+### Assurance and testing
+
+These change dydo's own repository and CI, not what a project runs.
+
+- **Mutation testing is UNAVAILABLE for 3.6.0.** The changed-code mutation gate has no installed
+  mechanism on any of the five stacks and returns exit 2, which is not a pass (DYD-773). The landing
+  records it as unavailable under the ratified disposition DYD-774; it is not reported as passed.
+- The guard's repeated numerical performance proofs are now an opt-in suite. No ordinary
+  `dotnet test`, filtered run, CI job or required check runs them; run them with
+  `release_proof.py run` or the `guard-performance-proofs.yml` workflow dispatch when a change to
+  how the guard reads commands calls for it (DYD-859,
+  [Testing Strategy](../../../../guides/testing-strategy.md#dormant-guard-performance-proofs)).
+- Toolchain pins: Node 26, .NET SDK 10.0.303 and Python 3.14
+  ([DYD-504](../2026-11-04/dyd-504-toolchain.md)). The coverage tools lock with pnpm, as the viewer
+  does ([DYD-553](../2026-11-05/dyd-553-pnpm-everywhere.md), DYD-643). The static-gate Python
+  environment moved to the repo-root `.static-gates/python`
+  ([DYD-539](../2026-11-04/dyd-539-static-gate-env.md)).
+- The testing facade caps the memory of every operation that runs children: a systemd scope that
+  joins the caller's slice on Linux, a Job object on Windows (default 8G, `DYDO_MEMORY_MAX` may
+  lower it). A run that hits the cap fails with a finding that names the scope limit
+  ([DYD-722](../2026-11-05/dyd-722-shared-host-memory-cap.md),
+  [DYD-729](../2026-11-06/dyd-729-slice-aware-memory-cap.md),
+  [DYD-730](../2026-11-06/dyd-730-windows-job-memory-cap.md),
+  [DYD-800](../2026-11-07/dyd-800-scope-cap-reason.md)).
+- CI runs on pushes to `feature/**`, every job checks out the run's own commit, and coverage unions
+  take each leg's latest attempt after a rerun ([DYD-698](../2026-11-05/dyd-698-feature-push-ci.md),
+  [DYD-717](../2026-11-06/dyd-717-merge-ref-ci.md),
+  [DYD-694](../2026-11-05/dyd-694-union-rerun-artifact.md)).
+- Hosted Windows CI runs the guard's analyzer and hook tests, native Windows Python coverage at full
+  thresholds, the statechart Windows tests and every declared Windows .NET test
+  ([DYD-681](../2026-11-05/dyd-681-windows-guard-ci.md), DYD-518, DYD-622, DYD-718,
+  [DYD-805](../2026-11-06/dyd-805-windows-guard-expansion.md),
+  [DYD-806](../2026-11-06/dyd-806-windows-directory-link-cleanup.md)). The new
+  `statechart-config-oracle` job runs the 4000-config TLC comparison
+  ([DYD-784](../2026-11-06/dyd-784-config-fuzz-oracle.md)).
+- Statechart measurement, coverage and tests (DYD-428, DYD-526, DYD-529, DYD-548, DYD-549,
+  DYD-558, DYD-656, DYD-726, DYD-740, DYD-780), per-ticket coverage scoped to the Light gate's
+  feature selection (DYD-522, DYD-712), and runner, reaping and interrupt fixes in the coverage
+  campaign (DYD-507, DYD-514, [DYD-516](../2026-11-05/dyd-516-missing-producer-campaign-isolation.md),
+  DYD-554, DYD-593, DYD-597, [DYD-605](../2026-11-05/dyd-605-escalation-cleanup-deadline.md),
+  DYD-638, DYD-645, DYD-654, DYD-657, DYD-658, DYD-664, DYD-693, DYD-704, DYD-706, DYD-728,
+  DYD-788, DYD-811). The test runner refuses a filter placed after the runsettings
+  separator (DYD-258), and the host canaries pre-warm the Claude guard hook
+  ([DYD-545](../2026-11-05/dyd-545-canary-fingerprint.md)).
+- Viewer tests: refresh tests wait for the `refresh-removed` marker, Refresh stays busy until the
+  canvas draws the new map, and a toggled plate centres on the layout it lands (DYD-378, DYD-575,
+  DYD-561). Test-only.
 
 ## Fixed
 
-- <!-- pending: DYD-406 --> The guard (retro items GS-01 to GS-06; absorbs DYD-379 and DYD-294):
-  - A command nudge matches only where a command runs, not inside quoted arguments, comments or
-    heredoc bodies. An `rg` pattern or a commit message naming `dotnet test` or `gh pr create` no
-    longer triggers one. A project's own nudge whose pattern starts at an argument no longer fires.
+### Guard
+
+- The retro's false refusals (GS-01 to GS-06, DYD-406):
   - Writing literal text passes: `cat > notes.md <<'EOF'` with `$` or backticks in the body, a
-    single-quoted `printf` or `sed -i`, a PowerShell `@'...'@` here-string, and
-    `cat > run.sh <<'EOF' ... && bash run.sh`. Expanding bodies (`<<EOF`, `@"..."@`) and dynamic
-    destinations are still refused.
+    PowerShell `@'...'@` here-string, and `cat > run.sh <<'EOF' ... && bash run.sh`. Expanding
+    bodies (`<<EOF`, `@"..."@`) and dynamic destinations are still refused.
   - The password-store rule matches `pass` and, newly, `gopass` only as a command, so a Python
     `pass` statement or a PR body saying "pass" goes through.
   - PowerShell `$p = Get-Content notes.md` (and `gc`, `cat`, `type`, `Select-String`) reads as a
     read of that path; the off-limits check still applies.
   - `gh pr create --help` is no longer taken for a PR call by the PR-ready check.
-  - A Python program on stdin is refused like `python -c`: `python -`, `py -`, or `python` with no
-    script while a heredoc, here-string, pipe or `<` feeds it. A script file still runs; the guard
-    does not follow its own file operations.
-- <!-- pending: DYD-403 --> `dydo init claude` and `--join` no longer warn that `CLAUDE.md` or
-  `CLAUDE.local.md` hides `AGENTS.md` when the file's first line is `@AGENTS.md` (`@../AGENTS.md`
-  for `.claude/CLAUDE.md`). `dydo init codex` and `--join` leave `.codex/rules/dydo.rules` alone
-  when only its line endings differ, and rewrite a stale one with the line endings it had, so a
-  CRLF checkout no longer shows it modified.
-- <!-- pending: DYD-411 --> The control-flow map lists `maintain-verification-skill` as the place
-  proof is defined, reached from `code-writer`, `reviewer`, `ticket-captain` and `verify-<app>`.
-- <!-- pending: DYD-378 --> Two viewer refresh tests wait for the `refresh-removed` marker instead
-  of racing React Flow. Test-only.
+- A single `sed`, `printf` or `echo` command that writes single-quoted data is no longer refused as
+  a bypass: ``sed -i 's/`x`/y/' f`` and `printf '%s' 'first line<newline>$HOME is literal' > notes.md`
+  write their literal destinations, which are still path-checked. A line that chains `git` stays
+  refused (DYD-422, DYD-659; see
+  [Single-quoted literal data](../2026-11-05/dyd-422-guard-single-quoted-literals.md)).
+- The PR-ready check no longer refuses a command with no gh word just because it could not finish
+  reading it, such as `arch="$(case "$(uname -m)" in ...)"`
+  ([DYD-515](../2026-11-05/dyd-515-pr-ready-without-gh.md)).
+- A long benign command is no longer refused as "Command too complex to verify safely" because a
+  dangerous-pattern rule ran past its 250 ms budget
+  ([DYD-610](../2026-11-05/dyd-610-guard-regex-budget.md)). Reading one command is now bounded in
+  time and memory: command text over 1,048,576 characters is always refused, and an unclosed `$(`
+  no longer blows up
+  ([DYD-723](../2026-11-05/dyd-723-unclosed-substitution-bound.md)).
+- `dydo guard --command "@'...'@"` reads a leading `@` as text and gives it a verdict, never a
+  response file (DYD-675).
+- From a bash line, `git -C C:\...\wt push` into a worktree on `main` is refused on Windows, as
+  every other host form already was
+  ([DYD-739](../2026-11-06/dyd-739-windows-git-c-push.md)).
+- <!-- pending: DYD-640 --> A file-descriptor redirection such as `1>` or `2>` now extracts a
+  write, so writing a protected file that way is refused instead of only warned.
+
+### Guard refusals that were missing
+
+- A Python program on stdin is refused like `python -c`: `python -`, `py -`, or `python` with no
+  script while a heredoc, here-string, pipe or `<` feeds it (DYD-406). The same holds when a
+  runner's `run` subcommand starts that Python: `uv run python - <<'EOF'`, `poetry run python3 -`
+  and `printf ... | uv run python` are refused, while `uv run python script.py` passes
+  ([DYD-509](../2026-11-05/dyd-509-python-stdin-run.md)).
+- The guard hard-blocks raw merges for every caller, under Claude's Bash and PowerShell tools and
+  Codex's argv arrays: `gh pr merge` in any form, `gh api` on the merge endpoints, the GraphQL merge
+  mutations, a `git push` that updates `master`, `main` or the `origin/HEAD` branch, and a
+  default-branch change. Each refusal names `dydo merge`
+  ([DYD-425](../2026-11-04/dyd-425-guard-merge-blocks.md), DYD-576). A Codex session and a Claude
+  session got the same allow or block outcome for the merge command matrix (DYD-426).
+
+### CLI
+
+- `dydo init claude` and `--join` no longer warn that `CLAUDE.md` hides `AGENTS.md` when its first
+  line is `@AGENTS.md`. `dydo init codex` leaves `.codex/rules/dydo.rules` alone when only its line
+  endings differ, so a CRLF checkout no longer shows it modified (DYD-403).
+- A `dydo mode set` whose mode store cannot be written prints one stderr line naming the store path
+  and the cause and exits 2, leaving the stored state as it was, instead of a .NET stack trace
+  (DYD-644).
+- Packing the tool from source fails with viewer build instructions when the map viewer bundle is
+  missing, so a source build no longer ships a CLI without the viewer (DYD-687; see
+  [Install from source](./dydo-3-6-0-safe-merge-command.md#install-from-source)).
+- A Release build in a worktree whose branch ref is only packed resolves its commit for SourceLink
+  (`Microsoft.SourceLink.GitHub` 10.0.403, DYD-603).
+
+### Statechart
+
+- The POSIX statechart socket stays within the `AF_UNIX` path limit when `TMPDIR` is long
+  (DYD-574). <!-- pending: DYD-601 --> When the socket's fallback directory cannot be created, the
+  error names the directory and the `TMPDIR` remedy instead of a bare `Win32Exception`.
+- The POSIX group drain reads a task the kernel is releasing as no member instead of aborting
+  ([DYD-678](../2026-11-05/dyd-678-posix-drain-releasing-task.md)). The skill's `.gitignore` covers
+  the Java build's `__pycache__`, so a coverage run leaves the tree clean
+  ([DYD-560](../2026-11-05/dyd-560-statechart-java-pycache-ignore.md)).
 
 ## Removed
 
 - The inquisition's lenses (correctness, coverage, security, dead code, doc drift, seams),
   read-only inquisitors, the separate record-delivery Feature and its `released <key>: record
-  delivery` loop. The two release reasons an inquisition still has are
-  `released <key>: verification skill first` and `released <key>: groups <keys>` (DYD-400).
+  delivery` loop (DYD-400).
+- The `ketchup` skill folder; the skill is `catch-up` now (DYD-449).
+
+## Moved to 3.7.0
+
+These were in 3.6.0's scope and did not land by the freeze. They continue in the 3.7.0 Project.
+
+- Guard reading, analyzer and PowerShell:
+  - A quote opened inside a `#` comment is taken as a real quote, hiding the lines between
+    (DYD-676).
+  - A line that writes git config or hooks and then runs git is allowed when the payload needs no
+    `$` (DYD-642).
+  - Single-quoted literal relief on lines that chain git (DYD-628).
+  - File-operation extraction ignores PowerShell typographic quotes (DYD-661).
+  - Here-string relief takes a mid-word `@'` as a here-string opener (DYD-662).
+  - The command string `iex` or `Invoke-Expression` runs isn't checked for file operations
+    (DYD-666).
+  - Three older PowerShell misreads: a block comment before `| iex`, `--%` stop-parsing, and a
+    backslash before a quote (DYD-680).
+- Guard tests and timeouts:
+  - Two guard patterns, `DdKnownDiskWrite` and `PowerShellRecursiveDelete`, still time out on long
+    benign inputs; they fail closed (DYD-679).
+  - Test gaps around `@`-text guard commands: verdict pinning and a Codex-shaped payload (DYD-696,
+    DYD-697).
+  - The hosted Windows guard job doesn't run `ShellReaderTests` (DYD-732).
+- Other:
+  - The statechart Java build helper tests don't assert its reproducibility flags and identity
+    guards (DYD-569).
+  - Sharpen the Python platform coverage tests against surviving mutants (DYD-542).
+  - An optional confirmation popup for overnight mode transitions (DYD-543).
 
 ## Upgrade steps
 
-1. Install the 3.6.0 CLI: `npm install -g dydo` or `dotnet tool update -g dydo`.
-   <!-- pending: DYD-406, DYD-403, DYD-407 --> It carries the guard, `init --join` and
-   `dydo clean` fixes; this release's other changes are skill and doc text.
-2. Take `skills/productivity/update-dydo/SKILL.md` from the v3.6.0 tag before running it. The
+1. Before updating the .NET tool, make sure the machine has the Microsoft.NETCore.App runtime
+   10.0.14 or later in a compatible 10.x version (`dotnet --list-runtimes`). A host with only
+   10.0.0 to 10.0.13 cannot launch the 3.6.0 tool; the SDK version alone does not tell you. npm and
+   the downloaded NativeAOT binaries embed the patched runtime and need nothing here
+   ([Distribution runtime requirements](../../../../reference/coverage-tools.md#distribution-runtime-requirements)).
+2. Install the 3.6.0 CLI: `npm install -g dydo` or `dotnet tool update -g dydo`.
+3. Take `skills/productivity/update-dydo/SKILL.md` from the v3.6.0 tag before running it. The
    3.5.1 skill runs `--join` in every worktree, editing committed hooks on branches you do not own,
    and finds no base for files the previous update merged. This replaces 3.5.1's step 2.
-3. A project whose last update left no record listing the files it merged gets more files with an
+4. A project whose last update left no record listing the files it merged gets more files with an
    unknown base on this run, and reconciles them by hand. Keep the commit message and PR text the
    skill hands you at the end: the next update reads them.
-4. Merge the release's `skills/` and `Scaffold/dydo/` changes into the project, keeping its edits,
-   and copy `THIRD-PARTY-NOTICES.md` along with `skills/`: it now credits tstack (MIT) for the
-   adapted PR-watch and proof text. Four files are new:
-   `skills/roles/crew/inquisitor/resources/{read,break,drive,context-size}.md`. No skill is
-   renamed. The Scaffold files are `guides/working-tree-contract.md`,
-   `reference/linear-workspace-standard.md`, `reference/dydo-glossary.md`,
-   `reference/about-dynadocs.md` and `project/_project.md`;
-   <!-- pending: DYD-407 --> also `reference/dydo-commands.md`.
-5. <!-- pending: DYD-406 --> `files-off-limits.md` changes only its prose: the Protected Patterns
-   paragraph now says the guard refuses inline interpreter code and a Python program on stdin. The
-   guard reads the pattern blocks, not this paragraph, so the update is optional. The file is
-   protected: `update-dydo` shows the diff and a person applies it. A new `dydo init` writes the new
-   text. In the dydo repository itself, the maintainer applies the same change to
-   `dydo/files-off-limits.md` after the guard fix lands, from the patch the guard ticket left.
-6. Run `dydo init <host> --join` for each wired host, then `node setup-skills.mjs`, in the update's
-   own checkout only. This overrides 3.5.1's step 4, which ran them in every checkout. In each
-   other checkout, run them once its branch carries the update, when
-   `git -C <checkout> show HEAD:dydo.json` records `dydoVersion` 3.6.0 or later.
-7. Hooks: no 3.6.0 change alters the hook entries `dydo init` writes. On a project already on 3.5.1,
-   `git diff --stat -- .claude/settings.json .codex/hooks.json` after step 6 should list nothing; if
-   it lists `.codex/hooks.json`, commit it and re-trust the hooks in Codex.
-   <!-- pending: DYD-403 --> A CRLF `.codex/rules/dydo.rules` no longer shows modified after
-   `--join`; a copy restored by hand after 3.5.1 needs nothing more.
-8. <!-- pending: DYD-409 --> Linear: the team needs a `Severity` label group with `blocker`
-   (`#E5484D`), `should` (`#FFB224`) and `nit` (`#8B8D98`). With a Linear connection in the
-   session, `update-dydo` lists every label, group, status and template the team lacks and offers
-   to create each with your OK. Without one, it lists the category and skips it; create the group
-   by hand in the team's label settings.
-9. From the next Project you chart: place Linear Milestones, the walking skeleton first and the
-   landing last, with one Walkthrough Ticket each, and wire the skeleton's as a native blocker of
-   the next Milestone's tickets. Write Walkthrough tickets with `## Checkpoint` and `## Verdict`
-   instead of `## What landed`. In a Project already in flight, make its landing Merge Ticket
-   natively blocked by every open should ticket. Neither DR 059 nor DR 060 asks for any other
-   migration of in-flight Projects or old inquisition records.
-10. Before the next inquisition: a project with a runnable surface needs a verification skill
+5. Merge the release's `skills/` and `Scaffold/dydo/` changes into the project, keeping its edits,
+   then run `node setup-skills.mjs` from its root.
+   - Renamed skill: `ketchup` is now `catch-up`. Move `skills/productivity/ketchup/` to
+     `skills/productivity/catch-up/` and take the release's text; a project's own mentions of
+     `/ketchup` become `/catch-up`.
+   - New skills: `statechart` (user-invoked) and `verify-dydo`. New resources: the inquisitor's
+     `read.md`, `break.md`, `drive.md` and `context-size.md`; the admiral's `check-in.md` and
+     `scaffold-project.md`; the chief of staff's `muster.md`, `night-survey.md` and
+     `morning-brief.md`; `overnight-mode`'s `transition-preflight.md`; `catch-up`'s `example.md`.
+   - Scaffold files: `guides/testing-strategy.md` (new), `guides/working-tree-contract.md`,
+     `project/_project.md`, `reference/about-dynadocs.md`, `reference/dydo-commands.md`,
+     `reference/dydo-glossary.md`, `reference/feature-spec-convention.md`,
+     `reference/linear-workspace-standard.md`, and `files-off-limits.md` (step 6).
+   - Copy `THIRD-PARTY-NOTICES.md` along with `skills/`: it now credits tstack (MIT) for the adapted
+     PR-watch and proof text, and its Cursor pstack (MIT) section adds `statechart`.
+6. `files-off-limits.md` changes only its prose: the Protected Patterns paragraph now says the
+   guard refuses inline interpreter code and a Python program on stdin, also when a runner's `run`
+   subcommand starts it. The guard reads the pattern blocks, not this paragraph, so the update is
+   optional. The file is protected: `update-dydo` shows the diff and a person applies it. A new
+   `dydo init` writes the new text. In the dydo repository itself, the maintainer applies the same
+   change to `dydo/files-off-limits.md`.
+7. Run `dydo init <host> --join` for each wired host, then `node setup-skills.mjs`, in the update's
+   own checkout only. This overrides 3.5.1's step 4, which ran them in every checkout. In each other
+   checkout, run them once its branch carries the update, when
+   `git -C <checkout> show HEAD:dydo.json` records `dydoVersion` 3.6.0 or later. For Claude Code,
+   `--join` adds the two `dydo merge` allow entries to `.claude/settings.local.json`, which stays
+   uncommitted, so each checkout needs its own run. For Codex it rewrites `.codex/rules/dydo.rules`:
+   commit it, restart Codex and re-trust the project, since Codex loads project rules only from a
+   trusted `.codex/` layer.
+8. Hooks: no 3.6.0 change alters the hook entries `dydo init` writes. After step 7,
+   `git diff --stat -- .claude/settings.json .codex/hooks.json` should list nothing; if it lists
+   `.codex/hooks.json`, commit it and re-trust the hooks in Codex. A CRLF `.codex/rules/dydo.rules`
+   no longer shows modified after `--join` when only its line endings differ.
+9. Check that the project's CI runs on PRs into `feature/*` branches. Without it `dydo merge`
+   refuses every merge with `no checks reported`.
+10. A machine carrying a stopgap for agent merges, such as a free-text `autoMode.allow` merge entry
+    or a user-level `Bash(gh pr merge:*)` allow rule, keeps it until the user has seen `dydo merge`
+    and the guard's merge blocks give Claude and Codex the same outcome in that project
+    ([DR 061](../../../decisions/061-agents-merge-only-into-feature-branches.md) decision 8). Then
+    the user removes it; agents cannot edit their own permissions.
+11. Linear: the team needs a `Severity` label group with `blocker` (`#E5484D`), `should`
+    (`#FFB224`) and `nit` (`#8B8D98`). With a Linear connection in the session, `update-dydo` lists
+    every label, group, status and template the team lacks and offers to create each with your OK.
+    Without one, create the group by hand in the team's label settings.
+12. From the next Project you chart: place Linear Milestones, the walking skeleton first and the
+    landing last, with one Walkthrough Ticket each, and wire the skeleton's as a native blocker of
+    the next Milestone's tickets. Write Walkthrough tickets with `## Checkpoint` and `## Verdict`.
+    In a Project already in flight, make its landing Merge Ticket natively blocked by every open
+    should ticket. Neither DR 059 nor DR 060 asks for any other migration of in-flight Projects or
+    old inquisition records.
+13. Before the next inquisition: a project with a runnable surface needs a verification skill
     (`create-verification-skill`), and the context-size check needs Node and crew dispatched as
-    their own T3 sessions; without them the inquisitor records its context as `unavailable`.
-    <!-- pending: DYD-397 --> Under T3, officers dispatch through T3's `delegate_task`, so the T3
-    MCP tools must be available to them.
-    <!-- pending: DYD-401 --> An existing generated `verify-<app>` skill does not gain the pointer
-    to `maintain-verification-skill`'s Proof; regenerate it or add the line by hand.
-11. Run `dydo adopt 3.6.0` last, once `dydo check` exits 0 and the update is proven.
+    their own T3 sessions; without them the inquisitor records its context as `unavailable`. Under
+    T3, officers dispatch through `delegate_task`, so the T3 MCP tools must be available to them. An
+    existing generated `verify-<app>` skill does not gain the pointer to
+    `maintain-verification-skill`'s Proof; regenerate it or add the line by hand.
+14. Run `dydo adopt 3.6.0` last, once `dydo check` exits 0 and the update is proven. It adds the
+    library-install warn nudge to `dydo.json` once, skipping a project whose `dydo.json` already
+    holds the same pattern.
 
-No 3.6.0 commit renames a term mechanically, so this release has no merge normalisations.
+### Merge normalisations
+
+1. `ketchup` becomes `catch-up` (DYD-449). Matching rule: the whole word `ketchup` where it names
+   the dydo skill or its folder. Scope: `Scaffold/dydo/reference/dydo-glossary.md`,
+   `skills/productivity/README.md`, the `name:` line of `skills/productivity/catch-up/SKILL.md`,
+   and the path column of `THIRD-PARTY-NOTICES.md` and `npm/THIRD-PARTY-NOTICES.md`. Exceptions:
+   the upstream skill name `ketchup` in the notices' first column and the `pstack/ketchup`
+   attribution comment, which name Cursor's skill. The folder move itself is carried by the merge.
 
 ## Files Changed
 
-`Scaffold/dydo/` (`guides/working-tree-contract.md`, `project/_project.md`,
-`reference/about-dynadocs.md`, `reference/dydo-glossary.md`,
-`reference/linear-workspace-standard.md`), `THIRD-PARTY-NOTICES.md`,
-`npm/THIRD-PARTY-NOTICES.md`, `dydo/guides/` (`customizing-roles.md`,
-`orchestration-pitfalls.md`, `working-tree-contract.md`, `writing-good-briefs.md`),
-`dydo/project/decisions/` (031, 045 and 047 banners; new 058, 059 and 060),
-`dydo/project/inquisitions/_inquisitions.md`, `dydo/reference/` (`about-dynadocs.md`,
-`dydo-glossary.md`, `linear-workspace-standard.md`), `dydo/understand/` (`control-flow.md`,
-`task-lifecycle.md`, `work-model.md`), `skills/engineering/` (`maintain-verification-skill`, `pr`,
-`wizard`), `skills/productivity/` (`README.md`, `overnight-mode`, `to-ticket`, `update-dydo`,
-`walkthrough`, `wayfinder`, `what-would-balazs-do`), `skills/roles/README.md`,
-`skills/roles/crew/` (`code-writer`, `docs-writer`, `inquisitor` and its four new resources,
-`reviewer` and its `code.md` and `docs.md`), `skills/roles/officers/` (`admiral`,
-`chief-of-staff`, `ticket-captain` and its `resources/inquisition.md`), this entry and its
-changelog hub.
+By area; each linked entry above lists its own files.
 
-<!-- pending: DYD-397 --> `dydo/project/decisions/057-t3-dispatch-follows-child-lifetime.md`.
-<!-- pending: DYD-401 --> `skills/engineering/README.md`, `create-verification-skill`.
-<!-- pending: DYD-403 --> `Commands/InitCommand.cs`, `DynaDocs.Tests/Integration/InitCommandTests.cs`.
-<!-- pending: DYD-406 --> `Services/BashCommandAnalyzer.cs`, `Services/PrCallScanner.cs`,
-`Commands/GuardCommand.cs`, `Scaffold/dydo/files-off-limits.md`, `dydo/files-off-limits.md`,
-`dydo/understand/guard-system.md`, `DynaDocs.Tests/` (`GuardRetroCommands.cs`,
-`Commands/GuardCommandTests.cs`, `Integration/GuardPrReadyTests.cs`,
-`Integration/GuardSecurityTests.cs`, `Integration/GuardWarnOrderTests.cs`,
-`Services/BashCommandAnalyzerTests.cs`, `Services/PrCallScannerTests.cs`).
-<!-- pending: DYD-407 --> `Services/WorktreeCleaner.cs`,
-`DynaDocs.Tests/Integration/CleanCommandTests.cs`, `Scaffold/dydo/reference/dydo-commands.md`,
-`dydo/reference/dydo-commands.md`.
-<!-- pending: DYD-378 --> `viewer/src/app/App.test.tsx`.
+- CLI: `Commands/` (`MergeCommand.cs`, `SurveyCommand.cs`, `StatechartCommand.cs`, `InitCommand.cs`,
+  `ModeCommand.cs`, `GuardCommand.cs`, `AdoptCommand.cs`), `Services/Merge/`, `Services/Survey/`,
+  `Services/Statechart/`, `Resources/Statechart/`, guard services (`BashCommandAnalyzer.cs`,
+  `ShellReader.cs`, `PrCallScanner.cs`, `PrCallScanner.MergeRoutes.cs`, `MergeRoute.cs`,
+  `CommandPosition.cs`, `ConfigFactory.cs`, `ClaudeGuardWiring.cs`, `ValidationService.cs`),
+  `Services/ModeState.cs`, `Services/WorktreeCleaner.cs`, `Utils/PathUtils.cs`, `Program.cs`,
+  `DynaDocs.csproj`, `ViewerPackaging.targets`, `.codex/rules/dydo.rules`.
+- Skills: `skills/engineering/` (new `statechart` and `verify-dydo`; `maintain-verification-skill`,
+  `create-verification-skill`, `pr`, `wizard`), `skills/productivity/` (`catch-up` replacing
+  `ketchup`, `overnight-mode`, `to-project`, `to-ticket`, `update-dydo`, `walkthrough`,
+  `wayfinder`, `what-would-balazs-do`), `skills/roles/` (`code-writer`, `docs-writer`,
+  `inquisitor`, `reviewer`, `admiral`, `chief-of-staff`, `ticket-captain` and their resources).
+- Docs: `Scaffold/dydo/` (step 5), `dydo/project/decisions/` (new 057 to 063; banners and
+  amendments on 031, 041, 044, 045, 047, 048, 052 and 053), `dydo/guides/`, `dydo/reference/`,
+  `dydo/understand/`, `THIRD-PARTY-NOTICES.md`, `npm/THIRD-PARTY-NOTICES.md`, this entry and its
+  changelog hub.
+- Assurance: `DynaDocs.Tests/`, `.github/workflows/` (`ci.yml`, `release.yml`,
+  `guard-performance-proofs.yml` and the provisioning scripts), `viewer/`.
+
 <!-- pending: version bump --> `DynaDocs.csproj`, `npm/package.json`,
 `.github/workflows/release.yml`, `DynaDocs.Tests/EndToEnd/CliEndToEndTests.cs`,
 `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`.
 
 ## Related
 
+- [dydo 3.6.0 - Safe merge command](./dydo-3-6-0-safe-merge-command.md)
+- [DYD-415: checked statecharts](./dyd-415-statechart.md)
+- [dydo 3.6.0 - Guard blocks raw merges](../2026-11-04/dyd-425-guard-merge-blocks.md)
+- [DYD-504 toolchain modernization](../2026-11-04/dyd-504-toolchain.md)
+- [DYD-413 - Canonical feature-first testing workflow](../2026-10-30/dyd-413-canonical-testing-workflow.md)
 - [dydo 3.5.1 - Downstream update fixes](../2026-10-27/dydo-3-5-1-downstream-update-fixes.md)
 - [Changelog](../../_changelog.md) - Releases and the Upgrade steps rule

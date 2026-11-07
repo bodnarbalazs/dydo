@@ -297,7 +297,8 @@
       "module": "Commands/ModeCommand.cs",
       "tests": [
         "DynaDocs.Tests/Commands/ModeCommandTests.cs",
-        "DynaDocs.Tests/Steps/MachineModeSteps.cs"
+        "DynaDocs.Tests/Steps/MachineModeSteps.cs",
+        "DynaDocs.Tests/Steps/ModeStoreFailureSteps.cs"
       ]
     },
     {
@@ -324,7 +325,8 @@
     {
       "module": "Services/ModeState.cs",
       "tests": [
-        "DynaDocs.Tests/Services/ModeStateTests.cs"
+        "DynaDocs.Tests/Services/ModeStateTests.cs",
+        "DynaDocs.Tests/Steps/ModeStoreFailureSteps.cs"
       ]
     },
     {

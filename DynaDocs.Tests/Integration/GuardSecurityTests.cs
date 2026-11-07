@@ -1752,6 +1752,156 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertPreToolUseAllowed();
     }
 
+    // ================================================================
+    // DYD-640: an fd-numbered redirection writes its target, checked like plain >
+    // ================================================================
+
+    [Theory]
+    [InlineData("printf x > dydo/index.md", "Path is protected")]
+    [InlineData("printf x 1> dydo/index.md", "Path is protected")]
+    [InlineData("printf x 2> dydo/index.md", "Path is protected")]
+    [InlineData("printf x 3> dydo/index.md", "Path is protected")]
+    [InlineData("printf x 1>> dydo/index.md", "Path is protected")]
+    [InlineData("printf x 1>| dydo/index.md", "Path is protected")]
+    [InlineData("printf x >| dydo/index.md", "Path is protected")]
+    [InlineData("printf x &> dydo/index.md", "Path is protected")]
+    [InlineData("printf x &>> dydo/index.md", "Path is protected")]
+    [InlineData("printf x >&dydo/index.md", "Path is protected")]
+    [InlineData("printf word2>dydo/index.md", "Path is protected")]
+    [InlineData("printf x 1> .env", "off-limits")]
+    [InlineData("printf x 2>> .env", "off-limits")]
+    public async Task Dyd640_OutputRedirectionToAGuardedPath_IsDenied(string command, string reason)
+    {
+        await SetupClaimedAgent();
+
+        foreach (var toolName in new[] { "Bash", "PowerShell" })
+        {
+            var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+            result.AssertPreToolUseDenied();
+            result.AssertStderrContains(reason);
+        }
+    }
+
+    // fd duplication or close, and an fd-numbered redirection into a sink, beside a $ word stay allowed.
+    [Theory]
+    [InlineData("Bash", "echo \"$HOME\" 2>/dev/null")]
+    [InlineData("Bash", "ls $(pwd) 2>/dev/null")]
+    [InlineData("Bash", "echo $HOME 1>/dev/null")]
+    [InlineData("Bash", "echo $HOME 2>/dev/stderr")]
+    [InlineData("Bash", "echo $HOME 1>/dev/stdout")]
+    [InlineData("Bash", "echo $HOME 3>/dev/fd/1")]
+    [InlineData("Bash", "echo $HOME 2>&1")]
+    [InlineData("Bash", "echo $HOME 1>&2")]
+    [InlineData("Bash", "echo $HOME >&2")]
+    [InlineData("Bash", "echo $HOME 2>&-")]
+    [InlineData("PowerShell", "Get-ChildItem $HOME 2>$null")]
+    [InlineData("PowerShell", "Invoke-Command { Get-ChildItem $HOME 2>$null}")]
+    public async Task Dyd640_FdDuplicationOrSinkBesideABypass_IsAllowed(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseAllowed();
+    }
+
+    // DYD-640 review B1, B3 and nit 2, round 2 B1: a duplication or sink closed by a substitution or
+    // subshell, text after it included, continued onto the next line or into /dev/tty stays allowed.
+    [Theory]
+    [InlineData("out=$(git status 2>&1)")]
+    [InlineData("out=$(git status 2>&1) || true")]
+    [InlineData("echo \"$(make 2>&1)\"")]
+    [InlineData("x=`ls 2>&1`")]
+    [InlineData("echo $(echo hi >&2)")]
+    [InlineData("(echo $HOME >&2)")]
+    [InlineData("x=$(git rev-parse HEAD 2>/dev/null)")]
+    [InlineData("x=\"$(git rev-parse HEAD 2>/dev/null)\"")]
+    [InlineData("v=$(command -v jq 2>/dev/null) || true")]
+    [InlineData("if [ -n \"$(git status --porcelain 2>/dev/null)\" ]; then echo dirty; fi")]
+    [InlineData("echo \"$HOME\" 2>\\\n/dev/null")]
+    [InlineData("echo $HOME 2>/dev/tty")]
+    [InlineData("tag=\"$(git describe --always 2>/dev/null)-dirty\"")]
+    [InlineData("echo \"$(git status 2>&1):done\"")]
+    [InlineData("x=$(git status 2>/dev/null)suffix")]
+    [InlineData("x=`git status 2>&1`suffix")]
+    [InlineData("x=$(echo $(git status 2>&1)x )")]
+    public async Task Dyd640_SinkInsideASubstitutionOrContinued_IsAllowed(string command)
+    {
+        await SetupClaimedAgent();
+
+        foreach (var toolName in new[] { "Bash", "PowerShell" })
+        {
+            var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+            result.AssertPreToolUseAllowed();
+        }
+    }
+
+    // A guarded target inside a substitution or after a continuation is still refused.
+    [Theory]
+    [InlineData("x=$(printf y 2>dydo/index.md)")]
+    [InlineData("x=\"$(printf y 1>dydo/index.md)\"")]
+    [InlineData("x=`printf y 2>>dydo/index.md`")]
+    [InlineData("{ printf y >&dydo/index.md; }")]
+    [InlineData("printf y 2>\\\ndydo/index.md")]
+    [InlineData("tag=\"$(git describe --always 2>dydo/index.md)-dirty\"")]
+    [InlineData("echo \"$(git status 2>dydo/index.md):done\"")]
+    [InlineData("x=$(git status 2>dydo/index.md)suffix")]
+    [InlineData("x=`git status 2>dydo/index.md`suffix")]
+    [InlineData("x=$( $(git status 2>dydo/index.md)x )")]
+    [InlineData("x=$(git status 2>.env)suffix")]
+    public async Task Dyd640_GuardedTargetInsideASubstitutionOrContinued_IsDenied(string command)
+    {
+        await SetupClaimedAgent();
+
+        foreach (var toolName in new[] { "Bash", "PowerShell" })
+        {
+            var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+            result.AssertPreToolUseDenied();
+        }
+    }
+
+    // DYD-640 review B2: $null is a sink only as PowerShell's own unquoted variable.
+    [Theory]
+    [InlineData("Bash", "null=dydo/index.md; printf x 1>>$null")]
+    [InlineData("Bash", "echo $HOME 2>$null")]
+    [InlineData("PowerShell", "Get-ChildItem $HOME 2>>'$null'")]
+    [InlineData("PowerShell", "Get-ChildItem $HOME 2>\"$null\"")]
+    public async Task Dyd640_NullOutsidePowerShellOrQuoted_IsDenied(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+    }
+
+    // DYD-640 round 2 B2 and N1: >& onto a variable or a quoted ) writes the file the word names, and bash
+    // ends no word at }, so each is a write beside a $ word.
+    [Theory]
+    [InlineData("Bash", "fd=dydo/index.md; printf x >&\"$fd\"")]
+    [InlineData("PowerShell", "fd=dydo/index.md; printf x >&\"$fd\"")]
+    [InlineData("Bash", "fd=.env; printf x >&$fd")]
+    [InlineData("PowerShell", "fd=.env; printf x >&$fd")]
+    [InlineData("Bash", "fd=dydo/index.md; printf x >&$fd")]
+    [InlineData("PowerShell", "fd=dydo/index.md; printf x >&$fd")]
+    [InlineData("Bash", "fd=.env; printf x >&\"$fd\"")]
+    [InlineData("PowerShell", "fd=.env; printf x >&\"$fd\"")]
+    [InlineData("Bash", "x=$( $(git status 2>&1)x )")]
+    [InlineData("Bash", "echo $HOME >&\"1)\"")]
+    [InlineData("PowerShell", "echo $HOME >&\"1)\"")]
+    [InlineData("Bash", "echo $HOME 2>/dev/null}")]
+    public async Task Dyd640_WordTheShellWritesBesideABypass_IsDenied(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+    }
+
     // DYD-723: a command nested past the guard's reading bound is refused as too complex to verify,
     // through Claude's Bash and PowerShell tools and in an unknown shell.
     [Theory]

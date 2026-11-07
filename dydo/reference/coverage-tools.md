@@ -297,7 +297,11 @@ On Linux and Windows it and every covered row also record `memoryCapHitReporting
 and `best-effort` on Windows.
 On Linux, around each row the facade reads `oom_kill` from the capping cgroup's `memory.events`. When the
 count rises, the row is a cap hit: `failed`, exit 1, `memoryCapHit: true`, with the reason
-`memory cap hit (MemoryMax=<cap>): a finding; do not raise the cap`, whatever the child returned.
+`memory cap hit (configured scope limit MemoryMax=<cap>; an enclosing slice budget may have triggered the kill): a finding; do not raise the cap`, whatever the child returned.
+The configured scope limit does not identify the exhausted budget: an enclosing slice can trigger
+the kill even when the scope records no `max` or `oom` events. The diagnostic does not identify
+which ancestor, if any, triggered it. Windows Job-object hits retain their existing reason,
+`memory cap hit (MemoryMax=<cap>): a finding; do not raise the cap`.
 The same line goes to stderr. A test row derived from a cap-hit coverage row fails the same way. A
 cap hit is a finding to diagnose, never a reason to raise the cap. When the kernel kills the facade
 itself, no result is written and the caller sees 137.

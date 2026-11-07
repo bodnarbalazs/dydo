@@ -69,6 +69,49 @@ test('TypeScript campaign records child-only execution and the source denominato
   assert.deepEqual(child.branchMap, source['child.ts'].branchMap);
 });
 
+function interruptedCampaign(root, prefix) {
+  const output = path.join(root, 'reports');
+  fs.writeFileSync(path.join(root, 'kept.ts'), 'export function kept() { return 1; }\nkept();\n');
+  fs.writeFileSync(path.join(root, 'interrupted.ts'), 'export function lost() { return 2; }\nlost();\n');
+  fs.writeFileSync(path.join(root, 'unloaded.ts'), 'export function unloaded() { return 3; }\n');
+  fs.writeFileSync(path.join(root, 'interrupted.cjs'),
+    "const fs = require('node:fs'); const path = require('node:path');\n"
+    + "import('./interrupted.ts').then(() => { const write = fs.writeFileSync;\n"
+    + 'fs.writeFileSync = (file, ...args) => {\n'
+    + `if (path.dirname(String(file)) !== ${JSON.stringify(output)}) return write(file, ...args);\n`
+    + `write(file, ${JSON.stringify(prefix)}); process.kill(process.pid, 'SIGKILL');\n`
+    + '}; });\n');
+  fs.writeFileSync(path.join(root, 'suite.cjs'),
+    "const assert = require('node:assert/strict'); const {spawnSync} = require('node:child_process');\n"
+    + "assert.equal(spawnSync(process.execPath, ['kept.ts']).status, 0);\n"
+    + "const interrupted = spawnSync(process.execPath, ['interrupted.cjs']);\n"
+    + 'assert.notEqual(interrupted.status, 0);\n');
+  const config = path.join(root, 'config.json');
+  fs.writeFileSync(config, JSON.stringify({ root, cwd: root, output,
+    targets: ['kept.ts', 'interrupted.ts', 'unloaded.ts'] }));
+  const run = spawnSync(process.execPath, [path.resolve(__dirname, '../javascript_coverage.cjs'),
+    '--typescript-run', config, 'suite.cjs'], { encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stdout + run.stderr);
+  return output;
+}
+
+for (const prefix of ['', '{']) {
+  test(`TypeScript interrupted exit publishes no ${prefix ? 'partial' : 'empty'} JSON report`, t => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dydo-ts-interrupted-'));
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    const output = interruptedCampaign(root, prefix);
+    const files = fs.readdirSync(output);
+    const reports = files.filter(file => file.endsWith('.json'))
+      .map(file => JSON.parse(fs.readFileSync(path.join(output, file), 'utf8')));
+    const rows = reports.flatMap(report => Object.values(report));
+    assert.deepEqual(rows.map(row => path.basename(row.path)), ['kept.ts']);
+    assert.equal(rows[0].f['0'], 1);
+    const pending = files.filter(file => file.endsWith('.pending'));
+    assert.equal(pending.length, 1);
+    assert.equal(fs.readFileSync(path.join(output, pending[0]), 'utf8'), prefix);
+  });
+}
+
 test('missing c8 is an unavailable measurement with exit 2', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dyd171-js-no-c8-'));
   const tools = path.join(root, 'tools');

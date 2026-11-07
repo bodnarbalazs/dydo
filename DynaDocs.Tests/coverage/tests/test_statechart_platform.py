@@ -169,6 +169,36 @@ class StatechartPlatformTests(unittest.TestCase):
         self.assertIn(missing.as_posix(), facts['platform_selection']['sources'])
         self.assertEqual({'branch-coverage'}, {row['gate'] for row in answer['findings']})
 
+    def test_unpublished_counters_stay_zero_and_published_corruption_is_rejected(self):
+        from gate_policy import evaluate_policy
+        targets = ['kept.ts', 'unloaded.ts']
+        for target in targets:
+            (self.root / target).write_text('console.log("measured");\n')
+        raw = self.root / 'raw'
+        reports = raw / 'istanbul'
+        reports.mkdir(parents=True)
+        walked = {target: {'methods': [], 'module': {'cc': 1, 'cognitive': 0}} for target in targets}
+        source = statechart_platform.denominator(self.root, targets, raw / 'source')
+        (reports / 'unloaded.json.pending').write_text('{')
+        with self.assertRaisesRegex(ValueError, 'No statechart Istanbul coverage reports'):
+            statechart_platform.measured_modules(self.root, targets, walked, raw)
+        measured = source['kept.ts']
+        measured['s'] = dict.fromkeys(measured['s'], 1)
+        (reports / 'kept.json').write_text(json.dumps({str(self.root / 'kept.ts'): measured}))
+        modules = statechart_platform.measured_modules(self.root, targets, walked, raw)
+        self.assertEqual(targets, [row['path'] for row in modules])
+        self.assertEqual([{'1': 1}, {'1': 0}], [row['lines'] for row in modules])
+        self.assertEqual({'unloaded.ts'}, {finding['path'] for finding in evaluate_policy(modules)})
+        for content in ('', '{'):
+            with self.subTest(content=content):
+                (reports / 'broken.json').write_text(content)
+                with self.assertRaises(json.JSONDecodeError):
+                    statechart_platform.measured_modules(self.root, targets, walked, raw)
+        (reports / 'broken.json').unlink()
+        (reports / 'foreign.json').write_text(json.dumps({str(self.root / 'foreign.ts'): measured}))
+        with self.assertRaisesRegex(ValueError, 'outside target inventory'):
+            statechart_platform.measured_modules(self.root, targets, walked, raw)
+
     def test_real_union_rebuilds_the_clean_candidate_and_detects_inventory_drift(self):
         source = statechart_platform.PACKAGE / 'mixed.ts'
         (self.root / source).parent.mkdir(parents=True)

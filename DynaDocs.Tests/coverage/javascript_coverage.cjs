@@ -217,8 +217,10 @@ function typescriptHook() {
     return { format: 'module', source: fs.readFileSync(code, 'utf8'), shortCircuit: true };
   } });
   process.on('exit', () => {
-    fs.writeFileSync(path.join(config.output, `${process.pid}-${threadId}-${randomUUID()}.json`),
-      JSON.stringify(globalThis.__dydo_ts_coverage__ || {}));
+    const report = path.join(config.output, `${process.pid}-${threadId}-${randomUUID()}.json`);
+    // Deliberately killed test children must not publish an unfinished JSON document.
+    fs.writeFileSync(`${report}.pending`, JSON.stringify(globalThis.__dydo_ts_coverage__ || {}));
+    fs.renameSync(`${report}.pending`, report);
   });
 }
 

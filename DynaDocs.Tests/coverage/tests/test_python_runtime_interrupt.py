@@ -45,6 +45,24 @@ class Broken:
     def __next__(self):
         raise ValueError('iterator failed')
 
+class Finite:
+    def __init__(self):
+        self.value = 0
+    def __iter__(self):
+        return self
+    def __next__(self):
+        self.value += 1
+        if self.value > 2:
+            raise StopIteration
+        return self.value
+    def __aiter__(self):
+        return self
+    async def __anext__(self):
+        self.value += 1
+        if self.value > 2:
+            raise StopAsyncIteration
+        return self.value
+
 def handled():
     try:
         for item in Broken():
@@ -63,6 +81,10 @@ async def asynchronous_generator():
 async def asynchronous():
     return [item async for item in asynchronous_generator() if item]
 
+async def explicit_async_exhaustion():
+    async for item in Finite():
+        pass
+
 class Container:
     values = [item for item in range(4) if item]
 
@@ -72,12 +94,17 @@ for value in (None, 0, 1, 3):
 first, second = generator(), generator()
 list(zip(first, second))
 handled()
+list(Finite())
 try:
     unwound()
 except ValueError:
     pass
 try:
     asynchronous().send(None)
+except StopIteration:
+    pass
+try:
+    explicit_async_exhaustion().send(None)
 except StopIteration:
     pass
 '''

@@ -259,10 +259,13 @@ def _instruction_edges(code):
         elif instruction.opname == 'FOR_ITER':
             starts[offset] = {offset + 4: offset + 4, instruction.argval + 2: instruction.argval + 4}
         elif instruction.opname == 'NOT_TAKEN':
-            direct[offset] = (previous, offset + 2)
+            # SEND's target has LINE instrumentation, which makes native BRANCH report the
+            # NOT_TAKEN site itself as its origin after a coroutine returns.
+            origin = offset if previous.opname == 'END_SEND' else previous.offset
+            direct[offset] = (origin, offset + 2)
         elif instruction.opname == 'END_ASYNC_FOR':
             direct[offset] = (offset + 2 - instruction.arg * 2, offset + 2)
-        previous = offset
+        previous = instruction
     relevant = set(starts) | set(direct)
     relevant.update(destination for destinations in starts.values() for destination in destinations)
     return starts, direct, relevant

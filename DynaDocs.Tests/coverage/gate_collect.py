@@ -400,27 +400,52 @@ class Collectors:
         # A type-only import is still a module edge; the compiler erasing it does not undo the cycle.
         return self._module_graph('typescript', '--ts-pre-compilation-deps')
 
-    def _module_graph(self, language, *options):
-        paths = {row['path'] for row in self.sources(language)}
-        native = self.command_json('dependency-cruiser', ['node',
+    def _dependency_pass(self, paths, mode, systems, options):
+        config = self.output / f'dependency-cruiser-{mode}.json'
+        config.write_text(json.dumps({'options': {'moduleSystems': systems, 'enhancedResolveOptions': {
+            'exportsFields': ['exports'],
+            'conditionNames': [mode, 'node', 'node-addons', 'module-sync', 'default']}}}), encoding='utf-8')
+        native = self.command_json(f'dependency-cruiser-{mode}', ['node',
             self.coverage / 'node_modules/dependency-cruiser/bin/dependency-cruise.mjs',
-            '--no-config', '--output-type', 'json', '--do-not-follow', 'node_modules', *options, *sorted(paths)])
-        modules = native['modules']
+            '--config', config, '--output-type', 'json', '--do-not-follow', 'node_modules', *options, *sorted(paths)])
         # A third-party module may repeat (node_modules leaves stay listed); only our own sources must be unique.
-        identities = [row['source'] for row in modules if row['source'] in paths]
+        identities = [row['source'] for row in native['modules'] if row['source'] in paths]
         if len(identities) != len(set(identities)) or not paths <= set(identities):
             raise ValueError('Missing or ambiguous dependency-cruiser source identity')
+        return native
+
+    def _module_graph(self, language, *options):
+        paths = {row['path'] for row in self.sources(language)}
+        # 18.2.0 resolves every edge with one condition set. Partition extraction, not source files:
+        # dynamic import in CommonJS and import-equals in TypeScript need different runtime targets.
+        # Together these passes retain all four native module systems; unsupported ones fail below.
+        passes = {mode: self._dependency_pass(paths, mode, systems, options)
+                  for mode, systems in (('require', ['cjs', 'amd', 'tsd']), ('import', ['es6']))}
+        modules = {}
+        for native in passes.values():
+            for module in native['modules']:
+                joined = modules.setdefault(module['source'], {'source': module['source'], 'dependencies': []})
+                # Native cycle/validation flags describe a partial graph, not the joined graph.
+                joined['dependencies'].extend({key: value for key, value in dependency.items()
+                                               if key not in {'circular', 'cycle', 'valid', 'rules'}}
+                                              for dependency in module['dependencies'])
+        return self._module_graph_result(paths, modules, passes)
+
+    def _module_graph_result(self, paths, modules, passes):
         edges, errors = [], []
-        for module in modules:
+        for module in modules.values():
             if module['source'] not in paths:
                 continue
             for dependency in module['dependencies']:
+                if dependency['moduleSystem'] not in {'cjs', 'es6'}:
+                    errors.append({'path': module['source'], 'message': 'Unsupported native JavaScript module system',
+                                   'dependency': dependency})
                 if dependency.get('couldNotResolve'):
                     errors.append({'path': module['source'], 'message': 'Unresolved native JavaScript dependency', 'dependency': dependency})
                 if dependency['resolved'] in paths:
                     edges.append([module['source'], dependency['resolved']])
         findings = [{'gate': 'module-cycle', 'members': cycle} for cycle in dependency_cycles(edges)]
-        return result({'native': native, 'edges': edges}, findings, errors)
+        return result({'native': {'modules': list(modules.values())}, 'resolutionPasses': passes, 'edges': edges}, findings, errors)
 
     def javascript_unused_exports(self):
         from gate_knip import collect_knip

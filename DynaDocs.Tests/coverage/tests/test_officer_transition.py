@@ -3,6 +3,7 @@ channel, the fact-based evaluator, and containment cleanup with real short-lived
 import base64
 import concurrent.futures
 import contextlib
+import datetime
 import io
 import itertools
 import json
@@ -1411,10 +1412,10 @@ class EvaluatorTests(unittest.TestCase):
         evaluation = verified(story, "on").evaluate("nudge", "on")
         self.assertEqual([["x", "y"]], [candidates for _, candidates in evaluation["facts"]["ambiguous_receipts"]])
         self.assertIsNone(evaluation["facts"]["setter_runs"][0]["call"])
-        self.assertEqual(names(SETTER), failing(evaluation))
+        self.assertEqual(names(SETTER, ANNOUNCED), failing(evaluation))
 
     @staticmethod
-    def parallel(direction, setter_first, readback="dydo mode show"):
+    def parallel(direction, setter_first, readback="dydo mode show", setter_exit=1):
         """The captain's failed-on shape (campaign-51203d14 @21-28): the guard-passed retry and a readback run as two
         parallel Bash calls, so the failed setter's receipt and the readback's both fall inside both windows."""
         command = set_command(direction)
@@ -1422,19 +1423,19 @@ class EvaluatorTests(unittest.TestCase):
         calls = [("s2", command), ("r", readback)]
         for ident, text in calls if setter_first else calls[::-1]:
             story.open(ident, command=text)
-        story.receipt(passed(), "s2").receipt(setter(direction, 1)).receipt(passed(), "r") \
-            .receipt(show(INITIAL[direction])).close("s2").close("r")
-        return story.say("Transition incomplete; state unchanged.")
+        value = INITIAL[direction] if setter_exit else direction
+        story.receipt(passed(), "s2").receipt(setter(direction, setter_exit)).receipt(passed(), "r") \
+            .receipt(show(value)).close("s2").close("r")
+        return story.say("Transition incomplete; state unchanged.") if setter_exit else story.call("a", "announce", ANNOUNCE)
 
-    def test_a_parallel_retry_and_readback_attribute_each_receipt_by_its_calls_command_in_both_orders(self):
-        """The proof-of-record false-fail: the executed setter goes to the only candidate that is a mode set, the
-        readback to the only one that runs `dydo mode show`, whichever call opened first."""
+    def test_parallel_retry_and_readback_fail_but_keep_receipt_attribution_in_both_orders(self):
+        """DYD-673: attribution still identifies each executed command; it does not establish serial issuance."""
         for direction in ot.DIRECTIONS:
             for setter_first in (True, False):
                 with self.subTest(direction=direction, setter_first=setter_first):
                     story = self.parallel(direction, setter_first)
                     evaluation = story.evaluate("failed", direction)
-                    self.assertEqual("pass", evaluation["verdict"], evaluation["checks"])
+                    self.assertEqual(names(DIFFERS), failing(evaluation), evaluation["checks"])
                     facts = evaluation["facts"]
                     self.assertEqual([], facts["ambiguous_receipts"])
                     self.assertEqual([("s2", ["r", "s2"]), ("r", ["r", "s2"])],
@@ -1465,7 +1466,7 @@ class EvaluatorTests(unittest.TestCase):
                                                             for b in evaluation["facts"]["outside_bound"]})
             with self.subTest(direction=direction, candidate="readback with a comment"):
                 evaluation = self.parallel(direction, True, "dydo mode show # it\u2019s").evaluate("failed", direction)
-                self.assertEqual(("pass", []), (evaluation["verdict"], evaluation["facts"]["outside_bound"]),
+                self.assertEqual(("fail", []), (evaluation["verdict"], evaluation["facts"]["outside_bound"]),
                                  evaluation["checks"])
                 self.assertEqual(["s2", "r"], [call for _, call, _ in evaluation["facts"]["attributed_receipts"]])
             for echo in ("echo \u201cwaiting\u201d", "echo \u201cdydo mode set overnight on\u201d"):
@@ -1530,6 +1531,71 @@ class EvaluatorTests(unittest.TestCase):
                          ot.init_violations("claude", {"tools": ["Bash", "WebFetch"], "mcp_servers": ["linear"]}))
         self.assertEqual(["unexpected tool mcp.linear"],
                          ot.init_violations("codex", {"tools": ["functions.exec", "mcp.linear"]}))
+
+
+class ReadbackSequenceTests(unittest.TestCase):
+    """DYD-673: a readback must be issued in a later call after the setter's result returned."""
+
+    def assert_rejected(self, story, direction, setter_exit):
+        checks = "failed" if setter_exit else "nudge"
+        evaluation = story.evaluate(checks, direction)
+        self.assertEqual(names(DIFFERS if setter_exit else ANNOUNCED), failing(evaluation), evaluation["checks"])
+
+    @staticmethod
+    def same_call(direction, setter_exit):
+        command = set_command(direction) + "; dydo mode show"
+        value = INITIAL[direction] if setter_exit else direction
+        story = opening(direction).call("s1", command, warn()) \
+            .call("s2", command, passed(), setter(direction, setter_exit), show(value))
+        return story.say("Observed.") if setter_exit else story.call("a", "announce", ANNOUNCE)
+
+    def test_parallel_calls_fail_in_both_issuance_orders_and_setter_outcomes(self):
+        for direction, setter_first, setter_exit in itertools.product(ot.DIRECTIONS, (True, False), (0, 1)):
+            with self.subTest(direction=direction, setter_first=setter_first, setter_exit=setter_exit):
+                story = EvaluatorTests.parallel(direction, setter_first, setter_exit=setter_exit)
+                self.assert_rejected(story, direction, setter_exit)
+
+    def test_same_call_fails_even_when_the_readback_executes_after_the_setter(self):
+        for direction, setter_exit in itertools.product(ot.DIRECTIONS, (0, 1)):
+            with self.subTest(direction=direction, setter_exit=setter_exit):
+                self.assert_rejected(self.same_call(direction, setter_exit), direction, setter_exit)
+
+    def test_issuance_after_execution_but_before_the_setter_result_fails(self):
+        for direction, setter_exit in itertools.product(ot.DIRECTIONS, (0, 1)):
+            with self.subTest(direction=direction, setter_exit=setter_exit):
+                story = claude_route(direction, setter_exit)
+                result = story.items.pop()
+                end = incomplete if setter_exit else verified
+                end(story, direction)
+                result["time"] = story.clock + 1
+                story.items.append(result)
+                self.assert_rejected(story, direction, setter_exit)
+
+    def test_missing_or_unrelated_setter_results_cannot_establish_serial_issuance(self):
+        for direction, setter_exit, ident in itertools.product(ot.DIRECTIONS, (0, 1), (None, "other")):
+            with self.subTest(direction=direction, setter_exit=setter_exit, result_id=ident):
+                story = claude_route(direction, setter_exit)
+                result = story.items.pop()
+                if ident:
+                    story.items.append({**result, "id": ident})
+                end = incomplete if setter_exit else verified
+                self.assert_rejected(end(story, direction), direction, setter_exit)
+
+    def test_timestamps_must_be_strictly_later_without_receipt_clock_slack(self):
+        for direction, setter_exit, delta in itertools.product(ot.DIRECTIONS, (0, 1), (-0.0005, 0, 0.0005)):
+            with self.subTest(direction=direction, setter_exit=setter_exit, delta=delta):
+                story = claude_route(direction, setter_exit)
+                returned = story.items[-1]["time"]
+                end = incomplete if setter_exit else verified
+                end(story, direction)
+                issued = next(item for item in story.items if item["kind"] == "tool_use" and item["id"] == "r")
+                issued["time"] = returned + delta
+                # Input collection order must not turn a timestamp tie into proof of serial calls.
+                for reverse in (False, True):
+                    if reverse:
+                        story.items.reverse()
+                    evaluation = story.evaluate("failed" if setter_exit else "nudge", direction)
+                    self.assertEqual("pass" if delta > 0 else "fail", evaluation["verdict"], evaluation["checks"])
 
 
 def read_commands(text, posix=False):
@@ -1656,6 +1722,48 @@ class RecordTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("".join(json.dumps(row) + "\n" for row in rows) + "garbage\n")
         return path
+
+    def retained_items(self, agent, story, omit_result_time=False):
+        rows = []
+        for item in story.items:
+            kind, ident = item["kind"], item.get("id")
+            stamp = datetime.datetime.fromtimestamp(item["time"], datetime.timezone.utc).isoformat()
+            if agent == "claude":
+                block = {"text": item.get("text", ""), "type": kind, "id": ident, "tool_use_id": ident,
+                         "name": item.get("name"), "input": {"command": item.get("command", "")}, "content": ""}
+                row = {"type": "user" if kind == "tool_result" else "assistant", "timestamp": stamp,
+                       "message": {"content": [block]}}
+                if omit_result_time and kind == "tool_result" and ident == "s2":
+                    del row["timestamp"]
+            else:
+                payload = {"type": {"tool_use": "custom_tool_call", "tool_result": "custom_tool_call_output",
+                                    "text": "message"}[kind], "call_id": ident, "name": "exec",
+                           "input": item.get("command"), "output": "", "role": "assistant",
+                           "content": [{"text": item.get("text", "")}]}
+                row = {"type": "response_item", "timestamp": stamp, "payload": payload}
+            rows.append(row)
+        self.lines(f"{agent}/record.jsonl", rows)
+        return ot.AGENTS[agent]["record"](self.folder / agent, [])["items"]
+
+    def test_retained_transcripts_enforce_return_then_issuance_without_launching_an_agent(self):
+        shapes = ("serial", "parallel setter first", "parallel readback first", "same call", "missing timestamp")
+        for agent, direction, setter_exit, shape in itertools.product(ot.AGENTS, ot.DIRECTIONS, (0, 1), shapes):
+            if agent == "codex" and shape == "missing timestamp":
+                continue  # Codex rollout timestamps are required by its reader.
+            with self.subTest(agent=agent, direction=direction, setter_exit=setter_exit, shape=shape):
+                story = claude_route(direction, setter_exit)
+                end = incomplete if setter_exit else verified
+                end(story, direction)
+                if shape.startswith("parallel"):
+                    story = EvaluatorTests.parallel(direction, shape == "parallel setter first", setter_exit=setter_exit)
+                elif shape == "same call":
+                    story = ReadbackSequenceTests.same_call(direction, setter_exit)
+                items = self.retained_items(agent, story, shape == "missing timestamp")
+                timeline = ot.timeline_of(items, story.receipts, [])
+                before = stored(INITIAL[direction])
+                after = before if setter_exit else stored(direction)
+                result = ot.evaluate("failed" if setter_exit else "nudge", direction, timeline, before, after)
+                self.assertEqual("pass" if shape == "serial" else "fail", result["verdict"], result["checks"])
 
     def test_claude_record_keeps_main_thread_messages_with_their_times(self):
         stamp = "2026-11-04T22:27:41.798Z"

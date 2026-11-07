@@ -321,10 +321,14 @@ measured exactly when its bytes hash differently from its line, or it has no lin
 upstream file makes it a target with no list to update. Its test row runs the package's own
 `pnpm` test script after `pnpm install --frozen-lockfile`. The managed prerequisites reach it through
 the caller's environment, as `TLA2TOOLS`, `JAVA` and `STATECHART_PELE`; a test without one skips
-by name and leaves its code uncovered. The coverage row runs the same script under node's test
-coverage, which follows the CLI, worker and native-entry processes the tests spawn, and joins the
-LCOV to the walker for HCRAP. Node's default coverage leaves out a whole test folder, so the row
-leaves out only the test files, and a helper beside them is measured. The static row typechecks the
+by name and leaves its code uncovered. The coverage row runs the full package suite on Linux;
+Windows runs only the files and exact test names in `statechart-platforms.json`, requiring every
+selected case to appear once and pass without a skip. Source-stable Istanbul JSON counters follow
+the CLI, worker and native-entry processes the tests spawn and include zero-hit points in unloaded
+target modules. Joined to the walker's callables, they provide the policy and HCRAP denominator,
+partitioned by the map's native callable ownership: Windows measures its declared callables and
+Linux measures the remainder. Native Node LCOV is diagnostic output only. The row excludes test
+files, while a helper beside them remains measured. The static row typechecks the
 package's own tsconfig, strict with `noUnusedLocals` and `noUnusedParameters`, using the viewer's
 locked TypeScript, since the package declares no compiler, and reads each diagnostic as a finding.
 It also runs the walker, dependency-cruiser, jscpd and knip in the package's own workspace. Knip and

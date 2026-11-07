@@ -84,6 +84,20 @@ class TypeScriptCollectorTests(unittest.TestCase):
         self.assertEqual([{"gate": "module-cycle", "members": ["viewer/src/left.ts", "viewer/src/right.ts"]}],
                          answer["findings"])
 
+    def test_runtime_import_conditions_resolve_the_real_vitest_entry(self):
+        shutil.copytree(REPOSITORY / "viewer/node_modules/vitest", self.repository / "node_modules/vitest")
+        relative = "viewer/src/consumer.ts"
+        (self.repository / relative).write_text("import { test } from 'vitest';\n", encoding="utf-8")
+
+        answer = self.collector([relative]).typescript_dependencies()
+
+        self.assertEqual("pass", answer["status"], answer["errors"])
+        module = next(row for row in answer["facts"]["native"]["modules"] if row["source"] == relative)
+        dependency, = module["dependencies"]
+        self.assertEqual("vitest", dependency["module"])
+        self.assertEqual("node_modules/vitest/dist/index.js", dependency["resolved"])
+        self.assertFalse(dependency["couldNotResolve"])
+
     def graph_of(self, identities, sources=("viewer/src/a.ts", "viewer/src/b.ts")):
         """The module graph measured from a dependency-cruiser output listing these module identities."""
         modules = [{"source": name, "dependencies": []} for name in identities]

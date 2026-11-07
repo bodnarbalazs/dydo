@@ -612,7 +612,14 @@ def _typescript_coverage(root, raw, inventory, campaign):
     commands.extend(_logged_commands(rows, _report_root(raw)))
     if errors:
         return _coverage_report("typescript-coverage", facts, [], errors, commands, artifacts)
-    modules = join(campaign["lcov"], root, campaign["base"], targets, walked)
+    if campaign["stack"] == "statechart":
+        from statechart_platform import measured_modules, scope, selected_tests
+        modules = measured_modules(root, targets, walked, raw)
+        modules, facts["platform_selection"] = scope(root, modules, campaign["platform"], campaign["selection"])
+        if campaign["platform"] == "windows":
+            facts["platform_selection"]["tests"] = selected_tests(raw / "suite.tap", campaign["selection"])
+    else:
+        modules = join(campaign["lcov"], root, campaign["base"], targets, walked)
     findings = evaluate_policy(modules)
     if facts["child_exit"] and not findings:
         errors.append({"gate": "typescript-coverage", "child_exit": facts["child_exit"],
@@ -639,7 +646,7 @@ def collect_viewer_coverage(root, raw, inventory):
         "artifacts": _raw_artifacts([report, lcov], run)})
 
 
-def _statechart_argv(root, raw):
+def _statechart_argv(root, raw, selection=None, platform=None):
     """The package's own test script, run by node with its test coverage and two machine reporters.
     Node's default coverage leaves out every file under a test folder; only the test files are left out
     here, so an executable helper beside them is measured."""
@@ -647,6 +654,9 @@ def _statechart_argv(root, raw):
     node, *arguments = shlex.split(script)
     if node != "node":
         raise ValueError(f"The statechart test script does not run node: {script}")
+    if selection is not None:
+        from statechart_platform import test_arguments
+        arguments = test_arguments(arguments, selection, platform)
     return ["node", "--experimental-test-coverage", "--test-coverage-exclude=**/*.test.ts",
             "--test-reporter=spec", "--test-reporter-destination=stdout",
             "--test-reporter=tap", f"--test-reporter-destination={raw / 'suite.tap'}",
@@ -654,15 +664,24 @@ def _statechart_argv(root, raw):
 
 
 def collect_statechart_coverage(root, raw, inventory):
+    from statechart_platform import load_selection, native_platform
+    platform = native_platform()
+    selection = load_selection(root, platform)
     run, package = _report_root(raw), root / STATECHART_PACKAGE
     raw.mkdir(parents=True)
     report, lcov = raw / "suite.tap", raw / "lcov.info"
-    argv = _statechart_argv(root, raw)
+    config = raw / "typescript-campaign.json"
+    config.write_text(json.dumps({"root": str(root), "cwd": str(package),
+                                 "targets": _target_paths(inventory, "typescript", "statechart"),
+                                 "output": str(raw / "istanbul")}), encoding="utf-8")
+    argv = ["node", str(Path(__file__).with_name("javascript_coverage.cjs")),
+            "--typescript-run", str(config), *_statechart_argv(root, raw, selection, platform)[1:]]
     started = time.monotonic()
     child = run_coverage_command(argv, package)
     suite, failing, skipped = _node_test_suite(report)
     return _typescript_coverage(root, raw, inventory, {
         "runner": "node --test", "stack": "statechart", "base": package, "lcov": lcov, "failing": failing,
+        "platform": platform, "selection": selection,
         "facts": {"child_exit": child, "suite_exit": suite, "skipped": skipped, "raw": _report_location(raw, run)},
         "commands": [_inherited_row("typescript-coverage", argv, package, child, started)],
         "artifacts": _raw_artifacts([report, lcov], run)})

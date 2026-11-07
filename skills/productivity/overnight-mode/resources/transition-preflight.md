@@ -21,9 +21,10 @@ including the opposite transition, receives its own warning. The retry passes th
 ordinary hard blocks still apply on every attempt. This nudge prevents accidents. It does not
 authenticate your role or prove human approval.
 
-After the actual command, independently run `dydo mode show` and require the requested value
-before announcing activation or shutdown. A warning, retry, successful setter exit, schedule or
-message establishes no transition by itself. Capture the action, result and fresh readback
+Wait for `dydo mode set` to return its result. Only then run `dydo mode show` in a separate later
+tool call, never in parallel with the setter. Require the requested value before announcing
+activation or shutdown. A warning, retry, successful setter exit, schedule or message establishes
+no transition by itself. Capture the action, result and fresh readback
 separately. If the value already matched before execution, report it as already on/off rather
 than claiming a new transition.
 

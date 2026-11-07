@@ -5,6 +5,7 @@ $ProgressPreference = 'SilentlyContinue'
 # Pele. The calling step's id receives the tla2tools, java and pele outputs.
 $lock = Get-Content Resources/Statechart/dependency-lock.json -Raw | ConvertFrom-Json
 $jre = ($lock.platforms | Where-Object rid -eq 'win-x64').java
+if (-not $IsWindows) { $jre = ($lock.platforms | Where-Object rid -eq 'linux-x64').java }
 $root = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'dydo-statechart')
 function Get-Pinned($url, $name) {
   $file = Join-Path $root $name
@@ -15,14 +16,22 @@ $jar = Get-Pinned $lock.tlc.url 'tla2tools.jar'
 if ((Get-FileHash $jar -Algorithm SHA256).Hash -ne $lock.tlc.sha256) { throw 'TLC does not match its pinned SHA-256.' }
 $archive = Get-Pinned $jre.url $jre.name
 if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne $jre.sha256) { throw 'The JRE does not match its pinned SHA-256.' }
-Expand-Archive $archive -DestinationPath (Join-Path $root 'java')
-$java = @(Get-ChildItem (Join-Path $root 'java') -Recurse -Filter java.exe | Where-Object { $_.Directory.Name -eq 'bin' })
-if ($java.Count -ne 1) { throw 'The JRE archive must hold exactly one bin/java.exe.' }
+$javaRoot = New-Item -ItemType Directory -Path (Join-Path $root 'java')
+if ($IsWindows) {
+  Expand-Archive $archive -DestinationPath $javaRoot
+  $javaName = 'java.exe'
+} else {
+  & tar -xzf $archive -C $javaRoot
+  if ($LASTEXITCODE -ne 0) { throw 'The JRE did not unpack.' }
+  $javaName = 'java'
+}
+$java = @(Get-ChildItem $javaRoot -Recurse -Filter $javaName | Where-Object { $_.Directory.Name -eq 'bin' })
+if ($java.Count -ne 1) { throw 'The JRE archive must hold exactly one bin/java executable.' }
 $tarball = Get-Pinned $lock.pele.url 'pele.tgz'
 $integrity = 'sha512-' + [Convert]::ToBase64String([Security.Cryptography.SHA512]::HashData([IO.File]::ReadAllBytes($tarball)))
 if ($integrity -cne $lock.pele.integrity) { throw 'Pele does not match its pinned integrity.' }
 $pele = New-Item -ItemType Directory -Path (Join-Path $root 'pele')
-& (Join-Path $env:SystemRoot 'System32/tar.exe') -xzf $tarball -C $pele
+& tar -xzf $tarball -C $pele
 if ($LASTEXITCODE -ne 0) { throw 'Pele did not unpack.' }
 $entry = [IO.Path]::GetFullPath((Join-Path $pele "package/$($lock.pele.entry)"))
 if (-not (Test-Path $entry -PathType Leaf)) { throw 'Pele has no pinned entry module.' }

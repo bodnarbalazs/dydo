@@ -5,6 +5,112 @@ const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { spawnSync } = require('node:child_process');
+const vm = require('node:vm');
+
+test('TypeScript instrumentation preserves pragma-like literals and neutralizes only comments', () => {
+  const { typescriptSource } = require('../javascript_coverage.cjs');
+  const source = '/* istanbul ignore file */\n'
+    + 'const plain: string = "istanbul ignore next";\n'
+    + 'const template = `c8 ignore next ${"v8 ignore next"}`;\n'
+    + 'const pattern = /istanbul ignore next/;\n'
+    + '// istanbul ignore next\n'
+    + 'function lineComment() { return plain; }\n'
+    + '/* istanbul ignore next */\n'
+    + 'function blockComment() { return template; }\n'
+    + 'result = [lineComment(), blockComment(), pattern.source];\n';
+  const compiled = typescriptSource(source, '/repo/literals.ts');
+  const context = {};
+  vm.runInNewContext(compiled.code, context);
+  assert.deepEqual(Array.from(context.result),
+    ['istanbul ignore next', 'c8 ignore next v8 ignore next', 'istanbul ignore next']);
+  assert.equal(Object.keys(compiled.coverage.fnMap).length, 2);
+  assert.deepEqual(Object.values(compiled.coverage.fnMap).map(row => row.loc.start.line), [6, 8]);
+});
+
+test('TypeScript source counters retain branches, erased types, empty and never-entered callables', () => {
+  const { typescriptSource } = require('../javascript_coverage.cjs');
+  const source = 'type Value = number;\nexport function choose(flag: boolean) { if (flag) return 1; return 0; }\n'
+    + 'export const empty = () => {};\n';
+  const first = typescriptSource(source, '/repo/source.ts');
+  const second = typescriptSource(source, '/other/source.ts');
+  for (const key of ['statementMap', 'fnMap', 'branchMap']) assert.deepEqual(first.coverage[key], second.coverage[key]);
+  assert.equal(Object.keys(first.coverage.fnMap).length, 2);
+  assert.equal(Object.keys(first.coverage.branchMap).length, 1);
+  assert.ok(Object.values(first.coverage.s).every(value => value === 0));
+  assert.ok(Object.values(first.coverage.statementMap).every(span => span.start.line > 1));
+  const ignored = typescriptSource('/* istanbul ignore next */\nexport function kept() { return 1; }', '/repo/kept.ts');
+  assert.equal(Object.keys(ignored.coverage.fnMap).length, 1);
+});
+
+test('TypeScript campaign records child-only execution and the source denominator keeps unloaded modules', t => {
+  const { typescriptDenominator } = require('../javascript_coverage.cjs');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dydo-ts-coverage-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.writeFileSync(path.join(root, 'child.ts'), 'export function native(value: number) { return value + 1; }\nnative(1);\n');
+  fs.writeFileSync(path.join(root, 'unloaded.ts'), 'export function missing() { return 0; }\n');
+  fs.writeFileSync(path.join(root, 'test.cjs'),
+    "const {spawnSync}=require('node:child_process'); const r=spawnSync(process.execPath,['child.ts'],{encoding:'utf8'});"
+    + "if(r.status || r.stderr) throw Error(r.stderr || 'child failed');");
+  const output = path.join(root, 'reports');
+  const config = path.join(root, 'config.json');
+  const targets = ['child.ts', 'unloaded.ts'];
+  fs.writeFileSync(config, JSON.stringify({ root, cwd: root, output, targets }));
+  const run = spawnSync(process.execPath, [path.resolve(__dirname, '../javascript_coverage.cjs'),
+    '--typescript-run', config, 'test.cjs'], { encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stdout + run.stderr);
+  const reports = fs.readdirSync(output).map(file => JSON.parse(fs.readFileSync(path.join(output, file))));
+  const child = reports.flatMap(report => Object.values(report)).find(row => row.path.endsWith('child.ts'));
+  assert.ok(child);
+  assert.equal(child.f['0'], 1);
+  const source = typescriptDenominator(root, targets);
+  assert.equal(source['unloaded.ts'].f['0'], 0);
+  assert.deepEqual(child.statementMap, source['child.ts'].statementMap);
+  assert.deepEqual(child.fnMap, source['child.ts'].fnMap);
+  assert.deepEqual(child.branchMap, source['child.ts'].branchMap);
+});
+
+function interruptedCampaign(root, prefix) {
+  const output = path.join(root, 'reports');
+  fs.writeFileSync(path.join(root, 'kept.ts'), 'export function kept() { return 1; }\nkept();\n');
+  fs.writeFileSync(path.join(root, 'interrupted.ts'), 'export function lost() { return 2; }\nlost();\n');
+  fs.writeFileSync(path.join(root, 'unloaded.ts'), 'export function unloaded() { return 3; }\n');
+  fs.writeFileSync(path.join(root, 'interrupted.cjs'),
+    "const fs = require('node:fs'); const path = require('node:path');\n"
+    + "import('./interrupted.ts').then(() => { const write = fs.writeFileSync;\n"
+    + 'fs.writeFileSync = (file, ...args) => {\n'
+    + `if (path.dirname(String(file)) !== ${JSON.stringify(output)}) return write(file, ...args);\n`
+    + `write(file, ${JSON.stringify(prefix)}); process.kill(process.pid, 'SIGKILL');\n`
+    + '}; });\n');
+  fs.writeFileSync(path.join(root, 'suite.cjs'),
+    "const assert = require('node:assert/strict'); const {spawnSync} = require('node:child_process');\n"
+    + "assert.equal(spawnSync(process.execPath, ['kept.ts']).status, 0);\n"
+    + "const interrupted = spawnSync(process.execPath, ['interrupted.cjs']);\n"
+    + 'assert.notEqual(interrupted.status, 0);\n');
+  const config = path.join(root, 'config.json');
+  fs.writeFileSync(config, JSON.stringify({ root, cwd: root, output,
+    targets: ['kept.ts', 'interrupted.ts', 'unloaded.ts'] }));
+  const run = spawnSync(process.execPath, [path.resolve(__dirname, '../javascript_coverage.cjs'),
+    '--typescript-run', config, 'suite.cjs'], { encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stdout + run.stderr);
+  return output;
+}
+
+for (const prefix of ['', '{']) {
+  test(`TypeScript interrupted exit publishes no ${prefix ? 'partial' : 'empty'} JSON report`, t => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dydo-ts-interrupted-'));
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    const output = interruptedCampaign(root, prefix);
+    const files = fs.readdirSync(output);
+    const reports = files.filter(file => file.endsWith('.json'))
+      .map(file => JSON.parse(fs.readFileSync(path.join(output, file), 'utf8')));
+    const rows = reports.flatMap(report => Object.values(report));
+    assert.deepEqual(rows.map(row => path.basename(row.path)), ['kept.ts']);
+    assert.equal(rows[0].f['0'], 1);
+    const pending = files.filter(file => file.endsWith('.pending'));
+    assert.equal(pending.length, 1);
+    assert.equal(fs.readFileSync(path.join(output, pending[0]), 'utf8'), prefix);
+  });
+}
 
 test('missing c8 is an unavailable measurement with exit 2', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dyd171-js-no-c8-'));

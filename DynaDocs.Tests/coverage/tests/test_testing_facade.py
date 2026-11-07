@@ -214,6 +214,11 @@ class TestingFacadeTests(unittest.TestCase):
     def assert_rows(self, payload, expected):
         self.assertEqual(expected, [(row['stack'], row['capability'], row['state']) for row in payload['results']])
 
+    def assert_interrupted_selection(self, payload, operation):
+        capabilities = ('test',) if operation == 'all' else ('test', 'static', 'coverage')
+        self.assert_rows(payload, [(name, capability, 'interrupted') for name in ('first', 'later')
+                                   for capability in capabilities])
+
     def test_help(self):
         p, root, payload = self.invoke(['--help'])
         self.assert_exit(p, 0)
@@ -849,7 +854,8 @@ class TestingFacadeTests(unittest.TestCase):
             self.assertFalse((root / 'first-coverage.json').exists())
             result_path = next(line.strip()[8:] for line in output if line.startswith('Result: '))
             payload = json.loads(Path(result_path).read_text(encoding='utf-8'))
-            self.assert_rows(payload, [('first', 'test', 'interrupted'), ('first', 'static', 'interrupted')])
+            self.assert_rows(payload, [('first', 'test', 'interrupted'), ('first', 'static', 'interrupted'),
+                                       ('first', 'coverage', 'interrupted')])
             self.assertEqual(130, payload['aggregateExit'])
             row = payload['results'][0]
             self.assertEqual(('interrupted', None, 130), tuple(row[key] for key in ('state', 'childExit', 'resultExit')))
@@ -1868,7 +1874,7 @@ print('INTER_ITERATION_CASES=' + str(count))
                         continue
                     result_path = next(line.strip()[8:] for line in output if line.startswith('Result: '))
                     payload = json.loads(Path(result_path).read_text(encoding='utf-8'))
-                    self.assert_rows(payload, [('first', 'test', 'interrupted')])
+                    self.assert_interrupted_selection(payload, operation)
                     self.assertEqual(130, payload['aggregateExit'])
                     self.assertEqual(['first', 'later'], payload['selectedStacks'])
                 finally:
@@ -1877,6 +1883,129 @@ print('INTER_ITERATION_CASES=' + str(count))
                         facade.wait(timeout=35)
                     reader.join(timeout=5)
                     facade.stdout.close()
+
+    def test_first_interrupt_during_launch_tracks_and_reaps_the_adapter(self):
+        data = manifest(stack('first'), stack('later'))
+        data['stacks'][0]['capabilities']['test'] = configured(['-u', 'adapter.py'])
+        root = self.fixture(data)
+        (root / 'adapter.py').write_text(
+            "import signal,sys,time\nfrom pathlib import Path\n"
+            "def interrupted(signum, frame):\n    raise KeyboardInterrupt\n"
+            "signal.signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT, interrupted)\n"
+            "mask = signal.pthread_sigmask(signal.SIG_BLOCK, ()) if hasattr(signal, 'pthread_sigmask') else ()\n"
+            "try:\n    deadline=time.monotonic()+30\n"
+            "    print('blocked' if signal.SIGINT in mask else 'ready', flush=True)\n"
+            "    while time.monotonic()<deadline:\n        time.sleep(.05)\n"
+            "except KeyboardInterrupt:\n    Path('cleanup.txt').write_text('complete')\n    sys.exit(130)\n"
+            "sys.exit(99)\n",
+            encoding='utf-8')
+        (root / 'launch_interrupt.py').write_text(
+            "import runpy,signal,subprocess,sys\nfrom pathlib import Path\n"
+            "children=[]\n"
+            "class InterruptedPopen(subprocess.Popen):\n"
+            "    def __init__(self, args, *rest, **options):\n"
+            "        adapter = 'adapter.py' in args\n"
+            "        if adapter:\n            options.update(stdout=subprocess.PIPE, text=True)\n"
+            "        super().__init__(args, *rest, **options)\n"
+            "        if adapter:\n"
+            "            children.append(self)\n"
+            "            print('CHILD_MASK:', self.stdout.readline().strip(), flush=True)\n"
+            "            signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
+            "subprocess.Popen=InterruptedPopen\n"
+            "try:\n    runpy.run_path('run_gap_check.py', run_name='__main__')\n"
+            "finally:\n"
+            "    for child in children:\n"
+            "        if child.poll() is None:\n"
+            "            Path('orphan.txt').write_text('adapter escaped facade cleanup')\n"
+            "            child.kill()\n"
+            "        child.wait()\n",
+            encoding='utf-8')
+        process = subprocess.run([sys.executable, '-u', 'launch_interrupt.py', 'all'], cwd=root,
+                                 capture_output=True, text=True, encoding='utf-8', timeout=60)
+        self.assert_exit(process, 130)
+        self.assertIn('CHILD_MASK: ready', process.stdout)
+        self.assertFalse((root / 'orphan.txt').exists(), 'launched adapter escaped facade cleanup')
+        self.assertEqual('complete', (root / 'cleanup.txt').read_text(encoding='utf-8'))
+        payload = json.loads(next((root / 'results').glob('*/result.json')).read_text(encoding='utf-8'))
+        self.assertEqual(130, payload['results'][0]['childExit'])
+        self.assertEqual(130, payload['aggregateExit'])
+        self.assert_rows(payload, [('first', 'test', 'interrupted'), ('later', 'test', 'interrupted')])
+        self.assertFalse((root / 'later-test.txt').exists())
+
+    def test_first_interrupt_during_reporting_or_publication_preserves_finished_rows(self):
+        for moment in ('prepare', 'static report', 'coverage report', 'serialize', 'write', 'replace', 'aggregate', 'result', 'halted result'):
+            with self.subTest(moment=moment):
+                first_stack = verdict_stack()
+                if moment == 'halted result':
+                    first_stack['capabilities']['static']['command']['argv'][1] += '; raise SystemExit(130)'
+                root = self.fixture(manifest(first_stack, stack('later')))
+                (root / 'publication_interrupt.py').write_text(
+                    "import builtins,json,pathlib,runpy,signal,sys\n"
+                    f"moment={moment!r}\n"
+                    "report,serialize,write,replace,opened=builtins.print,json.dumps,pathlib.Path.write_text,pathlib.Path.replace,pathlib.Path.open\n"
+                    "fired=False\n"
+                    "def fire(at):\n"
+                    "    global fired\n"
+                    "    if at == moment and not fired:\n"
+                    "        fired=True\n"
+                    "        report('FIRST_INTERRUPT', flush=True)\n"
+                    "        signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
+                    "def reported(*values, **options):\n"
+                    "    text=str(values[0]) if values else ''\n"
+                    "    at=next((at for prefix,at in [('first static:', 'static report'), ('first coverage:', 'coverage report'), ('Aggregate:', 'aggregate'), ('Result:', 'result')] if text.startswith(prefix)), '')\n"
+                    "    fire('halted result' if at == 'result' and moment == 'halted result' else at)\n    report(*values, **options)\n"
+                    "def serialized(value, *args, **kwargs):\n"
+                    "    if isinstance(value, dict) and 'aggregateExit' in value:\n        fire('serialize')\n"
+                    "    return serialize(value, *args, **kwargs)\n"
+                    "def written(path, *args, **kwargs):\n"
+                    "    if path.name == 'result.tmp':\n        fire('write')\n"
+                    "    return write(path, *args, **kwargs)\n"
+                    "def opening(path, *args, **kwargs):\n"
+                    "    if path.name == 'result.tmp':\n        fire('prepare')\n"
+                    "    return opened(path, *args, **kwargs)\n"
+                    "def replaced(path, target):\n"
+                    "    if path.name == 'result.tmp':\n"
+                    "        fire('replace')\n"
+                    "        if fired:\n"
+                    "            report('FURTHER_INTERRUPT', flush=True)\n"
+                    "            signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
+                    "    return replace(path, target)\n"
+                    "builtins.print,json.dumps,pathlib.Path.write_text,pathlib.Path.replace=reported,serialized,written,replaced\n"
+                    "pathlib.Path.open=opening\n"
+                    "runpy.run_path('run_gap_check.py', run_name='__main__')\n", encoding='utf-8')
+                process = subprocess.run([sys.executable, '-u', 'publication_interrupt.py', '--force-run'],
+                                         cwd=root, capture_output=True, text=True, encoding='utf-8', timeout=60)
+                self.assert_exit(process, 130)
+                self.assertIn('FIRST_INTERRUPT', process.stdout)
+                self.assertNotIn('Traceback', process.stderr)
+                payload = json.loads(next((root / 'results').glob('*/result.json')).read_text(encoding='utf-8'))
+                self.assertEqual(130, payload['aggregateExit'])
+                first = ['interrupted', 'passed', 'interrupted'] if moment == 'static report' else ['passed'] * 3
+                later = ['interrupted'] * 3 if moment.endswith('report') else ['passed'] * 3
+                if moment in ('prepare', 'halted result'):
+                    first = later = ['interrupted'] * 3
+                self.assertEqual(first + later, [row['state'] for row in payload['results']])
+                if moment == 'static report':
+                    self.assertIn('interrupted before the coverage row', payload['results'][0]['reason'])
+                self.assertFalse((root / 'first-test.txt').exists(), 'coverage must remain the only suite execution')
+
+    def test_first_interrupt_with_unwritable_publication_retry_retains_exit_130(self):
+        root = self.fixture()
+        (root / 'unwritable_retry.py').write_text(
+            "import pathlib,runpy,signal,sys\n"
+            "replace=pathlib.Path.replace\n"
+            "def replacing(path, target):\n"
+            "    if path.name == 'result.tmp' and not target.exists():\n"
+            "        target.mkdir()\n"
+            "        signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
+            "    return replace(path, target)\n"
+            "pathlib.Path.replace=replacing\n"
+            "runpy.run_path('run_gap_check.py', run_name='__main__')\n", encoding='utf-8')
+        process = subprocess.run([sys.executable, '-u', 'unwritable_retry.py', 'all'], cwd=root,
+                                 capture_output=True, text=True, encoding='utf-8', timeout=60)
+        self.assert_exit(process, 130)
+        self.assertIn('artifact destination', process.stderr)
+        self.assertNotIn('Traceback', process.stderr)
 
     @unittest.skipIf(os.name == 'nt', 'Windows Popen reaps through its process handle and takes no waitpid lock')
     def test_an_interrupt_landing_while_popen_holds_its_waitpid_lock_still_confirms_the_adapter_exit(self):
@@ -2003,7 +2132,7 @@ print('INTER_ITERATION_CASES=' + str(count))
                 self.assertFalse((root / 'later-test.txt').exists())
                 result_path = next(line[8:] for line in process.stdout.splitlines() if line.startswith('Result: '))
                 payload = json.loads(Path(result_path).read_text(encoding='utf-8'))
-                self.assert_rows(payload, [('first', 'test', 'interrupted')])
+                self.assert_rows(payload, [('first', 'test', 'interrupted'), ('later', 'test', 'interrupted')])
                 self.assertEqual(130, payload['aggregateExit'])
                 row = payload['results'][0]
                 self.assertEqual(130, row['childExit'], row['reason'])

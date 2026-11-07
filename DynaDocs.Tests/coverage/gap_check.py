@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run this project's declared tests and assurance gates without a shell."""
 import atexit
+from contextlib import contextmanager
 import ctypes as c
 import hashlib
 import json
@@ -20,16 +21,34 @@ if hasattr(sys.stdout, "reconfigure"):
 
 
 interrupted = False
+interrupt_deferred = False
 
 
 def interrupt(_signum, _frame):
-    """Raise the run's first interrupt. It decides the outcome, interrupted, so a further one is
+    """Record the run's first interrupt, raising outside ownership changes. A further one is
     dropped: it could only abort the adapter's stop, which CLEANUP_SECONDS and REAP_SECONDS already
     bound, and the result's publication."""
     global interrupted
     if not interrupted:
         interrupted = True
-        raise KeyboardInterrupt
+        if not interrupt_deferred:
+            raise KeyboardInterrupt
+
+
+@contextmanager
+def defer_interrupt(deferred=True):
+    """Record signals without unwinding ownership changes; never change the child's signal mask.
+
+    The caller checks `interrupted` at its next safe boundary. Waiting for an owned child opts
+    back into delivery so cancellation can stop it promptly.
+    """
+    global interrupt_deferred
+    previous = interrupt_deferred
+    interrupt_deferred = deferred
+    try:
+        yield
+    finally:
+        interrupt_deferred = previous
 
 
 if sys.platform == "win32":
@@ -401,13 +420,21 @@ def run_row(stack, capability, root, since, forwarded, deadline):
         working_directory = contained(root, stack["cwd"])
         before = {item["path"]: artifact_snapshot(root, item["path"]) for item in artifacts
                   if item["required"] and capability != "test"}
-        child = subprocess.Popen(argv, executable=resolve_executable(argv[0], working_directory), cwd=working_directory, env={**os.environ, "PYTHON": sys.executable, **environment}, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
-                                 start_new_session=sys.platform != "win32")
-        if not wait_for_child(child, capability, deadline):
+        with defer_interrupt():
+            if not interrupted:
+                child = subprocess.Popen(argv, executable=resolve_executable(argv[0], working_directory), cwd=working_directory, env={**os.environ, "PYTHON": sys.executable, **environment}, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+                                         start_new_session=sys.platform != "win32")
+        with defer_interrupt(False):
+            if interrupted:
+                raise KeyboardInterrupt
+            finished = wait_for_child(child, capability, deadline)
+        if not finished:
             return result(stack, capability, "interrupted", argv=argv, environment=environment,
                           childExit=child.returncode, artifacts=artifacts,
                           reason=stopped("row deadline exceeded after adapter cleanup", child))
         error = artifact_error(root, capability, artifacts, before)
+        if interrupted:
+            raise KeyboardInterrupt
         if error:
             return result(stack, capability, "invalid", argv=argv, environment=environment,
                           childExit=child.returncode, artifacts=artifacts, reason=error)
@@ -909,38 +936,52 @@ def capped_row(stack, capability, root, since, forwarded, cap):
     return cap.judged(current, before), current["state"] == "interrupted"
 
 
-def execute_rows(selected, capabilities, root, since, forwarded, cap=None):
+def execute_rows(selected, capabilities, root, since, forwarded, cap=None, rows=None):
+    """Complete the selected row record, then dispatch unless interrupted.
+
+    Publication recovery can call this with finished rows: it only fills omitted rows when a
+    facade signal follows an adapter halt, and the interrupt prevents any further dispatch.
+    """
     cap = cap or MemoryCap("unavailable")
-    rows = []
-    halted = False
-    for stack in selected:
-        deferred = None
-        for capability in capabilities:
-            if capability == "test" and deferral_applies(stack, capabilities, root):
-                deferred = len(rows)
-                rows.append(cap.annotated(result(stack, "test", "interrupted", reason=INTERRUPTED_BEFORE_COVERAGE)))
-                continue
-            current, halted = capped_row(stack, capability, root, since, forwarded, cap)
-            rows.append(current)
-            print_row(current)
-            if deferred is not None and capability == "coverage":
-                derived = cap.annotated(suite_verdict(root, stack, current), current)
-                rows[deferred] = derived
-                deferred = None
-                print_row(derived)
-            if halted:
-                break
-        if deferred is not None:
-            print_row(rows[deferred])
-        if halted:
-            break
+    rows = [] if rows is None else rows
+    with defer_interrupt():
+        plan = []
+        for stack in selected:
+            deferred = deferral_applies(stack, capabilities, root)
+            for capability in capabilities:
+                plan.append((stack, capability, deferred))
+                if len(rows) < len(plan):
+                    reason = INTERRUPTED_BEFORE_COVERAGE if deferred and capability == "test" else "run interrupted before this row"
+                    rows.append(cap.annotated(result(stack, capability, "interrupted", reason=reason)))
+        execute_plan(plan, rows, root, since, forwarded, cap)
     return rows
+
+
+def execute_plan(plan, rows, root, since, forwarded, cap):
+    """Commit finished rows before reporting them; the enclosing deferral protects those commits."""
+    halted = False
+    deferred_index = None
+    for index, (stack, capability, deferred) in enumerate(plan):
+        if interrupted or halted:
+            break
+        if deferred and capability == "test":
+            deferred_index = index
+            continue
+        current, halted = capped_row(stack, capability, root, since, forwarded, cap)
+        rows[index] = current
+        if deferred and capability == "coverage":
+            rows[deferred_index] = cap.annotated(suite_verdict(root, stack, current), current)
+            print_row(rows[deferred_index])
+        print_row(current)
+        if halted and not interrupted:
+            # Adapter deadlines and cap findings retain their existing row/aggregate semantics.
+            del rows[index + 1:]
 
 
 def write_result(root, run, operation, selected, rows, candidate, memory=None):
     if not run.resolve().is_relative_to(root):
         raise ContractError("result artifact escapes repository")
-    exit_code = max((EXITS[row["state"]] for row in rows), default=0)
+    exit_code = 130 if interrupted else max((EXITS[row["state"]] for row in rows), default=0)
     payload = {"schema": 1, "candidate": candidate, "memoryCap": memory,
                "operation": operation, "selectedStacks": [x["name"] for x in selected], "results": rows, "aggregateExit": exit_code}
     path = run / "result.json"
@@ -949,6 +990,24 @@ def write_result(root, run, operation, selected, rows, candidate, memory=None):
     pending.replace(path)
     print(f"Aggregate: {exit_code}")
     print(f"Result: {path}"); return exit_code
+
+
+def run_operation(root, destination, selected, parsed, cap, candidate, rows):
+    name, capabilities, since, _, forwarded = parsed
+    operation = {"name": name, **({"since": since} if since else {})}
+    run = None
+    try:
+        with defer_interrupt():
+            run = prepare_result(destination)
+            execute_rows(selected, capabilities, root, since, forwarded, cap, rows)
+            if interrupted:
+                execute_rows(selected, capabilities, root, since, forwarded, cap, rows)
+        return write_result(root, run, operation, selected, rows, candidate, cap.record)
+    except KeyboardInterrupt:
+        if run is None:
+            raise
+        execute_rows(selected, capabilities, root, since, forwarded, cap, rows)
+        return write_result(root, run, operation, selected, rows, candidate, cap.record)
 
 
 def main(argv=None):
@@ -964,7 +1023,7 @@ def main(argv=None):
         parsed = request(args)
         if parsed is None: print(HELP); return 2
         if parsed == "help": print(HELP); return 0
-        name, capabilities, since, names, forwarded = parsed
+        name, _, _, names, _ = parsed
         data = read_manifest(path)
         destination = artifact_destination(root, data["artifactRoot"])
         selected = selected_stacks(data["stacks"], names)
@@ -972,13 +1031,10 @@ def main(argv=None):
             return print_capabilities(selected, root)
         cap = memory_cap()
         candidate = candidate_identity(root)
-        run = prepare_result(destination)
-        rows = execute_rows(selected, capabilities, root, since, forwarded, cap)
-        return write_result(root, run, {"name": name, **({"since": since} if since else {})}, selected, rows,
-                            candidate, cap.record)
+        return run_operation(root, destination, selected, parsed, cap, candidate, rows)
     except (ContractError, OSError) as error:
         print(f"Invalid request or artifact destination: {error}", file=sys.stderr)
-        return 130 if any(row["state"] == "interrupted" for row in rows) else 2
+        return 130 if interrupted or any(row["state"] == "interrupted" for row in rows) else 2
 
 
 if __name__ == "__main__":

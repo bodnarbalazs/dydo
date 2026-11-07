@@ -22,17 +22,43 @@ if hasattr(sys.stdout, "reconfigure"):
 
 interrupted = False
 interrupt_deferred = False
+interrupt_handlers = {}
+completed_publication = None
 
 
-def interrupt(_signum, _frame):
-    """Record the run's first interrupt, raising outside ownership changes. A further one is
-    dropped: it could only abort the adapter's stop, which CLEANUP_SECONDS and REAP_SECONDS already
-    bound, and the result's publication."""
+def interrupt(signum, frame):
+    """Honor the caller's handler, but own its KeyboardInterrupt through cleanup and handoff.
+
+    A completed run retains publication ownership: the return opcode can already have loaded
+    an exit code, so a late signal must publish and exit here rather than return that stale code.
+    Further interrupts cannot abort cleanup or publication.
+    """
     global interrupted
-    if not interrupted:
+    if interrupted:
+        return
+    try:
+        interrupt_handlers.get(signum, signal.default_int_handler)(signum, frame)
+    except KeyboardInterrupt:
         interrupted = True
-        if not interrupt_deferred:
-            raise KeyboardInterrupt
+    else:
+        return
+    if completed_publication is not None:
+        try:
+            completed_publication()
+        except (ContractError, OSError) as error:
+            print(f"Invalid request or artifact destination: {error}", file=sys.stderr)
+        raise SystemExit(130)
+    if not interrupt_deferred:
+        raise KeyboardInterrupt
+
+
+def install_interrupt_handlers():
+    for signum in (signal.SIGINT, *([signal.SIGBREAK] if sys.platform == "win32" else [])):
+        handler = signal.getsignal(signum)
+        if handler in (signal.SIG_IGN, interrupt):
+            continue
+        interrupt_handlers[signum] = handler if callable(handler) else signal.default_int_handler
+        signal.signal(signum, interrupt)
 
 
 @contextmanager
@@ -50,9 +76,6 @@ def defer_interrupt(deferred=True):
     finally:
         interrupt_deferred = previous
 
-
-if sys.platform == "win32":
-    signal.signal(signal.SIGBREAK, interrupt)
 
 CAPS = ("test", "static", "coverage", "mutation")
 EXITS = {"passed": 0, "failed": 1, "unavailable": 2, "invalid": 2, "interrupted": 130}
@@ -993,26 +1016,32 @@ def write_result(root, run, operation, selected, rows, candidate, memory=None):
 
 
 def run_operation(root, destination, selected, parsed, cap, candidate, rows):
+    global completed_publication, interrupted
     name, capabilities, since, _, forwarded = parsed
     operation = {"name": name, **({"since": since} if since else {})}
     run = None
+
+    def publish():
+        if interrupted:
+            execute_rows(selected, capabilities, root, since, forwarded, cap, rows)
+        return write_result(root, run, operation, selected, rows, candidate, cap.record)
+
     try:
         with defer_interrupt():
             run = prepare_result(destination)
             execute_rows(selected, capabilities, root, since, forwarded, cap, rows)
-            if interrupted:
-                execute_rows(selected, capabilities, root, since, forwarded, cap, rows)
-        return write_result(root, run, operation, selected, rows, candidate, cap.record)
+        exit_code = publish()
+        completed_publication = publish
+        return exit_code
     except KeyboardInterrupt:
+        interrupted = True
         if run is None:
             raise
-        execute_rows(selected, capabilities, root, since, forwarded, cap, rows)
-        return write_result(root, run, operation, selected, rows, candidate, cap.record)
+        return publish()
 
 
 def main(argv=None):
-    if signal.getsignal(signal.SIGINT) is signal.default_int_handler:
-        signal.signal(signal.SIGINT, interrupt)  # An inherited SIG_IGN or a caller's handler stays.
+    install_interrupt_handlers()
     args = list(sys.argv[1:] if argv is None else argv)
     path = Path(__file__).with_suffix(".json")
     # A sandbox's empty `.git` mount point names no repository: only a gitfile or a gitdir with HEAD does.

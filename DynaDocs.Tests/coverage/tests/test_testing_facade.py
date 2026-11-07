@@ -1885,6 +1885,12 @@ print('INTER_ITERATION_CASES=' + str(count))
                     facade.stdout.close()
 
     def test_first_interrupt_during_launch_tracks_and_reaps_the_adapter(self):
+        self.assert_launch_interrupt(False)
+
+    def test_first_interrupt_from_caller_handler_during_launch_tracks_the_adapter(self):
+        self.assert_launch_interrupt(True)
+
+    def assert_launch_interrupt(self, custom):
         data = manifest(stack('first'), stack('later'))
         data['stacks'][0]['capabilities']['test'] = configured(['-u', 'adapter.py'])
         root = self.fixture(data)
@@ -1901,6 +1907,13 @@ print('INTER_ITERATION_CASES=' + str(count))
             encoding='utf-8')
         (root / 'launch_interrupt.py').write_text(
             "import runpy,signal,subprocess,sys\nfrom pathlib import Path\n"
+            f"custom={custom!r}\n"
+            "def caller_handler(signum, frame):\n"
+            "    with open('handler-calls.txt', 'a') as calls: calls.write('called\\n')\n"
+            "    signal.default_int_handler(signum, frame)\n"
+            "if custom:\n"
+            "    signal.signal(signal.SIGINT, caller_handler)\n"
+            "    if hasattr(signal, 'SIGBREAK'): signal.signal(signal.SIGBREAK, caller_handler)\n"
             "children=[]\n"
             "class InterruptedPopen(subprocess.Popen):\n"
             "    def __init__(self, args, *rest, **options):\n"
@@ -1910,6 +1923,7 @@ print('INTER_ITERATION_CASES=' + str(count))
             "        if adapter:\n"
             "            children.append(self)\n"
             "            print('CHILD_MASK:', self.stdout.readline().strip(), flush=True)\n"
+            "            signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
             "            signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
             "subprocess.Popen=InterruptedPopen\n"
             "try:\n    runpy.run_path('run_gap_check.py', run_name='__main__')\n"
@@ -1931,6 +1945,8 @@ print('INTER_ITERATION_CASES=' + str(count))
         self.assertEqual(130, payload['aggregateExit'])
         self.assert_rows(payload, [('first', 'test', 'interrupted'), ('later', 'test', 'interrupted')])
         self.assertFalse((root / 'later-test.txt').exists())
+        if custom:
+            self.assertEqual(['called'], (root / 'handler-calls.txt').read_text().splitlines())
 
     def test_first_interrupt_during_reporting_or_publication_preserves_finished_rows(self):
         for moment in ('prepare', 'static report', 'coverage report', 'serialize', 'write', 'replace', 'aggregate', 'result', 'halted result'):
@@ -1988,6 +2004,122 @@ print('INTER_ITERATION_CASES=' + str(count))
                 if moment == 'static report':
                     self.assertIn('interrupted before the coverage row', payload['results'][0]['reason'])
                 self.assertFalse((root / 'first-test.txt').exists(), 'coverage must remain the only suite execution')
+
+
+    def test_first_interrupt_at_final_return_publishes_130(self):
+        for target in ('write_result', 'run_operation', 'main'):
+            for event in ('return', 'opcode'):
+                for custom in (False, True):
+                    with self.subTest(target=target, event=event, custom=custom):
+                        self.assert_final_return_interrupt(target, event, custom)
+
+    def assert_final_return_interrupt(self, target, event, custom):
+        root = self.fixture(manifest(stack('first'), stack('later')))
+        (root / 'return_interrupt.py').write_text(
+            "import dis,runpy,signal,sys\n"
+            f"target,event_kind,custom={target!r},{event!r},{custom!r}\n"
+            "def caller_handler(signum, frame):\n"
+            "    print('CALLER_HANDLER', flush=True)\n"
+            "    signal.default_int_handler(signum, frame)\n"
+            "if custom:\n"
+            "    signal.signal(signal.SIGINT, caller_handler)\n"
+            "    if hasattr(signal, 'SIGBREAK'): signal.signal(signal.SIGBREAK, caller_handler)\n"
+            "fired=False\n"
+            "def trace(frame, event, arg):\n"
+            "    global fired\n"
+            f"    matching=frame.f_code.co_name == target and frame.f_code.co_filename == {str(self.runner)!r}\n"
+            "    if matching and event_kind == 'opcode': frame.f_trace_opcodes=True\n"
+            "    boundary=event == 'return' if event_kind == 'return' else event == 'opcode' and dis.opname[frame.f_code.co_code[frame.f_lasti]] in ('RETURN_VALUE', 'RETURN_CONST')\n"
+            "    if not fired and matching and boundary:\n"
+            "        fired=True\n"
+            "        print('FIRST_INTERRUPT_AT_RETURN', flush=True)\n"
+            "        signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
+            "    return trace\n"
+            "sys.settrace(trace)\n"
+            "runpy.run_path('run_gap_check.py', run_name='__main__')\n", encoding='utf-8')
+        process = subprocess.run([sys.executable, '-u', 'return_interrupt.py', 'all'], cwd=root,
+                                 capture_output=True, text=True, encoding='utf-8', timeout=60)
+        self.assert_exit(process, 130)
+        self.assertIn('FIRST_INTERRUPT_AT_RETURN', process.stdout)
+        self.assertEqual(int(custom), process.stdout.count('CALLER_HANDLER'))
+        self.assertNotIn('Traceback', process.stderr)
+        payload = json.loads(next((root / 'results').glob('*/result.json')).read_text(encoding='utf-8'))
+        self.assertEqual(130, payload['aggregateExit'])
+        self.assert_rows(payload, [('first', 'test', 'passed'), ('later', 'test', 'passed')])
+
+    def test_first_interrupt_from_caller_handler_never_redispatches_finished_adapters(self):
+        for moment in ('first test:', 'Aggregate:', 'Result:'):
+            with self.subTest(moment=moment):
+                self.assert_caller_reporting(moment, 'raise')
+
+    def test_ignored_or_returning_caller_handler_keeps_its_signal_semantics(self):
+        for handler in ('ignore', 'return'):
+            with self.subTest(handler=handler):
+                self.assert_caller_reporting('first test:', handler)
+
+    def assert_caller_reporting(self, moment, handler):
+        data = manifest(stack('first'), stack('later'))
+        for item in data['stacks']:
+            item['capabilities']['test'] = configured(['-c',
+                "from pathlib import Path; p=Path('calls.txt'); "
+                "p.write_text((p.read_text() if p.exists() else '') + " + repr(item['name'] + '\n') + ")"])
+        root = self.fixture(data)
+        (root / 'caller_interrupt.py').write_text(
+            "import builtins,runpy,signal,sys\n"
+            f"moment,handler={moment!r},{handler!r}\n"
+            "report=builtins.print\n"
+            "def caller_handler(signum, frame):\n"
+            "    report('CALLER_HANDLER', flush=True)\n"
+            "    if handler == 'raise': signal.default_int_handler(signum, frame)\n"
+            "sig=signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT\n"
+            "signal.signal(sig, signal.SIG_IGN if handler == 'ignore' else caller_handler)\n"
+            "fired=False\n"
+            "def reporting(*args, **kwargs):\n"
+            "    global fired\n"
+            "    if not fired and args and str(args[0]).startswith(moment):\n"
+            "        fired=True\n"
+            "        signal.raise_signal(sig)\n"
+            "    return report(*args, **kwargs)\n"
+            "builtins.print=reporting\n"
+            "runpy.run_path('run_gap_check.py', run_name='__main__')\n", encoding='utf-8')
+        process = subprocess.run([sys.executable, '-u', 'caller_interrupt.py', 'all'], cwd=root,
+                                 capture_output=True, text=True, encoding='utf-8', timeout=60)
+        expected_exit = 130 if handler == 'raise' else 0
+        self.assert_exit(process, expected_exit)
+        self.assertNotIn('Traceback', process.stderr)
+        self.assertEqual(int(handler != 'ignore'), process.stdout.count('CALLER_HANDLER'))
+        stopped_early = handler == 'raise' and moment == 'first test:'
+        self.assertEqual(['first'] if stopped_early else ['first', 'later'],
+                         (root / 'calls.txt').read_text().splitlines())
+        payload = json.loads(next((root / 'results').glob('*/result.json')).read_text(encoding='utf-8'))
+        self.assertEqual(expected_exit, payload['aggregateExit'])
+        self.assert_rows(payload, [('first', 'test', 'passed'),
+                                   ('later', 'test', 'interrupted' if stopped_early else 'passed')])
+
+    def test_first_interrupt_after_main_returns_retains_publication_ownership(self):
+        for unwritable in (False, True):
+            with self.subTest(unwritable=unwritable):
+                root = self.fixture(manifest(stack('first'), stack('later')))
+                launcher = root / 'run_gap_check.py'
+                launcher.write_text(launcher.read_text(encoding='utf-8').replace(
+                    'raise SystemExit(module.main())',
+                    "code=module.main()\n"
+                    "import signal\nfrom pathlib import Path\n"
+                    "replace=Path.replace\n"
+                    "sig=signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT\n"
+                    "def replacing(path, target):\n"
+                    "    signal.raise_signal(sig)\n"
+                    f"    if {unwritable!r}: raise OSError('late publication unavailable')\n"
+                    "    return replace(path, target)\n"
+                    "Path.replace=replacing\n"
+                    "signal.raise_signal(sig)\n"
+                    "raise SystemExit(code)"), encoding='utf-8')
+                process, _, payload = self.invoke(['all'], directory=root)
+                self.assert_exit(process, 130)
+                self.assertNotIn('Traceback', process.stderr)
+                self.assertEqual(0 if unwritable else 130, payload['aggregateExit'])
+                self.assertEqual(unwritable, 'late publication unavailable' in process.stderr)
+                self.assert_rows(payload, [('first', 'test', 'passed'), ('later', 'test', 'passed')])
 
     def test_first_interrupt_with_unwritable_publication_retry_retains_exit_130(self):
         root = self.fixture()

@@ -198,6 +198,28 @@ class PythonPlatformTests(unittest.TestCase):
         self.assertEqual([module()], rows)
         self.assertEqual([], self.scope('windows', selection)[0])
 
+    def test_union_refuses_a_windows_leg_that_measured_nothing(self):
+        # DYD-431 A-08: "An empty selection is not a pass" (testing-strategy.md:59); the .NET union
+        # refuses a selection naming no Windows point (dotnet_platform.scope).
+        empty = {'schema': 1, 'neutral': 'linux', 'native': {}}
+        (self.root / python_platform.SELECTION).write_text(json.dumps(empty), encoding='utf-8')
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 'commit', '-qam', 'Selection names no Windows callable')
+        self.commit = self.git('rev-parse', 'HEAD').strip()
+        reports = []
+        for platform in ('linux', 'windows'):
+            rows, receipt = self.scope(platform, empty)
+            for row in rows:
+                row['branches'] = {edge: 1 for edge in row['branches']}
+            reports.append({'schema': 1, 'candidate': {'commit': self.commit, 'dirty': False},
+                            'exitCode': 0, 'measurementComplete': True,
+                            'stack': 'python', 'gate': 'coverage', 'findings': [], 'gaps': [],
+                            'collectors': {'python-coverage': {'facts': {
+                                'modules': rows, 'platform_selection': receipt}}}})
+        self.assertEqual([], reports[1]['collectors']['python-coverage']['facts']['modules'])
+        with self.assertRaises(ValueError, msg='a Windows leg with zero measured points passed the union'):
+            self.verify(*reports)
+
     def test_complete_union_rejects_missing_points_platforms_and_candidate_drift(self):
         linux, left = self.scope('linux')
         windows, right = self.scope('windows')

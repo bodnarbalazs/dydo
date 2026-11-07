@@ -101,7 +101,7 @@ internal static partial class CommandPosition
             }
             else if (Keywords.Contains(name))
                 at++;
-            else if (name == "env" && EnvSplitString(words.Skip(at + 1).ToList()) != null)
+            else if (name == "env" && EnvSplitString(words, at + 1) != null)
                 break;
             else if (Runners.TryGetValue(name, out var valueOptions))
                 at = SkipRunnerOptions(words, at + 1, valueOptions, takesOperand: name == "timeout", name == "env" ? assignments : null);
@@ -150,10 +150,10 @@ internal static partial class CommandPosition
     /// The string env -S (or --split-string) splits into the command it runs, with env's remaining
     /// words after it; null when env is given no -S.
     /// </summary>
-    public static string? EnvSplitString(IReadOnlyList<string> rest)
+    public static string? EnvSplitString(IReadOnlyList<string> rest, int from = 0)
     {
         var valueOptions = Runners["env"];
-        for (var at = 0; at < rest.Count && rest[at].Length > 1 && rest[at][0] == '-' && rest[at] != "--";
+        for (var at = from; at < rest.Count && rest[at].Length > 1 && rest[at][0] == '-' && rest[at] != "--";
              at += valueOptions.Contains(rest[at]) ? 2 : 1)
         {
             var (split, next) = rest[at] switch

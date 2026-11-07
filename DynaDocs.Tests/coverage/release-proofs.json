@@ -1,0 +1,183 @@
+{
+  "schema": 1,
+  "decision": "DYD-840: repeated numerical performance proofs run in the required, capped, uninstrumented Release lane on every pull request and feature push; instrumented coverage runs each one's witness.",
+  "trait": "PerformanceProof",
+  "releaseFilter": "PerformanceProof=Release|PerformanceProof=Shared",
+  "coverageFilter": "PerformanceProof!=Release",
+  "assembly": "DynaDocs.Tests/bin/Release/net10.0/DynaDocs.Tests.dll",
+  "laneCheck": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.ReleaseProofLane_MeasuresTheOptimizedUninstrumentedProduct",
+  "proofs": [
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_LongInput_TakesTimeLinearly",
+      "lane": "Release",
+      "cases": 11,
+      "assertions": [
+        "3 warmups of 12,500 and 100,000 characters; best of 7 rounds: one 100,000 analysis over eight 12,500, thread CPU, ratio < 2.5",
+        "Release, uninstrumented: best wall time at 100,000 characters <= 1 s"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_LongInput_CoverageWitness"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_LongNesting_TakesTimeLinearly",
+      "lane": "Release",
+      "cases": 7,
+      "assertions": [
+        "3 warmups of 12,500 and 100,000 characters; best of 7 rounds: one 100,000 analysis over eight 12,500, thread CPU, ratio < 2.5",
+        "Release, uninstrumented: best wall time at 100,000 characters <= 1 s"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_LongNesting_CoverageWitness"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_LongBodies_TakeTimeLinearly",
+      "lane": "Release",
+      "cases": 10,
+      "assertions": [
+        "3 warmups of 12,500 and 100,000 characters; best of 7 rounds: one 100,000 analysis over eight 12,500, thread CPU, ratio < 2.5",
+        "Release, uninstrumented: best wall time at 100,000 characters <= 1 s"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_LongBodies_CoverageWitness"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_UnclosedCatHeredocs_TakesTimeLinearly",
+      "lane": "Release",
+      "cases": 3,
+      "assertions": [
+        "3 warmups of 12,500 and 100,000 characters; best of 7 rounds: one 100,000 analysis over eight 12,500, thread CPU, ratio < 2.5",
+        "Release, uninstrumented: best wall time at 100,000 characters <= 1 s"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_UnclosedCatHeredocs_CoverageWitness"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_MixedBodyOpeners_GrowsLinearly",
+      "lane": "Release",
+      "cases": 3,
+      "assertions": [
+        "3 warmups of 12,500 and 100,000 characters; best of 7 rounds: one 100,000 analysis over eight 12,500, thread CPU, ratio < 2.5",
+        "Release, uninstrumented: best wall time at 100,000 characters <= 1 s"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_MixedBodyOpeners_CoverageWitness"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_EscapedQuoteOpeners_GrowsLinearly",
+      "lane": "Release",
+      "cases": 3,
+      "assertions": [
+        "1 warmup each of 10,000 and 20,000 characters; best of 7 rounds, thread CPU: 20,000 over 10,000 ratio < 2.5",
+        "3 warmups of 12,500 and 100,000 characters; best of 7 rounds: one 100,000 analysis over eight 12,500, thread CPU, ratio < 2.5",
+        "Release, uninstrumented: best wall time at 100,000 characters <= 1 s"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_EscapedQuoteOpeners_CoverageWitness"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_RepeatedRunnerWords_GrowsLinearly",
+      "lane": "Release",
+      "cases": 6,
+      "assertions": [
+        "allocation at 2,000 characters <= 2.5 x allocation at 1,000 (witness asserts it under coverage too)",
+        "3 warmups of 12,500 and 100,000 characters; best of 7 rounds: one 100,000 analysis over eight 12,500, thread CPU, ratio < 2.5",
+        "Release, uninstrumented: best wall time at 100,000 characters <= 1 s"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_RepeatedRunnerWords_CoverageWitness"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.DangerousRules_RepeatedPrefixes_GrowLinearly",
+      "lane": "Release",
+      "cases": 12,
+      "assertions": [
+        "the rule's MatchTimeout is 250 ms, DYD-610 (witness asserts it under coverage too)",
+        "the rule matches neither input (witness asserts it under coverage too)",
+        "3 warmups of 12,500 and 100,000 characters; best of 7 rounds: one 100,000 match over eight 12,500, thread CPU, ratio < 2.5",
+        "Release, uninstrumented: best wall time at 100,000 characters <= 1 s"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.DangerousRules_RepeatedPrefixes_CoverageWitness"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.FirstRunningMatch_ManyDataMatches_GrowsLinearly",
+      "lane": "Release",
+      "cases": 12,
+      "assertions": [
+        "no running match in any input (witness asserts it under coverage too)",
+        "allocation at 2,000 characters <= 2.5 x allocation at 1,000 (witness asserts it under coverage too)",
+        "allocation at 10,000 characters <= 256 MB (witness asserts it under coverage too)",
+        "3 warmups of 12,500 and 100,000 characters; best of 7 rounds: one 100,000 check over eight 12,500, thread CPU, ratio < 2.5",
+        "Release, uninstrumented: best wall time at 100,000 characters <= 1 s"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.FirstRunningMatch_ManyDataMatches_CoverageWitness"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.CheckBypassAttempts_ManyBodies_TakesTimeLinearly",
+      "lane": "Release",
+      "cases": 6,
+      "assertions": [
+        "3 warmups of 12,500 and 100,000 characters; best of 7 rounds: one 100,000 check over eight 12,500, thread CPU, ratio < 2.5",
+        "Release, uninstrumented: best wall time at 100,000 characters <= 1 s"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.CheckBypassAttempts_ManyBodies_CoverageWitness"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.PasswdModify_DistinctWrites_TakesTimeLinearly",
+      "lane": "Release",
+      "cases": 1,
+      "assertions": [
+        "3 warmups of 12,500 and 100,000 characters; best of 7 rounds: one 100,000 match over eight 12,500, thread CPU, ratio < 2.5",
+        "Release, uninstrumented: best wall time at 100,000 characters <= 1 s"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.PasswdModify_DistinctWrites_CoverageWitness"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_DistinctCommands_GrowLinearlyWithinTheBudget",
+      "lane": "Release",
+      "cases": 3,
+      "assertions": [
+        "3 warmups of 12,500 and 100,000 characters; best of 7 rounds: one 100,000 analysis over eight 12,500, thread CPU, ratio < 2.5",
+        "Release, uninstrumented: best wall time at 100,000 characters <= 1 s",
+        "smaller of two allocations at 10,000 characters <= 256 MB (witness asserts it under coverage too)",
+        "allocation at 100,000 characters <= 2.5 x allocation at 50,000 (witness asserts it under coverage too)",
+        "Release, uninstrumented: allocation at 100,000 characters <= 256 MB"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_DistinctCommands_CoverageWitness"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.NudgeClassifier_LongDataBodies_GrowLinearly",
+      "lane": "Release",
+      "cases": 12,
+      "assertions": [
+        "the classifier finds no running tail in either input (witness asserts it under coverage too)",
+        "1 warmup each of 12,500 and 100,000 characters; best of 7 rounds, wall time: one 100,000 over eight 12,500, ratio < 2.5",
+        "Release, uninstrumented: best wall time at 100,000 characters <= 1 s"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.NudgeClassifier_LongDataBodies_CoverageWitness"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_DeepNesting_StaysWithinTheBudget",
+      "lane": "Shared",
+      "cases": 9,
+      "assertions": [
+        "22 nesting levels allocate <= 256 MB",
+        "22 nesting levels take <= 1 s"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_DeepNesting_StaysWithinTheBudget"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_LongNesting_AllocatesLinearlyWithinTheBudget",
+      "lane": "Shared",
+      "cases": 12,
+      "assertions": [
+        "allocation at 10,000 characters <= 256 MB",
+        "allocation at 100,000 characters <= 2.5 x allocation at 50,000"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_LongNesting_AllocatesLinearlyWithinTheBudget"
+    },
+    {
+      "proof": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_LongBodies_AllocateLinearlyWithinTheBudget",
+      "lane": "Shared",
+      "cases": 9,
+      "assertions": [
+        "smaller of two allocations at 10,000 characters <= 256 MB",
+        "allocation at 100,000 characters <= 2.5 x allocation at 50,000",
+        "Release, uninstrumented: allocation at 100,000 characters <= 256 MB"
+      ],
+      "witness": "DynaDocs.Tests.Services.BashCommandAnalyzerTests.Analyze_LongBodies_AllocateLinearlyWithinTheBudget"
+    }
+  ]
+}

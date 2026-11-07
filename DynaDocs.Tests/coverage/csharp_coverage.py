@@ -11,6 +11,8 @@ import xml.etree.ElementTree as ET
 from collections import Counter
 from pathlib import Path
 
+from release_proof import coverage_filter
+
 
 ASSEMBLY_NAMES = {"dydo", "DynaDocs.Tests", "GateMetrics"}
 ASSEMBLY_PROJECTS = {
@@ -66,8 +68,12 @@ def _subject_commands(root, tests=None, results=None):
         results = Path(results)
         return [[*suite, "--filter", tests, "--logger", f"trx;LogFileName={results.name}",
                  "--results-directory", str(results.parent), "--", "RunConfiguration.TreatNoTestsAsError=true"]]
+    # The full suite but the repeated numerical proofs, which the required Release lane runs and
+    # whose coverage witnesses run here (DYD-840, release-proofs.json).
+    excluded = coverage_filter(root / "DynaDocs.Tests/coverage/release-proofs.json")
     return [
-        [*suite, "--", "RunConfiguration.TreatNoTestsAsError=true"],
+        [*suite, "--filter", excluded, "--logger", "console;verbosity=normal",
+         "--", "RunConfiguration.TreatNoTestsAsError=true"],
         [sys.executable, str(root / "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py")],
     ]
 
@@ -108,11 +114,10 @@ def altcover_commands(root, output, tests=None):
 def _run(name, command, root, output):
     prefix = output / name
     started = time.monotonic()
-    result = subprocess.run(list(map(str, command)), cwd=root, text=True, encoding="utf-8",
-                            errors="replace", capture_output=True)
     stdout, stderr = Path(str(prefix) + ".stdout"), Path(str(prefix) + ".stderr")
-    stdout.write_text(result.stdout, encoding="utf-8")
-    stderr.write_text(result.stderr, encoding="utf-8")
+    # Retain native progress even when the campaign owner interrupts this command.
+    with stdout.open("wb") as out, stderr.open("wb") as err:
+        result = subprocess.run(list(map(str, command)), cwd=root, stdout=out, stderr=err)
     return {"name": name, "argv": list(map(str, command)), "cwd": str(root),
             "environment": {key: os.environ[key] for key in CAMPAIGN_ENVIRONMENT if key in os.environ},
             "exit": result.returncode, "elapsedSeconds": round(time.monotonic() - started, 6),

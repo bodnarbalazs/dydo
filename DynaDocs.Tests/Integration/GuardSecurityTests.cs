@@ -12,6 +12,125 @@ using DynaDocs.Services;
 public class GuardSecurityTests : IntegrationTestBase
 {
     [Theory]
+    [InlineData("Bash", "Posix")]
+    [InlineData("PowerShell", "PowerShell")]
+    [InlineData("", "Unknown")]
+    public async Task PythonFallbackTimeout_AnalyzerAndHookRefuseOnEveryAttempt(string toolName, string dialect)
+    {
+        await SetupClaimedAgent();
+        var patterns = ((Func<string, bool> IsMatch, string Reason)[])typeof(BashCommandAnalyzer)
+            .GetField("DangerousPatterns", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+            .GetValue(null)!;
+        var index = Array.FindIndex(patterns, pattern => pattern.IsMatch.Method.Name == "RunsPythonFromStdin");
+        Assert.True(index >= 0);
+        var original = patterns[index];
+        try
+        {
+            patterns[index] = (_ => throw new System.Text.RegularExpressions.RegexMatchTimeoutException(), original.Reason);
+            var analysis = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect)).Analyze("echo ready");
+            Assert.True(analysis.HasDangerousPattern);
+            Assert.Equal("Command too complex to verify safely", analysis.DangerousPatternReason);
+            Assert.Empty(analysis.Operations);
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                var result = toolName == "" ? await UnknownShellGuardAsync("echo ready")
+                    : await GuardWithStdinAsync(ShellJson(toolName, "echo ready"));
+                AssertRefused(toolName, result);
+                result.AssertStderrContains("Command too complex to verify safely");
+            }
+        }
+        finally
+        {
+            patterns[index] = original;
+        }
+    }
+
+    [Theory]
+    [InlineData("Bash")]
+    [InlineData("PowerShell")]
+    [InlineData("")]
+    public async Task LengthBoundary_BenignCommandIsRefusedOnEveryAttempt(string toolName)
+    {
+        await SetupClaimedAgent();
+        var command = "echo ready";
+        var allowed = toolName == "" ? await UnknownShellGuardAsync(command)
+            : await GuardWithStdinAsync(ShellJson(toolName, command));
+        if (toolName == "") allowed.AssertSuccess();
+        else allowed.AssertPreToolUseAllowed();
+        command = command.PadRight(1_048_576, 'x');
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var result = toolName == "" ? await UnknownShellGuardAsync(command + "x")
+                : await GuardWithStdinAsync(ShellJson(toolName, command + "x"));
+            AssertRefused(toolName, result);
+            result.AssertStderrContains("limit of 1048576 characters");
+        }
+    }
+
+    [Theory]
+    [InlineData("Write-Output @(Write-Output @(<# tail -f #> x))")]
+    [InlineData("Write-Output @(<# outer #> Write-Output @(<# tail -f #> x))")]
+    [InlineData("Write-Output @(Write-Output @(# tail -f\nx))")]
+    public async Task NestedGroupComment_DoesNotConsumePollingNudgeRetry(string command)
+    {
+        await SetupClaimedAgent();
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var result = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+            result.AssertPreToolUseAllowed();
+        }
+    }
+
+    [Theory]
+    [InlineData("Write-Output @(Write-Output @(rg 'tail -f' notes))", false)]
+    [InlineData("echo @(cat <<E\n$(rg -n 'tail -f' docs)\nE\n)", true)]
+    [InlineData("echo @(cat <<E\r\n$(rg -n 'tail -f' docs)\r\nE\r\n)", true)]
+    public async Task NestedGroupData_KeepsWarningOrderAndRetry(string command, bool hardBlock)
+    {
+        await SetupClaimedAgent();
+        var first = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        first.AssertPreToolUseDenied();
+        var reason = hardBlock ? "Command contains bypass patterns" : "Open-ended Bash poll-loop detected";
+        first.AssertStderrContains(reason);
+        var retry = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        if (hardBlock)
+        {
+            retry.AssertPreToolUseDenied();
+            retry.AssertStderrContains(reason);
+        }
+        else retry.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("block", "command")]
+    [InlineData("warn", "command")]
+    [InlineData("notice", "command")]
+    [InlineData("warn", "new-file")]
+    public async Task NudgeMatchTimeout_IsRefusedOnEveryAttempt(string severity, string match)
+    {
+        await InitProjectAsync("none");
+        var path = Path.Combine(TestDir, ConfigService.ConfigFileName);
+        var config = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))!;
+        config["nudges"] = System.Text.Json.JsonSerializer.SerializeToNode(new[]
+        {
+            new NudgeConfig { Pattern = "^(a+)+$", Message = "Slow configured nudge", Severity = severity, Match = match }
+        });
+        File.WriteAllText(path, config.ToJsonString());
+        var command = new string('a', 26) + "!";
+        var payload = match == "command" ? BashJson(command) : System.Text.Json.JsonSerializer.Serialize(new
+        {
+            session_id = TestSessionId, cwd = TestDir, tool_name = "Write",
+            tool_input = new { file_path = command, content = "x" }
+        });
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var result = await GuardWithStdinAsync(payload);
+            result.AssertPreToolUseDenied();
+            result.AssertStderrContains("Command too complex to verify safely");
+        }
+    }
+
+    [Theory]
     [InlineData("git push --force origin main")]
     [InlineData("gh auth token")]
     [InlineData("bw export --format json")]
@@ -1631,5 +1750,92 @@ public class GuardSecurityTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(ShellJson("Bash", command));
 
         result.AssertPreToolUseAllowed();
+    }
+
+    // DYD-723: a command nested past the guard's reading bound is refused as too complex to verify,
+    // through Claude's Bash and PowerShell tools and in an unknown shell.
+    [Theory]
+    [InlineData("Bash")]
+    [InlineData("PowerShell")]
+    [InlineData("")]
+    public async Task DeepNesting_IsRefusedAsTooComplex(string toolName)
+    {
+        await SetupClaimedAgent();
+
+        var result = await NestingGuardAsync(toolName, 40);
+
+        AssertRefused(toolName, result);
+        result.AssertStderrContains("Command too complex to verify safely");
+    }
+
+    // 100,000 characters of it are refused as promptly, since reading stops at the bound. Before
+    // DYD-723 the reading recursed once per level and overflowed the stack: run on the fix only.
+    [Theory]
+    [InlineData("Bash")]
+    [InlineData("PowerShell")]
+    [InlineData("")]
+    public async Task LongDeepNesting_IsRefusedPromptly(string toolName)
+    {
+        await SetupClaimedAgent();
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        var result = await NestingGuardAsync(toolName, 33_333);
+
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Took {stopwatch.Elapsed}");
+        AssertRefused(toolName, result);
+        result.AssertStderrContains("Command too complex to verify safely");
+    }
+
+    // The bound holds on every path a command runs (DYD-723). bash reads an unquoted $( as a group,
+    // which nests as a substitution does, and a command string a shell runs is read eight levels
+    // below the command. Past 32 groups, or past eight shells around a substitution nested past the
+    // bound, the command is refused in every lane; at 32 groups, and at eight shells around one
+    // nested 16 deep, it is allowed as before.
+    [Theory]
+    [InlineData("Bash", "$(", ")", 33, 0, true)]
+    [InlineData("PowerShell", "$(", ")", 33, 0, true)]
+    [InlineData("", "$(", ")", 33, 0, true)]
+    [InlineData("Bash", "$(", ")", 32, 0, false)]
+    [InlineData("PowerShell", "$(", ")", 32, 0, false)]
+    [InlineData("", "$(", ")", 32, 0, false)]
+    [InlineData("Bash", "\"$(", ")\"", 40, 9, true)]
+    [InlineData("PowerShell", "\"$(", ")\"", 40, 9, true)]
+    [InlineData("", "\"$(", ")\"", 40, 9, true)]
+    [InlineData("Bash", "\"$(", ")\"", 16, 8, false)]
+    [InlineData("PowerShell", "\"$(", ")\"", 16, 8, false)]
+    [InlineData("", "\"$(", ")\"", 16, 8, false)]
+    public async Task NestingOnEveryPath_PastTheBound_IsRefused(string toolName, string opener, string closer, int levels, int shells, bool refused)
+    {
+        await SetupClaimedAgent();
+        var command = "echo " + string.Concat(Enumerable.Repeat(opener, levels)) + "x" + string.Concat(Enumerable.Repeat(closer, levels));
+        for (var shell = 0; shell < shells; shell++)
+            command = "bash -c '" + command.Replace("'", "'\"'\"'") + "'";
+
+        var result = toolName == "" ? await UnknownShellGuardAsync(command) : await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        if (refused)
+        {
+            AssertRefused(toolName, result);
+            result.AssertStderrContains("Command too complex to verify safely");
+        }
+        else if (toolName == "")
+            result.AssertSuccess();
+        else
+            result.AssertPreToolUseAllowed();
+    }
+
+    // A hook call is refused with a deny decision, the CLI lane with exit 2.
+    private static void AssertRefused(string toolName, CommandResult result)
+    {
+        if (toolName == "")
+            result.AssertExitCode(2);
+        else
+            result.AssertPreToolUseDenied();
+    }
+
+    private Task<CommandResult> NestingGuardAsync(string toolName, int levels)
+    {
+        var command = "echo " + string.Concat(Enumerable.Repeat("\"$(", levels)) + "x" + string.Concat(Enumerable.Repeat(")\"", levels));
+        return toolName == "" ? UnknownShellGuardAsync(command) : GuardWithStdinAsync(ShellJson(toolName, command));
     }
 }

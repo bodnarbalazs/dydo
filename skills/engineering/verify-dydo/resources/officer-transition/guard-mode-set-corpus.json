@@ -1440,14 +1440,14 @@
   "command": "eval eval eval eval eval eval eval eval eval eval dydo mode set overnight on",
   "source": "fix6 brief",
   "mode_set": true,
-  "refused_first": "BLOCKED: This command runs a PR call through eval, which the PR check does not read."
+  "refused_first": "BLOCKED: Dangerous command pattern detected."
  },
  {
   "kind": "uncertain",
   "command": "eval eval eval eval eval eval eval eval eval eval true",
   "source": "fix6 brief",
   "mode_set": false,
-  "refused_first": "BLOCKED: This command runs a PR call through eval, which the PR check does not read."
+  "refused_first": "BLOCKED: Dangerous command pattern detected."
  },
  {
   "kind": "uncertain",
@@ -1504,21 +1504,21 @@
   "command": "env -S env -S env -S env -S env -S env -S env -S env -S env -S env -S dydo mode set overnight on",
   "source": "fix6 brief",
   "mode_set": true,
-  "refused_first": "BLOCKED: This command runs a PR call through env, which the PR check does not read."
+  "refused_first": "BLOCKED: Dangerous command pattern detected."
  },
  {
   "kind": "uncertain",
   "command": "env -S env -S env -S env -S env -S env -S env -S env -S env -S env -S true",
   "source": "fix6 brief",
   "mode_set": false,
-  "refused_first": "BLOCKED: This command runs a PR call through env, which the PR check does not read."
+  "refused_first": "BLOCKED: Dangerous command pattern detected."
  },
  {
   "kind": "uncertain",
   "command": "eval eval eval eval eval eval eval eval eval eval echo dydo mode set overnight on",
   "source": "fix6 brief",
   "mode_set": true,
-  "refused_first": "BLOCKED: This command runs a PR call through eval, which the PR check does not read."
+  "refused_first": "BLOCKED: Dangerous command pattern detected."
  },
  {
   "kind": "uncertain",

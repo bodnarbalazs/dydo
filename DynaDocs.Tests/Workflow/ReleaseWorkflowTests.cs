@@ -243,7 +243,7 @@ public sealed class ReleaseWorkflowTests
     }
 
     [Theory]
-    [InlineData("ci.yml", "python-coverage statechart-coverage dotnet-coverage dotnet-coverage-union guard-windows build full-stack")]
+    [InlineData("ci.yml", "python-coverage statechart-coverage dotnet-coverage dotnet-release-proof dotnet-coverage-union guard-windows build full-stack")]
     [InlineData("release.yml", "build validation nuget")]
     public void Workflows_ProvisionPatchedRuntimeBeforeDotnetConsumers(string name, string expectedJobs)
     {

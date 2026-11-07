@@ -79,4 +79,31 @@ public sealed class ModeCommandTests : IDisposable
         Assert.NotEqual(0, exitCode);
         Assert.False(Directory.Exists(_root));
     }
+
+    /// <summary>
+    /// DYD-431 F-30: overnight-mode's morning brief reports the observed mode as "unknown if
+    /// unreadable", so a store that exists but cannot be read or parsed must not show as a successful
+    /// <c>overnight: off</c>. Runs against this test's own root, never the machine store.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("")]
+    [InlineData("{\n  \"overnight\": \"o")]
+    [InlineData("{ not json")]
+    [InlineData("<denied>")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public async Task Show_OverAnEmptyCorruptOrUnreadableStore_NeverReportsASuccessfulOff(string content)
+    {
+        Skip.If(content == "<denied>" && OperatingSystem.IsWindows(), "Unix permission bits.");
+        var file = Path.Combine(_root, "mode.json");
+        Assert.StartsWith(_root, new ModeState(_root).FilePath);
+        Directory.CreateDirectory(_root);
+        File.WriteAllText(file, content == "<denied>" ? """{"overnight":"on"}""" : content);
+        if (content == "<denied>")
+            File.SetUnixFileMode(file, UnixFileMode.None);
+
+        var (exitCode, stdout, _) = await Run("show");
+
+        Assert.False(exitCode == 0 && stdout.Trim() == "overnight: off",
+            $"an unusable store read as a successful off (exit {exitCode}, stdout '{stdout.Trim()}')");
+    }
 }

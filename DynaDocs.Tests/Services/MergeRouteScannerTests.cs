@@ -120,6 +120,107 @@ public class MergeRouteScannerTests
         Assert.Empty(PrCallScanner.FindMergeRoutes(command));
     }
 
+    // DYD-887: the branches the line's own branch changes leave HEAD on before a push of the current branch.
+    private static List<string?> Switches(string command, ShellDialect dialect = ShellDialect.Unknown) =>
+        [.. PrCallScanner.FindMergeRoutes(command, dialect).Where(r => r.SwitchedTo != null).Select(r => r.SwitchedTo)];
+
+    [Fact]
+    public void BarePush_AfterACheckout_IsAlsoJudgedOnTheCheckedOutBranch()
+    {
+        var routes = PrCallScanner.FindMergeRoutes("git checkout main && git merge feature/x && git push");
+
+        Assert.Equal([null, "main"], routes.Select(r => r.SwitchedTo));
+        Assert.All(routes, r => Assert.Equal(MergeRoute.Upstream, r.Destination));
+    }
+
+    [Theory]
+    [InlineData("git checkout main && git push", "main")]
+    [InlineData("git switch main; git push origin", "main")]
+    [InlineData("git switch main && git push origin @", "main")]
+    [InlineData("git checkout -q refs/heads/main && git push origin HEAD", "main")]
+    [InlineData("git checkout -b new && git push", "new")]
+    [InlineData("git checkout -B new && git push", "new")]
+    [InlineData("git checkout --orphan new && git push", "new")]
+    [InlineData("git switch -c new && git push", "new")]
+    [InlineData("git switch --create=new && git push", "new")]
+    [InlineData("git switch --no-track -C new && git push", "new")]
+    [InlineData("git branch -M main && git push", "main")]
+    [InlineData("git branch -m old main && git push", "main")]
+    [InlineData("git -C wt checkout main && git push", "main")]
+    [InlineData("git checkout main || git push", "main")]
+    [InlineData("git checkout main | cat; git push", "main")]
+    [InlineData("bash -c 'git checkout main' && git push", "main")]
+    [InlineData("echo \"$(git checkout main)\"; git push", "main")]
+    [InlineData("git checkout feature/x\ngit push", "feature/x")]
+    public void BranchChange_BeforeAPushOfTheCurrentBranch_NamesItsBranch(string command, string branch)
+    {
+        Assert.Equal([branch], Switches(command));
+    }
+
+    [Fact]
+    public void BacktickSubstitution_CountsBeforeEveryPush()
+    {
+        Assert.Equal(["main"], Switches("git push; echo `git checkout main`", ShellDialect.Posix));
+    }
+
+    [Fact]
+    public void EveryBranchChangeBeforeAPush_IsJudged()
+    {
+        Assert.Equal(["x", "main"], Switches("git checkout x; git checkout main; git push"));
+    }
+
+    [Theory]
+    [InlineData("git checkout - && git push")]
+    [InlineData("git switch - && git push")]
+    [InlineData("git checkout '@{-1}' && git push")]
+    [InlineData("git checkout $B && git push")]
+    [InlineData("git checkout \"$(echo main)\" && git push")]
+    [InlineData("git switch --detach main && git push origin HEAD")]
+    [InlineData("git switch -d main && git push")]
+    [InlineData("git checkout --detach && git push")]
+    [InlineData("git checkout -t origin/main && git push")]
+    [InlineData("git checkout --track=direct origin/main && git push")]
+    [InlineData("git checkout -b new origin/main && git push")]
+    [InlineData("git switch -c new main && git push")]
+    [InlineData("git checkout -qb new && git push")]
+    [InlineData("git checkout -b && git push")]
+    [InlineData("git switch a b && git push")]
+    [InlineData("gh pr checkout 5 && git push")]
+    [InlineData("gh -R o/r pr checkout 5 && git push")]
+    [InlineData("gh co 5 && git push")]
+    public void BranchChange_TheLineDoesNotSayForCertain_IsUnreadable(string command)
+    {
+        Assert.Equal([MergeRoute.UnreadableBranch], Switches(command));
+    }
+
+    [Theory]
+    [InlineData("git checkout main -- readme.md && git push")]
+    [InlineData("git checkout -- readme.md && git push")]
+    [InlineData("git checkout main readme.md && git push")]
+    [InlineData("git checkout -p main && git push")]
+    [InlineData("git checkout --pathspec-from-file=list && git push")]
+    [InlineData("git checkout HEAD && git push")]
+    [InlineData("git checkout && git push")]
+    [InlineData("git branch -d x && git push")]
+    [InlineData("git branch -m && git push")]
+    [InlineData("gh pr checkout --help && git push")]
+    [InlineData("gh pr view 5 && git push")]
+    [InlineData("git push && git checkout main")]
+    [InlineData("git checkout main && git push origin feature/x")]
+    [InlineData("git checkout main && git push origin HEAD:feature/x")]
+    [InlineData("echo 'git checkout main'; git push")]
+    public void NoBranchChangeBeforeAPushOfTheCurrentBranch_JudgesHeadAlone(string command)
+    {
+        Assert.Empty(Switches(command));
+    }
+
+    [Fact]
+    public void BranchChange_WithoutAPush_TakesNoRoute()
+    {
+        Assert.Empty(PrCallScanner.FindMergeRoutes("git checkout main && git merge feature/x"));
+        Assert.Empty(PrCallScanner.FindMergeRoutesInArgv(["git", "checkout", "main"]));
+    }
+
     [Fact]
     public void TagsWithARefspec_UpdatesThatBranch()
     {

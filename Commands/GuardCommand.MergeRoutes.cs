@@ -12,6 +12,8 @@ using DynaDocs.Services;
 /// names its branch, or HEAD (the current branch), or none (the current branch's upstream, else the
 /// current branch); git state is read offline in the call's directory, the PR check's, or the
 /// directory git -C names there. State git cannot read resolves nothing, so it never blocks on its own.
+/// A push of the current branch after the line's own branch change is also judged on the branch that
+/// change checks out, and refused when the line does not say which (DYD-887).
 /// </summary>
 public static partial class GuardCommand
 {
@@ -35,8 +37,13 @@ public static partial class GuardCommand
         var directory = CallDirectory(cwd, env);
         foreach (var push in routes)
         {
+            if (push.SwitchedTo == MergeRoute.UnreadableBranch)
+                return RefusePr("BLOCKED: This git push follows a branch change in the same line, and the guard cannot read which branch that change checks out, so the push may update the default branch, which is the user's (DR 061).",
+                    $"  Detected: {push.Form}",
+                    "  Push your own branch by name (git push origin <branch>), then integrate it into its feature/* branch",
+                    "  with dydo merge, or with a PR from it into that branch.");
             var tree = Path.GetFullPath(Path.Combine(directory, push.Directory ?? ""));
-            if (PushedBranch(push.Destination!, tree) is { } branch && DefaultBranchMatch(branch, tree) is { } target)
+            if (PushedBranch(push, tree) is { } branch && DefaultBranchMatch(branch, tree) is { } target)
                 return RefusePr($"BLOCKED: This git push updates {target}, the default branch, and the default branch is the user's (DR 061).",
                     $"  Detected: {push.Form}",
                     "  Push your own branch and integrate it into its feature/* branch with dydo merge.");
@@ -48,12 +55,14 @@ public static partial class GuardCommand
     private static string CallDirectory(string? cwd, GuardEnv env) =>
         Path.GetFullPath(cwd ?? env.ProjectRoot ?? Environment.CurrentDirectory);
 
-    // The branch name a push destination stands for in tree, or null when git cannot say.
-    private static string? PushedBranch(string destination, string tree)
+    // The branch name a push destination stands for in tree, or null when git cannot say. The current
+    // branch is the one the line's own branch change checks out, else HEAD's at hook time.
+    private static string? PushedBranch(MergeRoute push, string tree)
     {
+        var destination = push.Destination!;
         if (destination is not (MergeRoute.CurrentBranch or MergeRoute.Upstream))
             return destination;
-        var current = GitText(tree, "symbolic-ref", "--quiet", "--short", "HEAD");
+        var current = push.SwitchedTo ?? GitText(tree, "symbolic-ref", "--quiet", "--short", "HEAD");
         if (current == null || destination == MergeRoute.CurrentBranch)
             return current;
         var upstream = GitText(tree, "config", "--get", $"branch.{current}.merge");

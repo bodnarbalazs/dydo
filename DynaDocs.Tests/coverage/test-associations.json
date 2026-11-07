@@ -287,6 +287,13 @@
       ]
     },
     {
+      "module": "Services/PrCallScanner.BranchChanges.cs",
+      "tests": [
+        "DynaDocs.Tests/Services/MergeRouteScannerTests.cs",
+        "DynaDocs.Tests/Integration/GuardMergeRouteTests.cs"
+      ]
+    },
+    {
       "module": "Services/MergeRoute.cs",
       "tests": [
         "DynaDocs.Tests/Services/MergeRouteScannerTests.cs",

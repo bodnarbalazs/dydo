@@ -19,7 +19,9 @@ The existing parser tests and the new four-way separator matrix exercise that pr
 
 Pr-ready reads section boundaries and verdicts through `IndependentReview`. It requires a PASS
 with a code/docs/merge rubric and parsed candidate and base fields. Its error gives the expected
-semicolon-separated form. No commit resolution, HEAD comparison of the review candidate, or
+semicolon-separated form. Command-only body validation lives in `PrReadyCommand`; the guard
+continues to share `PrReadyCheck`'s tree checks. This avoids a namespace cycle from Services into
+Services.Merge, which already depends on Services. No commit resolution, HEAD comparison of the review candidate, or
 base ancestry check was added. Merge's policy is unchanged, including its existing missing-base
 warning. The Gherkin scenarios exercise pr-ready's command and a pinned merge dry run against a
 fake GitHub boundary; they make no claim about hosted GitHub execution.
@@ -36,6 +38,13 @@ Evidence directory: `/var/tmp/dyd624-618-writer` on the implementation host.
 - `reverted-red.log`: both production files restored to the base while retaining tests,
   exit 1; 18 failed, 48 passed, zero skipped. The five Gherkin cases were discovered too.
   Restoring `fix.patch` reinstated the implementation after this observation.
+- The first commit `acb7e1614033605acaef2f1794fd3d986ece5917` failed static with exactly one
+  finding: the introduced `DynaDocs.Services` / `DynaDocs.Services.Merge` namespace cycle.
+  Moving command-only validation to the command removes that dependency. The failed receipt
+  is `results/run-1794037199797-aa686c01/result.json`; the raw assurance run is
+  `results/assurance/run-8e62005370534f40a38405980dadcd8b/`.
+- `green-cycle-fix.log`: corrected command placement, exit 0; all 587 affected tests passed,
+  zero failed or skipped.
 
 The statechart JRE and TLC SHA-256 values and Pele SHA-512 integrity matched
 `Resources/Statechart/dependency-lock.json`. Installed tools were Python 3.14.4,
@@ -57,11 +66,12 @@ systemd-run --user --scope --slice=app-t3code-agents.slice \
   --filter 'FullyQualifiedName~DynaDocs.Tests.Merge|FullyQualifiedName~PrReady|FullyQualifiedName~SharedIndependentReviewPASSGrammar'
 ```
 
-For the red witness, save the two production files, replace them with their base versions using
+For the red witness, save `Services/Merge/IndependentReview.cs`, `Services/PrReadyCheck.cs` and
+`Commands/PrReadyCommand.cs`, then replace all three with their base versions using
 `git show BASE:path`, and run the same command with the narrower filter
 `FullyQualifiedName~IndependentReviewTests|FullyQualifiedName~PrReadyCommandTests|FullyQualifiedName~SharedIndependentReviewPASSGrammar`.
 Expect exit 1 and the failures above; restore the saved production files, then expect exit 0.
-Only those two files are reverted; canonical tests stay enabled throughout.
+Only those three files are reverted; canonical tests stay enabled throughout.
 
 Final gates use the pinned facade, whose coverage adapter produces and consumes native coverage.
 Set `TLA2TOOLS=/var/tmp/dyd740-statechart/tla2tools.jar`,

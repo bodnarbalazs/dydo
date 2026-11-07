@@ -323,11 +323,14 @@ These change dydo's own repository and CI, not what a project runs.
 - From a bash line, `git -C C:\...\wt push` into a worktree on `main` is refused on Windows, as
   every other host form already was
   ([DYD-739](../2026-11-06/dyd-739-windows-git-c-push.md)).
-- <!-- pending: DYD-640 --> A file-descriptor redirection such as `1>` or `2>` now extracts a
-  write, so writing a protected file that way is refused instead of only warned.
-- <!-- pending: DYD-881 --> A malformed input no longer crashes the 3.6.0 shell reader. Before the
-  fix, the crash reached the guard's catch-all, which allowed the call; now the reader does not
-  throw and the call is refused.
+- A file-descriptor redirection such as `1>` or `2>` now extracts a write, so writing a protected
+  file that way is refused instead of only warned
+  ([DYD-640](../2026-11-05/dyd-640-fd-redirect-write.md)).
+- A here-string whose word is a backtick substitution at the end of a command no longer crashes
+  the 3.6.0 shell reader. Before the fix, the crash reached the guard's catch-all, which allowed
+  the call, so a protected delete or a push to the default branch inside that substitution ran.
+  Now the reader reads the substitution, the guard judges the command inside it, and an unclosed
+  backtick fails the reading instead of throwing (DYD-881).
 - <!-- pending: DYD-887 --> From a ticket branch, one line that switches to the default branch,
   merges and runs a bare `git push` is refused. Before, the guard judged that push by the branch
   checked out before the switch, so it allowed a push to the default branch.

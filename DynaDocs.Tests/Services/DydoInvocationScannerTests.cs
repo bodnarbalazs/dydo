@@ -106,6 +106,32 @@ public class DydoInvocationScannerTests
             Assert.Contains(expected, found);
     }
 
+    // DYD-641: pwsh 7.6.9 ends a statement and a comment at a bare carriage return, closes a string
+    // at a typographic quote, and keeps a caret literal, so the dydo after each runs.
+    [Theory]
+    [InlineData("echo 'x'\rdydo mode set overnight on")]
+    [InlineData("echo x # note\rdydo mode set overnight on")]
+    [InlineData("echo ‘a'; dydo mode set overnight on; ’b'")]
+    [InlineData("echo \"a”; dydo mode set overnight on; “b\"")]
+    [InlineData("echo a^;dydo mode set overnight on")]
+    public void PowerShellReading_FindsTheDydoPwshRuns(string command)
+    {
+        var found = DydoInvocationScanner.Find(command, ShellDialect.PowerShell).Invocations.Select(words => string.Join(' ', words));
+
+        Assert.Contains("mode set overnight on", found);
+    }
+
+    // Where pwsh and cmd read a caret differently, both readings count and neither is certain.
+    [Fact]
+    public void CaretPwshAndCmdReadDifferently_IsUncertain()
+    {
+        var scan = DydoInvocationScanner.Find("dydo ^\r\ncheck", ShellDialect.PowerShell);
+
+        Assert.True(scan.Uncertain);
+        Assert.Contains(["check"], scan.Invocations);
+        Assert.Contains(["^"], scan.Invocations);
+    }
+
     [Fact]
     public void EncodedPowerShellCommand_IsDecoded()
     {

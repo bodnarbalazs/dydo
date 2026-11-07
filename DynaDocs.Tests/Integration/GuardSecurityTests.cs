@@ -12,6 +12,125 @@ using DynaDocs.Services;
 public class GuardSecurityTests : IntegrationTestBase
 {
     [Theory]
+    [InlineData("Bash", "Posix")]
+    [InlineData("PowerShell", "PowerShell")]
+    [InlineData("", "Unknown")]
+    public async Task PythonFallbackTimeout_AnalyzerAndHookRefuseOnEveryAttempt(string toolName, string dialect)
+    {
+        await SetupClaimedAgent();
+        var patterns = ((Func<string, bool> IsMatch, string Reason)[])typeof(BashCommandAnalyzer)
+            .GetField("DangerousPatterns", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+            .GetValue(null)!;
+        var index = Array.FindIndex(patterns, pattern => pattern.IsMatch.Method.Name == "RunsPythonFromStdin");
+        Assert.True(index >= 0);
+        var original = patterns[index];
+        try
+        {
+            patterns[index] = (_ => throw new System.Text.RegularExpressions.RegexMatchTimeoutException(), original.Reason);
+            var analysis = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect)).Analyze("echo ready");
+            Assert.True(analysis.HasDangerousPattern);
+            Assert.Equal("Command too complex to verify safely", analysis.DangerousPatternReason);
+            Assert.Empty(analysis.Operations);
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                var result = toolName == "" ? await UnknownShellGuardAsync("echo ready")
+                    : await GuardWithStdinAsync(ShellJson(toolName, "echo ready"));
+                AssertRefused(toolName, result);
+                result.AssertStderrContains("Command too complex to verify safely");
+            }
+        }
+        finally
+        {
+            patterns[index] = original;
+        }
+    }
+
+    [Theory]
+    [InlineData("Bash")]
+    [InlineData("PowerShell")]
+    [InlineData("")]
+    public async Task LengthBoundary_BenignCommandIsRefusedOnEveryAttempt(string toolName)
+    {
+        await SetupClaimedAgent();
+        var command = "echo ready";
+        var allowed = toolName == "" ? await UnknownShellGuardAsync(command)
+            : await GuardWithStdinAsync(ShellJson(toolName, command));
+        if (toolName == "") allowed.AssertSuccess();
+        else allowed.AssertPreToolUseAllowed();
+        command = command.PadRight(1_048_576, 'x');
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var result = toolName == "" ? await UnknownShellGuardAsync(command + "x")
+                : await GuardWithStdinAsync(ShellJson(toolName, command + "x"));
+            AssertRefused(toolName, result);
+            result.AssertStderrContains("limit of 1048576 characters");
+        }
+    }
+
+    [Theory]
+    [InlineData("Write-Output @(Write-Output @(<# tail -f #> x))")]
+    [InlineData("Write-Output @(<# outer #> Write-Output @(<# tail -f #> x))")]
+    [InlineData("Write-Output @(Write-Output @(# tail -f\nx))")]
+    public async Task NestedGroupComment_DoesNotConsumePollingNudgeRetry(string command)
+    {
+        await SetupClaimedAgent();
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var result = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+            result.AssertPreToolUseAllowed();
+        }
+    }
+
+    [Theory]
+    [InlineData("Write-Output @(Write-Output @(rg 'tail -f' notes))", false)]
+    [InlineData("echo @(cat <<E\n$(rg -n 'tail -f' docs)\nE\n)", true)]
+    [InlineData("echo @(cat <<E\r\n$(rg -n 'tail -f' docs)\r\nE\r\n)", true)]
+    public async Task NestedGroupData_KeepsWarningOrderAndRetry(string command, bool hardBlock)
+    {
+        await SetupClaimedAgent();
+        var first = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        first.AssertPreToolUseDenied();
+        var reason = hardBlock ? "Command contains bypass patterns" : "Open-ended Bash poll-loop detected";
+        first.AssertStderrContains(reason);
+        var retry = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        if (hardBlock)
+        {
+            retry.AssertPreToolUseDenied();
+            retry.AssertStderrContains(reason);
+        }
+        else retry.AssertPreToolUseAllowed();
+    }
+
+    [Theory]
+    [InlineData("block", "command")]
+    [InlineData("warn", "command")]
+    [InlineData("notice", "command")]
+    [InlineData("warn", "new-file")]
+    public async Task NudgeMatchTimeout_IsRefusedOnEveryAttempt(string severity, string match)
+    {
+        await InitProjectAsync("none");
+        var path = Path.Combine(TestDir, ConfigService.ConfigFileName);
+        var config = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))!;
+        config["nudges"] = System.Text.Json.JsonSerializer.SerializeToNode(new[]
+        {
+            new NudgeConfig { Pattern = "^(a+)+$", Message = "Slow configured nudge", Severity = severity, Match = match }
+        });
+        File.WriteAllText(path, config.ToJsonString());
+        var command = new string('a', 26) + "!";
+        var payload = match == "command" ? BashJson(command) : System.Text.Json.JsonSerializer.Serialize(new
+        {
+            session_id = TestSessionId, cwd = TestDir, tool_name = "Write",
+            tool_input = new { file_path = command, content = "x" }
+        });
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var result = await GuardWithStdinAsync(payload);
+            result.AssertPreToolUseDenied();
+            result.AssertStderrContains("Command too complex to verify safely");
+        }
+    }
+
+    [Theory]
     [InlineData("git push --force origin main")]
     [InlineData("gh auth token")]
     [InlineData("bw export --format json")]
@@ -960,6 +1079,131 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertStderrContains("bypass");
     }
 
+    // DYD-641: pwsh 7.6.9 ends a statement and a comment at a bare carriage return, and a here-string
+    // at a bare carriage return or a typographic quote before @ (measured in /tmp/dyd641-evidence);
+    // the text after each runs, so Claude's PowerShell tool, a Codex pwsh argv envelope and an
+    // unknown shell refuse it, and the protected canary keeps its bytes.
+    [Theory]
+    [InlineData("echo @'\nx\n’@; iex '$(echo x > $OUT)'\n'@ # '")]
+    [InlineData("echo @'\nx\r'@; iex '$(echo x > $OUT)'\n'@ # '")]
+    [InlineData("echo x\riex @'\n$(echo x > $OUT)\n'@")]
+    [InlineData("echo hello\rrm dydo/index.md")]
+    [InlineData("echo hello # note\rRemove-Item dydo/index.md")]
+    [InlineData("# x\riex (\n@'\n$(echo x > dydo/index.md)\n'@\n)")]
+    [InlineData("# x\riex `\n@'\n$(echo x > dydo/index.md)\n'@")]
+    [InlineData("echo a > notes.md # x\"\rRemove-Item dydo/index.md\r# y\"")]
+    public async Task Dyd641_StatementPwshRuns_IsDeniedWhereverPwshMayRunIt(string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        await AssertPwshToolsDenyAsync(command);
+        var unknown = await UnknownShellGuardAsync(command);
+
+        unknown.AssertExitCode(2);
+        unknown.AssertStderrContains("bypass");
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // A line starting with @ reaches the CLI lane's argv parser as a response file, so the unknown
+    // shell's reading of this one is proved in the analyzer's tests.
+    [Fact]
+    public async Task Dyd641_PipeAfterABareCarriageReturn_IsDeniedWherePwshRunsIt()
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        await AssertPwshToolsDenyAsync("@'\n$(echo x > dydo/index.md)\n'@\n# c\r| iex");
+
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // bash 5.3.9 keeps a bare carriage return in a word, so the words after it are still the command's
+    // arguments: it deletes, truncates, edits or chmods the canary (measured in /tmp/dyd641-evidence/fix2).
+    // Claude's Bash tool and an unknown shell refuse it, as before DYD-641.
+    [Theory]
+    [InlineData("rm \r dydo/index.md")]
+    [InlineData("rm -- \r dydo/index.md")]
+    [InlineData("tee \r dydo/index.md")]
+    [InlineData("sed -i\r s/a/b/ dydo/index.md")]
+    [InlineData("truncate -s 0 \r dydo/index.md")]
+    [InlineData("chmod 000 \r dydo/index.md")]
+    [InlineData("echo $(rm \r dydo/index.md)")]
+    public async Task Dyd641_ArgumentsAfterABareCarriageReturn_AreDeniedWhereverBashMayRunThem(string command)
+    {
+        await SetupClaimedAgent();
+        var canary = Path.Combine(DydoDir, "index.md");
+        var before = File.ReadAllBytes(canary);
+
+        var bash = await GuardWithStdinAsync(ShellJson("Bash", command));
+        var unknown = await UnknownShellGuardAsync(command);
+
+        bash.AssertPreToolUseDenied();
+        unknown.AssertExitCode(2);
+        Assert.Equal(before, File.ReadAllBytes(canary));
+    }
+
+    // A bash -c string is bash's whichever tool hands it on, so every lane refuses it.
+    [Fact]
+    public async Task Dyd641_BashCommandStringWithABareCarriageReturn_IsDeniedInEveryLane()
+    {
+        await SetupClaimedAgent();
+        const string command = "bash -c 'rm \r dydo/index.md'";
+
+        foreach (var json in new[] { ShellJson("Bash", command), ShellJson("PowerShell", command), CodexPwshJson(command) })
+            (await GuardWithStdinAsync(json)).AssertPreToolUseDenied();
+        (await UnknownShellGuardAsync(command)).AssertExitCode(2);
+    }
+
+    // Each carriage return here is half of a CRLF, so the line holds none of the three characters:
+    // the Windows-authored here-string write is allowed as before DYD-641 (pwsh 7.6.9 runs it harmlessly).
+    // A line starting with @ reaches the CLI lane's argv parser as a response file (DYD-675).
+    [Theory]
+    [InlineData("@'\r\nhello\r\n'@ | Set-Content notes.md\r\necho done")]
+    [InlineData("@'\r\na\r\n'@ | Set-Content notes.md\r\n@'\r\nb\r\n'@ | Add-Content notes.md")]
+    [InlineData("@'\nhello\n'@ | Set-Content notes.md\r\n")]
+    [InlineData("cat @'\r\nhello\r\n'@ > notes.md\r\n")]
+    public async Task Dyd641_CrlfAfterAHereStringWrite_IsAllowed(string command)
+    {
+        await SetupClaimedAgent();
+
+        foreach (var json in new[] { ShellJson("Bash", command), ShellJson("PowerShell", command), CodexPwshJson(command) })
+            (await GuardWithStdinAsync(json)).AssertPreToolUseAllowed();
+    }
+
+    [Fact]
+    public async Task Dyd641_CrlfAfterAHereStringWrite_IsAllowedInAnUnknownShell()
+    {
+        await SetupClaimedAgent();
+
+        (await UnknownShellGuardAsync("cat @'\r\nhello\r\n'@ > notes.md\r\n")).AssertExitCode(0);
+    }
+
+    // Claude's PowerShell tool and a Codex pwsh argv envelope both refuse the command as a bypass.
+    private async Task AssertPwshToolsDenyAsync(string command)
+    {
+        var powerShell = await GuardWithStdinAsync(ShellJson("PowerShell", command));
+        var envelope = await GuardWithStdinAsync(CodexPwshJson(command));
+
+        powerShell.AssertPreToolUseDenied();
+        powerShell.AssertStderrContains("bypass");
+        envelope.AssertPreToolUseDenied();
+        envelope.AssertStderrContains("bypass");
+    }
+
+    // A Codex shell call that runs the command through pwsh -Command.
+    private string CodexPwshJson(string command) =>
+        System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["session_id"] = TestSessionId,
+            ["turn_id"] = "t1",
+            ["tool_name"] = "shell_command",
+            ["cwd"] = TestDir,
+            ["tool_input"] = new Dictionary<string, object> { ["command"] = new[] { "pwsh", "-Command", command }, ["workdir"] = TestDir },
+        });
+
     // Split seat B's expanding-word probes that write no path: master warns, and so does every lane.
     [Theory]
     [MemberData(nameof(GuardRetroCommands.Gs02ExpandingWordWarningLines), MemberType = typeof(GuardRetroCommands))]
@@ -1552,6 +1796,7 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("Bash", "echo $HOME >&2")]
     [InlineData("Bash", "echo $HOME 2>&-")]
     [InlineData("PowerShell", "Get-ChildItem $HOME 2>$null")]
+    [InlineData("PowerShell", "Invoke-Command { Get-ChildItem $HOME 2>$null}")]
     public async Task Dyd640_FdDuplicationOrSinkBesideABypass_IsAllowed(string toolName, string command)
     {
         await SetupClaimedAgent();
@@ -1561,8 +1806,8 @@ public class GuardSecurityTests : IntegrationTestBase
         result.AssertPreToolUseAllowed();
     }
 
-    // DYD-640 review B1, B3 and nits 2-3: a duplication or sink closed by a substitution, subshell or
-    // group, continued onto the next line, into /dev/tty or onto a $ descriptor stays allowed.
+    // DYD-640 review B1, B3 and nit 2, round 2 B1: a duplication or sink closed by a substitution or
+    // subshell, text after it included, continued onto the next line or into /dev/tty stays allowed.
     [Theory]
     [InlineData("out=$(git status 2>&1)")]
     [InlineData("out=$(git status 2>&1) || true")]
@@ -1574,10 +1819,13 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("x=\"$(git rev-parse HEAD 2>/dev/null)\"")]
     [InlineData("v=$(command -v jq 2>/dev/null) || true")]
     [InlineData("if [ -n \"$(git status --porcelain 2>/dev/null)\" ]; then echo dirty; fi")]
-    [InlineData("echo $HOME 2>/dev/null}")]
     [InlineData("echo \"$HOME\" 2>\\\n/dev/null")]
     [InlineData("echo $HOME 2>/dev/tty")]
-    [InlineData("echo $HOME >&$fd")]
+    [InlineData("tag=\"$(git describe --always 2>/dev/null)-dirty\"")]
+    [InlineData("echo \"$(git status 2>&1):done\"")]
+    [InlineData("x=$(git status 2>/dev/null)suffix")]
+    [InlineData("x=`git status 2>&1`suffix")]
+    [InlineData("x=$(echo $(git status 2>&1)x )")]
     public async Task Dyd640_SinkInsideASubstitutionOrContinued_IsAllowed(string command)
     {
         await SetupClaimedAgent();
@@ -1597,6 +1845,12 @@ public class GuardSecurityTests : IntegrationTestBase
     [InlineData("x=`printf y 2>>dydo/index.md`")]
     [InlineData("{ printf y >&dydo/index.md; }")]
     [InlineData("printf y 2>\\\ndydo/index.md")]
+    [InlineData("tag=\"$(git describe --always 2>dydo/index.md)-dirty\"")]
+    [InlineData("echo \"$(git status 2>dydo/index.md):done\"")]
+    [InlineData("x=$(git status 2>dydo/index.md)suffix")]
+    [InlineData("x=`git status 2>dydo/index.md`suffix")]
+    [InlineData("x=$( $(git status 2>dydo/index.md)x )")]
+    [InlineData("x=$(git status 2>.env)suffix")]
     public async Task Dyd640_GuardedTargetInsideASubstitutionOrContinued_IsDenied(string command)
     {
         await SetupClaimedAgent();
@@ -1622,5 +1876,116 @@ public class GuardSecurityTests : IntegrationTestBase
         var result = await GuardWithStdinAsync(ShellJson(toolName, command));
 
         result.AssertPreToolUseDenied();
+    }
+
+    // DYD-640 round 2 B2 and N1: >& onto a variable or a quoted ) writes the file the word names, and bash
+    // ends no word at }, so each is a write beside a $ word.
+    [Theory]
+    [InlineData("Bash", "fd=dydo/index.md; printf x >&\"$fd\"")]
+    [InlineData("PowerShell", "fd=dydo/index.md; printf x >&\"$fd\"")]
+    [InlineData("Bash", "fd=.env; printf x >&$fd")]
+    [InlineData("PowerShell", "fd=.env; printf x >&$fd")]
+    [InlineData("Bash", "fd=dydo/index.md; printf x >&$fd")]
+    [InlineData("PowerShell", "fd=dydo/index.md; printf x >&$fd")]
+    [InlineData("Bash", "fd=.env; printf x >&\"$fd\"")]
+    [InlineData("PowerShell", "fd=.env; printf x >&\"$fd\"")]
+    [InlineData("Bash", "x=$( $(git status 2>&1)x )")]
+    [InlineData("Bash", "echo $HOME >&\"1)\"")]
+    [InlineData("PowerShell", "echo $HOME >&\"1)\"")]
+    [InlineData("Bash", "echo $HOME 2>/dev/null}")]
+    public async Task Dyd640_WordTheShellWritesBesideABypass_IsDenied(string toolName, string command)
+    {
+        await SetupClaimedAgent();
+
+        var result = await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        result.AssertPreToolUseDenied();
+    }
+
+    // DYD-723: a command nested past the guard's reading bound is refused as too complex to verify,
+    // through Claude's Bash and PowerShell tools and in an unknown shell.
+    [Theory]
+    [InlineData("Bash")]
+    [InlineData("PowerShell")]
+    [InlineData("")]
+    public async Task DeepNesting_IsRefusedAsTooComplex(string toolName)
+    {
+        await SetupClaimedAgent();
+
+        var result = await NestingGuardAsync(toolName, 40);
+
+        AssertRefused(toolName, result);
+        result.AssertStderrContains("Command too complex to verify safely");
+    }
+
+    // 100,000 characters of it are refused as promptly, since reading stops at the bound. Before
+    // DYD-723 the reading recursed once per level and overflowed the stack: run on the fix only.
+    [Theory]
+    [InlineData("Bash")]
+    [InlineData("PowerShell")]
+    [InlineData("")]
+    public async Task LongDeepNesting_IsRefusedPromptly(string toolName)
+    {
+        await SetupClaimedAgent();
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        var result = await NestingGuardAsync(toolName, 33_333);
+
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Took {stopwatch.Elapsed}");
+        AssertRefused(toolName, result);
+        result.AssertStderrContains("Command too complex to verify safely");
+    }
+
+    // The bound holds on every path a command runs (DYD-723). bash reads an unquoted $( as a group,
+    // which nests as a substitution does, and a command string a shell runs is read eight levels
+    // below the command. Past 32 groups, or past eight shells around a substitution nested past the
+    // bound, the command is refused in every lane; at 32 groups, and at eight shells around one
+    // nested 16 deep, it is allowed as before.
+    [Theory]
+    [InlineData("Bash", "$(", ")", 33, 0, true)]
+    [InlineData("PowerShell", "$(", ")", 33, 0, true)]
+    [InlineData("", "$(", ")", 33, 0, true)]
+    [InlineData("Bash", "$(", ")", 32, 0, false)]
+    [InlineData("PowerShell", "$(", ")", 32, 0, false)]
+    [InlineData("", "$(", ")", 32, 0, false)]
+    [InlineData("Bash", "\"$(", ")\"", 40, 9, true)]
+    [InlineData("PowerShell", "\"$(", ")\"", 40, 9, true)]
+    [InlineData("", "\"$(", ")\"", 40, 9, true)]
+    [InlineData("Bash", "\"$(", ")\"", 16, 8, false)]
+    [InlineData("PowerShell", "\"$(", ")\"", 16, 8, false)]
+    [InlineData("", "\"$(", ")\"", 16, 8, false)]
+    public async Task NestingOnEveryPath_PastTheBound_IsRefused(string toolName, string opener, string closer, int levels, int shells, bool refused)
+    {
+        await SetupClaimedAgent();
+        var command = "echo " + string.Concat(Enumerable.Repeat(opener, levels)) + "x" + string.Concat(Enumerable.Repeat(closer, levels));
+        for (var shell = 0; shell < shells; shell++)
+            command = "bash -c '" + command.Replace("'", "'\"'\"'") + "'";
+
+        var result = toolName == "" ? await UnknownShellGuardAsync(command) : await GuardWithStdinAsync(ShellJson(toolName, command));
+
+        if (refused)
+        {
+            AssertRefused(toolName, result);
+            result.AssertStderrContains("Command too complex to verify safely");
+        }
+        else if (toolName == "")
+            result.AssertSuccess();
+        else
+            result.AssertPreToolUseAllowed();
+    }
+
+    // A hook call is refused with a deny decision, the CLI lane with exit 2.
+    private static void AssertRefused(string toolName, CommandResult result)
+    {
+        if (toolName == "")
+            result.AssertExitCode(2);
+        else
+            result.AssertPreToolUseDenied();
+    }
+
+    private Task<CommandResult> NestingGuardAsync(string toolName, int levels)
+    {
+        var command = "echo " + string.Concat(Enumerable.Repeat("\"$(", levels)) + "x" + string.Concat(Enumerable.Repeat(")\"", levels));
+        return toolName == "" ? UnknownShellGuardAsync(command) : GuardWithStdinAsync(ShellJson(toolName, command));
     }
 }

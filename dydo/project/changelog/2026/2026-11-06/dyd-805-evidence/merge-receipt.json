@@ -1,0 +1,146 @@
+{
+  "testedCandidate": "6ac09458abd0b56290237b2648469f294a18a7ad",
+  "parents": [
+    "7175d7128d62ed4a16fec9b2cd81115c34a3ee5f",
+    "4dfa8bb79a832d776e91539aae785fca3ed30c93"
+  ],
+  "source": {
+    ".github/workflows/ci.yml": "014997903f358b5031dafa913bfcec2fa4bf7aa56dfd190466744b31f7519aeb",
+    "DynaDocs.Tests/Integration/GuardPrReadyTests.cs": "81250feeb23c7cedc20556b7fa54c2c0dba8fe737ebc2a9a3c5c981e4cf26cb9",
+    "DynaDocs.Tests/Commands/GuardPrReadyBodyFileTests.cs": "0d32f34569b0a0f362a797696dc68e8ecd19a3fb6c841222bb9bb9fad4d2f5a7",
+    "DynaDocs.Tests/coverage/tests/guard-windows-selection.test.cjs": "ec6cc2a9d1362b4e50ebf4423463df20b668d6a05ee75ed49eaccccf3293cdbf",
+    "DynaDocs.Tests/coverage/gap_check.py": "901759b8a72aeb7e8985f6671f81c1915064002d61df4016f1a60bb1845430cf"
+  },
+  "exits": {
+    "discovery": 0,
+    "node": 1,
+    "classes": 0,
+    "light": 0,
+    "static": 0
+  },
+  "preflight": {
+    "initialExit": 127,
+    "reason": "Explicit PATH omitted provisioned Node",
+    "correctedExit": 0
+  },
+  "environment": "Linux; PATH includes /tmp/dyd622-pwsh and provisioned fnm Node; required gate lock and capped systemd scopes",
+  "red": "Reused retained initial diagnosis; production guard/parser source unchanged",
+  "classes": {
+    "counters": {
+      "total": "287",
+      "executed": "287",
+      "passed": "287",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "classes": {
+      "DynaDocs.Tests.Integration.GuardPrReadyTests": 257,
+      "DynaDocs.Tests.Commands.GuardPrReadyBodyFileTests": 30
+    },
+    "nonPassed": []
+  },
+  "light": {
+    "counters": {
+      "total": "2515",
+      "executed": "2515",
+      "passed": "2515",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "classes": {
+      "DynaDocs.Tests.Integration.GuardCodexApplyPatchTests": 31,
+      "DynaDocs.Tests.Services.PrCallScannerTests": 463,
+      "DynaDocs.Tests.Integration.GuardPrReadyTests": 257,
+      "DynaDocs.Tests.Integration.GuardSecurityTests": 597,
+      "DynaDocs.Tests.Commands.GuardCommandTests": 502,
+      "DynaDocs.Tests.Integration.GuardWorkerLaneTests": 155,
+      "DynaDocs.Tests.Integration.GuardModeSetTests": 73,
+      "DynaDocs.Tests.Commands.GuardPrReadyBodyFileTests": 30,
+      "DynaDocs.Tests.Integration.GuardIntegrationTests": 94,
+      "DynaDocs.Tests.Integration.GuardMergeRouteTests": 23,
+      "DynaDocs.Tests.Services.DangerousPatternCultureTests": 24,
+      "DynaDocs.Tests.Integration.GuardRefusalContractTests": 9,
+      "DynaDocs.Tests.Commands.GuardNewFileNudgeTests": 52,
+      "DynaDocs.Tests.Integration.GuardWarnOrderTests": 22,
+      "DynaDocs.Tests.Commands.GuardHostMemoryTests": 29,
+      "DynaDocs.Tests.Integration.PrReadyCommandTests": 15,
+      "DynaDocs.Tests.Integration.GuardWorktreeRemovalTests": 12,
+      "DynaDocs.Tests.Integration.GuardAtCommandTests": 13,
+      "DynaDocs.Tests.Workflow.NodeTestGuardTests": 10,
+      "DynaDocs.Tests.Integration.GuardStaticGateProvisioningTests": 10,
+      "DynaDocs.Tests.Integration.ClaudeGuardWiringTests": 14,
+      "DynaDocs.Tests.Services.PrCallScannerBackslashTreeTests": 16,
+      "DynaDocs.Tests.Integration.GuardWorkerLaneMergeTests": 4,
+      "DynaDocs.Tests.EndToEnd.GuardAtCommandProcessTests": 7,
+      "DynaDocs.Tests.Integration.InitCommandTests": 12,
+      "DynaDocs.Tests.Integration.GuardNewFileNudgeIntegrationTests": 24,
+      "DynaDocs.Tests.Services.ValidationServiceTests": 12,
+      "DynaDocs.Tests.Services.PnpmNudgeTests": 1,
+      "DynaDocs.Tests.Workflow.ReleaseWorkflowTests": 2,
+      "DynaDocs.Tests.Commands.ValidateCommandTests": 1,
+      "DynaDocs.Tests.Features.ValidationReportsAClaudeProjectThatRunsWithoutTheDydoGuardFeature": 1
+    },
+    "nonPassed": []
+  },
+  "static": {
+    "candidate": {
+      "commit": "6ac09458abd0b56290237b2648469f294a18a7ad",
+      "dirty": false
+    },
+    "stacks": [
+      {
+        "stack": "dotnet",
+        "state": "passed",
+        "childExit": 0,
+        "resultExit": 0
+      },
+      {
+        "stack": "python",
+        "state": "passed",
+        "childExit": 0,
+        "resultExit": 0
+      },
+      {
+        "stack": "node",
+        "state": "passed",
+        "childExit": 0,
+        "resultExit": 0
+      },
+      {
+        "stack": "viewer",
+        "state": "passed",
+        "childExit": 0,
+        "resultExit": 0
+      },
+      {
+        "stack": "statechart",
+        "state": "passed",
+        "childExit": 0,
+        "resultExit": 0
+      }
+    ]
+  },
+  "treeAfterGates": "8f48693d443ef73e1ef2ad877da489f5a6efbfaa"
+}

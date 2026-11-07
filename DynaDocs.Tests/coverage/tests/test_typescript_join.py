@@ -1,12 +1,13 @@
 """Istanbul LCOV joins the TypeScript walker's callables into policy modules."""
 import sys
+import copy
 import tempfile
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gate_policy import evaluate_policy
-from typescript_join import join, join_module, parse_lcov
+from typescript_join import join, join_module, parse_lcov, join_istanbul, merge_istanbul
 
 ROOT = Path("/repo")
 BASE = ROOT / "viewer"
@@ -43,11 +44,19 @@ class LcovParseTests(unittest.TestCase):
         self.assertEqual({2: 1, 3: 1, 4: 0, 6: 1}, record["lines"])
         self.assertEqual({"2:0:0": 1, "2:0:1": 0}, record["branches"])
         self.assertEqual({1: ["outer"], 3: ["(anonymous_1)"], 6: ["idle"]}, record["functions"])
-        self.assertEqual(0, record["calls"]["idle"])
+        self.assertEqual({"outer": [1], "(anonymous_1)": [1], "idle": [0]}, record["calls"])
 
     def test_a_source_recorded_twice_is_refused(self):
         with self.assertRaisesRegex(ValueError, "Duplicate Istanbul LCOV record"):
             parse_lcov(LCOV + LCOV, ROOT, BASE)
+
+    def test_a_source_outside_the_repository_is_no_record_and_leaves_the_next_intact(self):
+        foreign = "TN:\nSF:../../managed/pele.js\nDA:1,1\nBRDA:1,0,0,1\nend_of_record\n"
+
+        records = parse_lcov(foreign + LCOV, ROOT, BASE)
+
+        self.assertEqual(["viewer/src/app.ts"], list(records))
+        self.assertEqual({2: 1, 3: 1, 4: 0, 6: 1}, records["viewer/src/app.ts"]["lines"])
 
 
 class JoinModuleTests(unittest.TestCase):
@@ -75,6 +84,17 @@ class JoinModuleTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "No unambiguous Istanbul LCOV point"):
             join_module("viewer/src/app.ts", record, walked(method("outer:1:0", 1, 1, 0, 9)))
 
+    def test_two_functions_node_names_alike_each_keep_their_own_counter(self):
+        lcov = ("TN:\nSF:src/temp.ts\nFN:2,temp\nFN:6,temp\nFNDA:256,temp\nFNDA:0,temp\n"
+                "DA:2,256\nDA:3,256\nDA:6,1\nDA:7,0\nend_of_record\n")
+        record = parse_lcov(lcov, ROOT, BASE)["viewer/src/temp.ts"]
+
+        module = join_module("viewer/src/temp.ts", record,
+                             walked(method("temp:2:2", 2, 3, 10, 40), method("temp:6:2", 6, 7, 60, 90)))
+
+        rows = {row["id"]: (row["covered"], row["total"]) for row in module["methods"]}
+        self.assertEqual({"temp:2:2": (2, 2), "temp:6:2": (0, 2)}, rows)
+
     def test_top_level_statements_are_the_module_callable(self):
         scores = {"cc": 3, "cognitive": 2}
         module = join_module("viewer/src/app.ts", self.record(), walked(module=scores))
@@ -101,6 +121,51 @@ class JoinTests(unittest.TestCase):
         findings = {(row["path"], row["gate"]) for row in evaluate_policy(modules)}
         self.assertEqual({("viewer/src/unused.ts", "line-coverage"), ("viewer/src/unused.ts", "branch-coverage"),
                           ("viewer/src/unused.ts", "hcrap")}, findings)
+
+
+class SourceDerivedJoinTests(unittest.TestCase):
+    def coverage(self):
+        body = {'start': {'line': 1, 'column': 20}, 'end': {'line': 3, 'column': 1}}
+        return {'statementMap': {'0': {'start': {'line': 2, 'column': 2},
+                                       'end': {'line': 2, 'column': 11}}},
+                's': {'0': 1}, 'fnMap': {'0': {'loc': body}}, 'f': {'0': 0},
+                'branchMap': {'0': {'line': 2}}, 'b': {'0': [1, 0]}}
+
+    def test_body_counts_keep_an_unentered_callable_uncovered_on_a_hit_line(self):
+        coverage = self.coverage()
+        metric = {**method('unused:1:7', 1, 3, 0, 50), 'body': coverage['fnMap']['0']['loc']}
+        row = join_istanbul('source.ts', coverage, walked(metric))
+        self.assertEqual({'2': 1}, row['lines'])
+        self.assertEqual({'2': 0}, row['methods'][0]['body_lines'])
+        self.assertEqual(0, row['methods'][0]['covered'])
+        self.assertEqual({'2:0:0': 1, '2:0:1': 0}, row['branches'])
+
+    def test_empty_function_still_has_its_execution_counter_and_body_point(self):
+        coverage = self.coverage()
+        coverage['statementMap'], coverage['s'] = {}, {}
+        metric = {**method('empty:1:7', 1, 3, 0, 50), 'body': coverage['fnMap']['0']['loc']}
+        row = join_istanbul('source.ts', coverage, walked(metric))
+        self.assertEqual({'1': 0}, row['methods'][0]['body_lines'])
+        self.assertEqual({'1': 0}, row['lines'])
+
+    def test_merge_preserves_unloaded_source_and_rejects_denominator_or_counter_drift(self):
+        source = {'source.ts': self.coverage(), 'unloaded.ts': self.coverage()}
+        for value in source.values():
+            value['s']['0'] = 0
+            value['b']['0'] = [0, 0]
+        measured = self.coverage()
+        merged = merge_istanbul(source, [{str(ROOT / 'source.ts'): measured}], ROOT)
+        self.assertEqual(1, merged['source.ts']['s']['0'])
+        self.assertEqual(0, merged['unloaded.ts']['s']['0'])
+        self.assertEqual(0, source['source.ts']['s']['0'])
+        for defect in ('map', 'missing', 'branch', 'negative'):
+            report = copy.deepcopy(measured)
+            if defect == 'map': report['fnMap'] = {}
+            if defect == 'missing': report['s'] = {}
+            if defect == 'branch': report['b']['0'].pop()
+            if defect == 'negative': report['f']['0'] = -1
+            with self.subTest(defect=defect), self.assertRaises(ValueError):
+                merge_istanbul(source, [{str(ROOT / 'source.ts'): report}], ROOT)
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { plainText } from "../backends/plain-text.ts";
 import { readMessages } from "../frontends/messages.ts";
 import { pinnedTlc } from "../run.ts";
-import { skip as noTlc } from "./tlc.ts";
+import { exitClass, skip as noTlc } from "./tlc.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const corpus = path.join(here, "corpus");
@@ -100,7 +100,7 @@ for (const name of fs.readdirSync(corpus)) {
     assert.equal(r.stderr, "");
     const first = path.join(dir, "verdict-1.exit");
     const plain = fs.existsSync(first) ? Number(read(first)) : 0;
-    assert.equal(r.status, plain === 0 ? 0 : [11, 12, 13].includes(plain) ? 1 : 2);
+    assert.equal(r.status, exitClass(plain));
     assert.equal(r.report, read(path.join(dir, "report.md")));
     assert.equal(read(path.join(r.out, "chart.mmd")), read(path.join(dir, "chart.mmd")));
     assert.deepEqual(r.files, ["chart.mmd", "report.md", "tlc.out", ...named(r.report)].sort());

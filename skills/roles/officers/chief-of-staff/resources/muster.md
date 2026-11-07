@@ -6,7 +6,8 @@ The Chief of Staff completes this checklist with the user before activation.
 
 - [ ] Complete `overnight-mode`'s transition preflight for startup and shutdown while the user is
       present. Record the observed mode and prepare the chief-of-staff warning, same-command retry
-      and independent `dydo mode show` after actual execution. Activation awaits that readback.
+      and `dydo mode show` in a separate later tool call, only after the setter has returned its
+      result, never in parallel. Activation awaits that readback.
 - [ ] Request each admiral's report using the block below.
 - [ ] Show each intent read-back verbatim, separately from work; obtain the user's corrections.
 - [ ] Present current and foreseeable questions with context, options and recommendations; record

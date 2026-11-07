@@ -1,0 +1,30 @@
+Running as unit: run-p2797654-i48885452.scope; invocation ID: 927a6d5958e84e72844b205b43e5d0c9
+✖ CI runs the oracle and requires its result on every push/PR trigger (1.273622ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 101.307462
+
+✖ failing tests:
+
+test at DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:35:1
+✖ CI runs the oracle and requires its result on every push/PR trigger (1.273622ms)
+  AssertionError [ERR_ASSERTION]: CI must run the config oracle in a required job
+      at oracleSteps (/home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:16:10)
+      at TestContext.<anonymous> (/home/balazs/.t3/worktrees/DynaDocs/t3-92dba75c/DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs:36:3)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+reverted workflow regression exit=1 (expected 1)

@@ -1,0 +1,10 @@
+{
+  "id": 127712322688,
+  "run_id": 42162831171,
+  "head_sha": "b1ec72e005b326088d885efe6c16b6cd4c9ba3d2",
+  "status": "completed",
+  "conclusion": "failure",
+  "started_at": "2026-11-06T04:29:48Z",
+  "completed_at": "2026-11-06T04:46:44Z",
+  "html_url": "https://github.com/BalazsOrg/dydo/actions/runs/42162831171/job/127712322688"
+}

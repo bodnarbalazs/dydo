@@ -163,79 +163,50 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private const RegexOptions LinearIgnoreCase = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking;
 
     private const int DangerousPatternTimeoutMs = 250;
+    private const string TooComplex = "Command too complex to verify safely";
+    internal const int MaxCommandLength = 1_048_576;
+    internal const string CommandLengthReason = TooComplex + ": command length exceeds limit of 1048576 characters";
 
     // A command word ends at whitespace, the end, a quote or backtick closing a -c string or substitution, or a separator.
     private const string CommandEndContext = @"\s|$|['""`);&|]";
     private const string LinearCommandEnd = "(?:" + CommandEndContext + ")";
 
-    private static readonly (Func<string, bool> IsMatch, string Reason)[] DangerousPatterns =
-    [
-        (RecursiveDeleteRootRegex().IsMatch, "Recursive delete of root or home directory"),
-        (RecursiveDeleteGlobRegex().IsMatch, "Recursive delete with dangerous glob pattern"),
 
-        (PowerShellRecursiveDeleteRegex().IsMatch, "PowerShell recursive delete of root directory"),
-
-        (ForkBombClassicRegex().IsMatch, "Fork bomb detected"),
-        (ForkBombAltRegex().IsMatch, "Fork bomb variant detected"),
-
-        (DirectDiskWriteRegex().IsMatch, "Direct disk write attempt"),
-        (DdDiskWriteRegex().IsMatch, "Direct disk write via dd"),
-        (DdKnownDiskWriteRegex().IsMatch, "Direct disk write via dd"),
-
-        (Base64DecodePipeExecRegex().IsMatch, "Base64 decode piped to interpreter"),
-
-        (CurlPipeShRegex().IsMatch, "Download and execute pattern (curl | sh)"),
-        (WgetPipeShRegex().IsMatch, "Download and execute pattern (wget | sh)"),
-        (WgetOutputPipeShRegex().IsMatch, "Download and execute pattern (wget -O | sh)"),
-
-        (PowerShellIwrIexRegex().IsMatch, "Download and execute pattern (PowerShell IWR | IEX)"),
-        (PowerShellIwrIexShortRegex().IsMatch, "Download and execute pattern (PowerShell iwr | iex)"),
-        (PowerShellDownloadStringRegex().IsMatch, "Download and execute pattern (DownloadString | IEX)"),
-
-        (EvalVariableRegex().IsMatch, "Eval of variable content"),
-
-        (HistoryClearRegex().IsMatch, "History clearing detected"),
-        (HistoryFileTruncateRegex().IsMatch, "History file truncation"),
-        (PowerShellHistoryDeleteRegex().IsMatch, "PowerShell history deletion"),
-
-        (SelinuxDisableRegex().IsMatch, "SELinux disable attempt"),
-        (FirewallFlushRegex().IsMatch, "Firewall flush attempt"),
-
-        (ShadowFileAccessRegex().IsMatch, "Shadow file access attempt"),
-        (PasswdModifyRegex().IsMatch, "Password file modification attempt"),
-
-        // David Ondrej's global command denylist, pinned in DYD-188.
-        (OndrejRmRegex().IsMatch, "Deletion of system or home directory"),
-        (OndrejDiskRegex().IsMatch, "Disk format or erase attempt"),
-        (OndrejSudoRmRegex().IsMatch, "Privileged delete attempt"),
-        (OndrejCurlPipeRegex().IsMatch, "Download and execute as shell"),
-        (OndrejGitPushRegex().IsMatch, "Force push or remote branch deletion. GitHub deletes a merged PR's branch itself; clean up locally from outside the tree with dydo clean --dry-run <worktree>, then dydo clean <worktree>, which removes the worktree, keeps unmerged branches and runs git fetch --prune; name any other remote branch for the user"),
-        (OndrejGitRecoveryRegex().IsMatch, "Git recovery history destruction"),
-        (OndrejSystemPermissionsRegex().IsMatch, "System permission or ownership change"),
-        (OndrejGhDeleteRegex().IsMatch, "Destructive GitHub operation"),
-        (OndrejGhApiDeleteRegex().IsMatch, "GitHub API delete operation"),
-        (OndrejGhVisibilityRegex().IsMatch, "GitHub repository visibility change"),
-        (OndrejGhTokenRegex().IsMatch, "GitHub authentication token access"),
-        (OndrejPasswordCliRegex().IsMatch, "Password manager access"),
-        (RunsPasswordStore, "Password store access"),
-        (OndrejOpRegex().IsMatch, "1Password secret access"),
-        (OndrejKeychainRegex().IsMatch, "Keychain password access"),
-        (OndrejGpgSecretRegex().IsMatch, "GPG secret key export"),
-        (OndrejPasswordStorePathRegex().IsMatch, "Password store path access"),
-        (OndrejPasswordAppRegex().IsMatch, "Password manager application access"),
-
-        // Raw worktree removal - dydo clean archives uncommitted work and never follows a link.
-        (ForcedWorktreeRemoveRegex().IsMatch, WorktreeRemovalReason),
-        (IsRecursiveWorktreeDelete, WorktreeRemovalReason),
-
-        (InlineInterpreterRegex().IsMatch, "Inline interpreter execution bypasses file operation analysis. Write a script file instead."),
-        (RunsPythonFromStdin, "Python program on stdin bypasses file operation analysis, as python -c does. "
-            + "Change files with the file tools or write a script file; a change to a protected file goes to the user."),
-    ];
 
     // Heredoc detection - strip $(cat <<'WORD'...WORD) to prevent false positives
     [GeneratedRegex(@"\$\(cat\s+<<-?'?""?(\w+)""?'?\s*\n[\s\S]*?\n\1\s*\)")]
     private static partial Regex CatHeredocRegex();
+
+    [GeneratedRegex(@"\$\(cat\s+<<-?'?""?(\w+)""?'?[^\S\n]*\n")]
+    private static partial Regex CatHeredocOpenerRegex();
+
+    [GeneratedRegex(@"\n(\w+)\s*\)")]
+    private static partial Regex CatHeredocCloserRegex();
+
+    // An unmatched opener must not search the remaining text again. A matching delimiter after
+    // the opener's first newline guarantees the original regex succeeds at that opener; keeping
+    // that regex preserves its greedy header, lazy body and exact replacement extent.
+    private static string StripCatHeredocs(string text)
+    {
+        Dictionary<string, int> closing = new(StringComparer.Ordinal);
+        foreach (Match closer in CatHeredocCloserRegex().Matches(text))
+            closing[closer.Groups[1].Value] = closer.Index;
+        if (closing.Count == 0)
+            return text;
+
+        var result = new StringBuilder(text.Length);
+        var start = 0;
+        for (var opener = CatHeredocOpenerRegex().Match(text); opener.Success;
+            opener = CatHeredocOpenerRegex().Match(text, Math.Max(start, opener.Index + opener.Length)))
+        {
+            if (closing.GetValueOrDefault(opener.Groups[1].Value, -1) < opener.Index + opener.Length)
+                continue;
+            var match = CatHeredocRegex().Match(text, opener.Index);
+            result.Append(text, start, match.Index - start).Append("HEREDOC_STRIPPED");
+            start = match.Index + match.Length;
+        }
+        return result.Append(text, start, text.Length - start).ToString();
+    }
 
     // Any heredoc (<<WORD, <<'WORD', <<"WORD", <<-WORD; a word of letters, digits, _ and -, such as
     // END-OF-FILE, ending where the shell's word ends): group 1 is the opener line, then the body and
@@ -248,6 +219,83 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // A PowerShell here-string: @' or @" ends its line, '@ or "@ starts the closing line. @' is literal.
     [GeneratedRegex(@"@(['""])[ \t]*\r?\n[\s\S]*?^\1@", RegexOptions.Multiline)]
     private static partial Regex HereStringRegex();
+
+    // Where HeredocBodyRegex and HereStringRegex can start, up to the body: group 1 the dash, 2 the
+    // quote and 3 the delimiter of a heredoc; group 1 the quote of a here-string.
+    [GeneratedRegex(@"(?<!<)<<(-)?[ \t]*(['""]?)([\w-]+)\2(?=[\s;&|<>()])")]
+    private static partial Regex HeredocOpenerRegex();
+
+    [GeneratedRegex(@"@(['""])[ \t]*\r?\n")]
+    private static partial Regex HereStringOpenerRegex();
+
+    // The delimiter HeredocBodyRegex reads after << when it takes a dash after it as the delimiter's own.
+    [GeneratedRegex(@"\G[\w-]+(?=[\s;&|<>()])")]
+    private static partial Regex DashDelimiterRegex();
+
+    // The positions, in order, where HeredocBodyRegex and HereStringRegex match: each opener a later
+    // line closes; and each heredoc the command's own reading read, from its << to after its last line.
+    private sealed record ClosedBodyOpeners(List<int> Heredocs, List<int> HereStrings, HashSet<(int Opener, int End)> ReadHeredocs);
+
+    /// <summary>
+    /// Where a heredoc or here-string of the text can match: each opener a line after it closes.
+    /// Searching from an opener that nothing closes reads to the end of the text, once per such
+    /// opener, quadratic in quoted text full of them (DYD-723); the body regexes run only from these.
+    /// </summary>
+    private static ClosedBodyOpeners ClosedOpeners(string text, ShellReader.Reading reading)
+    {
+        var closing = ClosingLines(text);
+        List<int> heredocs = [];
+        var lineEnd = -1;
+        for (var opener = HeredocOpenerRegex().Match(text); opener.Success; opener = opener.NextMatch())
+        {
+            var body = NextAt(text, '\n', opener.Index + opener.Length, ref lineEnd) + 1;
+            var dash = opener.Groups[1].Success;
+            if ((dash ? closing.Tabbed : closing.Untabbed).GetValueOrDefault(opener.Groups[3].Value, -1) >= body
+                || (dash && DashDelimiterRegex().Match(text, opener.Index + 2) is { Success: true } own
+                    && closing.Untabbed.GetValueOrDefault(own.Value, -1) >= body))
+                heredocs.Add(opener.Index);
+        }
+
+        List<int> hereStrings = [];
+        for (var opener = HereStringOpenerRegex().Match(text); opener.Success; opener = opener.NextMatch())
+        {
+            if ((opener.Groups[1].Value == "'" ? closing.Single : closing.Double) >= opener.Index + opener.Length)
+                hereStrings.Add(opener.Index);
+        }
+        return new ClosedBodyOpeners(heredocs, hereStrings, [.. reading.Commands.SelectMany(command => command.Bodies)
+            .Where(body => body.Kind == ShellReader.BodyKind.Heredoc).Select(body => (body.Whole.Start.Value, body.Whole.End.Value))]);
+    }
+
+    // Where each line of the text could close a body, the last line that does: a heredoc's delimiter
+    // is the line less one trailing CR and its trailing blanks, less its leading tabs too after <<-;
+    // a here-string closes at a line that starts with its quote and @.
+    private static (Dictionary<string, int> Untabbed, Dictionary<string, int> Tabbed, int Single, int Double) ClosingLines(string text)
+    {
+        Dictionary<string, int> untabbed = new(StringComparer.Ordinal);
+        Dictionary<string, int> tabbed = new(StringComparer.Ordinal);
+        var (single, @double) = (-1, -1);
+        for (var at = 0; at <= text.Length;)
+        {
+            var end = text.IndexOf('\n', at) is var newline and >= 0 ? newline : text.Length;
+            var line = text.AsSpan(at, end - at);
+            single = line.StartsWith("'@", StringComparison.Ordinal) ? at : single;
+            @double = line.StartsWith("\"@", StringComparison.Ordinal) ? at : @double;
+            line = (line is [.., '\r'] ? line[..^1] : line).TrimEnd(" \t");
+            untabbed[line.ToString()] = at;
+            tabbed[line.TrimStart('\t').ToString()] = at;
+            at = end + 1;
+        }
+        return (untabbed, tabbed, single, @double);
+    }
+
+    // Choose the first body before matching it. Eagerly matching both kinds rereads a long later
+    // body for every earlier body of the other kind, even though that later match is discarded.
+    private static int FirstOpener(List<int> openers, int start)
+    {
+        var at = openers.BinarySearch(start);
+        at = at < 0 ? ~at : at;
+        return at < openers.Count ? openers[at] : int.MaxValue;
+    }
 
     [GeneratedRegex(@"(?<!<)<<(?!<)")]
     private static partial Regex HeredocOperatorRegex();
@@ -298,55 +346,74 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private List<CodePiece> CodePieces(string command)
     {
         List<CodePiece> pieces = [];
-        var rest = command;
-        while (DataBody(rest) is { } cut)
+        var start = 0;
+        // Text with no body opener holds no body to cut, so it is not read (DYD-723). Keep the
+        // original code when a child's extent is unsupported; cutting its enclosing data body would
+        // discard executable text beyond an apparent substitution terminator.
+        if (HasBodyOpener(command) && ShellReader.Read(command, _shell != ShellDialect.PowerShell) is { Failed: false } reading)
         {
-            pieces.Add(cut.Piece);
-            rest = rest[cut.Resume..];
+            var openers = ClosedOpeners(command, reading);
+            while (DataBody(command, start, openers) is { } cut)
+            {
+                pieces.Add(cut.Piece);
+                start = cut.Resume;
+            }
         }
 
+        var rest = command[start..];
         pieces.Add(new CodePiece(rest, rest));
         return pieces;
     }
 
-    /// <summary>
-    /// The first heredoc or here-string of <paramref name="text"/> cut out, when it is literal data:
-    /// its line is the first line of code, and every command it feeds is a data command
-    /// (<see cref="FeedsDataOnly"/>). Otherwise null, failing closed.
-    /// </summary>
-    private DataBodyCut? DataBody(string text)
-    {
-        // Keep the original code when a child's extent is unsupported; cutting its enclosing
-        // data body would discard executable text beyond an apparent substitution terminator.
-        if (ShellReader.Read(text, _shell != ShellDialect.PowerShell).Failed)
-            return null;
+    private static bool HasBodyOpener(string text) => text.Contains("<<", StringComparison.Ordinal)
+        || text.Contains("@'", StringComparison.Ordinal) || text.Contains("@\"", StringComparison.Ordinal);
 
-        var heredoc = HeredocBodyRegex().Match(text);
-        var hereString = HereStringRegex().Match(text);
-        if (hereString.Success && (!heredoc.Success || hereString.Index < heredoc.Index))
-            return HereStringData(text, hereString);
-        return heredoc.Success ? HeredocData(text, heredoc) : null;
+    /// <summary>
+    /// The first heredoc or here-string of <paramref name="text"/> from <paramref name="start"/>, a
+    /// line start, cut out when it is literal data: its line is the first line of code, every
+    /// command it feeds is a data command (<see cref="FeedsDataOnly"/>), and the text up to the line
+    /// after it reads, so the piece after it starts as a shell left it. Otherwise null, failing closed.
+    /// Each search and reading stays within the cut, so cutting every body costs the text's length
+    /// once, not once per body (DYD-723). A heredoc the whole command's reading read to the same line
+    /// reads there as it does alone: its line reads (<see cref="FeedsDataOnly"/>), only blank and
+    /// comment lines come before it, and its body is the one that reading read, so it is not read again.
+    /// </summary>
+    private DataBodyCut? DataBody(string text, int start, ClosedBodyOpeners openers)
+    {
+        var heredocAt = FirstOpener(openers.Heredocs, start);
+        var hereStringAt = FirstOpener(openers.HereStrings, start);
+        DataBodyCut? cut = null;
+        var read = false;
+        if (hereStringAt < heredocAt)
+            cut = HereStringData(text, start, HereStringRegex().Match(text, hereStringAt));
+        else if (heredocAt != int.MaxValue)
+        {
+            var heredoc = HeredocBodyRegex().Match(text, heredocAt);
+            cut = HeredocData(text, start, heredoc);
+            read = openers.ReadHeredocs.Contains((heredoc.Index, heredoc.Index + heredoc.Length));
+        }
+        return cut != null && (read || !ShellReader.Read(text[start..cut.Resume], _shell != ShellDialect.PowerShell).Failed) ? cut : null;
     }
 
     // A heredoc is bash's: bash reads its opener line, and PowerShell too when it may run the command.
-    private DataBodyCut? HeredocData(string text, Match heredoc)
+    private DataBodyCut? HeredocData(string text, int start, Match heredoc)
     {
         var lineStart = LineStart(text, heredoc.Index);
         var openerEnd = heredoc.Index + heredoc.Groups[1].Value.TrimEnd().Length;
         var end = heredoc.Index + heredoc.Length;
         var line = text[lineStart..heredoc.Index] + $" {BodyMark} " + text[heredoc.Index..openerEnd];
         bool[] readings = _shell == ShellDialect.Posix ? [true] : [true, false];
-        if (!StartsItsPiece(text, lineStart) || HeredocOperatorRegex().Count(line) != 1
-            || !FeedsDataOnly(line, readings, hereString: false, text[end..]))
+        if (!StartsItsPiece(text, start, lineStart) || HeredocOperatorRegex().Count(line) != 1
+            || !FeedsDataOnly(line, readings, hereString: false, text, end))
             return null;
 
-        var code = text[..openerEnd];
-        return new DataBodyCut(new CodePiece(code, heredoc.Groups[3].Length == 0 ? text[..end] : code), end);
+        var code = text[start..openerEnd];
+        return new DataBodyCut(new CodePiece(code, heredoc.Groups[3].Length == 0 ? text[start..end] : code), end);
     }
 
     // A here-string is PowerShell's: PowerShell reads its line, and bash too when it may run the
     // command, which then must read the here-string as words of that line (BashReadsAsWords).
-    private DataBodyCut? HereStringData(string text, Match hereString)
+    private DataBodyCut? HereStringData(string text, int start, Match hereString)
     {
         var lineStart = LineStart(text, hereString.Index);
         var end = hereString.Index + hereString.Length;
@@ -358,21 +425,48 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         var line = text[lineStart..hereString.Index] + $" {BodyMark} " + text[end..lineEnd];
         var powerShell = _shell == ShellDialect.PowerShell;
         bool[] readings = powerShell ? [false] : [false, true];
-        if (!StartsItsPiece(text, lineStart) || HeredocOperatorRegex().IsMatch(line)
+        if (PwshEndsSooner(hereString) || !StartsItsPiece(text, start, lineStart) || HeredocOperatorRegex().IsMatch(line)
             || (!powerShell && !BashReadsAsWords(hereString.Value))
-            || !FeedsDataOnly(line, readings, hereString: true, text[resume..]))
+            || !FeedsDataOnly(line, readings, hereString: true, text, resume))
             return null;
 
-        var code = text[..hereString.Index] + "''" + text[end..lineEnd];
-        return new DataBodyCut(new CodePiece(code, hereString.Groups[1].Value == "\"" ? text[..lineEnd] : code), resume);
+        // A CRLF is one line break, so the piece ends before both halves: a carriage return left in it
+        // would read as a bare one when the pieces are joined (DYD-641).
+        var pieceEnd = lineEnd < text.Length && text[lineEnd - 1] == '\r' ? lineEnd - 1 : lineEnd;
+        var code = text[start..hereString.Index] + "''" + text[end..pieceEnd];
+        return new DataBodyCut(new CodePiece(code, hereString.Groups[1].Value == "\"" ? text[start..pieceEnd] : code), resume);
     }
 
-    // Only blank and comment lines come before the body's line, so no group, quote or pipe is open there.
-    private static bool StartsItsPiece(string text, int lineStart) => !CodeLines(text[..lineStart]).Any();
+    // pwsh 7.6.9 ends a here-string at the first line break, a bare carriage return among them, that a
+    // quote of the opener's family and @ follow (DYD-641); HereStringRegex takes a line feed and the
+    // opener's own quote only, so a body pwsh ends sooner holds code it runs.
+    private static bool PwshEndsSooner(Match hereString) =>
+        (hereString.Groups[1].Value == "'" ? PwshSingleTerminatorRegex() : PwshDoubleTerminatorRegex())
+            .IsMatch(hereString.ValueSpan[..^2]);
 
-    // The lines of text that hold code: neither blank nor a comment.
-    private static IEnumerable<string> CodeLines(string text) =>
-        text.Split('\n').Select(line => line.Trim()).Where(line => line is [not '#', ..]);
+    [GeneratedRegex(@"[\r\n]['\u2018\u2019\u201A\u201B]@")]
+    private static partial Regex PwshSingleTerminatorRegex();
+
+    [GeneratedRegex(@"[\r\n][""\u201C\u201D\u201E]@")]
+    private static partial Regex PwshDoubleTerminatorRegex();
+
+    // Only blank and comment lines come before the body's line, so no group, quote or pipe is open there.
+    private static bool StartsItsPiece(string text, int start, int lineStart) => !CodeLines(text, start, lineStart).Any();
+
+    // The lines of text from start to end that hold code, in order: neither blank nor a comment. A
+    // bare carriage return ends a line, as pwsh 7.6.9 ends a comment at one (DYD-641); to bash, which
+    // reads it as word text, the split can only add code, and a line a pipe starts goes on only in
+    // pwsh. Each line is cut only when it is asked for.
+    private static IEnumerable<string> CodeLines(string text, int start, int end)
+    {
+        while (start < end)
+        {
+            var lineEnd = text.AsSpan(start, end - start).IndexOfAny('\n', '\r') is var at and >= 0 ? start + at : end;
+            if (text[start..lineEnd].Trim() is [not '#', ..] line)
+                yield return line;
+            start = lineEnd + 1;
+        }
+    }
 
     /// <summary>
     /// Whether a body, at the mark in its command <paramref name="line"/>, feeds only data commands
@@ -380,11 +474,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// <c>;</c>, <c>&amp;&amp;</c>, <c>||</c> and pipes, with no group, substitution or compound
     /// command; the command reading the body is a data command named as such (a here-string may
     /// also stand alone), and so is each command its output is piped on to. The line does not go
-    /// on past its break: no trailing \ or `, and no next line of code starting with a pipe.
+    /// on past its break: no trailing \ or `, and no next line of code, in text from after, starting with a pipe.
     /// </summary>
-    private static bool FeedsDataOnly(string line, bool[] readings, bool hereString, string after)
+    private static bool FeedsDataOnly(string line, bool[] readings, bool hereString, string text, int after)
     {
-        if (line.TrimEnd() is [.., '\\' or '`'] || CodeLines(after).FirstOrDefault() is ['|', ..])
+        if (line.TrimEnd() is [.., '\\' or '`'] || CodeLines(text, after, text.Length).FirstOrDefault() is ['|', ..])
             return false;
 
         var marked = PipeRegex().Replace(
@@ -430,22 +524,29 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return stretches.Length % 2 == 1 && stretches.Where((_, i) => i % 2 == 1).All(stretch => !BashStructureRegex().IsMatch(stretch));
     }
 
+    // A body's line starts after a line feed only: each reading of the line takes a bare carriage
+    // return as its shell does, and bash's must see a comment before one hide the opener (DYD-641).
     private static int LineStart(string text, int index) => index == 0 ? 0 : text.LastIndexOf('\n', index - 1) + 1;
 
     // A double-quoted string (backslash escapes skipped, lines spanned) or a single-quoted one, the
     // first that starts.
-    [GeneratedRegex(@"""(?:[^""\\]|\\.)*""|(?<single>'[^']*')")]
-    private static partial Regex QuotedTextRegex();
+    private static readonly Regex QuotedTextRegex = new(@"""(?:[^""\\]|\\.)*""|(?<single>'[^']*')", RegexOptions.NonBacktracking);
 
     // A piece's layout: each double-quoted string emptied, so a line break left in the piece separates
-    // commands. One spanning lines is emptied only where each reading of the piece holds it in a word:
-    // an apostrophe in a comment quotes nothing, so it hides no line break after it. Single-quoted text
-    // is kept, so a line break in it counts (DYD-421); literal data is emptied before (DYD-422).
+    // commands. One spanning lines, a bare carriage return among the breaks (DYD-641), is emptied only
+    // where each reading of the piece holds it in a word: an apostrophe in a comment quotes nothing, so
+    // it hides no line break after it. Single-quoted text is kept, so a line break in it counts
+    // (DYD-421); literal data is emptied before (DYD-422).
     private static string Layout(string code)
     {
-        var read = new Lazy<(List<CommandLine> Lines, bool Uncertain)>(() => CommandLines(code, ShellDialect.Unknown));
-        return QuotedTextRegex().Replace(code, quoted =>
-            quoted.Groups["single"].Success || (quoted.Value.Contains('\n') && !IsQuotedWord(code, quoted, read.Value))
+        var words = new Lazy<List<WordSubstrings>?>(() =>
+        {
+            var read = CommandLines(code, ShellDialect.Unknown);
+            return read.Uncertain ? null : read.Lines.Where(line => line.Text == code)
+                .Select(line => new WordSubstrings(line.Commands.SelectMany(command => command.Words))).ToList();
+        });
+        return QuotedTextRegex.Replace(code, quoted =>
+            quoted.Groups["single"].Success || (quoted.Value.AsSpan().IndexOfAny('\n', '\r') >= 0 && !IsQuotedWord(quoted, words.Value))
                 ? quoted.Value
                 : "\"\"");
     }
@@ -454,13 +555,81 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"\\([$`""\\])")]
     private static partial Regex DoubleQuotedEscapeRegex();
 
-    private static bool IsQuotedWord(string code, Match quoted, (List<CommandLine> Lines, bool Uncertain) read)
+    private static bool IsQuotedWord(Match quoted, List<WordSubstrings>? words)
     {
         var raw = quoted.Value[1..^1];
         var unescaped = DoubleQuotedEscapeRegex().Replace(raw, "$1");
-        bool Holds(string word) => word.Contains(raw, StringComparison.Ordinal) || word.Contains(unescaped, StringComparison.Ordinal);
-        return !read.Uncertain && read.Lines.Where(line => line.Text == code)
-            .All(line => line.Commands.Any(command => command.Words.Any(Holds)));
+        return words != null && words.All(index => index.Contains(raw) || index.Contains(unescaped));
+    }
+
+    // A suffix automaton indexes all word substrings in linear space and time. -1 separates words
+    // outside the UTF-16 alphabet, so a query cannot accidentally span two words. Layout used to
+    // search every word again for every multiline quote, quadratic even on ordinary echo commands.
+    private sealed class WordSubstrings
+    {
+        private sealed class State(int length)
+        {
+            public int Length { get; } = length;
+            public int Link { get; set; } = -1;
+            public Dictionary<int, int> Next { get; init; } = [];
+        }
+
+        private readonly List<State> _states = [new(0)];
+        private int _last;
+
+        public WordSubstrings(IEnumerable<string> words)
+        {
+            // A group word already contains its children's words. Index longer words first so
+            // nested readings do not store the same text once per enclosing group again.
+            foreach (var word in words.Distinct(StringComparer.Ordinal).OrderByDescending(word => word.Length))
+            {
+                if (Contains(word))
+                    continue;
+                foreach (var character in word)
+                    Append(character);
+                Append(-1);
+            }
+        }
+
+        public bool Contains(string text)
+        {
+            var state = 0;
+            foreach (var character in text)
+                if (!_states[state].Next.TryGetValue(character, out state))
+                    return false;
+            return true;
+        }
+
+        private void Append(int character)
+        {
+            var current = _states.Count;
+            _states.Add(new State(_states[_last].Length + 1));
+            var previous = _last;
+            while (previous >= 0 && _states[previous].Next.TryAdd(character, current))
+                previous = _states[previous].Link;
+            _states[current].Link = previous < 0 ? 0 : Link(previous, character);
+            _last = current;
+        }
+
+        private int Link(int previous, int character)
+        {
+            var next = _states[previous].Next[character];
+            if (_states[previous].Length + 1 == _states[next].Length)
+                return next;
+            var clone = _states.Count;
+            _states.Add(new State(_states[previous].Length + 1)
+            {
+                Link = _states[next].Link,
+                Next = new Dictionary<int, int>(_states[next].Next),
+            });
+            while (previous >= 0 && _states[previous].Next.GetValueOrDefault(character, -1) == next)
+            {
+                _states[previous].Next[character] = clone;
+                previous = _states[previous].Link;
+            }
+            _states[next].Link = clone;
+            return clone;
+        }
     }
 
     // sed: only read and in-place-substitute flags. -i and --in-place must be bare, with no backup
@@ -507,13 +676,17 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return Emptied(code, data.Select(quote => quote.Quote));
     }
 
-    // The text with each quote replaced by ''.
+    // The text with each quote replaced by '', in one pass: the quotes one reading holds never overlap.
     private static string Emptied(string text, IEnumerable<Range> quotes)
     {
-        var emptied = new StringBuilder(text);
-        foreach (var quote in quotes.OrderByDescending(quote => quote.Start.Value))
-            emptied.Remove(quote.Start.Value, quote.End.Value - quote.Start.Value).Insert(quote.Start.Value, "''");
-        return emptied.ToString();
+        var emptied = new StringBuilder(text.Length);
+        var at = 0;
+        foreach (var quote in quotes.OrderBy(quote => quote.Start.Value))
+        {
+            emptied.Append(text, at, quote.Start.Value - at).Append("''");
+            at = quote.End.Value;
+        }
+        return emptied.Append(text, at, text.Length - at).ToString();
     }
 
     /// <summary>
@@ -524,11 +697,15 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// </summary>
     private static HashSet<DataQuote> DataQuotes(string code, bool posix)
     {
+        // Text with no single quote of either reading holds none to empty, so it is not read (DYD-723).
+        if (code.AsSpan().IndexOfAny("'\u2018\u2019\u201A\u201B") < 0)
+            return [];
+
         var reading = ShellReader.Read(code, posix);
         var quotes = reading.Source.SingleQuotes;
         return reading.Commands is [var command] && IsOneDataCommand(reading, command)
             && !MayReadOtherwise(code, Emptied(code, quotes))
-            ? [.. quotes.Select(quote => DataQuoteIn(command, quote)).OfType<DataQuote>()]
+            ? [.. DataQuotesIn(command, quotes)]
             : [];
     }
 
@@ -573,14 +750,21 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         && (char.IsControl(c) || char.GetUnicodeCategory(c) is System.Globalization.UnicodeCategory.LineSeparator
             or System.Globalization.UnicodeCategory.ParagraphSeparator);
 
-    // The quote in a word of the command, when the command takes that word as data: any word of
-    // printf or echo, and only the script of sed, whose other words are files it rewrites.
-    private static DataQuote? DataQuoteIn(ShellReader.Command command, Range quote)
+    // The quotes in words the command takes as data, each with its word: any word of printf or echo,
+    // and only the script of sed, whose other words are files it rewrites. Quotes and words come in
+    // reading order, so one walk pairs them (DYD-723); a quote out of order is left unpaired and kept.
+    private static IEnumerable<DataQuote> DataQuotesIn(ShellReader.Command command, IEnumerable<Range> quotes)
     {
-        var word = command.WordRanges.FindIndex(range => range.Start.Value <= quote.Start.Value && quote.End.Value <= range.End.Value);
-        return word >= 0 && (command.Words[0] != "sed" || SedScriptIndex(command.Words) == word)
-            ? new DataQuote(quote, command.WordRanges[word])
-            : null;
+        var script = command.Words[0] == "sed" ? SedScriptIndex(command.Words) : -1;
+        var word = 0;
+        foreach (var quote in quotes)
+        {
+            while (word < command.WordRanges.Count && command.WordRanges[word].End.Value < quote.End.Value)
+                word++;
+            if (word < command.WordRanges.Count && command.WordRanges[word].Start.Value <= quote.Start.Value
+                && (script < 0 || script == word))
+                yield return new DataQuote(quote, command.WordRanges[word]);
+        }
     }
 
     /// <summary>
@@ -612,9 +796,59 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // A short cluster's letters before a trailing bare i.
     private static string SedFlags(string option) => option.EndsWith('i') ? option[1..^1] : option[1..];
 
-    // Bypass detection patterns
-    [GeneratedRegex(@"\$\([^)]+\)|`[^`]+`")]
-    private static partial Regex CommandSubstitutionRegex();
+    // Bypass detection. The substitution and expansion searches are scans, not regexes: a regex search
+    // restarts at each unclosed $( or ${ and looks for its closer to the end, quadratic (DYD-723).
+    // Each scan finds the matches the regexes \$\([^)]+\)|`[^`]+` and \$[A-Za-z_]\w*|\$\{[^}]+\} find.
+
+    /// <summary>
+    /// The bodies of the <c>$( ... )</c> and backtick substitutions in the text, left to right: each
+    /// opener to the first closer after it, with something between them. Each closer is looked for
+    /// once, however many openers precede it.
+    /// </summary>
+    internal static IEnumerable<string> SubstitutionBodies(string text)
+    {
+        var (paren, tick) = (-1, -1);
+        for (var i = 0; i + 2 < text.Length; i++)
+        {
+            int body;
+            int end;
+            if (text[i] == '`')
+                (body, end) = (i + 1, NextAt(text, '`', i + 1, ref tick));
+            else if (text[i] == '$' && text[i + 1] == '(')
+                (body, end) = (i + 2, NextAt(text, ')', i + 2, ref paren));
+            else
+                continue;
+            if (end == text.Length || end == body)
+                continue;
+            yield return text[body..end];
+            i = end;
+        }
+    }
+
+    /// <summary>Whether the text expands a variable: a <c>$</c> before a name, or a <c>${ ... }</c> with something inside.</summary>
+    internal static bool ExpandsVariable(string text)
+    {
+        var brace = -1;
+        for (var i = 0; i + 1 < text.Length; i++)
+        {
+            if (text[i] != '$')
+                continue;
+            if (char.IsAsciiLetter(text[i + 1]) || text[i + 1] == '_')
+                return true;
+            if (text[i + 1] == '{' && NextAt(text, '}', i + 2, ref brace) is var end && end < text.Length && end > i + 2)
+                return true;
+        }
+        return false;
+    }
+
+    // The first c at or after from, or the text's length when there is none. found holds the answer
+    // to an earlier search from no later than from; it still holds when it lies at or after from.
+    private static int NextAt(string text, char c, int from, ref int found)
+    {
+        if (found < from)
+            found = text.IndexOf(c, from) is var at and >= 0 ? at : text.Length;
+        return found;
+    }
 
     [GeneratedRegex(@"base64\s+(-d|--decode)", RegexOptions.IgnoreCase)]
     private static partial Regex Base64DecodeRegex();
@@ -622,17 +856,25 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"xxd\s+-r|od\s+-A")]
     private static partial Regex HexDecodeRegex();
 
-    [GeneratedRegex(@"\$[A-Za-z_][A-Za-z0-9_]*|\$\{[^}]+\}")]
-    private static partial Regex VariableExpansionRegex();
+    private static readonly Regex RecursiveDeleteRootRegex = new(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(\./|/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)", RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+(\./|/|~|/\*)(\s+--[a-z-]+)*\s*($|;|&&|\|\||&|\|)", RegexOptions.None, DangerousPatternTimeoutMs)]
-    private static partial Regex RecursiveDeleteRootRegex();
+    private static readonly Regex RecursiveDeleteGlobRegex = new(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+\*\s*($|;|&&|\|\||&|\|)", RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"rm\s+(-[a-zA-Z]*[rfRF][a-zA-Z]*\s+)+\*\s*($|;|&&|\|\||&|\|)", RegexOptions.None, DangerousPatternTimeoutMs)]
-    private static partial Regex RecursiveDeleteGlobRegex();
+    // The two lookaheads require Recurse and Force anywhere after Remove-Item on its line.
+    // Their witnesses and the target can occur in any of six orders. Only a final target may
+    // cross a newline: both flags must precede the first newline, as in the original lookaheads.
+    private const string RecurseWitness = @"-Recurse\b";
+    private const string ForceWitness = @"-Force\b";
+    private const string DeleteTarget = @"(?:\s[/~]|\s[A-Z]:\\)\s*(?:$|;|&&|\|\|)";
+    private const string SameLineDeleteTarget = @"(?:[^\S\n][/~]|[^\S\n][A-Z]:\\)[^\S\n]*(?:$|;|&&|\|\|)";
 
-    [GeneratedRegex(@"Remove-Item\b(?=.*-Recurse\b)(?=.*-Force\b).*(\s[/~]|\s[A-Z]:\\)\s*($|;|&&|\|\|)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex PowerShellRecursiveDeleteRegex();
+    private static readonly Regex PowerShellRecursiveDeleteRegex = new(@"Remove-Item\b.*(?:"
+        + RecurseWitness + ".*" + ForceWitness + ".*" + DeleteTarget + "|"
+        + ForceWitness + ".*" + RecurseWitness + ".*" + DeleteTarget + "|"
+        + RecurseWitness + ".*" + SameLineDeleteTarget + ".*" + ForceWitness + "|"
+        + ForceWitness + ".*" + SameLineDeleteTarget + ".*" + RecurseWitness + "|"
+        + SameLineDeleteTarget + ".*(?:" + RecurseWitness + ".*" + ForceWitness + "|"
+        + ForceWitness + ".*" + RecurseWitness + "))", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
     [GeneratedRegex(@":\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex ForkBombClassicRegex();
@@ -649,29 +891,21 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     internal static partial Regex DdDiskWriteRegex();
 
     // Kept unanchored on purpose: known disk targets block anywhere in the command text.
-    [GeneratedRegex(@"dd\s+.*of\s*=\s*/dev/(?:sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex DdKnownDiskWriteRegex();
+    private static readonly Regex DdKnownDiskWriteRegex = new(@"dd\s+.*of\s*=\s*/dev/(?:sd[a-z]|nvme\d|vd[a-z]|mmcblk\d)", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"base64\s+(-d|--decode)[^|]*\|\s*(python[23]?|bash|sh|zsh|perl|ruby|node|pwsh|powershell)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex Base64DecodePipeExecRegex();
+    private static readonly Regex Base64DecodePipeExecRegex = new(@"base64\s+(-d|--decode)[^|]*\|\s*(python[23]?|bash|sh|zsh|perl|ruby|node|pwsh|powershell)", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"curl\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex CurlPipeShRegex();
+    private static readonly Regex CurlPipeShRegex = new(@"curl\s+[^|]*\|\s*(ba)?sh", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"wget\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex WgetPipeShRegex();
+    private static readonly Regex WgetPipeShRegex = new(@"wget\s+[^|]*\|\s*(ba)?sh", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"wget\s+-O\s*-?\s+[^|]*\|\s*(ba)?sh", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex WgetOutputPipeShRegex();
+    private static readonly Regex WgetOutputPipeShRegex = new(@"wget\s+-O\s*-?\s+[^|]*\|\s*(ba)?sh", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"Invoke-WebRequest[^|]*\|\s*Invoke-Expression", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex PowerShellIwrIexRegex();
+    private static readonly Regex PowerShellIwrIexRegex = new(@"Invoke-WebRequest[^|]*\|\s*Invoke-Expression", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"iwr\s+[^|]*\|\s*iex", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex PowerShellIwrIexShortRegex();
+    private static readonly Regex PowerShellIwrIexShortRegex = new(@"iwr\s+[^|]*\|\s*iex", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
-    [GeneratedRegex(@"DownloadString\s*\([^)]+\)[^|]*\|\s*(iex|Invoke-Expression)", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex PowerShellDownloadStringRegex();
+    private static readonly Regex PowerShellDownloadStringRegex = new(@"DownloadString\s*\([^)]+\)[^|]*\|\s*(iex|Invoke-Expression)", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
     [GeneratedRegex(@"eval\s+\$", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex EvalVariableRegex();
@@ -682,8 +916,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@">\s*~/\.bash_history|>\s*~/\.zsh_history", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex HistoryFileTruncateRegex();
 
-    [GeneratedRegex(@"Remove-Item.*ConsoleHost_history\.txt", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
-    private static partial Regex PowerShellHistoryDeleteRegex();
+    private static readonly Regex PowerShellHistoryDeleteRegex = new(@"Remove-Item.*ConsoleHost_history\.txt", LinearIgnoreCase, TimeSpan.FromMilliseconds(DangerousPatternTimeoutMs));
 
     [GeneratedRegex(@"setenforce\s+0", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex SelinuxDisableRegex();
@@ -694,7 +927,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"cat\s+/etc/shadow|head\s+/etc/shadow|tail\s+/etc/shadow", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex ShadowFileAccessRegex();
 
-    [GeneratedRegex(@">\s*/etc/passwd|echo.*>>\s*/etc/passwd", RegexOptions.None, DangerousPatternTimeoutMs)]
+    // The old echo.*>> alternative only found writes this > alternative already matches, while
+    // restarting its suffix scan at every echo made a long command quadratic.
+    [GeneratedRegex(@">\s*/etc/passwd", RegexOptions.None, DangerousPatternTimeoutMs)]
     private static partial Regex PasswdModifyRegex();
 
     [GeneratedRegex(LinearCommandStart + @"rm\s+(?:(?:-[a-zA-Z]+|--[a-z-]+)\s+)*(?:['"" ]?/(?:Users(?:/[^/\s'"";&|]+)?/?|\*|)|['"" ]?(?:~|\$HOME|\$\{HOME\})(?:/\*)?/?|[^;&|]*--no-preserve-root)(?:['""\s]|$|[;&|])", LinearIgnoreCase, DangerousPatternTimeoutMs)]
@@ -775,7 +1010,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static partial Regex PythonWordRegex();
 
     // python -, the form a command line that cannot be read for certain is still refused for.
-    [GeneratedRegex(@"\bpy(?:thon[0-9.]*)?w?(?:\.exe)?(?:\s+-\S+)*\s+-(?=\s|$|[;&|)])", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\bpy(?:thon[0-9.]*)?w?(?:\.exe)?(?:\s+-\S+)*\s+-(?=\s|$|[;&|)])", RegexOptions.IgnoreCase, DangerousPatternTimeoutMs)]
     private static partial Regex PythonDashRegex();
 
     [GeneratedRegex(@"^py(?:thon[0-9.]*)?w?$")]
@@ -872,9 +1107,21 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// option's value, so each run word that may be the first operand counts (<c>uv --directory run
     /// run python -</c>), and so does each Python word that may be run's.
     /// </summary>
-    private static IEnumerable<int> RunPythonPrograms(IReadOnlyList<string> words, int program) =>
-        LeadingOperands(words, program + 1).Where(i => words[i] == "run")
-            .SelectMany(run => LeadingOperands(words, run + 1)).Where(i => IsPythonProgram(words[i]));
+    private static IEnumerable<int> RunPythonPrograms(IReadOnlyList<string> words, int program)
+    {
+        var through = program;
+        foreach (var run in LeadingOperands(words, program + 1).Where(i => words[i] == "run"))
+        {
+            if (run < through)
+                continue;
+            foreach (var operand in LeadingOperands(words, run + 1))
+            {
+                through = operand;
+                if (IsPythonProgram(words[operand]))
+                    yield return operand;
+            }
+        }
+    }
 
     // The operands from words[from] on that may be the first: each after an option, then the first
     // after an operand or none (--name=value names its value).
@@ -902,8 +1149,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private const int MaxCommandLineDepth = 8;
 
-    /// <summary>One reading of one command line: its text and its commands.</summary>
-    private sealed record CommandLine(string Text, List<ReadCommand> Commands);
+    /// <summary>One reading of one command line: its text, its commands, and whether it nests too deep to read.</summary>
+    private sealed record CommandLine(string Text, List<ReadCommand> Commands, bool TooDeep);
 
     /// <summary>
     /// One command as its shell reads it: its words, and whether something feeds its stdin, a heredoc
@@ -929,31 +1176,53 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// (<see cref="CommandPosition.ScriptOf"/>), the heredoc or here-string a shell given none reads,
     /// and a bash backtick substitution are command lines of their own. <c>Uncertain</c> when a
     /// reading cannot finish, a command string is encoded, a shell reads a pipe the line does not
-    /// show, or nesting passes the limit.
+    /// show, or nesting passes the limit. A line past the limit, or past the reading's budget, is too
+    /// deep and holds no commands (DYD-723).
     /// </summary>
     private static (List<CommandLine> Lines, bool Uncertain) CommandLines(string command, ShellDialect dialect)
     {
-        List<CommandLine> lines = [];
-        var uncertain = ReadCommandLines(command, dialect, 0, lines);
-        return (lines, uncertain);
+        var reading = new CommandLineReading(command.Length);
+        var uncertain = ReadCommandLines(command, dialect, 0, reading);
+        return (reading.Lines, uncertain);
     }
 
-    private static bool ReadCommandLines(string text, ShellDialect dialect, int depth, List<CommandLine> lines)
+    /// <summary>
+    /// The lines one reading of a command's lines holds so far, and what it may still read: each line
+    /// once, by its text, dialect and level, however many readings run it, and in all about the
+    /// command read both ways and a line as long at each level below it, with room for a short chain
+    /// of cmd. cmd reads its command string both ways, so each level of cmd doubled the readings and a
+    /// chain of them was read 2^9 times; each is read once now, but a long chain of cmd, or of text the
+    /// two ways read apart, still reads more each level and stops at the budget (DYD-723).
+    /// </summary>
+    private sealed class CommandLineReading(int length)
     {
-        if (depth > MaxCommandLineDepth)
-            return true;
+        public List<CommandLine> Lines { get; } = [];
+        public HashSet<(string Text, ShellDialect Dialect, int Depth)> Read { get; } = [];
+        public long Budget { get; set; } = (MaxCommandLineDepth + 2L) * length + 4_096;
+    }
 
-        var uncertain = false;
+    private static bool ReadCommandLines(string text, ShellDialect dialect, int depth, CommandLineReading lines)
+    {
+        if (!lines.Read.Add((text, dialect, depth)))
+            return false;
         bool[] readings = dialect switch
         {
             ShellDialect.Posix => [true],
             ShellDialect.PowerShell => [false],
             _ => [true, false],
         };
+        lines.Budget -= readings.Length * text.Length;
+        if (depth > MaxCommandLineDepth || lines.Budget < 0)
+        {
+            lines.Lines.Add(new CommandLine(text, [], TooDeep: true));
+            return true;
+        }
+
+        var uncertain = false;
         foreach (var posix in readings)
         {
             var reading = ShellReader.Read(text, posix);
-            lines.Add(new CommandLine(text, [.. reading.Commands.Select(Unmark)]));
+            lines.Lines.Add(new CommandLine(text, [.. reading.Commands.Select(Unmark)], reading.TooDeep));
             uncertain |= reading.Failed;
             foreach (var substitution in reading.Substitutions)
                 uncertain |= ReadCommandLines(substitution, ShellDialect.Posix, depth + 1, lines);
@@ -965,7 +1234,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     }
 
     // The command lines one command runs: its command string, or the stdin bodies a shell reads.
-    private static bool ReadRunLines(ShellReader.Command command, int depth, List<CommandLine> lines)
+    private static bool ReadRunLines(ShellReader.Command command, int depth, CommandLineReading lines)
     {
         if (ProgramCall(command.Words) is not { } call)
             return false;
@@ -1014,187 +1283,294 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// only the recorded quoted search/filter roles, comments and data bodies are exempt.
     /// Known executable strings are read recursively, preserving code inside quoted arguments.
     /// </summary>
-    internal static bool RunsAt(string command, int index, ShellDialect dialect)
+    // A command's data positions are classified once, then every raw nudge match is a lookup.
+    // Positions retain their source coordinates through words, body normalization and command strings.
+    internal static Func<int, bool> NudgeClassifier(string text, ShellDialect dialect)
     {
-        return HasLaunchMark(command) || CountsNudge(command.Insert(index, LaunchMark), dialect, 0, new NudgeFrame(BodyOutput.Data));
+        var data = new NudgeDataReading().Read(text, dialect, BodyOutput.Data, 0);
+        return index => index < 0 || index >= data.Length || !data[index];
+    }
+
+    private sealed class NudgeDataReading
+    {
+        private readonly Dictionary<ShellReader.Command, BodyOutput> _outputs = [];
+        private readonly Dictionary<ShellReader.Scope, bool> _compound = [];
+        private readonly Dictionary<ShellReader.Body, bool> _bodySurface = [];
+        private readonly Dictionary<ShellReader.Command, ShellDialect?> _stdin = [];
+        private readonly Dictionary<string, HashSet<Range>> _filters = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<(string Text, ShellDialect Dialect, BodyOutput Output, int Depth), bool[]> _read = [];
+
+        public bool[] Read(string text, ShellDialect dialect, BodyOutput output, int depth)
+        {
+            var key = (text, dialect, output, depth);
+            if (!_read.TryGetValue(key, out var data))
+            {
+                data = ReadData(text, dialect, output, depth);
+                _read.Add(key, data);
+            }
+            return data;
+        }
+
+        private bool[] ReadData(string text, ShellDialect dialect, BodyOutput output, int depth)
+        {
+            var data = new bool[text.Length + 1];
+            if (depth > MaxCommandLineDepth || HasLaunchMark(text))
+                return data;
+            bool[] readings = dialect switch
+            {
+                ShellDialect.Posix => [true],
+                ShellDialect.PowerShell => [false],
+                _ => [true, false],
+            };
+            var first = true;
+            foreach (var posix in readings)
+            {
+                var reading = ShellReader.Read(text, posix);
+                if (reading.Failed)
+                    return new bool[text.Length + 1];
+                var current = ScopeData(reading.Source, output, depth);
+                for (var i = 0; i < data.Length; i++)
+                    data[i] = first ? current[i] : data[i] && current[i];
+                first = false;
+            }
+            return data;
+        }
+
+        private bool[] ScopeData(ShellReader.Scope source, BodyOutput output, int depth)
+        {
+            var data = new bool[source.End - source.Start + 1];
+            foreach (var comment in source.Comments)
+                Fill(data, source.Start, comment.Start.Value + 1, comment.End.Value + 1, true);
+            foreach (var command in source.Commands)
+            {
+                Words(command, data, output, depth);
+                foreach (var body in command.Bodies)
+                    Body(body, data, output, depth);
+            }
+            foreach (var child in source.Children)
+            {
+                var inner = ScopeData(child, output, depth);
+                if (child.DerivedBody is { } body)
+                    Project(inner, child.Start, body.Origins, source, data);
+                else
+                    for (var i = 0; i < inner.Length; i++)
+                        if (inner[i]) data[child.Start - source.Start + i] = true;
+            }
+            Executions(source, data, output, depth);
+            return data;
+        }
+
+        private void Executions(ShellReader.Scope source, bool[] data, BodyOutput output, int depth)
+        {
+            foreach (var edge in source.Executions)
+            {
+                if (edge.Kind == ShellReader.ExecutionKind.Group && edge.Child is { } group)
+                    CountGroupWords(group, data, source.Start);
+                if (edge.Capture is not { } capture || !CompletedExecution(edge))
+                    continue;
+                var inner = Read(capture.Text, ShellDialect.Posix, CaptureOutput(edge, output), depth + 1);
+                Project(inner, 0, capture.Origins, source, data);
+            }
+        }
+
+        // GroupWord emits child words into an unquoted parent word too. That representation
+        // still counts; a child's quoted-data role cannot discharge its parent's occurrence.
+        private static void CountGroupWords(ShellReader.Scope group, bool[] data, int start)
+        {
+            foreach (var range in GroupWordRanges(group))
+                Fill(data, start, range.Start.Value, range.End.Value, false);
+        }
+
+        // Source ranges include comments and delimiters that GroupWord never emits. Follow only
+        // emitted characters, projecting normalized body coordinates back to their source.
+        private static IEnumerable<Range> GroupWordRanges(ShellReader.Scope group)
+        {
+            foreach (var origins in group.Commands.SelectMany(command => command.WordOrigins))
+                foreach (var run in origins.SourceRanges())
+                    if (ReferenceEquals(run.Source.Text, group.Text)) yield return run.Range;
+            foreach (var child in group.Children)
+                foreach (var range in GroupWordRanges(child))
+                {
+                    if (child.DerivedBody is not { } body)
+                        yield return range;
+                    else
+                        foreach (var run in body.Origins.SourceRanges(range.Start.Value, range.End.Value))
+                            yield return run.Range;
+                }
+        }
+
+        private void Words(ShellReader.Command command, bool[] data, BodyOutput output, int depth)
+        {
+            var source = command.Source;
+            var literalPrefix = true;
+            for (var i = 0; i < command.Words.Count; i++)
+            {
+                var range = command.WordRanges[i];
+                var raw = command.RawWord(i);
+                if (LiteralNudgeQuoteRegex().IsMatch(raw)
+                    && ((literalPrefix && QuotedSearchPattern(command, i, raw[0]))
+                        || (!source.Posix && FilterWords(source.Text).Contains(range))))
+                    Fill(data, source.Start, range.Start.Value + 1, range.End.Value, true);
+                literalPrefix &= raw == command.Words[i];
+            }
+            Script(command, data, output, depth);
+        }
+
+        private HashSet<Range> FilterWords(string text)
+        {
+            if (!_filters.TryGetValue(text, out var words))
+            {
+                words = [.. ProcessFilterOperandPattern.Matches(text).Select(match => match.Groups["operand"])
+                    .Select(group => group.Index..(group.Index + group.Length))];
+                _filters.Add(text, words);
+            }
+            return words;
+        }
+
+        private void Script(ShellReader.Command command, bool[] data, BodyOutput output, int depth)
+        {
+            if (ProgramCall(command.Words) is not { } call
+                || CommandPosition.ScriptOf(call.Program, call.Arguments) is not { Encoded: false } script)
+                return;
+            var inner = Read(script.Text, script.Dialect, Output(command, output), depth + 1);
+            var exact = command.Words.FindIndex(word => ReferenceEquals(word, script.Text));
+            if (exact >= 0)
+            {
+                ProjectScriptWord(command, exact, inner, 0, data);
+                return;
+            }
+            var end = script.Text.Length;
+            for (var word = command.Words.Count - 1; word >= 0 && end > 0; word--)
+            {
+                var text = command.Words[word];
+                if (text.Length > end || !script.Text.AsSpan(0, end).EndsWith(text, StringComparison.Ordinal))
+                    break;
+                end -= text.Length;
+                ProjectScriptWord(command, word, inner, end, data);
+                if (end > 0 && script.Text[end - 1] == ' ') end--;
+            }
+        }
+
+        private static void ProjectScriptWord(ShellReader.Command command, int word, bool[] inner, int start, bool[] data)
+        {
+            if (!ScriptWordIsQuoted(command, word))
+                return;
+            for (var i = 0; i < command.Words[word].Length; i++)
+                if (inner[start + i] && command.WordOrigins[word].At(i) is { } origin
+                    && ReferenceEquals(origin.Source, command.Source))
+                    data[origin.Offset - command.Source.Start] = true;
+        }
+
+        private void Body(ShellReader.Body body, bool[] data, BodyOutput output, int depth)
+        {
+            if (!Surface(body))
+                return;
+            var owner = body.Owner;
+            if (body.Kind != ShellReader.BodyKind.HereString && StdinOf(owner) is { } dialect)
+                Project(Read(body.Text, dialect, Output(owner, output), depth + 1), 0, body.Origins, owner.Source, data);
+            else if (BodyIsData(body) && Output(owner, output) == BodyOutput.Data)
+                LiteralBody(body, data);
+            foreach (var edge in body.Expansions)
+                if (RawToken(edge) is { } token)
+                    Fill(data, owner.Source.Start, token.Start.Value + 1, token.End.Value, false);
+        }
+
+        private static void LiteralBody(ShellReader.Body body, bool[] data)
+        {
+            var source = body.Owner.Source;
+            var single = source.Posix && body.Kind == ShellReader.BodyKind.HereString
+                && source.Text[body.Whole.Start.Value + 1] == '\'';
+            var quoted = true;
+            for (var at = body.Content.Start.Value; at < body.Content.End.Value; at++)
+            {
+                if (quoted) data[at - source.Start] = true;
+                if (single && source.Text[at] == '\'') quoted = !quoted;
+            }
+        }
+
+        private bool Surface(ShellReader.Body body)
+        {
+            if (!_bodySurface.TryGetValue(body, out var valid))
+            {
+                valid = BodyPositionIsData(body, body.Content.Start.Value);
+                _bodySurface.Add(body, valid);
+            }
+            return valid;
+        }
+
+        private BodyOutput CaptureOutput(ShellReader.Host host, BodyOutput output)
+        {
+            if (RawToken(host) == null || !Surface(host.Body!))
+                return BodyOutput.Unknown;
+            if (StdinOf(host.Command) != null)
+                return BodyOutput.Executable;
+            return BodyIsData(host.Body!) ? Output(host.Command, output) : BodyOutput.Unknown;
+        }
+
+        private ShellDialect? StdinOf(ShellReader.Command command)
+        {
+            if (!_stdin.TryGetValue(command, out var dialect))
+            {
+                dialect = ProgramCall(command.Words) is { } call ? StdinShellDialect(call.Program, call.Arguments) : null;
+                _stdin.Add(command, dialect);
+            }
+            return dialect;
+        }
+
+        private BodyOutput Output(ShellReader.Command command, BodyOutput inherited)
+        {
+            if (_outputs.TryGetValue(command, out var known)) return known;
+            if (!_compound.TryGetValue(command.Source, out var compound))
+            {
+                compound = command.Source.Commands.Any(c => c.Words.Count > 0 && CompoundWords.Contains(c.Words[0]));
+                _compound.Add(command.Source, compound);
+            }
+            var chain = new List<ShellReader.Command>();
+            var current = command;
+            while (!_outputs.TryGetValue(current, out known))
+            {
+                chain.Add(current);
+                if (compound || current.UncertainFeed || current.HeaderExpansion
+                    || current.RedirectTargets.Any(r => !LiteralRedirect(current.Source, r)))
+                { known = BodyOutput.Unknown; break; }
+                if (!current.PipesOutput)
+                {
+                    known = current.Source.Host is { } host ? CaptureOutput(host, inherited) : inherited;
+                    break;
+                }
+                if (current.Next is not { } next) { known = BodyOutput.Unknown; break; }
+                if (next.Words is [var first, ..] && DataCommands.Contains(first)) { current = next; continue; }
+                known = ConsumerOutput(next);
+                break;
+            }
+            foreach (var item in chain) _outputs[item] = known;
+            return known;
+        }
+
+        private static BodyOutput ConsumerOutput(ShellReader.Command command) =>
+            ProgramCall(command.Words) is { } call
+            && (StdinShellDialect(call.Program, call.Arguments) != null || call.Program is "iex" or "invoke-expression")
+                ? BodyOutput.Executable : BodyOutput.Unknown;
+
+        private static void Project(bool[] inner, int start, ShellReader.TextOrigins origins, ShellReader.Scope source, bool[] data)
+        {
+            for (var i = 0; i < inner.Length; i++)
+                if (inner[i] && origins.At(start + i) is { } origin && ReferenceEquals(origin.Source, source))
+                    data[origin.Offset - source.Start] = true;
+        }
+
+        private static void Fill(bool[] data, int start, int from, int to, bool value)
+        {
+            Array.Fill(data, value, from - start, to - from);
+        }
     }
 
     private enum BodyOutput { Data, Executable, Unknown }
-    private enum Accounting { Absent, Accounted, Missing }
-    private sealed record NudgeFrame(BodyOutput Output, ShellReader.Position? Origin = null, NudgeFrame? Parent = null);
-
-    private static bool CountsNudge(string text, ShellDialect dialect, int depth, NudgeFrame frame)
-    {
-        if (depth > MaxCommandLineDepth || !HasLaunchMark(text) || text.IndexOf(LaunchMark, StringComparison.Ordinal)
-            != text.LastIndexOf(LaunchMark, StringComparison.Ordinal)
-            || !ValidFrame(frame))
-            return true;
-        bool[] readings = dialect switch
-        {
-            ShellDialect.Posix => [true],
-            ShellDialect.PowerShell => [false],
-            _ => [true, false],
-        };
-        foreach (var posix in readings)
-        {
-            var reading = ShellReader.Read(text, posix);
-            if (reading.Failed || AccountedFor(reading.Source) != Accounting.Accounted
-                || reading.Captures.Any(c => HasLaunchMark(c.Source.Text[c.Range])
-                    && CaptureCountsNudge(c, frame, depth))
-                || reading.Commands.Any(c => CommandCountsNudge(c, frame, depth)))
-                return true;
-        }
-        return false;
-    }
-
     private static bool HasLaunchMark(string text) => text.Contains(LaunchMark, StringComparison.Ordinal);
-
-    private static bool ValidFrame(NudgeFrame frame) => frame.Parent == null
-        ? frame.Origin == null && frame.Output == BodyOutput.Data
-        : frame.Origin is { } origin && MarkedAt(origin) && ValidFrame(frame.Parent)
-            && (frame.Parent.Output == BodyOutput.Data || frame.Output != BodyOutput.Data);
-
-    private static bool MarkedAt(ShellReader.Position position) =>
-        position.Source.Contains(position.Offset..(position.Offset + LaunchMark.Length))
-        && position.Source.Text[position.Offset] == LaunchMark[0];
-
-    private static int MarkedIndex(ShellReader.Scope source, Range range)
-    {
-        if (!source.Contains(range))
-            return -1;
-        var index = source.Text.IndexOf(LaunchMark, range.Start.Value, range.End.Value - range.Start.Value, StringComparison.Ordinal);
-        return index;
-    }
-
-    // Every marked representation must have its own emitted origin or completed execution edge.
-    // A comment/body elsewhere, or absence of a counted flat command, cannot discharge this source.
-    private static Accounting AccountedFor(ShellReader.Scope source, Dictionary<ShellReader.Scope, Accounting>? known = null)
-    {
-        known ??= [];
-        if (known.TryGetValue(source, out var previous))
-            return previous;
-        known[source] = Accounting.Missing; // An ancestry cycle cannot certify itself.
-        var result = AccountSource(source, known);
-        known[source] = result;
-        return result;
-    }
-
-    private static Accounting AccountSource(ShellReader.Scope source, Dictionary<ShellReader.Scope, Accounting> known)
-    {
-        var marker = MarkedIndex(source, source.Start..source.End);
-        if (marker < 0)
-            return Accounting.Absent;
-        var accounted = source.Comments.Any(r => MarkedIndex(source, r) == marker);
-        if (source.DerivedBody is { } derived)
-            accounted |= ReferenceEquals(derived.ExpansionSource, source)
-                && OriginMatches(derived.Origins, marker, derived.Owner.Source, derived.Content);
-        foreach (var command in source.Commands)
-        {
-            if (!CommandAccountsFor(command, marker, known, out var owns))
-                return Accounting.Missing;
-            accounted |= owns;
-        }
-        foreach (var edge in source.Executions.Where(e => MarkedIndex(source, e.Token) == marker))
-        {
-            if (!ExecutionAccountsFor(edge, known))
-                return Accounting.Missing;
-            accounted = true;
-        }
-        if (source.Children.Any(child => AccountedFor(child, known) == Accounting.Missing))
-            return Accounting.Missing;
-        return accounted ? Accounting.Accounted : Accounting.Missing;
-    }
-
-    private static bool CommandAccountsFor(ShellReader.Command command, int marker,
-        Dictionary<ShellReader.Scope, Accounting> known, out bool owns)
-    {
-        owns = command.Redirections.Any(HasLaunchMark);
-        for (var i = 0; i < command.Words.Count; i++)
-        {
-            if (MarkedIndex(command.Source, command.WordRanges[i]) != marker)
-                continue;
-            owns = true;
-            var normalized = command.Words[i].IndexOf(LaunchMark, StringComparison.Ordinal);
-            if (!OriginMatches(command.WordOrigins[i], normalized, command.Source, command.WordRanges[i])
-                && !command.Source.Executions.Any(e => ReferenceEquals(e.Command, command)
-                    && e.WordIndex == i && MarkedIndex(e.Source, e.Token) == marker && ExecutionAccountsFor(e, known)))
-                return false;
-        }
-        foreach (var body in command.Bodies.Where(b => MarkedIndex(command.Source, b.Content) == marker))
-        {
-            owns = true;
-            var normalized = body.Text.IndexOf(LaunchMark, StringComparison.Ordinal);
-            if (!OriginMatches(body.Origins, normalized, command.Source, body.Content)
-                && !body.Expansions.Any(e => RawToken(e) is { } r && MarkedIndex(command.Source, r) == marker
-                    && ExecutionAccountsFor(e, known)))
-                return false;
-        }
-        return true;
-    }
-
-    private static bool OriginMatches(ShellReader.TextOrigins origins, int index, ShellReader.Scope source, Range range) =>
-        index >= 0 && origins.At(index) is { } origin && ReferenceEquals(origin.Source, source)
-        && origin.Offset == MarkedIndex(source, range) && MarkedAt(origin);
-
-    private static bool ExecutionAccountsFor(ShellReader.Host edge, Dictionary<ShellReader.Scope, Accounting>? known = null)
-    {
-        if (!CompletedExecution(edge))
-            return false;
-        if (edge.Child is { } child)
-            return AccountedFor(child, known) == Accounting.Accounted;
-        var capture = edge.Capture!;
-        return OriginMatches(capture.Origins, capture.Text.IndexOf(LaunchMark, StringComparison.Ordinal),
-            capture.Source, capture.Range);
-    }
-
-    private static bool CaptureCountsNudge(ShellReader.Capture capture, NudgeFrame frame, int depth)
-    {
-        var marker = capture.Text.IndexOf(LaunchMark, StringComparison.Ordinal);
-        if (!ExecutionAccountsFor(capture.Host) || capture.Origins.At(marker) is not { } origin)
-            return true;
-        return CountsNudge(capture.Text, ShellDialect.Posix, depth + 1,
-            new NudgeFrame(CapturedOutput(capture.Host, frame.Output), origin, frame));
-    }
-
-    private static bool CommandCountsNudge(ShellReader.Command command, NudgeFrame frame, int depth)
-    {
-        if (command.Redirections.Any(HasLaunchMark))
-            return true;
-        var scriptWord = -1;
-        if (CommandPosition.ScriptOf(command, LaunchMark) is { } script
-            && HasLaunchMark(script.Text))
-        {
-            if (script.Encoded || script.Origin is not { } origin || !ReferenceEquals(origin.Command, command)
-                || origin.Offset != script.Text.IndexOf(LaunchMark, StringComparison.Ordinal)
-                || !MarkedScriptWordIsQuoted(command, origin.Word)
-                || CountsNudge(script.Text, script.Dialect, depth + 1,
-                    new NudgeFrame(OutputOf(command, frame.Output), origin.Source, frame)))
-                return true;
-            scriptWord = origin.Word;
-        }
-
-        for (var i = 0; i < command.Words.Count; i++)
-        {
-            if (i != scriptWord && WordCountsNudge(command, i, frame, depth))
-                return true;
-        }
-        return command.Bodies.Where(b => b.WordIndex < 0
-                && (HasLaunchMark(b.Text) || MarkedIndex(command.Source, b.Content) >= 0))
-            .Any(body => BodyCountsNudge(body, frame, depth));
-    }
-
-    private static bool WordCountsNudge(ShellReader.Command command, int index, NudgeFrame frame, int depth)
-    {
-        var raw = MarkedIndex(command.Source, command.WordRanges[index]);
-        if (!HasLaunchMark(command.Words[index]))
-            return raw >= 0 && !command.Source.Executions.Any(e => ReferenceEquals(e.Command, command)
-                && e.WordIndex == index && MarkedIndex(e.Source, e.Token) == raw && ExecutionAccountsFor(e));
-        return raw < 0 || !QuotedNudgeData(command, index, frame, depth);
-    }
 
     // Re-reading an executable string must not turn an originally unquoted match into data.
     // Unsupported concatenated strings stay counted even if the shell could eventually quote them.
-    private static bool MarkedScriptWordIsQuoted(ShellReader.Command command, int word)
+    private static bool ScriptWordIsQuoted(ShellReader.Command command, int word)
     {
         var pattern = command.Source.Posix ? PosixScriptWordRegex() : PowerShellScriptWordRegex();
         return pattern.IsMatch(command.RawWord(word));
@@ -1205,26 +1581,6 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     [GeneratedRegex("\\A(?:'(?:''|[^'])*'|\"(?:`[\\s\\S]|\"\"|[^\"`])*\")\\z")]
     private static partial Regex PowerShellScriptWordRegex();
-
-    private static bool BodyCountsNudge(ShellReader.Body body, NudgeFrame frame, int depth)
-    {
-        var owner = body.Owner;
-        var marker = MarkedIndex(owner.Source, body.Content);
-        if (marker < 0 || !BodyPositionIsData(body, marker))
-            return true;
-        var delegated = body.Expansions.Where(e => RawToken(e) is { } token
-            && MarkedIndex(owner.Source, token) == marker).ToArray();
-        if (delegated.Length != 0)
-            return delegated.Length != 1 || !ExecutionAccountsFor(delegated[0]);
-        var normalized = body.Text.IndexOf(LaunchMark, StringComparison.Ordinal);
-        if (!OriginMatches(body.Origins, normalized, owner.Source, body.Content))
-            return true;
-        if (body.Kind != ShellReader.BodyKind.HereString && ProgramCall(owner.Words) is { } shell
-            && StdinShellDialect(shell.Program, shell.Arguments) is { } dialect)
-            return CountsNudge(body.Text, dialect, depth + 1,
-                new NudgeFrame(OutputOf(owner, frame.Output), body.Origins.At(normalized), frame));
-        return !BodyIsData(body) || OutputOf(owner, frame.Output) != BodyOutput.Data;
-    }
 
     private static bool BodyIsData(ShellReader.Body body) =>
         (body.Owner.Words is [var first, ..] && DataCommands.Contains(first))
@@ -1240,7 +1596,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             return PosixScriptWordRegex().IsMatch(raw);
         if (body.Kind != ShellReader.BodyKind.HereString)
             return true;
-        if (!body.Owner.WordRanges[body.WordIndex].Equals(body.Whole))
+        if (body.WordIndex < 0 || body.WordIndex >= body.Owner.WordRanges.Count
+            || !body.Owner.WordRanges[body.WordIndex].Equals(body.Whole))
             return false;
         if (!body.Owner.Source.Posix)
             return true;
@@ -1256,7 +1613,9 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         if (!source.Contains(body.Whole) || !source.Contains(body.Content)
             || position < body.Content.Start.Value || position >= body.Content.End.Value)
             return null;
-        var surface = new StringBuilder();
+        // Heredocs need only provenance validation. Their Whole ranges overlap when one
+        // command declares many bodies; copying those ranges would revisit every prefix.
+        var surface = body.Kind == ShellReader.BodyKind.Heredoc ? null : new StringBuilder();
         var cursor = body.Whole.Start.Value;
         var projected = position - cursor;
         foreach (var edge in body.Expansions)
@@ -1265,28 +1624,28 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
                 || token.Start.Value < cursor || token.Start.Value < body.Content.Start.Value
                 || token.End.Value > body.Content.End.Value)
                 return null;
-            surface.Append(source.Text, cursor, token.Start.Value - cursor);
+            surface?.Append(source.Text, cursor, token.Start.Value - cursor);
             if (position >= token.Start.Value && position < token.End.Value)
-                projected = surface.Length;
+                projected = surface?.Length ?? 0;
             else if (position >= token.End.Value)
                 projected -= token.End.Value - token.Start.Value - 1;
-            surface.Append('x');
+            surface?.Append('x');
             cursor = token.End.Value;
         }
-        surface.Append(source.Text, cursor, body.Whole.End.Value - cursor);
-        return (surface.ToString(), projected);
+        surface?.Append(source.Text, cursor, body.Whole.End.Value - cursor);
+        return (surface?.ToString() ?? "", projected);
     }
 
     private static bool CompletedExecution(ShellReader.Host edge)
     {
-        if (!edge.Complete || !edge.Source.Contains(edge.Token) || !edge.Source.Executions.Contains(edge)
+        if (!edge.Complete || !edge.Source.Contains(edge.Token) || !edge.Source.HasExecution(edge)
             || edge.Token.End.Value <= edge.Token.Start.Value)
             return false;
         if (edge.Child is { } child)
         {
             var opener = edge.Kind == ShellReader.ExecutionKind.Group && edge.Source.Text[edge.Token.Start.Value] == '(' ? 1 : 2;
             return edge.Kind != ShellReader.ExecutionKind.Backtick && edge.Capture == null && ReferenceEquals(child.Host, edge)
-                && edge.Source.Children.Contains(child) && child.Start == edge.Token.Start.Value + opener
+                && edge.Source.HasChild(child) && child.Start == edge.Token.Start.Value + opener
                 && child.End + 1 == edge.Token.End.Value;
         }
         return edge.Kind == ShellReader.ExecutionKind.Backtick && edge.Capture is { } capture && ReferenceEquals(capture.Host, edge)
@@ -1297,8 +1656,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     private static Range? RawToken(ShellReader.Host edge)
     {
         if (!CompletedExecution(edge) || edge.Body is not { } body
-            || !ReferenceEquals(body.Owner, edge.Command) || !body.Expansions.Contains(edge)
-            || !edge.Command.Bodies.Contains(body) || edge.WordIndex != body.WordIndex)
+            || !ReferenceEquals(body.Owner, edge.Command) || !body.HasExpansion(edge)
+            || !edge.Command.HasBody(body) || edge.WordIndex != body.WordIndex)
             return null;
         if (ReferenceEquals(edge.Source, body.Owner.Source))
             return body.Kind == ShellReader.BodyKind.HereWord ? edge.Token : null;
@@ -1306,65 +1665,18 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             ? body.Origins.RangeIn(body.Owner.Source, edge.Token) : null;
     }
 
-    private static BodyOutput CapturedOutput(ShellReader.Host host, BodyOutput output, HashSet<ShellReader.Host>? ancestors = null)
-    {
-        ancestors ??= [];
-        if (!ancestors.Add(host) || RawToken(host) is not { } token
-            || !BodyPositionIsData(host.Body!, token.Start.Value))
-            return BodyOutput.Unknown;
-        if (ProgramCall(host.Command.Words) is { } shell && StdinShellDialect(shell.Program, shell.Arguments) != null)
-            return BodyOutput.Executable;
-        return BodyIsData(host.Body!) ? OutputOf(host.Command, output, ancestors) : BodyOutput.Unknown;
-    }
-
-    private static BodyOutput OutputOf(ShellReader.Command command, BodyOutput output, HashSet<ShellReader.Host>? ancestors = null)
-    {
-        if (command.UncertainFeed || command.HeaderExpansion
-            || command.Source.Commands.Any(c => c.Words.Count > 0 && CompoundWords.Contains(c.Words[0]))
-            || command.RedirectTargets.Any(r => !LiteralRedirect(command.Source, r)))
-            return BodyOutput.Unknown;
-        if (command.PipesOutput)
-            return command.Next is { } next ? InputUse(next, output, ancestors) : BodyOutput.Unknown;
-        return command.Source.Host is { } host ? CapturedOutput(host, output, ancestors) : output;
-    }
-
-    private static BodyOutput InputUse(ShellReader.Command command, BodyOutput output, HashSet<ShellReader.Host>? ancestors)
-    {
-        if (command.Words is [var first, ..] && DataCommands.Contains(first))
-            return OutputOf(command, output, ancestors);
-        if (ProgramCall(command.Words) is { } call
-            && (StdinShellDialect(call.Program, call.Arguments) != null || call.Program is "iex" or "invoke-expression"))
-            return BodyOutput.Executable;
-        return BodyOutput.Unknown;
-    }
-
     private static bool LiteralRedirect(ShellReader.Scope source, ShellReader.RedirectTarget target) =>
         source.Contains(target.Range) && (target.Operator is "<" or ">" or ">>" or "0<" or "1>" or "1>>")
+        && target.Range.End.Value - target.Range.Start.Value >= target.Operator.Length
         && LiteralRedirectWordRegex().IsMatch(source.Text[target.Range][target.Operator.Length..]);
 
     [GeneratedRegex("\\A\\s*(?:'[^']*'|\"[^\"$`]*\"|[^\\s$`'\"()<>;&|]+)\\z")]
     private static partial Regex LiteralRedirectWordRegex();
 
-    // Q1-Q4 of the captain's finite GS-03 inventory. Prefixes identify operands, never whole argv.
-    private static bool QuotedNudgeData(ShellReader.Command command, int index, NudgeFrame frame, int depth)
-    {
-        var text = command.Source.Text;
-        var posix = command.Source.Posix;
-        var range = command.WordRanges[index];
-        var raw = text[range];
-        if (command.Bodies.SingleOrDefault(b => b.WordIndex == index) is { } body)
-            return !BodyCountsNudge(body, frame, depth);
-        if (!LiteralNudgeQuoteRegex().IsMatch(raw))
-            return false;
-        var literalPrefix = Enumerable.Range(0, index).All(i => text[command.WordRanges[i]] == command.Words[i]);
-        if (literalPrefix && QuotedSearchPattern(command, index, raw[0]))
-            return true;
-        return !posix && ProcessFilterPrefixRegex().IsMatch(text[..range.Start.Value])
-            && ProcessFilterSuffixRegex().IsMatch(text[range.End.Value..]);
-    }
-
     private static bool QuotedSearchPattern(ShellReader.Command command, int index, char quote)
     {
+        if (index is not (2 or 4 or 5))
+            return false;
         var prefix = command.Words.Take(index).ToArray();
         var tail = command.Words.Skip(index + 1).ToArray();
         return prefix switch
@@ -1394,11 +1706,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex("\\A(?:'[^']*'|\"[^\"$`]*\")\\z")]
     private static partial Regex LiteralNudgeQuoteRegex();
 
-    [GeneratedRegex(@"(?:\A|[;\r\n])\s*Get-CimInstance\s+Win32_Process\s*\|\s*Where-Object\s*\{\s*(?:\$_\.CreationDate\s+-gt\s+\$cut\s+-or\s+)?(?:\$_\.CommandLine|\(\[string\]\$_\.CommandLine\))\s+-match\s+\z", RegexOptions.IgnoreCase)]
-    private static partial Regex ProcessFilterPrefixRegex();
-
-    [GeneratedRegex(@"\A\s*(?:-and\s+\$_\.Name\s+-notmatch\s+'bash'\s*)?\}", RegexOptions.IgnoreCase)]
-    private static partial Regex ProcessFilterSuffixRegex();
+    private static readonly Regex ProcessFilterOperandPattern = new(@"(?:\A|[;\r\n])\s*Get-CimInstance\s+Win32_Process\s*\|\s*Where-Object\s*\{\s*(?:\$_\.CreationDate\s+-gt\s+\$cut\s+-or\s+)?(?:\$_\.CommandLine|\(\[string\]\$_\.CommandLine\))\s+-match\s+(?<operand>'[^']*'|""[^""$`]*"")\s*(?:-and\s+\$_\.Name\s+-notmatch\s+'bash'\s*)?\}", LinearIgnoreCase);
 
     [GeneratedRegex(LinearCommandStart + @"op\s+(?:read|run|inject|item|document|vault|connect|service-account|events-api|signin)" + LinearCommandEnd, LinearIgnoreCase, DangerousPatternTimeoutMs)]
     internal static partial Regex OndrejOpRegex();
@@ -1517,6 +1825,71 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     [GeneratedRegex(@"<\s*([^\s|;&><]+)")]
     private static partial Regex InputRedirectRegex();
 
+    private static readonly (Func<string, bool> IsMatch, string Reason)[] DangerousPatterns =
+    [
+        (RecursiveDeleteRootRegex.IsMatch, "Recursive delete of root or home directory"),
+        (RecursiveDeleteGlobRegex.IsMatch, "Recursive delete with dangerous glob pattern"),
+
+        (PowerShellRecursiveDeleteRegex.IsMatch, "PowerShell recursive delete of root directory"),
+
+        (ForkBombClassicRegex().IsMatch, "Fork bomb detected"),
+        (ForkBombAltRegex().IsMatch, "Fork bomb variant detected"),
+
+        (DirectDiskWriteRegex().IsMatch, "Direct disk write attempt"),
+        (DdDiskWriteRegex().IsMatch, "Direct disk write via dd"),
+        (DdKnownDiskWriteRegex.IsMatch, "Direct disk write via dd"),
+
+        (Base64DecodePipeExecRegex.IsMatch, "Base64 decode piped to interpreter"),
+
+        (CurlPipeShRegex.IsMatch, "Download and execute pattern (curl | sh)"),
+        (WgetPipeShRegex.IsMatch, "Download and execute pattern (wget | sh)"),
+        (WgetOutputPipeShRegex.IsMatch, "Download and execute pattern (wget -O | sh)"),
+
+        (PowerShellIwrIexRegex.IsMatch, "Download and execute pattern (PowerShell IWR | IEX)"),
+        (PowerShellIwrIexShortRegex.IsMatch, "Download and execute pattern (PowerShell iwr | iex)"),
+        (PowerShellDownloadStringRegex.IsMatch, "Download and execute pattern (DownloadString | IEX)"),
+
+        (EvalVariableRegex().IsMatch, "Eval of variable content"),
+
+        (HistoryClearRegex().IsMatch, "History clearing detected"),
+        (HistoryFileTruncateRegex().IsMatch, "History file truncation"),
+        (PowerShellHistoryDeleteRegex.IsMatch, "PowerShell history deletion"),
+
+        (SelinuxDisableRegex().IsMatch, "SELinux disable attempt"),
+        (FirewallFlushRegex().IsMatch, "Firewall flush attempt"),
+
+        (ShadowFileAccessRegex().IsMatch, "Shadow file access attempt"),
+        (PasswdModifyRegex().IsMatch, "Password file modification attempt"),
+
+        // David Ondrej's global command denylist, pinned in DYD-188.
+        (OndrejRmRegex().IsMatch, "Deletion of system or home directory"),
+        (OndrejDiskRegex().IsMatch, "Disk format or erase attempt"),
+        (OndrejSudoRmRegex().IsMatch, "Privileged delete attempt"),
+        (OndrejCurlPipeRegex().IsMatch, "Download and execute as shell"),
+        (OndrejGitPushRegex().IsMatch, "Force push or remote branch deletion. GitHub deletes a merged PR's branch itself; clean up locally from outside the tree with dydo clean --dry-run <worktree>, then dydo clean <worktree>, which removes the worktree, keeps unmerged branches and runs git fetch --prune; name any other remote branch for the user"),
+        (OndrejGitRecoveryRegex().IsMatch, "Git recovery history destruction"),
+        (OndrejSystemPermissionsRegex().IsMatch, "System permission or ownership change"),
+        (OndrejGhDeleteRegex().IsMatch, "Destructive GitHub operation"),
+        (OndrejGhApiDeleteRegex().IsMatch, "GitHub API delete operation"),
+        (OndrejGhVisibilityRegex().IsMatch, "GitHub repository visibility change"),
+        (OndrejGhTokenRegex().IsMatch, "GitHub authentication token access"),
+        (OndrejPasswordCliRegex().IsMatch, "Password manager access"),
+        (RunsPasswordStore, "Password store access"),
+        (OndrejOpRegex().IsMatch, "1Password secret access"),
+        (OndrejKeychainRegex().IsMatch, "Keychain password access"),
+        (OndrejGpgSecretRegex().IsMatch, "GPG secret key export"),
+        (OndrejPasswordStorePathRegex().IsMatch, "Password store path access"),
+        (OndrejPasswordAppRegex().IsMatch, "Password manager application access"),
+
+        // Raw worktree removal - dydo clean archives uncommitted work and never follows a link.
+        (ForcedWorktreeRemoveRegex().IsMatch, WorktreeRemovalReason),
+        (IsRecursiveWorktreeDelete, WorktreeRemovalReason),
+
+        (InlineInterpreterRegex().IsMatch, "Inline interpreter execution bypasses file operation analysis. Write a script file instead."),
+        (RunsPythonFromStdin, "Python program on stdin bypasses file operation analysis, as python -c does. "
+            + "Change files with the file tools or write a script file; a change to a protected file goes to the user."),
+    ];
+
     public (bool IsMatch, string? CdPath, string? RestCommand) DetectNeedlessCd(string command)
     {
         if (string.IsNullOrWhiteSpace(command))
@@ -1537,7 +1910,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     {
         var result = new BashAnalysisResult();
 
-        if (string.IsNullOrWhiteSpace(command))
+        if (command is not { Length: > MaxCommandLength } && string.IsNullOrWhiteSpace(command))
             return result;
 
         var (isDangerous, reason) = CheckDangerousPatterns(command);
@@ -1549,7 +1922,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         }
 
         // Strip cat heredoc blocks - literal text, not shell code
-        var strippedCommand = CatHeredocRegex().Replace(command, "HEREDOC_STRIPPED");
+        var strippedCommand = StripCatHeredocs(command);
 
         // A literal body only data commands read is neither expansion nor code, so each piece of code
         // is read on its own and only its expanding text is searched for bypasses (DYD-406), without
@@ -1578,17 +1951,8 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     private void AnalyzeCommandSubstitutions(string command, BashAnalysisResult result)
     {
-        foreach (Match match in CommandSubstitutionRegex().Matches(command))
+        foreach (var inner in SubstitutionBodies(command))
         {
-            var raw = match.Value;
-            string inner;
-            if (raw.StartsWith("$(") && raw.EndsWith(")"))
-                inner = raw[2..^1];
-            else if (raw.StartsWith("`") && raw.EndsWith("`"))
-                inner = raw[1..^1];
-            else
-                continue;
-
             foreach (var subCmd in SplitCommand(inner))
                 AnalyzeSubCommand(subCmd.Trim(), result, _shell == ShellDialect.PowerShell);
         }
@@ -1596,6 +1960,15 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
     public (bool IsDangerous, string? Reason) CheckDangerousPatterns(string command)
     {
+        if (command.Length > MaxCommandLength)
+            return (true, CommandLengthReason);
+
+        // A command line nested past a bound, in a reading (ShellReader.MaxNesting) or in the command
+        // lines it runs (MaxCommandLineDepth and the reading's budget), is not read to its end, so
+        // nothing it says can be verified (DYD-723).
+        if (CommandLines(command, _shell).Lines.Any(line => line.TooDeep))
+            return (true, TooComplex);
+
         try
         {
             foreach (var (isMatch, reason) in DangerousPatterns)
@@ -1606,7 +1979,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         }
         catch (RegexMatchTimeoutException)
         {
-            return (true, "Command too complex to verify safely");
+            return (true, TooComplex);
         }
         return (false, null);
     }
@@ -1614,30 +1987,33 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // Each check reads the expanding text of each piece, a substitution or variable search without its
     // literal data (DYD-422); a line break counts only in the layout of the pieces, joined, where it
     // separates commands rather than sitting in quoted text, a body or literal data.
-    private static readonly (Func<string, string, bool> Check, bool WithoutLiteralData, string Warning)[] BypassChecks =
+    private static readonly (Func<string, bool, bool> Check, bool WithoutLiteralData, string Warning)[] BypassChecks =
     [
-        ((code, _) => CommandSubstitutionRegex().IsMatch(code), true, "Command contains command substitution - paths may be dynamic"),
+        ((code, _) => SubstitutionBodies(code).Any(), true, "Command contains command substitution - paths may be dynamic"),
         ((code, _) => Base64DecodeRegex().IsMatch(code), false, "Command contains base64 decode - potential obfuscation"),
         ((code, _) => HexDecodeRegex().IsMatch(code), false, "Command contains hex decode - potential obfuscation"),
-        ((code, _) => VariableExpansionRegex().IsMatch(code), true, "Command contains variable expansion - paths may be dynamic"),
-        ((code, layout) => SeparatesCommandLines(layout) || code.Contains("$'\\n'") || code.Contains("%0a"), false, "Command contains embedded newlines"),
+        ((code, _) => ExpandsVariable(code), true, "Command contains variable expansion - paths may be dynamic"),
+        ((code, separates) => separates || code.Contains("$'\\n'") || code.Contains("%0a"), false, "Command contains embedded newlines"),
     ];
 
     // Whether more than one line of the layout holds a command. A blank or comment-only line, such as
     // the one a heredoc's trailing line break leaves, holds none unless the line before continues
-    // into it (a trailing \ or `), where its # no longer starts a comment.
+    // into it (a trailing \ or `), where its # no longer starts a comment. A bare carriage return
+    // ends a line too: pwsh 7.6.9 starts a statement after one (DYD-641).
     private static bool SeparatesCommandLines(string layout)
     {
-        var lines = layout.Split('\n');
-        return lines.Where((line, i) => line.TrimStart() is [not '#', ..] || (i > 0 && lines[i - 1].TrimEnd('\r') is [.., '\\' or '`']))
+        var lines = layout.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n', '\r');
+        return lines.Where((line, i) => line.TrimStart() is [not '#', ..] || (i > 0 && lines[i - 1] is [.., '\\' or '`']))
             .Skip(1).Any();
     }
 
     private static void CheckBypassAttempts(List<CodePiece> pieces, List<CodePiece> searched, string layout, BashAnalysisResult result)
     {
+        // The joined layout is shared by every piece; scanning it per body was quadratic.
+        var separates = SeparatesCommandLines(layout);
         foreach (var (check, withoutLiteralData, warning) in BypassChecks)
         {
-            if ((withoutLiteralData ? searched : pieces).Any(piece => check(piece.Expanding, layout)))
+            if ((withoutLiteralData ? searched : pieces).Any(piece => check(piece.Expanding, separates)))
             {
                 result.Warnings.Add(warning);
                 result.HasBypassAttempt = true;
@@ -1645,10 +2021,11 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         }
     }
 
-    private static int CheckCommandSeparator(string command, int i)
+    // To pwsh 7.6.9 a bare carriage return separates commands as a line feed does; bash reads it as word text (DYD-641).
+    private static int CheckCommandSeparator(string command, int i, bool posix)
     {
         var c = command[i];
-        if (c == ';' || c == '\n')
+        if (c == ';' || c == '\n' || (!posix && c == '\r' && (i + 1 == command.Length || command[i + 1] != '\n')))
             return 1;
         if (c == '&' && i + 1 < command.Length && command[i + 1] == '&')
             return 2;
@@ -1688,7 +2065,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     // How many characters at i an unquoted separator or, with dropComments, a comment consumes;
     // 0 when neither starts there. A comment stops before its newline, so the newline still splits.
     private static int ConsumeUnquoted(string command, int i, StringBuilder current,
-        List<string> parts, bool dropComments)
+        List<string> parts, bool dropComments, bool posix)
     {
         if (dropComments && command[i] == '#' && (current.Length == 0 || char.IsWhiteSpace(current[^1])))
         {
@@ -1696,7 +2073,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
             return (newline < 0 ? command.Length : newline) - i;
         }
 
-        var sepLen = CheckCommandSeparator(command, i);
+        var sepLen = CheckCommandSeparator(command, i, posix);
         if (sepLen > 0 && current.Length > 0)
         {
             parts.Add(current.ToString());
@@ -1708,9 +2085,18 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
     /// <summary>
     /// Splits a command at unquoted separators. A backslash is literal inside single quotes. With
     /// <paramref name="dropComments"/>, an unquoted <c>#</c> that begins a word drops the rest of
-    /// its line, as a shell comment.
+    /// its line, as a shell comment. pwsh 7.6.9 also ends a command at a bare carriage return, where
+    /// bash goes on with the same command's arguments (DYD-641), so both readings' sub-commands are
+    /// returned: pwsh's, then each of bash's that pwsh's lack.
     /// </summary>
     internal static IEnumerable<string> SplitCommand(string command, bool dropComments = false)
+    {
+        var pwsh = SplitCommand(command, dropComments, posix: false);
+        var pwshParts = new HashSet<string>(pwsh, StringComparer.Ordinal);
+        return pwsh.Concat(SplitCommand(command, dropComments, posix: true).Where(part => !pwshParts.Contains(part)));
+    }
+
+    private static List<string> SplitCommand(string command, bool dropComments, bool posix)
     {
         var parts = new List<string>();
         var current = new StringBuilder();
@@ -1741,7 +2127,7 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
 
             if (!inSingleQuote && !inDoubleQuote)
             {
-                var consumed = ConsumeUnquoted(command, i, current, parts, dropComments);
+                var consumed = ConsumeUnquoted(command, i, current, parts, dropComments, posix);
                 if (consumed > 0)
                 {
                     i += consumed - 1;
@@ -1985,22 +2371,65 @@ public partial class BashCommandAnalyzer : IBashCommandAnalyzer
         return null;
     }
 
-    // fd duplication or close (>&2, 2>&1, 3>&1-, 2>&-, >&$fd) names a descriptor, not a file. A
-    // redirection read only since DYD-640 (a digit before the operator, >| or >&) into a sink writes no
-    // file either: as a write it would refuse a stderr silencer beside a $ word. PowerShell's sink is its
-    // unquoted $null. > >> &> and &>> keep their reading, /dev/null included.
+    // fd duplication or close (>&2, 2>&1, 3>&1-, 2>&-) names a descriptor, not a file; >&$fd is a write,
+    // since bash writes a file when the expanded word is no number. A redirection read only since DYD-640
+    // (a digit before the operator, >| or >&) into a sink writes no file either: as a write it would
+    // refuse a stderr silencer beside a $ word. PowerShell's sink is its unquoted $null. > >> &> and &>>
+    // keep their reading, /dev/null included.
     private static bool WritesNoFile(bool newlyRead, string op, string target, bool powerShell)
     {
-        var word = ShellEndedWord(target);
-        return (op[^1] == '&' && (word.TrimEnd('-').All(char.IsAsciiDigit) || (word.StartsWith('$') && !word.Contains('/'))))
+        var word = ShellEndedWord(target, powerShell);
+        return (op[^1] == '&' && word.Length > 0 && word.TrimEnd('-').All(char.IsAsciiDigit))
             || (newlyRead && (OutputSinkRegex().IsMatch(word)
-                || (powerShell && target[0] is not ('"' or '\'') && word.Equals("$null", StringComparison.OrdinalIgnoreCase))));
+                || (powerShell && target.StartsWith("$null", StringComparison.OrdinalIgnoreCase)
+                    && word.Equals("$null", StringComparison.OrdinalIgnoreCase))));
     }
 
-    // The word a redirection target names where the shell ends it: its quotes dropped, and a ) ` or }
-    // that closes the substitution, subshell or group around the redirection left outside it.
-    private static string ShellEndedWord(string target) =>
-        target.TrimStart('"', '\'').TrimEnd(')', '`', '}', '"', '\'');
+    // The word a redirection target names where the shell ends it, read once left to right: quotes
+    // removed, and ended at the first unquoted ) or ` that closes the substitution or subshell around
+    // the redirection, text after it included. In PowerShell } closes a script block and ends it too;
+    // bash ends no word at }, so 2>/dev/null} writes the file /dev/null}.
+    private static string ShellEndedWord(string target, bool powerShell)
+    {
+        var ends = powerShell ? ")`}" : ")`";
+        var word = new StringBuilder(target.Length);
+        char? quote = null;
+        for (var i = 0; i < target.Length; i++)
+        {
+            var c = target[i];
+            if (PreserveTargetEscape(target, ref i, quote, powerShell, word))
+                continue;
+            if (quote is null && ends.Contains(c))
+                break;
+            if (c == quote)
+                quote = null;
+            else if (quote is null && c is '"' or '\'')
+                quote = c;
+            else
+                word.Append(c);
+        }
+        return word.ToString();
+    }
+
+    // Escape pairs cannot become quote boundaries or closing delimiters. Keep their spelling so
+    // classification grants no new sink exemption by decoding an escaped filename. PowerShell also
+    // doubles a quoted delimiter; the resulting literal quote is part of the filename.
+    private static bool PreserveTargetEscape(string target, ref int i, char? quote, bool powerShell, StringBuilder word)
+    {
+        if (i + 1 == target.Length)
+            return false;
+        var c = target[i];
+        if (powerShell && c == quote && target[i + 1] == c)
+        {
+            word.Append(c);
+            i++;
+            return true;
+        }
+        if (quote == '\'' || (c != '\\' && !(powerShell && quote == '"' && c == '`')))
+            return false;
+        word.Append(c).Append(target[++i]);
+        return true;
+    }
 
     private static void AnalyzeRedirection(string command, BashAnalysisResult result, bool powerShell)
     {

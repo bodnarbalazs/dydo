@@ -24,14 +24,27 @@ the commands that implement selection; a cheap test is not automatically suffici
 |---|---|
 | While building | Surgical tests that decide the change's behavior. |
 | Each committed code hop | Affected-feature Light, including reached features and shared tests, plus applicable static assurance. |
-| Final candidate | Own-feature Heavy when the declared plan contains Heavy, including any reached Heavy behavior; changed-product-stack coverage producer and consumer once. Retain required static and mutation gates. |
+| Final candidate | Own-feature Heavy when the declared plan contains Heavy, including any reached Heavy behavior and every Heavy-only source owed to it; ticket-scoped coverage producer and consumer once, as below. Retain required static and mutation gates. |
 | Documentation-only hop | Bounded documentation, setup and reference checks its contract names; runtime tests only where the change actually reaches behavior. |
-| CI or explicit human request | Whole suites for broad observations. A coverage producer may itself execute a stack suite; reuse its suite verdict where supported instead of launching the same suite twice. |
+| CI or explicit human request | Whole suites for broad observations; hosted CI also requires whole-stack coverage. A coverage producer may itself execute a stack suite; reuse its suite verdict where supported instead of launching the same suite twice. |
+
+Coverage is scoped to the ticket. Its coverage producer runs the ticket's own Light feature
+selection: own and reached features, with their ancestors' shared tests. Where the facade supports
+it, that is the same instrumented run as the Light gate, so the suite runs once. The consumer judges
+the ticket's changed files under the unchanged thresholds; a changed line the selection does not
+reach fails the gate rather than being waved through. A changed Heavy-only source, one only the
+project's declared Heavy tests reach, takes the Heavy route: the Light coverage gate reports it as
+owed to Heavy, and the final candidate's Heavy stage measures it under the same thresholds or fails.
+No gate reports an owed source as pending with exit 0; DR 048 leaves no escape hatch. A facade
+without feature selection keeps whole-stack coverage per ticket and records that as its concrete
+gap; the ticket claims no selector the facade lacks.
 
 The ticket's Exact gates bind real project commands, reached features, levels, prerequisites and
 stage. Use a supported selector/adapter; missing selection or Heavy support is a concrete gap to
 return to the captain, not a flag to invent or proof to skip. Required integration, combined-merge
-and release gates remain at their boundaries. Existing active ticket gates remain binding until
+and release gates remain at their boundaries. Whole-stack coverage is required at the landing, at
+every sync of the default branch into a feature branch and in hosted CI, and it measures Heavy-only
+sources under the unchanged thresholds or fails. Existing active ticket gates remain binding until
 their owner explicitly reconciles the contract under governing authority, naming retained,
 replaced and still-required gates; new guidance never retrospectively cancels an owed run.
 
@@ -53,6 +66,38 @@ The session's shared FIFO, concurrency limits and host restrictions take priorit
 local scheduling exemptions, including slot-free Light. Use the supported queue and let a healthy
 queued or quiet run continue. A Light label grants neither a bypass nor host access.
 
+Memory belongs to the whole host: one runaway run can exhaust it and end every session on the
+machine. Run each ad-hoc test, gate or probe under a hard cap with swap off:
+`[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`.
+The bracketed env prefix applies to .NET commands; omit the brackets when using it. Use your
+session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager. On a
+T3 host, `app-t3code-agents.slice` is an example; a nearer session slice takes precedence. Leave
+out `--slice` where no agent slice exists. Each run has its own cap; concurrent runs share the
+caller's slice budget. Give a focused probe `MemoryMax=4G` and a short timeout. Keep any host gate
+lock before the command, outside the cap. Pass input that holds `$` through a script file, and
+never scale an input upward uncapped. The testing facade caps its own operations the same way,
+and `DYDO_MEMORY_MAX` may only lower its cap.
+
+A cap hit is a finding to diagnose; nobody raises the cap to get past it. When the facade
+survives, the hit is a `failed` row marked `memoryCapHit`. Otherwise the caller sees 137, or 143
+when systemd stops a scope under its default `OOMPolicy=stop`, and the `journalctl --user` OOM line
+confirms it. Behind `timeout`, a default-policy scope can even return 0; that race is why the
+command sets `OOMPolicy=continue`. This ad-hoc command applies only where systemd exists.
+On Windows the facade caps itself with `JOB_OBJECT_LIMIT_JOB_MEMORY` in its own nested Job object,
+without restarting or killing itself or adding kill-on-close. The effective limit is the lower of
+its target and the outer job's job-memory limit, when present; Windows enforces nested limits.
+Its cap is `enforced`, with mechanism `windows job object`. Setup or query failure records
+`unavailable` with the Windows error and one warning, and the operation proceeds.
+
+The operation's `memoryCap` and every covered row record `memoryCapHitReporting`: `exact` on
+Linux, `best-effort` on Windows. A delivered `JOB_OBJECT_MSG_JOB_MEMORY_LIMIT` on the facade's own
+completion port makes that Windows row `failed`, exit 1, with `memoryCapHit: true` and
+`memory cap hit (MemoryMax=<cap>): a finding; do not raise the cap`. Windows message delivery is
+not guaranteed: a missing message proves nothing and never changes a failed row into a pass.
+`peakJobMemory` records the job's cumulative `PeakJobMemoryUsed` at each row's end as diagnosis
+only; neither a peak nor a child exit code establishes a hit. macOS and Linux without usable
+systemd still record `unavailable` with a reason and warning; only deadlines bound those runs.
+
 ## Evidence and inherited failures
 
 Each result names candidate/source identity, command and selection, environment/session, exit and
@@ -62,7 +107,9 @@ Pending work has no invented success or numeric exit: preserve the runner's actu
 
 Reuse evidence only for the exact candidate, selection and compatible environment when the gate
 allows it. Final Heavy and coverage each run once per final candidate; a changed final tree
-(including a fix or combined merge tree) requires fresh applicable final gates. New concerns and
+(including a fix or combined merge tree) requires fresh applicable final gates. A combined merge
+tree reruns the ticket-scoped coverage gate, not whole-stack coverage, unless it is the landing or a
+sync of the default branch. New concerns and
 distinct mandatory integration/release boundaries also require their specified reruns. Within one
 gate run, deduplicate execution where the producer's contract proves both verdicts. Independent
 review and the captain's own proof-recipe rerun remain required.

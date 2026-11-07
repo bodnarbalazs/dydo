@@ -5,7 +5,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from gate_inventory import assembly_path, assemble_inventory, dependency_cycles, test_project_role
+from gate_inventory import (STATECHART_ROOT, assembly_path, assemble_inventory, dependency_cycles,
+                            test_project_role, typescript_stack)
 from gate_run import CommandLog, STATIC_GATE_INTERPRETER, result
 from inventory import build_file_rows, git_file_state, source_fingerprint
 
@@ -24,6 +25,8 @@ _METRIC_KINDS = {'javascript': lambda path: 'module' if path.endswith('.mjs') el
                  'typescript': lambda path: 'tsx' if path.endswith('.tsx') else 'typescript'}
 _TSC_DIAGNOSTIC = re.compile(r'(?m)^(?P<path>[^\s(][^(\r\n]*)\((?P<line>\d+),(?P<column>\d+)\): '
                              r'(?P<severity>error|warning) (?P<code>TS\d+): (?P<message>.*)$')
+# The diagnostics noUnusedLocals and noUnusedParameters report.
+_UNUSED_BINDINGS = {'TS6133', 'TS6138', 'TS6192', 'TS6196', 'TS6198', 'TS6199', 'TS6205'}
 
 
 def viewer_script(script, *arguments):
@@ -133,6 +136,9 @@ def classify_vulture(lines):
 
 
 class Collectors:
+    # The stack whose TypeScript the collectors judge; None judges all of it.
+    stack = None
+
     def __init__(self, root, output):
         self.root = Path(root).resolve()
         self.output = Path(output).resolve()
@@ -201,7 +207,10 @@ class Collectors:
     def sources(self, language):
         if self.inventory is None:
             raise ValueError('Source inventory unavailable')
-        return [row for row in self.inventory['sources'] if row['language'] == language]
+        return [row for row in self.inventory['sources'] if row['language'] == language and self.owns(row)]
+
+    def owns(self, row):
+        return row.get('language') != 'typescript' or self.stack in (None, typescript_stack(row['path']))
 
     def csharp_source(self):
         project = self.coverage / 'metrics/GateMetrics.csproj'
@@ -342,6 +351,26 @@ class Collectors:
             {'message': 'Viewer typecheck failed without a compiler diagnostic', 'command': row}]
         return result({'command': row}, findings, errors)
 
+    def statechart_typecheck(self):
+        """The package's own strict tsconfig, compiled by the viewer's locked TypeScript and node types.
+        A byte-identical upstream file stays in the program, so a type error anywhere is a finding, but
+        its own unused bindings are not judged, as knip holds it without judging it."""
+        tools = self.root / 'viewer/node_modules'
+        row = self.log.run('statechart-typecheck', ['node', tools / 'typescript/bin/tsc', '-p',
+                                                    STATECHART_ROOT + 'tsconfig.json', '--typeRoots',
+                                                    tools / '@types', '--pretty', 'false'])
+        output = Path(row['stdout']).read_text(encoding='utf-8')
+        upstream = {source['path'] for source in self.inventory['excluded'] if 'upstream' in source.get('origin', {})}
+        findings, held = [], []
+        for match in _TSC_DIAGNOSTIC.finditer(output):
+            diagnostic = {'gate': 'typescript-build', **match.groupdict(), 'path': match['path'].strip()}
+            unjudged = diagnostic['path'] in upstream and diagnostic['code'] in _UNUSED_BINDINGS
+            (held if unjudged else findings).append(diagnostic)
+        accounted = len(findings) + len(held) == len(re.findall(r'(?m)^(?!\s).*?\b(?:error|warning) TS\d+: ', output))
+        errors = [] if accounted and (row['exit_code'] == 0 or findings or held) else [
+            {'message': 'Statechart typecheck failed without an accounted compiler diagnostic', 'command': row}]
+        return result({'command': row, 'upstreamUnusedBindings': held}, findings, errors)
+
     def viewer_lint(self):
         report = self.output / 'eslint.json'
         # An inline disable comment is an escape hatch DR 048 refuses, so the lint ignores them.
@@ -371,27 +400,52 @@ class Collectors:
         # A type-only import is still a module edge; the compiler erasing it does not undo the cycle.
         return self._module_graph('typescript', '--ts-pre-compilation-deps')
 
-    def _module_graph(self, language, *options):
-        paths = {row['path'] for row in self.sources(language)}
-        native = self.command_json('dependency-cruiser', ['node',
+    def _dependency_pass(self, paths, mode, systems, options):
+        config = self.output / f'dependency-cruiser-{mode}.json'
+        config.write_text(json.dumps({'options': {'moduleSystems': systems, 'enhancedResolveOptions': {
+            'exportsFields': ['exports'],
+            'conditionNames': [mode, 'node', 'node-addons', 'module-sync', 'default']}}}), encoding='utf-8')
+        native = self.command_json(f'dependency-cruiser-{mode}', ['node',
             self.coverage / 'node_modules/dependency-cruiser/bin/dependency-cruise.mjs',
-            '--no-config', '--output-type', 'json', '--do-not-follow', 'node_modules', *options, *sorted(paths)])
-        modules = native['modules']
+            '--config', config, '--output-type', 'json', '--do-not-follow', 'node_modules', *options, *sorted(paths)])
         # A third-party module may repeat (node_modules leaves stay listed); only our own sources must be unique.
-        identities = [row['source'] for row in modules if row['source'] in paths]
+        identities = [row['source'] for row in native['modules'] if row['source'] in paths]
         if len(identities) != len(set(identities)) or not paths <= set(identities):
             raise ValueError('Missing or ambiguous dependency-cruiser source identity')
+        return native
+
+    def _module_graph(self, language, *options):
+        paths = {row['path'] for row in self.sources(language)}
+        # 18.2.0 resolves every edge with one condition set. Partition extraction, not source files:
+        # dynamic import in CommonJS and import-equals in TypeScript need different runtime targets.
+        # Together these passes retain all four native module systems; unsupported ones fail below.
+        passes = {mode: self._dependency_pass(paths, mode, systems, options)
+                  for mode, systems in (('require', ['cjs', 'amd', 'tsd']), ('import', ['es6']))}
+        modules = {}
+        for native in passes.values():
+            for module in native['modules']:
+                joined = modules.setdefault(module['source'], {'source': module['source'], 'dependencies': []})
+                # Native cycle/validation flags describe a partial graph, not the joined graph.
+                joined['dependencies'].extend({key: value for key, value in dependency.items()
+                                               if key not in {'circular', 'cycle', 'valid', 'rules'}}
+                                              for dependency in module['dependencies'])
+        return self._module_graph_result(paths, modules, passes)
+
+    def _module_graph_result(self, paths, modules, passes):
         edges, errors = [], []
-        for module in modules:
+        for module in modules.values():
             if module['source'] not in paths:
                 continue
             for dependency in module['dependencies']:
+                if dependency['moduleSystem'] not in {'cjs', 'es6'}:
+                    errors.append({'path': module['source'], 'message': 'Unsupported native JavaScript module system',
+                                   'dependency': dependency})
                 if dependency.get('couldNotResolve'):
                     errors.append({'path': module['source'], 'message': 'Unresolved native JavaScript dependency', 'dependency': dependency})
                 if dependency['resolved'] in paths:
                     edges.append([module['source'], dependency['resolved']])
         findings = [{'gate': 'module-cycle', 'members': cycle} for cycle in dependency_cycles(edges)]
-        return result({'native': native, 'edges': edges}, findings, errors)
+        return result({'native': {'modules': list(modules.values())}, 'resolutionPasses': passes, 'edges': edges}, findings, errors)
 
     def javascript_unused_exports(self):
         from gate_knip import collect_knip
@@ -399,7 +453,7 @@ class Collectors:
 
     def typescript_unused_exports(self):
         from gate_knip import collect_knip
-        return collect_knip(self, 'typescript')
+        return collect_knip(self, self.stack or 'viewer')
 
     def pending(self, name, detail):
         return result(errors=[{'type': 'implementation-gap', 'collector': name, 'message': detail}])

@@ -11,6 +11,8 @@ import xml.etree.ElementTree as ET
 from collections import Counter
 from pathlib import Path
 
+from release_proof import coverage_filter
+
 
 ASSEMBLY_NAMES = {"dydo", "DynaDocs.Tests", "GateMetrics"}
 ASSEMBLY_PROJECTS = {
@@ -56,26 +58,33 @@ def _identity_producer(root):
     return command, producer
 
 
-def _subject_commands(root, tests=None):
+def _subject_commands(root, tests=None, results=None):
     root = Path(root).resolve()
     suite = ["dotnet", "test", "DynaDocs.sln", "-c", "Debug", "--no-build",
              "-p:RunAnalyzers=false", "-p:UseSharedCompilation=false"]
     if tests is not None:
-        # A platform campaign runs only the reviewed selection that reaches its native members.
-        return [[*suite, "--filter", tests, "--", "RunConfiguration.TreatNoTestsAsError=true"]]
+        # A platform campaign runs only the reviewed selection that reaches its native members,
+        # and keeps each test's result so the gate can prove every selected test ran.
+        results = Path(results)
+        return [[*suite, "--filter", tests, "--logger", f"trx;LogFileName={results.name}",
+                 "--results-directory", str(results.parent), "--", "RunConfiguration.TreatNoTestsAsError=true"]]
+    # The full suite but the repeated numerical proofs, which the required Release lane runs and
+    # whose coverage witnesses run here (DYD-840, release-proofs.json).
+    excluded = coverage_filter(root / "DynaDocs.Tests/coverage/release-proofs.json")
     return [
-        [*suite, "--", "RunConfiguration.TreatNoTestsAsError=true"],
+        [*suite, "--filter", excluded, "--logger", "console;verbosity=normal",
+         "--", "RunConfiguration.TreatNoTestsAsError=true"],
         [sys.executable, str(root / "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py")],
     ]
 
 
-def run_subject(root, tests=None):
+def run_subject(root, tests=None, results=None):
     root = Path(root).resolve()
     environment = os.environ.copy()
     environment[GATE_METRICS_PREBUILT_ENV] = str(
         root / "DynaDocs.Tests/coverage/metrics/bin/Debug/net10.0/GateMetrics.dll")
     status = 0
-    for command in _subject_commands(root, tests):
+    for command in _subject_commands(root, tests, results):
         result = subprocess.run(command, cwd=root, env=environment)
         if not status and result.returncode:
             status = result.returncode
@@ -83,7 +92,9 @@ def run_subject(root, tests=None):
 
 
 def altcover_commands(root, output, tests=None):
+    from dotnet_platform import WINDOWS_RESULTS
     root, output = Path(root).resolve(), Path(output).resolve()
+    selected = [] if tests is None else ["--tests", tests, "--results", str(output / WINDOWS_RESULTS)]
     inputs = [root / "bin/Debug/net10.0", root / "DynaDocs.Tests/bin/Debug/net10.0",
               root / "DynaDocs.Tests/coverage/metrics/bin/Debug/net10.0"]
     prepare = ["dotnet", "tool", "run", "altcover", "--",
@@ -96,18 +107,17 @@ def altcover_commands(root, output, tests=None):
               f"--workingDirectory={root}", f"--executable={sys.executable}",
               f"--outputFile={output / 'coverage.opencover.xml'}", "--summary=N", "--",
               str(root / "DynaDocs.Tests/coverage/csharp_coverage.py"), "--_subject",
-              "--root", str(root), *(["--tests", tests] if tests is not None else [])]
+              "--root", str(root), *selected]
     return prepare, runner
 
 
 def _run(name, command, root, output):
     prefix = output / name
     started = time.monotonic()
-    result = subprocess.run(list(map(str, command)), cwd=root, text=True, encoding="utf-8",
-                            errors="replace", capture_output=True)
     stdout, stderr = Path(str(prefix) + ".stdout"), Path(str(prefix) + ".stderr")
-    stdout.write_text(result.stdout, encoding="utf-8")
-    stderr.write_text(result.stderr, encoding="utf-8")
+    # Retain native progress even when the campaign owner interrupts this command.
+    with stdout.open("wb") as out, stderr.open("wb") as err:
+        result = subprocess.run(list(map(str, command)), cwd=root, stdout=out, stderr=err)
     return {"name": name, "argv": list(map(str, command)), "cwd": str(root),
             "environment": {key: os.environ[key] for key in CAMPAIGN_ENVIRONMENT if key in os.environ},
             "exit": result.returncode, "elapsedSeconds": round(time.monotonic() - started, 6),
@@ -490,11 +500,12 @@ def main():
     parser.add_argument("--result-root")
     parser.add_argument("--extra-json", default="[]")
     parser.add_argument("--tests", help=argparse.SUPPRESS)
+    parser.add_argument("--results", help=argparse.SUPPRESS)
     parser.add_argument("--denominator", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
         if args._subject:
-            return run_subject(args.root, args.tests)
+            return run_subject(args.root, args.tests, args.results)
         if args.result_root is None:
             return 2
         if args.denominator:

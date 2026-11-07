@@ -88,6 +88,10 @@ Account for every own/reached feature and shared test, preflight its selection, 
 hop's affected-feature Light and applicable static evidence. Attribute failures by Evidence and
 inherited failures; send unresolved attribution or missing support to the captain. Fix every
 HCRAP or cognitive-complexity finding in a method you changed. Mutation is the reviewer's.
+Run every test, gate and probe capped: `[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`, a probe at 4G with a short timeout. A cap hit is a finding; never raise the cap.
+Use your session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager
+(on a T3 host, for example, `app-t3code-agents.slice`; a nearer session slice takes precedence).
+Omit `--slice` where no agent slice exists. Use the bracketed env prefix for .NET commands, without the brackets.
 
 ## Return
 

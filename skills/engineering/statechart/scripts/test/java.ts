@@ -29,12 +29,12 @@ const java = (folder: string, args: string[]) => {
   return r;
 };
 
-if (record) {
+function recordRun(folder: string) {
   let tool = plain ? args.map((a, i) => (args[i - 1] === "-workers" ? "1" : a)) : args;
   const wantsPlainText = tool.includes("dydo.statechart.LoopbackTlc") && !tool.includes("-tool");
   if (wantsPlainText) tool = tool.flatMap((a) => (a === "dydo.statechart.LoopbackTlc" ? [a, "-tool"] : [a]));
-  const r = java(record, tool);
-  if (dump && fs.existsSync(dump)) fs.copyFileSync(dump, path.join(record, "graph.dot"));
+  const r = java(folder, tool);
+  if (dump && fs.existsSync(dump)) fs.copyFileSync(dump, path.join(folder, "graph.dot"));
   if (plain && tool.includes("-tool"))
     java(
       plain,
@@ -51,13 +51,18 @@ if (record) {
   process.exit(r.status ?? 1);
 }
 
+function replayRun(folder: string) {
+  const file = (ext: string) => path.join(folder, `${name}${ext}`);
+  if (dump && fs.existsSync(path.join(folder, "graph.dot")))
+    fs.copyFileSync(path.join(folder, "graph.dot"), dump);
+  const tag = fs.existsSync("ChartRun.tla")
+    ? fs.readFileSync("ChartRun.tla", "utf8").match(TAG)?.[0]
+    : undefined;
+  const saved = fs.readFileSync(file(".out"), "utf8");
+  process.stdout.write(tag ? saved.replace(/(<<\s*)"chart"(?=,)/g, `$1${tag}`) : saved);
+  process.exit(fs.existsSync(file(".exit")) ? Number(fs.readFileSync(file(".exit"), "utf8")) : 0);
+}
+
+if (record) recordRun(record);
 if (!replay) throw new Error("Set STATECHART_RECORD or STATECHART_REPLAY to a folder.");
-const file = (ext: string) => path.join(replay, `${name}${ext}`);
-if (dump && fs.existsSync(path.join(replay, "graph.dot")))
-  fs.copyFileSync(path.join(replay, "graph.dot"), dump);
-const tag = fs.existsSync("ChartRun.tla")
-  ? fs.readFileSync("ChartRun.tla", "utf8").match(TAG)?.[0]
-  : undefined;
-const saved = fs.readFileSync(file(".out"), "utf8");
-process.stdout.write(tag ? saved.replace(/(<<\s*)"chart"(?=,)/g, `$1${tag}`) : saved);
-process.exit(fs.existsSync(file(".exit")) ? Number(fs.readFileSync(file(".exit"), "utf8")) : 0);
+replayRun(replay);

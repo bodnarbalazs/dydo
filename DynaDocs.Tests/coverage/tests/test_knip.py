@@ -76,7 +76,7 @@ class KnipAccountingTests(unittest.TestCase):
     def test_a_source_no_declared_package_owns_is_an_accounted_measurement_error(self):
         (self.root / 'viewer').mkdir()
         (self.root / 'viewer/package.json').write_text('{}', encoding='utf-8')
-        model = workspace_model(self.root, ['skills/runtime/scripts/run.ts'], 'typescript')
+        model = workspace_model(self.root, ['skills/runtime/scripts/run.ts'], 'viewer')
         self.assertEqual([{'path': 'skills/runtime/scripts/run.ts',
                            'message': 'No declared package owns this maintained source'}], model['errors'])
         self.assertEqual([], model['sources'])
@@ -85,7 +85,7 @@ class KnipAccountingTests(unittest.TestCase):
         (self.root / 'viewer').mkdir()
         (self.root / 'viewer/package.json').write_text('{}', encoding='utf-8')
         unowned = ['skills/runtime/scripts/run.ts', 'skills/runtime/scripts/test/run.test.ts']
-        model = workspace_model(self.root, ['viewer/src/main.tsx'], 'typescript',
+        model = workspace_model(self.root, ['viewer/src/main.tsx'], 'viewer',
                                 ['viewer/e2e/journey.spec.ts', *unowned])
         self.assertEqual([], model['errors'])
         self.assertEqual(['viewer/e2e/journey.spec.ts', 'viewer/src/main.tsx'], [row['path'] for row in model['sources']])
@@ -168,6 +168,30 @@ class KnipAccountingTests(unittest.TestCase):
         self.assertEqual([view], model['config']['workspaces']['../..']['entry'])
         self.assertEqual([(view, 'knip-exports', 'planted')],
                          [(row['path'], row['gate'], row['diagnostic']['name']) for row in self.native_report(model)['findings']])
+
+    def test_a_vendored_member_keeps_its_consumers_counted_while_a_target_planted_export_is_found(self):
+        package = 'skills/engineering/statechart/scripts'
+        files = {'frontends/dot.ts': 'export const linesOf = (t: string) => t.split("\\n");\n'
+                                     'export const planted = () => 1;\n',
+                 'frontends/messages.ts': 'import { linesOf } from "./dot.ts";\n'
+                                          'export const read = (t: string) => linesOf(t);\n'
+                                          'export const vendoredDead = () => 2;\n',
+                 'test/messages.test.ts': 'import { read } from "../frontends/messages.ts";\nread("a");\n',
+                 'package.json': '{}'}
+        for name, text in files.items():
+            (self.root / package / name).parent.mkdir(parents=True, exist_ok=True)
+            (self.root / package / name).write_text(text, encoding='utf-8')
+        member = f'{package}/frontends/messages.ts'
+
+        model = workspace_model(self.root, [f'{package}/frontends/dot.ts', f'{package}/test/messages.test.ts'],
+                                'statechart', members=[member])
+
+        self.assertEqual({'count': 1, 'paths': [member]}, model['ignored'])
+        self.assertEqual(['frontends/messages.ts'],
+                         model['config']['workspaces']['../../' + package]['ignore'])
+        self.assertEqual([(f'{package}/frontends/dot.ts', 'knip-exports', 'planted')],
+                         [(row['path'], row['gate'], row['diagnostic']['name'])
+                          for row in self.native_report(model)['findings']])
 
     def test_an_absent_native_knip_installation_is_never_a_green_gate(self):
         runner = Collectors.__new__(Collectors)

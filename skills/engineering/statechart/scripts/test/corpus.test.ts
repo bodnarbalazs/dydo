@@ -7,6 +7,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { check, PINNED_FLAGS, tlcInvocation } from "../run.ts";
 import { prepareChecker } from "../checker.ts";
+import { exitClass } from "./tlc.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const corpus = path.join(here, "corpus");
@@ -51,7 +52,7 @@ for (const name of fs.readdirSync(corpus)) {
     const report = read(path.join(out, "report.md"));
     const first = path.join(dir, "verdict-1.exit");
     const plain = fs.existsSync(first) ? Number(read(first)) : 0;
-    assert.equal(r.status, plain === 0 ? 0 : [11, 12, 13].includes(plain) ? 1 : 2);
+    assert.equal(r.status, exitClass(plain));
     assert.equal(report, read(path.join(dir, "report.md")));
     assert.equal(read(path.join(out, "chart.mmd")), read(path.join(dir, "chart.mmd")));
   });
@@ -132,7 +133,7 @@ const plainTlc = (base: string) => {
     { cwd: path.dirname(base), encoding: "utf8" },
   );
   return {
-    exit: r.status === 0 ? 0 : [11, 12, 13].includes(r.status ?? -1) ? 1 : 2,
+    exit: exitClass(r.status),
     rule: r.stdout.match(/^Error: Invariant (\w+) is violated\.$/m)?.[1],
     path: [...r.stdout.matchAll(/^State \d+: <(\w+) line/gm)].map((m) => m[1]),
   };

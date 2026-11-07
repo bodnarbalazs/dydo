@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -eu
+evidence=dydo/project/changelog/2026/2026-11-06/dyd-784-fix-evidence
+exec > "$evidence/final-gates.log" 2>&1
+trap 'echo "final gates exit=$?"' EXIT
+export MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false PYTHONDONTWRITEBYTECODE=1
+dotnet msbuild DynaDocs.csproj -t:ValidateStatechartPayload -nr:false -p:UseSharedCompilation=false > "$evidence/payload-green.log" 2>&1
+echo 'payload target exit=0'
+dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --list-tests --filter FullyQualifiedName~DynaDocs.Tests.Statechart.StatechartAssetsTests -nr:false -p:UseSharedCompilation=false > "$evidence/dotnet-discovery.log" 2>&1
+grep -q InstalledPayloadExtractsOfflineAndReusesExactBytes "$evidence/dotnet-discovery.log"
+dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-build --no-restore --filter FullyQualifiedName~DynaDocs.Tests.Statechart.StatechartAssetsTests -nr:false -p:UseSharedCompilation=false --logger 'trx;LogFileName=statechart-assets.trx' --results-directory /tmp/dyd784-fix/dotnet-results > "$evidence/dotnet-assets.log" 2>&1
+cp /tmp/dyd784-fix/dotnet-results/statechart-assets.trx "$evidence/statechart-assets.trx"
+echo 'embedded asset tests exit=0'
+for gate in coverage static; do
+  set +e
+  bash dydo/project/changelog/2026/2026-11-06/dyd-784-evidence/run-gate.sh.txt "$gate" > "$evidence/$gate.log" 2>&1
+  rc=$?
+  set -e
+  echo "$gate exit=$rc"
+  cp "DynaDocs.Tests/coverage/results/adapters/statechart-$gate.json" "$evidence/$gate-adapter.json"
+  latest=$(ls -td DynaDocs.Tests/coverage/results/run-* | head -1)
+  cp "$latest/result.json" "$evidence/$gate-result.json"
+  test "$rc" -eq 0
+done

@@ -1,0 +1,28 @@
+{
+  "coverage": {
+    "candidate": {
+      "commit": "b1ec72e005b326088d885efe6c16b6cd4c9ba3d2",
+      "dirty": true,
+      "sourceFingerprint": "8da58e5f8eb05b297ddcbef5344700900cdae83cf3923d235e57cd28910b1111"
+    },
+    "exitCode": 0,
+    "measurementComplete": true,
+    "inventory": {
+      "path": "assurance/run-775fab5960cc4cbbb48b489d14610c23/inventory.json",
+      "sha256": "139d23cc191c91e5001c8793f98b9a4f3821576c15fea3bd1a5dd0ced267b620"
+    }
+  },
+  "static": {
+    "candidate": {
+      "commit": "b1ec72e005b326088d885efe6c16b6cd4c9ba3d2",
+      "dirty": true,
+      "sourceFingerprint": "8da58e5f8eb05b297ddcbef5344700900cdae83cf3923d235e57cd28910b1111"
+    },
+    "exitCode": 0,
+    "measurementComplete": true,
+    "inventory": {
+      "path": "assurance/run-36f0cd333e204e95930477bec114f9c8/inventory.json",
+      "sha256": "139d23cc191c91e5001c8793f98b9a4f3821576c15fea3bd1a5dd0ced267b620"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+"""Compare sealed bytes with the accepted base and unchanged payload manifest."""
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+base = '107a0394f1257228527c984511ea51bb723262ae'
+manifest = json.loads(Path('Resources/Statechart/payload.json').read_bytes())
+for path, expected in [
+    ('Resources/Statechart/dependency-lock.json', manifest['dependencyLockSha256']),
+    ('skills/engineering/statechart/PROVENANCE.md', next(
+        row['sha256'] for row in manifest['files'] if row['path'].endswith('/PROVENANCE.md'))),
+]:
+    original = subprocess.check_output(['git', 'show', f'{base}:{path}'])
+    current = Path(path).read_bytes()
+    assert current == original, path
+    digest = hashlib.sha256(current).hexdigest()
+    assert digest == expected, path
+    print(f'{digest}  {path}: base bytes and sealed manifest match')

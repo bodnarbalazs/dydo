@@ -113,12 +113,20 @@ public sealed class AssuranceAdoptionSteps
         {
             Assert.Equal($"{facade}: 1", $"{facade}: {payload["schema"]}");
             Assert.Equal(
-                new[] { "aggregateExit", "candidate", "operation", "results", "schema", "selectedStacks" },
+                new[] { "aggregateExit", "candidate", "memoryCap", "operation", "results", "schema", "selectedStacks" },
                 Keys(payload));
-            Assert.Equal(
-                new[] { "argv", "artifacts", "capability", "childExit", "cwd", "environment",
-                        "isolation", "resultExit", "stack", "state" },
-                Keys(payload["results"]![0]!));
+            var row = payload["results"]![0]!;
+            List<string> rowKeys = ["argv", "artifacts", "capability", "childExit", "cwd", "environment",
+                                    "isolation", "resultExit", "stack", "state"];
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsWindows())
+            {
+                rowKeys.Add("memoryCapHitReporting");
+                Assert.Equal(OperatingSystem.IsWindows() ? "best-effort" : "exact",
+                    row["memoryCapHitReporting"]!.GetValue<string>());
+            }
+            if (OperatingSystem.IsWindows())
+                rowKeys.Add("peakJobMemory");
+            Assert.Equal(rowKeys.Order().ToArray(), Keys(row));
         }
     }
 

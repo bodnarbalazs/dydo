@@ -52,9 +52,13 @@ compiled source inventory fails after the campaign, when the join is scoped (`_m
 point.
 
 The `dotnet-coverage` CI job runs the gate on `ubuntu-24.04` (the full suite) and on
-`windows-latest` (the selected tests), each on the PR head, and uploads `dotnet-coverage-linux`
-and `dotnet-coverage-windows`. The dependent `dotnet-coverage-union` job requires both legs to
-pass and runs:
+`windows-latest` (the selected tests), each on the run's own commit `github.sha` (the merge ref on
+a pull request, the pushed commit on a push), and uploads
+`dotnet-coverage-linux-attempt-<run_attempt>` and `dotnet-coverage-windows-attempt-<run_attempt>`.
+The dependent `dotnet-coverage-union` job requires both legs to pass. It then reads the run's job
+record for its own attempt, and `coverage_artifacts.py select` takes the artifact of the attempt in
+which each leg last ran. The identity and the report of that artifact must name that commit. Then
+the job runs:
 
 ```sh
 python DynaDocs.Tests/coverage/dotnet_platform.py --linux DynaDocs.Tests/coverage/results/coverage-platforms/linux/adapters/dotnet-coverage.json --windows DynaDocs.Tests/coverage/results/coverage-platforms/windows/adapters/dotnet-coverage.json --output DynaDocs.Tests/coverage/results/coverage-platforms
@@ -93,6 +97,8 @@ python -m venv .static-gates/python
 pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
 # the viewer's own toolchain, which the viewer rows call through its pnpm scripts
 pnpm -C viewer install --frozen-lockfile
+# the statechart runtime's locked test dependencies, for the statechart rows
+pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile
 # AltCover and the metrics closure
 dotnet tool restore --tool-manifest .config/dotnet-tools.json
 dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
@@ -112,6 +118,7 @@ python3.14 -m venv .static-gates/python
 .static-gates/python/bin/python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
 pnpm -C viewer install --frozen-lockfile
+pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile
 dotnet tool restore --tool-manifest .config/dotnet-tools.json
 dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
 ```
@@ -207,7 +214,7 @@ $py = ".static-gates/python/Scripts/python.exe"
 
 `all` runs test rows only. Each `gate` operation runs exactly the named capability, defaulting to
 every declared stack in manifest order. `--force-run` is the compatibility full-G operation: it
-selects test, static and coverage for every stack - twelve rows here - and never selects mutation.
+selects test, static and coverage for every stack - fifteen rows here - and never selects mutation.
 Where a stack's coverage row declares `suiteVerdict`, `--force-run` derives that stack's test row
 from the coverage row's single instrumented run instead of launching the suite a second time.
 
@@ -222,9 +229,82 @@ paths in an argv row resolve from that stack's working directory without changin
 vector; bare executable names use the platform search rules.
 
 Every started operation writes `<artifactRoot>/run-<epoch-milliseconds>-<8 hex>/result.json` and
-prints its path. It records schema, candidate commit and dirty state, operation, selected stacks,
-ordered rows and aggregate exit. `DynaDocs.Tests/coverage/.gitignore` ignores `results/`, so every
-artifact named on this page is local evidence, never a committed file.
+prints its path. It records schema, candidate commit and dirty state, the operation's memory cap,
+operation, selected stacks, ordered rows and aggregate exit. `DynaDocs.Tests/coverage/.gitignore`
+ignores `results/`, so every artifact named on this page is local evidence, never a committed file.
+
+### Memory cap
+
+Every operation that runs children (`all`, `test`, `gate` and `--force-run`, but not `--help` or
+`capabilities`) caps its own memory once, before it starts its first child. Rows run one at a
+time, so that one cap covers every child. The cap is 8G; Linux also disables swap. `DYDO_MEMORY_MAX`, in
+systemd size syntax such as `256M`, `1.5G` or a byte count, may lower it. A higher or malformed
+value exits 2 before any child runs; a raised one says "a cap hit is a finding; raising the cap is
+not allowed". `run_tests.py` imports the same cap from `gap_check.py` and applies it when it runs
+directly; on Linux it inherits the facade's, and on Windows it creates its own nested job.
+
+On Linux the facade reads its cgroup v2 ancestry from `/proc/self/cgroup` and `/sys/fs/cgroup`:
+
+| `memoryCap.state` | When | What the facade does |
+|---|---|---|
+| `inherited` | the tightest ancestor `memory.max` is at or below the target, that ancestor has `memory.swap.max` 0, and `systemctl --user show -p OOMPolicy` reports `continue` for its unit | runs in place; a nested facade run inside a capped operation takes this path |
+| `enforced` | otherwise | probes `systemd-run … true`, then reruns the same command line once with `systemd-run --user --scope --slice=<caller slice> --quiet -p MemoryMax=<limit> -p MemorySwapMax=0 -p OOMPolicy=continue --expand-environment=no`; the limit is the lower of the target and the tightest ancestor `memory.max`, each run is capped at its own limit, and concurrent runs share the caller's slice budget |
+| `unavailable` | no `systemd-run` on `PATH`, a failed probe, or a rerun whose scope shows no cap | runs uncapped and prints one `memory cap unavailable: <reason>` line to stderr |
+
+The enforced scope joins the caller's nearest ancestor `.slice` within the user manager, found
+in `/proc/self/cgroup`; `memoryCap.reason` names that slice. A caller directly in `app.slice`, or
+without a user-manager slice, keeps the default `app.slice` placement. The inherited path stays
+in place. An outer scope's tighter limit still bounds each rerun, but only the shared slice budget
+bounds concurrent reruns together.
+
+For ad-hoc runs where systemd exists use
+`[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`.
+Use your session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager
+(on a T3 host, for example, `app-t3code-agents.slice`; a nearer session slice takes precedence).
+Leave out `--slice` where no agent slice exists. The bracketed env prefix applies to .NET commands;
+omit the brackets when using it. Probes use 4G and a short timeout. Keep any host gate lock outside
+the cap, before the command.
+
+The facade sets `MSBUILDDISABLENODEREUSE=1`, `DOTNET_CLI_USE_MSBUILD_SERVER=0` and
+`UseSharedCompilation=false` in its children's environment wherever the caller left them unset.
+Caller values, including empty strings, stay unchanged. Direct `run_tests.py` uses the same defaults
+through the shared cap, preventing .NET build and compiler servers from outliving the run by default.
+
+The rerun keeps the process, its stdio, exit code and signals, and argv bytes, `$(` included.
+`OOMPolicy=continue` lets the facade outlive a child that the kernel kills at the cap, so it can
+record the hit. An unknown `OOMPolicy` counts as `stop`, and such an outer scope gets a scope of its
+own. On every platform each row keeps its 1800-second deadline, and `run_tests.py` keeps its
+1800-second limit for the C# campaign.
+
+On Windows the facade always creates its own nested Job object and assigns itself before running
+children. `JOB_OBJECT_LIMIT_JOB_MEMORY` limits committed memory for the job, including descendants.
+The effective recorded limit is the lower of the target and the outer job's job-memory limit, if
+present. Windows applies nested limits. The facade stays in place and adds no kill-on-close flag;
+`run_tests.py`'s campaign job nests beneath it. Windows records `enforced`, never `inherited`, with
+mechanism `windows job object` and a reason naming the limit. A setup or query failure records
+`unavailable` with the Windows error, prints one warning, and lets the operation proceed.
+
+The facade associates a private completion port with its job. Only a delivered
+`JOB_OBJECT_MSG_JOB_MEMORY_LIMIT` during a row sets `memoryCapHit: true`, fails that row with exit 1,
+and prints the same finding text as Linux below. Delivery is **not guaranteed**: a missing message
+proves nothing. A missing report never turns a failed child into a pass. Each Windows row records
+`peakJobMemory`, the cumulative job peak (`PeakJobMemoryUsed`) sampled at row end, or `null` when
+unavailable. This is diagnosis only: neither a peak nor an exit code proves a hit. macOS remains
+`unavailable` with its reason and warning.
+
+`memoryCap` records `state`, `limit` in bytes (`null` when unavailable), `mechanism` and `reason`.
+On Linux and Windows it and every covered row also record `memoryCapHitReporting`: `exact` on Linux
+and `best-effort` on Windows.
+On Linux, around each row the facade reads `oom_kill` from the capping cgroup's `memory.events`. When the
+count rises, the row is a cap hit: `failed`, exit 1, `memoryCapHit: true`, with the reason
+`memory cap hit (configured scope limit MemoryMax=<cap>; an enclosing slice budget may have triggered the kill): a finding; do not raise the cap`, whatever the child returned.
+The configured scope limit does not identify the exhausted budget: an enclosing slice can trigger
+the kill even when the scope records no `max` or `oom` events. The diagnostic does not identify
+which ancestor, if any, triggered it. Windows Job-object hits retain their existing reason,
+`memory cap hit (MemoryMax=<cap>): a finding; do not raise the cap`.
+The same line goes to stderr. A test row derived from a cap-hit coverage row fails the same way. A
+cap hit is a finding to diagnose, never a reason to raise the cap. When the kernel kills the facade
+itself, no result is written and the caller sees 137.
 
 `capabilities` applies the same stack, isolation, command and path validation without running
 children or creating result artifacts. It reports invalid entries alongside valid peers and returns
@@ -252,30 +332,47 @@ caller's identity propagates into every adapter.
 | `viewer` | test | `pnpm -C viewer run test` | none | - |
 | `viewer` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack viewer --gate static` | `results/adapters/viewer-static.json` | - |
 | `viewer` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack viewer --gate coverage` | `results/adapters/viewer-coverage.json` | `collectors.typescript-coverage.facts.suite_exit`; `collectors.typescript-coverage.findings[gate=functional]` |
+| `statechart` | test | `pnpm -C skills/engineering/statechart/scripts run test` | none | - |
+| `statechart` | static | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack statechart --gate static` | `results/adapters/statechart-static.json` | - |
+| `statechart` | coverage | `<python> DynaDocs.Tests/coverage/gate_adapter.py --stack statechart --gate coverage` | `results/adapters/statechart-coverage.json` | `collectors.typescript-coverage.facts.suite_exit`; `collectors.typescript-coverage.findings[gate=functional]` |
 | `dotnet`, `python`, `node` | mutation | unavailable, reason `Pending DYD-103` | none | - |
-| `viewer` | mutation | unavailable: no TypeScript mutation mechanism is adopted | none | - |
+| `viewer`, `statechart` | mutation | unavailable: no TypeScript mutation mechanism is adopted | none | - |
 
 Artifact paths are shown relative to `DynaDocs.Tests/coverage/`; the manifest declares them
 repository-relative, and the artifact root is `DynaDocs.Tests/coverage/results`. The `dotnet` stack declares isolation
 `git-worktree-copy-working-changes`, verified by the adapter `DynaDocs.Tests/coverage/run_tests.py`;
-`python`, `node` and `viewer` declare verified `in-place` isolation. The `viewer` coverage row
-writes its LCOV and vitest reports under its own run directory, not under the ignored
-`viewer/coverage/`. The runner also materializes the
+`python`, `node`, `viewer` and `statechart` declare verified `in-place` isolation. The `viewer`
+and `statechart` coverage rows write their LCOV and suite reports under their own run directory, not
+under the ignored `viewer/coverage/` or the skill folder. The statechart rows run the package's
+tests with whatever managed prerequisites the caller's environment names (`TLA2TOOLS`, `JAVA`,
+`STATECHART_PELE`); a test that lacks one skips by name, and its code then counts as uncovered.
+The release workflow's Windows `validation` job downloads the TLC jar, the win-x64 JRE and Pele
+from their pinned sources in `Resources/Statechart/dependency-lock.json`, refuses any that does not
+match its pinned hash, and names them to the `--force-run` step.
+Statechart coverage partitions points by callable: the Windows leg measures only
+the pinned native callables in `statechart-platforms.json`, and Linux measures every remainder.
+That provisioning is the shared `.github/workflows/provision-statechart.ps1`, which selects
+the locked linux-x64 JRE on Linux and win-x64 JRE on Windows, and which the CI
+`statechart-windows` job also calls. On every pull request and every push to `master`, `main` or `feature/**` the job runs
+`skills/engineering/statechart/scripts/test/windows.test.ts` on `windows-latest`, and
+`.github/workflows/assert-node-tests-ran.ps1 -MinimumTests 6` fails it on a missing report, a skip
+or todo, a failure, or fewer than 6 tests.
+The runner also materializes the
 gitignored `.claude/skills` and `.agents/skills` host discovery directories into the snapshot, so
 the canonical-tree guard's link-resolution check is not vacuous there. The runner marks its
 snapshot with a schema-versioned marker before running anything in it and removes the snapshot on
 every exit path, including a failing suite, an exception and an interrupt; at startup it also
 prunes any marked `dydo-test-*` snapshot older than a configurable age.
 
-Every G row therefore has a real mechanism: four test adapters, four static adapters and four
+Every G row therefore has a real mechanism: five test adapters, five static adapters and five
 coverage adapters. Mutation is the only unavailable capability. On `dotnet`, `python` and `node` it
 belongs to DYD-103, whose policy is already settled and does not wait on the adapter: DynaDocs
 requires no surviving or uncovered changed-code mutants, as the [Testing
 Strategy](../guides/testing-strategy.md) states it. Nothing here measures that today - those three
 stacks' mutation rows are `unavailable` with the reason `Pending DYD-103`, so the gate cannot run,
-and cannot pass, until that ticket lands a reviewed mechanism. `viewer`'s mutation row is
-`unavailable` for a different reason: no TypeScript mutation mechanism is adopted, and no ticket
-currently tracks that gap. Whether a given candidate passes is what its result artifact says; no
+and cannot pass, until that ticket lands a reviewed mechanism. The `viewer` and `statechart`
+mutation rows are `unavailable` for a different reason: no TypeScript mutation mechanism is
+adopted, and no ticket currently tracks that gap. Whether a given candidate passes is what its result artifact says; no
 document stands in for a run.
 
 ---
@@ -285,7 +382,7 @@ document stands in for a run.
 | State | Row exit | Cause |
 |---|---|---|
 | `passed` | 0 | the child exited 0 and every required artifact was created or refreshed |
-| `failed` | 1 | a measured failure: a nonzero test exit, or a gate child exit other than 0, 2 or 130 |
+| `failed` | 1 | a measured failure: a nonzero test exit, or a gate child exit other than 0, 2 or 130; or a [memory cap](#memory-cap) hit, marked `memoryCapHit: true` |
 | `unavailable` | 2 | the manifest declares the capability unavailable, with its reason |
 | `invalid` | 2 | malformed row, unusable destination, an unrefreshed required artifact, or a gate child exit of 2 (evidence-incomplete) |
 | `interrupted` | 130 | deadline or interrupt, after the adapter's own cleanup window |
@@ -346,7 +443,9 @@ never a silent overwrite. The identical bytes remain at
     "altcover": {"path": ".config/dotnet-tools.json", "sha256": "<hex>",
                  "resolved": {"altcover.global": "9.0.102"}},
     "viewer": {"path": "viewer/pnpm-lock.yaml", "sha256": "<hex>",
-               "resolved": {"typescript": "5.9.3", "vitest": "4.1.11"}}
+               "resolved": {"typescript": "5.9.3", "vitest": "4.1.11"}},
+    "statechart": {"path": "skills/engineering/statechart/scripts/pnpm-lock.yaml", "sha256": "<hex>",
+                   "resolved": {"fast-check": "4.5.3", "jsdom": "26.1.0", "mermaid": "11.16.0"}}
   }
 }
 ```
@@ -410,6 +509,20 @@ Before collecting, the adapter sets `APPDATA` to `dydo/_system/.local/appdata` a
 | `viewer` | `typescript-dependencies` | `dependency-cruiser --ts-pre-compilation-deps` over `viewer/src`, so a type-only import is still an edge |
 | `viewer` | `typescript-unused-exports` | `knip` over the viewer package with `src/main.tsx` and the test files as entries; its plugins load the whole package, so the out-of-root viewer TypeScript is judged too and counted |
 | `viewer` | `clones` | `jscpd` over `viewer/src`, `.ts` under its `typescript` grammar and `.tsx` under `tsx`, with the same eligibility proof |
+| `statechart` | `typescript-build` | `node viewer/node_modules/typescript/bin/tsc -p skills/engineering/statechart/scripts/tsconfig.json --typeRoots viewer/node_modules/@types --pretty false`: the viewer's locked TypeScript and node types over the package's own tsconfig, strict with `noUnused*`. Each `file(line,col): error TSnnnn` line is a finding, except an unused binding (`TS6133`, `TS6138`, `TS6192`, `TS6196`, `TS6198`, `TS6199`, `TS6205`) in a byte-identical upstream file, which the row lists as `upstreamUnusedBindings`. A diagnostic it cannot attribute, or a nonzero exit with none, is a gap |
+| `statechart` | `typescript-source` | the same walker over the statechart runtime's measured TypeScript |
+| `statechart` | `typescript-dependencies` | `dependency-cruiser --ts-pre-compilation-deps` over the measured statechart TypeScript |
+| `statechart` | `typescript-unused-exports` | `knip` over the `skills/engineering/statechart/scripts` package, with its test files and the modules launchers and tests run by path (`statechart.ts`, `native-entry.ts`, `worker.ts`, `windows-cleanup.ts`, `test/java.ts`) as entries. The byte-identical upstream files and the package's corpus views are members of the graph, so the consumers they hold count, but knip ignores their own issues; the model lists them as `ignored` |
+| `statechart` | `clones` | `jscpd` over the measured statechart TypeScript, with the same eligibility proof |
+
+The `viewer` and `statechart` rows split the inventory's TypeScript between them: a path under
+`skills/engineering/statechart/scripts/` belongs to `statechart`, and every other one to `viewer`.
+The package declares no TypeScript compiler, since node runs its sources by stripping their types,
+so its typecheck borrows the viewer's. A byte-identical upstream file stays in that program, because
+the types it declares and uses decide the targets', so a type error in it is still a finding; only
+its own unused bindings go unjudged, as knip holds it without judging it. The statechart stack has no
+ESLint row: the compiler's `noUnused*` carries its unused bindings, and the walker carries complexity,
+parameters and nested ternaries, as the lint does for the viewer.
 
 Three of those rows feed one judgment. `csharp-source` derives namespace edges with
 `GateMetrics.NamespaceDependencies`, from every identifier outside a `using` directive whose symbol
@@ -423,7 +536,7 @@ self-edge - rather than a bounded search, so no traversal depth can omit a cycle
 edges are pooled across every project before the components are computed, so dependency cycles that
 close through a second project are still found. Each one is a single finding carrying its whole
 component as sorted `members`, named `namespace-cycle` on `dotnet` and `module-cycle` on `python`,
-`node` and `viewer`.
+`node`, `viewer` and `statechart`.
 
 Suppression is itself a finding: a suppressed C# analyzer diagnostic on maintained source is
 reported as `maintained-diagnostic-suppression`, an `istanbul`, `c8` or `v8 ignore` comment in
@@ -438,14 +551,49 @@ exit 2.
 
 ---
 
+## Statechart platform measurement
+
+`DynaDocs.Tests/coverage/statechart-platforms.json` pins the source SHA-256 and exact walker
+callable identities owned by Windows. Its neutral leg is Linux. A declared callable includes
+its nested bodies; all remaining points stay on Linux, without splitting or excluding modules.
+Windows owns the CLI's native lifecycle callbacks and `windows.ts`'s job guard. Linux owns
+`posix-lifetime.ts`, the POSIX recording helper `test/java.ts`, and `windows-cleanup.ts`, whose
+top-level logic the adaptation suite exercises on Linux. Execution on the other platform does
+not change ownership.
+
+Linux runs the full package suite. Windows runs the map's `windows_tests.tests` files filtered
+to its exact `names`; every named case must appear once and pass, with no skip. The selection
+includes native job and TLC tests plus injected handshake and early cleanup failures.
+Both legs use the unchanged DR 048 module and method thresholds.
+
+Istanbul's pinned instrumenter derives the same statements, branches and function counters
+from source on both platforms, including zero-hit points in unloaded modules. Compilation
+finishes before the suite starts; the loader only reads prepared code, so instrumentation
+dependencies do not appear in the architecture tests' import traces. The existing
+TypeScript walker supplies callable identities and complexity. The report records source
+digests, the selection digest and every point's owner in `platform_selection`.
+`statechart_platform.py` rebuilds that denominator from a clean checkout, requires two passing
+reports for its commit, re-evaluates policy, and checks every module, point, callable, body and
+complexity fact. Matching receipts cannot hide a point removed from both reports.
+
+CI's `statechart-coverage` matrix runs on `ubuntu-24.04` and `windows-latest`; the
+`statechart-coverage-union` job uses `coverage_artifacts.py` to select each leg's latest executing
+attempt before verifying the union. The independent `statechart-windows`,
+`statechart-config-oracle` and `guard-windows` jobs retain their existing work.
+
+```sh
+python DynaDocs.Tests/coverage/statechart_platform.py --linux linux/adapters/statechart-coverage.json --windows windows/adapters/statechart-coverage.json --output union.json
+```
+
 ## Coverage collectors
 
 | Stack | Collector | Mechanism |
 |---|---|---|
-| `python` | `python-coverage` | coverage.py 7.16.0 with branch coverage, plus a flat per-process callable witness. `python_coverage.collect` writes `config.json`, the callable inventory of every target computed once (`inventory.pickle`, sealed with the SHA-256 of its pickled body and written only when it reads back through a process's own path as exactly the inventory computed, which a process reuses only for a source whose SHA-256 and compile state - interpreter build, `-O` level and debug ranges - match and whose entry is internally consistent, recomputing the rest; a missing, unreadable, damaged or malformed cache is a miss, never a startup failure; a cache deliberately rewritten and resealed is a forgery and out of scope, since whoever can write it can rewrite `sitecustomize.py`) and a generated `startup/sitecustomize.py` onto `PYTHONPATH`, runs the ordinary unittest suite, then combines the `.coverage` data with every `counter-*.json` receipt |
+| `python` | `python-coverage` | coverage.py 7.16.0 with branch coverage, plus a flat per-process callable witness. `python_coverage.collect` writes `config.json`, the callable inventory of every target computed once (`inventory.pickle`, sealed with the SHA-256 of its pickled body and written only when it reads back through a process's own path as exactly the inventory computed, which a process reuses only for a source whose SHA-256 and compile state - interpreter build, `-O` level and debug ranges - match and whose entry is internally consistent, recomputing the rest; a missing, unreadable, damaged or malformed cache is a miss, never a startup failure; a cache deliberately rewritten and resealed is a forgery and out of scope, since whoever can write it can rewrite `sitecustomize.py`) and puts a generated `startup/sitecustomize.py` onto `PYTHONPATH`. `config.json` also names the collecting interpreter's own `purelib` and `platlib` as `packages`. A measured process searches them after its own path, and only while it imports coverage.py, so a process of the same build started outside its venv (`sys._base_executable`) imports the collector's coverage.py and is measured, then restores search-path precedence so unrelated packages resolve as they would unmeasured; instrumentation dependencies remain in `sys.modules`; a process that still cannot measure fails the campaign. It runs the ordinary unittest suite, then combines the `.coverage` data with every `counter-*.json` receipt. Each measured process opens one reporting connection at startup to the loopback port `collect` listens on, found in `DYDO_PYTHON_COVERAGE_FAILURES` or, without that variable, in the `port` of `config.json`, names itself on it and holds it until exit. An `Exception` during measurement startup, or any `BaseException` during its exit `finish`, goes on that connection, naming the pid, phase and command line, so it takes no new descriptor and does not depend on the output or on any parent passing the exit on; a clean exit closes the connection with nothing more, and a killed process's close counts as such. `collect` fails instead of combining the rest on any failure, on an unreadable or incomplete record, or on a connection still open 5 s after its command returned. Opening the connection is part of startup: a connect refused, reset, timed out after 0.1 s or short of an ephemeral port is retried three times within 0.47 s, and a process still without a connection, including one that cannot create its socket, find its port or import `python_coverage`, exits 70 at startup before its program runs, so no measured program runs without one; a gone reporting peer (for example `EPIPE`, `ECONNRESET`, `ECONNABORTED`, `EBADF` or `ENOTCONN`) also ends the report with exit 70. Recoverable zero-byte send errors (`ENOBUFS`, `EAGAIN`/`EWOULDBLOCK`, `ENOMEM` and `EINTR`, including their Windows socket equivalents) retry the full framed record for 0.25 s with 0.01 s backoff: these mean temporary buffer/memory pressure, would-block or interruption, not a gone peer. After that budget, or on an unclassified socket error, the sender tries a compact, named failure record. If even that cannot be sent, it stops sending and keeps the connection open until the collector closes it, so a command that returns fails after the settle; a parent still waiting for that child also waits for the collector to close. It never silently closes a healthy connection on retry exhaustion. Every other `BaseException` interrupting a failure send retries the full framed record for as long as interruptions recur, keeping the connection open: a partial record followed by a full one is unreadable and also fails the campaign; a process still reporting at command end fails the campaign after the settle. Once a full frame is sent, the connection closes and the first reporting interruption is re-raised, or the caller re-raises the original measurement failure if sending was uninterrupted. An interruption while opening or naming the reporting connection exits 70 before the program runs. A `BaseException` outside `Exception` (such as `KeyboardInterrupt` or `SystemExit`) during measurement startup propagates without a failure record: it aborts interpreter startup before the program runs, so it does not fail the campaign under a parent that ignores that exit. Three cases are the honest limit of what `collect` can observe: a killed child; a process that never ran its program whose parent ignores both its exit code and its missing output; and an asynchronous signal delivered while a failure report is in flight, which is in the same class as a killed child. A process without `DYDO_PYTHON_COVERAGE_CONFIG` stays unmeasured and silent: the generated `sitecustomize.py` then imports nothing |
 | `node` | `javascript-coverage` | `node javascript_coverage.cjs` driving c8 12.0.0 with `--all --exclude-after-remap=false` over `node_tests.cjs`; Istanbul function and branch counters are joined to the ESLint callable inventory |
 | `dotnet` | `csharp-coverage` | `run_tests.py --assurance-output <dir>`: one isolated Git worktree copy of the working candidate, one AltCover campaign inside a Windows Job object, evidence published back outside the snapshot |
 | `viewer` | `typescript-coverage` | `pnpm -C viewer run coverage` with `--coverage.reporter=lcov`, `--coverage.reportsDirectory=<raw>/coverage` and a vitest JSON report added; `typescript_join.py` joins the Istanbul LCOV to the `typescript-source` walker's callables |
+| `statechart` | `typescript-coverage` | `javascript_coverage.cjs --typescript-run` runs the package test script with source-stable Istanbul counters after Node strips TypeScript types without moving positions. A preload hook instruments only inventory targets and follows spawned Node processes through `NODE_OPTIONS`. Per-process JSON reports live in `<raw>/istanbul`; TAP records the suite verdict. `typescript_join.py` joins statements, branches and callable bodies to the existing walker, then `statechart_platform.py` partitions them. Native Node LCOV is retained as diagnostic evidence, not the policy denominator |
 
 A maintained JavaScript file with no filename extension is recorded as a gap naming DYD-105, so the
 row fails closed rather than quietly measuring less than the inventory.
@@ -459,8 +607,10 @@ coverage-scoped: both files are still measured by every static collector above. 
 closed - an unextracted or unassociated driver produces the gap `host-driver-logic-untested` or
 `host-driver-unassociated` instead of the exemption, and the file returns to the coverage targets.
 
-The TypeScript join reads Istanbul LCOV per module: `DA` lines for the line floor, `BRDA` branches
-for the branch floor, and `FN`/`FNDA` function counters. Each `DA` line belongs to the innermost
+The viewer TypeScript join reads Istanbul LCOV per module: `DA` lines for the line floor, `BRDA` branches
+for the branch floor, and `FN`/`FNDA` function counters. Node's reporter can give two functions the
+same name; their `FNDA` counters follow their `FN` lines in order, so each pairs with its own line
+rather than the last counter of that name. Each `DA` line belongs to the innermost
 callable spanning it, so a component is charged neither the complexity nor the coverage of its
 callbacks. A callable whose own Istanbul counter is zero covers none of its lines, even on a line
 other code hit, and a callable with no line of its own is measured by that counter alone; with no
@@ -468,17 +618,22 @@ single counter on its line it is a gap. Top-level statements form a `<module>` c
 the walker's module metrics, as Python's module entry is. A target absent from the LCOV is
 declarative only when the walker finds no runtime statement in it. The viewer's `vite.config.ts`
 keeps `src/api/types.ts` out of the report, so that file passes this way. Any other absent target
-is a gap. The suite verdict is `suite_exit`,
+is a gap. A record for a source outside the repository, such as the managed Pele a statechart
+test loads, is no target and is not read. The suite verdict is `suite_exit`,
 taken from vitest's JSON report rather than the process exit, because the viewer's own
-per-file coverage thresholds also fail that process. A nonzero process exit that neither the suite
-nor a measured finding explains is a gap.
+per-file coverage thresholds also fail that process. The statechart row takes it from the TAP
+summary: a failed or cancelled test, or no test at all, fails the suite, and the row records the
+skipped count beside it. A nonzero process exit that neither the suite nor a measured finding
+explains is a gap.
 
 Each row above is the stack's single suite execution under `--force-run`: the declaring stack's test
 row is derived from it and launches nothing of its own. The C# campaign is Windows-only, so a Linux
 host derives no verdict for `dotnet` and keeps that stack's separate test execution. The Python and
 JavaScript collectors need `DynaDocs.Tests/coverage/requirements.lock` and
 `DynaDocs.Tests/coverage`'s pnpm lock installed, or they cannot launch a suite at all. The TypeScript
-collector also needs `viewer/node_modules` from `pnpm -C viewer install --frozen-lockfile`.
+collectors also need `viewer/node_modules` from `pnpm -C viewer install --frozen-lockfile` and the
+statechart package's from `pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile`;
+the statechart static row needs both, since its typecheck compiles with the viewer's TypeScript.
 
 `gate_policy.evaluate_policy` judges the joined modules of every stack the same way: line coverage
 at least 80% and branch coverage at least 60% per module, HCRAP

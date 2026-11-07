@@ -25,9 +25,10 @@ installed `chief-of-staff` skill folder; read it directly without invoking anoth
 2. Complete `chief-of-staff`'s `resources/muster.md`. Use `grilling` for
    decisions and `wizard` for terminal steps only. Proceed once every included admiral confirms
    its agreed work is runnable and every gap has the user's explicit disposition.
-3. Follow the preflight's warning/retry for `dydo mode set overnight on`. After actual execution,
-   independently run `dydo mode show` and require `overnight: on`. On refusal, failure or missing
-   readback, report activation incomplete with the observed state (unknown if unreadable) and exact
+3. Follow the preflight's warning/retry for `dydo mode set overnight on`. Wait for the setter to
+   return its result, then run `dydo mode show` in a separate later tool call, never in parallel,
+   and require `overnight: on`. On refusal, failure or missing readback, report activation incomplete
+   with the observed state (unknown if unreadable) and exact
    recovery action; keep the user present and do not announce activation or say goodnight.
 4. Create the 30-minute watch schedule, returning to this thread. Preserve the complete schedule
    ID exactly as returned by the host, including any prefix, for deletion at shutdown.
@@ -77,9 +78,10 @@ When the user says he's back, in the chief of staff's conversation:
 2. Delete the watch schedule using the complete preserved ID. List schedules and confirm that exact
    ID is absent before claiming the watch stopped; report a deletion or verification gap.
 3. Settle any pending survey through its host lifecycle so no tick remains in flight.
-4. Follow the preflight's warning/retry for `dydo mode set overnight off`. After actual execution,
-   independently run `dydo mode show` and require `overnight: off`, then announce the end to every
-   included admiral. On refusal, failure or missing readback, report shutdown incomplete with the
+4. Follow the preflight's warning/retry for `dydo mode set overnight off`. Wait for the setter to
+   return its result, then run `dydo mode show` in a separate later tool call, never in parallel,
+   and require `overnight: off`, then announce the end to every included admiral.
+   On refusal, failure or missing readback, report shutdown incomplete with the
    observed state (unknown if unreadable) and exact recovery action. A deleted schedule does not
    prove mode is off.
 5. Fill `chief-of-staff`'s `resources/morning-brief.md` in the conversation, writing nothing to the

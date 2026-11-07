@@ -37,6 +37,11 @@ return. A question goes back to the captain with what you searched.
    started the next item under the limit or stopped over it.
 3. **Return.** Done when every work item is documented or listed as handed back.
 
+Run every probe, test and drive capped: `[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`, a probe at 4G with a short timeout. A cap hit is a finding; never raise the cap.
+Use your session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager
+(on a T3 host, for example, `app-t3code-agents.slice`; a nearer session slice takes precedence).
+Omit `--slice` where no agent slice exists. Use the bracketed env prefix for .NET commands, without the brackets.
+
 ## Proof
 
 A finding counts once the repository proves it on the audit SHA:

@@ -44,7 +44,13 @@ the default officer: a ticket gets a captain whether or not the user has invoked
   your officer (the Admiral, or the user when none is invoked) to dispatch it. Every brief that
   sends out Codex agents names a cap: around 8 at once, toward 16 only while clean, fewer on
   `429 turn_rate_limit_exceeded` ("Codex is at capacity"); a capacity 429 means retry in a few
-  minutes, never a blocker; never "maximise parallelism". Never `t3_thread_launch` or
+  minutes, never a blocker; never "maximise parallelism". Every crew brief that runs code names the
+  memory cap: `[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`,
+  a probe at 4G with a short timeout, a gate lock outside the cap; run your own the same way.
+  Use your session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager
+  (on a T3 host, for example, `app-t3code-agents.slice`; a nearer session slice takes precedence).
+  Omit `--slice` where no agent slice exists. Use the bracketed env prefix for .NET commands, without the brackets.
+  A cap hit is a finding, never a reason to raise the cap. Never `t3_thread_launch` or
   `create_threads` for crew: top-level threads are the user's, only for HITL work or when the user
   asks. Needing the user while work runs, ask through the host's question tool; the Linear Question
   ticket stays the record. Full rule: working-tree contract.
@@ -71,7 +77,7 @@ the default officer: a ticket gets a captain whether or not the user has invoked
 
 1. **Claim.** Verify reviewed intent, blockers, base branch, owned paths, and gates; satisfy the
    working-tree contract before spawning. When the Project's map holder commissions Project setup, open the
-   feature branch from its named approved main SHA before creating the ticket branch. A move or
+   feature branch from its named approved main SHA, commit the spec draft its brief names, unchanged, as that branch's first commit and push it, before creating the ticket branch. A move or
    rename also owns every file it breaks: links, tests, notices. **Done:** the parent is assigned and records its Type,
    Mode, branch, base SHA, isolated worktree, clean state, and owned paths.
 2. **Contract.** Keep one compact acceptance contract on the parent and link its evidence instead of
@@ -146,8 +152,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    PASS once all lanes are in. Apply the testing strategy's final-candidate gates here and the
    contract's mandatory combined and landing gates at their boundaries, with exact-candidate
    reuse only where permitted. Before offering, rerun each writer's proof recipe yourself; that
-   rerun, posted on the record, is the proof of record. **Done:** push the branch, write the PR body with `pr` to a file outside the tree, listing the should-tickets filed and the nits recorded, run `dydo pr-ready --body <file>`, then open the
-   PR with its PASS block on the record and in the body. Handle its existing checks and comments,
+   rerun, posted on the record, is the proof of record. **Done:** push the branch, write the PR body with `pr` to `dydo/agents/workspace/pr-body-<KEY>.md`, listing the should-tickets filed and the nits recorded, run `dydo pr-ready --body <that file>` as its own command, then open the
+   PR, its PASS block on the record and in the body, with a lone `gh pr create --body-file <that file>`, nothing chained, piped or redirected. Handle its existing checks and comments,
    then **watch** it: one watcher per PR, `watch_pull_request` in T3, elsewhere one long-running
    watcher (Monitor in Claude Code), never a sleep or polling loop. The PR's owning thread watches;
    in T3 that is the top-level officer, so a delegated captain links the PR, returns

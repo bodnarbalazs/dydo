@@ -1,0 +1,27 @@
+<Project>
+    <UsingTask TaskName="ValidatePackedViewer" TaskFactory="RoslynCodeTaskFactory"
+               AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+        <ParameterGroup>
+            <AssemblyPath ParameterType="System.String" Required="true" />
+        </ParameterGroup>
+        <Task>
+            <Code Type="Fragment" Language="cs"><![CDATA[
+                var assembly = System.Reflection.Assembly.Load(System.IO.File.ReadAllBytes(AssemblyPath));
+                if (!assembly.GetManifestResourceNames().Contains("viewer/dist/index.html"))
+                {
+                    Log.LogError("DYDO002: The tool assembly has no embedded map viewer. Run pnpm -C viewer install --frozen-lockfile, then pnpm -C viewer run build, then rebuild with dotnet pack without --no-build.");
+                    return false;
+                }
+            ]]></Code>
+        </Task>
+    </UsingTask>
+
+    <!-- Pack can skip Build, so check the assembly itself as well as the viewer inputs. -->
+    <Target Name="ValidateViewerForPack" BeforeTargets="GenerateNuspec" Condition="'$(PackAsTool)' == 'true'">
+        <Error Condition="!Exists('$(MSBuildProjectDirectory)/viewer/dist/index.html')"
+               Text="DYDO001: The map viewer bundle is missing. Run pnpm -C viewer install --frozen-lockfile, then pnpm -C viewer run build, then rerun dotnet pack without --no-build." />
+        <ValidatePackedViewer AssemblyPath="$(TargetPath)" />
+        <ValidatePackedViewer AssemblyPath="$(PublishDir)$(TargetFileName)"
+                              Condition="Exists('$(PublishDir)$(TargetFileName)')" />
+    </Target>
+</Project>

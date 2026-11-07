@@ -35,7 +35,7 @@ A skipped test is missing proof, not a pass. These inputs decide which tests run
 | `STATECHART_PELE`: the Pele 1.9.0 module entry | Native renderer, SVG acceptance and the renderer tests |
 | `pnpm install --frozen-lockfile` in `scripts/`: fast-check 4.5.3, Mermaid 11.16.0 and jsdom 26.1.0 from `pnpm-lock.yaml` | The differential tests, and the renderer tests' Mermaid parse |
 | `node setup-skills.mjs`: the `.claude` and `.agents` projections | One native acceptance test, which reads both |
-| `STATECHART_TEST_DEPENDENCY_ROOT`: a verified managed installation | The installed ready-invocation test |
+| `STATECHART_TEST_DEPENDENCY_ROOT`: a verified managed source installation | Readiness tests copy the current lock/RID into each test's private temporary directory before running |
 | Windows | Job Object lifetime, the probe fixture, `statechart doctor` and native PowerShell acceptance |
 
 The .NET native tests run the `dydo` build beside the test assembly;
@@ -47,10 +47,14 @@ Restore the assurance toolchain first, from its locks, as
 [Coverage Tools](../../reference/coverage-tools.md#provisioning) lists it. Use the managed copy
 that `dydo statechart` installs on first use: run any chart once, then run the exact
 `installAndContinue` command its `approval-required` event names. Point each test command at that
-copy; change no PATH, JAVA_HOME or profile. From the repository root:
+copy as a source; change no PATH, JAVA_HOME or profile. Readiness tests never run or re-stamp
+the source store: each owns a full copy, including independent receipt files, and removes it
+with its test directory. Do not replace that copy with hard links or directory links. A source
+receipt re-stamped by another build cannot change the test's receipt assertions. From the
+repository root, after supplying the absolute path of a verified source installation:
 
 ```bash
-deps=~/.local/share/dydo/statechart/deps
+deps=${STATECHART_TEST_DEPENDENCY_ROOT:?Set the absolute path of a verified managed source installation}
 m=$(echo "$deps"/*/linux-x64)
 export JAVA=$m/java/content/jdk-21.0.8+9-jre/bin/java TLA2TOOLS=$m/tlc/tla2tools.jar
 export STATECHART_PELE=$m/pele/content/package/dist/pele.js STATECHART_TEST_DEPENDENCY_ROOT=$deps
@@ -62,11 +66,18 @@ PYTHONPATH=DynaDocs.Tests/coverage/tests "$py" -m unittest test_statechart_java_
 python3 DynaDocs.Tests/coverage/run_tests.py -c Release --filter "FullyQualifiedName~DynaDocs.Tests.Statechart"
 ```
 
-Only Windows-only tests and config-fuzz should skip. The managed copy survives rebuilds:
+Run each command under the memory cap and shared-host admission rules in
+[Testing Strategy](../../guides/testing-strategy.md#runner-prerequisites-and-shared-hosts).
+Set `TMPDIR` to the run's private scratch directory on shared hosts; copies and their cleanup
+belong to that run. No test setup should install into or re-stamp another session's store.
+
+Only Windows-only tests and config-fuzz should skip. The managed source survives rebuilds:
 a build that keeps the dependency lock re-verifies and re-stamps it on the next run, and a
 damaged component comes back as an `approval-required` repair plan. The installed
-ready-invocation test runs on this copy itself, so after a payload change its first run
-re-stamps the copy's receipts; the content stays unchanged.
+ready-invocation test re-verifies and re-stamps only its private copy after a payload change;
+both the source receipts and the copied content stay unchanged. The isolation regression
+restamps a second private source between the ready invocation and its receipt assertion,
+without touching the supplied source installation.
 
 ## History
 

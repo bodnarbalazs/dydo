@@ -193,6 +193,14 @@ file a shell command creates.
 A plain `gh pr create`, `gh pr new` or `gh pr ready` is blocked while the tree fails the tree checks
 of [dydo pr-ready](#dydo-pr-ready).
 
+The merge-route hard blocks apply to every caller, top-level or sub-agent. They refuse raw
+`gh pr merge` into any base, `gh api` REST and GraphQL merge calls, and `git push` updates to
+`master`, `main` or the branch the local `origin/HEAD` names. They also refuse default-branch
+changes through `gh repo edit --default-branch` or a `gh api` PATCH of the repository with a
+`default_branch` field. Each refusal directs the caller to [dydo merge](#dydo-merge) for reviewed
+feature-branch integration; the default branch remains the user's. These text checks stop
+accidents, not rogue agents.
+
 ---
 
 ## Linear Commands
@@ -442,12 +450,13 @@ so uncommitted or unpushed work is not in it.
 ```bash
 dydo pr-ready                          # check the current directory's tree
 dydo pr-ready <path>                   # check another tree
-dydo pr-ready --body /tmp/pr-body.md   # also check a PR body kept outside the tree
+dydo pr-ready --body dydo/agents/workspace/pr-body-<KEY>.md   # also check a PR body
 ```
 
 The tree must have no staged, unstaged or untracked files git does not ignore, and HEAD must have
 an upstream and equal it. The upstream is read from the local remote-tracking ref; nothing is
-fetched. Keep the body file outside the tree, where it is not an untracked file. With `--body`, the body must name a ticket key (such as `DYD-123`) and hold a
+fetched. Keep the body file in `dydo/agents/workspace/`, which git ignores, so it is not an untracked file
+and the guard can read it from inside the tree. With `--body`, the body must name a ticket key (such as `DYD-123`) and hold a
 `## Independent review` section with the reviewer's `PASS - rubric/type: ...` block, fenced or not;
 the dash after `PASS` may be a hyphen, an en dash or an em dash.
 Each problem prints as one `not ready:` line on stderr and the exit is `1`; a path outside a git

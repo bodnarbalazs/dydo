@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+out=$(realpath "$1")
+test -f "$out/source-sha256.txt"
+exec > "$out/gates.log" 2>&1
+trap 'echo "gates exit=$?"' EXIT
+export MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false PYTHONDONTWRITEBYTECODE=1
+sha256sum --check --status "$out/source-sha256.txt"
+dotnet msbuild DynaDocs.csproj -t:ValidateStatechartPayload -nr:false -p:UseSharedCompilation=false > "$out/payload.log" 2>&1
+echo 'payload exit=0'
+dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-restore --list-tests --filter FullyQualifiedName~DynaDocs.Tests.Statechart.StatechartAssetsTests -nr:false -p:UseSharedCompilation=false > "$out/assets-discovery.log" 2>&1
+rg -q InstalledPayloadExtractsOfflineAndReusesExactBytes "$out/assets-discovery.log"
+dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-build --no-restore --filter FullyQualifiedName~DynaDocs.Tests.Statechart.StatechartAssetsTests -nr:false -p:UseSharedCompilation=false --logger 'trx;LogFileName=statechart-assets.trx' --results-directory "$out/dotnet-results" > "$out/assets.log" 2>&1
+echo 'assets exit=0'
+for gate in coverage static; do
+  set +e
+  bash dydo/project/changelog/2026/2026-11-06/dyd-784-evidence/run-gate.sh.txt "$gate" > "$out/$gate.log" 2>&1
+  rc=$?
+  set -e
+  echo "$gate exit=$rc"
+  cp "DynaDocs.Tests/coverage/results/adapters/statechart-$gate.json" "$out/$gate-adapter.json"
+  latest=$(ls -td DynaDocs.Tests/coverage/results/run-* | head -1)
+  cp "$latest/result.json" "$out/$gate-result.json"
+  test "$rc" -eq 0
+done
+sha256sum --check --status "$out/source-sha256.txt"
+echo 'All tracked source hashes unchanged after gates.'

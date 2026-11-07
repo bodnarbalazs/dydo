@@ -1,0 +1,34 @@
+{
+  "merge": "2816d179cc8db21a118084e35e6b7ea9f3f347ab",
+  "tree": "2d61cf63b83a5108c3067d9b9c0cf14e2fda6ae3",
+  "parents": [
+    "cbfe6f772835c574da9e0304cc237b19e2368d7b",
+    "b1ec72e005b326088d885efe6c16b6cd4c9ba3d2"
+  ],
+  "files": [
+    {
+      "path": "DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs",
+      "b1ec72e005b326088d885efe6c16b6cd4c9ba3d2": "849ed04edbc92bfaa937e9dca3207c5316f8d73d6e0c252f2c43f3a6685242b3",
+      "cbfe6f772835c574da9e0304cc237b19e2368d7b": "absent",
+      "2816d179cc8db21a118084e35e6b7ea9f3f347ab": "849ed04edbc92bfaa937e9dca3207c5316f8d73d6e0c252f2c43f3a6685242b3"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/node_tests.cjs",
+      "b1ec72e005b326088d885efe6c16b6cd4c9ba3d2": "1bf9f58716a12f83efd659521897262e694eac1f7d0dfc1af763ebd5965029ec",
+      "cbfe6f772835c574da9e0304cc237b19e2368d7b": "1bf9f58716a12f83efd659521897262e694eac1f7d0dfc1af763ebd5965029ec",
+      "2816d179cc8db21a118084e35e6b7ea9f3f347ab": "1bf9f58716a12f83efd659521897262e694eac1f7d0dfc1af763ebd5965029ec"
+    },
+    {
+      "path": "DynaDocs.Tests/coverage/tests/test_javascript_metrics.py",
+      "b1ec72e005b326088d885efe6c16b6cd4c9ba3d2": "5085eb296ee58d419120200d02ab51b303f1e709f841bed4ad46f94a86e9cb57",
+      "cbfe6f772835c574da9e0304cc237b19e2368d7b": "5085eb296ee58d419120200d02ab51b303f1e709f841bed4ad46f94a86e9cb57",
+      "2816d179cc8db21a118084e35e6b7ea9f3f347ab": "5085eb296ee58d419120200d02ab51b303f1e709f841bed4ad46f94a86e9cb57"
+    },
+    {
+      "path": "npm/test/launcher.test.cjs",
+      "b1ec72e005b326088d885efe6c16b6cd4c9ba3d2": "f8ca6adb66325359884f3e1052a162d51c2edcbfbe5a182393f9c837cde74399",
+      "cbfe6f772835c574da9e0304cc237b19e2368d7b": "f83326beeb3f46e8c67b127ad1c1a43b68e87a8bdb0900539ac8d3e4dbd3de15",
+      "2816d179cc8db21a118084e35e6b7ea9f3f347ab": "f83326beeb3f46e8c67b127ad1c1a43b68e87a8bdb0900539ac8d3e4dbd3de15"
+    }
+  ]
+}

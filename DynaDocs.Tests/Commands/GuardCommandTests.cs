@@ -949,6 +949,58 @@ public class GuardCommandTests : IDisposable
         WriteConfigWithNudges((pattern, message, severity));
     }
 
+    [Theory]
+    [InlineData("CheckBlockNudges")]
+    [InlineData("CheckWarnNudges")]
+    public void NudgeBudgetExhaustion_IsAlwaysAHardRefusal(string check)
+    {
+        WriteConfigWithNudges(("echo", "a warning", "warn"));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var type = typeof(GuardCommand).GetNestedType("NudgeMatching", BindingFlags.NonPublic)!;
+        var matching = Activator.CreateInstance(type, "echo x", ShellDialect.Unknown)!;
+        type.GetField("_elapsed", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .SetValue(matching, TimeSpan.FromMilliseconds(250));
+        var method = typeof(GuardCommand).GetMethod(check, BindingFlags.NonPublic | BindingFlags.Static)!;
+        object[] arguments = check == "CheckBlockNudges"
+            ? ["echo x", env, ShellDialect.Unknown, null!, matching]
+            : ["echo x", env, false, ShellDialect.Unknown, null!, matching];
+        var result = RunNudge(() => (int?)method.Invoke(null, arguments));
+        Assert.Equal(ExitCodes.ToolError, result.Result);
+        Assert.Contains("Command too complex to verify safely", result.Stderr);
+    }
+
+    [Fact]
+    public void NudgeMatchers_KeepTheTimeoutAndOriginalCaptures()
+    {
+        var compile = typeof(GuardCommand).GetMethod("CompileNudgePattern", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var patterns = ConfigFactory.DefaultNudges.Select(nudge => nudge.Pattern).Append("(a+)+$");
+        foreach (var pattern in patterns)
+        {
+            var original = new Regex(pattern, RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(250));
+            var changed = (Regex)compile.Invoke(null, [pattern])!;
+            Assert.Equal(TimeSpan.FromMilliseconds(250), changed.MatchTimeout);
+            foreach (var command in NudgeMatcherInputs())
+            {
+                var before = original.Match(command);
+                var after = changed.Match(command);
+                Assert.Equal((before.Success, before.Index, before.Length), (after.Success, after.Index, after.Length));
+                Assert.Equal(before.Groups.Cast<Group>().Select(group => group.Value), after.Groups.Cast<Group>().Select(group => group.Value));
+                Assert.Equal(before.Groups.Cast<Group>().SelectMany(group => group.Captures.Cast<Capture>()).Select(capture => (capture.Index, capture.Length, capture.Value)),
+                    after.Groups.Cast<Group>().SelectMany(group => group.Captures.Cast<Capture>()).Select(capture => (capture.Index, capture.Length, capture.Value)));
+            }
+        }
+    }
+
+    private static IEnumerable<string> NudgeMatcherInputs()
+    {
+        string[] programs = ["npx", "dotnet", "dotnet tool run", "dotnet run", "bash", "python", "pwsh",
+            "tail", "while true; do", "gh pr create", "npm install", "uv run"];
+        foreach (var program in programs)
+        foreach (var flags in new[] { "", "--foo ", "--foo --bar ", "-x ", "--filter p ", "-- ", "-f " })
+        foreach (var tail in new[] { "dydo check", "'dydo check'", "sleep 1", "x", "--with pkg", "Independent review" })
+            yield return program + " " + flags + tail;
+    }
+
     private void WriteConfigWithNudges(params (string Pattern, string Message, string Severity)[] nudges)
     {
         var nudgeJson = string.Join(",\n          ",
@@ -1032,6 +1084,151 @@ public class GuardCommandTests : IDisposable
         Assert.Contains("BLOCKED: Paste the review block.", stderr);
     }
 
+    // DYD-736: the review-block pattern dydo.json copies carried before it read past leading
+    // assignments and env. The guard refreshes such a copy to the current pattern.
+    private const string PreDyd736ReviewBlockPattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)";
+
+    // The shipped nudge as dydo init writes it, or a dydo.json still holding the pre-DYD-736 copy.
+    private GuardCommand.GuardEnv LoadEnvWithTheReviewBlockNudge(bool preDyd736Copy)
+    {
+        if (!preDyd736Copy)
+            return LoadEnvWithTheDefaultNudges();
+        var nudge = ReviewBlockNudge();
+        WriteConfigWithNudges((PreDyd736ReviewBlockPattern, nudge.Message, nudge.Severity));
+        return GuardCommand.GuardEnv.Load(_testDir);
+    }
+
+    public static TheoryData<bool, string> PrefixedPrCreates()
+    {
+        string[] prefixes =
+        [
+            "FOO=1 ", "FOO=1 BAR=two ", "GH_PROMPT_DISABLED='1' ", "TITLE=\"a b\" ",
+            "env ", "env -i ", "env -u GH_TOKEN ", "env -- ", "env GH_TOKEN=x ",
+            "env -i -u GH_TOKEN -- GH_REPO=acme/lc ", "env --unset=GH_TOKEN FOO=1 ", "FOO=1 env ",
+            "git push && FOO=1 ", "git push; env -i ",
+            // Round 1 B1: values bash expands or escapes still lead a gh pr create.
+            "GH_TOKEN=$(printf token) ", "GH_TOKEN=$(cat token.txt | tr -d x) ", "TITLE=${BASE}-notes ", "TITLE=${NAME:-release notes} ",
+            "GH_REPO=$REPO ", "GH_TOKEN=`printf token` ", "TITLE=release\\ notes ", "TITLE=\"$(printf 'a b')\" ",
+            "env GH_TOKEN=$(printf token) ", "env -iu GH_TOKEN ",
+        ];
+        var data = new TheoryData<bool, string>();
+        foreach (var copy in new[] { false, true })
+            foreach (var prefix in prefixes)
+                data.Add(copy, prefix);
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(PrefixedPrCreates))]
+    public void ReviewBlockNudge_PrCreateBehindAssignmentsOrEnv_WarnsOnceWithTheShippedMessage(bool preDyd736Copy, string prefix)
+    {
+        var env = LoadEnvWithTheReviewBlockNudge(preDyd736Copy);
+        var command = prefix + "gh pr create --title x --body 'ships the fix'";
+
+        var (first, firstStderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+        var (retry, retryStderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, first);
+        Assert.Contains($"BLOCKED: {ReviewBlockNudge().Message}", firstStderr);
+        Assert.Contains("Run the same command again to proceed anyway.", firstStderr);
+        Assert.Null(retry);
+        Assert.Empty(retryStderr);
+    }
+
+    [Theory]
+    [MemberData(nameof(PrefixedPrCreates))]
+    public void ReviewBlockNudge_PrCreateBehindAssignmentsOrEnvCarryingTheBlock_StaysSilent(bool preDyd736Copy, string prefix)
+    {
+        var env = LoadEnvWithTheReviewBlockNudge(preDyd736Copy);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(
+            prefix + "gh pr create --body '## Independent review - rubric: code, verdict: PASS'", env));
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Theory]
+    [InlineData("echo env gh pr create --fill")]
+    [InlineData("echo FOO=1 gh pr create --fill")]
+    [InlineData("echo env -i FOO=1 gh pr create --fill")]
+    [InlineData("rg -n 'checks pass; env gh pr create follows' docs")]
+    [InlineData("rg -n 'checks pass; FOO=1 gh pr create follows' docs")]
+    [InlineData("git status # then; env gh pr create --fill")]
+    [InlineData("cat > notes.md <<'EOF'\nthen; FOO=1 env gh pr create --fill\nEOF")]
+    [InlineData("environment gh pr create --fill")]
+    [InlineData("FOO=1 ghx pr create --fill")]
+    // Round 1 N2: an option taking a value consumes the next word, so gh is the variable unset.
+    [InlineData("env -u gh pr create --fill")]
+    [InlineData("env -C gh pr create --fill")]
+    [InlineData("env -iu gh pr create --fill")]
+    [InlineData("env --unset gh pr create --fill")]
+    public void ReviewBlockNudge_PrefixedPrCreateThatDoesNotRun_StaysSilent(string command)
+    {
+        var env = LoadEnvWithTheReviewBlockNudge(preDyd736Copy: false);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Fact]
+    public void MergeSystemNudges_PreDyd736ReviewBlockCopy_TakesTheCurrentPatternAndKeepsItsSettings()
+    {
+        var copy = new NudgeConfig { Pattern = PreDyd736ReviewBlockPattern, Message = "Custom review text.", Severity = "block", Audience = "worker" };
+
+        var merged = GuardCommand.MergeSystemNudges([copy]);
+
+        var nudge = Assert.Single(merged, n => n.Pattern.Contains(@"pr\s+create"));
+        Assert.Equal(ConfigFactory.ReviewBlockPattern, nudge.Pattern);
+        Assert.Equal(("Custom review text.", "block", "worker"), (nudge.Message, nudge.Severity, nudge.Audience));
+    }
+
+    [Fact]
+    public void MergeSystemNudges_PreDyd736CopyBesideTheCurrentOne_KeepsOneReviewBlockNudge()
+    {
+        var current = ReviewBlockNudge();
+        var copy = new NudgeConfig { Pattern = PreDyd736ReviewBlockPattern, Message = current.Message, Severity = current.Severity };
+
+        var merged = GuardCommand.MergeSystemNudges([ConfigFactory.Copy(current), copy]);
+
+        Assert.Single(merged, n => n.Pattern.Contains(@"pr\s+create"));
+    }
+
+    // Round 1 N1: when a dydo.json holds both copies, the stricter one survives on the current pattern.
+    [Theory]
+    [InlineData("block", "warn", "block", "Old copy.")]
+    [InlineData("warn", "notice", "warn", "Old copy.")]
+    [InlineData("notice", "warn", "warn", "Current copy.")]
+    [InlineData("warn", "warn", "warn", "Current copy.")]
+    public void MergeSystemNudges_PreDyd736CopyBesideTheCurrentOne_KeepsTheStricterCopy(
+        string oldSeverity, string currentSeverity, string severity, string message)
+    {
+        var current = new NudgeConfig { Pattern = ConfigFactory.ReviewBlockPattern, Message = "Current copy.", Severity = currentSeverity };
+        var copy = new NudgeConfig { Pattern = PreDyd736ReviewBlockPattern, Message = "Old copy.", Severity = oldSeverity };
+
+        var merged = GuardCommand.MergeSystemNudges([current, copy]);
+
+        var nudge = Assert.Single(merged, n => n.Pattern.Contains(@"pr\s+create"));
+        Assert.Equal(ConfigFactory.ReviewBlockPattern, nudge.Pattern);
+        Assert.Equal((message, severity), (nudge.Message, nudge.Severity));
+    }
+
+    [Fact]
+    public void ReviewBlockNudge_DydoJsonWithABlockingPreDyd736CopyBesideTheCurrentOne_Blocks()
+    {
+        WriteConfigWithNudges(
+            (ConfigFactory.ReviewBlockPattern, ReviewBlockNudge().Message, "warn"),
+            (PreDyd736ReviewBlockPattern, "Paste the review block.", "block"));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckBlockNudges("FOO=1 gh pr create --fill", env));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("BLOCKED: Paste the review block.", stderr);
+    }
+
     #endregion
 
     #region Command Nudges Read Only What Runs (DYD-406 GS-03)
@@ -1099,8 +1296,9 @@ public class GuardCommandTests : IDisposable
     [InlineData("P02-collision", "Posix", "cat <<'EOF'\n\u0001 tail -f app.log\nEOF", "C")]
     public void Gs03_ContextBody_Occurrences(string id, string shell, string command, string decisions)
     {
+        var counts = BashCommandAnalyzer.NudgeClassifier(command, Enum.Parse<ShellDialect>(shell));
         var actual = new string(Regex.Matches(command, @"tail\s+(?:-f|--follow)\b").Cast<Match>()
-            .Select(match => BashCommandAnalyzer.RunsAt(command, match.Index, Enum.Parse<ShellDialect>(shell)) ? 'C' : 'D')
+            .Select(match => counts(match.Index) ? 'C' : 'D')
             .ToArray());
         Assert.Equal(id + ":" + decisions, id + ":" + actual);
     }
@@ -1180,9 +1378,10 @@ public class GuardCommandTests : IDisposable
     {
         const string pattern = @"tail\s+(?:-f|--follow)\s+(.*)";
         var dialect = Enum.Parse<ShellDialect>(shell);
-        var selected = (Match?)typeof(GuardCommand).GetMethod("FirstRunningMatch",
-            BindingFlags.NonPublic | BindingFlags.Static)!.Invoke(null,
-                [new Regex(pattern, RegexOptions.IgnoreCase), command, dialect]);
+        var selector = typeof(GuardCommand).GetMethod("FirstRunningMatch", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var context = selector.GetParameters()[2].ParameterType;
+        var argument = context.IsEnum ? (object)dialect : Activator.CreateInstance(context, command, dialect)!;
+        var selected = (Match?)selector.Invoke(null, [new Regex(pattern, RegexOptions.IgnoreCase), command, argument]);
         Assert.Equal(expectedIndex, selected?.Index ?? -1);
         Assert.Equal(expectedLength, selected?.Length ?? 0);
         Assert.Equal(capture, selected?.Groups[1].Value);

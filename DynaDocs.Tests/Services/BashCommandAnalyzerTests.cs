@@ -186,12 +186,24 @@ public class BashCommandAnalyzerTests
     [Fact]
     public void CheckDangerousPatterns_MatchTimeout_FailsClosed()
     {
-        var command = string.Concat(Enumerable.Repeat("dd ", 100_000));
+        // The former dd input is now linear. Exercise the timeout handler deterministically,
+        // without depending on a slow matcher or the host's scheduling to exhaust its budget.
+        var patterns = ((Func<string, bool> IsMatch, string Reason)[])typeof(BashCommandAnalyzer)
+            .GetField("DangerousPatterns", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+            .GetValue(null)!;
+        var original = patterns[0];
+        try
+        {
+            patterns[0] = (_ => throw new System.Text.RegularExpressions.RegexMatchTimeoutException(), original.Reason);
+            var (dangerous, reason) = _analyzer.CheckDangerousPatterns("echo x");
 
-        var (dangerous, reason) = _analyzer.CheckDangerousPatterns(command);
-
-        Assert.True(dangerous);
-        Assert.Equal("Command too complex to verify safely", reason);
+            Assert.True(dangerous);
+            Assert.Equal("Command too complex to verify safely", reason);
+        }
+        finally
+        {
+            patterns[0] = original;
+        }
     }
 
     [Theory]
@@ -453,8 +465,6 @@ public class BashCommandAnalyzerTests
     [InlineData("echo $HOME >&/dev/null")]
     [InlineData("echo $HOME word2>/dev/null")]
     [InlineData("echo $HOME 2>/dev/tty")]
-    [InlineData("echo $HOME >&$fd")]
-    [InlineData("echo $HOME >&\"$fd\"")]
     [InlineData("echo \"$HOME\" 2>\\\n/dev/null")]
     [InlineData("echo \"$HOME\" 2> \\\n  \\\n  /dev/null")]
     public void Analyze_FdDuplicationOrANewlyReadSink_WritesNoFile(string command)
@@ -467,8 +477,8 @@ public class BashCommandAnalyzerTests
         }
     }
 
-    // A ) ` or } that closes the substitution, subshell or group around a duplication or sink is not
-    // part of its target (DYD-640 review B1).
+    // A duplication or sink target ends at the first unquoted ) or ` that closes the substitution or
+    // subshell around it, wherever it falls, text after it included (DYD-640 review B1, round 2 B1).
     [Theory]
     [InlineData("out=$(git status 2>&1)")]
     [InlineData("out=$(git status 2>&1) || true")]
@@ -480,8 +490,13 @@ public class BashCommandAnalyzerTests
     [InlineData("x=\"$(git rev-parse HEAD 2>/dev/null)\"")]
     [InlineData("v=$(command -v jq 2>/dev/null) || true")]
     [InlineData("if [ -n \"$(git status --porcelain 2>/dev/null)\" ]; then echo dirty; fi")]
-    [InlineData("echo $HOME 2>/dev/null}")]
     [InlineData("x=$(git status 2>\"/dev/null\")")]
+    [InlineData("tag=\"$(git describe --always 2>/dev/null)-dirty\"")]
+    [InlineData("echo \"$(git status 2>&1):done\"")]
+    [InlineData("x=$(git status 2>/dev/null)suffix")]
+    [InlineData("x=`git status 2>&1`suffix")]
+    [InlineData("x=$(echo $(git status 2>&1)x )")]
+    [InlineData("x=\"$(git status 2>\"/dev/null\")-dirty\"")]
     public void Analyze_DuplicationOrSinkClosedBySubstitutionOrGroup_WritesNoFile(string command)
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
@@ -499,6 +514,11 @@ public class BashCommandAnalyzerTests
     [InlineData("x=`printf y 2>>dydo/index.md`")]
     [InlineData("{ printf y >&dydo/index.md; }")]
     [InlineData("printf y 2>\\\ndydo/index.md")]
+    [InlineData("tag=\"$(git describe --always 2>dydo/index.md)-dirty\"")]
+    [InlineData("echo \"$(git status 2>dydo/index.md):done\"")]
+    [InlineData("x=$(git status 2>dydo/index.md)suffix")]
+    [InlineData("x=`git status 2>dydo/index.md`suffix")]
+    [InlineData("x=$( $(git status 2>dydo/index.md)x )")]
     public void Analyze_FdRedirectionToAGuardedPathInsideASubstitutionOrContinued_WritesIt(string command)
     {
         foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
@@ -515,11 +535,80 @@ public class BashCommandAnalyzerTests
     [InlineData("Get-ChildItem $HOME 2>$NULL")]
     [InlineData("Get-ChildItem $HOME 2>>$null")]
     [InlineData("Write-Output $(Get-ChildItem $HOME 2>$null)")]
+    [InlineData("Invoke-Command { Get-ChildItem $HOME 2>$null}")]
+    [InlineData("Get-ChildItem $HOME | ForEach-Object {git -C $_ status 2>/dev/null}")]
     public void Analyze_PowerShellNullSink_WritesNoFile(string command)
     {
         var result = new BashCommandAnalyzer(ShellDialect.PowerShell).Analyze(command);
 
         Assert.DoesNotContain(result.Operations, op => op.Type == FileOperationType.Write);
+    }
+
+    // The shell reads these words whole: >&word whose word is no number writes the file it names, a
+    // variable's value included, a quoted ) is literal, and bash ends no word at }, which only
+    // PowerShell's script block closes (DYD-640 round 2 B2, N1).
+    [Theory]
+    [InlineData("Posix", "fd=dydo/index.md; printf x >&\"$fd\"", "$fd")]
+    [InlineData("PowerShell", "fd=dydo/index.md; printf x >&\"$fd\"", "$fd")]
+    [InlineData("Unknown", "fd=.env; printf x >&$fd", "$fd")]
+    [InlineData("PowerShell", "fd=.env; printf x >&$fd", "$fd")]
+    [InlineData("Posix", "printf x >&\"1)\"", "1)")]
+    [InlineData("PowerShell", "printf x >&'1)'", "1)")]
+    [InlineData("Posix", "echo $HOME 2>/dev/null}", "/dev/null}")]
+    [InlineData("Unknown", "printf y 2>\"/dev/null)\"", "/dev/null)")]
+    public void Analyze_DescriptorOrSinkLookalike_WritesTheWord(string dialect, string command, string path)
+    {
+        var result = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect)).Analyze(command);
+
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == path);
+    }
+
+    // These are inert analyzer inputs: escaped quotes/closers and doubled PowerShell quotes remain
+    // filename text rather than accidentally turning a filename into a descriptor or sink.
+    [Theory]
+    [InlineData("Posix", "printf x >&\"1\\\")\"")]
+    [InlineData("Posix", "printf x >&1\\)")]
+    [InlineData("Posix", "printf x >&'1\\)'")]
+    [InlineData("Posix", "printf x 2>\"/dev/null\\\")\"")]
+    [InlineData("Posix", "printf x 2>/dev/null\\`suffix")]
+    [InlineData("Posix", "printf x 2>\"/dev/null\\\\\")suffix")]
+    [InlineData("PowerShell", "Write-Output x 2>\"/dev/null`\")\"")]
+    [InlineData("PowerShell", "Write-Output x 2>\"/dev/null\"\"\"")]
+    [InlineData("PowerShell", "Write-Output x 2>'/dev/null'''")]
+    [InlineData("PowerShell", "Write-Output x 2>$nu''ll")]
+    public void Analyze_EscapedOrDoubledTargetCharacters_StayAWrite(string dialect, string command)
+    {
+        var result = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect)).Analyze(command);
+
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write);
+    }
+
+    [Theory]
+    [InlineData("fd=dydo/index.md; printf x >&$fd")]
+    [InlineData("fd=dydo/index.md; printf x >&\"$fd\"")]
+    [InlineData("fd=.env; printf x >&$fd")]
+    [InlineData("fd=.env; printf x >&\"$fd\"")]
+    public void Analyze_VariableRedirectionTarget_StaysAWrite(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "$fd");
+        }
+    }
+
+    // The integrated feature's uncertain-command classification still applies to a substitution
+    // used as the executable. Removing the descriptor redirect must not change that classification.
+    [Theory]
+    [InlineData("x=$( $(git status 2>&1)x )")]
+    [InlineData("x=$( $(git status)x )")]
+    public void Analyze_NestedDynamicExecutable_KeepsOnlyTheUncertainWrite(string command)
+    {
+        var result = _analyzer.Analyze(command);
+
+        Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.IsUncertain);
+        Assert.DoesNotContain(result.Operations, op => op.Type == FileOperationType.Write && !op.IsUncertain);
     }
 
     // Outside PowerShell $null is a variable naming a file, and a quoted '$null' or "$null" is no
@@ -604,11 +693,30 @@ public class BashCommandAnalyzerTests
     [InlineData("\\\\>|")]
     [InlineData("$(x 2>&1)")]
     [InlineData("2>/dev/null)")]
-    public void Analyze_LongRedirectionRun_GrowsLinearly(string unit)
+    [InlineData("2>&1)x")]
+    [InlineData(">&\"1)\"")]
+    public void Analyze_LongRedirectionRun_GrowsLinearly(string unit) => AssertRunGrowsLinearly("printf x ", unit);
+
+    // The target's shell-ended word is read in one left-to-right scan (DYD-640 round 2): one long target
+    // of closers, quotes and substitution openers costs about eight short ones.
+    [Theory]
+    [InlineData(")")]
+    [InlineData("`")]
+    [InlineData("}")]
+    [InlineData("\"")]
+    [InlineData("'")]
+    [InlineData("\\)")]
+    [InlineData("\\\"")]
+    [InlineData("\")")]
+    [InlineData("')`")]
+    [InlineData("1)")]
+    public void Analyze_LongShellEndedTarget_GrowsLinearly(string unit) => AssertRunGrowsLinearly("printf x 2>", unit);
+
+    private void AssertRunGrowsLinearly(string head, string unit)
     {
         const int growth = 8;
-        var shortRun = "printf x " + string.Concat(Enumerable.Repeat(unit, 256)) + " 1> out.md";
-        var longRun = "printf x " + string.Concat(Enumerable.Repeat(unit, 256 * growth)) + " 1> out.md";
+        var shortRun = head + string.Concat(Enumerable.Repeat(unit, 256)) + " 1> out.md";
+        var longRun = head + string.Concat(Enumerable.Repeat(unit, 256 * growth)) + " 1> out.md";
         var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
 
         for (var round = 0; round < 7; round++)
@@ -1996,6 +2104,121 @@ public class BashCommandAnalyzerTests
             Assert.True(new BashCommandAnalyzer(dialect).Analyze(command).HasBypassAttempt, $"{dialect}: {command}");
     }
 
+    // DYD-641: where pwsh may run the line, its reading decides. pwsh 7.6.9 ends a statement and a
+    // comment at a bare carriage return and closes a here-string at a bare carriage return or a
+    // typographic quote before @, so the text after each is code (measured in /tmp/dyd641-evidence).
+    private static readonly ShellDialect[] PowerShellReadings = [ShellDialect.Unknown, ShellDialect.PowerShell];
+
+    [Theory]
+    [InlineData("echo @'\nx\n’@; iex '$(echo x > $OUT)'\n'@ # '")]
+    [InlineData("echo @'\nx\r'@; iex '$(echo x > $OUT)'\n'@ # '")]
+    [InlineData("echo @'\nx\n’@; iex $(echo x > $OUT)\n'@ # '")]
+    [InlineData("echo x\riex @'\n$(echo x > $OUT)\n'@")]
+    [InlineData("# x\riex (\n@'\n$(echo x > dydo/index.md)\n'@\n)")]
+    [InlineData("# x\riex `\n@'\n$(echo x > dydo/index.md)\n'@")]
+    [InlineData("@'\n$(echo x > dydo/index.md)\n'@\n# c\r| iex")]
+    public void Analyze_HereStringBodyPwshRunsAsCode_IsABypass(string command)
+    {
+        foreach (var dialect in PowerShellReadings)
+            AssertBypassWithAChange(command, dialect);
+    }
+
+    // The line a body's opener is on runs to its line feed, and each shell's reading of it takes a
+    // bare carriage return as that shell does (both measured). bash reads one as word text, so a
+    // comment before it hides the opener and bash runs the body's line.
+    [Fact]
+    public void Analyze_CommentABareCarriageReturnEndsOnlyInPwsh_HidesTheOpenerFromBash()
+    {
+        foreach (var dialect in BashReadings)
+            AssertBypassWithAChange("# x\r@'\n$(echo x > dydo/index.md)\n'@", dialect);
+    }
+
+    // pwsh reads a bare carriage return as a break, so a pipe after the terminator feeds the body on.
+    [Fact]
+    public void Analyze_PipeAfterABareCarriageReturnOnTheTerminatorsLine_FeedsTheBodyInPwsh()
+    {
+        foreach (var dialect in PowerShellReadings)
+            AssertBypassWithAChange("@'\n$(echo x > dydo/index.md)\n'@\r| iex", dialect);
+    }
+
+    // bash 5.3.9 reads a bare carriage return as word text, so the words after one are still the
+    // command's arguments: it deletes, truncates, edits or chmods the file (measured in
+    // /tmp/dyd641-evidence/fix2). Wherever bash may run the line, the change is extracted.
+    [Theory]
+    [InlineData("rm \r dydo/index.md", FileOperationType.Delete)]
+    [InlineData("rm -- \r dydo/index.md", FileOperationType.Delete)]
+    [InlineData("tee \r dydo/index.md", FileOperationType.Write)]
+    [InlineData("sed -i\r s/a/b/ dydo/index.md", FileOperationType.Write)]
+    [InlineData("truncate -s 0 \r dydo/index.md", FileOperationType.Write)]
+    [InlineData("chmod 000 \r dydo/index.md", FileOperationType.PermissionChange)]
+    [InlineData("echo $(rm \r dydo/index.md)", FileOperationType.Delete)]
+    public void Analyze_ArgumentsAfterABareCarriageReturn_AreTheCommandsWhereBashMayRunIt(string command, FileOperationType type)
+    {
+        foreach (var dialect in BashReadings)
+            Assert.Contains(new BashCommandAnalyzer(dialect).Analyze(command).Operations, op => op.Type == type && op.Path == "dydo/index.md");
+    }
+
+    // A bash -c string is bash's in every dialect, the call's own shell only hands it on.
+    [Fact]
+    public void Analyze_BashCommandStringWithABareCarriageReturn_IsReadAsBashReadsIt()
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.Contains(new BashCommandAnalyzer(dialect).Analyze("bash -c 'rm \r dydo/index.md'").Operations,
+                op => op.Type == FileOperationType.Delete && op.Path == "dydo/index.md");
+    }
+
+    // Each carriage return here is half of a CRLF, so the line holds none of the three characters and
+    // reads as before: a Windows-authored here-string write is literal data (pwsh 7.6.9 runs each harmlessly).
+    [Theory]
+    [InlineData("@'\r\nhello\r\n'@ | Set-Content notes.md\r\necho done")]
+    [InlineData("@'\r\na\r\n'@ | Set-Content notes.md\r\n@'\r\nb\r\n'@ | Add-Content notes.md")]
+    [InlineData("@'\nhello\n'@ | Set-Content notes.md\r\n")]
+    [InlineData("cat @'\r\nhello\r\n'@ > notes.md\r\n")]
+    public void Analyze_CrlfAfterAHereStringWrite_IsNoBypass(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+        {
+            var result = new BashCommandAnalyzer(dialect).Analyze(command);
+
+            Assert.False(result.HasBypassAttempt, $"{dialect}: {string.Join("; ", result.Warnings)}");
+            Assert.Contains(result.Operations, op => op.Type == FileOperationType.Write && op.Path == "notes.md");
+        }
+    }
+
+    [Theory]
+    [InlineData("echo hello\rrm dydo/index.md")]
+    [InlineData("echo hello # note\rrm dydo/index.md")]
+    [InlineData("echo \"a”\nrm dydo/index.md\n“b\"")]
+    [InlineData("echo @\"\nx\n”@\nrm dydo/index.md\n\"@ # \"")]
+    [InlineData("echo a > notes.md # x\"\rRemove-Item dydo/index.md\r# y\"")]
+    public void Analyze_StatementPwshStartsOnALaterLine_IsAnEmbeddedNewline(string command)
+    {
+        foreach (var dialect in PowerShellReadings)
+            Assert.Contains("Command contains embedded newlines", new BashCommandAnalyzer(dialect).Analyze(command).Warnings);
+    }
+
+    [Theory]
+    [InlineData("echo x\rpass show bank", "Password store access")]
+    [InlineData("echo ‘a'; pass show bank; ’b'", "Password store access")]
+    [InlineData("echo x\rpython -", "Python program on stdin")]
+    [InlineData("echo ‘a'; python -; ’b'", "Python program on stdin")]
+    public void CheckDangerousPatterns_CommandPwshRuns_IsDangerous(string command, string reason)
+    {
+        var (dangerous, why) = _analyzer.CheckDangerousPatterns(command);
+
+        Assert.True(dangerous, command);
+        Assert.StartsWith(reason, why);
+    }
+
+    [Theory]
+    [InlineData("rg -n 'x’; tail -f app.log; ‘y'")]
+    [InlineData("echo ready # note\rtail -f app.log")]
+    public void NudgeClassifier_CommandPwshRuns_Counts(string command)
+    {
+        foreach (var dialect in PowerShellReadings)
+            Assert.True(BashCommandAnalyzer.NudgeClassifier(command, dialect)(command.IndexOf("tail", StringComparison.Ordinal)), $"{dialect}: {command}");
+    }
+
     // Inside single quotes bash 5.3.9 and pwsh 7.6.9 keep a carriage return, NEL and the Unicode
     // separators literal (measured), so a quote holding them stays literal data.
     [Theory]
@@ -2410,10 +2633,816 @@ public class BashCommandAnalyzerTests
     [InlineData("echo stdbuf -oL tail -f app.log", true)]
     [InlineData("grep 'ssh host tail -f' notes.md", true)]
     [InlineData("ssh tail -f app.log", true)]
-    public void RunsAt_RunnersAndRemoteCommands(string command, bool runs)
+    public void NudgeClassifier_RunnersAndRemoteCommands(string command, bool runs)
     {
-        Assert.Equal(runs, BashCommandAnalyzer.RunsAt(command, command.IndexOf("tail", StringComparison.Ordinal), ShellDialect.Posix));
+        Assert.Equal(runs, BashCommandAnalyzer.NudgeClassifier(command, ShellDialect.Posix)(command.IndexOf("tail", StringComparison.Ordinal)));
     }
+
+    #endregion
+
+    #region DYD-723: nesting stays within the budget
+
+    // Analysing any command of up to 100,000 characters allocates at most 256 MB on the calling
+    // thread and takes at most a second, in Release and uninstrumented. Coverage instrumentation
+    // multiplies allocation by up to about 30, so here the budget holds at BudgetedLength; the
+    // capped Release probe recorded with DYD-723 holds it at 100,000. The time bound sits on the deep
+    // rows, which stay small under instrumentation.
+    private const long AllocationBudget = 256L * 1024 * 1024;
+    private const int BudgetedLength = 10_000;
+
+    // Where each numerical proof runs (DYD-840). A Release proof repeats its measurements and runs
+    // only in the required dotnet-release-proof lane, in Release and uninstrumented, every case,
+    // warmup and round of it; coverage runs its witness instead, the proof's inputs read once each
+    // with its other assertions. A shared proof measures once and runs in both lanes.
+    // DynaDocs.Tests/coverage/release-proofs.json maps each proof to its witness.
+    internal const string PerformanceProof = "PerformanceProof";
+    internal const string ReleaseLane = "Release";
+    internal const string BothLanes = "Shared";
+
+    // The lane's measurements are the optimized, uninstrumented product's whenever this assembly is
+    // built in Release, as the lane builds it, so its one-second and 256 MB bounds apply there.
+    [Fact]
+    [Trait(PerformanceProof, ReleaseLane)]
+    public void ReleaseProofLane_MeasuresTheOptimizedUninstrumentedProduct()
+    {
+        var testsOptimized = typeof(BashCommandAnalyzerTests).Assembly
+            .GetCustomAttributes(typeof(System.Diagnostics.DebuggableAttribute), false)
+            .Cast<System.Diagnostics.DebuggableAttribute>().All(attribute => !attribute.IsJITOptimizerDisabled);
+
+        Assert.Equal(testsOptimized, ReleaseUninstrumented);
+    }
+
+    // 22 levels: before DYD-723 each level doubled the PowerShell reading, here past 400 MB.
+    [Theory]
+    [Trait(PerformanceProof, BothLanes)]
+    [InlineData("Posix", "$(", "")]
+    [InlineData("PowerShell", "$(", "")]
+    [InlineData("Unknown", "$(", "")]
+    [InlineData("Posix", "$(", ")")]
+    [InlineData("PowerShell", "$(", ")")]
+    [InlineData("Unknown", "$(", ")")]
+    [InlineData("Posix", "a (", ")")]
+    [InlineData("PowerShell", "a (", ")")]
+    [InlineData("Unknown", "a (", ")")]
+    public void Analyze_DeepNesting_StaysWithinTheBudget(string dialect, string opener, string closer)
+    {
+        var command = "printf x " + Repeat(opener, 22) + "y" + Repeat(closer, 22);
+
+        var (allocated, elapsed) = Measure(dialect, command);
+
+        Assert.True(allocated <= AllocationBudget, $"Allocated {allocated:N0} bytes");
+        Assert.True(elapsed <= TimeSpan.FromSeconds(1), $"Took {elapsed}");
+    }
+
+    // Before DYD-723 these exhausted the host's memory: run on the fix only. The budgeted length stays
+    // within the budget, and doubling the input to its full length at most about doubles the allocation.
+    [Theory]
+    [Trait(PerformanceProof, BothLanes)]
+    [InlineData("Posix", "$(", "")]
+    [InlineData("PowerShell", "$(", "")]
+    [InlineData("Unknown", "$(", "")]
+    [InlineData("Posix", "@(", ")")]
+    [InlineData("PowerShell", "@(", ")")]
+    [InlineData("Unknown", "@(", ")")]
+    [InlineData("Posix", "\"$(", ")\"")]
+    [InlineData("PowerShell", "\"$(", ")\"")]
+    [InlineData("Unknown", "\"$(", ")\"")]
+    [InlineData("Posix", "$(@(a (\"$(`${'", "")]
+    [InlineData("PowerShell", "$(@(a (\"$(`${'", "")]
+    [InlineData("Unknown", "$(@(a (\"$(`${'", "")]
+    public void Analyze_LongNesting_AllocatesLinearlyWithinTheBudget(string dialect, string opener, string closer)
+    {
+        var (budgeted, _) = Measure(dialect, Nesting(opener, closer, BudgetedLength));
+        var (half, _) = Measure(dialect, Nesting(opener, closer, 50_000));
+        var (full, _) = Measure(dialect, Nesting(opener, closer, 100_000));
+
+        Assert.True(budgeted <= AllocationBudget, $"Allocated {budgeted:N0} bytes at {BudgetedLength:N0} characters");
+        Assert.True(full <= 2.5 * half, $"Allocated {full:N0} bytes at 100,000 characters, {half:N0} at 50,000");
+    }
+
+    // Past the nesting bound no reading is complete, so the command is refused as too complex to
+    // verify, in every dialect, a command string a shell runs included. At the bound, and with many
+    // ( that do not nest, the command reads as before.
+    [Theory]
+    [InlineData("Posix", "echo ", 32, false)]
+    [InlineData("PowerShell", "echo ", 32, false)]
+    [InlineData("Unknown", "echo ", 32, false)]
+    [InlineData("Posix", "echo ", 33, true)]
+    [InlineData("PowerShell", "echo ", 33, true)]
+    [InlineData("Unknown", "echo ", 33, true)]
+    [InlineData("Posix", "bash -c 'echo ", 40, true)]
+    [InlineData("Unknown", "bash -c 'echo ", 40, true)]
+    public void CheckDangerousPatterns_NestingPastTheBound_IsTooComplex(string dialect, string head, int levels, bool refused)
+    {
+        var command = head + Repeat("\"$(", levels) + "x" + Repeat(")\"", levels) + (head.Contains('\'') ? "'" : "");
+
+        var (dangerous, reason) = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect)).CheckDangerousPatterns(command);
+
+        Assert.Equal(refused, dangerous);
+        Assert.Equal(refused ? "Command too complex to verify safely" : null, reason);
+    }
+
+    [Theory]
+    [InlineData("echo '((((((((((((((((((((((((((((((((((((((((")]
+    [InlineData("echo (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x) (x)")]
+    public void CheckDangerousPatterns_ManyParenthesesThatDoNotNest_AreNotTooComplex(string command)
+    {
+        foreach (var dialect in BashReadings.Append(ShellDialect.PowerShell))
+            Assert.False(new BashCommandAnalyzer(dialect).CheckDangerousPatterns(command).IsDangerous, $"{dialect}: {command}");
+    }
+
+    // The substitution and expansion scans answer as the regexes they replace did, on every string of
+    // up to five characters over their syntax and on longer random ones.
+    [Fact]
+    public void BypassScans_FindWhatTheirRegexesFound()
+    {
+        var substitution = new System.Text.RegularExpressions.Regex(@"\$\([^)]+\)|`[^`]+`");
+        var expansion = new System.Text.RegularExpressions.Regex(@"\$[A-Za-z_][A-Za-z0-9_]*|\$\{[^}]+\}");
+        var random = new Random(723);
+        const string alphabet = "$(){}`a_1";
+        const string wider = "$(){}` aZ_9\n'\"";
+        var texts = Enumerable.Range(0, 5).Aggregate(new List<string> { "" }, (all, length) =>
+                [.. all, .. all.Where(text => text.Length == length).SelectMany(text => alphabet.Select(c => text + c))])
+            .Concat(Enumerable.Range(0, 5000).Select(_ => new string([.. Enumerable.Range(0, random.Next(40)).Select(_ => wider[random.Next(wider.Length)])])));
+
+        foreach (var text in texts)
+        {
+            Assert.Equal(substitution.Matches(text).Select(match => match.Value[(match.Value[0] == '`' ? 1 : 2)..^1]), BashCommandAnalyzer.SubstitutionBodies(text));
+            Assert.True(expansion.IsMatch(text) == BashCommandAnalyzer.ExpandsVariable(text), text);
+        }
+    }
+
+    // bash reads an unquoted $( as $ and a group, and a group nests as a substitution does: past 32
+    // levels of them the command is refused, in every dialect. At the bound it reads as before.
+    [Theory]
+    [InlineData("Posix", 32, false)]
+    [InlineData("PowerShell", 32, false)]
+    [InlineData("Unknown", 32, false)]
+    [InlineData("Posix", 33, true)]
+    [InlineData("PowerShell", 33, true)]
+    [InlineData("Unknown", 33, true)]
+    public void CheckDangerousPatterns_UnquotedNestingPastTheBound_IsTooComplex(string dialect, int levels, bool refused)
+    {
+        AssertTooComplex(dialect, UnquotedNesting(levels), refused);
+    }
+
+    // A command string a shell runs is a command line of its own, read eight levels below the command.
+    // Past them the reading stops, so the command is refused, and so a substitution nested past the
+    // bound inside them is; before DYD-723 the reading stopped only as uncertain, and nine shells were
+    // allowed. Eight levels read as before.
+    [Theory]
+    [InlineData("Posix", 8, 16, false)]
+    [InlineData("PowerShell", 8, 16, false)]
+    [InlineData("Unknown", 8, 16, false)]
+    [InlineData("Posix", 9, 16, true)]
+    [InlineData("PowerShell", 9, 16, true)]
+    [InlineData("Unknown", 9, 16, true)]
+    [InlineData("Posix", 9, 40, true)]
+    [InlineData("PowerShell", 9, 40, true)]
+    [InlineData("Unknown", 9, 40, true)]
+    public void CheckDangerousPatterns_CommandStringsPastTheDepth_AreTooComplex(string dialect, int shells, int levels, bool refused)
+    {
+        AssertTooComplex(dialect, InShells(QuotedNesting(levels), shells), refused);
+    }
+
+    // cmd's command string is read both ways, so each level of a chain of cmd read its line twice as
+    // often as the level above, 2^9 times at the eighth. Each line is read once now, and reading a
+    // command's lines has a budget, about ten readings of the command: eight cmd of a short line read
+    // as before, and of a long one, read twice at every level, are refused as too complex.
+    [Theory]
+    [InlineData("Posix", 10, false)]
+    [InlineData("Unknown", 10, false)]
+    [InlineData("Posix", 20_000, true)]
+    [InlineData("Unknown", 20_000, true)]
+    public void CheckDangerousPatterns_CmdChainPastTheBudget_IsTooComplex(string dialect, int length, bool refused)
+    {
+        AssertTooComplex(dialect, Repeat("cmd /c ", 8) + "echo " + Repeat("x", length), refused);
+    }
+
+    // Long inputs of each shape whose analysis grew faster than its length (DYD-723): many quotes in a
+    // data command's words, each matched against every word, sed's script found again for each; many
+    // heredocs, each cut by reading the whole rest; many quoted heredoc or here-string openers, each
+    // searched to the end for its closer; long or wide nesting; and a chain of cmd, read 2^9 times.
+    private static readonly Dictionary<string, Func<int, string>> LongShapes = new()
+    {
+        ["escaped quote openers"] = length => "echo " + Repeat("\\\"", length / 2),
+        ["nudge quoted data"] = length => Repeat("rg -n 'tail -f' docs;", length / 21),
+        ["nudge comments"] = length => Repeat("# tail -f\n", length / 10),
+        ["nudge bodies"] = length => Repeat("cat <<E\ntail -f\nE\n", length / 18),
+        ["nudge one body"] = length => "cat <<E\n" + Repeat("tail -f\n", length / 8) + "E\n",
+        ["mixed body openers"] = length => Repeat("cat @'\n<<E\n'@\n", length / 14) + "E\n",
+        ["sed quotes"] = length => "sed 's/a/b/' " + Repeat("'' ", length / 3),
+        ["echo quotes"] = length => "echo " + Repeat("'' ", length / 3),
+        ["printf quotes"] = length => "printf " + Repeat("'a' ", length / 4),
+        ["echo words"] = length => "echo " + Repeat("a ", length / 2),
+        ["multiline quotes"] = length => string.Concat(Enumerable.Range(0, length / 15).Select(i => $"echo \"{i:D5}\nx\";")),
+        ["distinct commands"] = length => string.Concat(Enumerable.Range(0, length / 8).Select(i => $": {i:D5};")),
+        ["nested multiline quotes"] = length => "Write-Output " + Repeat("@(", 31)
+            + Repeat("\"x\ny\" ", (length - 106) / 6) + Repeat(")", 31),
+        ["env chain"] = length => "" + Repeat("env ", length / 4) + "echo x",
+        ["python run chain"] = length => "uv " + Repeat("-x run ", length / 7) + "python script.py",
+        ["rm flags"] = length => "rm " + Repeat("-rrrrrrrrrrrrrrrrrr ", length / 20) + "x",
+        ["remove words"] = length => "" + Repeat("Remove-Item x ", length / 14) + "",
+        ["dd words"] = length => "" + Repeat("dd x ", length / 5) + "",
+        ["base64 words"] = length => "" + Repeat("base64 -d x ", length / 12) + "",
+        ["curl words"] = length => "" + Repeat("curl x ", length / 7) + "",
+        ["wget words"] = length => "" + Repeat("wget x ", length / 7) + "",
+        ["wget output"] = length => "" + Repeat("wget -O - x ", length / 12) + "",
+        ["iwr words"] = length => "" + Repeat("Invoke-WebRequest x ", length / 20) + "",
+        ["iwr short"] = length => "" + Repeat("iwr x ", length / 6) + "",
+        ["download words"] = length => "" + Repeat("DownloadString(x ", length / 17) + "",
+        ["history words"] = length => "" + Repeat("Remove-Item x ", length / 14) + "",
+        ["cat heredoc openers"] = length => Repeat("echo '$(cat <<E'\n", length / 17),
+        ["heredocs"] = length => Repeat("cat <<E\na\nE\n", length / 12),
+        ["quoted heredocs"] = length => Repeat("cat <<'E'\n'a'\nE\n", length / 16),
+        ["here-strings"] = length => Repeat("echo @'\na\n'@\n", length / 13),
+        ["distinct writes"] = length => string.Concat(Enumerable.Range(0, length / 20).Select(i => $"echo x > f{i:D5}.txt;")),
+        ["heredoc openers"] = length => "echo \"" + Repeat("<<E x\n", length / 6) + "\"",
+        ["here-string openers"] = length => "echo \"" + Repeat("@'\n", length / 3) + "\"",
+        ["$( open"] = length => Nesting("$(", "", length),
+        ["$( wide"] = length => "printf x " + Repeat("$(y) ", length / 5),
+        ["\"$( closed"] = length => Nesting("\"$(", ")\"", length),
+        ["mixed open"] = length => Nesting("$(@(a (\"$(`${'", "", length),
+        ["cmd chain"] = length => Repeat("cmd /c ", 8) + "echo " + Repeat("x", length) + "; pass show x",
+    };
+
+    // Time grows with the input. One sample analyses the input of 12,500 characters eight times and the
+    // one of 100,000 once, so a linear analysis spends about as long on each and a quadratic one about
+    // eight times as long on the long one; as in the wrapper-chain test above, the ratio decides, and
+    // the best times of all seven interleaved rounds damp noise after warming both sizes. Linux uses
+    // calling-thread CPU for the ratio, so scheduling delays do not decide it. In Release,
+    // uninstrumented, 100,000 characters take at most a second (captain's ruling, 2026-11-05); in a
+    // Debug build, as the Windows guard job runs them, the ratio alone decides. These proofs run in the Release lane; each CoverageWitness reads the same inputs once under coverage.
+    public static TheoryData<string, string> LongInputCases => new()
+    {
+        { "Posix", "sed quotes" },
+        { "PowerShell", "sed quotes" },
+        { "Unknown", "sed quotes" },
+        { "Unknown", "echo quotes" },
+        { "Unknown", "printf quotes" },
+        { "Unknown", "echo words" },
+        { "Unknown", "heredoc openers" },
+        { "Unknown", "here-string openers" },
+        { "Posix", "multiline quotes" },
+        { "PowerShell", "multiline quotes" },
+        { "Unknown", "multiline quotes" },
+    };
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(LongInputCases))]
+    public void Analyze_LongInput_TakesTimeLinearly(string dialect, string shape) => AssertTimeGrowsLinearly(dialect, shape);
+
+    [Theory]
+    [MemberData(nameof(LongInputCases))]
+    public void Analyze_LongInput_CoverageWitness(string dialect, string shape) => AnalyzeGrowthInputs(dialect, shape);
+
+    // Before DYD-723 long nesting exhausted the host's memory: run on the fix only.
+    public static TheoryData<string, string> LongNestingTimeCases => new()
+    {
+        { "Posix", "$( open" },
+        { "Unknown", "$( wide" },
+        { "Unknown", "\"$( closed" },
+        { "Unknown", "mixed open" },
+        { "Posix", "nested multiline quotes" },
+        { "PowerShell", "nested multiline quotes" },
+        { "Unknown", "nested multiline quotes" },
+    };
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(LongNestingTimeCases))]
+    public void Analyze_LongNesting_TakesTimeLinearly(string dialect, string shape) => AssertTimeGrowsLinearly(dialect, shape);
+
+    [Theory]
+    [MemberData(nameof(LongNestingTimeCases))]
+    public void Analyze_LongNesting_CoverageWitness(string dialect, string shape) => AnalyzeGrowthInputs(dialect, shape);
+
+    // Before DYD-723 the long input of these took a minute (heredocs) or read the line 2^9 times (cmd):
+    // run on the fix only; their allocation test below fails before the fix at the budgeted length.
+    public static TheoryData<string, string> LongBodiesTimeCases => new()
+    {
+        { "Posix", "heredocs" },
+        { "PowerShell", "heredocs" },
+        { "Unknown", "heredocs" },
+        { "Posix", "quoted heredocs" },
+        { "Unknown", "quoted heredocs" },
+        { "PowerShell", "here-strings" },
+        { "Unknown", "here-strings" },
+        { "Posix", "distinct writes" },
+        { "Unknown", "distinct writes" },
+        { "Unknown", "cmd chain" },
+    };
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(LongBodiesTimeCases))]
+    public void Analyze_LongBodies_TakeTimeLinearly(string dialect, string shape) => AssertTimeGrowsLinearly(dialect, shape);
+
+    [Theory]
+    [MemberData(nameof(LongBodiesTimeCases))]
+    public void Analyze_LongBodies_CoverageWitness(string dialect, string shape) => AnalyzeGrowthInputs(dialect, shape);
+
+    public static TheoryData<string> Dialects => new() { "Posix", "PowerShell", "Unknown" };
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(Dialects))]
+    public void Analyze_UnclosedCatHeredocs_TakesTimeLinearly(string dialect) =>
+        AssertTimeGrowsLinearly(dialect, "cat heredoc openers");
+
+    [Theory]
+    [MemberData(nameof(Dialects))]
+    public void Analyze_UnclosedCatHeredocs_CoverageWitness(string dialect) =>
+        AnalyzeGrowthInputs(dialect, "cat heredoc openers");
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(Dialects))]
+    public void Analyze_MixedBodyOpeners_GrowsLinearly(string dialect) =>
+        AssertTimeGrowsLinearly(dialect, "mixed body openers");
+
+    [Theory]
+    [MemberData(nameof(Dialects))]
+    public void Analyze_MixedBodyOpeners_CoverageWitness(string dialect) =>
+        AnalyzeGrowthInputs(dialect, "mixed body openers");
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(Dialects))]
+    public void Analyze_EscapedQuoteOpeners_GrowsLinearly(string dialect)
+    {
+        var analyze = Analyzing(dialect);
+        var (shortInput, longInput) = EscapedQuoteDoublingInputs();
+        analyze(shortInput);
+        analyze(longInput);
+        var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
+        for (var round = 0; round < 7; round++)
+        {
+            shortBest = Min(shortBest, TimeAnalyses(analyze, shortInput, 1).Cpu);
+            longBest = Min(longBest, TimeAnalyses(analyze, longInput, 1).Cpu);
+        }
+        // Stop the old suffix search at a small witness before exercising the full budget.
+        Assert.True(longBest / shortBest < 2.5, $"Doubling escaped quotes took {longBest / shortBest:F2}x");
+        AssertTimeGrowsLinearly(analyze, "escaped quote openers");
+    }
+
+    [Theory]
+    [MemberData(nameof(Dialects))]
+    public void Analyze_EscapedQuoteOpeners_CoverageWitness(string dialect)
+    {
+        var analyze = Analyzing(dialect);
+        var (shortInput, longInput) = EscapedQuoteDoublingInputs();
+        analyze(shortInput);
+        analyze(longInput);
+        AnalyzeGrowthInputs(analyze, "escaped quote openers");
+    }
+
+    private static (string Short, string Long) EscapedQuoteDoublingInputs()
+    {
+        var shape = LongShapes["escaped quote openers"];
+        return (shape(10_000), shape(20_000));
+    }
+
+    public static TheoryData<string, string> RepeatedRunnerWordCases => new()
+    {
+        { "Posix", "env chain" },
+        { "PowerShell", "env chain" },
+        { "Unknown", "env chain" },
+        { "Posix", "python run chain" },
+        { "PowerShell", "python run chain" },
+        { "Unknown", "python run chain" },
+    };
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(RepeatedRunnerWordCases))]
+    public void Analyze_RepeatedRunnerWords_GrowsLinearly(string dialect, string shape)
+    {
+        AssertRunnerWordsAllocateLinearly(dialect, shape);
+        AssertTimeGrowsLinearly(dialect, shape);
+    }
+
+    // Allocation is deterministic, so its ratio holds under coverage too.
+    [Theory]
+    [MemberData(nameof(RepeatedRunnerWordCases))]
+    public void Analyze_RepeatedRunnerWords_CoverageWitness(string dialect, string shape)
+    {
+        AssertRunnerWordsAllocateLinearly(dialect, shape);
+        AnalyzeGrowthInputs(dialect, shape);
+    }
+
+    private static void AssertRunnerWordsAllocateLinearly(string dialect, string shape)
+    {
+        Measure(dialect, LongShapes[shape](100));
+        var shortBytes = Measure(dialect, LongShapes[shape](1_000)).Allocated;
+        var longBytes = Measure(dialect, LongShapes[shape](2_000)).Allocated;
+        Assert.True(longBytes <= shortBytes * 2.5, $"Allocated {shortBytes} then {longBytes}");
+    }
+
+    public static TheoryData<string, string> RepeatedPrefixCases => new()
+    {
+        { "RecursiveDeleteRootRegex", "rm flags" },
+        { "RecursiveDeleteGlobRegex", "rm flags" },
+        { "PowerShellRecursiveDeleteRegex", "remove words" },
+        { "DdKnownDiskWriteRegex", "dd words" },
+        { "Base64DecodePipeExecRegex", "base64 words" },
+        { "CurlPipeShRegex", "curl words" },
+        { "WgetPipeShRegex", "wget words" },
+        { "WgetOutputPipeShRegex", "wget output" },
+        { "PowerShellIwrIexRegex", "iwr words" },
+        { "PowerShellIwrIexShortRegex", "iwr short" },
+        { "PowerShellDownloadStringRegex", "download words" },
+        { "PowerShellHistoryDeleteRegex", "history words" },
+    };
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(RepeatedPrefixCases))]
+    public void DangerousRules_RepeatedPrefixes_GrowLinearly(string name, string shape) =>
+        AssertTimeGrowsLinearly(NoMatchOf(name), shape);
+
+    // The rule's 250 ms timeout (DYD-610) is checked under coverage too.
+    [Theory]
+    [MemberData(nameof(RepeatedPrefixCases))]
+    public void DangerousRules_RepeatedPrefixes_CoverageWitness(string name, string shape) =>
+        AnalyzeGrowthInputs(NoMatchOf(name), shape);
+
+    private static Action<string> NoMatchOf(string name)
+    {
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static;
+        var type = typeof(BashCommandAnalyzer);
+        var pattern = (System.Text.RegularExpressions.Regex)(type.GetField(name, flags)?.GetValue(null)
+            ?? type.GetMethod(name, flags)!.Invoke(null, null))!;
+        Assert.Equal(TimeSpan.FromMilliseconds(250), pattern.MatchTimeout);
+        return text => Assert.DoesNotMatch(pattern, text);
+    }
+
+    private static void AssertTimeGrowsLinearly(string dialect, string shape) =>
+        AssertTimeGrowsLinearly(Analyzing(dialect), shape);
+
+    private static Action<string> Analyzing(string dialect)
+    {
+        var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
+        return command => analyzer.Analyze(command);
+    }
+
+    public static TheoryData<string, string> ManyDataMatchCases => new()
+    {
+        { "Posix", "nudge quoted data" },
+        { "PowerShell", "nudge quoted data" },
+        { "Unknown", "nudge quoted data" },
+        { "Posix", "nudge comments" },
+        { "PowerShell", "nudge comments" },
+        { "Unknown", "nudge comments" },
+        { "Posix", "nudge bodies" },
+        { "PowerShell", "nudge bodies" },
+        { "Unknown", "nudge bodies" },
+        { "Posix", "nudge one body" },
+        { "PowerShell", "nudge one body" },
+        { "Unknown", "nudge one body" },
+    };
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(ManyDataMatchCases))]
+    public void FirstRunningMatch_ManyDataMatches_GrowsLinearly(string dialect, string shape)
+    {
+        var check = FirstRunningMatchFindsNone(dialect);
+        AssertRunningMatchAllocatesLinearly(check, shape);
+        AssertTimeGrowsLinearly(check, shape);
+    }
+
+    // Allocation is deterministic, so its ratio and budget hold under coverage too.
+    [Theory]
+    [MemberData(nameof(ManyDataMatchCases))]
+    public void FirstRunningMatch_ManyDataMatches_CoverageWitness(string dialect, string shape)
+    {
+        var check = FirstRunningMatchFindsNone(dialect);
+        AssertRunningMatchAllocatesLinearly(check, shape);
+        AnalyzeGrowthInputs(check, shape);
+    }
+
+    private static Action<string> FirstRunningMatchFindsNone(string dialect)
+    {
+        var method = typeof(DynaDocs.Commands.GuardCommand).GetMethod("FirstRunningMatch",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+        var pattern = new System.Text.RegularExpressions.Regex("tail -f");
+        var shell = Enum.Parse<ShellDialect>(dialect);
+        return text =>
+        {
+            var context = method.GetParameters()[2].ParameterType;
+            var argument = context.IsEnum ? (object)shell : Activator.CreateInstance(context, text, shell)!;
+            Assert.Null(method.Invoke(null, [pattern, text, argument]));
+        };
+    }
+
+    private static void AssertRunningMatchAllocatesLinearly(Action<string> check, string shape)
+    {
+        long Allocation(int length)
+        {
+            var text = LongShapes[shape](length);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            check(text);
+            return GC.GetAllocatedBytesForCurrentThread() - before;
+        }
+        Allocation(100);
+        var shortBytes = Allocation(1_000);
+        var longBytes = Allocation(2_000);
+        Assert.True(longBytes <= shortBytes * 2.5, $"Allocated {shortBytes} then {longBytes}");
+        Assert.True(Allocation(BudgetedLength) <= 256L * 1024 * 1024);
+    }
+
+    // Isolate the two CPU terms: end-to-end allocation and other linear work can mask their ratio.
+    public static TheoryData<string, string> ManyBodiesCases => new()
+    {
+        { "Posix", "heredocs" },
+        { "Unknown", "heredocs" },
+        { "Posix", "quoted heredocs" },
+        { "Unknown", "quoted heredocs" },
+        { "PowerShell", "here-strings" },
+        { "Unknown", "here-strings" },
+    };
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(ManyBodiesCases))]
+    public void CheckBypassAttempts_ManyBodies_TakesTimeLinearly(string dialect, string shape) =>
+        AssertTimeGrowsLinearly(CheckingBypassAttempts(dialect, shape), shape);
+
+    [Theory]
+    [MemberData(nameof(ManyBodiesCases))]
+    public void CheckBypassAttempts_ManyBodies_CoverageWitness(string dialect, string shape) =>
+        AnalyzeGrowthInputs(CheckingBypassAttempts(dialect, shape), shape);
+
+    private static Action<string> CheckingBypassAttempts(string dialect, string shape)
+    {
+        const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.NonPublic
+            | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance;
+        var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
+        var type = typeof(BashCommandAnalyzer);
+        var piecesMethod = type.GetMethod("CodePieces", flags)!;
+        var bypassMethod = type.GetMethod("CheckBypassAttempts", flags)!;
+        var inputs = new Dictionary<string, object[]>();
+        foreach (var text in GrowthInputs(shape))
+        {
+            var pieces = piecesMethod.Invoke(analyzer, [text])!;
+            var code = ((System.Collections.IEnumerable)pieces).Cast<object>()
+                .Select(piece => (string)piece.GetType().GetProperty("Code")!.GetValue(piece)!);
+            inputs[text] = [pieces, pieces, string.Join("; ", code), new BashAnalysisResult()];
+        }
+        return text => bypassMethod.Invoke(null, inputs[text]);
+    }
+
+    [Fact]
+    [Trait(PerformanceProof, ReleaseLane)]
+    public void PasswdModify_DistinctWrites_TakesTimeLinearly() =>
+        AssertTimeGrowsLinearly(PasswdModifyMatching(), "distinct writes");
+
+    [Fact]
+    public void PasswdModify_DistinctWrites_CoverageWitness() =>
+        AnalyzeGrowthInputs(PasswdModifyMatching(), "distinct writes");
+
+    private static Action<string> PasswdModifyMatching()
+    {
+        var pattern = (System.Text.RegularExpressions.Regex)typeof(BashCommandAnalyzer)
+            .GetMethod("PasswdModifyRegex", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+            .Invoke(null, null)!;
+        return text => pattern.IsMatch(text);
+    }
+
+    private const int Growth = 8;
+
+    // The proof's two inputs: an eighth of 100,000 characters and 100,000.
+    private static string[] GrowthInputs(string shape) =>
+        [LongShapes[shape](100_000 / Growth), LongShapes[shape](100_000)];
+
+    private static void AssertTimeGrowsLinearly(Action<string> analyze, string shape)
+    {
+        var inputs = GrowthInputs(shape);
+        var (shortInput, longInput) = (inputs[0], inputs[1]);
+        for (var warm = 0; warm < 3; warm++)
+        {
+            analyze(shortInput);
+            analyze(longInput);
+        }
+        var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
+        var wallBest = TimeSpan.MaxValue;
+
+        for (var round = 0; round < 7; round++)
+        {
+            shortBest = Min(shortBest, TimeAnalyses(analyze, shortInput, Growth).Cpu);
+            var full = TimeAnalyses(analyze, longInput, 1);
+            longBest = Min(longBest, full.Cpu);
+            wallBest = Min(wallBest, full.Wall);
+        }
+
+        var ratio = longBest / shortBest;
+        Assert.True(ratio < 2.5, $"one 8x input took {ratio:F2}x as long as eight short ones ({shortBest} vs {longBest})");
+        Assert.True(!ReleaseUninstrumented || wallBest <= TimeSpan.FromSeconds(1), $"Took {wallBest} at 100,000 characters");
+    }
+
+    // A Release proof's witness: each of its inputs read once, under coverage, with the check's own
+    // assertions. It claims nothing about time; the proof does, in the Release lane.
+    private static void AnalyzeGrowthInputs(string dialect, string shape) => AnalyzeGrowthInputs(Analyzing(dialect), shape);
+
+    private static void AnalyzeGrowthInputs(Action<string> analyze, string shape)
+    {
+        foreach (var input in GrowthInputs(shape))
+            analyze(input);
+    }
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(Dialects))]
+    public void Analyze_DistinctCommands_GrowLinearlyWithinTheBudget(string dialect)
+    {
+        AssertTimeGrowsLinearly(dialect, "distinct commands");
+        AssertDistinctCommandsAllocateLinearly(dialect);
+    }
+
+    [Theory]
+    [MemberData(nameof(Dialects))]
+    public void Analyze_DistinctCommands_CoverageWitness(string dialect)
+    {
+        AnalyzeGrowthInputs(dialect, "distinct commands");
+        AssertDistinctCommandsAllocateLinearly(dialect);
+    }
+
+    private static void AssertDistinctCommandsAllocateLinearly(string dialect)
+    {
+        var commands = LongShapes["distinct commands"];
+
+        Measure(dialect, commands(1_000));
+        var budgeted = Math.Min(Measure(dialect, commands(BudgetedLength)).Allocated,
+            Measure(dialect, commands(BudgetedLength)).Allocated);
+        var (half, _) = Measure(dialect, commands(50_000));
+        var (full, _) = Measure(dialect, commands(100_000));
+        Assert.True(budgeted <= AllocationBudget, $"Allocated {budgeted:N0} bytes at {BudgetedLength:N0} characters");
+        Assert.True(full <= 2.5 * half, $"Allocated {full:N0} bytes at 100,000 characters, {half:N0} at 50,000");
+        Assert.True(!ReleaseUninstrumented || full <= AllocationBudget, $"Allocated {full:N0} bytes at 100,000 characters");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SplitCommand_PreservesOrderAndDuplicatesWithinEachReading(bool dropComments)
+    {
+        Assert.Equal(new[] { "A", "a", "A", "a", "A", "A\ra", "A\ra" },
+            BashCommandAnalyzer.SplitCommand("A\ra;A\ra;A", dropComments));
+    }
+
+    // Allocation grows with the input, and the budgeted length stays within the budget. Coverage
+    // instrumentation charges the first analyses of a process with its own growing records, so a
+    // short input of the shape runs first, and the budgeted length is measured in two rounds, the
+    // smaller counting; uninstrumented, every round allocates alike.
+    [Theory]
+    [Trait(PerformanceProof, BothLanes)]
+    [InlineData("Posix", "heredocs")]
+    [InlineData("Unknown", "heredocs")]
+    [InlineData("Unknown", "cmd chain")]
+    [InlineData("Posix", "multiline quotes")]
+    [InlineData("PowerShell", "multiline quotes")]
+    [InlineData("Unknown", "multiline quotes")]
+    [InlineData("Posix", "nested multiline quotes")]
+    [InlineData("PowerShell", "nested multiline quotes")]
+    [InlineData("Unknown", "nested multiline quotes")]
+    public void Analyze_LongBodies_AllocateLinearlyWithinTheBudget(string dialect, string shape)
+    {
+        Measure(dialect, LongShapes[shape](1_000));
+        var budgeted = Math.Min(Measure(dialect, LongShapes[shape](BudgetedLength)).Allocated,
+            Measure(dialect, LongShapes[shape](BudgetedLength)).Allocated);
+        Assert.True(budgeted <= AllocationBudget, $"Allocated {budgeted:N0} bytes at {BudgetedLength:N0} characters");
+
+        var (half, _) = Measure(dialect, LongShapes[shape](50_000));
+        var (full, _) = Measure(dialect, LongShapes[shape](100_000));
+        Assert.True(full <= 2.5 * half, $"Allocated {full:N0} bytes at 100,000 characters, {half:N0} at 50,000");
+        Assert.True(!ReleaseUninstrumented || full <= AllocationBudget, $"Allocated {full:N0} bytes at 100,000 characters");
+    }
+
+    public static TheoryData<string, string> LongDataBodyCases => new()
+    {
+        { "Posix", "substitutions" },
+        { "PowerShell", "substitutions" },
+        { "Unknown", "substitutions" },
+        { "Posix", "pipeline" },
+        { "PowerShell", "pipeline" },
+        { "Unknown", "pipeline" },
+        { "Posix", "crlf" },
+        { "PowerShell", "crlf" },
+        { "Unknown", "crlf" },
+        { "Posix", "bodies" },
+        { "PowerShell", "bodies" },
+        { "Unknown", "bodies" },
+    };
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(LongDataBodyCases))]
+    public void NudgeClassifier_LongDataBodies_GrowLinearly(string dialect, string shape)
+    {
+        var shell = Enum.Parse<ShellDialect>(dialect);
+        TimeSpan Time(string text, int times)
+        {
+            var at = text.IndexOf("tail", StringComparison.Ordinal);
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            for (var i = 0; i < times; i++)
+                Assert.False(BashCommandAnalyzer.NudgeClassifier(text, shell)(at));
+            return watch.Elapsed;
+        }
+        var (shortInput, longInput) = (LongDataBody(shape, 12_500), LongDataBody(shape, 100_000));
+        Time(shortInput, 1);
+        Time(longInput, 1);
+        var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
+        for (var round = 0; round < 7; round++)
+        {
+            shortBest = Min(shortBest, Time(shortInput, 8));
+            longBest = Min(longBest, Time(longInput, 1));
+        }
+        Assert.True(longBest / shortBest < 2.5, $"one 8x input took {longBest / shortBest:F2}x ({shortBest} vs {longBest})");
+        Assert.True(!ReleaseUninstrumented || longBest <= TimeSpan.FromSeconds(1), $"Took {longBest} at 100,000 characters");
+    }
+
+    [Theory]
+    [MemberData(nameof(LongDataBodyCases))]
+    public void NudgeClassifier_LongDataBodies_CoverageWitness(string dialect, string shape)
+    {
+        var shell = Enum.Parse<ShellDialect>(dialect);
+        foreach (var text in new[] { LongDataBody(shape, 12_500), LongDataBody(shape, 100_000) })
+            Assert.False(BashCommandAnalyzer.NudgeClassifier(text, shell)(text.IndexOf("tail", StringComparison.Ordinal)));
+    }
+
+    private static string LongDataBody(string shape, int length)
+    {
+        var bodies = Enumerable.Range(0, (length - 18) / 32).ToArray();
+        return shape switch
+        {
+            "pipeline" => "cat <<E" + Repeat(" | cat", (length - 18) / 6) + "\ntail -f\nE\n",
+            "bodies" => "cat" + string.Concat(bodies.Select(i => $" <<E{i:D5}")) + " <<Z\n"
+                + string.Concat(bodies.Select(i => $"x\nE{i:D5}\n"))
+                + string.Concat(bodies.Select(i => $"$(echo {i:D5}) ")) + "tail -f\nZ\n",
+            _ => "cat <<E\n" + string.Concat(Enumerable.Range(0, (length - 18) / 15)
+                .Select(i => $"$(echo {i:D5})" + (shape == "crlf" ? "\r\n" : " "))) + "tail -f\nE\n",
+        };
+    }
+
+    // The one-second bound is Release's, uninstrumented: the product is optimized, and AltCover, which
+    // instruments it for coverage, is no reference of it.
+    private static readonly bool ReleaseUninstrumented =
+        typeof(BashCommandAnalyzer).Assembly.GetCustomAttributes(typeof(System.Diagnostics.DebuggableAttribute), false)
+            .Cast<System.Diagnostics.DebuggableAttribute>().All(attribute => !attribute.IsJITOptimizerDisabled)
+        && !typeof(BashCommandAnalyzer).Assembly.GetReferencedAssemblies()
+            .Any(name => name.Name?.StartsWith("AltCover", StringComparison.Ordinal) == true);
+
+    private static (TimeSpan Cpu, TimeSpan Wall) TimeAnalyses(Action<string> analyze, string command, int times)
+    {
+        // Compare both sizes from a collected heap. Otherwise a short batch occasionally avoids
+        // every promoted collection while the long batch inherits garbage from earlier samples.
+        // Collections triggered by the analyses remain inside the measured intervals.
+        GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var cpu = ThreadCpuTime.Now();
+        for (var i = 0; i < times; i++)
+            analyze(command);
+        return (ThreadCpuTime.Now() - cpu, stopwatch.Elapsed);
+    }
+
+    private static void AssertTooComplex(string dialect, string command, bool refused)
+    {
+        var (dangerous, reason) = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect)).CheckDangerousPatterns(command);
+
+        Assert.Equal(refused, dangerous);
+        Assert.Equal(refused ? "Command too complex to verify safely" : null, reason);
+    }
+
+    // echo, then levels of the opener, x and as many closers.
+    private static string UnquotedNesting(int levels) => "echo " + Repeat("$(", levels) + "x" + Repeat(")", levels);
+
+    private static string QuotedNesting(int levels) => "echo " + Repeat("\"$(", levels) + "x" + Repeat(")\"", levels);
+
+    // The command as the command string of that many bash -c, each single-quoted as Python's shlex.quote does.
+    private static string InShells(string command, int shells) =>
+        Enumerable.Range(0, shells).Aggregate(command, (inner, _) => "bash -c '" + inner.Replace("'", "'\"'\"'") + "'");
+
+    private static (long Allocated, TimeSpan Elapsed) Measure(string dialect, string command)
+    {
+        var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
+        analyzer.Analyze("echo ready");
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        analyzer.Analyze(command);
+        stopwatch.Stop();
+        return (GC.GetAllocatedBytesForCurrentThread() - before, stopwatch.Elapsed);
+    }
+
+    // The opener repeated, then y and the closer as often, to about length characters.
+    private static string Nesting(string opener, string closer, int length)
+    {
+        var levels = (length - 10) / (opener.Length + closer.Length);
+        return "printf x " + Repeat(opener, levels) + "y" + Repeat(closer, levels);
+    }
+
+    private static string Repeat(string unit, int count) => string.Concat(Enumerable.Repeat(unit, count));
 
     #endregion
 }

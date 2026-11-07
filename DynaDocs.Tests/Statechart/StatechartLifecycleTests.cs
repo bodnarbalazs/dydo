@@ -13,17 +13,17 @@ public class StatechartLifecycleTests
     }
 
     // The cleanup helper's protocol and scratch handling are portable; only its native owner, the Job Object, is Windows-only.
-    private static Process Cleanup(string nonce, string root)
+    private static Process Cleanup(string nonce, StatechartTestDirectory scope, string? stageParent = null)
     {
         var start = StatechartTestBinary.Start();
         start.ArgumentList.Add("__statechart-cleanup");
-        foreach (var argument in new[] { nonce, root, root, root }) start.ArgumentList.Add(argument);
+        foreach (var argument in new[] { nonce, stageParent ?? scope.Path, scope.Path, scope.Path }) start.ArgumentList.Add(argument);
         start.UseShellExecute = false;
         start.CreateNoWindow = true;
         start.RedirectStandardInput = true;
         start.RedirectStandardOutput = true;
         start.RedirectStandardError = true;
-        return Process.Start(start)!;
+        return scope.Own(Process.Start(start)!);
     }
 
     // Reserves and registers through a helper, returning the scratch it created.
@@ -58,9 +58,14 @@ public class StatechartLifecycleTests
     {
         using var scope = new StatechartTestDirectory();
         var lifetime = await WindowsStatechartLifetime.StartAsync(Binary(), scope.Path, scope.Path, scope.Path);
-        await lifetime.RegisterAsync();
-        var stage = lifetime.Stage;
-        await lifetime.DisposeAsync();
+        string stage;
+        // The owner's EOF is the subject, so it is disposed here, and also when registration throws, before the scope.
+        try
+        {
+            await lifetime.RegisterAsync();
+            stage = lifetime.Stage;
+        }
+        finally { await lifetime.DisposeAsync(); }
         Assert.True(Directory.Exists(stage));
         Assert.All(Directory.GetFiles(scope.Path, "scratch-*.journal"), file =>
             Assert.Contains("drain uncertain", File.ReadAllText(file)));
@@ -129,7 +134,7 @@ public class StatechartLifecycleTests
     {
         using var scope = new StatechartTestDirectory();
         var nonce = Guid.NewGuid().ToString("N");
-        using var helper = Cleanup(nonce, scope.Path);
+        var helper = Cleanup(nonce, scope);
         Assert.Equal("ready:1:" + nonce, await StatechartCleanup.Read(helper.StandardOutput));
         if (reserve)
         {
@@ -149,7 +154,7 @@ public class StatechartLifecycleTests
     {
         using var scope = new StatechartTestDirectory();
         var nonce = Guid.NewGuid().ToString("N");
-        using var helper = Cleanup(nonce, scope.Path);
+        var helper = Cleanup(nonce, scope);
         var (stage, temp) = await Register(helper, nonce);
         File.WriteAllText(Path.Combine(stage, "owned-file"), "checking");
         Directory.CreateDirectory(Path.Combine(temp, "owned-directory"));
@@ -171,7 +176,7 @@ public class StatechartLifecycleTests
     {
         using var scope = new StatechartTestDirectory();
         var nonce = Guid.NewGuid().ToString("N");
-        using var helper = Cleanup(nonce, scope.Path);
+        var helper = Cleanup(nonce, scope);
         var (stage, temp) = await Register(helper, nonce);
         if (forged) await StatechartCleanup.Say(helper.StandardInput, "drained:" + Guid.NewGuid().ToString("N"));
         helper.StandardInput.Close();
@@ -188,7 +193,12 @@ public class StatechartLifecycleTests
     {
         using var scope = new StatechartTestDirectory();
         var nonce = Guid.NewGuid().ToString("N");
-        using var helper = Cleanup(nonce, scope.Path);
+        if (OperatingSystem.IsWindows())
+        {
+            await ARegisteredScratchPathCannotBeReplacedOnWindows(scope, nonce);
+            return;
+        }
+        var helper = Cleanup(nonce, scope);
         var (stage, _) = await Register(helper, nonce);
         Directory.Move(stage, stage + "-registered");
         Directory.CreateDirectory(stage);
@@ -203,11 +213,35 @@ public class StatechartLifecycleTests
             File.ReadAllText(file).Contains("retained: directory path identity changed; foreign replacement retained"));
     }
 
+    // Windows refuses the replacement itself: the registered handle denies delete sharing, and a directory above an
+    // open handle cannot be renamed. So nothing foreign can take the path, and only the drain deletes the scratch.
+    private static async Task ARegisteredScratchPathCannotBeReplacedOnWindows(StatechartTestDirectory scope, string nonce)
+    {
+        const int sharingViolation = unchecked((int)0x80070020), accessDenied = unchecked((int)0x80070005);
+        var parent = Directory.CreateDirectory(Path.Combine(scope.Path, "parent")).FullName;
+        var helper = Cleanup(nonce, scope, parent);
+        var (stage, temp) = await Register(helper, nonce);
+        Assert.Equal(sharingViolation, Assert.Throws<IOException>(() => Directory.Move(stage, stage + "-registered")).HResult);
+        Assert.Equal(sharingViolation, Assert.Throws<IOException>(() => Directory.Delete(stage)).HResult);
+        Assert.Equal(accessDenied, Assert.Throws<IOException>(() => Directory.Move(parent, parent + "-moved")).HResult);
+        Assert.True(Directory.Exists(stage));
+        await StatechartCleanup.Say(helper.StandardInput, "drained:" + nonce);
+        Assert.Equal("cleaned:" + nonce, await StatechartCleanup.Read(helper.StandardOutput));
+        await helper.WaitForExitAsync();
+        Assert.Equal(0, helper.ExitCode);
+        Assert.False(Directory.Exists(stage));
+        Assert.False(Directory.Exists(temp));
+        Assert.False(Directory.Exists(stage + "-registered"));
+        Assert.Equal(2, Directory.GetFiles(scope.Path, "scratch-*.journal").Length);
+        Assert.All(Directory.GetFiles(scope.Path, "scratch-*.journal"), file =>
+            Assert.EndsWith("registered\ndeleted-after-authoritative-drain\n", File.ReadAllText(file)));
+    }
+
     [Fact]
     public async Task AHelperWithoutAValidChannelNonceReservesNothing()
     {
         using var scope = new StatechartTestDirectory();
-        using var helper = Cleanup("not-a-nonce", scope.Path);
+        var helper = Cleanup("not-a-nonce", scope);
         var errors = helper.StandardError.ReadToEndAsync();
         Assert.Null(await StatechartCleanup.Read(helper.StandardOutput));
         await helper.WaitForExitAsync();

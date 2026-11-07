@@ -50,8 +50,9 @@ It replaces a classifier hint that Claude Code applied by judgment, for Claude a
   step 4. In `overnight-mode`, standing order 3 routes feature merges through the captain's Merge
   chain and `dydo merge`; genuine Claude/Codex merge and approval parity remains pending in DYD-426.
 
-Guard hard blocks for raw `gh pr merge`, `gh api` merge paths, GraphQL merge mutations, pushes to the
-default branch and default-branch changes are planned, delivery pending in DYD-425. The genuine
+At this command delivery, guard hard blocks for raw `gh pr merge`, `gh api` merge paths, GraphQL merge
+mutations, pushes to the default branch and default-branch changes were pending in DYD-425. They
+subsequently shipped in the [November 4 guard delivery](../2026-11-04/dyd-425-guard-merge-blocks.md). The genuine
 Claude bash/Codex PowerShell parity gate is planned, pending in DYD-426; allow-rule delivery does not
 satisfy it.
 
@@ -79,6 +80,30 @@ NativeAOT binaries embed the patched runtime and need no separate .NET shared ru
 6. Run `dydo adopt 3.6.0` last, once `dydo check` exits 0 and the update is proven.
 
 No change in this entry renames a term mechanically, so it has no merge normalisations.
+
+## Install from source
+
+Use the repository's .NET 10 SDK, Node.js and pnpm versions. The .NET tool also needs runtime
+10.0.14 or later. From the repository root, build the viewer before packing:
+
+```sh
+pnpm -C viewer install --frozen-lockfile
+pnpm -C viewer run build
+dotnet restore --locked-mode
+dotnet pack DynaDocs.csproj --no-restore -c Release --output ./artifacts/source-package
+dotnet tool install dydo --tool-path ./artifacts/source-tool --source ./artifacts/source-package
+./artifacts/source-tool/dydo --version
+```
+
+The tool installs into this checkout; on Windows run `./artifacts/source-tool/dydo.exe --version`.
+Use a fresh output directory and tool path for each source build. `--source` restricts installation
+to the local package feed.
+
+Tool packing now fails with viewer build instructions if `viewer/dist/index.html` is absent. It
+also rejects an assembly that lacks the embedded viewer, even when the bundle was built later and
+`dotnet pack --no-build` would otherwise reuse that assembly. Rebuild by packing without
+`--no-build` after building the viewer. Ordinary `dotnet build` and test runs still work without
+the viewer; they do not install or build JavaScript dependencies automatically.
 
 ## Files Changed
 

@@ -14,7 +14,7 @@
       ]
     },
     "DynaDocs.Tests/coverage/run_tests.py": {
-      "sha256": "66ba26ce9f71c1698fa1bb4db68bb54f593e4de08615a4da239c88c18816f4c8",
+      "sha256": "b3b523ce499f5206e8e55940751b0ccedccafb1c404da2ba80c6d18ad590a667",
       "windows": [
         "_join_kill_on_close_job",
         "_end_member",

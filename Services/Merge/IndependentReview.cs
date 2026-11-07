@@ -6,10 +6,13 @@ using System.Text.RegularExpressions;
 /// The reviewer verdicts in a PR body's <c>## Independent review</c> section, where doctrine puts them
 /// verbatim: every line starting <c>PASS</c> or <c>FAIL</c>, a hyphen, en dash or em dash, then
 /// <c>rubric/type:</c>, fenced or not. Of the fields after the rubric only <c>candidate</c> and
-/// <c>base</c> are read, each the first of its kind, possibly backticked; any may be missing.
+/// <c>base</c> are read, each the first of its kind, with an optional colon and possibly backticked;
+/// any may be missing.
 /// </summary>
 internal static partial class IndependentReview
 {
+    public static bool HasSection(string body) => SectionRegex().IsMatch(body);
+
     public static List<ReviewVerdict> Parse(string body)
     {
         var section = SectionRegex().Match(body);
@@ -37,9 +40,9 @@ internal static partial class IndependentReview
     private static partial Regex VerdictRegex();
 
     // A field starts after a semicolon, so prose in Checks naming a "candidate" is not one.
-    [GeneratedRegex(@";[ \t]*candidate[ \t]+`?(?<sha>[0-9A-Fa-f]{7,40})\b")]
+    [GeneratedRegex(@";[ \t]*candidate:?[ \t]+`?(?<sha>[0-9A-Fa-f]{7,40})\b")]
     private static partial Regex CandidateRegex();
 
-    [GeneratedRegex(@";[ \t]*base[ \t]+`?(?<sha>[0-9A-Fa-f]{7,40})\b")]
+    [GeneratedRegex(@";[ \t]*base:?[ \t]+`?(?<sha>[0-9A-Fa-f]{7,40})\b")]
     private static partial Regex BaseRegex();
 }

@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Run this project's declared tests and assurance gates without a shell."""
+import atexit
+from contextlib import contextmanager
+import ctypes as c
 import hashlib
 import json
 import os
+import re
 import signal
 import shutil
 import subprocess
@@ -16,12 +20,62 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 
-def interrupt(_signum, _frame):
-    raise KeyboardInterrupt
+interrupted = False
+interrupt_deferred = False
+interrupt_handlers = {}
+completed_publication = None
 
 
-if sys.platform == "win32":
-    signal.signal(signal.SIGBREAK, interrupt)
+def interrupt(signum, frame):
+    """Honor the caller's handler, but own its KeyboardInterrupt through cleanup and handoff.
+
+    A completed run retains publication ownership: the return opcode can already have loaded
+    an exit code, so a late signal must publish and exit here rather than return that stale code.
+    Further interrupts cannot abort cleanup or publication.
+    """
+    global interrupted
+    if interrupted:
+        return
+    try:
+        interrupt_handlers.get(signum, signal.default_int_handler)(signum, frame)
+    except KeyboardInterrupt:
+        interrupted = True
+    else:
+        return
+    if completed_publication is not None:
+        try:
+            completed_publication()
+        except (ContractError, OSError) as error:
+            print(f"Invalid request or artifact destination: {error}", file=sys.stderr)
+        raise SystemExit(130)
+    if not interrupt_deferred:
+        raise KeyboardInterrupt
+
+
+def install_interrupt_handlers():
+    for signum in (signal.SIGINT, *([signal.SIGBREAK] if sys.platform == "win32" else [])):
+        handler = signal.getsignal(signum)
+        if handler in (signal.SIG_IGN, interrupt):
+            continue
+        interrupt_handlers[signum] = handler if callable(handler) else signal.default_int_handler
+        signal.signal(signum, interrupt)
+
+
+@contextmanager
+def defer_interrupt(deferred=True):
+    """Record signals without unwinding ownership changes; never change the child's signal mask.
+
+    The caller checks `interrupted` at its next safe boundary. Waiting for an owned child opts
+    back into delivery so cancellation can stop it promptly.
+    """
+    global interrupt_deferred
+    previous = interrupt_deferred
+    interrupt_deferred = deferred
+    try:
+        yield
+    finally:
+        interrupt_deferred = previous
+
 
 CAPS = ("test", "static", "coverage", "mutation")
 EXITS = {"passed": 0, "failed": 1, "unavailable": 2, "invalid": 2, "interrupted": 130}
@@ -29,6 +83,14 @@ EXECUTION_SECONDS_MAXIMUM = 1800
 CLEANUP_SECONDS = 30
 REAP_SECONDS = 1
 ROW_DEADLINE_ENV = "DYDO_ROW_DEADLINE"
+MEMORY_MAX_ENV = "DYDO_MEMORY_MAX"
+MEMORY_MAX_DEFAULT = 8 * 1024 ** 3
+# Set only for the operation's own rerun under systemd-run, which removes it before any child starts.
+MEMORY_SCOPE_ENV = "DYDO_MEMORY_CAP_SCOPE"
+MEMORY_UNITS = {"": 1, "K": 1024, "M": 1024 ** 2, "G": 1024 ** 3, "T": 1024 ** 4}
+CGROUP_ROOT = Path("/sys/fs/cgroup")
+SELF_CGROUP = Path("/proc/self/cgroup")
+SYSTEMD_SECONDS = 30
 HELP = """Usage: gap_check.py [--force-run] [operation] [options] [-- native arguments]
 
 Project testing facade. It runs manifest argv vectors directly; it never invokes a shell.
@@ -47,6 +109,8 @@ Examples: test --stack dotnet -- --filter FullyQualifiedName~ParserTests
           gate mutation --since BASE --stack dotnet
  Exit 0 is pass, 1 measured failure, 2 invalid or unavailable work, and 130 interruption
 after adapter cleanup. Results record candidate identity, argv, cwd, isolation, evidence, and artifacts.
+Operations that run children are capped at 8G by a Windows job or, with swap off, Linux systemd;
+DYDO_MEMORY_MAX may only lower the cap. A reported hit fails the row; Windows reporting is best-effort.
 """
 
 
@@ -279,6 +343,34 @@ def artifact_snapshot(root, value):
     return snapshot
 
 
+def held(call, *args):
+    """Make one Popen call with SIGINT held. An interrupt raised inside POSIX Popen after it takes
+    its waitpid lock leaks the lock, and the facade can then never reap an exited adapter. Held, the
+    interrupt surfaces here once the call returns. Windows Popen reaps by handle and takes no lock.
+    The mask is the calling thread's: this holds only while the facade's main thread is the one
+    thread a process-directed SIGINT can reach, so the facade must start no thread that leaves it
+    unblocked."""
+    if not hasattr(signal, "pthread_sigmask") or signal.SIGINT in signal.pthread_sigmask(signal.SIG_BLOCK, ()):
+        return call(*args)
+    try:
+        signal.pthread_sigmask(signal.SIG_BLOCK, (signal.SIGINT,))
+        return call(*args)
+    finally:
+        signal.pthread_sigmask(signal.SIG_UNBLOCK, (signal.SIGINT,))
+
+
+def exit_confirmed(child, deadline):
+    """Wait in short held slices, so an interrupt surfaces between them, never inside the reap."""
+    while held(child.poll) is None:
+        if time.monotonic() >= deadline:
+            return False
+        try:
+            held(child.wait, min(0.2, max(0, deadline - time.monotonic())))
+        except subprocess.TimeoutExpired:
+            pass
+    return True
+
+
 def kill_child(child):
     if sys.platform == "win32":
         child.kill()
@@ -287,21 +379,23 @@ def kill_child(child):
             os.killpg(child.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
-    try:
-        child.wait(timeout=REAP_SECONDS)
-    except subprocess.TimeoutExpired:
-        pass  # Stuck in the kernel: the reap stays unconfirmed and returncode stays None.
+    # Stuck in the kernel: the reap stays unconfirmed and returncode stays None.
+    exit_confirmed(child, time.monotonic() + REAP_SECONDS)
 
 
 def stop_child(child, deadline):
+    if child.returncode is not None:
+        return  # Already reaped: its pid, and so its process group, may belong to another process.
     try:
         if sys.platform == "win32":
             child.send_signal(signal.CTRL_BREAK_EVENT)
         else:
             os.killpg(child.pid, signal.SIGINT)
-        child.wait(timeout=max(0, deadline - time.monotonic()))
-    except (OSError, subprocess.TimeoutExpired):
-        kill_child(child)
+        if exit_confirmed(child, deadline):
+            return
+    except OSError:
+        pass
+    kill_child(child)
 
 
 def stopped(reason, child):
@@ -310,16 +404,11 @@ def stopped(reason, child):
 
 def wait_for_child(child, capability, deadline):
     execution_deadline = deadline if capability != "test" else deadline - CLEANUP_SECONDS
-    while child.poll() is None and time.monotonic() < execution_deadline:
-        try:
-            child.wait(timeout=min(0.2, max(0, execution_deadline - time.monotonic())))
-        except subprocess.TimeoutExpired:
-            pass
+    exit_confirmed(child, execution_deadline)
     # The clock is read after the exit is observed, so an exit that races the deadline is deadline-exceeded.
     if time.monotonic() < execution_deadline:
         return True
-    if child.returncode is None:
-        stop_child(child, deadline)
+    stop_child(child, deadline)
     return False
 
 
@@ -354,13 +443,21 @@ def run_row(stack, capability, root, since, forwarded, deadline):
         working_directory = contained(root, stack["cwd"])
         before = {item["path"]: artifact_snapshot(root, item["path"]) for item in artifacts
                   if item["required"] and capability != "test"}
-        child = subprocess.Popen(argv, executable=resolve_executable(argv[0], working_directory), cwd=working_directory, env={**os.environ, "PYTHON": sys.executable, **environment}, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
-                                 start_new_session=sys.platform != "win32")
-        if not wait_for_child(child, capability, deadline):
+        with defer_interrupt():
+            if not interrupted:
+                child = subprocess.Popen(argv, executable=resolve_executable(argv[0], working_directory), cwd=working_directory, env={**os.environ, "PYTHON": sys.executable, **environment}, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
+                                         start_new_session=sys.platform != "win32")
+        with defer_interrupt(False):
+            if interrupted:
+                raise KeyboardInterrupt
+            finished = wait_for_child(child, capability, deadline)
+        if not finished:
             return result(stack, capability, "interrupted", argv=argv, environment=environment,
                           childExit=child.returncode, artifacts=artifacts,
                           reason=stopped("row deadline exceeded after adapter cleanup", child))
         error = artifact_error(root, capability, artifacts, before)
+        if interrupted:
+            raise KeyboardInterrupt
         if error:
             return result(stack, capability, "invalid", argv=argv, environment=environment,
                           childExit=child.returncode, artifacts=artifacts, reason=error)
@@ -430,6 +527,9 @@ def diagnosis_text(finding):
 
 
 def suite_verdict(root, stack, coverage_row):
+    if coverage_row.get("memoryCapHit"):
+        return result(stack, "test", "failed", memoryCapHit=True,
+                      reason=f"test verdict derived from the coverage row: {coverage_row['reason']}")
     state = coverage_row["state"]
     if state == "interrupted":
         return result(stack, "test", "interrupted",
@@ -559,38 +659,356 @@ def print_row(current):
     print(f"{current['stack']} {current['capability']}: {current['state'].upper()}{child}{reason}", flush=True)
 
 
-def execute_rows(selected, capabilities, root, since, forwarded):
-    rows = []
-    for stack in selected:
-        deferred = None
-        for capability in capabilities:
-            if capability == "test" and deferral_applies(stack, capabilities, root):
-                deferred = len(rows)
-                rows.append(result(stack, "test", "interrupted", reason=INTERRUPTED_BEFORE_COVERAGE))
-                continue
-            deadline = time.monotonic() + EXECUTION_SECONDS_MAXIMUM + CLEANUP_SECONDS
-            current = run_row(stack, capability, root, since, forwarded, deadline)
-            rows.append(current)
-            print_row(current)
-            if deferred is not None and capability == "coverage":
-                derived = suite_verdict(root, stack, current)
-                rows[deferred] = derived
-                deferred = None
-                print_row(derived)
-            if current["state"] == "interrupted":
-                break
-        if deferred is not None:
-            print_row(rows[deferred])
-        if rows[-1]["state"] == "interrupted":
-            break
+def memory_size(value):
+    unit = next(unit for unit in ("T", "G", "M", "K", "") if value % MEMORY_UNITS[unit] == 0)
+    return f"{value // MEMORY_UNITS[unit]}{unit}"
+
+
+def memory_target():
+    """The cap in bytes: the default, or a lower DYDO_MEMORY_MAX in systemd size syntax."""
+    text = os.environ.get(MEMORY_MAX_ENV)
+    if text is None:
+        return MEMORY_MAX_DEFAULT
+    match = re.fullmatch(r"(\d+(?:\.\d+)?)([KMGT]?)", text)
+    limit = int(float(match[1]) * MEMORY_UNITS[match[2]]) if match else 0
+    if limit <= 0:
+        raise ContractError(f"{MEMORY_MAX_ENV} must be a positive systemd size such as 256M or 4G, not {text!r}")
+    if limit > MEMORY_MAX_DEFAULT:
+        raise ContractError(f"{MEMORY_MAX_ENV}={text} is above the {memory_size(MEMORY_MAX_DEFAULT)} default: "
+                            "a cap hit is a finding; raising the cap is not allowed")
+    return limit
+
+
+def cgroup_number(directory, name):
+    """A cgroup v2 byte count; None for `max` or an unreadable file."""
+    try:
+        return int((directory / name).read_text(encoding="ascii"))
+    except (OSError, UnicodeError, ValueError):
+        return None
+
+
+def oom_kills(directory):
+    try:
+        fields = dict(line.split(" ", 1) for line in (directory / "memory.events").read_text(encoding="ascii").splitlines())
+        return int(fields["oom_kill"])
+    except (OSError, UnicodeError, ValueError, KeyError):
+        return None
+
+
+def cgroup_ancestry():
+    """This process's cgroup v2 directory, then each ancestor below the root; empty without cgroup v2."""
+    try:
+        lines = SELF_CGROUP.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError):
+        return []
+    relative = next((line[3:].lstrip("/") for line in lines if line.startswith("0::/")), None)
+    if relative is None:
+        return []
+    leaf = CGROUP_ROOT / relative
+    return [leaf, *(parent for parent in leaf.parents if parent.is_relative_to(CGROUP_ROOT) and parent != CGROUP_ROOT)]
+
+
+def caller_slice(ancestry):
+    """Nearest slice below the user manager; system-manager slices cannot be joined with --user."""
+    manager = next((index for index, directory in enumerate(ancestry)
+                    if re.fullmatch(r"user@\d+\.service", directory.name)), 0)
+    return next((directory.name for directory in ancestry[:manager] if directory.name.endswith(".slice")), "app.slice")
+
+
+def oom_policy_continues(directory):
+    """Whether the unit owning `directory` keeps its scope alive after an OOM kill; unknown is stop."""
+    systemctl = shutil.which("systemctl")
+    if systemctl is None:
+        return False
+    try:
+        shown = subprocess.run([systemctl, "--user", "show", "-p", "OOMPolicy", "--value", directory.name],
+                               stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=SYSTEMD_SECONDS)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return shown.returncode == 0 and shown.stdout.strip() == "continue"
+
+
+class JobBasicLimits(c.Structure):
+    # Fixed-width Windows DWORDs also let the mocked API exercise the ABI on Unix.
+    _fields_ = [("process_time", c.c_int64), ("job_time", c.c_int64),
+                ("flags", c.c_uint32), ("min_ws", c.c_size_t), ("max_ws", c.c_size_t),
+                ("active_limit", c.c_uint32), ("affinity", c.c_size_t),
+                ("priority", c.c_uint32), ("scheduling", c.c_uint32)]
+
+
+class JobLimits(c.Structure):
+    _fields_ = [("basic", JobBasicLimits), ("io", c.c_uint64 * 6),
+                ("process_memory", c.c_size_t), ("job_memory", c.c_size_t),
+                ("peak_process", c.c_size_t), ("peak_job", c.c_size_t)]
+
+
+class JobPort(c.Structure):
+    _fields_ = [("key", c.c_void_p), ("port", c.c_void_p)]
+
+
+def job_api():
+    kernel = c.WinDLL("kernel32", use_last_error=True)
+    handle, dword, boolean = c.c_void_p, c.c_uint32, c.c_int32
+    specifications = {
+        "GetCurrentProcess": ([], handle),
+        "IsProcessInJob": ([handle, handle, c.POINTER(boolean)], boolean),
+        "CreateJobObjectW": ([handle, c.c_wchar_p], handle),
+        "SetInformationJobObject": ([handle, c.c_int, handle, dword], boolean),
+        "QueryInformationJobObject": ([handle, c.c_int, handle, dword, handle], boolean),
+        "AssignProcessToJobObject": ([handle, handle], boolean),
+        "CreateIoCompletionPort": ([handle, handle, c.c_size_t, dword], handle),
+        "GetQueuedCompletionStatus": ([handle, c.POINTER(dword), c.POINTER(c.c_size_t),
+                                        c.POINTER(handle), dword], boolean),
+        "CloseHandle": ([handle], boolean),
+    }
+    for name, (arguments, result_type) in specifications.items():
+        function = getattr(kernel, name)
+        function.argtypes, function.restype = arguments, result_type
+    return kernel
+
+
+def job_checked(value):
+    if not value:
+        raise c.WinError(c.get_last_error())
+    return value
+
+
+class WindowsMemoryJob:
+    """Own the nested cap and its port for this process's lifetime; never kill job members."""
+
+    def __init__(self, target):
+        self.kernel = job_api()
+        self.job = self.port = None
+        self.hits = 0
+        try:
+            process = self.kernel.GetCurrentProcess()
+            in_job = c.c_int32()
+            job_checked(self.kernel.IsProcessInJob(process, None, c.byref(in_job)))
+            outer = self.limits(None) if in_job.value else JobLimits()
+            self.limit = min(target, outer.job_memory) if outer.basic.flags & 0x200 else target
+            self.job = job_checked(self.kernel.CreateJobObjectW(None, None))
+            self.port = job_checked(self.kernel.CreateIoCompletionPort(c.c_void_p(-1), None, 0, 1))
+            association = JobPort(self.job, self.port)
+            job_checked(self.kernel.SetInformationJobObject(self.job, 7, c.byref(association), c.sizeof(association)))
+            limits = JobLimits()
+            limits.basic.flags, limits.job_memory = 0x200, self.limit  # JOB_OBJECT_LIMIT_JOB_MEMORY only.
+            job_checked(self.kernel.SetInformationJobObject(self.job, 9, c.byref(limits), c.sizeof(limits)))
+            job_checked(self.kernel.AssignProcessToJobObject(self.job, process))
+        except OSError:
+            self.close()
+            raise
+        atexit.register(self.close)
+
+    def close(self):
+        for handle in (self.job, self.port):
+            if handle:
+                self.kernel.CloseHandle(handle)
+        self.job = self.port = None
+
+    def limits(self, job):
+        limits = JobLimits()
+        job_checked(self.kernel.QueryInformationJobObject(job, 9, c.byref(limits), c.sizeof(limits), None))
+        return limits
+
+    def delivered_hits(self):
+        message, key, overlapped = c.c_uint32(), c.c_size_t(), c.c_void_p()
+        while self.kernel.GetQueuedCompletionStatus(self.port, c.byref(message), c.byref(key), c.byref(overlapped), 0):
+            if message.value == 10 and key.value == self.job:  # JOB_OBJECT_MSG_JOB_MEMORY_LIMIT.
+                self.hits += 1
+        error = c.get_last_error()
+        if error != 258:  # WAIT_TIMEOUT is the normal end of a nonblocking drain.
+            raise c.WinError(error)
+        return self.hits
+
+
+class MemoryCap:
+    """The operation's cap record and per-row evidence: Linux OOM kills or Windows messages."""
+
+    def __init__(self, state, limit=None, mechanism=None, reason=None, cgroup=None, job=None):
+        self.record = {"state": state, "limit": limit, "mechanism": mechanism, "reason": reason}
+        reporting = {"linux": "exact", "win32": "best-effort"}.get(sys.platform)
+        if reporting:
+            self.record["memoryCapHitReporting"] = reporting
+        self.cgroup = cgroup
+        self.job = job
+
+    def job_unavailable(self, error):
+        if self.record["state"] != "unavailable":
+            reason = f"windows job object: {error}"
+            print(f"memory cap unavailable: {reason}; this operation continues", file=sys.stderr, flush=True)
+            self.record.update(MemoryCap("unavailable", reason=reason).record)
+
+    def kills(self):
+        if self.job:
+            try:
+                return self.job.delivered_hits() if self.record["state"] != "unavailable" else None
+            except OSError as error:
+                self.job_unavailable(error)
+                return None
+        return oom_kills(self.cgroup) if self.cgroup else None
+
+    def finding(self, before):
+        """A positive cap-hit observation since `before`; missing Windows messages prove nothing."""
+        after = self.kills()
+        if before is None or after is None or after <= before:
+            return None
+        limit = f"MemoryMax={memory_size(self.record['limit'])}"
+        if self.cgroup:
+            limit = f"configured scope limit {limit}; an enclosing slice budget may have triggered the kill"
+        return f"memory cap hit ({limit}): a finding; do not raise the cap"
+
+    def annotated(self, row, source=None):
+        """Carry cap metadata on executed, deferred and derived rows alike."""
+        if "memoryCapHitReporting" in self.record:
+            row = {**row, "memoryCapHitReporting": self.record["memoryCapHitReporting"]}
+        if self.record.get("memoryCapHitReporting") == "best-effort":
+            row = {**row, "peakJobMemory": (source or row).get("peakJobMemory")}
+        return row
+
+    def judged(self, row, before):
+        """A reported hit wins over every row outcome. Peak memory is diagnostic only."""
+        finding = self.finding(before)
+        row = self.annotated(row)
+        if self.job:
+            try:
+                row["peakJobMemory"] = self.job.limits(self.job.job).peak_job
+            except OSError as error:
+                self.job_unavailable(error)
+        if finding is None:
+            return row
+        print(f"{row['stack']} {row['capability']}: {finding}", file=sys.stderr, flush=True)
+        return {**row, "state": "failed", "resultExit": EXITS["failed"], "memoryCapHit": True, "reason": finding}
+
+
+def uncapped(reason):
+    print(f"memory cap unavailable: {reason}; this operation runs uncapped", file=sys.stderr, flush=True)
+    return MemoryCap("unavailable", reason=reason)
+
+
+def rerun_cap(ancestry):
+    """The rerun under systemd-run confirms its own scope; it never wraps a second time."""
+    leaf = ancestry[0] if ancestry else None
+    limit = cgroup_number(leaf, "memory.max") if leaf else None
+    if limit is None or cgroup_number(leaf, "memory.swap.max") != 0:
+        return uncapped("systemd-run started this operation, but its cgroup shows no memory cap")
+    return MemoryCap("enforced", limit, "systemd-run --user --scope",
+                     f"MemoryMax={memory_size(limit)} MemorySwapMax=0 OOMPolicy=continue "
+                     f"slice={caller_slice(ancestry)} on {leaf}", leaf)
+
+
+def enforce(limit, ancestry):
+    """Rerun this operation once, unchanged, inside a new capped scope; return only when that cannot start."""
+    systemd_run = shutil.which("systemd-run")
+    if systemd_run is None:
+        return uncapped("systemd-run is not on PATH")
+    slice_name = caller_slice(ancestry)
+    slice_option = [f"--slice={slice_name}"] if slice_name != "app.slice" else []
+    # OOMPolicy=continue keeps the facade alive to record a row's cap hit; expansion off keeps `$` literal.
+    wrap = [systemd_run, "--user", "--scope", *slice_option, "--quiet", "-p", f"MemoryMax={limit}", "-p", "MemorySwapMax=0",
+            "-p", "OOMPolicy=continue", "--expand-environment=no", "--"]
+    try:
+        probe = subprocess.run([*wrap, "true"], stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                               timeout=SYSTEMD_SECONDS)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return uncapped(f"systemd-run cannot start a capped scope: {error}")
+    if probe.returncode != 0:
+        detail = probe.stderr.strip().splitlines()[-1:] or ["no diagnostic"]
+        return uncapped(f"systemd-run cannot start a capped scope (exit {probe.returncode}): {detail[0]}")
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os.environ[MEMORY_SCOPE_ENV] = "1"
+    os.execv(systemd_run, [*wrap, sys.executable, *sys.orig_argv[1:]])
+
+
+def memory_cap():
+    """Cap this operation before it starts a child. Inside an outer scope that already caps it as
+    tightly, with swap off and OOMPolicy=continue, the cap is inherited; otherwise the operation
+    reruns under systemd-run in the caller's slice at the tighter of the target and any ancestor
+    limit. Concurrent runs share that slice's budget. Windows always creates its own nested job.
+    Unavailable caps are recorded and warned once."""
+    names = {name.upper(): name for name in os.environ} if sys.platform == "win32" else {}
+    for name, value in (("MSBUILDDISABLENODEREUSE", "1"), ("DOTNET_CLI_USE_MSBUILD_SERVER", "0"),
+                        ("UseSharedCompilation", "false")):
+        os.environ.setdefault(names.get(name.upper(), name), value)
+    target = memory_target()
+    rerun = os.environ.pop(MEMORY_SCOPE_ENV, None)
+    if sys.platform == "win32":
+        try:
+            job = WindowsMemoryJob(target)
+        except OSError as error:
+            return uncapped(f"windows job object: {error}")
+        return MemoryCap("enforced", job.limit, "windows job object",
+                         f"JOB_OBJECT_LIMIT_JOB_MEMORY={memory_size(job.limit)} in the facade's nested job", job=job)
+    if sys.platform != "linux":
+        return uncapped(f"{sys.platform} has no systemd memory cap; each row keeps its {EXECUTION_SECONDS_MAXIMUM} s deadline")
+    ancestry = cgroup_ancestry()
+    if rerun is not None:
+        return rerun_cap(ancestry)
+    limits = [(limit, directory) for directory in ancestry
+              if (limit := cgroup_number(directory, "memory.max")) is not None]
+    tightest, capping = min(limits, key=lambda item: item[0], default=(target, None))
+    if (capping and tightest <= target and cgroup_number(capping, "memory.swap.max") == 0
+            and oom_policy_continues(capping)):
+        return MemoryCap("inherited", tightest, "cgroup v2",
+                         f"an outer scope caps this run with swap off and OOMPolicy=continue: {capping}", capping)
+    return enforce(min(target, tightest), ancestry)
+
+
+def capped_row(stack, capability, root, since, forwarded, cap):
+    """Run one row, judged against the cap; also whether it was interrupted, which stops the run."""
+    deadline = time.monotonic() + EXECUTION_SECONDS_MAXIMUM + CLEANUP_SECONDS
+    before = cap.kills()
+    current = run_row(stack, capability, root, since, forwarded, deadline)
+    return cap.judged(current, before), current["state"] == "interrupted"
+
+
+def execute_rows(selected, capabilities, root, since, forwarded, cap=None, rows=None):
+    """Complete the selected row record, then dispatch unless interrupted.
+
+    Publication recovery can call this with finished rows: it only fills omitted rows when a
+    facade signal follows an adapter halt, and the interrupt prevents any further dispatch.
+    """
+    cap = cap or MemoryCap("unavailable")
+    rows = [] if rows is None else rows
+    with defer_interrupt():
+        plan = []
+        for stack in selected:
+            deferred = deferral_applies(stack, capabilities, root)
+            for capability in capabilities:
+                plan.append((stack, capability, deferred))
+                if len(rows) < len(plan):
+                    reason = INTERRUPTED_BEFORE_COVERAGE if deferred and capability == "test" else "run interrupted before this row"
+                    rows.append(cap.annotated(result(stack, capability, "interrupted", reason=reason)))
+        execute_plan(plan, rows, root, since, forwarded, cap)
     return rows
 
 
-def write_result(root, run, operation, selected, rows, candidate):
+def execute_plan(plan, rows, root, since, forwarded, cap):
+    """Commit finished rows before reporting them; the enclosing deferral protects those commits."""
+    halted = False
+    deferred_index = None
+    for index, (stack, capability, deferred) in enumerate(plan):
+        if interrupted or halted:
+            break
+        if deferred and capability == "test":
+            deferred_index = index
+            continue
+        current, halted = capped_row(stack, capability, root, since, forwarded, cap)
+        rows[index] = current
+        if deferred and capability == "coverage":
+            rows[deferred_index] = cap.annotated(suite_verdict(root, stack, current), current)
+            print_row(rows[deferred_index])
+        print_row(current)
+        if halted and not interrupted:
+            # Adapter deadlines and cap findings retain their existing row/aggregate semantics.
+            del rows[index + 1:]
+
+
+def write_result(root, run, operation, selected, rows, candidate, memory=None):
     if not run.resolve().is_relative_to(root):
         raise ContractError("result artifact escapes repository")
-    exit_code = max((EXITS[row["state"]] for row in rows), default=0)
-    payload = {"schema": 1, "candidate": candidate,
+    exit_code = 130 if interrupted else max((EXITS[row["state"]] for row in rows), default=0)
+    payload = {"schema": 1, "candidate": candidate, "memoryCap": memory,
                "operation": operation, "selectedStacks": [x["name"] for x in selected], "results": rows, "aggregateExit": exit_code}
     path = run / "result.json"
     pending = run / "result.tmp"
@@ -600,7 +1018,33 @@ def write_result(root, run, operation, selected, rows, candidate):
     print(f"Result: {path}"); return exit_code
 
 
+def run_operation(root, destination, selected, parsed, cap, candidate, rows):
+    global completed_publication, interrupted
+    name, capabilities, since, _, forwarded = parsed
+    operation = {"name": name, **({"since": since} if since else {})}
+    run = None
+
+    def publish():
+        if interrupted:
+            execute_rows(selected, capabilities, root, since, forwarded, cap, rows)
+        return write_result(root, run, operation, selected, rows, candidate, cap.record)
+
+    try:
+        with defer_interrupt():
+            run = prepare_result(destination)
+            execute_rows(selected, capabilities, root, since, forwarded, cap, rows)
+        exit_code = publish()
+        completed_publication = publish
+        return exit_code
+    except KeyboardInterrupt:
+        interrupted = True
+        if run is None:
+            raise
+        return publish()
+
+
 def main(argv=None):
+    install_interrupt_handlers()
     args = list(sys.argv[1:] if argv is None else argv)
     path = Path(__file__).with_suffix(".json")
     # A sandbox's empty `.git` mount point names no repository: only a gitfile or a gitdir with HEAD does.
@@ -611,19 +1055,18 @@ def main(argv=None):
         parsed = request(args)
         if parsed is None: print(HELP); return 2
         if parsed == "help": print(HELP); return 0
-        name, capabilities, since, names, forwarded = parsed
+        name, _, _, names, _ = parsed
         data = read_manifest(path)
         destination = artifact_destination(root, data["artifactRoot"])
         selected = selected_stacks(data["stacks"], names)
         if name == "capabilities":
             return print_capabilities(selected, root)
+        cap = memory_cap()
         candidate = candidate_identity(root)
-        run = prepare_result(destination)
-        rows = execute_rows(selected, capabilities, root, since, forwarded)
-        return write_result(root, run, {"name": name, **({"since": since} if since else {})}, selected, rows, candidate)
+        return run_operation(root, destination, selected, parsed, cap, candidate, rows)
     except (ContractError, OSError) as error:
         print(f"Invalid request or artifact destination: {error}", file=sys.stderr)
-        return 130 if any(row["state"] == "interrupted" for row in rows) else 2
+        return 130 if interrupted or any(row["state"] == "interrupted" for row in rows) else 2
 
 
 if __name__ == "__main__":

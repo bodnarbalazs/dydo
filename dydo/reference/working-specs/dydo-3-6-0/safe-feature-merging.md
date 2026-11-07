@@ -18,16 +18,17 @@ Agents merge reviewed work into `feature/*` through `dydo merge`; the default br
 user's merge. The command binds the operation to the reviewed head, checks its PASS and CI, and
 produces a merge commit under [DR 061's command contract](../../../project/decisions/061-agents-merge-only-into-feature-branches.md#decision).
 
-The delivered command and init allow rules do not establish the remaining guard blocks or genuine
-host parity. Guard behavior must close the other agent merge routes; the same command must receive
-the same allow or block outcome on Claude and Codex. Those shared obligations remain pending until
-their owning tickets supply the required evidence. Linear holds their live state and dependencies.
+The merge-route hard blocks shipped in DYD-425; [Guard System](../../../understand/guard-system.md#also-enforced)
+owns their exact scope and accepted residuals. The delivered command, init allow rules and guard
+blocks do not establish genuine host parity. The same command must receive the same allow or block
+outcome on Claude and Codex; that gate remains pending in DYD-426 until it supplies the required
+native evidence. Linear holds live state and dependencies.
 
 ## Shared decisions
 
 [DR 061](../../../project/decisions/061-agents-merge-only-into-feature-branches.md) governs this spec.
 Its Decision 1–6 owns the command/refusals, review and CI checks, merge form and crew boundary;
-Decision 7–8 owns the planned guard blocks and host parity. Its
+Decision 7 owns the shipped guard blocks; Decision 8 owns the pending host parity gate. Its
 [Consequences](../../../project/decisions/061-agents-merge-only-into-feature-branches.md#consequences)
 retain the accepted residuals: guards stop accidents, not rogue agents. The user removes the stopgap
 `autoMode.allow` entry and the user-level `Bash(gh pr merge:*)` allow rule only after the parity gate
@@ -58,14 +59,13 @@ merge review. This spec does not recast that earlier delivery as work performed 
 
 ### Guard behavior
 
-Use [Guard blocks (DYD-425)](https://linear.app/bodnar-balazs/issue/DYD-425), sections “Outcome,”
-“Sequencing” and “Gates,” for the exact blocked and allowed cases, Bash/PowerShell/Codex envelopes,
-dependency and red-before-fix proof. The decided hard blocks are not established by command tests
-or by writing this spec.
+[Guard blocks (DYD-425)](https://linear.app/bodnar-balazs/issue/DYD-425) supplies the shipped guard
+blocks' evidence for the blocked and allowed cases, Bash/PowerShell/Codex envelopes and
+red-before-fix proof. These checks do not establish the native host parity gate below.
 
 ### Host parity
 
-Use [Claude/Codex parity (DYD-426)](https://linear.app/bodnar-balazs/issue/DYD-426), sections
+The native gate remains pending in [Claude/Codex parity (DYD-426)](https://linear.app/bodnar-balazs/issue/DYD-426). Use its sections
 “Outcome (the condition, with evidence)” and “Constraints,” for the actual command matrix across
 both hosts and checkout kinds, expected outcomes and installation prerequisites. Every pair must
 match; a mismatch is a blocker. Synthetic events or a dry-run alone do not establish that matrix.

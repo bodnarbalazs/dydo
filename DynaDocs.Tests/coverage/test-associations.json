@@ -2,6 +2,10 @@
   "schema": 1,
   "modules": [
     {
+      "module": "DynaDocs.Tests/coverage/statechart_platform.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_platform.py", "DynaDocs.Tests/coverage/tests/test_gate_adapter.py"]
+    },
+    {
       "module": "DynaDocs.Tests/coverage/gate_discovery.py",
       "tests": ["DynaDocs.Tests/coverage/tests/test_gate_adapter.py", "DynaDocs.Tests/coverage/tests/test_python_platform.py"]
     },
@@ -14,12 +18,68 @@
       "tests": ["DynaDocs.Tests/coverage/tests/test_dotnet_platform.py", "DynaDocs.Tests/coverage/tests/test_gate_adapter.py"]
     },
     {
+      "module": "DynaDocs.Tests/coverage/coverage_artifacts.py",
+      "tests": ["DynaDocs.Tests/coverage/tests/test_coverage_artifacts.py"]
+    },
+    {
       "module": "Services/Statechart/StatechartChecker.cs",
       "tests": ["DynaDocs.Tests/Statechart/StatechartCheckerTests.cs"]
     },
     {
+      "module": "skills/engineering/statechart/scripts/checker.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/checker.test.ts", "skills/engineering/statechart/scripts/test/tlc-bootstrap.test.ts"]
+    },
+    {
       "module": "skills/engineering/statechart/scripts/java/build.py",
       "tests": ["DynaDocs.Tests/coverage/tests/test_statechart_java_build.py"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/frontends/dot.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/messages.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/lifetime.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/native-gate.test.ts", "skills/engineering/statechart/scripts/test/native-entry.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/native-entry.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/native-entry.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/posix-lifetime.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/posix-lifetime.test.ts", "skills/engineering/statechart/scripts/test/native-entry.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/render.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/native-render.test.ts", "skills/engineering/statechart/scripts/test/native-entry.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/run.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/cli.test.ts", "skills/engineering/statechart/scripts/test/corpus.test.ts", "skills/engineering/statechart/scripts/test/adaptation.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/statechart.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/cli.test.ts", "skills/engineering/statechart/scripts/test/adaptation.test.ts", "skills/engineering/statechart/scripts/test/acceptance.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/java.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/corpus.test.ts", "skills/engineering/statechart/scripts/test/cli.test.ts", "skills/engineering/statechart/scripts/test/tlc-out.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/test/tlc.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/corpus.test.ts", "skills/engineering/statechart/scripts/test/cli.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/windows-cleanup.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/adaptation.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/windows.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/windows.test.ts", "skills/engineering/statechart/scripts/test/adaptation.test.ts"]
+    },
+    {
+      "module": "skills/engineering/statechart/scripts/worker.ts",
+      "tests": ["skills/engineering/statechart/scripts/test/cli.test.ts"]
     },
     {
       "module": "skills/engineering/verify-dydo/scripts/owned_process.py",
@@ -31,6 +91,12 @@
       "module": "skills/engineering/verify-dydo/scripts/control_dydo.py",
       "tests": [
         "DynaDocs.Tests/coverage/tests/test_control_dydo.py"
+      ]
+    },
+    {
+      "module": "skills/engineering/verify-dydo/scripts/officer_transition.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_officer_transition.py"
       ]
     },
     {
@@ -189,7 +255,8 @@
     {
       "module": "Commands/PrReadyCommand.cs",
       "tests": [
-        "DynaDocs.Tests/Integration/PrReadyCommandTests.cs"
+        "DynaDocs.Tests/Integration/PrReadyCommandTests.cs",
+        "DynaDocs.Tests/Merge/ReviewPassGrammarSteps.cs"
       ]
     },
     {
@@ -215,6 +282,7 @@
       "module": "Services/PrCallScanner.MergeRoutes.cs",
       "tests": [
         "DynaDocs.Tests/Services/MergeRouteScannerTests.cs",
+        "DynaDocs.Tests/Services/PrCallScannerBackslashTreeTests.cs",
         "DynaDocs.Tests/Integration/GuardMergeRouteTests.cs"
       ]
     },
@@ -249,6 +317,7 @@
     {
       "module": "Services/ShellReader.cs",
       "tests": [
+        "DynaDocs.Tests/Services/ShellReaderTests.cs",
         "DynaDocs.Tests/Services/DydoInvocationScannerTests.cs"
       ]
     },
@@ -295,6 +364,12 @@
       ]
     },
     {
+      "module": "DynaDocs.Tests/coverage/release_proof.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_release_proof.py"
+      ]
+    },
+    {
       "module": "DynaDocs.Tests/coverage/csharp_join.py",
       "tests": [
         "DynaDocs.Tests/coverage/tests/test_csharp_join.py"
@@ -303,7 +378,9 @@
     {
       "module": "DynaDocs.Tests/coverage/gap_check.py",
       "tests": [
-        "DynaDocs.Tests/coverage/tests/test_testing_facade.py"
+        "DynaDocs.Tests/coverage/tests/test_testing_facade.py",
+        "DynaDocs.Tests/coverage/tests/test_memory_cap.py",
+        "DynaDocs.Tests/coverage/tests/test_windows_memory_cap.py"
       ]
     },
     {
@@ -321,6 +398,7 @@
     {
       "module": "DynaDocs.Tests/coverage/gate_collect.py",
       "tests": [
+        "DynaDocs.Tests/coverage/tests/test_javascript_metrics.py",
         "DynaDocs.Tests/coverage/tests/test_orchestration.py",
         "DynaDocs.Tests/coverage/tests/test_typescript_collectors.py"
       ]
@@ -526,6 +604,12 @@
       ]
     },
     {
+      "module": "DynaDocs.Tests/coverage/pwsh_prerequisite.cjs",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/pwsh-prerequisite.test.cjs"
+      ]
+    },
+    {
       "module": "DynaDocs.Tests/coverage/node_tests.cjs",
       "tests": [
         "DynaDocs.Tests/coverage/tests/node_tests.test.cjs"
@@ -607,7 +691,8 @@
       "module": "DynaDocs.Tests/coverage/run_tests.py",
       "tests": [
         "DynaDocs.Tests/coverage/tests/test_runner.py",
-        "DynaDocs.Tests/coverage/tests/test_assurance_publication.py"
+        "DynaDocs.Tests/coverage/tests/test_assurance_publication.py",
+        "DynaDocs.Tests/coverage/tests/test_memory_cap.py"
       ]
     },
     {
@@ -826,6 +911,7 @@
     {
       "module": "Services/BashCommandAnalyzer.cs",
       "tests": [
+        "DynaDocs.Tests/Services/BashCommandAnalyzerInputBoundTests.cs",
         "DynaDocs.Tests/Services/BashCommandAnalyzerTests.cs",
         "DynaDocs.Tests/Services/DangerousPatternBudgetTests.cs",
         "DynaDocs.Tests/Services/DangerousPatternCultureTests.cs",
@@ -1586,7 +1672,8 @@
     {
       "module": "Services/Merge/IndependentReview.cs",
       "tests": [
-        "DynaDocs.Tests/Merge/IndependentReviewTests.cs"
+        "DynaDocs.Tests/Merge/IndependentReviewTests.cs",
+        "DynaDocs.Tests/Merge/ReviewPassGrammarSteps.cs"
       ]
     },
     {
@@ -1631,11 +1718,11 @@
     },
     {
       "module": "Services/Statechart/PosixStatechartNative.cs",
-      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixTests.cs"]
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixErrnoTests.cs"]
     },
     {
       "module": "Services/Statechart/PosixStatechartProcess.cs",
-      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixErrnoTests.cs"]
     },
     {
       "module": "Services/Statechart/PosixStatechartAnchor.cs",
@@ -1647,11 +1734,11 @@
     },
     {
       "module": "Services/Statechart/PosixStatechartSocket.cs",
-      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixChannelTests.cs"]
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixChannelTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixErrnoTests.cs"]
     },
     {
       "module": "Services/Statechart/PosixStatechartFiles.cs",
-      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs"]
+      "tests": ["DynaDocs.Tests/Statechart/StatechartPosixLifecycleTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixErrnoTests.cs"]
     },
     {
       "module": "Services/Statechart/PosixStatechartLifetime.cs",
@@ -1667,7 +1754,7 @@
     },
     {
       "module": "Services/Statechart/PosixStatechartDescriptors.cs",
-      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs"]
+      "tests": ["DynaDocs.Tests/Statechart/StatechartReadyTests.cs", "DynaDocs.Tests/Statechart/StatechartPosixErrnoTests.cs"]
     },
     {
       "module": "Services/Statechart/PosixStatechartChild.cs",

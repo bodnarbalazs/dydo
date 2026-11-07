@@ -1,0 +1,43 @@
+"""Read-only prerequisite proof; run from the repository root with the cache root as argv[1]."""
+import base64
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import sys
+import tarfile
+
+cache = Path(sys.argv[1])
+lock = json.loads(Path('Resources/Statechart/dependency-lock.json').read_text())
+jre = next(row['java'] for row in lock['platforms'] if row['rid'] == 'linux-x64')
+java_root = cache / 'java/content'
+pele_root = cache / 'pele/content'
+jar = cache / 'tlc/tla2tools.jar'
+archive = cache / 'java' / jre['name']
+pele = cache / 'pele/pele-1.9.0.tgz'
+for file, expected in [(archive, jre['sha256']), (jar, lock['tlc']['sha256'])]:
+    actual = hashlib.sha256(file.read_bytes()).hexdigest()
+    assert actual == expected, file
+    print(f'{actual}  {file}')
+integrity = 'sha512-' + base64.b64encode(hashlib.sha512(pele.read_bytes()).digest()).decode()
+assert integrity == lock['pele']['integrity']
+print(f'{integrity}  {pele}')
+for file, folder in [(archive, java_root), (pele, pele_root)]:
+    count = 0
+    with tarfile.open(file) as bundle:
+        for member in bundle:
+            if member.isfile():
+                assert (folder / member.name).read_bytes() == bundle.extractfile(member).read(), member.name
+                count += 1
+    print(f'{count} extracted files match {file.name}')
+java = java_root / 'jdk-21.0.8+9-jre/bin/java'
+subprocess.run([java, '-version'], check=True)
+modules = subprocess.check_output([java, '--list-modules'], text=True)
+assert 'jdk.compiler@' not in modules
+print('Pinned JRE has no jdk.compiler: local oracle skip is expected, not execution proof.')
+sys.path.insert(0, str(Path('DynaDocs.Tests/coverage').resolve()))
+from gate_versions import javascript_versions, python_versions
+print(json.dumps(python_versions(Path('DynaDocs.Tests/coverage')), sort_keys=True))
+versions = javascript_versions(Path('DynaDocs.Tests/coverage'))
+print(f"Verified {len(versions['packages'])} locked JavaScript packages")
+subprocess.run(['node', '--version'], check=True)

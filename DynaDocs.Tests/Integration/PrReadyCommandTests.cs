@@ -16,7 +16,7 @@ public sealed class PrReadyCommandTests : IDisposable
         ## Independent review
 
         ```text
-        PASS - rubric/type: code; contract DYD-374 description; candidate abc; base def; reviewer/model: r. Checks: ok.
+        PASS - rubric/type: code; contract DYD-374 description; candidate abcdef0; base def0123; reviewer/model: r. Checks: ok.
         ```
         """;
 
@@ -53,8 +53,8 @@ public sealed class PrReadyCommandTests : IDisposable
     // DYD-391: LC's PR bodies (bodnarbalazs/LC#473) write the review line with an em dash.
     [Theory]
     [InlineData("PASS — rubric/type: code; contract LC-1111 description as of 2026-10-26T20:51:09.455Z; candidate 2148f550; base f65e5647; reviewer/model: reviewer/claude-opus-5-5 (requested identity, requested effort high; fresh round-3 code review); applicable tests 83/83.")]
-    [InlineData("PASS – rubric/type: code; contract DYD-374 description; candidate abc; base def; reviewer/model: r.")]
-    [InlineData("PASS—rubric/type: code; contract DYD-374 description; candidate abc; base def; reviewer/model: r.")]
+    [InlineData("PASS – rubric/type: code; contract DYD-374 description; candidate abcdef0; base def0123; reviewer/model: r.")]
+    [InlineData("PASS—rubric/type: code; contract DYD-374 description; candidate abcdef0; base def0123; reviewer/model: r.")]
     public async Task ReviewLineWithAnEnOrEmDash_IsReady(string passLine)
     {
         var body = $"Closes LC-1111.\n\n## Independent review\n\n{passLine}\n\nChecks: I read the whole candidate.\n";
@@ -63,6 +63,41 @@ public sealed class PrReadyCommandTests : IDisposable
 
         Assert.True(exit == 0, stderr);
         Assert.Contains("PASS review", stdout);
+    }
+
+    [Theory]
+    [InlineData("PASS - rubric/type: code, fix-hop re-review.")]
+    [InlineData("PASS - rubric/type: code")]
+    [InlineData("PASS - rubric/type: code; base def0123")]
+    [InlineData("PASS - rubric/type: spec; candidate abcdef0; base def0123")]
+    [InlineData("PASS - rubric/type: code; candidate abc; base def0123")]
+    [InlineData("PASS - rubric/type: code; candidate abcdef0g; base def0123")]
+    [InlineData("PASS - rubric/type: code; candidate abcdef0123456789abcdef0123456789abcdef01234; base def0123")]
+    [InlineData("PASS - rubric/type: code; Checks: candidate abcdef0; base def0123")]
+    [InlineData("FAIL - rubric/type: code; candidate abcdef0; base def0123")]
+    public async Task UnusablePass_IsNotReady(string line)
+    {
+        var body = $"Closes DYD-618.\n\n## Independent review\n{line}\n";
+
+        var (exit, _, stderr) = await PrReady(_tree, "--body", BodyFile(body));
+
+        Assert.Equal(1, exit);
+        Assert.Contains("candidate <SHA>; base <SHA>", stderr);
+        Assert.Contains("code, docs or merge", stderr);
+    }
+
+    [Theory]
+    [InlineData("code", " ", " ")]
+    [InlineData("docs", ": ", " ")]
+    [InlineData("merge", " ", ": ")]
+    [InlineData("Code", ": ", ": ")]
+    public async Task CanonicalAndColonFields_AreReadyWithoutResolvingCommits(string rubric, string candidateSeparator, string baseSeparator)
+    {
+        var body = $"Closes DYD-624.\n\n## INDEPENDENT REVIEW\r\n```text\r\n  PASS—rubric/type: {rubric}; candidate{candidateSeparator}`ABCDEF0`; base{baseSeparator}`DEF0123`.\r\n```\r\n";
+
+        var (exit, _, stderr) = await PrReady(_tree, "--body", BodyFile(body));
+
+        Assert.True(exit == 0, stderr);
     }
 
     [Fact]

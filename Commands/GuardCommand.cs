@@ -224,6 +224,12 @@ public static partial class GuardCommand
 
     private static int Evaluate(GuardContext ctx)
     {
+        if (ctx.BashCommand is { Length: > BashCommandAnalyzer.MaxCommandLength })
+        {
+            Console.Error.WriteLine($"BLOCKED: {BashCommandAnalyzer.CommandLengthReason}");
+            return ExitCodes.ToolError;
+        }
+
         if (!ctx.HasCliArgs && string.IsNullOrEmpty(ctx.SessionId))
         {
             Console.Error.WriteLine("BLOCKED: No session_id in hook input.");
@@ -252,6 +258,10 @@ public static partial class GuardCommand
         try
         {
             return Decide(ctx, offLimitsService, env);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return RefuseComplexNudge();
         }
         catch (Exception ex)
         {
@@ -616,18 +626,24 @@ public static partial class GuardCommand
         var isDydo = IsDydoCommand(command) && !string.IsNullOrEmpty(ctx.SessionId);
 
         var shell = ExecutingShellOf(ctx);
+        var nudgeMatching = new NudgeMatching(command, shell);
+        // Each gh pr create's own body file, read once however many nudge checks ask (DYD-639).
+        var prBodies = new Dictionary<int, string?>();
+        string? PrBody(int launch) => prBodies.TryGetValue(launch, out var body)
+            ? body
+            : prBodies[launch] = PrBodyAt(command, launch, ctx.ToolCwd ?? ctx.Cwd, shell, env, offLimitsService);
 
         // dydo commands skip the cd-chain coaching (they are never a needless cd compound).
         var hardBlock = (isDydo && isWorker ? BlockIfWorkerDydoCommand(command) : null)
             ?? BlockIfDangerous(command, bashAnalyzer)
             ?? BlockIfMergeRoute(command, ctx.CommandArgv, ctx.ToolCwd ?? ctx.Cwd, shell, env)
-            ?? CheckBlockNudges(command, env, shell)
+            ?? CheckBlockNudges(command, env, shell, PrBody, nudgeMatching)
             ?? CheckPrReady(command, ctx.CommandArgv, ctx.ToolCwd ?? ctx.Cwd, shell, env)
             ?? (isDydo ? null : BlockIfCdChain(command, bashAnalyzer))
             ?? AnalyzeAndCheckBashOperations(command, offLimitsService, bashAnalyzer, env.Memory);
         if (hardBlock != null) return hardBlock.Value;
 
-        return CheckWarnNudges(command, env, IsModeSet(command, shell), shell) ?? ExitCodes.Success;
+        return CheckWarnNudges(command, env, IsModeSet(command, shell), shell, PrBody, nudgeMatching) ?? ExitCodes.Success;
     }
 
     private static int? BlockIfWorkerDydoCommand(string command)
@@ -672,77 +688,160 @@ public static partial class GuardCommand
     /// <summary>
     /// The command nudges that are not warns: a notice prints and passes, a block refuses.
     /// </summary>
-    internal static int? CheckBlockNudges(string command, GuardEnv env, ShellDialect shell = ShellDialect.Unknown)
+    internal static int? CheckBlockNudges(string command, GuardEnv env, ShellDialect shell = ShellDialect.Unknown,
+        Func<int, string?>? prBodyAt = null, NudgeMatching? matching = null)
     {
-        foreach (var (nudge, match) in MatchingCommandNudges(command, env, shell))
+        try
         {
-            if (IsWarn(nudge)) continue;
-
-            var verdict = EnforceNudge(nudge, match);
-            if (verdict != null) return verdict;
+            foreach (var (nudge, match) in MatchingCommandNudges(command, env, prBodyAt,
+                matching ?? new NudgeMatching(command, shell)))
+            {
+                if (IsWarn(nudge)) continue;
+                var verdict = EnforceNudge(nudge, match);
+                if (verdict != null) return verdict;
+            }
+            return null;
         }
-
-        return null;
+        catch (RegexMatchTimeoutException)
+        {
+            return RefuseComplexNudge();
+        }
     }
 
     /// <summary>
     /// The command warn nudges, and the mode-set reminder when <paramref name="modeSet"/>, as one
-    /// once-only step (<see cref="EnforceWarns"/>).
+    /// once-only step (<see cref="EnforceWarns"/>). <paramref name="prBodyAt"/> gives the text of the
+    /// body file a <c>gh pr create</c> launched at an index reads (<see cref="PrBodyAt"/>).
     /// </summary>
-    internal static int? CheckWarnNudges(string command, GuardEnv env, bool modeSet = false, ShellDialect shell = ShellDialect.Unknown)
+    internal static int? CheckWarnNudges(string command, GuardEnv env, bool modeSet = false, ShellDialect shell = ShellDialect.Unknown,
+        Func<int, string?>? prBodyAt = null, NudgeMatching? matching = null)
     {
-        var warns = MatchingCommandNudges(command, env, shell)
-            .Where(m => IsWarn(m.Nudge))
-            .Select(m => new WarnStep(m.Nudge, m.Match, CommandWarnMarkerName(m.Nudge.Pattern, command),
-                "Run the same command again to proceed anyway."))
-            .ToList();
-        if (modeSet)
-            warns.Add(new WarnStep(ModeSetNudge, Match.Empty, CommandWarnMarkerName(ModeSetNudge.Pattern, command),
-                "Run the same command again to proceed anyway."));
-        return EnforceWarns(warns, env);
+        try
+        {
+            var warns = MatchingCommandNudges(command, env, prBodyAt, matching ?? new NudgeMatching(command, shell))
+                .Where(m => IsWarn(m.Nudge))
+                .Select(m => new WarnStep(m.Nudge, m.Match, CommandWarnMarkerName(m.Nudge.Pattern, command),
+                    "Run the same command again to proceed anyway."))
+                .ToList();
+            if (modeSet)
+                warns.Add(new WarnStep(ModeSetNudge, Match.Empty, CommandWarnMarkerName(ModeSetNudge.Pattern, command),
+                    "Run the same command again to proceed anyway."));
+            return EnforceWarns(warns, env);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return RefuseComplexNudge();
+        }
+    }
+
+    private static int RefuseComplexNudge()
+    {
+        Console.Error.WriteLine("BLOCKED: Command too complex to verify safely");
+        return ExitCodes.ToolError;
     }
 
     // A nudge's pattern is matched on the raw text, and a match counts only where its launch word
     // counts under the bounded data-operand rules (DYD-406); captures come from that raw match.
-    private static IEnumerable<(NudgeConfig Nudge, Match Match)> MatchingCommandNudges(string command, GuardEnv env, ShellDialect shell)
+    // The review-block nudge, shipped or a dydo.json copy (a pre-DYD-736 one refreshed by
+    // MergeSystemNudges), also reads the body file of a gh pr create that is the line's only command (DYD-639).
+    private static IEnumerable<(NudgeConfig Nudge, Match Match)> MatchingCommandNudges(string command, GuardEnv env,
+        Func<int, string?>? prBodyAt, NudgeMatching matching)
     {
         foreach (var nudge in MergeSystemNudges(env.Config?.Nudges))
         {
             if (nudge.IsCommandMatch && CompileNudgePattern(nudge.Pattern) is { } pattern
-                && FirstRunningMatch(pattern, command, shell) is { } match)
+                && (prBodyAt != null && nudge.Pattern == ConfigFactory.ReviewBlockPattern
+                    ? FirstUnclearedMatch(pattern, command, matching, prBodyAt)
+                    : FirstRunningMatch(pattern, command, matching)) is { } match)
                 yield return (nudge, match);
         }
     }
 
+    private static Match? FirstRunningMatch(Regex pattern, string command, NudgeMatching matching) =>
+        RunningMatches(pattern, command, matching).FirstOrDefault().Match;
+
+    // The first running match that its call's own body file does not clear. A call's body file is
+    // its body as an inline one is, after its launch words: the pattern re-read on those words and
+    // that body alone decides, so no other call's text clears it (DYD-639). A call behind an
+    // assignment or env is no lone call, so its file is never read: the prefix can redirect what gh
+    // opens (DYD-731 Option A, DYD-736).
+    private static Match? FirstUnclearedMatch(Regex pattern, string command, NudgeMatching matching, Func<int, string?> bodyAt) =>
+        RunningMatches(pattern, command, matching)
+            .FirstOrDefault(running => bodyAt(running.Launch) is not { } body
+                || matching.Match(pattern, running.Match.Value + "\n" + body) is { Success: true, Index: 0 })
+            .Match;
+
     /// <summary>
-    /// The first match of <paramref name="pattern"/> whose launch word, the text past any space or
-    /// separator the match opens with, sits where a command runs (<see cref="BashCommandAnalyzer.RunsAt"/>),
-    /// excluding only recognized quoted data operands, comments and data bodies. Unquoted and
-    /// ambiguous quoted operands count. Each later try starts past the last launch word.
+    /// Each match of <paramref name="pattern"/> whose launch word, the text past any space or
+    /// separator the match opens with, sits where a command runs (<see cref="BashCommandAnalyzer.NudgeClassifier"/>),
+    /// excluding only recognized quoted data operands, comments and data bodies, with that launch
+    /// word's index. Unquoted and ambiguous quoted operands count. Each later try starts past the
+    /// last launch word.
     /// </summary>
-    private static Match? FirstRunningMatch(Regex pattern, string command, ShellDialect shell)
+    private static IEnumerable<(Match Match, int Launch)> RunningMatches(Regex pattern, string command, NudgeMatching matching)
     {
-        var match = pattern.Match(command);
+        var match = matching.Match(pattern, command);
         while (match.Success)
         {
             var launch = match.Index;
             while (launch < match.Index + match.Length && (char.IsWhiteSpace(command[launch]) || command[launch] is ';' or '&' or '|'))
                 launch++;
-            if (BashCommandAnalyzer.RunsAt(command, launch, shell))
-                return match;
-            match = launch < command.Length ? pattern.Match(command, launch + 1) : Match.Empty;
+            if (matching.Counts(launch))
+                yield return (match, launch);
+            match = launch < command.Length ? matching.Match(pattern, command, launch + 1) : Match.Empty;
         }
-
-        return null;
     }
 
     private static bool IsWarn(NudgeConfig nudge) =>
         string.Equals(nudge.Severity, "warn", StringComparison.OrdinalIgnoreCase);
 
+    private static readonly TimeSpan NudgeMatchTimeout = TimeSpan.FromMilliseconds(250);
+
     private static Regex? CompileNudgePattern(string pattern)
     {
-        try { return new Regex(pattern, RegexOptions.IgnoreCase); }
+        try
+        {
+            if (ConfigFactory.DefaultNudges.Any(nudge => nudge.Pattern == pattern))
+            {
+                try { return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, NudgeMatchTimeout); }
+                catch (NotSupportedException) { /* Lookarounds retain their original bounded matcher. */ }
+            }
+            return new Regex(pattern, RegexOptions.IgnoreCase, NudgeMatchTimeout);
+        }
         catch (ArgumentException) { return null; }
+    }
+
+    // One invocation shares its classification and its cumulative matching budget across patterns,
+    // block checks, body-file checks and warn checks. A timeout cannot become a warn retry.
+    internal sealed class NudgeMatching(string command, ShellDialect shell)
+    {
+        private Func<int, bool>? _counts;
+        private TimeSpan _elapsed;
+        private readonly Dictionary<Regex, Regex> _bounded = [];
+
+        public bool Counts(int index) => (_counts ??= BashCommandAnalyzer.NudgeClassifier(command, shell))(index);
+
+        public Match Match(Regex pattern, string text, int start = 0)
+        {
+            if (_elapsed >= NudgeMatchTimeout)
+                throw new RegexMatchTimeoutException(text, pattern.ToString(), NudgeMatchTimeout);
+            if (pattern.MatchTimeout != NudgeMatchTimeout)
+            {
+                if (!_bounded.TryGetValue(pattern, out var bounded))
+                {
+                    bounded = new Regex(pattern.ToString(), pattern.Options, NudgeMatchTimeout);
+                    _bounded.Add(pattern, bounded);
+                }
+                pattern = bounded;
+            }
+            var since = System.Diagnostics.Stopwatch.GetTimestamp();
+            Match result;
+            try { result = pattern.Match(text, start); }
+            finally { _elapsed += System.Diagnostics.Stopwatch.GetElapsedTime(since); }
+            if (_elapsed >= NudgeMatchTimeout)
+                throw new RegexMatchTimeoutException(text, pattern.ToString(), NudgeMatchTimeout);
+            return result;
+        }
     }
 
     /// <summary>
@@ -851,6 +950,7 @@ public static partial class GuardCommand
     internal static List<NudgeConfig> MergeSystemNudges(List<NudgeConfig>? configNudges)
     {
         var nudges = configNudges?.ToList() ?? [];
+        RefreshPreDyd736ReviewBlockCopies(nudges);
 
         for (int i = nudges.Count - 1; i >= 0; i--)
         {
@@ -890,6 +990,47 @@ public static partial class GuardCommand
 
         return nudges;
     }
+
+    /// <summary>
+    /// A dydo.json copy of the review-block nudge keeps the pattern it was written with, and the
+    /// pre-DYD-736 one misses a <c>gh pr create</c> behind assignments or <c>env</c>. The guard gives
+    /// such a copy the current pattern and keeps its message, severity and audience. Beside a current
+    /// copy only the stricter of the two stays, the current one on a tie.
+    /// </summary>
+    private static void RefreshPreDyd736ReviewBlockCopies(List<NudgeConfig> nudges)
+    {
+        for (var i = nudges.Count - 1; i >= 0; i--)
+        {
+            var old = nudges[i];
+            if (!old.IsCommandMatch || old.Pattern != ConfigFactory.PreDyd736ReviewBlockPattern)
+                continue;
+            var refreshed = new NudgeConfig
+            {
+                Pattern = ConfigFactory.ReviewBlockPattern,
+                Message = old.Message,
+                Severity = old.Severity,
+                Audience = old.Audience,
+                Match = old.Match
+            };
+            var current = nudges.FindIndex(n => n.IsCommandMatch && n.Pattern == ConfigFactory.ReviewBlockPattern);
+            if (current < 0)
+            {
+                nudges[i] = refreshed;
+                continue;
+            }
+            if (Strictness(old) > Strictness(nudges[current]))
+                nudges[current] = refreshed;
+            nudges.RemoveAt(i);
+        }
+    }
+
+    // A severity other than notice or warn enforces as a block (EnforceNudge).
+    private static int Strictness(NudgeConfig nudge) => nudge.Severity?.ToLowerInvariant() switch
+    {
+        "notice" => 0,
+        "warn" => 1,
+        _ => 2
+    };
 
     private static int? AnalyzeAndCheckBashOperations(
         string command, OffLimitsService offLimitsService, IBashCommandAnalyzer bashAnalyzer,

@@ -18,11 +18,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gate_run import STATIC_GATE_INTERPRETER
 from csharp_coverage import (ASSEMBLY_PROJECTS, GATE_METRICS_PREBUILT_ENV, _assembly_facts, _candidate_assemblies, _identity_classes, _identity_producer, _source_facts, _same_instrumented_map,
                              _altcover_aliases, _same_artifacts, _same_native_map, _same_restored_map,
-                             _platform_tests, _subject_commands, _template_original_map,
+                             _platform_tests, _run, _subject_commands, _template_original_map,
                              _validate_instrumented, _validate_restored, _write_commands,
                              altcover_commands, main, run_campaign, run_denominator, run_subject,
                              snapshot_artifacts)
 from csharp_join import coverage_methods, excluded_physical_tokens, join_methods
+from release_proof import MAP as RELEASE_PROOF_MAP
+
+
+def _copy_release_proof_map(root):
+    """A campaign root carries the candidate's release proof map, which its suite filter reads."""
+    destination = root / "DynaDocs.Tests/coverage/release-proofs.json"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(RELEASE_PROOF_MAP, destination)
 
 MINIMAL_SOLUTION = """Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynaDocs", "DynaDocs.csproj", "{8537ADD5-149C-4DAA-B9B7-C26CA3852204}"
@@ -174,6 +182,9 @@ def _minimal_campaign_root(root):
         "DynaDocs.Tests/coverage/csharp_coverage.py": SUBJECT_LAUNCHER.format(
             module=tools / "csharp_coverage.py"),
         "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py": SUBJECT_METRICS,
+        # The subject's suite filter: the lane module beside the campaign, and the map it reads.
+        "DynaDocs.Tests/coverage/release_proof.py": (tools / "release_proof.py").read_text(encoding="utf-8"),
+        "DynaDocs.Tests/coverage/release-proofs.json": RELEASE_PROOF_MAP.read_text(encoding="utf-8"),
     })
     for source in sorted((tools / "metrics").glob("*.cs")):
         shutil.copy2(source, root / "DynaDocs.Tests/coverage/metrics" / source.name)
@@ -222,21 +233,59 @@ class CSharpCoverageTests(unittest.TestCase):
         self.assertLessEqual(rows["_template_original_map"], 20)
         self.assertLessEqual(rows["run_campaign"], 20)
 
+    def test_native_output_survives_interruption_before_command_receipt(self):
+        native_run = subprocess.run
+
+        def interrupted(*args, **kwargs):
+            native_run(*args, **kwargs)
+            raise KeyboardInterrupt
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            command = [sys.executable, "-c", "import sys; print('progress'); print('diagnostic', file=sys.stderr)"]
+            with patch("csharp_coverage.subprocess.run", side_effect=interrupted), self.assertRaises(KeyboardInterrupt):
+                _run("subject", command, root, root)
+            self.assertEqual("progress\n", (root / "subject.stdout").read_text())
+            self.assertEqual("diagnostic\n", (root / "subject.stderr").read_text())
+
+    def test_native_output_receipt_preserves_failure_and_exact_bytes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            command = [sys.executable, "-c", "import sys; sys.stdout.buffer.write(b'progress\\r\\n'); "
+                       "sys.stderr.buffer.write(b'diagnostic\\xff'); sys.exit(7)"]
+            row = _run("subject", command, root, root)
+            self.assertEqual(7, row["exit"])
+            for stream, expected in (("stdout", b"progress\r\n"), ("stderr", b"diagnostic\xff")):
+                self.assertEqual(expected, (root / row[stream]).read_bytes())
+                self.assertEqual(hashlib.sha256(expected).hexdigest(), row[stream + "Sha256"])
+
     def test_runner_subject_keeps_full_suite_first_then_uses_prebuilt_metrics(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder).resolve()
+            _copy_release_proof_map(root)
             commands = _subject_commands(root)
             self.assertEqual("dotnet", commands[0][0])
             self.assertEqual(["test", "DynaDocs.sln"], commands[0][1:3])
             self.assertIn("--no-build", commands[0])
+            self.assertEqual("console;verbosity=normal", commands[0][commands[0].index("--logger") + 1])
+            # Only the Release lane's proofs leave the suite; their witnesses stay (DYD-840).
+            self.assertEqual(["--filter", "PerformanceProof!=Release"],
+                             commands[0][commands[0].index("--filter"):][:2])
+            self.assertLess(commands[0].index("--filter"), commands[0].index("--"))
             self.assertEqual(sys.executable, commands[1][0])
             self.assertEqual(root / "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py",
                              Path(commands[1][1]))
             self.assertNotIn("build", commands[1])
 
+    def test_runner_subject_without_the_release_proof_map_fails_closed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaises(OSError):
+                _subject_commands(Path(folder).resolve())
+
     def test_subject_runs_both_actions_in_order_with_inherited_recorder_environment(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder).resolve()
+            _copy_release_proof_map(root)
             recorder = str(root / "recorder")
             for exits, expected in (((7, 0), 7), ((0, 9), 9)):
                 with self.subTest(exits=exits), \
@@ -348,20 +397,23 @@ class CSharpCoverageTests(unittest.TestCase):
             self.assertIsNone(_platform_tests(root, None))
             with self.assertRaisesRegex(ValueError, "Unsupported"):
                 _platform_tests(root, "darwin")
-            commands = _subject_commands(root, tests)
-            self.assertEqual(1, len(commands))
-            self.assertEqual(["--filter", tests, "--", "RunConfiguration.TreatNoTestsAsError=true"], commands[0][-4:])
+            results = str(root / "evidence/windows-tests.trx")
             _, runner = altcover_commands(root, root / "evidence", tests)
-            self.assertEqual(["--tests", tests], runner[-2:])
+            self.assertEqual(["--tests", tests, "--results", results], runner[-4:])
+            commands = _subject_commands(root, tests, results)
+            self.assertEqual(1, len(commands))
+            self.assertEqual(["--filter", tests, "--logger", "trx;LogFileName=windows-tests.trx",
+                              "--results-directory", str(root / "evidence"),
+                              "--", "RunConfiguration.TreatNoTestsAsError=true"], commands[0][-8:])
             with patch("csharp_coverage.subprocess.run",
                        return_value=subprocess.CompletedProcess([], 0)) as run:
-                self.assertEqual(0, run_subject(root, tests))
+                self.assertEqual(0, run_subject(root, tests, results))
             self.assertEqual(commands, [call.args[0] for call in run.call_args_list])
             with patch.object(sys, "argv", ["csharp_coverage.py", "--_subject", "--root", str(root),
-                                            "--tests", tests]), \
+                                            "--tests", tests, "--results", results]), \
                     patch("csharp_coverage.run_subject", return_value=0) as subject:
                 self.assertEqual(0, main())
-            subject.assert_called_once_with(str(root), tests)
+            subject.assert_called_once_with(str(root), tests, results)
 
     def test_the_campaign_command_measures_on_its_native_platform(self):
         with tempfile.TemporaryDirectory() as folder:

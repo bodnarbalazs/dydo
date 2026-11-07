@@ -49,22 +49,27 @@ internal static partial class PrCallScanner
         return Readings(dialect, line).Select(posix => StepsOf(ShellReader.Read(line, posix), depth));
     }
 
-    // A reading's commands in order, each with the && run it is in; a backtick substitution runs just
-    // before the command that holds it (one whose command the reading lost, first), in no run.
+    // A reading's commands in order, each with the && run it is in, then its backtick substitutions'
+    // steps. A step a substitution holds is Substituted, wherever that substitution sits.
     private static List<Step> StepsOf(ShellReader.Reading reading, int depth)
     {
-        var hosted = reading.Captures.ToLookup(capture => capture.Host.Command);
-        List<Step> steps = [.. reading.Captures.Where(capture => !reading.Commands.Contains(capture.Host.Command))
-            .SelectMany(capture => ScanSteps(capture.Text, ShellDialect.Posix, depth + 1))];
+        List<Step> steps = [];
         var runs = new Runs();
         foreach (var command in reading.Commands)
         {
             var (run, own) = runs.Of(command);
-            steps.AddRange(hosted[command].SelectMany(capture => ScanSteps(capture.Text, ShellDialect.Posix, depth + 1)));
-            steps.AddRange(StepsOf(command.Words, depth, command).Select(step => step.Run == null ? step with { Run = own ?? run } : step));
+            var substituted = InSubstitution(command.Source);
+            steps.AddRange(StepsOf(command.Words, depth, command)
+                .Select(step => step with { Run = step.Run ?? own ?? run, Substituted = step.Substituted || substituted }));
         }
+        steps.AddRange(reading.Substitutions.SelectMany(text => ScanSteps(text, ShellDialect.Posix, depth + 1))
+            .Select(step => step with { Substituted = true }));
         return steps;
     }
+
+    // Whether a scope's commands are a $( ... ) substitution's, or nested in one.
+    private static bool InSubstitution(ShellReader.Scope scope) =>
+        scope.Host is { } host && (host.Kind == ShellReader.ExecutionKind.Substitution || InSubstitution(host.Source));
 
     // A nested script's steps, its readings in turn.
     private static List<Step> ScanSteps(string text, ShellDialect dialect, int depth) =>

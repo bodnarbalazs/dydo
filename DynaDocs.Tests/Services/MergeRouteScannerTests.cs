@@ -154,7 +154,6 @@ public class MergeRouteScannerTests
     [InlineData("git checkout main || git push", "main")]
     [InlineData("git checkout main | cat; git push", "main")]
     [InlineData("bash -c 'git checkout main' && git push", "main")]
-    [InlineData("echo \"$(git checkout main)\"; git push", "main")]
     [InlineData("git checkout feature/x\ngit push", "feature/x")]
     public void BranchChange_BeforeAPushOfTheCurrentBranch_NamesItsBranch(string command, string branch)
     {
@@ -202,7 +201,6 @@ public class MergeRouteScannerTests
     [InlineData("(git checkout main) && git push", "main")]
     [InlineData("bash -c 'git checkout main' && git push", "main")]
     [InlineData("bash -c 'git checkout main && git push'", "main&&")]
-    [InlineData("git checkout main && echo \"$(git checkout x)\" && git push", "main&& x")]
     [InlineData("git branch -m old main && git push", "+main")]
     [InlineData("git branch -m main && git push", "+main&&")]
     public void BranchChange_OnlyAndAndBeforeThePush_IsChained(string command, string changes)
@@ -210,15 +208,68 @@ public class MergeRouteScannerTests
         Assert.Equal(changes.Split(' '), Switches(command));
     }
 
-    // B3: a backtick substitution runs just before the command that holds it, not before every push.
+    // Round 2: the order bash runs substitutions in is not read. A line that changes branch and pushes,
+    // where a substitution (backtick or $( ... ), wherever it sits) holds a change or a push, makes
+    // every push unreadable, a push naming its branch included. A line with a backtick is also read
+    // as PowerShell, where the backtick escapes; the guard refuses when either reading does.
     [Theory]
-    [InlineData("git push; echo `git checkout main`", "")]
-    [InlineData("echo `git checkout main`; git push", "main")]
-    [InlineData("git push \"`git checkout main`\"", "main")]
-    [InlineData("git checkout x && echo `git checkout main` && git push", "x&& main")]
-    public void BacktickSubstitution_RunsBeforeTheCommandHoldingIt(string command, string changes)
+    [InlineData("echo `git checkout main && git merge feature/x` \"$(git push)\"")]
+    [InlineData("echo \"$(git push)\" `git checkout main && git merge feature/x`")]
+    [InlineData("echo `git push` \"$(git checkout main && git merge feature/x)\"")]
+    [InlineData("echo \"$(git checkout main && git merge feature/x)\" `git push`")]
+    [InlineData("echo \"$(git checkout main)\"; git push")]
+    [InlineData("echo \"$(git checkout main)\" && git push")]
+    [InlineData("git checkout main && echo \"$(git push)\"")]
+    [InlineData("echo \"$(git checkout main && git push)\"")]
+    [InlineData("echo \"$(echo \"$(git checkout main)\")\"; git push")]
+    [InlineData("git checkout main && echo \"$(git checkout x)\" && git push")]
+    [InlineData("echo \"$(gh pr checkout 5)\"; git push")]
+    [InlineData("echo \"$(git checkout main)\"; git push origin feature/x")]
+    [InlineData("bash -c 'echo \"$(git checkout main)\"' && git push")]
+    [InlineData("echo `git checkout main`; git push")]
+    [InlineData("git push; echo `git checkout main`")]
+    [InlineData("git push \"`git checkout main`\"")]
+    [InlineData("git checkout main && echo `git push`")]
+    [InlineData("echo `git checkout main && git push`")]
+    [InlineData("git checkout x && echo `git checkout main` && git push")]
+    public void BranchChangeAndPush_WithASubstitutionHoldingEither_LeaveEveryPushUnreadable(string command)
     {
+        var routes = PrCallScanner.FindMergeRoutes(command, ShellDialect.Posix);
+
+        Assert.NotEmpty(routes);
+        Assert.All(routes.GroupBy(route => route.Form), push => Assert.Contains(push, route => route.Unreadable));
+    }
+
+    // Its honest twins: a substitution holding neither a change nor a push leaves the line read as
+    // before, and so does a substitution holding a push when the line changes no branch, or a change
+    // when the line pushes nothing.
+    [Theory]
+    [InlineData("git push; echo `date`", "")]
+    [InlineData("git push origin \"$(git branch --show-current)\"", "")]
+    [InlineData("git checkout -b new && git push -u origin \"$(git branch --show-current)\"", "")]
+    [InlineData("git checkout main && echo `date` && git push", "main&&")]
+    [InlineData("echo \"$(git push)\"", "")]
+    [InlineData("echo `git push` && git merge feature/x", "")]
+    public void Push_BesideASubstitutionHoldingNoChangeAndNoPush_IsReadAsBefore(string command, string changes)
+    {
+        var routes = PrCallScanner.FindMergeRoutes(command, ShellDialect.Posix);
+
+        Assert.All(routes, route => Assert.False(route.Unreadable, route.Form));
         Assert.Equal(changes.Split(' ', StringSplitOptions.RemoveEmptyEntries), Switches(command, ShellDialect.Posix));
+    }
+
+    [Fact]
+    public void BranchChange_InASubstitutionWithoutAPush_TakesNoRoute()
+    {
+        Assert.Empty(PrCallScanner.FindMergeRoutes("echo \"$(git checkout main)\" `git switch x`", ShellDialect.Posix));
+    }
+
+    // A PowerShell $( ... ) is a substitution too.
+    [Fact]
+    public void PowerShellSubexpression_HoldingABranchChange_LeavesThePushUnreadable()
+    {
+        Assert.True(Single("echo \"$(git checkout main)\"; git push", ShellDialect.PowerShell).Unreadable);
+        Assert.False(Single("git checkout main; git push origin \"$(git branch --show-current)\"", ShellDialect.PowerShell).Unreadable);
     }
 
     [Fact]
@@ -300,7 +351,6 @@ public class MergeRouteScannerTests
     [InlineData("git checkout --conflict diff3 -- readme.md && git push")]
     [InlineData("git checkout --frobnicate=1 && git push")]
     [InlineData("git checkout --frobnicate && git push")]
-    [InlineData("git push; echo `git checkout main`")]
     [InlineData("git checkout HEAD && git push")]
     [InlineData("git checkout && git push")]
     [InlineData("git branch -d x && git push")]

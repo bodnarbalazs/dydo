@@ -4,16 +4,18 @@ namespace DynaDocs.Services;
 /// The branch changes a line makes before its pushes (DYD-887, DR 061 decision 7). A line's own
 /// <c>git checkout</c>, <c>git switch</c>, <c>git branch -m</c> or <c>gh pr checkout</c> moves HEAD
 /// before its later commands run, so a push to the current branch or its upstream carries every change
-/// the line runs before it, in order: after any separator, in a pipe, a wrapper's command string or a
-/// substitution, each where the shell runs it (a substitution just before the command that holds it).
+/// the line runs before it, in order: after any separator, in a pipe or in a wrapper's command string.
 /// A change only <c>&amp;&amp;</c> separates from the push is <see cref="BranchChange.Chained"/>. The
-/// guard keeps the changes in the push's own worktree and resolves each named branch there.
+/// guard keeps the changes in the push's own worktree and resolves each named branch there. The order
+/// bash runs substitutions in is not read: a line that changes branch and pushes, where a substitution
+/// (backtick or <c>$( ... )</c>) holds a change or a push, makes every push <see cref="MergeRoute.Unreadable"/>.
 /// </summary>
 internal static partial class PrCallScanner
 {
     // A route or a branch change, in the order the line runs them. Run is the && run it is in: each
     // command of a run runs only after the one before it succeeds. A step of no run has none.
-    private readonly record struct Step(MergeRoute? Route = null, BranchChange? Change = null, object? Run = null);
+    // Substituted: a substitution holds it.
+    private readonly record struct Step(MergeRoute? Route = null, BranchChange? Change = null, object? Run = null, bool Substituted = false);
 
     // A branch change as its words say it. Sure: when it succeeds, HEAD is on Branch.
     private readonly record struct Switch(string Branch, bool Creates = false, bool Sure = true);
@@ -46,25 +48,33 @@ internal static partial class PrCallScanner
 
     private static readonly char[] SeparatorChars = [';', '|', '(', ')', '{', '}', '#', '`', '\n', '\r'];
 
-    // Each route once; a push to the current branch or its upstream carries the branch changes before it.
-    private static List<MergeRoute> Followed(IEnumerable<Step> steps)
+    // Each route once; a push to the current branch or its upstream carries the branch changes before
+    // it, and every push is unreadable when the line changes branch and pushes with a substitution
+    // holding either (DYD-887).
+    private static List<MergeRoute> Followed(List<Step> steps)
     {
+        var unreadable = steps.Any(IsChange) && steps.Any(IsPush) && steps.Any(step => step.Substituted && (IsChange(step) || IsPush(step)));
         List<Step> changes = [];
         List<MergeRoute> routes = [];
         foreach (var step in steps)
         {
-            if (step.Change != null)
-            {
+            if (IsChange(step))
                 changes.Add(step);
-                continue;
-            }
-            var route = step.Route!;
-            routes.Add(changes.Count > 0 && route.Destination is MergeRoute.CurrentBranch or MergeRoute.Upstream
-                ? route with { Changes = new([.. changes.Select(change => change.Change! with { Chained = SameRun(change, step) })]) }
-                : route);
+            else
+                routes.Add(unreadable && IsPush(step) ? step.Route! with { Unreadable = true } : Carrying(step, changes));
         }
         return [.. routes.Distinct()];
     }
+
+    private static bool IsChange(Step step) => step.Change != null;
+
+    private static bool IsPush(Step step) => step.Route?.Kind == MergeRouteKind.Push;
+
+    // A route, a push to the current branch or its upstream carrying the changes before it.
+    private static MergeRoute Carrying(Step step, List<Step> changes) =>
+        changes.Count > 0 && step.Route!.Destination is MergeRoute.CurrentBranch or MergeRoute.Upstream
+            ? step.Route! with { Changes = new([.. changes.Select(change => change.Change! with { Chained = SameRun(change, step) })]) }
+            : step.Route!;
 
     private static bool SameRun(Step change, Step push) => change.Run != null && ReferenceEquals(change.Run, push.Run);
 

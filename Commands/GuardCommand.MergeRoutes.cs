@@ -14,6 +14,7 @@ using DynaDocs.Services;
 /// directory git -C names there. State git cannot read resolves nothing, so it never blocks on its own.
 /// A push of the current branch after the line's own branch change in the same worktree is also
 /// judged on the branch that change leaves HEAD on, and refused when git or the line cannot say (DYD-887).
+/// A line that changes branch and pushes, with a substitution holding either, is refused unread.
 /// </summary>
 public static partial class GuardCommand
 {
@@ -45,10 +46,11 @@ public static partial class GuardCommand
         foreach (var current in CurrentBranches(push, tree, directory))
         {
             if (current == MergeRoute.UnreadableBranch)
-                return RefusePr("BLOCKED: This git push follows a branch change in the same line, and the guard cannot read which branch that change leaves HEAD on, so the push may update the default branch, which is the user's (DR 061).",
+                return RefusePr("BLOCKED: This git push shares its line with a branch change, and the guard cannot read which branch HEAD is on when the push runs, so the push may update the default branch, which is the user's (DR 061).",
                     $"  Detected: {push.Form}",
-                    "  Push your own branch by name (git push origin <branch>), then integrate it into its feature/* branch",
-                    "  with dydo merge, or with a PR from it into that branch.");
+                    "  Push your own branch by name (git push origin <branch>) on a plain line, with no substitution",
+                    "  around a branch change or a push, then integrate it into its feature/* branch with dydo merge,",
+                    "  or with a PR from it into that branch.");
             if (PushedBranch(push.Destination!, current, tree) is { } branch && DefaultBranchMatch(branch, tree) is { } target)
                 return RefusePr($"BLOCKED: This git push updates {target}, the default branch, and the default branch is the user's (DR 061).",
                     $"  Detected: {push.Form}",
@@ -76,8 +78,11 @@ public static partial class GuardCommand
     // and the branch of each change before the push in its worktree, or only the last such change when
     // nothing but && separates it from the push, which so runs only after it succeeds. A change in a
     // worktree git cannot settle is kept, and never taken as the last. A push naming its branch has one: none.
+    // An unreadable push, whatever it names, has one the line cannot say.
     private static IEnumerable<string?> CurrentBranches(MergeRoute push, string tree, string directory)
     {
+        if (push.Unreadable)
+            return [MergeRoute.UnreadableBranch];
         if (push.Destination is not (MergeRoute.CurrentBranch or MergeRoute.Upstream))
             return [null];
         var top = Toplevel(tree);

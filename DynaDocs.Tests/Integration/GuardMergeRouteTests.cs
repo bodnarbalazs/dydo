@@ -306,15 +306,67 @@ public class GuardMergeRouteTests : IntegrationTestBase
             ChainEnvelopes));
     }
 
-    // B3 (round 1): a backtick substitution runs where its command does, so one after the push does not count.
+    // Round 2: the order bash runs substitutions in is not read, so a line that changes branch and
+    // pushes, with a substitution holding either, is refused unread, wherever the substitution sits.
+    // A backtick is a substitution only in bash; $( ... ) is one in PowerShell too.
     [Fact]
-    public async Task Push_BeforeABacktickCheckout_IsAllowed()
+    public async Task BranchChangeAndPush_WithASubstitutionHoldingEither_IsDeniedAsUnreadable()
+    {
+        await InitTicketBranchProject();
+        string[] bash = ["claude-bash", "codex-bash"];
+        string[] reason = ["cannot read", "no substitution", "dydo merge"];
+
+        AssertNoMisses(await LineMisses(denied: true, bash, [
+            "echo `git checkout main && git merge feature/x` \"$(git push)\"",
+            "echo \"$(git push)\" `git checkout main && git merge feature/x`",
+            "echo `git push` \"$(git checkout main && git merge feature/x)\"",
+            "echo \"$(git checkout main && git merge feature/x)\" `git push`",
+            "echo `git checkout main`; git push",
+            "git push; echo `git checkout main`",
+            "git checkout main && git merge feature/x && echo `git push`",
+            "echo `git checkout main && git push`"], reason));
+        AssertNoMisses(await LineMisses(denied: true, ChainEnvelopes, [
+            "echo \"$(git checkout main)\" && git merge feature/x && git push",
+            "git checkout main && git merge feature/x && echo \"$(git push)\"",
+            "echo \"$(git checkout main && git push)\""], reason));
+    }
+
+    // Its honest twins: a substitution holding neither a change nor a push leaves the push judged as
+    // before, from the ticket branch; so do the plain && lines.
+    [Fact]
+    public async Task Push_BesideAnUnrelatedSubstitutionOrOnAPlainLine_IsAllowed()
     {
         await InitTicketBranchProject();
 
-        AssertNoMisses(await Misses(denied: false, Words("git push; echo `git checkout main`"), ChainEnvelopes));
-        AssertNoMisses(await Misses(denied: true, Words("echo `git checkout main`; git push"), ["claude-bash", "codex-bash"],
-            reasonParts: ["main", "dydo merge"]));
+        AssertNoMisses(await LineMisses(denied: false, ["claude-bash", "codex-bash"], ["git push; echo `date`"]));
+        AssertNoMisses(await LineMisses(denied: false, ChainEnvelopes, [
+            "git push origin \"$(git branch --show-current)\"",
+            "git checkout -b new && git push -u origin new",
+            "git switch feature/x && git push",
+            "git checkout main && git switch feature/x && git push",
+            "git checkout main && git pull && git checkout DYD-1-x && git push"]));
+    }
+
+    // Each line as written, under each envelope, for lines whose quotes Words cannot carry.
+    private async Task<List<string>> LineMisses(bool denied, string[] envelopes, string[] lines, params string[] reasonParts)
+    {
+        List<string> misses = [];
+        foreach (var line in lines)
+        foreach (var envelope in envelopes)
+        {
+            var json = JsonNode.Parse(Payload([], envelope))!;
+            json["tool_input"]!["command"] = envelope switch
+            {
+                "codex-bash" => new JsonArray("bash", "-lc", line),
+                "codex-pwsh" => new JsonArray("pwsh", "-Command", line),
+                _ => line,
+            };
+            var result = await GuardWithStdinAsync(json.ToJsonString());
+            var wasDenied = !result.IsPreToolUseAllowed;
+            if (wasDenied != denied || (denied && reasonParts.Any(part => !result.Stderr.Contains(part))))
+                misses.Add($"{envelope} {(wasDenied ? "denied" : "allowed")}: {line}\n    {result.Stderr.Trim().Replace("\n", "\n    ")}");
+        }
+        return misses;
     }
 
     // S1 (round 1): when only && separates the last change from the push, the push runs only after it
@@ -459,21 +511,8 @@ public class GuardMergeRouteTests : IntegrationTestBase
             "echo x `\r\ngit push origin main", "echo 'x'`\r\ngh pr merge 5", "echo \"x\"`\r\ngh pr merge 5"));
     }
 
-    private async Task<List<string>> PwshLineMisses(bool denied, params string[] lines)
-    {
-        List<string> misses = [];
-        foreach (var line in lines)
-        foreach (var envelope in new[] { "claude-powershell", "codex-pwsh" })
-        {
-            var json = JsonNode.Parse(Payload([], envelope))!;
-            json["tool_input"]!["command"] = envelope == "codex-pwsh" ? new JsonArray("pwsh", "-Command", line) : line;
-            var result = await GuardWithStdinAsync(json.ToJsonString());
-            var wasDenied = !result.IsPreToolUseAllowed;
-            if (wasDenied != denied || (denied && !result.Stderr.Contains("dydo merge")))
-                misses.Add($"{envelope} {(wasDenied ? "denied" : "allowed")}: {line}\n    {result.Stderr.Trim()}");
-        }
-        return misses;
-    }
+    private Task<List<string>> PwshLineMisses(bool denied, params string[] lines) =>
+        LineMisses(denied, ["claude-powershell", "codex-pwsh"], lines, "dydo merge");
 
     // A Codex workdir is the call's directory, as for PR-ready.
     [Fact]

@@ -43,7 +43,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.13.0'
+          node-version: '26.13.0'
           cache: pnpm
           cache-dependency-path: viewer/pnpm-lock.yaml
 
@@ -97,8 +97,14 @@ jobs:
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
 
       - name: Install cross-compilation toolchain (Linux ARM64)
         if: matrix.cross
@@ -151,10 +157,14 @@ jobs:
         env:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
         with:
-          dotnet-version: '10.0.300'
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
 
       - name: Verify .NET SDK
-        run: if ((dotnet --version) -ne '10.0.300') { throw 'Expected .NET SDK 10.0.300.' }
+        run: if ((dotnet --version) -ne '10.0.303') { throw 'Expected .NET SDK 10.0.303.' }
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -164,15 +174,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.13.0'
+          node-version: '26.13.0'
           cache: pnpm
-          cache-dependency-path: viewer/pnpm-lock.yaml
+          cache-dependency-path: |
+            DynaDocs.Tests/coverage/pnpm-lock.yaml
+            viewer/pnpm-lock.yaml
 
       - name: Create Python assurance environment
-        run: python -m venv dydo/_system/.local/static-gates/python
+        run: python -m venv .static-gates/python
 
       - name: Install Python assurance toolchain
-        run: dydo/_system/.local/static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+        run: .static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock
 
       - name: Restore AltCover
         run: dotnet tool restore --tool-manifest .config/dotnet-tools.json
@@ -181,14 +193,23 @@ jobs:
         run: dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
 
       - name: Install Node assurance toolchain
-        run: npm ci
-        working-directory: DynaDocs.Tests/coverage
+        run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
 
       - name: Install viewer dependencies
         run: pnpm -C viewer install --frozen-lockfile
 
+      - name: Install statechart test dependencies
+        run: pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile
+
+      # The statechart stack's checker, replay and renderer tests need TLC, a JRE and Pele. Each comes
+      # from its pinned source in dydo's dependency lock and must match its pinned hash there.
+      - name: Provision statechart prerequisites
+        id: statechart
+        shell: pwsh
+        run: ./.github/workflows/provision-statechart.ps1
+
       - name: Run isolated test adapter
-        run: dydo/_system/.local/static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/run_tests.py
+        run: .static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/run_tests.py
 
       - name: Build release with warnings as errors
         run: dotnet build DynaDocs.sln -c Release --warnaserror
@@ -197,7 +218,11 @@ jobs:
         run: dotnet run --project DynaDocs.csproj -c Release --no-build -- check
 
       - name: Run coverage gate
-        run: dydo/_system/.local/static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/gap_check.py --force-run
+        run: .static-gates/python/Scripts/python.exe DynaDocs.Tests/coverage/gap_check.py --force-run
+        env:
+          TLA2TOOLS: ${{ steps.statechart.outputs.tla2tools }}
+          JAVA: ${{ steps.statechart.outputs.java }}
+          STATECHART_PELE: ${{ steps.statechart.outputs.pele }}
 
       # The gate's per-row reports, command logs and campaign streams, so a failed row carries its detail.
       - name: Upload coverage evidence
@@ -259,8 +284,14 @@ jobs:
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
 
       - name: Extract version from tag
         id: version
@@ -293,7 +324,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '26.13.0'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Extract version from tag

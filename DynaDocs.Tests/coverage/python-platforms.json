@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "neutral": "linux",
+  "native": {
+    "DynaDocs.Tests/coverage/held_directory.py": {
+      "sha256": "a2459a2d22d4ec634e3c15d4d7a470b462765f5163e06ce54a23541057cd13d3",
+      "windows": [
+        "_windows_open",
+        "_windows_parent",
+        "_windows_identity",
+        "_nt_create",
+        "_windows_directory",
+        "_windows_file"
+      ]
+    },
+    "DynaDocs.Tests/coverage/run_tests.py": {
+      "sha256": "b3b523ce499f5206e8e55940751b0ccedccafb1c404da2ba80c6d18ad590a667",
+      "windows": [
+        "_join_kill_on_close_job",
+        "_end_member",
+        "_end_job_members"
+      ]
+    },
+    "DynaDocs.Tests/coverage/windows_job.py": {
+      "sha256": "3af11982ff0a9da624fc3dc7bb11396f0d602342eaafda73629b02717ceb03fb",
+      "windows": [
+        "bindings",
+        "checked",
+        "close_handle",
+        "accounting",
+        "identity",
+        "members",
+        "retain_members",
+        "native_handle",
+        "issue_read",
+        "poll_pipe",
+        "close_pipe",
+        "make_pipe",
+        "pipes",
+        "attributes",
+        "launch",
+        "signaled",
+        "finish",
+        "wait_campaign",
+        "supervise",
+        "native_run",
+        "preflight"
+      ]
+    },
+    "skills/engineering/verify-dydo/scripts/owned_process.py": {
+      "sha256": "0e0bdc6af143602f535948663da3966f31c2d219a5c2fc9fc71a73db797d8083",
+      "windows": [
+        "supervise",
+        "native",
+        "run_owned"
+      ]
+    }
+  }
+}

@@ -74,3 +74,37 @@ record -- the record above is what "holding the record" means: the outgoing and 
 exact source path, and the reported version/revision proving the build did not change underneath
 the pin. A binary reporting a *different* version or revision is not a re-pin; it is an admiral
 decision, made outside the runner exactly as the 2026-09-16 note above already required.
+
+## The guard hook and the candidate fingerprint
+
+From DYD-500 on, the candidate's committed `.claude/settings.json` runs `dydo guard --host claude`
+before every Claude Read. The Claude leg keeps that hook on: it passes no `disableAllHooks` and no settings
+override, and never rewrites the settings file. The first guard call of the day writes the gitignored
+`dydo/_system/.local/last-validation` into the checkout, and the run fingerprints every byte but the
+top-level `.git`, so that write used to fail the run.
+
+Decision (DYD-545): pre-warm the guard. When the Claude leg is selected (`--only claude` or a bare
+run), `candidate-fingerprint.mjs` runs the same hook command once, through a shell, with a candidate
+Read payload and the checkout as cwd, before the "before" fingerprint is taken. The guard's only
+Read-time write is that daily validation, and it does not repeat within 24 hours, so the sessions'
+own hook Reads leave the bytes unchanged. Any other write, including a future per-call guard write,
+still fails the run. Two options were rejected: excluding `dydo/_system/.local/` from the
+fingerprint, because an exclusion ignores writes, and disabling project hooks, because that weakens
+the hook.
+
+The Claude leg needs `dydo` on the PATH it inherits. The pre-warm resolves it first and fails with a
+named error when it is missing, so the leg never runs with a broken hook. The manifest and
+`claude-guard-prewarm.json` record the resolved path and version, plus the pre-warm's exit code and
+stderr. A non-zero exit fails the run.
+
+The Codex leg runs no project hook. On 2026-11-05, codex-cli 0.166.0 on Linux was started as
+`app-server` with the leg's isolated `CODEX_HOME` config and a restricted PATH. Its `hooks/list` for
+a materialized candidate returned no hooks. As a positive control, the same call with the checkout
+marked as a trusted project listed `.codex/hooks.json`'s `dydo guard` PreToolUse hook as `project`
+with trust status `untrusted`: Codex runs a project hook only for a trusted project whose hook hash
+is trusted in `config.toml`, and the isolated home has neither. So the pre-warm rule does not apply
+to Codex. The probe did not run the pinned Windows `codex.exe`, so recheck it there.
+
+The expected skill count is derived, not pinned: the run counts the source commit's tracked
+`skills/**/SKILL.md` from `git ls-tree`, requires it to be nonzero, and requires the loaded inventory
+to match it.

@@ -119,10 +119,19 @@ in return for continuity across visits and restarts.
 
 ---
 
+## Amendment 2026-11-04 - `dydo survey`
+
+[DR 063](./063-dydo-survey-read-only-lane-digest.md) adds `dydo survey`, a read-only digest of one
+Project's lanes that reads through this command's reader under decisions 1 and 2 above. `dydo map`
+is no longer the only dydo command that reads Linear; the boundary texts name both.
+
+---
+
 ## Supersedes and amends
 
 Amends [DR 044](./044-linear-canonical-pm-and-dydo-knowledge-boundary.md), Integration posture:
-`dydo map` is the one permanent dydo component that talks to Linear's API, and it only reads.
+`dydo map` is a permanent dydo component that talks to Linear's API, and it only reads; since
+[DR 063](./063-dydo-survey-read-only-lane-digest.md), `dydo survey` reads through the same client.
 DR 044's canonical ownership and its no-mirror rule are unchanged.
 
 ## Affects

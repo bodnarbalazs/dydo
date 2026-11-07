@@ -1,0 +1,18 @@
+Running as unit: run-p2956423-i49088006.scope; invocation ID: aff4283ded8b444bbf5c66354ccbce0e
+✔ CI runs the oracle and requires its result on every push/PR trigger (0.509114ms)
+✔ the CI commands accept a passed oracle (503.163145ms)
+✔ the CI commands reject a skipped oracle (579.495502ms)
+✔ the CI commands reject a empty oracle (535.724071ms)
+✔ the CI commands reject a failed oracle (56.996174ms)
+✔ the CI JDK reuses the already-reviewed Java build toolchain pin (0.3065ms)
+✔ oracle provisioning publishes verified paths (677.829106ms)
+✔ oracle provisioning rejects changed tlc bytes (609.946167ms)
+✔ oracle provisioning rejects changed configOracleJdk bytes (658.891121ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3684.13625

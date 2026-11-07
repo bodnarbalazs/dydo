@@ -46,7 +46,7 @@ provide the ticket worktree; otherwise place it beside the repository at
 
 | Stage | Owner | Required state |
 |---|---|---|
-| Open the Project | the map holder, commissioning the first Ticket Captain | The first Captain opens the feature branch from the approved main SHA and reports it; the Project map is in Linear; every ticket carries outcome, owned paths, blockers, exact gates and base branch. Only then is a ticket pickable. |
+| Open the Project | the map holder, commissioning the first Ticket Captain | The first Captain opens the feature branch from the approved main SHA, commits the Project's working spec on it when the map holder hands one over, and reports both; the Project map is in Linear; every ticket carries outcome, owned paths, blockers, exact gates and base branch. Only then is a ticket pickable. |
 | Claim the ticket | `ticket-captain` | Ticket is assigned; its branch and isolated worktree exist; branch, base SHA and worktree path are on the ticket. The captain sets `Implementing` when it spawns the author, a code-writer or a docs-writer. |
 | Resolve the work | `ticket-captain` | The captain's compact acceptance contract names the lanes, or none; when the work splits beyond it, the writer's one pre-code comment names them. Parallel crew receive disjoint paths, the ticket's feature files among them, and exact gates; independently trackable parallel lanes become direct Sub-tickets. |
 | Open a parallel lane | `ticket-captain` | The Sub-ticket carries the parent's Type and Mode, its own chain, status and evidence, a disjoint owned-path subset, exact gates, child-key branch, parent-branch base SHA and isolated worktree. |
@@ -55,6 +55,9 @@ provide the ticket worktree; otherwise place it beside the repository at
 | Integrate a Project ticket | `ticket-captain` | Its final Merge Sub-ticket runs a code-writer - conflicts and combined gates mapped, the merge performed, a resolution that refactored leaving its code no worse than either side - then a fresh merge reviewer, preserving the merge commit and hop SHAs; the map holder wires the order and may advance an independent ready PR. Parent stays `Ready to Merge` until merge PASS, then both close `Done`. |
 | Integrate an atomic ticket | `ticket-captain` | No Merge Sub-ticket: the PR into main carries its reviewer PASS, the captain confirms CI green and sets `Ready to Merge`, and the user clicks the merge. The captain then closes the ticket `Done` and cleans up. |
 | Land the Project | user | The landing Merge Ticket prepares main into feature and obtains acceptance PASS; the user clicks feature into main as a merge commit, never squash. |
+
+A conflicted merge's push to its feature branch passes the guard, while a push to the default
+branch is blocked: the default branch is the user's.
 
 ## Before the first edit
 
@@ -85,30 +88,39 @@ permissions and uncertain native interfaces are examples of such a risk. Keep on
 it. This scale rule does not weaken required G/M, integration or release gates, and skipped native
 proof is never runtime proof.
 
-Before an expensive test, cheaply prove the repository or snapshot, intended selection and nonzero
-discovery. A `code-writer` hop runs the tests relevant to the change while building, then the full
-suite and static gate of each changed stack once before it returns, and its review judges that run.
-Other crew hops and their reviews prove with the tests relevant to the change and the cheap static
-checks. The full suites and the whole gate set run at the ticket's final gates, its Merge
-Sub-ticket's combined gates and the landing. Within one such gate run, each suite executes once.
-Record every gate result with candidate, command, environment or session, exit and result
-location; do not interrupt a quiet healthy test merely because it is silent. Reuse exact-candidate
-evidence only where the gate and environment permit it, rerunning after relevant changes or new
-concerns and at distinct mandatory integration or release boundaries. Validate uncertain native
-interface shapes early.
+The [testing strategy](./testing-strategy.md#feature-proof-and-gate-placement) owns selection,
+stage placement, runner prerequisites, shared-host constraints and exact-candidate evidence reuse.
+The captain pins those project-owned commands in Exact gates; the writer proves that hop's actual
+reach and the reviewer judges its record. Required combined-merge and release gates stay at their
+boundaries. Reconcile existing active gate contracts explicitly before changing obligations.
+Validate uncertain native interface shapes early.
 
 ## Delegation
 
 - The Admiral budgets open native capacity before commissioning or resuming a captain. The captain alone
   commissions exact-scope delivery crew, budgets that capacity and preserves the fresh reviewer
   obligation; `research` still sends its own scouts. A saved brief is not Admiral-to-crew authority.
-- AFK work, captain or crew, runs as a child task of its dispatcher; HITL work, which the user joins,
-  runs as a new top-level thread, never a child. Within one vendor, use the host's native subagents
-  and messaging where they carry the work and its return. When any agent in the exchange is another
-  vendor's, always use T3's `delegate_task` for a child and T3 messaging for a peer; without T3, use
-  what the host supplies, or none. A return comes back once, on the channel it was dispatched on.
-  Open a top-level thread only for HITL work or when the user asks for one; on `parent_not_active`,
-  hand the dispatch up to your officer.
+- Under T3, the channel follows where the child's result is awaited. A native foreground subagent
+  only when the dispatcher waits for it within its own turn. `delegate_task` for every other child
+  that returns to its dispatcher: captains, crew, reviewers, and any agent of another vendor. A new
+  top-level T3 thread only for HITL work the user takes over, or when the user asks for one. No
+  native background subagents. A peer of another vendor is reached by T3 messaging. Without T3, use
+  the host's native subagents and messaging, or none. A return comes back once, on the channel it
+  was dispatched on.
+- A native child lives only inside its dispatcher's turn and cannot itself call `delegate_task`;
+  T3 refuses with `parent_not_active` ("Delegated tasks require an active run owned by this MCP
+  provider session"). A native captain therefore cannot send its own Codex reviewer; a
+  `delegate_task` captain can. On `parent_not_active`, hand the dispatch up to your officer.
+- A dispatcher waiting on a native child, or a child awaiting a result it owns (a reviewer, a
+  suite), stays in its turn until the result arrives. Work that cannot finish inside the turn goes
+  through `delegate_task` instead.
+- Every brief that sends out Codex agents names their concurrency cap: start around 8 at once, rise
+  toward 16 only while runs stay clean, and back off on `429 turn_rate_limit_exceeded` ("Codex is
+  at capacity"). A capacity 429 means retry after a few minutes, never a blocker. A brief asks for a
+  capped count, never for "maximise parallelism".
+- An officer that needs the user while its work runs asks through the host's question tool; T3
+  then lifts the thread into the user's queue. The Linear Question ticket stays the record. Crew
+  hand their questions up to their captain and never ask the user directly.
 - On a bounded refusal, preserve the record, candidate, hop SHA and exact brief; do not broaden it or
   retry blindly. Use established lifecycle handling, then return or release the concrete limitation
   when captain-owned work cannot run. Record only observed native evidence.
@@ -140,11 +152,16 @@ captain takes the record, and returns `done <key>: merged` after merge PASS and 
 holds the detail; the captain posts each crew hop's SHA. A Merge Sub-ticket never enters `Ready to Merge`.
 An atomic ticket has no Merge Sub-ticket: its captain sets `Ready to Merge` once CI is green, and after
 the user's click closes it `Done`, cleans up and returns `done <key>: merged`.
+A delegated captain whose PR still awaits checks returns `PR open <key>, checks pending: <url>, head <SHA>`;
+its officer, the top-level thread that owns the PR in T3, watches it and wakes the captain, which
+rechecks the gate before `Ready to Merge`.
 
-For an uncleared blocker or user takeover: push, post the resume SHA, clean the worktree (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree), set the
-parent `Todo`, unassign and wire any blocker; return `released <key>: <reason>`. A dead session is
+For an uncleared blocker or user takeover: push, post the resume SHA, clean the worktrees the captain
+or its crew made (lanes, merge checkouts, temp checkouts) with `dydo clean --dry-run <worktree>`, then
+`dydo clean <worktree>`, run from outside that tree, set the parent `Todo`, unassign and wire any
+blocker; return `released <key>: <reason>`. The worktree its thread runs in belongs to T3: leave it. A dead session is
 treated as release from its last recorded hop without a final push. Fresh commission from the
-record works on both hosts. An invoked admiral wakes on a captain's return or the user's word and rereads
+record works on both hosts. An invoked admiral wakes on a captain's return, the user's word or its scheduled check-in, and rereads
 the board, including released and blocker-cleared tickets.
 
 Merge FAIL, a blocker, stays owned: fix integration defects inside Merge; revert a source defect there and
@@ -184,7 +201,7 @@ close `Done` and return `done <key>: merged`.
 
 | Artifact | Accountable | Completion |
 |---|---|---|
-| Parent ticket and lane worktrees | `ticket-captain` | Every worktree it or its crew created is cleaned with `dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree. A spawned Ticket Captain first pushes the parent branch and opens its PR so the work survives its return. |
+| Parent ticket and lane worktrees | `ticket-captain` | Every worktree it or its crew made (lanes, merge checkouts, temp checkouts) is cleaned with `dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree. The worktree its thread runs in belongs to T3: leave it. Any worktree under `~/.t3/worktrees` was made by T3, a crew member's `delegate_task` checkout included, and `dydo clean` skips it. A spawned Ticket Captain first pushes the parent branch and opens its PR so the work survives its return. |
 | Integrated lane Sub-ticket branch | `ticket-captain` | The branch is deleted after it passes review and is integrated into the parent ticket branch. |
 | Merged Project ticket branch | `ticket-captain` | The branch is deleted after the merge. |
 | Merged atomic ticket branch | `ticket-captain` | The branch is deleted after the user clicks its PR into main. |

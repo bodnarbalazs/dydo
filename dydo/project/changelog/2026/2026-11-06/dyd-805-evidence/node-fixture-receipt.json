@@ -1,0 +1,94 @@
+{
+  "baseCandidate": "530088c4007543ce545299a8005e3508a6072aaf",
+  "source": {
+    ".github/workflows/ci.yml": "014997903f358b5031dafa913bfcec2fa4bf7aa56dfd190466744b31f7519aeb",
+    "DynaDocs.Tests/Integration/GuardPrReadyTests.cs": "81250feeb23c7cedc20556b7fa54c2c0dba8fe737ebc2a9a3c5c981e4cf26cb9",
+    "DynaDocs.Tests/Commands/GuardPrReadyBodyFileTests.cs": "0d32f34569b0a0f362a797696dc68e8ecd19a3fb6c841222bb9bb9fad4d2f5a7",
+    "DynaDocs.Tests/coverage/tests/guard-windows-selection.test.cjs": "7cf5e132a17a0bf5947f1cc355549c0cc826c2728a0692b2652c2ca2d60cc27b",
+    "DynaDocs.Tests/coverage/gap_check.py": "901759b8a72aeb7e8985f6671f81c1915064002d61df4016f1a60bb1845430cf"
+  },
+  "redFixtureSha256": "ec6cc2a9d1362b4e50ebf4423463df20b668d6a05ee75ed49eaccccf3293cdbf",
+  "environment": "Linux; Node v26.13.0; PowerShell 7.6.9; Python 3.14.4; existing dependencies; no process environment inspection",
+  "wrapper": "/var/tmp/dydo-gate-lock.sh systemd-run --user --scope --slice=app-t3code-agents.slice -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue timeout <seconds> env PATH=/tmp/dyd622-pwsh:/home/balazs/.local/share/fnm/aliases/default/bin:/home/balazs/.dotnet:/usr/local/bin:/usr/bin:/bin MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false <command>",
+  "node": {
+    "command": "node --test DynaDocs.Tests/coverage/tests/guard-windows-selection.test.cjs",
+    "timeoutSeconds": 180,
+    "red": {
+      "exit": 1,
+      "passed": 10,
+      "failed": 2,
+      "skipped": 0
+    },
+    "green": {
+      "exit": 0,
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0
+    },
+    "reverted": {
+      "exit": 1,
+      "passed": 10,
+      "failed": 2,
+      "skipped": 0
+    },
+    "restored": "cmp to saved green bytes passed in preflight and before static"
+  },
+  "static": {
+    "command": ".static-gates/python/bin/python DynaDocs.Tests/coverage/gap_check.py gate static --stack node",
+    "timeoutSeconds": 600,
+    "exit": 0,
+    "rawResult": "node-fixture-static-result.json.gz"
+  },
+  "reusedCSharpEvidence": {
+    "receipt": "merge-receipt.json",
+    "testedCandidate": "6ac09458abd0b56290237b2648469f294a18a7ad",
+    "authorization": "Captain explicitly permits exact-byte C# reuse for this Node-only fixture correction",
+    "light": {
+      "exit": 0,
+      "passed": 2515,
+      "skipped": 0,
+      "raw": "merge-light.trx.gz"
+    },
+    "classes": {
+      "exit": 0,
+      "passed": 287,
+      "skipped": 0,
+      "raw": "merge-classes.trx.gz"
+    },
+    "changedPathsFromTestedCandidate": [
+      "DynaDocs.Tests/coverage/tests/guard-windows-selection.test.cjs",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-classes.log.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-classes.trx.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-discovery.log.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-docs.log.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-dotnet-static.json.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-light.log.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-light.trx.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-node-static.json.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-node.log.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-preflight-r2.log.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-preflight.log.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-preflight.sh",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-python-static.json.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-receipt.json",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-replay.sh",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-statechart-static.json.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-static-result.json.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-static.log.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-tree.txt.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-evidence/merge-viewer-static.json.gz",
+      "dydo/project/changelog/2026/2026-11-06/dyd-805-windows-guard-expansion.md"
+    ]
+  },
+  "limitations": [
+    "Hosted Windows remains captain-owned and pending",
+    "No local production coverage required for this fixture-only change",
+    "Mutation unavailable under DYD-103; not claimed passing"
+  ],
+  "docs": {
+    "command": "dotnet bin/Debug/net10.0/dydo.dll check",
+    "timeoutSeconds": 150,
+    "exit": 0,
+    "raw": "node-fixture-docs.log.gz"
+  }
+}

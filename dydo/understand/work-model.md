@@ -51,7 +51,7 @@ The [dydo glossary](../reference/dydo-glossary.md) names every member of each ca
 A captain's ticket is a Project one level down: the same Types, statuses and chain, with a different
 map holder. The [control-flow map](./control-flow.md) carries every contact, including captain
 two-step returns, release/takeover, review FAIL, merge FAIL and blocker-cleared resume. The board is
-the inbox; an admiral wakes on a captain's return or the user's word.
+the inbox; an admiral wakes on a captain's return, the user's word or its scheduled check-in.
 
 ## Canonical ownership
 
@@ -64,9 +64,11 @@ the inbox; an admiral wakes on a captain's return or the user's word.
 | Release tags and changelog | Git |
 | FutureFeatures and their promotion state | Linear |
 
-dydo has no Linear poller, webhook receiver, or Markdown mirror. Its only Linear client is
-`dydo map`, a read-only view that uses the user's `LINEAR_API_KEY` and keeps disposable saved maps
-([DR 052](../project/decisions/052-dydo-map-read-only-linear-view.md)). Agents reach Linear through
+dydo has no Linear poller, webhook receiver, or Markdown mirror. Its one Linear client is read-only
+and serves two commands that use the user's `LINEAR_API_KEY`: `dydo map`, a view that keeps
+disposable saved maps ([DR 052](../project/decisions/052-dydo-map-read-only-linear-view.md)), and
+`dydo survey`, a lane digest that keeps nothing
+([DR 063](../project/decisions/063-dydo-survey-read-only-lane-digest.md)). Agents reach Linear through
 its official MCP, UI, API, and integrations.
 
 ## Reviewed intent
@@ -74,7 +76,7 @@ its official MCP, UI, API, and integrations.
 No implementation begins without a contract another agent can review independently.
 
 - One atomic ticket can be its own reviewed contract. Cross-cutting architecture gets a reviewed
-  repository plan; shared multi-ticket behavior may use a [feature spec](../reference/feature-spec-convention.md).
+  repository plan; shared multi-ticket behavior may use a [feature spec](../reference/feature-spec-convention.md); a Project the admiral scaffolds always has one ([DR 053](../project/decisions/053-temporary-feature-specs.md)).
 - The plan carries one `linear-project` URL, and its Linear Project links back to the published plan.
 - An implementation ticket under a Project plan records the plan's exact governing commit before
   execution, including applicable feature-spec commit and sections; a review pins the ticket's

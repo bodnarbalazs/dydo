@@ -550,14 +550,16 @@ public static class InitCommand
         _ => value.ToJsonString()
     };
 
-    // The dydo clean entries are narrow on purpose: Claude Code's auto mode drops blanket shell
-    // rules but keeps narrow ones, so dydo clean (safe by design) runs without a prompt there too.
+    // The dydo clean and dydo merge entries are narrow on purpose: Claude Code's auto mode drops blanket
+    // shell rules but keeps narrow ones, so these commands (safe by design) run without a prompt there too.
     private static readonly string[] DydoAllowEntries =
     {
         "Bash(dydo:*)",
         "PowerShell(dydo:*)",
         "Bash(dydo clean:*)",
-        "PowerShell(dydo clean:*)"
+        "PowerShell(dydo clean:*)",
+        "Bash(dydo merge:*)",
+        "PowerShell(dydo merge:*)"
     };
 
     // The Claude guard rides the committed .claude/settings.json (PrepareClaudeSettings). This
@@ -597,7 +599,7 @@ public static class InitCommand
     // The Claude Code hook alone carries the host marker: it is the guard's only proof that the
     // host can answer an ask (the mode-set rerun). The Codex hook stays unmarked, so it is denied.
     private const string GuardHookCommand = "dydo guard";
-    private const string ClaudeGuardHookCommand = GuardHookCommand + " --host " + GuardCommand.ClaudeHost;
+    private const string ClaudeGuardHookCommand = ClaudeGuardWiring.HookCommand;
 
     // dydo installs no Stop hook, and `dydo guard --stop` is not a guard option, so a Stop entry
     // running it would fail every turn end.
@@ -699,12 +701,16 @@ public static class InitCommand
 
         var rulesPath = Path.Combine(codexDir, "rules", "dydo.rules");
         Directory.CreateDirectory(Path.GetDirectoryName(rulesPath)!);
-        File.WriteAllText(rulesPath, CodexRules);
+        var existing = File.Exists(rulesPath) ? File.ReadAllText(rulesPath) : "";
+        if (existing.ReplaceLineEndings("\n") != CodexRules)
+            File.WriteAllText(rulesPath, existing.Contains("\r\n", StringComparison.Ordinal) ? CodexRules.ReplaceLineEndings("\r\n") : CodexRules);
     }
 
-    // Codex's exec-policy allow rule for dydo clean, committed beside .codex/hooks.json. Codex loads
-    // project rules only when the project's .codex/ layer is trusted, as it does the hooks. dydo owns
-    // the whole file and rewrites it on every init and --join.
+    // Codex's exec-policy allow rules for dydo clean and dydo merge, committed beside .codex/hooks.json.
+    // Codex loads project rules only when the project's .codex/ layer is trusted, as it does the hooks.
+    // dydo owns the file, preserves matching bytes and restores stale content in the checkout's line endings.
+    // The merge rule also names dydo.exe: Codex matches the argv's first word as written,
+    // and Windows sessions write either.
     internal const string CodexRules =
         "# Written by dydo init codex; dydo rewrites this file on every init and --join.\n"
         + "# dydo clean archives uncommitted work and keeps unmerged branches before it removes a\n"
@@ -714,6 +720,15 @@ public static class InitCommand
         + "    decision = \"allow\",\n"
         + "    justification = \"dydo clean archives uncommitted work and keeps unmerged branches before it removes a worktree\",\n"
         + "    match = [\"dydo clean --dry-run\", \"dydo clean --all\"],\n"
+        + "    not_match = [\"dydo init codex\"],\n"
+        + ")\n"
+        + "# dydo merge refuses in code everything but a reviewed, green PR into a feature/* branch, so it\n"
+        + "# runs without an approval prompt.\n"
+        + "prefix_rule(\n"
+        + "    pattern = [[\"dydo\", \"dydo.exe\"], \"merge\"],\n"
+        + "    decision = \"allow\",\n"
+        + "    justification = \"dydo merge merges a reviewed PR into a feature/* branch only; master, main and the default branch are refused in code\",\n"
+        + "    match = [\"dydo merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567 --match-base-commit fedcba9876543210fedcba9876543210fedcba98\", \"dydo.exe merge 12 --match-head-commit 0123456789abcdef0123456789abcdef01234567 --match-base-commit fedcba9876543210fedcba9876543210fedcba98\"],\n"
         + "    not_match = [\"dydo init codex\"],\n"
         + ")\n";
 
@@ -813,7 +828,8 @@ public static class InitCommand
             "AGENTS.md (entry point)");
 
     // Claude Code reads AGENTS.md only when no CLAUDE.md, CLAUDE.local.md or .claude/CLAUDE.md
-    // is present. A CLAUDE.md that is dydo's own copy goes; anything the user wrote stays and warns.
+    // is present. A CLAUDE.md that is dydo's own copy goes; anything the user wrote stays and warns,
+    // unless it already imports AGENTS.md first.
     private static void ReconcileClaudeEntryFiles(string projectRoot)
     {
         var claudeMd = Path.Combine(projectRoot, "CLAUDE.md");
@@ -829,17 +845,23 @@ public static class InitCommand
                 File.Delete(claudeMd);
                 Console.WriteLine("  ✓ Removed CLAUDE.md, a copy of the entry point: Claude Code reads AGENTS.md");
             }
-            else
+            else if (!ImportsFirst(claudeMd, "@AGENTS.md"))
             {
                 ConsoleOutput.WriteWarning("  ! CLAUDE.md hides AGENTS.md from Claude Code. Move its content into AGENTS.md, or put @AGENTS.md at its top.");
             }
         }
 
-        if (File.Exists(Path.Combine(projectRoot, "CLAUDE.local.md")))
+        var claudeLocalMd = Path.Combine(projectRoot, "CLAUDE.local.md");
+        if (File.Exists(claudeLocalMd) && !ImportsFirst(claudeLocalMd, "@AGENTS.md"))
             ConsoleOutput.WriteWarning("  ! CLAUDE.local.md stops Claude Code reading AGENTS.md. Put @AGENTS.md at its top, or set Project instructions to claude-md-and-agents-md.");
-        if (File.Exists(Path.Combine(projectRoot, ".claude", "CLAUDE.md")))
+        var dotClaudeMd = Path.Combine(projectRoot, ".claude", "CLAUDE.md");
+        if (File.Exists(dotClaudeMd) && !ImportsFirst(dotClaudeMd, "@../AGENTS.md"))
             ConsoleOutput.WriteWarning("  ! .claude/CLAUDE.md stops Claude Code reading AGENTS.md. Put @../AGENTS.md at its top.");
     }
+
+    // File.ReadLines drops a BOM; the first non-blank line, trimmed, must be the import.
+    private static bool ImportsFirst(string path, string import) =>
+        File.ReadLines(path).FirstOrDefault(line => !string.IsNullOrWhiteSpace(line))?.Trim() == import;
 
     private static string NormalizeEntry(string content) =>
         content.Replace("\r\n", "\n", StringComparison.Ordinal).TrimEnd('\n');

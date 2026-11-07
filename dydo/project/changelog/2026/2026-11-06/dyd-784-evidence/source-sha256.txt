@@ -1,0 +1,5 @@
+36658a5974273f3dc8e1b2a2bdf3767bebe6a77195ac1cdfdca7a071dcee7e1b  .github/workflows/ci.yml
+2daa12b72152f29cc9567fd20aa1d0915f2fac32cef95bf4ddce4010790ecb66  .github/workflows/provision-statechart-oracle.ps1
+2e9b0f201e50590d88d37c5c78f9f54c63ec95b1213036d6650223845d197ebf  Resources/Statechart/dependency-lock.json
+c7ab3fdea28a108f0e3e32d26e31fdda907aae5363f8bc3315f9d1f6d09410c5  DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs
+8aa8fe2ddab416550de3e9a796e290479f55f95e73516fa22f5d8cef0d1594a9  skills/engineering/statechart/PROVENANCE.md

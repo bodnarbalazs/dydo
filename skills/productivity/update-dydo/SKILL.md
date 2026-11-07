@@ -185,3 +185,15 @@ asking, and report each such case as a dydo defect with its repro.
 **Skills.** In the clone, `git diff --no-renames --name-status <oldest base> <new> -- skills/`
 lists added and removed files; step 6's rename rule says which are moves. `skills/` at new
 against the project's shows the project-local ones.
+
+**Linear workspace.** Through whatever Linear connection the session has, read the team's label
+groups, labels, ticket statuses and templates, and compare them with the Linear Workspace Standard the
+reference writes (`reference/linear-workspace-standard.md` in its docs root), names, colours and
+status order included. Compare Project statuses through the user's workspace-settings read-back.
+List each difference. Follow upstream's Getting Started §5 at the new tag in step 1's temp clone
+(`git show <new>:dydo/guides/getting-started.md`): create missing label groups and labels only with
+the user's OK; list missing or misordered ticket statuses, Project statuses and templates for the
+user's clicks. A team value only the project has is a tweak: keep and list it. Templates the
+connection cannot read (the standard does not require it to): list the standard's for the user to
+check. A project that keeps no work in Linear has nothing
+to compare; with no Linear connection in the session, list the category for the user and skip it.

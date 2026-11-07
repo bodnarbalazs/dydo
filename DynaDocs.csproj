@@ -26,11 +26,10 @@
         <ToolCommandName>dydo</ToolCommandName>
         <PackageId>dydo</PackageId>
 
-        <!-- Runtime rollforward: run on any .NET 10.x runtime regardless of the SDK patch
-             the tool was built with. Prevents users from being forced to upgrade .NET every
-             time we ship a build against a newer patch. -->
+        <!-- Keep the AOT compiler and runtime at the first patch fixing CVE-2026-111497.
+             Framework-dependent tools also require this runtime minimum. -->
         <RollForward>LatestMinor</RollForward>
-        <RuntimeFrameworkVersion>10.0.0</RuntimeFrameworkVersion>
+        <RuntimeFrameworkVersion>10.0.14</RuntimeFrameworkVersion>
 
         <!-- Native AOT publishing -->
         <PublishAot>true</PublishAot>
@@ -38,13 +37,26 @@
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     </PropertyGroup>
 
+    <Import Project="Resources/Statechart/payload.items.props" />
+    <ItemGroup>
+        <EmbeddedResource Include="Resources/Statechart/payload.json" LogicalName="Statechart/manifest.json" />
+        <EmbeddedResource Include="Resources/Statechart/dependency-lock.json" LogicalName="Statechart/lock.json" />
+    </ItemGroup>
+    <Target Name="ValidateStatechartPayload" BeforeTargets="PrepareForBuild">
+        <GetFileHash Files="@(StatechartPayload)" Algorithm="SHA256">
+            <Output TaskParameter="Items" ItemName="StatechartPayloadHashes" />
+        </GetFileHash>
+        <Error Condition="'%(StatechartPayloadHashes.FileHash)' != '%(StatechartPayloadHashes.ExpectedHash)'"
+               Text="Statechart payload source drift: %(StatechartPayloadHashes.Identity). Review and explicitly update its manifest before building." />
+    </Target>
+
     <ItemGroup>
         <PackageReference Include="System.CommandLine" Version="2.0.2" />
         <PackageReference Include="CsToml" Version="1.8.4" />
         <PackageReference Include="Markdig" Version="0.44.0" />
         <!-- System.Management removed - using P/Invoke for parent PID lookup instead (AOT-compatible) -->
         <!-- Source Link for enhanced debugging -->
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.112" PrivateAssets="All" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.403" PrivateAssets="All" />
     </ItemGroup>
 
     <ItemGroup>
@@ -73,6 +85,8 @@
         <EmbeddedResource Include="viewer\dist\**\*"
                           LogicalName="$([System.String]::Copy('%(Identity)').Replace('\','/'))" />
     </ItemGroup>
+
+    <Import Project="ViewerPackaging.targets" />
 
     <ItemGroup>
         <None Include="README.md" Pack="true" PackagePath="" />

@@ -1,0 +1,355 @@
+namespace DynaDocs.Services.Merge;
+
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
+using DynaDocs.Utils;
+using static CommitSha;
+using static GitHubJson;
+
+/// <summary>
+/// <c>dydo merge</c>: merge a reviewed PR into its <c>feature/*</c> base with a merge commit, or refuse.
+/// In order: the repository is origin's; a closed PR is reconciled first (its SHA already in a feature
+/// base is success, so a rerun after a lost answer is safe); the base is a feature branch and not the
+/// default; the head is the reviewed SHA; the base's tip, read from the branch ref and never from the
+/// PR's <c>base.sha</c>, is the pin; the PR body holds that SHA's PASS; its checks are green. The merge
+/// names the validated base and the SHA, so a retarget or a push after the checks cannot change where or
+/// what lands. The pin only refuses: it never names the target, and it reaches a write only as the
+/// merge's first parent and as the value the ref must still hold for the move, equal to the tip just
+/// read. Nothing writes before every check has passed, and a dry run writes nothing.
+/// </summary>
+internal sealed partial class PullRequestMerge
+{
+    private static readonly HashSet<string> MergeRubrics = ["code", "docs", "merge"];
+
+    private static readonly HashSet<string> DefaultBranchNames = new(["master", "main"], StringComparer.OrdinalIgnoreCase);
+
+    // The pauses before each reread of a PR not yet marked merged: three rereads after the first, four seconds in all.
+    private static readonly TimeSpan[] RereadPauses = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2)];
+
+    private readonly MergeCheckout _checkout;
+    private readonly IGitHubApi _github;
+    private readonly int _number;
+    private readonly string _sha;
+    private readonly string _pin;
+    private readonly string _repo;
+    private readonly Action<TimeSpan> _wait;
+
+    private PullRequestMerge(MergeCheckout checkout, IGitHubApi github, int number, string sha, string pin, Action<TimeSpan> wait)
+    {
+        _checkout = checkout;
+        _github = github;
+        _number = number;
+        _sha = sha;
+        _pin = pin;
+        _wait = wait;
+        _repo = checkout.Origin.ApiPath;
+    }
+
+    /// <param name="pin">The target branch tip the caller pinned; a target at any other tip is refused.</param>
+    /// <param name="connect">Opens GitHub on origin's host; production passes <see cref="GhApi"/>.</param>
+    /// <param name="wait">Sleeps between the report's rereads; tests pass a recorder, production sleeps.</param>
+    public static int Run(string currentDirectory, int number, string? sha, string? pin, bool dryRun, Func<string, IGitHubApi> connect,
+        Action<TimeSpan>? wait = null)
+    {
+        try
+        {
+            sha = sha?.ToLowerInvariant();
+            pin = pin?.ToLowerInvariant();
+            if (sha == null || !FullShaRegex().IsMatch(sha))
+                throw MergeStop.Refused("--match-head-commit takes the full 40-character SHA the reviewer passed");
+            if (pin == null || !FullShaRegex().IsMatch(pin))
+                throw MergeStop.Refused("--match-base-commit takes the full 40-character SHA of the target branch tip you pinned");
+            var checkout = MergeCheckout.Locate(currentDirectory);
+            return new PullRequestMerge(checkout, connect(checkout.Origin.Host), number, sha, pin, wait ?? Thread.Sleep).Merge(dryRun);
+        }
+        catch (MergeStop stop)
+        {
+            foreach (var line in stop.Lines)
+                Console.Error.WriteLine(line);
+            return stop.ExitCode;
+        }
+    }
+
+    private int Merge(bool dryRun)
+    {
+        var pull = ReadPull();
+        if (pull.Closed)
+            return Reconcile(pull);
+
+        var defaultBranch = ReadDefaultBranch();
+        CheckPull(pull, defaultBranch);
+        var branch = PinnedBranch(pull.Base);
+        var pass = ReviewPass(pull, _pin);
+        if (CommitChecks.Refusal(_github, _repo, _sha, pull.Base, branch) is { } checks)
+            throw MergeStop.Refused(checks);
+
+        if (dryRun)
+        {
+            Console.WriteLine($"would merge {Short(_sha)} into {pull.Base} at {Short(_pin)} (PR #{_number})");
+            return ExitCodes.Success;
+        }
+
+        var message = CommitMessage(pull, pass);
+        var merge = Compare(_pin, _sha) == "ahead" ? WriteTwoParentMerge(pull.Base, message) : PostMerge(pull.Base, message);
+        if (merge == null)
+            Console.WriteLine(AlreadyIntegrated(pull));
+        else
+            Report(pull, merge, defaultBranch);
+        return ExitCodes.Success;
+    }
+
+    private PullRequest ReadPull()
+    {
+        var reply = _github.Send("GET", $"{_repo}/pulls/{_number}");
+        if (reply.Status == 0 && _checkout.Origin.IsSsh)
+            throw MergeStop.ToolError($"could not read PR #{_number} from {_checkout.Origin}: {reply.Error}; "
+                + $"if {_checkout.Origin.Host} is an SSH alias, {_checkout.Origin.RealHostHint}");
+        var pull = reply.Status == 404 ? null : PullRequest.From(Expect(reply, 200, $"could not read PR #{_number} from {_checkout.Origin}"));
+        return pull != null && string.Equals(pull.BaseRepo, _checkout.Origin.FullName, StringComparison.OrdinalIgnoreCase)
+            ? pull
+            : throw MergeStop.Refused($"PR #{_number} is not a pull request in {_checkout.Origin}");
+    }
+
+    private int Reconcile(PullRequest pull)
+    {
+        var tip = IsFeatureBase(pull.Base, ReadDefaultBranch()) ? Text(ReadBranch(pull.Base), "commit", "sha") : null;
+        if (tip == null || !Contains(tip, _sha))
+            throw MergeStop.Refused($"PR #{_number} is closed");
+        Console.WriteLine(AlreadyIntegrated(pull));
+        return ExitCodes.Success;
+    }
+
+    private string ReadDefaultBranch()
+    {
+        var reply = _github.Send("GET", _repo);
+        return reply.Status == 200 && Text(reply.Json, "default_branch") is { Length: > 0 } name
+            ? name
+            : throw MergeStop.Refused($"could not read {_checkout.Origin.FullName}'s default branch from GitHub; nothing merged");
+    }
+
+    private void CheckPull(PullRequest pull, string defaultBranch)
+    {
+        if (pull.Draft)
+            throw MergeStop.Refused($"PR #{_number} is a draft");
+        if (pull.HeadRepo == null || !string.Equals(pull.HeadRepo, pull.BaseRepo, StringComparison.OrdinalIgnoreCase))
+            throw MergeStop.Refused($"PR #{_number} comes from {pull.HeadRepo ?? pull.HeadLabel}; dydo merge merges same-repository PRs only");
+        if (DefaultNamed(pull.Base, defaultBranch) is { } named)
+            throw MergeStop.Refused($"{pull.Base} is this repository's default branch ({named}); that merge is the user's click");
+        if (DefaultBranchNames.Contains(pull.Base))
+            throw MergeStop.Refused($"{pull.Base} is a default branch name (this repository's default is {defaultBranch}); "
+                + "that merge is the user's click");
+        if (!FeatureBranch.IsValid(pull.Base, _checkout.Root))
+            throw MergeStop.Refused($"PR #{_number} targets {pull.Base}; dydo merge merges only into feature/* branches - "
+                + "master, main and the default branch are the user's click");
+        if (pull.HeadSha != _sha)
+            throw MergeStop.Refused($"PR #{_number} head is {Short(pull.HeadSha)}, not the reviewed {Short(_sha)}; "
+                + $"review {Short(pull.HeadSha)} or merge what was reviewed");
+    }
+
+    private bool IsFeatureBase(string name, string defaultBranch) =>
+        DefaultNamed(name, defaultBranch) == null && FeatureBranch.IsValid(name, _checkout.Root);
+
+    // GitHub's default read fresh, or the local origin/HEAD's name: either refuses, whatever its case.
+    private string? DefaultNamed(string name, string defaultBranch) =>
+        new[] { defaultBranch, _checkout.OriginHead }.FirstOrDefault(named => string.Equals(named, name, StringComparison.OrdinalIgnoreCase));
+
+    private ReviewVerdict ReviewPass(PullRequest pull, string tip)
+    {
+        var verdicts = IndependentReview.Parse(pull.Body);
+        var passes = verdicts.Where(verdict => verdict.Pass && Names(verdict.Candidate)).ToList();
+        if (passes.Count == 0)
+            throw MergeStop.Refused($"PR #{_number}'s Independent review holds no PASS for candidate {Short(_sha)}",
+                verdicts.Where(verdict => verdict is { Pass: true, Candidate: not null })
+                    .Select(verdict => $"found PASS for {Short(verdict.Candidate!)}").Distinct());
+        if (verdicts.Any(verdict => !verdict.Pass && Names(verdict.Candidate)))
+            throw MergeStop.Refused($"the review section also holds a FAIL for {Short(_sha)}");
+
+        var pass = passes.FirstOrDefault(verdict => MergeRubrics.Contains(verdict.Rubric))
+            ?? throw MergeStop.Refused($"the PASS for {Short(_sha)} is a {passes[0].Rubric} review; a merge needs a code, docs or merge PASS");
+        if (pass.Base == null)
+            Console.WriteLine($"note: the PASS for {Short(_sha)} names no base; the base check is skipped");
+        else if (!Contains(tip, pass.Base))
+            throw MergeStop.Refused($"the PASS for {Short(_sha)} reviewed against {Short(pass.Base)}, which {pull.Base} does not contain");
+        return pass;
+    }
+
+    // A full SHA must be the SHA; an abbreviated one counts only when GitHub resolves it to exactly the
+    // SHA, and an ambiguous prefix (422) resolves to nothing.
+    private bool Names(string? candidate)
+    {
+        if (candidate == null || !_sha.StartsWith(candidate, StringComparison.Ordinal))
+            return false;
+        if (candidate.Length == _sha.Length)
+            return true;
+        var reply = _github.Send("GET", $"{_repo}/commits/{candidate}");
+        return reply.Status is not (404 or 422) && Text(Expect(reply, 200, $"could not resolve candidate {candidate}"), "sha") == _sha;
+    }
+
+    // The tip comes from the branch ref: a PR's base.sha can be stale long after the branch advanced.
+    private JsonNode PinnedBranch(string name)
+    {
+        var branch = ReadBranch(name) ?? throw Moved(name);
+        var tip = TipOf(branch, name);
+        return tip == _pin
+            ? branch
+            : throw MergeStop.Refused($"{name} is at {Short(tip)}, not the pinned {Short(_pin)}; nothing merged - re-pin the target and re-contract");
+    }
+
+    private static string TipOf(JsonNode branch, string name) =>
+        Text(branch, "commit", "sha") ?? throw MergeStop.ToolError($"GitHub named no tip for {name}");
+
+    private JsonNode? ReadBranch(string name)
+    {
+        var reply = _github.Send("GET", $"{_repo}/branches/{name}");
+        return reply.Status == 404 ? null : Expect(reply, 200, $"could not read {name}");
+    }
+
+    private bool Contains(string tip, string commit) => Compare(commit, tip) is "ahead" or "identical";
+
+    // How head relates to base: ahead, behind, identical or diverged; null when either is unknown.
+    private string? Compare(string baseRef, string head)
+    {
+        var reply = _github.Send("GET", $"{_repo}/compare/{baseRef}...{head}?per_page=1");
+        return reply.Status == 404 ? null : Text(Expect(reply, 200, $"could not compare {Short(baseRef)} with {Short(head)}"), "status");
+    }
+
+    // GitHub cannot make POST /merges conditional on a tip: the ref is read again just before it, and
+    // the merge's first parent checked after it; a move in between still lands, and says so.
+    /// <summary>The merge commit's SHA, or null when the SHA was already in the base (204).</summary>
+    private string? PostMerge(string target, string message)
+    {
+        PinnedBranch(target);
+        var reply = _github.Send("POST", $"{_repo}/merges",
+            new JsonObject { ["base"] = target, ["head"] = _sha, ["commit_message"] = message });
+        return reply.Status switch
+        {
+            201 => OnThePin(target, Text(reply.Json, "sha") ?? throw MergeStop.ToolError($"GitHub merged PR #{_number} but named no merge commit")),
+            204 => null,
+            409 => throw MergeStop.Refused($"{Short(_sha)} conflicts with {target}; a Merge code-writer resolves it (code-writer merge resource)"),
+            404 => throw Moved(target),
+            _ => throw Failed($"GitHub refused the merge of PR #{_number}", reply)
+        };
+    }
+
+    private string OnThePin(string target, string merge)
+    {
+        var landed = $"PR #{_number} merged into {target} as {Short(merge)}, but its";
+        var commit = Expect(_github.Send("GET", $"{_repo}/git/commits/{merge}"), 200,
+            $"{landed} parents could not be read; the merge landed and its actual parents need merge review");
+        var parent = Text(Items(commit, "parents").FirstOrDefault(), "sha") ?? "unnamed";
+        return parent == _pin
+            ? merge
+            : throw MergeStop.ToolError($"{landed} first parent is {Short(parent)}, not the pinned {Short(_pin)}; "
+                + "the merge landed and its actual parents need merge review");
+    }
+
+    // The base tip is an ancestor of the SHA, so GitHub would fast-forward and leave no merge commit:
+    // write the two-parent commit on the pin by hand, then move the ref only if it is still at the pin.
+    private string WriteTwoParentMerge(string target, string message)
+    {
+        var repositoryId = Text(Expect(_github.Send("GET", _repo), 200, $"could not read {_checkout.Origin.FullName}"), "node_id")
+            ?? throw MergeStop.ToolError($"GitHub named no node id for {_checkout.Origin.FullName}");
+        var commit = Expect(_github.Send("GET", $"{_repo}/git/commits/{_sha}"), 200, $"could not read {Short(_sha)}");
+        var created = Expect(_github.Send("POST", $"{_repo}/git/commits", new JsonObject
+        {
+            ["message"] = message,
+            ["tree"] = Text(commit, "tree", "sha"),
+            ["parents"] = new JsonArray(_pin, _sha)
+        }), 201, "could not write the merge commit");
+        // An all-zero afterOid would delete the ref.
+        var merge = Text(created, "sha") is { } sha && FullShaRegex().IsMatch(sha) && sha.Trim('0').Length > 0
+            ? sha
+            : throw MergeStop.ToolError("GitHub named no merge commit");
+        return MoveFromThePin(repositoryId, target, merge);
+    }
+
+    // An unforced PATCH git/refs takes any fast-forward, so a tip another merge moved into the SHA's history
+    // would still pass; updateRefs with beforeOid moves the ref atomically, only from the pin. On any other
+    // answer the ref itself decides, never GitHub's wording.
+    private string MoveFromThePin(string repositoryId, string target, string merge)
+    {
+        var reply = _github.Send("POST", "graphql", new JsonObject
+        {
+            ["query"] = "mutation($input: UpdateRefsInput!) { updateRefs(input: $input) { clientMutationId } }",
+            ["variables"] = new JsonObject
+            {
+                ["input"] = new JsonObject
+                {
+                    ["repositoryId"] = repositoryId,
+                    ["refUpdates"] = new JsonArray(new JsonObject
+                    {
+                        ["name"] = $"refs/heads/{target}", ["beforeOid"] = _pin, ["afterOid"] = merge, ["force"] = false
+                    })
+                }
+            }
+        });
+        var errors = Items(reply.Json, "errors").Select(error => Text(error, "message") ?? "an unnamed error").ToList();
+        if (reply.Status == 200 && errors.Count == 0 && At(reply.Json, "data", "updateRefs") is JsonObject)
+            return merge;
+
+        var tip = TipOf(ReadBranch(target) ?? throw Moved(target), target);
+        if (tip == merge)
+            return merge;
+        if (tip != _pin)
+            throw Moved(target);
+        var what = $"GitHub refused to move {target} to the merge commit";
+        throw errors.Count > 0 ? MergeStop.ToolError($"{what}: {string.Join("; ", errors)}") : Failed(what, reply);
+    }
+
+    private void Report(PullRequest pull, string merge, string defaultBranch)
+    {
+        Console.WriteLine($"merged PR #{_number} ({Short(_sha)}) into {pull.Base} at {Short(_pin)} as {Short(merge)}; PR marked merged: {MarkedMerged()}");
+
+        var now = _github.Send("GET", _repo);
+        if (now.Status == 200 && Text(now.Json, "default_branch") is { Length: > 0 } current && current != defaultBranch)
+            Console.WriteLine($"warning: {_checkout.Origin.FullName}'s default branch changed during the run, from {defaultBranch} to {current}");
+    }
+
+    // GitHub marks a PR merged asynchronously, so a good write can still read merged:false at first. Each
+    // answer decides: true is yes, a failed read is unverified, and false is read again after a pause until
+    // the pauses run out, then pending. It only reads, and never reports no after a successful write.
+    private string MarkedMerged()
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            var reread = _github.Send("GET", $"{_repo}/pulls/{_number}");
+            if (reread.Status != 200)
+                return "unverified";
+            if (Flag(reread.Json, "merged"))
+                return "yes";
+            if (attempt == RereadPauses.Length)
+                return "pending";
+            _wait(RereadPauses[attempt]);
+        }
+    }
+
+    private string CommitMessage(PullRequest pull, ReviewVerdict pass) =>
+        $"Merge pull request #{_number} from {_checkout.Origin.Owner}/{pull.HeadRef}\n\n{pull.Title}\n\n"
+        + $"Dydo-Merge: dydo {DydoVersion.Current}\nReviewed-Candidate: {_sha}\nTarget-Tip: {_pin}\nReview: {(pass.Line.Length > 200 ? pass.Line[..200] : pass.Line)}";
+
+    private string AlreadyIntegrated(PullRequest pull) =>
+        $"already integrated (no new merge commit): PR #{_number} ({Short(_sha)}) is in {pull.Base}";
+
+    private MergeStop Moved(string target) =>
+        MergeStop.Refused($"{target} moved or no longer exists on {_checkout.Origin.FullName}; nothing merged - rerun");
+
+    private static JsonNode? Expect(GitHubReply reply, int status, string what) =>
+        reply.Status == status ? reply.Json : throw Failed(what, reply);
+
+    private static MergeStop Failed(string what, GitHubReply reply) =>
+        MergeStop.ToolError(reply.Status == 0 ? $"{what}: {reply.Error}" : $"{what}: {reply.Message} (HTTP {reply.Status})");
+
+    [GeneratedRegex(@"\A[0-9a-f]{40}\z")]
+    private static partial Regex FullShaRegex();
+
+    private sealed record PullRequest(
+        bool Closed, bool Draft, string Title, string Body, string Base, string? BaseRepo,
+        string HeadSha, string HeadRef, string? HeadRepo, string HeadLabel)
+    {
+        public static PullRequest From(JsonNode? pull) => new(
+            Text(pull, "state") == "closed", Flag(pull, "draft"), Text(pull, "title") ?? "", Text(pull, "body") ?? "",
+            Text(pull, "base", "ref") ?? "", Text(pull, "base", "repo", "full_name"),
+            Text(pull, "head", "sha") ?? "", Text(pull, "head", "ref") ?? "", Text(pull, "head", "repo", "full_name"),
+            Text(pull, "head", "label") ?? "a deleted fork");
+    }
+}

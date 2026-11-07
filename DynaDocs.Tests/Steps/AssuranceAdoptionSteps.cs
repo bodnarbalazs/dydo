@@ -113,12 +113,20 @@ public sealed class AssuranceAdoptionSteps
         {
             Assert.Equal($"{facade}: 1", $"{facade}: {payload["schema"]}");
             Assert.Equal(
-                new[] { "aggregateExit", "candidate", "operation", "results", "schema", "selectedStacks" },
+                new[] { "aggregateExit", "candidate", "memoryCap", "operation", "results", "schema", "selectedStacks" },
                 Keys(payload));
-            Assert.Equal(
-                new[] { "argv", "artifacts", "capability", "childExit", "cwd", "environment",
-                        "isolation", "resultExit", "stack", "state" },
-                Keys(payload["results"]![0]!));
+            var row = payload["results"]![0]!;
+            List<string> rowKeys = ["argv", "artifacts", "capability", "childExit", "cwd", "environment",
+                                    "isolation", "resultExit", "stack", "state"];
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsWindows())
+            {
+                rowKeys.Add("memoryCapHitReporting");
+                Assert.Equal(OperatingSystem.IsWindows() ? "best-effort" : "exact",
+                    row["memoryCapHitReporting"]!.GetValue<string>());
+            }
+            if (OperatingSystem.IsWindows())
+                rowKeys.Add("peakJobMemory");
+            Assert.Equal(rowKeys.Order().ToArray(), Keys(row));
         }
     }
 
@@ -176,6 +184,12 @@ public sealed class AssuranceAdoptionSteps
     {
         var directory = Directory.CreateTempSubdirectory("dydo-assurance-").FullName;
         _fixtures.Add(directory);
+        // Pin the facade root here: neither a stray marker nor a repository above may claim it.
+        using (var git = Process.Start("git", ["init", "--quiet", directory]))
+        {
+            git.WaitForExit();
+            Assert.Equal(0, git.ExitCode);
+        }
         File.Copy(Local(RepositoryRoot(), facade.Path), Local(directory, "gap_check.py"));
         File.WriteAllText(Local(directory, "gap_check.json"), Manifest().ToJsonString());
         var (exit, output) = Run(directory);

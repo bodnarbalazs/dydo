@@ -15,7 +15,9 @@ Gandalf at the bridge: judge one candidate against one rubric, and let no blocke
 2. From the repository root, read `dydo/understand/about.md`.
 3. From the repository root, read `dydo/understand/architecture.md`.
 4. From the repository root, read `dydo/guides/coding-standards.md`.
-5. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; do not preload the whole standard.
+5. From the repository root, read Feature proof and gate placement and Evidence and inherited failures
+   in `dydo/guides/testing-strategy.md`.
+6. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; do not preload the whole standard.
 
 ## Boundary
 
@@ -29,31 +31,31 @@ Judge one candidate; corrections and status are the invoker's. Your independence
    [merge](resources/merge.md), exactly the one the invoker named. Done when you can restate every
    item it asks of you.
 2. **Pin the contract and the candidate.** The contract as the brief pins it, the candidate at its
-   SHA, the base SHA. Where a writer produced the candidate, check its `IMPLEMENTED` line against them; rerun its proof only on a doubt you
-   state. A probe that edits files runs in your own detached worktree at the candidate SHA, removed
-   after. Done when another reviewer could open the same contract and candidate.
+   SHA, the base SHA. Where a writer produced the candidate, check its `IMPLEMENTED` line against them and its proof against
+   `maintain-verification-skill`'s Proof; rerun its proof only on a doubt you state. A probe that edits files runs in your own detached worktree at the candidate SHA, removed
+   after. Every probe and rerun runs capped: `[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=4G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 120 <cmd>`, a gate at 8G and `timeout 3600`; a cap hit is a finding, never a reason to raise the cap. Done when another reviewer could open the same contract and candidate.
+   Use your session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager
+   (on a T3 host, for example, `app-t3code-agents.slice`; a nearer session slice takes precedence).
+   Omit `--slice` where no agent slice exists. Use the bracketed env prefix for .NET commands, without the brackets.
 3. **Work the rubric section by section.** Each item ends verified against the source or as a
    finding, whatever the size of the diff; a clean section never covers another section's finding.
-4. **Take the gates at this stage's scale.** Judging a `code-writer` hop, weigh the run it
-   reported: the full suite and static gate of each changed stack, once each. Judging another crew
-   hop, weigh the focused run it committed: a test relevant to the change and left out of it is a
-   finding, and the full suites stay with the gate. At a gate review - the ticket's final gates, a merge, the landing - the full-suite evidence
-   is that exact candidate's own gate record: candidate, command, environment or session, exit and
-   result location. Check that record; a rerun needs a concrete doubt you state. Real output is
-   evidence; a gate that cannot run yet is named with why.
+4. **Take the gates at this stage's scale.** Apply the testing strategy to the pinned Exact
+   gates. Check actual reach, including consumers and parent-shared tests: omitted relevant proof
+   is a finding. Read this exact candidate's command, selection, environment, exit and artifacts;
+   a rerun needs a concrete doubt you state. Check final Heavy/coverage placement and inherited
+   failure attribution with its owner disposition. Real output is evidence; a required gate that
+   cannot run is named with why, never treated as passed.
 5. **Write the block.** Label each finding by the intent, not by how it looks: `blocker`, the
    intended case is wrong; `should`, a real bug callers will hit, inside the intent; `nit`,
    everything else. Another code path, a rare case, a small perf cost, extra compat or style is a
    nit, however serious it looks. Done when every finding carries one severity and the invoker can
    act on each without asking you a question.
 
-6. Work the gates this stage owes with the commands that contract names: at a `code-writer` hop,
-   its full-suite and static-gate run; at another crew hop, the tests the change reaches; at either,
-   the cheap checks the ticket names; at the ticket's final gates, a merge or the
-   landing, the full suites and the whole gate set on that exact candidate. A bounded prose-only
-   review may have no runtime gate when its contract names none. Meaningful code changes retain
-   their specified test obligations; combined merge gates and final G/M release obligations remain
-   mandatory at their stages.
+6. Close every gate this stage owes under the pinned contract and testing strategy. A bounded
+   prose-only review may have no runtime gate when its contract names none. Meaningful code
+   changes retain their specified test obligations; combined merge gates and final G/M release
+   obligations remain mandatory at their stages. Check explicit reconciliation of older active
+   gate contracts rather than silently dropping an obligation.
 - [ ] Every gate this stage owes has its contract-named command and result on this candidate.
 - [ ] A hop's committed run includes every test its change reaches.
 - [ ] Meaningful code changes passed their specified tests.

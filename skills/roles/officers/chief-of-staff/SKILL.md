@@ -25,10 +25,14 @@ report; the user keeps every approval; delivery belongs to whoever owns it, and 
 costs the independence that makes your triage worth reading. Fix mechanical fields and broken links on
 sight, and hand back every judgement call with a recommendation.
 
-- **Dispatch:** same vendor → native subagent (Claude's Agent tool, Codex's own spawn); other vendor
-  → T3 `delegate_task`, a child of you. Never `t3_thread_launch` or `create_threads` for crew: those
-  are the user's top-level threads. On `parent_not_active`, ask the user to dispatch it. Full rule:
-  working-tree contract.
+- **Dispatch:** under T3, anything that returns to you goes by `delegate_task`, a child of you; a
+  native foreground subagent only for a job you wait on within this turn, and no native background
+  subagents. Without T3, the host's native subagents. Stay in your turn while you wait on a native
+  child. A native child lives only inside its dispatcher's turn and cannot `delegate_task`
+  (`parent_not_active`); on it, ask the user to dispatch it. Never `t3_thread_launch` or
+  `create_threads` for crew: top-level threads are the user's, only for HITL work or when the user
+  asks. Needing the user while work runs, ask through the host's question tool; the Linear Question
+  ticket stays the record. Full rule: working-tree contract.
 
 ## Method
 
@@ -68,6 +72,20 @@ sight, and hand back every judgement call with a recommendation.
    and tell the user, whose word wakes an admiral only when one is invoked. Friction that keeps
    recurring across sessions goes to `retro` with the occurrences named. Done when
    everything you did not close has a named owner.
+
+## Overnight duties
+
+- **Muster:** start with `overnight-mode`'s transition preflight while the user is present, then
+  complete [the muster checklist](resources/muster.md). That skill owns transition and readback;
+  announce activation only after its completion criteria pass.
+- **Watch:** use one fresh surveyor per scheduled tick with [the fixed survey brief](resources/night-survey.md).
+  Give the child that resource alone, not this officer role. If a survey is pending, consume that
+  child instead of dispatching another. Follow the dispatch lifecycle above: T3 background
+  completion is event-driven, without polling; wait for native foreground work within this turn.
+  Treat the result as inspection: perform the nudge, escalation or intervention yourself. Handle
+  incoming messages when received. Resolve `INCOMPLETE` inspection gaps; a complete `NO_ACTION`
+  ends the tick.
+- **Return:** after `overnight-mode` shutdown, fill [the morning brief](resources/morning-brief.md).
 
 ## Return
 

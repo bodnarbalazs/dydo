@@ -7,10 +7,12 @@ import os
 import platform
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import windows_job
@@ -51,6 +53,23 @@ if(role==='grandchild') {
 '''
 
 
+class WindowsJobPlatformTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "Non-Windows preflight contract")
+    def test_non_windows_owner_fails_closed_without_starting_a_subject(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            value = windows_job.request([sys.executable, "-c", "raise SystemExit(0)"],
+                                        root, root / "owner")
+            result = windows_job.run(value)
+            self.assertFalse(result["complete"])
+            self.assertFalse(result["cleanup_confirmed"])
+            self.assertIsNone(result["subject_status"])
+            self.assertEqual("preflight", result["failure_category"])
+            self.assertIn("requires Windows CPython 3.14", result["error_message"])
+            self.assertFalse((root / "owner").exists())
+
+
+@unittest.skipUnless(os.name == "nt", "Native Win32 Job Object contracts require Windows")
 class WindowsJobTests(unittest.TestCase):
     def setUp(self):
         evidence = os.environ.get("DYDO_NATIVE_TEST_EVIDENCE")
@@ -65,6 +84,36 @@ class WindowsJobTests(unittest.TestCase):
         request = windows_job.request([shutil.which("node"), str(subject), *args],
                                       self.root, self.root / "evidence", budget, 3)
         return windows_job.run(request, environment)
+
+    def test_runner_job_reaps_native_descendants_and_checks_its_deadline(self):
+        script = self.root / 'runner_job.py'
+        script.write_text('''import subprocess, sys
+sys.path.insert(0, sys.argv[1])
+import run_tests
+job = run_tests.contain_descendants()
+child = subprocess.Popen([sys.executable, '-c',
+    "import threading; print('ready', flush=True); threading.Event().wait()"],
+    stdout=subprocess.PIPE)
+try:
+    assert child.stdout.readline() == b'ready\\r\\n'
+    try:
+        run_tests.end_descendants(job, seconds=0)
+    except TimeoutError:
+        pass
+    else:
+        raise AssertionError('cleanup deadline was ignored')
+    run_tests.end_descendants(job, seconds=5)
+    assert child.wait(timeout=5) != 0
+    run_tests.end_descendants(job, seconds=5)
+finally:
+    if child.poll() is None:
+        child.kill()
+        child.wait(timeout=5)
+    child.stdout.close()
+''', encoding='utf-8')
+        child = subprocess.run([sys.executable, str(script), str(Path(windows_job.__file__).parent)],
+                               capture_output=True, text=True, timeout=20)
+        self.assertEqual(0, child.returncode, child.stdout + child.stderr)
 
     def test_native_argv_environment_cwd_and_nonzero_are_preserved(self):
         secret = "safe-test-" + os.urandom(16).hex()
@@ -127,53 +176,20 @@ class WindowsJobTests(unittest.TestCase):
         self.assertFalse(result["complete"])
         self.assertEqual(2, result["error_code"])
 
-    def test_stale_helper_fails_before_launch(self):
-        request = windows_job.request([shutil.which("node"), "-e", "process.exit(0)"], self.root, self.root / "evidence")
-        request["helper_sha256"] = "0" * 64
-        request["config_sha256"] = windows_job.config_hash(request)
-        result = windows_job.run(request)
-        self.assertEqual("not_started", result["launch_state"])
-        self.assertFalse(result["complete"])
-        self.assertEqual("preflight", result["failure_category"])
-
-    def test_request_carries_no_environment(self):
-        value = windows_job.request([shutil.which("node")], self.root, self.root / "evidence")
-        self.assertEqual(hashlib.sha256(Path(windows_job.__file__).read_bytes()).hexdigest(), value["helper_sha256"])
-        self.assertNotIn("environment", value)
-
-    def test_runtime_contract_accepts_any_cpython_312_patch_and_reports_exact_evidence(self):
+    def test_runtime_contract_accepts_any_cpython_314_patch_and_reports_exact_evidence(self):
         value = windows_job.request([shutil.which("node")], self.root, self.root / "evidence")
         with patch.object(windows_job.platform, "python_implementation", return_value="CPython"), \
-             patch.object(windows_job.sys, "version_info", (3, 12, 99)):
+             patch.object(windows_job.sys, "version_info", (3, 14, 99)):
             evidence = windows_job.validate(value)
             capability = windows_job.preflight()
 
         self.assertEqual("CPython", evidence["implementation"])
-        self.assertEqual([3, 12, 99], evidence["version"])
-        self.assertEqual([3, 12, 99], capability["version"])
+        self.assertEqual([3, 14, 99], evidence["version"])
+        self.assertEqual([3, 14, 99], capability["version"])
         self.assertEqual(hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
                          evidence["executable_sha256"])
         self.assertEqual(hashlib.sha256(Path(sys._base_executable).read_bytes()).hexdigest(),
                          evidence["base_sha256"])
-
-    def test_runtime_contract_rejects_non_cpython_and_wrong_series_in_validate_and_preflight(self):
-        value = windows_job.request([shutil.which("node")], self.root, self.root / "evidence")
-        for implementation, version in (("PyPy", (3, 12, 10)), ("CPython", (3, 11, 10))):
-            for operation in (lambda: windows_job.validate(value), windows_job.preflight):
-                with self.subTest(implementation=implementation, version=version, operation=operation.__name__), \
-                     patch.object(windows_job.platform, "python_implementation", return_value=implementation), \
-                     patch.object(windows_job.sys, "version_info", version), \
-                     self.assertRaisesRegex(ValueError, "requires Windows CPython 3.12"):
-                    operation()
-
-    def test_boolean_protocol_version_is_not_version_one(self):
-        value = windows_job.request([shutil.which("node"), "-e", "process.exitCode=0"], self.root, self.root / "evidence", 1, 1)
-        value["version"] = True
-        value["config_sha256"] = windows_job.config_hash(value)
-        result = windows_job.run(value)
-        self.assertFalse(result["complete"])
-        self.assertEqual("not_started", result["launch_state"])
-        self.assertFalse((self.root / "evidence").exists())
 
     def test_explicit_execution_seconds_maximum_is_validated_at_the_boundary(self):
         value = windows_job.request([shutil.which("node"), "-e", "process.exitCode=0"],
@@ -190,39 +206,6 @@ class WindowsJobTests(unittest.TestCase):
                 self.assertFalse(result["complete"])
                 self.assertEqual("not_started", result["launch_state"])
                 self.assertFalse((self.root / output).exists())
-
-    def test_invalid_control_requests_never_launch_or_touch_outputs(self):
-        changes = [("version", 2), ("argv", []), ("argv", None), ("argv", [True]),
-                   ("argv", ["node\0.exe"]), ("argv", ["relative.exe"]),
-                   ("cwd", str(self.root / "absent")), ("output", "relative"),
-                   ("execution_seconds", 0), ("execution_seconds", 1801),
-                   ("execution_seconds", True), ("teardown_seconds", 11),
-                   ("owner_id", None), ("owner_id", "short"), ("owner_id", "z" * 32),
-                   ("unexpected", "reject"), ("config_sha256", "0" * 64)]
-        for key, change in changes:
-            with self.subTest(field=key, value=change):
-                value = windows_job.request([shutil.which("node"), "-e", "process.exitCode=0"], self.root, self.root / "evidence", 1, 1)
-                value[key] = change
-                if key != "config_sha256":
-                    value["config_sha256"] = windows_job.config_hash(value)
-                result = windows_job.run(value)
-                self.assertFalse(result["complete"])
-                self.assertEqual("not_started", result["launch_state"])
-                self.assertFalse((self.root / "evidence").exists())
-
-    def test_existing_output_is_never_overwritten(self):
-        output = self.root / "evidence"
-        output.mkdir()
-        (output / "result.json").write_text("preserve")
-        value = windows_job.request([shutil.which("node")], self.root, output)
-        self.assertFalse(windows_job.run(value)["complete"])
-        self.assertEqual("preserve", (output / "result.json").read_text())
-
-    def test_unsupported_host_refuses_before_native_binding(self):
-        value = windows_job.request([shutil.which("node")], self.root, self.root / "evidence")
-        with patch.object(windows_job.os, "name", "posix"), patch.object(windows_job, "bindings") as native:
-            self.assertFalse(windows_job.run(value)["complete"])
-        native.assert_not_called()
 
     def test_attribute_capability_refusal_creates_no_subject(self):
         value = windows_job.request([shutil.which("node")], self.root, self.root / "evidence")
@@ -400,12 +383,6 @@ class WindowsJobTests(unittest.TestCase):
         self.assertEqual(platform.python_implementation(), result["implementation"])
         self.assertEqual(hashlib.sha256(Path(windows_job.__file__).read_bytes()).hexdigest(), result["helper_sha256"])
 
-    def test_main_malformed_request_is_incomplete_without_native_launch(self):
-        stream = io.StringIO()
-        with patch.object(sys, "argv", ["windows_job.py"]), patch.object(sys, "stdin", io.StringIO("{")), redirect_stdout(stream):
-            self.assertEqual(2, windows_job.main())
-        self.assertEqual("not_started", json.loads(stream.getvalue())["launch_state"])
-
     def test_nested_owner_timeout_cleans_its_subtree_inside_outer_job(self):
         observer = self.root / "nested.py"
         observer.write_text('import sys,json\nfrom pathlib import Path\nsys.path.insert(0,sys.argv[1])\nimport windows_job\nr=Path(sys.argv[2]);v=windows_job.request([sys.argv[3],"-e","setInterval(()=>{},1000)"],r,r/"inner",.2,2)\n(r/"inner-observed.json").write_text(json.dumps(windows_job.run(v)))\n', encoding="utf-8")
@@ -417,6 +394,101 @@ class WindowsJobTests(unittest.TestCase):
         self.assertFalse(inner["complete"])
         self.assertTrue(inner["cleanup_confirmed"])
         self.assertEqual("timeout", inner["failure_category"])
+
+
+class WindowsJobContractTests(unittest.TestCase):
+    def setUp(self):
+        # Validation needs a reported host identity, never a native API stand-in.
+        self.enterContext(patch.object(windows_job, "os", SimpleNamespace(name="nt", environ=os.environ)))
+        evidence = os.environ.get("DYDO_NATIVE_TEST_EVIDENCE")
+        self.root = Path(tempfile.mkdtemp(prefix="dydo-native-job-", dir=evidence))
+        if not evidence:
+            self.addCleanup(shutil.rmtree, self.root)
+        (self.root / "test-id.json").write_text(json.dumps({"id": self.id()}))
+
+    def test_valid_request_reports_runtime_without_launching_or_creating_output(self):
+        value = windows_job.request([sys.executable], self.root, self.root / "evidence", 14400)
+        with patch.object(windows_job.sys, "version_info", (3, 14, 99)):
+            runtime = windows_job.validate(value, execution_seconds_maximum=14400)
+        self.assertEqual("CPython", runtime["implementation"])
+        self.assertEqual([3, 14, 99], runtime["version"])
+        self.assertEqual(hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(), runtime["executable_sha256"])
+        self.assertFalse((self.root / "evidence").exists())
+        with self.assertRaisesRegex(ValueError, "Invalid owner deadline"):
+            windows_job.validate(value)
+
+    def test_request_carries_no_environment(self):
+        value = windows_job.request([shutil.which("node")], self.root, self.root / "evidence")
+        self.assertEqual(hashlib.sha256(Path(windows_job.__file__).read_bytes()).hexdigest(), value["helper_sha256"])
+        self.assertNotIn("environment", value)
+
+    def test_boolean_protocol_version_is_not_version_one(self):
+        value = windows_job.request([shutil.which("node"), "-e", "process.exitCode=0"], self.root, self.root / "evidence", 1, 1)
+        value["version"] = True
+        value["config_sha256"] = windows_job.config_hash(value)
+        result = windows_job.run(value)
+        self.assertFalse(result["complete"])
+        self.assertEqual("not_started", result["launch_state"])
+        self.assertFalse((self.root / "evidence").exists())
+
+    def test_existing_output_is_never_overwritten(self):
+        output = self.root / "evidence"
+        output.mkdir()
+        (output / "result.json").write_text("preserve")
+        value = windows_job.request([shutil.which("node")], self.root, output)
+        self.assertFalse(windows_job.run(value)["complete"])
+        self.assertEqual("preserve", (output / "result.json").read_text())
+
+    def test_unsupported_host_refuses_before_native_binding(self):
+        value = windows_job.request([shutil.which("node")], self.root, self.root / "evidence")
+        with patch.object(windows_job.os, "name", "posix"), patch.object(windows_job, "bindings") as native:
+            self.assertFalse(windows_job.run(value)["complete"])
+        native.assert_not_called()
+
+    def test_main_malformed_request_is_incomplete_without_native_launch(self):
+        stream = io.StringIO()
+        with patch.object(sys, "argv", ["windows_job.py"]), patch.object(sys, "stdin", io.StringIO("{")), redirect_stdout(stream):
+            self.assertEqual(2, windows_job.main())
+        self.assertEqual("not_started", json.loads(stream.getvalue())["launch_state"])
+
+
+    def test_stale_helper_fails_before_launch(self):
+        request = windows_job.request([shutil.which("node"), "-e", "process.exit(0)"], self.root, self.root / "evidence")
+        request["helper_sha256"] = "0" * 64
+        request["config_sha256"] = windows_job.config_hash(request)
+        result = windows_job.run(request)
+        self.assertEqual("not_started", result["launch_state"])
+        self.assertFalse(result["complete"])
+        self.assertEqual("preflight", result["failure_category"])
+
+    def test_runtime_contract_rejects_non_cpython_and_wrong_series_in_validate_and_preflight(self):
+        value = windows_job.request([shutil.which("node")], self.root, self.root / "evidence")
+        for implementation, version in (("PyPy", (3, 14, 10)), ("CPython", (3, 11, 10))):
+            for operation in (lambda: windows_job.validate(value), windows_job.preflight):
+                with self.subTest(implementation=implementation, version=version, operation=operation.__name__), \
+                     patch.object(windows_job.platform, "python_implementation", return_value=implementation), \
+                     patch.object(windows_job.sys, "version_info", version), \
+                     self.assertRaisesRegex(ValueError, "requires Windows CPython 3.14"):
+                    operation()
+
+    def test_invalid_control_requests_never_launch_or_touch_outputs(self):
+        changes = [("version", 2), ("argv", []), ("argv", None), ("argv", [True]),
+                   ("argv", ["node\0.exe"]), ("argv", ["relative.exe"]),
+                   ("cwd", str(self.root / "absent")), ("output", "relative"),
+                   ("execution_seconds", 0), ("execution_seconds", 1801),
+                   ("execution_seconds", True), ("teardown_seconds", 11),
+                   ("owner_id", None), ("owner_id", "short"), ("owner_id", "z" * 32),
+                   ("unexpected", "reject"), ("config_sha256", "0" * 64)]
+        for key, change in changes:
+            with self.subTest(field=key, value=change):
+                value = windows_job.request([shutil.which("node"), "-e", "process.exitCode=0"], self.root, self.root / "evidence", 1, 1)
+                value[key] = change
+                if key != "config_sha256":
+                    value["config_sha256"] = windows_job.config_hash(value)
+                result = windows_job.run(value)
+                self.assertFalse(result["complete"])
+                self.assertEqual("not_started", result["launch_state"])
+                self.assertFalse((self.root / "evidence").exists())
 
 
 def matrix_case(api, mode):

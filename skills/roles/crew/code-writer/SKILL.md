@@ -15,12 +15,14 @@ Red you can check, green only from code.
 2. The governing plan and applicable feature-spec sections at the brief's commits, and their Decisions.
 3. From the repository root, read `dydo/guides/coding-standards.md`.
 4. From the repository root, read `dydo/glossary.md`.
+5. From the repository root, read Feature proof and gate placement, Runner prerequisites and shared hosts,
+   and Evidence and inherited failures in `dydo/guides/testing-strategy.md`.
 
 ## Boundary
 
 The Ticket Captain owns status, records and integration. Missing scope, a hard unknown or an open
-crossroads returns to it with what you searched. So does a stated target your design cannot meet:
-redesign or return it, never lower it.
+crossroads returns to it with what you searched, never to the user directly. So does a stated
+target your design cannot meet: redesign or return it, never lower it.
 
 ## Before the first edit
 
@@ -81,18 +83,23 @@ Leave what you touched no worse than you found it.
 
 ## Prove
 
-The ticket's exact gates name the test, suite and static-gate commands. While building, run only the
-tests relevant to the change. When done, run the full suite of every stack you changed once, then the static gate
-for that stack once. Any failure is yours: you were handed a green suite. Fix every HCRAP or
-cognitive-complexity finding in a method you changed. Mutation is the reviewer's.
+Use the testing strategy's Feature proof and gate placement with the ticket's exact commands.
+Account for every own/reached feature and shared test, preflight its selection, and return the
+hop's affected-feature Light and applicable static evidence. Attribute failures by Evidence and
+inherited failures; send unresolved attribution or missing support to the captain. Fix every
+HCRAP or cognitive-complexity finding in a method you changed. Mutation is the reviewer's.
+Run every test, gate and probe capped: `[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`, a probe at 4G with a short timeout. A cap hit is a finding; never raise the cap.
+Use your session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager
+(on a T3 host, for example, `app-t3code-agents.slice`; a nearer session slice takes precedence).
+Omit `--slice` where no agent slice exists. Use the bracketed env prefix for .NET commands, without the brackets.
 
 ## Return
 
 Before code, post only when the work splits into disjoint lanes or the contract is inexact: one
 comment naming them, then stop. Sign every comment and return `code-writer/model: <truthful identity>`.
 
-Outside proof-only, return to the Ticket Captain in the standard's form, proof carrying the red
-lines, or for an unused-member Bug its definition and reference search,
+Outside proof-only, return to the Ticket Captain in the standard's form, proof carrying the proof
+recipe of `maintain-verification-skill`'s Proof: the red lines, or for an unused-member Bug its definition and reference search,
 and gates run with exits; a Prototype hop returns runnable-demo evidence and its commit:
 
 `IMPLEMENTED - hop/candidate <SHA>; <behavior>; proof: <evidence>; blocker: <none or named blocker>.`
@@ -106,4 +113,7 @@ captain's to file. Prefer the change that deletes or narrows code; review never 
 Fix at the root: a gap
 gets its test first; cut what the contract does not need; split or flatten what is complex; hide
 what leaks across a seam; a surviving mutant sharpens its test or deletes its code; a surviving
-example value gets its step wired.
+example value gets its step wired. Before expensive broad gates, check the exact successor against
+the previous reviewer's strongest concrete counterexample and the accepted invariant at the
+implicated boundary; return failed or inconclusive evidence to the captain. A passing witness does
+not replace ordinary RED/fix proof, required final gates or independent review.

@@ -8,7 +8,7 @@ type: reference
 Complete reference for dydo's local setup, documentation, guard, worktree cleanup, validation, testing, and utility
 commands.
 Live work is managed in Linear through its official surfaces; no dydo command creates, updates,
-polls, or mirrors a Linear object; `dydo map` reads Linear on demand and keeps disposable saved maps. FutureFeatures live in Linear and are promoted by the user; historical repository records remain
+polls, or mirrors a Linear object; `dydo map` and `dydo survey` read Linear on demand, and only `dydo map` keeps disposable saved maps. FutureFeatures live in Linear and are promoted by the user; historical repository records remain
 durable evidence rather than a second work board.
 
 Commands find the project by walking up to the nearest `dydo.json`; `dydo validate` is the exception
@@ -42,10 +42,10 @@ The runtime modes add, per selected host:
 | Host | Files | What they carry |
 |---|---|---|
 | `claude` | `.claude/settings.json` (committed) | a `PreToolUse` hook running `dydo guard --host claude` on the matched tools, `env.CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH = "3"` and `"autoMemoryEnabled": false` |
-| `claude` | `.claude/settings.local.json` (gitignored) | the allow entries `Bash(dydo:*)`, `PowerShell(dydo:*)`, `Bash(dydo clean:*)` and `PowerShell(dydo clean:*)` |
+| `claude` | `.claude/settings.local.json` (gitignored) | the allow entries `Bash(dydo:*)`, `PowerShell(dydo:*)`, `Bash(dydo clean:*)`, `PowerShell(dydo clean:*)`, `Bash(dydo merge:*)` and `PowerShell(dydo merge:*)` |
 | `claude` | `.gitignore` | `.claude/settings.local.json`, `/.claude/skills/` and `/.agents/skills/` |
 | `codex` | `.codex/hooks.json` | a `PreToolUse` hook running `dydo guard` on the matched tools |
-| `codex` | `.codex/rules/dydo.rules` | an exec-policy `prefix_rule` allowing `dydo clean`, which Codex loads when the project's `.codex/` layer is trusted; dydo rewrites the file on every init and `--join` |
+| `codex` | `.codex/rules/dydo.rules` | exec-policy `prefix_rule`s allowing `dydo clean`, and `dydo merge` under `dydo` or `dydo.exe`, which Codex loads when the project's `.codex/` layer is trusted; dydo rewrites the file on every init and `--join` |
 | `codex` | `.codex/config.toml` | `[agents]` with `max_depth = 3` and `max_concurrent_threads_per_session = 16` |
 | `codex` | `.gitignore` | `/.claude/skills/` and `/.agents/skills/` |
 
@@ -174,11 +174,12 @@ dydo guard --command "git status"
 ```
 
 `--host claude` marks the Claude Code hook `dydo init` writes; it is not a diagnostic argument, so
-the call still reads its payload from stdin. The Codex hook carries no marker.
+the call still reads its payload from stdin. The Codex hook carries no marker. An argument starting
+with `@`, such as a PowerShell here-string `--command "@'…'@"`, is text and gets a verdict; the guard
+never reads it as a response file.
 
 In hook mode (a PreToolUse payload on stdin, no arguments) exit `0` with empty stdout allows the
-action, and exit `0` with one `permissionDecision: "deny"` object on stdout blocks it (the one
-`"ask"` is the [mode-set](#dydo-mode) rerun); the reason
+action, and exit `0` with one `permissionDecision: "deny"` object on stdout blocks it; the reason
 carries the `BLOCKED:` text, which still goes to stderr too. See [Guard System](../understand/guard-system.md)
 for why a block is not exit `2`. In diagnostic mode (the CLI-argument examples above) exit `0`
 allows and exit `2` blocks with `BLOCKED:` on stderr. **Off-limits** paths block
@@ -192,9 +193,17 @@ file a shell command creates.
 A plain `gh pr create`, `gh pr new` or `gh pr ready` is blocked while the tree fails the tree checks
 of [dydo pr-ready](#dydo-pr-ready).
 
+The merge-route hard blocks apply to every caller, top-level or sub-agent. They refuse raw
+`gh pr merge` into any base, `gh api` REST and GraphQL merge calls, and `git push` updates to
+`master`, `main` or the branch the local `origin/HEAD` names. They also refuse default-branch
+changes through `gh repo edit --default-branch` or a `gh api` PATCH of the repository with a
+`default_branch` field. Each refusal directs the caller to [dydo merge](#dydo-merge) for reviewed
+feature-branch integration; the default branch remains the user's. These text checks stop
+accidents, not rogue agents.
+
 ---
 
-## Linear Command
+## Linear Commands
 
 ### dydo map
 
@@ -258,6 +267,50 @@ without it serves a page at `/` saying the viewer was not built, and `dydo map -
 `DYDO_LINEAR_ENDPOINT` replaces the Linear GraphQL URL. It is a test seam for pointing dydo map at a
 fake Linear, not a user setting.
 
+### dydo survey
+
+Print a read-only digest of one Linear Project's lanes.
+
+```bash
+dydo survey 4e6aa9da-f325-4b53-a318-deba4b1b4d26                          # by Project UUID
+dydo survey 25acbbb9a90b                                                  # by slugId
+dydo survey https://linear.app/<workspace>/project/<name>-25acbbb9a90b    # by Project URL
+```
+
+`dydo survey` reads one Project once, with the user's `LINEAR_API_KEY`, and prints plain text. It
+writes nothing, keeps nothing, and never polls: the caller decides when to run it
+([DR 063](../project/decisions/063-dydo-survey-read-only-lane-digest.md)). Without a key it prints
+the same key help as [dydo map](#dydo-map) and exits `2` before any request. It reads the Project's
+non-archived issues, the issues linked from them, their `blocks` and `related` relations, each
+issue's priority, and the Project body.
+
+The ledger is the body section under the first `##` heading containing "ledger", in any case, up to
+the next `##` heading, read as markdown. Its rows are table rows, with or without edge pipes, and
+list items with their continuation lines and the prose under them, quotes included; a nested list
+item or table row is a row of its own, and code holds no rows, no identifiers and no headings. A row
+names every issue identifier in it, bare or inside a Linear link. Closed means a `completed`, `canceled` or
+`duplicate` state; every other state, backlog and triage included, is open.
+
+The first line is `dydo survey <Project name> <UTC ISO time>: <n> findings`. Each finding follows on
+its own line, `<kind> <KEY> <title> — <reason>`, sorted by kind and then key:
+
+| Kind | Finding |
+|---|---|
+| `no-ledger` | The body has no ledger section; its key is `-`. Every open issue is then `unlaned`. |
+| `pickable` | An unstarted, unassigned Project issue with no open blocker, as the map draws it, and not already `unblocked`. |
+| `question-no-priority` | An open Project issue labelled `Question` with no priority. |
+| `stale-row` | A ledger row whose named issues in the read graph are all closed, unless it is a table row whose `State` cell, the column under a `State` header, is `done` (trimmed, any case, backticks allowed). A list item, or a row of a table with no `State` column, is always stale then. |
+| `started-unassigned` | A started Project issue with no assignee. |
+| `unblocked` | An open, unassigned issue in the Project or linked from it, with at least one `blocks` relation into it and every blocker closed. For a linked issue, only the blockers in the Project's graph are seen. |
+| `uncontracted` | An unassigned Backlog Project issue with no open blocker, waiting to be contracted to `Todo`. |
+| `unlaned` | An open Project issue that no ledger row names, nor its parent's. |
+
+A successful read exits `0`, findings or not. An argument that is not one Project UUID, slugId or
+Linear Project URL, and an unknown Project, are usage errors with exit `2`; the message names what
+Linear lacked. An API or network
+failure exits `2` with a message naming it. `DYDO_LINEAR_ENDPOINT` is the same test seam as for
+`dydo map`.
+
 ---
 
 ## Mode Command
@@ -277,7 +330,11 @@ reads the same values. One flag ships: `overnight`, `on` or `off`, default `off`
 unknown flag or value with exit `2` and changes nothing; on success it prints every flag as `show` does.
 
 `dydo mode set` from an agent meets a built-in warn nudge that `dydo.json` cannot remove or weaken. The
-first try is blocked with a reminder that only the chief of staff sets the mode. The guard reads the
+first try stops with the reminder: run this only if you are the chief of staff readying overnight
+mode or ending it; otherwise stop. On every host and direct guard invocation, the same command's
+retry passes the warning. Its marker uses the existing command-warn key: pattern hash and full
+command with whitespace runs normalized. A different command, including the opposite transition,
+gets its own warning. Hard blocks run before warnings and preserve their markers. The guard reads the
 command as the shell that runs it would, quotes, escapes, here-strings, heredocs and line
 continuations included, and splits it only on separators outside quotes. Claude Code's `Bash` tool runs
 bash and its `PowerShell` tool PowerShell; Codex, whose payload carries a `turn_id`, runs PowerShell on
@@ -292,15 +349,12 @@ as does an `@(...)` array or `(...)` group as the argument list. A PowerShell `<
 of any other program are text, so a commit message, a PR body or a here-string that mentions
 `dydo mode set`, even after a `;` inside the quotes, does not meet it. A command the guard cannot read,
 such as one with an unbalanced quote or one piping text into a shell, meets it whenever it contains
-dydo, mode and set in that order. On the rerun the guard answers `permissionDecision: "ask"` only when the hook command carries
-the `--host claude` marker `dydo init` writes into the Claude Code hook and the permission mode is
-`default`, `acceptEdits`, `plan` or `auto`, so the user approves or rejects it. The environment is not
-the signal: `CLAUDECODE=1` is inherited by a Codex session started from a Claude Code shell. Everywhere
-else, Codex, `bypassPermissions`, `dontAsk`, an unknown host or a Claude Code hook written before the
-marker existed, it denies, and the user runs the command in their own terminal, where no guard runs.
-To get the prompt on an older install, run `dydo init claude --join` to rewrite the Claude Code hook.
-The guard stops a stray agent setting the mode by accident, not a deliberate bypass such as an agent
-forging the hook marker or writing the mode file directly.
+dydo, mode and set in that order. The reminder applies equally to Claude, Codex, T3 and unknown
+hosts, independent of permission mode or hook marker. It prevents accidents, without authenticating
+the chief-of-staff role or proving human approval. After actual execution of either transition,
+independently run `dydo mode show` and verify the intended value before announcing activation or
+shutdown. A setter exit, intent, warning retry or schedule is insufficient. On failure or mismatched
+readback, report the transition incomplete and the observed state; report unknown if unreadable.
 
 ---
 
@@ -326,8 +380,8 @@ failed (with the reason), followed by whether its local branch was deleted or ke
 failed worktree always keeps its branch, and its line says so.
 
 - **Never touched:** the main checkout, the worktree holding the current directory, a locked worktree,
-  one a running process is using, and one under T3's worktree root `~/.t3/worktrees` (archive the T3
-  thread instead). Each is skipped with its reason. So is a worktree whose `dydo.json`, at HEAD or
+  one a running process is using, and one under T3's worktree root `~/.t3/worktrees`, which T3
+  owns. Each is skipped with its reason. So is a worktree whose `dydo.json`, at HEAD or
   in the tree, cannot be parsed, dry run included: which evidence it holds is unknown.
 - **Submodules:** the archive reads only the worktree itself, so a worktree with an initialized
   submodule that has staged, unstaged or untracked changes, or a commit on any local ref (HEAD, a
@@ -397,18 +451,123 @@ so uncommitted or unpushed work is not in it.
 ```bash
 dydo pr-ready                          # check the current directory's tree
 dydo pr-ready <path>                   # check another tree
-dydo pr-ready --body /tmp/pr-body.md   # also check a PR body kept outside the tree
+dydo pr-ready --body dydo/agents/workspace/pr-body-<KEY>.md   # also check a PR body
 ```
 
 The tree must have no staged, unstaged or untracked files git does not ignore, and HEAD must have
 an upstream and equal it. The upstream is read from the local remote-tracking ref; nothing is
-fetched. Keep the body file outside the tree, where it is not an untracked file. With `--body`, the body must name a ticket key (such as `DYD-123`) and hold a
-`## Independent review` section with the reviewer's `PASS - rubric/type: ...` block, fenced or not;
-the dash after `PASS` may be a hyphen, an en dash or an em dash.
+fetched. Keep the body file in `dydo/agents/workspace/`, which git ignores, so it is not an untracked file
+and the guard can read it from inside the tree. With `--body`, the body must name a ticket key (such as `DYD-123`) and hold a
+`## Independent review` section with a parsable reviewer block, fenced or not:
+`PASS - rubric/type: code; candidate <SHA>; base <SHA>`. The rubric must be `code`, `docs` or
+`merge`; the candidate SHA must contain 7–40 hexadecimal digits and may be backticked. Fields start
+after semicolons. `candidate: <SHA>` and `base: <SHA>` are also accepted, independently;
+the canonical forms without colons remain valid. The dash after `PASS` may be a hyphen,
+an en dash or an em dash. Prose-only PASS lines and missing or invalid candidate fields are refused
+with the expected form. Base is optional: as in merge, an absent or unparsed base does not
+invalidate the PASS. A parsed base uses the same SHA form. This uses the merge parser but checks grammar only: it does not
+resolve review SHAs, match the candidate to HEAD or check base ancestry. Merge still applies
+its own review, pin, ancestry and check policy.
 Each problem prints as one `not ready:` line on stderr and the exit is `1`; a path outside a git
 work tree is a problem too. When all hold, it prints one `ready:` line and exits `0`. The guard
 runs the tree checks on `gh pr create`, `gh pr new`, `gh pr ready` and their `gh api` forms
 ([Guard System](../understand/guard-system.md)).
+
+### dydo merge
+
+Merge a reviewed PR into its `feature/*` branch with a merge commit. A merge into `master`, `main` or
+the default branch is the user's click: the command refuses it, and no option overrides a refusal.
+
+```bash
+dydo merge <pr> --match-head-commit <sha> --match-base-commit <tip> --dry-run   # every read and check; merges nothing
+dydo merge <pr> --match-head-commit <sha> --match-base-commit <tip>             # merge exactly <sha> into the PR's feature/* base at <tip>
+```
+
+`--match-head-commit` takes the full 40-character SHA the reviewer passed: the PR head must equal it,
+and it is what merges. `--match-base-commit` takes the full 40-character SHA of the target branch tip
+you pinned; read it from the branch ref (`git ls-remote origin refs/heads/<base>`), never from the
+PR's `baseRefOid` or `base.sha`, which can name a tip the branch has since left. Both are required
+and validated before any network call, the head pin first; a missing, short or non-hex value prints
+`refused: --match-base-commit takes the full 40-character SHA of the target branch tip you pinned`.
+There is no repository, base-selection or override option: the target is always the PR's base, and
+the base pin only adds a refusal. In order, it checks:
+
+- **Repository:** the one the `origin` remote of the located project's checkout names, as
+  `HOST/OWNER/REPO`; the checkout's git top level must be the `dydo.json` folder. git runs without
+  inherited `GIT_*` variables, and gh runs as `gh api` with `--hostname` set to origin's host and
+  `GH_REPO` and `GH_HOST` removed. The PR must be in that repository.
+- **A closed PR first:** when its base is a feature branch (as below) that already holds the SHA, the
+  run prints `already integrated` and exits `0`, so a rerun after a lost answer is safe; any other
+  closed PR is refused.
+- **The PR:** not a draft, and from the same repository, not a fork.
+- **Base:** refused when it is GitHub's `default_branch`, read fresh on every run, or the local
+  `origin/HEAD` name, whatever the case; it must be `feature/` and one or more `/`-separated
+  segments, each starting with a letter or digit (`[A-Za-z0-9][A-Za-z0-9._-]*`), and pass
+  `git check-ref-format --branch`. An unreadable default branch is refused.
+- **Head:** the PR head must equal the SHA.
+- **Target tip:** the base's tip, read from `GET repos/<owner>/<repo>/branches/<base>`, must equal
+  the pin, dry run or real; otherwise
+  `refused: <base> is at <tip12>, not the pinned <pin12>; nothing merged - re-pin the target and re-contract`.
+  A closed PR's reconcile compares no pin, since the run's own merge moved the tip.
+- **Review:** the PR body's `## Independent review` section, up to the next level-one or level-two
+  heading, must hold a `PASS - rubric/type: <rubric>; ...` line whose `candidate` is the SHA: fenced
+  or not, a hyphen, en dash or em dash after `PASS`, the SHA possibly backticked. The `candidate`
+  and `base` field names accept an optional colon before the whitespace and SHA. An abbreviated
+  candidate of at least 7 hex digits counts only when GitHub resolves it to exactly the SHA. The
+  rubric must be `code`, `docs` or `merge`, and a `FAIL` line for the same candidate refuses. When the
+  PASS names a `base`, the target's tip must contain it; when it names none, a `note:` line says the
+  base check was skipped.
+- **Checks:** every check suite, latest check run and legacy commit status on the SHA is read to
+  the last page. The fixed in-code inert-app list, matched by GitHub App slug, contains only
+  `blacksmith-sh`. A listed app's suite is ignored only when its status is `queued`, `in_progress`,
+  `pending`, `requested` or `waiting` and `latest_check_runs_count` is present as a valid integer
+  zero. Unknown, missing or malformed status and missing or invalid count never establish the
+  exception, even for `blacksmith-sh`. Every non-exempt suite is judged normally; any unfinished
+  suite then refuses, whatever its run count. Unknown states always refuse.
+  Suites and runs must finish with `success`,
+  `neutral` or `skipped`; legacy statuses must be `success`. Every check the target's branch
+  protection or rulesets require must be present. A suite refusal names the app slug and status,
+  for example `refused: checks on <sha12> are not green: circleci-checks queued`.
+  With no suite left after the exception, the command refuses `no checks reported`.
+
+Then it merges: `POST repos/<owner>/<repo>/merges` names the validated base and the SHA, so a later
+retarget or push cannot change where or what lands. GitHub cannot make that call conditional on a
+tip, so the command reads the branch ref again just before it, refusing as above on a mismatch, and
+afterwards checks that the merge commit's first parent is the pin. When the pin is an ancestor of
+the SHA, where GitHub would fast-forward, it writes a two-parent commit (the SHA's tree, parents the
+pin and the SHA) and moves the base atomically, only if it is still at the pin: GraphQL `updateRefs`
+with `beforeOid` the pin, without force. A base that moved meanwhile, even to a commit in the SHA's
+history, fails that move; the command then reads the branch ref again and, when the base is off the
+pin, refuses with nothing merged. A base still at the pin is a tool error with GitHub's message. There
+is no squash or rebase. The commit message is `Merge pull request #<n> from <owner>/<head-ref>`, the
+PR title, and the trailers `Dydo-Merge: dydo <version>`, `Reviewed-Candidate: <sha>`,
+`Target-Tip: <pin>` and `Review: <the PASS line, first 200 characters>`. A conflict (`409`) is
+refused for a Merge code-writer to resolve locally.
+
+Output on stdout, the captain's merge receipt:
+`merged PR #<n> (<sha12>) into <base> at <pin12> as <merge12>; PR marked merged: yes|pending|unverified`,
+or `already integrated (no new merge commit): PR #<n> (<sha12>) is in <base>`, or for a dry run
+`would merge <sha12> into <base> at <pin12> (PR #<n>)`. A `warning:` line follows when the default branch changed
+during the run. There is no local log; git and the PR timeline are the record.
+
+Exit `0` for a merge, a SHA already integrated, and a `--dry-run` whose checks pass. Each refusal
+prints one `refused:` line on stderr and exits `1`; a missing PASS adds a `found PASS for <sha12>`
+line for each other candidate the review section passed. A tool error prints one `error:` line and exits
+`2`: gh missing or signed out, the network, an origin on an SSH alias host, or an unexpected GitHub
+answer such as a `403`, `422` or ruleset rejection, with GitHub's message. A merge that landed on
+another tip, when the branch moved between the re-read and GitHub's merge, also exits `2`: its
+`error:` line names the merge, its first parent and the pin, and says the merge landed and its actual
+parents need merge review. A merge that succeeded exits `0` even when the PR could not be reread
+(`unverified`) or GitHub had not yet marked it merged (`pending`: the command rereads a few times over
+about four seconds, and never prints `no` after a successful merge).
+
+`dydo init` and `--join` write narrow allow rules for both hosts (see [dydo init](#dydo-init)),
+and the guard lets a sub-agent run it: a Merge Sub-ticket's code-writer runs it. The guard hard blocks
+the other merge routes for every caller: raw `gh pr merge`, `gh api` and GraphQL merge calls, a
+`git push` to the default branch and default-branch changes
+([merge-route blocks](../understand/guard-system.md#also-enforced)); each refusal names `dydo merge`.
+The Claude bash/Codex PowerShell parity gate is planned, pending in DYD-426; writing these rules or
+shipping the blocks does not prove host parity.
 
 ---
 
@@ -423,6 +582,18 @@ severity, audience, and `match` (absent, `command`, or `new-file`).
 dydo validate
 dydo validate --root <dir>
 ```
+
+When `dydo.json` records `integrations.claude: true`, validate also checks that the committed
+`.claude/settings.json` runs the guard: some `PreToolUse` hook's `command` is exactly
+`dydo guard --host claude`, the one [`dydo init`](#dydo-init) writes, whatever its matcher. A guard
+only in `.claude/settings.local.json`, or a bare `dydo guard`, does not count. When the file is
+missing, cannot be read, does not run the guard, or is not valid settings JSON, validate prints one
+warning against `.claude/settings.json`: Claude agents run without the dydo guard. The fix is
+`dydo init claude --join`. Make an unreadable file readable first. Fix the JSON first when the file
+is not valid JSON, is not an object, or has a `hooks` that is not an object or a
+`hooks.PreToolUse` that is not an array, because `dydo init claude --join` refuses such a file.
+The warning alone leaves the exit code `0`. The guard's daily validation prints the same warning
+and still allows the tool call.
 
 This validates dydo's local configuration. It does not validate or provision Linear.
 
@@ -448,6 +619,64 @@ runner's exit code; configuration, startup, and cancellation failures exit `2`.
 ---
 
 ## Utility Commands
+
+### dydo statechart
+
+```bash
+dydo statechart SPEC.tla [--config FILE] [--view FILE] [--out DIR] [--skill DIR]
+```
+
+Runs on Windows and Linux; other platforms are refused, and the skill's own
+launchers remain available there. Captures the caller and original model inputs.
+Missing prerequisites produce a locked JSON plan and saved request with exit `3`;
+the initial invocation starts no installer. A verified ready invocation checks the
+model without installing. Only complete checker verdicts `0` and `1` publish output.
+
+### dydo statechart resume
+
+```bash
+dydo statechart resume --request ABSOLUTE_REQUEST_JSON
+```
+
+Submit the exact saved continuation through the host\'s normal installation
+authorization mechanism. Resume verifies saved inputs and identities, installs
+missing locked prerequisites into the planned managed roots, proves readiness and
+continues the captured chart. A local flag or receipt is never host approval.
+Failures preserve the pending request; changed inputs require a fresh plan.
+Completed requests return the recorded verdict only while their output still matches.
+Managed dependencies live in a folder named for their dependency lock. A dydo whose lock
+changed installs into a new folder and keeps the old one, which another installed dydo
+may still use; remove an old lock folder only when no installed dydo uses that lock.
+Extracted assets are kept per release and payload for the same reason.
+
+### dydo statechart install-skill
+
+```bash
+dydo statechart install-skill --root ABSOLUTE_PROJECT
+```
+
+Installs this executable's embedded statechart skill into the explicitly named
+project and projects it into both agent discovery roots. The skill's receipt records
+its installed files; after a dydo update, a skill whose files still match that record
+is replaced with this release's. A receipt without that record is replaced only when
+its files are already this release's. Foreign skills, local edits and any project setup
+script stay untouched, and the refusal names the changed files and the remedy.
+`--skill DIR` on chart invocation verifies the installed skill's exact release,
+protocol, payload and file identities before checking; an unchanged skill from an
+earlier release is refused with the `install-skill` command that updates it.
+
+### dydo statechart doctor
+
+```bash
+dydo statechart doctor
+```
+
+On Windows, verifies and extracts the installed binary's exact statechart payload,
+then inspects local Node/Java candidates and an explicit TLC jar without downloads.
+Probes run hidden under registered native ownership. Diagnostic JSON distinguishes
+candidate compatibility from verified checking readiness. Exit `2` means checking
+readiness is not established; it is never a chart verdict or installation approval.
+This operation changes no PATH, home settings or managed prerequisites.
 
 ### dydo completions
 

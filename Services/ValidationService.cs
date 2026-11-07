@@ -9,12 +9,15 @@ public class ValidationService : IValidationService
     {
         var issues = new List<ValidationIssue>();
 
-        ValidateDydoJson(basePath, issues);
+        var config = ValidateDydoJson(basePath, issues);
+        if (config != null && config.Integrations.GetValueOrDefault("claude") &&
+            ClaudeGuardWiring.Check(basePath) is { } unguarded)
+            issues.Add(unguarded);
 
         return issues;
     }
 
-    private static void ValidateDydoJson(string basePath, List<ValidationIssue> issues)
+    private static DydoConfig? ValidateDydoJson(string basePath, List<ValidationIssue> issues)
     {
         var configPath = Path.Combine(basePath, "dydo.json");
         if (!File.Exists(configPath))
@@ -25,13 +28,14 @@ public class ValidationService : IValidationService
                 File = "dydo.json",
                 Message = "dydo.json not found."
             });
-            return;
+            return null;
         }
 
         try
         {
             var config = new ConfigService().LoadConfigStrict(basePath)!;
             ValidateNudges(config, issues);
+            return config;
         }
         catch (InvalidDataException ex)
         {
@@ -41,6 +45,7 @@ public class ValidationService : IValidationService
                 File = "dydo.json",
                 Message = ex.Message
             });
+            return null;
         }
     }
 

@@ -5,15 +5,182 @@ type: guide
 
 # Testing Strategy
 
-Every project exposes one project-local testing facade. It is a small Python runner beside a schema
+The shared workflow below is portable policy; execution still needs a project's real commands.
+This repository's current facade has no `--feature`, `--plan`, `--heavy` or Ripple support.
+Its per-ticket coverage therefore stays whole-stack, its recorded gap against ticket-scoped
+coverage: `gap_check.py gate coverage`, narrowed at most to whole stacks with `--stack`, measures
+each selected stack's whole suite.
+Map the required selection to existing project selectors/adapters and record the commands in the
+ticket; return missing support rather than inventing flags or claiming later machinery shipped.
+
+## Feature proof and gate placement
+
+Feature/subfeature tests and parent-owned shared tests are the primary proof. Select every own
+and reached feature from the actual change: inspect affected consumers of shared contracts,
+fixtures and configuration, not just edited paths. A selected parent includes its descendants
+and ancestor-owned shared tests. Selecting a child includes that child's tests and its ancestors'
+shared tests; siblings join when the change reaches them. Selection may widen, never omit reach.
+
+Light means the project's ordinary tests; Heavy adds its declared costly tests. Cost, feature
+ownership and Ripple membership are separate dimensions. The project declares cost criteria and
+the commands that implement selection; a cheap test is not automatically sufficient proof.
+
+| Stage | Required proof |
+|---|---|
+| While building | Surgical tests that decide the change's behavior. |
+| Each committed code hop | Affected-feature Light, including reached features and shared tests, plus applicable static assurance. |
+| Final candidate | Own-feature Heavy when the declared plan contains Heavy, including any reached Heavy behavior and every Heavy-only source owed to it; ticket-scoped coverage producer and consumer once, as below. Retain required static and mutation gates. |
+| Documentation-only hop | Bounded documentation, setup and reference checks its contract names; runtime tests only where the change actually reaches behavior. |
+| CI or explicit human request | Whole suites for broad observations; hosted CI also requires whole-stack coverage. A coverage producer may itself execute a stack suite; reuse its suite verdict where supported instead of launching the same suite twice. |
+
+Coverage is scoped to the ticket. Its coverage producer runs the ticket's own Light feature
+selection: own and reached features, with their ancestors' shared tests. Where the facade supports
+it, that is the same instrumented run as the Light gate, so the suite runs once. The consumer judges
+the ticket's changed files under the unchanged thresholds; a changed line the selection does not
+reach fails the gate rather than being waved through. A changed Heavy-only source, one only the
+project's declared Heavy tests reach, takes the Heavy route: the Light coverage gate reports it as
+owed to Heavy, and the final candidate's Heavy stage measures it under the same thresholds or fails.
+No gate reports an owed source as pending with exit 0; DR 048 leaves no escape hatch. A facade
+without feature selection keeps whole-stack coverage per ticket and records that as its concrete
+gap; the ticket claims no selector the facade lacks.
+
+The ticket's Exact gates bind real project commands, reached features, levels, prerequisites and
+stage. Use a supported selector/adapter; missing selection or Heavy support is a concrete gap to
+return to the captain, not a flag to invent or proof to skip. Required integration, combined-merge
+and release gates remain at their boundaries. Whole-stack coverage is required at the landing, at
+every sync of the default branch into a feature branch and in hosted CI, and it measures Heavy-only
+sources under the unchanged thresholds or fails. Existing active ticket gates remain binding until
+their owner explicitly reconciles the contract under governing authority, naming retained,
+replaced and still-required gates; new guidance never retrospectively cancels an owed run.
+
+## Runner prerequisites and shared hosts
+
+Before an expensive run, cheaply verify the checkout/snapshot and exact source, supported command
+and selection plan, and nonzero native discovery for every intended selection. An empty selection
+is not a pass. Verify the runtime/tool versions and locked dependencies in the checkout that will
+execute, including each selected route's install; another worktree's packages prove nothing here.
+Missing prerequisites return a named setup gap before expensive execution.
+
+Declare the owner of processes, worktrees, temporary data and result paths before launch. Preserve
+source identity across isolation or copying, use per-run artifacts where needed, and retain raw
+evidence through cleanup. Cleanup must verify owned resources are gone; it must not touch another
+crew's processes or shared services. Native proof uses authorized isolated scratch and reports
+skips as missing proof, not passes. The adapter owns isolation and cancellation cleanup.
+
+The session's shared FIFO, concurrency limits and host restrictions take priority over project
+local scheduling exemptions, including slot-free Light. Use the supported queue and let a healthy
+queued or quiet run continue. A Light label grants neither a bypass nor host access.
+
+Memory belongs to the whole host: one runaway run can exhaust it and end every session on the
+machine. Run each ad-hoc test, gate or probe under a hard cap with swap off:
+`[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`.
+The bracketed env prefix applies to .NET commands; omit the brackets when using it. Use your
+session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager. On a
+T3 host, `app-t3code-agents.slice` is an example; a nearer session slice takes precedence. Leave
+out `--slice` where no agent slice exists. Each run has its own cap; concurrent runs share the
+caller's slice budget. Give a focused probe `MemoryMax=4G` and a short timeout. Keep any host gate
+lock before the command, outside the cap. Pass input that holds `$` through a script file, and
+never scale an input upward uncapped. The testing facade caps its own operations the same way,
+and `DYDO_MEMORY_MAX` may only lower its cap.
+
+A cap hit is a finding to diagnose; nobody raises the cap to get past it. When the facade
+survives, the hit is a `failed` row marked `memoryCapHit`. Otherwise the caller sees 137, or 143
+when systemd stops a scope under its default `OOMPolicy=stop`, and the `journalctl --user` OOM line
+confirms it. Behind `timeout`, a default-policy scope can even return 0; that race is why the
+command sets `OOMPolicy=continue`. This ad-hoc command applies only where systemd exists.
+On Windows the facade caps itself with `JOB_OBJECT_LIMIT_JOB_MEMORY` in its own nested Job object,
+without restarting or killing itself or adding kill-on-close. The effective limit is the lower of
+its target and the outer job's job-memory limit, when present; Windows enforces nested limits.
+Its cap is `enforced`, with mechanism `windows job object`. Setup or query failure records
+`unavailable` with the Windows error and one warning, and the operation proceeds.
+
+The operation's `memoryCap` and every covered row record `memoryCapHitReporting`: `exact` on
+Linux, `best-effort` on Windows. A delivered `JOB_OBJECT_MSG_JOB_MEMORY_LIMIT` on the facade's own
+completion port makes that Windows row `failed`, exit 1, with `memoryCapHit: true` and
+`memory cap hit (MemoryMax=<cap>): a finding; do not raise the cap`. Windows message delivery is
+not guaranteed: a missing message proves nothing and never changes a failed row into a pass.
+`peakJobMemory` records the job's cumulative `PeakJobMemoryUsed` at each row's end as diagnosis
+only; neither a peak nor a child exit code establishes a hit. macOS and Linux without usable
+systemd still record `unavailable` with a reason and warning; only deadlines bound those runs.
+
+## Evidence and inherited failures
+
+Each result names candidate/source identity, command and selection, environment/session, exit and
+raw artifact location. Bind dirty inputs to their bytes; a HEAD label alone is not the tested tree.
+Keep native output and producer/consumer receipts, including unavailable or deferred assurance.
+Pending work has no invented success or numeric exit: preserve the runner's actual result.
+
+Reuse evidence only for the exact candidate, selection and compatible environment when the gate
+allows it. Final Heavy and coverage each run once per final candidate; a changed final tree
+(including a fix or combined merge tree) requires fresh applicable final gates. A combined merge
+tree reruns the ticket-scoped coverage gate, not whole-stack coverage, unless it is the landing or a
+sync of the default branch. New concerns and
+distinct mandatory integration/release boundaries also require their specified reruns. Within one
+gate run, deduplicate execution where the producer's contract proves both verdicts. Independent
+review and the captain's own proof-recipe rerun remain required.
+
+A failing result stays failed. Distinguish a change-caused defect from inherited debt, a fixture
+fault or runner/environment failure with exact-candidate output and comparable base/source
+evidence. An assertion that it was already broken is not attribution. Return the failure and
+evidence to the captain; repair change-caused defects in scope. For inherited or infrastructure
+failures, the accountable owner records disposition, separately routes repair or escalation, and
+states which required gates remain blocked. Neither attribution nor filing a follow-up makes the
+candidate green, waives a threshold/mutation obligation, or authorizes unrelated repair work.
+Flaky or unexplained failures require an accountable diagnosis and repair owner; they are not
+an accepted final state.
+
+## Ripple
+
+Ripple supplements feature proof with cheap, high-value cross-feature detectors. Where supported,
+the runner selects the deduplicated union of required feature tests and evidence-selected Ripple
+members. Membership starts empty, admits only demonstrated value and excludes Heavy tests;
+agents select features rather than hand-curating members. Empty or disabled Ripple gives zero
+collateral protection and leaves feature proof mandatory.
+
+Reward distinct, verified collateral product defects missed by feature proof and the other
+members. Duplicate detectors of the same defect, flakes and infrastructure failures earn no
+additional defect credit. Full CI supplies broad observations, including tests outside current
+membership. Count opportunities only from eligible outside-feature observations: executed,
+interpretable results with known change reach and comparable source/test versions. Required
+own-feature executions earn neither detection credit nor a place in the opportunity denominator
+or window. Repeated own-feature passes therefore cannot dilute or age out a prior collateral
+catch; eligible outside-feature observations can affect the window. Missing, skipped or ambiguous
+results are unknown, not passes; unresolved failures cannot establish that feature proof missed
+the defect. No opportunity means no evidence of decay merely because time passed.
+
+Selection values marginal catches per eligible opportunity relative to marginal runtime,
+including added route overhead. A cost cap is a ceiling, not a target to fill. Numerical windows,
+minimum samples, caps, catalogs and deployment belong to the project's proven mechanism.
+
+When a project supports published membership, retain the actual list version/digest and source
+used by each run. Bounded retrieval may use a valid compatible cache or disable Ripple, recording
+the fallback reason and zero protection when disabled. Exact-version replay must report an
+unavailable version rather than substitute another. This policy supplies no host service or
+permission to deploy one.
+
+## Current project facade
+
+This repository exposes a project-local testing facade. It is a small Python runner beside a schema
 1 JSON manifest. The facade selects declared adapters and executes their argv arrays directly: it
 does not construct a shell command, infer an omitted gate, or turn missing assurance into success.
 
 Run this repository's facade with the pinned local interpreter, because the `dotnet` static row
-measures the caller's own package identities:
+measures the caller's own package identities. The assurance environment uses CPython 3.14.4,
+Node 26.13.0 and .NET SDK 10.0.303. Framework-dependent dydo and its test children
+also require shared runtime Microsoft.NETCore.App 10.0.14 or later, matching the
+patched AOT/runtime minimum in `DynaDocs.csproj`. Package restore alone does not
+provision that shared runtime. The pinned interpreter lives in the repo-root, gitignored
+`.static-gates/python`, which an agent provisions without user action: on Linux,
+`python3.14 -m venv .static-gates/python` then
+`.static-gates/python/bin/python -m pip install -r DynaDocs.Tests/coverage/requirements.lock`;
+on Windows, `python -m venv .static-gates/python` then
+`& .static-gates/python/Scripts/python.exe -m pip install -r DynaDocs.Tests/coverage/requirements.lock`.
+[Provisioning](../reference/coverage-tools.md#provisioning) lists the other toolchains and the
+prepared-environment link. On Linux, use `py=.static-gates/python/bin/python` and invoke `"$py"`
+instead of PowerShell's `& $py` below:
 
 ```powershell
-$py = "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+$py = ".static-gates/python/Scripts/python.exe"
 & $py DynaDocs.Tests/coverage/gap_check.py all
 & $py DynaDocs.Tests/coverage/gap_check.py gate static
 & $py DynaDocs.Tests/coverage/gap_check.py gate coverage
@@ -125,13 +292,14 @@ registration have disappeared before the result is reported.
 
 ## What this repository measures
 
-Twelve rows are configured: a test, a static and a coverage adapter for each of `dotnet`, `python`,
-`node` and `viewer`. Mutation is unavailable on every stack: on the first three with the reason
-`Pending DYD-103`, and on `viewer` because no TypeScript mutation mechanism is adopted. An
+Fifteen rows are configured: a test, a static and a coverage adapter for each of `dotnet`, `python`,
+`node`, `viewer` and `statechart`. Mutation is unavailable on every stack: on the first three with
+the reason `Pending DYD-103`, and on `viewer` and `statechart` because no TypeScript mutation
+mechanism is adopted. An
 unavailable capability is a failed-closed 2, never a passing gate. Each stack's coverage row
 declares its suite verdict, so under `--force-run` a declaring stack's test verdict comes from its
 coverage row's single instrumented execution. The `dotnet` stack runs inside
-an isolated Git worktree copy of the working candidate; `python`, `node` and `viewer` run in place.
+an isolated Git worktree copy of the working candidate; the other four run in place.
 [Coverage Tools](../reference/coverage-tools.md) holds the exact commands, artifacts, exit meanings
 and summary schema.
 
@@ -146,6 +314,29 @@ read per module from Istanbul LCOV and joined to the walker's callables for HCRA
 command is not a gate row: the typecheck carries the strict-types invariant, and building would write
 the `viewer/dist` that the .NET build embeds.
 
+The `statechart` stack is the statechart runtime's TypeScript under
+`skills/engineering/statechart/scripts/` that dydo wrote or adapted. Its `PROVENANCE.md` pins the
+upstream pstack commit and lists the Git blob hash of every upstream TypeScript file there. A file is
+measured exactly when its bytes hash differently from its line, or it has no line, so editing an
+upstream file makes it a target with no list to update. Its test row runs the package's own
+`pnpm` test script after `pnpm install --frozen-lockfile`. The managed prerequisites reach it through
+the caller's environment, as `TLA2TOOLS`, `JAVA` and `STATECHART_PELE`; a test without one skips
+by name and leaves its code uncovered. The coverage row runs the full package suite on Linux;
+Windows runs only the files and exact test names in `statechart-platforms.json`, requiring every
+selected case to appear once and pass without a skip. Source-stable Istanbul JSON counters follow
+the CLI, worker and native-entry processes the tests spawn and include zero-hit points in unloaded
+target modules. Joined to the walker's callables, they provide the policy and HCRAP denominator,
+partitioned by the map's native callable ownership: Windows measures its declared callables and
+Linux measures the remainder. Native Node LCOV is diagnostic output only. The row excludes test
+files, while a helper beside them remains measured. The static row typechecks the
+package's own tsconfig, strict with `noUnusedLocals` and `noUnusedParameters`, using the viewer's
+locked TypeScript, since the package declares no compiler, and reads each diagnostic as a finding.
+It also runs the walker, dependency-cruiser, jscpd and knip in the package's own workspace. Knip and
+the typecheck keep the byte-identical upstream files in their programs, since what those files
+import and declare decides whether a measured export is used or a measured call type-checks. A type
+error in one is still a finding, but neither judges its own dead code. The compiler's unused checks
+stand in for the viewer's lint, as no lint row runs here.
+
 Static measurement covers all maintained source of a stack, test files included: complexity,
 parameters, dead code, nested ternaries, dependency cycles, unused exports, clones and the native
 analyzers all read test code as well as product code.
@@ -156,7 +347,10 @@ TypeScript from native test discovery. A viewer test is a `viewer/src/**/*.test.
 imports `vitest` and calls `test` or `it`. Any other viewer module that imports `vitest`, such as
 the `testSetup.ts` vitest loads before every file, can only run under the runner, so it is test
 harness: role `test` with `nativeTest: false`, which no association can name as another module's
-test file. Test bodies, fixtures and assertion helpers supply the evidence; they are
+test file. A statechart test is a `test/*.test.ts` file that imports `node:test` and calls `test`;
+any other statechart module that imports `node:test` is harness in the same way. A folder makes no
+module harness: `test/tlc.ts` and the stand-in `test/java.ts` import no runner, so they are targets
+like any other module. Test bodies, fixtures and assertion helpers supply the evidence; they are
 not coverage targets and are never required to cover themselves. A maintained gate producer or
 runner is a target even under a test directory - `GateMetrics` and the `DynaDocs.Tests/coverage`
 runners are measured, while the `DynaDocs.Tests` assembly is instrumented for identity only.
@@ -168,7 +362,7 @@ Amendment 2026-09-17, `DynaDocs.Tests/HostCanaries/run-host-canaries.mjs` and
 every static gate and in the association manifest, and their inventory row carries
 `coverageExemption` only while their extracted modules and the drivers themselves stay associated.
 
-Two gaps are recorded rather than dropped or weakened. The first is mutation: on `dotnet`, `python`
+Three gaps are recorded rather than dropped or weakened. The first is mutation: on `dotnet`, `python`
 and `node` it is DYD-103; on `viewer` no TypeScript mutation mechanism is adopted, and no ticket
 currently tracks that gap. The
 JavaScript coverage row carries a second fail-closed rule that currently reports nothing: a
@@ -186,9 +380,93 @@ whole package and an unused verdict needs that graph. What they lack is the gap_
 clone and cycle gates and the association gate. TypeScript under `viewer/dist`, `viewer/coverage`
 or `viewer/node_modules` would fall outside `viewer/src/` the same way, and Git ignores all three.
 
+The third gap is the statechart runtime's TypeScript that is still byte-identical to its pinned
+upstream file, which DYD-590 decides. The same rule records it: the inventory lists each such file in
+`excluded` with the reason `typescript-outside-viewer-src`, and its `origin` carries the upstream
+commit, path and blob hash it matches. No association names one. The package's tests still run it,
+and the statechart knip graph holds it, listed as `ignored`, so the exports it uses count. It stays
+under the strict typecheck, but its own unused bindings are listed rather than judged. What it
+lacks is the walker, the clone and cycle gates, coverage, and the unused-binding and association
+gates. The moment its bytes change, it leaves this gap and becomes a measured target.
+
 A viewer module absent from the LCOV report passes only if the walker proves it declarative, with
 every top-level statement a type, an interface or a type-only import or export, as
 `viewer/src/api/types.ts` is. Any other absent module is a measurement gap.
+
+## Python platform coverage
+
+Python coverage has explicit platform ownership under
+[DR 048's platform measurement amendment](../project/decisions/048-one-level-static-gates-certainly-wrong-no-escape-hatch.md).
+`DynaDocs.Tests/coverage/python-platforms.json` assigns native
+callables to Windows; Linux measures every other target and every mixed module's neutral
+remainder. Source pins make selection drift a measurement error. Both hosted CI jobs run the
+whole Python suite, apply the same 80% line / 60% branch / HCRAP 20 policy to their portions, and
+publish the unfiltered native measurements. The dependent union gate requires two passing gates
+on the same clean candidate and accounts for every line, branch and callable body. Neither a
+Linux-only result nor inherited-failure attribution establishes combined coverage success.
+
+## .NET platform coverage
+
+.NET coverage applies the same ownership to the statechart's Windows-native code.
+`DynaDocs.Tests/coverage/dotnet-platforms.json` names Windows-owned members per source and pins
+each source. A point belongs to the member whose emitted body owns it, so a lambda or field
+initializer goes with its member. A branch belongs to its origin line. Linux runs the full suite
+and measures every other point, including the neutral remainder of mixed files. Windows runs only
+the selection's named tests, which reach the named members, and judges them by per-test results.
+A declared test without an executed result, a result that is not Passed, or a result outside the
+selection fails the gate; theory rows count under their method. Both gates apply 80% line / 60%
+branch / HCRAP 20 to their own portion. The hosted `dotnet-coverage` job runs both gates on the
+run's own commit, `github.sha`: the merge ref on a pull request and the pushed commit on a push.
+Linux runs on `ubuntu-24.04` and Windows on `windows-latest`. Every `ci.yml` job checks out that
+same commit, so each helper and lock the workflow names comes from the tree it runs on, and the
+preflight receipt still records both `pr_head_sha` and `merge_ref_sha`. The dependent
+`dotnet-coverage-union` job requires both reports and both passing gates on the same clean commit.
+It rebuilds that commit's complete zero-hit Linux denominator and checks that each report holds
+exactly its own platform's points and agrees on every owner. Neither report alone establishes .NET
+coverage success.
+
+The Windows coverage leg runs only the statechart's selected tests, so the guard's tests run on
+Windows in a separate job. The hosted `guard-windows` job builds the candidate commit on
+`windows-latest`, the merge ref on a pull request and the pushed commit on a push, and runs the
+classes in that job's `GUARD_CLASSES` in `.github/workflows/ci.yml`, the one list of selected
+classes, without instrumentation. It fails when `dotnet test` fails, when the selection yields no results, when a
+class yields none, or when any result is not Passed, so a skip fails it. It adds no points to
+either coverage report.
+
+Native error codes are read in the native call's own statement, as in
+`Check(Native(...), Marshal.GetLastPInvokeError())`. The gate instruments with AltCover `--eager`,
+and each visit flushes its trace through a P/Invoke that replaces the thread's last error. Visits
+fall at statement and branch boundaries, so a read in a later statement sees the visit's error,
+not the native call's.
+
+## Dormant guard performance proofs
+
+The guard's repeated numerical performance proofs, the `PerformanceProof=Release` tests in
+`BashCommandAnalyzerTests`, are a dormant suite (DYD-859). They show that reading a command stays
+linear and within its time and memory budget on inputs up to 100,000 characters. Repeating that
+measurement on every run costs far more than it tells, so no ordinary run includes them:
+
+- `DynaDocs.Tests/DynaDocs.Tests.runsettings` filters them out of every `dotnet test` of the test
+  project, and VSTest joins that filter to any `--filter`, so a filtered run leaves them out too.
+  The `guard-windows` filter also names the exclusion.
+- No `ci.yml` job, required check or `dydo merge` expectation runs or needs them.
+- Instrumented coverage runs each one's cheap coverage witness, as `release-proofs.json` maps it,
+  and the `Shared` proofs, which measure once and are their own witnesses. The coverage selection,
+  thresholds and denominator are unchanged.
+
+Run the suite when a fundamental change to how the guard reads commands, a suspected performance
+regression or a new reader architecture calls for it. Run it under the full-gate lock and 8G cap:
+`.static-gates/python/bin/python DynaDocs.Tests/coverage/release_proof.py run`. It opts in with
+`-p:PerformanceProofs=true`, builds Release in the isolated worktree, runs
+`PerformanceProof=Release|PerformanceProof=Shared` uninstrumented, and judges the TRX against the
+map: all 120 mapped results present once and passed, from the Release build, the lane check
+included. Its receipt is `DynaDocs.Tests/coverage/results/release-proof/receipt.json`. On hosted
+Linux, dispatch `.github/workflows/guard-performance-proofs.yml`; `workflow_dispatch` is its only
+trigger, and GitHub offers it once the file is on the default branch.
+
+A failure there is a real regression signal: diagnose it. Don't rerun it until it passes, and
+don't relax a bound. DYD-723's passing runs on `3b08adaf` and on feature push `30c2884c` remain the suite's
+recorded evidence.
 
 ## Recorded gate correction: three dynamic Vulture uses
 

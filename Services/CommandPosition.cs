@@ -3,15 +3,18 @@ namespace DynaDocs.Services;
 using System.Text.RegularExpressions;
 
 /// <summary>A command string a shell or eval is given, and the dialect that shell reads it in.</summary>
-internal sealed record ShellScript(string Text, ShellDialect Dialect, bool Encoded = false);
+internal sealed record ShellScript(string Text, ShellDialect Dialect, bool Encoded = false)
+{
+    public (ShellReader.Command Command, int Word, int Offset, ShellReader.Position Source)? Origin { get; init; }
+}
 
 /// <summary>
 /// Where the program sits in one command's words, shared by the scanners that read shell command
 /// lines (<see cref="DydoInvocationScanner"/>, <see cref="PrCallScanner"/>): past VAR=value words,
 /// shell keywords and the programs that run their remaining words (env, sudo, nohup, time,
 /// timeout, ...) with their options, and with any path, case or executable suffix. It also finds
-/// the command string a shell is given (bash -c, cmd /c, eval, env -S, pwsh -Command or -EncodedCommand)
-/// with the dialect that string is read in, and Codex's shell envelope: an argv array that is a
+/// the command string a shell is given (bash -c, cmd /c, eval, env -S, pwsh -Command or -EncodedCommand,
+/// and the remote command of ssh or the command watch runs) with the dialect that string is read in, and Codex's shell envelope: an argv array that is a
 /// shell, its options, its script flag and one script.
 /// </summary>
 internal static partial class CommandPosition
@@ -34,7 +37,20 @@ internal static partial class CommandPosition
         ["doas"] = ["-u", "-C"],
         ["xargs"] = ["-I", "-L", "-n", "-P", "-s", "-d", "-E", "-a", "--max-args", "--max-procs",
             "--delimiter", "--arg-file", "--max-lines", "--max-chars"],
+        ["stdbuf"] = ["-i", "-o", "-e", "--input", "--output", "--error"],
+        ["ionice"] = ["-c", "-n", "-p", "-P", "-u", "--class", "--classdata", "--pid", "--pgid", "--uid"],
+        ["setsid"] = [],
+        ["unbuffer"] = [],
+        ["caffeinate"] = ["-t", "-w"],
+        ["wsl"] = ["-d", "--distribution", "-u", "--user", "--cd"],
     };
+
+    // ssh's options that take a value; its first operand is the host, and the words after it (and any options) the remote command.
+    private static readonly HashSet<string> SshValueOptions =
+        ["-B", "-b", "-c", "-D", "-E", "-e", "-F", "-I", "-i", "-J", "-L", "-l", "-m", "-O", "-o", "-P", "-p", "-Q", "-R", "-S", "-W", "-w"];
+
+    // watch's options that take a value; the words after them are the command it runs through sh -c.
+    private static readonly HashSet<string> WatchValueOptions = ["-n", "--interval", "-q", "--equexit", "-s", "--shotsdir"];
 
     /// <summary>The name <see cref="Skip"/> reports for env -i, which clears every variable.</summary>
     public const string AllVariables = "*";
@@ -85,10 +101,10 @@ internal static partial class CommandPosition
             }
             else if (Keywords.Contains(name))
                 at++;
-            else if (name == "env" && EnvSplitString(words.Skip(at + 1).ToList()) != null)
+            else if (name == "env" && EnvSplitString(words, at + 1) != null)
                 break;
             else if (Runners.TryGetValue(name, out var valueOptions))
-                at = SkipRunnerOptions(words, at + 1, valueOptions, name == "timeout", name == "env" ? assignments : null);
+                at = SkipRunnerOptions(words, at + 1, valueOptions, takesOperand: name == "timeout", name == "env" ? assignments : null);
             else
                 break;
         }
@@ -96,21 +112,30 @@ internal static partial class CommandPosition
         return at;
     }
 
+    // takesOperand skips the one operand the command follows (timeout's duration, ssh's host);
     // envChanges, given for env, receives its -u/--unset and -i changes.
-    private static int SkipRunnerOptions(IReadOnlyList<string> words, int at, HashSet<string> valueOptions, bool takesDuration,
-        List<(string Name, string Value)>? envChanges)
+    private static int SkipRunnerOptions(IReadOnlyList<string> words, int at, HashSet<string> valueOptions, bool takesOperand,
+        List<(string Name, string Value)>? envChanges = null)
     {
         while (at < words.Count && words[at].Length > 1 && words[at][0] == '-')
         {
             if (words[at] == "--")
-                return at + 1 + (takesDuration ? 1 : 0);
+                return at + 1 + (takesOperand ? 1 : 0);
             if (envChanges != null && EnvChange(words, at) is { } change)
                 envChanges.Add((change, ""));
             at += valueOptions.Contains(words[at]) ? 2 : 1;
         }
 
-        return at + (takesDuration ? 1 : 0);
+        return at + (takesOperand ? 1 : 0);
     }
+
+    // ssh's remote command: past its options, its host and the options it also takes after the host.
+    private static string? SshCommand(IReadOnlyList<string> rest) =>
+        WordsFrom(rest, SkipRunnerOptions(rest, SkipRunnerOptions(rest, 0, SshValueOptions, takesOperand: true), SshValueOptions, takesOperand: false));
+
+    // The words from at on, as one command string; null when there are none.
+    private static string? WordsFrom(IReadOnlyList<string> rest, int at) =>
+        at < rest.Count ? string.Join(' ', rest.Skip(at)) : null;
 
     // The variable an env option at words[at] removes: -u NAME, --unset NAME, --unset=NAME, or every one for -i.
     private static string? EnvChange(IReadOnlyList<string> words, int at) => words[at] switch
@@ -125,10 +150,10 @@ internal static partial class CommandPosition
     /// The string env -S (or --split-string) splits into the command it runs, with env's remaining
     /// words after it; null when env is given no -S.
     /// </summary>
-    public static string? EnvSplitString(IReadOnlyList<string> rest)
+    public static string? EnvSplitString(IReadOnlyList<string> rest, int from = 0)
     {
         var valueOptions = Runners["env"];
-        for (var at = 0; at < rest.Count && rest[at].Length > 1 && rest[at][0] == '-' && rest[at] != "--";
+        for (var at = from; at < rest.Count && rest[at].Length > 1 && rest[at][0] == '-' && rest[at] != "--";
              at += valueOptions.Contains(rest[at]) ? 2 : 1)
         {
             var (split, next) = rest[at] switch
@@ -154,7 +179,7 @@ internal static partial class CommandPosition
 
     /// <summary>
     /// The command string <paramref name="program"/> runs given <paramref name="rest"/>, its words,
-    /// or null when it is no shell or eval or names no command string (a script file, stdin).
+    /// or null when it is no shell, eval, ssh or watch or names no command string (a script file, stdin).
     /// </summary>
     public static ShellScript? ScriptOf(string program, IReadOnlyList<string> rest)
     {
@@ -166,10 +191,35 @@ internal static partial class CommandPosition
             "eval" => (EvalString(rest), ShellDialect.Posix),
             "env" => (EnvSplitString(rest), ShellDialect.Posix),
             "iex" or "invoke-expression" => (EvalString(rest), ShellDialect.PowerShell),
+            "ssh" => (SshCommand(rest), ShellDialect.Posix),
+            "watch" => (WordsFrom(rest, SkipRunnerOptions(rest, 0, WatchValueOptions, takesOperand: false)), ShellDialect.Posix),
             _ when PosixShells.Contains(program) => (PosixShellString(rest), ShellDialect.Posix),
             _ => (null, ShellDialect.Unknown),
         };
         return string.IsNullOrEmpty(text) ? null : new ShellScript(text, dialect);
+    }
+
+    // Transport one selected occurrence through the same extraction used by the shared scanners.
+    // The marker is an occurrence identity, not a search for an equal source string.
+    public static ShellScript? ScriptOf(ShellReader.Command command, string marker)
+    {
+        var at = Skip(command.Words);
+        if (at >= command.Words.Count)
+            return null;
+        var script = ScriptOf(ProgramName(command.Words[at]), command.Words.Skip(at + 1).ToList());
+        if (script == null)
+            return null;
+        var words = Enumerable.Range(at + 1, command.Words.Count - at - 1)
+            .Where(i => command.Words[i].Contains(marker, StringComparison.Ordinal)).ToArray();
+        var offset = script.Text.IndexOf(marker, StringComparison.Ordinal);
+        return words.Length == 1 && offset >= 0
+            && script.Text.IndexOf(marker, offset + marker.Length, StringComparison.Ordinal) < 0
+            && command.WordOrigins[words[0]].At(command.Words[words[0]].IndexOf(marker, StringComparison.Ordinal)) is { } source
+            && ReferenceEquals(source.Source, command.Source)
+            && source.Offset == command.WordRanges[words[0]].Start.Value
+                + command.RawWord(words[0]).IndexOf(marker, StringComparison.Ordinal)
+            ? script with { Origin = (command, words[0], offset, source) }
+            : script;
     }
 
     private static ShellScript? PwshScript(IReadOnlyList<string> rest)

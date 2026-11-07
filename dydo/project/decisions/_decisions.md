@@ -42,4 +42,6 @@ Required frontmatter:
 
 ## Related
 
+- [DR062 - Statechart invocation manages prerequisites](./062-statechart-invocation-manages-prerequisites.md)
+- [DR063 - dydo survey: a read-only lane digest](./063-dydo-survey-read-only-lane-digest.md)
 - [Pitfalls](../pitfalls/_pitfalls.md) - Known issues from past decisions

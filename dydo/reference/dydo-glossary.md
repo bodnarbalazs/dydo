@@ -23,6 +23,10 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Task** - the role a captain-held ticket plays on a Wayfinder map; a name for that role, not a
   separate Linear Type.
 - **Sub-ticket** - optional decomposition when child tickets need independent tracking.
+- **Lane** - an ordered run of tickets one owner moves forward in a Project, tracked in the admiral's
+  lane ledger; it serves the Project's deliverables. Distinct from a Lane Sub-ticket, a captain's parallel child ticket.
+- **Filler** - small, ready work, such as review `should` tickets, that the admiral takes into a free
+  lane slot while main lanes wait, under a cap of four moving lanes per Project unless the user sets another.
 - **Cycle** - an optional team capacity timebox, orthogonal to Projects.
 - **Label** - restrained cross-cutting routing metadata, never a shadow work-type hierarchy.
 
@@ -76,11 +80,11 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
   grilling, wayfinder, domain-modeling, codebase-design, diagnosing-bugs, prototype, show-me,
   writing-for-agents, writing-for-humans, retro, wizard, overnight-mode, what-would-balazs-do, maintain-verification-skill,
   maintain-formal-verification-skill. These load only when the user asks: to-project, to-ticket,
-  in-your-own-words, ketchup, teach, walkthrough (also at the map holder's Milestone and landing steps) and handoff (also
+  in-your-own-words, catch-up, teach, walkthrough (also at the map holder's Milestone and landing steps) and handoff (also
   when an officer briefs an agent it dispatches).
 - **User command** - a skill only the user invokes by name, never reached for by a model:
   grill-me, bro, improve-codebase-architecture, create-verification-skill,
-  create-formal-verification-skill, update-dydo.
+  create-formal-verification-skill, statechart, update-dydo.
 - **Rubric** - the one named standard a reviewer judges a candidate against: code, docs,
   project-plan, spec, or merge.
 
@@ -101,7 +105,8 @@ Project-domain terms belong in the separate [glossary.md](../glossary.md).
 - **Ticket review** - an independent reviewer's verdict on one candidate against one named rubric,
   before it merges. FAIL means at least one blocker; PASS means none, and may list should and nit
   findings. There is no unlabelled note: every finding carries a severity and is answered.
-- **Severity** - the label on every review finding (DR 058). A `blocker`: the intended case is
+- **Severity** - the label on every review finding (DR 058); a ticket born from a finding carries
+  it as a Linear label in the `Severity` group. A `blocker`: the intended case is
   wrong; only a blocker FAILs a review and sends a fix hop. A `should`: a real bug callers will hit,
   inside the intent; the captain files it as its own ticket, and a Project lands only once each is
   `Done` or closed with a reason. A `nit`: everything else, one line on the ticket's record, listed

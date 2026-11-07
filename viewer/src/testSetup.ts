@@ -1,6 +1,16 @@
 import { cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
 
+declare const jsdom: { window: Window };
+
+// Node 26 defines storage globals, so Vitest leaves them in place instead of jsdom's.
+if (typeof jsdom !== 'undefined') {
+  Object.assign(globalThis, {
+    localStorage: jsdom.window.localStorage,
+    sessionStorage: jsdom.window.sessionStorage,
+  });
+}
+
 // jsdom lacks the layout APIs React Flow measures with.
 class ResizeObserverStub {
   observe(): void {}

@@ -46,7 +46,7 @@ public class ConfigFactoryTests
         // The alternation lists exactly the commands Program.cs registers - nothing retired.
         Assert.Equal(
             ["check", "fix", "index", "init", "graph", "guard",
-                "completions", "complete", "validate", "map", "version", "help"],
+                "completions", "complete", "validate", "map", "survey", "version", "help"],
             Regex.Match(nudge.Pattern, @"\(\?:([\w|]+)\)\\b").Groups[1].Value.Split('|'));
     }
 
@@ -164,6 +164,35 @@ public class ConfigFactoryTests
         Assert.DoesNotMatch(regex, "gh pr create --body '## Independent review\nverdict: PASS'");
     }
 
+    // DYD-736: the current pattern reads past leading assignments and env; the pre-DYD-736 one did not.
+    [Theory]
+    [InlineData("FOO=1 gh pr create --fill")]
+    [InlineData("env gh pr create --fill")]
+    [InlineData("env -i -u GH_TOKEN -- GH_REPO=acme/lc gh pr create --fill")]
+    [InlineData("GH_TOKEN=$(printf token) gh pr create --fill")]
+    [InlineData("TITLE=release\\ notes gh pr create --fill")]
+    public void ReviewBlockPattern_PrefixedPrCreate_MatchesWhereThePreDyd736PatternDidNot(string command)
+    {
+        Assert.Matches(new Regex(ConfigFactory.ReviewBlockPattern, RegexOptions.IgnoreCase), command);
+        Assert.DoesNotMatch(new Regex(ConfigFactory.PreDyd736ReviewBlockPattern, RegexOptions.IgnoreCase), command);
+    }
+
+    // Round 1 N2: each env option word has one reading, so a long chain of options taking a value
+    // is read in linear time, not by trying every split. The engine's match budget catches a regression.
+    [Theory]
+    [InlineData("env {0}x")]
+    [InlineData("env {0}gh pr create --fill")]
+    [InlineData("FOO=$(a {0}")]
+    public void ReviewBlockPattern_LongEnvOptionChain_IsReadWithinTheEngineBudget(string template)
+    {
+        var command = string.Format(template, string.Concat(Enumerable.Repeat("-u ", 400)));
+        var regex = new Regex(ConfigFactory.ReviewBlockPattern, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(2));
+
+        var exception = Record.Exception(() => regex.IsMatch(command));
+
+        Assert.Null(exception);
+    }
+
 
 
     [Theory]
@@ -269,4 +298,69 @@ public class ConfigFactoryTests
         Assert.Equal("new-file", added.Match);
         Assert.Single(config.Nudges, n => n.Pattern == docs.Pattern && n.IsCommandMatch);
     }
+
+    #region Library-install warn nudge (DYD-499)
+
+    private static DydoConfig DefaultConfigWithoutTheInstallNudge()
+    {
+        var config = ConfigFactory.CreateDefault();
+        config.Nudges.RemoveAll(n => n.Pattern == InstallNudgeExpectation.Pattern);
+        return config;
+    }
+
+    [Fact]
+    public void CreateDefault_IncludesTheInstallNudge_AsAWarnCommandNudge()
+    {
+        var config = ConfigFactory.CreateDefault();
+
+        var nudge = Assert.Single(config.Nudges, n => n.Pattern == InstallNudgeExpectation.Pattern);
+        Assert.Equal(InstallNudgeExpectation.Message, nudge.Message);
+        Assert.Equal("warn", nudge.Severity);
+        Assert.True(nudge.IsCommandMatch);
+    }
+
+    [Fact]
+    public void EnsureDefaultNudges_AddsTheInstallNudge_ToAConfigLackingIt()
+    {
+        var config = DefaultConfigWithoutTheInstallNudge();
+
+        var added = ConfigFactory.EnsureDefaultNudges(config);
+
+        Assert.Equal(1, added);
+        var nudge = Assert.Single(config.Nudges, n => n.Pattern == InstallNudgeExpectation.Pattern);
+        Assert.Equal(InstallNudgeExpectation.Message, nudge.Message);
+        Assert.Equal("warn", nudge.Severity);
+    }
+
+    [Fact]
+    public void EnsureDefaultNudges_AddsNothing_WhenTheInterimCopyIsPresent()
+    {
+        var config = DefaultConfigWithoutTheInstallNudge();
+        config.Nudges.Add(new NudgeConfig
+        {
+            Pattern = InstallNudgeExpectation.Pattern,
+            Message = "Our own wording.",
+            Severity = "warn"
+        });
+
+        var added = ConfigFactory.EnsureDefaultNudges(config);
+
+        Assert.Equal(0, added);
+        var nudge = Assert.Single(config.Nudges, n => n.Pattern == InstallNudgeExpectation.Pattern);
+        Assert.Equal("Our own wording.", nudge.Message);
+    }
+
+    [Fact]
+    public void EnsureDefaultNudges_DoesNotDuplicateTheInstallNudge_WhenRunTwice()
+    {
+        var config = DefaultConfigWithoutTheInstallNudge();
+
+        ConfigFactory.EnsureDefaultNudges(config);
+        var second = ConfigFactory.EnsureDefaultNudges(config);
+
+        Assert.Equal(0, second);
+        Assert.Single(config.Nudges, n => n.Pattern == InstallNudgeExpectation.Pattern);
+    }
+
+    #endregion
 }

@@ -15,12 +15,22 @@ from pathlib import Path
 from copy import deepcopy
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from gate_run import STATIC_GATE_INTERPRETER
 from csharp_coverage import (ASSEMBLY_PROJECTS, GATE_METRICS_PREBUILT_ENV, _assembly_facts, _candidate_assemblies, _identity_classes, _identity_producer, _source_facts, _same_instrumented_map,
                              _altcover_aliases, _same_artifacts, _same_native_map, _same_restored_map,
-                             _subject_commands, _template_original_map, _validate_instrumented,
-                             _validate_restored, _write_commands, altcover_commands, main,
-                             run_campaign, run_subject, snapshot_artifacts)
+                             _platform_tests, _run, _subject_commands, _template_original_map,
+                             _validate_instrumented, _validate_restored, _write_commands,
+                             altcover_commands, main, run_campaign, run_denominator, run_subject,
+                             snapshot_artifacts)
 from csharp_join import coverage_methods, excluded_physical_tokens, join_methods
+from release_proof import MAP as RELEASE_PROOF_MAP
+
+
+def _copy_release_proof_map(root):
+    """A campaign root carries the candidate's release proof map, which its suite filter reads."""
+    destination = root / "DynaDocs.Tests/coverage/release-proofs.json"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(RELEASE_PROOF_MAP, destination)
 
 MINIMAL_SOLUTION = """Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynaDocs", "DynaDocs.csproj", "{8537ADD5-149C-4DAA-B9B7-C26CA3852204}"
@@ -172,6 +182,9 @@ def _minimal_campaign_root(root):
         "DynaDocs.Tests/coverage/csharp_coverage.py": SUBJECT_LAUNCHER.format(
             module=tools / "csharp_coverage.py"),
         "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py": SUBJECT_METRICS,
+        # The subject's suite filter: the lane module beside the campaign, and the map it reads.
+        "DynaDocs.Tests/coverage/release_proof.py": (tools / "release_proof.py").read_text(encoding="utf-8"),
+        "DynaDocs.Tests/coverage/release-proofs.json": RELEASE_PROOF_MAP.read_text(encoding="utf-8"),
     })
     for source in sorted((tools / "metrics").glob("*.cs")):
         shutil.copy2(source, root / "DynaDocs.Tests/coverage/metrics" / source.name)
@@ -210,7 +223,7 @@ def _replay_coverage(root, name):
 class CSharpCoverageTests(unittest.TestCase):
     def test_campaign_mechanism_callables_stay_within_cognitive_budget(self):
         root = Path(__file__).resolve().parents[3]
-        python = root / "dydo/_system/.local/static-gates/python/Scripts/python.exe"
+        python = root / STATIC_GATE_INTERPRETER
         metrics = subprocess.run([
             str(python), str(root / "DynaDocs.Tests/coverage/python_metrics.py")
         ], input=(root / "DynaDocs.Tests/coverage/csharp_coverage.py").read_text(encoding="utf-8"),
@@ -220,21 +233,59 @@ class CSharpCoverageTests(unittest.TestCase):
         self.assertLessEqual(rows["_template_original_map"], 20)
         self.assertLessEqual(rows["run_campaign"], 20)
 
+    def test_native_output_survives_interruption_before_command_receipt(self):
+        native_run = subprocess.run
+
+        def interrupted(*args, **kwargs):
+            native_run(*args, **kwargs)
+            raise KeyboardInterrupt
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            command = [sys.executable, "-c", "import sys; print('progress'); print('diagnostic', file=sys.stderr)"]
+            with patch("csharp_coverage.subprocess.run", side_effect=interrupted), self.assertRaises(KeyboardInterrupt):
+                _run("subject", command, root, root)
+            self.assertEqual("progress\n", (root / "subject.stdout").read_text())
+            self.assertEqual("diagnostic\n", (root / "subject.stderr").read_text())
+
+    def test_native_output_receipt_preserves_failure_and_exact_bytes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            command = [sys.executable, "-c", "import sys; sys.stdout.buffer.write(b'progress\\r\\n'); "
+                       "sys.stderr.buffer.write(b'diagnostic\\xff'); sys.exit(7)"]
+            row = _run("subject", command, root, root)
+            self.assertEqual(7, row["exit"])
+            for stream, expected in (("stdout", b"progress\r\n"), ("stderr", b"diagnostic\xff")):
+                self.assertEqual(expected, (root / row[stream]).read_bytes())
+                self.assertEqual(hashlib.sha256(expected).hexdigest(), row[stream + "Sha256"])
+
     def test_runner_subject_keeps_full_suite_first_then_uses_prebuilt_metrics(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder).resolve()
+            _copy_release_proof_map(root)
             commands = _subject_commands(root)
             self.assertEqual("dotnet", commands[0][0])
             self.assertEqual(["test", "DynaDocs.sln"], commands[0][1:3])
             self.assertIn("--no-build", commands[0])
+            self.assertEqual("console;verbosity=normal", commands[0][commands[0].index("--logger") + 1])
+            # Only the Release lane's proofs leave the suite; their witnesses stay (DYD-840).
+            self.assertEqual(["--filter", "PerformanceProof!=Release"],
+                             commands[0][commands[0].index("--filter"):][:2])
+            self.assertLess(commands[0].index("--filter"), commands[0].index("--"))
             self.assertEqual(sys.executable, commands[1][0])
             self.assertEqual(root / "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py",
                              Path(commands[1][1]))
             self.assertNotIn("build", commands[1])
 
+    def test_runner_subject_without_the_release_proof_map_fails_closed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaises(OSError):
+                _subject_commands(Path(folder).resolve())
+
     def test_subject_runs_both_actions_in_order_with_inherited_recorder_environment(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder).resolve()
+            _copy_release_proof_map(root)
             recorder = str(root / "recorder")
             for exits, expected in (((7, 0), 7), ((0, 9), 9)):
                 with self.subTest(exits=exits), \
@@ -335,6 +386,74 @@ class CSharpCoverageTests(unittest.TestCase):
             self.assertEqual(2, runner.count("--"))
             self.assertIn("--_subject", runner)
             self.assertTrue(str(output / "template.opencover.xml") in rendered)
+
+    def test_a_windows_campaign_runs_only_the_reviewed_selection_without_the_metrics_suite(self):
+        from test_dotnet_platform import WINDOWS_TEST, write_dotnet_fixture
+        with tempfile.TemporaryDirectory() as folder:
+            root = write_dotnet_fixture(Path(folder).resolve())
+            tests = _platform_tests(root, "windows")
+            self.assertEqual("FullyQualifiedName=" + WINDOWS_TEST, tests)
+            self.assertIsNone(_platform_tests(root, "linux"))
+            self.assertIsNone(_platform_tests(root, None))
+            with self.assertRaisesRegex(ValueError, "Unsupported"):
+                _platform_tests(root, "darwin")
+            results = str(root / "evidence/windows-tests.trx")
+            _, runner = altcover_commands(root, root / "evidence", tests)
+            self.assertEqual(["--tests", tests, "--results", results], runner[-4:])
+            commands = _subject_commands(root, tests, results)
+            self.assertEqual(1, len(commands))
+            self.assertEqual(["--filter", tests, "--logger", "trx;LogFileName=windows-tests.trx",
+                              "--results-directory", str(root / "evidence"),
+                              "--", "RunConfiguration.TreatNoTestsAsError=true"], commands[0][-8:])
+            with patch("csharp_coverage.subprocess.run",
+                       return_value=subprocess.CompletedProcess([], 0)) as run:
+                self.assertEqual(0, run_subject(root, tests, results))
+            self.assertEqual(commands, [call.args[0] for call in run.call_args_list])
+            with patch.object(sys, "argv", ["csharp_coverage.py", "--_subject", "--root", str(root),
+                                            "--tests", tests, "--results", results]), \
+                    patch("csharp_coverage.run_subject", return_value=0) as subject:
+                self.assertEqual(0, main())
+            subject.assert_called_once_with(str(root), tests, results)
+
+    def test_the_campaign_command_measures_on_its_native_platform(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            arguments = ["csharp_coverage.py", "--root", str(root), "--result-root", str(root / "fresh")]
+            for platform in ("linux", "windows", None):
+                with self.subTest(platform=platform), patch.object(sys, "argv", arguments), \
+                        patch("dotnet_platform.native_platform", return_value=platform), \
+                        patch("csharp_coverage.run_campaign", return_value=0) as campaign:
+                    self.assertEqual(0, main())
+                campaign.assert_called_once_with(str(root), str(root / "fresh"), [], platform)
+            with patch.object(sys, "argv", [*arguments, "--denominator"]), \
+                    patch("csharp_coverage.run_campaign") as campaign, \
+                    patch("csharp_coverage.run_denominator", return_value=0) as denominator:
+                self.assertEqual(0, main())
+            denominator.assert_called_once_with(str(root), str(root / "fresh"))
+            campaign.assert_not_called()
+
+    def test_the_denominator_is_the_campaigns_zero_hit_join_without_a_suite(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root, output = Path(folder).resolve(), Path(folder).resolve() / "denominator"
+            built = {"template": output / "template.opencover.xml"}
+            with patch.dict(os.environ), \
+                    patch("csharp_coverage._build", return_value=built) as build, \
+                    patch("csharp_coverage._instrument", return_value=True) as instrument, \
+                    patch("csharp_coverage._run_recorded") as recorded, \
+                    patch("csharp_coverage._restore_and_join") as join:
+                self.assertEqual(0, run_denominator(root, output))
+                self.assertEqual("0", os.environ["DOTNET_CLI_USE_MSBUILD_SERVER"])
+            build.assert_called_once_with(root, output, [])
+            instrument.assert_called_once_with(root, output, [], built)
+            recorded.assert_not_called()
+            join.assert_called_once_with(root, output, built, built["template"])
+            for index, (build_result, instrumented) in enumerate(((None, True), (built, False))):
+                with self.subTest(build=build_result, instrumented=instrumented), patch.dict(os.environ), \
+                        patch("csharp_coverage._build", return_value=build_result), \
+                        patch("csharp_coverage._instrument", return_value=instrumented), \
+                        patch("csharp_coverage._restore_and_join") as join:
+                    self.assertEqual(2, run_denominator(root, root / f"failed-{index}"))
+                join.assert_not_called()
 
     def test_snapshot_hashes_assembly_pdb_source_and_reports(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -514,7 +633,7 @@ class CSharpCoverageTests(unittest.TestCase):
                 ("Missing or ambiguous template module",
                  _template_report(_template_module_xml("B", "bin/A.dll", "ab", method))),
                 ("Template module outside campaign root",
-                 _template_report(_template_module_xml("A", "C:/elsewhere/A.dll", "ab", method))),
+                 _template_report(_template_module_xml("A", (root.parent / "elsewhere/A.dll").as_posix(), "ab", method))),
                 ("Unknown template module alias",
                  _template_report(_template_module_xml("A", "bin/Other.dll", "ab", method))),
                 ("Original template module hash mismatch",
@@ -689,6 +808,27 @@ class CSharpCampaignTests(unittest.TestCase):
         self.assertEqual(sorted(pre), sorted(instrumented))
         self.assertTrue(all(pre[alias] != instrumented[alias] for alias in pre))
         self.assertEqual(self.recorded("identity-pre.json"), self.recorded("identity-post.json"))
+
+    def test_the_denominator_rebuilds_the_campaigns_exact_points_with_zero_hits(self):
+        output = self.root / "denominator"
+        # In-place AltCover keeps its originals beside the build; a fresh checkout, as the union rebuilds, has none.
+        for saved in self.root.rglob("__Saved"):
+            shutil.rmtree(saved)
+        with patch.dict(os.environ):
+            self.assertEqual(0, run_denominator(self.root, output))
+
+        def points(joined):
+            return {row["path"]: (sorted(row["lines"]), sorted(row["branches"]),
+                                  sorted(method["id"] for method in row["methods"])) for row in joined["modules"]}
+        rebuilt = json.loads((output / "joined.json").read_text(encoding="utf-8"))
+        self.assertEqual(points(self.recorded("joined.json")), points(rebuilt))
+        self.assertTrue(any(row["lines"] for row in rebuilt["modules"]))
+        self.assertEqual({0}, {hits for row in rebuilt["modules"]
+                               for hits in [*row["lines"].values(), *row["branches"].values()]})
+        commands = json.loads((output / "commands.json").read_text(encoding="utf-8"))
+        self.assertEqual(["build-0", "build-1", "build-2", "altcover-prepare"], [row["name"] for row in commands])
+        self.assertEqual(self.recorded("identity-pre.json"),
+                         json.loads((output / "identity-post.json").read_text(encoding="utf-8")))
 
     def test_real_campaign_joins_collected_hits_onto_the_authored_source_method(self):
         joined = self.recorded("joined.json")

@@ -1,4 +1,6 @@
 """Behavioral probes shared by unittest and exact Reqnroll scenario bindings."""
+import contextlib
+import io
 import json
 import os
 import queue
@@ -9,6 +11,7 @@ import sys
 import tempfile
 import threading
 import time
+import types
 import unittest
 from unittest import mock
 import runpy
@@ -28,6 +31,13 @@ def has_worktree_identity(listing, path):
     identity = path.resolve()
     return any(Path(line[len(prefix):]).resolve() == identity
                for line in listing.splitlines() if line.startswith(prefix))
+
+
+def first_adapter_line(lines):
+    """The first queued line, past the facade's one memory-cap warning: a host without systemd
+    (Windows, macOS, a runner with no user manager) prints that warning before any adapter output."""
+    line = lines.get(timeout=15)
+    return lines.get(timeout=15) if line.startswith('memory cap unavailable: ') else line
 
 
 def next_line(lines, matches, seconds):
@@ -95,6 +105,66 @@ def verdict_stack(name='first', collector=None, report=None, coverage_exit=0, de
     return item
 
 
+class UnboundedWait(AssertionError):
+    """An untimed wait on a child that is never reaped: on a real host the facade would hang forever."""
+
+
+class FakeClock:
+    def __init__(self):
+        self.now = 0.0
+
+    def monotonic(self):
+        return self.now
+
+
+class FakeChild:
+    """A Popen stand-in on a FakeClock. It ignores the interrupt, exits by itself with 99 at
+    `exits_at` (never when None) and, once killed, is reaped only when `reapable`. The facade
+    resumes `stall` seconds late after launching it; `interrupt` raises one KeyboardInterrupt
+    from its first wait."""
+    pid = 4242
+
+    def __init__(self, clock, exits_at=None, reapable=True, stall=0, interrupt=False):
+        self.clock, self.exits_at, self.reapable, self.stall, self.interrupt = clock, exits_at, reapable, stall, interrupt
+        self.exit_code, self.returncode, self.signals = 99, None, []
+
+    def poll(self):
+        if self.returncode is None and self.exits_at is not None and self.clock.now >= self.exits_at:
+            self.returncode = self.exit_code
+        return self.returncode
+
+    def wait(self, timeout=None):
+        if self.interrupt:
+            self.interrupt = False
+            raise KeyboardInterrupt
+        if self.poll() is None:
+            if self.exits_at is not None and (timeout is None or self.clock.now + timeout >= self.exits_at):
+                self.clock.now = self.exits_at
+            elif timeout is None:
+                raise UnboundedWait('untimed wait on a killed child that is never reaped')
+            else:
+                self.clock.now += timeout
+                raise subprocess.TimeoutExpired('fake-child', timeout)
+        return self.poll()
+
+    def send_signal(self, sig):
+        self.signals.append(sig)
+
+    def kill(self):
+        self.signals.append('kill')
+        self.exit_code, self.exits_at = -9, self.clock.now if self.reapable else None
+
+
+def fake_killpg(children):
+    """os.killpg for FakeChild stand-ins: SIGKILL kills the latest child, any other signal is recorded."""
+    def killpg(_pid, sig):
+        if sig == signal.SIGKILL:
+            children[-1].kill()
+        else:
+            children[-1].send_signal(sig)
+    return killpg
+
+
 class TestingFacadeTests(unittest.TestCase):
     runner = RUNNER
 
@@ -102,6 +172,8 @@ class TestingFacadeTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory(prefix='dydo-facade-')
         self.addCleanup(temporary.cleanup)
         directory = Path(temporary.name)
+        # Pin the facade root here: neither a stray marker nor a repository above may claim it.
+        subprocess.run(['git', 'init', '--quiet', str(directory)], check=True)
         shutil.copyfile(self.runner, directory / 'gap_check.py')
         # Both legs run through the same launcher: the derived copy is byte-identical, so its
         # deadline policy is the project's and every case must hold for it too.
@@ -141,6 +213,11 @@ class TestingFacadeTests(unittest.TestCase):
 
     def assert_rows(self, payload, expected):
         self.assertEqual(expected, [(row['stack'], row['capability'], row['state']) for row in payload['results']])
+
+    def assert_interrupted_selection(self, payload, operation):
+        capabilities = ('test',) if operation == 'all' else ('test', 'static', 'coverage')
+        self.assert_rows(payload, [(name, capability, 'interrupted') for name in ('first', 'later')
+                                   for capability in capabilities])
 
     def test_help(self):
         p, root, payload = self.invoke(['--help'])
@@ -675,14 +752,14 @@ class TestingFacadeTests(unittest.TestCase):
     def test_derived_exit_2_diagnosis_joins_category_and_message_when_both_are_named(self):
         errors = [{'gate': 'csharp-coverage', 'message': 'native campaign incomplete',
                   'failureCategory': 'preflight',
-                  'errorMessage': 'Owner requires Windows CPython 3.12',
+                  'errorMessage': 'Owner requires Windows CPython 3.14',
                   'identitiesPath': '/tmp/run/identities.json'}]
         p, _, payload = self.derived_case(coverage_report('first-coverage', 2, errors=errors), 1)
         self.assert_exit(p, 2)
         self.assert_derived(payload, ('invalid', None, 2), ('failed', 1), 2)
         reason = payload['results'][0]['reason']
         self.assertTrue(reason.endswith(
-            '; preflight: Owner requires Windows CPython 3.12 at /tmp/run/identities.json'), reason)
+            '; preflight: Owner requires Windows CPython 3.14 at /tmp/run/identities.json'), reason)
 
     def test_derived_exit_2_diagnosis_unavailable_is_rendered_on_the_unattributed_row(self):
         errors = [{'gate': 'csharp-coverage', 'message': 'native campaign incomplete',
@@ -769,7 +846,7 @@ class TestingFacadeTests(unittest.TestCase):
                 output.append(line); lines.put(line)
         reader = threading.Thread(target=collect, daemon=True); reader.start()
         try:
-            self.assertEqual('WAITING_FOR_INTERRUPT', lines.get(timeout=15).strip())
+            self.assertEqual('WAITING_FOR_INTERRUPT', first_adapter_line(lines).strip())
             facade.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGINT)
             facade.wait(timeout=35); reader.join(timeout=5)
             self.assertEqual(130, facade.returncode, ''.join(output))
@@ -777,7 +854,8 @@ class TestingFacadeTests(unittest.TestCase):
             self.assertFalse((root / 'first-coverage.json').exists())
             result_path = next(line.strip()[8:] for line in output if line.startswith('Result: '))
             payload = json.loads(Path(result_path).read_text(encoding='utf-8'))
-            self.assert_rows(payload, [('first', 'test', 'interrupted'), ('first', 'static', 'interrupted')])
+            self.assert_rows(payload, [('first', 'test', 'interrupted'), ('first', 'static', 'interrupted'),
+                                       ('first', 'coverage', 'interrupted')])
             self.assertEqual(130, payload['aggregateExit'])
             row = payload['results'][0]
             self.assertEqual(('interrupted', None, 130), tuple(row[key] for key in ('state', 'childExit', 'resultExit')))
@@ -859,7 +937,7 @@ class TestingFacadeTests(unittest.TestCase):
     def test_exit_unavailable(self): self.exit_case(2)
 
     def assert_payload(self, payload, root):
-        self.assertEqual({'schema', 'candidate', 'operation', 'selectedStacks', 'results', 'aggregateExit'}, set(payload))
+        self.assertEqual({'schema', 'candidate', 'memoryCap', 'operation', 'selectedStacks', 'results', 'aggregateExit'}, set(payload))
         self.assertIs(type(payload['schema']), int)
         self.assertEqual(1, payload['schema'])
         self.assertEqual({'commit', 'dirty'}, set(payload['candidate']))
@@ -868,6 +946,13 @@ class TestingFacadeTests(unittest.TestCase):
         for row in payload['results']:
             fields = {'stack', 'capability', 'state', 'argv', 'cwd', 'isolation',
                       'environment', 'childExit', 'resultExit', 'artifacts'}
+            if sys.platform in ('linux', 'win32'):
+                fields.add('memoryCapHitReporting')
+                self.assertEqual('best-effort' if sys.platform == 'win32' else 'exact', row['memoryCapHitReporting'])
+            if sys.platform == 'win32':
+                fields.add('peakJobMemory')
+                if payload['memoryCap']['state'] == 'enforced':
+                    self.assertIsInstance(row['peakJobMemory'], int)
             self.assertEqual(fields, set(row) - {'reason'})
             self.assertIn(row['state'], ['passed', 'failed', 'unavailable', 'invalid', 'interrupted'])
             self.assertIn(row['resultExit'], [0, 1, 2, 130])
@@ -881,7 +966,6 @@ class TestingFacadeTests(unittest.TestCase):
 
     def test_result_artifact(self):
         root = self.fixture()
-        subprocess.run(['git', 'init', '-q'], cwd=root, check=True, capture_output=True)
         subprocess.run(['git', '-c', 'user.name=Facade Test', '-c', 'user.email=facade@example.invalid', 'commit', '--allow-empty', '-qm', 'fixture'], cwd=root, check=True, capture_output=True)
         expected = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, check=True, capture_output=True, text=True).stdout.strip()
         for expected_exit in [0, 1, 2]:
@@ -1082,8 +1166,12 @@ class TestingFacadeTests(unittest.TestCase):
     def test_active_manifest(self):
         data = json.loads((ROOT / 'DynaDocs.Tests/coverage/gap_check.json').read_text())
         self.assertEqual('DynaDocs.Tests/coverage/results', data['artifactRoot'])
-        dotnet, python, node, viewer = data['stacks']
+        dotnet, python, node, viewer, statechart = data['stacks']
         self.assertEqual({'kind': 'current-python', 'argv': ['-u', 'DynaDocs.Tests/coverage/run_tests.py', '--']}, dotnet['capabilities']['test']['command'])
+        self.assertEqual({'kind': 'argv', 'argv': ['pnpm', '-C', 'skills/engineering/statechart/scripts', 'run', 'test']},
+                         statechart['capabilities']['test']['command'])
+        self.assertEqual(viewer['isolation'], statechart['isolation'])
+        self.assertEqual(viewer['capabilities']['mutation'], statechart['capabilities']['mutation'])
         self.assertEqual({'requirement': 'git-worktree-copy-working-changes', 'evidence': {'state': 'verified', 'kind': 'adapter', 'path': 'DynaDocs.Tests/coverage/run_tests.py'}}, dotnet['isolation'])
         self.assertEqual({'kind': 'current-python', 'argv': ['-m', 'unittest', 'discover', '-s', 'DynaDocs.Tests/coverage/tests', '-p', 'test_*.py']}, python['capabilities']['test']['command'])
         self.assertEqual(['node', 'DynaDocs.Tests/coverage/node_tests.cjs'], node['capabilities']['test']['command']['argv'])
@@ -1092,7 +1180,7 @@ class TestingFacadeTests(unittest.TestCase):
         self.assertEqual(unavailable('No mutation mechanism is adopted for TypeScript; the DYD-103 lane the other stacks cite is canceled'),
                          viewer['capabilities']['mutation'])
         for item in data['stacks']:
-            if item['name'] != 'viewer':
+            if item['name'] not in ('viewer', 'statechart'):
                 self.assertEqual(unavailable('Pending DYD-103'), item['capabilities']['mutation'])
             for capability in ['static', 'coverage']:
                 row = item['capabilities'][capability]
@@ -1102,8 +1190,8 @@ class TestingFacadeTests(unittest.TestCase):
                 self.assertEqual([{'path': f'DynaDocs.Tests/coverage/results/adapters/{item["name"]}-{capability}.json', 'required': True}], row['artifacts'])
                 if capability == 'coverage':
                     collector = {'dotnet': 'csharp-coverage', 'python': 'python-coverage', 'node': 'javascript-coverage',
-                                 'viewer': 'typescript-coverage'}[item['name']]
-                    verdict = 'suite_exit' if item['name'] == 'viewer' else 'child_exit'
+                                 'viewer': 'typescript-coverage', 'statechart': 'typescript-coverage'}[item['name']]
+                    verdict = 'suite_exit' if item['name'] in ('viewer', 'statechart') else 'child_exit'
                     self.assertEqual({'exit': ['collectors', collector, 'facts', verdict],
                                       'failure': ['collectors', collector, 'findings', {'gate': 'functional'}]}, row['suiteVerdict'])
 
@@ -1120,6 +1208,7 @@ class TestingFacadeTests(unittest.TestCase):
     def test_copied_single_file_preserves_child_streams_exit_deadline_and_cleanup(self):
         with tempfile.TemporaryDirectory(prefix='dydo-standalone-facade-') as temporary:
             root = Path(temporary)
+            subprocess.run(['git', 'init', '--quiet', str(root)], check=True)
             shutil.copyfile(RUNNER, root / 'gap_check.py')
             (root / 'child.py').write_text(
                 "import math,os,sys,time\nfrom pathlib import Path\n"
@@ -1152,6 +1241,32 @@ class TestingFacadeTests(unittest.TestCase):
             self.assertEqual(('failed', 17, 1),
                              (row['state'], row['childExit'], row['resultExit']))
             self.assertEqual(deadline, float(row['environment']['DYDO_ROW_DEADLINE']))
+
+    def test_root_is_the_nearest_ancestor_with_a_repository_marker(self):
+        # A sandbox can leave an empty `.git` mount point in a shared temporary ancestor; only a
+        # gitfile or a directory holding HEAD names a repository.
+        plants = {
+            'an empty .git directory': (lambda git: git.mkdir(), False),
+            'a .git file': (lambda git: git.write_text('gitdir: elsewhere\n', encoding='utf-8'), True),
+            'a .git directory holding HEAD': (lambda git: (git.mkdir(), (git / 'HEAD').write_text('ref: refs/heads/main\n', encoding='utf-8')), True),
+        }
+        for marker, (plant, adopted) in plants.items():
+            with self.subTest(marker=marker), tempfile.TemporaryDirectory(prefix='dydo-facade-root-') as temporary:
+                repository = Path(temporary).resolve()
+                subprocess.run(['git', 'init', '--quiet', str(repository)], check=True)
+                ancestor = repository / 'ancestor'
+                project = ancestor / 'project'
+                project.mkdir(parents=True)
+                plant(ancestor / '.git')
+                shutil.copyfile(self.runner, project / 'gap_check.py')
+                (project / 'gap_check.json').write_text(json.dumps(manifest()), encoding='utf-8')
+                p = subprocess.run([sys.executable, '-u', str(project / 'gap_check.py'), 'all'], cwd=project,
+                                   capture_output=True, text=True, encoding='utf-8', timeout=60)
+                self.assert_exit(p, 0)
+                result = next(Path(line[8:]) for line in p.stdout.splitlines() if line.startswith('Result: '))
+                expected = ancestor if adopted else repository
+                self.assertEqual(expected / 'results', result.parents[1])
+                self.assertTrue((expected / 'dotnet-test.txt').is_file())
 
     def test_owned_policy_docs_replace_tiers_with_the_dr048_gate_set(self):
         for path in ['dydo/guides/testing-strategy.md', 'dydo/reference/coverage-tools.md', 'Scaffold/dydo/guides/coding-standards.md']:
@@ -1743,7 +1858,7 @@ print('INTER_ITERATION_CASES=' + str(count))
                         output.append(line); lines.put(line)
                 reader = threading.Thread(target=collect, daemon=True); reader.start()
                 try:
-                    self.assertEqual('WAITING_FOR_INTERRUPT', lines.get(timeout=15).strip())
+                    self.assertEqual('WAITING_FOR_INTERRUPT', first_adapter_line(lines).strip())
                     interrupted_at = time.monotonic()
                     facade.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGINT)
                     facade.wait(timeout=35); reader.join(timeout=5)
@@ -1759,7 +1874,7 @@ print('INTER_ITERATION_CASES=' + str(count))
                         continue
                     result_path = next(line.strip()[8:] for line in output if line.startswith('Result: '))
                     payload = json.loads(Path(result_path).read_text(encoding='utf-8'))
-                    self.assert_rows(payload, [('first', 'test', 'interrupted')])
+                    self.assert_interrupted_selection(payload, operation)
                     self.assertEqual(130, payload['aggregateExit'])
                     self.assertEqual(['first', 'later'], payload['selectedStacks'])
                 finally:
@@ -1768,6 +1883,437 @@ print('INTER_ITERATION_CASES=' + str(count))
                         facade.wait(timeout=35)
                     reader.join(timeout=5)
                     facade.stdout.close()
+
+    def test_first_interrupt_during_launch_tracks_and_reaps_the_adapter(self):
+        self.assert_launch_interrupt(False)
+
+    def test_first_interrupt_from_caller_handler_during_launch_tracks_the_adapter(self):
+        self.assert_launch_interrupt(True)
+
+    def assert_launch_interrupt(self, custom):
+        data = manifest(stack('first'), stack('later'))
+        data['stacks'][0]['capabilities']['test'] = configured(['-u', 'adapter.py'])
+        root = self.fixture(data)
+        (root / 'adapter.py').write_text(
+            "import signal,sys,time\nfrom pathlib import Path\n"
+            "def interrupted(signum, frame):\n    raise KeyboardInterrupt\n"
+            "signal.signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT, interrupted)\n"
+            "mask = signal.pthread_sigmask(signal.SIG_BLOCK, ()) if hasattr(signal, 'pthread_sigmask') else ()\n"
+            "try:\n    deadline=time.monotonic()+30\n"
+            "    print('blocked' if signal.SIGINT in mask else 'ready', flush=True)\n"
+            "    while time.monotonic()<deadline:\n        time.sleep(.05)\n"
+            "except KeyboardInterrupt:\n    Path('cleanup.txt').write_text('complete')\n    sys.exit(130)\n"
+            "sys.exit(99)\n",
+            encoding='utf-8')
+        (root / 'launch_interrupt.py').write_text(
+            "import runpy,signal,subprocess,sys\nfrom pathlib import Path\n"
+            f"custom={custom!r}\n"
+            "def caller_handler(signum, frame):\n"
+            "    with open('handler-calls.txt', 'a') as calls: calls.write('called\\n')\n"
+            "    signal.default_int_handler(signum, frame)\n"
+            "if custom:\n"
+            "    signal.signal(signal.SIGINT, caller_handler)\n"
+            "    if hasattr(signal, 'SIGBREAK'): signal.signal(signal.SIGBREAK, caller_handler)\n"
+            "children=[]\n"
+            "class InterruptedPopen(subprocess.Popen):\n"
+            "    def __init__(self, args, *rest, **options):\n"
+            "        adapter = 'adapter.py' in args\n"
+            "        if adapter:\n            options.update(stdout=subprocess.PIPE, text=True)\n"
+            "        super().__init__(args, *rest, **options)\n"
+            "        if adapter:\n"
+            "            children.append(self)\n"
+            "            print('CHILD_MASK:', self.stdout.readline().strip(), flush=True)\n"
+            "            signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
+            "            signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
+            "subprocess.Popen=InterruptedPopen\n"
+            "try:\n    runpy.run_path('run_gap_check.py', run_name='__main__')\n"
+            "finally:\n"
+            "    for child in children:\n"
+            "        if child.poll() is None:\n"
+            "            Path('orphan.txt').write_text('adapter escaped facade cleanup')\n"
+            "            child.kill()\n"
+            "        child.wait()\n",
+            encoding='utf-8')
+        process = subprocess.run([sys.executable, '-u', 'launch_interrupt.py', 'all'], cwd=root,
+                                 capture_output=True, text=True, encoding='utf-8', timeout=60)
+        self.assert_exit(process, 130)
+        self.assertIn('CHILD_MASK: ready', process.stdout)
+        self.assertFalse((root / 'orphan.txt').exists(), 'launched adapter escaped facade cleanup')
+        self.assertEqual('complete', (root / 'cleanup.txt').read_text(encoding='utf-8'))
+        payload = json.loads(next((root / 'results').glob('*/result.json')).read_text(encoding='utf-8'))
+        self.assertEqual(130, payload['results'][0]['childExit'])
+        self.assertEqual(130, payload['aggregateExit'])
+        self.assert_rows(payload, [('first', 'test', 'interrupted'), ('later', 'test', 'interrupted')])
+        self.assertFalse((root / 'later-test.txt').exists())
+        if custom:
+            self.assertEqual(['called'], (root / 'handler-calls.txt').read_text().splitlines())
+
+    def test_first_interrupt_during_reporting_or_publication_preserves_finished_rows(self):
+        for moment in ('prepare', 'static report', 'coverage report', 'serialize', 'write', 'replace', 'aggregate', 'result', 'halted result'):
+            with self.subTest(moment=moment):
+                first_stack = verdict_stack()
+                if moment == 'halted result':
+                    first_stack['capabilities']['static']['command']['argv'][1] += '; raise SystemExit(130)'
+                root = self.fixture(manifest(first_stack, stack('later')))
+                (root / 'publication_interrupt.py').write_text(
+                    "import builtins,json,pathlib,runpy,signal,sys\n"
+                    f"moment={moment!r}\n"
+                    "report,serialize,write,replace,opened=builtins.print,json.dumps,pathlib.Path.write_text,pathlib.Path.replace,pathlib.Path.open\n"
+                    "fired=False\n"
+                    "def fire(at):\n"
+                    "    global fired\n"
+                    "    if at == moment and not fired:\n"
+                    "        fired=True\n"
+                    "        report('FIRST_INTERRUPT', flush=True)\n"
+                    "        signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
+                    "def reported(*values, **options):\n"
+                    "    text=str(values[0]) if values else ''\n"
+                    "    at=next((at for prefix,at in [('first static:', 'static report'), ('first coverage:', 'coverage report'), ('Aggregate:', 'aggregate'), ('Result:', 'result')] if text.startswith(prefix)), '')\n"
+                    "    fire('halted result' if at == 'result' and moment == 'halted result' else at)\n    report(*values, **options)\n"
+                    "def serialized(value, *args, **kwargs):\n"
+                    "    if isinstance(value, dict) and 'aggregateExit' in value:\n        fire('serialize')\n"
+                    "    return serialize(value, *args, **kwargs)\n"
+                    "def written(path, *args, **kwargs):\n"
+                    "    if path.name == 'result.tmp':\n        fire('write')\n"
+                    "    return write(path, *args, **kwargs)\n"
+                    "def opening(path, *args, **kwargs):\n"
+                    "    if path.name == 'result.tmp':\n        fire('prepare')\n"
+                    "    return opened(path, *args, **kwargs)\n"
+                    "def replaced(path, target):\n"
+                    "    if path.name == 'result.tmp':\n"
+                    "        fire('replace')\n"
+                    "        if fired:\n"
+                    "            report('FURTHER_INTERRUPT', flush=True)\n"
+                    "            signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
+                    "    return replace(path, target)\n"
+                    "builtins.print,json.dumps,pathlib.Path.write_text,pathlib.Path.replace=reported,serialized,written,replaced\n"
+                    "pathlib.Path.open=opening\n"
+                    "runpy.run_path('run_gap_check.py', run_name='__main__')\n", encoding='utf-8')
+                process = subprocess.run([sys.executable, '-u', 'publication_interrupt.py', '--force-run'],
+                                         cwd=root, capture_output=True, text=True, encoding='utf-8', timeout=60)
+                self.assert_exit(process, 130)
+                self.assertIn('FIRST_INTERRUPT', process.stdout)
+                self.assertNotIn('Traceback', process.stderr)
+                payload = json.loads(next((root / 'results').glob('*/result.json')).read_text(encoding='utf-8'))
+                self.assertEqual(130, payload['aggregateExit'])
+                first = ['interrupted', 'passed', 'interrupted'] if moment == 'static report' else ['passed'] * 3
+                later = ['interrupted'] * 3 if moment.endswith('report') else ['passed'] * 3
+                if moment in ('prepare', 'halted result'):
+                    first = later = ['interrupted'] * 3
+                self.assertEqual(first + later, [row['state'] for row in payload['results']])
+                if moment == 'static report':
+                    self.assertIn('interrupted before the coverage row', payload['results'][0]['reason'])
+                self.assertFalse((root / 'first-test.txt').exists(), 'coverage must remain the only suite execution')
+
+
+    def test_first_interrupt_at_final_return_publishes_130(self):
+        for target in ('write_result', 'run_operation', 'main'):
+            for event in ('return', 'opcode'):
+                for custom in (False, True):
+                    with self.subTest(target=target, event=event, custom=custom):
+                        self.assert_final_return_interrupt(target, event, custom)
+
+    def assert_final_return_interrupt(self, target, event, custom):
+        root = self.fixture(manifest(stack('first'), stack('later')))
+        (root / 'return_interrupt.py').write_text(
+            "import dis,runpy,signal,sys\n"
+            f"target,event_kind,custom={target!r},{event!r},{custom!r}\n"
+            "def caller_handler(signum, frame):\n"
+            "    print('CALLER_HANDLER', flush=True)\n"
+            "    signal.default_int_handler(signum, frame)\n"
+            "if custom:\n"
+            "    signal.signal(signal.SIGINT, caller_handler)\n"
+            "    if hasattr(signal, 'SIGBREAK'): signal.signal(signal.SIGBREAK, caller_handler)\n"
+            "fired=False\n"
+            "def trace(frame, event, arg):\n"
+            "    global fired\n"
+            f"    matching=frame.f_code.co_name == target and frame.f_code.co_filename == {str(self.runner)!r}\n"
+            "    if matching and event_kind == 'opcode': frame.f_trace_opcodes=True\n"
+            "    boundary=event == 'return' if event_kind == 'return' else event == 'opcode' and dis.opname[frame.f_code.co_code[frame.f_lasti]] in ('RETURN_VALUE', 'RETURN_CONST')\n"
+            "    if not fired and matching and boundary:\n"
+            "        fired=True\n"
+            "        print('FIRST_INTERRUPT_AT_RETURN', flush=True)\n"
+            "        signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
+            "    return trace\n"
+            "sys.settrace(trace)\n"
+            "runpy.run_path('run_gap_check.py', run_name='__main__')\n", encoding='utf-8')
+        process = subprocess.run([sys.executable, '-u', 'return_interrupt.py', 'all'], cwd=root,
+                                 capture_output=True, text=True, encoding='utf-8', timeout=60)
+        self.assert_exit(process, 130)
+        self.assertIn('FIRST_INTERRUPT_AT_RETURN', process.stdout)
+        self.assertEqual(int(custom), process.stdout.count('CALLER_HANDLER'))
+        self.assertNotIn('Traceback', process.stderr)
+        payload = json.loads(next((root / 'results').glob('*/result.json')).read_text(encoding='utf-8'))
+        self.assertEqual(130, payload['aggregateExit'])
+        self.assert_rows(payload, [('first', 'test', 'passed'), ('later', 'test', 'passed')])
+
+    def test_first_interrupt_from_caller_handler_never_redispatches_finished_adapters(self):
+        for moment in ('first test:', 'Aggregate:', 'Result:'):
+            with self.subTest(moment=moment):
+                self.assert_caller_reporting(moment, 'raise')
+
+    def test_ignored_or_returning_caller_handler_keeps_its_signal_semantics(self):
+        for handler in ('ignore', 'return'):
+            with self.subTest(handler=handler):
+                self.assert_caller_reporting('first test:', handler)
+
+    def assert_caller_reporting(self, moment, handler):
+        data = manifest(stack('first'), stack('later'))
+        for item in data['stacks']:
+            item['capabilities']['test'] = configured(['-c',
+                "from pathlib import Path; p=Path('calls.txt'); "
+                "p.write_text((p.read_text() if p.exists() else '') + " + repr(item['name'] + '\n') + ")"])
+        root = self.fixture(data)
+        (root / 'caller_interrupt.py').write_text(
+            "import builtins,runpy,signal,sys\n"
+            f"moment,handler={moment!r},{handler!r}\n"
+            "report=builtins.print\n"
+            "def caller_handler(signum, frame):\n"
+            "    report('CALLER_HANDLER', flush=True)\n"
+            "    if handler == 'raise': signal.default_int_handler(signum, frame)\n"
+            "sig=signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT\n"
+            "signal.signal(sig, signal.SIG_IGN if handler == 'ignore' else caller_handler)\n"
+            "fired=False\n"
+            "def reporting(*args, **kwargs):\n"
+            "    global fired\n"
+            "    if not fired and args and str(args[0]).startswith(moment):\n"
+            "        fired=True\n"
+            "        signal.raise_signal(sig)\n"
+            "    return report(*args, **kwargs)\n"
+            "builtins.print=reporting\n"
+            "runpy.run_path('run_gap_check.py', run_name='__main__')\n", encoding='utf-8')
+        process = subprocess.run([sys.executable, '-u', 'caller_interrupt.py', 'all'], cwd=root,
+                                 capture_output=True, text=True, encoding='utf-8', timeout=60)
+        expected_exit = 130 if handler == 'raise' else 0
+        self.assert_exit(process, expected_exit)
+        self.assertNotIn('Traceback', process.stderr)
+        self.assertEqual(int(handler != 'ignore'), process.stdout.count('CALLER_HANDLER'))
+        stopped_early = handler == 'raise' and moment == 'first test:'
+        self.assertEqual(['first'] if stopped_early else ['first', 'later'],
+                         (root / 'calls.txt').read_text().splitlines())
+        payload = json.loads(next((root / 'results').glob('*/result.json')).read_text(encoding='utf-8'))
+        self.assertEqual(expected_exit, payload['aggregateExit'])
+        self.assert_rows(payload, [('first', 'test', 'passed'),
+                                   ('later', 'test', 'interrupted' if stopped_early else 'passed')])
+
+    def test_first_interrupt_after_main_returns_retains_publication_ownership(self):
+        for unwritable in (False, True):
+            with self.subTest(unwritable=unwritable):
+                root = self.fixture(manifest(stack('first'), stack('later')))
+                launcher = root / 'run_gap_check.py'
+                launcher.write_text(launcher.read_text(encoding='utf-8').replace(
+                    'raise SystemExit(module.main())',
+                    "code=module.main()\n"
+                    "import signal\nfrom pathlib import Path\n"
+                    "replace=Path.replace\n"
+                    "sig=signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT\n"
+                    "def replacing(path, target):\n"
+                    "    signal.raise_signal(sig)\n"
+                    f"    if {unwritable!r}: raise OSError('late publication unavailable')\n"
+                    "    return replace(path, target)\n"
+                    "Path.replace=replacing\n"
+                    "signal.raise_signal(sig)\n"
+                    "raise SystemExit(code)"), encoding='utf-8')
+                process, _, payload = self.invoke(['all'], directory=root)
+                self.assert_exit(process, 130)
+                self.assertNotIn('Traceback', process.stderr)
+                self.assertEqual(0 if unwritable else 130, payload['aggregateExit'])
+                self.assertEqual(unwritable, 'late publication unavailable' in process.stderr)
+                self.assert_rows(payload, [('first', 'test', 'passed'), ('later', 'test', 'passed')])
+
+    def test_first_interrupt_with_unwritable_publication_retry_retains_exit_130(self):
+        root = self.fixture()
+        (root / 'unwritable_retry.py').write_text(
+            "import pathlib,runpy,signal,sys\n"
+            "replace=pathlib.Path.replace\n"
+            "def replacing(path, target):\n"
+            "    if path.name == 'result.tmp' and not target.exists():\n"
+            "        target.mkdir()\n"
+            "        signal.raise_signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT)\n"
+            "    return replace(path, target)\n"
+            "pathlib.Path.replace=replacing\n"
+            "runpy.run_path('run_gap_check.py', run_name='__main__')\n", encoding='utf-8')
+        process = subprocess.run([sys.executable, '-u', 'unwritable_retry.py', 'all'], cwd=root,
+                                 capture_output=True, text=True, encoding='utf-8', timeout=60)
+        self.assert_exit(process, 130)
+        self.assertIn('artifact destination', process.stderr)
+        self.assertNotIn('Traceback', process.stderr)
+
+    @unittest.skipIf(os.name == 'nt', 'Windows Popen reaps through its process handle and takes no waitpid lock')
+    def test_an_interrupt_landing_while_popen_holds_its_waitpid_lock_still_confirms_the_adapter_exit(self):
+        # The facade's SIGINT is delivered as soon as Popen has taken its waitpid lock, before the
+        # try that releases it: a facade that lets the interrupt surface there can no longer reap
+        # its adapter, waits out the cleanup window and records no child exit.
+        cleanup_seconds = 15
+        root = self.fixture(cleanup_seconds=cleanup_seconds)
+        (root / 'adapter.py').write_text(
+            "import signal,sys,time\nfrom pathlib import Path\n"
+            "def interrupted(signum, frame):\n    raise KeyboardInterrupt\n"
+            "signal.signal(signal.SIGINT, interrupted)\n"
+            "try:\n    Path('ready.txt').write_text('ready')\n    deadline=time.monotonic()+60\n"
+            "    while time.monotonic()<deadline:\n        time.sleep(0.05)\n"
+            "except KeyboardInterrupt:\n    Path('cleanup.txt').write_text('complete')\n    sys.exit(130)\n"
+            "sys.exit(99)\n", encoding='utf-8')
+        data = manifest(stack('first'))
+        data['stacks'][0]['capabilities']['test'] = configured(['-u', 'adapter.py'])
+        (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
+        (root / 'trapped_gap_check.py').write_text(
+            "import runpy,signal,subprocess\nfrom pathlib import Path\n"
+            "class InterruptedAfterAcquire:\n"
+            "    def __init__(self, lock):\n        self.lock, self.armed = lock, True\n"
+            "    def acquire(self, blocking=True, timeout=-1):\n"
+            "        acquired = self.lock.acquire(blocking, timeout)\n"
+            "        if acquired and self.armed and Path('ready.txt').exists():\n"
+            "            self.armed = False\n"
+            "            print('INTERRUPT_UNDER_WAITPID_LOCK', flush=True)\n"
+            "            signal.raise_signal(signal.SIGINT)\n"
+            "        return acquired\n"
+            "    def release(self):\n        self.lock.release()\n"
+            "    def __enter__(self):\n        self.acquire()\n        return self\n"
+            "    def __exit__(self, *details):\n        self.release()\n"
+            "class TrappedPopen(subprocess.Popen):\n"
+            "    def __init__(self, args, *rest, **options):\n"
+            "        super().__init__(args, *rest, **options)\n"
+            "        if 'adapter.py' in args:\n"
+            "            self._waitpid_lock = InterruptedAfterAcquire(self._waitpid_lock)\n"
+            "subprocess.Popen = TrappedPopen\n"
+            "runpy.run_path('run_gap_check.py', run_name='__main__')\n", encoding='utf-8')
+        started = time.monotonic()
+        process = subprocess.run([sys.executable, '-u', 'trapped_gap_check.py', 'test', '--stack', 'first'],
+                                 cwd=root, capture_output=True, text=True, encoding='utf-8', timeout=60)
+        elapsed = time.monotonic() - started
+        output = process.stdout + process.stderr
+        self.assertIn('INTERRUPT_UNDER_WAITPID_LOCK', output)
+        self.assert_exit(process, 130)
+        self.assertEqual('complete', (root / 'cleanup.txt').read_text(encoding='utf-8'))
+        result_path = next(line[8:] for line in process.stdout.splitlines() if line.startswith('Result: '))
+        row = json.loads(Path(result_path).read_text(encoding='utf-8'))['results'][0]
+        self.assertEqual(('interrupted', 130), (row['state'], row['resultExit']))
+        self.assertEqual(130, row['childExit'], row['reason'])
+        self.assertNotIn('not reaped', row['reason'])
+        self.assertLess(elapsed, cleanup_seconds, output)
+
+    def test_a_further_interrupt_while_the_facade_stops_its_adapter_or_publishes_the_result_does_not_abort_it(self):
+        # The first interrupt decides the outcome. A further one, while the facade waits on or reaps
+        # the adapter it is stopping, skips the later rows or writes the result, must not abort it:
+        # the row keeps the adapter's real exit and the result is published.
+        cleanup_seconds = 15
+        for moment in ('cleanup wait', 'after reap', 'row reported', 'result publication'):
+            with self.subTest(moment=moment):
+                data = manifest(stack('first'), stack('later'))
+                root = self.fixture(data, cleanup_seconds=cleanup_seconds)
+                (root / 'adapter.py').write_text(
+                    "import signal,sys,time\nfrom pathlib import Path\n"
+                    "def interrupted(signum, frame):\n    raise KeyboardInterrupt\n"
+                    "signal.signal(signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT, interrupted)\n"
+                    "try:\n    Path('ready.txt').write_text('ready')\n    deadline=time.monotonic()+60\n"
+                    "    while time.monotonic()<deadline:\n        time.sleep(0.05)\n"
+                    "except KeyboardInterrupt:\n    Path('stopping.txt').write_text('stopping')\n"
+                    f"    deadline=time.monotonic()+{cleanup_seconds}\n"
+                    f"    while {moment == 'cleanup wait'} and not Path('released.txt').exists() and time.monotonic()<deadline:\n"
+                    "        time.sleep(0.05)\n"
+                    "    Path('cleanup.txt').write_text('complete')\n    sys.exit(130)\n"
+                    "sys.exit(99)\n", encoding='utf-8')
+                data['stacks'][0]['capabilities']['test'] = configured(['-u', 'adapter.py'])
+                (root / 'gap_check.json').write_text(json.dumps(data), encoding='utf-8')
+                (root / 'interrupted_gap_check.py').write_text(
+                    "import builtins,pathlib,runpy,signal,subprocess,sys\nfrom pathlib import Path\n"
+                    f"MOMENT = {moment!r}\n"
+                    "INTERRUPT = signal.SIGBREAK if sys.platform == 'win32' else signal.SIGINT\n"
+                    "report, publish = builtins.print, pathlib.Path.replace\n"
+                    "def further():\n"
+                    "    report('FURTHER_INTERRUPT', flush=True)\n"
+                    "    signal.raise_signal(INTERRUPT)\n"
+                    "class InterruptedPopen(subprocess.Popen):\n"
+                    "    def __init__(self, args, *rest, **options):\n"
+                    "        super().__init__(args, *rest, **options)\n"
+                    "        self.adapter, self.first, self.further = 'adapter.py' in args, False, False\n"
+                    "    def poll(self):\n"
+                    "        code = super().poll()\n"
+                    "        if self.adapter and not self.first and Path('ready.txt').exists():\n"
+                    "            self.first = True\n"
+                    "            report('FIRST_INTERRUPT', flush=True)\n"
+                    "            signal.raise_signal(INTERRUPT)\n"
+                    "        elif self.adapter and not self.further and (\n"
+                    "                MOMENT == 'cleanup wait' and code is None and Path('stopping.txt').exists()\n"
+                    "                or MOMENT == 'after reap' and code == 130):\n"
+                    "            self.further = True\n"
+                    "            further()\n"
+                    "            Path('released.txt').write_text('released')\n"
+                    "        return code\n"
+                    "def reported(*values, **options):\n"
+                    "    report(*values, **options)\n"
+                    "    if MOMENT == 'row reported' and values and str(values[0]).startswith('first test: INTERRUPTED'):\n"
+                    "        further()\n"
+                    "def published(self, target):\n"
+                    "    if MOMENT == 'result publication' and self.name == 'result.tmp':\n"
+                    "        further()\n"
+                    "    return publish(self, target)\n"
+                    "subprocess.Popen, builtins.print, pathlib.Path.replace = InterruptedPopen, reported, published\n"
+                    "runpy.run_path('run_gap_check.py', run_name='__main__')\n", encoding='utf-8')
+                started = time.monotonic()
+                process = subprocess.run([sys.executable, '-u', 'interrupted_gap_check.py', 'all'],
+                                         cwd=root, capture_output=True, text=True, encoding='utf-8', timeout=60)
+                elapsed = time.monotonic() - started
+                output = process.stdout + process.stderr
+                self.assertIn('FIRST_INTERRUPT', output)
+                self.assertIn('FURTHER_INTERRUPT', output)
+                self.assert_exit(process, 130)
+                self.assertNotIn('Traceback', output)
+                self.assertEqual('complete', (root / 'cleanup.txt').read_text(encoding='utf-8'))
+                self.assertFalse((root / 'later-test.txt').exists())
+                result_path = next(line[8:] for line in process.stdout.splitlines() if line.startswith('Result: '))
+                payload = json.loads(Path(result_path).read_text(encoding='utf-8'))
+                self.assert_rows(payload, [('first', 'test', 'interrupted'), ('later', 'test', 'interrupted')])
+                self.assertEqual(130, payload['aggregateExit'])
+                row = payload['results'][0]
+                self.assertEqual(130, row['childExit'], row['reason'])
+                self.assertNotIn('not reaped', row['reason'])
+                self.assertLess(elapsed, cleanup_seconds, output)
+
+    @unittest.skipUnless(hasattr(signal, 'pthread_sigmask'), 'SIGINT is held through pthread_sigmask, absent here')
+    def test_held_blocks_sigint_only_when_it_set_the_block_and_defers_an_interrupt_until_the_call_returns(self):
+        held = runpy.run_path(str(self.runner))['held']
+        sigint = signal.SIGINT
+
+        def interrupted(signum, frame):
+            raise KeyboardInterrupt
+
+        def raise_inside_call():
+            masks.append(signal.pthread_sigmask(signal.SIG_BLOCK, ()))
+            signal.raise_signal(sigint)
+            masks.append(signal.pthread_sigmask(signal.SIG_BLOCK, ()))
+            returned.append(True)
+            return 'result'
+
+        previous = signal.signal(sigint, interrupted)
+        original = signal.pthread_sigmask(signal.SIG_BLOCK, ())
+        try:
+            signal.pthread_sigmask(signal.SIG_UNBLOCK, (sigint,))
+            masks, returned = [], []
+            with self.assertRaises(KeyboardInterrupt):
+                held(raise_inside_call)
+            self.assertEqual([True], returned, 'the interrupt surfaced before the held call returned')
+            self.assertTrue(all(sigint in mask for mask in masks), 'SIGINT was not blocked during the call')
+            self.assertNotIn(sigint, signal.pthread_sigmask(signal.SIG_BLOCK, ()),
+                             'held left SIGINT blocked after it blocked it')
+            self.assertEqual('result', held(lambda: 'result'))
+            self.assertNotIn(sigint, signal.pthread_sigmask(signal.SIG_BLOCK, ()))
+
+            # The caller's own block is not the facade's to lift.
+            signal.pthread_sigmask(signal.SIG_BLOCK, (sigint,))
+            masks, returned = [], []
+            self.assertEqual('result', held(raise_inside_call))
+            self.assertEqual([True], returned)
+            self.assertIn(sigint, signal.pthread_sigmask(signal.SIG_BLOCK, ()),
+                          'held unblocked a SIGINT block it did not set')
+            self.assertEqual('again', held(lambda first, second: first + second, 'ag', 'ain'))
+            self.assertIn(sigint, signal.pthread_sigmask(signal.SIG_BLOCK, ()))
+        finally:
+            # The interrupt raised under the caller's block is still pending: deliver it to a handler that drops it.
+            signal.signal(sigint, lambda signum, frame: None)
+            signal.pthread_sigmask(signal.SIG_SETMASK, original)
+            signal.signal(sigint, previous)
 
     def test_absolute_row_deadline_cleans_cooperative_child_before_publication(self):
         data = manifest(stack('first'), stack('later'))
@@ -1812,6 +2358,92 @@ print('INTER_ITERATION_CASES=' + str(count))
         self.assertFalse((root / 'later-test.txt').exists())
         self.assert_rows(payload, [('first', 'test', 'interrupted')])
         self.assertIn('deadline', payload['results'][0]['reason'])
+
+    def fake_rows(self, clock, *children):
+        """The runner's own execute_rows over the test rows of `first` and `later` with the
+        production deadlines on `clock`, launching `children` in turn instead of processes."""
+        namespace = runpy.run_path(str(self.runner))['execute_rows'].__globals__
+        launched = []
+
+        def launch(*_args, **_kwargs):
+            child = children[len(launched)]
+            launched.append(child)
+            clock.now += child.stall
+            return child
+        launcher = types.SimpleNamespace(Popen=launch, TimeoutExpired=subprocess.TimeoutExpired,
+                                         CREATE_NEW_PROCESS_GROUP=getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0))
+        temporary = tempfile.TemporaryDirectory(prefix='dydo-facade-')
+        self.addCleanup(temporary.cleanup)
+        with (mock.patch.dict(namespace, {'time': clock, 'subprocess': launcher}),
+              mock.patch.object(os, 'killpg', fake_killpg(launched), create=True),
+              contextlib.redirect_stdout(io.StringIO())):
+            rows = namespace['execute_rows']([stack('first'), stack('later')], ('test',),
+                                             Path(temporary.name).resolve(), None, [])
+        return [(row['stack'], row['state'], row['childExit']) for row in rows], rows, launched, namespace
+
+    def test_a_killed_child_that_is_never_reaped_releases_the_facade_within_the_reap_bound(self):
+        namespace = runpy.run_path(str(self.runner))['stop_child'].__globals__
+        for platform in ('linux', 'win32'):
+            with self.subTest(platform=platform):
+                clock, children = FakeClock(), []
+                children.append(FakeChild(clock, reapable=False))
+                with (mock.patch.dict(namespace, {'time': clock}), mock.patch.object(sys, 'platform', platform),
+                      mock.patch.object(signal, 'SIGKILL', getattr(signal, 'SIGKILL', 9), create=True),
+                      mock.patch.object(signal, 'CTRL_BREAK_EVENT', getattr(signal, 'CTRL_BREAK_EVENT', 1), create=True),
+                      mock.patch.object(os, 'killpg', fake_killpg(children), create=True)):
+                    namespace['stop_child'](children[0], 30)
+                self.assertEqual(['kill'], children[0].signals[1:])
+                self.assertIsNone(children[0].returncode)
+                self.assertLessEqual(clock.now, 30 + namespace['REAP_SECONDS'])
+
+    def test_a_deadline_row_whose_killed_child_is_never_reaped_stays_interrupted_without_a_child_exit(self):
+        clock = FakeClock()
+        rows, results, launched, namespace = self.fake_rows(clock, FakeChild(clock, reapable=False))
+        self.assertEqual([('first', 'interrupted', None)], rows)
+        self.assertEqual(1, len(launched))
+        self.assertIn('deadline', results[0]['reason'])
+        self.assertIn('not reaped', results[0]['reason'])
+        self.assertLessEqual(clock.now, 1830 + namespace['REAP_SECONDS'])
+
+    def test_an_interrupted_row_whose_killed_child_is_never_reaped_records_no_child_exit(self):
+        clock = FakeClock()
+        rows, results, launched, _ = self.fake_rows(clock, FakeChild(clock, reapable=False, interrupt=True))
+        self.assertEqual([('first', 'interrupted', None)], rows)
+        self.assertEqual(1, len(launched))
+        self.assertIn('interrupted', results[0]['reason'])
+        self.assertIn('not reaped', results[0]['reason'])
+
+    def test_a_child_exit_first_observed_after_the_execution_deadline_interrupts_the_row(self):
+        clock = FakeClock()
+        rows, results, launched, _ = self.fake_rows(clock, FakeChild(clock, exits_at=1, stall=1801), FakeChild(clock, exits_at=1))
+        self.assertEqual([('first', 'interrupted', 99)], rows)
+        self.assertEqual(1, len(launched))
+        self.assertEqual([], launched[0].signals)
+        self.assertIn('deadline', results[0]['reason'])
+
+    def test_a_child_exit_observed_before_the_execution_deadline_completes_the_row(self):
+        clock = FakeClock()
+        rows, _, launched, _ = self.fake_rows(clock, FakeChild(clock, exits_at=1799.9), FakeChild(clock, exits_at=1))
+        self.assertEqual([('first', 'failed', 99), ('later', 'failed', 99)], rows)
+        self.assertEqual([[], []], [child.signals for child in launched])
+
+    def test_an_exit_racing_the_execution_deadline_resolves_to_the_deadline(self):
+        # The facade observes the exit, then resumes past the deadline before it reads the clock:
+        # it cannot show that the exit came first, so the row is deadline-exceeded.
+        namespace = runpy.run_path(str(self.runner))['wait_for_child'].__globals__
+        clock = FakeClock()
+        child = FakeChild(clock, exits_at=0)
+        observe = child.poll
+
+        def late_poll():
+            code = observe()
+            clock.now = max(clock.now, 1800)
+            return code
+        child.poll = late_poll
+        with mock.patch.dict(namespace, {'time': clock}):
+            self.assertFalse(namespace['wait_for_child'](child, 'test', 1830))
+        self.assertEqual(99, child.returncode)
+        self.assertEqual([], child.signals)
 
 
 class PortableTestingFacadeTests(TestingFacadeTests):

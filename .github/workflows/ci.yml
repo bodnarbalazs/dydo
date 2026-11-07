@@ -2,15 +2,43 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, 'feature/**']
   pull_request:
 
-jobs:
-  viewer:
-    runs-on: ubuntu-latest
+# A newer first-attempt push to the same feature branch cancels its superseded run. Every other
+# run, a master/main push, a pull request or a rerun (run_attempt > 1), has a group of its own, so
+# a rerun of a superseded run neither cancels the tip nor is cancelled by it. Group names are
+# case-insensitive; feature branches are lowercase feature/<project-slug>.
+concurrency:
+  group: ci-${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/') && github.run_attempt == 1 && github.ref || github.run_id }}
+  cancel-in-progress: true
 
+# One tree per run: every job checks out the run's own commit, github.sha. On a pull request that is
+# the merge ref whose ci.yml is running, on a push the pushed commit, so every helper, lock and
+# manifest this workflow names exists in the tree it runs on. No job checks out the PR head.
+jobs:
+  python-coverage:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux
+            python: .static-gates/python/bin/python
+          - os: windows-latest
+            platform: windows
+            python: .static-gates/python/Scripts/python.exe
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -20,7 +48,883 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.13.0'
+          node-version: '26.13.0'
+          cache: pnpm
+          cache-dependency-path: DynaDocs.Tests/coverage/pnpm-lock.yaml
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
+        with:
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
+
+      - name: Prepare pinned Python assurance environment
+        run: python -m venv .static-gates/python
+
+      - name: Install locked Python dependencies
+        run: ${{ matrix.python }} -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Install locked coverage dependencies
+        run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
+
+      # The statechart typecheck tests compile with the viewer's locked TypeScript and node types,
+      # and the package's own test files import its locked dependencies.
+      - name: Install viewer dependencies
+        run: pnpm -C viewer install --frozen-lockfile
+
+      - name: Install statechart test dependencies
+        run: pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile
+
+      - name: Prepare native evidence directories
+        shell: bash
+        run: mkdir -p DynaDocs.Tests/coverage/results/native-jobs DynaDocs.Tests/coverage/results/native-lifetime
+
+      - name: Preflight candidate, pins, dependencies and nonzero discovery
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_REF_SHA: ${{ github.sha }}
+        run: |
+          "${{ matrix.python }}" - <<'PY'
+          import json, os, platform, subprocess, sys, unittest
+          from pathlib import Path
+          tools = Path('DynaDocs.Tests/coverage')
+          sys.path.insert(0, str(tools.resolve()))
+          from gate_versions import javascript_versions, python_versions
+          candidate = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          tree = subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip()
+          assert not subprocess.check_output(['git', 'status', '--porcelain']), 'Dirty PR candidate'
+          versions = python_versions(tools)
+          assert platform.python_version() == versions['declared_runtime']
+          assert subprocess.check_output(['node', '--version'], text=True).strip() == 'v26.13.0'
+          javascript_versions(tools)
+          loader = unittest.TestLoader()
+          suite = loader.discover(str(tools / 'tests'), pattern='test_*.py')
+          assert not loader.errors, loader.errors
+          def cases(suite):
+              for item in suite:
+                  if isinstance(item, unittest.TestSuite):
+                      yield from cases(item)
+                  else:
+                      yield item
+          ids = [case.id() for case in cases(suite)]
+          counts = {name: sum(value.startswith(name + '.') for value in ids) for name in
+                    ('test_windows_job', 'test_windows_cancellation', 'test_control_dydo_lifetime')}
+          assert ids and all(counts.values()), counts
+          receipt = {'candidate': candidate, 'checkout_tree': tree, 'pr_head_sha': os.environ['PR_HEAD_SHA'],
+                     'merge_ref_sha': os.environ['MERGE_REF_SHA'], 'python': versions,
+                     'tests': len(ids), 'native_tests': counts}
+          (tools / 'results/preflight.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
+          print(json.dumps(receipt))
+          PY
+
+      - name: Full Python suite and platform coverage gate
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          DYDO_NATIVE_TEST_EVIDENCE: DynaDocs.Tests/coverage/results/native-jobs
+          DYDO_LIFETIME_EVIDENCE: DynaDocs.Tests/coverage/results/native-lifetime
+          DYDO_CANCELLATION_EVIDENCE: DynaDocs.Tests/coverage/results/windows-cancellation
+        run: ${{ matrix.python }} DynaDocs.Tests/coverage/gap_check.py gate coverage --stack python
+
+      - name: Canonical Python static gate
+        if: ${{ !cancelled() && matrix.platform == 'linux' }}
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: ${{ matrix.python }} DynaDocs.Tests/coverage/gap_check.py gate static --stack python
+
+      # A rerun of failed jobs reruns only the failed leg, so each artifact names the attempt that made it.
+      - name: Stamp platform coverage artifact identity
+        if: always()
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py stamp --stack python
+          --platform ${{ matrix.platform }} --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --results DynaDocs.Tests/coverage/results
+
+      - name: Upload platform coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage-${{ matrix.platform }}-attempt-${{ github.run_attempt }}
+          path: DynaDocs.Tests/coverage/results
+          if-no-files-found: error
+
+  python-coverage-union:
+    needs: python-coverage
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - name: Install locked union analysis dependencies
+        run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      # Every attempt's leg artifacts; the selection below takes each leg's latest execution.
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: python-coverage-*-attempt-*
+          path: DynaDocs.Tests/coverage/results/coverage-legs
+          merge-multiple: false
+
+      - name: Require both native jobs to pass
+        if: always()
+        shell: bash
+        env:
+          PLATFORM_RESULT: ${{ needs.python-coverage.result }}
+        run: |
+          mkdir -p DynaDocs.Tests/coverage/results/coverage-platforms
+          echo "$PLATFORM_RESULT" > DynaDocs.Tests/coverage/results/coverage-platforms/native-job-result.txt
+          test "$PLATFORM_RESULT" = success
+
+      # A rerun copies each leg it does not rerun into the new attempt, keeping the leg's original start time.
+      - name: Record each leg's latest execution from the run's job record
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_API: repos/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api --paginate "$RUN_API/attempts/${{ github.run_attempt }}/jobs?per_page=100" --jq '.jobs[]' > DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          for attempt in $(seq ${{ github.run_attempt }}); do
+            gh api "$RUN_API/attempts/$attempt" --jq '{run_attempt, run_started_at}'
+          done > DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
+
+      - name: Select each leg's latest-execution artifact
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py select --stack python
+          --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --expected-commit ${{ github.sha }}
+          --jobs DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          --attempts DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
+          --staging DynaDocs.Tests/coverage/results/coverage-legs
+          --linux DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-linux
+          --windows DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-windows
+          --receipt DynaDocs.Tests/coverage/results/coverage-platforms/artifact-selection.json
+
+      - name: Verify complete same-candidate platform union
+        run: >-
+          python DynaDocs.Tests/coverage/python_platform.py
+          --linux DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-linux/adapters/python-coverage.json
+          --windows DynaDocs.Tests/coverage/results/coverage-platforms/python-coverage-windows/adapters/python-coverage.json
+          --output DynaDocs.Tests/coverage/results/coverage-platforms/union.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: python-coverage-union
+          path: DynaDocs.Tests/coverage/results/coverage-platforms
+          if-no-files-found: error
+
+  statechart-coverage:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux
+            python: .static-gates/python/bin/python
+          - os: windows-latest
+            platform: windows
+            python: .static-gates/python/Scripts/python.exe
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+          cache: pnpm
+          cache-dependency-path: DynaDocs.Tests/coverage/pnpm-lock.yaml
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
+        with:
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
+
+      - name: Prepare pinned Python assurance environment
+        run: python -m venv .static-gates/python
+
+      - name: Install locked Python dependencies
+        run: ${{ matrix.python }} -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Install locked coverage dependencies
+        run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
+
+      # The statechart typecheck tests compile with the viewer's locked TypeScript and node types,
+      # and the package's own test files import its locked dependencies.
+      - name: Install viewer dependencies
+        run: pnpm -C viewer install --frozen-lockfile
+
+      - name: Install statechart test dependencies
+        run: pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile
+
+      - name: Project canonical skills
+        run: node setup-skills.mjs
+
+      - name: Restore locked .NET tools and packages
+        run: |
+          dotnet tool restore
+          dotnet restore --locked-mode
+          dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
+
+      - name: Provision statechart prerequisites
+        id: statechart
+        shell: pwsh
+        run: ./.github/workflows/provision-statechart.ps1
+
+      - name: Statechart suite and platform coverage gate
+        env:
+          TLA2TOOLS: ${{ steps.statechart.outputs.tla2tools }}
+          JAVA: ${{ steps.statechart.outputs.java }}
+          STATECHART_PELE: ${{ steps.statechart.outputs.pele }}
+        run: ${{ matrix.python }} DynaDocs.Tests/coverage/gap_check.py gate coverage --stack statechart
+
+      # A rerun of failed jobs reruns only the failed leg, so each artifact names the attempt that made it.
+      - name: Stamp platform coverage artifact identity
+        if: always()
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py stamp --stack statechart
+          --platform ${{ matrix.platform }} --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --results DynaDocs.Tests/coverage/results
+
+      - name: Upload platform coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: statechart-coverage-${{ matrix.platform }}-attempt-${{ github.run_attempt }}
+          path: DynaDocs.Tests/coverage/results
+          if-no-files-found: error
+
+  statechart-coverage-union:
+    needs: statechart-coverage
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - name: Install locked union analysis dependencies
+        run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+          cache: pnpm
+          cache-dependency-path: DynaDocs.Tests/coverage/pnpm-lock.yaml
+
+      - name: Install locked coverage dependencies
+        run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
+
+      # Every attempt's leg artifacts; the selection below takes each leg's latest execution.
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: statechart-coverage-*-attempt-*
+          path: DynaDocs.Tests/coverage/results/coverage-legs
+          merge-multiple: false
+
+      - name: Require both native jobs to pass
+        if: always()
+        shell: bash
+        env:
+          PLATFORM_RESULT: ${{ needs.statechart-coverage.result }}
+        run: |
+          mkdir -p DynaDocs.Tests/coverage/results/coverage-platforms
+          echo "$PLATFORM_RESULT" > DynaDocs.Tests/coverage/results/coverage-platforms/native-job-result.txt
+          test "$PLATFORM_RESULT" = success
+
+      # A rerun copies each leg it does not rerun into the new attempt, keeping the leg's original start time.
+      - name: Record each leg's latest execution from the run's job record
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_API: repos/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api --paginate "$RUN_API/attempts/${{ github.run_attempt }}/jobs?per_page=100" --jq '.jobs[]' > DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          for attempt in $(seq ${{ github.run_attempt }}); do
+            gh api "$RUN_API/attempts/$attempt" --jq '{run_attempt, run_started_at}'
+          done > DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
+
+      - name: Select each leg's latest-execution artifact
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py select --stack statechart
+          --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --expected-commit ${{ github.sha }}
+          --jobs DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          --attempts DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
+          --staging DynaDocs.Tests/coverage/results/coverage-legs
+          --linux DynaDocs.Tests/coverage/results/coverage-platforms/statechart-coverage-linux
+          --windows DynaDocs.Tests/coverage/results/coverage-platforms/statechart-coverage-windows
+          --receipt DynaDocs.Tests/coverage/results/coverage-platforms/artifact-selection.json
+
+      - name: Verify complete same-candidate platform union
+        run: >-
+          python DynaDocs.Tests/coverage/statechart_platform.py
+          --linux DynaDocs.Tests/coverage/results/coverage-platforms/statechart-coverage-linux/adapters/statechart-coverage.json
+          --windows DynaDocs.Tests/coverage/results/coverage-platforms/statechart-coverage-windows/adapters/statechart-coverage.json
+          --output DynaDocs.Tests/coverage/results/coverage-platforms/union.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: statechart-coverage-union
+          path: DynaDocs.Tests/coverage/results/coverage-platforms
+          if-no-files-found: error
+
+  # Linux runs the full suite over every point outside dotnet-platforms.json; Windows runs only the
+  # selected tests over the Windows-native members it names. Both measure the candidate commit (the
+  # merge ref on a pull request, the pushed commit on a push), and the union requires both reports. The
+  # guard's tests run on Windows in guard-windows, outside this measurement.
+  dotnet-coverage:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux
+            python: .static-gates/python/bin/python
+          - os: windows-latest
+            platform: windows
+            python: .static-gates/python/Scripts/python.exe
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - name: Keep candidate bytes identical on both platforms
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+          cache: pnpm
+          cache-dependency-path: DynaDocs.Tests/coverage/pnpm-lock.yaml
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
+        with:
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
+
+      - name: Prepare pinned Python assurance environment
+        run: python -m venv .static-gates/python
+
+      - name: Install locked Python dependencies
+        run: ${{ matrix.python }} -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Install locked coverage dependencies
+        run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
+
+      - name: Restore locked .NET tools and packages
+        run: |
+          dotnet tool restore
+          dotnet restore --locked-mode
+          dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
+
+      - name: Preflight candidate, selection pins and nonzero test discovery
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_REF_SHA: ${{ github.sha }}
+          DOTNET_PLATFORM: ${{ matrix.platform }}
+        run: |
+          mkdir -p DynaDocs.Tests/coverage/results
+          "${{ matrix.python }}" - <<'PY'
+          import json, os, platform, subprocess, sys
+          from pathlib import Path
+          tools = Path('DynaDocs.Tests/coverage')
+          sys.path.insert(0, str(tools.resolve()))
+          from dotnet_platform import discover_windows_tests, load_selection, native_platform
+          from gate_versions import python_versions
+          candidate = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert not subprocess.check_output(['git', 'status', '--porcelain']), 'Dirty candidate'
+          assert candidate == os.environ['MERGE_REF_SHA'], candidate
+          versions = python_versions(tools)
+          assert platform.python_version() == versions['declared_runtime']
+          assert subprocess.check_output(['dotnet', '--version'], text=True).strip() == '10.0.303'
+          native = native_platform()
+          assert native == os.environ['DOTNET_PLATFORM'], native
+          selection = load_selection(Path('.'), native)
+          tests = discover_windows_tests(Path('.'), selection) if native == 'windows' else 'full suite'
+          assert tests, 'No Windows test selected'
+          receipt = {'candidate': candidate, 'pr_head_sha': os.environ['PR_HEAD_SHA'],
+                     'merge_ref_sha': os.environ['MERGE_REF_SHA'], 'python': versions, 'platform': native,
+                     'native': sorted(selection['native']), 'tests': tests}
+          (tools / 'results/preflight.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - name: Platform .NET coverage gate
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: ${{ matrix.python }} DynaDocs.Tests/coverage/gap_check.py gate coverage --stack dotnet
+
+      # A rerun of failed jobs reruns only the failed leg, so each artifact names the attempt that made it.
+      - name: Stamp platform .NET coverage artifact identity
+        if: always()
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py stamp --stack dotnet
+          --platform ${{ matrix.platform }} --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --results DynaDocs.Tests/coverage/results
+
+      - name: Upload platform .NET coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-coverage-${{ matrix.platform }}-attempt-${{ github.run_attempt }}
+          path: DynaDocs.Tests/coverage/results
+          if-no-files-found: error
+
+  dotnet-coverage-union:
+    needs: dotnet-coverage
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
+        with:
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
+
+      - name: Install locked union analysis dependencies
+        run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Restore locked .NET tools and packages
+        run: |
+          dotnet tool restore
+          dotnet restore --locked-mode
+          dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
+
+      # Every attempt's leg artifacts; the selection below takes each leg's latest execution.
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dotnet-coverage-*-attempt-*
+          path: DynaDocs.Tests/coverage/results/coverage-legs
+          merge-multiple: false
+
+      - name: Require both native jobs to pass
+        if: always()
+        shell: bash
+        env:
+          PLATFORM_RESULT: ${{ needs.dotnet-coverage.result }}
+        run: |
+          mkdir -p DynaDocs.Tests/coverage/results/coverage-platforms
+          echo "$PLATFORM_RESULT" > DynaDocs.Tests/coverage/results/coverage-platforms/native-job-result.txt
+          test "$PLATFORM_RESULT" = success
+
+      # A rerun copies each leg it does not rerun into the new attempt, keeping the leg's original start time.
+      - name: Record each leg's latest execution from the run's job record
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_API: repos/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api --paginate "$RUN_API/attempts/${{ github.run_attempt }}/jobs?per_page=100" --jq '.jobs[]' > DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          for attempt in $(seq ${{ github.run_attempt }}); do
+            gh api "$RUN_API/attempts/$attempt" --jq '{run_attempt, run_started_at}'
+          done > DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
+
+      - name: Select each leg's latest-execution artifact
+        run: >-
+          python DynaDocs.Tests/coverage/coverage_artifacts.py select --stack dotnet
+          --run-id ${{ github.run_id }} --run-attempt ${{ github.run_attempt }}
+          --expected-commit ${{ github.sha }}
+          --jobs DynaDocs.Tests/coverage/results/coverage-platforms/run-jobs.jsonl
+          --attempts DynaDocs.Tests/coverage/results/coverage-platforms/run-attempts.jsonl
+          --staging DynaDocs.Tests/coverage/results/coverage-legs
+          --linux DynaDocs.Tests/coverage/results/coverage-platforms/linux
+          --windows DynaDocs.Tests/coverage/results/coverage-platforms/windows
+          --receipt DynaDocs.Tests/coverage/results/coverage-platforms/artifact-selection.json
+
+      # Rebuilds this candidate's complete zero-hit denominator and checks each platform's portion against it.
+      - name: Verify the complete same-candidate platform partition
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: >-
+          python DynaDocs.Tests/coverage/dotnet_platform.py
+          --linux DynaDocs.Tests/coverage/results/coverage-platforms/linux/adapters/dotnet-coverage.json
+          --windows DynaDocs.Tests/coverage/results/coverage-platforms/windows/adapters/dotnet-coverage.json
+          --output DynaDocs.Tests/coverage/results/coverage-platforms
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dotnet-coverage-union
+          path: DynaDocs.Tests/coverage/results/coverage-platforms
+          if-no-files-found: error
+
+  # The guard serves Windows hosts, and its culture and path behaviour is platform-specific. This job
+  # runs the guard's analyzer and hook tests natively on Windows, uninstrumented and outside the
+  # dotnet-coverage measurement, and fails on any result that is not a pass.
+  guard-windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      # The one list of selected classes: the test step filters on it and the check step requires each.
+      GUARD_CLASSES: >-
+        DynaDocs.Tests.Services.DangerousPatternCultureTests
+        DynaDocs.Tests.Services.DangerousPatternOracleTests
+        DynaDocs.Tests.Services.DangerousPatternBudgetTests
+        DynaDocs.Tests.Services.BashCommandAnalyzerTests
+        DynaDocs.Tests.Integration.GuardSecurityTests
+        DynaDocs.Tests.Integration.GuardMergeRouteTests
+        DynaDocs.Tests.Integration.GuardPrReadyTests
+      # Select this regression alone: its siblings include intentional Windows skips.
+      GUARD_TESTS: >-
+        DynaDocs.Tests.Commands.GuardPrReadyBodyFileTests.LinkedDirectoryLeavingTheTree_IsNull
+    steps:
+      - name: Keep candidate bytes identical on both platforms
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
+        with:
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
+
+      - name: Restore locked packages
+        run: dotnet restore DynaDocs.sln --locked-mode
+
+      - name: Build
+        run: dotnet build DynaDocs.sln --no-restore --warnaserror
+
+      - name: Enable file symbolic links for guard fixtures
+        shell: pwsh
+        run: |
+          $key = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock'
+          New-Item -Path $key -Force | Out-Null
+          New-ItemProperty -Path $key -Name AllowDevelopmentWithoutDevLicense -Value 1 -PropertyType DWord -Force | Out-Null
+
+      - name: Guard analyzer and hook tests
+        id: guard-tests
+        shell: pwsh
+        run: |
+          # The trailing dot keeps a class from also selecting classes whose names extend it.
+          $filters = @(-split $env:GUARD_CLASSES | ForEach-Object { "FullyQualifiedName~$_." })
+          $filters += @(-split $env:GUARD_TESTS | ForEach-Object { "FullyQualifiedName=$_" })
+          # The repeated performance proofs stay dormant here too; their coverage witnesses still run (DYD-859).
+          $filter = '(' + ($filters -join '|') + ')&PerformanceProof!=Release'
+          Write-Host "Filter: $filter"
+          dotnet test DynaDocs.Tests/DynaDocs.Tests.csproj --no-build `
+            --filter $filter `
+            --logger 'trx;LogFileName=guard-windows.trx' `
+            --results-directory TestResults/guard-windows
+
+      # A skip is missing proof: every selected class and exact test must run, and every result must pass.
+      - name: Require every selected guard test to pass
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        env:
+          TEST_OUTCOME: ${{ steps.guard-tests.outcome }}
+          GUARD_TRX: TestResults/guard-windows/guard-windows.trx
+        run: |
+          $classes = @(-split $env:GUARD_CLASSES)
+          $methods = @(-split $env:GUARD_TESTS)
+          $problems = [System.Collections.Generic.List[string]]::new()
+          if ($env:TEST_OUTCOME -ne 'success') { $problems.Add("dotnet test outcome is '$env:TEST_OUTCOME'") }
+          if (-not (Test-Path -LiteralPath $env:GUARD_TRX)) {
+            $problems.Add("No test results at $env:GUARD_TRX")
+          } else {
+            $trx = [xml](Get-Content -Raw -LiteralPath $env:GUARD_TRX)
+            $ns = [System.Xml.XmlNamespaceManager]::new($trx.NameTable)
+            $ns.AddNamespace('t', 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010')
+            $definitions = @($trx.SelectNodes('//t:TestDefinitions/t:UnitTest', $ns))
+            $classOf = @{}
+            $methodOf = @{}
+            foreach ($test in $definitions) {
+              $method = $test.SelectSingleNode('t:TestMethod', $ns)
+              $classOf[$test.id] = $method.className
+              $methodOf[$test.id] = "$($method.className).$($method.name)"
+            }
+            $results = @($trx.SelectNodes('//t:Results/t:UnitTestResult', $ns))
+            if ($results.Count -eq 0) { $problems.Add('The selection produced zero results') }
+            foreach ($result in $results | Where-Object outcome -ne 'Passed') {
+              $problems.Add("$($result.testName) is $($result.outcome), not Passed")
+            }
+            foreach ($class in $classes) {
+              $count = @($results | Where-Object { $classOf[$_.testId] -eq $class }).Count
+              Write-Host ("{0,5} {1}" -f $count, $class)
+              if ($count -eq 0) { $problems.Add("$class produced zero results") }
+            }
+            foreach ($method in $methods) {
+              $count = @($results | Where-Object { $methodOf[$_.testId] -eq $method }).Count
+              Write-Host ("{0,5} {1}" -f $count, $method)
+              if ($count -eq 0) { $problems.Add("$method produced zero results") }
+            }
+            if ($definitions.Count -ne $results.Count) {
+              $problems.Add("The TRX defines $($definitions.Count) tests but has $($results.Count) results")
+            }
+            # The counters must exist and agree with the results read, so a truncated TRX cannot pass.
+            $counters = $trx.SelectSingleNode('//t:ResultSummary/t:Counters', $ns)
+            if ($null -eq $counters) {
+              $problems.Add('The TRX has no ResultSummary/Counters')
+            } else {
+              Write-Host "TRX counters: total $($counters.total), passed $($counters.passed), failed $($counters.failed), notExecuted $($counters.notExecuted)"
+              if ($counters.total -ne $counters.passed) {
+                $problems.Add("TRX counters show total $($counters.total) but passed $($counters.passed)")
+              }
+              if ($counters.total -ne "$($results.Count)") {
+                $problems.Add("TRX counters show total $($counters.total) but the TRX has $($results.Count) results")
+              }
+            }
+          }
+          foreach ($problem in $problems) { Write-Host "::error::$problem" }
+          if ($problems.Count -gt 0) { exit 1 }
+
+      - name: Upload guard test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guard-windows-attempt-${{ github.run_attempt }}
+          path: TestResults/guard-windows
+          if-no-files-found: error
+
+  assurance-cancellation:
+    strategy:
+      fail-fast: false
+      matrix:
+        # CPython 3.14.4 has a hosted build for Ubuntu 24.04, not 26.04.
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+          cache: pnpm
+          cache-dependency-path: DynaDocs.Tests/coverage/pnpm-lock.yaml
+
+      - name: Install locked assurance dependencies
+        run: python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Install locked coverage dependencies
+        run: pnpm -C DynaDocs.Tests/coverage install --frozen-lockfile
+
+      - name: Native cancellation regression
+        env:
+          PYTHONPATH: DynaDocs.Tests/coverage/tests
+          DYDO_CANCELLATION_EVIDENCE: DynaDocs.Tests/coverage/results/windows-cancellation
+        run: python -m unittest -v test_windows_cancellation test_windows_job test_gate_adapter.CoverageCancellationTests
+
+      - name: Upload cancellation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cancellation-${{ matrix.os }}
+          path: DynaDocs.Tests/coverage/results/windows-cancellation
+          if-no-files-found: warn
+
+  statechart-config-oracle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+
+      - name: Validate runner JDK pin and provision locked TLC
+        id: statechart
+        shell: pwsh
+        run: ./.github/workflows/provision-statechart-oracle.ps1
+
+      # Direct execution makes a file with no tests produce no TAP report, not a passing file-test.
+      - name: Compare 4000 seed-1 configs with TLC
+        id: oracle
+        shell: pwsh
+        working-directory: skills/engineering/statechart/scripts
+        env:
+          TLA2TOOLS: ${{ steps.statechart.outputs.tla2tools }}
+          JAVA: ${{ steps.statechart.outputs.java }}
+        run: node --disable-warning=ExperimentalWarning --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap '--test-reporter-destination=${{ runner.temp }}/statechart-config-oracle.tap' test/config-fuzz.test.ts
+
+      - name: Require the config oracle to run and pass
+        id: require-oracle
+        shell: pwsh
+        run: ./.github/workflows/assert-node-tests-ran.ps1 -Tap '${{ runner.temp }}/statechart-config-oracle.tap' -MinimumTests 1
+
+      - name: Retain config oracle result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: statechart-config-oracle-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/statechart-config-oracle.tap
+          if-no-files-found: error
+
+  # The statechart runtime's Windows paths (its job object, TLC and JAVA resolved from the caller and
+  # through PATH) run only on Windows. Their tests skip anywhere else, and they skip on Windows
+  # without TLC, so this leg provisions the release's pinned prerequisites and fails on any skip.
+  statechart-windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+          cache: pnpm
+          cache-dependency-path: skills/engineering/statechart/scripts/pnpm-lock.yaml
+
+      - name: Install statechart test dependencies
+        run: pnpm -C skills/engineering/statechart/scripts install --frozen-lockfile
+
+      - name: Provision statechart prerequisites
+        id: statechart
+        shell: pwsh
+        run: ./.github/workflows/provision-statechart.ps1
+
+      # Run the file directly, not under --test, which reports a file with no tests as one passing test.
+      - name: Windows statechart tests
+        working-directory: skills/engineering/statechart/scripts
+        env:
+          TLA2TOOLS: ${{ steps.statechart.outputs.tla2tools }}
+          JAVA: ${{ steps.statechart.outputs.java }}
+          STATECHART_PELE: ${{ steps.statechart.outputs.pele }}
+        run: node --disable-warning=ExperimentalWarning --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=${{ runner.temp }}/statechart-windows.tap test/windows.test.ts
+
+      # windows.test.ts holds 6 tests: 2 job-ownership cases and 4 real-TLC override cases (DYD-428).
+      - name: Require every Windows statechart test to run
+        shell: pwsh
+        run: ./.github/workflows/assert-node-tests-ran.ps1 -Tap '${{ runner.temp }}/statechart-windows.tap' -MinimumTests 6
+
+  viewer:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
           cache: pnpm
           cache-dependency-path: viewer/pnpm-lock.yaml
 
@@ -61,6 +965,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
 
       - name: Download viewer bundle
         uses: actions/download-artifact@v4
@@ -70,8 +976,14 @@ jobs:
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
 
       - name: Restore dependencies
         run: dotnet restore
@@ -88,6 +1000,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
 
       - name: Download viewer bundle
         uses: actions/download-artifact@v4
@@ -97,8 +1011,14 @@ jobs:
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
 
       - name: Publish dydo (linux-x64)
         run: dotnet publish DynaDocs.csproj -c Release -r linux-x64 -o artifacts/map-e2e
@@ -111,7 +1031,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.13.0'
+          node-version: '26.13.0'
           cache: pnpm
           cache-dependency-path: viewer/pnpm-lock.yaml
 

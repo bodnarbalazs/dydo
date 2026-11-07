@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+out=$(realpath "$1")
+export PWSH=/tmp/dyd622-pwsh/pwsh PYTHONDONTWRITEBYTECODE=1
+export MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false
+exec > "$out/focused-session.log" 2>&1
+trap 'echo "focused session exit=$?"' EXIT
+node --version
+dotnet --version
+dotnet --list-runtimes
+/tmp/dyd507-524-venv/bin/python --version
+"$PWSH" -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
+/tmp/dyd507-524-venv/bin/python dydo/project/changelog/2026/2026-11-06/dyd-784-evidence/verify-cache.py.txt /home/balazs/.local/share/dydo/statechart/deps/3ad231072bddc04588d0f2cf1b61a3e62fc38b4ff400ccea5c3b5d41409575ab/linux-x64 > "$out/cache-check.log" 2>&1
+node --test --test-reporter=tap DynaDocs.Tests/coverage/tests/statechart-config-oracle.test.cjs > "$out/focused.tap" 2>&1
+echo 'focused exit=0'
+PYTHONPATH=DynaDocs.Tests/coverage/tests /tmp/dyd507-524-venv/bin/python -m unittest -v test_coverage_artifacts.WorkflowTests > "$out/workflow.log" 2>&1
+echo 'workflow exit=0'
+PYTHONPATH=DynaDocs.Tests/coverage/tests DYDO_NATIVE_TEST_EVIDENCE="$out" /tmp/dyd507-524-venv/bin/python -m unittest -v test_javascript_metrics.JavaScriptMetricsTests > "$out/python-node.log" 2>&1
+echo 'python-node exit=0'
+git ls-files -z | xargs -0 sha256sum > "$out/source-sha256.txt"
+git show -s --format='%H%n%P%n%T' HEAD > "$out/candidate.txt"

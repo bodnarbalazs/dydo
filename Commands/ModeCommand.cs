@@ -49,7 +49,16 @@ public static class ModeCommand
             return ExitCodes.ToolError;
         }
 
-        state.Set(flag, value);
+        try
+        {
+            state.Set(flag, value);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Console.Error.WriteLine($"Cannot write the mode store {state.FilePath}: {ex.Message}");
+            return ExitCodes.ToolError;
+        }
+
         Print(state);
         return ExitCodes.Success;
     }

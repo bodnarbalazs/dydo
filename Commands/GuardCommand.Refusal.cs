@@ -9,8 +9,7 @@ using DynaDocs.Utils;
 /// shell, <c>powershell|pwsh -NoProfile -Command "dydo guard"</c>, and both PowerShells turn a
 /// native exit 2 into exit 1 there; Codex treats exit 1 as a failed hook and runs the tool. So a
 /// hook-mode refusal exits 0 and decides through stdout instead: exactly one deny-decision
-/// object, which Codex and Claude Code both honour as a block. The one ask decision (the mode-set
-/// rerun, GuardCommand.ModeSet.cs) is emitted only where Claude Code is positively identified.
+/// object, which Codex and Claude Code both honour as a block.
 /// </summary>
 public static partial class GuardCommand
 {
@@ -19,15 +18,13 @@ public static partial class GuardCommand
         !ctx.HasCliArgs && (ctx.HookEventName == null || ctx.HookEventName == "PreToolUse");
 
     /// <summary>
-    /// Turns a verdict into the guard's answer: a PreToolUse block or ask becomes a decision on
-    /// stdout; anywhere else an ask cannot be answered, so it blocks with exit 2.
+    /// Turns a verdict into the guard's answer: a PreToolUse block becomes a deny decision on
+    /// stdout; anywhere else it keeps exit 2.
     /// </summary>
     private static int Conclude(GuardContext ctx, int verdict, string reason) =>
         (verdict, IsPreToolUseHook(ctx)) switch
         {
             (ExitCodes.ToolError, true) => DecidePreToolUse("deny", reason),
-            (AskUser, true) => DecidePreToolUse("ask", reason),
-            (AskUser, false) => ExitCodes.ToolError,
             _ => verdict
         };
 

@@ -838,7 +838,8 @@ public sealed class CleanCommandTests : IDisposable
         Assert.Equal(0, exit);
         Assert.Contains($"skipped {_main}: the main checkout is never removed", stdout);
         Assert.Contains($"skipped {locked}: it is locked", stdout);
-        Assert.Contains($"skipped {t3}: T3 owns worktrees under {_t3Root}", stdout);
+        Assert.Contains($"skipped {t3}: T3 owns worktrees under {_t3Root}; leave them to T3", stdout);
+        Assert.DoesNotContain("archive the thread", stdout);
         Assert.Contains($"removed {plain}", stdout);
         Assert.True(Directory.Exists(locked));
         Assert.True(Directory.Exists(t3));
@@ -870,8 +871,10 @@ public sealed class CleanCommandTests : IDisposable
         }
         finally
         {
-            process.Kill();
+            // Let the Git wrapper wait for its child before fixture deletion.
+            process.StandardInput.Close();
             process.WaitForExit();
+            Assert.Equal(0, process.ExitCode);
         }
     }
 

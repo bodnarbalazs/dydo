@@ -162,6 +162,99 @@ and adding a third file is another §5 triage to record, not a routine edit. Rea
 a driver whose logic was never extracted, or widen it past the coverage thresholds, and it becomes
 the escape hatch §1 refuses.
 
+## Amendment 2026-11-04 — platform-scoped Python measurement
+
+Balazs conditionally approved this amendment on 2026-11-04 (DYD-534), subject to fresh independent
+review and full hosted Linux/Windows coverage proof on the candidate before merge. His note:
+“in production the backend will be running on linux either way… I'm not sure if we should run anything on windows unless it's warranted.”
+A project measures on Windows only when it ships code executing natively there, so a
+Linux-deployed backend such as LC's needs no Windows coverage job.
+
+DYD-518 implements that bounded selection. The policy stays line ≥ 80%, branch ≥ 60% per module and HCRAP ≤ 20 per
+method. A native implementation is measured on the operating system where it executes. Linux
+continues to measure every platform-neutral Python module and the neutral remainder of mixed
+modules. Platform selection is measurement ownership, not an exclusion or coverage exemption.
+
+`DynaDocs.Tests/coverage/python-platforms.json` records the selection explicitly: Linux owns
+neutral code; named top-level native callables in `run_tests.py`, `windows_job.py` and
+`skills/engineering/verify-dydo/scripts/owned_process.py` belong to Windows. Their spans include
+nested callables, decorators and defaults. Every other point in those mixed modules remains
+Linux-owned, including configuration, validation, orchestration and module initialization. Each
+mixed source has a normalized UTF-8 SHA-256 pin, so changes require reviewing the selection again.
+Missing sources or callables, source drift, missing selection and unsupported platforms fail closed.
+
+Both hosted jobs run the whole Python suite with ordinary coverage.py and callable monitoring.
+The consumer partitions the complete native line, branch and callable denominator by this
+selection and applies the unchanged policy to each platform's portion of each module. A branch
+belongs to the platform of its origin line; a module-initialization callable is partitioned by its
+body points, retaining its full complexity scores on each measured portion. Static assurance is
+unchanged and still measures every maintained source on each invocation.
+
+Both gates must pass on the same clean PR candidate. Their receipts record all source hashes,
+the selection hash and every point's owner. A dependent union check independently rebuilds the
+Python target inventory, executable points, compiled callable bodies and source metrics from the
+clean checkout matching the reports' commit. It recomputes source and selection hashes and owners,
+checks each platform's actual points, callable bodies and unchanged policy, and rejects matching
+omissions, altered ownership or different candidates. The union job runs even when a native leg
+fails and explicitly fails unless both jobs pass. Native raw coverage and counters remain
+in the artifacts; no point is discarded from the two-platform union. This amends measurement
+placement under §2, without widening the September coverage exemption or changing any threshold.
+
+## Amendment 2026-11-05 — platform-scoped .NET measurement
+
+Balazs ratified this amendment on 2026-11-05
+([DYD-649](https://linear.app/bodnar-balazs/issue/DYD-649)): the two-report hosted union, an
+`ubuntu-24.04` full suite plus a `windows-latest` run of the selected tests, as
+[DYD-558](https://linear.app/bodnar-balazs/issue/DYD-558) implements it in
+[PR 268](https://github.com/BalazsOrg/dydo/pull/268).
+
+This applies the 2026-11-04 principle to .NET: a project measures on Windows only when it ships
+code that executes natively there. dydo ships the Windows statechart runtime: Job Object ownership,
+kernel32 directory primitives and the Windows check and diagnosis paths. The policy is unchanged:
+line ≥ 80% and branch ≥ 60% per module, and HCRAP ≤ 20 per method. Platform selection is
+measurement ownership. It is not an exclusion or a coverage exemption.
+
+`DynaDocs.Tests/coverage/dotnet-platforms.json` records the selection. Linux owns neutral code.
+Named members belong to Windows, by their Roslyn member names, in `Commands/StatechartCommand.cs`,
+`Services/Statechart/StatechartLifetime.cs`, `StatechartRunner.cs`, `WindowsStatechartFiles.cs`,
+`WindowsStatechartJob.cs` and `WindowsStatechartLifetime.cs`. A point belongs to the member whose
+emitted body owns it, so lambdas, local functions and field initializers stay with their member. A
+branch belongs to the platform of its origin line, and a line claimed by both platforms is a
+measurement error. Platform dispatch sites stay neutral and Linux-owned. Where a Windows arm sat
+inside a neutral method, it becomes a behaviour-preserving named member so that it can be selected.
+Each source has an SHA-256 pin with line endings normalized. A missing or drifted selection, a
+missing source and an unsupported platform fail before a campaign starts; so does, on Windows, a
+selected test not declared exactly once. A named member missing from the compiled source inventory
+fails when the join is scoped, after the campaign.
+
+Linux runs the full suite and measures every other point, including the neutral remainder of mixed
+sources. Windows runs only the selection's fourteen named tests, seventeen cases with their theory
+rows, which reach the Windows members. It passes only if every declared test runs, none fails or is
+skipped, and no result falls outside the selection. Each of the fourteen needs at least one executed
+result, with theory rows counting under their method. Linux already measures every point Windows
+does not own, so a full Windows suite would measure nothing more. Both platforms keep the full native join as raw evidence and
+apply the unchanged policy to their own portion.
+
+One hosted job, `dotnet-coverage`, runs the gate on both platforms on the run's own commit,
+`github.sha`, which on a pull request is the merge result, not the PR head: `ubuntu-24.04`
+with the full suite and `windows-latest` with the selected tests. A dependent union check,
+`dotnet-coverage-union`, requires both reports. It rejects a missing report, a failed, incomplete or
+dirty gate, reports from different commits, a Windows receipt without its selected-test count and a
+Linux receipt with one. It then rebuilds the clean commit's complete denominator on Linux: its own
+build, PDB identities and AltCover instrumentation, with no suite and zero hits. It recomputes the
+source and selection hashes and every owner, and requires each report to hold exactly its own
+platform's lines, branches and callables under those hashes and owners, with callable facts matching
+the rebuilt candidate. Matching omissions, altered ownership and a different selection therefore all
+fail. Neither report alone establishes .NET coverage success. This amends measurement placement
+under §2. It does not widen the September coverage exemption or change any threshold.
+
+*Note 2026-11-06: Balazs ratified on 2026-11-06
+([DYD-744](https://linear.app/bodnar-balazs/issue/DYD-744)) that hosted pull-request runs measure
+the merge result, and receipts keep the PR head SHA. The 2026-11-05 text placed the gate on the PR
+head. [DYD-717](https://linear.app/bodnar-balazs/issue/DYD-717) implements the change: every
+`ci.yml` job checks out `github.sha`, and the preflight receipts record `pr_head_sha` and
+`merge_ref_sha`.*
+
 ## Consequences
 
 - `gap_check.py` in each project: one threshold set; HCRAP replaces classic CRAP; per-method

@@ -29,6 +29,42 @@ public static class ConfigFactory
         Match = "new-file"
     };
 
+    /// <summary>
+    /// DYD-499: installing or adding a library or tool needs the user's permission. A warn, so an
+    /// approved install costs one retry. Restoring locked dependencies never matches.
+    /// </summary>
+    public static readonly NudgeConfig InstallNudge = new()
+    {
+        Pattern = @"(?:^|[;&|\n(][ \t]*)(?:sudo[ \t]+(?:-\S+[ \t]+)*)?(?:env[ \t]+)?(?:[A-Za-z_][A-Za-z0-9_]*=[^\s;&|]*[ \t]+)*((?:pnpm|npm|yarn|bun)[ \t]+(?:(?:--(?:filter|dir|prefix|workspace|reporter|config|registry)|-[CFw])[ \t]+[^\s;&|<>]+[ \t]+|(?:--(?:filter|dir|prefix|workspace|reporter|config|registry)|-[CFw])=[^\s;&|<>]+[ \t]+|(?:-r|--recursive|-w|--workspace-root)[ \t]+)*(?:add|dlx|create|update|up|upgrade|link)\b|(?:pnpm|npm|yarn|bun)[ \t]+(?:(?:--(?:filter|dir|prefix|workspace|reporter|config|registry)|-[CFw])[ \t]+[^\s;&|<>]+[ \t]+|(?:--(?:filter|dir|prefix|workspace|reporter|config|registry)|-[CFw])=[^\s;&|<>]+[ \t]+|(?:-r|--recursive|-w|--workspace-root)[ \t]+)*(?:install|i)\b(?=(?:[ \t]+(?:(?:--(?:filter|dir|prefix|workspace|reporter|config|registry)|-[CFw])[ \t]+[^\s;&|<>]+|-(?!-?(?:filter|dir|prefix|workspace|reporter|config|registry)\b)(?![CFw](?:[ \t]|$))[^\s;&|<>]+))*[ \t]+(?![0-9]*[<>])[^-\s;&|<>()#\'""])|(?:npx|pnpx|bunx)[ \t]+(?:-y|--yes|-p|--package)\b|(?:[\w.~/-]*/)?uv[ \t]+(?:add|remove|pip[ \t]+install|tool[ \t]+install)\b|(?:[\w.~/-]*/)?uv[ \t]+run\b(?=[^\n;&|]*[ \t]--with\b)|(?:[\w.~/-]*/)?(?:uvx|pipx)\b|(?:[\w.~/-]*/)?(?:pip[0-9.]*[ \t]+install|(?:python[0-9.]*|py)[ \t]+-m[ \t]+pip[ \t]+install)\b|dotnet[ \t]+(?:add\b|tool[ \t]+(?:install|update)\b|workload[ \t]+install\b|new[ \t]+install\b)|(?:apt(?:-get)?[ \t]+(?:install|reinstall)|snap[ \t]+install|flatpak[ \t]+install|(?:cargo|go|gem|brew)[ \t]+install)\b)",
+        Message = @"Installing or adding a library or tool needs the user's permission ($1). Retry this exact command only if the user explicitly approved this install, in this conversation or in the approved plan/ticket you are executing that names it. Otherwise stop and ask the user. Restoring locked dependencies (pnpm install --frozen-lockfile, npm ci, uv sync --frozen, dotnet restore) needs no permission.",
+        Severity = "warn"
+    };
+
+    /// <summary>
+    /// The review-block nudge's pattern: a <c>gh pr create</c> at a command's start, behind any
+    /// leading <c>NAME=value</c> assignments and an optional <c>env</c> with its options and
+    /// assignments (DYD-736). dydo.json copies of the nudge are matched by it; the guard refreshes a
+    /// copy of <see cref="PreDyd736ReviewBlockPattern"/> to it, and reads a lone, unprefixed
+    /// <c>gh pr create</c>'s in-tree body file for it too (DYD-639, DYD-731 Option A).
+    /// </summary>
+    public const string ReviewBlockPattern =
+        @"(?:^|[;&|]\s*)" + LeadingAssignments + @"(?:env\s+(?:" + EnvOptionTakingAValue + @"\s+[^\s;&|]+\s+|(?!"
+        + EnvOptionTakingAValue + @"\s)-[^\s;&|]*\s+)*" + LeadingAssignments + @")?gh\s+pr\s+create\b(?![\s\S]*Independent review)";
+
+    /// <summary>The review-block pattern dydo.json copies carried before DYD-736: a plain <c>gh</c> only.</summary>
+    public const string PreDyd736ReviewBlockPattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)";
+
+    // Shell assignments before a command: NAME=value. The value's pieces are quoted text, a $(...)
+    // one level deep, ${...}, backticks, an escaped character or a plain one. Each piece opens
+    // differently, so a value has one reading and no input backtracks far.
+    private const string LeadingAssignments =
+        @"(?:[A-Za-z_][A-Za-z0-9_]*=(?:'[^']*'|""(?:[^""\\]|\\[\s\S])*""|`[^`]*`|\$\((?:[^()]|\([^()]*\))*\)|\$\{[^}]*\}"
+        + @"|\\[\s\S]|\$(?![({])|[^\s;&|'""`\\$])*\s+)*";
+
+    // An env option word whose value is the next word: -u, -C, a short cluster ending in one, or
+    // --unset and --chdir. Every other option word stands alone, so each word has one reading.
+    private const string EnvOptionTakingAValue = @"(?:-[^\s;&|-]*(?-i:[uC])|--unset|--chdir)";
+
     public static readonly List<NudgeConfig> DefaultNudges =
     [
         new()
@@ -45,7 +81,7 @@ public static class ConfigFactory
         },
         new()
         {
-            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:check|fix|index|init|graph|guard|completions|complete|validate|map|version|help)\b.*)",
+            Pattern = @"(?:^|[;&|]\s*)dotnet\s+run\b(?:\s+(?:-\w+|--[\w-]+(?:[=\s]\S+)?))*\s+--\s+((?:check|fix|index|init|graph|guard|completions|complete|validate|map|survey|version|help)\b.*)",
             Message = "Don't use dotnet run to invoke dydo - it's already on your PATH. Just use: dydo $1",
             Severity = "block"
         },
@@ -84,10 +120,11 @@ public static class ConfigFactory
         // honest exception costs one retry; DR 042's rule escalates it to block if discipline erodes.
         new()
         {
-            Pattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)",
+            Pattern = ReviewBlockPattern,
             Message = "This PR carries no review block. Add the independent review under an 'Independent review' heading and follow this project's shared Communication and evidence standard.",
             Severity = "warn"
         },
+        InstallNudge,
         DocsOutsideDydoNudge,
     ];
 

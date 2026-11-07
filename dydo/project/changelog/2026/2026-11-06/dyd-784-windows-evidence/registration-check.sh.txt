@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -uo pipefail
+out=/tmp/dyd784-windows-diagnosis-b1ec72
+PWSH=/tmp/dyd622-pwsh/pwsh node --test-reporter=tap "$out/windows-registration.cjs" > "$out/$1.tap" 2>&1
+node_rc=$?
+/tmp/dyd622-pwsh/pwsh -NoProfile -NonInteractive -File .github/workflows/assert-node-tests-ran.ps1 -Tap "$out/$1.tap" -MinimumTests 13 > "$out/$1-guard.log" 2>&1
+guard_rc=$?
+echo "node=$node_rc guard=$guard_rc"
+echo "node=$node_rc guard=$guard_rc" > "$out/$1-exits.txt"
+tail -n 8 "$out/$1.tap"
+exit "$guard_rc"

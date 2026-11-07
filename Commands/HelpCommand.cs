@@ -34,6 +34,7 @@ public static class HelpCommand
         Console.WriteLine();
         Console.WriteLine("Linear Commands:");
         Console.WriteLine("  map [--no-browser]     Serve a read-only map of a Linear Project on localhost");
+        Console.WriteLine("  survey <project>       Print a read-only digest of a Linear Project's lanes");
         Console.WriteLine();
         Console.WriteLine("Workspace Commands:");
         Console.WriteLine("  guard                  Check if action is allowed (for hooks)");
@@ -42,10 +43,16 @@ public static class HelpCommand
         Console.WriteLine("  clean [<worktree>...]  Remove linked worktrees; archives uncommitted work, keeps unmerged branches");
         Console.WriteLine("  clean --all            Every linked worktree (--dry-run first; --archive lists the archive)");
         Console.WriteLine("  pr-ready [path]        Check a PR can be opened: clean tree, HEAD pushed (--body checks the body)");
+        Console.WriteLine("  merge <pr> --match-head-commit <sha> --match-base-commit <sha>");
+        Console.WriteLine("                         Merge a reviewed PR into its feature/* branch (--dry-run checks only)");
         Console.WriteLine();
         Console.WriteLine("Validation Commands:");
         Console.WriteLine("  validate               Validate local configuration and nudges");
         Console.WriteLine("  gap-check [args]       Run the configured coverage gap check");
+        Console.WriteLine("  statechart             Check a TLA+ model or save its prerequisite installation plan");
+        Console.WriteLine("  statechart resume      Install locked prerequisites and continue a saved request");
+        Console.WriteLine("  statechart doctor      Inspect installed statechart assets and local prerequisites offline");
+        Console.WriteLine("  statechart install-skill Install matching statechart skill into an explicit project");
         Console.WriteLine();
         Console.WriteLine("Utility:");
         Console.WriteLine("  completions <shell>    Generate shell completions (bash, zsh, powershell)");

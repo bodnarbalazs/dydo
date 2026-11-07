@@ -2,10 +2,15 @@
 import hashlib
 import re
 import subprocess
+import sys
 import time
 from pathlib import Path
 
 from run_tests import isolated_environment
+
+
+STATIC_GATE_INTERPRETER = (".static-gates/python/"
+                           + ("Scripts/python.exe" if sys.platform == "win32" else "bin/python"))
 
 
 def file_hash(path):

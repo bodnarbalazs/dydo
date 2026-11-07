@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import signal
 import subprocess
 import sys
 import time
@@ -73,8 +74,8 @@ EXECUTION_SECONDS_MAXIMUM = 1800
 
 def runtime_evidence():
     implementation = platform.python_implementation()
-    if os.name != "nt" or implementation != "CPython" or sys.version_info[:2] != (3, 12):
-        raise ValueError("Owner requires Windows CPython 3.12")
+    if os.name != "nt" or implementation != "CPython" or sys.version_info[:2] != (3, 14):
+        raise ValueError("Owner requires Windows CPython 3.14")
     return {"implementation": implementation, "version": list(sys.version_info[:3]),
             "executable": sys.executable,
             "executable_sha256": hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
@@ -334,10 +335,13 @@ def launch(kernel, value, environment, startup, pi):
 
 
 def signaled(kernel, handle, deadline):
-    result = kernel.WaitForSingleObject(handle, max(0, int((deadline - time.monotonic()) * 1000)))
-    if result == 0xffffffff:
-        checked(False)
-    return result == 0
+    while True:
+        remaining = max(0, int((deadline - time.monotonic()) * 1000))
+        result = kernel.WaitForSingleObject(handle, min(200, remaining))
+        if result == 0xffffffff:
+            checked(False)
+        if result != 258 or remaining <= 200:
+            return result == 0
 
 
 def finish(kernel, job, pi, readers, held, deadline):
@@ -364,6 +368,8 @@ def finish(kernel, job, pi, readers, held, deadline):
 def wait_campaign(kernel, job, pi, state, stack, seconds):
     deadline = time.monotonic() + seconds
     while True:
+        if state["interrupted"]["requested"]:
+            raise KeyboardInterrupt
         for reader in state["readers"]:
             poll_pipe(kernel, reader)
         retain_members(kernel, job, state["held"], stack)
@@ -385,6 +391,8 @@ def supervise(kernel, job, pi, state, value, stack):
             failure = "timeout"
     except (OSError, ValueError):
         failure = "observation"
+    except KeyboardInterrupt:
+        failure = "KeyboardInterrupt"
     start = time.monotonic()
     deadline = start + value["teardown_seconds"]
     if failure:
@@ -395,7 +403,7 @@ def supervise(kernel, job, pi, state, value, stack):
     return result
 
 
-def native_run(value, environment, output, result):
+def native_run(value, environment, output, result, interrupted):
     kernel = bindings()
     with ExitStack() as stack:
         job = checked(kernel.CreateJobObjectW(None, None))
@@ -424,7 +432,7 @@ def native_run(value, environment, output, result):
         result["root_identity"] = identity(kernel, pi.process, pi.pid)
         for stream in files[1:]:
             stream.close()
-        state = {"readers": readers, "held": {}}
+        state = {"readers": readers, "held": {}, "interrupted": interrupted}
         result.update(supervise(kernel, job, pi, state, value, stack))
         return result
 
@@ -447,6 +455,22 @@ def preflight():
 
 
 def run(value, environment=None, execution_seconds_maximum=EXECUTION_SECONDS_MAXIMUM):
+    interrupted = {"requested": False}
+
+    def remember_interrupt(_signum, _frame):
+        # Python dispatches handlers on this thread, including during another handler.
+        # Event.set() can deadlock on its own non-reentrant Condition lock.
+        interrupted["requested"] = True
+
+    # Keep signal handlers non-throwing through native handle release and receipt writing.
+    with ExitStack() as stack:
+        for signum in (signal.SIGINT, *([signal.SIGBREAK] if sys.platform == "win32" else [])):
+            previous = signal.signal(signum, remember_interrupt)
+            stack.callback(signal.signal, signum, previous)
+        return _run(value, environment, execution_seconds_maximum, interrupted)
+
+
+def _run(value, environment, execution_seconds_maximum, interrupted):
     started = time.monotonic()
     result = {"version": 1, "owner_id": value.get("owner_id"), "config_sha256": value.get("config_sha256"),
               "helper_sha256": value.get("helper_sha256"), "launch_state": "not_started",
@@ -461,13 +485,18 @@ def run(value, environment=None, execution_seconds_maximum=EXECUTION_SECONDS_MAX
         candidate.mkdir(parents=True, exist_ok=False)
         output = candidate
         result.update(stdout_path=str(output / "stdout.log"), stderr_path=str(output / "stderr.log"), retained_paths=[str(output)])
-        result.update(native_run(value, dict(os.environ) if environment is None else dict(environment), output, result))
+        result.update(native_run(value, dict(os.environ) if environment is None else dict(environment),
+                                 output, result, interrupted))
+    except KeyboardInterrupt:
+        result.update(complete=False, cleanup_confirmed=False, failure_category="KeyboardInterrupt")
     except (OSError, ValueError, AttributeError, TypeError) as error:
         result.update(complete=False, cleanup_confirmed=False)
         result["error_code"] = getattr(error, "winerror", None)
         result["error_message"] = str(error)
         if output is not None:
             result["failure_category"] = "native_failure"
+    if interrupted["requested"]:
+        result.update(complete=False, failure_category="KeyboardInterrupt")
     result["elapsed_seconds"] = time.monotonic() - started
     if output is not None:
         (output / "result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")

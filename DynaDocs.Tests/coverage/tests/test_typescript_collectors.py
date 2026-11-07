@@ -16,6 +16,7 @@ from inventory import git_file_state
 
 TOOLS = Path(__file__).resolve().parents[1]
 REPOSITORY = TOOLS.parents[1]
+STATECHART = "skills/engineering/statechart/scripts"
 DEEP_MODULE = "export const x = 1;\n" + "".join(
     f"if (x > {index}) {{ if (x > {index + 1}) {{ console.log({index}); }} }}\n" for index in range(8))
 
@@ -83,6 +84,20 @@ class TypeScriptCollectorTests(unittest.TestCase):
         self.assertEqual([{"gate": "module-cycle", "members": ["viewer/src/left.ts", "viewer/src/right.ts"]}],
                          answer["findings"])
 
+    def test_runtime_import_conditions_resolve_the_real_vitest_entry(self):
+        shutil.copytree(REPOSITORY / "viewer/node_modules/vitest", self.repository / "node_modules/vitest")
+        relative = "viewer/src/consumer.ts"
+        (self.repository / relative).write_text("import { test } from 'vitest';\n", encoding="utf-8")
+
+        answer = self.collector([relative]).typescript_dependencies()
+
+        self.assertEqual("pass", answer["status"], answer["errors"])
+        module = next(row for row in answer["facts"]["native"]["modules"] if row["source"] == relative)
+        dependency, = module["dependencies"]
+        self.assertEqual("vitest", dependency["module"])
+        self.assertEqual("node_modules/vitest/dist/index.js", dependency["resolved"])
+        self.assertFalse(dependency["couldNotResolve"])
+
     def graph_of(self, identities, sources=("viewer/src/a.ts", "viewer/src/b.ts")):
         """The module graph measured from a dependency-cruiser output listing these module identities."""
         modules = [{"source": name, "dependencies": []} for name in identities]
@@ -115,6 +130,36 @@ class TypeScriptCollectorTests(unittest.TestCase):
                           "severity": "error", "code": "TS2322", "message": "Type 'string' is not assignable."},
                          self.first_finding(output, 2, "viewer_typecheck"))
 
+    def statechart_typecheck(self, stdout, exit_code):
+        """The statechart typecheck against a stand-in tsc printing `stdout`, beside one upstream file."""
+        tsc = self.repository / "viewer/node_modules/typescript/bin/tsc"
+        tsc.parent.mkdir(parents=True, exist_ok=True)
+        tsc.write_text(f"process.stdout.write({json.dumps(stdout)});\nprocess.exit({exit_code});\n", encoding="utf-8")
+        runner = self.collector([f"{STATECHART}/worker.ts"])
+        runner.inventory["excluded"] = [{"path": f"{STATECHART}/pipeline.ts", "reason": "typescript-outside-viewer-src",
+                                         "origin": {"upstream": {"path": "pstack/skills/statechart/scripts/pipeline.ts"}}}]
+        return runner.statechart_typecheck()
+
+    def test_every_statechart_compiler_diagnostic_is_a_finding_but_an_upstream_unused_binding(self):
+        target = f"{STATECHART}/worker.ts(28,50): error TS2769: No overload matches this call.\n"
+        upstream_type = f"{STATECHART}/pipeline.ts(9,3): error TS2322: Type 'string' is not assignable.\n"
+        upstream_unused = f"{STATECHART}/pipeline.ts(7,8): error TS6133: 'Chart' is declared but never read.\n"
+        target_unused = f"{STATECHART}/worker.ts(2,8): error TS6133: 'Buffer' is declared but never read.\n"
+        cases = ((target + "  Overload 1 of 2 gave the following error.\n", 2, "fail", ["worker.ts"], 0),
+                 (upstream_type, 2, "fail", ["pipeline.ts"], 0), (target_unused, 2, "fail", ["worker.ts"], 0),
+                 (upstream_unused, 2, "pass", [], 1), ("", 0, "pass", [], 0), ("", 2, "error", [], 0),
+                 (upstream_unused + "error TS5023: Unknown compiler option 'x'.\n", 1, "error", [], 1))
+        for stdout, exit_code, status, paths, held in cases:
+            with self.subTest(stdout=stdout, exit_code=exit_code):
+                answer = self.statechart_typecheck(stdout, exit_code)
+
+                self.assertEqual(status, answer["status"])
+                self.assertEqual(paths, [Path(row["path"]).name for row in answer["findings"]])
+                self.assertEqual(held, len(answer["facts"]["upstreamUnusedBindings"]))
+        self.assertEqual({"gate": "typescript-build", "path": f"{STATECHART}/worker.ts", "line": "28", "column": "50",
+                          "severity": "error", "code": "TS2769", "message": "No overload matches this call."},
+                         self.statechart_typecheck(target, 2)["findings"][0])
+
     def test_each_lint_message_is_a_finding_and_a_crash_is_a_gap(self):
         report = json.dumps([{"filePath": str(self.repository / "viewer/src/left.ts"),
                               "messages": [{"ruleId": "no-nested-ternary", "severity": 1, "line": 2}]}])
@@ -132,10 +177,10 @@ class TypeScriptCollectorTests(unittest.TestCase):
             return getattr(self.collector([]), method)()["findings"][0]
 
 
-class ViewerKnipTests(unittest.TestCase):
+class TypeScriptKnipTests(unittest.TestCase):
     def test_the_viewer_model_judges_the_whole_package_its_plugins_load(self):
         model = workspace_model(REPOSITORY, ["viewer/src/a.test.ts", "viewer/src/main.tsx", "viewer/vite.config.ts"],
-                                "typescript")
+                                "viewer")
 
         self.assertEqual({".": {"entry": [], "project": []},
                           "../../viewer": {"entry": ["src/a.test.ts", "src/main.tsx"],
@@ -143,25 +188,73 @@ class ViewerKnipTests(unittest.TestCase):
                          model["config"]["workspaces"])
         self.assertEqual(["DynaDocs.Tests/coverage", "viewer"], model["packages"])
 
-    def test_collector_measures_the_real_viewer_graph(self):
+    def test_the_statechart_model_roots_its_tests_and_the_modules_it_runs_by_path(self):
+        model = workspace_model(REPOSITORY, [f"{STATECHART}/{name}" for name in (
+            "checker.ts", "native-entry.ts", "statechart.ts", "test/checker.test.ts", "test/java.ts", "test/tlc.ts",
+            "windows-cleanup.ts", "worker.ts")], "statechart")
+
+        self.assertEqual({"entry": ["native-entry.ts", "statechart.ts", "test/checker.test.ts", "test/java.ts",
+                                    "windows-cleanup.ts", "worker.ts"],
+                          "project": ["checker.ts", "native-entry.ts", "statechart.ts", "test/checker.test.ts",
+                                      "test/java.ts", "test/tlc.ts", "windows-cleanup.ts", "worker.ts"]},
+                         model["config"]["workspaces"]["../../skills/engineering/statechart/scripts"])
+        self.assertEqual(["DynaDocs.Tests/coverage", STATECHART], model["packages"])
+
+    def measure_real(self, paths, graph="viewer", measure=None):
+        """A real TypeScript collector, knip by default, over these repository paths, inventoried as the gate does."""
         from gate_inventory import assemble_inventory
         import gate_adapter
-        paths = [path for path in git_file_state(REPOSITORY)[0] if path.startswith("viewer/")]
         inventory = assemble_inventory(REPOSITORY, paths, [], gate_adapter._ordinary_discovery(REPOSITORY, paths))
         runner = Collectors.__new__(Collectors)
-        runner.root, runner.coverage = REPOSITORY, TOOLS
+        runner.root, runner.coverage, runner.stack = REPOSITORY, TOOLS, graph
         with tempfile.TemporaryDirectory() as folder:
             runner.output = Path(folder)
             runner.log = CommandLog(REPOSITORY, runner.output / "commands")
             runner.inventory = inventory
+            return inventory, (measure or (lambda runner: collect_knip(runner, graph)))(runner)
 
-            answer = collect_knip(runner, "typescript")
+    def test_the_real_statechart_package_typechecks_holding_only_upstream_unused_bindings(self):
+        package = [path for path in git_file_state(REPOSITORY)[0]
+                   if path.startswith(f"{STATECHART}/") and path.endswith(".ts")]
+        inventory, answer = self.measure_real(package, "statechart", Collectors.statechart_typecheck)
+
+        upstream = {row["path"] for row in inventory["excluded"]}
+        self.assertEqual(([], []), (answer["findings"], answer["errors"]))
+        self.assertEqual(set(), {row["path"] for row in answer["facts"]["upstreamUnusedBindings"]} - upstream)
+
+    def test_collector_measures_the_real_viewer_graph(self):
+        inventory, answer = self.measure_real(
+            [path for path in git_file_state(REPOSITORY)[0] if path.startswith("viewer/")])
 
         judged = sorted(row["path"] for row in answer["facts"]["model"]["sources"])
         self.assertEqual([], answer["errors"])
         self.assertEqual(sorted([*(row["path"] for row in inventory["sources"]),
                                  *(row["path"] for row in inventory["excluded"])]), judged)
         self.assertEqual(len(judged), answer["facts"]["native"][1]["counters"]["processed"])
+
+    def test_the_real_statechart_graph_judges_its_targets_and_holds_its_upstream_files(self):
+        package = [path for path in git_file_state(REPOSITORY)[0]
+                   if path.startswith(f"{STATECHART}/") and path.endswith((".ts", ".mjs"))]
+        inventory, answer = self.measure_real(package, "statechart")
+
+        model = answer["facts"]["model"]
+        targets = sorted(row["path"] for row in inventory["sources"] if row["language"] == "typescript")
+        upstream = sorted(row["path"] for row in inventory["excluded"])
+        views = sorted(row["path"] for row in inventory["sources"] if row["language"] == "javascript")
+        self.assertEqual([], answer["errors"])
+        self.assertTrue(targets and upstream and views)
+        self.assertEqual({"count": 0, "paths": []}, model["unjudged"])
+        self.assertEqual(sorted([*upstream, *views]), model["ignored"]["paths"])
+        self.assertEqual(sorted(package), sorted(row["path"] for row in model["sources"]))
+        self.assertEqual(len(package), answer["facts"]["native"][1]["counters"]["processed"])
+
+    def test_the_viewer_graph_leaves_the_statechart_package_to_its_own_stack(self):
+        _, answer = self.measure_real(
+            [path for path in git_file_state(REPOSITORY)[0] if path.endswith((".ts", ".tsx"))])
+
+        self.assertEqual([], answer["errors"])
+        self.assertEqual({"count": 0, "paths": []}, answer["facts"]["model"]["unjudged"])
+        self.assertFalse(any(row["path"].startswith(f"{STATECHART}/") for row in answer["facts"]["model"]["sources"]))
 
 
 if __name__ == "__main__":

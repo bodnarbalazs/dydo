@@ -1,10 +1,13 @@
 namespace DynaDocs.Tests.Commands;
 
 using System.Reflection;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using DynaDocs.Commands;
 using DynaDocs.Models;
+using DynaDocs.Serialization;
 using DynaDocs.Services;
+using DynaDocs.Tests.Services;
 using DynaDocs.Utils;
 
 /// <summary>
@@ -651,8 +654,7 @@ public class GuardCommandTests : IDisposable
         var env = GuardCommand.GuardEnv.Load(_testDir);
         var workspace = env.MarkerDir;  // warn-nudge markers are global, machine-local state (DR-041)
         var pattern = @"dangerous-command";
-        var hash = GuardCommand.ComputeNudgeHash(pattern);
-        var markerPath = Path.Combine(workspace, $".nudge-{hash}");
+        var markerPath = Path.Combine(workspace, GuardCommand.CommandWarnMarkerName(pattern, "dangerous-command"));
 
         WriteConfigWithNudge(pattern, "Don't do that", "warn");
         env = GuardCommand.GuardEnv.Load(_testDir);
@@ -669,8 +671,7 @@ public class GuardCommandTests : IDisposable
         var env = GuardCommand.GuardEnv.Load(_testDir);
         var workspace = env.MarkerDir;
         var pattern = @"dangerous-command";
-        var hash = GuardCommand.ComputeNudgeHash(pattern);
-        var markerPath = Path.Combine(workspace, $".nudge-{hash}");
+        var markerPath = Path.Combine(workspace, GuardCommand.CommandWarnMarkerName(pattern, "dangerous-command"));
 
         WriteConfigWithNudge(pattern, "Don't do that", "warn");
         env = GuardCommand.GuardEnv.Load(_testDir);
@@ -695,8 +696,8 @@ public class GuardCommandTests : IDisposable
         var env = GuardCommand.GuardEnv.Load(_testDir);
 
         var workspace = env.MarkerDir;
-        var markerA = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternA)}");
-        var markerB = Path.Combine(workspace, $".nudge-{GuardCommand.ComputeNudgeHash(patternB)}");
+        var markerA = Path.Combine(workspace, GuardCommand.CommandWarnMarkerName(patternA, "risky-alpha"));
+        var markerB = Path.Combine(workspace, GuardCommand.CommandWarnMarkerName(patternB, "risky-beta"));
 
         GuardCommand.CheckWarnNudges("risky-alpha", env);
 
@@ -748,13 +749,176 @@ public class GuardCommandTests : IDisposable
         WriteConfigWithNudge(pattern, "Prefer the wrapper script.", "notice");
         var env = GuardCommand.GuardEnv.Load(_testDir);
         var markerPath = Path.Combine(
-            env.MarkerDir, $".nudge-{GuardCommand.ComputeNudgeHash(pattern)}");
+            env.MarkerDir, GuardCommand.CommandWarnMarkerName(pattern, "noticeable-command --now"));
 
         var (result, stderr) = RunNudge(() => GuardCommand.CheckBlockNudges("noticeable-command --now", env));
 
         Assert.Null(result);
         Assert.Contains("NOTICE: Prefer the wrapper script.", stderr);
         Assert.False(File.Exists(markerPath), "a notice must not create a pass-through marker");
+    }
+
+    // DYD-499: the shipped library-install nudge, driven through the real default config. These
+    // assert only the contract that holds however the pass-through marker is keyed: the first
+    // attempt warns, the same command retried passes, and a restore never warns.
+    private GuardCommand.GuardEnv LoadEnvWithTheDefaultNudges()
+    {
+        File.WriteAllText(Path.Combine(_testDir, "dydo.json"),
+            JsonSerializer.Serialize(ConfigFactory.CreateDefault(), DydoConfigJsonContext.Default.DydoConfig));
+        return GuardCommand.GuardEnv.Load(_testDir);
+    }
+
+    [Theory]
+    [InlineData("pnpm add left-pad", "pnpm add")]
+    [InlineData("uv add requests", "uv add")]
+    [InlineData("git pull && npm install left-pad", "npm install")]
+    public void InstallNudge_DefaultConfig_BlocksTheFirstAttempt_AndLetsTheSameRetryPass(string command, string named)
+    {
+        var env = LoadEnvWithTheDefaultNudges();
+
+        var (first, firstStderr) = RunNudge(() => GuardCommand.CheckBlockNudges(command, env) ?? GuardCommand.CheckWarnNudges(command, env));
+        var (retry, retryStderr) = RunNudge(() => GuardCommand.CheckBlockNudges(command, env) ?? GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, first);
+        Assert.Contains($"BLOCKED: Installing or adding a library or tool needs the user's permission ({named}).", firstStderr);
+        Assert.Contains("Run the same command again to proceed anyway.", firstStderr);
+        Assert.Null(retry);
+        Assert.Empty(retryStderr);
+    }
+
+    [Theory]
+    [InlineData("pnpm install --frozen-lockfile")]
+    [InlineData("npm ci")]
+    [InlineData("uv sync --frozen")]
+    [InlineData("uv sync --locked")]
+    [InlineData("dotnet restore")]
+    [InlineData("dotnet tool restore")]
+    [InlineData("pnpm install")]
+    [InlineData("npm install")]
+    public void InstallNudge_DefaultConfig_RestoreNeverWarns_AndCreatesNoMarker(string command)
+    {
+        var env = LoadEnvWithTheDefaultNudges();
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckBlockNudges(command, env) ?? GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+        Assert.False(
+            Directory.Exists(env.MarkerDir) && Directory.EnumerateFiles(env.MarkerDir, ".nudge-*").Any(),
+            "a restore must not create a pass-through marker");
+    }
+
+    // DYD-503: a command warn's marker is keyed by the command, so "retry this exact command" holds.
+    private static string InstallMarker(GuardCommand.GuardEnv env, string command) =>
+        Path.Combine(env.MarkerDir, GuardCommand.CommandWarnMarkerName(ConfigFactory.InstallNudge.Pattern, command));
+
+    [Fact]
+    public void CommandWarn_ADifferentCommandAfterAWarn_IsBlockedAndLeavesTheFirstMarker()
+    {
+        var env = LoadEnvWithTheDefaultNudges();
+
+        var (first, _) = RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add left-pad", env));
+        var (other, otherStderr) = RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add other", env));
+
+        Assert.Equal(ExitCodes.ToolError, first);
+        Assert.Equal(ExitCodes.ToolError, other);
+        Assert.Contains("(pnpm add)", otherStderr);
+        Assert.True(File.Exists(InstallMarker(env, "pnpm add other")), "the other command arms its own marker");
+        Assert.True(File.Exists(InstallMarker(env, "pnpm add left-pad")), "the other command must not spend the first marker");
+
+        var (retry, retryStderr) = RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add left-pad", env));
+
+        Assert.Null(retry);
+        Assert.Empty(retryStderr);
+    }
+
+    [Fact]
+    public void CommandWarn_TheIdenticalRetry_SpendsOnlyItsOwnMarker()
+    {
+        var env = LoadEnvWithTheDefaultNudges();
+        RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add left-pad", env));
+        RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add other", env));
+
+        var (retry, _) = RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add left-pad", env));
+
+        Assert.Null(retry);
+        Assert.False(File.Exists(InstallMarker(env, "pnpm add left-pad")), "the retry spends its own marker");
+        Assert.True(File.Exists(InstallMarker(env, "pnpm add other")), "another command's marker stays");
+        Assert.Single(Directory.EnumerateFiles(env.MarkerDir, ".nudge-*"));
+    }
+
+    [Theory]
+    [InlineData("pnpm  add   left-pad", true)]
+    [InlineData("pnpm add\tleft-pad\n", true)]
+    [InlineData("  pnpm add left-pad\r\n", true)]
+    [InlineData("pnpm add Left-Pad", false)]
+    [InlineData("PNPM add left-pad", false)]
+    public void CommandWarn_ARetry_PassesOnlyWhenItIsTheSameCommandUpToWhitespace(string retryCommand, bool passes)
+    {
+        var env = LoadEnvWithTheDefaultNudges();
+        RunNudge(() => GuardCommand.CheckWarnNudges("pnpm add left-pad", env));
+
+        var (retry, _) = RunNudge(() => GuardCommand.CheckWarnNudges(retryCommand, env));
+
+        Assert.Equal(passes ? null : ExitCodes.ToolError, retry);
+    }
+
+    [Theory]
+    [InlineData("pnpm add left-pad", "pnpm add left-pad", true)]
+    [InlineData("pnpm add left-pad", "  pnpm add left-pad  ", true)]
+    [InlineData("pnpm add left-pad", "pnpm\tadd\r\nleft-pad\n", true)]
+    [InlineData("pnpm add left-pad", "pnpm \t add  left-pad", true)]
+    [InlineData("echo 'a  b'", "echo 'a b'", true)]
+    [InlineData("pnpm add left-pad", "pnpm add Left-Pad", false)]
+    [InlineData("pnpm add left-pad", "pnpm add left-pad2", false)]
+    [InlineData("pnpm add left-pad", "pnpm addleft-pad", false)]
+    public void CommandWarnMarkerName_NormalisesWhitespaceOnly(string a, string b, bool same)
+    {
+        var nameA = GuardCommand.CommandWarnMarkerName("p", a);
+        var nameB = GuardCommand.CommandWarnMarkerName("p", b);
+
+        Assert.Equal(same, nameA == nameB);
+    }
+
+    [Fact]
+    public void CommandWarnMarkerName_IsThePatternHashThenTheCommandsSha256Prefix()
+    {
+        Assert.Equal($".nudge-{GuardCommand.ComputeNudgeHash("p")}-e57b95a7a197242d",
+            GuardCommand.CommandWarnMarkerName("p", " pnpm add\tleft-pad\n"));
+    }
+
+    [Fact]
+    public void CommandWarnMarkerName_DiffersByPatternForTheSameCommand()
+    {
+        Assert.NotEqual(
+            GuardCommand.CommandWarnMarkerName("risky-alpha", "risky-alpha risky-beta"),
+            GuardCommand.CommandWarnMarkerName("risky-beta", "risky-alpha risky-beta"));
+    }
+
+    // All-or-nothing across a call's warns: arming one leaves the call blocked on the other, and the
+    // call passes only once both of its command-keyed markers are set, spending both.
+    [Fact]
+    public void CommandWarn_TwoWarnsOnOneCall_BlockUntilBothAreMarked_ThenSpendBoth()
+    {
+        const string command = "risky-alpha risky-beta";
+        WriteConfigWithNudges(("risky-alpha", "Warning A", "warn"), ("risky-beta", "Warning B", "warn"));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var markerA = Path.Combine(env.MarkerDir, GuardCommand.CommandWarnMarkerName("risky-alpha", command));
+        var markerB = Path.Combine(env.MarkerDir, GuardCommand.CommandWarnMarkerName("risky-beta", command));
+        Directory.CreateDirectory(env.MarkerDir);
+        File.WriteAllText(markerA, "armed");
+
+        var (first, firstStderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, first);
+        Assert.DoesNotContain("Warning A", firstStderr);
+        Assert.Contains("BLOCKED: Warning B", firstStderr);
+        Assert.True(File.Exists(markerA) && File.Exists(markerB), "a blocked call spends no marker");
+
+        var (second, _) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Null(second);
+        Assert.False(File.Exists(markerA) || File.Exists(markerB), "the passing call spends both markers");
     }
 
     private static (int? Result, string Stderr) RunNudge(Func<int?> check)
@@ -785,10 +949,62 @@ public class GuardCommandTests : IDisposable
         WriteConfigWithNudges((pattern, message, severity));
     }
 
+    [Theory]
+    [InlineData("CheckBlockNudges")]
+    [InlineData("CheckWarnNudges")]
+    public void NudgeBudgetExhaustion_IsAlwaysAHardRefusal(string check)
+    {
+        WriteConfigWithNudges(("echo", "a warning", "warn"));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var type = typeof(GuardCommand).GetNestedType("NudgeMatching", BindingFlags.NonPublic)!;
+        var matching = Activator.CreateInstance(type, "echo x", ShellDialect.Unknown)!;
+        type.GetField("_elapsed", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .SetValue(matching, TimeSpan.FromMilliseconds(250));
+        var method = typeof(GuardCommand).GetMethod(check, BindingFlags.NonPublic | BindingFlags.Static)!;
+        object[] arguments = check == "CheckBlockNudges"
+            ? ["echo x", env, ShellDialect.Unknown, null!, matching]
+            : ["echo x", env, false, ShellDialect.Unknown, null!, matching];
+        var result = RunNudge(() => (int?)method.Invoke(null, arguments));
+        Assert.Equal(ExitCodes.ToolError, result.Result);
+        Assert.Contains("Command too complex to verify safely", result.Stderr);
+    }
+
+    [Fact]
+    public void NudgeMatchers_KeepTheTimeoutAndOriginalCaptures()
+    {
+        var compile = typeof(GuardCommand).GetMethod("CompileNudgePattern", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var patterns = ConfigFactory.DefaultNudges.Select(nudge => nudge.Pattern).Append("(a+)+$");
+        foreach (var pattern in patterns)
+        {
+            var original = new Regex(pattern, RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(250));
+            var changed = (Regex)compile.Invoke(null, [pattern])!;
+            Assert.Equal(TimeSpan.FromMilliseconds(250), changed.MatchTimeout);
+            foreach (var command in NudgeMatcherInputs())
+            {
+                var before = original.Match(command);
+                var after = changed.Match(command);
+                Assert.Equal((before.Success, before.Index, before.Length), (after.Success, after.Index, after.Length));
+                Assert.Equal(before.Groups.Cast<Group>().Select(group => group.Value), after.Groups.Cast<Group>().Select(group => group.Value));
+                Assert.Equal(before.Groups.Cast<Group>().SelectMany(group => group.Captures.Cast<Capture>()).Select(capture => (capture.Index, capture.Length, capture.Value)),
+                    after.Groups.Cast<Group>().SelectMany(group => group.Captures.Cast<Capture>()).Select(capture => (capture.Index, capture.Length, capture.Value)));
+            }
+        }
+    }
+
+    private static IEnumerable<string> NudgeMatcherInputs()
+    {
+        string[] programs = ["npx", "dotnet", "dotnet tool run", "dotnet run", "bash", "python", "pwsh",
+            "tail", "while true; do", "gh pr create", "npm install", "uv run"];
+        foreach (var program in programs)
+        foreach (var flags in new[] { "", "--foo ", "--foo --bar ", "-x ", "--filter p ", "-- ", "-f " })
+        foreach (var tail in new[] { "dydo check", "'dydo check'", "sleep 1", "x", "--with pkg", "Independent review" })
+            yield return program + " " + flags + tail;
+    }
+
     private void WriteConfigWithNudges(params (string Pattern, string Message, string Severity)[] nudges)
     {
         var nudgeJson = string.Join(",\n          ",
-            nudges.Select(n => $$"""{"pattern": "{{n.Pattern.Replace("\\", "\\\\")}}", "message": "{{n.Message}}", "severity": "{{n.Severity}}"}"""));
+            nudges.Select(n => $$"""{"pattern": {{JsonSerializer.Serialize(n.Pattern)}}, "message": {{JsonSerializer.Serialize(n.Message)}}, "severity": "{{n.Severity}}"}"""));
 
         File.WriteAllText(Path.Combine(_testDir, "dydo.json"), $$"""
             {
@@ -830,6 +1046,703 @@ public class GuardCommandTests : IDisposable
 
         var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(
             "gh pr create --body '## Independent review - rubric: code, verdict: PASS'", env));
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Theory]
+    [InlineData("rg -n 'docs: checks pass; gh pr create follows' docs")]
+    [InlineData("git grep -n -E 'build && gh pr create --draft'")]
+    [InlineData("cat > notes.md <<'EOF'\nthen; gh pr create --fill\nEOF")]
+    public void ReviewBlockNudge_PrCreateInTextACommandReads_StaysSilent(string command)
+    {
+        var nudge = ReviewBlockNudge();
+        WriteConfigWithNudges((nudge.Pattern, "Paste the review block.", nudge.Severity));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Theory]
+    [InlineData("echo ok && gh pr create --title x --body 'ships the fix'")]
+    [InlineData("git push; gh pr create --fill")]
+    [InlineData("git commit -m \"docs: checks pass; gh pr create follows\"")]
+    [InlineData("echo 'build && gh pr create --draft'")]
+    public void ReviewBlockNudge_PrCreateAfterASeparator_StillWarns(string command)
+    {
+        var nudge = ReviewBlockNudge();
+        WriteConfigWithNudges((nudge.Pattern, "Paste the review block.", nudge.Severity));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("BLOCKED: Paste the review block.", stderr);
+    }
+
+    // DYD-736: the review-block pattern dydo.json copies carried before it read past leading
+    // assignments and env. The guard refreshes such a copy to the current pattern.
+    private const string PreDyd736ReviewBlockPattern = @"(?:^|[;&|]\s*)gh\s+pr\s+create\b(?![\s\S]*Independent review)";
+
+    // The shipped nudge as dydo init writes it, or a dydo.json still holding the pre-DYD-736 copy.
+    private GuardCommand.GuardEnv LoadEnvWithTheReviewBlockNudge(bool preDyd736Copy)
+    {
+        if (!preDyd736Copy)
+            return LoadEnvWithTheDefaultNudges();
+        var nudge = ReviewBlockNudge();
+        WriteConfigWithNudges((PreDyd736ReviewBlockPattern, nudge.Message, nudge.Severity));
+        return GuardCommand.GuardEnv.Load(_testDir);
+    }
+
+    public static TheoryData<bool, string> PrefixedPrCreates()
+    {
+        string[] prefixes =
+        [
+            "FOO=1 ", "FOO=1 BAR=two ", "GH_PROMPT_DISABLED='1' ", "TITLE=\"a b\" ",
+            "env ", "env -i ", "env -u GH_TOKEN ", "env -- ", "env GH_TOKEN=x ",
+            "env -i -u GH_TOKEN -- GH_REPO=acme/lc ", "env --unset=GH_TOKEN FOO=1 ", "FOO=1 env ",
+            "git push && FOO=1 ", "git push; env -i ",
+            // Round 1 B1: values bash expands or escapes still lead a gh pr create.
+            "GH_TOKEN=$(printf token) ", "GH_TOKEN=$(cat token.txt | tr -d x) ", "TITLE=${BASE}-notes ", "TITLE=${NAME:-release notes} ",
+            "GH_REPO=$REPO ", "GH_TOKEN=`printf token` ", "TITLE=release\\ notes ", "TITLE=\"$(printf 'a b')\" ",
+            "env GH_TOKEN=$(printf token) ", "env -iu GH_TOKEN ",
+        ];
+        var data = new TheoryData<bool, string>();
+        foreach (var copy in new[] { false, true })
+            foreach (var prefix in prefixes)
+                data.Add(copy, prefix);
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(PrefixedPrCreates))]
+    public void ReviewBlockNudge_PrCreateBehindAssignmentsOrEnv_WarnsOnceWithTheShippedMessage(bool preDyd736Copy, string prefix)
+    {
+        var env = LoadEnvWithTheReviewBlockNudge(preDyd736Copy);
+        var command = prefix + "gh pr create --title x --body 'ships the fix'";
+
+        var (first, firstStderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+        var (retry, retryStderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, first);
+        Assert.Contains($"BLOCKED: {ReviewBlockNudge().Message}", firstStderr);
+        Assert.Contains("Run the same command again to proceed anyway.", firstStderr);
+        Assert.Null(retry);
+        Assert.Empty(retryStderr);
+    }
+
+    [Theory]
+    [MemberData(nameof(PrefixedPrCreates))]
+    public void ReviewBlockNudge_PrCreateBehindAssignmentsOrEnvCarryingTheBlock_StaysSilent(bool preDyd736Copy, string prefix)
+    {
+        var env = LoadEnvWithTheReviewBlockNudge(preDyd736Copy);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(
+            prefix + "gh pr create --body '## Independent review - rubric: code, verdict: PASS'", env));
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Theory]
+    [InlineData("echo env gh pr create --fill")]
+    [InlineData("echo FOO=1 gh pr create --fill")]
+    [InlineData("echo env -i FOO=1 gh pr create --fill")]
+    [InlineData("rg -n 'checks pass; env gh pr create follows' docs")]
+    [InlineData("rg -n 'checks pass; FOO=1 gh pr create follows' docs")]
+    [InlineData("git status # then; env gh pr create --fill")]
+    [InlineData("cat > notes.md <<'EOF'\nthen; FOO=1 env gh pr create --fill\nEOF")]
+    [InlineData("environment gh pr create --fill")]
+    [InlineData("FOO=1 ghx pr create --fill")]
+    // Round 1 N2: an option taking a value consumes the next word, so gh is the variable unset.
+    [InlineData("env -u gh pr create --fill")]
+    [InlineData("env -C gh pr create --fill")]
+    [InlineData("env -iu gh pr create --fill")]
+    [InlineData("env --unset gh pr create --fill")]
+    public void ReviewBlockNudge_PrefixedPrCreateThatDoesNotRun_StaysSilent(string command)
+    {
+        var env = LoadEnvWithTheReviewBlockNudge(preDyd736Copy: false);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Fact]
+    public void MergeSystemNudges_PreDyd736ReviewBlockCopy_TakesTheCurrentPatternAndKeepsItsSettings()
+    {
+        var copy = new NudgeConfig { Pattern = PreDyd736ReviewBlockPattern, Message = "Custom review text.", Severity = "block", Audience = "worker" };
+
+        var merged = GuardCommand.MergeSystemNudges([copy]);
+
+        var nudge = Assert.Single(merged, n => n.Pattern.Contains(@"pr\s+create"));
+        Assert.Equal(ConfigFactory.ReviewBlockPattern, nudge.Pattern);
+        Assert.Equal(("Custom review text.", "block", "worker"), (nudge.Message, nudge.Severity, nudge.Audience));
+    }
+
+    [Fact]
+    public void MergeSystemNudges_PreDyd736CopyBesideTheCurrentOne_KeepsOneReviewBlockNudge()
+    {
+        var current = ReviewBlockNudge();
+        var copy = new NudgeConfig { Pattern = PreDyd736ReviewBlockPattern, Message = current.Message, Severity = current.Severity };
+
+        var merged = GuardCommand.MergeSystemNudges([ConfigFactory.Copy(current), copy]);
+
+        Assert.Single(merged, n => n.Pattern.Contains(@"pr\s+create"));
+    }
+
+    // Round 1 N1: when a dydo.json holds both copies, the stricter one survives on the current pattern.
+    [Theory]
+    [InlineData("block", "warn", "block", "Old copy.")]
+    [InlineData("warn", "notice", "warn", "Old copy.")]
+    [InlineData("notice", "warn", "warn", "Current copy.")]
+    [InlineData("warn", "warn", "warn", "Current copy.")]
+    public void MergeSystemNudges_PreDyd736CopyBesideTheCurrentOne_KeepsTheStricterCopy(
+        string oldSeverity, string currentSeverity, string severity, string message)
+    {
+        var current = new NudgeConfig { Pattern = ConfigFactory.ReviewBlockPattern, Message = "Current copy.", Severity = currentSeverity };
+        var copy = new NudgeConfig { Pattern = PreDyd736ReviewBlockPattern, Message = "Old copy.", Severity = oldSeverity };
+
+        var merged = GuardCommand.MergeSystemNudges([current, copy]);
+
+        var nudge = Assert.Single(merged, n => n.Pattern.Contains(@"pr\s+create"));
+        Assert.Equal(ConfigFactory.ReviewBlockPattern, nudge.Pattern);
+        Assert.Equal((message, severity), (nudge.Message, nudge.Severity));
+    }
+
+    [Fact]
+    public void ReviewBlockNudge_DydoJsonWithABlockingPreDyd736CopyBesideTheCurrentOne_Blocks()
+    {
+        WriteConfigWithNudges(
+            (ConfigFactory.ReviewBlockPattern, ReviewBlockNudge().Message, "warn"),
+            (PreDyd736ReviewBlockPattern, "Paste the review block.", "block"));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckBlockNudges("FOO=1 gh pr create --fill", env));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("BLOCKED: Paste the review block.", stderr);
+    }
+
+    #endregion
+
+    #region Command Nudges Read Only What Runs (DYD-406 GS-03)
+
+    // Each letter belongs to that occurrence, including identical text in different bodies.
+    [Theory]
+    [InlineData("F01-data", "Posix", "cat <<'EOF'\ntail -f app.log\nEOF", "D")]
+    [InlineData("F01-shell", "Posix", "bash <<'EOF'\ntail -f app.log\nEOF", "C")]
+    [InlineData("F02", "Posix", "cat <<'EOF' | bash\ntail -f app.log\nEOF", "C")]
+    [InlineData("F03", "Posix", "cat <<'EOF' | unknown-wrapper\ntail -f app.log\nEOF", "C")]
+    [InlineData("F04-data", "PowerShell", "Write-Output @'\ntail -f app.log\n'@", "D")]
+    [InlineData("F04-code", "PowerShell", "Write-Output @'\ntail -f app.log\n'@ | Invoke-Expression", "C")]
+    [InlineData("F05", "PowerShell", "Write-Output @'\ntail -f app.log\n'@ | pwsh -Command -", "C")]
+    [InlineData("F06-posix", "Posix", "echo @'\nx'; tail -f app.log; echo '\n'@", "C")]
+    [InlineData("F06-unknown", "Unknown", "echo @'\nx'; tail -f app.log; echo '\n'@", "C")]
+    [InlineData("F06-literal", "Posix", "echo @'\n$(tail -f app.log)\n'@", "D")]
+    [InlineData("F07-ps", "PowerShell", "echo @'\nx'; tail -f app.log; echo '\n'@", "D")]
+    [InlineData("F07-apostrophe", "PowerShell", "Write-Output @'\nIt's ready; tail -f app.log\n'@", "D")]
+    [InlineData("F08-posix", "Posix", "echo @'\nx' tail -f app.log 'y\n'@", "C")]
+    [InlineData("F08-unknown", "Unknown", "echo @'\nx' tail -f app.log 'y\n'@", "C")]
+    [InlineData("F09-data", "Posix", "cat <<'EOF' | grep -v x | tee notes.md\ntail -f app.log\nEOF", "D")]
+    [InlineData("F09-code", "Posix", "cat <<'EOF' | grep -v x | bash\ntail -f app.log\nEOF", "C")]
+    [InlineData("F09-unknown", "Posix", "cat <<'EOF' | grep -v x | unknown-wrapper\ntail -f app.log\nEOF", "C")]
+    [InlineData("F10-data", "PowerShell", "Write-Output @'\ntail -f app.log\n'@ | Out-File notes.md", "D")]
+    [InlineData("F10-unknown", "PowerShell", "Write-Output @'\ntail -f app.log\n'@ | Out-File notes.md | unknown-wrapper", "C")]
+    [InlineData("F11-pending", "Posix", "cat <<'EOF' |\ntail -f app.log\nEOF\nbash", "C")]
+    [InlineData("F11-continuation", "Posix", "cat <<'EOF' \\\n| bash\ntail -f app.log\nEOF", "C")]
+    [InlineData("F11-next-line", "PowerShell", "Write-Output @'\ntail -f app.log\n'@\n| Invoke-Expression", "C")]
+    [InlineData("F12-brace", "Posix", "{\ncat <<'EOF'\ntail -f app.log\nEOF\n} | bash", "C")]
+    [InlineData("F12-paren", "Posix", "(\ncat <<'EOF'\ntail -f app.log\nEOF\n) | bash", "C")]
+    [InlineData("F12-redirect", "Posix", "cat <<'EOF' > >(bash)\ntail -f app.log\nEOF", "C")]
+    [InlineData("F12-tee", "Posix", "cat <<'EOF' | tee >(bash)\ntail -f app.log\nEOF", "C")]
+    [InlineData("F13-data", "Posix", "cat <<< 'tail -f app.log'", "D")]
+    [InlineData("F13-code", "Posix", "cat <<< 'tail -f app.log' | bash", "C")]
+    [InlineData("F13-unknown", "Posix", "cat <<< 'tail -f app.log' | unknown-wrapper", "C")]
+    [InlineData("F14-single", "Posix", "cat > notes.md <<'END-OF-FILE'\ntail -f app.log\nEND-OF-FILE", "D")]
+    [InlineData("F14-double", "Posix", "cat > notes.md <<\"END-OF-FILE\"\ntail -f app.log\nEND-OF-FILE", "D")]
+    [InlineData("F14-tabs", "Posix", "cat > notes.md <<-'END-OF-FILE'\n\ttail -f app.log\n\tEND-OF-FILE", "D")]
+    [InlineData("F14-crlf", "Posix", "cat > notes.md <<'END-OF-FILE'\r\ntail -f app.log\r\nEND-OF-FILE", "D")]
+    [InlineData("F15-data", "Posix", "cat > a.md <<'A'\ntail -f app.log\nA\ncat > b.md <<'B'\ntail -f app.log\nB", "DD")]
+    [InlineData("F15-code", "Posix", "cat > a.md <<'A'\ntail -f app.log\nA\ncat <<'B' | bash\ntail -f app.log\nB", "DC")]
+    [InlineData("F16-after", "Posix", "cat > notes.md <<'EOF' # don't expand\ntail -f app.log\nEOF\ntail -f real.log", "DC")]
+    [InlineData("F16-closing", "PowerShell", "Write-Output @'\ntail -f app.log\n'@; tail -f real.log", "DC")]
+    [InlineData("F16-opener", "Posix", "cat tail --follow <<'EOF'\nplain\nEOF", "C")]
+    [InlineData("F19-dollar", "Posix", "cat <<EOF\n$(tail -f app.log)\nEOF", "C")]
+    [InlineData("F19-backtick", "Posix", "cat <<EOF\n`tail -f app.log`\nEOF", "C")]
+    [InlineData("F19-ps", "PowerShell", "Write-Output @\"\n$(tail -f app.log)\n\"@", "C")]
+    [InlineData("F19-literal-bash", "Posix", "cat <<'EOF'\n$(tail -f app.log)\nEOF", "D")]
+    [InlineData("F19-literal-ps", "PowerShell", "Write-Output @'\n$(tail -f app.log)\n'@", "D")]
+    [InlineData("F20-apostrophes", "Posix", "cat <<EOF\nit's $(tail -f app.log) you're\nEOF", "C")]
+    [InlineData("F20-nested", "Posix", "cat <<OUT\n$(cat <<'IN'\ntail -f data.log\nIN\ntail -f real.log\n)\nOUT", "DC")]
+    [InlineData("F21-script", "Posix", "bash -c 'cat <<EOF\ntail -f app.log\nEOF'", "D")]
+    [InlineData("F21-unknown", "Posix", "unknown-wrapper 'cat <<EOF\ntail -f app.log\nEOF'", "C")]
+    [InlineData("F22-heredoc", "Posix", "cat <<'EOF'\ntail -f app.log", "C")]
+    [InlineData("F22-missing", "PowerShell", "Write-Output @'\ntail -f app.log", "C")]
+    [InlineData("F22-attached", "PowerShell", "Write-Output @'\ntext\n'@tail -f app.log", "C")]
+    [InlineData("F22-suffix", "PowerShell", "Write-Output @'\ntail -f app.log\n'@suffix", "C")]
+    [InlineData("F22-dash", "PowerShell", "Write-Output @'\ntail -f app.log\n'@-suffix", "C")]
+    [InlineData("F23-end", "PowerShell", "Write-Output @'\ntail -f app.log\n'@", "D")]
+    [InlineData("F23-space", "PowerShell", "Write-Output @'\ntail -f app.log\n'@ ", "D")]
+    [InlineData("F23-tab", "PowerShell", "Write-Output @'\ntail -f app.log\n'@\t", "D")]
+    [InlineData("F23-sequence", "PowerShell", "Write-Output @'\ntail -f app.log\n'@; Write-Output ready", "D")]
+    [InlineData("F23-pipe", "PowerShell", "Write-Output @'\ntail -f app.log\n'@ | Out-File notes.md", "D")]
+    [InlineData("P02-comment", "Posix", "echo ready # tail -f app.log\ntail -f real.log", "DC")]
+    [InlineData("P02-collision", "Posix", "cat <<'EOF'\n\u0001 tail -f app.log\nEOF", "C")]
+    public void Gs03_ContextBody_Occurrences(string id, string shell, string command, string decisions)
+    {
+        var counts = BashCommandAnalyzer.NudgeClassifier(command, Enum.Parse<ShellDialect>(shell));
+        var actual = new string(Regex.Matches(command, @"tail\s+(?:-f|--follow)\b").Cast<Match>()
+            .Select(match => counts(match.Index) ? 'C' : 'D')
+            .ToArray());
+        Assert.Equal(id + ":" + decisions, id + ":" + actual);
+    }
+
+    [Theory]
+    [InlineData("H01-posix", "Posix", "echo @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@", "C")]
+    [InlineData("H02-unknown", "Unknown", "echo @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@", "C")]
+    [InlineData("H03-data", "Posix", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@", "D")]
+    [InlineData("H04-child-quotes", "Posix", "echo @\"\n$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\n\"@", "D")]
+    [InlineData("H05-code", "Posix", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@ | bash", "C")]
+    [InlineData("H06-unknown-consumer", "Posix", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@ | unknown-wrapper", "C")]
+    [InlineData("H07-malformed", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@suffix", "C")]
+    [InlineData("H08-data", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@", "D")]
+    [InlineData("H09-child-quotes", "PowerShell", "Write-Output @\"\n$(Write-Output @'\nIt's \"ready\"; tail -f app.log\n'@\n)\n\"@", "D")]
+    [InlineData("H10-code", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@ | Invoke-Expression", "C")]
+    [InlineData("H11-unknown-consumer", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@ | unknown-wrapper", "C")]
+    [InlineData("H12-dash-suffix", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@-suffix", "C")]
+    [InlineData("H13-space", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@ ", "D")]
+    [InlineData("H13-tab", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@\t", "D")]
+    [InlineData("H14-later-launch", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@; tail -f real.log", "DC")]
+    [InlineData("H15-backtick-data", "Posix", "echo @\"\n`cat <<'IN'\ntail -f app.log\nIN\n`\n\"@", "D")]
+    [InlineData("H15-backtick-code", "Posix", "echo @\"\n`cat <<'IN'\ntail -f app.log\nIN\n`\n\"@ | bash", "C")]
+    [InlineData("H16-identical-children", "Posix", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@", "DD")]
+    [InlineData("H17-sibling-quotes-unknown", "Posix", "echo @\"\n$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@ | unknown-wrapper", "CC")]
+    [InlineData("H18-stdin-data", "Posix", "bash <<'OUT'\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\nOUT", "D")]
+    [InlineData("H18-stdin-code", "Posix", "bash <<'OUT' | bash\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\nOUT", "C")]
+    [InlineData("H18-stdin-unknown", "Posix", "bash <<'OUT' | unknown-wrapper\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\nOUT", "C")]
+    [InlineData("H19-script-data", "Posix", "bash -c \"echo @\\\"\n\\$(cat <<'IN'\ntail -f app.log\nIN\n)\n\\\"@\"", "D")]
+    [InlineData("H19-script-code", "Posix", "bash -c \"echo @\\\"\n\\$(cat <<'IN'\ntail -f app.log\nIN\n)\n\\\"@\" | bash", "C")]
+    [InlineData("H20-script-ps-data", "Posix", "pwsh -Command \"Write-Output @\\\"\n\\$(Write-Output @'\ntail -f app.log\n'@\n)\n\\\"@\"", "D")]
+    [InlineData("H20-script-ps-unknown", "Posix", "pwsh -Command \"Write-Output @\\\"\n\\$(Write-Output @'\ntail -f app.log\n'@\n)\n\\\"@\" | unknown-wrapper", "C")]
+    [InlineData("H21-data-then-unsafe", "Posix", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\necho @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@", "DC")]
+    [InlineData("H21-unsafe-then-data", "Posix", "echo @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@", "CD")]
+    [InlineData("H22-child-launch", "Posix", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\ntail -f real.log\n)\n\"@", "DC")]
+    [InlineData("H23-child-launch-code", "Posix", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\ntail -f real.log\n)\n\"@ | bash", "CC")]
+    [InlineData("H24-crlf-posix", "Posix", "echo @\"\r\n$(cat <<'IN'\r\ntail -f app.log\r\nIN\r\n)\r\n\"@", "D")]
+    [InlineData("H24-crlf-powershell", "PowerShell", "Write-Output @\"\r\n$(Write-Output @'\r\ntail -f app.log\r\n'@\r\n)\r\n\"@", "D")]
+    [InlineData("H25-capture-stdin-data", "Posix", "echo @\"\n$(bash <<'MID'\ncat <<'IN'\ntail -f app.log\nIN\nMID\n)\n\"@", "D")]
+    [InlineData("H25-capture-stdin-code", "Posix", "echo @\"\n$(bash <<'MID'\ncat <<'IN'\ntail -f app.log\nIN\nMID\n)\n\"@ | bash", "C")]
+    [InlineData("H26-hereword-data", "Posix", "cat <<< \"$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\"", "D")]
+    [InlineData("H26-hereword-code", "Posix", "cat <<< \"$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\" | bash", "C")]
+    [InlineData("H27-two-captures-data", "Posix", "cat <<OUTER\n$(cat <<MIDDLE\n$(cat <<'INNER'\ntail -f app.log\nINNER\n)\nMIDDLE\n)\nOUTER", "D")]
+    [InlineData("H27-two-captures-code", "Posix", "cat <<OUTER | bash\n$(cat <<MIDDLE\n$(cat <<'INNER'\ntail -f app.log\nINNER\n)\nMIDDLE\n)\nOUTER", "C")]
+    public void Gs03_HostEdge_Occurrences(string id, string shell, string command, string decisions) =>
+        Gs03_ContextBody_Occurrences(id, shell, command, decisions);
+
+    [Theory]
+    [InlineData("H04-child-quotes-capture-notice", "Posix", "echo @\"\n$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\n\"@", "notice", -1, 0, null)]
+    [InlineData("H04-child-quotes-capture-warn", "Posix", "echo @\"\n$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\n\"@", "warn", -1, 0, null)]
+    [InlineData("H04-child-quotes-capture-block", "Posix", "echo @\"\n$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\n\"@", "block", -1, 0, null)]
+    [InlineData("H09-child-quotes-capture-notice", "PowerShell", "Write-Output @\"\n$(Write-Output @'\nIt's \"ready\"; tail -f app.log\n'@\n)\n\"@", "notice", -1, 0, null)]
+    [InlineData("H09-child-quotes-capture-warn", "PowerShell", "Write-Output @\"\n$(Write-Output @'\nIt's \"ready\"; tail -f app.log\n'@\n)\n\"@", "warn", -1, 0, null)]
+    [InlineData("H09-child-quotes-capture-block", "PowerShell", "Write-Output @\"\n$(Write-Output @'\nIt's \"ready\"; tail -f app.log\n'@\n)\n\"@", "block", -1, 0, null)]
+    [InlineData("H14-later-launch-capture-notice", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@; tail -f real.log", "notice", 59, 16, "real.log")]
+    [InlineData("H14-later-launch-capture-warn", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@; tail -f real.log", "warn", 59, 16, "real.log")]
+    [InlineData("H14-later-launch-capture-block", "PowerShell", "Write-Output @\"\n$(Write-Output @'\ntail -f app.log\n'@\n)\n\"@; tail -f real.log", "block", 59, 16, "real.log")]
+    [InlineData("H17-sibling-quotes-unknown-capture-notice", "Posix", "echo @\"\n$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@ | unknown-wrapper", "notice", 35, 15, "app.log")]
+    [InlineData("H17-sibling-quotes-unknown-capture-warn", "Posix", "echo @\"\n$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@ | unknown-wrapper", "warn", 35, 15, "app.log")]
+    [InlineData("H17-sibling-quotes-unknown-capture-block", "Posix", "echo @\"\n$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@ | unknown-wrapper", "block", 35, 15, "app.log")]
+    [InlineData("H21-data-then-unsafe-capture-notice", "Posix", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\necho @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@", "notice", 68, 15, "app.log")]
+    [InlineData("H21-data-then-unsafe-capture-warn", "Posix", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\necho @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@", "warn", 68, 15, "app.log")]
+    [InlineData("H21-data-then-unsafe-capture-block", "Posix", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@\necho @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@", "block", 68, 15, "app.log")]
+    [InlineData("H21-unsafe-then-data-capture-notice", "Posix", "echo @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@", "notice", 23, 15, "app.log")]
+    [InlineData("H21-unsafe-then-data-capture-warn", "Posix", "echo @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@", "warn", 23, 15, "app.log")]
+    [InlineData("H21-unsafe-then-data-capture-block", "Posix", "echo @\"\n\" $(cat <<'IN'\ntail -f app.log\nIN\n) | bash; echo \"\n\"@\necho @\"\n$(cat <<'IN'\ntail -f app.log\nIN\n)\n\"@", "block", 23, 15, "app.log")]
+    [InlineData("H22-child-launch-capture-notice", "Posix", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\ntail -f real.log\n)\n\"@", "notice", 40, 16, "real.log")]
+    [InlineData("H22-child-launch-capture-warn", "Posix", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\ntail -f real.log\n)\n\"@", "warn", 40, 16, "real.log")]
+    [InlineData("H22-child-launch-capture-block", "Posix", "echo @\"\n$(cat <<'IN'\ntail -f app.log\nIN\ntail -f real.log\n)\n\"@", "block", 40, 16, "real.log")]
+    [InlineData("H26-hereword-data-capture-notice", "Posix", "cat <<< \"$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\"", "notice", -1, 0, null)]
+    [InlineData("H26-hereword-data-capture-warn", "Posix", "cat <<< \"$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\"", "warn", -1, 0, null)]
+    [InlineData("H26-hereword-data-capture-block", "Posix", "cat <<< \"$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\"", "block", -1, 0, null)]
+    [InlineData("H26-hereword-code-capture-notice", "Posix", "cat <<< \"$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\" | bash", "notice", 36, 15, "app.log")]
+    [InlineData("H26-hereword-code-capture-warn", "Posix", "cat <<< \"$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\" | bash", "warn", 36, 15, "app.log")]
+    [InlineData("H26-hereword-code-capture-block", "Posix", "cat <<< \"$(cat <<'IN'\nIt's \"ready\"; tail -f app.log\nIN\n)\" | bash", "block", 36, 15, "app.log")]
+    public void Gs03_HostEdge_OriginalMatchSeverityAndRetry(string id, string shell, string command,
+        string severity, int expectedIndex, int expectedLength, string? capture)
+    {
+        const string pattern = @"tail\s+(?:-f|--follow)\s+(.*)";
+        var dialect = Enum.Parse<ShellDialect>(shell);
+        var selector = typeof(GuardCommand).GetMethod("FirstRunningMatch", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var context = selector.GetParameters()[2].ParameterType;
+        var argument = context.IsEnum ? (object)dialect : Activator.CreateInstance(context, command, dialect)!;
+        var selected = (Match?)selector.Invoke(null, [new Regex(pattern, RegexOptions.IgnoreCase), command, argument]);
+        Assert.Equal(expectedIndex, selected?.Index ?? -1);
+        Assert.Equal(expectedLength, selected?.Length ?? 0);
+        Assert.Equal(capture, selected?.Groups[1].Value);
+        WriteConfigWithNudges((pattern, "selected:$1", severity));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        int? Check() => GuardCommand.CheckBlockNudges(command, env, dialect)
+            ?? GuardCommand.CheckWarnNudges(command, env, shell: dialect);
+        var first = RunNudge(Check);
+        var retry = RunNudge(Check);
+        var prefix = severity == "notice" ? "NOTICE: " : "BLOCKED: ";
+        var message = capture == null ? "" : prefix
+            + "selected:" + capture.Trim() + Environment.NewLine;
+        var hint = severity == "warn" && capture != null
+            ? "  (Run the same command again to proceed anyway.)" + Environment.NewLine : "";
+        Assert.Equal(id + ":" + message + hint, id + ":" + first.Stderr);
+        Assert.Equal(severity == "warn" ? "" : message, retry.Stderr);
+        Assert.Equal(capture != null && severity != "notice" ? (int?)ExitCodes.ToolError : null, first.Result);
+        Assert.Equal(capture != null && severity == "block" ? (int?)ExitCodes.ToolError : null, retry.Result);
+    }
+
+    [Theory]
+    [InlineData("N01-safe", "Posix", "bash <<'OUT'\ncat <<'IN'\ntail -f app.log\nIN\nOUT", "D")]
+    [InlineData("N01-code", "Posix", "bash <<'OUT' | bash\ncat <<'IN'\ntail -f app.log\nIN\nOUT", "C")]
+    [InlineData("N01-unknown", "Posix", "bash <<'OUT' | unknown-wrapper\ncat <<'IN'\ntail -f app.log\nIN\nOUT", "C")]
+    [InlineData("N02-safe", "Posix", "bash -c \"cat <<'IN'\ntail -f app.log\nIN\"", "D")]
+    [InlineData("N02-code", "Posix", "bash -c \"cat <<'IN'\ntail -f app.log\nIN\" | bash", "C")]
+    [InlineData("N02-unknown", "Posix", "bash -c \"cat <<'IN'\ntail -f app.log\nIN\" | unknown-wrapper", "C")]
+    [InlineData("N02-ps-safe", "Posix", "pwsh -Command \"Write-Output @'\ntail -f app.log\n'@\"", "D")]
+    [InlineData("N02-ps-code", "Posix", "pwsh -Command \"Write-Output @'\ntail -f app.log\n'@\" | bash", "C")]
+    [InlineData("N03-stdin-safe", "Posix", "bash <<'OUT'\nbash <<'MID'\ncat <<'IN'\ntail -f app.log\nIN\nMID\nOUT", "D")]
+    [InlineData("N03-stdin-code", "Posix", "bash <<'OUT' | bash\nbash <<'MID'\ncat <<'IN'\ntail -f app.log\nIN\nMID\nOUT", "C")]
+    [InlineData("N03-stdin-unknown", "Posix", "bash <<'OUT' | unknown-wrapper\nbash <<'MID'\ncat <<'IN'\ntail -f app.log\nIN\nMID\nOUT", "C")]
+    [InlineData("N03-stdin-script-safe", "Posix", "bash <<'OUT'\nbash -c \"cat <<'IN'\ntail -f app.log\nIN\"\nOUT", "D")]
+    [InlineData("N03-stdin-script-code", "Posix", "bash <<'OUT' | bash\nbash -c \"cat <<'IN'\ntail -f app.log\nIN\"\nOUT", "C")]
+    [InlineData("N03-script-stdin-safe", "Posix", "bash -c \"bash <<'MID'\ncat <<'IN'\ntail -f app.log\nIN\nMID\"", "D")]
+    [InlineData("N03-script-stdin-unknown", "Posix", "bash -c \"bash <<'MID'\ncat <<'IN'\ntail -f app.log\nIN\nMID\" | unknown-wrapper", "C")]
+    [InlineData("N04-capture-safe", "Posix", "cat <<OUT\n$(cat <<'IN'\ntail -f data.log\nIN\ntail -f real.log\n)\nOUT", "DC")]
+    [InlineData("N04-capture-code", "Posix", "cat <<OUT | bash\n$(cat <<'IN'\ntail -f data.log\nIN\ntail -f real.log\n)\nOUT", "CC")]
+    [InlineData("N04-backtick-safe", "Posix", "cat <<OUT\n`cat <<'IN'\ntail -f data.log\nIN\ntail -f real.log\n`\nOUT", "DC")]
+    [InlineData("N04-backtick-code", "Posix", "cat <<OUT | bash\n`cat <<'IN'\ntail -f data.log\nIN\ntail -f real.log\n`\nOUT", "CC")]
+    [InlineData("N05-sequence-code", "Posix", "bash <<'OUT' | bash\ncat <<'IN'; echo ready\ntail -f app.log\nIN\nOUT", "C")]
+    [InlineData("N05-siblings", "Posix", "bash <<'OUT'\ncat <<'IN'\ntail -f app.log\nIN\nOUT\nbash <<'OUT' | bash\ncat <<'IN'\ntail -f app.log\nIN\nOUT", "DC")]
+    [InlineData("N06-inner-ps", "Posix", "pwsh -Command \"Write-Output @'\nIt's ready; tail -f app.log\n'@\"", "D")]
+    [InlineData("N06-inner-bash", "PowerShell", "bash -c \"echo @'\nx'; tail -f app.log; echo '\n'@\"", "C")]
+    [InlineData("N06-unknown-host", "Posix", "unknown-wrapper \"$(cat <<'IN'\ntail -f app.log\nIN\n)\"", "C")]
+    [InlineData("N07-join", "Posix", "eval \"cat <<'IN'\ntail -f app.log\nIN\n\" \"echo ready\"", "D")]
+    [InlineData("N07-join-code", "Posix", "eval \"cat <<'IN'\ntail -f app.log\nIN\n\" \"echo ready\" | bash", "C")]
+    [InlineData("N07-crlf", "Posix", "bash <<'OUT'\r\ncat <<'IN'\r\ntail -f app.log\r\nIN\r\nOUT", "D")]
+    [InlineData("N07-groupword", "PowerShell", "unknown-wrapper @(Write-Output @'\ntail -f app.log\n'@)", "C")]
+    [InlineData("N07-quoted-removal", "Posix", "bash -c \"cat <<< 'tail -f app.log'\"", "D")]
+    [InlineData("N07-unsupported-script-word", "Posix", "bash -c 'cat <<EOF\ntail -f app.log\nEOF'joined", "C")]
+    public void Gs03_ContextBody_RecursiveOccurrences(string id, string shell, string command, string decisions) =>
+        Gs03_ContextBody_Occurrences(id, shell, command, decisions);
+
+    [Fact]
+    public void Gs03_ContextBody_DepthLimitCounts()
+    {
+        var command = "cat <<'INNER'\ntail -f app.log\nINNER";
+        for (var i = 0; i < 20; i++)
+            command = $"bash <<'OUT{i}'\n{command}\nOUT{i}";
+        Gs03_ContextBody_Occurrences("N07-depth", "Posix", command, "C");
+    }
+
+    [Theory]
+    [InlineData("notice")]
+    [InlineData("warn")]
+    [InlineData("block")]
+    public void Gs03_ContextBody_PreservesRawCaptureSeverityAndRetry(string severity)
+    {
+        WriteConfigWithNudges((@"(?:^|[;\r\n]\s*)npm\s+(\w+)", "selected:$1", severity));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        const string command = "cat > notes.md <<'EOF'\n; npm example\nEOF\nnpm real";
+        int? Check() => GuardCommand.CheckBlockNudges(command, env, ShellDialect.Posix)
+            ?? GuardCommand.CheckWarnNudges(command, env, shell: ShellDialect.Posix);
+        var first = RunNudge(Check);
+        var retry = RunNudge(Check);
+        Assert.Equal(severity == "notice" ? null : (int?)ExitCodes.ToolError, first.Result);
+        Assert.Contains("selected:real", first.Stderr);
+        Assert.DoesNotContain("example", first.Stderr);
+        Assert.Equal(severity == "block" ? (int?)ExitCodes.ToolError : null, retry.Result);
+    }
+
+    [Theory]
+    [InlineData("cat <<'EOF'\n; npm real\nEOF\nnpm real", "real")]
+    [InlineData("cat <<'EOF'\n; npm first\n; npm second\nEOF\nnpm real", "real")]
+    [InlineData("npm real; cat <<'EOF'\n; npm inert\nEOF", "real; cat <<'EOF'")]
+    [InlineData("Write-Output @'\n; npm example\n'@; npm real", "real")]
+    public void Gs03_ContextBody_GreedyOriginalCapture(string command, string capture)
+    {
+        WriteConfigWithNudges((@"(?:^|[;\r\n]\s*)npm\s+(.*)", "selected:$1", "warn"));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var shell = command.StartsWith("Write-Output", StringComparison.Ordinal) ? ShellDialect.PowerShell : ShellDialect.Posix;
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env, shell: shell));
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Equal("BLOCKED: selected:" + capture + Environment.NewLine
+            + "  (Run the same command again to proceed anyway.)" + Environment.NewLine, stderr);
+    }
+
+    [Theory]
+    [InlineData("docker exec web tail -f app.log")]
+    [InlineData("docker compose exec api tail -f app.log")]
+    [InlineData("kubectl exec pod -- tail -f app.log")]
+    [InlineData("winpty tail -f app.log")]
+    [InlineData("flock /tmp/lock tail -f app.log")]
+    [InlineData("taskset -c 0 tail -f app.log")]
+    [InlineData("chrt -i 0 tail -f app.log")]
+    [InlineData("find . -name app.log -exec tail -f {} +")]
+    [InlineData("script -q -c 'tail -f app.log' /dev/null")]
+    [InlineData("su -c 'tail -f app.log'")]
+    [InlineData("tmux new -d 'tail -f app.log'")]
+    [InlineData("unknown-wrapper 'tail -f app.log'")]
+    [InlineData("rg tail --follow docs")]
+    [InlineData("echo stdbuf -oL tail -f app.log")]
+    [InlineData("rg --unknown 'tail -f' docs")]
+    [InlineData("rg -n 'pattern' --glob 'tail -f' docs")]
+    [InlineData("git log --grep 'tail -f'")]
+    [InlineData("git grep --unknown 'tail -f'")]
+    [InlineData("grep -e 'tail -f' notes.md")]
+    [InlineData("grep -iE \"$(tail -f app.log)\" notes.md")]
+    [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match \"$(tail -f app.log)\" }")]
+    [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'safe'; tail -f app.log }")]
+    [InlineData("unknown-wrapper <<'EOF'\ntail -f app.log\nEOF")]
+    [InlineData("git commit -m \"stop the while true; do sleep loop\"")]
+    [InlineData("rg 'tail' --follow docs")]
+    [InlineData("echo > tail -f app.log")]
+    [InlineData("rg -n 'tail -f' --unknown docs")]
+    [InlineData("git grep -n -E 'tail -f' --unknown")]
+    [InlineData("grep -iE \"tail -f\" --unknown")]
+    [InlineData("rg -n 'tail -f'concat docs")]
+    [InlineData("bash -c \"rg -n '\"tail -f\"' docs\"")]
+    [InlineData("cat <<'EOF'\ntail -f app.log")]
+    [InlineData("Write-Output @'\ntext\n'@tail -f app.log")]
+    [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.Other -match 'tail -f' }")]
+    [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'tail -f' -unknown }")]
+    public void Gs03_BoundedRelief_KeepsUnquotedAndUnknownQuotedMatches(string command)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("Open-ended Bash poll-loop detected", stderr);
+    }
+
+    [Theory]
+    [InlineData("rg -n 'text; npm install example' docs; npm install real")]
+    [InlineData("git grep -n -E 'text; npm install example' HEAD -- docs; npm install real")]
+    [InlineData("grep -iE \"text; npm install example\" notes.md; npm install real")]
+    [InlineData("Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'text; npm install example' }; npm install real")]
+    public void Gs03_BoundedRelief_CapturesTheLaterLaunch(string command)
+    {
+        var shell = command.StartsWith("Get-CimInstance", StringComparison.Ordinal) ? ShellDialect.PowerShell : ShellDialect.Unknown;
+        var (result, stderr) = RunLcNudges(command, shell);
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("Try: pnpm install real", stderr);
+        Assert.DoesNotContain("example", stderr);
+    }
+
+    [Theory]
+    [InlineData("PowerShell", false)]
+    [InlineData("Posix", true)]
+    [InlineData("Unknown", true)]
+    public void Gs03_BoundedRelief_ProcessPredicateNeedsPowerShell(string shell, bool warns)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        const string command = "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'tail -f' }";
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env, shell: Enum.Parse<ShellDialect>(shell)));
+
+        Assert.Equal(warns ? (int?)ExitCodes.ToolError : null, result);
+        Assert.Equal(warns, stderr.Contains("Open-ended Bash poll-loop detected", StringComparison.Ordinal));
+    }
+
+    // The LC dydo.json nudges the retro's refusals came from (LC master fe021e2e), messages shortened.
+    private static readonly (string Pattern, string Message, string Severity)[] LcNudges =
+    [
+        (@"(?:^|[;&|]\s*)dotnet\s+test\b(.*)", "Use the one test command instead: python tools/test.py", "warn"),
+        (@"(?:^|[;&|]\s*)cs2ts\b(.*)", "Use the wrapper script instead: python tools/types/regen_types.py", "warn"),
+        (@"(?:^|[;&|]\s*)npm\s+(.*)", "Use pnpm, not npm. Try: pnpm $1", "warn"),
+        (@"(?:^|[;&|]\s*)(?:&\s+)?(?:""[^""]*(?:LC[.]AppHost|LC[.]Api)[.]exe\b""|'[^']*(?:LC[.]AppHost|LC[.]Api)[.]exe\b'|[^\s;&|]*(?:LC[.]AppHost|LC[.]Api)[.]exe\b)",
+            "Don't launch LC.AppHost or LC.Api executables directly.", "block"),
+    ];
+
+    [Theory]
+    [InlineData("notice")]
+    [InlineData("warn")]
+    [InlineData("block")]
+    public void Gs03_BoundedRelief_PreservesSeverityCaptureAndRetry(string severity)
+    {
+        WriteConfigWithNudges((@"(?:^|[;&|]\s*)npm\s+(\w+)", "selected:$1", severity));
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        const string command = "rg -n 'text; npm example' docs; npm real";
+        int? Check() => GuardCommand.CheckBlockNudges(command, env) ?? GuardCommand.CheckWarnNudges(command, env);
+
+        var first = RunNudge(Check);
+        var retry = RunNudge(Check);
+
+        Assert.Equal(severity == "notice" ? null : (int?)ExitCodes.ToolError, first.Result);
+        Assert.Contains("selected:real", first.Stderr);
+        Assert.DoesNotContain("example", first.Stderr);
+        Assert.Equal(severity == "block" ? (int?)ExitCodes.ToolError : null, retry.Result);
+    }
+
+    private (int? Result, string Stderr) RunLcNudges(string command, ShellDialect shell = ShellDialect.Unknown)
+    {
+        WriteConfigWithNudges(LcNudges);
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        return RunNudge(() => GuardCommand.CheckBlockNudges(command, env, shell) ?? GuardCommand.CheckWarnNudges(command, env, shell: shell));
+    }
+
+    [Theory]
+    [InlineData(GuardRetroCommands.Gs03ProcessListing)]
+    [InlineData(GuardRetroCommands.Gs03RgPattern)]
+    [InlineData(GuardRetroCommands.Gs03QuotedProcessListing)]
+    [InlineData(GuardRetroCommands.Gs03PowerShellProcessListing)]
+    [InlineData(GuardRetroCommands.Gs03GitGrepPattern)]
+    [InlineData(GuardRetroCommands.Gs03LogGrep)]
+    [InlineData("echo ready # then; dotnet test")]
+    [InlineData("cat > notes.md <<'EOF'\nrun it | dotnet test\nEOF")]
+    [InlineData("Write-Output @'\nthen; npm install\n'@")]
+    public void CommandNudges_LaunchWordsInTextACommandReads_StaySilent(string command)
+    {
+        var shell = command switch
+        {
+            GuardRetroCommands.Gs03QuotedProcessListing => ShellDialect.Posix,
+            GuardRetroCommands.Gs03PowerShellProcessListing => ShellDialect.PowerShell,
+            _ => ShellDialect.Unknown,
+        };
+        var (result, stderr) = RunLcNudges(command, shell);
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    [Theory]
+    [InlineData("dotnet test --filter Foo", "BLOCKED: Use the one test command instead")]
+    [InlineData("git status; dotnet test --no-build", "BLOCKED: Use the one test command instead")]
+    [InlineData("& dotnet test", "BLOCKED: Use the one test command instead")]
+    [InlineData("rg -l foo | cs2ts --check", "BLOCKED: Use the wrapper script instead")]
+    [InlineData("npm install left-pad", "Try: pnpm install left-pad")]
+    [InlineData("git status && npm run lint", "Try: pnpm run lint")]
+    [InlineData("& \"C:\\Program Files\\LC\\LC.AppHost.exe\" --urls http://x", "BLOCKED: Don't launch LC.AppHost")]
+    [InlineData("'C:/x y/LC.Api.exe' --urls http://x", "BLOCKED: Don't launch LC.AppHost")]
+    [InlineData("C:/LC/bin/LC.Api.exe", "BLOCKED: Don't launch LC.AppHost")]
+    [InlineData("echo \"unbalanced; dotnet test", "BLOCKED: Use the one test command instead")]
+    public void CommandNudges_RealLaunch_KeepsSeverityAndCaptures(string command, string expected)
+    {
+        var (result, stderr) = RunLcNudges(command);
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains(expected, stderr);
+    }
+
+    // The captures come from the match that runs, not from an earlier one in quoted text.
+    [Theory]
+    [InlineData("rg -n 'text; npm install example' docs; npm install real", "Try: pnpm install real")]
+    [InlineData("grep -iE \"a; npm run example\" notes.md && npm install real", "Try: pnpm install real")]
+    [InlineData("git grep -n -E 'npm ci' HEAD && npm run lint", "Try: pnpm run lint")]
+    public void CommandNudges_QuotedExampleThenRealLaunch_CapturesTheRealLaunch(string command, string expected)
+    {
+        var (result, stderr) = RunLcNudges(command);
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains(expected, stderr);
+        Assert.DoesNotContain("example", stderr);
+        Assert.DoesNotContain("'", stderr);
+    }
+
+    [Theory]
+    [InlineData("npx dydo check --all", "Just use: dydo check --all")]
+    [InlineData("bash -c \"dydo check\"", "Don't use 'bash' to run dydo - it's already on your PATH. Just use: dydo check")]
+    public void ShippedDydoNudge_KeepsItsCaptures(string command, string expected)
+    {
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckBlockNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains(expected, stderr);
+    }
+
+    [Theory]
+    [InlineData("bash -c \"tail -f build.log\"")]
+    [InlineData("sh -c 'while true; do sleep 1; done'")]
+    public void PollLoopNudge_InsideAShellCommandString_StillWarns(string command)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("Open-ended Bash poll-loop detected", stderr);
+    }
+
+    [Theory]
+    [InlineData("tail --follow build.log")]
+    [InlineData("rg tail docs; tail -f build.log")]
+    [InlineData("sudo /usr/bin/tail -n 5 -f build.log")]
+    public void PollLoopNudge_RealTailLaunch_StillWarns(string command)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("Open-ended Bash poll-loop detected", stderr);
+    }
+
+    [Theory]
+    [InlineData("case x in x) tail -f app.log;; esac")]
+    [InlineData("case x in x|y) tail -f app.log;; esac")]
+    [InlineData("case x in (x) tail -f app.log;; esac")]
+    [InlineData("case x in y) echo no;; x) tail -f app.log;; esac")]
+    [InlineData("case x in x) echo yes;; esac; tail -f app.log")]
+    [InlineData("echo ready; case x in x) tail -f app.log;; esac")]
+    [InlineData("if true; then case x in x) tail -f app.log;; esac; fi")]
+    public void CaseArm_ExecutableExpandingBody_KeepsNudge(string child)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+        var command = "cat <<EOF\n$(" + child + ")\nEOF";
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env, shell: ShellDialect.Posix));
+
+        Assert.Equal(ExitCodes.ToolError, result);
+        Assert.Contains("Open-ended Bash poll-loop detected", stderr);
+    }
+
+    [Theory]
+    [InlineData("cat <<'EOF'\n$(case x in x) tail -f app.log;; esac)\nEOF")]
+    [InlineData("cat <<EOF\ncase x in x) tail -f app.log;; esac\nEOF")]
+    [InlineData("cat <<EOF\n$(cat <<'IN'\ncase x in x) tail -f app.log;; esac\nIN\n)\nEOF")]
+    [InlineData("cat <<EOF\n$(echo 'case'; cat <<'IN'\ntail -f app.log\nIN\n)\nEOF")]
+    [InlineData("cat <<EOF\n$(echo \"case\"; cat <<'IN'\ntail -f app.log\nIN\n)\nEOF")]
+    [InlineData("cat <<EOF\n$(echo showcase; cat <<'IN'\ntail -f app.log\nIN\n)\nEOF")]
+    [InlineData("rg -n 'case x in x) tail -f app.log;; esac' docs")]
+    public void CaseArm_LiteralBodyOrQuotedWord_PreservesNudgeRelief(string command)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env, shell: ShellDialect.Posix));
+
+        Assert.Null(result);
+        Assert.Empty(stderr);
+    }
+
+    // Only the inventoried quoted operand roles receive relief.
+    [Theory]
+    [InlineData("rg -n 'tail -f' docs")]
+    [InlineData("git grep -n -E 'tail -f' HEAD -- docs")]
+    [InlineData("grep -iE \"tail -f\" notes.md")]
+    public void PollLoopNudge_InQuotedText_StaysSilent(string command)
+    {
+        WriteConfigWithOpenEndedPollNudges();
+        var env = GuardCommand.GuardEnv.Load(_testDir);
+
+        var (result, stderr) = RunNudge(() => GuardCommand.CheckWarnNudges(command, env));
 
         Assert.Null(result);
         Assert.Empty(stderr);

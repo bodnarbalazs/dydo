@@ -14,17 +14,18 @@ Make one documentation change true.
 2. From the repository root, read `dydo/reference/writing-docs.md`.
 3. From the repository root, read `dydo/understand/about.md`.
 4. From the repository root, read `dydo/guides/working-tree-contract.md`.
-5. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; do not preload the whole standard.
+5. From the repository root, read Feature proof and gate placement in `dydo/guides/testing-strategy.md`.
+6. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; do not preload the whole standard.
 
 ## Boundary
 
 Every sentence you write is a claim, and every claim needs a **witness** in the repository: code,
 configuration, governing intent (spec, Decision Record or ticket). Where the witness is missing, return the gap instead.
 The Ticket Captain that spawned you owns review, integration, status and follow-up work; you own the
-words. On a fix hop the FAIL block's blockers are your contract: check each finding's severity
-against the source, not the reviewer's label, close only the blockers, and put a label you change in
-your `IMPLEMENTED` behaviour with its evidence (file:line, check, output). Prefer the edit that
-deletes or narrows; review never grows the change.
+words. Your questions go to it, never to the user directly. On a fix hop the FAIL block's blockers
+are your contract: check each finding's severity against the source, not the reviewer's label, close
+only the blockers, and put a label you change in your `IMPLEMENTED` behaviour with its evidence
+(file:line, check, output). Prefer the edit that deletes or narrows; review never grows the change.
 
 ## Method
 
@@ -50,8 +51,9 @@ deletes or narrows; review never grows the change.
    check after the merge.
 5. **Fix, check, commit.** `dydo fix` after a document is added, moved or renamed, then this hop's
    proof until clean: `dydo check`, the other cheap checks the ticket names, and the tests your change
-   reaches. Then commit in the owned paths; the full suites wait for the gate the Captain names. Done
-   when that focused proof has run and the work is committed.
+   reaches, using the testing strategy's documentation-only scope. Then commit in the owned paths;
+   hand any remaining project-declared gates to the Captain. Done when the bounded proof has run
+   and the work is committed.
 
 ## Return
 

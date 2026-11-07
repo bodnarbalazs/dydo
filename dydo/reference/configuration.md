@@ -79,9 +79,17 @@ briefs, and changelog.
 `dydo init claude` and `dydo init codex` wire the selected runtime's guard hooks automatically,
 into committed files, so a fresh clone is guarded: Claude Code uses `.claude/settings.json`, Codex
 uses `.codex/hooks.json` ([DR 056](../project/decisions/056-claude-guard-in-committed-settings.md)).
-Both also get an allow rule for `dydo clean`, so a host's auto mode does not stop it:
-`Bash(dydo clean:*)` and `PowerShell(dydo clean:*)` in the `permissions.allow` of Claude Code's
-gitignored `.claude/settings.local.json`, and a `prefix_rule` in `.codex/rules/dydo.rules` for Codex.
+Both also get narrow allow rules for `dydo clean` and `dydo merge`:
+`Bash(dydo clean:*)`, `PowerShell(dydo clean:*)`, `Bash(dydo merge:*)` and
+`PowerShell(dydo merge:*)` in the `permissions.allow` of Claude Code's gitignored
+`.claude/settings.local.json`, and one `prefix_rule` each in `.codex/rules/dydo.rules` for Codex,
+the merge rule matching `[["dydo", "dydo.exe"], "merge"]` because a Windows session may write
+either. Each command refuses in code what it must not do, so the narrow rule is safe, and both hosts
+must reach the same allow or block outcome. The Claude bash/Codex PowerShell parity gate is planned,
+pending in DYD-426; writing allow rules or shipping guard blocks does not establish parity. The
+merge-route hard blocks shipped in DYD-425; see [Guard System](../understand/guard-system.md#also-enforced)
+for the blocked routes and accepted residuals
+([DR 061](../project/decisions/061-agents-merge-only-into-feature-branches.md)).
 
 The `PreToolUse` hook sends matched tool calls to `dydo guard`. Exit `0` with empty stdout allows
 the action; exit `0` with one `permissionDecision: "deny"` object on stdout blocks it, a contract
@@ -150,6 +158,8 @@ Each nudge has a regular-expression `pattern`, a `message`, a `severity` (`notic
 and blocks reject the action. Nudges enforce project process; they do not create or update work records.
 The pattern is matched case-insensitively, and `$1`, `$2` and so on in the message take the
 matching capture groups.
+
+A `warn` on a command is passed by retrying the same command: its pass-through marker names the pattern and the command with whitespace runs collapsed, so a different command matching the same nudge is warned on its own. See [Layer 3: Nudges](../understand/guard-system.md#layer-3-nudges).
 
 An optional `match` picks what the pattern is matched against:
 

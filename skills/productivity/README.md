@@ -7,11 +7,11 @@
 - **grill-me** (user-invoked): A relentless interview to sharpen a plan or design, which also creates docs (Decision Records and glossary) as we go.
 - **grilling** (model-invoked): Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test his thinking, or uses any 'grill' trigger phrases.
 - **handoff** (model-invoked): Compact the current conversation into a handoff document for another agent to pick up. Load only when the user asks, or when an officer briefs an agent it dispatches.
-- **in-your-own-words** (model-invoked): Restate in your own words what you think the user's goals are and what problem they're trying to solve. Load only when the user asks.
+- **in-your-own-words** (model-invoked): Restate in your own words what you think the user's goals are and what problem they're trying to solve. Load when the user asks, including the user's muster request relayed by the chief of staff.
 - **overnight-mode** (model-invoked): Overnight mode, the user away while admirals run on standing and night orders. Load only on the chief of staff's muster or morning-brief announcement, or when the user calls overnight mode.
 - **retro** (model-invoked): Kaizen for the harness. Use when the same friction, correction, or workaround returns a second time; when a mistake could have been caught by a check that does not exist; when a run burns its budget finding what it should have been handed.
 - **show-me** (model-invoked): Help the user understand the current topic visually with concise diagrams, code-shape sketches, and focused HTML artifacts.
-- **ketchup** (model-invoked): Catch the user up on what changed in this chat since their last message, in a short reply built on real visuals. Give each action item just enough context to make the call. Load only when the user asks.
+- **catch-up** (model-invoked): Catch the user up on the work you hold: each deliverable's purpose, progress, current work and next steps, and what needs him. Load only when the user asks.
 - **teach** (model-invoked): Teach the user a new skill or concept, within this workspace. Load only when the user asks.
 - **to-ticket** (model-invoked): Break a plan, spec, or this conversation into pickable Linear tickets, tracer-bullet slices wired with native blocking relations. Load only when the user asks.
 - **to-project** (model-invoked): Turn this co-think into a Linear Project, with its settled intent and links. Load only when the user asks.

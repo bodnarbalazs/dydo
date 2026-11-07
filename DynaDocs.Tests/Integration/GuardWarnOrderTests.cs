@@ -31,7 +31,7 @@ public sealed class GuardWarnOrderTests : IntegrationTestBase
 
     private string MarkerPath(string name) => Path.Combine(GuardCommand.GuardEnv.Load(TestDir).MarkerDir, name);
 
-    private string WarnMarker => MarkerPath($".nudge-{GuardCommand.ComputeNudgeHash(WarnEverything)}");
+    private string WarnMarker(string command) => MarkerPath(GuardCommand.CommandWarnMarkerName(WarnEverything, command));
 
     private void Arm(string marker)
     {
@@ -71,8 +71,8 @@ public sealed class GuardWarnOrderTests : IntegrationTestBase
     [InlineData("dydo init", true, "BLOCKED: Sub-agents may run only these dydo commands", true)]
     [InlineData("rm -rf /", false, "BLOCKED: Dangerous command pattern detected.", false)]
     [InlineData("rm -rf /", false, "BLOCKED: Dangerous command pattern detected.", true)]
-    [InlineData("echo risky-gamma", false, "BLOCKED: " + BlockMessage, false)]
-    [InlineData("echo risky-gamma", false, "BLOCKED: " + BlockMessage, true)]
+    [InlineData("risky-gamma --now", false, "BLOCKED: " + BlockMessage, false)]
+    [InlineData("risky-gamma --now", false, "BLOCKED: " + BlockMessage, true)]
     [InlineData("cd tools && echo hi", false, "BLOCKED: Don't chain cd / Set-Location", false)]
     [InlineData("cd tools && echo hi", false, "BLOCKED: Don't chain cd / Set-Location", true)]
     [InlineData("echo x > $OUT", false, "BLOCKED: Command contains bypass patterns", false)]
@@ -87,14 +87,14 @@ public sealed class GuardWarnOrderTests : IntegrationTestBase
         string command, bool worker, string refusal, bool markerBefore)
     {
         await InitWithNudges();
-        if (markerBefore) Arm(WarnMarker);
+        if (markerBefore) Arm(WarnMarker(command));
 
         for (var attempt = 1; attempt <= 4; attempt++)
         {
             var reason = (await GuardWithStdinAsync(Hook(command, worker))).AssertPreToolUseDenied();
 
             Assert.True(reason.Contains(refusal) && !reason.Contains(WarnMessage), $"try {attempt}: {reason}");
-            Assert.True(File.Exists(WarnMarker) == markerBefore, $"try {attempt} changed the warn marker");
+            Assert.True(File.Exists(WarnMarker(command)) == markerBefore, $"try {attempt} changed the warn marker");
         }
     }
 
@@ -104,43 +104,43 @@ public sealed class GuardWarnOrderTests : IntegrationTestBase
         await InitWithNudges();
 
         var first = (await GuardWithStdinAsync(Hook("echo hi"))).AssertPreToolUseDenied();
+        Assert.True(File.Exists(WarnMarker("echo hi")), "the first try arms the command's marker");
         var second = await GuardWithStdinAsync(Hook("echo hi"));
 
         Assert.Contains("BLOCKED: " + WarnMessage, first);
         second.AssertPreToolUseAllowed();
-        Assert.False(File.Exists(WarnMarker));
+        Assert.False(File.Exists(WarnMarker("echo hi")));
     }
 
-    // Contract item 3: a host that cannot ask refuses every try, and neither the command warn's
-    // marker nor the mode-set reminder's marker moves.
+    // A hard block preserves both command-keyed warnings, armed or unarmed, on every try.
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task ModeSet_OnAHostThatCannotAsk_RefusesEveryTryAndLeavesTheMarkers(bool markersBefore)
+    public async Task ModeSet_WithAHardBlock_NeitherArmsNorSpendsAnyWarn(bool markersBefore)
     {
         await InitWithNudges();
-        var reminderMarker = MarkerPath(".nudge-mode-set");
+        const string command = "dydo mode set overnight on && cat .env";
+        var env = GuardCommand.GuardEnv.Load(TestDir);
         if (markersBefore)
-        {
-            Arm(WarnMarker);
-            Arm(reminderMarker);
-        }
+            Assert.Equal(2, GuardCommand.CheckWarnNudges(command, env, modeSet: true));
+        Directory.CreateDirectory(env.MarkerDir);
+        var before = Directory.GetFiles(env.MarkerDir, ".nudge-*")
+            .ToDictionary(path => path, File.ReadAllText);
+        Assert.Equal(markersBefore ? 2 : 0, before.Count);
 
         for (var attempt = 1; attempt <= 4; attempt++)
         {
-            var result = await GuardWithStdinAsync(Hook("dydo mode set overnight on", permissionMode: "dontAsk"), ClaudeHook);
-
-            var reason = result.AssertPreToolUseDenied();
-            Assert.True(reason.StartsWith("BLOCKED: This host cannot ask"), $"try {attempt}: {reason}");
-            Assert.True(File.Exists(WarnMarker) == markersBefore, $"try {attempt} changed the warn marker");
-            Assert.True(File.Exists(reminderMarker) == markersBefore, $"try {attempt} changed the reminder marker");
+            var result = await GuardWithStdinAsync(Hook(command, permissionMode: "dontAsk"), ClaudeHook);
+            Assert.Contains("off-limits", result.AssertPreToolUseDenied());
+            var after = Directory.GetFiles(env.MarkerDir, ".nudge-*")
+                .ToDictionary(path => path, File.ReadAllText);
+            Assert.Equal(before.OrderBy(pair => pair.Key), after.OrderBy(pair => pair.Key));
         }
     }
 
-    // Where the host can ask, a warn and the mode-set reminder block together once, and the rerun
-    // asks: they never take turns.
+    // The reminder and other warnings block together once, then pass together.
     [Fact]
-    public async Task ModeSet_WithAWarn_OnAHostThatCanAsk_AsksOnEveryRerun()
+    public async Task ModeSet_WithAWarn_BlocksAndPassesTogether()
     {
         await InitWithNudges();
         var decisions = new List<string>();
@@ -148,11 +148,25 @@ public sealed class GuardWarnOrderTests : IntegrationTestBase
         for (var attempt = 1; attempt <= 4; attempt++)
             decisions.Add(Decision(await GuardWithStdinAsync(Hook("dydo mode set overnight on"), ClaudeHook)));
 
-        Assert.Equal(["deny", "ask", "deny", "ask"], decisions);
+        Assert.Equal(["deny", "allow", "deny", "allow"], decisions);
+    }
+
+    // DYD-503 through the hook: the shipped install warn passes only the same command retried; a
+    // different install after a warn is warned on its own.
+    [Fact]
+    public async Task InstallWarn_ADifferentInstallAfterAWarn_IsWarnedToo_AndEachRetryPasses()
+    {
+        await InitProjectAsync("none");
+        var decisions = new List<string>();
+
+        foreach (var command in new[] { "pnpm add left-pad", "pnpm add other", "pnpm add left-pad", "pnpm add other" })
+            decisions.Add(Decision(await GuardWithStdinAsync(Hook(command))));
+
+        Assert.Equal(["deny", "deny", "allow", "allow"], decisions);
     }
 
     [Fact]
-    public async Task ModeSet_WithAWarn_OnAHostThatCanAsk_NamesBothOnTheFirstTry()
+    public async Task ModeSet_WithAWarn_NamesBothOnTheFirstTry()
     {
         await InitWithNudges();
 

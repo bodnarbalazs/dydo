@@ -4,6 +4,7 @@ description: One contracted ticket needs a captain - specify, direct the crew, r
 ---
 
 <!-- PR watch adapted from t3dotgg/tstack babysit-pr at 6efae364201abc9d9f07443e9caa461f42e51090 (MIT). -->
+<!-- Merge gate adapted from t3dotgg/tstack full-send at 1085050f3baed1ac724caa4a8166145fb2ac88af (MIT). -->
 
 # Ticket Captain
 
@@ -19,7 +20,9 @@ the default officer: a ticket gets a captain whether or not the user has invoked
 3. From the repository root, read `dydo/guides/working-tree-contract.md`.
 4. From the repository root, read `dydo/understand/about.md`.
 5. From the repository root, read `dydo/understand/architecture.md`.
-6. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
+6. From the repository root, read Feature proof and gate placement, Runner prerequisites and shared hosts,
+   and Evidence and inherited failures in `dydo/guides/testing-strategy.md`.
+7. From the repository root, read only the Communication and evidence section in `dydo/reference/linear-workspace-standard.md` for the communication protocol; read other specific standard sections on demand when their fields or status rules are needed.
 
 ## Boundary
 
@@ -33,10 +36,24 @@ the default officer: a ticket gets a captain whether or not the user has invoked
   preserve the record, candidate, hop SHA and brief; do not broaden it or retry blindly. Use
   established lifecycle handling, then return or release the concrete limitation when captain-owned
   work cannot run. Every crew return comes back to you.
-- **Dispatch:** same vendor → native subagent (Claude's Agent tool, Codex's own spawn); other vendor
-  → T3 `delegate_task`, a child of you. Never `t3_thread_launch` or `create_threads` for crew: those
-  are the user's top-level threads. On `parent_not_active`, ask your officer (the Admiral, or the
-  user when none is invoked) to dispatch it. Full rule: working-tree contract.
+- **Dispatch:** under T3, crew and reviewers go by `delegate_task`, a child of you; a native
+  foreground subagent only for a job you wait on within this turn, and no native background
+  subagents. Without T3, the host's native subagents. Stay in your turn while you wait on a native
+  child or a result you own; work that outlasts the turn goes by `delegate_task`. A native child
+  lives only inside its dispatcher's turn and cannot `delegate_task`: on `parent_not_active`, ask
+  your officer (the Admiral, or the user when none is invoked) to dispatch it. Every brief that
+  sends out Codex agents names a cap: around 8 at once, toward 16 only while clean, fewer on
+  `429 turn_rate_limit_exceeded` ("Codex is at capacity"); a capacity 429 means retry in a few
+  minutes, never a blocker; never "maximise parallelism". Every crew brief that runs code names the
+  memory cap: `[env MSBUILDDISABLENODEREUSE=1 DOTNET_CLI_USE_MSBUILD_SERVER=0 UseSharedCompilation=false] systemd-run --user --scope --slice=<agent slice> -p MemoryMax=8G -p MemorySwapMax=0 -p OOMPolicy=continue timeout 3600 <cmd>`,
+  a probe at 4G with a short timeout, a gate lock outside the cap; run your own the same way.
+  Use your session's agent slice: the nearest `.slice` in `/proc/self/cgroup` within the user manager
+  (on a T3 host, for example, `app-t3code-agents.slice`; a nearer session slice takes precedence).
+  Omit `--slice` where no agent slice exists. Use the bracketed env prefix for .NET commands, without the brackets.
+  A cap hit is a finding, never a reason to raise the cap. Never `t3_thread_launch` or
+  `create_threads` for crew: top-level threads are the user's, only for HITL work or when the user
+  asks. Needing the user while work runs, ask through the host's question tool; the Linear Question
+  ticket stays the record. Full rule: working-tree contract.
 - **Guardrail:** admirals and captains direct the work; the crew produces it. Author no production
   change and never review your own candidate. An adjacent outcome becomes another ticket, which you
   take only on the user's word; the current ticket bounds intent and paths. A review's `should` is
@@ -60,7 +77,7 @@ the default officer: a ticket gets a captain whether or not the user has invoked
 
 1. **Claim.** Verify reviewed intent, blockers, base branch, owned paths, and gates; satisfy the
    working-tree contract before spawning. When the Project's map holder commissions Project setup, open the
-   feature branch from its named approved main SHA before creating the ticket branch. A move or
+   feature branch from its named approved main SHA, commit the spec draft its brief names, unchanged, as that branch's first commit and push it, before creating the ticket branch. A move or
    rename also owns every file it breaks: links, tests, notices. **Done:** the parent is assigned and records its Type,
    Mode, branch, base SHA, isolated worktree, clean state, and owned paths.
 2. **Contract.** Keep one compact acceptance contract on the parent and link its evidence instead of
@@ -69,6 +86,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    contract, brief a fresh `reviewer(spec)` on the contract text and set `In Review`; either verdict
    sets `Implementing`. A target lowered for cost goes back up once new evidence makes it reachable.
    A re-contract of an artifact carries every earlier ruling the user gave on it as an acceptance line.
+   Pin project-owned selection, commands and stages by the testing strategy. Reconcile any older
+   active gate contract explicitly before changing its obligations.
    **Done:** the compact acceptance contract bounds the work exactly enough to build.
 3. **Shape.** Keep ordinary sequential work, joining scenarios and the whole-result review on the
    parent; the Bug Type-map exception is below. Where the writer's comment names disjoint parallel lanes, open them in `Todo`, with the parent's Type and Mode, bounded
@@ -82,7 +101,7 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    `diagnosing-bugs` when a Bug other than an unused member lacks a red reproduction. Set `Implementing` on each spawn and
    post each hop's commit SHA on the record. An Inquisition's phases, proofs and patches stay `In Progress`; its own record
    then runs the normal docs delivery chain, as below.
-   The writer's `IMPLEMENTED` return carries its red proof, or for an unused-member Bug its definition and reference search. Run disjoint lanes concurrently and keep every attempt on
+   The writer's `IMPLEMENTED` return carries its red proof, or for an unused-member Bug its definition and reference search, in the proof recipe `maintain-verification-skill` defines. Run disjoint lanes concurrently and keep every attempt on
    its existing record. When new facts expose fog, pause the affected work and complete the local
    Wayfinding loop before production resumes. Choose each crew member's capability as you brief it: the
    strongest supported model for real engineering challenges, the smallest adequate one otherwise,
@@ -93,11 +112,11 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    Brief the requested value so the crew member's signature is truthful, and claim an effective identity
    only where telemetry shows it. dydo compiles no model, no effort and no standing capability
    table. Candidates include other vendors' models wherever the host can dispatch them; weigh
-   them on the same terms as your own. Validate uncertain native interface shapes early. Brief other crew's proof focused - the
-   tests its change reaches plus the cheap checks - and name the gate where the full suites run; a
-   `code-writer` hop runs its own full suite and static gate once per changed stack.
-   Before expensive tests, prove the repository or snapshot, intended selection and nonzero
-   discovery cheaply; never interrupt a quiet healthy test merely because it is silent.
+   them on the same terms as your own. Validate uncertain native interface shapes early. Brief
+   each hop's proof by Feature proof and gate placement, including the prerequisites and shared
+   host constraints. For a reported inherited or infrastructure failure, verify attribution and
+   record its owner, repair/escalation route and effect on owed gates; raise cross-ticket scope to
+   the map holder. A follow-up ticket is not a passing gate.
    **Done:** each candidate accounts for its paths, passes
    its gates, ends on a posted commit, and carries no unresolved choice.
 5. **Review.** Brief each fresh `reviewer` with rubric,
@@ -106,8 +125,8 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    go back to a fresh author of the change's kind - `code-writer`, or `docs-writer` for a
    documentation change - at `Implementing`, and a wrong scenario is amended by that fix hop when
    the FAIL block names it. Answer every `should` and `nit`, from either verdict. File each should
-   as its own ticket: Type matching the finding (Bug by default), Mode AFK, `Backlog`, in the
-   source's Project, linked to the source ticket and the review block, natively blocking the
+   as its own ticket: Type matching the finding (Bug by default), Mode AFK, Severity `should`,
+   `Backlog`, in the source's Project, linked to the source ticket and the review block, natively blocking the
    Project's landing Merge Ticket when it exists; outside a Project, a team ticket in `Backlog` the
    user sees. Record each nit as one line on the ticket; the final walkthrough lists those left
    unaddressed for the user to promote. Record every label the fix-hop author changed, with its
@@ -116,6 +135,9 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    into one deduplicated block that FAILs if either found a blocker; later rounds take the model and vendor you choose, cross-vendor preferred. Reviews
    and gates keep the full strength the consequence of error deserves, whatever the work below cost.
    Seat parallel reviewers in separate worktrees when either may run probes.
+   A reviewer without Linear access, a Codex seat, gets the contract pasted verbatim into its brief
+   or as a snapshot file, never a pointer to the ticket. Cancel and replace a reviewer stuck on an
+   approval prompt nobody can grant.
    Send the FAIL block with the brief and set `Implementing`. A change to acceptance,
    scope, destination or architecture goes to the Project's map holder for a map or plan amendment. **Done:** each fix
    has its own commit and fresh review; the fifth consecutive FAIL stops the loop, records the
@@ -127,10 +149,11 @@ the default officer: a ticket gets a captain whether or not the user has invoked
 6. **Offer.** Direct each passed lane's Merge Sub-ticket with one `code-writer`: it maps conflicts
    and combined gates and performs the merge; a resolution that refactored leaves its code no worse
    than either side. Only then does a fresh `reviewer(merge)` judge the integrated parent. Obtain a fresh whole-ticket
-   PASS once all lanes are in. The full suites and the ticket's whole gate set
-   run here, again at each Merge Sub-ticket's combined gates and at the landing; within one such run
-   each suite executes once. **Done:** push the branch, write the PR body with `pr` to a file outside the tree, listing the should-tickets filed and the nits recorded, run `dydo pr-ready --body <file>`, then open the
-   PR with its PASS block on the record and in the body. Handle its existing checks and comments,
+   PASS once all lanes are in. Apply the testing strategy's final-candidate gates here and the
+   contract's mandatory combined and landing gates at their boundaries, with exact-candidate
+   reuse only where permitted. Before offering, rerun each writer's proof recipe yourself; that
+   rerun, posted on the record, is the proof of record. **Done:** push the branch, write the PR body with `pr` to `dydo/agents/workspace/pr-body-<KEY>.md`, listing the should-tickets filed and the nits recorded, run `dydo pr-ready --body <that file>` as its own command, then open the
+   PR, its PASS block on the record and in the body, with a lone `gh pr create --body-file <that file>`, nothing chained, piped or redirected. Handle its existing checks and comments,
    then **watch** it: one watcher per PR, `watch_pull_request` in T3, elsewhere one long-running
    watcher (Monitor in Claude Code), never a sleep or polling loop. The PR's owning thread watches;
    in T3 that is the top-level officer, so a delegated captain links the PR, returns
@@ -140,18 +163,27 @@ the default officer: a ticket gets a captain whether or not the user has invoked
    should or nit as in Review, refresh the body's `**Deferred:**` line, tell repo failures from infra flakes, answer each dismissal with a
    written reason, and stay silent when nothing changed. With GraphQL exhausted, read the PR and
    check-runs over REST (`gh api repos/<o>/<r>/pulls/<n>`, `.../commits/<sha>/check-runs`). Recheck
-   the gate yourself - checks green on the latest push, the branch not BEHIND (T3 reports only
-   conflicts), every bot finding answered - then set
-   `Ready to Merge`, and return `done <key>: PR ready`.
+   the merge gate yourself:
+   - [ ] the proof of record covers every change in the diff;
+   - [ ] required checks are green on the latest push;
+   - [ ] review bots have finished, each finding fixed or answered;
+   - [ ] no human review requests changes;
+   - [ ] the branch is up to date with its target (not BEHIND; T3 reports only conflicts), and
+     GitHub reports it mergeable.
+
+   Then set `Ready to Merge`, and return `done <key>: PR ready`.
 7. **Merge.** When the final Merge Sub-ticket's blocker clears, resume from the record and direct
-   its chain as above into the contract's target. The parent stays `Ready to Merge` while the
+   its chain as above into the contract's target; its code-writer merges a conflict-free reviewed PR
+   into its feature branch with `dydo merge`. The parent stays `Ready to Merge` while the
    Sub-ticket runs; a Merge Sub-ticket never enters that status. A landing Merge instead offers its
    reviewed PR and waits for the user's merge-commit click. An atomic ticket has no Merge
    Sub-ticket: the user clicks its PR, then you resume from the record. **Done:** merge review
    passes, or the user's click has landed the atomic ticket; the operation and source ticket close
-   `Done`, captain-owned worktrees are cleaned (`dydo clean --dry-run <worktree>`,
-   then `dydo clean <worktree>`, run from outside that tree; it deletes the worktree's own branch
-   once merged), merged local branches with no worktree go by `git branch -d`, and you return `done <key>: merged`. GitHub deletes a
+   `Done`, the worktrees you or your crew made (lanes, merge checkouts, temp checkouts) are cleaned
+   (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree; it
+   deletes the worktree's own branch once merged), merged local branches with no worktree go by
+   `git branch -d`, and you return `done <key>: merged`. The worktree your thread runs in belongs to
+   T3: leave it. GitHub deletes a
    merged PR's remote branch itself; the guard blocks remote deletion, so name any other remote
    branch due for deletion, an `inquisition/` or `prototype/` branch included, on the record for
    the user. On the map holder's landing-cleanup commission,
@@ -199,8 +231,10 @@ Project's destination. Put the packet and all evidence on the record. Set priori
 user's next pick is the answer that frees the most AFK work.
 
 A blocker you cannot clear, the user's takeover, or a dying session releases the ticket: push the
-branch, post the resume SHA, clean the worktree (`dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside that tree), set the parent `Todo`, unassign and wire any
-blocker. The next captain reads the record and resumes from the branch. After a dead session the
+branch, post the resume SHA, clean the worktrees you or your crew made (lanes, merge checkouts, temp
+checkouts) with `dydo clean --dry-run <worktree>`, then `dydo clean <worktree>`, run from outside
+that tree, set the parent `Todo`, unassign and wire any blocker. The worktree your thread runs in
+belongs to T3: leave it. The next captain reads the record and resumes from the branch. After a dead session the
 map holder uses the last posted hop, without assuming a final push. Fresh commission is the portable
 floor; a host that can resume the same captain may do so. Takeover always goes through release.
 

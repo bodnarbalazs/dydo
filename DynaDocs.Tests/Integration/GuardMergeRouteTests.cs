@@ -176,6 +176,72 @@ public class GuardMergeRouteTests : IntegrationTestBase
             reasonParts: ["main", "dydo merge"]));
     }
 
+    // DYD-887: the S-01 fixture. The tree sits on ticket branch DYD-1-x, which tracks its own
+    // upstream; main tracks origin/main, origin/HEAD names main, and feature/x is pushed.
+    private async Task InitTicketBranchProject()
+    {
+        await InitPushedProject();
+        Git(TestDir, "checkout", "-b", "DYD-1-x");
+        Git(TestDir, "push", "-u", "origin", "DYD-1-x");
+        Git(TestDir, "branch", "-D", "feature");
+        Git(TestDir, "push", "origin", "--delete", "feature");
+        Git(TestDir, "push", "origin", "DYD-1-x:main", "DYD-1-x:feature/x");
+        Git(TestDir, "branch", "--track", "main", "origin/main");
+        Git(TestDir, "branch", "--track", "feature/x", "origin/feature/x");
+        Git(TestDir, "remote", "set-head", "origin", "main");
+    }
+
+    // A line's own checkout or switch moves HEAD before its bare push runs, so the push is judged
+    // on the branch the line switches to, not the one the hook sees. Codex's bare argv cannot chain.
+    private static readonly string[] ChainEnvelopes = ["claude-bash", "claude-powershell", "codex-bash", "codex-pwsh"];
+
+    [Fact]
+    public async Task BarePush_AfterTheLineChecksOutMain_IsDenied()
+    {
+        await InitTicketBranchProject();
+
+        AssertNoMisses(await Misses(denied: true, Words(
+            "git checkout main && git merge feature/x && git push",
+            "git switch main && git merge feature/x && git push",
+            "git checkout main && git push origin",
+            "git checkout -q main && git push -u origin HEAD",
+            "git switch main; git push origin @",
+            "git -C . checkout main && git push"),
+            ChainEnvelopes, reasonParts: ["main", "dydo merge", "the default branch is the user's"]));
+    }
+
+    // A branch change whose target the guard cannot read for certain refuses the push that follows it.
+    [Fact]
+    public async Task BarePush_AfterAnUnreadableBranchChange_IsDenied()
+    {
+        await InitTicketBranchProject();
+
+        AssertNoMisses(await Misses(denied: true, Words(
+            "git checkout - && git merge feature/x && git push",
+            "git switch - && git push",
+            "git checkout @{-1} && git push",
+            "git switch --detach main && git push origin HEAD",
+            "gh pr checkout 5 && git push"),
+            ChainEnvelopes, reasonParts: ["dydo merge", "cannot read"]));
+    }
+
+    [Fact]
+    public async Task Push_AfterTheLineChangesToItsOwnOrANewBranch_IsAllowed()
+    {
+        await InitTicketBranchProject();
+
+        AssertNoMisses(await Misses(denied: false, Words(
+            "git checkout feature/x && git push",
+            "git switch feature/x && git push origin HEAD",
+            "git checkout -b new && git push -u origin new",
+            "git switch -c new && git push -u origin new",
+            "git checkout -b new && git push",
+            "git checkout main -- readme.md && git push",
+            "git checkout -- readme.md && git push",
+            "git checkout - && git push origin DYD-1-x"),
+            ChainEnvelopes));
+    }
+
     [Fact]
     public async Task PushOfHead_OnMain_IsDenied()
     {

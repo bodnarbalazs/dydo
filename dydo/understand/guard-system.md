@@ -99,7 +99,7 @@ Bash commands get deeper treatment than direct tool calls:
 
 Bash's reading keeps all three as word text, as bash does. Because the embedded-newline check and file-operation extraction also take pwsh's reading of a bare carriage return whatever the shell, a bash call holding one can be refused for what pwsh would run.
 
-A backtick before a CRLF continues a PowerShell line only between words, as pwsh 7.6.9 does (DYD-665). Inside a word the reading keeps the carriage return and ends the statement at the line feed, so a command on the next line is read as its own command. A quoted argument that opened between words ends where its quote closes, so a backtick after it continues the line. In cmd's reading a caret before a CRLF, and in bash's a backslash before one, still continue the line.
+A backtick before a CRLF continues a PowerShell line only between words, as pwsh 7.6.9 does (DYD-665). Inside a word the reading keeps the carriage return and ends the statement at the line feed, so a command on the next line is read as its own command. A quoted argument that opened between words ends where its quote closes, so a backtick after it continues the line. In cmd's reading a caret before a CRLF still continues the line. The guard's bash reading also continues the line at a backslash before a CRLF, but bash itself does not: bash 5.3.9 takes the carriage return as the escaped character and ends the line at the line feed, so the next line runs as its own command.
 
 Residuals, since the guard stops accidents, not a bypass:
 

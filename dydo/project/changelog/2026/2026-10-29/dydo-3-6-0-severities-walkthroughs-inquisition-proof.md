@@ -22,9 +22,9 @@ A process and guard release built from a retro of ten days of dydo and LC agent 
   skeleton, and the user walks each Milestone as it lands. The inquisition is rebuilt around an area
   map and rounds that repeat until one finds no blocker and no should.
 - **Safe feature merges.** Agents merge a reviewed, green PR into a `feature/*` branch through
-  `dydo merge`, and the guard refuses every raw route around it: `gh pr merge`, the merge APIs, a
-  push to the default branch and a default-branch change. A merge into the default branch stays the
-  user's click.
+  `dydo merge`, and the guard refuses the raw routes around it: `gh pr merge`, the merge APIs, a
+  push to the default branch and a default-branch change, with the gaps listed under
+  [Known guard gaps](#known-guard-gaps). A merge into the default branch stays the user's click.
 - **Statecharts.** The user-invoked `statechart` skill and `dydo statechart` command check a bounded
   TLA+ model with TLC and draw the result, installing their locked prerequisites on first use.
 - **Guard.** It stops refusing the ordinary commands the retro caught, reads a bare carriage
@@ -216,7 +216,8 @@ upgrade the .NET runtime before the tool; see Upgrade steps.
 - A new default `warn` nudge, the install nudge, fires when an agent installs or adds a library or
   tool: `pnpm`, `npm`, `yarn` or `bun` `add` or `install <package>`, `npx -y`, `uv add`, `pip
   install`, `pipx`, `dotnet add` or `dotnet tool install`, and `apt`, `brew`, `cargo` or `gem
-  install`, among others. Restoring locked dependencies (`pnpm install --frozen-lockfile`, `npm ci`,
+  install`, among others. It also fires behind `sudo`, `env` or leading assignments, through a path
+  to `pip` or `uv`, and after options such as `pnpm -C <dir>`. Restoring locked dependencies (`pnpm install --frozen-lockfile`, `npm ci`,
   `uv sync --frozen`, `dotnet restore`, a bare `pnpm install` or `npm install`) never triggers it.
   The agent retries the same command only with the user's permission, given in the conversation or
   in the approved plan or ticket that names the install; otherwise it stops and asks. It is
@@ -327,6 +328,9 @@ These change dydo's own repository and CI, not what a project runs.
 - <!-- pending: DYD-881 --> A malformed input no longer crashes the 3.6.0 shell reader. Before the
   fix, the crash reached the guard's catch-all, which allowed the call; now the reader does not
   throw and the call is refused.
+- <!-- pending: DYD-887 --> From a ticket branch, one line that switches to the default branch,
+  merges and runs a bare `git push` is refused. Before, the guard judged that push by the branch
+  checked out before the switch, so it allowed a push to the default branch.
 
 ### Guard refusals that were missing
 
@@ -340,7 +344,8 @@ These change dydo's own repository and CI, not what a project runs.
   mutations, a `git push` that updates `master`, `main` or the `origin/HEAD` branch, and a
   default-branch change. Each refusal names `dydo merge`
   ([DYD-425](../2026-11-04/dyd-425-guard-merge-blocks.md), DYD-576). A Codex session and a Claude
-  session got the same allow or block outcome for the merge command matrix (DYD-426).
+  session got the same allow or block outcome for the merge command matrix (DYD-426). Two push
+  routes to `main` still pass; see [Known guard gaps](#known-guard-gaps).
 
 ### CLI
 
@@ -359,8 +364,9 @@ These change dydo's own repository and CI, not what a project runs.
 ### Statechart
 
 - The POSIX statechart socket stays within the `AF_UNIX` path limit when `TMPDIR` is long
-  (DYD-574). <!-- pending: DYD-601 --> When the socket's fallback directory cannot be created, the
-  error names the directory and the `TMPDIR` remedy instead of a bare `Win32Exception`.
+  (DYD-574). When the socket's fallback directory cannot be created, the error names the directory
+  and the remedy, removing it or setting a shorter `TMPDIR`, instead of a bare `Win32Exception`
+  (DYD-601).
 - The POSIX group drain reads a task the kernel is releasing as no member instead of aborting
   ([DYD-678](../2026-11-05/dyd-678-posix-drain-releasing-task.md)). The skill's `.gitignore` covers
   the Java build's `__pycache__`, so a coverage run leaves the tree clean
@@ -446,6 +452,8 @@ accidents, not a determined agent. Balazs marked DYD-865, DYD-879 and DYD-882 as
     (DYD-871).
   - In PowerShell: renaming a protected file, a block comment before a delete, and `.\`-prefixed or
     backslash paths on Linux pwsh (DYD-883).
+  - A delete inside an escaped backtick substitution nested in another backtick substitution
+    (DYD-888).
 
 ## Upgrade steps
 

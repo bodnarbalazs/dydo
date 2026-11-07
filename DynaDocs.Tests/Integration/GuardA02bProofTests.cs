@@ -44,4 +44,15 @@ public class GuardA02bProofTests : IntegrationTestBase
         result.AssertPreToolUseDenied();
     }
 
+    // Pre-existing. In bash an escaped backtick inside a backtick substitution opens a nested one,
+    // and the nested command runs: `echo \`echo \\\`rm dydo.json\\\`\`` deletes dydo.json. The
+    // reader keeps the inner text as one capture and the guard allows it, on 42882830 and 3.6.0.
+    [Fact]
+    public async Task NestedEscapedBacktick_ProtectedDelete_IsDenied()
+    {
+        await InitProjectAsync("none");
+        var result = await GuardWithStdinAsync(BashPayload("echo `echo \\`rm dydo.json\\``"));
+        Assert.False(result.IsPreToolUseAllowed, "guard allowed a nested backtick that deletes dydo.json");
+        result.AssertPreToolUseDenied();
+    }
 }

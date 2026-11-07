@@ -43,7 +43,7 @@ function execute(t, script, report, outcome = 'success') {
   return result;
 }
 
-test('Windows selects the exact directory-link regression alongside the seven guard classes', pwsh, t => {
+test('Windows selects the exact directory-link regression alongside the seven guard classes, without the dormant performance proofs', pwsh, t => {
   assert.equal(job['runs-on'], 'windows-latest');
   for (const item of [job, run, guard]) assert.equal(item['continue-on-error'], undefined);
   assert.equal(job.if, undefined);
@@ -56,7 +56,9 @@ test('Windows selects the exact directory-link regression alongside the seven gu
   assert.equal(result.status, 0, result.stdout + result.stderr);
   const args = JSON.parse(result.stdout.split(/\r?\n/).find(line => line.startsWith('ARGV:')).slice(5));
   assert.equal(args[0], 'test');
-  assert.deepEqual(args[args.indexOf('--filter') + 1].split('|'), [
+  const filter = args[args.indexOf('--filter') + 1].match(/^\((.*)\)&PerformanceProof!=Release$/);
+  assert.ok(filter, args.join(' '));
+  assert.deepEqual(filter[1].split('|'), [
     ...classes.map(name => `FullyQualifiedName~${name}.`), `FullyQualifiedName=${required}`,
   ]);
 });

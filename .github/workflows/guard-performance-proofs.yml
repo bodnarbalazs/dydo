@@ -1,0 +1,59 @@
+name: Guard performance proofs
+
+# The guard's repeated numerical performance proofs are a dormant, opt-in suite (DYD-859): no pull
+# request, push or required check runs them. Dispatch this when a fundamental change to how the
+# guard reads commands, a suspected performance regression or a new reader architecture calls for
+# them; a failure is a real regression signal. It runs release_proof.py run, the suite's one
+# command: every mapped case, warmup and round, built in Release and uninstrumented, judged against
+# release-proofs.json. See "Dormant guard performance proofs" in dydo/guides/testing-strategy.md.
+on:
+  workflow_dispatch:
+
+jobs:
+  guard-performance-proofs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
+        with:
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
+
+      - name: Prepare pinned Python assurance environment
+        run: python -m venv .static-gates/python
+
+      - name: Install locked Python dependencies
+        run: .static-gates/python/bin/python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Restore locked packages
+        run: dotnet restore --locked-mode
+
+      - name: Release performance proofs
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: .static-gates/python/bin/python DynaDocs.Tests/coverage/release_proof.py run
+
+      - name: Upload Release proof evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guard-performance-proofs-attempt-${{ github.run_attempt }}
+          path: DynaDocs.Tests/coverage/results
+          if-no-files-found: error

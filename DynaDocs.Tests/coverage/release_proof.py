@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""The required Release performance-proof lane (DYD-840).
+"""The opt-in Release performance-proof suite (DYD-840, DYD-859).
 
 `run` builds and runs exactly the mapped proofs once, in Release and uninstrumented, through the
 isolated testing facade, then judges the run's TRX. `verify` judges a TRX alone. Evidence that is
-missing, unreadable, failed, partial, unmapped or not the Release build fails the lane. The map,
+missing, unreadable, failed, partial, unmapped or not the Release build fails the suite. The map,
 release-proofs.json, also names the filter that keeps the Release proofs out of instrumented
-coverage, where their witnesses run instead.
+coverage, where their witnesses run instead. Every other test run leaves them dormant through the
+test project's run settings; `run` alone opts in.
 """
 import argparse
 import hashlib
@@ -21,6 +22,8 @@ ROOT = TOOLS.parents[1]
 MAP = TOOLS / "release-proofs.json"
 RESULTS = ROOT / "DynaDocs.Tests/coverage/results/release-proof"
 TRX_NAME = "release-proof.trx"
+# Drops the run settings that keep the Release proofs dormant (DynaDocs.Tests.csproj).
+OPT_IN = "-p:PerformanceProofs=true"
 LANES = ("Release", "Shared")
 TRX = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
 
@@ -76,7 +79,7 @@ def coverage_filter(path=MAP):
 
 def facade_command(mapping, results):
     return [sys.executable, str(TOOLS / "gap_check.py"), "test", "--stack", "dotnet", "--",
-            "-c", "Release", "--filter", mapping["releaseFilter"],
+            "-c", "Release", OPT_IN, "--filter", mapping["releaseFilter"],
             "--logger", f"trx;LogFileName={TRX_NAME}", "--results-directory", str(results)]
 
 

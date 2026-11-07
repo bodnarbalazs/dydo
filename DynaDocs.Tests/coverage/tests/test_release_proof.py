@@ -389,6 +389,22 @@ class ReleaseProofCommandLineTests(unittest.TestCase):
             with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
                 self.assertEqual(1, main(["verify", "--trx", str(trx), "--receipt", str(receipt)]))
 
+    def test_verify_refuses_to_stamp_an_earlier_candidates_trx_as_this_candidates_pass(self):
+        # DYD-431 F-32: a passing TRX run on candidate A must not become a pass receipt for candidate B.
+        # testing-strategy.md: "Reuse evidence only for the exact candidate".
+        earlier, current = "a" * 40, "b" * 40
+        with tempfile.TemporaryDirectory() as folder:
+            with patch("release_proof._candidate", return_value=earlier):
+                trx = write_trx(Path(folder) / TRX_NAME, lane_rows(load_map()))
+            receipt = Path(folder) / "receipt.json"
+            with patch("release_proof._candidate", return_value=current), \
+                    redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                status = main(["verify", "--trx", str(trx), "--receipt", str(receipt)])
+            written = json.loads(receipt.read_text(encoding="utf-8"))
+            self.assertEqual((1, "fail"), (status, written["verdict"]),
+                             f"candidate {written['candidate']} was stamped {written['verdict']} "
+                             f"from a TRX carrying no binding to the candidate it ran on")
+
     def test_run_uses_the_given_results_directory(self):
         with patch("release_proof.run", return_value=0) as lane:
             self.assertEqual(0, main(["run", "--results", "/somewhere"]))

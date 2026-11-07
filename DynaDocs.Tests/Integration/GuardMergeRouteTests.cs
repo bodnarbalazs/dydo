@@ -242,6 +242,126 @@ public class GuardMergeRouteTests : IntegrationTestBase
             ChainEnvelopes));
     }
 
+    // B1 (round 1): a change in another repository or a linked worktree leaves this worktree's HEAD
+    // alone, so the push is judged on its own HEAD; a subdirectory or any path into this worktree is
+    // the same worktree, and an other-tree change after a change here does not end it.
+    [Fact]
+    public async Task BarePush_AfterACheckoutInAnotherWorktree_IsJudgedOnItsOwnHead()
+    {
+        await InitTicketBranchProject();
+        var other = Path.Combine(TestDir, "other");
+        Directory.CreateDirectory(other);
+        Git(other, "init", "-b", "main");
+        Git(other, "config", "user.name", "Test");
+        Git(other, "config", "user.email", "test@example.com");
+        Git(other, "config", "commit.gpgsign", "false");
+        Git(other, "commit", "--allow-empty", "-m", "seed");
+        Git(other, "checkout", "-b", "side");
+        Git(TestDir, "worktree", "add", "--detach", Worktree, "HEAD");
+        Directory.CreateDirectory(Path.Combine(TestDir, "sub"));
+
+        AssertNoMisses(await Misses(denied: false, Words(
+            $"git -C {other} checkout main && git push",
+            "git -C other checkout main && git push origin HEAD",
+            $"git -C {Worktree} checkout main && git push",
+            "git -C wt switch main && git push"),
+            ChainEnvelopes));
+        AssertNoMisses(await Misses(denied: true, Words(
+            "git -C sub checkout main && git push",
+            "git -C wt/.. checkout main && git push",
+            $"git -C {TestDir} switch main && git push origin HEAD",
+            "git checkout main && git -C wt checkout feature/x && git push"),
+            ChainEnvelopes, reasonParts: ["main", "dydo merge"]));
+    }
+
+    // B2 (round 1): a checkout target is a branch only when git has it as a local branch (or as a
+    // remote's branch it then creates); a commit, tag or remote-tracking ref detaches and is unreadable.
+    [Fact]
+    public async Task Push_AfterADetachOntoACommitTagOrRemoteRef_IsDenied()
+    {
+        await InitTicketBranchProject();
+        Git(TestDir, "tag", "v1");
+        var sha = Git(TestDir, "rev-parse", "HEAD").Text.Trim();
+
+        AssertNoMisses(await Misses(denied: true, Words(
+            $"git checkout {sha} && git push origin HEAD",
+            "git checkout origin/main && git push origin HEAD",
+            "git checkout v1 && git push",
+            "git checkout refs/heads/main && git push origin HEAD",
+            "git checkout --frobnicate main && git push"),
+            ChainEnvelopes, reasonParts: ["dydo merge", "cannot read"]));
+    }
+
+    [Fact]
+    public async Task Push_AfterACheckoutOfPathsOrARemotesBranch_IsAllowed()
+    {
+        await InitTicketBranchProject();
+        Git(TestDir, "push", "origin", "DYD-1-x:feature/y");
+
+        AssertNoMisses(await Misses(denied: false, Words(
+            "git checkout readme.md && git push",
+            "git checkout feature/y && git push",
+            "git switch feature/y && git push origin HEAD",
+            "git checkout no-such-branch && git push"),
+            ChainEnvelopes));
+    }
+
+    // B3 (round 1): a backtick substitution runs where its command does, so one after the push does not count.
+    [Fact]
+    public async Task Push_BeforeABacktickCheckout_IsAllowed()
+    {
+        await InitTicketBranchProject();
+
+        AssertNoMisses(await Misses(denied: false, Words("git push; echo `git checkout main`"), ChainEnvelopes));
+        AssertNoMisses(await Misses(denied: true, Words("echo `git checkout main`; git push"), ["claude-bash", "codex-bash"],
+            reasonParts: ["main", "dydo merge"]));
+    }
+
+    // S1 (round 1): when only && separates the last change from the push, the push runs only after it
+    // succeeds, so that change alone is in effect; any other separator keeps every earlier candidate.
+    [Fact]
+    public async Task Push_AfterAnAndAndRunOfChanges_IsJudgedOnTheLast()
+    {
+        await InitTicketBranchProject();
+
+        AssertNoMisses(await Misses(denied: false, Words(
+            "git checkout main && git switch feature/x && git push",
+            "git checkout main && git pull && git checkout DYD-1-x && git push",
+            "git checkout main; git switch feature/x && git push"),
+            ChainEnvelopes));
+        AssertNoMisses(await Misses(denied: true, Words(
+            "git checkout main && git switch feature/x; git push",
+            "git checkout main && git switch feature/x || git push",
+            "git checkout feature/x && git checkout main && git push",
+            "git checkout main && true || git checkout feature/x && git push"),
+            ChainEnvelopes, reasonParts: ["main", "dydo merge"]));
+
+        // From main: a push after an && change runs on that change's branch, but one after || may run on main.
+        Git(TestDir, "checkout", "main");
+        AssertNoMisses(await Misses(denied: false, Words("git checkout feature/x && git push"), ChainEnvelopes));
+        AssertNoMisses(await Misses(denied: true, Words("git checkout feature/x; git push", "true || git checkout feature/x && git push"),
+            ChainEnvelopes, reasonParts: ["main", "dydo merge"]));
+    }
+
+    // N1 (round 1): an option's value is never read as the branch, so these still check out main.
+    [Fact]
+    public async Task Push_AfterACheckoutOfMainWithOptions_IsDenied()
+    {
+        await InitTicketBranchProject();
+
+        AssertNoMisses(await Misses(denied: true, Words(
+            "git checkout --conflict diff3 main && git push",
+            "git switch --conflict=merge main && git push",
+            "git -c advice.detachedHead=false checkout main && git push",
+            "git --no-pager checkout main && git push",
+            "git checkout --recurse-submodules main && git push",
+            "git checkout main 2>/dev/null && git push",
+            "git switch --discard-changes main && git push",
+            "git checkout -m main && git push",
+            "git checkout --no-track main && git push"),
+            ChainEnvelopes, reasonParts: ["main", "dydo merge"]));
+    }
+
     [Fact]
     public async Task PushOfHead_OnMain_IsDenied()
     {

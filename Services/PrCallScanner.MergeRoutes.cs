@@ -10,8 +10,8 @@ using System.Text.RegularExpressions;
 /// <c>pulls/N/merge-async</c> or <c>merges</c>, as path or URL, whatever the method; <c>gh api
 /// graphql</c> with a field naming mergePullRequest, enablePullRequestAutoMerge or mergeBranch;
 /// <c>gh repo edit --default-branch</c>, or a <c>gh api</c> PATCH of <c>repos/OWNER/REPO</c> with a
-/// default_branch field; and every <c>git push</c>, one route per branch it updates, and again per
-/// branch change before it when it pushes the current branch (see PrCallScanner.BranchChanges). A wrapper's
+/// default_branch field; and every <c>git push</c>, one route per branch it updates, a push of the
+/// current branch carrying the branch changes before it (see PrCallScanner.BranchChanges). A wrapper's
 /// command string is read the same way and its routes are the line's; another program's arguments,
 /// in a shell line or a bare argv array alike, are data. An encoded command or nesting past the limit is left to the PR check, which
 /// refuses it unread in a git tree. A GraphQL query or API body read from a file or stdin is not read.
@@ -42,15 +42,28 @@ internal static partial class PrCallScanner
     public static List<MergeRoute> FindMergeRoutesInArgv(IReadOnlyList<string> argv) =>
         CommandPosition.Envelope(argv) is { } envelope ? FindMergeRoutes(envelope.Text, envelope.Dialect) : Followed(StepsOf(argv, 0));
 
-    // Each reading's routes and branch changes in the order it runs them; a backtick substitution's
-    // come first, since its place is not kept and it runs before the command that holds it.
+    // Each reading's routes and branch changes in the order it runs them.
     private static IEnumerable<List<Step>> Readings(string text, ShellDialect dialect, int depth)
     {
         var line = GhPlaceholderRegex().Replace(text, ":$1");
-        return Readings(dialect, line)
-            .Select(posix => ShellReader.Read(line, posix))
-            .Select(reading => reading.Substitutions.SelectMany(substitution => ScanSteps(substitution, ShellDialect.Posix, depth + 1))
-                .Concat(reading.Commands.SelectMany(command => StepsOf(command.Words, depth, command))).ToList());
+        return Readings(dialect, line).Select(posix => StepsOf(ShellReader.Read(line, posix), depth));
+    }
+
+    // A reading's commands in order, each with the && run it is in; a backtick substitution runs just
+    // before the command that holds it (one whose command the reading lost, first), in no run.
+    private static List<Step> StepsOf(ShellReader.Reading reading, int depth)
+    {
+        var hosted = reading.Captures.ToLookup(capture => capture.Host.Command);
+        List<Step> steps = [.. reading.Captures.Where(capture => !reading.Commands.Contains(capture.Host.Command))
+            .SelectMany(capture => ScanSteps(capture.Text, ShellDialect.Posix, depth + 1))];
+        var runs = new Runs();
+        foreach (var command in reading.Commands)
+        {
+            var (run, own) = runs.Of(command);
+            steps.AddRange(hosted[command].SelectMany(capture => ScanSteps(capture.Text, ShellDialect.Posix, depth + 1)));
+            steps.AddRange(StepsOf(command.Words, depth, command).Select(step => step.Run == null ? step with { Run = own ?? run } : step));
+        }
+        return steps;
     }
 
     // A nested script's steps, its readings in turn.
@@ -77,9 +90,11 @@ internal static partial class PrCallScanner
         if (program == "gh" && GhRoute(rest) is { } route)
             return [new(route)];
         if (program == "gh")
-            return ChecksOutAPr(rest) ? [new(Branch: MergeRoute.UnreadableBranch)] : [];
+            return ChecksOutAPr(rest) ? [new(Change: new BranchChange(MergeRoute.UnreadableBranch))] : [];
+        // A negated command (!) succeeds when git fails, so it starts no run.
         if (program == "git")
-            return GitSteps(rest, index => WrittenWord(command, at + 1 + index));
+            return [.. GitSteps(rest, index => WrittenWord(command, at + 1 + index))
+                .Select(step => words.Take(at).Contains("!") ? step with { Run = new object() } : step)];
         return CommandPosition.ScriptOf(program, rest) is { Encoded: false } script && depth < MaxDepth
             ? ScanSteps(script.Text, script.Dialect, depth + 1)
             : [];
@@ -139,7 +154,11 @@ internal static partial class PrCallScanner
             return [];
         if (rest[at] == "push")
             return [.. PushRoutes(rest[at..], directory, asWritten).Select(route => new Step(route))];
-        return SwitchedBranch(rest[at], rest[(at + 1)..]) is { } branch ? [new(Branch: branch)] : [];
+        if (SwitchedBranch(rest[at], rest[(at + 1)..]) is not { } change)
+            return [];
+        // A change HEAD is not sure to follow starts no run, so no push takes it as the last.
+        var branchChange = new BranchChange(change.Branch, change.Creates, directory, asWritten == directory ? null : asWritten);
+        return [new(Change: branchChange, Run: change.Sure ? null : new object())];
     }
 
     // push's first operand is the remote and the rest are refspecs. With none, a push updates the

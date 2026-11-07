@@ -17,7 +17,8 @@ internal sealed class ModeState(string? root = null)
         ["overnight"] = ["off", "on"],
     };
 
-    private readonly string _path = Path.Combine(
+    /// <summary>The full path of the mode store file.</summary>
+    public string FilePath { get; } = Path.Combine(
         root ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "dydo"),
         "mode.json");
 
@@ -34,15 +35,15 @@ internal sealed class ModeState(string? root = null)
     {
         var values = Read().ToDictionary(StringComparer.Ordinal);
         values[flag] = value;
-        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-        File.WriteAllText(_path, JsonSerializer.Serialize(values, DydoDefaultJsonContext.Default.DictionaryStringString));
+        Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+        File.WriteAllText(FilePath, JsonSerializer.Serialize(values, DydoDefaultJsonContext.Default.DictionaryStringString));
     }
 
     private Dictionary<string, string> Load()
     {
         try
         {
-            return JsonSerializer.Deserialize(File.ReadAllText(_path), DydoDefaultJsonContext.Default.DictionaryStringString) ?? [];
+            return JsonSerializer.Deserialize(File.ReadAllText(FilePath), DydoDefaultJsonContext.Default.DictionaryStringString) ?? [];
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {

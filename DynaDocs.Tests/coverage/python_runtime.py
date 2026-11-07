@@ -313,6 +313,10 @@ class CallableWitness:
         row, own, _ = self._row(code)
         if own:
             row['execution_count'] += 1
+        if row is not None and self.tool_id is not None:
+            monitor = sys.monitoring
+            if not monitor.get_local_events(self.tool_id, code):
+                monitor.set_local_events(self.tool_id, code, monitor.events.INSTRUCTION)
 
     def _line(self, code, line):
         row = self._row(code)[0]
@@ -373,8 +377,7 @@ class CallableWitness:
             monitor.register_callback(self.tool_id, monitor.events.EXCEPTION_HANDLED, self._exception)
             monitor.register_callback(self.tool_id, monitor.events.PY_UNWIND, self._exception)
             monitor.set_events(self.tool_id, monitor.events.PY_START | monitor.events.LINE
-                               | monitor.events.INSTRUCTION | monitor.events.EXCEPTION_HANDLED
-                               | monitor.events.PY_UNWIND)
+                               | monitor.events.EXCEPTION_HANDLED | monitor.events.PY_UNWIND)
         except BaseException:
             self.__exit__(None, None, None)
             raise

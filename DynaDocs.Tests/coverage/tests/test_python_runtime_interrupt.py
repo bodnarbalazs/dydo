@@ -1,6 +1,7 @@
 """Real signals inside the witness must reach the measured frame's exception handler."""
 import dis
 import signal
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -115,6 +116,11 @@ def measured(source, native):
     with CallableWitness({path: source}) as witness:
         monitor = sys.monitoring
         if native:
+            def start(code, _offset):
+                row, own, _ = witness._row(code)
+                if own:
+                    row['execution_count'] += 1
+            monitor.register_callback(witness.tool_id, monitor.events.PY_START, start)
             monitor.register_callback(witness.tool_id, monitor.events.BRANCH, witness._branch)
             monitor.set_events(witness.tool_id, monitor.events.PY_START | monitor.events.LINE | monitor.events.BRANCH)
         try:
@@ -126,6 +132,23 @@ def measured(source, native):
 
 
 class PythonRuntimeInterruptTests(unittest.TestCase):
+    def test_nested_witness_keeps_other_monitors_branch_origins(self):
+        # Two witnesses need both reserved IDs; the campaign measuring this test owns a third.
+        script = '''import importlib.util, sys
+sys.path[:0] = sys.argv[1:3]
+spec = importlib.util.spec_from_file_location('python_runtime', sys.argv[3])
+module = importlib.util.module_from_spec(spec)
+sys.modules['python_runtime'] = module
+spec.loader.exec_module(module)
+from test_python_runtime_interrupt import ACCOUNTING, CallableWitness, measured
+with CallableWitness({}):
+    assert measured(ACCOUNTING, True) == measured(ACCOUNTING, False)
+'''
+        tests = Path(__file__).resolve().parent
+        result = subprocess.run([sys.executable, '-I', '-c', script, str(tests), str(tests.parent),
+                                 sys.modules['python_runtime'].__file__], capture_output=True, text=True)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+
     def test_branch_and_callable_accounting_matches_native_monitoring(self):
         extended = ('def work(value):\n    if value:\n' + '        value += 1\n' * 300
                     + '    return value\nwork(False)\nwork(True)\n')
@@ -153,8 +176,16 @@ class PythonRuntimeInterruptTests(unittest.TestCase):
         self.assertIs(sys.monitoring.DISABLE, witness._instruction(code, 0))
         self.assertIs(sys.monitoring.DISABLE, witness._instruction(measured.__code__, 0))
         with witness:
+            namespace['work'](True)
+            self.assertEqual(sys.monitoring.events.INSTRUCTION,
+                             sys.monitoring.get_local_events(witness.tool_id, code))
             witness._instruction(code, branch.offset)
         self.assertEqual({}, witness._pending)
+        before = witness.rows()
+        namespace['work'](False)  # free_tool_id invalidates local events lazily on next execution.
+        self.assertEqual(before, witness.rows())
+        self.assertIsNone(sys.monitoring.get_tool(witness.tool_id))
+        self.assertEqual(0, sys.monitoring.get_local_events(witness.tool_id, code))
 
     def test_signal_inside_callback_reaches_target_and_non_target_handler(self):
         namespace = {}
@@ -173,7 +204,10 @@ class PythonRuntimeInterruptTests(unittest.TestCase):
         def row(witness, code):
             callback = sys._getframe(1)
             offset = callback.f_locals.get('origin', callback.f_locals.get('offset'))
-            if code is work.__code__ and offset == origin and not delivered:
+            site = offset == origin
+            if not target and hasattr(witness, '_instruction'):
+                site = callback.f_code.co_name == '_line' and callback.f_locals['line'] == 4
+            if code is work.__code__ and site and not delivered:
                 signal.raise_signal(signal.SIGINT)
             return original_row(witness, code)
 

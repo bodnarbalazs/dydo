@@ -24,4 +24,17 @@ public class GuardA02ProofTests : IntegrationTestBase
         Assert.DoesNotContain("internal error", result.Stderr);
         result.AssertPreToolUseDenied();
     }
+
+    // Codex runs the command in tool_input.workdir; the guard parses it (ToolCwd) but resolves the
+    // command's file operations against its own process directory, so a relative delete there passes.
+    [Fact]
+    public async Task CodexWorkdir_RelativeDeleteOfProtectedFile_IsDenied()
+    {
+        await InitProjectAsync("none");
+        var result = await GuardWithStdinAsync(Payload(
+            new Dictionary<string, string> { ["command"] = "rm index.md", ["workdir"] = Path.Combine(TestDir, "dydo") },
+            turnId: "turn-1"), "--host", "codex");
+        Assert.False(result.IsPreToolUseAllowed, "guard allowed rm of dydo/index.md run in workdir dydo");
+        result.AssertPreToolUseDenied();
+    }
 }

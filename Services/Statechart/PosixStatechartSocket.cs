@@ -33,10 +33,14 @@ internal static class PosixStatechartSocket
             if ((mode & 0xf000) == 0x4000 && (mode & 0xe3f) == 0 && (uint)Marshal.ReadInt32(info, 20) == owner)
                 return directory;
         }
+        catch (Win32Exception error) { throw Refused(directory, owner, error); } // Nothing to vet: mkdir failed, not with EEXIST.
         finally { Marshal.FreeHGlobal(info); }
-        throw new IOException($"Statechart socket directory {directory} must be a directory owned by uid {owner} " +
-            "with mode 0700 or stricter, and not a link. Remove it, or set TMPDIR to a shorter path.");
+        throw Refused(directory, owner, null);
     }
+
+    private static IOException Refused(string directory, uint owner, Win32Exception? cause) =>
+        new($"Statechart socket directory {directory} must be a directory owned by uid {owner} " +
+            "with mode 0700 or stricter, and not a link. Remove it, or set TMPDIR to a shorter path.", cause);
 
     [DllImport("libc", EntryPoint = "geteuid")]
     private static extern uint EffectiveUser();

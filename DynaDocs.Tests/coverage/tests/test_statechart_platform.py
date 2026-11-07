@@ -144,14 +144,23 @@ class StatechartPlatformTests(unittest.TestCase):
                 statechart_platform.selected_tests(report, self.selection)
 
     def test_windows_adapter_simulation_excludes_an_unloaded_posix_module(self):
+        for newline in ('\n', '\r\n'):
+            with self.subTest(newline=repr(newline)):
+                self.assert_windows_adapter(newline)
+
+    def assert_windows_adapter(self, newline):
         import gate_adapter
         from test_gate_adapter import StatechartGateTests, fake_node_test
         fixture = StatechartGateTests()
-        root, raw, inventory = fixture.repository(self.root / 'adapter')
+        root, raw, inventory = fixture.repository(self.root / f'adapter-{len(newline)}')
         path = statechart_platform.PACKAGE / 'run.ts'
+        target = root / path
+        target.write_text(target.read_text(encoding='utf-8'), encoding='utf-8', newline=newline)
+        self.assertEqual(newline == '\r\n', b'\r\n' in target.read_bytes())
         selection = copy.deepcopy(self.selection)
         selection['native'] = {path.as_posix(): {
-            'sha256': hashlib.sha256((root / path).read_bytes()).hexdigest(), 'windows': ['run:1:7']}}
+            'sha256': hashlib.sha256(target.read_text(encoding='utf-8-sig').encode('utf-8')).hexdigest(),
+            'windows': ['run:1:7']}}
         selection['windows_tests'] = {'reason': 'fixture', 'tests': ['test/run.test.ts'], 'names': ['runs']}
         (root / statechart_platform.SELECTION).write_text(json.dumps(selection))
         missing = statechart_platform.PACKAGE / 'test/java.ts'
@@ -168,6 +177,20 @@ class StatechartPlatformTests(unittest.TestCase):
         self.assertEqual('windows', facts['platform_selection']['platform'])
         self.assertIn(missing.as_posix(), facts['platform_selection']['sources'])
         self.assertEqual({'branch-coverage'}, {row['gate'] for row in answer['findings']})
+
+    def test_source_pins_and_union_receipts_normalize_newlines_but_reject_edits(self):
+        receipts = []
+        target = self.root / 'mixed.ts'
+        for newline in ('\n', '\r\n'):
+            target.write_text(SOURCE, encoding='utf-8', newline=newline)
+            receipts.append([self.scope(platform)[1] for platform in statechart_platform.PLATFORMS])
+            self.assertEqual(0, self.verify(self.reports())['exitCode'])
+            target.write_text(SOURCE.replace('return 2', 'return 9'), encoding='utf-8', newline=newline)
+            for platform in statechart_platform.PLATFORMS:
+                with self.subTest(newline=repr(newline), platform=platform), \
+                        self.assertRaisesRegex(ValueError, 'Platform selection source drift'):
+                    self.scope(platform)
+        self.assertEqual(receipts[0], receipts[1])
 
     def test_unpublished_counters_stay_zero_and_published_corruption_is_rejected(self):
         from gate_policy import evaluate_policy

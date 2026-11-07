@@ -14,6 +14,16 @@ Feature: Shared independent review PASS grammar
       | space     | colon |
       | colon     | colon |
 
+  Scenario Outline: An optional base does not prevent readiness or merge
+    Given an independent review line without a parsed base "<suffix>"
+    When I check that review with pr-ready and a pinned merge dry run
+    Then both commands accept the review
+
+    Examples:
+      | suffix |
+      |        |
+      | ; base nope |
+
   Scenario: Prose-only PASS is refused before merge
     Given the independent review line "PASS - rubric/type: code, fix-hop re-review."
     When I check that review with pr-ready and a pinned merge dry run

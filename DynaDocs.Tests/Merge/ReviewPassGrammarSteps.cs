@@ -21,6 +21,9 @@ public sealed class ReviewPassGrammarSteps
     [Given("the independent review line {string}")]
     public void Line(string line) => _line = line;
 
+    [Given("an independent review line without a parsed base {string}")]
+    public void WithoutBase(string suffix) => _line = $"PASS - rubric/type: code; candidate {Sha}{suffix}";
+
     [When("I check that review with pr-ready and a pinned merge dry run")]
     public async Task Check()
     {

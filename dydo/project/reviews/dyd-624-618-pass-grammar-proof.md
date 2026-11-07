@@ -18,7 +18,8 @@ backticked SHAs, punctuation, trailing prose, mixed-case hex and all three suppo
 The existing parser tests and the new four-way separator matrix exercise that preservation.
 
 Pr-ready reads section boundaries and verdicts through `IndependentReview`. It requires a PASS
-with a code/docs/merge rubric and parsed candidate and base fields. Its error gives the expected
+with a code/docs/merge rubric and parsed candidate field. Base is optional, matching merge's
+existing acceptance when the field is absent or unparsed. Its error gives the expected
 semicolon-separated form. Command-only body validation lives in `PrReadyCommand`; the guard
 continues to share `PrReadyCheck`'s tree checks. This avoids a namespace cycle from Services into
 Services.Merge, which already depends on Services. No commit resolution, HEAD comparison of the review candidate, or
@@ -51,6 +52,14 @@ The statechart JRE and TLC SHA-256 values and Pele SHA-512 integrity matched
 Node 26.13.0, SDK 10.0.303 and shared .NET runtime 10.0.14.
 
 ## Captain rerun
+
+Both independent reviewers rejected the first candidate's required-base condition because merge
+accepts a missing base. The captain corrected the contract to retain that existing policy.
+The paired absent/unparsed-base scenarios failed before the correction (2 failed, 5 passed,
+zero skipped; `/var/tmp/dyd624-618-captain/optional-base-red.log`). The fix removes only the
+readiness base requirement, corrects two contrary rejection cases and clarifies the reference.
+No merge policy changes. The seven Gherkin cases now cover canonical, colon, optional-base and
+prose-only behavior. Final gate receipts and the captain's affected-test rerun accompany the hop.
 
 Use this checkout with its restored locked prerequisites. Create a unique evidence directory
 under `/var/tmp`, set `TMPDIR` to it, and export `MSBUILDDISABLENODEREUSE=1`,

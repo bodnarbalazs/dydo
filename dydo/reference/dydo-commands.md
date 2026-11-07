@@ -452,11 +452,12 @@ fetched. Keep the body file in `dydo/agents/workspace/`, which git ignores, so i
 and the guard can read it from inside the tree. With `--body`, the body must name a ticket key (such as `DYD-123`) and hold a
 `## Independent review` section with a parsable reviewer block, fenced or not:
 `PASS - rubric/type: code; candidate <SHA>; base <SHA>`. The rubric must be `code`, `docs` or
-`merge`; both SHAs must contain 7–40 hexadecimal digits and may be backticked. Fields start
+`merge`; the candidate SHA must contain 7–40 hexadecimal digits and may be backticked. Fields start
 after semicolons. `candidate: <SHA>` and `base: <SHA>` are also accepted, independently;
 the canonical forms without colons remain valid. The dash after `PASS` may be a hyphen,
-an en dash or an em dash. Prose-only PASS lines and missing or invalid fields are refused
-with the expected form. This uses the merge parser but checks grammar only: it does not
+an en dash or an em dash. Prose-only PASS lines and missing or invalid candidate fields are refused
+with the expected form. Base is optional: as in merge, an absent or unparsed base does not
+invalidate the PASS. A parsed base uses the same SHA form. This uses the merge parser but checks grammar only: it does not
 resolve review SHAs, match the candidate to HEAD or check base ancestry. Merge still applies
 its own review, pin, ancestry and check policy.
 Each problem prints as one `not ready:` line on stderr and the exit is `1`; a path outside a git

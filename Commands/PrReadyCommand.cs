@@ -63,10 +63,10 @@ public static partial class PrReadyCommand
         if (!IndependentReview.HasSection(body))
             problems.Add("the body has no '## Independent review' section");
         else if (!IndependentReview.Parse(body).Any(verdict => verdict is
-                     { Pass: true, Rubric: "code" or "docs" or "merge", Candidate: not null, Base: not null }))
+                     { Pass: true, Rubric: "code" or "docs" or "merge", Candidate: not null }))
             problems.Add("the '## Independent review' section holds no reviewer 'PASS - rubric/type: ...' block with usable fields; "
                 + "expected PASS - rubric/type: code; candidate <SHA>; base <SHA> "
-                + "(code, docs or merge; 7–40 hex digits per SHA; optional candidate:/base: colons; hyphen, en dash or em dash after PASS)");
+                + "(code, docs or merge; 7–40 hex digits per SHA; base optional; optional candidate:/base: colons; hyphen, en dash or em dash after PASS)");
         return problems;
     }
 

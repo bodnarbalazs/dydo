@@ -1,7 +1,9 @@
 # Morning brief
 
-Complete `overnight-mode` shutdown, including fresh off readback, first. If blocked, report
-shutdown incomplete with the observed mode and exact human-terminal action; a stopped watch
+Complete `overnight-mode` shutdown first: wait for `dydo mode set overnight off` to return its
+result, then run `dydo mode show` in a separate later tool call, never in parallel, and require
+`overnight: off`. If blocked, report shutdown incomplete with the observed mode and exact
+human-terminal action; a stopped watch
 does not establish mode off. Fill this template in the conversation after verified shutdown.
 
 ## The night

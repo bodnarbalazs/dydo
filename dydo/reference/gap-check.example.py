@@ -852,7 +852,10 @@ class MemoryCap:
         after = self.kills()
         if before is None or after is None or after <= before:
             return None
-        return f"memory cap hit (MemoryMax={memory_size(self.record['limit'])}): a finding; do not raise the cap"
+        limit = f"MemoryMax={memory_size(self.record['limit'])}"
+        if self.cgroup:
+            limit = f"configured scope limit {limit}; an enclosing slice budget may have triggered the kill"
+        return f"memory cap hit ({limit}): a finding; do not raise the cap"
 
     def annotated(self, row, source=None):
         """Carry cap metadata on executed, deferred and derived rows alike."""

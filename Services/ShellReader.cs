@@ -229,6 +229,8 @@ internal sealed class ShellReader
     private Command? _last;
     private StringBuilder? _word;
     private int _wordStart;
+    // Just after a quote that opened between words closes; pwsh 7.6.9 ends that argument there.
+    private int _quotedEnd = -1;
     private int _i;
     private int _depth;
     private bool _redirectNext;
@@ -368,30 +370,36 @@ internal sealed class ShellReader
     }
 
     // An escaped line break continues the line; any other escaped character is literal. pwsh 7.6.9
-    // also continues at an escaped bare carriage return between words, and keeps one inside a word.
+    // continues at an escaped carriage return, bare or before a line feed, only between words (DYD-665);
+    // inside a word it keeps the carriage return, and a line feed after it still ends the line.
     // pwsh and cmd read a caret before a letter, a digit, a caret or the end alike; before anything
     // else they read the line apart.
     private void Escape()
     {
         var next = Peek(1);
         _caretDiverges |= _text[_i] == '^' && _i + 1 < _text.Length && !char.IsAsciiLetterOrDigit(next) && next != '^';
-        if (next == '\r' && Peek(2) == '\n')
+        var crlf = next == '\r' && Peek(2) == '\n';
+        var continues = next == '\n' || (crlf && (_posix || _text[_i] == '^'));
+        if (!continues && next == '\r' && !_posix && BetweenWords)
         {
-            _command.UncertainFeed = true;
-            _i += 3;
-            return;
+            EndWord();
+            continues = true;
         }
 
-        if (next == '\n' || (next == '\r' && !_posix && _word == null))
+        if (continues)
             _command.UncertainFeed = true;
         else if (next != '\0')
             Append(next, _i + 1);
-        _i += 2;
+        _i += crlf && continues ? 3 : 2;
     }
+
+    // In pwsh a quote that opens between words is an argument of its own, ended where it closes.
+    private bool BetweenWords => _word == null || (!_posix && _quotedEnd == _i);
 
     // In PowerShell a doubled quote is one literal quote, and the string goes on from the second.
     private void SingleQuoted()
     {
+        var standalone = BetweenWords;
         while (true)
         {
             var length = _text.AsSpan(_i + 1).IndexOfAny(SingleQuoteChars);
@@ -406,13 +414,18 @@ internal sealed class ShellReader
             AppendSlice(_i + 1, end - _i - 1);
             _i = end + 1;
             if (_posix || !SingleQuoteChars.Contains(Peek(0)))
+            {
+                if (standalone)
+                    _quotedEnd = _i;
                 return;
+            }
             Append(Peek(0));
         }
     }
 
     private void DoubleQuoted()
     {
+        var standalone = BetweenWords;
         StartWord();
         var at = _i + 1;
         while (at < _text.Length && !_failed)
@@ -422,6 +435,8 @@ internal sealed class ShellReader
             if (DoubleQuoteChars.Contains(c) && !IsQuotedEscape(c, next))
             {
                 _i = at + 1;
+                if (standalone)
+                    _quotedEnd = _i;
                 return;
             }
 

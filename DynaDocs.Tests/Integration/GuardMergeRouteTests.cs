@@ -242,6 +242,53 @@ public class GuardMergeRouteTests : IntegrationTestBase
         AssertNoMisses(misses);
     }
 
+    // DYD-665: inside a word pwsh 7.6.9 keeps a backtick-escaped carriage return and ends the
+    // statement at the line feed after it, so the route on the next line runs: Claude's PowerShell
+    // tool, a Codex pwsh envelope and an unknown shell refuse it.
+    [Fact]
+    public async Task BacktickCrlfInAWord_BeforeARoute_IsDeniedWherePwshRunsIt()
+    {
+        await InitPushedProject();
+        string[] lines = ["x`\r\ngit push origin main", "x`\r\ngh pr merge 5"];
+
+        List<string> misses = [];
+        foreach (var line in lines)
+        {
+            misses.AddRange(await PwshLineMisses(denied: true, line));
+            var unknown = await GuardWithStdinAsync("", "--command", line);
+            if (unknown.ExitCode != 2 || !unknown.Stderr.Contains("dydo merge"))
+                misses.Add($"unknown exit {unknown.ExitCode}: {line}\n    {unknown.Stderr.Trim()}");
+        }
+        AssertNoMisses(misses);
+    }
+
+    // Its nearest honest twin: between words, or after a quoted argument, the backtick continues the
+    // line, so pwsh runs one echo whose arguments spell the route, and both pwsh lanes allow it.
+    [Fact]
+    public async Task BacktickCrlfBetweenWords_BeforeARoute_IsAllowedInPwsh()
+    {
+        await InitPushedProject();
+
+        AssertNoMisses(await PwshLineMisses(denied: false,
+            "echo x `\r\ngit push origin main", "echo 'x'`\r\ngh pr merge 5", "echo \"x\"`\r\ngh pr merge 5"));
+    }
+
+    private async Task<List<string>> PwshLineMisses(bool denied, params string[] lines)
+    {
+        List<string> misses = [];
+        foreach (var line in lines)
+        foreach (var envelope in new[] { "claude-powershell", "codex-pwsh" })
+        {
+            var json = JsonNode.Parse(Payload([], envelope))!;
+            json["tool_input"]!["command"] = envelope == "codex-pwsh" ? new JsonArray("pwsh", "-Command", line) : line;
+            var result = await GuardWithStdinAsync(json.ToJsonString());
+            var wasDenied = !result.IsPreToolUseAllowed;
+            if (wasDenied != denied || (denied && !result.Stderr.Contains("dydo merge")))
+                misses.Add($"{envelope} {(wasDenied ? "denied" : "allowed")}: {line}\n    {result.Stderr.Trim()}");
+        }
+        return misses;
+    }
+
     // A Codex workdir is the call's directory, as for PR-ready.
     [Fact]
     public async Task PushOfHead_WithACodexWorkdirOnMain_IsDenied()

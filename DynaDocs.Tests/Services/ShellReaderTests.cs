@@ -33,6 +33,54 @@ public class ShellReaderTests
         Assert.Equal(commands, Commands(text));
     }
 
+    // DYD-665: pwsh 7.6.9 continues the line at a backtick before CRLF only between words, a quote
+    // that opened between words ending its argument where it closes. Inside a word it keeps the
+    // carriage return and the line feed still ends the statement (measured in /var/tmp/dyd665-opus).
+    // Adjacent quoted arguments ('a'"b") are one word to this reading, as before.
+    [Theory]
+    [InlineData("echo a`\r\necho b", new[] { "echo a\r", "echo b" })]
+    [InlineData("x`\r\ngit push origin main", new[] { "x\r", "git push origin main" })]
+    [InlineData("echo a'b'`\r\necho c", new[] { "echo ab\r", "echo c" })]
+    [InlineData("echo 'a'b'c'`\r\necho d", new[] { "echo abc\r", "echo d" })]
+    [InlineData("echo a`\"`\r\necho b", new[] { "echo a\"\r", "echo b" })]
+    [InlineData("echo a `\r\necho b", new[] { "echo a echo b" })]
+    [InlineData("echo ''`\r\necho b", new[] { "echo  echo b" })]
+    [InlineData("echo \"\"`\r\necho b", new[] { "echo  echo b" })]
+    [InlineData("echo 'a'`\r\necho b", new[] { "echo a echo b" })]
+    [InlineData("echo \"a\"`\r\necho b", new[] { "echo a echo b" })]
+    [InlineData("echo ‘a’`\r\necho b", new[] { "echo a echo b" })]
+    [InlineData("echo 'a''b'`\r\necho b", new[] { "echo a'b echo b" })]
+    [InlineData("echo \"a\"\"b\"`\r\necho b", new[] { "echo a\"b echo b" })]
+    [InlineData("echo 'a'\"b\"`\r\necho c", new[] { "echo ab echo c" })]
+    [InlineData("echo 'a'`\recho b", new[] { "echo a echo b" })]
+    public void BacktickCrlf_ContinuesOnlyBetweenWords(string text, string[] commands)
+    {
+        Assert.False(ShellReader.Read(text, posix: false).Failed);
+        Assert.Equal(commands, Commands(text));
+    }
+
+    [Fact]
+    public void BacktickCrlf_InAWord_KeepsTheCarriageReturnAndTheOrigins()
+    {
+        const string text = "echo a`\r\necho b";
+        var reading = ShellReader.Read(text, posix: false);
+
+        Assert.Equal(2, reading.Commands.Count);
+        Assert.Equal(5..8, reading.Commands[0].WordRanges[1]);
+        Assert.Equal(new ShellReader.Position(reading.Source, 7), reading.Commands[0].WordOrigins[1].At(1));
+        Assert.Equal<Range?>(9..13, reading.Commands[1].WordOrigins[0].RangeIn(reading.Source, 0..4));
+    }
+
+    [Fact]
+    public void BacktickCrlf_AfterAQuotedArgument_EndsItAtTheClosingQuote()
+    {
+        const string text = "echo 'a'`\r\necho b";
+        var command = Assert.Single(ShellReader.Read(text, posix: false).Commands);
+
+        Assert.Equal([5..8, 11..15], command.WordRanges[1..3]);
+        Assert.Equal<Range?>(11..15, command.WordOrigins[2].RangeIn(command.Source, 0..4));
+    }
+
     [Theory]
     [InlineData("echo 'x'\riex 'y'", new[] { "echo x iex y" })]
     [InlineData("echo x # note\rrm y", new[] { "echo x" })]
@@ -81,6 +129,7 @@ public class ShellReaderTests
     [InlineData("echo a^;rm y", "rm y")]
     [InlineData("echo a^\nrm y", "rm y")]
     [InlineData("echo a^\r\nrm y", "rm y")]
+    [InlineData("echo a^\r\necho b", "echo aecho b")]
     [InlineData("echo a^ b", "echo a^ b")]
     [InlineData("echo ^$(rm y)", "rm y")]
     [InlineData("echo ^'a b'", "echo ^a b")]

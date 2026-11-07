@@ -8,6 +8,12 @@
     <ReqnrollUseIntermediateOutputPathForCodeBehind>true</ReqnrollUseIntermediateOutputPathForCodeBehind>
   </PropertyGroup>
 
+  <!-- The repeated performance proofs are dormant (DYD-859). VSTest joins this filter to any filter
+       given on the command line, so filtered runs leave them out too; release_proof.py run opts in. -->
+  <PropertyGroup Condition="'$(PerformanceProofs)' != 'true'">
+    <RunSettingsFilePath>$(MSBuildThisFileDirectory)DynaDocs.Tests.runsettings</RunSettingsFilePath>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Reqnroll.xUnit" Version="3.3.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />

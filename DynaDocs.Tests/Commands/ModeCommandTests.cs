@@ -39,6 +39,38 @@ public sealed class ModeCommandTests : IDisposable
         Assert.False(Directory.Exists(_root));
     }
 
+    [SkippableTheory]
+    [InlineData("file", "off", "on")]
+    [InlineData("file", "on", "off")]
+    [InlineData("folder", "off", "on")]
+    [InlineData("folder", "on", "off")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public async Task Set_DeniedByTheStorePermissions_FailsWithOneErrorAndKeepsTheBytes(string denied, string initial, string value)
+    {
+        Skip.If(OperatingSystem.IsWindows(), "Unix permission bits; the locked-file scenarios cover Windows.");
+        var file = Path.Combine(_root, "mode.json");
+        await Run("set", "overnight", initial);
+        var before = File.ReadAllText(file);
+        var deniedPath = denied == "file" ? file : _root;
+        var mode = File.GetUnixFileMode(deniedPath);
+        File.SetUnixFileMode(deniedPath, denied == "file" ? UnixFileMode.UserRead : UnixFileMode.None);
+
+        (int ExitCode, string Stdout, string Stderr) result;
+        try
+        {
+            result = await Run("set", "overnight", value);
+        }
+        finally
+        {
+            File.SetUnixFileMode(deniedPath, mode);
+        }
+
+        Assert.Equal(2, result.ExitCode);
+        Assert.Equal("", result.Stdout);
+        Assert.Equal($"Cannot write the mode store {file}: Access to the path '{file}' is denied.{Environment.NewLine}", result.Stderr);
+        Assert.Equal(before, File.ReadAllText(file));
+    }
+
     [Fact]
     public async Task Set_WithoutAValue_IsAParseError()
     {

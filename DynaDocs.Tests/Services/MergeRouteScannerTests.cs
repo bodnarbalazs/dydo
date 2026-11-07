@@ -214,13 +214,15 @@ public class MergeRouteScannerTests
     }
 
     // DYD-641: pwsh 7.6.9 ends a statement and a comment at a bare carriage return, closes a string
-    // at a typographic quote, and keeps a caret literal, so the route after each is taken.
+    // at a typographic quote, and keeps a caret literal, so the route after each is taken. DYD-665:
+    // a backtick before CRLF inside a word keeps the carriage return, and the line feed ends the statement.
     [Theory]
     [InlineData("echo 'x'\rgh pr merge 5")]
     [InlineData("echo x # note\rgh pr merge 5")]
     [InlineData("echo ‘a'; gh pr merge 5; ’b'")]
     [InlineData("echo \"a”; gh pr merge 5; “b\"")]
     [InlineData("echo a^;gh pr merge 5")]
+    [InlineData("x`\r\ngh pr merge 5")]
     public void PowerShellReading_FindsTheMergePwshRuns(string command)
     {
         Assert.Contains(PrCallScanner.FindMergeRoutes(command, ShellDialect.PowerShell), route => route.Kind == MergeRouteKind.Merge);
@@ -230,10 +232,22 @@ public class MergeRouteScannerTests
     [InlineData("echo 'x'\rgit push origin main")]
     [InlineData("echo ‘a'; git push origin main; ’b'")]
     [InlineData("echo a^;git push origin main")]
+    [InlineData("x`\r\ngit push origin main")]
     public void PowerShellReading_FindsThePushPwshRuns(string command)
     {
         Assert.Contains(PrCallScanner.FindMergeRoutes(command, ShellDialect.PowerShell),
             route => route.Kind == MergeRouteKind.Push && route.Destination == "main");
+    }
+
+    // DYD-665's twin: between words, and after a quoted argument, the backtick continues the line,
+    // so the route's words are echo's arguments.
+    [Theory]
+    [InlineData("echo x `\r\ngh pr merge 5")]
+    [InlineData("echo 'x'`\r\ngh pr merge 5")]
+    [InlineData("echo \"x\"`\r\ngit push origin main")]
+    public void PowerShellReading_BacktickCrlfBetweenWords_TakesNoRoute(string command)
+    {
+        Assert.Empty(PrCallScanner.FindMergeRoutes(command, ShellDialect.PowerShell));
     }
 
     // The PR check's bare-argv rule (admiral ruling 2026-10-27) is its own and stays: there another

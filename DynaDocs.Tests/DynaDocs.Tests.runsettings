@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keeps the guard's repeated performance proofs dormant (DYD-859, dydo/guides/testing-strategy.md). -->
+<RunSettings>
+  <RunConfiguration>
+    <TestCaseFilter>PerformanceProof!=Release</TestCaseFilter>
+  </RunConfiguration>
+</RunSettings>

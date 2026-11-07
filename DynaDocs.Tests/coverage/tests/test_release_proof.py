@@ -1,7 +1,8 @@
-"""The required Release proof lane passes only on complete, passing Release evidence (DYD-840)."""
+"""The opt-in Release proof suite passes only on complete, passing Release evidence (DYD-840, DYD-859)."""
 import copy
 import io
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -14,10 +15,11 @@ from xml.sax.saxutils import quoteattr
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import release_proof
-from release_proof import (MAP, TRX_NAME, coverage_filter, expected_counts, facade_command, judge,
+from release_proof import (MAP, ROOT, TRX_NAME, coverage_filter, expected_counts, facade_command, judge,
                            load_map, main, run, verify)
 from test_coverage_artifacts import WORKFLOW, _header, _job, _named, _steps, _uses
 
+MANUAL_WORKFLOW = WORKFLOW.with_name("guard-performance-proofs.yml")
 RELEASE = "/tmp/dydo-test-1/DynaDocs.Tests/bin/Release/net10.0/DynaDocs.Tests.dll"
 DEBUG = "/tmp/dydo-test-1/DynaDocs.Tests/bin/Debug/net10.0/DynaDocs.Tests.dll"
 
@@ -107,8 +109,17 @@ class ReleaseProofMapTests(unittest.TestCase):
         results = Path("/results")
         command = facade_command(self.mapping, results)
         self.assertEqual([sys.executable, str(release_proof.TOOLS / "gap_check.py"), "test", "--stack", "dotnet", "--",
-                          "-c", "Release", "--filter", self.mapping["releaseFilter"],
+                          "-c", "Release", "-p:PerformanceProofs=true", "--filter", self.mapping["releaseFilter"],
                           "--logger", f"trx;LogFileName={TRX_NAME}", "--results-directory", str(results)], command)
+
+    def test_every_run_but_the_opted_in_one_leaves_the_release_proofs_out(self):
+        # VSTest joins the run settings' filter to any --filter, so a filtered run stays without them.
+        project = ElementTree.parse(ROOT / "DynaDocs.Tests/DynaDocs.Tests.csproj").getroot()
+        group = next(group for group in project.iter("PropertyGroup") if group.find("RunSettingsFilePath") is not None)
+        self.assertEqual(("'$(PerformanceProofs)' != 'true'", "-p:PerformanceProofs=true"),
+                         (group.get("Condition"), release_proof.OPT_IN))
+        settings = group.findtext("RunSettingsFilePath").replace("$(MSBuildThisFileDirectory)", "DynaDocs.Tests/")
+        self.assertEqual(coverage_filter(), ElementTree.parse(ROOT / settings).findtext("RunConfiguration/TestCaseFilter"))
 
 
 class ReleaseProofEvidenceTests(unittest.TestCase):
@@ -339,37 +350,32 @@ class ReleaseProofRunTests(unittest.TestCase):
 
 
 class ReleaseProofWorkflowTests(unittest.TestCase):
-    """Every pull request and feature push runs the lane, and .NET coverage holds only with it."""
+    """Only a manual dispatch runs the suite in CI; no pull request, push or required check needs it (DYD-859)."""
 
-    def setUp(self):
-        self.workflow = WORKFLOW.read_text(encoding="utf-8")
+    def test_no_ci_job_runs_or_requires_the_suite(self):
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        for name in ("release_proof.py", "PerformanceProofs=true", "dotnet-release-proof", "PerformanceProof=Release"):
+            self.assertNotIn(name, workflow)
+        self.assertEqual("dotnet-coverage", _header(_job(workflow, "dotnet-coverage-union"))["needs"])
 
-    def test_the_lane_job_runs_the_proofs_and_always_keeps_its_evidence(self):
-        job = _job(self.workflow, "dotnet-release-proof")
+    def test_a_manual_dispatch_alone_runs_the_suite_and_always_keeps_its_evidence(self):
+        workflow = MANUAL_WORKFLOW.read_text(encoding="utf-8")
+        self.assertEqual("  workflow_dispatch:\n", re.search(r"^on:\n((?:  .*\n)+)", workflow, re.M)[1])
+        self.assertEqual(["guard-performance-proofs"], re.findall(r"^  ([\w-]+):", workflow.split("\njobs:\n", 1)[1], re.M))
+        job = _job(workflow, "guard-performance-proofs")
         header, steps = _header(job), _steps(job)
-        self.assertEqual(("ubuntu-24.04", "30"), (header["runs-on"], header["timeout-minutes"]))
-        self.assertNotIn("if", header)
+        self.assertEqual(("ubuntu-24.04", "30", {"contents": "read"}),
+                         (header["runs-on"], header["timeout-minutes"], header["permissions"]))
         self.assertNotIn("continue-on-error", job)
-        lane = steps[_named(steps, "Release performance proofs")]
-        self.assertEqual(".static-gates/python/bin/python DynaDocs.Tests/coverage/release_proof.py run", lane["run"])
-        self.assertNotIn("if", lane)
+        suite = steps[_named(steps, "Release performance proofs")]
+        self.assertEqual(".static-gates/python/bin/python DynaDocs.Tests/coverage/release_proof.py run", suite["run"])
+        self.assertNotIn("if", suite)
         upload = steps[_named(steps, "Upload Release proof evidence")]
         self.assertEqual(_uses(steps, "actions/upload-artifact@"), [_named(steps, "Upload Release proof evidence")])
-        self.assertEqual(("always()", "dotnet-release-proof-attempt-${{ github.run_attempt }}",
+        self.assertEqual(("always()", "guard-performance-proofs-attempt-${{ github.run_attempt }}",
                           "DynaDocs.Tests/coverage/results", "error"),
                          (upload["if"], upload["with"]["name"], upload["with"]["path"],
                           upload["with"]["if-no-files-found"]))
-
-    def test_the_dotnet_coverage_union_requires_the_lane(self):
-        job = _job(self.workflow, "dotnet-coverage-union")
-        self.assertEqual("[dotnet-coverage, dotnet-release-proof]", _header(job)["needs"])
-        steps = _steps(job)
-        required = steps[_named(steps, "Require the Release performance proofs to pass")]
-        self.assertEqual(("always()", "${{ needs.dotnet-release-proof.result }}"),
-                         (required["if"], required["env"]["RELEASE_PROOF_RESULT"]))
-        self.assertIn('test "$RELEASE_PROOF_RESULT" = success', required["run"])
-        self.assertLess(_named(steps, "Require both native jobs to pass"),
-                        _named(steps, "Require the Release performance proofs to pass"))
 
 
 class ReleaseProofCommandLineTests(unittest.TestCase):

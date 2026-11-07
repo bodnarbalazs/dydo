@@ -284,5 +284,39 @@ public class ShellReaderTests
         Assert.Equal(["echo", new string('\'', 50_000)], reading.Commands.Single().Words);
     }
 
+    // DYD-881: a here-word opened by a backtick read its start past the substitution, so at the end
+    // of the input it indexed past the text and threw. bash -n rejects every unclosed form below.
+    [Theory]
+    [InlineData("<<<`")]
+    [InlineData("<<<`\nrm dydo.json")]
+    [InlineData("cat <<<`")]
+    [InlineData("cat <<< `\nrm dydo.json")]
+    [InlineData("cat <<< `echo hi\nrm dydo.json")]
+    public void HereWordUnclosedBacktick_FailsTheReading(string text)
+    {
+        Assert.True(ShellReader.Read(text, posix: true).Failed);
+    }
+
+    // The MUST-ALLOW twin: bash -n accepts a closed backtick here-word, at the end or before a line.
+    [Theory]
+    [InlineData("cat <<< `echo hi`", "", 8)]
+    [InlineData("<<<`echo hi`", "", 3)]
+    [InlineData("cat <<< `echo hi`\nrm x", "", 8)]
+    [InlineData("cat <<< `echo hi`x", "x", 8)]
+    public void HereWordClosedBacktick_ReadsTheWordFromTheBacktick(string text, string word, int start)
+    {
+        var reading = ShellReader.Read(text, posix: true);
+
+        Assert.False(reading.Failed);
+        var body = reading.Commands.SelectMany(command => command.Bodies).Single();
+        Assert.Equal(ShellReader.BodyKind.HereWord, body.Kind);
+        Assert.Equal(word, body.Text);
+        Assert.True(body.Expands);
+        Assert.Equal(start, body.Whole.Start.Value);
+        Assert.Equal(text.IndexOf('`', start + 1) + 1 + word.Length, body.Whole.End.Value);
+        Assert.Equal(["echo hi"], reading.Substitutions);
+        Assert.Same(body, body.Expansions.Single().Body);
+    }
+
     private static string Repeat(string unit, int count) => string.Concat(Enumerable.Repeat(unit, count));
 }

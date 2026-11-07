@@ -24,4 +24,14 @@ public class GuardA02ProofTests : IntegrationTestBase
         Assert.DoesNotContain("internal error", result.Stderr);
         result.AssertPreToolUseDenied();
     }
+
+    // DYD-881 MUST-ALLOW twin: a closed backtick here-word is valid bash, read without an error.
+    [Fact]
+    public async Task HereStringClosedBacktick_IsAllowed()
+    {
+        await InitProjectAsync("none");
+        var result = await GuardWithStdinAsync(Payload(new Dictionary<string, string> { ["command"] = "cat <<< `echo hi`" }));
+        Assert.DoesNotContain("internal error", result.Stderr);
+        result.AssertPreToolUseAllowed();
+    }
 }

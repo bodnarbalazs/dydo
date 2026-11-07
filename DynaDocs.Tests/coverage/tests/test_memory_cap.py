@@ -362,7 +362,7 @@ class MemoryCapTests(unittest.TestCase):
         return rows, stdout.getvalue(), stderr.getvalue()
 
     def test_a_row_that_raises_the_oom_kill_count_fails_as_a_cap_hit(self):
-        hit = "from pathlib import Path; Path('EVENTS').write_text('oom_kill KILLS\\n'); raise SystemExit(EXIT)"
+        hit = "from pathlib import Path; Path('EVENTS').write_text('max 0\\noom 0\\noom_kill KILLS\\n'); raise SystemExit(EXIT)"
         for capability, code, artifact in (('test', hit.replace('EXIT', '0'), None),
                                            ('test', hit.replace('EXIT', '137'), None),
                                            ('static', hit.replace('EXIT', '0'), 'missing.json'),
@@ -370,7 +370,8 @@ class MemoryCapTests(unittest.TestCase):
             with self.subTest(capability=capability, code=code):
                 rows, stdout, stderr = self.rows(self.stack(capability, code, artifact), (capability,))
                 row = rows[0]
-                reason = f'memory cap hit (MemoryMax=256M): {FINDING}'
+                reason = ('memory cap hit (configured scope limit MemoryMax=256M; '
+                          f'an enclosing slice budget may have triggered the kill): {FINDING}')
                 self.assertEqual(('failed', 1, True, reason),
                                  (row['state'], row['resultExit'], row['memoryCapHit'], row['reason']))
                 self.assertIn(f'hog {capability}: {reason}', stderr)
@@ -404,7 +405,8 @@ class MemoryCapTests(unittest.TestCase):
         self.assertEqual(('failed', True), (coverage['state'], coverage['memoryCapHit']))
         self.assertEqual(('test', 'failed', 1, True),
                          (test['capability'], test['state'], test['resultExit'], test['memoryCapHit']))
-        self.assertIn(f'memory cap hit (MemoryMax=1048580K): {FINDING}', test['reason'])
+        self.assertIn('memory cap hit (configured scope limit MemoryMax=1048580K; '
+                      f'an enclosing slice budget may have triggered the kill): {FINDING}', test['reason'])
 
     def test_execute_rows_without_a_cap_runs_rows_unchanged(self):
         with contextlib.redirect_stdout(io.StringIO()):
@@ -557,7 +559,9 @@ class RunTestsMemoryCapTests(unittest.TestCase):
                     with self.assertRaises(SystemExit) as exited:
                         self.run_tests.main(cap)
                 self.assertEqual(expected, exited.exception.code)
-                self.assertEqual(expected == 1, f'memory cap hit (MemoryMax=512M): {FINDING}' in stderr.getvalue())
+                reason = ('memory cap hit (configured scope limit MemoryMax=512M; '
+                          f'an enclosing slice budget may have triggered the kill): {FINDING}')
+                self.assertEqual(expected == 1, reason in stderr.getvalue())
 
 
 if __name__ == '__main__':

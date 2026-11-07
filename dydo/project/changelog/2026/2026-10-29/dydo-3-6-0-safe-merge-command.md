@@ -50,8 +50,9 @@ It replaces a classifier hint that Claude Code applied by judgment, for Claude a
   step 4. In `overnight-mode`, standing order 3 routes feature merges through the captain's Merge
   chain and `dydo merge`; genuine Claude/Codex merge and approval parity remains pending in DYD-426.
 
-Guard hard blocks for raw `gh pr merge`, `gh api` merge paths, GraphQL merge mutations, pushes to the
-default branch and default-branch changes are planned, delivery pending in DYD-425. The genuine
+At this command delivery, guard hard blocks for raw `gh pr merge`, `gh api` merge paths, GraphQL merge
+mutations, pushes to the default branch and default-branch changes were pending in DYD-425. They
+subsequently shipped in the [November 4 guard delivery](../2026-11-04/dyd-425-guard-merge-blocks.md). The genuine
 Claude bash/Codex PowerShell parity gate is planned, pending in DYD-426; allow-rule delivery does not
 satisfy it.
 

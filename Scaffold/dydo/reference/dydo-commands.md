@@ -193,6 +193,14 @@ file a shell command creates.
 A plain `gh pr create`, `gh pr new` or `gh pr ready` is blocked while the tree fails the tree checks
 of [dydo pr-ready](#dydo-pr-ready).
 
+The merge-route hard blocks apply to every caller, top-level or sub-agent. They refuse raw
+`gh pr merge` into any base, `gh api` REST and GraphQL merge calls, and `git push` updates to
+`master`, `main` or the branch the local `origin/HEAD` names. They also refuse default-branch
+changes through `gh repo edit --default-branch` or a `gh api` PATCH of the repository with a
+`default_branch` field. Each refusal directs the caller to [dydo merge](#dydo-merge) for reviewed
+feature-branch integration; the default branch remains the user's. These text checks stop
+accidents, not rogue agents.
+
 ---
 
 ## Linear Commands

@@ -125,9 +125,8 @@ dotnet restore DynaDocs.Tests/coverage/metrics/GateMetrics.csproj --locked-mode
 
 The Python environment lives at the repository root, in `.static-gates/python`, outside
 `dydo/_system/**`. An agent provisions it without user action, and the guard still refuses every
-write into `dydo/_system/**`. This repository's `dydo.json` carries no install nudge, so the
-`pip install` passes outright here. In a project whose `dydo.json` carries the install nudge that
-`dydo init` writes by default, the POSIX `bin/python -m pip install` form meets it: the guard refuses
+write into `dydo/_system/**`. This repository's `dydo.json` carries the install nudge that
+`dydo init` writes by default, and the POSIX `bin/python -m pip install` form meets it: the guard refuses
 the first try once and passes the identical retry when the user or the ticket being executed approved
 that install. That nudge's pattern does not match the Windows `Scripts/python.exe -m pip install` form.
 Instead of installing, a POSIX checkout may link a matching prepared environment, one created by

@@ -13,6 +13,7 @@ import json
 import subprocess
 import sys
 import xml.etree.ElementTree as ElementTree
+from collections import Counter
 from pathlib import Path, PurePosixPath
 
 TOOLS = Path(__file__).resolve().parent
@@ -90,8 +91,14 @@ def _method(definition):
 def read_trx(path):
     """The TRX's definitions (id: method, storage), results (test id, outcome) and counters."""
     root = ElementTree.parse(path).getroot()
-    definitions = {test.get("id"): (_method(test), test.get("storage", ""))
-                   for test in root.iterfind("t:TestDefinitions/t:UnitTest", TRX)}
+    definitions = {}
+    for test in root.iterfind("t:TestDefinitions/t:UnitTest", TRX):
+        identity = test.get("id")
+        if not identity:
+            raise ValueError("A TRX definition has no id")
+        if identity in definitions:
+            raise ValueError(f"Duplicate TRX definition id {identity}")
+        definitions[identity] = (_method(test), test.get("storage", ""))
     results = [(result.get("testId"), result.get("outcome"))
                for result in root.iterfind("t:Results/t:UnitTestResult", TRX)]
     counters = root.find("t:ResultSummary/t:Counters", TRX)
@@ -105,6 +112,16 @@ def _counter_problems(counters, results):
     problems = [] if total == passed else [f"TRX counters show total {total} but passed {passed}"]
     if total != str(len(results)):
         problems.append(f"TRX counters show total {total} but the TRX has {len(results)} results")
+    return problems
+
+
+def _identity_problems(definitions, results):
+    counts = Counter(test for test, _ in results)
+    problems = [] if all(counts) else ["A TRX result has no testId"]
+    problems += [f"TRX test {test} has {count} results, not exactly one"
+                 for test, count in counts.items() if count != 1]
+    problems += [f"TRX test {test} has no result" for test in definitions if test not in counts]
+    problems += [f"TRX result names undefined test {test}" for test in counts if test not in definitions]
     return problems
 
 
@@ -131,6 +148,7 @@ def verify(trx, mapping):
         return [f"No readable Release proof evidence at {trx}: {error}"], {}
     counts = {}
     problems = [] if results else ["The lane produced zero results"]
+    problems += _identity_problems(definitions, results)
     for test, outcome in results:
         method = definitions.get(test, ("an undefined test " + str(test), ""))[0]
         counts[method] = counts.get(method, 0) + 1

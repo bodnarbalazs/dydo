@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ElementTree
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
@@ -183,6 +184,75 @@ class ReleaseProofEvidenceTests(unittest.TestCase):
         self.trx.write_text(text, encoding="utf-8")
         problems = verify(self.trx, self.mapping)[0]
         self.assertTrue(any("an undefined test unknown ran in the lane" in problem for problem in problems))
+
+
+class ReleaseProofIdentityTests(unittest.TestCase):
+    def setUp(self):
+        self.mapping = load_map()
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.trx = write_trx(Path(self.folder.name) / TRX_NAME, lane_rows(self.mapping))
+        self.tree = ElementTree.parse(self.trx)
+        self.definitions = self.tree.find("t:TestDefinitions", release_proof.TRX)
+        self.results = self.tree.find("t:Results", release_proof.TRX)
+
+    def problems(self):
+        self.tree.write(self.trx, encoding="utf-8", xml_declaration=True)
+        return verify(self.trx, self.mapping)[0]
+
+    def test_a_duplicate_sibling_cannot_replace_a_missing_case(self):
+        # The first mapped theory has multiple cases; totals and method counts stay intact.
+        self.assertEqual(lane_rows(self.mapping)[0][0], lane_rows(self.mapping)[1][0])
+        self.results.remove(self.results[1])
+        self.results.insert(1, copy.deepcopy(self.results[0]))
+        problems = self.problems()
+        self.assertIn("TRX test t0 has 2 results, not exactly one", problems)
+        self.assertIn("TRX test t1 has no result", problems)
+        self.assertEqual(expected_counts(self.mapping), verify(self.trx, self.mapping)[1])
+
+    def test_duplicate_definition_ids_are_refused_before_overwriting(self):
+        duplicate = copy.deepcopy(self.definitions[0])
+        self.definitions.append(duplicate)
+        for storage in (RELEASE, DEBUG):
+            with self.subTest(storage=storage):
+                duplicate.set("storage", storage)
+                self.assertTrue(any("Duplicate TRX definition id t0" in problem for problem in self.problems()))
+
+    def test_an_extra_result_for_the_same_case_is_refused(self):
+        self.results.append(copy.deepcopy(self.results[0]))
+        self.assertIn("TRX test t0 has 2 results, not exactly one", self.problems())
+
+    def test_a_defined_case_must_have_a_result(self):
+        self.results.remove(self.results[0])
+        self.assertIn("TRX test t0 has no result", self.problems())
+
+    def test_a_result_must_name_a_defined_case(self):
+        self.results[0].set("testId", "unknown")
+        problems = self.problems()
+        self.assertIn("TRX result names undefined test unknown", problems)
+        self.assertIn("TRX test t0 has no result", problems)
+
+    def test_absent_or_empty_ids_cannot_form_a_matching_pair(self):
+        for identity in (None, ""):
+            with self.subTest(identity=identity):
+                self.definitions[0].attrib.pop("id", None)
+                self.results[0].attrib.pop("testId", None)
+                if identity is not None:
+                    self.definitions[0].set("id", identity)
+                    self.results[0].set("testId", identity)
+                self.assertTrue(self.problems())
+
+    def test_a_result_without_an_id_is_refused(self):
+        for identity in (None, ""):
+            with self.subTest(identity=identity):
+                self.results[0].attrib.pop("testId", None)
+                if identity is not None:
+                    self.results[0].set("testId", identity)
+                self.assertIn("A TRX result has no testId", self.problems())
+
+    def test_identity_matching_does_not_depend_on_result_order(self):
+        self.results[:] = reversed(self.results[:])
+        self.assertEqual([], self.problems())
 
 
 class ReleaseProofJudgementTests(unittest.TestCase):

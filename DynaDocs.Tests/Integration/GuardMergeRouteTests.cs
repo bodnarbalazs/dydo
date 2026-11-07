@@ -176,6 +176,244 @@ public class GuardMergeRouteTests : IntegrationTestBase
             reasonParts: ["main", "dydo merge"]));
     }
 
+    // DYD-887: the S-01 fixture. The tree sits on ticket branch DYD-1-x, which tracks its own
+    // upstream; main tracks origin/main, origin/HEAD names main, and feature/x is pushed.
+    private async Task InitTicketBranchProject()
+    {
+        await InitPushedProject();
+        Git(TestDir, "checkout", "-b", "DYD-1-x");
+        Git(TestDir, "push", "-u", "origin", "DYD-1-x");
+        Git(TestDir, "branch", "-D", "feature");
+        Git(TestDir, "push", "origin", "--delete", "feature");
+        Git(TestDir, "push", "origin", "DYD-1-x:main", "DYD-1-x:feature/x");
+        Git(TestDir, "branch", "--track", "main", "origin/main");
+        Git(TestDir, "branch", "--track", "feature/x", "origin/feature/x");
+        Git(TestDir, "remote", "set-head", "origin", "main");
+    }
+
+    // A line's own checkout or switch moves HEAD before its bare push runs, so the push is judged
+    // on the branch the line switches to, not the one the hook sees. Codex's bare argv cannot chain.
+    private static readonly string[] ChainEnvelopes = ["claude-bash", "claude-powershell", "codex-bash", "codex-pwsh"];
+
+    [Fact]
+    public async Task BarePush_AfterTheLineChecksOutMain_IsDenied()
+    {
+        await InitTicketBranchProject();
+
+        AssertNoMisses(await Misses(denied: true, Words(
+            "git checkout main && git merge feature/x && git push",
+            "git switch main && git merge feature/x && git push",
+            "git checkout main && git push origin",
+            "git checkout -q main && git push -u origin HEAD",
+            "git switch main; git push origin @",
+            "git -C . checkout main && git push"),
+            ChainEnvelopes, reasonParts: ["main", "dydo merge", "the default branch is the user's"]));
+    }
+
+    // A branch change whose target the guard cannot read for certain refuses the push that follows it.
+    [Fact]
+    public async Task BarePush_AfterAnUnreadableBranchChange_IsDenied()
+    {
+        await InitTicketBranchProject();
+
+        AssertNoMisses(await Misses(denied: true, Words(
+            "git checkout - && git merge feature/x && git push",
+            "git switch - && git push",
+            "git checkout @{-1} && git push",
+            "git switch --detach main && git push origin HEAD",
+            "gh pr checkout 5 && git push"),
+            ChainEnvelopes, reasonParts: ["dydo merge", "cannot read"]));
+    }
+
+    [Fact]
+    public async Task Push_AfterTheLineChangesToItsOwnOrANewBranch_IsAllowed()
+    {
+        await InitTicketBranchProject();
+
+        AssertNoMisses(await Misses(denied: false, Words(
+            "git checkout feature/x && git push",
+            "git switch feature/x && git push origin HEAD",
+            "git checkout -b new && git push -u origin new",
+            "git switch -c new && git push -u origin new",
+            "git checkout -b new && git push",
+            "git checkout main -- readme.md && git push",
+            "git checkout -- readme.md && git push",
+            "git checkout - && git push origin DYD-1-x"),
+            ChainEnvelopes));
+    }
+
+    // B1 (round 1): a change in another repository or a linked worktree leaves this worktree's HEAD
+    // alone, so the push is judged on its own HEAD; a subdirectory or any path into this worktree is
+    // the same worktree, and an other-tree change after a change here does not end it.
+    [Fact]
+    public async Task BarePush_AfterACheckoutInAnotherWorktree_IsJudgedOnItsOwnHead()
+    {
+        await InitTicketBranchProject();
+        var other = Path.Combine(TestDir, "other");
+        Directory.CreateDirectory(other);
+        Git(other, "init", "-b", "main");
+        Git(other, "config", "user.name", "Test");
+        Git(other, "config", "user.email", "test@example.com");
+        Git(other, "config", "commit.gpgsign", "false");
+        Git(other, "commit", "--allow-empty", "-m", "seed");
+        Git(other, "checkout", "-b", "side");
+        Git(TestDir, "worktree", "add", "--detach", Worktree, "HEAD");
+        Directory.CreateDirectory(Path.Combine(TestDir, "sub"));
+
+        AssertNoMisses(await Misses(denied: false, Words(
+            $"git -C {other} checkout main && git push",
+            "git -C other checkout main && git push origin HEAD",
+            $"git -C {Worktree} checkout main && git push",
+            "git -C wt switch main && git push"),
+            ChainEnvelopes));
+        AssertNoMisses(await Misses(denied: true, Words(
+            "git -C sub checkout main && git push",
+            "git -C wt/.. checkout main && git push",
+            $"git -C {TestDir} switch main && git push origin HEAD",
+            "git checkout main && git -C wt checkout feature/x && git push"),
+            ChainEnvelopes, reasonParts: ["main", "dydo merge"]));
+    }
+
+    // B2 (round 1): a checkout target is a branch only when git has it as a local branch (or as a
+    // remote's branch it then creates); a commit, tag or remote-tracking ref detaches and is unreadable.
+    [Fact]
+    public async Task Push_AfterADetachOntoACommitTagOrRemoteRef_IsDenied()
+    {
+        await InitTicketBranchProject();
+        Git(TestDir, "tag", "v1");
+        var sha = Git(TestDir, "rev-parse", "HEAD").Text.Trim();
+
+        AssertNoMisses(await Misses(denied: true, Words(
+            $"git checkout {sha} && git push origin HEAD",
+            "git checkout origin/main && git push origin HEAD",
+            "git checkout v1 && git push",
+            "git checkout refs/heads/main && git push origin HEAD",
+            "git checkout --frobnicate main && git push"),
+            ChainEnvelopes, reasonParts: ["dydo merge", "cannot read"]));
+    }
+
+    [Fact]
+    public async Task Push_AfterACheckoutOfPathsOrARemotesBranch_IsAllowed()
+    {
+        await InitTicketBranchProject();
+        Git(TestDir, "push", "origin", "DYD-1-x:feature/y");
+
+        AssertNoMisses(await Misses(denied: false, Words(
+            "git checkout readme.md && git push",
+            "git checkout feature/y && git push",
+            "git switch feature/y && git push origin HEAD",
+            "git checkout no-such-branch && git push"),
+            ChainEnvelopes));
+    }
+
+    // Round 2: the order bash runs substitutions in is not read, so a line that changes branch and
+    // pushes, with a substitution holding either, is refused unread, wherever the substitution sits.
+    // A backtick is a substitution only in bash; $( ... ) is one in PowerShell too.
+    [Fact]
+    public async Task BranchChangeAndPush_WithASubstitutionHoldingEither_IsDeniedAsUnreadable()
+    {
+        await InitTicketBranchProject();
+        string[] bash = ["claude-bash", "codex-bash"];
+        string[] reason = ["cannot read", "no substitution", "dydo merge"];
+
+        AssertNoMisses(await LineMisses(denied: true, bash, [
+            "echo `git checkout main && git merge feature/x` \"$(git push)\"",
+            "echo \"$(git push)\" `git checkout main && git merge feature/x`",
+            "echo `git push` \"$(git checkout main && git merge feature/x)\"",
+            "echo \"$(git checkout main && git merge feature/x)\" `git push`",
+            "echo `git checkout main`; git push",
+            "git push; echo `git checkout main`",
+            "git checkout main && git merge feature/x && echo `git push`",
+            "echo `git checkout main && git push`"], reason));
+        AssertNoMisses(await LineMisses(denied: true, ChainEnvelopes, [
+            "echo \"$(git checkout main)\" && git merge feature/x && git push",
+            "git checkout main && git merge feature/x && echo \"$(git push)\"",
+            "echo \"$(git checkout main && git push)\""], reason));
+    }
+
+    // Its honest twins: a substitution holding neither a change nor a push leaves the push judged as
+    // before, from the ticket branch; so do the plain && lines.
+    [Fact]
+    public async Task Push_BesideAnUnrelatedSubstitutionOrOnAPlainLine_IsAllowed()
+    {
+        await InitTicketBranchProject();
+
+        AssertNoMisses(await LineMisses(denied: false, ["claude-bash", "codex-bash"], ["git push; echo `date`"]));
+        AssertNoMisses(await LineMisses(denied: false, ChainEnvelopes, [
+            "git push origin \"$(git branch --show-current)\"",
+            "git checkout -b new && git push -u origin new",
+            "git switch feature/x && git push",
+            "git checkout main && git switch feature/x && git push",
+            "git checkout main && git pull && git checkout DYD-1-x && git push"]));
+    }
+
+    // Each line as written, under each envelope, for lines whose quotes Words cannot carry.
+    private async Task<List<string>> LineMisses(bool denied, string[] envelopes, string[] lines, params string[] reasonParts)
+    {
+        List<string> misses = [];
+        foreach (var line in lines)
+        foreach (var envelope in envelopes)
+        {
+            var json = JsonNode.Parse(Payload([], envelope))!;
+            json["tool_input"]!["command"] = envelope switch
+            {
+                "codex-bash" => new JsonArray("bash", "-lc", line),
+                "codex-pwsh" => new JsonArray("pwsh", "-Command", line),
+                _ => line,
+            };
+            var result = await GuardWithStdinAsync(json.ToJsonString());
+            var wasDenied = !result.IsPreToolUseAllowed;
+            if (wasDenied != denied || (denied && reasonParts.Any(part => !result.Stderr.Contains(part))))
+                misses.Add($"{envelope} {(wasDenied ? "denied" : "allowed")}: {line}\n    {result.Stderr.Trim().Replace("\n", "\n    ")}");
+        }
+        return misses;
+    }
+
+    // S1 (round 1): when only && separates the last change from the push, the push runs only after it
+    // succeeds, so that change alone is in effect; any other separator keeps every earlier candidate.
+    [Fact]
+    public async Task Push_AfterAnAndAndRunOfChanges_IsJudgedOnTheLast()
+    {
+        await InitTicketBranchProject();
+
+        AssertNoMisses(await Misses(denied: false, Words(
+            "git checkout main && git switch feature/x && git push",
+            "git checkout main && git pull && git checkout DYD-1-x && git push",
+            "git checkout main; git switch feature/x && git push"),
+            ChainEnvelopes));
+        AssertNoMisses(await Misses(denied: true, Words(
+            "git checkout main && git switch feature/x; git push",
+            "git checkout main && git switch feature/x || git push",
+            "git checkout feature/x && git checkout main && git push",
+            "git checkout main && true || git checkout feature/x && git push"),
+            ChainEnvelopes, reasonParts: ["main", "dydo merge"]));
+
+        // From main: a push after an && change runs on that change's branch, but one after || may run on main.
+        Git(TestDir, "checkout", "main");
+        AssertNoMisses(await Misses(denied: false, Words("git checkout feature/x && git push"), ChainEnvelopes));
+        AssertNoMisses(await Misses(denied: true, Words("git checkout feature/x; git push", "true || git checkout feature/x && git push"),
+            ChainEnvelopes, reasonParts: ["main", "dydo merge"]));
+    }
+
+    // N1 (round 1): an option's value is never read as the branch, so these still check out main.
+    [Fact]
+    public async Task Push_AfterACheckoutOfMainWithOptions_IsDenied()
+    {
+        await InitTicketBranchProject();
+
+        AssertNoMisses(await Misses(denied: true, Words(
+            "git checkout --conflict diff3 main && git push",
+            "git switch --conflict=merge main && git push",
+            "git -c advice.detachedHead=false checkout main && git push",
+            "git --no-pager checkout main && git push",
+            "git checkout --recurse-submodules main && git push",
+            "git checkout main 2>/dev/null && git push",
+            "git switch --discard-changes main && git push",
+            "git checkout -m main && git push",
+            "git checkout --no-track main && git push"),
+            ChainEnvelopes, reasonParts: ["main", "dydo merge"]));
+    }
+
     [Fact]
     public async Task PushOfHead_OnMain_IsDenied()
     {
@@ -273,21 +511,8 @@ public class GuardMergeRouteTests : IntegrationTestBase
             "echo x `\r\ngit push origin main", "echo 'x'`\r\ngh pr merge 5", "echo \"x\"`\r\ngh pr merge 5"));
     }
 
-    private async Task<List<string>> PwshLineMisses(bool denied, params string[] lines)
-    {
-        List<string> misses = [];
-        foreach (var line in lines)
-        foreach (var envelope in new[] { "claude-powershell", "codex-pwsh" })
-        {
-            var json = JsonNode.Parse(Payload([], envelope))!;
-            json["tool_input"]!["command"] = envelope == "codex-pwsh" ? new JsonArray("pwsh", "-Command", line) : line;
-            var result = await GuardWithStdinAsync(json.ToJsonString());
-            var wasDenied = !result.IsPreToolUseAllowed;
-            if (wasDenied != denied || (denied && !result.Stderr.Contains("dydo merge")))
-                misses.Add($"{envelope} {(wasDenied ? "denied" : "allowed")}: {line}\n    {result.Stderr.Trim()}");
-        }
-        return misses;
-    }
+    private Task<List<string>> PwshLineMisses(bool denied, params string[] lines) =>
+        LineMisses(denied, ["claude-powershell", "codex-pwsh"], lines, "dydo merge");
 
     // A Codex workdir is the call's directory, as for PR-ready.
     [Fact]

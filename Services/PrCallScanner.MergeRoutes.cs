@@ -10,7 +10,8 @@ using System.Text.RegularExpressions;
 /// <c>pulls/N/merge-async</c> or <c>merges</c>, as path or URL, whatever the method; <c>gh api
 /// graphql</c> with a field naming mergePullRequest, enablePullRequestAutoMerge or mergeBranch;
 /// <c>gh repo edit --default-branch</c>, or a <c>gh api</c> PATCH of <c>repos/OWNER/REPO</c> with a
-/// default_branch field; and every <c>git push</c>, one route per branch it updates. A wrapper's
+/// default_branch field; and every <c>git push</c>, one route per branch it updates, a push of the
+/// current branch carrying the branch changes before it (see PrCallScanner.BranchChanges). A wrapper's
 /// command string is read the same way and its routes are the line's; another program's arguments,
 /// in a shell line or a bare argv array alike, are data. An encoded command or nesting past the limit is left to the PR check, which
 /// refuses it unread in a git tree. A GraphQL query or API body read from a file or stdin is not read.
@@ -31,7 +32,7 @@ internal static partial class PrCallScanner
 
     /// <summary>The merge routes <paramref name="command"/> takes when <paramref name="dialect"/> runs it.</summary>
     public static List<MergeRoute> FindMergeRoutes(string command, ShellDialect dialect = ShellDialect.Unknown) =>
-        ScanRoutes(command, dialect, 0);
+        [.. Readings(command, dialect, 0).SelectMany(Followed).Distinct()];
 
     /// <summary>
     /// The merge routes an argv array takes: Codex's shell envelope runs its script as a direct line,
@@ -39,17 +40,40 @@ internal static partial class PrCallScanner
     /// as a shell would read the same words. (The PR check's bare-argv rule is stricter; see FindInArgv.)
     /// </summary>
     public static List<MergeRoute> FindMergeRoutesInArgv(IReadOnlyList<string> argv) =>
-        CommandPosition.Envelope(argv) is { } envelope ? FindMergeRoutes(envelope.Text, envelope.Dialect) : RoutesOf(argv, 0);
+        CommandPosition.Envelope(argv) is { } envelope ? FindMergeRoutes(envelope.Text, envelope.Dialect) : Followed(StepsOf(argv, 0));
 
-    private static List<MergeRoute> ScanRoutes(string text, ShellDialect dialect, int depth)
+    // Each reading's routes and branch changes in the order it runs them.
+    private static IEnumerable<List<Step>> Readings(string text, ShellDialect dialect, int depth)
     {
         var line = GhPlaceholderRegex().Replace(text, ":$1");
-        return [.. Readings(dialect, line)
-            .Select(posix => ShellReader.Read(line, posix))
-            .SelectMany(reading => reading.Commands.SelectMany(command => RoutesOf(command.Words, depth, command))
-                .Concat(reading.Substitutions.SelectMany(substitution => ScanRoutes(substitution, ShellDialect.Posix, depth + 1))))
-            .Distinct()];
+        return Readings(dialect, line).Select(posix => StepsOf(ShellReader.Read(line, posix), depth));
     }
+
+    // A reading's commands in order, each with the && run it is in, then its backtick substitutions'
+    // steps. A step a substitution holds is Substituted, wherever that substitution sits.
+    private static List<Step> StepsOf(ShellReader.Reading reading, int depth)
+    {
+        List<Step> steps = [];
+        var runs = new Runs();
+        foreach (var command in reading.Commands)
+        {
+            var (run, own) = runs.Of(command);
+            var substituted = InSubstitution(command.Source);
+            steps.AddRange(StepsOf(command.Words, depth, command)
+                .Select(step => step with { Run = step.Run ?? own ?? run, Substituted = step.Substituted || substituted }));
+        }
+        steps.AddRange(reading.Substitutions.SelectMany(text => ScanSteps(text, ShellDialect.Posix, depth + 1))
+            .Select(step => step with { Substituted = true }));
+        return steps;
+    }
+
+    // Whether a scope's commands are a $( ... ) substitution's, or nested in one.
+    private static bool InSubstitution(ShellReader.Scope scope) =>
+        scope.Host is { } host && (host.Kind == ShellReader.ExecutionKind.Substitution || InSubstitution(host.Source));
+
+    // A nested script's steps, its readings in turn.
+    private static List<Step> ScanSteps(string text, ShellDialect dialect, int depth) =>
+        [.. Readings(text, dialect, depth).SelectMany(steps => steps)];
 
     // Bash drops an unquoted backslash, so its word for git -C C:\Users\wt is C:Userswt, a tree that
     // does not exist; the word as written names the tree the agent meant (DYD-739). Only a -C word of
@@ -60,7 +84,7 @@ internal static partial class PrCallScanner
         return raw.Contains('\\') && ShellReader.Read(raw, posix: false).Commands is [{ Words: [var word] }] ? word : null;
     }
 
-    private static List<MergeRoute> RoutesOf(IReadOnlyList<string> words, int depth, ShellReader.Command? command = null)
+    private static List<Step> StepsOf(IReadOnlyList<string> words, int depth, ShellReader.Command? command = null)
     {
         var at = CommandPosition.Skip(words);
         if (at >= words.Count)
@@ -68,12 +92,16 @@ internal static partial class PrCallScanner
 
         var program = CommandPosition.ProgramName(words[at]);
         var rest = words.Skip(at + 1).ToList();
+        if (program == "gh" && GhRoute(rest) is { } route)
+            return [new(route)];
         if (program == "gh")
-            return GhRoute(rest) is { } route ? [route] : [];
+            return ChecksOutAPr(rest) ? [new(Change: new BranchChange(MergeRoute.UnreadableBranch))] : [];
+        // A negated command (!) succeeds when git fails, so it starts no run.
         if (program == "git")
-            return PushRoutes(rest, index => WrittenWord(command, at + 1 + index));
+            return [.. GitSteps(rest, index => WrittenWord(command, at + 1 + index))
+                .Select(step => words.Take(at).Contains("!") ? step with { Run = new object() } : step)];
         return CommandPosition.ScriptOf(program, rest) is { Encoded: false } script && depth < MaxDepth
-            ? ScanRoutes(script.Text, script.Dialect, depth + 1)
+            ? ScanSteps(script.Text, script.Dialect, depth + 1)
             : [];
     }
 
@@ -114,10 +142,8 @@ internal static partial class PrCallScanner
             : null;
     }
 
-    // git's own options, then push: its first operand is the remote and the rest are refspecs. With
-    // none, a push updates the upstream; --all, --branches and --mirror update every branch; --tags alone
-    // none. Each -C tree is taken as bash reads it and as written, one route per distinct tree.
-    private static List<MergeRoute> PushRoutes(List<string> rest, Func<int, string?> written)
+    // git's own options, then its subcommand: a push's routes, or a branch change.
+    private static List<Step> GitSteps(List<string> rest, Func<int, string?> written)
     {
         string? directory = null, asWritten = null;
         var at = 0;
@@ -129,11 +155,24 @@ internal static partial class PrCallScanner
                 asWritten = Under(asWritten, written(at + 1) ?? rest[at + 1]);
             }
         }
-        if (at >= rest.Count || rest[at] != "push")
+        if (at >= rest.Count)
             return [];
+        if (rest[at] == "push")
+            return [.. PushRoutes(rest[at..], directory, asWritten).Select(route => new Step(route))];
+        if (SwitchedBranch(rest[at], rest[(at + 1)..]) is not { } change)
+            return [];
+        // A change HEAD is not sure to follow starts no run, so no push takes it as the last.
+        var branchChange = new BranchChange(change.Branch, change.Creates, directory, asWritten == directory ? null : asWritten);
+        return [new(Change: branchChange, Run: change.Sure ? null : new object())];
+    }
 
-        var (operands, flags) = PushWords(rest[(at + 1)..]);
-        var form = string.Join(' ', rest[at..].Prepend("git"));
+    // push's first operand is the remote and the rest are refspecs. With none, a push updates the
+    // upstream; --all, --branches and --mirror update every branch; --tags alone none. Each -C tree
+    // is taken as bash reads it and as written, one route per distinct tree.
+    private static List<MergeRoute> PushRoutes(List<string> push, string? directory, string? asWritten)
+    {
+        var (operands, flags) = PushWords(push[1..]);
+        var form = string.Join(' ', push.Prepend("git"));
         List<string> destinations = operands.Count > 1 ? [.. operands.Skip(1).Select(Destination)] : [MergeRoute.Upstream];
         if (flags.Overlaps(PushEveryBranch))
             destinations = ["*"];

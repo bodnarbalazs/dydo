@@ -671,7 +671,8 @@
     {
       "module": "DynaDocs.Tests/coverage/python_runtime.py",
       "tests": [
-        "DynaDocs.Tests/coverage/tests/test_python_runtime.py"
+        "DynaDocs.Tests/coverage/tests/test_python_runtime.py",
+        "DynaDocs.Tests/coverage/tests/test_python_runtime_interrupt.py"
       ]
     },
     {

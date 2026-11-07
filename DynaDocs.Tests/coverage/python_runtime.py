@@ -1,5 +1,6 @@
 """CPython 3.14 code-object witnesses prevent definition-line coverage borrowing."""
 import ast
+import dis
 import hashlib
 import inspect
 from itertools import chain
@@ -247,6 +248,26 @@ def _cached_inventory(entry, path, source):
     return inventory if consistent else None
 
 
+def _instruction_edges(code):
+    """CPython 3.14 BRANCH offsets, observed without its exception-unsafe jump callbacks."""
+    starts, direct = {}, {}
+    previous = None
+    for instruction in dis.get_instructions(code):
+        offset = instruction.offset
+        if instruction.opname.startswith('POP_JUMP_IF_'):
+            starts[offset] = {instruction.argval: instruction.argval}
+        elif instruction.opname == 'FOR_ITER':
+            starts[offset] = {offset + 4: offset + 4, instruction.argval + 2: instruction.argval + 4}
+        elif instruction.opname == 'NOT_TAKEN':
+            direct[offset] = (previous, offset + 2)
+        elif instruction.opname == 'END_ASYNC_FOR':
+            direct[offset] = (offset + 2 - instruction.arg * 2, offset + 2)
+        previous = offset
+    relevant = set(starts) | set(direct)
+    relevant.update(destination for destinations in starts.values() for destination in destinations)
+    return starts, direct, relevant
+
+
 class CallableWitness:
     def __init__(self, sources, cache=None):
         if sys.implementation.name != 'cpython' or sys.version_info[:2] != (3, 14):
@@ -263,6 +284,8 @@ class CallableWitness:
         self._paths = set(sources)
         self._errors = []
         self._codes = {}
+        self._edges = {}
+        self._pending = {}
 
     def _row(self, code):
         """A target code object's row, whether it is that row's own code, and its key's digest.
@@ -309,6 +332,28 @@ class CallableWitness:
                 if edge not in row['physical_branches']:
                     row['physical_branches'].append(edge)
 
+    def _instruction(self, code, offset):
+        # CPython's BRANCH callback exceptions unwind at the destination, which can lie outside
+        # the source's try. Instruction callbacks unwind at the instruction actually executing.
+        if self._row(code)[0] is None:
+            return sys.monitoring.DISABLE
+        if id(code) not in self._edges:
+            self._edges[id(code)] = _instruction_edges(code)
+        starts, direct, relevant = self._edges[id(code)]
+        if offset not in relevant:
+            return sys.monitoring.DISABLE
+        frame = sys._getframe(1)
+        pending = self._pending.pop(frame, None)
+        if pending is not None and offset in pending[1]:
+            self._branch(code, pending[0], pending[1][offset])
+        if offset in direct:
+            self._branch(code, *direct[offset])
+        if offset in starts:
+            self._pending[frame] = (offset, starts[offset])
+
+    def _exception(self, _code, _offset, _error):
+        self._pending.pop(sys._getframe(1), None)
+
     def __enter__(self):
         monitor = sys.monitoring
         for tool_id in (3, 4):
@@ -321,8 +366,12 @@ class CallableWitness:
         try:
             monitor.register_callback(self.tool_id, monitor.events.PY_START, self._start)
             monitor.register_callback(self.tool_id, monitor.events.LINE, self._line)
-            monitor.register_callback(self.tool_id, monitor.events.BRANCH, self._branch)
-            monitor.set_events(self.tool_id, monitor.events.PY_START | monitor.events.LINE | monitor.events.BRANCH)
+            monitor.register_callback(self.tool_id, monitor.events.INSTRUCTION, self._instruction)
+            monitor.register_callback(self.tool_id, monitor.events.EXCEPTION_HANDLED, self._exception)
+            monitor.register_callback(self.tool_id, monitor.events.PY_UNWIND, self._exception)
+            monitor.set_events(self.tool_id, monitor.events.PY_START | monitor.events.LINE
+                               | monitor.events.INSTRUCTION | monitor.events.EXCEPTION_HANDLED
+                               | monitor.events.PY_UNWIND)
         except BaseException:
             self.__exit__(None, None, None)
             raise
@@ -333,7 +382,8 @@ class CallableWitness:
         failure = None
         operations = [(monitor.set_events, (self.tool_id, 0)),
                       *((monitor.register_callback, (self.tool_id, event, None))
-                        for event in (monitor.events.PY_START, monitor.events.LINE, monitor.events.BRANCH)),
+                        for event in (monitor.events.PY_START, monitor.events.LINE, monitor.events.INSTRUCTION,
+                                      monitor.events.EXCEPTION_HANDLED, monitor.events.PY_UNWIND)),
                       (monitor.free_tool_id, (self.tool_id,))]
         for operation, arguments in operations:
             try:
@@ -341,6 +391,7 @@ class CallableWitness:
             except BaseException as error:
                 if failure is None:
                     failure = error
+        self._pending.clear()
         if failure is not None:
             raise failure
 

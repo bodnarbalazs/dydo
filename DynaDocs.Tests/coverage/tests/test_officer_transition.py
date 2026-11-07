@@ -2574,5 +2574,17 @@ class GuardOracleTests(unittest.TestCase):
                         self.encoded_answer)
 
 
+class ExitCodeTests(unittest.TestCase):
+    """DYD-431 F-31: a campaign whose runs did not pass must not exit 0, or a caller reading only the exit
+    status takes a failed, refused, errored or safety-stopped campaign for a proof."""
+
+    def test_a_campaign_with_any_run_that_did_not_pass_exits_nonzero(self):
+        for verdict in ("fail", "refused", "error", "safety-stop"):
+            for verdicts in ({verdict: 1}, {"pass": 5, verdict: 1}):
+                with self.subTest(verdicts=verdicts):
+                    self.assertNotEqual(0, ot.exit_code(True, verdicts))
+        self.assertEqual(0, ot.exit_code(True, {"pass": 6}))
+
+
 if __name__ == "__main__":
     unittest.main()

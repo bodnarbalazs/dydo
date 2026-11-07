@@ -147,6 +147,14 @@ Guards stop accidents, not rogue agents. The bound exists so the guard never tak
 - The 256 MB and one-second bounds are Release, uninstrumented. Coverage instrumentation multiplies
   allocation by up to about 30, so the test holds the absolute budget at 10,000 characters and the
   growth ratios at 100,000; the one-second bound is asserted when the tests run in Release.
+- The repeated time-growth proofs run in a required CI lane, `dotnet-release-proof`, built in
+  Release and uninstrumented, on every pull request and feature push (DYD-840). Under coverage
+  they took about 1,100 of the hosted Linux job's 1,800 seconds. Instrumented coverage runs a
+  witness of each instead: the proof's inputs read once each, with its deterministic allocation
+  and match assertions. `DynaDocs.Tests/coverage/release-proofs.json` maps each proof to its
+  witness. The lane fails on evidence that is missing, failed, partial, unmapped or not the
+  Release build, and `.NET` coverage's union requires it. The single-shot allocation proofs run in
+  both lanes.
 - On Linux, the analysis time-ratio tests measure calling-thread CPU to exclude
   shared-host scheduling noise. Their input sizes, seven rounds, warm-up and ratio threshold stay
   the same, and the one-second assertion still measures wall time. Other hosts retain wall timing.
@@ -165,7 +173,12 @@ Fix hop 5 also changes `Services/CommandPosition.cs`, `Commands/GuardCommand.cs`
 `DynaDocs.Tests/Commands/GuardCommandTests.cs`. The feature merge imports its own changes;
 the implementation report lists those separately from this hop's authored files.
 Fix hop 6 adds `DynaDocs.Tests/Services/BashCommandAnalyzerInputBoundTests.cs` and its test
-association, and extends the existing guard integration tests.
+association, and extends the existing guard integration tests. The proof-placement hop (DYD-840)
+adds `DynaDocs.Tests/coverage/release_proof.py`, `release-proofs.json`, their tests
+`DynaDocs.Tests/coverage/tests/test_release_proof.py` and
+`DynaDocs.Tests/Services/ReleaseProofMapTests.cs`, and changes
+`DynaDocs.Tests/coverage/csharp_coverage.py`, its tests, the test association,
+`.github/workflows/ci.yml` and its job pin in `DynaDocs.Tests/Workflow/ReleaseWorkflowTests.cs`.
 
 ## Related
 

@@ -23,6 +23,14 @@ from csharp_coverage import (ASSEMBLY_PROJECTS, GATE_METRICS_PREBUILT_ENV, _asse
                              altcover_commands, main, run_campaign, run_denominator, run_subject,
                              snapshot_artifacts)
 from csharp_join import coverage_methods, excluded_physical_tokens, join_methods
+from release_proof import MAP as RELEASE_PROOF_MAP
+
+
+def _copy_release_proof_map(root):
+    """A campaign root carries the candidate's release proof map, which its suite filter reads."""
+    destination = root / "DynaDocs.Tests/coverage/release-proofs.json"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(RELEASE_PROOF_MAP, destination)
 
 MINIMAL_SOLUTION = """Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynaDocs", "DynaDocs.csproj", "{8537ADD5-149C-4DAA-B9B7-C26CA3852204}"
@@ -174,6 +182,9 @@ def _minimal_campaign_root(root):
         "DynaDocs.Tests/coverage/csharp_coverage.py": SUBJECT_LAUNCHER.format(
             module=tools / "csharp_coverage.py"),
         "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py": SUBJECT_METRICS,
+        # The subject's suite filter: the lane module beside the campaign, and the map it reads.
+        "DynaDocs.Tests/coverage/release_proof.py": (tools / "release_proof.py").read_text(encoding="utf-8"),
+        "DynaDocs.Tests/coverage/release-proofs.json": RELEASE_PROOF_MAP.read_text(encoding="utf-8"),
     })
     for source in sorted((tools / "metrics").glob("*.cs")):
         shutil.copy2(source, root / "DynaDocs.Tests/coverage/metrics" / source.name)
@@ -251,19 +262,30 @@ class CSharpCoverageTests(unittest.TestCase):
     def test_runner_subject_keeps_full_suite_first_then_uses_prebuilt_metrics(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder).resolve()
+            _copy_release_proof_map(root)
             commands = _subject_commands(root)
             self.assertEqual("dotnet", commands[0][0])
             self.assertEqual(["test", "DynaDocs.sln"], commands[0][1:3])
             self.assertIn("--no-build", commands[0])
             self.assertEqual("console;verbosity=normal", commands[0][commands[0].index("--logger") + 1])
+            # Only the Release lane's proofs leave the suite; their witnesses stay (DYD-840).
+            self.assertEqual(["--filter", "PerformanceProof!=Release"],
+                             commands[0][commands[0].index("--filter"):][:2])
+            self.assertLess(commands[0].index("--filter"), commands[0].index("--"))
             self.assertEqual(sys.executable, commands[1][0])
             self.assertEqual(root / "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py",
                              Path(commands[1][1]))
             self.assertNotIn("build", commands[1])
 
+    def test_runner_subject_without_the_release_proof_map_fails_closed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaises(OSError):
+                _subject_commands(Path(folder).resolve())
+
     def test_subject_runs_both_actions_in_order_with_inherited_recorder_environment(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder).resolve()
+            _copy_release_proof_map(root)
             recorder = str(root / "recorder")
             for exits, expected in (((7, 0), 7), ((0, 9), 9)):
                 with self.subTest(exits=exits), \

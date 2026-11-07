@@ -2323,8 +2323,31 @@ public class BashCommandAnalyzerTests
     private const long AllocationBudget = 256L * 1024 * 1024;
     private const int BudgetedLength = 10_000;
 
+    // Where each numerical proof runs (DYD-840). A Release proof repeats its measurements and runs
+    // only in the required dotnet-release-proof lane, in Release and uninstrumented, every case,
+    // warmup and round of it; coverage runs its witness instead, the proof's inputs read once each
+    // with its other assertions. A shared proof measures once and runs in both lanes.
+    // DynaDocs.Tests/coverage/release-proofs.json maps each proof to its witness.
+    internal const string PerformanceProof = "PerformanceProof";
+    internal const string ReleaseLane = "Release";
+    internal const string BothLanes = "Shared";
+
+    // The lane's measurements are the optimized, uninstrumented product's whenever this assembly is
+    // built in Release, as the lane builds it, so its one-second and 256 MB bounds apply there.
+    [Fact]
+    [Trait(PerformanceProof, ReleaseLane)]
+    public void ReleaseProofLane_MeasuresTheOptimizedUninstrumentedProduct()
+    {
+        var testsOptimized = typeof(BashCommandAnalyzerTests).Assembly
+            .GetCustomAttributes(typeof(System.Diagnostics.DebuggableAttribute), false)
+            .Cast<System.Diagnostics.DebuggableAttribute>().All(attribute => !attribute.IsJITOptimizerDisabled);
+
+        Assert.Equal(testsOptimized, ReleaseUninstrumented);
+    }
+
     // 22 levels: before DYD-723 each level doubled the PowerShell reading, here past 400 MB.
     [Theory]
+    [Trait(PerformanceProof, BothLanes)]
     [InlineData("Posix", "$(", "")]
     [InlineData("PowerShell", "$(", "")]
     [InlineData("Unknown", "$(", "")]
@@ -2347,6 +2370,7 @@ public class BashCommandAnalyzerTests
     // Before DYD-723 these exhausted the host's memory: run on the fix only. The budgeted length stays
     // within the budget, and doubling the input to its full length at most about doubles the allocation.
     [Theory]
+    [Trait(PerformanceProof, BothLanes)]
     [InlineData("Posix", "$(", "")]
     [InlineData("PowerShell", "$(", "")]
     [InlineData("Unknown", "$(", "")]
@@ -2517,76 +2541,112 @@ public class BashCommandAnalyzerTests
 
     // Time grows with the input. One sample analyses the input of 12,500 characters eight times and the
     // one of 100,000 once, so a linear analysis spends about as long on each and a quadratic one about
-    // eight times as long on the long one; as in the wrapper-chain test above, the ratio decides, so
-    // coverage instrumentation cancels out, and the best times of all seven interleaved rounds
-    // damp noise after warming both sizes. Linux uses calling-thread CPU for the
-    // ratio, so scheduling delays do not decide it. In Release, uninstrumented, 100,000 characters take at most a
-    // second (captain's ruling, 2026-11-05); a Debug build or instrumentation runs many times slower,
-    // and there the ratio alone decides.
+    // eight times as long on the long one; as in the wrapper-chain test above, the ratio decides, and
+    // the best times of all seven interleaved rounds damp noise after warming both sizes. Linux uses
+    // calling-thread CPU for the ratio, so scheduling delays do not decide it. In Release,
+    // uninstrumented, 100,000 characters take at most a second (captain's ruling, 2026-11-05); in a
+    // Debug build, as the Windows guard job runs them, the ratio alone decides. These proofs run in the Release lane; each CoverageWitness reads the same inputs once under coverage.
+    public static TheoryData<string, string> LongInputCases => new()
+    {
+        { "Posix", "sed quotes" },
+        { "PowerShell", "sed quotes" },
+        { "Unknown", "sed quotes" },
+        { "Unknown", "echo quotes" },
+        { "Unknown", "printf quotes" },
+        { "Unknown", "echo words" },
+        { "Unknown", "heredoc openers" },
+        { "Unknown", "here-string openers" },
+        { "Posix", "multiline quotes" },
+        { "PowerShell", "multiline quotes" },
+        { "Unknown", "multiline quotes" },
+    };
+
     [Theory]
-    [InlineData("Posix", "sed quotes")]
-    [InlineData("PowerShell", "sed quotes")]
-    [InlineData("Unknown", "sed quotes")]
-    [InlineData("Unknown", "echo quotes")]
-    [InlineData("Unknown", "printf quotes")]
-    [InlineData("Unknown", "echo words")]
-    [InlineData("Unknown", "heredoc openers")]
-    [InlineData("Unknown", "here-string openers")]
-    [InlineData("Posix", "multiline quotes")]
-    [InlineData("PowerShell", "multiline quotes")]
-    [InlineData("Unknown", "multiline quotes")]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(LongInputCases))]
     public void Analyze_LongInput_TakesTimeLinearly(string dialect, string shape) => AssertTimeGrowsLinearly(dialect, shape);
 
-    // Before DYD-723 long nesting exhausted the host's memory: run on the fix only.
     [Theory]
-    [InlineData("Posix", "$( open")]
-    [InlineData("Unknown", "$( wide")]
-    [InlineData("Unknown", "\"$( closed")]
-    [InlineData("Unknown", "mixed open")]
-    [InlineData("Posix", "nested multiline quotes")]
-    [InlineData("PowerShell", "nested multiline quotes")]
-    [InlineData("Unknown", "nested multiline quotes")]
+    [MemberData(nameof(LongInputCases))]
+    public void Analyze_LongInput_CoverageWitness(string dialect, string shape) => AnalyzeGrowthInputs(dialect, shape);
+
+    // Before DYD-723 long nesting exhausted the host's memory: run on the fix only.
+    public static TheoryData<string, string> LongNestingTimeCases => new()
+    {
+        { "Posix", "$( open" },
+        { "Unknown", "$( wide" },
+        { "Unknown", "\"$( closed" },
+        { "Unknown", "mixed open" },
+        { "Posix", "nested multiline quotes" },
+        { "PowerShell", "nested multiline quotes" },
+        { "Unknown", "nested multiline quotes" },
+    };
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(LongNestingTimeCases))]
     public void Analyze_LongNesting_TakesTimeLinearly(string dialect, string shape) => AssertTimeGrowsLinearly(dialect, shape);
+
+    [Theory]
+    [MemberData(nameof(LongNestingTimeCases))]
+    public void Analyze_LongNesting_CoverageWitness(string dialect, string shape) => AnalyzeGrowthInputs(dialect, shape);
 
     // Before DYD-723 the long input of these took a minute (heredocs) or read the line 2^9 times (cmd):
     // run on the fix only; their allocation test below fails before the fix at the budgeted length.
+    public static TheoryData<string, string> LongBodiesTimeCases => new()
+    {
+        { "Posix", "heredocs" },
+        { "PowerShell", "heredocs" },
+        { "Unknown", "heredocs" },
+        { "Posix", "quoted heredocs" },
+        { "Unknown", "quoted heredocs" },
+        { "PowerShell", "here-strings" },
+        { "Unknown", "here-strings" },
+        { "Posix", "distinct writes" },
+        { "Unknown", "distinct writes" },
+        { "Unknown", "cmd chain" },
+    };
+
     [Theory]
-    [InlineData("Posix", "heredocs")]
-    [InlineData("PowerShell", "heredocs")]
-    [InlineData("Unknown", "heredocs")]
-    [InlineData("Posix", "quoted heredocs")]
-    [InlineData("Unknown", "quoted heredocs")]
-    [InlineData("PowerShell", "here-strings")]
-    [InlineData("Unknown", "here-strings")]
-    [InlineData("Posix", "distinct writes")]
-    [InlineData("Unknown", "distinct writes")]
-    [InlineData("Unknown", "cmd chain")]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(LongBodiesTimeCases))]
     public void Analyze_LongBodies_TakeTimeLinearly(string dialect, string shape) => AssertTimeGrowsLinearly(dialect, shape);
 
     [Theory]
-    [InlineData("Posix")]
-    [InlineData("PowerShell")]
-    [InlineData("Unknown")]
+    [MemberData(nameof(LongBodiesTimeCases))]
+    public void Analyze_LongBodies_CoverageWitness(string dialect, string shape) => AnalyzeGrowthInputs(dialect, shape);
+
+    public static TheoryData<string> Dialects => new() { "Posix", "PowerShell", "Unknown" };
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(Dialects))]
     public void Analyze_UnclosedCatHeredocs_TakesTimeLinearly(string dialect) =>
         AssertTimeGrowsLinearly(dialect, "cat heredoc openers");
 
     [Theory]
-    [InlineData("Posix")]
-    [InlineData("PowerShell")]
-    [InlineData("Unknown")]
+    [MemberData(nameof(Dialects))]
+    public void Analyze_UnclosedCatHeredocs_CoverageWitness(string dialect) =>
+        AnalyzeGrowthInputs(dialect, "cat heredoc openers");
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(Dialects))]
     public void Analyze_MixedBodyOpeners_GrowsLinearly(string dialect) =>
         AssertTimeGrowsLinearly(dialect, "mixed body openers");
 
     [Theory]
-    [InlineData("Posix")]
-    [InlineData("PowerShell")]
-    [InlineData("Unknown")]
+    [MemberData(nameof(Dialects))]
+    public void Analyze_MixedBodyOpeners_CoverageWitness(string dialect) =>
+        AnalyzeGrowthInputs(dialect, "mixed body openers");
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(Dialects))]
     public void Analyze_EscapedQuoteOpeners_GrowsLinearly(string dialect)
     {
-        var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
-        Action<string> analyze = text => analyzer.Analyze(text);
-        var shape = LongShapes["escaped quote openers"];
-        var (shortInput, longInput) = (shape(10_000), shape(20_000));
+        var analyze = Analyzing(dialect);
+        var (shortInput, longInput) = EscapedQuoteDoublingInputs();
         analyze(shortInput);
         analyze(longInput);
         var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
@@ -2601,80 +2661,162 @@ public class BashCommandAnalyzerTests
     }
 
     [Theory]
-    [InlineData("Posix", "env chain")]
-    [InlineData("PowerShell", "env chain")]
-    [InlineData("Unknown", "env chain")]
-    [InlineData("Posix", "python run chain")]
-    [InlineData("PowerShell", "python run chain")]
-    [InlineData("Unknown", "python run chain")]
+    [MemberData(nameof(Dialects))]
+    public void Analyze_EscapedQuoteOpeners_CoverageWitness(string dialect)
+    {
+        var analyze = Analyzing(dialect);
+        var (shortInput, longInput) = EscapedQuoteDoublingInputs();
+        analyze(shortInput);
+        analyze(longInput);
+        AnalyzeGrowthInputs(analyze, "escaped quote openers");
+    }
+
+    private static (string Short, string Long) EscapedQuoteDoublingInputs()
+    {
+        var shape = LongShapes["escaped quote openers"];
+        return (shape(10_000), shape(20_000));
+    }
+
+    public static TheoryData<string, string> RepeatedRunnerWordCases => new()
+    {
+        { "Posix", "env chain" },
+        { "PowerShell", "env chain" },
+        { "Unknown", "env chain" },
+        { "Posix", "python run chain" },
+        { "PowerShell", "python run chain" },
+        { "Unknown", "python run chain" },
+    };
+
+    [Theory]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(RepeatedRunnerWordCases))]
     public void Analyze_RepeatedRunnerWords_GrowsLinearly(string dialect, string shape)
+    {
+        AssertRunnerWordsAllocateLinearly(dialect, shape);
+        AssertTimeGrowsLinearly(dialect, shape);
+    }
+
+    // Allocation is deterministic, so its ratio holds under coverage too.
+    [Theory]
+    [MemberData(nameof(RepeatedRunnerWordCases))]
+    public void Analyze_RepeatedRunnerWords_CoverageWitness(string dialect, string shape)
+    {
+        AssertRunnerWordsAllocateLinearly(dialect, shape);
+        AnalyzeGrowthInputs(dialect, shape);
+    }
+
+    private static void AssertRunnerWordsAllocateLinearly(string dialect, string shape)
     {
         Measure(dialect, LongShapes[shape](100));
         var shortBytes = Measure(dialect, LongShapes[shape](1_000)).Allocated;
         var longBytes = Measure(dialect, LongShapes[shape](2_000)).Allocated;
         Assert.True(longBytes <= shortBytes * 2.5, $"Allocated {shortBytes} then {longBytes}");
-        AssertTimeGrowsLinearly(dialect, shape);
     }
 
+    public static TheoryData<string, string> RepeatedPrefixCases => new()
+    {
+        { "RecursiveDeleteRootRegex", "rm flags" },
+        { "RecursiveDeleteGlobRegex", "rm flags" },
+        { "PowerShellRecursiveDeleteRegex", "remove words" },
+        { "DdKnownDiskWriteRegex", "dd words" },
+        { "Base64DecodePipeExecRegex", "base64 words" },
+        { "CurlPipeShRegex", "curl words" },
+        { "WgetPipeShRegex", "wget words" },
+        { "WgetOutputPipeShRegex", "wget output" },
+        { "PowerShellIwrIexRegex", "iwr words" },
+        { "PowerShellIwrIexShortRegex", "iwr short" },
+        { "PowerShellDownloadStringRegex", "download words" },
+        { "PowerShellHistoryDeleteRegex", "history words" },
+    };
+
     [Theory]
-    [InlineData("RecursiveDeleteRootRegex", "rm flags")]
-    [InlineData("RecursiveDeleteGlobRegex", "rm flags")]
-    [InlineData("PowerShellRecursiveDeleteRegex", "remove words")]
-    [InlineData("DdKnownDiskWriteRegex", "dd words")]
-    [InlineData("Base64DecodePipeExecRegex", "base64 words")]
-    [InlineData("CurlPipeShRegex", "curl words")]
-    [InlineData("WgetPipeShRegex", "wget words")]
-    [InlineData("WgetOutputPipeShRegex", "wget output")]
-    [InlineData("PowerShellIwrIexRegex", "iwr words")]
-    [InlineData("PowerShellIwrIexShortRegex", "iwr short")]
-    [InlineData("PowerShellDownloadStringRegex", "download words")]
-    [InlineData("PowerShellHistoryDeleteRegex", "history words")]
-    public void DangerousRules_RepeatedPrefixes_GrowLinearly(string name, string shape)
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(RepeatedPrefixCases))]
+    public void DangerousRules_RepeatedPrefixes_GrowLinearly(string name, string shape) =>
+        AssertTimeGrowsLinearly(NoMatchOf(name), shape);
+
+    // The rule's 250 ms timeout (DYD-610) is checked under coverage too.
+    [Theory]
+    [MemberData(nameof(RepeatedPrefixCases))]
+    public void DangerousRules_RepeatedPrefixes_CoverageWitness(string name, string shape) =>
+        AnalyzeGrowthInputs(NoMatchOf(name), shape);
+
+    private static Action<string> NoMatchOf(string name)
     {
         var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static;
         var type = typeof(BashCommandAnalyzer);
         var pattern = (System.Text.RegularExpressions.Regex)(type.GetField(name, flags)?.GetValue(null)
             ?? type.GetMethod(name, flags)!.Invoke(null, null))!;
         Assert.Equal(TimeSpan.FromMilliseconds(250), pattern.MatchTimeout);
-        AssertTimeGrowsLinearly(text => Assert.DoesNotMatch(pattern, text), shape);
+        return text => Assert.DoesNotMatch(pattern, text);
     }
 
-    private static void AssertTimeGrowsLinearly(string dialect, string shape)
+    private static void AssertTimeGrowsLinearly(string dialect, string shape) =>
+        AssertTimeGrowsLinearly(Analyzing(dialect), shape);
+
+    private static Action<string> Analyzing(string dialect)
     {
         var analyzer = new BashCommandAnalyzer(Enum.Parse<ShellDialect>(dialect));
-        AssertTimeGrowsLinearly(command => analyzer.Analyze(command), shape);
+        return command => analyzer.Analyze(command);
     }
 
+    public static TheoryData<string, string> ManyDataMatchCases => new()
+    {
+        { "Posix", "nudge quoted data" },
+        { "PowerShell", "nudge quoted data" },
+        { "Unknown", "nudge quoted data" },
+        { "Posix", "nudge comments" },
+        { "PowerShell", "nudge comments" },
+        { "Unknown", "nudge comments" },
+        { "Posix", "nudge bodies" },
+        { "PowerShell", "nudge bodies" },
+        { "Unknown", "nudge bodies" },
+        { "Posix", "nudge one body" },
+        { "PowerShell", "nudge one body" },
+        { "Unknown", "nudge one body" },
+    };
+
     [Theory]
-    [InlineData("Posix", "nudge quoted data")]
-    [InlineData("PowerShell", "nudge quoted data")]
-    [InlineData("Unknown", "nudge quoted data")]
-    [InlineData("Posix", "nudge comments")]
-    [InlineData("PowerShell", "nudge comments")]
-    [InlineData("Unknown", "nudge comments")]
-    [InlineData("Posix", "nudge bodies")]
-    [InlineData("PowerShell", "nudge bodies")]
-    [InlineData("Unknown", "nudge bodies")]
-    [InlineData("Posix", "nudge one body")]
-    [InlineData("PowerShell", "nudge one body")]
-    [InlineData("Unknown", "nudge one body")]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(ManyDataMatchCases))]
     public void FirstRunningMatch_ManyDataMatches_GrowsLinearly(string dialect, string shape)
+    {
+        var check = FirstRunningMatchFindsNone(dialect);
+        AssertRunningMatchAllocatesLinearly(check, shape);
+        AssertTimeGrowsLinearly(check, shape);
+    }
+
+    // Allocation is deterministic, so its ratio and budget hold under coverage too.
+    [Theory]
+    [MemberData(nameof(ManyDataMatchCases))]
+    public void FirstRunningMatch_ManyDataMatches_CoverageWitness(string dialect, string shape)
+    {
+        var check = FirstRunningMatchFindsNone(dialect);
+        AssertRunningMatchAllocatesLinearly(check, shape);
+        AnalyzeGrowthInputs(check, shape);
+    }
+
+    private static Action<string> FirstRunningMatchFindsNone(string dialect)
     {
         var method = typeof(DynaDocs.Commands.GuardCommand).GetMethod("FirstRunningMatch",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
         var pattern = new System.Text.RegularExpressions.Regex("tail -f");
         var shell = Enum.Parse<ShellDialect>(dialect);
-        void Check(string text)
+        return text =>
         {
             var context = method.GetParameters()[2].ParameterType;
             var argument = context.IsEnum ? (object)shell : Activator.CreateInstance(context, text, shell)!;
             Assert.Null(method.Invoke(null, [pattern, text, argument]));
-        }
+        };
+    }
+
+    private static void AssertRunningMatchAllocatesLinearly(Action<string> check, string shape)
+    {
         long Allocation(int length)
         {
             var text = LongShapes[shape](length);
             var before = GC.GetAllocatedBytesForCurrentThread();
-            Check(text);
+            check(text);
             return GC.GetAllocatedBytesForCurrentThread() - before;
         }
         Allocation(100);
@@ -2682,18 +2824,31 @@ public class BashCommandAnalyzerTests
         var longBytes = Allocation(2_000);
         Assert.True(longBytes <= shortBytes * 2.5, $"Allocated {shortBytes} then {longBytes}");
         Assert.True(Allocation(BudgetedLength) <= 256L * 1024 * 1024);
-        AssertTimeGrowsLinearly(Check, shape);
     }
 
     // Isolate the two CPU terms: end-to-end allocation and other linear work can mask their ratio.
+    public static TheoryData<string, string> ManyBodiesCases => new()
+    {
+        { "Posix", "heredocs" },
+        { "Unknown", "heredocs" },
+        { "Posix", "quoted heredocs" },
+        { "Unknown", "quoted heredocs" },
+        { "PowerShell", "here-strings" },
+        { "Unknown", "here-strings" },
+    };
+
     [Theory]
-    [InlineData("Posix", "heredocs")]
-    [InlineData("Unknown", "heredocs")]
-    [InlineData("Posix", "quoted heredocs")]
-    [InlineData("Unknown", "quoted heredocs")]
-    [InlineData("PowerShell", "here-strings")]
-    [InlineData("Unknown", "here-strings")]
-    public void CheckBypassAttempts_ManyBodies_TakesTimeLinearly(string dialect, string shape)
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(ManyBodiesCases))]
+    public void CheckBypassAttempts_ManyBodies_TakesTimeLinearly(string dialect, string shape) =>
+        AssertTimeGrowsLinearly(CheckingBypassAttempts(dialect, shape), shape);
+
+    [Theory]
+    [MemberData(nameof(ManyBodiesCases))]
+    public void CheckBypassAttempts_ManyBodies_CoverageWitness(string dialect, string shape) =>
+        AnalyzeGrowthInputs(CheckingBypassAttempts(dialect, shape), shape);
+
+    private static Action<string> CheckingBypassAttempts(string dialect, string shape)
     {
         const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.NonPublic
             | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance;
@@ -2702,30 +2857,43 @@ public class BashCommandAnalyzerTests
         var piecesMethod = type.GetMethod("CodePieces", flags)!;
         var bypassMethod = type.GetMethod("CheckBypassAttempts", flags)!;
         var inputs = new Dictionary<string, object[]>();
-        foreach (var length in new[] { 12_500, 100_000 })
+        foreach (var text in GrowthInputs(shape))
         {
-            var text = LongShapes[shape](length);
             var pieces = piecesMethod.Invoke(analyzer, [text])!;
             var code = ((System.Collections.IEnumerable)pieces).Cast<object>()
                 .Select(piece => (string)piece.GetType().GetProperty("Code")!.GetValue(piece)!);
             inputs[text] = [pieces, pieces, string.Join("; ", code), new BashAnalysisResult()];
         }
-        AssertTimeGrowsLinearly(text => bypassMethod.Invoke(null, inputs[text]), shape);
+        return text => bypassMethod.Invoke(null, inputs[text]);
     }
 
     [Fact]
-    public void PasswdModify_DistinctWrites_TakesTimeLinearly()
+    [Trait(PerformanceProof, ReleaseLane)]
+    public void PasswdModify_DistinctWrites_TakesTimeLinearly() =>
+        AssertTimeGrowsLinearly(PasswdModifyMatching(), "distinct writes");
+
+    [Fact]
+    public void PasswdModify_DistinctWrites_CoverageWitness() =>
+        AnalyzeGrowthInputs(PasswdModifyMatching(), "distinct writes");
+
+    private static Action<string> PasswdModifyMatching()
     {
         var pattern = (System.Text.RegularExpressions.Regex)typeof(BashCommandAnalyzer)
             .GetMethod("PasswdModifyRegex", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
             .Invoke(null, null)!;
-        AssertTimeGrowsLinearly(text => pattern.IsMatch(text), "distinct writes");
+        return text => pattern.IsMatch(text);
     }
+
+    private const int Growth = 8;
+
+    // The proof's two inputs: an eighth of 100,000 characters and 100,000.
+    private static string[] GrowthInputs(string shape) =>
+        [LongShapes[shape](100_000 / Growth), LongShapes[shape](100_000)];
 
     private static void AssertTimeGrowsLinearly(Action<string> analyze, string shape)
     {
-        const int growth = 8;
-        var (shortInput, longInput) = (LongShapes[shape](100_000 / growth), LongShapes[shape](100_000));
+        var inputs = GrowthInputs(shape);
+        var (shortInput, longInput) = (inputs[0], inputs[1]);
         for (var warm = 0; warm < 3; warm++)
         {
             analyze(shortInput);
@@ -2736,7 +2904,7 @@ public class BashCommandAnalyzerTests
 
         for (var round = 0; round < 7; round++)
         {
-            shortBest = Min(shortBest, TimeAnalyses(analyze, shortInput, growth).Cpu);
+            shortBest = Min(shortBest, TimeAnalyses(analyze, shortInput, Growth).Cpu);
             var full = TimeAnalyses(analyze, longInput, 1);
             longBest = Min(longBest, full.Cpu);
             wallBest = Min(wallBest, full.Wall);
@@ -2747,13 +2915,35 @@ public class BashCommandAnalyzerTests
         Assert.True(!ReleaseUninstrumented || wallBest <= TimeSpan.FromSeconds(1), $"Took {wallBest} at 100,000 characters");
     }
 
+    // A Release proof's witness: each of its inputs read once, under coverage, with the check's own
+    // assertions. It claims nothing about time; the proof does, in the Release lane.
+    private static void AnalyzeGrowthInputs(string dialect, string shape) => AnalyzeGrowthInputs(Analyzing(dialect), shape);
+
+    private static void AnalyzeGrowthInputs(Action<string> analyze, string shape)
+    {
+        foreach (var input in GrowthInputs(shape))
+            analyze(input);
+    }
+
     [Theory]
-    [InlineData("Posix")]
-    [InlineData("PowerShell")]
-    [InlineData("Unknown")]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(Dialects))]
     public void Analyze_DistinctCommands_GrowLinearlyWithinTheBudget(string dialect)
     {
         AssertTimeGrowsLinearly(dialect, "distinct commands");
+        AssertDistinctCommandsAllocateLinearly(dialect);
+    }
+
+    [Theory]
+    [MemberData(nameof(Dialects))]
+    public void Analyze_DistinctCommands_CoverageWitness(string dialect)
+    {
+        AnalyzeGrowthInputs(dialect, "distinct commands");
+        AssertDistinctCommandsAllocateLinearly(dialect);
+    }
+
+    private static void AssertDistinctCommandsAllocateLinearly(string dialect)
+    {
         var commands = LongShapes["distinct commands"];
 
         Measure(dialect, commands(1_000));
@@ -2780,6 +2970,7 @@ public class BashCommandAnalyzerTests
     // short input of the shape runs first, and the budgeted length is measured in two rounds, the
     // smaller counting; uninstrumented, every round allocates alike.
     [Theory]
+    [Trait(PerformanceProof, BothLanes)]
     [InlineData("Posix", "heredocs")]
     [InlineData("Unknown", "heredocs")]
     [InlineData("Unknown", "cmd chain")]
@@ -2802,34 +2993,27 @@ public class BashCommandAnalyzerTests
         Assert.True(!ReleaseUninstrumented || full <= AllocationBudget, $"Allocated {full:N0} bytes at 100,000 characters");
     }
 
+    public static TheoryData<string, string> LongDataBodyCases => new()
+    {
+        { "Posix", "substitutions" },
+        { "PowerShell", "substitutions" },
+        { "Unknown", "substitutions" },
+        { "Posix", "pipeline" },
+        { "PowerShell", "pipeline" },
+        { "Unknown", "pipeline" },
+        { "Posix", "crlf" },
+        { "PowerShell", "crlf" },
+        { "Unknown", "crlf" },
+        { "Posix", "bodies" },
+        { "PowerShell", "bodies" },
+        { "Unknown", "bodies" },
+    };
+
     [Theory]
-    [InlineData("Posix", "substitutions")]
-    [InlineData("PowerShell", "substitutions")]
-    [InlineData("Unknown", "substitutions")]
-    [InlineData("Posix", "pipeline")]
-    [InlineData("PowerShell", "pipeline")]
-    [InlineData("Unknown", "pipeline")]
-    [InlineData("Posix", "crlf")]
-    [InlineData("PowerShell", "crlf")]
-    [InlineData("Unknown", "crlf")]
-    [InlineData("Posix", "bodies")]
-    [InlineData("PowerShell", "bodies")]
-    [InlineData("Unknown", "bodies")]
+    [Trait(PerformanceProof, ReleaseLane)]
+    [MemberData(nameof(LongDataBodyCases))]
     public void NudgeClassifier_LongDataBodies_GrowLinearly(string dialect, string shape)
     {
-        string Input(int length)
-        {
-            var bodies = Enumerable.Range(0, (length - 18) / 32).ToArray();
-            return shape switch
-            {
-                "pipeline" => "cat <<E" + Repeat(" | cat", (length - 18) / 6) + "\ntail -f\nE\n",
-                "bodies" => "cat" + string.Concat(bodies.Select(i => $" <<E{i:D5}")) + " <<Z\n"
-                    + string.Concat(bodies.Select(i => $"x\nE{i:D5}\n"))
-                    + string.Concat(bodies.Select(i => $"$(echo {i:D5}) ")) + "tail -f\nZ\n",
-                _ => "cat <<E\n" + string.Concat(Enumerable.Range(0, (length - 18) / 15)
-                    .Select(i => $"$(echo {i:D5})" + (shape == "crlf" ? "\r\n" : " "))) + "tail -f\nE\n",
-            };
-        }
         var shell = Enum.Parse<ShellDialect>(dialect);
         TimeSpan Time(string text, int times)
         {
@@ -2839,7 +3023,7 @@ public class BashCommandAnalyzerTests
                 Assert.False(BashCommandAnalyzer.NudgeClassifier(text, shell)(at));
             return watch.Elapsed;
         }
-        var (shortInput, longInput) = (Input(12_500), Input(100_000));
+        var (shortInput, longInput) = (LongDataBody(shape, 12_500), LongDataBody(shape, 100_000));
         Time(shortInput, 1);
         Time(longInput, 1);
         var (shortBest, longBest) = (TimeSpan.MaxValue, TimeSpan.MaxValue);
@@ -2850,6 +3034,29 @@ public class BashCommandAnalyzerTests
         }
         Assert.True(longBest / shortBest < 2.5, $"one 8x input took {longBest / shortBest:F2}x ({shortBest} vs {longBest})");
         Assert.True(!ReleaseUninstrumented || longBest <= TimeSpan.FromSeconds(1), $"Took {longBest} at 100,000 characters");
+    }
+
+    [Theory]
+    [MemberData(nameof(LongDataBodyCases))]
+    public void NudgeClassifier_LongDataBodies_CoverageWitness(string dialect, string shape)
+    {
+        var shell = Enum.Parse<ShellDialect>(dialect);
+        foreach (var text in new[] { LongDataBody(shape, 12_500), LongDataBody(shape, 100_000) })
+            Assert.False(BashCommandAnalyzer.NudgeClassifier(text, shell)(text.IndexOf("tail", StringComparison.Ordinal)));
+    }
+
+    private static string LongDataBody(string shape, int length)
+    {
+        var bodies = Enumerable.Range(0, (length - 18) / 32).ToArray();
+        return shape switch
+        {
+            "pipeline" => "cat <<E" + Repeat(" | cat", (length - 18) / 6) + "\ntail -f\nE\n",
+            "bodies" => "cat" + string.Concat(bodies.Select(i => $" <<E{i:D5}")) + " <<Z\n"
+                + string.Concat(bodies.Select(i => $"x\nE{i:D5}\n"))
+                + string.Concat(bodies.Select(i => $"$(echo {i:D5}) ")) + "tail -f\nZ\n",
+            _ => "cat <<E\n" + string.Concat(Enumerable.Range(0, (length - 18) / 15)
+                .Select(i => $"$(echo {i:D5})" + (shape == "crlf" ? "\r\n" : " "))) + "tail -f\nE\n",
+        };
     }
 
     // The one-second bound is Release's, uninstrumented: the product is optimized, and AltCover, which

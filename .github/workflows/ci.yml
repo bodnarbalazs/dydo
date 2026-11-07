@@ -352,8 +352,58 @@ jobs:
           path: DynaDocs.Tests/coverage/results
           if-no-files-found: error
 
+  # DYD-840: the repeated numerical performance proofs run here, built in Release and
+  # uninstrumented, every case, warmup and round of them, on every pull request and feature push.
+  # Instrumented coverage runs each one's witness instead (release-proofs.json). The lane fails on
+  # evidence that is missing, failed, partial, unmapped or not the Release build.
+  dotnet-release-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: DynaDocs.Tests/coverage/.python-version
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dydo-assurance-dotnet
+        with:
+          dotnet-version: '10.0.303'
+
+      - name: Provision patched .NET runtime
+        shell: pwsh
+        run: ./.github/workflows/provision-dotnet-runtime.ps1
+
+      - name: Prepare pinned Python assurance environment
+        run: python -m venv .static-gates/python
+
+      - name: Install locked Python dependencies
+        run: .static-gates/python/bin/python -m pip install -r DynaDocs.Tests/coverage/requirements.lock
+
+      - name: Restore locked packages
+        run: dotnet restore --locked-mode
+
+      - name: Release performance proofs
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: .static-gates/python/bin/python DynaDocs.Tests/coverage/release_proof.py run
+
+      - name: Upload Release proof evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-release-proof-attempt-${{ github.run_attempt }}
+          path: DynaDocs.Tests/coverage/results
+          if-no-files-found: error
+
   dotnet-coverage-union:
-    needs: dotnet-coverage
+    needs: [dotnet-coverage, dotnet-release-proof]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -405,6 +455,17 @@ jobs:
           mkdir -p DynaDocs.Tests/coverage/results/coverage-platforms
           echo "$PLATFORM_RESULT" > DynaDocs.Tests/coverage/results/coverage-platforms/native-job-result.txt
           test "$PLATFORM_RESULT" = success
+
+      # Coverage leaves the repeated numerical proofs to the Release lane, so .NET coverage holds only with it.
+      - name: Require the Release performance proofs to pass
+        if: always()
+        shell: bash
+        env:
+          RELEASE_PROOF_RESULT: ${{ needs.dotnet-release-proof.result }}
+        run: |
+          mkdir -p DynaDocs.Tests/coverage/results/coverage-platforms
+          echo "$RELEASE_PROOF_RESULT" > DynaDocs.Tests/coverage/results/coverage-platforms/release-proof-job-result.txt
+          test "$RELEASE_PROOF_RESULT" = success
 
       # A rerun copies each leg it does not rerun into the new attempt, keeping the leg's original start time.
       - name: Record each leg's latest execution from the run's job record

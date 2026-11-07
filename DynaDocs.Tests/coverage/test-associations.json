@@ -359,6 +359,12 @@
       ]
     },
     {
+      "module": "DynaDocs.Tests/coverage/release_proof.py",
+      "tests": [
+        "DynaDocs.Tests/coverage/tests/test_release_proof.py"
+      ]
+    },
+    {
       "module": "DynaDocs.Tests/coverage/csharp_join.py",
       "tests": [
         "DynaDocs.Tests/coverage/tests/test_csharp_join.py"

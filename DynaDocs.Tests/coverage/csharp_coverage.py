@@ -11,6 +11,8 @@ import xml.etree.ElementTree as ET
 from collections import Counter
 from pathlib import Path
 
+from release_proof import coverage_filter
+
 
 ASSEMBLY_NAMES = {"dydo", "DynaDocs.Tests", "GateMetrics"}
 ASSEMBLY_PROJECTS = {
@@ -66,8 +68,12 @@ def _subject_commands(root, tests=None, results=None):
         results = Path(results)
         return [[*suite, "--filter", tests, "--logger", f"trx;LogFileName={results.name}",
                  "--results-directory", str(results.parent), "--", "RunConfiguration.TreatNoTestsAsError=true"]]
+    # The full suite but the repeated numerical proofs, which the required Release lane runs and
+    # whose coverage witnesses run here (DYD-840, release-proofs.json).
+    excluded = coverage_filter(root / "DynaDocs.Tests/coverage/release-proofs.json")
     return [
-        [*suite, "--logger", "console;verbosity=normal", "--", "RunConfiguration.TreatNoTestsAsError=true"],
+        [*suite, "--filter", excluded, "--logger", "console;verbosity=normal",
+         "--", "RunConfiguration.TreatNoTestsAsError=true"],
         [sys.executable, str(root / "DynaDocs.Tests/coverage/tests/test_csharp_metrics.py")],
     ]
 

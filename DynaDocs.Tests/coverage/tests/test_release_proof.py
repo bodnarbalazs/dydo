@@ -104,10 +104,11 @@ class ReleaseProofMapTests(unittest.TestCase):
                 load_map(path)
 
     def test_the_lane_runs_the_release_filter_through_the_isolated_facade(self):
-        command = facade_command(self.mapping, Path("/results"))
+        results = Path("/results")
+        command = facade_command(self.mapping, results)
         self.assertEqual([sys.executable, str(release_proof.TOOLS / "gap_check.py"), "test", "--stack", "dotnet", "--",
                           "-c", "Release", "--filter", self.mapping["releaseFilter"],
-                          "--logger", f"trx;LogFileName={TRX_NAME}", "--results-directory", "/results"], command)
+                          "--logger", f"trx;LogFileName={TRX_NAME}", "--results-directory", str(results)], command)
 
 
 class ReleaseProofEvidenceTests(unittest.TestCase):
